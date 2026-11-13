@@ -1,6 +1,6 @@
 # Spec 5: Booking and requests
 
-**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Draft for review
+**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
 Features: D3 Book seats on the whole trip or only part of it, D4 My bookings,
 C7 Accept or decline requests ([features](../product/features.md)).
@@ -104,8 +104,8 @@ Opened from trip details (spec 4) with the chosen part and seats.
 
 - A pending request shows its deadline and can be **withdrawn** at any time,
   which frees the seats and never affects reliability.
-- Whether a passenger can hold requests or bookings on two trips at the same
-  time is question 1.
+- A passenger cannot hold requests or bookings on two trips that overlap in
+  time (decision 1). To change plans, they withdraw or cancel one first.
 
 ### 3.5 Paying
 
@@ -159,8 +159,8 @@ Rules P1, S1 to S5, the booking modes and the booking lifecycle in
 | R5.6 | Request messages are at most 300 characters and contain no phone numbers, email addresses or links. |
 | R5.7 | Decline reasons are seen only by the operator. |
 | R5.8 | Withdrawing a request never affects reliability. |
-| R5.9 | Seats per booking are 1 up to the seats free on that part. The person booking is responsible for any companions (question 2). |
-| R5.10 | Overlapping bookings by the same passenger: see question 1. |
+| R5.9 | Seats per booking are 1 up to the seats free on that part. Companions need no account; the person booking is responsible for them (decision 2). |
+| R5.10 | A passenger's requested, accepted and confirmed bookings never overlap in time, from boarding to alighting (decision 1). |
 | R5.11 | A booking is confirmed only when paid within the payment window (rule M1); a free booking is confirmed at once. |
 | R5.12 | The chat, the number plate and the exact meeting details open when the booking is confirmed. |
 
@@ -279,15 +279,11 @@ blocking (spec 9), the payment provider integration, receipts, refunds and
 payouts (spec 13), waiting lists for full trips, and
 adding a booking to the phone's calendar (could come later).
 
-## Docs to update when approved
+## Decisions
 
-- [Pricing and seats](../product/pricing-and-seats.md#booking-modes): the late
-  request deadline in R5.5.
-- [Domain model](../architecture/domain-model.md): the new `Booking` fields.
+Accepted by Martin on 2026-11-13 as recommended.
 
-## Questions for Martin
-
-| # | Question | Recommendation |
-| - | -------- | -------------- |
-| 1 | Can a passenger hold requests or bookings on two trips that overlap in time? | No. Holding seats in two cars at once blocks other passengers and leaves a driver waiting. The passenger withdraws one first |
-| 2 | Can one booking include companions who have no account? | Yes, up to the free seats. The person booking is responsible for their companions, and the driver sees the number of seats when deciding |
+| # | Question | Decision |
+| - | -------- | -------- |
+| 1 | Can a passenger hold requests or bookings on two trips that overlap in time? | No. They withdraw or cancel one first |
+| 2 | Can one booking include companions who have no account? | Yes, up to the free seats; the person booking is responsible for them |

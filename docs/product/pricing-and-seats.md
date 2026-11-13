@@ -198,8 +198,10 @@ passengers on different parts of the trip.
   at once.
 - **Approval:** the request holds the seats while the driver decides. It
   expires if the driver does not answer within 12 hours, or by 2 hours before
-  departure from the boarding stop, whichever is earlier. Expired requests free
-  their seats. When the driver accepts, the passenger pays.
+  departure from the boarding stop, whichever is earlier. A request made less
+  than 2 hours 30 minutes before boarding expires at the booking cut-off
+  instead. Expired requests free their seats. When the driver accepts, the
+  passenger pays.
 
 In both modes a booking is confirmed only once it is paid (rule M1).
 
@@ -257,15 +259,23 @@ drivers in cash or by direct transfer for a ShareRide booking.
 - The departure moves by more than 30 minutes and the passenger cancels:
   **full refund**.
 - The passenger cancels later than 15 minutes before boarding, or is marked a
-  no-show: proposed no refund, so the driver is paid (awaiting Martin's
-  answer).
+  no-show: **no refund**; the driver is paid (decided 2026-11-13). Weather and
+  road closures are handled as cancellations by the driver.
 - Refunds go back to the original payment method.
 
 ### Rule M3: payouts to drivers
 
-Proposed (awaiting Martin's answer): the driver is paid automatically 24 hours
-after the trip completes, unless a passenger has reported a problem with it,
-to the bank account they set up with the payment provider.
+The driver is paid automatically 24 hours after the trip completes, unless a
+passenger has reported a problem with it, to the bank account they set up with
+the payment provider (decided 2026-11-13). A reported problem holds that
+booking's payout until the operator resolves it.
+
+### Rule M4: card fees
+
+In the beta, ShareRide pays the payment provider's fees; passengers pay the
+booking price and nothing more, and drivers receive the full price (decided
+2026-11-13). Whether a service fee is charged after the beta is open question
+Q5.
 
 ## Trip changes after bookings exist
 
@@ -303,7 +313,7 @@ Set centrally by the operator; changes are logged.
 | `price_level_step` | 10% | Steps of the driver's price level |
 | `payment_window` | 30 minutes | Time to pay after acceptance; never past the booking cut-off |
 | `free_cancellation_until` | 15 minutes | Before the planned time at the boarding stop; full refund until then |
-| `payout_delay` | 24 hours (proposed) | After trip completion |
+| `payout_delay` | 24 hours | After trip completion |
 | `booking_cutoff` | 15 minutes | Before the planned time at the boarding stop |
 | `request_expiry` | 12 hours | Approval mode; also never later than 2 hours before boarding |
 | `major_time_change` | 30 minutes | Above this, passengers may cancel without penalty |

@@ -120,7 +120,8 @@ trigger or a denormalised capacity column).
 | `seats` | ≥ 1 |
 | `status` | `requested`, `accepted` (awaiting payment), `confirmed` (paid), `declined`, `expired`, `cancelled`, `completed`, `no_show` |
 | `total_price`, `currency` | Snapshot at booking time |
-| `requested_at`, `decided_at`, `expires_at` | |
+| `requested_at`, `decided_at`, `expires_at`, `payment_due_at` | |
+| `message`, `decline_reason`, `attempt_key` | Request note, reason seen only by the operator, idempotency key ([spec 5](../specs/2026-11-13-booking-and-requests.md#6-data-and-api)) |
 | `cancelled_by`, `cancel_reason`, `cancelled_at` | Reasons include `weather`, `road_closed` |
 
 ### BookingSegmentPrice

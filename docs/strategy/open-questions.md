@@ -10,7 +10,7 @@ here, update or accept the linked ADR, and move the row to "Answered".
 
 | #  | Question | Recommendation | Affects |
 | -- | -------- | -------------- | ------- |
-| Q5 | Business model: passenger service fee, driver fee, subscription, or free? | A small passenger service fee per booking, shown separately. Payments run in the app from the beta (ADR 0013), so the question is whether the beta already charges it; recommendation: free during the beta, fee from launch. | [ADR 0013](../decisions/0013-in-app-payments-only.md) |
+| Q5 | Business model after the beta: passenger service fee, driver fee, subscription, or free? | A small passenger service fee per booking, shown separately, from launch. The beta is free of fees, and ShareRide pays card fees (A19). | [ADR 0013](../decisions/0013-in-app-payments-only.md) |
 | Q6 | Which corridors open first? | Reykjavík–Hveragerði–Selfoss, Reykjavík–Reykjanesbær–Keflavík Airport, Reykjavík–Akranes–Borgarnes, Reykjavík–Akureyri, and Selfoss–Hvolsvöllur–Vík along the south coast. To be checked against waitlist demand. | [meeting points](../product/meeting-points.md) |
 | Q8 | Which identity checks are required? | Phone verification for everyone. Drivers also confirm their driving licence. Auðkenni verification is optional and shown as a badge. | [ADR 0010](../decisions/0010-authentication-and-identity.md) |
 | Q9 | Languages at launch? | Icelandic and English; Polish in Phase 5. | [ADR 0011](../decisions/0011-localization.md) |
@@ -41,3 +41,4 @@ here, update or accept the linked ADR, and move the row to "Answered".
 | A16 | Spec 3 (driver setup and posting a trip) | Approved with Martin's changes: one price level per trip (ADR 0012), stops added automatically with no limit, licence declaration only, any car, plate up to departure, make, model and colour public. See [spec 3](../specs/2026-11-13-post-a-trip.md#decisions). | 2026-11-13 |
 | A17 | Spec 4 (search and trip details) | Approved as recommended: "Reykjavík" covers the whole capital area; the date is optional. See [spec 4](../specs/2026-11-13-search-and-trip-details.md#decisions). | 2026-11-13 |
 | A18 | Q2 revisited: how do passengers pay? | Only through the app, from the beta. Pay when the booking is accepted; free cancellation with a full refund up to 15 minutes before departure. ADR 0013 supersedes ADR 0008 (A4). | 2026-11-13 |
+| A19 | Payment details and spec 5 | Accepted as recommended: no refund for cancellations later than 15 minutes before boarding or for no-shows; ShareRide pays card fees in the beta (no service fee); drivers are paid 24 hours after the trip unless a problem is reported; no overlapping bookings per passenger; companions without accounts allowed. Spec 5 approved. | 2026-11-13 |
