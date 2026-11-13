@@ -36,9 +36,13 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0003](0003-cross-platform-client-expo.md) | Cross-platform client with Expo | Accepted |
 | [0004](0004-backend-modular-monolith.md) | Backend as a TypeScript modular monolith | Accepted |
 | [0005](0005-postgresql-postgis.md) | PostgreSQL with PostGIS as the system of record | Accepted |
-| [0006](0006-meeting-points-and-segment-pricing.md) | Meeting-point network with per-segment prices and seats | Accepted |
-| [0007](0007-eea-hosting-and-data-residency.md) | EEA hosting and data residency | Proposed |
-| [0008](0008-payments-phased.md) | Phased payments behind a provider-agnostic port | Accepted |
-| [0009](0009-maps-and-routing.md) | Maps with MapLibre and OpenStreetMap; precomputed routing | Proposed |
-| [0010](0010-authentication-and-identity.md) | Phone-first authentication and layered identity verification | Proposed |
-| [0011](0011-localization.md) | Icelandic and English from day one | Proposed |
+| [0006](0006-meeting-points-and-segment-pricing.md) | Meeting-point network with per-segment prices and seats | Superseded by ADR 0012 |
+| [0007](0007-eea-hosting-and-data-residency.md) | EEA hosting and data residency | Accepted |
+| [0008](0008-payments-phased.md) | Phased payments behind a provider-agnostic port | Superseded by ADR 0013 |
+| [0009](0009-maps-and-routing.md) | Maps with MapLibre and OpenStreetMap; precomputed routing | Accepted |
+| [0010](0010-authentication-and-identity.md) | Phone-first authentication and layered identity verification | Accepted |
+| [0011](0011-localization.md) | Icelandic and English from day one | Accepted |
+| [0012](0012-trip-price-level.md) | One price level per trip instead of per-segment price editing | Accepted |
+| [0013](0013-in-app-payments-only.md) | All payments through the app, from the beta | Accepted |
+| [0014](0014-passenger-service-fee-from-launch.md) | A passenger service fee from public launch | Accepted |
+| [0015](0015-women-only-trips.md) | Women-only trips based on a private self-declaration | Proposed |

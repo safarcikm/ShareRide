@@ -23,8 +23,8 @@
 1. **Collect less.** Last name, kennitala, home address and exact location are
    not needed and not collected.
 2. **Show less.** Public profiles show first name, photo, bio, languages,
-   badges and ratings. Vehicle registration and exact pickup details are shown
-   only to booked passengers. Phone numbers are never shown; people talk in the
+   badges and ratings, and the car's make, model and colour on trips. The
+   number plate and exact pickup details are shown only to booked passengers. Phone numbers are never shown; people talk in the
    in-app chat.
 3. **Keep less.** Every category has a retention period, enforced by scheduled
    jobs.
@@ -37,19 +37,32 @@
 
 | Category | Examples | Purpose | Legal basis | Visible to | Retention |
 | -------- | -------- | ------- | ----------- | ---------- | --------- |
-| Account | Phone, email, first name, language | Sign-in, contact | Contract | User; operator | While the account exists |
+| Account | Phone, email, first name, language | Sign-in, contact | Contract | User; operator | While the account exists, plus a 7-day waiting period after deletion is asked for |
+| Blocked phone numbers | One-way hash of a suspended person's phone number | Stop suspended people signing up again | Legitimate interest | System | Until the suspension ends, at most 3 years |
+| Data exports | The user's own export file | Access and portability | Legal obligation | The user | 7 days |
+| Privacy requests | Request text and answer | Answer rights requests | Legal obligation | Operator | 3 years after the answer (**verify**) |
 | Public profile | First name, photo, bio, languages, badges | Trust between users | Contract | All users | While the account exists |
-| Vehicle | Make, model, colour, registration | Identify the car at pickup | Contract | Booked passengers | While the account exists |
+| Women-only trips | Date of opting in, date access was withdrawn; no gender field ([spec 14](../specs/2026-11-13-women-only-trips.md#7-privacy-and-safety)) | Let people offer and book women-only trips | Consent (given with the switch, withdrawn by turning it off) | The user; operator; others on a women-only trip see only that it is women-only | Until turned off or the account is deleted; a withdrawal stays with its report |
+| Vehicle | Make, model, colour, number plate | Identify the car at pickup | Contract | Make, model and colour: all users; number plate: booked passengers | While the account exists |
 | Trips and bookings | Meeting points, times, seats, prices | Provide the service | Contract | Participants; operator | 3 years after the trip, then anonymised (**verify** period) |
-| Messages | Chat between driver and passenger | Coordinate the trip | Contract | Participants; operator only when a report is filed | 12 months after the trip, unless part of a report |
+| Messages | Chat between driver and passenger | Coordinate the trip | Contract | Participants; operator only when a report or a trip day dispute is filed | 12 months after the trip, unless part of a report |
+| Trip day records | "I'm here" times (no location), no-show and missing-driver reports, dispute notes | Settle disagreements and payouts | Contract and legitimate interest | Operator; the other side sees only the outcome | With the booking |
+| Reliability | Counts of trips and bookings kept and not kept | Trust between users | Legitimate interest | Figure and counts: all users; reasons: operator | Figure covers 12 months; records kept with the booking |
 | Reviews and ratings | Rating, comment | Trust | Contract and legitimate interest | All users | While the subject's account exists |
-| Reports and moderation | Report text, evidence, actions | Safety | Legitimate interest; legal obligation where applicable | Operator | 3 years after closure (**verify**) |
+| Reports and moderation | Report text, evidence, actions, statements of reasons, appeals | Safety | Legitimate interest; legal obligation where applicable | Operator; the reporter sees the outcome in general terms; the affected user sees the statement of reasons | 3 years after closure (**verify**) |
+| Blocks | Who blocked whom | Keep people apart | Legitimate interest | The person who blocked | Until unblocked or either account is deleted |
+| Audit log | Operator actions, record IDs, device and network address, before and after values | Accountability and security | Legitimate interest; legal obligation where applicable | Operator | 3 years (**verify**) |
 | Verification | Phone verified, Auðkenni verified flag | Trust and safety | Consent (optional badges); contract (phone) | Badge public; details operator | While the account exists |
 | Device and push tokens | Push token, app version | Notifications | Contract | System | Until sign-out or token expiry |
+| Notification log | Recipient, kind of notification, channel, delivery status, time; no message text | Check that people were told | Contract and legitimate interest | Operator | 90 days |
 | Approximate location (on request) | Device location to find nearby meeting points | Convenience | Consent (device permission) | Not stored | Not stored |
-| Analytics | Usage events without names | Improve the product | Consent | Operator | 14 months |
+| Analytics | None in the beta ([spec 12](../specs/2026-11-13-beta-access-and-feedback.md#34-usage-analytics-j3)); if added later, usage events without names | Improve the product | Consent | Operator | 14 months |
+| Waitlist | Email, role, corridors, language, how they heard | Invite people to the beta | Consent (email confirmation) | Operator | Until they leave, 30 days after sign-up, or 12 months if never invited |
+| Feedback | Message, optional screenshot, app version, platform, screen | Improve the product | Legitimate interest | Operator | 12 months after the beta ends, or until the account is deleted |
+| Search log | From and to place, date searched for, result count, time, platform; no user, device or network identifier | Beta metrics | Not personal data by design | Operator | 14 months |
 | Technical logs | Request IDs, errors | Security and reliability | Legitimate interest | Operator | 30 days |
-| Payments (Phase 5) | Amounts, provider references | Payment, accounting | Contract; legal obligation | Participants; operator | As bookkeeping law requires (**verify**) |
+| Payments | Amounts, provider references, refunds, payouts | Payment, accounting | Contract; legal obligation | Participants; operator | As bookkeeping law requires (**verify**) |
+| Payout set-up (drivers) | Identity check and bank account, held by the payment provider | Paying drivers | Contract; legal obligation (provider's checks) | Provider; operator sees status only | Per the provider's terms |
 
 ## Rights in the app
 
@@ -57,9 +70,9 @@
 | ----- | --- |
 | Access and portability | "Download my data" produces a machine-readable file and a readable summary |
 | Rectification | Edit profile; contact support for other data |
-| Erasure | "Delete my account": removes the profile, anonymises trips, bookings and reviews, and deletes messages, after any open bookings are resolved |
+| Erasure | "Delete my account": after any open bookings are resolved and a 7-day waiting period, removes the profile, anonymises trips and bookings, and deletes messages; reviews written stay as by "a former member" ([spec 11](../specs/2026-11-13-privacy-self-service.md#35-what-is-erased-and-what-is-kept)) |
 | Objection and restriction | Contact form routed to the operator; answered within one month |
-| Withdraw consent | Settings for analytics, marketing and optional verification |
+| Withdraw consent | Settings for analytics, marketing, optional verification and women-only trips |
 
 ## Required documents before the beta
 
@@ -98,4 +111,4 @@ lawyer, then implemented as scheduled jobs and listed in the privacy policy.
 
 ## Age
 
-Accounts are for people aged 18 and over (open question Q7).
+Accounts are for people aged 18 and over (decided 2026-11-13).

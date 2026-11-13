@@ -6,8 +6,37 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- MVP feature list rewritten with feature IDs, priorities, questions for the
+  owner and the order in which specs are written.
+
 ### Added
 
+- Spec 1: sign-in, profile, settings and legal acceptance (approved).
+- Spec 2: meeting points, place search and their admin (approved).
+- Spec 3: driver setup and posting a trip with prices (approved).
+- Spec 4: search and trip details (approved).
+- Spec 5: booking and requests (approved).
+- Spec 6: changes and cancellations (approved).
+- Spec 7: chat, notifications and reminders (approved).
+- Spec 8: trip day, reviews and reliability (approved).
+- Spec 9: safety and moderation (approved).
+- Spec 10: operator settings and metrics (approved).
+- Spec 11: privacy self-service (approved).
+- Spec 12: beta access and feedback (approved). All MVP specs are approved.
+- Spec 13: payments, refunds, payouts and receipts (approved).
+- ADR 0012: one price level per trip instead of per-segment price editing
+  (supersedes ADR 0006).
+- ADR 0013: all payments through the app, from the beta (supersedes ADR
+  0008).
+- ADR 0014: a passenger service fee from public launch (answers Q5).
+- ADRs 0007, 0009, 0010 and 0011 accepted; open questions Q5, Q8, Q9, Q10,
+  Q11 and Q13 answered.
+- Launch corridors decided (Q6): Selfoss, Keflavík Airport, and Akranes and
+  Borgarnes, with Akureyri if the waitlist shows demand.
+- Women-only trips in the MVP (Q12): spec 14 and ADR 0015, both for review.
+  All open questions are answered.
 - Development strategy, roadmap and open questions.
 - Product vision, pricing and seat rules, meeting point strategy.
 - Architecture overview, domain model and integrations.

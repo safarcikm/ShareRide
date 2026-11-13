@@ -20,6 +20,7 @@ erDiagram
   MEETING_POINT ||--o{ TRIP_STOP : "used as"
   TRIP ||--|{ TRIP_STOP : "has ordered"
   TRIP ||--|{ SEGMENT : "has"
+  TRIP ||--o{ TRIP_CHANGE : "records"
   TRIP }o--|| VEHICLE : uses
   TRIP ||--o{ BOOKING : receives
   BOOKING }o--|| TRIP_STOP : "boards at"
@@ -28,7 +29,7 @@ erDiagram
   BOOKING ||--o| CONVERSATION : has
   CONVERSATION ||--o{ MESSAGE : contains
   BOOKING ||--o{ REVIEW : "reviewed in"
-  BOOKING ||--o{ PAYMENT : "paid by (Phase 5)"
+  BOOKING ||--o{ PAYMENT : "paid by"
 ```
 
 ## Entities
@@ -43,26 +44,47 @@ erDiagram
 | `first_name`, `photo`, `bio` | Public profile; last name is never shown publicly |
 | `languages` | Languages spoken, shown on profile |
 | `locale` | App language |
-| `verification` | Set of: `phone`, `email`, `driving_licence`, `audkenni` |
+| `verification` | Set of: `phone`, `email`, `audkenni` |
+| `licence_declared_at` | When the user declared they hold a valid driving licence (needed to publish trips) |
+| `women_only_since`, `women_only_withdrawn_at` | When the user opted in to women-only trips, and when the operator withdrew that access; no gender is stored ([spec 14](../specs/2026-11-13-women-only-trips.md)) |
 | `roles` | `member`, `operator`; admin access needs `operator` |
-| `status` | `active`, `suspended`, `deleted` |
+| `status` | `active`, `suspended` (with `suspended_until`, empty when permanent), `deletion_scheduled` (with `delete_after`, 7 days), `deleted` (an anonymous placeholder) |
 | `created_at`, `deleted_at` | Deletion anonymises; see [privacy](../compliance/privacy-gdpr.md) |
 
 ### Vehicle
 
-`id`, `owner_id`, `make`, `model`, `colour`, `seats` (excluding the driver),
-`registration` (shown only to booked passengers), `is_4x4`, `status`.
+`id`, `owner_id`, `make`, `model`, `colour` (shown on trips to everyone),
+`registration` (optional until the trip departs; shown only to booked
+passengers), `status`. Who owns the car
+in real life does not matter; the user is responsible for being allowed to
+use it ([spec 3](../specs/2026-11-13-post-a-trip.md#32-cars)).
 
 ### MeetingPoint
 
-See [meeting points](../product/meeting-points.md#data-kept-for-each-meeting-point).
-Location stored as PostGIS `geography(Point, 4326)`.
+See [meeting points](../product/meeting-points.md#data-kept-for-each-meeting-point)
+and [spec 2](../specs/2026-11-13-meeting-points.md#6-data-and-api).
+Location stored as PostGIS `geography(Point, 4326)`. `status` is `draft`,
+`active`, `paused`, `retiring` or `retired`. `search_text` holds the
+normalised names and aliases with a trigram index. Photos are
+`MeetingPointPhoto` records.
+
+### Place
+
+Towns, villages and landmarks that are not meeting points, used by place
+search to find the nearest meeting points: `name`, `aliases`, `location`,
+`kind`, `region`, `search_text`.
+
+### MeetingPointIssue
+
+A user's report of a problem with a meeting point: `user_id` (removed when
+resolved), `meeting_point_id`, `reason`, `note`, `status`, `resolution`.
 
 ### Leg
 
 `from_meeting_point_id`, `to_meeting_point_id`, `distance_m`, `duration_s`,
 `computed_at`, `source` (routing engine and data version). Directional:
-A→B and B→A are separate legs because routes can differ.
+A→B and B→A are separate legs because routes can differ. Computed for every
+ordered pair of active meeting points connected by road.
 
 ### Trip
 
@@ -70,11 +92,13 @@ A→B and B→A are separate legs because routes can differ.
 | ----- | ----- |
 | `id` | UUID v7 |
 | `driver_id`, `vehicle_id` | |
-| `capacity` | Seats offered; ≤ vehicle seats |
+| `capacity` | Seats offered, 1 to `max_capacity` (8) |
 | `booking_mode` | `instant` or `approval` |
+| `price_level` | Percentage of the suggested prices, 0 (free) up to the cap ([ADR 0012](../decisions/0012-trip-price-level.md)) |
 | `status` | `draft`, `published`, `departed`, `completed`, `cancelled` |
 | `preferences` | Luggage, pets, smoking, etc. |
 | `notes` | Free text from the driver |
+| `women_only` | Only people who have opted in can see and book it; fixed once a request or booking exists |
 | `published_at`, `cancelled_at`, `cancel_reason` | |
 
 ### TripStop
@@ -89,6 +113,13 @@ A→B and B→A are separate legs because routes can differ.
 the booking transaction, checked by `CHECK (occupancy <= capacity)` through a
 trigger or a denormalised capacity column).
 
+### TripChange
+
+One row per change to a published trip, so passengers can see what changed:
+`trip_id`, `kind` (`time`, `stop_added`, `stop_removed`, `seats`,
+`price_level`, `car`, `booking_mode`, `details`), `before`, `after`,
+`changed_at`. See [spec 6](../specs/2026-11-13-changes-and-cancellations.md#6-data-and-api).
+
 ### Booking
 
 | Field | Notes |
@@ -97,10 +128,13 @@ trigger or a denormalised capacity column).
 | `trip_id`, `passenger_id` | |
 | `from_stop_id`, `to_stop_id` | Stop IDs, not positions |
 | `seats` | ≥ 1 |
-| `status` | `requested`, `accepted`, `declined`, `expired`, `cancelled`, `completed`, `no_show` |
+| `status` | `requested`, `accepted` (awaiting payment), `confirmed` (paid), `declined`, `expired`, `cancelled`, `completed`, `no_show` |
 | `total_price`, `currency` | Snapshot at booking time |
-| `requested_at`, `decided_at`, `expires_at` | |
+| `requested_at`, `decided_at`, `expires_at`, `payment_due_at` | |
+| `party_confirmed_at` | The passenger confirmed that everyone in a booking of more than one seat on a women-only trip can join |
+| `message`, `decline_reason`, `attempt_key` | Request note, reason seen only by the operator, idempotency key ([spec 5](../specs/2026-11-13-booking-and-requests.md#6-data-and-api)) |
 | `cancelled_by`, `cancel_reason`, `cancelled_at` | Reasons include `weather`, `road_closed` |
+| `refund_amount`, `counts_on_reliability` | Worked out by the domain when the booking is cancelled ([spec 6](../specs/2026-11-13-changes-and-cancellations.md#4-rules)) |
 
 ### BookingSegmentPrice
 
@@ -109,31 +143,68 @@ The per-segment price snapshot of a booking: `booking_id`, `segment_index`,
 
 ### Conversation and Message
 
-One conversation per booking, between the driver and that passenger. Messages
-have `sender_id`, `body`, `sent_at`, `read_at`. Retained per the
-[privacy](../compliance/privacy-gdpr.md#retention) schedule.
+One conversation per booking, between the driver and that passenger, with
+`opened_at` (booking confirmed) and `closes_at` (7 days after the trip's
+planned arrival). Messages have `sender_id` (empty for a system line), `kind`
+(`text`, `quick`, `system`), `body` or a quick message key with parameters,
+`client_id`, `sent_at`, `read_at`. Retained per the
+[privacy](../compliance/privacy-gdpr.md#retention) schedule. See
+[spec 7](../specs/2026-11-13-chat-and-notifications.md#6-data-and-api).
 
 ### Review
 
 `booking_id`, `author_id`, `subject_id`, `role` (`as_driver` or
-`as_passenger`), `rating` (1–5), `comment`, `created_at`, `revealed_at`.
+`as_passenger`), `rating` (1–5), `comment`, `created_at`, `revealed_at`,
+`hidden_at` (moderation).
+
+### Trip day and reliability records
+
+Detailed in [spec 8](../specs/2026-11-13-trip-day-reviews-and-reliability.md#6-data-and-api):
+`CheckIn` ("I'm here": trip stop, user, time; never a location), `Dispute`
+(a no-show or a missing driver, the other side's answer and the outcome),
+`ReliabilityRecord` (one per kept or not-kept trip or booking, with whether
+it counts and why not) and `UserStats` (rating and reliability totals).
 
 ### Report
 
 `reporter_id`, `subject_user_id` or `subject_trip_id`, `category`,
 `description`, `status`, `resolution`, `handled_by`, timestamps. Every action
-on a report is written to the audit log.
+on a report is written to the audit log. A report can also be about a
+message, review or booking; safety reports are urgent. Related records, in
+[spec 9](../specs/2026-11-13-safety-and-moderation.md#6-data-and-api):
+`ModerationAction` (warning, hidden content, suspension, reinstatement,
+operator cancellation or refund, each with a statement of reasons and an
+appeal) and `OperatorNote`.
 
-### Payment (Phase 5)
+### Payment
 
 `booking_id`, `provider`, `provider_ref`, `amount`, `fee`, `currency`,
-`status`, plus `Payout` and `Refund` records. Designed in Phase 5.
+`status`, card brand and last four digits. Payments run in the app from the
+beta ([ADR 0013](../decisions/0013-in-app-payments-only.md)). Related records,
+detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
+`Refund`, `PayoutAccount` (provider reference and status only), `Payout`,
+`Chargeback`, an append-only `LedgerEntry` for every money movement, and
+`ProviderEvent` for processing webhooks exactly once.
 
 ### Supporting records
 
 - `AuditLog`: who did what to which record, when, from where. Append-only.
-- `Setting`: operator configuration (rates, timeouts) with change history.
-- `NotificationPreference`, `PushToken`, `Block`.
+- `Setting`: operator configuration (rates, timeouts, switches) with a range,
+  a `SettingChange` history and a `SettingsVersion` that trips and bookings
+  record ([spec 10](../specs/2026-11-13-operator-settings-and-metrics.md#6-data-and-api)).
+- `SearchLog` (anonymous: places, date, result count, time, platform),
+  `Corridor`, `WeeklyMetric`, `Announcement`.
+- Privacy records ([spec 11](../specs/2026-11-13-privacy-self-service.md#6-data-and-api)):
+  `DataExport`, `ErasedAccount`, `BlockedNumber`, `PrivacyRequest`,
+  `RetentionRun`, `Hold`.
+- Beta records ([spec 12](../specs/2026-11-13-beta-access-and-feedback.md#6-data-and-api)):
+  `WaitlistEntry`, `InviteCode` (users record the code they joined with),
+  `Feedback`.
+- `NotificationPreference`, `PushToken`.
+- `Block`: blocker and blocked; hides both from each other ([spec 9](../specs/2026-11-13-safety-and-moderation.md#32-blocking-g2)).
+- `Notification` and `NotificationDelivery`: who was told what kind of thing,
+  on which channel and whether it arrived, without the text; kept 90 days
+  ([spec 7](../specs/2026-11-13-chat-and-notifications.md#6-data-and-api)).
 - `WeatherWarning`, `RoadCondition`: cached external data with validity times.
 
 ## Invariants
@@ -150,6 +221,8 @@ Enforced in the domain package and, where possible, in the database too.
 7. A user cannot book their own trip.
 8. Reviews exist only for completed bookings, one per author per booking.
 9. A trip with active bookings cannot be deleted, only cancelled.
+10. Only users who have opted in, and whose access is not withdrawn, can
+    publish, see or book a women-only trip.
 
 ## Trip lifecycle
 
@@ -160,7 +233,7 @@ stateDiagram-v2
   draft --> [*] : driver discards
   published --> cancelled : driver cancels
   published --> departed : planned time of first stop passes
-  departed --> completed : planned time of last stop passes plus grace period
+  departed --> completed : planned time of last stop passes plus 2 hours
   cancelled --> [*]
   completed --> [*]
 ```
@@ -175,7 +248,10 @@ outbox table) and processed by the worker:
 
 `TripPublished`, `TripChanged`, `TripCancelled`, `BookingRequested`,
 `BookingAccepted`, `BookingDeclined`, `BookingExpired`, `BookingCancelled`,
-`PassengerNoShow`, `TripCompleted`, `ReviewSubmitted`, `ReportFiled`,
+`TripDeparted`, `CheckedIn`, `PassengerNoShow`, `DriverAbsentReported`,
+`DisputeAnswered`, `DisputeDecided`, `TripCompleted`, `MessageSent`, `ReviewSubmitted`, `ReviewsRevealed`, `ReportFiled`, `ReportResolved`,
+`UserBlocked`, `UserSuspended`, `UserReinstated`, `ContentHidden`,
+`WomenOnlyAccessWithdrawn`, `WomenOnlyAccessRestored`,
 `WeatherWarningMatched`, `RoadClosureMatched`.
 
 Notifications, review reminders and analytics subscribe to these events, so

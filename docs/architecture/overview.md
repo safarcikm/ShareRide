@@ -20,7 +20,7 @@ flowchart TB
   SR --> WX[Veðurstofa Íslands<br/>weather warnings]
   SR --> ROAD[Vegagerðin<br/>road conditions]
   SR --> EID[Auðkenni<br/>electronic ID]
-  SR --> PAY[Payment provider<br/>Phase 5]
+  SR --> PAY[Payment provider]
 ```
 
 ## Containers
@@ -74,7 +74,7 @@ No module reads another module's tables directly.
 | ------ | -------------- |
 | `users` | Accounts, profiles, vehicles, verification levels, blocking |
 | `auth` | Sign-in, sessions, tokens, roles |
-| `meeting-points` | Meeting points, legs, suggestions, search by name and location |
+| `meeting-points` | Meeting points, legs, problem reports, search by name and location |
 | `trips` | Creating, editing, publishing, cancelling trips; stops and segments |
 | `booking` | Requests, acceptance, cancellations, no-shows, seat capacity |
 | `pricing` | Suggested prices, caps, price snapshots, configuration |
@@ -84,7 +84,7 @@ No module reads another module's tables directly.
 | `reviews` | Ratings and reviews, reveal rules |
 | `safety` | Reports, moderation actions, audit log |
 | `conditions` | Weather warnings and road closures matched to trips |
-| `payments` | Payment port and provider adapters (Phase 5) |
+| `payments` | Payments, refunds and payouts through the payment port and provider adapters |
 | `admin` | Operator tools on top of the other modules |
 | `privacy` | Data export, deletion, retention jobs |
 

@@ -41,16 +41,20 @@ Goal: every aspect of the product is thought out and written down before code.
 
 Product and design
 
-- [ ] Review and accept or amend the strategy and ADRs 0002 to 0011
-- [ ] Answer the [open questions](open-questions.md)
-- [ ] Write MVP feature specs in `docs/specs/` (one per feature in
-      [features](../product/features.md))
+- [x] Review and accept or amend the strategy and ADRs 0002 to 0011
+- [x] Answer the [open questions](open-questions.md) (all answered
+      2026-11-13)
+- [x] Write MVP feature specs in `docs/specs/` (one per feature in
+      [features](../product/features.md)); specs 1 to 13 approved
+- [ ] Approve spec 14, women-only trips (added 2026-11-13, answer A36)
 - [ ] Draft the meeting point list v1 for the launch corridors
       ([meeting points](../product/meeting-points.md))
 - [ ] User flows and wireframes for: post a trip, search, book, manage bookings
 - [ ] Brand direction: name check, logo, colours, tone of voice
 - [ ] Clickable prototype tested with 5 to 10 potential drivers and passengers
-- [ ] Set the cost-sharing price rates (ISK per km) and rounding
+- [x] Set the cost-sharing price rates (ISK per km) and rounding: 15 kr
+      suggested, 150 kr reference, 100 kr step (2026-11-13; legal opinion to
+      confirm)
 
 Legal and company (start now, see [legal and regulatory](../compliance/legal-and-regulatory.md))
 
@@ -58,8 +62,12 @@ Legal and company (start now, see [legal and regulatory](../compliance/legal-and
       the Taxi Act No. 120/2022
 - [ ] Informal check with Samgöngustofa (Icelandic Transport Authority)
 - [ ] Decide company form (likely an ehf., private limited company)
-- [ ] Check the name: trademark search, domain names, app-store availability
+- [x] Name: keep "ShareRide" for now, with the option to change it later
+      (2026-11-13); a trademark and domain check before public launch
 - [ ] Ask two insurers how cost-sharing affects drivers' motor insurance
+- [ ] Talk to payment providers (Rapyd, Teya, Straumur) about marketplace
+      payments, refunds and payouts to individuals, then choose one in an ADR
+      ([ADR 0013](../decisions/0013-in-app-payments-only.md))
 
 Exit criteria: ADRs accepted; MVP specs approved; prototype tested; legal
 opinion requested; company form chosen.
@@ -84,6 +92,7 @@ MVP features (each one a spec, a plan and a PR series)
 - [ ] Search by place and date, including partial routes
 - [ ] Book seats on a segment range; instant or approval mode
 - [ ] Booking management and cancellations by either side
+- [ ] In-app payments, refunds, receipts and driver payouts
 - [ ] Chat between driver and booked passengers
 - [ ] Push, email and SMS notifications
 - [ ] Ratings after the trip
@@ -96,6 +105,7 @@ MVP features (each one a spec, a plan and a PR series)
 Legal and company (in parallel)
 
 - [ ] Register the company; open a business bank account
+- [ ] Sign the payment provider contract
 - [ ] Terms of service, privacy policy, community rules (Icelandic and English)
 - [ ] Record of processing activities and data protection impact assessment
 - [ ] Data processing agreements with every provider
@@ -113,16 +123,23 @@ policy approved; company registered.
 
 Goal: prove that people find rides and that the rules work in real life.
 
-- [ ] 50 to 150 testers on 3 to 5 corridors, for 6 to 8 weeks
+- [ ] 50 to 150 testers on the three commuter corridors (Selfoss, Keflavík
+  Airport, Akranes and Borgarnes; Akureyri if the waitlist shows demand), for
+  6 to 8 weeks
 - [ ] TestFlight and Google Play internal testing, plus the web app
 - [ ] In-app feedback and a weekly review of metrics and reports
 - [ ] Fix, simplify, repeat
 
-Exit criteria (targets to be confirmed before the beta starts):
+Exit criteria (confirmed 2026-11-13, measured over the last 4 weeks of the
+beta on the launch corridors,
+[spec 10](../specs/2026-11-13-operator-settings-and-metrics.md#34-metrics-h5)):
 
 - At least half of searches on launch corridors return one or more trips
 - At least 1 in 5 searches with results leads to a booking request
 - Driver cancellation rate under 10 percent, excluding weather
+- Seat fill of at least 30 percent
+- At least 30 percent of passengers book again within 60 days
+- Every report answered within 24 hours
 - No unresolved safety incident
 - Legal opinion received and the model adjusted if needed
 
@@ -144,8 +161,8 @@ Exit criteria: public in both stores; support and moderation routines running.
 
 ## Phase 5: Grow and monetise
 
-- [ ] In-app payments, driver payouts, service fee, refunds and receipts
-      (after provider and licensing work, see [ADR 0008](../decisions/0008-payments-phased.md))
+- [ ] Passenger service fee: set the amount from beta data
+      ([ADR 0014](../decisions/0014-passenger-service-fee-from-launch.md))
 - [ ] Recurring trips for commuters
 - [ ] Ride alerts: notify me when a matching trip is posted
 - [ ] Passenger ride requests that drivers can answer

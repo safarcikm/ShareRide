@@ -18,12 +18,12 @@ Provider names are candidates to evaluate, not commitments.
 | Email | `EmailSender` | An EU email provider | 2 | Transactional only; templates per language |
 | Push notifications | `PushSender` | Expo push service (wraps APNs and FCM) | 2 | Tokens stored per device |
 | Error tracking | n/a | Sentry (EU data region) or similar | 2 | Scrub personal data before sending |
-| Analytics | `Analytics` | PostHog (EU cloud) or self-hosted alternative | 3 | Consent-based; no session recording of personal screens |
+| Analytics | `Analytics` | PostHog (EU cloud) or self-hosted alternative | After the beta, if needed | None in the beta (spec 12); consent-based; no session recording of personal screens |
 | Weather warnings | `WeatherWarnings` | Veðurstofa Íslands (Icelandic Met Office) data services | 4 | Match warning areas to trip routes |
 | Road conditions and closures | `RoadConditions` | Vegagerðin web services (DATEX II) | 4 | Match closed road sections to legs |
 | Electronic ID | `IdentityVerifier` | Auðkenni directly (OIDC) or through a broker such as Signicat | 4 | Optional verification badge for residents |
 | Document ID check (visitors) | `IdentityVerifier` | A document-verification provider with EU processing | 5 | Only if the beta shows a need |
-| Payments | `PaymentProvider` | Rapyd, Teya, Straumur (Icelandic acquirers); a non-Icelandic entity would open Stripe or Adyen | 5 | See [ADR 0008](../decisions/0008-payments-phased.md) |
+| Payments | `PaymentProvider` | Rapyd, Teya, Straumur (Icelandic acquirers); a non-Icelandic entity would open Stripe or Adyen | 2 | In the app from the beta, see [ADR 0013](../decisions/0013-in-app-payments-only.md); provider chosen in its own ADR |
 | Flight status (KEF) | `FlightStatus` | Isavia data or a flight data API | 5 | For airport trips |
 
 ## Integration rules

@@ -48,8 +48,8 @@ These principles decide trade-offs when nothing else does.
 
 ## 3. Recommended technology stack
 
-The stack (ADRs 0002 to 0005), the trip and pricing model (ADR 0006) and
-phased payments (ADR 0008) were **accepted** on 2026-11-13. The other rows
+The stack (ADRs 0002 to 0005), the trip and pricing model (ADRs 0006 and 0012) and
+payments (ADR 0013, which replaced ADR 0008) were **accepted** on 2026-11-13. The other rows
 are **Proposed** until the owner accepts their ADRs. The main alternatives
 were considered in each ADR.
 
@@ -59,9 +59,9 @@ were considered in each ADR.
 | iOS, Android, web client | Expo (React Native) with Expo Router; EAS Build, Submit and Update | [0003](../decisions/0003-cross-platform-client-expo.md) |
 | Backend                  | TypeScript modular monolith (Hono), framework-free domain package, OpenAPI contract generated from Zod schemas | [0004](../decisions/0004-backend-modular-monolith.md) |
 | Database                 | PostgreSQL with PostGIS, Drizzle ORM and SQL migrations            | [0005](../decisions/0005-postgresql-postgis.md) |
-| Trip model               | Curated meeting-point network, per-segment prices and per-segment seat capacity | [0006](../decisions/0006-meeting-points-and-segment-pricing.md) |
+| Trip model               | Curated meeting-point network, per-segment prices from one driver-chosen price level, per-segment seat capacity | [0006](../decisions/0006-meeting-points-and-segment-pricing.md), [0012](../decisions/0012-trip-price-level.md) |
 | Hosting                  | Containers on a managed platform in an EEA region; all personal data stays in the EEA | [0007](../decisions/0007-eea-hosting-and-data-residency.md) |
-| Payments                 | Phased: pay the driver directly in the beta, in-app payments later through a provider that supports Icelandic marketplaces | [0008](../decisions/0008-payments-phased.md) |
+| Payments                 | In the app only, from the beta, through a provider that supports Icelandic marketplaces; provider chosen in its own ADR | [0013](../decisions/0013-in-app-payments-only.md) |
 | Maps and routing         | MapLibre with OpenStreetMap-based tiles; precomputed distances between meeting points | [0009](../decisions/0009-maps-and-routing.md) |
 | Sign-in and identity     | Phone number first, plus Apple and Google; optional Auðkenni (Icelandic electronic ID) verification | [0010](../decisions/0010-authentication-and-identity.md) |
 | Languages                | Icelandic and English at launch, Polish next; ICU messages         | [0011](../decisions/0011-localization.md) |
@@ -153,11 +153,12 @@ available to an Icelandic company. Icelandic acquirers (Rapyd, Teya, Straumur)
 are the realistic options, and holding passengers' money before paying drivers
 raises payment-services licensing questions.
 
-Recommendation: **launch the beta without in-app payments** (the app shows the
-price, the passenger pays the driver through a bank app or in cash), prove
-demand, and add in-app payments in Phase 5 once a provider and the legal
-structure are settled. The domain model includes payments from day one, so this
-is a switch, not a rewrite. See [ADR 0008](../decisions/0008-payments-phased.md).
+Decision (2026-11-13): **all payments go through the app, from the beta**.
+The passenger pays when a booking is accepted, and gets a full refund when
+cancelling up to 15 minutes before departure. This puts the company, a
+payment provider contract and the legal opinion on the path to the beta. See
+[ADR 0013](../decisions/0013-in-app-payments-only.md), which replaced the
+earlier plan to let passengers pay drivers directly in the beta.
 
 ## 8. Quality strategy
 
@@ -223,7 +224,7 @@ because they take calendar time and the beta depends on them:
 | 2     | Build                    | Walking skeleton, then the MVP: post trips, search, book segments, chat, notifications, ratings, admin console |
 | 3     | Closed beta              | 50 to 150 testers on 3 to 5 corridors for 6 to 8 weeks; liquidity and safety metrics met; company, terms and privacy policy live |
 | 4     | Public launch            | Store releases, website, marketing campaign, support and moderation routines running |
-| 5     | Grow and monetise        | In-app payments and service fee, recurring trips, ride alerts, Polish, partnerships |
+| 5     | Grow and monetise        | Service fee (if decided), recurring trips, ride alerts, Polish, partnerships |
 
 Full detail: [roadmap](roadmap.md).
 
@@ -233,7 +234,7 @@ Full detail: [roadmap](roadmap.md).
 | ------------------------------------------------------------ | -------------------------------------------------------------------------- |
 | Too few trips for passengers to find a ride (cold start)     | Launch on 3 to 5 corridors; recurring commuter trips; seed with partner drivers; ride alerts |
 | Regulators treat drivers as unlicensed taxis                 | Cost-sharing price caps, legal opinion before launch, dialogue with Samgöngustofa |
-| Payments provider or licensing blocks in-app payments        | Beta without in-app payments; provider-agnostic payment interface           |
+| Payments provider or licensing blocks in-app payments        | Provider talks and legal opinion in Phase 1; provider-agnostic payment interface; if blocked, Martin decides between delaying the beta and free rides |
 | Safety incident damages trust                                | Verified profiles, public meeting points, trip sharing, fast reporting and response |
 | Winter weather makes trips unreliable                        | Weather and road integration, penalty-free weather cancellations           |
 | Project knowledge lost over time                             | ADRs, specs and plans in the repo; CLAUDE.md; docs updated in every PR     |
@@ -245,7 +246,10 @@ The open questions, each with a recommendation, are in
 were decided on 2026-11-13:
 
 1. **Stack:** Expo with our own TypeScript API.
-2. **Payments in the beta:** passengers pay the driver directly; in-app
-   payments come after launch.
+2. **Payments:** first decided as paying the driver directly in the beta;
+   changed the same day to all payments through the app from the beta
+   ([ADR 0013](../decisions/0013-in-app-payments-only.md)).
 3. **Who sets segment prices:** the app suggests a cost-based price and the
-   driver adjusts it up to a cap.
+   driver adjusts it up to a cap. Refined the same day: the driver sets one
+   price level for the whole trip, from free up to the cap
+   ([ADR 0012](../decisions/0012-trip-price-level.md)).

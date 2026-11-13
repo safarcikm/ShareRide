@@ -54,29 +54,34 @@ Preferred
 | Opening hours of shelter | Where relevant |
 | Season | All year, or the months it is usable |
 | Photo and directions | Where to stand, which entrance |
-| Status | Draft, active, inactive (inactive points stay on past trips) |
+| Status | Draft, active, paused, retiring, retired ([spec 2](../specs/2026-11-13-meeting-points.md#36-operator-console)); retired points stay on past trips |
 
 ## The meeting-point network
 
 Distances and typical driving times between meeting points are precomputed
-once with a routing engine and stored as **legs**. A leg exists between two
-meeting points that a driver can travel between directly along a sensible
-route. Trips are chains of legs. This gives instant price suggestions and
-lets us check that a trip's stop order makes geographic sense.
+once with a routing engine and stored as **legs**, for every ordered pair of
+active meeting points connected by road (no ferries or mountain roads). Trips
+are chains of legs. This gives instant price suggestions, and the leg
+distances let us check that a trip's stop order makes geographic sense when
+it is posted.
 
-## Launch corridors (proposal, open question Q6)
+## Launch corridors
 
-Start where demand and driver supply are highest. Example meeting points per
-corridor; the final list is drafted in Phase 1 and checked on site.
+Decided by Martin on 2026-11-13 (open question Q6, answer A35): the beta
+opens with three commuter corridors, where people drive the same road every
+weekday, plus the capital area hubs that all of them start from. With at most
+150 testers (spec 12), three corridors keep enough drivers and passengers on
+each. Example meeting points per corridor; the final list is drafted in
+Phase 1 and confirmed by the operator, who knows the places locally.
 
-| Corridor | Example meeting points |
-| -------- | ---------------------- |
-| Capital area hubs | BSÍ bus terminal, Mjódd bus hub, Kringlan, Smáralind, Ártúnshöfði, Hafnarfjörður (Fjörður), Mosfellsbær |
-| Reykjavík – Selfoss | Hveragerði, Selfoss |
-| Reykjavík – Keflavík Airport | Reykjanesbær, Keflavík Airport (KEF) |
-| Reykjavík – Akranes – Borgarnes | Akranes, Borgarnes |
-| Reykjavík – Akureyri (Route 1 north) | Borgarnes, Bifröst, Staðarskáli, Blönduós, Varmahlíð, Akureyri |
-| South coast | Selfoss, Hella, Hvolsvöllur, Vík |
+| Corridor | Example meeting points | When |
+| -------- | ---------------------- | ---- |
+| Capital area hubs | BSÍ bus terminal, Mjódd bus hub, Kringlan, Smáralind, Ártúnshöfði, Hafnarfjörður (Fjörður), Mosfellsbær | Beta, from the start |
+| Reykjavík – Hveragerði – Selfoss | Hveragerði, Selfoss | Beta, from the start |
+| Reykjavík – Reykjanesbær – Keflavík Airport | Reykjanesbær, Keflavík Airport (KEF) | Beta, from the start |
+| Reykjavík – Akranes – Borgarnes | Akranes, Borgarnes | Beta, from the start |
+| Reykjavík – Akureyri (Route 1 north) | Borgarnes, Bifröst, Staðarskáli, Blönduós, Varmahlíð, Akureyri | Beta, if the waitlist shows demand |
+| South coast | Selfoss, Hella, Hvolsvöllur, Vík | After the beta |
 
 Later corridors: Snæfellsnes, the Westfjords, Mývatn and Húsavík, the East
 (Egilsstaðir, Seyðisfjörður ferry), the South-East (Kirkjubæjarklaustur,
@@ -85,6 +90,8 @@ Skaftafell, Höfn), Golden Circle, and ferry ports (Landeyjahöfn, Stykkishólmu
 ## Governance
 
 - Only the operator can activate a meeting point.
-- Anyone can suggest one from the app; suggestions go to the admin queue.
+- Users cannot add or suggest meeting points (decided 2026-11-13). They can
+  report a problem with one; reports go to the admin queue.
 - Each active point is reviewed once a year, and after any report about it.
-- A point is never deleted, only made inactive, so past trips stay readable.
+- A point is never deleted, only retired, so past trips stay readable. A point
+  can be paused at once if it becomes unsafe.
