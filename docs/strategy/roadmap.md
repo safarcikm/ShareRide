@@ -41,7 +41,7 @@ Goal: every aspect of the product is thought out and written down before code.
 
 Product and design
 
-- [ ] Review and accept or amend the strategy and ADRs 0002 to 0011
+- [x] Review and accept or amend the strategy and ADRs 0002 to 0011
 - [ ] Answer the [open questions](open-questions.md)
 - [x] Write MVP feature specs in `docs/specs/` (one per feature in
       [features](../product/features.md))
@@ -60,7 +60,8 @@ Legal and company (start now, see [legal and regulatory](../compliance/legal-and
       the Taxi Act No. 120/2022
 - [ ] Informal check with Samgöngustofa (Icelandic Transport Authority)
 - [ ] Decide company form (likely an ehf., private limited company)
-- [ ] Check the name: trademark search, domain names, app-store availability
+- [x] Name: keep "ShareRide" for now, with the option to change it later
+      (2026-11-13); a trademark and domain check before public launch
 - [ ] Ask two insurers how cost-sharing affects drivers' motor insurance
 - [ ] Talk to payment providers (Rapyd, Teya, Straumur) about marketplace
       payments, refunds and payouts to individuals, then choose one in an ADR
@@ -156,7 +157,8 @@ Exit criteria: public in both stores; support and moderation routines running.
 
 ## Phase 5: Grow and monetise
 
-- [ ] Passenger service fee, if decided (open question Q5)
+- [ ] Passenger service fee: set the amount from beta data
+      ([ADR 0014](../decisions/0014-passenger-service-fee-from-launch.md))
 - [ ] Recurring trips for commuters
 - [ ] Ride alerts: notify me when a matching trip is posted
 - [ ] Passenger ride requests that drivers can answer

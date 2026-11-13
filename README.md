@@ -52,5 +52,5 @@ created in Phase 2.
 
 ## Licence
 
-All rights reserved. No licence is granted until the owner decides otherwise
-(see [open questions](docs/strategy/open-questions.md)).
+All rights reserved. The code is proprietary and the repository is private
+(decided 2026-11-13, see [open questions](docs/strategy/open-questions.md)).

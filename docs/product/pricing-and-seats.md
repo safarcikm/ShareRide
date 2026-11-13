@@ -105,9 +105,11 @@ L_max = highest step of L at or below
 
 ### Rule P5: service fee
 
-A passenger service fee may be added on top of the booking price and shown
-separately. Whether there is one, and how much, is open question Q5. The
-driver's share is never reduced by the fee.
+From public launch, a passenger service fee is added on top of the booking
+price and shown separately; the beta has none. The amount is decided before
+launch from beta data ([ADR 0014](../decisions/0014-passenger-service-fee-from-launch.md)).
+The driver's share is never reduced by the fee, and a full refund includes
+it.
 
 ### Worked example
 
@@ -276,8 +278,8 @@ booking's payout until the operator resolves it.
 
 In the beta, ShareRide pays the payment provider's fees; passengers pay the
 booking price and nothing more, and drivers receive the full price (decided
-2026-11-13). Whether a service fee is charged after the beta is open question
-Q5.
+2026-11-13). From public launch a passenger service fee is added (rule P5,
+[ADR 0014](../decisions/0014-passenger-service-fee-from-launch.md)).
 
 ### Rule M5: chargebacks
 

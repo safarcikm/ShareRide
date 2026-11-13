@@ -1,6 +1,6 @@
 # 0011. Icelandic and English from day one
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-13, by Martin once the MVP specs were approved)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [conventions](../engineering/conventions.md#internationalisation),

@@ -316,7 +316,7 @@ Already planned for later phases (see the [roadmap](../strategy/roadmap.md)):
 - Optional identity verification with Auðkenni
 - Website with route pages for search engines
 - Help centre and support contact
-- A passenger service fee (open question Q5)
+- A passenger service fee, from public launch ([ADR 0014](../decisions/0014-passenger-service-fee-from-launch.md))
 - Recurring trips for commuters
 - Ride alerts for saved searches
 - Passenger ride requests that drivers can answer

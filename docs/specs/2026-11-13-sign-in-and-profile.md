@@ -5,7 +5,7 @@
 Features: A1 Sign up and sign in, A2 Profile, A4 Settings, A6 Terms, privacy
 policy and community rules ([features](../product/features.md)).
 Related decisions: [ADR 0010](../decisions/0010-authentication-and-identity.md)
-(proposed), [ADR 0011](../decisions/0011-localization.md) (proposed),
+(accepted), [ADR 0011](../decisions/0011-localization.md) (accepted),
 [privacy and GDPR](../compliance/privacy-gdpr.md).
 
 ## 1. Problem and goal

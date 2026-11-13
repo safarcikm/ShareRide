@@ -30,6 +30,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   (supersedes ADR 0006).
 - ADR 0013: all payments through the app, from the beta (supersedes ADR
   0008).
+- ADR 0014: a passenger service fee from public launch (answers Q5).
+- ADRs 0007, 0009, 0010 and 0011 accepted; open questions Q5, Q8, Q9, Q10,
+  Q11 and Q13 answered.
 - Development strategy, roadmap and open questions.
 - Product vision, pricing and seat rules, meeting point strategy.
 - Architecture overview, domain model and integrations.

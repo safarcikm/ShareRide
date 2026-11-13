@@ -1,6 +1,6 @@
 # 0009. Maps with MapLibre and OpenStreetMap; precomputed routing
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-13, by Martin once the MVP specs were approved)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [integrations](../architecture/integrations.md),

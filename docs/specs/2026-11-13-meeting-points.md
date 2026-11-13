@@ -8,7 +8,7 @@ points, was dropped: the operator curates every meeting point (decision 1).
 Related: [meeting points](../product/meeting-points.md),
 [ADR 0005](../decisions/0005-postgresql-postgis.md),
 [ADR 0006](../decisions/0006-meeting-points-and-segment-pricing.md),
-[ADR 0009](../decisions/0009-maps-and-routing.md) (proposed),
+[ADR 0009](../decisions/0009-maps-and-routing.md) (accepted),
 [spec 1](2026-11-13-sign-in-and-profile.md).
 
 ## 1. Problem and goal

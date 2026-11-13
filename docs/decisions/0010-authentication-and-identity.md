@@ -1,6 +1,6 @@
 # 0010. Phone-first authentication and layered identity verification
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-13, by Martin once the MVP specs were approved)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [security](../engineering/security.md),

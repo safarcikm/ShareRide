@@ -10,14 +10,8 @@ here, update or accept the linked ADR, and move the row to "Answered".
 
 | #  | Question | Recommendation | Affects |
 | -- | -------- | -------------- | ------- |
-| Q5 | Business model after the beta: passenger service fee, driver fee, subscription, or free? | A small passenger service fee per booking, shown separately, from launch. The beta is free of fees, and ShareRide pays card fees (A19). | [ADR 0013](../decisions/0013-in-app-payments-only.md) |
-| Q6 | Which corridors open first? | Reykjavík–Hveragerði–Selfoss, Reykjavík–Reykjanesbær–Keflavík Airport, Reykjavík–Akranes–Borgarnes, Reykjavík–Akureyri, and Selfoss–Hvolsvöllur–Vík along the south coast. To be checked against waitlist demand. | [meeting points](../product/meeting-points.md) |
-| Q8 | Which identity checks are required? | Phone verification for everyone. Drivers also confirm their driving licence. Auðkenni verification is optional and shown as a badge. | [ADR 0010](../decisions/0010-authentication-and-identity.md) |
-| Q9 | Languages at launch? | Icelandic and English; Polish in Phase 5. | [ADR 0011](../decisions/0011-localization.md) |
-| Q10 | Licence for the code? | Keep it proprietary (all rights reserved) and the repository private. | [README](../../README.md#licence) |
-| Q11 | Brand and domain: is "ShareRide" the final name, and is shareride.com owned? | Run a trademark and domain check in Phase 1 before investing in branding. An Icelandic name (or .is domain) may help locally. | [roadmap](roadmap.md) |
+| Q6 | Which corridors open first? | Start with three commuter routes: Reykjavík–Hveragerði–Selfoss, Reykjavík–Reykjanesbær–Keflavík Airport and Reykjavík–Akranes–Borgarnes. Add Reykjavík–Akureyri if the waitlist shows demand; Selfoss–Hvolsvöllur–Vík later. With up to 150 testers (spec 12), three routes keep enough people on each. | [meeting points](../product/meeting-points.md) |
 | Q12 | Women-only trips option? | Not in the MVP; consider after the beta based on feedback. | [features](../product/features.md) |
-| Q13 | Can legal and company work start in Phase 1 instead of after the beta? | Yes. Run it as a parallel track: the legal opinion shapes the pricing rules, and beta testers need terms, a privacy policy and a company as data controller. Marketing starts as driver recruitment during the build. | [roadmap](roadmap.md) |
 
 ## Answered
 
@@ -50,3 +44,10 @@ here, update or accept the linked ADR, and move the row to "Answered".
 | A25 | Spec 10 (operator settings and metrics) | Approved as recommended: suggested rate 15 kr per km per passenger and reference cost 150 kr per km (state mileage allowance from 1 June 2026), both to be confirmed by the legal opinion; the beta targets from the vision, over the last 4 weeks on the launch corridors; testers can turn off announcements with "Beta news". See [spec 10](../specs/2026-11-13-operator-settings-and-metrics.md#decisions). | 2026-11-13 |
 | A26 | Spec 11 (privacy self-service) | Approved as recommended: account data is erased 7 days after deletion is asked for, with an undo until then; a suspended person's phone number is kept only as a one-way hash until the suspension ends, at most 3 years, so they cannot sign up again. See [spec 11](../specs/2026-11-13-privacy-self-service.md#decisions). | 2026-11-13 |
 | A27 | Spec 12 (beta access and feedback) | Approved as recommended: anyone can browse and search on the website during the beta, only invited testers can book, post or chat; a corridor's drivers are invited two weeks before its passengers, then weekly waves of about 25 passengers per corridor, up to 150 testers; no usage analytics in the beta (J3 dropped). All MVP specs are approved. See [spec 12](../specs/2026-11-13-beta-access-and-feedback.md#decisions). | 2026-11-13 |
+| A28 | Q5: business model after the beta | A small passenger service fee per booking, shown separately, from public launch; drivers keep their whole contribution. The beta has no fee. The amount is decided before launch from beta data ([ADR 0014](../decisions/0014-passenger-service-fee-from-launch.md)). | 2026-11-13 |
+| A29 | Q8: identity checks | As recommended: phone verification for everyone; drivers declare a valid licence; Auðkenni later as an optional badge ([ADR 0010](../decisions/0010-authentication-and-identity.md) accepted). | 2026-11-13 |
+| A30 | Q9: languages at launch | As recommended: Icelandic and English; Polish in Phase 5 ([ADR 0011](../decisions/0011-localization.md) accepted). | 2026-11-13 |
+| A31 | Q10: licence for the code | Proprietary, all rights reserved; the repository stays private. | 2026-11-13 |
+| A32 | Q11: brand and domain | Keep "ShareRide" as the name for now, with the option to change it later. The name lives in one place in the app's configuration and texts, so a rename stays cheap. | 2026-11-13 |
+| A33 | Q13: legal and company work in Phase 1 | Yes, as a parallel track: the legal opinion, company, terms, privacy policy and insurance before the beta. | 2026-11-13 |
+| A34 | Remaining proposed ADRs | ADRs 0007 (EEA hosting), 0009 (maps and routing), 0010 (authentication and identity) and 0011 (Icelandic and English) accepted as written. | 2026-11-13 |
