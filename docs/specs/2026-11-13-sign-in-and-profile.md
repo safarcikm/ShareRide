@@ -1,6 +1,6 @@
 # Spec 1: Sign in, profile, settings and legal acceptance
 
-**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Draft for review
+**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
 Features: A1 Sign up and sign in, A2 Profile, A4 Settings, A6 Terms, privacy
 policy and community rules ([features](../product/features.md)).
@@ -40,13 +40,13 @@ language, and stay signed in securely on their devices.
 1. The app opens in the phone's language if it is Icelandic or English;
    otherwise English. A language switch is on the welcome screen.
 2. Without an account, a person can browse meeting points and search trips
-   (see question 1). Booking, posting a trip and chat need an account.
+   (decision 1). Booking, posting a trip and chat need an account.
 3. During the beta, sign-up asks for an invite code first (spec 12).
 
 ### 3.2 Sign up or sign in with a phone number
 
 1. Enter a phone number. The country defaults to Iceland (+354); a country
-   picker allows other supported countries (see question 3).
+   picker allows other supported countries (decision 3).
 2. The app sends a 6-digit code by SMS. The screen does not reveal whether an
    account already exists for that number.
 3. Enter the code. The code is valid for 10 minutes and allows 5 attempts. A new
@@ -71,7 +71,7 @@ help link).
 
 ### 3.4 Terms and age
 
-1. The user confirms "I am 18 or older" (see question 2) and accepts the Terms
+1. The user confirms "I am 18 or older" (decision 2) and accepts the Terms
    of Service and the Community Rules. The Privacy Policy is linked and must
    be shown, but it is information, not something to "accept".
 2. Each acceptance is stored with document, version, time and language.
@@ -84,10 +84,10 @@ help link).
 | Field | Rules | Visible to |
 | ----- | ----- | ---------- |
 | First name | Required, 1 to 30 characters, letters, spaces, hyphens and apostrophes | Everyone |
-| Photo | Optional for passengers (see question 4); JPEG, PNG or HEIC up to 10 MB; cropped square; location and camera data removed | Everyone |
+| Photo | Optional for passengers, required for drivers before their first trip (decision 4); JPEG, PNG or HEIC up to 10 MB; cropped square; location and camera data removed | Everyone |
 | About you | Optional, up to 300 characters | Everyone |
 | Languages spoken | Optional, choose from a list | Everyone |
-| Email | Optional (see question 5); verified by a link | Only the user and the operator |
+| Email | Optional but encouraged (decision 5); verified by a link | Only the user and the operator |
 | Phone number | Required, verified | Only the user and the operator |
 
 Public profile shows: first name, photo, about, languages, badges (phone
@@ -127,7 +127,7 @@ phone number; legal documents; delete account (spec 11); sign out.
 | R1.2 | A code is 6 digits, single use, valid 10 minutes, 5 attempts. |
 | R1.3 | Sending limits: one code per 30 seconds per number, 5 per hour per number, plus per-IP and per-country-prefix limits with an alert to the operator when exceeded. |
 | R1.4 | Responses to "send code" are the same whether or not an account exists. |
-| R1.5 | Only numbers from supported countries receive codes (see question 3). |
+| R1.5 | Only numbers from supported countries receive codes (decision 3). |
 | R1.6 | Booking, posting and chatting require a verified phone number and acceptance of the current material versions of the Terms and Community Rules. |
 | R1.7 | Users must confirm they are 18 or older. |
 | R1.8 | Profile text and photos follow the community rules; the operator can remove them. |
@@ -137,7 +137,7 @@ phone number; legal documents; delete account (spec 11); sign out.
 Phone first, then wide screen (web) with the same content in a centred column.
 
 1. Welcome: value statement, language switch, "Continue with phone", Apple,
-   Google, "Browse trips" (if browsing without an account is allowed)
+   Google, "Browse trips"
 2. Phone number entry with country picker
 3. Code entry with resend timer
 4. Terms and age confirmation
@@ -232,12 +232,14 @@ notification settings detail (spec 7), blocking (spec 9), ratings and
 reliability on profiles (spec 8), data export and account deletion (spec 11),
 Auðkenni verification (Phase 4), passkeys (later).
 
-## Questions for Martin
+## Decisions
 
-| # | Question | Recommendation |
-| - | -------- | -------------- |
-| 1 | Can people browse meeting points and search trips without an account? | Yes. Sign-in is needed only to book, post or chat. Lower friction, and the web app can be shared |
-| 2 | Age check: tick "I am 18 or older", or enter a date of birth? | Tick box in the beta (collects less data); revisit before public launch |
-| 3 | Which phone numbers can sign up? | Iceland, the EEA, the UK, the US and Canada at first; others on request. Limits SMS fraud while covering residents and most visitors |
+Accepted by Martin on 2026-11-13 as recommended.
+
+| # | Question | Decision |
+| - | -------- | -------- |
+| 1 | Can people browse meeting points and search trips without an account? | Yes. Sign-in is needed only to book, post or chat |
+| 2 | Age check: tick "I am 18 or older", or enter a date of birth? | Tick box in the beta, so no birth date is collected; revisit before public launch |
+| 3 | Which phone numbers can sign up? | Iceland, the EEA, the UK, the US and Canada at first; others on request |
 | 4 | Is a profile photo required? | Optional for passengers, required for drivers before their first trip (spec 3) |
 | 5 | Is email required? | Optional but encouraged, for receipts and account recovery |

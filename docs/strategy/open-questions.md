@@ -31,3 +31,4 @@ here, update or accept the linked ADR, and move the row to "Answered".
 | A6 | Q4: Default booking mode? | Driver chooses per trip; the default in the beta is request and approval. | 2026-11-13 |
 | A7 | Q7: Minimum age? | 18. | 2026-11-13 |
 | A8 | MVP feature list and its nine design questions | Accepted as recommended; see [features](../product/features.md#decisions). | 2026-11-13 |
+| A9 | Spec 1 (sign-in and profiles) and its five questions | Accepted as recommended: browsing without an account, an age tick box, phone numbers from Iceland, the EEA, the UK, the US and Canada, photo required only for drivers, email optional. See [spec 1](../specs/2026-11-13-sign-in-and-profile.md#decisions). | 2026-11-13 |

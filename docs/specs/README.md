@@ -25,4 +25,4 @@ Specs follow the order in [features](../product/features.md#spec-order).
 
 | # | Spec | Features | Status |
 | - | ---- | -------- | ------ |
-| 1 | [Sign in, profile, settings and legal acceptance](2026-11-13-sign-in-and-profile.md) | A1, A2, A4, A6 | Draft for review |
+| 1 | [Sign in, profile, settings and legal acceptance](2026-11-13-sign-in-and-profile.md) | A1, A2, A4, A6 | Approved (2026-11-13) |
