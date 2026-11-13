@@ -1,6 +1,6 @@
 # 0017. Our own visual design system on React Native primitives
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-13)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [spec 15](../specs/2026-11-13-visual-design-system.md),

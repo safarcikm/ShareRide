@@ -34,7 +34,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   phone and desktop sizes.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
-  (proposed): our own parts on React Native primitives, the fonts Fredoka and
+  (accepted): our own parts on React Native primitives, the fonts Fredoka and
   Nunito, `react-native-svg` drawings and Lucide icons.
 
 ### Changed
