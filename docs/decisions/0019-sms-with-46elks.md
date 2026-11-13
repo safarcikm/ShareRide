@@ -31,8 +31,9 @@ sender name such as "ShareRide" is allowed.
 
 ## Decision
 
-We will send SMS through **46elks**, behind the existing `SmsSender` port,
-from a queued job in the worker. Before the beta we test delivery to numbers
+We will send SMS through **46elks**, behind the existing `SmsSender` port.
+Sign-in codes are sent by the API directly, with `dontlog=message` so the
+provider does not keep the code. Before the beta we test delivery to numbers
 on all three Icelandic networks; **Sinch** is the fallback if delivery or
 prices disappoint.
 

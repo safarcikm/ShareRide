@@ -39,7 +39,7 @@ When this milestone is done:
 | In milestone 2 | Later |
 | -------------- | ----- |
 | Staging: API, worker, database and web app | Production environment (before the beta); preview environments per PR; our own domain |
-| Job queue and outbox; real SMS for sign-in codes | Email and push notifications (spec 7) |
+| Real SMS for sign-in codes; a worker with the clean-up jobs the privacy inventory promises | Outbox for email, push and SMS notifications (spec 7) |
 | Error tracking for app, API and worker; uptime check | Performance tracing, log search |
 | EAS development and preview builds; Maestro on Android in CI | Maestro on iOS in CI (macOS runners use minutes ten times faster); store listings |
 | Meeting points: read-only catalogue, map, list by region, summary card, with sample points | Details with photos, filters, offline, place search, problem reports, operator console, legs (the rest of spec 2); the real meeting point list v1 |
@@ -105,19 +105,28 @@ Render, Frankfurt
 - **Rollback:** redeploy the previous image (migrations are expand-then-
   contract, see [CI/CD](../engineering/ci-cd-and-releases.md)).
 
-### 4.2 Jobs and SMS
+### 4.2 SMS and the worker
 
-- **pg-boss** in the same database, as ADR 0004 asks (no Redis).
-- Starting a sign-in stores the code and queues an `sms.send` job in one
-  transaction (outbox). The worker sends it with a timeout and retries until
-  the code expires (10 minutes).
-- Message text: the code and the app name, sender `ShareRide`, no link
-  (Icelandic operators filter links). The code comes first, so iOS can offer
-  it as a one-time code.
-- Against SMS pumping: the country list from milestone 1, a daily budget per
-  country, an alert on unusual volume and a kill switch in the environment.
-- The 46elks adapter sits behind the existing `SmsSender` port. A contract
-  test runs against the provider's test mode, outside the normal CI run.
+- **Sign-in codes are sent by the API directly**, as in milestone 1, with a
+  timeout; if sending fails the person sees "try again". A queued job would
+  have to store the number and the code in plain text until sent, and the
+  privacy inventory promises that neither is ever stored. (This changes the
+  milestone 1 plan's note that SMS would move to a queue.)
+- The 46elks adapter sits behind the existing `SmsSender` port. It sends
+  with `dontlog=message`, so 46elks does not keep the code either. The
+  sender is `ShareRide` (11 letters at most), with no link (Icelandic
+  operators filter links). Both texts fit one SMS part (Icelandic letters
+  such as ð and þ allow 70 characters per part).
+- A contract test calls 46elks with `dryrun=yes`, outside the normal CI run.
+- Against SMS pumping: the country list and limits from milestone 1, a daily
+  budget per country, an alert on unusual volume and a kill switch in the
+  environment.
+- **The worker** is the same codebase started in worker mode, with
+  **pg-boss** in the same database (ADR 0004, no Redis). In milestone 2 it
+  runs the clean-up jobs the [privacy](../compliance/privacy-gdpr.md)
+  inventory names: expired codes, old rate-limit events and ended sessions.
+  Job payloads hold IDs, never personal data. Notifications (spec 7) reuse
+  it later.
 
 ### 4.3 Error tracking and uptime
 
@@ -201,7 +210,20 @@ a code review before it opens. Tick tasks as they merge.
 - [x] This plan, ADRs 0018 to 0022 (accepted), the integrations table, the
       privacy provider list, the roadmap
 
-### PR 2: `feat(infra)`: staging on Render
+### PR 2: `feat(api)`: real SMS and the clean-up worker
+
+- [ ] 46elks adapter with a timeout. Tests against a fake HTTP server: the
+      request shape (`dontlog`, sender, form encoding), a refusal or a timeout
+      becomes `sms_failed` and is logged without the number
+- [ ] Config: `SMS_PROVIDER=46elks` with its keys; the kill switch; a daily
+      budget per country. Test: the budget refuses with the same reply as a
+      limit, and logs a warning
+- [ ] Contract test with `dryrun=yes`, run by hand or nightly with the keys
+- [ ] Worker entry point with pg-boss and scheduled clean-up jobs. Tests:
+      each job deletes only what is past its retention
+- Verify: with 46elks keys in `.env`, a real code arrives on a phone
+
+### PR 3: `feat(infra)`: staging on Render
 
 - [ ] `infra/render/render.yaml`; the API image includes the web export and
       serves it. Test: unknown paths outside `/v1` return `index.html`, and
@@ -212,17 +234,6 @@ a code review before it opens. Tick tasks as they merge.
       restore
 - Verify: the staging URL shows the welcome screen and `/v1/health/ready`
   is 200
-
-### PR 3: `feat(api)`: job queue and real SMS
-
-- [ ] Worker entry point and pg-boss. Test: a job queued in a rolled-back
-      transaction never runs
-- [ ] Sign-in start queues the SMS. Test: the code is sent once even when
-      the worker restarts mid-job
-- [ ] 46elks adapter with a timeout. Tests: a refusal is logged without the
-      number; the contract test sends in test mode
-- [ ] Daily budget per country and the kill switch
-- Verify: sign in on staging with a real phone
 
 ### PR 4: `feat(observability)`: error tracking and uptime
 
@@ -277,9 +288,9 @@ a code review before it opens. Tick tasks as they merge.
 In the order the PRs need them. Each step gets exact instructions in the
 thread when its PR is ready.
 
-1. Render: open an account, connect the GitHub repository and apply the
-   blueprint (PR 2).
-2. 46elks: open an account, add credit, put the API keys in Render (PR 3).
+1. 46elks: open an account and add credit (PR 2).
+2. Render: open an account, connect the GitHub repository, apply the
+   blueprint and paste the 46elks keys (PR 3).
 3. Sentry: open an organisation **in the EU region** (it cannot be changed
    later), put the DSN in Render and a token in GitHub (PR 4).
 4. Expo account, and the Apple Developer Program if decision 6 is accepted
