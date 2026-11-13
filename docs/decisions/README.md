@@ -36,7 +36,7 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0003](0003-cross-platform-client-expo.md) | Cross-platform client with Expo | Accepted |
 | [0004](0004-backend-modular-monolith.md) | Backend as a TypeScript modular monolith | Accepted |
 | [0005](0005-postgresql-postgis.md) | PostgreSQL with PostGIS as the system of record | Accepted |
-| [0006](0006-meeting-points-and-segment-pricing.md) | Meeting-point network with per-segment prices and seats | Proposed |
+| [0006](0006-meeting-points-and-segment-pricing.md) | Meeting-point network with per-segment prices and seats | Accepted |
 | [0007](0007-eea-hosting-and-data-residency.md) | EEA hosting and data residency | Proposed |
 | [0008](0008-payments-phased.md) | Phased payments behind a provider-agnostic port | Accepted |
 | [0009](0009-maps-and-routing.md) | Maps with MapLibre and OpenStreetMap; precomputed routing | Proposed |

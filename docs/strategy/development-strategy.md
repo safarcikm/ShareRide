@@ -48,8 +48,8 @@ These principles decide trade-offs when nothing else does.
 
 ## 3. Recommended technology stack
 
-The stack (ADRs 0002 to 0005) and phased payments (ADR 0008) were
-**accepted** on 2026-11-13. The other rows
+The stack (ADRs 0002 to 0005), the trip and pricing model (ADR 0006) and
+phased payments (ADR 0008) were **accepted** on 2026-11-13. The other rows
 are **Proposed** until the owner accepts their ADRs. The main alternatives
 were considered in each ADR.
 
@@ -238,14 +238,14 @@ Full detail: [roadmap](roadmap.md).
 | Winter weather makes trips unreliable                        | Weather and road integration, penalty-free weather cancellations           |
 | Project knowledge lost over time                             | ADRs, specs and plans in the repo; CLAUDE.md; docs updated in every PR     |
 
-## 13. What the owner needs to decide now
+## 13. Key decisions
 
 The open questions, each with a recommendation, are in
-[open questions](open-questions.md). The three that shape everything else:
+[open questions](open-questions.md). The three that shape everything else
+were decided on 2026-11-13:
 
-1. **Stack:** decided on 2026-11-13: Expo with our own TypeScript API.
-2. **Payments in the beta:** decided on 2026-11-13: passengers pay the driver
-   directly; in-app payments come after launch.
-3. **Who sets segment prices:** the platform suggests a cost-based price and
-   the driver adjusts within a cap (recommended), the driver sets any price,
-   or the platform fixes it.
+1. **Stack:** Expo with our own TypeScript API.
+2. **Payments in the beta:** passengers pay the driver directly; in-app
+   payments come after launch.
+3. **Who sets segment prices:** the app suggests a cost-based price and the
+   driver adjusts it up to a cap.

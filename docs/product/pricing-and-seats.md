@@ -1,8 +1,9 @@
 # Pricing and seats
 
-**Owner:** Martin · **Last reviewed:** 2026-11-13 · **Status:** Proposed
-(see [ADR 0006](../decisions/0006-meeting-points-and-segment-pricing.md) and
-open questions Q3 and Q4)
+**Owner:** Martin · **Last reviewed:** 2026-11-13 · **Status:** Accepted
+([ADR 0006](../decisions/0006-meeting-points-and-segment-pricing.md));
+configuration values and the default booking mode (open question Q4) are
+still to be set
 
 These are the business rules for prices, seat capacity, bookings and
 cancellations. They are the source of truth for the domain package. If code and

@@ -1,6 +1,7 @@
 # 0006. Meeting-point network with per-segment prices and seats
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-13: app suggests a cost-based segment price,
+  driver adjusts up to a cap; the cap formula is confirmed by the legal opinion)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [pricing and seats](../product/pricing-and-seats.md),
