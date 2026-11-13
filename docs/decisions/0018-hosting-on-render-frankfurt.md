@@ -35,16 +35,17 @@ PostgreSQL 18.
 ## Decision
 
 We will run staging (and, unless this ADR is revisited before the beta,
-production) on **Render in the Frankfurt region**: the API and the worker as
-containers built from the same image, and managed PostgreSQL 18 with PostGIS
-reachable only on the private network. The web app is served by the API
+production) on **Render in the Frankfurt region**: the API as a container,
+scheduled tasks as cron jobs and, once needed, the worker from the same
+image, and managed PostgreSQL 18 with PostGIS reachable only on the private
+network. The web app is served by the API
 container on the same origin, so the sign-in cookie stays first-party on an
 `onrender.com` address. Infrastructure lives in `infra/render/render.yaml`.
 
 ## Consequences
 
 - One provider and one bill for compute and the database; little to operate.
-- Staging costs about $20 a month on the smallest paid instances.
+- Staging costs about $15 a month on the smallest paid instances.
 - Point-in-time recovery covers 3 days on the free workspace plan, 7 days on
   Pro. Production should be on Pro.
 - The images are standard containers, so moving to another provider means

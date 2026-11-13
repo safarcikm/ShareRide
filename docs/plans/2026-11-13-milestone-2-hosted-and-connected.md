@@ -20,8 +20,8 @@ photo) and [spec 2](../specs/2026-11-13-meeting-points.md) (section 3.1).
 
 When this milestone is done:
 
-- Every merge to `main` deploys the API, the worker and the web app to
-  staging in Frankfurt. Migrations run first, then a smoke test.
+- Every merge to `main` deploys the API, the web app and the hourly clean-up
+  to staging in Frankfurt. Migrations run first, then a smoke test.
 - Sign-in codes arrive by real SMS on staging. Local development keeps the
   development sender.
 - Errors in the app and the API reach Sentry's EU region without personal
@@ -38,9 +38,9 @@ When this milestone is done:
 
 | In milestone 2 | Later |
 | -------------- | ----- |
-| Staging: API, worker, database and web app | Production environment (before the beta); preview environments per PR; our own domain |
-| Real SMS for sign-in codes; a worker with the clean-up jobs the privacy inventory promises | Outbox for email, push and SMS notifications (spec 7) |
-| Error tracking for app, API and worker; uptime check | Performance tracing, log search |
+| Staging: API, web app, database and the hourly clean-up | Production environment (before the beta); preview environments per PR; our own domain |
+| Real SMS for sign-in codes; an hourly clean-up of the records the privacy inventory limits | A worker with a job queue and outbox for email, push and SMS notifications (spec 7) |
+| Error tracking for the app, the API and the clean-up; uptime check | Performance tracing, log search |
 | EAS development and preview builds; Maestro on Android in CI | Maestro on iOS in CI (macOS runners use minutes ten times faster); store listings |
 | Meeting points: read-only catalogue, map, list by region, summary card, with sample points | Details with photos, filters, offline, place search, problem reports, operator console, legs (the rest of spec 2); the real meeting point list v1 |
 | Sign in with Google and Apple; link and unlink them in settings | Adding or changing a phone number on an account (comes with booking, where a phone is first required) |
@@ -61,14 +61,14 @@ account, not an architecture decision, so it lives here and in the roadmap. Pric
 
 | # | Choice | Decision (accepted) | Why | Main alternative | Per month |
 | - | ------ | -------------- | --- | ---------------- | --------- |
-| 1 | Hosting | **Render, Frankfurt**: API and worker containers, managed PostgreSQL | PostgreSQL 18 with PostGIS (our schema uses PostgreSQL 18's `uuidv7()`), point-in-time recovery, private network, secret store, a blueprint file in the repository as infrastructure in code | Fly.io in Stockholm is closer, but its managed PostgreSQL stops at version 17; AWS in Stockholm is more work for one person | About $20 ($7 API, $7 worker, $6 database plus storage) |
+| 1 | Hosting | **Render, Frankfurt**: the API container, a cron job and managed PostgreSQL | PostgreSQL 18 with PostGIS (our schema uses PostgreSQL 18's `uuidv7()`), point-in-time recovery, private network, secret store, a blueprint file in the repository as infrastructure in code | Fly.io in Stockholm is closer, but its managed PostgreSQL stops at version 17; AWS in Stockholm is more work for one person | About $15 ($7 API, $6 database plus storage, about $1 for the hourly clean-up) |
 | 2 | SMS | **46elks** (Swedish telecom operator) | All data in the EU, pay per message, no monthly fee, a small HTTP API | Sinch (also Swedish, larger, more onboarding) as the fallback | Per message; big providers charge about 6 to 7 US cents for Iceland; 46elks's rate to confirm at sign-up |
 | 3 | Error tracking and uptime | **Sentry, EU data region** (Frankfurt), free plan | Mature SDKs for Expo and Node.js, scrubbing hooks, one uptime monitor included | GlitchTip (Sentry-compatible); Better Stack for uptime | $0 |
 | 4 | Map tiles | **MapTiler** (Swiss) | Switzerland has an EU adequacy decision; OpenStreetMap vector tiles for MapLibre; the free plan covers testing and prototypes | Stadia Maps (United States); our own Protomaps file of Iceland, the ADR 0009 fallback | $0 while building, then $30 (Flex) from the beta, or switch to our own file |
 | 5 | Photo storage | **Hetzner Object Storage, Helsinki** (German company) | S3-compatible, EU company, close to Iceland, predictable price | Scaleway in Paris; Cloudflare R2 with EU jurisdiction (United States company) | About €5, including 1 TB of storage and traffic |
 | 6 | Apple developer account | **Enrol as an individual now** ($99 a year) and use separate development app IDs; the company's own account takes the store app ID once the company exists | iOS builds on a phone and Sign in with Apple both need a paid account. Staging accounts are test data that can be thrown away, so nothing has to move later | Wait for the company: Sign in with Apple and iOS phone builds slip until then; Android, the iOS simulator and the web carry on | $99 a year |
 
-Staging totals about $25 to $30 a month plus SMS, and $99 a year for Apple.
+Staging totals about $20 to $25 a month plus SMS, and $99 a year for Apple.
 
 Accounts are opened by Martin with a shared project email address and moved
 to the company once it is registered (Render, Sentry, MapTiler, Expo,
@@ -83,7 +83,7 @@ GitHub Actions (main)
   build image (commit SHA) -> GitHub Container Registry -> Render deploy hook
 Render, Frankfurt
   shareride-staging-api     web service: /v1 and the web app on one origin
-  shareride-staging-worker  background worker: same image, worker entry point
+  shareride-staging-clean-up  cron job, hourly: same image, clean-up entry point
   shareride-staging-db      PostgreSQL 18 with PostGIS, private network only
 ```
 
@@ -105,7 +105,7 @@ Render, Frankfurt
 - **Rollback:** redeploy the previous image (migrations are expand-then-
   contract, see [CI/CD](../engineering/ci-cd-and-releases.md)).
 
-### 4.2 SMS and the worker
+### 4.2 SMS and the clean-up
 
 - **Sign-in codes are sent by the API directly**, as in milestone 1, with a
   timeout; if sending fails the person sees "try again". A queued job would
@@ -121,16 +121,17 @@ Render, Frankfurt
 - Against SMS pumping: the country list and limits from milestone 1, a daily
   budget per country, an alert on unusual volume and a kill switch in the
   environment.
-- **The worker** is the same codebase started in worker mode, with
-  **pg-boss** in the same database (ADR 0004, no Redis). In milestone 2 it
-  runs the clean-up jobs the [privacy](../compliance/privacy-gdpr.md)
-  inventory names: expired codes, old rate-limit events and ended sessions.
-  Job payloads hold IDs, never personal data. Notifications (spec 7) reuse
-  it later.
+- **An hourly clean-up** deletes what the
+  [privacy](../compliance/privacy-gdpr.md) inventory limits: expired codes,
+  rate-limit events after 24 hours, expired tokens, sessions unused for 60
+  days (ended) and sessions ended 30 days ago. It is a short command run as a
+  Render cron job from the API image. The worker with a PostgreSQL job queue
+  (ADR 0004) arrives with notifications (spec 7), the first work that needs
+  a queue; until then a cron job costs less and has nothing to keep running.
 
 ### 4.3 Error tracking and uptime
 
-- `@sentry/node` in the API and the worker; `@sentry/react-native` in the
+- `@sentry/node` in the API and the clean-up; `@sentry/react-native` in the
   app, including the web.
 - No personal data: `sendDefaultPii` off, and a `beforeSend` that removes
   phone numbers, codes, tokens and the `Authorization` and `Cookie` headers,
@@ -210,7 +211,7 @@ a code review before it opens. Tick tasks as they merge.
 - [x] This plan, ADRs 0018 to 0022 (accepted), the integrations table, the
       privacy provider list, the roadmap
 
-### PR 2: `feat(api)`: real SMS and the clean-up worker
+### PR 2: `feat(api)`: real SMS and the hourly clean-up
 
 - [ ] 46elks adapter with a timeout. Tests against a fake HTTP server: the
       request shape (`dontlog`, sender, form encoding), a refusal or a timeout
@@ -219,8 +220,8 @@ a code review before it opens. Tick tasks as they merge.
       budget per country. Test: the budget refuses with the same reply as a
       limit, and logs a warning
 - [ ] Contract test with `dryrun=yes`, run by hand or nightly with the keys
-- [ ] Worker entry point with pg-boss and scheduled clean-up jobs. Tests:
-      each job deletes only what is past its retention
+- [ ] Clean-up command (`pnpm --filter @shareride/api clean-up`). Tests:
+      each kind of record goes only once past its retention
 - Verify: with 46elks keys in `.env`, a real code arrives on a phone
 
 ### PR 3: `feat(infra)`: staging on Render
@@ -237,7 +238,7 @@ a code review before it opens. Tick tasks as they merge.
 
 ### PR 4: `feat(observability)`: error tracking and uptime
 
-- [ ] Sentry in API, worker and app. Test: an event with a phone number,
+- [ ] Sentry in the API, the clean-up and the app. Test: an event with a phone number,
       code or token reaches the transport scrubbed
 - [ ] Releases and source maps in CI; uptime monitor and alert routing in the
       runbook
