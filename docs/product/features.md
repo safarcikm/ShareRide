@@ -79,7 +79,9 @@ verification badges, member since, rating and reliability. Others see the
 first name only, never the phone number.
 
 **A3. Driver setup: vehicle and licence (Must).** Add one or more vehicles
-(make, model, colour, seats, registration number, 4x4). Declare a valid
+(make and model, colour, number plate; the plate can be added up to
+departure). Any car the driver may use; who owns it does not matter. Declare a
+valid
 driving licence before publishing the first trip (see decision 3).
 The registration number is shown only to booked passengers.
 

@@ -49,8 +49,10 @@ Actions:
   **verify** number and scope).
 - Ask insurers whether accepting cost contributions through a platform
   affects cover, and whether a platform-level policy is available or needed.
-- Terms must make clear that the driver's own insurance applies and that
-  ShareRide is not the carrier.
+- Terms must make clear that the driver's own insurance applies, that
+  ShareRide is not the carrier, and that the driver is responsible for being
+  allowed to use the car, including rental or borrowed cars (decided
+  2026-11-13, [spec 3](../specs/2026-11-13-post-a-trip.md#32-cars)).
 
 ## 3. Company and operations
 

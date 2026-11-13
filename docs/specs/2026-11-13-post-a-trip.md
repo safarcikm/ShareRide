@@ -48,21 +48,26 @@ missing, and each item can be done from there:
 
 1. Verified phone number and the current terms accepted (spec 1).
 2. A profile photo (spec 1, decision 4).
-3. At least one vehicle (3.2).
+3. A car (3.2).
 4. A driving licence declaration (3.3).
 
-### 3.2 Vehicles
+### 3.2 Cars
 
-- Fields: make (from a list, or "Other"), model, colour (from a list),
-  passenger seats (1 to 8, not counting the driver), registration number, and
-  whether it is a 4x4.
-- The registration number is stored in capitals without spaces or hyphens,
-  2 to 8 letters and digits, and shown only to booked passengers. What the rest
-  of the vehicle shows publicly is question 1.
-- A driver can have several vehicles and chooses one per trip; the last used
-  is preselected.
-- A vehicle used by a future trip cannot be removed until that trip uses
-  another vehicle or ends. Removed vehicles stay on past trips.
+1. The driver enters the car's make and model (from a list, or typed), picks
+   its colour from a list, and adds the number plate.
+2. **Any car:** it does not matter who owns the car. The Terms of Service make
+   the driver responsible for being allowed to use it, and for its insurance
+   (decision 5).
+3. **Number plate later:** the plate can be left empty when publishing and
+   added at the latest before departure (decision 4). If it is missing, the app
+   reminds the driver 24 hours and 1 hour before departure, and booked
+   passengers see "The driver will add the number plate before departure".
+4. The plate is stored in capitals without spaces or hyphens, 2 to 8 letters
+   and digits, and shown only to booked passengers. What the rest of the car
+   shows publicly is question 1.
+5. A driver can save several cars and chooses one per trip; the last used is
+   preselected. A car used by a future trip cannot be removed until that trip
+   uses another car or ends. Removed cars stay on past trips.
 
 ### 3.3 Driving licence declaration
 
@@ -87,7 +92,7 @@ missing, and each item can be done from there:
    another active meeting point through search. An added point is inserted
    where it adds the least distance.
 4. **Stop limit:** a trip can have at most the maximum number of stops,
-   including start and end (8 today, features decision 6; see question 3). If
+   including start and end (8 today, features decision 6; see question 2). If
    more points lie on the way, the app adds them all and asks the driver to
    remove some before continuing.
 5. **Order check** for stops the driver adds: the whole route may be at most
@@ -136,9 +141,9 @@ Drivers do not edit segment prices one by one (decision 2,
 
 ### 3.7 Seats, booking mode and preferences
 
-1. **Seats offered:** 1 up to the vehicle's passenger seats. Default: the
-   number used on the driver's last trip, or 3 (or fewer if the car has fewer
-   seats) the first time.
+1. **Seats offered:** 1 to 8. Default: the number used on the driver's last
+   trip, or 3 the first time. Offering no more seats than the car has is the
+   driver's responsibility.
 2. **Booking mode:** request and approval (default in the beta) or instant
    booking ([pricing and seats](../product/pricing-and-seats.md#booking-modes)).
 3. **Preferences**, all prefilled from the driver's last trip:
@@ -155,7 +160,7 @@ Drivers do not edit segment prices one by one (decision 2,
 ### 3.8 Review and publish
 
 1. A summary shows the route on a map, stops and times, the price level and
-   prices, seats, booking mode, vehicle, preferences and note, each with "Edit".
+   prices, seats, booking mode, car, preferences and note, each with "Edit".
 2. "Publish" runs every check in section 4 again on the server and publishes
    the trip, or lists what must be fixed.
 3. After publishing, the trip page opens with "Share" (a link to the trip on
@@ -184,7 +189,7 @@ apply. This spec adds:
 
 | ID | Rule |
 | -- | ---- |
-| R3.1 | Publishing needs a verified phone number, the current terms accepted, a profile photo, a vehicle and the driving licence declaration. |
+| R3.1 | Publishing needs a verified phone number, the current terms accepted, a profile photo, a car (make, model and colour) and the driving licence declaration. |
 | R3.2 | A trip has from 2 stops up to the stop limit, each an active meeting point in season on the trip date (spec 2, R2.4), each used once. |
 | R3.3 | Meeting points on the way are added as stops automatically; the driver may remove them or add others. |
 | R3.4 | The route is at most 1.5 times the direct distance between the first and last stops. |
@@ -192,25 +197,26 @@ apply. This spec adds:
 | R3.6 | Planned times strictly increase, and each segment takes at least 90% of its typical driving time. |
 | R3.7 | A driver's published trips do not overlap in time. |
 | R3.8 | The driver sets one price level per trip, from 0% to the highest level the cap allows, in 10% steps. Segment prices are computed from it (rule P4) and never edited one by one. |
-| R3.9 | Seats offered are between 1 and the vehicle's passenger seats. |
+| R3.9 | Seats offered are between 1 and 8. |
 | R3.10 | Notes contain no phone numbers, email addresses or links. |
 | R3.11 | Drafts are deleted 30 days after their last change or once their departure has passed. |
+| R3.12 | The number plate may be added after publishing, but by the planned departure at the latest. |
 
 The "on the way" margin, the 1.5 route factor, the 90% time floor, the
-30-minute minimum notice and the price level step are settings the operator
-can change (feature H4).
+30-minute minimum notice, the price level step, the 8-seat maximum and the
+plate reminder times are settings the operator can change (feature H4).
 
 ## 5. Screens
 
 Phone first. The same screens work in the web app in a centred column.
 
-1. Ready to drive: the checklist (photo, vehicle, licence)
-2. Add or edit a vehicle
+1. Ready to drive: the checklist (photo, car, licence)
+2. Add or edit a car, including adding the plate later
 3. Driving licence declaration
 4. Route: from, to, the stops added along the way, map
 5. Date and times
 6. Price level, with the whole-route price and the price of each stretch
-7. Seats, booking mode, vehicle and preferences
+7. Seats, booking mode, car and preferences
 8. Note
 9. Review and publish
 10. Published: share and post the return trip
@@ -219,8 +225,8 @@ Phone first. The same screens work in the web app in a centred column.
 
 Entities (see [domain model](../architecture/domain-model.md)):
 
-- `Vehicle` as in the domain model (`seats` counts passenger seats), plus
-  `removed_at`.
+- `Vehicle`: owner, make, model, colour, registration (optional until
+  departure), `removed_at`. It no longer stores seats or a 4x4 flag.
 - `User.licence_declared_at`: when the driver made the licence declaration.
 - `Trip`, `TripStop` and `Segment` as in the domain model. `Trip.price_level`
   holds the driver's level. `Trip.preferences` holds luggage, pets, smoking,
@@ -235,8 +241,8 @@ Endpoints (`/v1`, shapes defined in `packages/contracts`):
 | Method and path | Purpose |
 | --------------- | ------- |
 | `GET /me/driver-readiness` | What is still missing before publishing |
-| `GET /me/vehicles`, `POST /me/vehicles` | List and add vehicles |
-| `PATCH /me/vehicles/{id}`, `DELETE /me/vehicles/{id}` | Edit or remove a vehicle |
+| `GET /me/vehicles`, `POST /me/vehicles` | List and add cars |
+| `PATCH /me/vehicles/{id}`, `DELETE /me/vehicles/{id}` | Edit a car (including adding the plate) or remove it |
 | `PUT /me/driver-licence-declaration` | Make the licence declaration |
 | `GET /routes/stops-along?from=&to=` | Meeting points on the way, in route order |
 | `POST /routes/quote` | For a list of stops, seats, a departure and a price level: distances, typical times, segment prices, the highest level and warnings |
@@ -255,15 +261,14 @@ Events: `VehicleAdded`, `VehicleRemoved`, `LicenceDeclared`, `TripPublished`.
 
 - The licence declaration stores only its date. No licence number, copy or
   kennitala is ever collected.
-- The registration number is shown only to booked passengers.
+- The number plate is shown only to booked passengers.
 - Trips start and end at meeting points, never at a home address. A published
   trip's route, times and the driver's public profile are visible to everyone,
   which is the purpose of the service. Retention follows the privacy inventory
   (trips and bookings).
 - Notes cannot carry contact details (R3.10), which keeps contact in the app
   and protects both sides.
-- The 90% time floor (R3.6) avoids plans that require speeding, and the
-  4x4 flag helps passengers in winter.
+- The 90% time floor (R3.6) avoids plans that require speeding.
 
 ## 8. Texts (first draft; Icelandic to be reviewed by a native speaker)
 
@@ -272,8 +277,9 @@ Events: `VehicleAdded`, `VehicleRemoved`, `LicenceDeclared`, `TripPublished`.
 | `driver.offerRide` | Offer a ride | Bjóða far |
 | `driver.ready.title` | Before you publish | Áður en þú birtir |
 | `vehicle.add` | Add a car | Bæta við bíl |
-| `vehicle.seats` | Passenger seats | Farþegasæti |
-| `vehicle.registration` | Registration number | Bílnúmer |
+| `vehicle.registration` | Number plate | Bílnúmer |
+| `vehicle.plateLater` | You can add the number plate later, before you set off. | Þú getur bætt bílnúmerinu við síðar, áður en þú leggur af stað. |
+| `trip.plateComing` | The driver will add the number plate before departure | Ökumaðurinn bætir bílnúmerinu við fyrir brottför |
 | `licence.declare` | I declare that I hold a valid driving licence for the cars I drive on ShareRide | Ég lýsi því yfir að ég sé með gilt ökuskírteini fyrir þá bíla sem ég ek á ShareRide |
 | `trip.from` | From | Frá |
 | `trip.to` | To | Til |
@@ -304,7 +310,8 @@ Events: `VehicleAdded`, `VehicleRemoved`, `LicenceDeclared`, `TripPublished`.
   midnight; overlap detection; every R3 rule reported by the publish
   validation.
 - **API integration:** driver readiness, including the licence declaration;
-  vehicle rules (removal while used); quote and publish with a fixed distance
+  car rules (removal while used, plate added after publishing, plate
+  reminders); quote and publish with a fixed distance
   table; the server rejecting a tampered price level above the highest level;
   overlapping trips; drafts cleaned up.
 - **End to end:** a first-time driver sets up and publishes a trip; a returning
@@ -329,11 +336,12 @@ legal opinion).
 | 1 | Does the driver pick the stops along the way? | No. The app adds the meeting points on the way automatically; the driver can remove any (Martin, 2026-11-13) |
 | 2 | Can the driver edit each segment's price? | No. One price level for the whole trip, from free up to the cap ([ADR 0012](../decisions/0012-trip-price-level.md); Martin, 2026-11-13) |
 | 3 | How is the driving licence confirmed? | A declaration tick box only; no expiry date, no spot checks (Martin, 2026-11-13; replaces features decision 3) |
+| 4 | When must the number plate be added? | At the latest before departure; it can be missing when the trip is published (Martin, 2026-11-13) |
+| 5 | Does it matter who owns the car, for example a rental car? | No. The driver picks the make, model and colour; being allowed to use the car is the driver's responsibility, not ShareRide's (Martin, 2026-11-13) |
 
 ## Questions for Martin
 
 | # | Question | Recommendation |
 | - | -------- | -------------- |
-| 1 | Who sees the car's make, model, colour and 4x4 flag? | Everyone viewing the trip, as it helps people choose (a 4x4 in winter, a bigger car for luggage). The registration number stays visible only to booked passengers. This updates the privacy inventory |
-| 2 | Can drivers use rental cars in the beta? | No. Rental agreements commonly forbid carrying passengers for payment. Add it to the questions for the lawyer and revisit before launch |
-| 3 | Now that stops are added automatically, should the stop limit rise from 8? | Yes, to 12 including start and end. The driver only stops where someone gets on or off, so more stops cost little time and give passengers more places to join |
+| 1 | Who sees the car's make, model and colour? | Everyone viewing the trip, as it helps people recognise the car and choose a ride. The number plate stays visible only to booked passengers. This updates the privacy inventory |
+| 2 | Now that stops are added automatically, should the stop limit rise from 8? | Yes, to 12 including start and end. The driver only stops where someone gets on or off, so more stops cost little time and give passengers more places to join |

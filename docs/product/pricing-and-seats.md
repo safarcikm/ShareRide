@@ -264,4 +264,4 @@ Set centrally by the operator; changes are logged.
 | `booking_cutoff` | 15 minutes | Before the planned time at the boarding stop |
 | `request_expiry` | 12 hours | Approval mode; also never later than 2 hours before boarding |
 | `major_time_change` | 30 minutes | Above this, passengers may cancel without penalty |
-| `max_capacity` | the vehicle's passenger seats (all seats minus the driver's) | Driver may offer fewer |
+| `max_capacity` | 8 | Most seats a driver can offer; matching the car is the driver's responsibility |

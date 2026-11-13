@@ -51,8 +51,10 @@ erDiagram
 
 ### Vehicle
 
-`id`, `owner_id`, `make`, `model`, `colour`, `seats` (excluding the driver),
-`registration` (shown only to booked passengers), `is_4x4`, `status`.
+`id`, `owner_id`, `make`, `model`, `colour`, `registration` (optional until
+the trip departs; shown only to booked passengers), `status`. Who owns the car
+in real life does not matter; the user is responsible for being allowed to
+use it ([spec 3](../specs/2026-11-13-post-a-trip.md#32-cars)).
 
 ### MeetingPoint
 
@@ -87,7 +89,7 @@ ordered pair of active meeting points connected by road.
 | ----- | ----- |
 | `id` | UUID v7 |
 | `driver_id`, `vehicle_id` | |
-| `capacity` | Seats offered; ≤ vehicle seats |
+| `capacity` | Seats offered, 1 to `max_capacity` (8) |
 | `booking_mode` | `instant` or `approval` |
 | `price_level` | Percentage of the suggested prices, 0 (free) up to the cap ([ADR 0012](../decisions/0012-trip-price-level.md)) |
 | `status` | `draft`, `published`, `departed`, `completed`, `cancelled` |
