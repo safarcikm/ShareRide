@@ -98,7 +98,7 @@ ordered pair of active meeting points connected by road.
 | `status` | `draft`, `published`, `departed`, `completed`, `cancelled` |
 | `preferences` | Luggage, pets, smoking, etc. |
 | `notes` | Free text from the driver |
-| `women_only` | Only people who have opted in can see and book it; fixed once a request or booking exists |
+| `women_only` | Shown to everyone; only women who have opted in can book it; fixed once a request or booking exists |
 | `published_at`, `cancelled_at`, `cancel_reason` | |
 
 ### TripStop
@@ -222,7 +222,7 @@ Enforced in the domain package and, where possible, in the database too.
 8. Reviews exist only for completed bookings, one per author per booking.
 9. A trip with active bookings cannot be deleted, only cancelled.
 10. Only users who have opted in, and whose access is not withdrawn, can
-    publish, see or book a women-only trip.
+    publish, request or book a women-only trip.
 
 ## Trip lifecycle
 

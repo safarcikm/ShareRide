@@ -236,10 +236,11 @@ made more than 24 hours before boarding, are excluded.
 screens, SafeTravel information for remote routes, and "share trip details"
 that sends the route, time, driver's first name and vehicle to a contact.
 
-**G5. Women-only trips (Must, subject to the legal opinion).** A driver who
-has opted in can offer a trip only to people who have opted in, based on a
-private self-declaration in Settings; no gender is stored and no proof is
-asked (decision 14, [ADR 0015](../decisions/0015-women-only-trips.md)).
+**G5. Women-only trips (Must, subject to the legal opinion).** A woman driver
+can offer a trip that only women can book. Everyone can see these trips,
+marked "Women only"; booking needs a private self-declaration in Settings; no
+gender is stored and no proof is asked (decision 14,
+[ADR 0015](../decisions/0015-women-only-trips.md)).
 
 ## H. Operator console (web)
 
@@ -313,7 +314,7 @@ decisions 3 and 6.
 | 11 | Does the driver pick the stops along the way? | No. The app adds the meeting points along the route automatically; the driver can remove any they will not stop at |
 | 12 | Can the driver edit each segment's price? | No. One price level for the whole trip, from free up to the cap ([ADR 0012](../decisions/0012-trip-price-level.md)) |
 | 13 | How do passengers pay? | Only in the app, from the beta: they pay when the booking is accepted; free cancellation with a full refund up to 15 minutes before departure ([ADR 0013](../decisions/0013-in-app-payments-only.md)) |
-| 14 | Women-only trips in the MVP (open question Q12)? | Yes (the recommendation was to wait for the beta). Details in [spec 14](../specs/2026-11-13-women-only-trips.md) |
+| 14 | Women-only trips in the MVP (open question Q12)? | Yes, for women only, visible to everyone and bookable only by women (the recommendation was to wait for the beta). Details in [spec 14](../specs/2026-11-13-women-only-trips.md) |
 
 ## After the MVP
 

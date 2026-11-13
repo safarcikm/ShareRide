@@ -1,7 +1,7 @@
 # 0015. Women-only trips based on a private self-declaration
 
-- **Status:** Proposed (Martin put women-only trips in the MVP on 2026-11-13,
-  answering open question Q12; this design is accepted with spec 14)
+- **Status:** Accepted (2026-11-13, decided by Martin answering open question
+  Q12 and the questions in spec 14)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [spec 14](../specs/2026-11-13-women-only-trips.md),
@@ -37,8 +37,8 @@ Constraints:
 
 ## Options considered
 
-1. **Private opt-in, stored as a date only.** A person declares in Settings
-   that they can join women-only trips; we store when, nothing else. No proof
+1. **Private opt-in, stored as a date only.** A woman declares in Settings
+   that she wants women-only trips; we store when, nothing else. No proof
    is asked. Minimal data and follows gender autonomy. Someone could declare
    falsely; we rely on the community rules and reports.
 2. **A gender field in every profile.** Asked of everyone, possibly shown,
@@ -52,20 +52,26 @@ Constraints:
 
 ## Decision
 
-We will offer women-only trips in the MVP, based on option 1. A person opts in
-with a private declaration in Settings, stored only as the date they made it;
+We will offer women-only trips in the MVP, based on option 1. A woman opts in
+with a private declaration in Settings, stored only as the date she made it;
 we never store a gender field or ask for proof. Only a driver who has opted in
-can mark a trip women-only, and only people who have opted in can book it.
-Everyone in the car must be eligible, including people the driver or a
-passenger brings along. Who is eligible and who can see these trips are
-settled in spec 14. The feature goes live only if the legal opinion confirms
-it is allowed.
+can mark a trip women-only, and only women who have opted in can book it.
+Everyone in the car must be a woman, including people the driver or a
+passenger brings along. Women-only trips are visible to everyone, marked
+"Women only". The feature goes live only if the legal opinion confirms it is
+allowed.
 
 ## Consequences
 
 - People who do not opt in give no gender data at all.
-- Taking part tells the others on that trip that the person opted in. The
-  app says so before they opt in.
+- The public label shows that a woman is driving that trip, and the people on
+  a trip can see who booked it. The app says so before someone opts in and
+  before a driver marks a trip.
+- Everyone sees which trips are women-only, so the option is easy to find,
+  but people who cannot book will see trips they cannot take.
+- People registered as neutral cannot join. The equal treatment act counts
+  them as a gender of their own, so the lawyer is asked whether this is
+  allowed.
 - A false declaration breaks the community rules. Reports go through spec 9;
   the operator never asks for proof, judges by conduct, and can withdraw
   someone's access to women-only trips.
@@ -77,6 +83,7 @@ it is allowed.
 
 ## Revisit when
 
-- The legal opinion says the option is not allowed, or only with changes.
+- The legal opinion says the option is not allowed, or only with changes,
+  such as including people registered as neutral.
 - Reports show the declaration is misused often.
 - Beta data shows almost no use, or strong demand for more.
