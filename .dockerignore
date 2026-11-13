@@ -1,0 +1,15 @@
+# Keep the API image small and free of secrets.
+**/node_modules
+**/.turbo
+**/coverage
+**/dist
+**/*.test.ts
+.git
+.github
+.claude
+.env
+.env.*
+docs
+infra
+apps/mobile
+*.md

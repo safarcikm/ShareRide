@@ -33,9 +33,14 @@ The full documentation map is in [docs/README.md](docs/README.md).
 ├── CHANGELOG.md              # Notable changes, newest first
 ├── .claude/                  # Shared Claude Code settings and project skills
 ├── .github/                  # PR and issue templates, CI workflows, CODEOWNERS
+├── apps/
+│   └── api/                  # The API (Hono), with its Dockerfile
 ├── packages/
 │   ├── config/               # Shared TypeScript, ESLint and Prettier configuration
+│   ├── contracts/            # API schemas and route definitions (Zod)
+│   ├── db/                   # Database schema, migrations and connection (Drizzle)
 │   └── domain/               # Pure business rules (money so far)
+├── infra/docker/             # Local PostgreSQL with PostGIS (Docker Compose)
 └── docs/
     ├── strategy/             # Development strategy, roadmap, open questions
     ├── product/              # Vision, features, pricing rules, meeting points
@@ -56,10 +61,20 @@ are added as milestone 1 progresses.
 
 You need Node.js 26 and pnpm 12 (`npm install --global pnpm@12`).
 
+You also need Docker (Docker Desktop on Windows and macOS) for the local
+database.
+
 ```sh
-pnpm install   # install everything
-pnpm check     # lint, type check and unit tests
+pnpm install                                              # install everything
+cp .env.example .env                                      # local settings
+docker compose -f infra/docker/compose.yml up -d --wait   # start the database
+pnpm check                                                # lint, types, unit tests
+pnpm test:integration                                     # database tests
+pnpm --filter @shareride/api dev                          # API on http://localhost:3000
 ```
+
+Open <http://localhost:3000/v1/health> to check the API, and
+<http://localhost:3000/v1/openapi.json> for its documentation.
 
 More commands are in [CLAUDE.md](CLAUDE.md#commands).
 

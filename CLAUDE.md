@@ -73,11 +73,19 @@ in `pnpm-workspace.yaml`; packages refer to them with `catalog:`.
 
 ```sh
 pnpm install                 # install the workspace
+cp .env.example .env         # local settings (never commit .env)
+docker compose -f infra/docker/compose.yml up -d --wait   # PostgreSQL 18 + PostGIS
 pnpm check                   # lint, type check and unit tests (Turborepo)
+pnpm test:integration        # tests against the database (one package at a time)
 pnpm format                  # format with Prettier (pnpm format:check in CI)
+pnpm --filter @shareride/api dev       # migrate, then run the API on port 3000
+pnpm --filter @shareride/db generate   # SQL migration from schema changes
 pnpm --filter @shareride/domain test   # one package
 npx --yes markdownlint-cli2@0.24.0     # lint the docs
 ```
+
+Tests named `*.integration.test.ts` need `TEST_DATABASE_URL`, a database
+whose name ends in `_test`; they wipe it.
 
 Workspace packages export TypeScript source directly (`"exports":
 "./src/index.ts"`); Node.js runs it with built-in type stripping, so use

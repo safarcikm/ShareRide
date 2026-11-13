@@ -9,11 +9,25 @@ engineStrict: true
 # these with "catalog:". Dependabot proposes updates.
 catalog:
   "@eslint/js": 10.0.1
+  "@hono/node-server": 2.1.8
+  "@hono/zod-openapi": 1.6.3
   "@types/node": 26.6.6
+  "@types/pg": 8.23.1
+  drizzle-kit: 0.31.11
+  drizzle-orm: 0.45.4
   eslint: 10.14.0
   globals: 17.14.0
+  hono: 4.13.18
+  pg: 8.23.1
+  pino: 10.4.0
   prettier: 3.10.1
   turbo: 2.11.11
   typescript: 6.0.3
   typescript-eslint: 8.72.2
   vitest: 5.1.0
+  zod: 4.6.7
+
+# Dependencies allowed to run install scripts. Everything else is blocked.
+# esbuild (used by drizzle-kit) checks its platform binary.
+allowBuilds:
+  esbuild: true

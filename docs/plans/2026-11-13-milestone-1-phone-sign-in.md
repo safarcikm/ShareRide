@@ -210,22 +210,22 @@ task. Tick tasks as they merge, so a new session can resume here.
 
 ### PR 3: `feat(api)`: API skeleton, database and local development
 
-- [ ] `infra/docker/compose.yml` with `postgis/postgis:18-3.7`, a health
+- [x] `infra/docker/compose.yml` with `postgis/postgis:18-3.7`, a health
       check and a named volume; `.env.example`
-- [ ] `apps/api/src/config.ts`: environment validated with Zod at start-up.
+- [x] `apps/api/src/config.ts`: environment validated with Zod at start-up.
       Test first: missing or invalid variables stop the start with a clear
       message
-- [ ] `packages/db`: Drizzle setup, first migration (extensions), `migrate`
+- [x] `packages/db`: Drizzle setup, first migration (extensions), `migrate`
       script. Test: migrations apply to an empty database twice without error
-- [ ] Logger with request IDs and redaction. Test: a phone number or token
+- [x] Logger with request IDs and redaction. Test: a phone number or token
       in a log field is replaced with `[redacted]`
-- [ ] `GET /v1/health` and `GET /v1/health/ready`; error handler with the
+- [x] `GET /v1/health` and `GET /v1/health/ready`; error handler with the
       standard error shape; OpenAPI document. Tests: health is 200, ready is
       503 when the database is down, unknown route gives the error shape
-- [ ] `apps/api/Dockerfile` (multi-stage, non-root user)
-- [ ] CI job `api`: PostgreSQL service container, migrations, integration
+- [x] `apps/api/Dockerfile` (multi-stage, non-root user)
+- [x] CI job `api`: PostgreSQL service container, migrations, integration
       tests, Docker image build (not pushed)
-- Verify: `docker compose -f infra/docker/compose.yml up -d && pnpm --filter api test`
+- Verify: `docker compose -f infra/docker/compose.yml up -d --wait && pnpm test:integration`
 
 ### PR 4: `feat(mobile)`: Expo app and translations
 
