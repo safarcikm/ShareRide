@@ -20,7 +20,7 @@ releases follow [Semantic Versioning](https://semver.org/).
 - Spec 5: booking and requests (approved).
 - Spec 6: changes and cancellations (approved).
 - Spec 7: chat, notifications and reminders (approved).
-- Spec 8: trip day, reviews and reliability (draft for review).
+- Spec 8: trip day, reviews and reliability (approved).
 - Spec 13: payments, refunds, payouts and receipts (approved).
 - ADR 0012: one price level per trip instead of per-segment price editing
   (supersedes ADR 0006).

@@ -1,6 +1,6 @@
 # Spec 8: Trip day, reviews and reliability
 
-**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Draft for review
+**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
 Features: E2 "I'm here" check-in, E3 Mark a no-show, E4 Trip completion,
 G1 Ratings and reviews, G3 Reliability figure
@@ -69,7 +69,8 @@ view. It is built to be used while parked: large buttons and no typing needed.
 ### 3.3 A passenger doesn't come (E3)
 
 1. The driver can mark a confirmed passenger as a no-show once the wait time
-   has passed after the planned time at their boarding stop (question 2), and
+   has passed: 10 minutes after the planned time at their boarding stop
+   (decision 2), and
    only after the driver tapped "I'm here" at that stop.
 2. The driver confirms, with an optional note for the operator. The passenger
    is told at once (push and email) and can answer "That's right" or "That's
@@ -137,14 +138,25 @@ complain further.
 
 ### 3.8 Reliability (G3)
 
-1. Each profile shows a reliability figure: how often the person kept their
-   trips and bookings. What counts, the period and when it is shown:
-   question 3.
-2. Cancellations with the reason weather or road closed do not count. How
-   that is checked in the beta: question 1.
+1. Each profile shows one reliability figure across both roles: the share of
+   trips and bookings the person kept, out of those that count, over the last
+   12 months. It is shown once 5 count; before that the profile says "Not
+   enough trips yet" (decision 3).
+   - **Kept:** a completed booking, as passenger; a completed trip with at
+     least one passenger, as driver.
+   - **Not kept:** a no-show or a passenger cancellation that counts (spec 6,
+     R6.8); a driver's trip or booking cancellation that counts (spec 6), or a
+     driver absence that stands.
+   - Nothing else counts: early cancellations, withdrawn requests, unpaid
+     bookings, trips without passengers.
+2. Cancellations with the reason weather or road closed do not count. In the
+   beta the reason is trusted as given. The console lists these
+   cancellations, and the operator can overrule a clearly wrong one, which
+   then counts; repeated misuse leads to a warning (decision 1). Automatic
+   checks against official warnings and closures come later (Phase 4).
 3. Tapping the figure shows the counts behind it, by role.
-4. Nothing is suspended automatically. The operator sees who falls below the
-   watch level and decides on a warning or a suspension
+4. Nothing is suspended automatically. The operator sees who falls below 80%
+   and decides on a warning or a suspension
    ([pricing and seats](../product/pricing-and-seats.md#cancellations-and-reliability)).
 
 ### 3.9 Notifications
@@ -167,14 +179,14 @@ Sent through spec 7, in the recipient's language:
 | R8.1 | A trip departs at the planned time of its first stop and completes 2 hours after the planned time of its last stop. |
 | R8.2 | At completion, every confirmed booking that is not a no-show and has no open "driver didn't come" report becomes completed. |
 | R8.3 | "I'm here" works from 30 minutes before to 60 minutes after the planned time at that stop and records only the time. |
-| R8.4 | A driver can mark a no-show only for a confirmed passenger of their own trip, after the wait time (question 2), after checking in at that stop, and before the trip completes. |
+| R8.4 | A driver can mark a no-show only for a confirmed passenger of their own trip, after the 10-minute wait, after checking in at that stop, and before the trip completes. |
 | R8.5 | A passenger can report that the driver didn't come from the wait time after their boarding time until 24 hours after the trip completes. |
 | R8.6 | The other side has 24 hours to contest. Uncontested reports stand; contested ones hold the payout until the operator decides. |
 | R8.7 | A no-show that stands gives no refund and counts on the passenger's reliability. A driver absence that stands gives a full refund and counts on the driver's reliability. |
 | R8.8 | Reviews exist only for completed bookings, one per author per booking, written within 14 days; rating 1 to 5; comment up to 500 characters without contact details or links. |
 | R8.9 | A review is revealed when both sides have reviewed, or 14 days after completion, and cannot be edited after it is sent. |
-| R8.10 | Reliability counts as decided in question 3, and never suspends anyone automatically. |
-| R8.11 | Weather and road-closure cancellations are handled as decided in question 1. |
+| R8.10 | Reliability is the share of trips and bookings kept out of those that count, over 12 months and across both roles, shown once 5 count (3.8). It never suspends anyone automatically. |
+| R8.11 | A weather or road-closure reason is trusted in the beta; the operator can overrule a clearly wrong one, and it then counts. |
 
 ## 5. Screens
 
@@ -230,13 +242,14 @@ Events: `CheckedIn`, `PassengerNoShow` (existing), `DriverAbsentReported`,
 `DisputeAnswered`, `DisputeDecided`, `TripDeparted`, `TripCompleted`
 (existing), `ReviewSubmitted` (existing), `ReviewsRevealed`.
 
-The booking lifecycle in pricing and seats gains one step on approval: a
-completed booking becomes cancelled when a driver absence stands.
+The booking lifecycle in [pricing and seats](../product/pricing-and-seats.md#booking-lifecycle)
+has one step for this: a completed booking becomes cancelled when a driver
+absence stands.
 
-Settings: `no_show_wait` (question 2), `trip_completion_delay` 2 hours,
+Settings: `no_show_wait` 10 minutes, `trip_completion_delay` 2 hours,
 `dispute_answer_window` 24 hours, `review_window` 14 days,
-`reliability_period`, `reliability_min_count` and `reliability_watch_level`
-(question 3).
+`reliability_period` 12 months, `reliability_min_count` 5,
+`reliability_watch_level` 80%.
 
 ## 7. Privacy and safety
 
@@ -245,8 +258,7 @@ Settings: `no_show_wait` (question 2), `trip_completion_delay` 2 hours,
   figure with counts only, never the reasons or notes behind them.
 - Dispute notes are seen by the operator only; the other side sees only that
   the report was contested and the outcome. The operator reads the booking's
-  chat for a dispute, as for a report (privacy register, messages row, to be
-  updated on approval).
+  chat for a dispute, as for a report (privacy register, messages row).
 - Reliability is shown to help people choose; any warning or suspension is a
   decision by a person, never automatic, so no solely automated decision
   affects anyone.
@@ -316,10 +328,12 @@ weather and road-closure checks (Phase 4, [integrations](../architecture/integra
 reporting, blocking, the 112 link and sharing trip details (spec 9); the
 console's layout (spec 10).
 
-## Questions for Martin
+## Decisions
 
-| # | Question | Recommendation |
-| - | -------- | -------------- |
+Accepted by Martin on 2026-11-13 as recommended.
+
+| # | Question | Decision |
+| - | -------- | -------- |
 | 1 | How are weather and road-closure cancellations checked in the beta, before we connect the Met Office and Road Administration data? | Trust the reason the person gives. The console lists these cancellations so you can overrule a clearly wrong one, which then counts. Repeated misuse leads to a warning |
 | 2 | How long must a driver wait before marking a passenger as a no-show? | 10 minutes after the planned time at that stop. The passenger can report that the driver didn't come after the same wait |
 | 3 | How is reliability counted and shown? | One figure per person, across both roles, over the last 12 months: kept trips and bookings out of those that count. Shown once there are 5 that count. Counted: completed bookings and trips with passengers (kept); no-shows, driver absences and cancellations that count under spec 6 (not kept). The operator watches anyone below 80% |

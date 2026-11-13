@@ -227,6 +227,7 @@ stateDiagram-v2
   declined --> [*]
   expired --> [*]
   cancelled --> [*]
+  completed --> cancelled : driver absence stands (spec 8)
   completed --> [*]
   no_show --> [*]
 ```
@@ -305,12 +306,21 @@ Refunds follow rule M2. Reliability adds a trust signal on top:
 - Cancellations and no-shows are counted on each profile and shown as a
   reliability figure.
 - Cancellations with reason `weather` or `road_closed` do not count when an
-  official warning or closure applied to the route at the time.
+  official warning or closure applied to the route at the time. In the beta
+  the reason is trusted as given and the operator can overrule a clearly
+  wrong one; automatic checks come later (decided 2026-11-13).
 - A passenger's cancellation counts only when it is made less than 24 hours
   before boarding, and never after the driver moved the departure by more
   than 30 minutes. No-shows always count (decided 2026-11-13).
-- A pattern of late cancellations or no-shows leads to a warning, then a
-  suspension, decided in the admin console.
+- The figure is the share of trips and bookings kept out of those that
+  count, over the last 12 months and across both roles, shown once 5 count
+  ([spec 8](../specs/2026-11-13-trip-day-reviews-and-reliability.md#38-reliability-g3)).
+- A driver can mark a no-show 10 minutes after the planned time at the
+  passenger's stop; either side can contest a no-show or a missing driver
+  within 24 hours, and the operator decides.
+- Anyone below 80% is on the operator's watch list. A pattern of late
+  cancellations or no-shows leads to a warning, then a suspension, decided by
+  the operator; nothing is automatic.
 
 ## Configuration values
 
@@ -330,4 +340,9 @@ Set centrally by the operator; changes are logged.
 | `major_time_change` | 30 minutes | Above this, passengers may cancel without penalty |
 | `max_time_change` | 2 hours | Largest departure move once a trip has bookings |
 | `reliability_cancellation_window` | 24 hours | Before boarding; a passenger's cancellation counts on reliability only inside it |
+| `no_show_wait` | 10 minutes | After the planned time at the passenger's stop |
+| `trip_completion_delay` | 2 hours | After the planned time at the last stop |
+| `reliability_period` | 12 months | Window of the reliability figure |
+| `reliability_min_count` | 5 | Counted trips and bookings before the figure is shown |
+| `reliability_watch_level` | 80% | Below this, the operator is alerted |
 | `max_capacity` | 8 | Most seats a driver can offer; matching the car is the driver's responsibility |

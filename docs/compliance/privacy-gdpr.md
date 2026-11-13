@@ -41,7 +41,9 @@
 | Public profile | First name, photo, bio, languages, badges | Trust between users | Contract | All users | While the account exists |
 | Vehicle | Make, model, colour, number plate | Identify the car at pickup | Contract | Make, model and colour: all users; number plate: booked passengers | While the account exists |
 | Trips and bookings | Meeting points, times, seats, prices | Provide the service | Contract | Participants; operator | 3 years after the trip, then anonymised (**verify** period) |
-| Messages | Chat between driver and passenger | Coordinate the trip | Contract | Participants; operator only when a report is filed | 12 months after the trip, unless part of a report |
+| Messages | Chat between driver and passenger | Coordinate the trip | Contract | Participants; operator only when a report or a trip day dispute is filed | 12 months after the trip, unless part of a report |
+| Trip day records | "I'm here" times (no location), no-show and missing-driver reports, dispute notes | Settle disagreements and payouts | Contract and legitimate interest | Operator; the other side sees only the outcome | With the booking |
+| Reliability | Counts of trips and bookings kept and not kept | Trust between users | Legitimate interest | Figure and counts: all users; reasons: operator | Figure covers 12 months; records kept with the booking |
 | Reviews and ratings | Rating, comment | Trust | Contract and legitimate interest | All users | While the subject's account exists |
 | Reports and moderation | Report text, evidence, actions | Safety | Legitimate interest; legal obligation where applicable | Operator | 3 years after closure (**verify**) |
 | Verification | Phone verified, Auðkenni verified flag | Trust and safety | Consent (optional badges); contract (phone) | Badge public; details operator | While the account exists |

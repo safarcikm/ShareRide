@@ -151,7 +151,16 @@ planned arrival). Messages have `sender_id` (empty for a system line), `kind`
 ### Review
 
 `booking_id`, `author_id`, `subject_id`, `role` (`as_driver` or
-`as_passenger`), `rating` (1–5), `comment`, `created_at`, `revealed_at`.
+`as_passenger`), `rating` (1–5), `comment`, `created_at`, `revealed_at`,
+`hidden_at` (moderation).
+
+### Trip day and reliability records
+
+Detailed in [spec 8](../specs/2026-11-13-trip-day-reviews-and-reliability.md#6-data-and-api):
+`CheckIn` ("I'm here": trip stop, user, time; never a location), `Dispute`
+(a no-show or a missing driver, the other side's answer and the outcome),
+`ReliabilityRecord` (one per kept or not-kept trip or booking, with whether
+it counts and why not) and `UserStats` (rating and reliability totals).
 
 ### Report
 
@@ -203,7 +212,7 @@ stateDiagram-v2
   draft --> [*] : driver discards
   published --> cancelled : driver cancels
   published --> departed : planned time of first stop passes
-  departed --> completed : planned time of last stop passes plus grace period
+  departed --> completed : planned time of last stop passes plus 2 hours
   cancelled --> [*]
   completed --> [*]
 ```
@@ -218,7 +227,8 @@ outbox table) and processed by the worker:
 
 `TripPublished`, `TripChanged`, `TripCancelled`, `BookingRequested`,
 `BookingAccepted`, `BookingDeclined`, `BookingExpired`, `BookingCancelled`,
-`PassengerNoShow`, `TripCompleted`, `MessageSent`, `ReviewSubmitted`, `ReportFiled`,
+`TripDeparted`, `CheckedIn`, `PassengerNoShow`, `DriverAbsentReported`,
+`DisputeAnswered`, `DisputeDecided`, `TripCompleted`, `MessageSent`, `ReviewSubmitted`, `ReviewsRevealed`, `ReportFiled`,
 `WeatherWarningMatched`, `RoadClosureMatched`.
 
 Notifications, review reminders and analytics subscribe to these events, so

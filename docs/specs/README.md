@@ -32,5 +32,5 @@ Specs follow the order in [features](../product/features.md#spec-order).
 | 5 | [Booking and requests](2026-11-13-booking-and-requests.md) | D3, D4, C7 | Approved (2026-11-13) |
 | 6 | [Changes and cancellations](2026-11-13-changes-and-cancellations.md) | C5, C6, D5 | Approved (2026-11-13) |
 | 7 | [Chat, notifications and reminders](2026-11-13-chat-and-notifications.md) | F1, F2, E1 | Approved (2026-11-13) |
-| 8 | [Trip day, reviews and reliability](2026-11-13-trip-day-reviews-and-reliability.md) | E2, E3, E4, G1, G3 | Draft for review |
+| 8 | [Trip day, reviews and reliability](2026-11-13-trip-day-reviews-and-reliability.md) | E2, E3, E4, G1, G3 | Approved (2026-11-13) |
 | 13 | [Payments, refunds, payouts and receipts](2026-11-13-payments.md) | D7, D8, C8, H7 | Approved (2026-11-13) |

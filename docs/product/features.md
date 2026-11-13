@@ -200,8 +200,8 @@ with directions to the meeting point.
 **E2. "I'm here" check-in (Should).** One tap at the meeting point tells the
 other side you have arrived. No location tracking.
 
-**E3. Mark a no-show (Should).** After the planned time plus a grace period,
-the driver can mark a passenger absent; the passenger can dispute it.
+**E3. Mark a no-show (Should).** Ten minutes after the planned time, the
+driver can mark a passenger absent; the passenger can dispute it.
 
 **E4. Trip completion (Must).** A trip completes automatically after its last
 stop, which opens reviews.
@@ -226,10 +226,10 @@ after 14 days.
 **G2. Report and block (Must).** Report a user, trip or message with a
 category. Blocking hides both people from each other's searches and trips.
 
-**G3. Reliability figure (Should).** Share of trips and bookings completed
-rather than cancelled, on every profile. Weather and road-closure
-cancellations, and passenger cancellations made more than 24 hours before
-boarding, are excluded.
+**G3. Reliability figure (Should).** Share of trips and bookings kept rather
+than cancelled late or missed, over the last 12 months, on every profile once
+5 count. Weather and road-closure cancellations, and passenger cancellations
+made more than 24 hours before boarding, are excluded.
 
 **G4. Safety information and trip sharing (Must).** A 112 link on trip
 screens, SafeTravel information for remote routes, and "share trip details"
