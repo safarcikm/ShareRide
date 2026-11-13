@@ -76,14 +76,23 @@ opinion requested; company form chosen.
 
 Goal: a working, tested MVP on staging.
 
-Walking skeleton (first milestone)
+Walking skeleton, milestone 1: foundation and phone sign-in
+([plan](../plans/2026-11-13-milestone-1-phone-sign-in.md))
 
 - [ ] Monorepo scaffold, CI, local development with Docker Compose
 - [ ] Expo app running on iOS, Android and web
-- [ ] API with health check, deployed to staging in the EEA
+- [ ] API with health check and structured logging
 - [ ] Sign-in with phone number
+
+Walking skeleton, milestone 2: hosted and connected (plan written after
+milestone 1; each provider choice gets an ADR)
+
+- [ ] API deployed to staging in the EEA
+- [ ] Real SMS provider for sign-in codes
+- [ ] Error tracking and uptime checks connected
 - [ ] Meeting points shown on a map and in a list
-- [ ] Error tracking and logging connected
+- [ ] Apple and Google sign-in; profile photo
+- [ ] Development builds with EAS and mobile end-to-end tests
 
 MVP features (each one a spec, a plan and a PR series)
 

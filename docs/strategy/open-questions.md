@@ -8,8 +8,12 @@ here, update or accept the linked ADR, and move the row to "Answered".
 
 ## Open
 
-None right now (2026-11-13). A new question goes in a table here with the
-next free number (Q14 onwards), a recommendation and the docs it affects.
+A new question goes in this table with the next free number, a
+recommendation and the docs it affects.
+
+| #   | Question | Recommendation | Affects |
+| --- | -------- | -------------- | ------- |
+| Q14 | Sign-in: use the Better Auth library, or write our own small sign-in module? | Our own module: Better Auth needs a made-up email for phone-only users and has no rotating refresh tokens, so spec 1 would have to change. Own code built on Node's crypto, fully tested and security-reviewed. | [ADR 0016](../decisions/0016-own-sign-in-module.md), [ADR 0010](../decisions/0010-authentication-and-identity.md), [milestone 1 plan](../plans/2026-11-13-milestone-1-phone-sign-in.md) |
 
 ## Answered
 

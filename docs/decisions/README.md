@@ -46,3 +46,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0013](0013-in-app-payments-only.md) | All payments through the app, from the beta | Accepted |
 | [0014](0014-passenger-service-fee-from-launch.md) | A passenger service fee from public launch | Accepted |
 | [0015](0015-women-only-trips.md) | Women-only trips based on a private self-declaration | Accepted |
+| [0016](0016-own-sign-in-module.md) | Our own sign-in module instead of an auth library | Proposed |
