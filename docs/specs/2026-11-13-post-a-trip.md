@@ -50,6 +50,9 @@ missing, and each item can be done from there:
 2. A profile photo (spec 1, decision 4).
 3. A car (3.2).
 4. A driving licence declaration (3.3).
+5. For a trip with a price: payouts set up with the payment provider
+   ([spec 13](2026-11-13-payments.md#34-payouts-driver)); free trips do not
+   need it.
 
 ### 3.2 Cars
 
@@ -186,7 +189,7 @@ apply. This spec adds:
 
 | ID | Rule |
 | -- | ---- |
-| R3.1 | Publishing needs a verified phone number, the current terms accepted, a profile photo, a car (make, model and colour) and the driving licence declaration. |
+| R3.1 | Publishing needs a verified phone number, the current terms accepted, a profile photo, a car (make, model and colour) and the driving licence declaration; a trip with a price also needs payouts set up (spec 13, R13.7). |
 | R3.2 | A trip has at least 2 stops and no maximum. Each is an active meeting point in season on the trip date (spec 2, R2.4), used once. |
 | R3.3 | Meeting points on the way are added as stops automatically; the driver may remove them or add others. |
 | R3.4 | The route is at most 1.5 times the direct distance between the first and last stops. |

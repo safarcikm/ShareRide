@@ -18,7 +18,7 @@ releases follow [Semantic Versioning](https://semver.org/).
 - Spec 3: driver setup and posting a trip with prices (approved).
 - Spec 4: search and trip details (approved).
 - Spec 5: booking and requests (approved).
-- Spec 13 draft: payments, refunds, payouts and receipts.
+- Spec 13: payments, refunds, payouts and receipts (approved).
 - ADR 0012: one price level per trip instead of per-segment price editing
   (supersedes ADR 0006).
 - ADR 0013: all payments through the app, from the beta (supersedes ADR

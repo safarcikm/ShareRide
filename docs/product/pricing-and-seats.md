@@ -277,6 +277,13 @@ booking price and nothing more, and drivers receive the full price (decided
 2026-11-13). Whether a service fee is charged after the beta is open question
 Q5.
 
+### Rule M5: chargebacks
+
+If a passenger's bank reverses a payment after the driver was paid and the
+chargeback is lost, the amount is taken from the driver's next payouts when the
+trip did not happen because of the driver. Otherwise ShareRide carries the loss
+in the beta (decided 2026-11-13; reviewed before launch).
+
 ## Trip changes after bookings exist
 
 | Change by driver | Allowed? | Effect on booked passengers |

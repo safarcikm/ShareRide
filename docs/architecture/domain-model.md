@@ -149,9 +149,12 @@ on a report is written to the audit log.
 ### Payment
 
 `booking_id`, `provider`, `provider_ref`, `amount`, `fee`, `currency`,
-`status`, plus `Payout` and `Refund` records. Payments run in the app from the
-beta ([ADR 0013](../decisions/0013-in-app-payments-only.md)); details in the
-payments spec.
+`status`, card brand and last four digits. Payments run in the app from the
+beta ([ADR 0013](../decisions/0013-in-app-payments-only.md)). Related records,
+detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
+`Refund`, `PayoutAccount` (provider reference and status only), `Payout`,
+`Chargeback`, an append-only `LedgerEntry` for every money movement, and
+`ProviderEvent` for processing webhooks exactly once.
 
 ### Supporting records
 
