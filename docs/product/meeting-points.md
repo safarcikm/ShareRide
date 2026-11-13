@@ -67,7 +67,8 @@ lets us check that a trip's stop order makes geographic sense.
 ## Launch corridors (proposal, open question Q6)
 
 Start where demand and driver supply are highest. Example meeting points per
-corridor; the final list is drafted in Phase 1 and checked on site.
+corridor; the final list is drafted in Phase 1 and confirmed by
+the operator, who knows the places locally.
 
 | Corridor | Example meeting points |
 | -------- | ---------------------- |

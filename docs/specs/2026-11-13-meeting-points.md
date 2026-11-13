@@ -155,7 +155,7 @@ the point for review, and the user sees a thank-you message.
 | -- | ---- |
 | R2.1 | Only the operator creates, edits, activates, pauses and retires meeting points. Users cannot add or suggest them. |
 | R2.2 | Meeting points are never deleted. Retired points stay readable on past trips and bookings. |
-| R2.3 | A point can be activated only with: a name, location, type, region and municipality; "where to stand" in Icelandic and English; at least one photo with descriptions; amenities and season reviewed; an on-site check date (see question 2); computed legs. |
+| R2.3 | A point can be activated only with: a name, location, type, region and municipality; "where to stand" in Icelandic and English; at least one photo with descriptions; amenities and season reviewed; the date the operator confirmed it (decision 2); computed legs. |
 | R2.4 | A new stop on a trip must be an active meeting point, in season on the trip date. Paused points cannot be added to trips. |
 | R2.5 | Seasons are whole months and may cross the new year (for example November to March). |
 | R2.6 | Search ignores case and accents and maps þ→th, ð→d, æ→ae, ö→o, á→a, é→e, í→i, ó→o, ú→u, ý→y, in both the query and the names. |
@@ -278,7 +278,7 @@ fixed distance table and only the adapter talks to the engine.
 - **End to end:** browse the map and list in both languages, open details,
   search without Icelandic letters, use "Near me" with a mocked position,
   report a problem; operator creates, activates, pauses and retires a point.
-- **Manual:** on-site check of every launch point; screen reader pass on the
+- **Manual:** operator confirmation of every launch point; screen reader pass on the
   map, list and details; details opened offline in airplane mode.
 
 ## 10. Out of scope
@@ -302,10 +302,10 @@ and places reachable only by ferry, such as Vestmannaeyjar, Hrísey and Grímsey
 | # | Question | Decision |
 | - | -------- | -------- |
 | 1 | Can users suggest meeting points? | No. The operator curates every meeting point (Martin, 2026-11-13). Users can still report a problem with an existing point |
+| 2 | Must every meeting point be checked on site before it goes live? | The operator confirms every point before activation, from local knowledge or a visit; a visit is not required (Martin, 2026-11-13). The photo and "where to stand" are still required |
 
 ## Questions for Martin
 
 | # | Question | Recommendation |
 | - | -------- | -------------- |
-| 2 | Must every meeting point be checked on site before it goes live? | Yes. Safety and "where to stand" are the core promise. You, or a trusted local helper, visit, take the photos and confirm the details. Plan the launch corridors as a few road trips |
 | 3 | Should search find street addresses in the beta? | No. Towns, villages, landmarks and "Near me" cover how people choose a meeting point; addresses add data and licence work. Revisit after the beta |
