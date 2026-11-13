@@ -50,7 +50,13 @@ Product and design
 - [ ] Draft the meeting point list v1 for the launch corridors
       ([meeting points](../product/meeting-points.md))
 - [ ] User flows and wireframes for: post a trip, search, book, manage bookings
-- [ ] Brand direction: name check, logo, colours, tone of voice
+      (search, book and post a trip drawn in
+      [spec 15](../specs/2026-11-13-visual-design-system.md#54-screens);
+      manage bookings to do)
+- [ ] Brand direction: name check, logo, colours, tone of voice (colours,
+      type and tone of voice in
+      [spec 15](../specs/2026-11-13-visual-design-system.md); logo and app
+      icon to do)
 - [ ] Clickable prototype tested with 5 to 10 potential drivers and passengers
 - [x] Set the cost-sharing price rates (ISK per km) and rounding: 15 kr
       suggested, 150 kr reference, 100 kr step (2026-11-13; legal opinion to
