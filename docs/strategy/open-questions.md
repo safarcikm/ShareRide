@@ -8,12 +8,8 @@ here, update or accept the linked ADR, and move the row to "Answered".
 
 ## Open
 
-A new question goes in this table with the next free number, a
-recommendation and the docs it affects.
-
-| #   | Question | Recommendation | Affects |
-| --- | -------- | -------------- | ------- |
-| Q14 | Sign-in: use the Better Auth library, or write our own small sign-in module? | Our own module: Better Auth needs a made-up email for phone-only users and has no rotating refresh tokens, so spec 1 would have to change. Own code built on Node's crypto, fully tested and security-reviewed. | [ADR 0016](../decisions/0016-own-sign-in-module.md), [ADR 0010](../decisions/0010-authentication-and-identity.md), [milestone 1 plan](../plans/2026-11-13-milestone-1-phone-sign-in.md) |
+None right now (2026-11-13). A new question goes in a table here with the
+next free number (Q15 onwards), a recommendation and the docs it affects.
 
 ## Answered
 
@@ -55,3 +51,4 @@ recommendation and the docs it affects.
 | A34 | Remaining proposed ADRs | ADRs 0007 (EEA hosting), 0009 (maps and routing), 0010 (authentication and identity) and 0011 (Icelandic and English) accepted as written. | 2026-11-13 |
 | A35 | Q6: which corridors open first | As recommended: the beta opens with three commuter corridors, Reykjavík–Hveragerði–Selfoss, Reykjavík–Reykjanesbær–Keflavík Airport and Reykjavík–Akranes–Borgarnes, plus the capital area hubs. Reykjavík–Akureyri is added if the waitlist shows demand; Selfoss–Hvolsvöllur–Vík later ([meeting points](../product/meeting-points.md#launch-corridors)). | 2026-11-13 |
 | A36 | Q12: women-only trips | Yes, in the MVP (changed by Martin from the recommendation to wait for the beta). For women only; everyone can see these trips, only women who have opted in can book them; a private self-declaration with no gender field. See [spec 14](../specs/2026-11-13-women-only-trips.md#decisions) (approved) and [ADR 0015](../decisions/0015-women-only-trips.md) (accepted); subject to the legal opinion. | 2026-11-13 |
+| A37 | Q14: sign-in with the Better Auth library or our own module? | Our own small sign-in module in the API, so spec 1 is built as written: no placeholder emails, rotating refresh tokens with reuse detection, every rule tested. [ADR 0016](../decisions/0016-own-sign-in-module.md) accepted; it replaces only the implementation choice in [ADR 0010](../decisions/0010-authentication-and-identity.md). | 2026-11-13 |

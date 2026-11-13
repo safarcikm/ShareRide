@@ -1,12 +1,12 @@
 # 0016. Our own sign-in module instead of an auth library
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-13, by Martin on a decision card)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [ADR 0010](0010-authentication-and-identity.md) (this ADR
   replaces only its "Implementation" choice),
   [spec 1](../specs/2026-11-13-sign-in-and-profile.md),
-  [security](../engineering/security.md), open question Q14,
+  [security](../engineering/security.md), open question Q14 (answered as A37),
   [milestone 1 plan](../plans/2026-11-13-milestone-1-phone-sign-in.md)
 
 ## Context
@@ -81,8 +81,8 @@ alternatives, verification levels and no kennitala.
   this module.
 - Apple and Google sign-in (milestone 2) and passkeys need their own small
   pieces of work instead of a plugin switch.
-- If accepted, ADR 0010's status line notes that its implementation choice is
-  replaced by this ADR.
+- ADR 0010's status line notes that its implementation choice is replaced by
+  this ADR.
 
 ## Revisit when
 

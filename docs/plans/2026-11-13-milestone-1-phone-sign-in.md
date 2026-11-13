@@ -11,8 +11,9 @@ Implements the first half of the Phase 2 walking skeleton
 [0004](../decisions/0004-backend-modular-monolith.md),
 [0005](../decisions/0005-postgresql-postgis.md),
 [0010](../decisions/0010-authentication-and-identity.md),
-[0011](../decisions/0011-localization.md) and the proposed
-[ADR 0016](../decisions/0016-own-sign-in-module.md).
+[0011](../decisions/0011-localization.md) and
+[0016](../decisions/0016-own-sign-in-module.md) (own sign-in module, accepted
+2026-11-13).
 
 ## 1. Goal
 
@@ -183,7 +184,7 @@ task. Tick tasks as they merge, so a new session can resume here.
 
 ### PR 1: `docs(plans)`: this plan and ADR 0016
 
-- [ ] Plan, ADR 0016 (proposed), open question Q14, roadmap split into
+- [ ] Plan, ADR 0016 (accepted), answered question A37, roadmap split into
       milestones 1 and 2
 
 ### PR 2: `chore(repo)`: monorepo scaffold and CI
@@ -191,10 +192,11 @@ task. Tick tasks as they merge, so a new session can resume here.
 - [ ] Root `package.json` (`packageManager`, `engines`), `pnpm-workspace.yaml`,
       `turbo.json`, `.nvmrc`, `.npmrc`
 - [ ] `packages/config`: `tsconfig.base.json`, ESLint flat config with
-      boundary rules, Prettier config, Vitest preset
-- [ ] `packages/domain` with the first rule, money. Test first:
-      `formatMoney` and `addMoney` reject non-integer amounts and mixed
-      currencies (`money.test.ts`)
+      boundary rules (no I/O, clock or randomness in the domain), Prettier
+      config
+- [ ] `packages/domain` with the first rule, money, and the `Result` type.
+      Test first: `createMoney`, `addMoney` and `multiplyMoney` reject
+      non-integer amounts and mixed currencies (`money.test.ts`)
 - [ ] `.github/workflows/ci.yml`, job `checks`: frozen install, format check,
       lint, type check, unit tests, `pnpm audit --audit-level high`; actions
       pinned to commit SHAs
@@ -262,7 +264,7 @@ task. Tick tasks as they merge, so a new session can resume here.
       current terms; profile validation (first name 1 to 30 letters, about up
       to 300 characters)
 - [ ] Security review (`/security-review`) before the PR is opened
-- [ ] Docs: ADR 0016 status if accepted, security guide (token handling),
+- [ ] Docs: security guide (token handling),
       record of personal data for the new tables
 - Verify: `pnpm --filter api test` against the local database
 

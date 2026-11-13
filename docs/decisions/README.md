@@ -40,10 +40,10 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0007](0007-eea-hosting-and-data-residency.md) | EEA hosting and data residency | Accepted |
 | [0008](0008-payments-phased.md) | Phased payments behind a provider-agnostic port | Superseded by ADR 0013 |
 | [0009](0009-maps-and-routing.md) | Maps with MapLibre and OpenStreetMap; precomputed routing | Accepted |
-| [0010](0010-authentication-and-identity.md) | Phone-first authentication and layered identity verification | Accepted |
+| [0010](0010-authentication-and-identity.md) | Phone-first authentication and layered identity verification | Accepted (implementation superseded by ADR 0016) |
 | [0011](0011-localization.md) | Icelandic and English from day one | Accepted |
 | [0012](0012-trip-price-level.md) | One price level per trip instead of per-segment price editing | Accepted |
 | [0013](0013-in-app-payments-only.md) | All payments through the app, from the beta | Accepted |
 | [0014](0014-passenger-service-fee-from-launch.md) | A passenger service fee from public launch | Accepted |
 | [0015](0015-women-only-trips.md) | Women-only trips based on a private self-declaration | Accepted |
-| [0016](0016-own-sign-in-module.md) | Our own sign-in module instead of an auth library | Proposed |
+| [0016](0016-own-sign-in-module.md) | Our own sign-in module instead of an auth library | Accepted |
