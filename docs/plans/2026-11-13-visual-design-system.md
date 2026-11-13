@@ -1,6 +1,6 @@
 # Visual design system implementation plan
 
-**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Draft, for review
+**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13, PR #12); PR A in review
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > superpowers:subagent-driven-development (recommended) or
@@ -68,6 +68,23 @@ which must be merged first.
 
 ## PR A: `feat(mobile)`: the look from spec 15
 
+**Changed while building** (the code and spec 15 section 6 follow these):
+
+- The chunky edge is `chunky(edge, edgeColor, pressed)` in
+  `theme/pressable.ts`, returning an `outer` style (the bottom border) and a
+  `face` style (moved down by the edge when pressed), instead of one
+  `edgeStyle`. A secondary button needs its control outline on the face and
+  its edge on the outer view, and the box keeps its height when pressed.
+- The focus ring is one `:focus-visible` style sheet on the web
+  (`focusRingCss`, added by `installFocusRing` in `theme/focus-ring.web.ts`)
+  instead of `focusStyle` on each part: it covers links and fields too, and
+  shows for the keyboard and not for clicks or taps.
+- Lucide icons go through `components/icon.tsx`, which sets the 2.4 stroke
+  and hides them from screen readers. Jest maps `lucide-react-native` to its
+  CommonJS build.
+- The browser check shows light in English and dark in Icelandic, so the 8
+  screenshots cover both languages.
+
 Not in this PR (they come with the screens of specs 3 to 5, spec 15
 section 5.2): tag colours, the rating star, people and car colours, shape
 people, the seat view and the other new parts.
@@ -108,7 +125,7 @@ ADR 0017.
 - Produces: `contrastRatio(foreground: string, background: string): number`
   (WCAG 2.2 relative luminance, hex `#RRGGBB` in).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```ts
 // tokens.test.ts
@@ -149,23 +166,23 @@ it("keeps fontWeight out of the components", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests and see them fail**
+- [x] **Step 2: Run the tests and see them fail**
 
 Run: `pnpm --filter @shareride/mobile test -- src/theme/tokens.test.ts`
 Expected: FAIL, `contrastRatio` is not defined.
 
-- [ ] **Step 3: Write `contrastRatio` and the new tokens** with the values of
+- [x] **Step 3: Write `contrastRatio` and the new tokens** with the values of
   spec 15, sections 4.1, 4.3 and 4.4. The "keeps fontWeight out of the
   components" test fails until Task 5 removes the checkbox tick's weight;
   mark it `it.todo` here and turn it on in Task 5.
 
-- [ ] **Step 4: Run the tests and the type check**
+- [x] **Step 4: Run the tests and the type check**
 
 Run: `pnpm --filter @shareride/mobile test -- src/theme && pnpm --filter @shareride/mobile typecheck`
 Expected: PASS. Type errors in components that read removed fields (the
 old `fontWeight`) are fixed by dropping those fields.
 
-- [ ] **Step 5: Commit** `feat(mobile): design tokens from spec 15 with a contrast test`
+- [x] **Step 5: Commit** `feat(mobile): design tokens from spec 15 with a contrast test`
 
 ### Task 2: Fonts in the root layout
 
@@ -183,10 +200,10 @@ old `fontWeight`) are fixed by dropping those fields.
   the names in `fonts`) and `useAppFonts(): boolean`, true once the fonts
   are loaded or have failed.
 
-- [ ] **Step 1: Install** with `npx expo install expo-font
+- [x] **Step 1: Install** with `npx expo install expo-font
   @expo-google-fonts/fredoka @expo-google-fonts/nunito` in `apps/mobile`.
 
-- [ ] **Step 2: Write the failing tests.** Mock `@/auth/api`,
+- [x] **Step 2: Write the failing tests.** Mock `@/auth/api`,
   `@/auth/token-store` and `expo-localization` (English device) as
   `src/__tests__/welcome.test.tsx` does, and mock `expo-font`'s `useFonts`:
 
@@ -203,24 +220,24 @@ it("opens the app with system fonts when loading fails", async () => {
 });
 ```
 
-- [ ] **Step 3: Run them and see them fail**
+- [x] **Step 3: Run them and see them fail**
 
 Run: `pnpm --filter @shareride/mobile test -- fonts`
 Expected: FAIL, no element labelled "Loading".
 
-- [ ] **Step 4: Implement.** `useAppFonts` returns `loaded || error !== null`.
+- [x] **Step 4: Implement.** `useAppFonts` returns `loaded || error !== null`.
   `Navigation` shows `<Loading />` while the session is loading **or** fonts
   are not ready, so both happen at once. `Loading` gets
   `accessibilityLabel={t("common.loading")}`; add `common.loading`
   ("Loading", "Hleð") to both message files.
 
-- [ ] **Step 5: Run the app's tests**
+- [x] **Step 5: Run the app's tests**
 
 Run: `pnpm --filter @shareride/mobile test`
 Expected: PASS (jest-expo resolves `useFonts`; if it does not, mock it in
 `src/testing/app.tsx` to return `[true, null]`).
 
-- [ ] **Step 6: Commit** `feat(mobile): load Fredoka and Nunito at start`
+- [x] **Step 6: Commit** `feat(mobile): load Fredoka and Nunito at start`
 
 ### Task 3: The chunky edge and the focus ring
 
@@ -236,7 +253,7 @@ Expected: PASS (jest-expo resolves `useFonts`; if it does not, mock it in
   (an outline on the web only; phones keep their own focus highlight, spec
   15, section 6). Uses the `focusRing` token.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```ts
 it("keeps the box height when pressed", () => {
@@ -254,12 +271,12 @@ it("draws a 3 wide focus ring 2 away when focused", () => {
 });
 ```
 
-- [ ] **Step 2: Run, see them fail, implement, run again**
+- [x] **Step 2: Run, see them fail, implement, run again**
 
 Run: `pnpm --filter @shareride/mobile test -- pressable`
 Expected: FAIL first, then PASS.
 
-- [ ] **Step 3: Commit** `feat(mobile): pressed edge and focus ring styles`
+- [x] **Step 3: Commit** `feat(mobile): pressed edge and focus ring styles`
 
 ### Task 4: Button
 
@@ -274,7 +291,7 @@ Expected: FAIL first, then PASS.
 - Props unchanged: `label`, `onPress`, `accessibilityLabel`, `variant`
   (`primary` | `secondary` | `text`), `busy`, `disabled`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```tsx
 it("keeps the label visible while busy", async () => {
@@ -294,11 +311,11 @@ it("grows with its text instead of a fixed height", async () => {
 });
 ```
 
-- [ ] **Step 2: Run them and see them fail**
+- [x] **Step 2: Run them and see them fail**
 
 Run: `pnpm --filter @shareride/mobile test -- button`
 
-- [ ] **Step 3: Restyle** as spec 15, section 5.1: primary (fill `primary`,
+- [x] **Step 3: Restyle** as spec 15, section 5.1: primary (fill `primary`,
   edge `buttonPrimary` in `primaryEdge`), secondary (fill `surface`,
   2 `control` outline, edge `buttonSecondary` in `edge`), text (no fill,
   `primary` label in `typography.label`); corner `radii.control`;
@@ -307,12 +324,12 @@ Run: `pnpm --filter @shareride/mobile test -- button`
   `textMuted` label with no edge; `Pressable` style uses `pressed` with
   `edgeStyle` and `focused` with `focusStyle`. Remove the old opacity dimming.
 
-- [ ] **Step 4: Run all the app's tests**
+- [x] **Step 4: Run all the app's tests**
 
 Run: `pnpm --filter @shareride/mobile test`
 Expected: PASS, including the existing screen tests.
 
-- [ ] **Step 5: Commit** `feat(mobile): restyle Button`
+- [x] **Step 5: Commit** `feat(mobile): restyle Button`
 
 ### Task 5: Form parts: TextField, Checkbox, Chip, Notice
 
@@ -328,10 +345,10 @@ Expected: PASS, including the existing screen tests.
 - Consumes: tokens, `focusStyle`; `iconStroke` for every Lucide icon.
 - Props unchanged.
 
-- [ ] **Step 1: Install** `npx expo install react-native-svg` and
+- [x] **Step 1: Install** `npx expo install react-native-svg` and
   `pnpm --filter @shareride/mobile add lucide-react-native@<latest, exact>`.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 ```tsx
 it("outlines a field in the control colour, and in error colour with an error", async () => {
@@ -356,11 +373,11 @@ it("puts an error notice on the error fill", async () => {
 });
 ```
 
-- [ ] **Step 3: Run them and see them fail**
+- [x] **Step 3: Run them and see them fail**
 
 Run: `pnpm --filter @shareride/mobile test -- form-parts`
 
-- [ ] **Step 4: Restyle** as spec 15, section 5.1. TextField: label in
+- [x] **Step 4: Restyle** as spec 15, section 5.1. TextField: label in
   `typography.label`, input `minHeight` `sizes.inputHeight`, fill
   `surface`, 2 `control` outline, corner `radii.control`, error message
   after a Lucide `CircleAlert`. Checkbox: 26 box, corner 9, 2 `control`
@@ -373,14 +390,14 @@ Run: `pnpm --filter @shareride/mobile test -- form-parts`
   and `text`. Icons are `aria-hidden` (`accessibilityElementsHidden`,
   `importantForAccessibility="no-hide-descendants"`).
 
-- [ ] **Step 5: Run all the app's tests** (now with the `fontWeight` test on)
+- [x] **Step 5: Run all the app's tests** (now with the `fontWeight` test on)
 
 Run: `pnpm --filter @shareride/mobile test`
 Expected: PASS. If Jest cannot parse `react-native-svg` or
 `lucide-react-native`, add them to the pattern in `jest.config.js` the way
 FormatJS is added.
 
-- [ ] **Step 6: Commit** `feat(mobile): restyle text fields, checkboxes, chips and notices`
+- [x] **Step 6: Commit** `feat(mobile): restyle text fields, checkboxes, chips and notices`
 
 ### Task 6: Screen, text, links, back and language
 
@@ -396,7 +413,7 @@ FormatJS is added.
 - `BackButton` keeps role `button` and the accessible name
   `t("common.back")`; `LanguageSwitch` keeps its label and accessible name.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```tsx
 it("shows Back as a round icon button with its name", async () => {
@@ -411,11 +428,11 @@ it("underlines links in bold Nunito", async () => {
 });
 ```
 
-- [ ] **Step 2: Run them and see them fail**
+- [x] **Step 2: Run them and see them fail**
 
 Run: `pnpm --filter @shareride/mobile test -- navigation-parts`
 
-- [ ] **Step 3: Restyle.** `Screen`: `background`, padding `spacing.md`,
+- [x] **Step 3: Restyle.** `Screen`: `background`, padding `spacing.md`,
   column gap `spacing.md`, at most `maxContentWidth`. `Title`:
   `typography.title` in `text`. `Body`: `typography.body` (keeps
   `textMuted`). `TextLink`: `primary`, `fonts.bodyBold`, underlined.
@@ -423,12 +440,12 @@ Run: `pnpm --filter @shareride/mobile test -- navigation-parts`
   `edge`, `ChevronLeft` 22 in `text`, with the same fallback behaviour.
   `LanguageSwitch`: the `text` button variant.
 
-- [ ] **Step 4: Run all the app's tests and the type check**
+- [x] **Step 4: Run all the app's tests and the type check**
 
 Run: `pnpm --filter @shareride/mobile test && pnpm --filter @shareride/mobile typecheck`
 Expected: PASS. Screen tests that found "Back" by role and name still pass.
 
-- [ ] **Step 5: Commit** `feat(mobile): restyle screens, titles, links and the back button`
+- [x] **Step 5: Commit** `feat(mobile): restyle screens, titles, links and the back button`
 
 ### Task 7: Browser checks and screenshots for review
 
@@ -439,7 +456,7 @@ Expected: PASS. Screen tests that found "Back" by role and name still pass.
   with `actions/upload-artifact`, pinned to a commit SHA like the other
   actions)
 
-- [ ] **Step 1: Write the test.** On the welcome and sign-in screens, in
+- [x] **Step 1: Write the test.** On the welcome and sign-in screens, in
   both Playwright projects (phone and desktop) and both colour schemes
   (`test.use({ colorScheme })`):
   - press Tab until the "Browse trips" button has focus and expect its
@@ -448,16 +465,16 @@ Expected: PASS. Screen tests that found "Back" by role and name still pass.
   - expect `document.fonts.check("16px Fredoka_600SemiBold")` to be true;
   - save a full-page screenshot to `test-results/look/<screen>-<project>-<scheme>.png`.
 
-- [ ] **Step 2: Run it**
+- [x] **Step 2: Run it**
 
 Run: `pnpm --filter @shareride/mobile e2e:web -- look.spec.ts`
 Expected: PASS, 8 screenshots written.
 
-- [ ] **Step 3: Check the screenshots** against the spec's boards and
+- [x] **Step 3: Check the screenshots** against the spec's boards and
   attach them to the PR description (phone and desktop, light and dark,
   Icelandic and English).
 
-- [ ] **Step 4: Commit** `test(mobile): browser check of focus ring and fonts, with screenshots`
+- [x] **Step 4: Commit** `test(mobile): browser check of focus ring and fonts, with screenshots`
 
 ### Task 8: Docs and the pull request
 
@@ -467,7 +484,7 @@ Expected: PASS, 8 screenshots written.
   this plan (tick the tasks), `apps/mobile/src/theme/tokens.ts` header
   comment (points to spec 15 instead of "placeholder")
 
-- [ ] **Step 1: Run every check**
+- [x] **Step 1: Run every check**
 
 Run: `pnpm check && pnpm format:check && npx --yes markdownlint-cli2@0.24.0`
 Expected: all pass.

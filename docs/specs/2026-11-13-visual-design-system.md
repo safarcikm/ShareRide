@@ -355,9 +355,11 @@ use `control`; body text is drawn at 16 and is 17.
 - **Add packages** with `npx expo install expo-font react-native-svg
   @expo-google-fonts/fredoka @expo-google-fonts/nunito`, and
   `lucide-react-native` with pnpm.
-- **Focus ring:** on the web, the `outline` style props from React Native
-  Web's `focused` state on `Pressable`. On phones, keep the system's own
-  focus highlight (Android keyboard navigation, iOS Full Keyboard Access).
+- **Focus ring:** on the web, one `:focus-visible` style sheet added at
+  start (`apps/mobile/src/theme/focus-ring.web.ts`), so every pressable
+  part, link and field shows the ring for the keyboard and not for clicks
+  or taps. On phones, keep the system's own focus highlight (Android
+  keyboard navigation, iOS Full Keyboard Access).
 - The first implementation PR updates tokens, fonts and the parts in section
   5.1. The parts in 5.2 come with the screens of specs 3 to 5.
 

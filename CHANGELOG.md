@@ -61,6 +61,11 @@ releases follow [Semantic Versioning](https://semver.org/).
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
   Nunito, `react-native-svg` drawings and Lucide icons.
+- The look of spec 15 in the app: its colours in light and dark mode with a
+  test of every contrast pair, Fredoka and Nunito loaded at start, chunky
+  buttons that sink when pressed, a keyboard focus ring on the web, and
+  restyled fields, tick boxes, chips, notices, links and the back button.
+  A browser check saves screenshots of the first screens in CI.
 
 ### Changed
 
