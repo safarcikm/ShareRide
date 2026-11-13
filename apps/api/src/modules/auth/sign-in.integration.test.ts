@@ -1,5 +1,6 @@
 import { getMeRoute, startPhoneSignInRoute, verifyPhoneCodeRoute } from "@shareride/contracts";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { SmsSendError } from "../../platform/sms.ts";
 import { startTestApi, type TestApi } from "../../testing.ts";
 
 let api: TestApi;
@@ -238,6 +239,28 @@ describe("sending limits (rule R1.3)", () => {
     expect(warning).toContain('"callingCode":"47"');
   });
 
+  it("cap codes per day to a country calling code, and log it", async () => {
+    // Danish mobile numbers +45 30 10 00 00 upwards: 50 in each of two hours.
+    const danish = (i: number) => `+45${String(30_100_000 + i)}`;
+    for (let hour = 0; hour < 2; hour++) {
+      for (let i = 0; i < 50; i++) {
+        api.ip = `198.18.${String(hour)}.${String(i)}`;
+        expect((await start(danish(hour * 50 + i))).ok).toBe(true);
+      }
+      api.advance(3601);
+    }
+    // A new hour, so only the daily cap of 100 can refuse this one.
+    api.ip = "198.18.2.1";
+    expect(await start(danish(100))).toMatchObject({
+      status: 429,
+      error: { code: "rate_limited" },
+    });
+    const warning = api.logLines.find(
+      (line) => line.includes("calling code limit") && line.includes('"callingCode":"45"'),
+    );
+    expect(warning).toBeDefined();
+  });
+
   it("do not count refused requests, so a blocked number recovers on time", async () => {
     const phone = api.newPhoneNumber();
     api.ip = "192.0.2.60";
@@ -248,6 +271,25 @@ describe("sending limits (rule R1.3)", () => {
     }
     api.advance(6);
     expect((await start(phone)).ok).toBe(true);
+  });
+});
+
+describe("when the SMS cannot be sent", () => {
+  it("says so, and logs neither the number nor the code", async () => {
+    const phone = api.newPhoneNumber();
+    api.ip = "192.0.2.90";
+    const before = api.logLines.length;
+    api.smsFailure = new SmsSendError("46elks refused the message (HTTP 400)");
+    try {
+      expect(await start(phone)).toMatchObject({ status: 502, error: { code: "sms_failed" } });
+    } finally {
+      api.smsFailure = null;
+    }
+    const logged = api.logLines.slice(before).join("\n");
+    expect(logged).toContain("sign-in code SMS not sent");
+    expect(logged).toContain("HTTP 400");
+    expect(logged).not.toContain(phone.slice(4));
+    expect(logged).not.toContain(api.lastCode(phone));
   });
 });
 

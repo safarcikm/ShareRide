@@ -7,7 +7,9 @@ const valid = {
   LOG_LEVEL: "warn",
   DATABASE_URL: "postgres://app:secret-password@db.internal:5432/shareride",
   AUTH_SECRET: "a-long-random-secret-of-at-least-32-characters",
-  SMS_PROVIDER: "dev",
+  SMS_PROVIDER: "46elks",
+  ELKS_API_USERNAME: "u-example",
+  ELKS_API_PASSWORD: "p-example",
   WEB_ORIGINS: "https://shareride.is, https://www.shareride.is",
   TRUST_PROXY: "true",
 };
@@ -26,7 +28,13 @@ describe("loadConfig", () => {
       logLevel: "warn",
       databaseUrl: valid.DATABASE_URL,
       authSecret: valid.AUTH_SECRET,
-      smsProvider: "dev",
+      sms: {
+        provider: "46elks",
+        username: "u-example",
+        password: "p-example",
+        sender: "ShareRide",
+        paused: false,
+      },
       webOrigins: ["https://shareride.is", "https://www.shareride.is"],
       trustProxy: true,
     });
@@ -36,7 +44,7 @@ describe("loadConfig", () => {
     const config = loadConfig(development);
     expect(config.port).toBe(3000);
     expect(config.logLevel).toBe("info");
-    expect(config.smsProvider).toBe("dev");
+    expect(config.sms).toEqual({ provider: "dev", paused: false });
     expect(config.webOrigins).toEqual([]);
     expect(config.trustProxy).toBe(false);
   });
@@ -67,13 +75,39 @@ describe("loadConfig", () => {
 
   it("refuses the development SMS sender in production, since it prints codes", () => {
     try {
-      loadConfig(valid);
+      loadConfig({ ...valid, SMS_PROVIDER: "dev" });
       expect.unreachable();
     } catch (error) {
       expect((error as ConfigError).problems).toEqual([
         "SMS_PROVIDER: dev prints codes in the terminal and is not allowed in production",
       ]);
     }
+  });
+
+  it("needs the 46elks keys when 46elks sends the SMS", () => {
+    try {
+      loadConfig({ ...development, SMS_PROVIDER: "46elks" });
+      expect.unreachable();
+    } catch (error) {
+      expect((error as ConfigError).problems).toEqual([
+        "ELKS_API_USERNAME: needed when SMS_PROVIDER is 46elks",
+        "ELKS_API_PASSWORD: needed when SMS_PROVIDER is 46elks",
+      ]);
+    }
+  });
+
+  it("takes a sender name of up to 11 letters and digits, starting with a letter", () => {
+    expect(loadConfig({ ...valid, SMS_SENDER: "ShareRide2" }).sms).toMatchObject({
+      sender: "ShareRide2",
+    });
+    for (const sender of ["Share Ride", "ShareRideApp1", "1ShareRide", "Deilibíll"]) {
+      expect(() => loadConfig({ ...valid, SMS_SENDER: sender })).toThrow(ConfigError);
+    }
+  });
+
+  it("pauses SMS sending with the kill switch", () => {
+    expect(loadConfig({ ...valid, SMS_PAUSED: "true" }).sms.paused).toBe(true);
+    expect(loadConfig({ ...development, SMS_PAUSED: "true" }).sms.paused).toBe(true);
   });
 
   it("names every missing or invalid variable", () => {

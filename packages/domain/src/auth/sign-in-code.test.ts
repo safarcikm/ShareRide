@@ -66,4 +66,15 @@ describe("codeSendLimits (rule R1.3)", () => {
       { limit: 5, windowSeconds: 3600 },
     ]);
   });
+
+  it("cap codes per country per hour and per day, higher for Iceland", () => {
+    expect(codeSendLimits.perCallingCode("354")).toEqual([
+      { limit: 500, windowSeconds: 3600 },
+      { limit: 2000, windowSeconds: 24 * 3600 },
+    ]);
+    expect(codeSendLimits.perCallingCode("48")).toEqual([
+      { limit: 50, windowSeconds: 3600 },
+      { limit: 100, windowSeconds: 24 * 3600 },
+    ]);
+  });
 });

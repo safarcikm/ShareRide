@@ -20,8 +20,20 @@ const environmentSchema = z
     DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
     /** Keys the hashes of sign-in codes, phone numbers and rate-limit keys. */
     AUTH_SECRET: z.string().min(32),
-    /** Only the development sender exists until milestone 2 adds a provider. */
-    SMS_PROVIDER: z.enum(["dev"]).default("dev"),
+    /** `dev` prints codes in the terminal; `46elks` sends real SMS (ADR 0019). */
+    SMS_PROVIDER: z.enum(["dev", "46elks"]).default("dev"),
+    ELKS_API_USERNAME: z.string().min(1).optional(),
+    ELKS_API_PASSWORD: z.string().min(1).optional(),
+    /** The name the recipient sees: up to 11 letters and digits, starting with a letter. */
+    SMS_SENDER: z
+      .string()
+      .regex(/^[A-Za-z][A-Za-z0-9]{0,10}$/)
+      .default("ShareRide"),
+    /** The kill switch: every sign-in code fails to send while true. */
+    SMS_PAUSED: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((value) => value === "true"),
     /** Web app origins allowed to call the API with cookies, comma-separated. */
     WEB_ORIGINS: z
       .string()
@@ -47,8 +59,6 @@ const environmentSchema = z
         message: "the example value is not allowed in production",
       });
     }
-    // Only "dev" exists today; the check stays when real providers are added.
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (env.NODE_ENV === "production" && env.SMS_PROVIDER === "dev") {
       context.addIssue({
         code: "custom",
@@ -56,7 +66,28 @@ const environmentSchema = z
         message: "dev prints codes in the terminal and is not allowed in production",
       });
     }
+    if (env.SMS_PROVIDER === "46elks") {
+      for (const key of ["ELKS_API_USERNAME", "ELKS_API_PASSWORD"] as const) {
+        if (env[key] === undefined) {
+          context.addIssue({
+            code: "custom",
+            path: [key],
+            message: "needed when SMS_PROVIDER is 46elks",
+          });
+        }
+      }
+    }
   });
+
+export type SmsConfig =
+  | { readonly provider: "dev"; readonly paused: boolean }
+  | {
+      readonly provider: "46elks";
+      readonly username: string;
+      readonly password: string;
+      readonly sender: string;
+      readonly paused: boolean;
+    };
 
 export interface Config {
   readonly nodeEnv: "development" | "test" | "production";
@@ -64,7 +95,7 @@ export interface Config {
   readonly logLevel: "fatal" | "error" | "warn" | "info" | "debug" | "trace" | "silent";
   readonly databaseUrl: string;
   readonly authSecret: string;
-  readonly smsProvider: "dev";
+  readonly sms: SmsConfig;
   readonly webOrigins: readonly string[];
   readonly trustProxy: boolean;
 }
@@ -106,7 +137,17 @@ export function loadConfig(environment: Readonly<Record<string, string | undefin
     logLevel: env.LOG_LEVEL,
     databaseUrl: env.DATABASE_URL,
     authSecret: env.AUTH_SECRET,
-    smsProvider: env.SMS_PROVIDER,
+    sms:
+      env.SMS_PROVIDER === "46elks"
+        ? {
+            provider: "46elks",
+            // Checked above: both are present for 46elks.
+            username: env.ELKS_API_USERNAME ?? "",
+            password: env.ELKS_API_PASSWORD ?? "",
+            sender: env.SMS_SENDER,
+            paused: env.SMS_PAUSED,
+          }
+        : { provider: "dev", paused: env.SMS_PAUSED },
     webOrigins: env.WEB_ORIGINS,
     trustProxy: env.TRUST_PROXY,
   };

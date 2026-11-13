@@ -8,7 +8,7 @@ import { ConfigError, loadConfig, type Config } from "./config.ts";
 import { createLogger } from "./logger.ts";
 import { clientAddress } from "./platform/client-address.ts";
 import { createKeyedHasher } from "./platform/crypto.ts";
-import { createDevSmsSender } from "./platform/sms.ts";
+import { selectSmsSender } from "./platform/select-sms-sender.ts";
 
 let config: Config;
 try {
@@ -23,8 +23,9 @@ try {
 
 const logger = createLogger({ level: config.logLevel });
 const database = connectDatabase(config.databaseUrl, { applicationName: "shareride-api" });
-// The only sender until milestone 2; loadConfig refuses it in production.
-const sms = createDevSmsSender({ print: (line) => process.stdout.write(`${line}\n`) });
+// The development sender prints to the terminal, not the logs; loadConfig
+// refuses it in production.
+const sms = selectSmsSender(config.sms, (line) => process.stdout.write(`${line}\n`));
 const app = createApp({
   logger,
   checkDatabase: () => pingDatabase(database.pool),
@@ -45,7 +46,15 @@ const app = createApp({
 });
 
 const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
-  logger.info({ port: info.port, nodeEnv: config.nodeEnv }, "API listening");
+  logger.info(
+    {
+      port: info.port,
+      nodeEnv: config.nodeEnv,
+      smsProvider: config.sms.provider,
+      smsPaused: config.sms.paused,
+    },
+    "API listening",
+  );
 });
 
 function shutdown(signal: string): void {

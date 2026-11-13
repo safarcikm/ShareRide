@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDevSmsSender } from "./sms.ts";
+import { createDevSmsSender, createPausedSmsSender, SmsSendError } from "./sms.ts";
 
 describe("createDevSmsSender", () => {
   it("keeps sent messages for tests, newest last", async () => {
@@ -24,5 +24,13 @@ describe("createDevSmsSender", () => {
     const sms = createDevSmsSender({ print: (line) => printed.push(line) });
     await sms.send({ to: "+3546901234", text: "123456 is your code." });
     expect(printed).toEqual(["[dev SMS to +354•••••34] 123456 is your code."]);
+  });
+});
+
+describe("createPausedSmsSender", () => {
+  it("refuses every message, so sign-in shows that the SMS was not sent", async () => {
+    await expect(createPausedSmsSender().send({ to: "+3546900001", text: "x" })).rejects.toThrow(
+      SmsSendError,
+    );
   });
 });
