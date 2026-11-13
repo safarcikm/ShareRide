@@ -90,8 +90,9 @@ Walking skeleton, milestone 1: foundation and phone sign-in
 - [x] API with health check and structured logging
 - [x] Sign-in with phone number
 
-Walking skeleton, milestone 2: hosted and connected (plan written after
-milestone 1; each provider choice gets an ADR)
+Walking skeleton, milestone 2: hosted and connected
+([plan](../plans/2026-11-13-milestone-2-hosted-and-connected.md), a draft;
+each provider choice gets an ADR)
 
 - [ ] API deployed to staging in the EEA
 - [ ] Real SMS provider for sign-in codes
