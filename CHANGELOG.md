@@ -16,6 +16,8 @@ releases follow [Semantic Versioning](https://semver.org/).
 - Spec 1: sign-in, profile, settings and legal acceptance (approved).
 - Spec 2: meeting points, place search and their admin (approved).
 - Spec 3 draft: driver setup and posting a trip with prices.
+- ADR 0012: one price level per trip instead of per-segment price editing
+  (supersedes ADR 0006).
 - Development strategy, roadmap and open questions.
 - Product vision, pricing and seat rules, meeting point strategy.
 - Architecture overview, domain model and integrations.

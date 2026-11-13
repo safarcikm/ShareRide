@@ -1,7 +1,8 @@
 # Pricing and seats
 
 **Owner:** Martin · **Last reviewed:** 2026-11-13 · **Status:** Accepted
-([ADR 0006](../decisions/0006-meeting-points-and-segment-pricing.md));
+([ADR 0006](../decisions/0006-meeting-points-and-segment-pricing.md), with the
+driver's price control replaced by [ADR 0012](../decisions/0012-trip-price-level.md));
 configuration values are still to be set
 
 These are the business rules for prices, seat capacity, bookings and
@@ -44,7 +45,8 @@ as an integer plus a currency code (see [conventions](../engineering/conventions
 
 ### Rule P2: suggested segment price
 
-When a driver builds a trip, the app suggests a price for every segment:
+When a driver builds a trip, the app works out a suggested price for every
+segment:
 
 ```text
 suggested[k] = round_to_step(distance_km[k] × suggested_rate)
@@ -61,8 +63,8 @@ suggested[k] = round_to_step(distance_km[k] × suggested_rate)
 ### Rule P3: price limits (cost-sharing cap)
 
 To stay a cost-sharing service and not a taxi service (see
-[legal and regulatory](../compliance/legal-and-regulatory.md)), the driver may
-change each segment price only within limits:
+[legal and regulatory](../compliance/legal-and-regulatory.md)), every segment
+price stays within limits:
 
 ```text
 0 ≤ p[k] ≤ cap[k]
@@ -76,11 +78,29 @@ mileage allowance for government employees (akstursgjald) or a fuel and wear
 estimate. **The formula and its inputs are to be confirmed by the legal
 opinion before the beta.**
 
-### Rule P4: price changes
+### Rule P4: the driver's price level
 
-- A segment price change applies to new bookings only. Every booking stores a
+The driver does not edit segment prices one by one
+([ADR 0012](../decisions/0012-trip-price-level.md)). They choose one **price
+level** `L` for the whole trip, a percentage of the suggested prices:
+
+```text
+p[k]  = min(cap[k], round_to_step(distance_km[k] × suggested_rate × L))
+L_max = highest step of L at or below
+        reference_cost_per_km / ((capacity + 1) × suggested_rate)
+```
+
+- `L` goes from 0% (a free ride) to `L_max` in steps of `price_level_step`
+  (default 10%). The default is the level of the driver's previous trip, or
+  100% (the suggested prices) on their first trip.
+- Because the suggestion and the cap are both proportional to distance, `L_max`
+  is the same for every segment. The `min` with `cap[k]` only absorbs
+  rounding.
+- Offering more seats lowers `L_max`. If the chosen level is above the new
+  `L_max`, it is lowered to it and the driver is told.
+- A price level change applies to new bookings only. Every booking stores a
   snapshot of the segment prices it was made at.
-- Lowering a price is always allowed. Raising a price is allowed up to the cap.
+- Lowering the level is always allowed. Raising it is allowed up to `L_max`.
 
 ### Rule P5: service fee (Phase 5)
 
@@ -104,6 +124,16 @@ A driver posts Reykjavík (A) → Borgarnes (B) → Blönduós (C) → Akureyri 
 A passenger from Reykjavík to Akureyri pays 5 800 kr. A passenger from Borgarnes
 to Akureyri pays 2 600 + 2 100 = 4 700 kr. Two seats from Reykjavík to Blönduós
 cost 2 × (1 100 + 2 600) = 7 400 kr.
+
+If the driver sets the price level to 80%:
+
+| Segment | Calculation | Price |
+| ------- | ----------- | ----- |
+| A → B   | 74 × 15 × 0.8 = 888    | 900 kr   |
+| B → C   | 171 × 15 × 0.8 = 2 052 | 2 100 kr |
+| C → D   | 143 × 15 × 0.8 = 1 716 | 1 700 kr |
+
+The whole route then costs 4 700 kr. At 0% every segment is free.
 
 ## Seats
 
@@ -204,7 +234,7 @@ A cancellation records who cancelled, when, and the reason (including
 | Remove a stop no booking uses | Yes | Notified |
 | Remove a stop a booking uses | No | The driver must contact the passenger, who cancels or the driver cancels that booking |
 | Lower the capacity | Down to the highest occupancy | None |
-| Change prices | Yes, within limits | None; bookings keep their price snapshot |
+| Change the price level | Yes, from 0% to `L_max` | None; bookings keep their price snapshot |
 | Cancel the trip | Yes, with a reason | Every booking is cancelled and the passengers are notified |
 
 ## Cancellations and reliability
@@ -230,6 +260,7 @@ Set centrally by the operator; changes are logged.
 | `suggested_rate` | to decide in Phase 1 | ISK per km per passenger |
 | `reference_cost_per_km` | to decide in Phase 1 | Basis of the price cap |
 | `price_step` | 100 kr | Rounding step for suggested prices and caps |
+| `price_level_step` | 10% | Steps of the driver's price level |
 | `booking_cutoff` | 15 minutes | Before the planned time at the boarding stop |
 | `request_expiry` | 12 hours | Approval mode; also never later than 2 hours before boarding |
 | `major_time_change` | 30 minutes | Above this, passengers may cancel without penalty |

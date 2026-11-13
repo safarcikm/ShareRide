@@ -79,8 +79,8 @@ verification badges, member since, rating and reliability. Others see the
 first name only, never the phone number.
 
 **A3. Driver setup: vehicle and licence (Must).** Add one or more vehicles
-(make, model, colour, seats, registration number, 4x4). Confirm a valid
-driving licence before publishing the first trip (method: see decision 3).
+(make, model, colour, seats, registration number, 4x4). Declare a valid
+driving licence before publishing the first trip (see decision 3).
 The registration number is shown only to booked passengers.
 
 **A4. Settings (Must).** Language, notification choices per category,
@@ -112,13 +112,17 @@ problem with an existing point (spec 2).
 ## C. Driver: trips
 
 **C1. Post a trip (Must).** Choose the start and end meeting points; the app
-offers meeting points along the way to add as stops. Pick the date and
+adds the meeting points along the way as stops automatically, and the driver
+can remove any they will not stop at (decision 11). Pick the date and
 departure time; planned times at each stop are prefilled from typical driving
 times and can be adjusted. Target: a trip posted in under a minute.
 
-**C2. Segment prices (Must).** The app suggests a price for each segment. The
-driver can lower it, or raise it up to the cost-sharing cap. The screen shows
-what a passenger pays for the whole route and explains why there is a cap.
+**C2. Segment prices (Must).** The app works out a price for each segment
+from its distance. The driver sets one price level for the whole trip, from
+free up to the cost-sharing cap, instead of editing segments one by one
+(decision 12, [ADR 0012](../decisions/0012-trip-price-level.md)). The screen
+shows what a passenger pays for the whole route and explains why there is a
+cap.
 
 **C3. Seats and booking mode (Must).** Seats offered (at most the vehicle's
 seats). Instant booking or request and approval.
@@ -258,13 +262,14 @@ with consent, to measure the beta's exit criteria.
 ## Decisions
 
 Decisions 1 to 9 were accepted by Martin on 2026-11-13 as recommended;
-decision 10 is his own, from the same day.
+decisions 10 to 12 are his own, from the same day, and he later simplified
+decision 3.
 
 | # | Question | Decision |
 | - | -------- | -------- |
 | 1 | Default booking mode in the beta (open question Q4)? | Request and approval by default; drivers can switch a trip to instant |
 | 2 | Can passengers message a driver before booking? | No. A request can include a short message; full chat opens with the booking. Less spam and harassment |
-| 3 | How is a driving licence confirmed in the beta? | Self-declaration with licence expiry date, plus operator spot checks, since testers are invited. A stronger check (Auðkenni or document check) before public launch |
+| 3 | How is a driving licence confirmed in the beta? | A declaration only: the driver ticks "I declare that I hold a valid driving licence". No expiry date or spot checks (changed by Martin on 2026-11-13 from the recommended self-declaration with expiry date and spot checks) |
 | 4 | Invite-only beta, or open sign-up limited to the launch corridors? | Invite codes from the waitlist |
 | 5 | Is the web app part of the beta? | Yes for searching and booking, since Expo makes it cheap; driver flows are designed phone-first |
 | 6 | Maximum number of stops per trip? | 8, including start and end |
@@ -272,6 +277,8 @@ decision 10 is his own, from the same day.
 | 8 | Should the app ever show a phone number? | No in the beta; chat only. Consider masked calling later |
 | 9 | Minimum age (open question Q7)? | 18 |
 | 10 | Can users suggest meeting points? | No. The operator curates every meeting point; users can report a problem with one |
+| 11 | Does the driver pick the stops along the way? | No. The app adds the meeting points along the route automatically; the driver can remove any they will not stop at |
+| 12 | Can the driver edit each segment's price? | No. One price level for the whole trip, from free up to the cap ([ADR 0012](../decisions/0012-trip-price-level.md)) |
 
 ## After the MVP
 

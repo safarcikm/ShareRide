@@ -40,8 +40,9 @@ fewer cars carry one person.
 2. **Partial routes.** A passenger can ride any part of a trip. One seat can
    carry Reykjavík to Borgarnes for one person and Borgarnes to Akureyri for
    another.
-3. **Fair, transparent prices.** Each segment has its own price, suggested from
-   the real cost of driving it. The passenger sees exactly what each part costs.
+3. **Fair, transparent prices.** Each segment has its own price, worked out
+   from the real cost of driving it; the driver only chooses one price level,
+   or a free ride. The passenger sees exactly what each part costs.
 4. **Built for Iceland.** Icelandic and English, weather and road warnings,
    112 and SafeTravel information, works for residents and visitors alike.
 

@@ -48,8 +48,8 @@ Auth implementation
 - **Verification levels**, shown as badges:
   1. Phone verified (required for everyone)
   2. Email verified (optional)
-  3. Driving licence confirmed (required to publish trips; method decided in
-     the driver-onboarding spec)
+  3. Driving licence declared (required to publish trips; a declaration only,
+     not shown as a badge, see [spec 3](../specs/2026-11-13-post-a-trip.md))
   4. Auðkenni verified (optional, Phase 4; via OpenID Connect directly or a
      broker such as Signicat)
   5. Document verified for visitors (Phase 5, only if the beta shows a need)

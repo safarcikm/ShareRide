@@ -43,7 +43,8 @@ erDiagram
 | `first_name`, `photo`, `bio` | Public profile; last name is never shown publicly |
 | `languages` | Languages spoken, shown on profile |
 | `locale` | App language |
-| `verification` | Set of: `phone`, `email`, `driving_licence`, `audkenni` |
+| `verification` | Set of: `phone`, `email`, `audkenni` |
+| `licence_declared_at` | When the user declared they hold a valid driving licence (needed to publish trips) |
 | `roles` | `member`, `operator`; admin access needs `operator` |
 | `status` | `active`, `suspended`, `deleted` |
 | `created_at`, `deleted_at` | Deletion anonymises; see [privacy](../compliance/privacy-gdpr.md) |
@@ -88,6 +89,7 @@ ordered pair of active meeting points connected by road.
 | `driver_id`, `vehicle_id` | |
 | `capacity` | Seats offered; ≤ vehicle seats |
 | `booking_mode` | `instant` or `approval` |
+| `price_level` | Percentage of the suggested prices, 0 (free) up to the cap ([ADR 0012](../decisions/0012-trip-price-level.md)) |
 | `status` | `draft`, `published`, `departed`, `completed`, `cancelled` |
 | `preferences` | Luggage, pets, smoking, etc. |
 | `notes` | Free text from the driver |

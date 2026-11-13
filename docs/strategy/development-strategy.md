@@ -48,7 +48,7 @@ These principles decide trade-offs when nothing else does.
 
 ## 3. Recommended technology stack
 
-The stack (ADRs 0002 to 0005), the trip and pricing model (ADR 0006) and
+The stack (ADRs 0002 to 0005), the trip and pricing model (ADRs 0006 and 0012) and
 phased payments (ADR 0008) were **accepted** on 2026-11-13. The other rows
 are **Proposed** until the owner accepts their ADRs. The main alternatives
 were considered in each ADR.
@@ -59,7 +59,7 @@ were considered in each ADR.
 | iOS, Android, web client | Expo (React Native) with Expo Router; EAS Build, Submit and Update | [0003](../decisions/0003-cross-platform-client-expo.md) |
 | Backend                  | TypeScript modular monolith (Hono), framework-free domain package, OpenAPI contract generated from Zod schemas | [0004](../decisions/0004-backend-modular-monolith.md) |
 | Database                 | PostgreSQL with PostGIS, Drizzle ORM and SQL migrations            | [0005](../decisions/0005-postgresql-postgis.md) |
-| Trip model               | Curated meeting-point network, per-segment prices and per-segment seat capacity | [0006](../decisions/0006-meeting-points-and-segment-pricing.md) |
+| Trip model               | Curated meeting-point network, per-segment prices from one driver-chosen price level, per-segment seat capacity | [0006](../decisions/0006-meeting-points-and-segment-pricing.md), [0012](../decisions/0012-trip-price-level.md) |
 | Hosting                  | Containers on a managed platform in an EEA region; all personal data stays in the EEA | [0007](../decisions/0007-eea-hosting-and-data-residency.md) |
 | Payments                 | Phased: pay the driver directly in the beta, in-app payments later through a provider that supports Icelandic marketplaces | [0008](../decisions/0008-payments-phased.md) |
 | Maps and routing         | MapLibre with OpenStreetMap-based tiles; precomputed distances between meeting points | [0009](../decisions/0009-maps-and-routing.md) |
@@ -248,4 +248,6 @@ were decided on 2026-11-13:
 2. **Payments in the beta:** passengers pay the driver directly; in-app
    payments come after launch.
 3. **Who sets segment prices:** the app suggests a cost-based price and the
-   driver adjusts it up to a cap.
+   driver adjusts it up to a cap. Refined the same day: the driver sets one
+   price level for the whole trip, from free up to the cap
+   ([ADR 0012](../decisions/0012-trip-price-level.md)).
