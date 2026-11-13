@@ -13,6 +13,7 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Spec 1 draft: sign-in, profile, settings and legal acceptance.
 - Development strategy, roadmap and open questions.
 - Product vision, pricing and seat rules, meeting point strategy.
 - Architecture overview, domain model and integrations.
