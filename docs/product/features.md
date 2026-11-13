@@ -264,8 +264,8 @@ with consent, to measure the beta's exit criteria.
 ## Decisions
 
 Decisions 1 to 9 were accepted by Martin on 2026-11-13 as recommended;
-decisions 10 to 12 are his own, from the same day, and he later simplified
-decision 3.
+decisions 10 to 12 are his own, from the same day, and he later changed
+decisions 3 and 6.
 
 | # | Question | Decision |
 | - | -------- | -------- |
@@ -274,7 +274,7 @@ decision 3.
 | 3 | How is a driving licence confirmed in the beta? | A declaration only: the driver ticks "I declare that I hold a valid driving licence". No expiry date or spot checks (changed by Martin on 2026-11-13 from the recommended self-declaration with expiry date and spot checks) |
 | 4 | Invite-only beta, or open sign-up limited to the launch corridors? | Invite codes from the waitlist |
 | 5 | Is the web app part of the beta? | Yes for searching and booking, since Expo makes it cheap; driver flows are designed phone-first |
-| 6 | Maximum number of stops per trip? | 8, including start and end |
+| 6 | Maximum number of stops per trip? | No limit; the app adds every meeting point on the way (changed by Martin on 2026-11-13 from the recommended 8) |
 | 7 | How far ahead can a trip be posted? | 60 days |
 | 8 | Should the app ever show a phone number? | No in the beta; chat only. Consider masked calling later |
 | 9 | Minimum age (open question Q7)? | 18 |

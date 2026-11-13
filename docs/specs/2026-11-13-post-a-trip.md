@@ -1,6 +1,6 @@
 # Spec 3: Driver setup and posting a trip with prices
 
-**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Draft for review
+**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
 Features: A3 Driver setup, C1 Post a trip, C2 Segment prices, C3 Seats and
 booking mode, C4 Trip preferences and notes ([features](../product/features.md)).
@@ -35,8 +35,8 @@ seats and preferences.
   passenger.
 - As a driver, I say whether there is room for luggage, whether pets are
   welcome and how chatty I am, so passengers know what to expect.
-- As the operator, I know every trip respects the cost-sharing cap, the stop
-  limit and the 60-day window.
+- As the operator, I know every trip respects the cost-sharing cap and the
+  60-day window.
 
 ## 3. Behaviour
 
@@ -63,8 +63,8 @@ missing, and each item can be done from there:
    reminds the driver 24 hours and 1 hour before departure, and booked
    passengers see "The driver will add the number plate before departure".
 4. The plate is stored in capitals without spaces or hyphens, 2 to 8 letters
-   and digits, and shown only to booked passengers. What the rest of the car
-   shows publicly is question 1.
+   and digits, and shown only to booked passengers. Make, model and colour are
+   shown to everyone viewing the trip (decision 7).
 5. A driver can save several cars and chooses one per trip; the last used is
    preselected. A car used by a future trip cannot be removed until that trip
    uses another car or ends. Removed cars stay on past trips.
@@ -91,10 +91,7 @@ missing, and each item can be done from there:
 3. The driver can **remove** any added stop they will not stop at, and **add**
    another active meeting point through search. An added point is inserted
    where it adds the least distance.
-4. **Stop limit:** a trip can have at most the maximum number of stops,
-   including start and end (8 today, features decision 6; see question 2). If
-   more points lie on the way, the app adds them all and asks the driver to
-   remove some before continuing.
+4. **No stop limit** (decision 6): a trip can have any number of stops.
 5. **Order check** for stops the driver adds: the whole route may be at most
    1.5 times the direct distance from the first to the last stop. A stop that
    adds more than 20% or 20 km to the stretch between its neighbours shows a
@@ -190,7 +187,7 @@ apply. This spec adds:
 | ID | Rule |
 | -- | ---- |
 | R3.1 | Publishing needs a verified phone number, the current terms accepted, a profile photo, a car (make, model and colour) and the driving licence declaration. |
-| R3.2 | A trip has from 2 stops up to the stop limit, each an active meeting point in season on the trip date (spec 2, R2.4), each used once. |
+| R3.2 | A trip has at least 2 stops and no maximum. Each is an active meeting point in season on the trip date (spec 2, R2.4), used once. |
 | R3.3 | Meeting points on the way are added as stops automatically; the driver may remove them or add others. |
 | R3.4 | The route is at most 1.5 times the direct distance between the first and last stops. |
 | R3.5 | Departure is at least 30 minutes after publishing and at most 60 days ahead. |
@@ -284,7 +281,6 @@ Events: `VehicleAdded`, `VehicleRemoved`, `LicenceDeclared`, `TripPublished`.
 | `trip.from` | From | Frá |
 | `trip.to` | To | Til |
 | `trip.stopsAdded` | We added the meeting points on your way. Remove any you won't stop at. | Við bættum við mótsstöðum á leiðinni. Fjarlægðu þá sem þú stoppar ekki á. |
-| `trip.tooManyStops` | Remove stops until there are at most {max}. | Fjarlægðu viðkomustaði þar til þeir eru ekki fleiri en {max}. |
 | `trip.stopAdds` | This stop adds {km} km | Þessi viðkomustaður bætir {km} km við |
 | `trip.icelandTime` | Iceland time | Íslenskur tími |
 | `trip.priceLevel` | Price level | Verðstig |
@@ -306,7 +302,7 @@ Events: `VehicleAdded`, `VehicleRemoved`, `LicenceDeclared`, `TripPublished`.
   price step; the whole-route price equals the sum of segments; the worked
   example in pricing and seats (100% gives 5 800 kr, 80% gives 4 700 kr);
   stops along the way come out in route order; insertion and the order check;
-  the stop limit; time planning and the 90% floor, including trips that pass
+  time planning and the 90% floor, including trips that pass
   midnight; overlap detection; every R3 rule reported by the publish
   validation.
 - **API integration:** driver readiness, including the licence declaration;
@@ -338,10 +334,5 @@ legal opinion).
 | 3 | How is the driving licence confirmed? | A declaration tick box only; no expiry date, no spot checks (Martin, 2026-11-13; replaces features decision 3) |
 | 4 | When must the number plate be added? | At the latest before departure; it can be missing when the trip is published (Martin, 2026-11-13) |
 | 5 | Does it matter who owns the car, for example a rental car? | No. The driver picks the make, model and colour; being allowed to use the car is the driver's responsibility, not ShareRide's (Martin, 2026-11-13) |
-
-## Questions for Martin
-
-| # | Question | Recommendation |
-| - | -------- | -------------- |
-| 1 | Who sees the car's make, model and colour? | Everyone viewing the trip, as it helps people recognise the car and choose a ride. The number plate stays visible only to booked passengers. This updates the privacy inventory |
-| 2 | Now that stops are added automatically, should the stop limit rise from 8? | Yes, to 12 including start and end. The driver only stops where someone gets on or off, so more stops cost little time and give passengers more places to join |
+| 6 | Is there a limit on the number of stops? | No (Martin, 2026-11-13; replaces features decision 6) |
+| 7 | Who sees the car's make, model and colour? | Everyone viewing the trip; the number plate only booked passengers (Martin, 2026-11-13) |

@@ -37,3 +37,5 @@ here, update or accept the linked ADR, and move the row to "Answered".
 | A12 | How do drivers adjust prices? (refines A5) | One price level for the whole trip, from free up to the cap; segment prices are computed from it. Stops along the route are added automatically. ADR 0012 supersedes ADR 0006. | 2026-11-13 |
 | A13 | How is a driver's licence confirmed? (revises features decision 3) | A declaration tick box only; no expiry date and no spot checks. | 2026-11-13 |
 | A14 | Which cars can drivers use? | Any car, including rental cars; ownership does not matter and being allowed to use the car is the driver's responsibility. Make, model and colour are required; the number plate can be added up to departure. | 2026-11-13 |
+| A15 | Maximum number of stops per trip? (revises features decision 6) | No limit. | 2026-11-13 |
+| A16 | Spec 3 (driver setup and posting a trip) | Approved with Martin's changes: one price level per trip (ADR 0012), stops added automatically with no limit, licence declaration only, any car, plate up to departure, make, model and colour public. See [spec 3](../specs/2026-11-13-post-a-trip.md#decisions). | 2026-11-13 |

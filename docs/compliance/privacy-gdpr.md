@@ -23,8 +23,8 @@
 1. **Collect less.** Last name, kennitala, home address and exact location are
    not needed and not collected.
 2. **Show less.** Public profiles show first name, photo, bio, languages,
-   badges and ratings. Vehicle registration and exact pickup details are shown
-   only to booked passengers. Phone numbers are never shown; people talk in the
+   badges and ratings, and the car's make, model and colour on trips. The
+   number plate and exact pickup details are shown only to booked passengers. Phone numbers are never shown; people talk in the
    in-app chat.
 3. **Keep less.** Every category has a retention period, enforced by scheduled
    jobs.
@@ -39,7 +39,7 @@
 | -------- | -------- | ------- | ----------- | ---------- | --------- |
 | Account | Phone, email, first name, language | Sign-in, contact | Contract | User; operator | While the account exists |
 | Public profile | First name, photo, bio, languages, badges | Trust between users | Contract | All users | While the account exists |
-| Vehicle | Make, model, colour, registration | Identify the car at pickup | Contract | Booked passengers | While the account exists |
+| Vehicle | Make, model, colour, number plate | Identify the car at pickup | Contract | Make, model and colour: all users; number plate: booked passengers | While the account exists |
 | Trips and bookings | Meeting points, times, seats, prices | Provide the service | Contract | Participants; operator | 3 years after the trip, then anonymised (**verify** period) |
 | Messages | Chat between driver and passenger | Coordinate the trip | Contract | Participants; operator only when a report is filed | 12 months after the trip, unless part of a report |
 | Reviews and ratings | Rating, comment | Trust | Contract and legitimate interest | All users | While the subject's account exists |

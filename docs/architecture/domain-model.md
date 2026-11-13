@@ -51,8 +51,9 @@ erDiagram
 
 ### Vehicle
 
-`id`, `owner_id`, `make`, `model`, `colour`, `registration` (optional until
-the trip departs; shown only to booked passengers), `status`. Who owns the car
+`id`, `owner_id`, `make`, `model`, `colour` (shown on trips to everyone),
+`registration` (optional until the trip departs; shown only to booked
+passengers), `status`. Who owns the car
 in real life does not matter; the user is responsible for being allowed to
 use it ([spec 3](../specs/2026-11-13-post-a-trip.md#32-cars)).
 
