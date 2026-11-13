@@ -46,7 +46,7 @@ Product and design
       2026-11-13)
 - [x] Write MVP feature specs in `docs/specs/` (one per feature in
       [features](../product/features.md)); specs 1 to 13 approved
-- [ ] Approve spec 14, women-only trips (added 2026-11-13, answer A36)
+- [x] Approve spec 14, women-only trips (added and approved 2026-11-13)
 - [ ] Draft the meeting point list v1 for the launch corridors
       ([meeting points](../product/meeting-points.md))
 - [ ] User flows and wireframes for: post a trip, search, book, manage bookings

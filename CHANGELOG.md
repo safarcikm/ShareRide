@@ -35,8 +35,8 @@ releases follow [Semantic Versioning](https://semver.org/).
   Q11 and Q13 answered.
 - Launch corridors decided (Q6): Selfoss, Keflavík Airport, and Akranes and
   Borgarnes, with Akureyri if the waitlist shows demand.
-- Women-only trips in the MVP (Q12): spec 14 and ADR 0015, both for review.
-  All open questions are answered.
+- Women-only trips in the MVP (Q12): spec 14 (approved) and ADR 0015
+  (accepted). All open questions are answered.
 - Development strategy, roadmap and open questions.
 - Product vision, pricing and seat rules, meeting point strategy.
 - Architecture overview, domain model and integrations.
