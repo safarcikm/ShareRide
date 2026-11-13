@@ -213,14 +213,14 @@ a code review before it opens. Tick tasks as they merge.
 
 ### PR 2: `feat(api)`: real SMS and the hourly clean-up
 
-- [ ] 46elks adapter with a timeout. Tests against a fake HTTP server: the
+- [x] 46elks adapter with a timeout. Tests against a fake HTTP server: the
       request shape (`dontlog`, sender, form encoding), a refusal or a timeout
       becomes `sms_failed` and is logged without the number
-- [ ] Config: `SMS_PROVIDER=46elks` with its keys; the kill switch; a daily
+- [x] Config: `SMS_PROVIDER=46elks` with its keys; the kill switch; a daily
       budget per country. Test: the budget refuses with the same reply as a
       limit, and logs a warning
-- [ ] Contract test with `dryrun=yes`, run by hand or nightly with the keys
-- [ ] Clean-up command (`pnpm --filter @shareride/api clean-up`). Tests:
+- [x] Contract test with `dryrun=yes`, run by hand with the keys
+- [x] Clean-up command (`pnpm --filter @shareride/api clean-up`). Tests:
       each kind of record goes only once past its retention
 - Verify: with 46elks keys in `.env`, a real code arrives on a phone
 
