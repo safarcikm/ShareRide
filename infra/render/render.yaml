@@ -1,0 +1,95 @@
+# Staging on Render in Frankfurt (ADR 0018). Create the Blueprint with the
+# Blueprint Path infra/render/render.yaml; paths below are relative to the
+# repository root. The runbook is docs/operations/staging.md.
+#
+# No secrets here: Render generates AUTH_SECRET, and asks for the 46elks keys
+# once, when the blueprint is first applied.
+
+services:
+  # The API, which also serves the web app on the same origin, so the
+  # refresh cookie stays first-party (onrender.com is a public suffix).
+  - type: web
+    name: shareride-staging-api
+    runtime: docker
+    region: frankfurt
+    plan: 0.5c-512mb
+    branch: main
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    # Deploy a commit on main only after its CI checks pass.
+    autoDeployTrigger: checksPass
+    buildFilter:
+      ignoredPaths:
+        - docs/**
+        - "**/*.md"
+        - .claude/**
+    # Render switches traffic to a new deploy only once this answers 200,
+    # which needs the database.
+    healthCheckPath: /v1/health/ready
+    # Runs in the new image before it takes traffic; a failure stops the
+    # deploy and keeps the running version.
+    preDeployCommand: node packages/db/src/migrate-cli.ts --seed-drafts
+    envVars:
+      - fromGroup: shareride-staging
+      - key: DATABASE_URL
+        fromDatabase:
+          name: shareride-staging-db
+          property: connectionString
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: SMS_PROVIDER
+        value: 46elks
+      - key: ELKS_API_USERNAME
+        sync: false
+      - key: ELKS_API_PASSWORD
+        sync: false
+      # Two proxies append to X-Forwarded-For: Cloudflare adds the client,
+      # then Render's proxy adds the Cloudflare edge. Entries before those
+      # come from the client and are ignored.
+      - key: TRUST_PROXY
+        value: "2"
+
+  # Deletes sign-in records past their retention, every hour (UTC).
+  - type: cron
+    name: shareride-staging-clean-up
+    runtime: docker
+    region: frankfurt
+    plan: 0.5c-512mb
+    branch: main
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    autoDeployTrigger: checksPass
+    buildFilter:
+      ignoredPaths:
+        - docs/**
+        - "**/*.md"
+        - .claude/**
+    schedule: "17 * * * *"
+    dockerCommand: node apps/api/src/clean-up-cli.ts
+    envVars:
+      - fromGroup: shareride-staging
+      - key: DATABASE_URL
+        fromDatabase:
+          name: shareride-staging-db
+          property: connectionString
+
+databases:
+  - name: shareride-staging-db
+    databaseName: shareride
+    user: shareride
+    region: frankfurt
+    plan: 0.1c-256mb
+    diskSizeGB: 5
+    postgresMajorVersion: "18"
+    # Private network only: no connections from the internet.
+    ipAllowList: []
+
+envVarGroups:
+  - name: shareride-staging
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_ENV
+        value: staging
+      - key: LOG_LEVEL
+        value: info

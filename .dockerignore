@@ -1,15 +1,20 @@
-# Keep the API image small and free of secrets.
+# Keep the image small and free of secrets. The app's source stays in: the
+# image's web stage exports the web app from it.
 **/node_modules
 **/.turbo
+**/.expo
 **/coverage
 **/dist
 **/*.test.ts
+**/*.test.tsx
+apps/mobile/e2e
+apps/mobile/test-results
+apps/mobile/playwright-report
 .git
 .github
 .claude
-.env
-.env.*
+**/.env
+**/.env.*
 docs
 infra
-apps/mobile
 *.md

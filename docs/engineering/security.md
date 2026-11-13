@@ -52,8 +52,12 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   5 the person must ask for a new code, which the sending limits slow down.
 - **Sending limits:** per number, per IP address and per country calling code
   (plan section 4.2). Keys are keyed hashes, so the table holds no numbers or
-  addresses. The IP address comes from `X-Forwarded-For` only when
-  `TRUST_PROXY=true`, and then from the entry our load balancer added. A
+  addresses. The IP address comes from `X-Forwarded-For` only behind
+  trusted proxies (`TRUST_PROXY`), and then from the entry the outermost
+  one appended, counted from the end; earlier entries come from the client
+  and are ignored. On Render that is 2: Cloudflare appends the client, then
+  Render's proxy appends the Cloudflare edge. If that entry is missing, the
+  API uses the connection's address and logs a warning. A
   per-prefix limit logs a warning (milestone 2 turns it into an alert).
 - **Tokens:** 256 random bits, prefixed `sr_at_` (access) or `sr_rt_`
   (refresh) so leaked tokens are easy to recognise, and stored only as
@@ -65,7 +69,9 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   token within 30 seconds, treated as a retry after a lost reply.
 - **Web:** the refresh token is a cookie with `HttpOnly`, `SameSite=Strict`,
   `Path=/v1/auth` and, in production, `Secure`; the access token stays in
-  memory. Browsers may call the API with cookies only from `WEB_ORIGINS`.
+  memory. Staging and production serve the web app from the API's own
+  origin, so the cookie is first-party, and its pages carry a content
+  security policy that allows only our own scripts and API. Browsers may call the API with cookies only from `WEB_ORIGINS`.
   Request bodies must be `application/json` (anything else gets 415), so a
   form or text post from another page cannot use the cookie.
 - **In the app:** the access token stays in memory. On iOS and Android the

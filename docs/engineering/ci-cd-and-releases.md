@@ -15,7 +15,7 @@ Runs on GitHub Actions for every pull request and every push to `main`.
 | Unit tests (domain, components) | | Yes |
 | Integration tests with PostgreSQL and PostGIS | | Yes |
 | Translation completeness | | Yes |
-| Build API image and app bundles | | Yes |
+| Build API image and app bundles; start the image and smoke-test it | | Yes |
 | End-to-end (Playwright web; Maestro mobile) | | Yes, for app changes |
 | Dependency review and CodeQL | | Needs a paid GitHub security plan on a private repository; `pnpm audit` for high and critical advisories runs instead |
 | Secret scanning | GitHub setting | GitHub setting |
@@ -51,13 +51,17 @@ the repository.
 
 ## API and worker releases
 
-1. Merge to `main` builds a container image tagged with the commit SHA.
-2. The image deploys to staging; migrations run first, then the new version
-   starts; smoke tests run.
-3. Promotion to production is a manual approval in the GitHub Environment,
-   deploying the same image.
-4. Rollback: redeploy the previous image. Migrations are backward compatible
-   (expand then contract), so rollback does not need a database restore.
+1. CI builds the API image (which includes the exported web app) and starts
+   it against a test database with `infra/docker/smoke-test.sh`.
+2. Once a commit on `main` passes CI, Render builds the same Dockerfile and
+   deploys it to staging: migrations run as the pre-deploy command, and
+   traffic moves to the new version only when `/v1/health/ready` answers 200
+   ([staging runbook](../operations/staging.md)).
+3. Production arrives before the beta, also on Render (ADR 0018).
+   Promotion stays a manual step that deploys a commit staging has run.
+4. Rollback: redeploy the previous build from Render's dashboard. Migrations
+   are backward compatible (expand then contract), so rollback does not need
+   a database restore.
 
 ## App releases (Expo and EAS)
 

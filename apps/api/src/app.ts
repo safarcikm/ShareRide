@@ -17,6 +17,7 @@ import { createLegalService, registerLegalRoutes } from "./modules/legal/index.t
 import { bearerAuth, toOpenApiRoute } from "./openapi.ts";
 import type { KeyedHasher } from "./platform/crypto.ts";
 import type { SmsSender } from "./platform/sms.ts";
+import { createWebApp } from "./web-app.ts";
 
 export type { AppEnv };
 
@@ -41,6 +42,8 @@ export interface AppDependencies {
   readonly features?: FeatureDependencies;
   /** Web app origins allowed to call the API from a browser, with cookies. */
   readonly webOrigins?: readonly string[];
+  /** The exported web app to serve on this origin, outside /v1. */
+  readonly webAppDir?: string;
 }
 
 export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
@@ -147,7 +150,12 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     info: { title: "ShareRide API", version: "1" },
   });
 
-  app.notFound((c) => c.json(errorBody("not_found", "There is no such endpoint."), 404));
+  const webApp =
+    dependencies.webAppDir === undefined ? undefined : createWebApp(dependencies.webAppDir);
+  app.notFound(
+    async (c: Context<AppEnv, string>) =>
+      (await webApp?.(c)) ?? c.json(errorBody("not_found", "There is no such endpoint."), 404),
+  );
 
   app.onError((error, c) => {
     logger.error({ requestId: c.get("requestId"), err: error }, "unhandled error");

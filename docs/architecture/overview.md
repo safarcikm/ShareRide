@@ -179,8 +179,8 @@ packages/
   ui/              # Design tokens and shared components (once a second client needs them, ADR 0017)
   config/          # Shared TypeScript, lint and test configuration
 infra/
-  docker/          # Local development: PostgreSQL + PostGIS, mail catcher
-  deploy/          # Deployment configuration for staging and production
+  docker/          # Local development: PostgreSQL + PostGIS; the image smoke test
+  render/          # Render blueprint for staging (ADR 0018), later production
 docs/              # This documentation
 ```
 

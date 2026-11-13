@@ -35,6 +35,10 @@ Everything needed to understand, build and run ShareRide. Start with the
 - [Security](engineering/security.md)
 - [Claude Code setup](engineering/claude-code-setup.md): plugins, skills and why
 
+## Operations
+
+- [Staging runbook](operations/staging.md): set up, deploy, roll back, logs, restore
+
 ## Compliance
 
 - [Legal and regulatory](compliance/legal-and-regulatory.md): taxi law, insurance, company, tax, payments, platform rules

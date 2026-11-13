@@ -61,6 +61,11 @@ releases follow [Semantic Versioning](https://semver.org/).
   country, and an `SMS_PAUSED` kill switch.
 - Hourly clean-up of sign-in records past their retention: expired codes,
   rate-limit events, expired tokens, idle and ended sessions.
+- Staging on Render in Frankfurt (`infra/render/render.yaml`): the API image
+  serves the web app on its own origin with a content security policy,
+  deploys after CI passes, migrates before it starts and finds client
+  addresses behind Render's two proxies (`TRUST_PROXY=2`). CI smoke-tests
+  the image. Runbook in `docs/operations/staging.md`.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

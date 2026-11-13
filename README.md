@@ -43,12 +43,15 @@ The full documentation map is in [docs/README.md](docs/README.md).
 │   ├── db/                   # Database schema, migrations and connection (Drizzle)
 │   ├── domain/               # Pure business rules (money, countries, sign-in rules)
 │   └── i18n/                 # Icelandic and English texts and formatting
-├── infra/docker/             # Local PostgreSQL with PostGIS (Docker Compose)
+├── infra/
+│   ├── docker/               # Local PostgreSQL with PostGIS; the image smoke test
+│   └── render/               # Staging on Render (blueprint)
 └── docs/
     ├── strategy/             # Development strategy, roadmap, open questions
     ├── product/              # Vision, features, pricing rules, meeting points
     ├── architecture/         # System overview, domain model, integrations
     ├── engineering/          # Workflow, conventions, testing, CI/CD, tooling
+    ├── operations/           # Runbooks (staging)
     ├── compliance/           # Legal, regulatory and privacy (GDPR)
     ├── decisions/            # Architecture Decision Records (ADRs)
     ├── specs/                # Feature design specs (one per feature)
@@ -136,7 +139,8 @@ pnpm --filter @shareride/api test:contract  # 46elks dry run (needs its keys; se
 
 The browser journeys build the web app, start a test API on port 3001 and
 use the `shareride_test` database, which they empty first. More commands are
-in [CLAUDE.md](CLAUDE.md#commands).
+in [CLAUDE.md](CLAUDE.md#commands). Staging and how it deploys are in the
+[staging runbook](docs/operations/staging.md).
 
 ## Licence
 
