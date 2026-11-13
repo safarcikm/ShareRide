@@ -29,3 +29,4 @@ Specs follow the order in [features](../product/features.md#spec-order).
 | 2 | [Meeting points, place search and their admin](2026-11-13-meeting-points.md) | B1, B2, H1 | Approved (2026-11-13) |
 | 3 | [Driver setup and posting a trip with prices](2026-11-13-post-a-trip.md) | A3, C1, C2, C3, C4 | Approved (2026-11-13) |
 | 4 | [Search and trip details](2026-11-13-search-and-trip-details.md) | D1, D2, D6 | Approved (2026-11-13) |
+| 5 | [Booking and requests](2026-11-13-booking-and-requests.md) | D3, D4, C7 | Draft for review |
