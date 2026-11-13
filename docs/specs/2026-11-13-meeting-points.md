@@ -1,6 +1,6 @@
 # Spec 2: Meeting points, place search and their admin
 
-**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Draft for review
+**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
 Features: B1 Meeting point catalogue, B2 Place search, H1 Meeting points in the
 operator console ([features](../product/features.md)). B3, suggesting meeting
@@ -89,7 +89,7 @@ trips (spec 4) and when posting a trip (spec 3).
    points and how far they are from it in a straight line.
 4. Order: exact and prefix matches first, then aliases, then close matches;
    meeting points before places when equally good.
-5. Street addresses are not searched in the beta (see question 3).
+5. Street addresses are not searched in the beta (decision 3).
 6. **Near me:** asks for location permission when first tapped, takes one
    position, and lists the nearest active meeting points with straight-line
    distance. The position is used on the device only, against the downloaded
@@ -290,22 +290,10 @@ users (decision 1), street address search, photos from users, public meeting
 point pages on the website (later), weather and road closure warnings (later),
 and places reachable only by ferry, such as Vestmannaeyjar, Hrísey and Grímsey.
 
-## Docs to update when approved
-
-- [Meeting points](../product/meeting-points.md): statuses (draft, active,
-  paused, retiring, retired) and legs for every connected pair.
-- [Domain model](../architecture/domain-model.md): `MeetingPoint` fields,
-  `Place`, `MeetingPointIssue`.
-
 ## Decisions
 
 | # | Question | Decision |
 | - | -------- | -------- |
 | 1 | Can users suggest meeting points? | No. The operator curates every meeting point (Martin, 2026-11-13). Users can still report a problem with an existing point |
 | 2 | Must every meeting point be checked on site before it goes live? | The operator confirms every point before activation, from local knowledge or a visit; a visit is not required (Martin, 2026-11-13). The photo and "where to stand" are still required |
-
-## Questions for Martin
-
-| # | Question | Recommendation |
-| - | -------- | -------------- |
-| 3 | Should search find street addresses in the beta? | No. Towns, villages, landmarks and "Near me" cover how people choose a meeting point; addresses add data and licence work. Revisit after the beta |
+| 3 | Should search find street addresses in the beta? | No. Towns, villages, landmarks and "Near me" are enough to choose a meeting point; revisit after the beta (Martin, 2026-11-13) |

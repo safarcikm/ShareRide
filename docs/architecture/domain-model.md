@@ -55,14 +55,30 @@ erDiagram
 
 ### MeetingPoint
 
-See [meeting points](../product/meeting-points.md#data-kept-for-each-meeting-point).
-Location stored as PostGIS `geography(Point, 4326)`.
+See [meeting points](../product/meeting-points.md#data-kept-for-each-meeting-point)
+and [spec 2](../specs/2026-11-13-meeting-points.md#6-data-and-api).
+Location stored as PostGIS `geography(Point, 4326)`. `status` is `draft`,
+`active`, `paused`, `retiring` or `retired`. `search_text` holds the
+normalised names and aliases with a trigram index. Photos are
+`MeetingPointPhoto` records.
+
+### Place
+
+Towns, villages and landmarks that are not meeting points, used by place
+search to find the nearest meeting points: `name`, `aliases`, `location`,
+`kind`, `region`, `search_text`.
+
+### MeetingPointIssue
+
+A user's report of a problem with a meeting point: `user_id` (removed when
+resolved), `meeting_point_id`, `reason`, `note`, `status`, `resolution`.
 
 ### Leg
 
 `from_meeting_point_id`, `to_meeting_point_id`, `distance_m`, `duration_s`,
 `computed_at`, `source` (routing engine and data version). Directional:
-A→B and B→A are separate legs because routes can differ.
+A→B and B→A are separate legs because routes can differ. Computed for every
+ordered pair of active meeting points connected by road.
 
 ### Trip
 
