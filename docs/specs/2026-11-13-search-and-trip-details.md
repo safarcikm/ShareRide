@@ -124,8 +124,9 @@ When there are no results (on a chosen date, or at all):
 5. **Preferences and note:** luggage, pets, smoking, child seat, chat, and the
    driver's note.
 6. **Booking mode:** "Instant booking" or "The driver approves each request".
-7. **Payment:** "Pay the driver directly, by bank transfer or cash"
-   ([ADR 0008](../decisions/0008-payments-phased.md)).
+7. **Payment:** "Pay in the app once your booking is accepted. Free
+   cancellation up to 15 minutes before departure."
+   ([ADR 0013](../decisions/0013-in-app-payments-only.md)).
 8. **Actions:** "Book" or "Request to book" (spec 5), "Share" (a link to the
    trip page), "Report this trip" (spec 9).
 9. **Other states:** full on this part (with "Try another part of the trip"),
@@ -226,7 +227,7 @@ upcoming trips.
 | `results.nearbyPoints` | Trips from nearby meeting points | Ferðir frá nálægum mótsstöðum |
 | `results.noTripsYet` | No trips yet on this route | Engar ferðir enn á þessari leið |
 | `trip.yourPart` | Your part of the trip | Þinn hluti ferðarinnar |
-| `trip.payDriver` | Pay the driver directly, by bank transfer or cash | Greiddu ökumanninum beint, með millifærslu eða reiðufé |
+| `trip.payInApp` | Pay in the app once your booking is accepted. Free cancellation up to 15 minutes before departure. | Þú greiðir í appinu þegar bókunin hefur verið samþykkt. Ókeypis afbókun allt að 15 mínútum fyrir brottför. |
 | `trip.book` | Book | Bóka |
 | `trip.requestToBook` | Request to book | Óska eftir fari |
 | `trip.fullOnPart` | Full on your part of the trip | Fullt á þínum hluta ferðarinnar |

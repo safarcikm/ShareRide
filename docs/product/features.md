@@ -36,12 +36,15 @@ Priorities:
 | C5 | Manage my trips | Must | 6 |
 | C6 | Duplicate a trip or create the return trip | Should | 6 |
 | C7 | Accept or decline requests | Must | 5 |
+| C8 | Payouts to drivers | Must | 13 |
 | D1 | Search trips, including partial routes | Must | 4 |
 | D2 | Trip details | Must | 4 |
 | D3 | Book seats on the whole trip or only part of it | Must | 5 |
 | D4 | My bookings | Must | 5 |
 | D5 | Cancel a booking | Must | 6 |
 | D6 | Help when nothing matches | Should | 4 |
+| D7 | Pay in the app | Must | 13 |
+| D8 | Receipts | Must | 13 |
 | E1 | Reminders | Must | 7 |
 | E2 | "I'm here" check-in | Should | 8 |
 | E3 | Mark a no-show | Should | 8 |
@@ -58,6 +61,7 @@ Priorities:
 | H4 | Admin: pricing and timing settings | Must | 10 |
 | H5 | Admin: beta metrics | Should | 10 |
 | H6 | Admin: message all beta testers | Could | 10 |
+| H7 | Admin: payments, refunds and payouts | Must | 13 |
 | I1 | Icelandic and English | Must | all |
 | I2 | Accessibility | Must | all |
 | I3 | Web app | Must | all |
@@ -144,6 +148,10 @@ to a new date, or create the return trip with the stops in reverse order.
 the passenger's profile, segment and seats, and accepts or declines. Requests
 expire if not answered in time.
 
+**C8. Payouts to drivers (Must).** The driver sets up payouts with the
+payment provider once (identity and bank account, held by the provider) and is
+paid automatically after each trip.
+
 ## D. Passenger: search and booking
 
 **D1. Search trips, including partial routes (Must).** From, to and date.
@@ -162,17 +170,27 @@ joins between any two meeting points on the trip, in travel order, and pays
 only the segments in between. Seats are counted per segment, so a seat freed at
 one stop can be booked by someone else from there on (rules in
 [pricing and seats](pricing-and-seats.md#seats)). Choose the number of seats,
-see the total price and the cancellation rules, confirm. Instant bookings
-confirm at once; requests can include a short message to the driver.
+see the total price and the cancellation rules, confirm. Instant bookings are
+accepted at once; requests can include a short message to the driver. Either
+way the passenger pays in the app once accepted (D7).
 
 **D4. My bookings (Must).** Upcoming and past bookings with status, meeting
 point directions and a link to the chat.
 
-**D5. Cancel a booking (Must).** With a reason; the app shows how it affects my
+**D5. Cancel a booking (Must).** With a reason. Free, with a full refund, up to
+15 minutes before my departure; the app shows the refund and how it affects my
 reliability (weather and road closures don't count).
 
 **D6. Help when nothing matches (Should).** Suggest the same route on nearby
 dates and trips from nearby meeting points.
+
+**D7. Pay in the app (Must).** When a booking is accepted, the passenger pays
+in the app (card, Apple Pay or Google Pay through the payment provider) within
+the payment window; the booking is then confirmed. Refunds follow
+[pricing and seats](pricing-and-seats.md#payment-and-refunds) (decision 13).
+
+**D8. Receipts (Must).** A receipt by email and in the app for every payment
+and refund.
 
 ## E. Trip day
 
@@ -234,6 +252,9 @@ bookings, cancellations, by corridor and week: the beta's exit criteria.
 **H6. Message all beta testers (Could).** Send an announcement by push and
 email.
 
+**H7. Payments, refunds and payouts (Must).** See payments, refund a booking,
+hold or release a payout, and handle chargebacks.
+
 ## I. Across the whole app
 
 **I1. Icelandic and English (Must).** Every screen, email, SMS and push in both.
@@ -264,7 +285,7 @@ with consent, to measure the beta's exit criteria.
 ## Decisions
 
 Decisions 1 to 9 were accepted by Martin on 2026-11-13 as recommended;
-decisions 10 to 12 are his own, from the same day, and he later changed
+decisions 10 to 13 are his own, from the same day, and he later changed
 decisions 3 and 6.
 
 | # | Question | Decision |
@@ -281,6 +302,7 @@ decisions 3 and 6.
 | 10 | Can users suggest meeting points? | No. The operator curates every meeting point; users can report a problem with one |
 | 11 | Does the driver pick the stops along the way? | No. The app adds the meeting points along the route automatically; the driver can remove any they will not stop at |
 | 12 | Can the driver edit each segment's price? | No. One price level for the whole trip, from free up to the cap ([ADR 0012](../decisions/0012-trip-price-level.md)) |
+| 13 | How do passengers pay? | Only in the app, from the beta: they pay when the booking is accepted; free cancellation with a full refund up to 15 minutes before departure ([ADR 0013](../decisions/0013-in-app-payments-only.md)) |
 
 ## After the MVP
 
@@ -290,7 +312,7 @@ Already planned for later phases (see the [roadmap](../strategy/roadmap.md)):
 - Optional identity verification with Auðkenni
 - Website with route pages for search engines
 - Help centre and support contact
-- In-app payments, driver payouts, service fee, refunds and receipts
+- A passenger service fee (open question Q5)
 - Recurring trips for commuters
 - Ride alerts for saved searches
 - Passenger ride requests that drivers can answer
@@ -323,3 +345,7 @@ features (I1 to I5) apply to every spec.
 10. Operator settings and metrics (H4, H5, H6)
 11. Privacy self-service (A5)
 12. Beta access and feedback (J1, J2, J3)
+
+Spec 13, payments, payouts and refunds (D7, D8, C8, H7), was added on
+2026-11-13 when payments moved into the beta. It is written right after
+spec 5.

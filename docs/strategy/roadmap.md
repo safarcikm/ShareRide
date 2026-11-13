@@ -60,6 +60,9 @@ Legal and company (start now, see [legal and regulatory](../compliance/legal-and
 - [ ] Decide company form (likely an ehf., private limited company)
 - [ ] Check the name: trademark search, domain names, app-store availability
 - [ ] Ask two insurers how cost-sharing affects drivers' motor insurance
+- [ ] Talk to payment providers (Rapyd, Teya, Straumur) about marketplace
+      payments, refunds and payouts to individuals, then choose one in an ADR
+      ([ADR 0013](../decisions/0013-in-app-payments-only.md))
 
 Exit criteria: ADRs accepted; MVP specs approved; prototype tested; legal
 opinion requested; company form chosen.
@@ -84,6 +87,7 @@ MVP features (each one a spec, a plan and a PR series)
 - [ ] Search by place and date, including partial routes
 - [ ] Book seats on a segment range; instant or approval mode
 - [ ] Booking management and cancellations by either side
+- [ ] In-app payments, refunds, receipts and driver payouts
 - [ ] Chat between driver and booked passengers
 - [ ] Push, email and SMS notifications
 - [ ] Ratings after the trip
@@ -96,6 +100,7 @@ MVP features (each one a spec, a plan and a PR series)
 Legal and company (in parallel)
 
 - [ ] Register the company; open a business bank account
+- [ ] Sign the payment provider contract
 - [ ] Terms of service, privacy policy, community rules (Icelandic and English)
 - [ ] Record of processing activities and data protection impact assessment
 - [ ] Data processing agreements with every provider
@@ -144,8 +149,7 @@ Exit criteria: public in both stores; support and moderation routines running.
 
 ## Phase 5: Grow and monetise
 
-- [ ] In-app payments, driver payouts, service fee, refunds and receipts
-      (after provider and licensing work, see [ADR 0008](../decisions/0008-payments-phased.md))
+- [ ] Passenger service fee, if decided (open question Q5)
 - [ ] Recurring trips for commuters
 - [ ] Ride alerts: notify me when a matching trip is posted
 - [ ] Passenger ride requests that drivers can answer

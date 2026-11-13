@@ -20,6 +20,8 @@ releases follow [Semantic Versioning](https://semver.org/).
 - Spec 5 draft: booking and requests.
 - ADR 0012: one price level per trip instead of per-segment price editing
   (supersedes ADR 0006).
+- ADR 0013: all payments through the app, from the beta (supersedes ADR
+  0008).
 - Development strategy, roadmap and open questions.
 - Product vision, pricing and seat rules, meeting point strategy.
 - Architecture overview, domain model and integrations.

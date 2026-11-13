@@ -28,7 +28,7 @@ erDiagram
   BOOKING ||--o| CONVERSATION : has
   CONVERSATION ||--o{ MESSAGE : contains
   BOOKING ||--o{ REVIEW : "reviewed in"
-  BOOKING ||--o{ PAYMENT : "paid by (Phase 5)"
+  BOOKING ||--o{ PAYMENT : "paid by"
 ```
 
 ## Entities
@@ -118,7 +118,7 @@ trigger or a denormalised capacity column).
 | `trip_id`, `passenger_id` | |
 | `from_stop_id`, `to_stop_id` | Stop IDs, not positions |
 | `seats` | ≥ 1 |
-| `status` | `requested`, `accepted`, `declined`, `expired`, `cancelled`, `completed`, `no_show` |
+| `status` | `requested`, `accepted` (awaiting payment), `confirmed` (paid), `declined`, `expired`, `cancelled`, `completed`, `no_show` |
 | `total_price`, `currency` | Snapshot at booking time |
 | `requested_at`, `decided_at`, `expires_at` | |
 | `cancelled_by`, `cancel_reason`, `cancelled_at` | Reasons include `weather`, `road_closed` |
@@ -145,10 +145,12 @@ have `sender_id`, `body`, `sent_at`, `read_at`. Retained per the
 `description`, `status`, `resolution`, `handled_by`, timestamps. Every action
 on a report is written to the audit log.
 
-### Payment (Phase 5)
+### Payment
 
 `booking_id`, `provider`, `provider_ref`, `amount`, `fee`, `currency`,
-`status`, plus `Payout` and `Refund` records. Designed in Phase 5.
+`status`, plus `Payout` and `Refund` records. Payments run in the app from the
+beta ([ADR 0013](../decisions/0013-in-app-payments-only.md)); details in the
+payments spec.
 
 ### Supporting records
 

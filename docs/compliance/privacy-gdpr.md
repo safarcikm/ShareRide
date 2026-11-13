@@ -49,7 +49,8 @@
 | Approximate location (on request) | Device location to find nearby meeting points | Convenience | Consent (device permission) | Not stored | Not stored |
 | Analytics | Usage events without names | Improve the product | Consent | Operator | 14 months |
 | Technical logs | Request IDs, errors | Security and reliability | Legitimate interest | Operator | 30 days |
-| Payments (Phase 5) | Amounts, provider references | Payment, accounting | Contract; legal obligation | Participants; operator | As bookkeeping law requires (**verify**) |
+| Payments | Amounts, provider references, refunds, payouts | Payment, accounting | Contract; legal obligation | Participants; operator | As bookkeeping law requires (**verify**) |
+| Payout set-up (drivers) | Identity check and bank account, held by the payment provider | Paying drivers | Contract; legal obligation (provider's checks) | Provider; operator sees status only | Per the provider's terms |
 
 ## Rights in the app
 

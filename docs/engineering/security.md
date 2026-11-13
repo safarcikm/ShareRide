@@ -52,8 +52,8 @@ apps.
   or admin (use `/security-review` in Claude Code, plus the security-guidance
   plugin during development).
 - Threat model updated in this file when a new feature changes the picture.
-- External penetration test before public launch (Phase 4) and before
-  in-app payments (Phase 5).
+- External penetration test before the beta, because it takes payments, and
+  again before public launch (Phase 4).
 - Vulnerability reports handled per [SECURITY.md](../../SECURITY.md).
 - Personal data breaches follow the breach procedure in
   [privacy and GDPR](../compliance/privacy-gdpr.md#breaches).

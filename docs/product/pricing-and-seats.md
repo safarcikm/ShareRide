@@ -2,7 +2,8 @@
 
 **Owner:** Martin · **Last reviewed:** 2026-11-13 · **Status:** Accepted
 ([ADR 0006](../decisions/0006-meeting-points-and-segment-pricing.md), with the
-driver's price control replaced by [ADR 0012](../decisions/0012-trip-price-level.md));
+driver's price control replaced by [ADR 0012](../decisions/0012-trip-price-level.md)
+and payments by [ADR 0013](../decisions/0013-in-app-payments-only.md));
 configuration values are still to be set
 
 These are the business rules for prices, seat capacity, bookings and
@@ -102,11 +103,11 @@ L_max = highest step of L at or below
   snapshot of the segment prices it was made at.
 - Lowering the level is always allowed. Raising it is allowed up to `L_max`.
 
-### Rule P5: service fee (Phase 5)
+### Rule P5: service fee
 
-When in-app payments arrive, a passenger service fee is added on top of the
-booking price and shown separately. Formula and amount are decided then
-(open question Q5). The driver's share is never reduced by the fee.
+A passenger service fee may be added on top of the booking price and shown
+separately. Whether there is one, and how much, is open question Q5. The
+driver's share is never reduced by the fee.
 
 ### Worked example
 
@@ -140,7 +141,8 @@ The whole route then costs 4 700 kr. At 0% every segment is free.
 ### Rule S1: occupancy
 
 The occupancy of segment `k` is the total number of seats held by bookings
-that cover `k` and whose status holds seats (`requested` or `accepted`).
+that cover `k` and whose status holds seats (`requested`, `accepted` or
+`confirmed`).
 
 ### Rule S2: the capacity invariant
 
@@ -192,11 +194,14 @@ passengers on different parts of the trip.
 
 ## Booking modes
 
-- **Instant:** a valid request is accepted immediately.
+- **Instant:** a valid request is accepted immediately, and the passenger pays
+  at once.
 - **Approval:** the request holds the seats while the driver decides. It
   expires if the driver does not answer within 12 hours, or by 2 hours before
   departure from the boarding stop, whichever is earlier. Expired requests free
-  their seats.
+  their seats. When the driver accepts, the passenger pays.
+
+In both modes a booking is confirmed only once it is paid (rule M1).
 
 The driver chooses the mode per trip. Default during the beta: approval
 (decided 2026-11-13).
@@ -211,9 +216,12 @@ stateDiagram-v2
   requested --> declined : driver declines
   requested --> expired : no answer in time
   requested --> cancelled : passenger withdraws
+  accepted --> confirmed : passenger pays, or the ride is free
+  accepted --> expired : not paid in time
   accepted --> cancelled : passenger or driver cancels
-  accepted --> completed : trip completed
-  accepted --> no_show : driver marks passenger absent
+  confirmed --> cancelled : passenger or driver cancels
+  confirmed --> completed : trip completed
+  confirmed --> no_show : driver marks passenger absent
   declined --> [*]
   expired --> [*]
   cancelled --> [*]
@@ -224,22 +232,57 @@ stateDiagram-v2
 A cancellation records who cancelled, when, and the reason (including
 `weather` and `road_closed`).
 
+## Payment and refunds
+
+All payments go through the app, from the beta
+([ADR 0013](../decisions/0013-in-app-payments-only.md)). Passengers never pay
+drivers in cash or by direct transfer for a ShareRide booking.
+
+### Rule M1: paying
+
+- When a booking is accepted, the passenger pays its price (rule P1, from the
+  booking's price snapshot) in the app.
+- The payment window is 30 minutes from acceptance, and never later than the
+  booking cut-off. The seats stay held meanwhile. An unpaid booking expires and
+  frees its seats.
+- A paid booking is `confirmed`. A free booking (price 0) is confirmed at once.
+- A licensed payment provider holds the money until it is paid out to the
+  driver. Card details never reach ShareRide's servers.
+
+### Rule M2: refunds
+
+- The passenger cancels up to 15 minutes before the planned time at their
+  boarding stop: **full refund**.
+- The driver cancels the booking or the trip: **full refund**, always.
+- The departure moves by more than 30 minutes and the passenger cancels:
+  **full refund**.
+- The passenger cancels later than 15 minutes before boarding, or is marked a
+  no-show: proposed no refund, so the driver is paid (awaiting Martin's
+  answer).
+- Refunds go back to the original payment method.
+
+### Rule M3: payouts to drivers
+
+Proposed (awaiting Martin's answer): the driver is paid automatically 24 hours
+after the trip completes, unless a passenger has reported a problem with it,
+to the bank account they set up with the payment provider.
+
 ## Trip changes after bookings exist
 
 | Change by driver | Allowed? | Effect on booked passengers |
 | ---------------- | -------- | --------------------------- |
 | Departure time moves 30 minutes or less | Yes | Notified |
-| Departure time moves more than 30 minutes | Yes | Notified; may cancel without it counting against them |
+| Departure time moves more than 30 minutes | Yes | Notified; may cancel with a full refund, without it counting against them |
 | Add a stop | Yes | Notified; their price stays as booked |
 | Remove a stop no booking uses | Yes | Notified |
-| Remove a stop a booking uses | No | The driver must contact the passenger, who cancels or the driver cancels that booking |
+| Remove a stop a booking uses | No | The driver must contact the passenger, who cancels or the driver cancels that booking (full refund) |
 | Lower the capacity | Down to the highest occupancy | None |
 | Change the price level | Yes, from 0% to `L_max` | None; bookings keep their price snapshot |
-| Cancel the trip | Yes, with a reason | Every booking is cancelled and the passengers are notified |
+| Cancel the trip | Yes, with a reason | Every booking is cancelled with a full refund and the passengers are notified |
 
 ## Cancellations and reliability
 
-During the beta no money moves through the app, so the policy is about trust:
+Refunds follow rule M2. Reliability adds a trust signal on top:
 
 - Cancellations and no-shows are counted on each profile and shown as a
   reliability figure.
@@ -247,9 +290,6 @@ During the beta no money moves through the app, so the policy is about trust:
   official warning or closure applied to the route at the time.
 - A pattern of late cancellations or no-shows leads to a warning, then a
   suspension, decided in the admin console.
-
-The money-based refund policy for Phase 5 is drafted with the payment provider
-choice (see [ADR 0008](../decisions/0008-payments-phased.md)).
 
 ## Configuration values
 
@@ -261,6 +301,9 @@ Set centrally by the operator; changes are logged.
 | `reference_cost_per_km` | to decide in Phase 1 | Basis of the price cap |
 | `price_step` | 100 kr | Rounding step for suggested prices and caps |
 | `price_level_step` | 10% | Steps of the driver's price level |
+| `payment_window` | 30 minutes | Time to pay after acceptance; never past the booking cut-off |
+| `free_cancellation_until` | 15 minutes | Before the planned time at the boarding stop; full refund until then |
+| `payout_delay` | 24 hours (proposed) | After trip completion |
 | `booking_cutoff` | 15 minutes | Before the planned time at the boarding stop |
 | `request_expiry` | 12 hours | Approval mode; also never later than 2 hours before boarding |
 | `major_time_change` | 30 minutes | Above this, passengers may cancel without penalty |

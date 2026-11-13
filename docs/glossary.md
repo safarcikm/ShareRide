@@ -21,6 +21,9 @@ to be confirmed by a native speaker before they appear in the app.
 | Operator | Rekstraraðili | The person or company running ShareRide; uses the admin console |
 | Suggested price | Ráðlagt verð | Price per segment proposed by the app from distance and rate |
 | Price cap | Hámarksverð | Highest price a segment may have (cost-sharing limit) |
+| Payment window (`paymentWindow`) | Greiðslufrestur | Time a passenger has to pay after a booking is accepted |
+| Refund (`Refund`) | Endurgreiðsla | Money returned to a passenger, for example after a free cancellation |
+| Payout (`Payout`) | Útborgun | Money paid to a driver for a completed trip |
 | Price level (`priceLevel`) | Verðstig | The one percentage of the suggested prices a driver chooses for a whole trip, from 0% (free) up to the cap |
 | Cost-sharing | Kostnaðarskipting | Passengers contribute to the cost of a trip the driver makes anyway, without profit |
 | Reliability | Áreiðanleiki | Share of trips and bookings a user completed rather than cancelled |

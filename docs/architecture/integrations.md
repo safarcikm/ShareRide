@@ -23,7 +23,7 @@ Provider names are candidates to evaluate, not commitments.
 | Road conditions and closures | `RoadConditions` | Vegagerðin web services (DATEX II) | 4 | Match closed road sections to legs |
 | Electronic ID | `IdentityVerifier` | Auðkenni directly (OIDC) or through a broker such as Signicat | 4 | Optional verification badge for residents |
 | Document ID check (visitors) | `IdentityVerifier` | A document-verification provider with EU processing | 5 | Only if the beta shows a need |
-| Payments | `PaymentProvider` | Rapyd, Teya, Straumur (Icelandic acquirers); a non-Icelandic entity would open Stripe or Adyen | 5 | See [ADR 0008](../decisions/0008-payments-phased.md) |
+| Payments | `PaymentProvider` | Rapyd, Teya, Straumur (Icelandic acquirers); a non-Icelandic entity would open Stripe or Adyen | 2 | In the app from the beta, see [ADR 0013](../decisions/0013-in-app-payments-only.md); provider chosen in its own ADR |
 | Flight status (KEF) | `FlightStatus` | Isavia data or a flight data API | 5 | For airport trips |
 
 ## Integration rules

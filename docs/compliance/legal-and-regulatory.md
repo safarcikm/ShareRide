@@ -72,13 +72,17 @@ Actions:
 - **Drivers:** whether cost contributions are taxable income when they do not
   exceed the cost of the trip (**verify** with Skatturinn's guidance or an
   accountant). Explain the answer in the help centre.
-- **Platform:** VAT on the passenger service fee from Phase 5 (Iceland's
+- **Platform:** VAT on any passenger service fee (Iceland's
   standard rate applies unless an exemption fits, **verify**), and income tax
   on profits.
-- Receipts for passengers and annual statements for drivers once payments run
-  through the app.
+- Receipts for passengers and annual statements for drivers, since payments
+  run through the app from the beta.
 
-## 5. Payments (Phase 5)
+## 5. Payments
+
+- Payments go through the app from the beta
+  ([ADR 0013](../decisions/0013-in-app-payments-only.md)), so the company,
+  the provider contract and this legal work must be done before the beta.
 
 - Holding passengers' money and paying it to drivers may be a regulated
   payment service under the Icelandic payment services law implementing the
@@ -86,8 +90,9 @@ Actions:
   commercial agent exclusion). The supervisor is the Central Bank of Iceland
   (Seðlabanki Íslands).
 - The simplest compliant structure is usually a licensed provider's
-  marketplace product that holds funds and verifies drivers' identity. See
-  [ADR 0008](../decisions/0008-payments-phased.md).
+  marketplace product that holds funds and verifies drivers' identity.
+- Refunds, chargebacks and the cancellation rules must be stated in the terms
+  ([pricing and seats](../product/pricing-and-seats.md#payment-and-refunds)).
 - Accounting records must be kept for the statutory period (**verify**, likely
   seven years).
 
@@ -97,8 +102,8 @@ Actions:
   English, accepted at sign-up, versioned, with acceptance recorded.
 - Clear pre-booking information: price, cancellation rules, who the driver is,
   and that ShareRide is an intermediary.
-- Distance-selling and consumer rules for the service fee (Phase 5); the
-  Consumer Agency (Neytendastofa) is the regulator.
+- Distance-selling and consumer rules for payments, refunds and any service
+  fee; the Consumer Agency (Neytendastofa) is the regulator.
 - Marketing messages (email, SMS, push) only with opt-in consent under the
   electronic communications rules (**verify** current act).
 
@@ -132,6 +137,7 @@ Actions:
 4. What must the terms of service say about liability, insurance and the
    intermediary role?
 5. Which payment structure avoids needing our own payment licence?
+   Does taking payments in the app change the answer to question 1?
 6. What do drivers need to know about tax on contributions?
 7. Which company form and set-up do you recommend for a solo operator?
 8. Do the Digital Services Act and the European Accessibility Act apply in

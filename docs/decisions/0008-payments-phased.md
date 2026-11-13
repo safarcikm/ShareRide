@@ -1,7 +1,8 @@
 # 0008. Phased payments behind a provider-agnostic port
 
-- **Status:** Accepted (2026-11-13: pay the driver directly during the beta;
-  the service fee itself stays open as question Q5)
+- **Status:** Superseded by ADR [0013](0013-in-app-payments-only.md) (2026-11-13).
+  Previously accepted 2026-11-13: pay the driver directly during the beta;
+  the service fee itself stays open as question Q5
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [legal and regulatory](../compliance/legal-and-regulatory.md),
