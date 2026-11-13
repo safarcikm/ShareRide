@@ -140,9 +140,13 @@ The per-segment price snapshot of a booking: `booking_id`, `segment_index`,
 
 ### Conversation and Message
 
-One conversation per booking, between the driver and that passenger. Messages
-have `sender_id`, `body`, `sent_at`, `read_at`. Retained per the
-[privacy](../compliance/privacy-gdpr.md#retention) schedule.
+One conversation per booking, between the driver and that passenger, with
+`opened_at` (booking confirmed) and `closes_at` (7 days after the trip's
+planned arrival). Messages have `sender_id` (empty for a system line), `kind`
+(`text`, `quick`, `system`), `body` or a quick message key with parameters,
+`client_id`, `sent_at`, `read_at`. Retained per the
+[privacy](../compliance/privacy-gdpr.md#retention) schedule. See
+[spec 7](../specs/2026-11-13-chat-and-notifications.md#6-data-and-api).
 
 ### Review
 
@@ -170,6 +174,9 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
 - `AuditLog`: who did what to which record, when, from where. Append-only.
 - `Setting`: operator configuration (rates, timeouts) with change history.
 - `NotificationPreference`, `PushToken`, `Block`.
+- `Notification` and `NotificationDelivery`: who was told what kind of thing,
+  on which channel and whether it arrived, without the text; kept 90 days
+  ([spec 7](../specs/2026-11-13-chat-and-notifications.md#6-data-and-api)).
 - `WeatherWarning`, `RoadCondition`: cached external data with validity times.
 
 ## Invariants
@@ -211,7 +218,7 @@ outbox table) and processed by the worker:
 
 `TripPublished`, `TripChanged`, `TripCancelled`, `BookingRequested`,
 `BookingAccepted`, `BookingDeclined`, `BookingExpired`, `BookingCancelled`,
-`PassengerNoShow`, `TripCompleted`, `ReviewSubmitted`, `ReportFiled`,
+`PassengerNoShow`, `TripCompleted`, `MessageSent`, `ReviewSubmitted`, `ReportFiled`,
 `WeatherWarningMatched`, `RoadClosureMatched`.
 
 Notifications, review reminders and analytics subscribe to these events, so

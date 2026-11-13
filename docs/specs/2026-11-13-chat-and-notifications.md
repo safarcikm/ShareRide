@@ -1,6 +1,6 @@
 # Spec 7: Chat, notifications and reminders
 
-**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Draft for review
+**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
 Features: F1 Chat, F2 Notifications, E1 Reminders
 ([features](../product/features.md)). Related: [spec 5](2026-11-13-booking-and-requests.md)
@@ -57,10 +57,12 @@ keep its cost down.
 4. The sender sees "Seen" once the other person has opened the conversation.
 5. A safety tip is pinned at the top: pay only in the app, and ShareRide never
    asks for card details in a chat.
-6. Whether phone numbers, email addresses and links can be sent in the chat:
-   question 3.
-7. **Closing:** the conversation becomes read-only after a set time
-   (question 2). Both people can still read it until it is deleted with the
+6. Phone numbers, email addresses and links can be sent in the chat, since
+   the booking is already paid and people may need to call each other at the
+   meeting point (decision 3). Requests and trip notes stay free of them
+   (specs 3 and 5).
+7. **Closing:** the conversation becomes read-only 7 days after the trip's
+   planned arrival, whether the trip happened or was cancelled (decision 2). Both people can still read it until it is deleted with the
    rest of the trip's messages, 12 months after the trip
    ([privacy](../compliance/privacy-gdpr.md)).
 8. Reporting a message and blocking a person are spec 9. Blocking makes the
@@ -113,8 +115,15 @@ note send nothing (spec 6). Sign-in codes and account emails are spec 1.
 ### 3.4 SMS for last-minute news
 
 SMS is only for sign-in codes (spec 1) and for news that could leave someone
-waiting at a meeting point. Which events, and in what window: question 1. An
-SMS goes only to the account's verified phone number, in the person's
+waiting at a meeting point (decision 1). It goes only to passengers, and only
+within 24 hours of their boarding time, when:
+
+- the trip is cancelled;
+- the driver cancels their booking;
+- the departure moves by more than 30 minutes;
+- their meeting point is moved or paused.
+
+An SMS goes only to the account's verified phone number, in the person's
 language, and says only what happened and to open the app. Nobody gets more
 than 5 such messages a day.
 
@@ -169,7 +178,7 @@ than 5 such messages a day.
 
 | ID | Rule |
 | -- | ---- |
-| R7.1 | One conversation per booking, between its driver and passenger only. It opens when the booking is confirmed and becomes read-only as decided in question 2, or at once when either blocks the other. |
+| R7.1 | One conversation per booking, between its driver and passenger only. It opens when the booking is confirmed and becomes read-only 7 days after the trip's planned arrival (decision 2), or at once when either blocks the other. |
 | R7.2 | Messages are text, 1 to 1 000 characters, or a quick message key. Quick messages and system lines are shown in the reader's language. |
 | R7.3 | Only the two participants can read a conversation. The operator reads it only when a report covers it (spec 9). |
 | R7.4 | A driver's message to all passengers is a separate message in each conversation; passengers never see each other. |
@@ -178,7 +187,7 @@ than 5 such messages a day.
 | R7.7 | Notifications use the recipient's language and local time. |
 | R7.8 | Only trip reminders can be turned off in the app. |
 | R7.9 | Notifications never add a phone number, email address, number plate or payment details. A chat message's text appears only in its push, never in an email or SMS. Emails carry no tracking pixels or tracked links. |
-| R7.10 | SMS is sent only for sign-in codes and the events of question 1, only to a verified phone number, and at most 5 a day per person apart from codes. |
+| R7.10 | SMS is sent only for sign-in codes and the events in 3.4 (passengers, within 24 hours of boarding), only to a verified phone number, and at most 5 a day per person apart from codes. |
 | R7.11 | Reminders follow the trip: they move when the departure moves and are dropped when the booking ends. |
 
 ## 5. Screens
@@ -233,8 +242,8 @@ are chosen in Phase 2 with an ADR each.
 Events: `MessageSent`. Reminders are jobs in the queue, keyed by booking and
 reminder, and replaced when the trip's time changes.
 
-Settings: `chat_close_after` (question 2), `reminder_evening_at` 18:00,
-`reminder_before_boarding` 60 minutes, `sms_window` (question 1),
+Settings: `chat_close_after` 7 days, `reminder_evening_at` 18:00,
+`reminder_before_boarding` 60 minutes, `sms_window` 24 hours,
 `unread_email_after` 15 minutes, `chat_rate_limit` 10 a minute,
 `sms_daily_limit` 5.
 
@@ -249,8 +258,8 @@ Settings: `chat_close_after` (question 2), `reminder_evening_at` 18:00,
   The push for a chat message shows its text, which people can hide in the
   phone's settings.
 - The notification log keeps who was told what kind of thing, when and on
-  which channel, without the text, for 90 days. It is a new row in the
-  privacy register when this spec is approved.
+  which channel, without the text, for 90 days (privacy register:
+  notification log).
 - Email and SMS providers are processors with a data processing agreement and
   EEA hosting where possible (ADR 0007). Sending domains use SPF, DKIM and
   DMARC ([security](../engineering/security.md)).
@@ -329,10 +338,12 @@ connections for the chat; marketing messages; review reminders and trip day
 (spec 8); reporting and blocking (spec 9); the operator console screens
 (spec 10); choosing the email and SMS providers (Phase 2, an ADR each).
 
-## Questions for Martin
+## Decisions
 
-| # | Question | Recommendation |
-| - | -------- | -------------- |
+Accepted by Martin on 2026-11-13 as recommended.
+
+| # | Question | Decision |
+| - | -------- | -------- |
 | 1 | Which events also go by SMS? | Only for passengers, and only within 24 hours of their boarding time: trip cancelled, booking cancelled by the driver, departure moved by more than 30 minutes, and their meeting point moved or paused. Everything else goes by push and email |
 | 2 | How long does a chat stay open after the trip? | 7 days after the trip's planned arrival, whether it happened or was cancelled, for lost items and settling up. Then read-only |
 | 3 | Can people send phone numbers, email addresses and links in the chat? | Yes, once the booking is confirmed. They have already paid in the app and may need to call each other at the meeting point. Requests and trip notes stay free of contact details (specs 3 and 5), and the safety tip stays pinned |

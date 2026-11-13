@@ -46,6 +46,7 @@
 | Reports and moderation | Report text, evidence, actions | Safety | Legitimate interest; legal obligation where applicable | Operator | 3 years after closure (**verify**) |
 | Verification | Phone verified, Auðkenni verified flag | Trust and safety | Consent (optional badges); contract (phone) | Badge public; details operator | While the account exists |
 | Device and push tokens | Push token, app version | Notifications | Contract | System | Until sign-out or token expiry |
+| Notification log | Recipient, kind of notification, channel, delivery status, time; no message text | Check that people were told | Contract and legitimate interest | Operator | 90 days |
 | Approximate location (on request) | Device location to find nearby meeting points | Convenience | Consent (device permission) | Not stored | Not stored |
 | Analytics | Usage events without names | Improve the product | Consent | Operator | 14 months |
 | Technical logs | Request IDs, errors | Security and reliability | Legitimate interest | Operator | 30 days |

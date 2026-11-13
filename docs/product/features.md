@@ -209,11 +209,13 @@ stop, which opens reviews.
 ## F. Communication
 
 **F1. Chat (Must).** One conversation per booking between the driver and that
-passenger. Text only. Phone numbers are never shared by the app.
+passenger. Text only. Phone numbers are never shared by the app; people may
+share contact details themselves once the booking is confirmed.
 
 **F2. Notifications (Must).** Push for every booking and trip event. Email for
-confirmations, changes and cancellations. SMS only for sign-in codes and
-last-minute cancellations, to control cost.
+confirmations, changes and cancellations. SMS only for sign-in codes and,
+within 24 hours of boarding, for passengers whose trip is cancelled, moved by
+more than 30 minutes, or whose meeting point changes, to control cost.
 
 ## G. Trust and safety
 
