@@ -1,15 +1,14 @@
 # Features
 
-**Owner:** Martin · **Last reviewed:** 2026-11-13 · **Status:** Proposed MVP
-list, for Martin's review
+**Owner:** Martin · **Last reviewed:** 2026-11-13 · **Status:** Accepted
+(2026-11-13), including the recommended answers to its design questions
 
 This is the feature list for the closed beta (the MVP), plus what comes after.
 Each feature has an ID so specs, plans, issues and PRs can refer to it.
 
-**How to review:** for each feature, say *keep*, *change* (and how), *later*
-or *cut*, and add anything missing. Questions where your answer changes the
-design are collected in [Questions for Martin](#questions-for-martin), each
-with a recommendation.
+**Changing this list:** propose additions or cuts in an issue or PR; the
+owner approves. Decisions that shaped the list are recorded in
+[Decisions](#decisions).
 
 Priorities:
 
@@ -81,7 +80,7 @@ first name only, never the phone number.
 
 **A3. Driver setup: vehicle and licence (Must).** Add one or more vehicles
 (make, model, colour, seats, registration number, 4x4). Confirm a valid
-driving licence before publishing the first trip (method: see question 3).
+driving licence before publishing the first trip (method: see decision 3).
 The registration number is shown only to booked passengers.
 
 **A4. Settings (Must).** Language, notification choices per category,
@@ -235,7 +234,7 @@ email.
 **I2. Accessibility (Must).** WCAG 2.2 AA: screen readers, large text,
 contrast, touch targets.
 
-**I3. Web app (Must).** The same app in the browser (see question 5).
+**I3. Web app (Must).** The same app in the browser (see decision 5).
 
 **I4. Works with poor mobile coverage (Should).** Booking details and meeting
 point directions stay available offline once loaded; actions retry when the
@@ -255,10 +254,12 @@ screen; it lands in the operator console.
 **J3. Usage analytics with consent (Should).** Anonymous usage events, only
 with consent, to measure the beta's exit criteria.
 
-## Questions for Martin
+## Decisions
 
-| # | Question | Recommendation |
-| - | -------- | -------------- |
+Accepted by Martin on 2026-11-13 as recommended.
+
+| # | Question | Decision |
+| - | -------- | -------- |
 | 1 | Default booking mode in the beta (open question Q4)? | Request and approval by default; drivers can switch a trip to instant |
 | 2 | Can passengers message a driver before booking? | No. A request can include a short message; full chat opens with the booking. Less spam and harassment |
 | 3 | How is a driving licence confirmed in the beta? | Self-declaration with licence expiry date, plus operator spot checks, since testers are invited. A stronger check (Auðkenni or document check) before public launch |

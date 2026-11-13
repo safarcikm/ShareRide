@@ -98,4 +98,4 @@ lawyer, then implemented as scheduled jobs and listed in the privacy policy.
 
 ## Age
 
-Accounts are for people aged 18 and over (open question Q7).
+Accounts are for people aged 18 and over (decided 2026-11-13).
