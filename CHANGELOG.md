@@ -33,6 +33,10 @@ releases follow [Semantic Versioning](https://semver.org/).
 - ADR 0014: a passenger service fee from public launch (answers Q5).
 - ADRs 0007, 0009, 0010 and 0011 accepted; open questions Q5, Q8, Q9, Q10,
   Q11 and Q13 answered.
+- Launch corridors decided (Q6): Selfoss, Keflavík Airport, and Akranes and
+  Borgarnes, with Akureyri if the waitlist shows demand.
+- Women-only trips in the MVP (Q12): spec 14 and ADR 0015, both for review.
+  All open questions are answered.
 - Development strategy, roadmap and open questions.
 - Product vision, pricing and seat rules, meeting point strategy.
 - Architecture overview, domain model and integrations.

@@ -55,6 +55,7 @@ Priorities:
 | G2 | Report and block | Must | 9 |
 | G3 | Reliability figure | Should | 8 |
 | G4 | Safety information and trip sharing | Must | 9 |
+| G5 | Women-only trips | Must | 14 |
 | H1 | Admin: meeting points | Must | 2 |
 | H2 | Admin: users, trips and bookings | Must | 9 |
 | H3 | Admin: reports and audit log | Must | 9 |
@@ -235,6 +236,11 @@ made more than 24 hours before boarding, are excluded.
 screens, SafeTravel information for remote routes, and "share trip details"
 that sends the route, time, driver's first name and vehicle to a contact.
 
+**G5. Women-only trips (Must, subject to the legal opinion).** A driver who
+has opted in can offer a trip only to people who have opted in, based on a
+private self-declaration in Settings; no gender is stored and no proof is
+asked (decision 14, [ADR 0015](../decisions/0015-women-only-trips.md)).
+
 ## H. Operator console (web)
 
 **H1. Meeting points (Must).** Create, edit, activate, deactivate; review
@@ -289,7 +295,7 @@ Revisit before launch (spec 12, decision 3).
 ## Decisions
 
 Decisions 1 to 9 were accepted by Martin on 2026-11-13 as recommended;
-decisions 10 to 13 are his own, from the same day, and he later changed
+decisions 10 to 14 are his own, from the same day, and he later changed
 decisions 3 and 6.
 
 | # | Question | Decision |
@@ -307,6 +313,7 @@ decisions 3 and 6.
 | 11 | Does the driver pick the stops along the way? | No. The app adds the meeting points along the route automatically; the driver can remove any they will not stop at |
 | 12 | Can the driver edit each segment's price? | No. One price level for the whole trip, from free up to the cap ([ADR 0012](../decisions/0012-trip-price-level.md)) |
 | 13 | How do passengers pay? | Only in the app, from the beta: they pay when the booking is accepted; free cancellation with a full refund up to 15 minutes before departure ([ADR 0013](../decisions/0013-in-app-payments-only.md)) |
+| 14 | Women-only trips in the MVP (open question Q12)? | Yes (the recommendation was to wait for the beta). Details in [spec 14](../specs/2026-11-13-women-only-trips.md) |
 
 ## After the MVP
 
@@ -323,7 +330,6 @@ Already planned for later phases (see the [roadmap](../strategy/roadmap.md)):
 - Polish language
 - Keflavík Airport flows that take flight times into account
 - Live trip sharing with a contact
-- Women-only trips, if the beta shows demand
 - Saved favourite routes and meeting points
 - Partner programmes (employers, universities, tourism)
 
@@ -352,4 +358,5 @@ features (I1 to I5) apply to every spec.
 
 Spec 13, payments, payouts and refunds (D7, D8, C8, H7), was added on
 2026-11-13 when payments moved into the beta. It is written right after
-spec 5.
+spec 5. Spec 14, women-only trips (G5), was added the same day when Martin
+put the option in the MVP (open question Q12).

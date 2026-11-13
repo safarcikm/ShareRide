@@ -42,9 +42,11 @@ Goal: every aspect of the product is thought out and written down before code.
 Product and design
 
 - [x] Review and accept or amend the strategy and ADRs 0002 to 0011
-- [ ] Answer the [open questions](open-questions.md)
+- [x] Answer the [open questions](open-questions.md) (all answered
+      2026-11-13)
 - [x] Write MVP feature specs in `docs/specs/` (one per feature in
-      [features](../product/features.md))
+      [features](../product/features.md)); specs 1 to 13 approved
+- [ ] Approve spec 14, women-only trips (added 2026-11-13, answer A36)
 - [ ] Draft the meeting point list v1 for the launch corridors
       ([meeting points](../product/meeting-points.md))
 - [ ] User flows and wireframes for: post a trip, search, book, manage bookings
@@ -121,7 +123,9 @@ policy approved; company registered.
 
 Goal: prove that people find rides and that the rules work in real life.
 
-- [ ] 50 to 150 testers on 3 to 5 corridors, for 6 to 8 weeks
+- [ ] 50 to 150 testers on the three commuter corridors (Selfoss, Keflavík
+  Airport, Akranes and Borgarnes; Akureyri if the waitlist shows demand), for
+  6 to 8 weeks
 - [ ] TestFlight and Google Play internal testing, plus the web app
 - [ ] In-app feedback and a weekly review of metrics and reports
 - [ ] Fix, simplify, repeat

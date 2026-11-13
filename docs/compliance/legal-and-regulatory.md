@@ -142,3 +142,8 @@ Actions:
 7. Which company form and set-up do you recommend for a solo operator?
 8. Do the Digital Services Act and the European Accessibility Act apply in
    Iceland today?
+9. Are women-only trips ([spec 14](../specs/2026-11-13-women-only-trips.md))
+   allowed under article 17 of the Act on Equal Status and Equal Rights
+   Irrespective of Gender (No. 150/2020), as a difference in treatment
+   justified by safety? Must people registered as neutral be included, and
+   do we need to offer men-only trips too?

@@ -75,6 +75,7 @@ A trip matches when all of these hold (rule R4.1):
 5. At least the requested number of seats is free on every segment between the
    two stops (rule S3).
 6. The searcher is not the driver, and neither has blocked the other.
+7. A women-only trip matches only for people who can see it ([spec 14](2026-11-13-women-only-trips.md)).
 
 When several stops of one trip match (for example two capital area points),
 the result uses the boarding stop and the alighting stop closest to what was
@@ -91,7 +92,8 @@ page.
    driver"; and "Instant" or "Request" for the booking mode.
 2. Sorted by departure time at the boarding stop. Can be sorted by price
    instead. Without a date, results are grouped by day.
-3. Filters: instant booking only; time of day (morning, afternoon, evening).
+3. Filters: instant booking only; time of day (morning, afternoon, evening);
+   and, for people who have opted in, women-only trips only (spec 14).
 4. Trips that are full on the searched part are not shown.
 5. Times are in Iceland time; if the phone uses another time zone, the screen
    says "Iceland time".

@@ -45,3 +45,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0012](0012-trip-price-level.md) | One price level per trip instead of per-segment price editing | Accepted |
 | [0013](0013-in-app-payments-only.md) | All payments through the app, from the beta | Accepted |
 | [0014](0014-passenger-service-fee-from-launch.md) | A passenger service fee from public launch | Accepted |
+| [0015](0015-women-only-trips.md) | Women-only trips based on a private self-declaration | Proposed |

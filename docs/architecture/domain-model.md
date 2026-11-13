@@ -46,6 +46,7 @@ erDiagram
 | `locale` | App language |
 | `verification` | Set of: `phone`, `email`, `audkenni` |
 | `licence_declared_at` | When the user declared they hold a valid driving licence (needed to publish trips) |
+| `women_only_since`, `women_only_withdrawn_at` | When the user opted in to women-only trips, and when the operator withdrew that access; no gender is stored ([spec 14](../specs/2026-11-13-women-only-trips.md)) |
 | `roles` | `member`, `operator`; admin access needs `operator` |
 | `status` | `active`, `suspended` (with `suspended_until`, empty when permanent), `deletion_scheduled` (with `delete_after`, 7 days), `deleted` (an anonymous placeholder) |
 | `created_at`, `deleted_at` | Deletion anonymises; see [privacy](../compliance/privacy-gdpr.md) |
@@ -97,6 +98,7 @@ ordered pair of active meeting points connected by road.
 | `status` | `draft`, `published`, `departed`, `completed`, `cancelled` |
 | `preferences` | Luggage, pets, smoking, etc. |
 | `notes` | Free text from the driver |
+| `women_only` | Only people who have opted in can see and book it; fixed once a request or booking exists |
 | `published_at`, `cancelled_at`, `cancel_reason` | |
 
 ### TripStop
@@ -129,6 +131,7 @@ One row per change to a published trip, so passengers can see what changed:
 | `status` | `requested`, `accepted` (awaiting payment), `confirmed` (paid), `declined`, `expired`, `cancelled`, `completed`, `no_show` |
 | `total_price`, `currency` | Snapshot at booking time |
 | `requested_at`, `decided_at`, `expires_at`, `payment_due_at` | |
+| `party_confirmed_at` | The passenger confirmed that everyone in a booking of more than one seat on a women-only trip can join |
 | `message`, `decline_reason`, `attempt_key` | Request note, reason seen only by the operator, idempotency key ([spec 5](../specs/2026-11-13-booking-and-requests.md#6-data-and-api)) |
 | `cancelled_by`, `cancel_reason`, `cancelled_at` | Reasons include `weather`, `road_closed` |
 | `refund_amount`, `counts_on_reliability` | Worked out by the domain when the booking is cancelled ([spec 6](../specs/2026-11-13-changes-and-cancellations.md#4-rules)) |
@@ -218,6 +221,8 @@ Enforced in the domain package and, where possible, in the database too.
 7. A user cannot book their own trip.
 8. Reviews exist only for completed bookings, one per author per booking.
 9. A trip with active bookings cannot be deleted, only cancelled.
+10. Only users who have opted in, and whose access is not withdrawn, can
+    publish, see or book a women-only trip.
 
 ## Trip lifecycle
 
@@ -246,6 +251,7 @@ outbox table) and processed by the worker:
 `TripDeparted`, `CheckedIn`, `PassengerNoShow`, `DriverAbsentReported`,
 `DisputeAnswered`, `DisputeDecided`, `TripCompleted`, `MessageSent`, `ReviewSubmitted`, `ReviewsRevealed`, `ReportFiled`, `ReportResolved`,
 `UserBlocked`, `UserSuspended`, `UserReinstated`, `ContentHidden`,
+`WomenOnlyAccessWithdrawn`, `WomenOnlyAccessRestored`,
 `WeatherWarningMatched`, `RoadClosureMatched`.
 
 Notifications, review reminders and analytics subscribe to these events, so

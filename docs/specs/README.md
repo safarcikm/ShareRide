@@ -38,3 +38,4 @@ Specs follow the order in [features](../product/features.md#spec-order).
 | 11 | [Privacy self-service](2026-11-13-privacy-self-service.md) | A5 | Approved (2026-11-13) |
 | 12 | [Beta access and feedback](2026-11-13-beta-access-and-feedback.md) | J1, J2, J3 | Approved (2026-11-13) |
 | 13 | [Payments, refunds, payouts and receipts](2026-11-13-payments.md) | D7, D8, C8, H7 | Approved (2026-11-13) |
+| 14 | [Women-only trips](2026-11-13-women-only-trips.md) | G5 | Draft for review |

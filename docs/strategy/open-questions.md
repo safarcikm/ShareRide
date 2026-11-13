@@ -8,10 +8,8 @@ here, update or accept the linked ADR, and move the row to "Answered".
 
 ## Open
 
-| #  | Question | Recommendation | Affects |
-| -- | -------- | -------------- | ------- |
-| Q6 | Which corridors open first? | Start with three commuter routes: Reykjavík–Hveragerði–Selfoss, Reykjavík–Reykjanesbær–Keflavík Airport and Reykjavík–Akranes–Borgarnes. Add Reykjavík–Akureyri if the waitlist shows demand; Selfoss–Hvolsvöllur–Vík later. With up to 150 testers (spec 12), three routes keep enough people on each. | [meeting points](../product/meeting-points.md) |
-| Q12 | Women-only trips option? | Not in the MVP; consider after the beta based on feedback. | [features](../product/features.md) |
+None right now (2026-11-13). A new question goes in a table here with the
+next free number (Q14 onwards), a recommendation and the docs it affects.
 
 ## Answered
 
@@ -51,3 +49,5 @@ here, update or accept the linked ADR, and move the row to "Answered".
 | A32 | Q11: brand and domain | Keep "ShareRide" as the name for now, with the option to change it later. The name lives in one place in the app's configuration and texts, so a rename stays cheap. | 2026-11-13 |
 | A33 | Q13: legal and company work in Phase 1 | Yes, as a parallel track: the legal opinion, company, terms, privacy policy and insurance before the beta. | 2026-11-13 |
 | A34 | Remaining proposed ADRs | ADRs 0007 (EEA hosting), 0009 (maps and routing), 0010 (authentication and identity) and 0011 (Icelandic and English) accepted as written. | 2026-11-13 |
+| A35 | Q6: which corridors open first | As recommended: the beta opens with three commuter corridors, Reykjavík–Hveragerði–Selfoss, Reykjavík–Reykjanesbær–Keflavík Airport and Reykjavík–Akranes–Borgarnes, plus the capital area hubs. Reykjavík–Akureyri is added if the waitlist shows demand; Selfoss–Hvolsvöllur–Vík later ([meeting points](../product/meeting-points.md#launch-corridors)). | 2026-11-13 |
+| A36 | Q12: women-only trips | Yes, in the MVP (changed by Martin from the recommendation to wait for the beta). A driver can offer a trip only to women, based on a private self-declaration; details in [spec 14](../specs/2026-11-13-women-only-trips.md) and [ADR 0015](../decisions/0015-women-only-trips.md), both for review, and subject to the legal opinion. | 2026-11-13 |

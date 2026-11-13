@@ -62,6 +62,8 @@ Opened from trip details (spec 4) with the chosen part and seats.
    phone numbers, email addresses or links (as in spec 3, R3.10). Instant
    bookings have no message; the chat opens at once.
 6. Button: "Book" (instant) or "Send request" (approval).
+7. **Women-only trips:** only people who have opted in can book, and a
+   booking of more than one seat needs a confirmation ([spec 14](2026-11-13-women-only-trips.md)).
 
 ### 3.2 Confirming
 

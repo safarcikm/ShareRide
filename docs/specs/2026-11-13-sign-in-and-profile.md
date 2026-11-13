@@ -118,8 +118,9 @@ number. Otherwise they contact support.
 ### 3.8 Settings
 
 Language; notification choices (filled in by spec 7); blocked users (filled in
-by spec 9); signed-in devices; linked sign-in methods (Apple, Google); email;
-phone number; legal documents; delete account (spec 11); sign out.
+by spec 9); women-only trips ([spec 14](2026-11-13-women-only-trips.md)); signed-in devices; linked sign-in
+methods (Apple, Google); email; phone number; legal documents; delete account
+(spec 11); sign out.
 
 ## 4. Rules
 

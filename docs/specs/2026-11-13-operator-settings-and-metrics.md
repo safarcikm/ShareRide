@@ -99,8 +99,9 @@ an hour reminds the operator.
 
 1. **Corridors:** the operator defines corridors as a name and an ordered list
    of places (for example Reykjavík, Hveragerði, Selfoss). A search or trip
-   belongs to a corridor when both its ends are places on it. Which corridors
-   open first is open question Q6.
+   belongs to a corridor when both its ends are places on it. The beta opens
+   with three corridors ([meeting points](../product/meeting-points.md#launch-corridors),
+   answer A35 to open question Q6).
 2. **Weekly figures** by corridor and in total, for ISO weeks in Iceland time:
 
    | Metric | How it is counted |

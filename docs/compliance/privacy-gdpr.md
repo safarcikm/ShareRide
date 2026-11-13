@@ -42,6 +42,7 @@
 | Data exports | The user's own export file | Access and portability | Legal obligation | The user | 7 days |
 | Privacy requests | Request text and answer | Answer rights requests | Legal obligation | Operator | 3 years after the answer (**verify**) |
 | Public profile | First name, photo, bio, languages, badges | Trust between users | Contract | All users | While the account exists |
+| Women-only trips | Date of opting in, date access was withdrawn; no gender field ([spec 14](../specs/2026-11-13-women-only-trips.md#7-privacy-and-safety)) | Let people offer and book women-only trips | Consent (given with the switch, withdrawn by turning it off) | The user; operator; others on a women-only trip see only that it is women-only | Until turned off or the account is deleted; a withdrawal stays with its report |
 | Vehicle | Make, model, colour, number plate | Identify the car at pickup | Contract | Make, model and colour: all users; number plate: booked passengers | While the account exists |
 | Trips and bookings | Meeting points, times, seats, prices | Provide the service | Contract | Participants; operator | 3 years after the trip, then anonymised (**verify** period) |
 | Messages | Chat between driver and passenger | Coordinate the trip | Contract | Participants; operator only when a report or a trip day dispute is filed | 12 months after the trip, unless part of a report |
@@ -71,7 +72,7 @@
 | Rectification | Edit profile; contact support for other data |
 | Erasure | "Delete my account": after any open bookings are resolved and a 7-day waiting period, removes the profile, anonymises trips and bookings, and deletes messages; reviews written stay as by "a former member" ([spec 11](../specs/2026-11-13-privacy-self-service.md#35-what-is-erased-and-what-is-kept)) |
 | Objection and restriction | Contact form routed to the operator; answered within one month |
-| Withdraw consent | Settings for analytics, marketing and optional verification |
+| Withdraw consent | Settings for analytics, marketing, optional verification and women-only trips |
 
 ## Required documents before the beta
 

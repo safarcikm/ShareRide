@@ -156,6 +156,8 @@ Drivers do not edit segment prices one by one (decision 2,
 4. **Note** to passengers: up to 500 characters. Phone numbers, email addresses
    and links are not allowed, with an explanation that contact happens in the
    app chat (features decision 8).
+5. **Women only:** a driver who has opted in can offer the trip only to
+   people who have opted in ([spec 14](2026-11-13-women-only-trips.md)).
 
 ### 3.8 Review and publish
 

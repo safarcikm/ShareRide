@@ -51,7 +51,7 @@ decision, with every operator action logged.
 2. **Categories:** safety (dangerous driving, threats, violence); harassment
    or unwanted contact; discrimination; scam or payment outside the app;
    false profile, car or licence; offensive content; the trip wasn't as
-   listed; something else. A no-show or a missing driver is not a report but
+   listed; misuse of a women-only trip ([spec 14](2026-11-13-women-only-trips.md)); something else. A no-show or a missing driver is not a report but
    spec 8's flow, which the report screen points to.
 3. For the safety category, the screen first says "If you are in danger, call
    112 now", with a call button. ShareRide is not an emergency service.
@@ -114,7 +114,7 @@ decision, with every operator action logged.
    note, profile photo or bio); suspend (3.6); refund a booking or release a
    held payout (spec 13); cancel an upcoming trip as the operator (full
    refunds; it does not count on the driver's reliability unless the operator
-   says so).
+   says so); withdraw access to women-only trips (spec 14).
 4. **Statement of reasons:** every action that affects a user sends them an
    email in their language with what was done, which community rule it
    concerns, the content affected, and how to appeal: by replying to that
