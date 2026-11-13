@@ -37,9 +37,9 @@ Priorities:
 | C5 | Manage my trips | Must | 6 |
 | C6 | Duplicate a trip or create the return trip | Should | 6 |
 | C7 | Accept or decline requests | Must | 5 |
-| D1 | Search trips | Must | 4 |
+| D1 | Search trips, including partial routes | Must | 4 |
 | D2 | Trip details | Must | 4 |
-| D3 | Book seats | Must | 5 |
+| D3 | Book seats on the whole trip or only part of it | Must | 5 |
 | D4 | My bookings | Must | 5 |
 | D5 | Cancel a booking | Must | 6 |
 | D6 | Help when nothing matches | Should | 4 |
@@ -140,18 +140,24 @@ expire if not answered in time.
 
 ## D. Passenger: search and booking
 
-**D1. Search trips (Must).** From, to and date. Results include trips that
-pass through both places in the right order, not only end to end. Each result
-shows the departure time at my boarding stop, my price, free seats and the
-driver's rating.
+**D1. Search trips, including partial routes (Must).** From, to and date.
+Results include every trip that passes through both places in the right order,
+not only trips that start and end there. Searching Borgarnes to Blönduós finds a
+Reykjavík to Akureyri trip that stops at both. Each result shows the departure
+time at my boarding stop, my price for that part, the seats free on that part
+and the driver's rating.
 
 **D2. Trip details (Must).** Route on a map with all stops and times, my price,
 the driver's profile and reviews, the vehicle (model and colour; registration
 after booking), preferences and booking mode.
 
-**D3. Book seats (Must).** Choose the number of seats, see the total price and
-the cancellation rules, confirm. Instant bookings confirm at once; requests can
-include a short message to the driver.
+**D3. Book seats on the whole trip or only part of it (Must).** A passenger
+joins between any two meeting points on the trip, in travel order, and pays
+only the segments in between. Seats are counted per segment, so a seat freed at
+one stop can be booked by someone else from there on (rules in
+[pricing and seats](pricing-and-seats.md#seats)). Choose the number of seats,
+see the total price and the cancellation rules, confirm. Instant bookings
+confirm at once; requests can include a short message to the driver.
 
 **D4. My bookings (Must).** Upcoming and past bookings with status, meeting
 point directions and a link to the chat.
