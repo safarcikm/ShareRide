@@ -186,7 +186,11 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
 ### Supporting records
 
 - `AuditLog`: who did what to which record, when, from where. Append-only.
-- `Setting`: operator configuration (rates, timeouts) with change history.
+- `Setting`: operator configuration (rates, timeouts, switches) with a range,
+  a `SettingChange` history and a `SettingsVersion` that trips and bookings
+  record ([spec 10](../specs/2026-11-13-operator-settings-and-metrics.md#6-data-and-api)).
+- `SearchLog` (anonymous: places, date, result count, time, platform),
+  `Corridor`, `WeeklyMetric`, `Announcement`.
 - `NotificationPreference`, `PushToken`.
 - `Block`: blocker and blocked; hides both from each other ([spec 9](../specs/2026-11-13-safety-and-moderation.md#32-blocking-g2)).
 - `Notification` and `NotificationDelivery`: who was told what kind of thing,

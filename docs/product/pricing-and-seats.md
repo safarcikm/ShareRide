@@ -74,9 +74,9 @@ cap[k] = round_to_step(distance_km[k] × reference_cost_per_km / (capacity + 1))
 
 The idea: a full car must not earn the driver more than the cost of driving.
 The driver counts as one of the people sharing the cost, hence `capacity + 1`.
-`reference_cost_per_km` is set centrally, for example from the official
-mileage allowance for government employees (akstursgjald) or a fuel and wear
-estimate. **The formula and its inputs are to be confirmed by the legal
+`reference_cost_per_km` is set centrally from the official mileage allowance
+for government employees (akstursgjald): 150 kr per km to start, the rate for
+the first 10 000 km from 1 June 2026 (decided 2026-11-13). **The formula and its inputs are to be confirmed by the legal
 opinion before the beta.**
 
 ### Rule P4: the driver's price level
@@ -111,7 +111,8 @@ driver's share is never reduced by the fee.
 
 ### Worked example
 
-The reference values below are placeholders for illustration only.
+The suggested rate below is the starting value (decided 2026-11-13);
+distances are approximate.
 
 A driver posts Reykjavík (A) → Borgarnes (B) → Blönduós (C) → Akureyri (D) with
 3 seats. Suggested rate: 15 kr per km per passenger. Step: 100 kr.
@@ -328,8 +329,8 @@ Set centrally by the operator; changes are logged.
 
 | Setting | Default | Notes |
 | ------- | ------- | ----- |
-| `suggested_rate` | to decide in Phase 1 | ISK per km per passenger |
-| `reference_cost_per_km` | to decide in Phase 1 | Basis of the price cap |
+| `suggested_rate` | 15 kr | ISK per km per passenger (decided 2026-11-13; to be confirmed by the legal opinion) |
+| `reference_cost_per_km` | 150 kr | Basis of the price cap: the state mileage allowance, first 10 000 km, from 1 June 2026 (decided 2026-11-13; to be confirmed by the legal opinion) |
 | `price_step` | 100 kr | Rounding step for suggested prices and caps |
 | `price_level_step` | 10% | Steps of the driver's price level |
 | `payment_window` | 30 minutes | Time to pay after acceptance; never past the booking cut-off |

@@ -1,6 +1,6 @@
 # Spec 10: Operator settings and metrics
 
-**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Draft for review
+**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
 Features: H4 Pricing and timing settings, H5 Beta metrics, H6 Message all beta
 testers ([features](../product/features.md)), and the console's overall
@@ -73,7 +73,11 @@ testers; and a console home that shows what needs attention today.
 6. Changing a value within its range is an operational change. Changing a
    range, the meaning of a setting, or adding one is a rule change and needs
    an ADR, as for any business rule.
-7. Starting values for the two price rates: question 1.
+7. Starting values (decision 1): `suggested_rate` 15 kr per km per passenger
+   and `reference_cost_per_km` 150 kr per km, the state mileage allowance for
+   the first 10 000 km from 1 June 2026. Both are confirmed or lowered by the
+   legal opinion before the beta, and the reference cost is reviewed when the
+   allowance changes.
 
 ### 3.3 Switches
 
@@ -115,8 +119,13 @@ an hour reminds the operator.
    | Active people | Drivers with a trip, passengers with a booking |
 
 3. **Exit criteria:** a panel compares the last 4 weeks on the launch
-   corridors with the beta targets, each marked met or not met. The targets
-   themselves: question 2.
+   corridors with the beta targets, each marked met or not met (decision 2):
+   - at least half of searches show a trip;
+   - at least 1 in 5 searches with a result leads to a request;
+   - driver cancellations under 10%, excluding weather;
+   - seat fill of at least 30%;
+   - at least 30% of passengers book again within 60 days;
+   - every report answered within 24 hours.
 4. Figures are recomputed every night for the last 2 weeks, so late
    cancellations and completions are included. The page can export the
    figures as CSV.
@@ -137,7 +146,8 @@ an hour reminds the operator.
    (verified addresses), through spec 7's delivery with its once-only
    guarantee.
 4. Announcements are about the beta and the service, never advertising
-   (spec 7). Whether testers can turn them off: question 3.
+   (spec 7). Testers can turn them off with a "Beta news" switch in
+   Settings, on by default (decision 3).
 5. Sent announcements are listed with their audience, time and delivery
    counts.
 
@@ -151,7 +161,7 @@ an hour reminds the operator.
 | R10.4 | Changing a value within its range is operational; changing a range or a meaning, or adding a setting, needs an ADR. |
 | R10.5 | A switch pauses only new activity; it never cancels or changes existing trips and bookings. |
 | R10.6 | Metrics use the database's own records and a search log that holds no user ID, device ID or network address. |
-| R10.7 | Announcements need both languages, go only to beta testers, and never advertise. |
+| R10.7 | Announcements need both languages, go only to beta testers who have "Beta news" on, and never advertise. |
 | R10.8 | Only the operator role can open the console, and every action in it is written to the audit log (spec 9). |
 
 ## 5. Screens
@@ -207,11 +217,11 @@ metrics job and announcement sending run in the worker.
 
 - The search log is anonymous by design: no user, device or network
   identifier, so the metrics need no consent. It is listed in the privacy
-  register when this spec is approved.
+  register.
 - Metrics are aggregates. Corridor and week figures based on fewer than 5
   people are shown as "fewer than 5" outside the console's own detail views.
-- Announcements go only to beta testers and contain no advertising; whether
-  they can be turned off is question 3. Marketing messages need opt-in
+- Announcements go only to beta testers, contain no advertising and can be
+  turned off with "Beta news". Marketing messages need opt-in
   consent ([legal](../compliance/legal-and-regulatory.md#6-consumer-protection-and-terms)).
 - The console requires the operator role and a passkey; settings, switches
   and announcements are all audited (spec 9).
@@ -255,15 +265,17 @@ statistics; product analytics in the app (Phase 3, consent-based,
 [integrations](../architecture/integrations.md)); beta invitations and
 feedback (spec 12).
 
-## Questions for Martin
+## Decisions
 
-| # | Question | Recommendation |
-| - | -------- | -------------- |
+Accepted by Martin on 2026-11-13 as recommended.
+
+| # | Question | Decision |
+| - | -------- | -------- |
 | 1 | What should the two price rates start at? | Suggested rate 15 kr per km per passenger, so Reykjavík to Akureyri costs about 5 800 kr at 100%. With two passengers that covers roughly the fuel and the new per-km road fee. Reference cost 150 kr per km, the state mileage allowance for the first 10 000 km from 1 June 2026. With 3 seats drivers could then go up to 250%. Both are confirmed or lowered by the legal opinion before the beta |
 | 2 | Which beta targets do we hold ourselves to? | The ones in the vision, over the last 4 weeks of the beta on the launch corridors: half of searches show a trip; 1 in 5 searches with a result leads to a request; driver cancellations under 10% (excluding weather); seat fill 30%; 30% of passengers book again within 60 days; every report answered within 24 hours |
 | 3 | Can testers turn off announcements? | Yes, with a "Beta news" switch in Settings, on by default. They are not essential, and it keeps us clear of the marketing consent rules |
 
-Sources for question 1: the state mileage allowance, announcement 1/2026
+Sources for decision 1: the state mileage allowance, announcement 1/2026
 ([Stjórnarráð Íslands](https://www.stjornarradid.is/efst-a-baugi/frettir/stok-frett/2026/05/31/Akstursgjald-rikisstarfsmanna-auglysing-nr.-1-2026/)),
 150 kr per km for the first 10 000 km from 1 June 2026; petrol around
 280 kr per litre in October 2026 and the per-km road fee from 1 January 2026

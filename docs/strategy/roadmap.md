@@ -50,7 +50,9 @@ Product and design
 - [ ] User flows and wireframes for: post a trip, search, book, manage bookings
 - [ ] Brand direction: name check, logo, colours, tone of voice
 - [ ] Clickable prototype tested with 5 to 10 potential drivers and passengers
-- [ ] Set the cost-sharing price rates (ISK per km) and rounding
+- [x] Set the cost-sharing price rates (ISK per km) and rounding: 15 kr
+      suggested, 150 kr reference, 100 kr step (2026-11-13; legal opinion to
+      confirm)
 
 Legal and company (start now, see [legal and regulatory](../compliance/legal-and-regulatory.md))
 
@@ -123,11 +125,16 @@ Goal: prove that people find rides and that the rules work in real life.
 - [ ] In-app feedback and a weekly review of metrics and reports
 - [ ] Fix, simplify, repeat
 
-Exit criteria (targets to be confirmed before the beta starts):
+Exit criteria (confirmed 2026-11-13, measured over the last 4 weeks of the
+beta on the launch corridors,
+[spec 10](../specs/2026-11-13-operator-settings-and-metrics.md#34-metrics-h5)):
 
 - At least half of searches on launch corridors return one or more trips
 - At least 1 in 5 searches with results leads to a booking request
 - Driver cancellation rate under 10 percent, excluding weather
+- Seat fill of at least 30 percent
+- At least 30 percent of passengers book again within 60 days
+- Every report answered within 24 hours
 - No unresolved safety incident
 - Legal opinion received and the model adjusted if needed
 

@@ -53,6 +53,7 @@
 | Notification log | Recipient, kind of notification, channel, delivery status, time; no message text | Check that people were told | Contract and legitimate interest | Operator | 90 days |
 | Approximate location (on request) | Device location to find nearby meeting points | Convenience | Consent (device permission) | Not stored | Not stored |
 | Analytics | Usage events without names | Improve the product | Consent | Operator | 14 months |
+| Search log | From and to place, date searched for, result count, time, platform; no user, device or network identifier | Beta metrics | Not personal data by design | Operator | 14 months |
 | Technical logs | Request IDs, errors | Security and reliability | Legitimate interest | Operator | 30 days |
 | Payments | Amounts, provider references, refunds, payouts | Payment, accounting | Contract; legal obligation | Participants; operator | As bookkeeping law requires (**verify**) |
 | Payout set-up (drivers) | Identity check and bank account, held by the payment provider | Paying drivers | Contract; legal obligation (provider's checks) | Provider; operator sees status only | Per the provider's terms |

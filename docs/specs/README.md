@@ -34,5 +34,5 @@ Specs follow the order in [features](../product/features.md#spec-order).
 | 7 | [Chat, notifications and reminders](2026-11-13-chat-and-notifications.md) | F1, F2, E1 | Approved (2026-11-13) |
 | 8 | [Trip day, reviews and reliability](2026-11-13-trip-day-reviews-and-reliability.md) | E2, E3, E4, G1, G3 | Approved (2026-11-13) |
 | 9 | [Safety and moderation](2026-11-13-safety-and-moderation.md) | G2, G4, H2, H3 | Approved (2026-11-13) |
-| 10 | [Operator settings and metrics](2026-11-13-operator-settings-and-metrics.md) | H4, H5, H6 | Draft for review |
+| 10 | [Operator settings and metrics](2026-11-13-operator-settings-and-metrics.md) | H4, H5, H6 | Approved (2026-11-13) |
 | 13 | [Payments, refunds, payouts and receipts](2026-11-13-payments.md) | D7, D8, C8, H7 | Approved (2026-11-13) |

@@ -145,7 +145,8 @@ than 5 such messages a day.
 
 ### 3.6 Settings and reaching people
 
-1. Settings (spec 1) has one switch: trip reminders, on by default.
+1. Settings (spec 1) has two switches, both on by default: trip reminders,
+   and beta news (spec 10).
    Notifications about bookings, trips, payments and messages are always on in
    the app, because other people rely on them. Push can still be turned off in
    the phone's settings; the email fallback then applies.
@@ -185,7 +186,7 @@ than 5 such messages a day.
 | R7.5 | Sending is limited to 10 messages a minute per person. |
 | R7.6 | Every event in the catalogue (3.3) reaches each person concerned at most once per channel. |
 | R7.7 | Notifications use the recipient's language and local time. |
-| R7.8 | Only trip reminders can be turned off in the app. |
+| R7.8 | Only trip reminders and beta news (spec 10) can be turned off in the app. |
 | R7.9 | Notifications never add a phone number, email address, number plate or payment details. A chat message's text appears only in its push, never in an email or SMS. Emails carry no tracking pixels or tracked links. |
 | R7.10 | SMS is sent only for sign-in codes and the events in 3.4 (passengers, within 24 hours of boarding), only to a verified phone number, and at most 5 a day per person apart from codes. |
 | R7.11 | Reminders follow the trip: they move when the departure moves and are dropped when the booking ends. |
@@ -218,7 +219,7 @@ Entities (see [domain model](../architecture/domain-model.md)):
   reference, sent at. Both are kept 90 days.
 - `PushToken`: user, signed-in device (spec 1), platform, token, updated at;
   removed at sign-out or when reported invalid.
-- `NotificationPreference`: user, reminders on or off.
+- `NotificationPreference`: user, reminders on or off, beta news on or off.
 
 Endpoints (`/v1`, shapes defined in `packages/contracts`):
 

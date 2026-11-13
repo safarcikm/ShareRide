@@ -48,7 +48,7 @@ fewer cars carry one person.
 
 ## How we will know it works
 
-| Metric | Why it matters | Beta target (to confirm) |
+| Metric | Why it matters | Beta target (confirmed 2026-11-13) |
 | ------ | -------------- | ------------------------ |
 | Searches with at least one result | Liquidity: the core health signal | 50 percent on launch corridors |
 | Search to booking request | Do results match what people need? | 20 percent of searches with results |
