@@ -1,6 +1,7 @@
 # 0010. Phone-first authentication and layered identity verification
 
-- **Status:** Accepted (2026-11-13, by Martin once the MVP specs were approved)
+- **Status:** Accepted (2026-11-13, by Martin once the MVP specs were approved); the
+  "Implementation" choice is superseded by [ADR 0016](0016-own-sign-in-module.md)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [security](../engineering/security.md),

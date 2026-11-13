@@ -12,4 +12,6 @@ one stopped.
 
 ## Index
 
-None yet.
+| Plan | Covers | Status |
+| ---- | ------ | ------ |
+| [Milestone 1: foundation and phone sign-in](2026-11-13-milestone-1-phone-sign-in.md) | Monorepo, CI, local development, Expo app on iOS, Android and web, phone sign-in ([spec 1](../specs/2026-11-13-sign-in-and-profile.md)) | Proposed |
