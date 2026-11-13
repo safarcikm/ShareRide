@@ -79,13 +79,19 @@ pnpm check                   # lint, type check and unit tests (Turborepo)
 pnpm test:integration        # tests against the database (one package at a time)
 pnpm format                  # format with Prettier (pnpm format:check in CI)
 pnpm --filter @shareride/api dev       # migrate, then run the API on port 3000
+pnpm --filter @shareride/mobile dev    # the app: Expo dev server (w = web, QR = Expo Go)
+pnpm --filter @shareride/mobile export # bundles for iOS, Android and web (dist/)
+pnpm --filter @shareride/mobile e2e:web  # Playwright on the exported web build
 pnpm --filter @shareride/db generate   # SQL migration from schema changes
 pnpm --filter @shareride/domain test   # one package
 npx --yes markdownlint-cli2@0.24.0     # lint the docs
 ```
 
 Tests named `*.integration.test.ts` need `TEST_DATABASE_URL`, a database
-whose name ends in `_test`; they wipe it.
+whose name ends in `_test`; they wipe it. App texts live in
+`packages/i18n/src/messages/en.ts` and `is.ts`; add every key to both. In the
+app, add Expo packages with `npx expo install`, and await RNTL 14's `render`
+and `fireEvent`.
 
 Workspace packages export TypeScript source directly (`"exports":
 "./src/index.ts"`); Node.js runs it with built-in type stripping, so use
