@@ -11,6 +11,7 @@ export const colors = {
     primary: "#0B5CAD",
     onPrimary: "#FFFFFF",
     border: "#C9D0D9",
+    error: "#B3261E",
     focus: "#F2A900",
   },
   dark: {
@@ -21,6 +22,7 @@ export const colors = {
     primary: "#7FB6F2",
     onPrimary: "#0A1A2B",
     border: "#38414D",
+    error: "#FFB4AB",
     focus: "#F2A900",
   },
 } as const;
@@ -34,6 +36,8 @@ export const typography = {
   title: { fontSize: 28, lineHeight: 34, fontWeight: "700" },
   body: { fontSize: 17, lineHeight: 24, fontWeight: "400" },
   button: { fontSize: 17, lineHeight: 22, fontWeight: "600" },
+  label: { fontSize: 15, lineHeight: 20, fontWeight: "600" },
+  small: { fontSize: 15, lineHeight: 20, fontWeight: "400" },
 } as const;
 
 /** Smallest touch target, in points (WCAG 2.2 AA, conventions). */

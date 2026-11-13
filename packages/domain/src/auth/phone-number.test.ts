@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalisePhoneNumber } from "./phone-number.ts";
+import { callingCode, formatPhoneNumber, normalisePhoneNumber } from "./phone-number.ts";
 
 describe("normalisePhoneNumber (rules R1.1 and R1.5)", () => {
   it("reads an Icelandic mobile number without a country code as Icelandic", () => {
@@ -54,5 +54,24 @@ describe("normalisePhoneNumber (rules R1.1 and R1.5)", () => {
 
   it.each(["", "abc", "12", "+354 690 00000 000"])("rejects %j", (input) => {
     expect(normalisePhoneNumber(input)).toEqual({ ok: false, error: { code: "phone_invalid" } });
+  });
+});
+
+describe("callingCode", () => {
+  it("gives the country calling code for the country picker", () => {
+    expect(callingCode("IS")).toBe("354");
+    expect(callingCode("GB")).toBe("44");
+    expect(callingCode("US")).toBe("1");
+  });
+});
+
+describe("formatPhoneNumber", () => {
+  it("shows an E.164 number in the international format people read", () => {
+    expect(formatPhoneNumber("+3546900000")).toBe("+354 690 0000");
+    expect(formatPhoneNumber("+48512345678")).toBe("+48 512 345 678");
+  });
+
+  it("leaves text that is not a phone number as it is", () => {
+    expect(formatPhoneNumber("not a number")).toBe("not a number");
   });
 });

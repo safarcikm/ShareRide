@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "typecheck": "tsc && tsc -p scripts",
     "test": "vitest run",
-    "generate:countries": "node scripts/generate-country-names.ts"
+    "generate:names": "node scripts/generate-display-names.ts"
   },
   "dependencies": {
     "@shareride/domain": "workspace:*",

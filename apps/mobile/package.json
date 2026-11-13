@@ -20,6 +20,8 @@
     "e2e:web": "playwright test"
   },
   "dependencies": {
+    "@shareride/api-client": "workspace:*",
+    "@shareride/contracts": "workspace:*",
     "@shareride/domain": "workspace:*",
     "@shareride/i18n": "workspace:*",
     "expo": "~58.0.25",

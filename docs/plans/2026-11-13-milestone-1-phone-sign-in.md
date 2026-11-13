@@ -280,19 +280,26 @@ task. Tick tasks as they merge, so a new session can resume here.
 
 ### PR 6: `feat(auth)`: sign-in screens, profile and settings
 
-- [ ] Session store: tokens in `expo-secure-store` on iOS and Android, refresh
+- [x] Session store: tokens in `expo-secure-store` on iOS and Android, refresh
       cookie on the web, a single refresh in flight at a time
-- [ ] Screens in 4.5, each with component tests for errors (wrong code with
+- [x] Screens in 4.5, each with component tests for errors (wrong code with
       attempts left, expired code, too many attempts with the wait time,
       unsupported country)
-- [ ] Texts in both languages, using spec 1, section 8 as the start
-- [ ] Playwright journeys on the web build against the API with a test
+- [x] Texts in both languages, using spec 1, section 8 as the start
+- [x] Playwright journeys on the web build against the API with a test
       database: sign up in English; sign up in Icelandic; sign out on all
       devices
-- [ ] Manual check on iOS and Android with Expo Go; screenshots in the PR
-- [ ] Docs: README "Run it locally" (Windows and macOS), CHANGELOG, roadmap
+- [ ] Manual check on iOS and Android with Expo Go (Martin, with the README
+      steps); web screenshots at phone size are in the project thread
+- [x] Docs: README "Run it locally" (Windows and macOS), CHANGELOG, roadmap
       ticks, this plan's status
 - Verify: `pnpm turbo test && pnpm --filter mobile e2e:web`
+
+Notes from building it: signed-in and signed-out screens are separated with
+Expo Router's protected routes, so signing out anywhere returns to the
+welcome screen; the number being signed in is kept in memory, not in the
+address; the web build is served with a fallback to `index.html`
+(`apps/mobile/scripts/serve-web.ts`), which a web host needs too.
 
 ## 6. Definition of done
 

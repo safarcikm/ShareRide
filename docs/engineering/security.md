@@ -68,6 +68,17 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   memory. Browsers may call the API with cookies only from `WEB_ORIGINS`.
   Request bodies must be `application/json` (anything else gets 415), so a
   form or text post from another page cannot use the cookie.
+- **In the app:** the access token stays in memory. On iOS and Android the
+  refresh token is kept with `expo-secure-store` (Keychain and Keystore); on
+  the web it is only in the cookie, out of reach of scripts. Only one refresh
+  runs at a time, so a rotation never races itself. Only a refused refresh
+  (401) signs the person out; no network, a server error or a limit keeps
+  the token to try again. Signing out forgets the tokens once the API
+  confirms. A phone signing out of itself also forgets them when the API
+  cannot be reached, because deleting the stored token is enough there. On
+  the web only the API can delete the cookie, and "sign out on all devices"
+  must reach the API, so those show the failure and the person stays signed
+  in to try again. The phone number never appears in a web address.
 - **Suspended accounts:** their access tokens stop working at once, and a
   refresh ends the session.
 - **Sign-out** ends the session and deletes its tokens at once; there are no

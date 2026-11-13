@@ -12,7 +12,8 @@ export function Screen({ children }: { readonly children: ReactNode }) {
   const palette = usePalette();
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      {/* "handled": with the keyboard open, a tap on a button acts at once. */}
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.column}>{children}</View>
       </ScrollView>
     </SafeAreaView>
