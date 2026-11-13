@@ -37,7 +37,10 @@
 
 | Category | Examples | Purpose | Legal basis | Visible to | Retention |
 | -------- | -------- | ------- | ----------- | ---------- | --------- |
-| Account | Phone, email, first name, language | Sign-in, contact | Contract | User; operator | While the account exists |
+| Account | Phone, email, first name, language | Sign-in, contact | Contract | User; operator | While the account exists, plus a 7-day waiting period after deletion is asked for |
+| Blocked phone numbers | One-way hash of a suspended person's phone number | Stop suspended people signing up again | Legitimate interest | System | Until the suspension ends, at most 3 years |
+| Data exports | The user's own export file | Access and portability | Legal obligation | The user | 7 days |
+| Privacy requests | Request text and answer | Answer rights requests | Legal obligation | Operator | 3 years after the answer (**verify**) |
 | Public profile | First name, photo, bio, languages, badges | Trust between users | Contract | All users | While the account exists |
 | Vehicle | Make, model, colour, number plate | Identify the car at pickup | Contract | Make, model and colour: all users; number plate: booked passengers | While the account exists |
 | Trips and bookings | Meeting points, times, seats, prices | Provide the service | Contract | Participants; operator | 3 years after the trip, then anonymised (**verify** period) |
@@ -64,7 +67,7 @@
 | ----- | --- |
 | Access and portability | "Download my data" produces a machine-readable file and a readable summary |
 | Rectification | Edit profile; contact support for other data |
-| Erasure | "Delete my account": removes the profile, anonymises trips, bookings and reviews, and deletes messages, after any open bookings are resolved |
+| Erasure | "Delete my account": after any open bookings are resolved and a 7-day waiting period, removes the profile, anonymises trips and bookings, and deletes messages; reviews written stay as by "a former member" ([spec 11](../specs/2026-11-13-privacy-self-service.md#35-what-is-erased-and-what-is-kept)) |
 | Objection and restriction | Contact form routed to the operator; answered within one month |
 | Withdraw consent | Settings for analytics, marketing and optional verification |
 

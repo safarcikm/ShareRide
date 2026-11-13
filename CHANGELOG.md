@@ -23,7 +23,7 @@ releases follow [Semantic Versioning](https://semver.org/).
 - Spec 8: trip day, reviews and reliability (approved).
 - Spec 9: safety and moderation (approved).
 - Spec 10: operator settings and metrics (approved).
-- Spec 11: privacy self-service (draft for review).
+- Spec 11: privacy self-service (approved).
 - Spec 13: payments, refunds, payouts and receipts (approved).
 - ADR 0012: one price level per trip instead of per-segment price editing
   (supersedes ADR 0006).

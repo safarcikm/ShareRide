@@ -56,7 +56,9 @@ language, and stay signed in securely on their devices.
 
 Errors: wrong code (attempts left shown), expired code, too many attempts
 (wait time shown), unsupported country, SMS not delivered (offer resend and a
-help link).
+help link), and a number blocked after a suspended account was deleted
+([spec 11](2026-11-13-privacy-self-service.md#decisions)), which is refused
+with a link to the community rules.
 
 ### 3.3 Sign in with Apple or Google
 

@@ -1,6 +1,6 @@
 # Spec 11: Privacy self-service
 
-**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Draft for review
+**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
 Feature: A5 Export and delete my data ([features](../product/features.md)),
 and the privacy rights and retention rules behind it. Related:
@@ -91,7 +91,10 @@ else goes through "Ask about my data" (3.6).
 3. **Right away:** the user is signed out of every device; their profile,
    trips and reviews disappear from the app; nobody can book with them or
    message them.
-4. Whether there is a waiting period before the data is erased: question 1.
+4. **Waiting period (decision 1):** the data is erased 7 days later. Until
+   then the person can sign in, which shows "Your account will be deleted on
+   {date}" with an undo button. Undoing brings the account back as it was;
+   trips and bookings cancelled before deleting stay cancelled.
 5. A confirmation goes to their verified email, if any, and that address is
    then erased with the rest.
 
@@ -100,7 +103,7 @@ else goes through "Ask about my data" (3.6).
 | Data | On deletion |
 | ---- | ----------- |
 | Profile: first name, photo, bio, languages; email; settings | Erased |
-| Phone number | Erased, except as decided in question 2 |
+| Phone number | Erased. For a suspended account, a one-way hash is kept until the suspension ends, at most 3 years, so the number cannot sign up again (decision 2) |
 | Signed-in devices, push tokens, notification log, consents | Erased |
 | Vehicles | Erased |
 | Messages they sent | Erased; the other person sees "Message deleted" |
@@ -148,14 +151,15 @@ date appear on the console home (spec 10).
 | R11.5 | Every retention period in the privacy register is enforced by a scheduled job, and each run is recorded without content. |
 | R11.6 | A hold on records needs a reason and an end date, and is audited. |
 | R11.7 | Privacy requests are answered within one month. |
-| R11.8 | The waiting period and phone number handling follow questions 1 and 2. |
+| R11.8 | Personal data is erased 7 days after the person asks, unless they undo it first. |
+| R11.9 | Only a suspended account's phone number hash outlives deletion, until the suspension ends and at most 3 years; a number with a hash cannot sign up. |
 
 ## 5. Screens
 
 1. Settings, Privacy page
 2. Download my data: request, preparing, ready, expired
 3. Delete my account: what is open, what happens, confirm with a code
-4. "Account deletion scheduled" and undo, if question 1 is yes
+4. "Account deletion scheduled" and undo
 5. Ask about my data
 6. Console: privacy requests with due dates; holds; retention runs
 
@@ -164,11 +168,13 @@ date appear on the console home (spec 10).
 Entities (see [domain model](../architecture/domain-model.md)):
 
 - `DataExport`: user, requested at, ready at, file location, expires at.
-- `User` (existing): `status` gains a `deletion_scheduled` state if question 1
-  is yes, with `delete_after`; a deleted user becomes an anonymous
+- `User` (existing): `status` gains a `deletion_scheduled` state, with
+  `delete_after`; a deleted user becomes an anonymous
   placeholder with no personal fields.
 - `ErasedAccount`: former user ID and erased at, for re-applying erasures
   after a restore.
+- `BlockedNumber`: phone number hash, until (the suspension's end, at most 3
+  years).
 - `PrivacyRequest`: user, kind (objection, restriction, correction,
   question), text, received at, due at, answered at, answer.
 - `RetentionRun`: rule, run at, records erased, records anonymised.
@@ -182,7 +188,7 @@ Endpoints (`/v1`, shapes defined in `packages/contracts`):
 | `GET /me/export` | Its status and download link |
 | `GET /me/deletion-check` | What is still open before deletion |
 | `POST /me/delete` | Delete the account (after re-verification) |
-| `POST /me/delete/cancel` | Undo during the waiting period, if question 1 is yes |
+| `POST /me/delete/cancel` | Undo during the 7-day waiting period |
 | `POST /me/privacy-requests` | Ask about my data |
 
 Console endpoints under `/admin/v1`: privacy requests and answers, holds, and
@@ -222,6 +228,8 @@ Events: `DataExportRequested`, `DataExportReady`, `AccountDeletionRequested`,
 | `privacy.deleteConfirm` | Delete my account | Eyða aðganginum |
 | `privacy.ask` | Ask about my data | Spyrja um gögnin mín |
 | `privacy.askThanks` | Thank you. We'll answer by email within a month. | Takk. Við svörum með tölvupósti innan mánaðar. |
+| `privacy.deletionScheduled` | Your account will be deleted on {date}. | Aðganginum þínum verður eytt {date}. |
+| `privacy.undoDeletion` | Keep my account | Halda aðganginum |
 | `chat.messageDeleted` | Message deleted | Skilaboðum eytt |
 
 ## 9. Testing
@@ -252,9 +260,11 @@ exported on request; a self-service correction form for trips and payments;
 the privacy policy text itself (lawyer, before the beta); usage analytics
 consent (spec 12).
 
-## Questions for Martin
+## Decisions
 
-| # | Question | Recommendation |
-| - | -------- | -------------- |
+Accepted by Martin on 2026-11-13 as recommended.
+
+| # | Question | Decision |
+| - | -------- | -------- |
 | 1 | Should deletion wait a few days before the data is erased? | Yes, 7 days. The account is closed and hidden at once, and erased after 7 days unless the person signs in and undoes it. This protects against mistakes and a stolen phone, and app stores accept it when the app says so |
 | 2 | Can someone who is suspended delete their account and sign up again with the same phone number? | No. For a suspended account we keep only a one-way fingerprint (hash) of the phone number until the suspension ends, at most 3 years, so the number cannot sign up again. Everything else is erased as usual |

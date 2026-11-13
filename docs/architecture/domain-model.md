@@ -47,7 +47,7 @@ erDiagram
 | `verification` | Set of: `phone`, `email`, `audkenni` |
 | `licence_declared_at` | When the user declared they hold a valid driving licence (needed to publish trips) |
 | `roles` | `member`, `operator`; admin access needs `operator` |
-| `status` | `active`, `suspended` (with `suspended_until`, empty when permanent), `deleted` |
+| `status` | `active`, `suspended` (with `suspended_until`, empty when permanent), `deletion_scheduled` (with `delete_after`, 7 days), `deleted` (an anonymous placeholder) |
 | `created_at`, `deleted_at` | Deletion anonymises; see [privacy](../compliance/privacy-gdpr.md) |
 
 ### Vehicle
@@ -191,6 +191,9 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
   record ([spec 10](../specs/2026-11-13-operator-settings-and-metrics.md#6-data-and-api)).
 - `SearchLog` (anonymous: places, date, result count, time, platform),
   `Corridor`, `WeeklyMetric`, `Announcement`.
+- Privacy records ([spec 11](../specs/2026-11-13-privacy-self-service.md#6-data-and-api)):
+  `DataExport`, `ErasedAccount`, `BlockedNumber`, `PrivacyRequest`,
+  `RetentionRun`, `Hold`.
 - `NotificationPreference`, `PushToken`.
 - `Block`: blocker and blocked; hides both from each other ([spec 9](../specs/2026-11-13-safety-and-moderation.md#32-blocking-g2)).
 - `Notification` and `NotificationDelivery`: who was told what kind of thing,
