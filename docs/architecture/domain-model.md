@@ -20,6 +20,7 @@ erDiagram
   MEETING_POINT ||--o{ TRIP_STOP : "used as"
   TRIP ||--|{ TRIP_STOP : "has ordered"
   TRIP ||--|{ SEGMENT : "has"
+  TRIP ||--o{ TRIP_CHANGE : "records"
   TRIP }o--|| VEHICLE : uses
   TRIP ||--o{ BOOKING : receives
   BOOKING }o--|| TRIP_STOP : "boards at"
@@ -110,6 +111,13 @@ ordered pair of active meeting points connected by road.
 the booking transaction, checked by `CHECK (occupancy <= capacity)` through a
 trigger or a denormalised capacity column).
 
+### TripChange
+
+One row per change to a published trip, so passengers can see what changed:
+`trip_id`, `kind` (`time`, `stop_added`, `stop_removed`, `seats`,
+`price_level`, `car`, `booking_mode`, `details`), `before`, `after`,
+`changed_at`. See [spec 6](../specs/2026-11-13-changes-and-cancellations.md#6-data-and-api).
+
 ### Booking
 
 | Field | Notes |
@@ -123,6 +131,7 @@ trigger or a denormalised capacity column).
 | `requested_at`, `decided_at`, `expires_at`, `payment_due_at` | |
 | `message`, `decline_reason`, `attempt_key` | Request note, reason seen only by the operator, idempotency key ([spec 5](../specs/2026-11-13-booking-and-requests.md#6-data-and-api)) |
 | `cancelled_by`, `cancel_reason`, `cancelled_at` | Reasons include `weather`, `road_closed` |
+| `refund_amount`, `counts_on_reliability` | Worked out by the domain when the booking is cancelled ([spec 6](../specs/2026-11-13-changes-and-cancellations.md#4-rules)) |
 
 ### BookingSegmentPrice
 

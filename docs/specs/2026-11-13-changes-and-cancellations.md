@@ -1,6 +1,6 @@
 # Spec 6: Changes and cancellations
 
-**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Draft for review
+**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
 Features: C5 Manage my trips, C6 Duplicate a trip or create the return trip,
 D5 Cancel a booking ([features](../product/features.md)).
@@ -55,7 +55,7 @@ What can change follows
 
 | Change | Without bookings | With bookings |
 | ------ | ---------------- | ------------- |
-| Departure time | Any, within the 60-day window | Up to 30 minutes: passengers are told. More than 30 minutes: passengers are told and may cancel with a full refund, without it counting against them. Maximum move: question 1 |
+| Departure time | Any, within the 60-day window | Up to 30 minutes: passengers are told. More than 30 minutes: passengers are told and may cancel with a full refund, without it counting against them. Never more than 2 hours (decision 1) |
 | Add a stop | Yes | Yes; existing bookings keep their price and stops |
 | Remove a stop | Yes | Only if no booking gets in or out there; otherwise those bookings are cancelled first, by the passenger or the driver (full refund) |
 | Seats offered | 1 to 8 | Down to the most seats taken on any segment, up to 8 |
@@ -100,8 +100,8 @@ themselves instead.
    - "Full refund of {amount}" when it is 15 minutes or more before boarding,
      or the driver moved the departure by more than 30 minutes;
    - "No refund: less than 15 minutes before departure" otherwise.
-   It also says whether the cancellation counts on their reliability
-   (question 2).
+   It also says whether the cancellation counts on their reliability: only
+   when it is less than 24 hours before boarding (decision 2, rule R6.8).
 3. On confirming: the seats are freed for others, the refund starts (spec 13),
    and the driver is told.
 4. A request not yet accepted is withdrawn instead (spec 5), and an accepted
@@ -129,11 +129,11 @@ The trip-change table and rules M2 and S5 in
 | R6.1 | A published trip cannot be changed after it departs. |
 | R6.2 | When the departure moves, all planned times move together and must still meet R3.6. |
 | R6.3 | A departure moved by more than 30 minutes lets each booked passenger cancel with a full refund, at any time before the new departure, without it counting on reliability. |
-| R6.4 | A departure cannot move by more than the maximum when bookings exist (question 1). |
+| R6.4 | When bookings exist, the departure cannot move by more than 2 hours, earlier or later, from the time the passengers booked (decision 1). A bigger change means cancelling the trip and posting a new one. |
 | R6.5 | A stop where a booking gets in or out cannot be removed. |
 | R6.6 | Cancelling a trip cancels every booking with a full refund, declines pending requests and lets unpaid accepted bookings lapse. |
 | R6.7 | A cancellation records who cancelled, when, the reason and the refund. Weather and road-closure reasons do not count on reliability (spec 8 decides how they are checked). |
-| R6.8 | Which passenger cancellations count on reliability: question 2. |
+| R6.8 | A passenger cancellation counts on reliability only when it is made less than 24 hours before boarding. It never counts when the reason is weather or a road closure (checked as in spec 8), after the driver moved the departure by more than 30 minutes, or for a withdrawn request or an unpaid accepted booking. No-shows always count (spec 8) (decision 2). |
 | R6.9 | Every change and cancellation is shown to the affected people with what changed. |
 
 ## 5. Screens
@@ -214,11 +214,11 @@ and refund). Notifications for each come in spec 7; refunds in spec 13.
 ## 9. Testing
 
 - **Unit (domain):** every row of the change table with and without bookings;
-  moves of 30 minutes, just over 30 and over the maximum; adding a stop inside
+  moves of 30 minutes, just over 30, exactly 2 hours and just over 2 hours; adding a stop inside
   a booked stretch keeps bookings and occupancy right; removing a used stop is
   refused; seats lowered to the highest occupancy and no further; the refund
   and reliability effect of each cancellation case, including exactly 15
-  minutes before boarding; reversing stops.
+  minutes and exactly 24 hours before boarding; reversing stops.
 - **Property tests:** after any sequence of allowed changes, bookings keep
   their stops, prices and the capacity invariant.
 - **API integration:** cancelling a trip refunds every paid booking once and
@@ -236,9 +236,11 @@ calculated and shown (spec 8), reports about cancellations (spec 9), recurring
 trips (after the MVP), and automatic weather or road-closure checks (later;
 spec 8 covers the beta).
 
-## Questions for Martin
+## Decisions
 
-| # | Question | Recommendation |
-| - | -------- | -------------- |
-| 1 | How far can a driver move the departure once people have booked? | Up to 2 hours. A bigger change is really a different trip: the driver cancels (everyone refunded) and posts a new one |
-| 2 | Which passenger cancellations count on their reliability? | Only those in the last 24 hours before departure, and no-shows. Never weather or road-closure cancellations, or cancellations after the driver moved the trip by more than 30 minutes |
+Accepted by Martin on 2026-11-13 as recommended.
+
+| # | Question | Decision |
+| - | -------- | -------- |
+| 1 | How far can a driver move the departure once people have booked? | Up to 2 hours, earlier or later. A bigger change is really a different trip: the driver cancels (everyone refunded) and posts a new one |
+| 2 | Which passenger cancellations count on their reliability? | Only those in the last 24 hours before boarding, and no-shows. Never weather or road-closure cancellations, or cancellations after the driver moved the trip by more than 30 minutes |

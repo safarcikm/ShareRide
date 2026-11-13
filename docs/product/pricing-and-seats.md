@@ -289,7 +289,8 @@ in the beta (decided 2026-11-13; reviewed before launch).
 | Change by driver | Allowed? | Effect on booked passengers |
 | ---------------- | -------- | --------------------------- |
 | Departure time moves 30 minutes or less | Yes | Notified |
-| Departure time moves more than 30 minutes | Yes | Notified; may cancel with a full refund, without it counting against them |
+| Departure time moves more than 30 minutes | Yes, up to 2 hours | Notified; may cancel with a full refund, without it counting against them |
+| Departure time moves more than 2 hours | No | The driver cancels the trip (full refunds) and posts a new one (decided 2026-11-13) |
 | Add a stop | Yes | Notified; their price stays as booked |
 | Remove a stop no booking uses | Yes | Notified |
 | Remove a stop a booking uses | No | The driver must contact the passenger, who cancels or the driver cancels that booking (full refund) |
@@ -305,6 +306,9 @@ Refunds follow rule M2. Reliability adds a trust signal on top:
   reliability figure.
 - Cancellations with reason `weather` or `road_closed` do not count when an
   official warning or closure applied to the route at the time.
+- A passenger's cancellation counts only when it is made less than 24 hours
+  before boarding, and never after the driver moved the departure by more
+  than 30 minutes. No-shows always count (decided 2026-11-13).
 - A pattern of late cancellations or no-shows leads to a warning, then a
   suspension, decided in the admin console.
 
@@ -324,4 +328,6 @@ Set centrally by the operator; changes are logged.
 | `booking_cutoff` | 15 minutes | Before the planned time at the boarding stop |
 | `request_expiry` | 12 hours | Approval mode; also never later than 2 hours before boarding |
 | `major_time_change` | 30 minutes | Above this, passengers may cancel without penalty |
+| `max_time_change` | 2 hours | Largest departure move once a trip has bookings |
+| `reliability_cancellation_window` | 24 hours | Before boarding; a passenger's cancellation counts on reliability only inside it |
 | `max_capacity` | 8 | Most seats a driver can offer; matching the car is the driver's responsibility |

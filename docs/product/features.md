@@ -226,7 +226,8 @@ category. Blocking hides both people from each other's searches and trips.
 
 **G3. Reliability figure (Should).** Share of trips and bookings completed
 rather than cancelled, on every profile. Weather and road-closure
-cancellations are excluded.
+cancellations, and passenger cancellations made more than 24 hours before
+boarding, are excluded.
 
 **G4. Safety information and trip sharing (Must).** A 112 link on trip
 screens, SafeTravel information for remote routes, and "share trip details"
