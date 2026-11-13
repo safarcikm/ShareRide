@@ -1,6 +1,6 @@
 # Spec 4: Search and trip details
 
-**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Draft for review
+**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
 Features: D1 Search trips, including partial routes, D2 Trip details, D6 Help
 when nothing matches ([features](../product/features.md)).
@@ -43,7 +43,7 @@ their part, the price, the driver and the car.
 1. **From** and **To** use the place search from spec 2: a meeting point, a
    town or landmark, or "Near me" (computed on the device; only the matching
    meeting point IDs are sent, never the position).
-2. **Date** (see question 2) and **seats** (1 to 8, default 1).
+2. **Date**, optional (decision 2), and **seats** (1 to 8, default 1).
 3. Available without an account (spec 1, decision 1). Booking needs one
    (spec 5).
 4. The last five searches are kept on the device for one-tap repeat.
@@ -54,7 +54,10 @@ their part, the price, the driver and the car.
   "nearby" with the distance ("Mjódd, 2.1 km from Kringlan").
 - **A town or landmark:** active points within its radius: 10 km for towns,
   5 km for villages and landmarks, adjustable per place by the operator.
-  Whether "Reykjavík" covers the whole capital area is question 1.
+- **The capital area** is one place (decision 1): "Reykjavík" covers every
+  active meeting point in Reykjavík, Kópavogur, Garðabær, Hafnarfjörður,
+  Seltjarnarnes and Mosfellsbær. Searching one of those towns by name stays
+  limited to that town.
 
 ### 3.3 Which trips match
 
@@ -64,9 +67,9 @@ A trip matches when all of these hold (rule R4.1):
 2. It has a stop among the "from" points and a later stop among the "to"
    points. Direction matters: a trip Akureyri to Reykjavík does not match
    Borgarnes to Blönduós.
-3. The planned time at the boarding stop falls on the chosen date, in Iceland
-   time. For partial routes this is the passenger's own departure, not the
-   trip's start.
+3. If a date is chosen, the planned time at the boarding stop falls on it, in
+   Iceland time. For partial routes this is the passenger's own departure, not
+   the trip's start. Without a date, every upcoming trip matches.
 4. The boarding stop is at least the booking cut-off away (15 minutes, rule
    S4).
 5. At least the requested number of seats is free on every segment between the
@@ -87,7 +90,7 @@ page.
    driver's first name, photo and rating with the number of reviews, or "New
    driver"; and "Instant" or "Request" for the booking mode.
 2. Sorted by departure time at the boarding stop. Can be sorted by price
-   instead.
+   instead. Without a date, results are grouped by day.
 3. Filters: instant booking only; time of day (morning, afternoon, evening).
 4. Trips that are full on the searched part are not shown.
 5. Times are in Iceland time; if the phone uses another time zone, the screen
@@ -95,10 +98,10 @@ page.
 
 ### 3.5 Nothing matches
 
-When there are no results:
+When there are no results (on a chosen date, or at all):
 
-1. **Other days:** the number of matching trips on each of the three days
-   before and after, tap to switch.
+1. **Other days** (when a date was chosen): the number of matching trips on
+   each of the three days before and after, tap to switch.
 2. **Nearby meeting points:** trips from or to active points within 20 km of
    the searched places, with distances.
 3. If neither finds anything: "No trips yet on this route", with "Offer a ride"
@@ -143,8 +146,8 @@ apply. This spec adds:
 | ID | Rule |
 | -- | ---- |
 | R4.1 | A trip matches a search only under all six conditions in 3.3. |
-| R4.2 | A meeting point search also covers active points within 3 km; a place covers active points within its radius (10 km towns, 5 km villages and landmarks, adjustable per place). |
-| R4.3 | The date of a result is the date of the planned time at the passenger's boarding stop, in Iceland time. |
+| R4.2 | A meeting point search also covers active points within 3 km; a place covers active points within its radius (10 km towns, 5 km villages and landmarks, adjustable per place); "Reykjavík" covers the whole capital area. |
+| R4.3 | The date is optional. The date of a result is the date of the planned time at the passenger's boarding stop, in Iceland time. |
 | R4.4 | Prices shown are the current segment prices (rule P1). The price is fixed when the booking is made (spec 5). |
 | R4.5 | Searching needs no account; searches are not stored with a user or device on the server. |
 | R4.6 | Trip pages are public by link and never indexed by search engines. |
@@ -255,9 +258,11 @@ Booking and requests (spec 5), reviews and reliability (spec 8), reporting
 warnings on trips (later), route pages for search engines (website, later),
 and connecting two trips into one journey (ideas list).
 
-## Questions for Martin
+## Decisions
 
-| # | Question | Recommendation |
-| - | -------- | -------------- |
-| 1 | Does a search for "Reykjavík" cover the whole capital area, including Hafnarfjörður, Kópavogur and Mosfellsbær? | Yes. People think of the capital area as one place when travelling around Iceland. A search for a specific meeting point stays precise |
-| 2 | Must the passenger pick a date? | No. The date is optional; without one, results show all upcoming trips on the route, grouped by day. With few trips in the beta, people see everything available |
+Accepted by Martin on 2026-11-13 as recommended.
+
+| # | Question | Decision |
+| - | -------- | -------- |
+| 1 | Does a search for "Reykjavík" cover the whole capital area? | Yes: Reykjavík, Kópavogur, Garðabær, Hafnarfjörður, Seltjarnarnes and Mosfellsbær. A search for a specific meeting point or town stays precise |
+| 2 | Must the passenger pick a date? | No. Without a date, results show all upcoming trips on the route, grouped by day |

@@ -39,3 +39,4 @@ here, update or accept the linked ADR, and move the row to "Answered".
 | A14 | Which cars can drivers use? | Any car, including rental cars; ownership does not matter and being allowed to use the car is the driver's responsibility. Make, model and colour are required; the number plate can be added up to departure. | 2026-11-13 |
 | A15 | Maximum number of stops per trip? (revises features decision 6) | No limit. | 2026-11-13 |
 | A16 | Spec 3 (driver setup and posting a trip) | Approved with Martin's changes: one price level per trip (ADR 0012), stops added automatically with no limit, licence declaration only, any car, plate up to departure, make, model and colour public. See [spec 3](../specs/2026-11-13-post-a-trip.md#decisions). | 2026-11-13 |
+| A17 | Spec 4 (search and trip details) | Approved as recommended: "Reykjavík" covers the whole capital area; the date is optional. See [spec 4](../specs/2026-11-13-search-and-trip-details.md#decisions). | 2026-11-13 |
