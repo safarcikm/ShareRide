@@ -14,6 +14,7 @@ releases follow [Semantic Versioning](https://semver.org/).
 ### Added
 
 - Spec 1: sign-in, profile, settings and legal acceptance (approved).
+- Spec 2 draft: meeting points, place search and their admin.
 - Development strategy, roadmap and open questions.
 - Product vision, pricing and seat rules, meeting point strategy.
 - Architecture overview, domain model and integrations.
