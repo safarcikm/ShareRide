@@ -24,6 +24,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   migration, and `packages/contracts` for the API's schemas and routes.
 - Local database with Docker Compose; API container image built in CI; CI
   runs integration tests against PostgreSQL with PostGIS.
+- The app (`apps/mobile`, Expo SDK 58 with Expo Router) for iOS, Android and
+  the web: welcome screen with a language switch and a "coming soon" page;
+  opens in the device's language if Icelandic or English.
+- `packages/i18n`: Icelandic and English texts in ICU MessageFormat with
+  typed keys, a test that both languages have the same keys and arguments,
+  money formatting ("2.500 kr." and "2,500 ISK") and country names.
+- CI bundles the app for iOS, Android and the web and runs browser tests at
+  phone and desktop sizes.
 
 ### Changed
 

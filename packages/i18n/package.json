@@ -1,0 +1,29 @@
+{
+  "name": "@shareride/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Icelandic and English texts (ICU MessageFormat) and formatting helpers (ADR 0011)",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc && tsc -p scripts",
+    "test": "vitest run",
+    "generate:countries": "node scripts/generate-country-names.ts"
+  },
+  "dependencies": {
+    "@shareride/domain": "workspace:*",
+    "intl-messageformat": "catalog:"
+  },
+  "devDependencies": {
+    "@formatjs/icu-messageformat-parser": "catalog:",
+    "@shareride/config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

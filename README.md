@@ -34,12 +34,14 @@ The full documentation map is in [docs/README.md](docs/README.md).
 ├── .claude/                  # Shared Claude Code settings and project skills
 ├── .github/                  # PR and issue templates, CI workflows, CODEOWNERS
 ├── apps/
-│   └── api/                  # The API (Hono), with its Dockerfile
+│   ├── api/                  # The API (Hono), with its Dockerfile
+│   └── mobile/               # The app for iOS, Android and the web (Expo)
 ├── packages/
 │   ├── config/               # Shared TypeScript, ESLint and Prettier configuration
 │   ├── contracts/            # API schemas and route definitions (Zod)
 │   ├── db/                   # Database schema, migrations and connection (Drizzle)
-│   └── domain/               # Pure business rules (money so far)
+│   ├── domain/               # Pure business rules (money, supported countries)
+│   └── i18n/                 # Icelandic and English texts and formatting
 ├── infra/docker/             # Local PostgreSQL with PostGIS (Docker Compose)
 └── docs/
     ├── strategy/             # Development strategy, roadmap, open questions
@@ -75,6 +77,15 @@ pnpm --filter @shareride/api dev                          # API on http://localh
 
 Open <http://localhost:3000/v1/health> to check the API, and
 <http://localhost:3000/v1/openapi.json> for its documentation.
+
+To run the app:
+
+```sh
+pnpm --filter @shareride/mobile dev
+```
+
+Press `w` to open it in the browser, or scan the QR code with the Expo Go app
+on an iPhone or Android phone (on the same Wi-Fi network as the computer).
 
 More commands are in [CLAUDE.md](CLAUDE.md#commands).
 

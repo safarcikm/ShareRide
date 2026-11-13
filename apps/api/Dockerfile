@@ -8,12 +8,11 @@ RUN npm install --global pnpm@12.18.0 && npm cache clean --force
 WORKDIR /repo
 
 FROM base AS install
-# Download dependencies from the lockfile alone, so this layer stays cached
-# until dependencies change.
-COPY pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm fetch --prod
 COPY . .
-RUN pnpm install --offline --frozen-lockfile --prod --filter "@shareride/api..."
+# Only the API and the workspace packages it uses, without dev dependencies.
+# (`pnpm fetch` would cache this layer better, but then the install takes the
+# app's packages too.)
+RUN pnpm install --frozen-lockfile --prod --filter "@shareride/api..."
 
 FROM node:26-slim AS runtime
 ENV NODE_ENV=production

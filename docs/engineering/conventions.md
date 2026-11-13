@@ -64,7 +64,9 @@ imports end in `.ts`.
 ## Internationalisation
 
 - Every user-facing string goes through `packages/i18n` with ICU messages.
-  Keys are namespaced by feature: `booking.cancel.confirmTitle`.
+  Keys are namespaced by feature: `booking.cancel.confirmTitle`. The texts
+  are in `packages/i18n/src/messages/en.ts` and `is.ts`; the type checker and
+  a unit test fail when a key or an argument is missing in either language.
 - No string concatenation for sentences; use message arguments.
 - Format numbers, dates and currency with `Intl` using the active locale.
 - Translations for Icelandic and English are required for merge; CI checks for

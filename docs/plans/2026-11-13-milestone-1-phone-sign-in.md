@@ -229,23 +229,28 @@ task. Tick tasks as they merge, so a new session can resume here.
 
 ### PR 4: `feat(mobile)`: Expo app and translations
 
-- [ ] `packages/i18n`: `en.json` and `is.json` with ICU messages, a typed
-      `t()` key list, `formatMoney` and `formatDate` with `Intl`. Tests:
-      Icelandic plurals (1, 21 and 11 items), "2.500 kr." and "2,500 ISK"
-- [ ] `check-messages` script: same keys in both languages and valid ICU
-      syntax; added to the `checks` CI job. Test: a missing key fails
-- [ ] Country names in Icelandic and English generated once from CLDR data
+- [x] `packages/i18n`: `messages/en.ts` and `is.ts` with ICU messages, a
+      typed `t()`, and `formatMoney` with `Intl` (date formatting comes with
+      the first screen that shows a date). Tests: Icelandic plurals (1, 21 and
+      11 items), "2.500 kr." and "2,500 ISK"
+- [x] Message check: same keys and arguments in both languages and valid
+      ICU syntax, run as a unit test in the `checks` job (the typed catalogs
+      also fail type checking). Test: a missing key fails
+- [x] Country names in Icelandic and English generated once from CLDR data
       with Node's `Intl.DisplayNames`
-- [ ] `apps/mobile`: Expo Router app, theme tokens, language provider (device
+- [x] `apps/mobile`: Expo Router app, theme tokens, language provider (device
       language if Icelandic or English, otherwise English; choice saved on the
       device), welcome screen and "coming soon" page. Component tests: the
       language switch changes the texts; buttons have labels
-- [ ] Check whether Hermes on SDK 58 has `Intl.PluralRules` and
-      `Intl.NumberFormat` for Icelandic; add FormatJS polyfills only if not
-- [ ] CI job `app`: component tests, `expo export` for iOS, Android and web
-- [ ] Playwright smoke test on the web build: the welcome screen opens in
+- [x] Hermes on current React Native includes `Intl.PluralRules` and basic
+      `Intl.NumberFormat` (FormatJS guide), so no polyfills for now; checked on
+      real phones with Expo Go in PR 6. Hermes has no `Intl.DisplayNames`,
+      hence the generated country names
+- [x] CI job `app`: `expo export` for iOS, Android and web (component tests
+      run in the `checks` job)
+- [x] Playwright smoke test on the web build: the welcome screen opens in
       English and switches to Icelandic
-- Verify: `pnpm --filter mobile test && pnpm --filter mobile exec expo export --platform all`
+- Verify: `pnpm --filter @shareride/mobile test && pnpm --filter @shareride/mobile export && pnpm --filter @shareride/mobile e2e:web`
 
 ### PR 5: `feat(auth)`: phone sign-in in the API
 

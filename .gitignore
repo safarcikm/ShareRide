@@ -45,3 +45,13 @@ Thumbs.db
 # Claude Code personal settings
 .claude/settings.local.json
 CLAUDE.local.md
+
+# Expo (apps/mobile)
+expo-env.d.ts
+.metro-health-check*
+*.mobileprovision
+.kotlin/
+
+# Playwright output
+test-results/
+playwright-report/
