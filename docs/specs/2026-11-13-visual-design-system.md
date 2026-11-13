@@ -176,9 +176,9 @@ Two free fonts (SIL Open Font License), both with every Icelandic letter
 | Group | Tokens |
 | ----- | ------ |
 | Spacing | `xs` 4, `sm` 8, `ms` 12, `md` 16, `lg` 24, `xl` 32, `xxl` 48 |
-| Corners | `seat` 4 (seat legend), `tag` 12, `control` 16 (buttons, inputs, notices), `card` 22, `pill` 999 (chips, need bubbles, icon buttons) |
+| Corners | `seat` 4 (seat legend), `checkbox` 9, `tag` 12, `control` 16 (buttons, inputs, notices), `card` 22, `pill` 999 (chips, need bubbles, icon buttons) |
 | Bottom edges | `card` 3 (`edge` colour), `buttonPrimary` 4 (`primaryEdge`), `buttonSecondary` 3 (`edge`) |
-| Sizes | `minTouchTarget` 44, `buttonHeight` 48, `mainButtonHeight` 56, `inputHeight` 52, `chipHeight` 40, `iconButton` 44, `maxContentWidth` 480 |
+| Sizes | `minTouchTarget` 44, `buttonHeight` 48, `mainButtonHeight` 56, `inputHeight` 52, `chipHeight` 40, `iconButton` 44, `checkbox` 26, `maxContentWidth` 480; `controlOutline` 2 (inputs, tick boxes, chips) |
 
 - `ms` 12 is new; the other spacing names are unchanged.
 - Screen padding is `md`; gaps between cards are `md`; inside a card, `ms`
@@ -192,8 +192,8 @@ Two free fonts (SIL Open Font License), both with every Icelandic letter
 ### 4.5 Icons
 
 [Lucide](https://lucide.dev) icons (ISC licence), 2.4 stroke, 22 points in
-buttons and 14 to 18 inside need bubbles and ticks, in the colour of the text
-next to them. An icon on its own (an icon button) always has an accessible
+buttons and 14 to 18 inside need bubbles and ticks (`iconSizes`: `button`
+22, `inline` 18, `tick` 16), in the colour of the text next to them. An icon on its own (an icon button) always has an accessible
 name. Shape people and the car are our own drawings.
 
 ### 4.6 Motion
@@ -242,7 +242,7 @@ and tests need no edits. Only the look changes.
 | `Loading` | A `primary` spinner centred on `background` |
 | `Screen` | `background`, safe area, `md` padding, column at most 480 wide |
 | `Title` | `title`, `text`, role header |
-| `Body` | `body`, `text` |
+| `Body` | `body`, `textMuted` (the intro or help line under a title) |
 | `LanguageSwitch` | A `text` button with the other language's name |
 
 **Focus:** every pressable part shows a 3 wide `focus` ring with a 2 gap

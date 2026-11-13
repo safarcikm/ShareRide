@@ -83,7 +83,15 @@ which must be merged first.
   and hides them from screen readers. Jest maps `lucide-react-native` to its
   CommonJS build.
 - The browser check shows light in English and dark in Icelandic, so the 8
-  screenshots cover both languages.
+  screenshots cover both languages, and also checks the focus ring on the
+  phone number field.
+- After the code review: `Body` stays `textMuted` as Task 6 says, and spec 15
+  section 5.1 now says so too (it said `text`); new tokens `radii.checkbox`,
+  `sizes.checkbox`, `controlOutline` and `iconSizes` replace raw sizes in
+  the parts; on the web every font has a `system-ui, sans-serif` fallback;
+  bold text on the legal screens uses Nunito Bold instead of `fontWeight`,
+  and the `fontWeight` test covers `src/app` too; a text button no longer
+  places itself, so the language switch stays at the top right of welcome.
 
 Not in this PR (they come with the screens of specs 3 to 5, spec 15
 section 5.2): tag colours, the rating star, people and car colours, shape

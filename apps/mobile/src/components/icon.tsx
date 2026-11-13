@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react-native";
 import { View } from "react-native";
-import { iconStroke } from "@/theme/tokens";
+import { iconSizes, iconStroke } from "@/theme/tokens";
 
 interface IconProps {
   /** A Lucide icon, such as `Check` or `CircleAlert`. */
@@ -15,7 +15,7 @@ interface IconProps {
  * screen readers: it sits next to text that says the same thing. An icon on
  * its own needs an accessible name on the part around it.
  */
-export function Icon({ icon: Glyph, color, size = 22, testID }: IconProps) {
+export function Icon({ icon: Glyph, color, size = iconSizes.button, testID }: IconProps) {
   return (
     <View
       testID={testID}

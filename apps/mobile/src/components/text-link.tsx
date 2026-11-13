@@ -1,6 +1,6 @@
 import { router, type Href } from "expo-router";
 import { Pressable, StyleSheet, Text } from "react-native";
-import { fonts, minTouchTarget, typography } from "@/theme/tokens";
+import { minTouchTarget, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
@@ -19,12 +19,12 @@ export function TextLink({ label, href }: { readonly label: string; readonly hre
       }}
       style={styles.link}
     >
-      <Text style={[typography.body, styles.text, { color: palette.primary }]}>{label}</Text>
+      <Text style={[typography.bodyStrong, styles.text, { color: palette.primary }]}>{label}</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   link: { minHeight: minTouchTarget, justifyContent: "center", alignSelf: "flex-start" },
-  text: { fontFamily: fonts.bodyBold, textDecorationLine: "underline" },
+  text: { textDecorationLine: "underline" },
 });

@@ -1,6 +1,6 @@
 import { CircleAlert } from "lucide-react-native";
 import { StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
-import { radii, sizes, spacing, typography } from "@/theme/tokens";
+import { controlOutline, iconSizes, radii, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { Icon } from "./icon";
 
@@ -57,7 +57,12 @@ export function TextField({ label, value, onChangeText, help, error, ...input }:
       {hint === undefined ? null : (
         <View style={styles.hint}>
           {hasError ? (
-            <Icon icon={CircleAlert} color={palette.error} size={18} testID="field-error-icon" />
+            <Icon
+              icon={CircleAlert}
+              color={palette.error}
+              size={iconSizes.inline}
+              testID="field-error-icon"
+            />
           ) : null}
           <Text
             accessibilityLiveRegion={hasError ? "polite" : "none"}
@@ -79,7 +84,7 @@ const styles = StyleSheet.create({
   field: { gap: spacing.xs },
   input: {
     minHeight: sizes.inputHeight,
-    borderWidth: 2,
+    borderWidth: controlOutline,
     borderRadius: radii.control,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.ms,

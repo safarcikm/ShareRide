@@ -1,6 +1,14 @@
 import { Check } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { minTouchTarget, spacing, typography } from "@/theme/tokens";
+import {
+  controlOutline,
+  iconSizes,
+  minTouchTarget,
+  radii,
+  sizes,
+  spacing,
+  typography,
+} from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { Icon } from "./icon";
 
@@ -9,9 +17,6 @@ interface CheckboxProps {
   readonly checked: boolean;
   readonly onChange: (checked: boolean) => void;
 }
-
-/** Size, corner and outline of the box (spec 15, section 5.1). */
-const box = { size: 26, corner: 9, outline: 2 } as const;
 
 /** A tick box with its label; the whole row is the touch target. */
 export function Checkbox({ label, checked, onChange }: CheckboxProps) {
@@ -40,7 +45,12 @@ export function Checkbox({ label, checked, onChange }: CheckboxProps) {
         ]}
       >
         {checked ? (
-          <Icon icon={Check} color={palette.onPrimary} size={18} testID="checkbox-tick" />
+          <Icon
+            icon={Check}
+            color={palette.onPrimary}
+            size={iconSizes.inline}
+            testID="checkbox-tick"
+          />
         ) : null}
       </View>
       <Text style={[typography.body, styles.label, { color: palette.text }]}>{label}</Text>
@@ -51,10 +61,10 @@ export function Checkbox({ label, checked, onChange }: CheckboxProps) {
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: spacing.ms, minHeight: minTouchTarget },
   box: {
-    width: box.size,
-    height: box.size,
-    borderWidth: box.outline,
-    borderRadius: box.corner,
+    width: sizes.checkbox,
+    height: sizes.checkbox,
+    borderWidth: controlOutline,
+    borderRadius: radii.checkbox,
     alignItems: "center",
     justifyContent: "center",
   },

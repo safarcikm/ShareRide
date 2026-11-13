@@ -92,6 +92,7 @@ export function Button({
           <Text
             style={[
               variant === "text" ? typography.label : typography.button,
+              styles.label,
               { color: labelColor },
             ]}
           >
@@ -105,7 +106,7 @@ export function Button({
 
 const styles = StyleSheet.create({
   outer: { minHeight: sizes.buttonHeight, minWidth: minTouchTarget, borderRadius: radii.control },
-  textOuter: { minHeight: minTouchTarget, alignSelf: "flex-start" },
+  textOuter: { minHeight: minTouchTarget },
   face: {
     flexGrow: 1,
     flexDirection: "row",
@@ -117,4 +118,5 @@ const styles = StyleSheet.create({
     borderRadius: radii.control,
   },
   textFace: { paddingHorizontal: spacing.sm },
+  label: { flexShrink: 1, textAlign: "center" },
 });

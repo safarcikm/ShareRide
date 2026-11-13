@@ -1,6 +1,14 @@
 import { Check } from "lucide-react-native";
 import { Pressable, StyleSheet, Text } from "react-native";
-import { minTouchTarget, radii, sizes, spacing, typography } from "@/theme/tokens";
+import {
+  controlOutline,
+  iconSizes,
+  minTouchTarget,
+  radii,
+  sizes,
+  spacing,
+  typography,
+} from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { Icon } from "./icon";
 
@@ -36,8 +44,16 @@ export function Chip({
           : { backgroundColor: palette.surface, borderColor: palette.control },
       ]}
     >
-      {selected ? <Icon icon={Check} color={palette.primary} size={16} testID="chip-tick" /> : null}
-      <Text style={[typography.label, { color: selected ? palette.primary : palette.text }]}>
+      {selected ? (
+        <Icon icon={Check} color={palette.primary} size={iconSizes.tick} testID="chip-tick" />
+      ) : null}
+      <Text
+        style={[
+          typography.label,
+          styles.label,
+          { color: selected ? palette.primary : palette.text },
+        ]}
+      >
         {label}
       </Text>
     </Pressable>
@@ -51,8 +67,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.xs,
     paddingHorizontal: spacing.md,
-    borderWidth: 2,
+    borderWidth: controlOutline,
     borderRadius: radii.pill,
     alignSelf: "flex-start",
   },
+  label: { flexShrink: 1 },
 });

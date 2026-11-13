@@ -98,4 +98,4 @@ function Markdown({ text }: { readonly text: string }) {
   });
 }
 
-const styles = StyleSheet.create({ bold: { fontWeight: "700" } });
+const styles = StyleSheet.create({ bold: { fontFamily: typography.bodyStrong.fontFamily } });

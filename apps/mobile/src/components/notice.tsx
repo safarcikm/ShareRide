@@ -1,6 +1,6 @@
 import { CircleAlert, Info } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
-import { radii, spacing, typography } from "@/theme/tokens";
+import { iconSizes, radii, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { Icon } from "./icon";
 
@@ -29,8 +29,8 @@ export function Notice({
     >
       <Icon
         icon={isError ? CircleAlert : Info}
-        color={isError ? palette.error : palette.focus}
-        size={22}
+        color={isError ? palette.error : palette.text}
+        size={iconSizes.button}
       />
       <Text style={[typography.body, styles.message, { color: palette.text }]}>{message}</Text>
     </View>

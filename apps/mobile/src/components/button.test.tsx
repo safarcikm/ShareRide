@@ -48,6 +48,18 @@ describe("Button", () => {
     expect(StyleSheet.flatten(button.props.style)).not.toHaveProperty("height");
   });
 
+  it("lets the screen place a text button", async () => {
+    await render(<Button label="Íslenska" variant="text" onPress={jest.fn()} />);
+    expect(StyleSheet.flatten(screen.getByRole("button").props.style)).not.toHaveProperty(
+      "alignSelf",
+    );
+  });
+
+  it("centres a label that wraps, and lets it shrink beside the spinner", async () => {
+    await render(<Button label="Continue" onPress={jest.fn()} busy />);
+    expect(screen.getByText("Continue")).toHaveStyle({ textAlign: "center", flexShrink: 1 });
+  });
+
   it("ignores presses while busy or disabled", async () => {
     const onPress = jest.fn();
     const { rerender } = await render(<Button label="Go" onPress={onPress} busy />);
