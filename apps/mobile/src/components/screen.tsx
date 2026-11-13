@@ -13,7 +13,11 @@ export function Screen({ children }: { readonly children: ReactNode }) {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]}>
       {/* "handled": with the keyboard open, a tap on a button acts at once. */}
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        testID="screen-scroll"
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.column}>{children}</View>
       </ScrollView>
     </SafeAreaView>
@@ -22,6 +26,6 @@ export function Screen({ children }: { readonly children: ReactNode }) {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  scroll: { flexGrow: 1, alignItems: "center", padding: spacing.lg },
+  scroll: { flexGrow: 1, alignItems: "center", padding: spacing.md },
   column: { flex: 1, width: "100%", maxWidth: maxContentWidth, gap: spacing.md },
 });
