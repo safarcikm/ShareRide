@@ -203,6 +203,9 @@ catalogs:
     intl-messageformat:
       specifier: 12.1.5
       version: 12.1.5
+    libphonenumber-js:
+      specifier: 1.13.16
+      version: 1.13.16
     pg:
       specifier: 8.23.1
       version: 8.23.1
@@ -259,6 +262,12 @@ importers:
       '@shareride/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@shareride/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.4(@types/pg@8.23.1)(pg@8.23.1)
       hono:
         specifier: 'catalog:'
         version: 4.13.18
@@ -269,6 +278,9 @@ importers:
         specifier: 'catalog:'
         version: 4.6.7
     devDependencies:
+      '@shareride/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
       '@shareride/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -370,6 +382,28 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
+  packages/api-client:
+    dependencies:
+      '@shareride/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
+    devDependencies:
+      '@shareride/config':
+        specifier: workspace:*
+        version: link:../config
+      eslint:
+        specifier: 'catalog:'
+        version: 10.14.0(supports-color@8.1.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.1.0(@types/node@26.6.6)(jsdom@26.1.0(supports-color@8.1.1))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+
   packages/config:
     dependencies:
       '@eslint/js':
@@ -391,6 +425,9 @@ importers:
 
   packages/contracts:
     dependencies:
+      '@shareride/domain':
+        specifier: workspace:*
+        version: link:../domain
       zod:
         specifier: 'catalog:'
         version: 4.6.7
@@ -440,6 +477,10 @@ importers:
         version: 5.1.0(@types/node@26.6.6)(jsdom@26.1.0(supports-color@8.1.1))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/domain:
+    dependencies:
+      libphonenumber-js:
+        specifier: 'catalog:'
+        version: 1.13.16
     devDependencies:
       '@shareride/config':
         specifier: workspace:*
@@ -4587,6 +4628,9 @@ packages:
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
+
+  libphonenumber-js@1.13.16:
+    resolution: {integrity: sha512-tIOCM9yx2Go6d5/ZANe0K+G4AZek1Ymx81HxQpf19Sri4zMP95eQbKdnUGHAvFQ4nx0PeLhFqvAfisTADXj3tQ==}
 
   lightningcss-android-arm64@1.33.0:
     resolution: {integrity: sha512-gEpRTalKdosp4Bb8qWtc2iOgE5SeIHlpS1up9bFq2wAyYhl1UdTObYiHe98zEM9SQvSoqQZ1IQD0JNpg3Ml5pg==}
@@ -10959,6 +11003,8 @@ snapshots:
     dependencies:
       prelude-ls: 1.2.1
       type-check: 0.4.0
+
+  libphonenumber-js@1.13.16: {}
 
   lightningcss-android-arm64@1.33.0:
     optional: true

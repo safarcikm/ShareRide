@@ -37,6 +37,53 @@ apps.
 - Security headers and a content security policy on web properties.
 - Dependencies and containers scanned in CI; critical findings block merge.
 
+## Sign-in and sessions
+
+How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
+`apps/api/src/modules/auth` with the rules in `packages/domain/src/auth`.
+
+- **Codes:** 6 digits from `crypto.randomInt`, valid 10 minutes, 5 attempts.
+  Stored as HMAC-SHA-256 keyed with `AUTH_SECRET`, bound to the number, and
+  compared in constant time. Only the newest code for a number works; a used
+  code is deleted. The number itself is stored only as a keyed hash until the
+  account exists.
+- **Number guessing:** "send code" answers the same for every valid number,
+  whether or not it has an account. Wrong codes count against the code; after
+  5 the person must ask for a new code, which the sending limits slow down.
+- **Sending limits:** per number, per IP address and per country calling code
+  (plan section 4.2). Keys are keyed hashes, so the table holds no numbers or
+  addresses. The IP address comes from `X-Forwarded-For` only when
+  `TRUST_PROXY=true`, and then from the entry our load balancer added. A
+  per-prefix limit logs a warning (milestone 2 turns it into an alert).
+- **Tokens:** 256 random bits, prefixed `sr_at_` (access) or `sr_rt_`
+  (refresh) so leaked tokens are easy to recognise, and stored only as
+  SHA-256 hashes. Access tokens last 15 minutes. Every refresh replaces both
+  tokens and deletes the session's earlier access tokens. Refresh tokens
+  expire after 60 days without use.
+- **Stolen refresh tokens:** a replaced refresh token that comes back ends the
+  whole session and logs a warning. The exception is the immediately previous
+  token within 30 seconds, treated as a retry after a lost reply.
+- **Web:** the refresh token is a cookie with `HttpOnly`, `SameSite=Strict`,
+  `Path=/v1/auth` and, in production, `Secure`; the access token stays in
+  memory. Browsers may call the API with cookies only from `WEB_ORIGINS`.
+  Request bodies must be `application/json` (anything else gets 415), so a
+  form or text post from another page cannot use the cookie.
+- **Suspended accounts:** their access tokens stop working at once, and a
+  refresh ends the session.
+- **Sign-out** ends the session and deletes its tokens at once; there are no
+  signed tokens that stay valid until they expire. A person can end any of
+  their own sessions, and the API answers "not found" for anyone else's.
+- **Secrets:** `AUTH_SECRET` is at least 32 characters and differs per
+  environment; the API refuses the example value in production. Changing it invalidates codes waiting to be used and resets the
+  sending limits; sessions are not affected.
+- **Development SMS:** the development sender prints codes in the API
+  terminal, outside the logs. The API refuses to start with it in production.
+- **Still to come:** clean-up jobs for expired codes, ended sessions and old
+  limit records (milestone 2, with the worker); the approximate country of
+  each session (needs an IP-to-country lookup); `Idempotency-Key` support
+  (conventions), which these endpoints skip because a repeat is harmless or
+  limited: a lost reply to "verify" means asking for a new code.
+
 ## Safety features (product)
 
 - Meeting points only at public, lit places.

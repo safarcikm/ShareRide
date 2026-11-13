@@ -7,7 +7,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./testing": "./src/testing.ts"
+    "./testing": "./src/testing.ts",
+    "./seed": "./src/seed.ts"
   },
   "scripts": {
     "lint": "eslint .",
@@ -15,7 +16,8 @@
     "test": "vitest run --passWithNoTests --exclude \"src/**/*.integration.test.ts\"",
     "test:integration": "vitest run .integration.test",
     "migrate": "node --env-file-if-exists=../../.env src/migrate-cli.ts",
-    "generate": "drizzle-kit generate"
+    "generate": "drizzle-kit generate",
+    "seed": "node --env-file-if-exists=../../.env src/seed-cli.ts"
   },
   "dependencies": {
     "drizzle-orm": "catalog:",

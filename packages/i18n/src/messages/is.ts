@@ -17,4 +17,5 @@ export const is = {
   "comingSoon.body": "Leit og bókun ferða opnar með prufuútgáfunni. Takk fyrir þolinmæðina.",
   "search.tripCount": "{count, plural, =0 {Engar ferðir} one {# ferð} other {# ferðir}}",
   "format.money": "{amount} kr.",
+  "sms.signInCode": "{code} er ShareRide kóðinn þinn. Hann gildir í 10 mínútur.",
 } as const satisfies Record<MessageKey, string>;

@@ -78,7 +78,7 @@ docker compose -f infra/docker/compose.yml up -d --wait   # PostgreSQL 18 + Post
 pnpm check                   # lint, type check and unit tests (Turborepo)
 pnpm test:integration        # tests against the database (one package at a time)
 pnpm format                  # format with Prettier (pnpm format:check in CI)
-pnpm --filter @shareride/api dev       # migrate, then run the API on port 3000
+pnpm --filter @shareride/api dev       # migrate, seed, run the API on port 3000 (SMS codes print here)
 pnpm --filter @shareride/mobile dev    # the app: Expo dev server (w = web, QR = Expo Go)
 pnpm --filter @shareride/mobile export # bundles for iOS, Android and web (dist/)
 pnpm --filter @shareride/mobile e2e:web  # Playwright on the exported web build

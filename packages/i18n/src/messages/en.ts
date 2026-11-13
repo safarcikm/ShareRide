@@ -15,6 +15,7 @@ export const en = {
   "comingSoon.body": "Finding and booking trips opens with the beta. Thank you for your patience.",
   "search.tripCount": "{count, plural, =0 {No trips} one {# trip} other {# trips}}",
   "format.money": "{amount} ISK",
+  "sms.signInCode": "{code} is your ShareRide code. It expires in 10 minutes.",
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;

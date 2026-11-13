@@ -37,10 +37,11 @@ The full documentation map is in [docs/README.md](docs/README.md).
 │   ├── api/                  # The API (Hono), with its Dockerfile
 │   └── mobile/               # The app for iOS, Android and the web (Expo)
 ├── packages/
+│   ├── api-client/           # Typed client for the API, used by the app
 │   ├── config/               # Shared TypeScript, ESLint and Prettier configuration
 │   ├── contracts/            # API schemas and route definitions (Zod)
 │   ├── db/                   # Database schema, migrations and connection (Drizzle)
-│   ├── domain/               # Pure business rules (money, supported countries)
+│   ├── domain/               # Pure business rules (money, countries, sign-in rules)
 │   └── i18n/                 # Icelandic and English texts and formatting
 ├── infra/docker/             # Local PostgreSQL with PostGIS (Docker Compose)
 └── docs/

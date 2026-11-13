@@ -18,5 +18,8 @@
     "eslint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "libphonenumber-js": "catalog:"
   }
 }
