@@ -68,6 +68,20 @@
 | Payments | Amounts, provider references, refunds, payouts | Payment, accounting | Contract; legal obligation | Participants; operator | As bookkeeping law requires (**verify**) |
 | Payout set-up (drivers) | Identity check and bank account, held by the payment provider | Paying drivers | Contract; legal obligation (provider's checks) | Provider; operator sees status only | Per the provider's terms |
 
+## Providers
+
+Each provider that touches personal data, chosen in an ADR. "DPA" is a data
+processing agreement; Martin signs each one when he opens the account.
+
+| Provider | Role | Personal data | Where | Decision | DPA |
+| -------- | ---- | ------------- | ----- | -------- | --- |
+| Render | Processor | Everything the API stores: the database, logs | Frankfurt, Germany (United States company) | [ADR 0018](../decisions/0018-hosting-on-render-frankfurt.md) | To sign |
+| 46elks | Separate controller under telecom law | Phone number and message text | Sweden | [ADR 0019](../decisions/0019-sms-with-46elks.md) | Not needed by its terms; ask for one if the lawyer advises |
+| Sentry | Processor | Scrubbed error reports: app version, device model, request path, network address | Frankfurt, Germany (United States company) | [ADR 0020](../decisions/0020-error-tracking-with-sentry-eu.md) | To sign |
+| MapTiler | Processor | Network address and the map area viewed, with each tile request | Switzerland (adequacy decision) | [ADR 0021](../decisions/0021-map-tiles-from-maptiler.md) | To sign |
+| Hetzner | Processor | Profile photos | Helsinki, Finland | [ADR 0022](../decisions/0022-photo-storage-on-hetzner.md) | To sign |
+| Apple and Google | Separate controllers, at the person's choice | Their account ID and email, when the person signs in with them | Their own terms | [Spec 1](../specs/2026-11-13-sign-in-and-profile.md) | Not applicable |
+
 ## Rights in the app
 
 | Right | How |

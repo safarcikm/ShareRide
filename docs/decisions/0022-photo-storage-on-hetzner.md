@@ -1,6 +1,6 @@
 # 0022. Store photos in Hetzner Object Storage in Helsinki
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-13, by Martin, with the milestone 2 plan)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [ADR 0007](0007-eea-hosting-and-data-residency.md),

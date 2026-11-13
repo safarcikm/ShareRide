@@ -91,8 +91,8 @@ Walking skeleton, milestone 1: foundation and phone sign-in
 - [x] Sign-in with phone number
 
 Walking skeleton, milestone 2: hosted and connected
-([plan](../plans/2026-11-13-milestone-2-hosted-and-connected.md), a draft;
-each provider choice gets an ADR)
+([plan](../plans/2026-11-13-milestone-2-hosted-and-connected.md), approved
+2026-11-13; providers in ADRs 0018 to 0022)
 
 - [ ] API deployed to staging in the EEA
 - [ ] Real SMS provider for sign-in codes
@@ -125,7 +125,9 @@ Legal and company (in parallel)
 - [ ] Terms of service, privacy policy, community rules (Icelandic and English)
 - [ ] Record of processing activities and data protection impact assessment
 - [ ] Data processing agreements with every provider
-- [ ] Apple and Google developer accounts in the company's name
+- [ ] Apple and Google developer accounts in the company's name (until then,
+      Martin's individual Apple account is used for development builds only,
+      [milestone 2 plan](../plans/2026-11-13-milestone-2-hosted-and-connected.md#3-decisions-for-martin))
 
 Community (in parallel)
 

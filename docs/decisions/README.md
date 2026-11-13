@@ -48,8 +48,8 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0015](0015-women-only-trips.md) | Women-only trips based on a private self-declaration | Accepted |
 | [0016](0016-own-sign-in-module.md) | Our own sign-in module instead of an auth library | Accepted |
 | [0017](0017-visual-design-system.md) | Our own visual design system on React Native primitives | Accepted |
-| [0018](0018-hosting-on-render-frankfurt.md) | Host the API, worker and database on Render in Frankfurt | Proposed |
-| [0019](0019-sms-with-46elks.md) | Send sign-in codes by SMS with 46elks | Proposed |
-| [0020](0020-error-tracking-with-sentry-eu.md) | Error tracking and uptime checks with Sentry in its EU region | Proposed |
-| [0021](0021-map-tiles-from-maptiler.md) | Map tiles from MapTiler | Proposed |
-| [0022](0022-photo-storage-on-hetzner.md) | Store photos in Hetzner Object Storage in Helsinki | Proposed |
+| [0018](0018-hosting-on-render-frankfurt.md) | Host the API, worker and database on Render in Frankfurt | Accepted |
+| [0019](0019-sms-with-46elks.md) | Send sign-in codes by SMS with 46elks | Accepted |
+| [0020](0020-error-tracking-with-sentry-eu.md) | Error tracking and uptime checks with Sentry in its EU region | Accepted |
+| [0021](0021-map-tiles-from-maptiler.md) | Map tiles from MapTiler | Accepted |
+| [0022](0022-photo-storage-on-hetzner.md) | Store photos in Hetzner Object Storage in Helsinki | Accepted |

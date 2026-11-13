@@ -1,7 +1,7 @@
 # Milestone 2 plan: hosted and connected
 
-**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Draft for Martin's
-review
+**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved by Martin
+(2026-11-13: all six choices in section 3 accepted)
 
 Implements the second half of the Phase 2 walking skeleton
 ([roadmap](../strategy/roadmap.md#phase-2-build)): staging in the EEA, real
@@ -49,11 +49,17 @@ When this milestone is done:
 ## 3. Decisions for Martin
 
 Each choice is checked against the ADR 0007 list (EEA region, data
-processing agreement, little operations work). Each accepted choice becomes a
-short ADR and an entry in the [privacy](../compliance/privacy-gdpr.md)
-inventory. Prices are list prices on 2026-11-13 for staging only.
+processing agreement, little operations work). Martin accepted all six on
+2026-11-13. Choices 1 to 5 are ADRs
+[0018](../decisions/0018-hosting-on-render-frankfurt.md),
+[0019](../decisions/0019-sms-with-46elks.md),
+[0020](../decisions/0020-error-tracking-with-sentry-eu.md),
+[0021](../decisions/0021-map-tiles-from-maptiler.md) and
+[0022](../decisions/0022-photo-storage-on-hetzner.md), and each provider is
+in the [privacy](../compliance/privacy-gdpr.md#providers) list. Choice 6 is an
+account, not an architecture decision, so it lives here and in the roadmap. Prices are list prices on 2026-11-13 for staging only.
 
-| # | Choice | Recommendation | Why | Main alternative | Per month |
+| # | Choice | Decision (accepted) | Why | Main alternative | Per month |
 | - | ------ | -------------- | --- | ---------------- | --------- |
 | 1 | Hosting | **Render, Frankfurt**: API and worker containers, managed PostgreSQL | PostgreSQL 18 with PostGIS (our schema uses PostgreSQL 18's `uuidv7()`), point-in-time recovery, private network, secret store, a blueprint file in the repository as infrastructure in code | Fly.io in Stockholm is closer, but its managed PostgreSQL stops at version 17; AWS in Stockholm is more work for one person | About $20 ($7 API, $7 worker, $6 database plus storage) |
 | 2 | SMS | **46elks** (Swedish telecom operator) | All data in the EU, pay per message, no monthly fee, a small HTTP API | Sinch (also Swedish, larger, more onboarding) as the fallback | Per message; big providers charge about 6 to 7 US cents for Iceland; 46elks's rate to confirm at sign-up |
@@ -192,8 +198,8 @@ a code review before it opens. Tick tasks as they merge.
 
 ### PR 1: `docs(plans)`: this plan and the provider ADRs
 
-- [ ] This plan, one ADR per accepted choice in section 3, the integrations
-      table, the privacy inventory, the roadmap
+- [x] This plan, ADRs 0018 to 0022 (accepted), the integrations table, the
+      privacy provider list, the roadmap
 
 ### PR 2: `feat(infra)`: staging on Render
 

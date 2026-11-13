@@ -1,6 +1,6 @@
 # 0019. Send sign-in codes by SMS with 46elks
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-13, by Martin, with the milestone 2 plan)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [ADR 0016](0016-own-sign-in-module.md),
