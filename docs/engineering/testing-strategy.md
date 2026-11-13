@@ -61,6 +61,13 @@ checks that exactly one succeeds.
 7. Both leave a review after the trip
 8. A user exports and deletes their data
 
+On the web, Playwright runs these journeys against the real API with a test
+database (`apps/api/src/e2e-server.ts`). That server writes text messages to a
+file the tests read the codes from, and moves its clock 31 seconds on with
+each code, so a test can sign in to the same account again at once. Journey 1
+runs in English and Icelandic, with "sign out on all devices"
+(`apps/mobile/e2e/sign-in.spec.ts`).
+
 ## Coverage
 
 Coverage is a signal, not a target. Guidelines: domain package close to full

@@ -1,9 +1,12 @@
-import { fireEvent, renderRouter, screen } from "expo-router/testing-library";
+import { fireEvent, screen } from "expo-router/testing-library";
 import { getLocales } from "expo-localization";
-import ComingSoon from "@/app/coming-soon";
-import Welcome from "@/app/index";
-import RootLayout from "@/app/_layout";
+import { renderApp } from "@/testing/app";
+import type * as TestApp from "@/testing/app";
 
+jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
+jest.mock("@/auth/token-store", () => {
+  return jest.requireActual<typeof TestApp>("@/testing/app").mockTokenStoreModule;
+});
 jest.mock("expo-localization", () => ({ getLocales: jest.fn() }));
 jest.mock("@/lib/preferences", () => ({
   readPreference: jest.fn(() => Promise.resolve(null)),
@@ -16,35 +19,28 @@ function deviceLanguage(languageTag: string) {
   mockedGetLocales.mockReturnValue([{ languageTag }]);
 }
 
-function renderApp() {
-  return renderRouter(
-    { _layout: RootLayout, index: Welcome, "coming-soon": ComingSoon },
-    { initialUrl: "/" },
-  );
-}
-
 describe("Welcome", () => {
   it("opens in English on an English device", async () => {
     deviceLanguage("en-GB");
-    await renderApp();
+    await renderApp("/");
     expect(await screen.findByText("Share the ride across Iceland")).toBeVisible();
   });
 
   it("opens in Icelandic on an Icelandic device", async () => {
     deviceLanguage("is-IS");
-    await renderApp();
+    await renderApp("/");
     expect(await screen.findByText("Samferða um allt Ísland")).toBeVisible();
   });
 
   it("opens in English on a device in another language", async () => {
     deviceLanguage("pl-PL");
-    await renderApp();
+    await renderApp("/");
     expect(await screen.findByText("Share the ride across Iceland")).toBeVisible();
   });
 
   it("switches to Icelandic and back with the language button", async () => {
     deviceLanguage("en-GB");
-    await renderApp();
+    await renderApp("/");
     await fireEvent.press(
       await screen.findByRole("button", { name: "Change the language to Icelandic" }),
     );
@@ -55,7 +51,7 @@ describe("Welcome", () => {
 
   it("labels the title as a heading for screen readers", async () => {
     deviceLanguage("en-GB");
-    await renderApp();
+    await renderApp("/");
     expect(
       await screen.findByRole("header", { name: "Share the ride across Iceland" }),
     ).toBeVisible();
@@ -63,7 +59,7 @@ describe("Welcome", () => {
 
   it("leads from Browse trips to the coming-soon page and back", async () => {
     deviceLanguage("en-GB");
-    await renderApp();
+    await renderApp("/");
     await fireEvent.press(await screen.findByRole("button", { name: "Browse trips" }));
     expect(await screen.findByText("Coming soon")).toBeVisible();
     expect(screen).toHavePathname("/coming-soon");

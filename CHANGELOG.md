@@ -38,6 +38,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   acceptance with the age confirmation. Codes, numbers in sign-in tables and
   tokens are stored only as hashes; limits per number, IP address and
   country calling code.
+- Sign-in screens in the app (spec 1): phone number with a country picker,
+  code with a resend timer and clear errors, terms and age, create and edit
+  a profile, my profile, and settings with language, legal documents, sign
+  out and sign out on all devices. The session stays signed in: refresh
+  token in the phone's secure storage, or an HTTP-only cookie on the web.
+- Browser journeys against the API with a test database: sign up in English
+  and in Icelandic, stay signed in after a reload, sign out on all devices.
+- README: how to run the API and the app locally on Windows and macOS, and
+  on a phone with Expo Go.
 - Domain rules for phone numbers, codes, sending limits, token rotation,
   profile fields and the legal gate (rules R1.1 to R1.7).
 - `packages/api-client`: a typed client for the API, checked against the

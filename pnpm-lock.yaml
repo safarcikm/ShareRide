@@ -299,6 +299,12 @@ importers:
 
   apps/mobile:
     dependencies:
+      '@shareride/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
+      '@shareride/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@shareride/domain':
         specifier: workspace:*
         version: link:../../packages/domain

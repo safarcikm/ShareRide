@@ -37,6 +37,12 @@ export const spokenLanguages = [
 
 export type SpokenLanguage = (typeof spokenLanguages)[number];
 
+/** Limits on profile text (spec 1, section 3.5), in characters as people count them. */
+export const profileRules = {
+  firstNameMaxLength: 30,
+  aboutMaxLength: 300,
+} as const;
+
 export interface ProfileChanges {
   readonly firstName?: string;
   readonly about?: string;
@@ -74,7 +80,10 @@ export function validateProfileChanges(
 
   if (changes.firstName !== undefined) {
     const firstName = tidy(changes.firstName);
-    if (characterCount(firstName) > 30 || !firstNamePattern.test(firstName)) {
+    if (
+      characterCount(firstName) > profileRules.firstNameMaxLength ||
+      !firstNamePattern.test(firstName)
+    ) {
       return err({ code: "profile_invalid", field: "firstName" });
     }
     valid.firstName = firstName;
@@ -82,7 +91,9 @@ export function validateProfileChanges(
 
   if (changes.about !== undefined) {
     const about = tidy(changes.about);
-    if (characterCount(about) > 300) return err({ code: "profile_invalid", field: "about" });
+    if (characterCount(about) > profileRules.aboutMaxLength) {
+      return err({ code: "profile_invalid", field: "about" });
+    }
     valid.about = about === "" ? null : about;
   }
 

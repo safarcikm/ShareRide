@@ -18,6 +18,8 @@ export const legalDocumentSchema = z.object({
   body: z.string(),
 });
 
+export type LegalDocument = z.infer<typeof legalDocumentSchema>;
+
 export const currentLegalDocumentRoute = defineRoute({
   method: "get",
   path: "/v1/legal/{type}/current",

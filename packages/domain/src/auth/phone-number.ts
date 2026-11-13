@@ -1,4 +1,4 @@
-import { parsePhoneNumberFromString } from "libphonenumber-js/mobile";
+import { getCountryCallingCode, parsePhoneNumberFromString } from "libphonenumber-js/mobile";
 import { isSupportedCountry, type SupportedCountry } from "../countries.ts";
 import { err, ok, type Result } from "../result.ts";
 
@@ -40,4 +40,14 @@ export function normalisePhoneNumber(
     country: parsed.country,
     callingCode: parsed.countryCallingCode,
   });
+}
+
+/** The country calling code without the plus, for example "354" for Iceland. */
+export function callingCode(country: SupportedCountry): string {
+  return getCountryCallingCode(country);
+}
+
+/** An E.164 number in the international format, for example "+354 690 0000". */
+export function formatPhoneNumber(e164: string): string {
+  return parsePhoneNumberFromString(e164)?.formatInternational() ?? e164;
 }

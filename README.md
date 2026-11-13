@@ -60,35 +60,79 @@ The full code layout (`apps/`, `packages/`, `infra/`) is described in the
 [architecture overview](docs/architecture/overview.md#repository-layout); parts
 are added as milestone 1 progresses.
 
-## Development
+## Run it locally
 
-You need Node.js 26 and pnpm 12 (`npm install --global pnpm@12`).
+This runs the API and the app on your own computer, and the app on your own
+phone with Expo Go. In development no text messages are sent: the sign-in
+code appears in the API's terminal.
 
-You also need Docker (Docker Desktop on Windows and macOS) for the local
-database.
+### One-time setup
+
+1. Install [Git](https://git-scm.com/downloads),
+   [Node.js 26](https://nodejs.org/) and
+   [Docker Desktop](https://www.docker.com/products/docker-desktop/), then
+   pnpm 12: `npm install --global pnpm@12`.
+2. Clone the repository, open a terminal in its folder and run:
+
+   ```sh
+   pnpm install
+   ```
+
+3. Copy the local settings. macOS: `cp .env.example .env`. Windows
+   (PowerShell): `Copy-Item .env.example .env`.
+4. On your phone, install **Expo Go** from the App Store or Google Play.
+
+### Each time
+
+1. Start Docker Desktop, then start the database:
+
+   ```sh
+   docker compose -f infra/docker/compose.yml up -d --wait
+   ```
+
+2. In one terminal, start the API (it updates the database first):
+
+   ```sh
+   pnpm --filter @shareride/api dev
+   ```
+
+   Open <http://localhost:3000/v1/health> to check it, and
+   <http://localhost:3000/v1/openapi.json> for its documentation.
+
+3. In a second terminal, start the app:
+
+   ```sh
+   pnpm --filter @shareride/mobile dev
+   ```
+
+   Press `w` to open it in the browser. On a phone, scan the QR code: with the
+   Camera app on an iPhone, or from Expo Go on Android.
+
+### Sign up on your phone
+
+- The phone and the computer must be on the same Wi-Fi network. The app
+  finds the API at the computer's address on port 3000.
+- The first time, allow Node.js through the firewall when Windows or macOS
+  asks (on Windows, for private networks). Otherwise the phone cannot reach
+  the API and the app says it cannot reach ShareRide.
+- Enter your number and tap **Send code**. The code appears in the API
+  terminal, for example `[dev SMS to +354••••••67] 123456 is your ShareRide
+  code.` Type it in the app.
+- If the phone still cannot reach the API (some office and guest networks
+  block it), put `EXPO_PUBLIC_API_URL=http://<your computer's address>:3000`
+  in `apps/mobile/.env.local` and restart the app.
+
+### Checks and tests
 
 ```sh
-pnpm install                                              # install everything
-cp .env.example .env                                      # local settings
-docker compose -f infra/docker/compose.yml up -d --wait   # start the database
-pnpm check                                                # lint, types, unit tests
-pnpm test:integration                                     # database tests
-pnpm --filter @shareride/api dev                          # API on http://localhost:3000
+pnpm check                                  # lint, types and unit tests
+pnpm test:integration                       # API and database tests
+pnpm --filter @shareride/mobile e2e:web     # browser journeys (needs the database)
 ```
 
-Open <http://localhost:3000/v1/health> to check the API, and
-<http://localhost:3000/v1/openapi.json> for its documentation.
-
-To run the app:
-
-```sh
-pnpm --filter @shareride/mobile dev
-```
-
-Press `w` to open it in the browser, or scan the QR code with the Expo Go app
-on an iPhone or Android phone (on the same Wi-Fi network as the computer).
-
-More commands are in [CLAUDE.md](CLAUDE.md#commands).
+The browser journeys build the web app, start a test API on port 3001 and
+use the `shareride_test` database, which they empty first. More commands are
+in [CLAUDE.md](CLAUDE.md#commands).
 
 ## Licence
 

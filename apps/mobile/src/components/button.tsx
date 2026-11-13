@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text } from "react-native";
 import { minTouchTarget, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
@@ -7,28 +7,56 @@ interface ButtonProps {
   readonly onPress: () => void;
   /** Read by screen readers instead of the label, when the label is not enough. */
   readonly accessibilityLabel?: string;
-  readonly variant?: "primary" | "secondary";
+  readonly variant?: "primary" | "secondary" | "text";
+  /** Waiting for the API: shows a spinner and ignores presses. */
+  readonly busy?: boolean;
+  readonly disabled?: boolean;
 }
 
-export function Button({ label, onPress, accessibilityLabel, variant = "primary" }: ButtonProps) {
+export function Button({
+  label,
+  onPress,
+  accessibilityLabel,
+  variant = "primary",
+  busy = false,
+  disabled = false,
+}: ButtonProps) {
   const palette = usePalette();
   const primary = variant === "primary";
+  const inactive = busy || disabled;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityState={{ disabled: inactive, busy }}
+      disabled={inactive}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
-        primary
-          ? { backgroundColor: palette.primary }
-          : { borderColor: palette.border, borderWidth: 1 },
-        pressed && styles.pressed,
+        primary && { backgroundColor: palette.primary },
+        variant === "secondary" && { borderColor: palette.border, borderWidth: 1 },
+        variant === "text" && styles.text,
+        (pressed || inactive) && styles.dimmed,
       ]}
     >
-      <Text style={[typography.button, { color: primary ? palette.onPrimary : palette.text }]}>
-        {label}
-      </Text>
+      {busy ? (
+        <ActivityIndicator color={primary ? palette.onPrimary : palette.text} />
+      ) : (
+        <Text
+          style={[
+            typography.button,
+            {
+              color: primary
+                ? palette.onPrimary
+                : variant === "text"
+                  ? palette.primary
+                  : palette.text,
+            },
+          ]}
+        >
+          {label}
+        </Text>
+      )}
     </Pressable>
   );
 }
@@ -43,5 +71,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  pressed: { opacity: 0.8 },
+  text: { paddingHorizontal: spacing.sm, alignSelf: "flex-start" },
+  dimmed: { opacity: 0.7 },
 });

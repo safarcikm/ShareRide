@@ -71,8 +71,24 @@ jobs:
     name: App bundles (iOS, Android, web) and web tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # The web tests sign up against the API with a test database (e2e-server.ts).
+    services:
+      postgres:
+        image: postgis/postgis:18-3.7
+        env:
+          POSTGRES_USER: shareride
+          POSTGRES_PASSWORD: shareride-ci-only
+          POSTGRES_DB: shareride_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U shareride -d shareride_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
     env:
       EXPO_NO_TELEMETRY: "1"
+      TEST_DATABASE_URL: postgres://shareride:shareride-ci-only@localhost:5432/shareride_test
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
@@ -86,5 +102,5 @@ jobs:
         run: pnpm --filter @shareride/mobile export
       - name: Install Chromium for Playwright
         run: pnpm --filter @shareride/mobile exec playwright install --with-deps chromium
-      - name: Web tests (phone and desktop sizes)
+      - name: Web tests against the API (phone and desktop sizes)
         run: pnpm --filter @shareride/mobile e2e:web

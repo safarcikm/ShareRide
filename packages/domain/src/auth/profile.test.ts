@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateProfileChanges } from "./profile.ts";
+import { profileRules, validateProfileChanges } from "./profile.ts";
 
 describe("validateProfileChanges (spec 1, section 3.5)", () => {
   it("accepts a first name, an about text and languages", () => {
@@ -68,5 +68,16 @@ describe("validateProfileChanges (spec 1, section 3.5)", () => {
       ok: false,
       error: { code: "profile_invalid", field: "languages" },
     });
+  });
+});
+
+describe("profileRules", () => {
+  it("are the limits the checks use", () => {
+    const longest = "A".repeat(profileRules.firstNameMaxLength);
+    expect(validateProfileChanges({ firstName: longest }).ok).toBe(true);
+    expect(validateProfileChanges({ firstName: `${longest}A` }).ok).toBe(false);
+    const about = "a".repeat(profileRules.aboutMaxLength);
+    expect(validateProfileChanges({ about }).ok).toBe(true);
+    expect(validateProfileChanges({ about: `${about}a` }).ok).toBe(false);
   });
 });
