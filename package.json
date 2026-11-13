@@ -16,6 +16,7 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "test:integration": "turbo run test:integration --concurrency=1",
     "check": "turbo run lint typecheck test",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

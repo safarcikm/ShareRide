@@ -1,0 +1,26 @@
+# Local development services. Start with:
+#   docker compose -f infra/docker/compose.yml up -d
+# Credentials here are for local development only and never used elsewhere.
+name: shareride
+
+services:
+  db:
+    image: postgis/postgis:18-3.7
+    environment:
+      POSTGRES_USER: shareride
+      POSTGRES_PASSWORD: shareride-local-only
+      POSTGRES_DB: shareride
+    ports:
+      - "5432:5432"
+    volumes:
+      # PostgreSQL 18 images keep their data under /var/lib/postgresql/18.
+      - db-data:/var/lib/postgresql
+      - ./initdb/20-test-database.sql:/docker-entrypoint-initdb.d/20-test-database.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shareride -d shareride"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  db-data:

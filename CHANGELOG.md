@@ -17,6 +17,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   domain free of I/O, frameworks, clock and randomness.
 - CI for code: format, lint, type check, unit tests and a dependency audit
   on every pull request; Dependabot for npm packages.
+- API skeleton (Hono): `/v1/health`, `/v1/health/ready` and
+  `/v1/openapi.json`, the standard error shape, request IDs, security headers
+  and JSON logs that redact personal data; environment checked at start-up.
+- `packages/db` (Drizzle, PostgreSQL 18 with PostGIS) with the first
+  migration, and `packages/contracts` for the API's schemas and routes.
+- Local database with Docker Compose; API container image built in CI; CI
+  runs integration tests against PostgreSQL with PostGIS.
 
 ### Changed
 

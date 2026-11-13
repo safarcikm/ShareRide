@@ -1,0 +1,33 @@
+{
+  "name": "@shareride/db",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Database schema, SQL migrations and connection for the API (PostgreSQL with PostGIS)",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc",
+    "test": "vitest run --passWithNoTests --exclude \"src/**/*.integration.test.ts\"",
+    "test:integration": "vitest run .integration.test",
+    "migrate": "node --env-file-if-exists=../../.env src/migrate-cli.ts",
+    "generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "drizzle-orm": "catalog:",
+    "pg": "catalog:"
+  },
+  "devDependencies": {
+    "@shareride/config": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/pg": "catalog:",
+    "drizzle-kit": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

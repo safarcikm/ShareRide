@@ -29,7 +29,7 @@ when the monorepo is scaffolded; this page records the intent.
 | TypeScript 6.0, strict, `noUncheckedIndexedAccess`, `erasableSyntaxOnly` | `packages/config/tsconfig.base.json` |
 | ESLint (typescript-eslint, strict type-checked rules) | `packages/config/eslint.js`; the `domain` rules block I/O, frameworks, `Date.now()`, `new Date()` and `Math.random()` in `packages/domain` |
 | Prettier, 100 characters per line | `packages/config/prettier.json`; Markdown is left to markdownlint |
-| Vitest for unit and API tests | Each package's `test` script |
+| Vitest for unit and API tests | Each package's `test` script; `*.integration.test.ts` files run with `pnpm test:integration` against a `_test` database |
 | Shared versions | The `catalog` in `pnpm-workspace.yaml` |
 
 Workspace packages export their TypeScript source; there is no build step

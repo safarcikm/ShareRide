@@ -1,0 +1,25 @@
+{
+  "name": "@shareride/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The /v1 API contract: Zod schemas and route definitions shared by the API and the apps",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@shareride/config": "workspace:*",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "name": "@shareride/api",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The ShareRide API: a TypeScript modular monolith (ADR 0004)",
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @shareride/db migrate && node --env-file-if-exists=../../.env --watch src/server.ts",
+    "start": "node src/server.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc",
+    "test": "vitest run --exclude \"src/**/*.integration.test.ts\"",
+    "test:integration": "vitest run .integration.test"
+  },
+  "dependencies": {
+    "@hono/node-server": "catalog:",
+    "@hono/zod-openapi": "catalog:",
+    "@shareride/contracts": "workspace:*",
+    "@shareride/db": "workspace:*",
+    "@shareride/domain": "workspace:*",
+    "hono": "catalog:",
+    "pino": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@shareride/config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

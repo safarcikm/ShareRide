@@ -32,3 +32,37 @@ jobs:
         run: pnpm check
       - name: Dependency audit (high and critical)
         run: pnpm audit --audit-level high
+
+  api:
+    name: API integration tests and image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgis/postgis:18-3.7
+        env:
+          POSTGRES_USER: shareride
+          POSTGRES_PASSWORD: shareride-ci-only
+          POSTGRES_DB: shareride_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U shareride -d shareride_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    env:
+      TEST_DATABASE_URL: postgres://shareride:shareride-ci-only@localhost:5432/shareride_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Integration tests (migrations, API against PostgreSQL)
+        run: pnpm test:integration
+      - name: Build the API container image (not pushed)
+        run: docker build --file apps/api/Dockerfile --tag shareride-api:${{ github.sha }} .
