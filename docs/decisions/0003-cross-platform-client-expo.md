@@ -1,6 +1,6 @@
 # 0003. Cross-platform client with Expo
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-13, stack decision: Expo with our own TypeScript API)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [ADR 0002](0002-monorepo-and-typescript.md), open question Q1

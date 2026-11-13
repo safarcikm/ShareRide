@@ -48,8 +48,10 @@ These principles decide trade-offs when nothing else does.
 
 ## 3. Recommended technology stack
 
-All items are **Proposed** until the owner accepts the ADRs. The main
-alternatives were considered in each ADR.
+The stack (ADRs 0002 to 0005) and phased payments (ADR 0008) were
+**accepted** on 2026-11-13. The other rows
+are **Proposed** until the owner accepts their ADRs. The main alternatives
+were considered in each ADR.
 
 | Concern                  | Recommendation                                                     | ADR |
 | ------------------------ | ------------------------------------------------------------------ | --- |
@@ -241,10 +243,9 @@ Full detail: [roadmap](roadmap.md).
 The open questions, each with a recommendation, are in
 [open questions](open-questions.md). The three that shape everything else:
 
-1. **Stack:** Expo with our own TypeScript API (recommended), Expo with Supabase,
-   or Flutter.
-2. **Payments in the beta:** pay the driver directly (recommended) or in-app
-   from day one.
+1. **Stack:** decided on 2026-11-13: Expo with our own TypeScript API.
+2. **Payments in the beta:** decided on 2026-11-13: passengers pay the driver
+   directly; in-app payments come after launch.
 3. **Who sets segment prices:** the platform suggests a cost-based price and
    the driver adjusts within a cap (recommended), the driver sets any price,
    or the platform fixes it.

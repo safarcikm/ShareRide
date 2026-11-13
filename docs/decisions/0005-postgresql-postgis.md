@@ -1,6 +1,6 @@
 # 0005. PostgreSQL with PostGIS as the system of record
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-13, stack decision: Expo with our own TypeScript API)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [ADR 0004](0004-backend-modular-monolith.md),

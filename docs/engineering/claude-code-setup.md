@@ -31,11 +31,11 @@ All plugins below are in Anthropic's official marketplace,
 | `pr-review-toolkit` | Specialised review agents for tests, error handling, type design, comments and simplification. Gives the owner a second pair of eyes before every merge. |
 | `claude-md-management` | Keeps `CLAUDE.md` accurate as the project evolves; `/revise-claude-md` captures lessons from a session. |
 
-## Install when the stack is accepted (Phase 2)
+## Install when the code is scaffolded (Phase 2)
 
 | Plugin | Why |
 | ------ | --- |
-| `expo` | Official Expo skills (Expo Router, native UI, data fetching, upgrades, EAS builds, store submission, updates, workflows) plus the Expo MCP server. Only if ADR 0003 is accepted. |
+| `expo` | Official Expo skills (Expo Router, native UI, data fetching, upgrades, EAS builds, store submission, updates, workflows) plus the Expo MCP server. ADR 0003 is accepted; install it when the app is scaffolded. |
 | `typescript-lsp` | Real code intelligence (go to definition, type errors) once TypeScript code exists. Needs `typescript-language-server` installed: `npm install -g typescript-language-server typescript`. |
 | `playwright` | Lets Claude drive a browser to test and screenshot the web app. |
 

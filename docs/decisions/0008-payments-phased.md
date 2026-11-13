@@ -1,6 +1,7 @@
 # 0008. Phased payments behind a provider-agnostic port
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-13: pay the driver directly during the beta;
+  the service fee itself stays open as question Q5)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [legal and regulatory](../compliance/legal-and-regulatory.md),
