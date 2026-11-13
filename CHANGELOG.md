@@ -6,6 +6,11 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- MVP feature list rewritten with feature IDs, priorities, questions for the
+  owner and the order in which specs are written.
+
 ### Added
 
 - Development strategy, roadmap and open questions.
