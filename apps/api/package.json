@@ -6,7 +6,7 @@
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter @shareride/db migrate && node --env-file-if-exists=../../.env --watch src/server.ts",
+    "dev": "pnpm --filter @shareride/db migrate && pnpm --filter @shareride/db seed && node --env-file-if-exists=../../.env --watch src/server.ts",
     "start": "node src/server.ts",
     "lint": "eslint .",
     "typecheck": "tsc",
@@ -19,11 +19,14 @@
     "@shareride/contracts": "workspace:*",
     "@shareride/db": "workspace:*",
     "@shareride/domain": "workspace:*",
+    "@shareride/i18n": "workspace:*",
+    "drizzle-orm": "catalog:",
     "hono": "catalog:",
     "pino": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@shareride/api-client": "workspace:*",
     "@shareride/config": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",

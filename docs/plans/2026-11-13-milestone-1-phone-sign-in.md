@@ -121,7 +121,8 @@ module's internals.
 Limits (rules R1.2 and R1.3): one code per 30 seconds and 5 per hour per
 number; 10 per hour per IP address; per country calling code, 500 per hour
 for +354 and 50 per hour for each other prefix. The last two are starting
-values, kept in configuration and tuned with real traffic. Passing a prefix
+values, kept in one place (`codeSendLimits` in `packages/domain`) and tuned
+with real traffic; operator settings (spec 10) can make them editable. Passing a prefix
 limit logs a warning event without the number; in milestone 2 error tracking
 turns it into an alert on Martin's phone.
 
@@ -130,9 +131,9 @@ turns it into an alert on Martin's phone.
 | Table | Main columns |
 | ----- | ------------ |
 | `users` | `id`, `phone_e164` (unique), `phone_verified_at`, `first_name`, `about`, `languages`, `locale`, `email`, `email_verified_at`, `age_confirmed_at`, `roles`, `status`, `created_at`, `updated_at` |
-| `verification_codes` | `id`, `phone_e164`, `code_hash`, `expires_at`, `attempts`, `used_at`, `created_at` |
+| `verification_codes` | `id`, `phone_hash` (keyed hash, not the number), `code_hash`, `expires_at`, `attempts`, `used_at`, `created_at` |
 | `sessions` | `id`, `user_id`, `device_name`, `platform`, `app_version`, `created_at`, `last_active_at`, `ended_at`, `end_reason` |
-| `session_tokens` | `id`, `session_id`, `kind` (access or refresh), `token_hash`, `expires_at`, `rotated_at`, `created_at` |
+| `session_tokens` | `id`, `session_id`, `kind` (access or refresh), `token_hash`, `expires_at`, `rotated_at`, `replaced_by`, `created_at` |
 | `legal_documents` | `id`, `type`, `version`, `material`, `texts` (per language), `published_at` |
 | `legal_acceptances` | `id`, `user_id`, `document_id`, `version`, `locale`, `accepted_at` |
 | `rate_limit_events` | `id`, `scope`, `key_hash`, `created_at` |
@@ -148,9 +149,10 @@ production.
 
 `GET /v1/health`, `GET /v1/health/ready` (checks the database),
 `GET /v1/openapi.json`, the four `auth` endpoints above, `GET /v1/me`,
-`PATCH /v1/me` (first name, about, languages, app language, age
-confirmation), `GET /v1/me/sessions`, `DELETE /v1/me/sessions/{id}`,
-`GET /v1/legal/{type}/current`, `POST /v1/me/legal-acceptances`.
+`PATCH /v1/me` (first name, about, languages, app language),
+`GET /v1/me/sessions`, `DELETE /v1/me/sessions/{id}`,
+`GET /v1/legal/{type}/current`, `POST /v1/me/legal-acceptances` (the
+documents and the age confirmation, sent together from the terms screen).
 
 Errors use the shape `{ error: { code, message, details? } }` from the
 [conventions](../engineering/conventions.md#api); the app translates `code`.
@@ -254,25 +256,25 @@ task. Tick tasks as they merge, so a new session can resume here.
 
 ### PR 5: `feat(auth)`: phone sign-in in the API
 
-- [ ] Domain, tests first: phone normalisation and supported countries
+- [x] Domain, tests first: phone normalisation and supported countries
       (R1.1, R1.5); code rules (R1.2: 6 digits, 10 minutes, 5 attempts, single
       use); resend timing (R1.3); token rotation decisions (rotate, retry
       grace, reuse means end the session); legal gate (R1.6, R1.7)
-- [ ] `packages/contracts`: schemas and route definitions for the
+- [x] `packages/contracts`: schemas and route definitions for the
       milestone 1 endpoints; `packages/api-client` with a typed `call()`
-- [ ] Migrations for the tables in 4.3; seed placeholder Terms and Community
+- [x] Migrations for the tables in 4.3; seed placeholder Terms and Community
       Rules marked "draft"
-- [ ] `SmsSender` port with a development adapter that prints the code in the
+- [x] `SmsSender` port with a development adapter that prints the code in the
       API terminal and keeps the last messages for tests; the API refuses to
       start with it when `NODE_ENV=production`
-- [ ] Endpoints in 4.4, with integration tests: sign up and sign in; the same
+- [x] Endpoints in 4.4, with integration tests: sign up and sign in; the same
       reply for known and unknown numbers; each limit; code expiry and
       attempts; refresh rotation, retry grace and reuse; sign out of one and
       all sessions; another user's session cannot be ended; acceptance of the
       current terms; profile validation (first name 1 to 30 letters, about up
       to 300 characters)
-- [ ] Security review (`/security-review`) before the PR is opened
-- [ ] Docs: security guide (token handling),
+- [x] Security review (`/security-review`) before the PR is opened
+- [x] Docs: security guide (token handling),
       record of personal data for the new tables
 - Verify: `pnpm --filter api test` against the local database
 

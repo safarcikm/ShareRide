@@ -80,7 +80,10 @@ imports end in `.ts`.
 - Use `camelCase` in JSON.
 - Pagination with cursors. Filtering by query parameters.
 - Errors use one shape: `{ error: { code, message, details? } }`, where `code`
-  is stable and machine-readable.
+  is stable and machine-readable. A few errors add a number the app shows,
+  such as `retryAfterSeconds` (also sent as `Retry-After`) or `attemptsLeft`.
+- Routes that need a signed-in person take `Authorization: Bearer <access
+  token>` and are marked `auth: true` in the contract.
 - Every state-changing endpoint accepts an `Idempotency-Key` header.
 
 ## Database

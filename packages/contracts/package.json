@@ -14,6 +14,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@shareride/domain": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

@@ -46,6 +46,27 @@ describe("errors", () => {
   });
 });
 
+describe("request bodies", () => {
+  it("must be JSON, so a cross-site form cannot post to the API", async () => {
+    const response = await setup().app.request("/v1/auth/refresh", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "refreshToken=x",
+    });
+    expect(response.status).toBe(415);
+    expect(await response.json()).toMatchObject({ error: { code: "unsupported_media_type" } });
+  });
+
+  it("may be JSON with a charset", async () => {
+    const response = await setup().app.request("/v1/no-such-thing", {
+      method: "POST",
+      headers: { "content-type": "application/json; charset=utf-8" },
+      body: "{}",
+    });
+    expect(response.status).toBe(404);
+  });
+});
+
 describe("requests", () => {
   it("every response carries a request ID, which is also in the log line", async () => {
     const { app, logLines } = setup();

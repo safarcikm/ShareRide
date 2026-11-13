@@ -1,0 +1,8 @@
+{
+  "extends": "@shareride/config/tsconfig.base.json",
+  "compilerOptions": {
+    // fetch, Request and Response as in browsers and React Native.
+    "lib": ["es2024", "dom"]
+  },
+  "include": ["src", "*.ts"]
+}

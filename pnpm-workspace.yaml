@@ -21,6 +21,7 @@ catalog:
   globals: 17.14.0
   hono: 4.13.18
   intl-messageformat: 12.1.5
+  libphonenumber-js: 1.13.16
   pg: 8.23.1
   pino: 10.4.0
   prettier: 3.10.1

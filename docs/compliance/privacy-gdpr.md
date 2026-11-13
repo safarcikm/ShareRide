@@ -37,7 +37,11 @@
 
 | Category | Examples | Purpose | Legal basis | Visible to | Retention |
 | -------- | -------- | ------- | ----------- | ---------- | --------- |
-| Account | Phone, email, first name, language | Sign-in, contact | Contract | User; operator | While the account exists, plus a 7-day waiting period after deletion is asked for |
+| Account | Phone, email, first name, language, age confirmation (a yes and its date, no birth date) | Sign-in, contact | Contract | User; operator | While the account exists, plus a 7-day waiting period after deletion is asked for |
+| Sign-in codes | Keyed hash of the phone number, keyed hash of the code, attempts, expiry; never the number or the code itself | Check that the person has the phone | Contract | System | Deleted when used or replaced by a newer code; expired codes deleted by the clean-up job (milestone 2) |
+| Sessions | Device name, platform, app version, sign-in and last-active times; tokens only as hashes | Keep people signed in; let them see and end sessions | Contract | The user (own devices); operator | Until signed out or 60 days unused; ended sessions deleted 30 days after ending (clean-up job, milestone 2) |
+| Sign-in limits | Keyed hashes of the phone number, IP address and country calling code, with the time | Stop SMS fraud and number guessing | Legitimate interest | System | Needed for one hour; deleted after 24 hours by the clean-up job (milestone 2) |
+| Legal acceptances | Document, version, time and language of each acceptance | Show what each person agreed to | Contract; legal obligation | The user; operator | While the account exists (**verify** how long after deletion) |
 | Blocked phone numbers | One-way hash of a suspended person's phone number | Stop suspended people signing up again | Legitimate interest | System | Until the suspension ends, at most 3 years |
 | Data exports | The user's own export file | Access and portability | Legal obligation | The user | 7 days |
 | Privacy requests | Request text and answer | Answer rights requests | Legal obligation | Operator | 3 years after the answer (**verify**) |

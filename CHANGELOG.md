@@ -32,6 +32,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   money formatting ("2.500 kr." and "2,500 ISK") and country names.
 - CI bundles the app for iOS, Android and the web and runs browser tests at
   phone and desktop sizes.
+- Phone sign-in in the API (spec 1, ADR 0016): send and check a 6-digit code,
+  sign up or sign in, rotating refresh tokens with reuse detection, sign out
+  on one or all devices, my account and profile, legal documents and their
+  acceptance with the age confirmation. Codes, numbers in sign-in tables and
+  tokens are stored only as hashes; limits per number, IP address and
+  country calling code.
+- Domain rules for phone numbers, codes, sending limits, token rotation,
+  profile fields and the legal gate (rules R1.1 to R1.7).
+- `packages/api-client`: a typed client for the API, checked against the
+  contracts. A development SMS sender prints codes in the API terminal.
+- Draft Terms, Community Rules and Privacy Policy for development
+  (`pnpm --filter @shareride/db seed`).
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
