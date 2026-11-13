@@ -47,7 +47,7 @@ erDiagram
 | `verification` | Set of: `phone`, `email`, `audkenni` |
 | `licence_declared_at` | When the user declared they hold a valid driving licence (needed to publish trips) |
 | `roles` | `member`, `operator`; admin access needs `operator` |
-| `status` | `active`, `suspended`, `deleted` |
+| `status` | `active`, `suspended` (with `suspended_until`, empty when permanent), `deleted` |
 | `created_at`, `deleted_at` | Deletion anonymises; see [privacy](../compliance/privacy-gdpr.md) |
 
 ### Vehicle
@@ -166,7 +166,12 @@ it counts and why not) and `UserStats` (rating and reliability totals).
 
 `reporter_id`, `subject_user_id` or `subject_trip_id`, `category`,
 `description`, `status`, `resolution`, `handled_by`, timestamps. Every action
-on a report is written to the audit log.
+on a report is written to the audit log. A report can also be about a
+message, review or booking; safety reports are urgent. Related records, in
+[spec 9](../specs/2026-11-13-safety-and-moderation.md#6-data-and-api):
+`ModerationAction` (warning, hidden content, suspension, reinstatement,
+operator cancellation or refund, each with a statement of reasons and an
+appeal) and `OperatorNote`.
 
 ### Payment
 
@@ -182,7 +187,8 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
 
 - `AuditLog`: who did what to which record, when, from where. Append-only.
 - `Setting`: operator configuration (rates, timeouts) with change history.
-- `NotificationPreference`, `PushToken`, `Block`.
+- `NotificationPreference`, `PushToken`.
+- `Block`: blocker and blocked; hides both from each other ([spec 9](../specs/2026-11-13-safety-and-moderation.md#32-blocking-g2)).
 - `Notification` and `NotificationDelivery`: who was told what kind of thing,
   on which channel and whether it arrived, without the text; kept 90 days
   ([spec 7](../specs/2026-11-13-chat-and-notifications.md#6-data-and-api)).
@@ -228,7 +234,8 @@ outbox table) and processed by the worker:
 `TripPublished`, `TripChanged`, `TripCancelled`, `BookingRequested`,
 `BookingAccepted`, `BookingDeclined`, `BookingExpired`, `BookingCancelled`,
 `TripDeparted`, `CheckedIn`, `PassengerNoShow`, `DriverAbsentReported`,
-`DisputeAnswered`, `DisputeDecided`, `TripCompleted`, `MessageSent`, `ReviewSubmitted`, `ReviewsRevealed`, `ReportFiled`,
+`DisputeAnswered`, `DisputeDecided`, `TripCompleted`, `MessageSent`, `ReviewSubmitted`, `ReviewsRevealed`, `ReportFiled`, `ReportResolved`,
+`UserBlocked`, `UserSuspended`, `UserReinstated`, `ContentHidden`,
 `WeatherWarningMatched`, `RoadClosureMatched`.
 
 Notifications, review reminders and analytics subscribe to these events, so

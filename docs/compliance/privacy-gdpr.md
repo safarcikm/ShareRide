@@ -45,7 +45,9 @@
 | Trip day records | "I'm here" times (no location), no-show and missing-driver reports, dispute notes | Settle disagreements and payouts | Contract and legitimate interest | Operator; the other side sees only the outcome | With the booking |
 | Reliability | Counts of trips and bookings kept and not kept | Trust between users | Legitimate interest | Figure and counts: all users; reasons: operator | Figure covers 12 months; records kept with the booking |
 | Reviews and ratings | Rating, comment | Trust | Contract and legitimate interest | All users | While the subject's account exists |
-| Reports and moderation | Report text, evidence, actions | Safety | Legitimate interest; legal obligation where applicable | Operator | 3 years after closure (**verify**) |
+| Reports and moderation | Report text, evidence, actions, statements of reasons, appeals | Safety | Legitimate interest; legal obligation where applicable | Operator; the reporter sees the outcome in general terms; the affected user sees the statement of reasons | 3 years after closure (**verify**) |
+| Blocks | Who blocked whom | Keep people apart | Legitimate interest | The person who blocked | Until unblocked or either account is deleted |
+| Audit log | Operator actions, record IDs, device and network address, before and after values | Accountability and security | Legitimate interest; legal obligation where applicable | Operator | 3 years (**verify**) |
 | Verification | Phone verified, Auðkenni verified flag | Trust and safety | Consent (optional badges); contract (phone) | Badge public; details operator | While the account exists |
 | Device and push tokens | Push token, app version | Notifications | Contract | System | Until sign-out or token expiry |
 | Notification log | Recipient, kind of notification, channel, delivery status, time; no message text | Check that people were told | Contract and legitimate interest | Operator | 90 days |

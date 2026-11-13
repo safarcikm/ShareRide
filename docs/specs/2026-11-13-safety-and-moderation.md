@@ -1,6 +1,6 @@
 # Spec 9: Safety and moderation
 
-**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Draft for review
+**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
 Features: G2 Report and block, G4 Safety information and trip sharing,
 H2 Users, trips and bookings, H3 Reports and audit log
@@ -73,7 +73,11 @@ decision, with every operator action logged.
 2. Both people stop seeing each other's trips in search and trip pages, and
    neither can request or book the other's trips. Their chats become
    read-only (spec 7).
-3. What happens to an upcoming booking between them: question 1.
+3. If they have an upcoming booking together, the app offers to cancel it
+   under the normal rules (spec 6). If the person also reports a safety
+   problem, the operator can refund in full and keep the cancellation off
+   their reliability. Blocking alone never changes the refund, so it cannot
+   be used to dodge the late-cancellation rules (decision 1).
 4. Blocked people are listed in Settings (spec 1), where they can be
    unblocked.
 
@@ -98,8 +102,10 @@ decision, with every operator action logged.
 ### 3.4 Reports in the console (H3)
 
 1. **Queue:** open reports, safety first, then oldest first, with the time
-   left to the response target. How fast reports are answered and how the
-   operator is alerted: question 4.
+   left to the response target: every report is answered within 24 hours.
+   A safety report alerts the operator at once by push and SMS from 07:00 to
+   23:00, and by push only at night (decision 4). The app always tells people
+   to call 112 in an emergency.
 2. **A report shows** the category, description, reporter and subject; the
    related trip, booking, message or review; earlier reports by and about
    both people; ratings, reliability and recent trips; and, when the report
@@ -134,14 +140,19 @@ decision, with every operator action logged.
 
 1. A suspension has a reason, the rule it concerns, and an end date or none
    (permanent). The user gets the statement of reasons (3.4).
-2. What a suspended user can still do, and what happens to their upcoming
-   trips and bookings: question 2.
+2. A suspended user can still sign in to see their data, download it or
+   delete the account, but cannot search, book, post, chat or review. Their
+   upcoming trips and bookings are cancelled at once with full refunds to the
+   other people, who are told the trip or booking was cancelled, not why.
+   Payouts for trips already done are still paid unless the operator holds
+   them (decision 2).
 3. Reinstating ends the suspension early, with a note; the user is told.
 
 ### 3.7 Pre-checks
 
-Whether the operator checks new profiles, photos, trips or reviews before
-they appear: question 3. Automatic checks stay as decided: no contact details
+The operator does not check new profiles, photos, trips or reviews before
+they appear; everything goes live at once and is handled through reports
+(decision 3). Automatic checks stay as decided: no contact details
 in requests and trip notes (specs 3 and 5), and no contact details or links
 in reviews (spec 8).
 
@@ -165,7 +176,8 @@ from the console.
 | R9.6 | The operator reads a conversation only through a report or dispute that covers it, and every such opening is logged. |
 | R9.7 | Every operator action is recorded in an append-only audit log. |
 | R9.8 | Shared trip details are sent only by the user through their phone's share sheet; ShareRide stores nothing and creates no link. |
-| R9.9 | Report response times and alerts follow question 4. |
+| R9.9 | Every report is answered within 24 hours. Safety reports alert the operator at once: push and SMS from 07:00 to 23:00, push only at night. |
+| R9.10 | A suspension cancels the person's upcoming trips and bookings with full refunds to the other people; the person keeps access to their data, its download and account deletion. |
 
 ## 5. Screens
 
@@ -216,7 +228,7 @@ Events: `ReportFiled` (existing), `ReportResolved`, `UserBlocked`,
 `UserSuspended`, `UserReinstated`, `ContentHidden`. Notifications through
 spec 7: the reporter on the outcome (push), the affected user on an action
 (email, and push where they have it), the operator on new reports
-(question 4).
+(push, and SMS for safety reports from 07:00 to 23:00).
 
 ## 7. Privacy and safety
 
@@ -227,8 +239,8 @@ spec 7: the reporter on the outcome (push), the affected user on an action
 - Blocks are seen only by the person who blocked; kept until unblocked or
   either account is deleted.
 - The audit log holds operator activity and the IDs of the records touched,
-  not copies of personal data; kept 3 years (**verify**), and listed in the
-  privacy register when this spec is approved.
+  not copies of personal data; kept 3 years (**verify**), as listed in the
+  privacy register.
 - Sharing trip details is the user's own choice; the plate is included
   because it helps the contact if something goes wrong.
 - The statement of reasons and the appeal follow the Digital Services Act
@@ -293,10 +305,12 @@ live trip tracking or a live shared link; an in-app emergency alarm; age
 verification beyond the declaration (spec 1); public transparency reports;
 the console's general layout, settings and metrics (spec 10).
 
-## Questions for Martin
+## Decisions
 
-| # | Question | Recommendation |
-| - | -------- | -------------- |
+Accepted by Martin on 2026-11-13 as recommended.
+
+| # | Question | Decision |
+| - | -------- | -------- |
 | 1 | What happens to an upcoming booking when one of the two blocks the other? | The app offers to cancel it, under the normal rules (spec 6). If the person also reports a safety problem, you can refund in full and keep it off their reliability. This stops blocking being used to dodge late-cancellation rules |
 | 2 | What does a suspension do? | The person can still sign in to see their data, download it or delete the account, but cannot search, book, post or chat. Their upcoming trips and bookings are cancelled at once with full refunds to the other people. Payouts for trips already done are still paid unless you hold them |
 | 3 | Do you check new profiles, photos, trips or reviews before they appear? | No. Everything appears at once and is handled through reports, plus the automatic contact-detail checks we already have. Checking everything first would not scale for one person |
