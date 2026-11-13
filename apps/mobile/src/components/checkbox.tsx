@@ -45,6 +45,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  tick: { fontSize: 18, fontWeight: "700" },
+  tick: { fontSize: 18 },
   label: { flex: 1 },
 });
