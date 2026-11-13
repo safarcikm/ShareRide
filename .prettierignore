@@ -1,0 +1,7 @@
+# Markdown is checked by markdownlint (see .markdownlint-cli2.jsonc).
+*.md
+pnpm-lock.yaml
+node_modules/
+dist/
+coverage/
+.turbo/

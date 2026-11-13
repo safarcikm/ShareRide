@@ -1,7 +1,7 @@
 # Milestone 1 plan: foundation and phone sign-in
 
-**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Proposed, waiting for
-Martin's OK
+**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved by Martin
+(2026-11-13, PR #4); in progress
 
 Implements the first half of the Phase 2 walking skeleton
 ([roadmap](../strategy/roadmap.md#phase-2-build)) and the phone sign-in parts of
@@ -184,26 +184,29 @@ task. Tick tasks as they merge, so a new session can resume here.
 
 ### PR 1: `docs(plans)`: this plan and ADR 0016
 
-- [ ] Plan, ADR 0016 (accepted), answered question A37, roadmap split into
+- [x] Plan, ADR 0016 (accepted), answered question A37, roadmap split into
       milestones 1 and 2
 
 ### PR 2: `chore(repo)`: monorepo scaffold and CI
 
-- [ ] Root `package.json` (`packageManager`, `engines`), `pnpm-workspace.yaml`,
-      `turbo.json`, `.nvmrc`, `.npmrc`
-- [ ] `packages/config`: `tsconfig.base.json`, ESLint flat config with
+- [x] Root `package.json` (`packageManager`, `engines`), `pnpm-workspace.yaml`,
+      `turbo.json`, `.nvmrc` (pnpm settings and the version catalog live in
+      `pnpm-workspace.yaml`)
+- [x] `packages/config`: `tsconfig.base.json`, ESLint flat config with
       boundary rules (no I/O, clock or randomness in the domain), Prettier
       config
-- [ ] `packages/domain` with the first rule, money, and the `Result` type.
+- [x] `packages/domain` with the first rule, money, and the `Result` type.
       Test first: `createMoney`, `addMoney` and `multiplyMoney` reject
       non-integer amounts and mixed currencies (`money.test.ts`)
-- [ ] `.github/workflows/ci.yml`, job `checks`: frozen install, format check,
+- [x] `.github/workflows/ci.yml`, job `checks`: frozen install, format check,
       lint, type check, unit tests, `pnpm audit --audit-level high`; actions
       pinned to commit SHAs
-- [ ] Dependabot: npm ecosystem, weekly, grouped minor and patch updates
-- [ ] Docs: `CLAUDE.md` commands section, engineering conventions (tool
-      list), Claude Code setup (install the Phase 2 plugins)
-- Verify: `pnpm install --frozen-lockfile && pnpm turbo lint typecheck test`
+- [x] Dependabot: npm ecosystem, weekly, grouped minor and patch updates
+- [x] Docs: `CLAUDE.md` commands section, README, CHANGELOG, engineering
+      conventions (tool list), CI/CD guide
+- [ ] Enable the `typescript-lsp` plugin in `.claude/settings.json` (Martin:
+      Claude sessions may not change their own settings)
+- Verify: `pnpm install --frozen-lockfile && pnpm check`
 
 ### PR 3: `feat(api)`: API skeleton, database and local development
 

@@ -6,10 +6,9 @@ meeting points, and passengers book the empty seats on any part of the route.
 
 The app targets iOS, Android and the web from one codebase.
 
-> **Status:** Phase 1, Design. The repository holds the strategy,
-> architecture decisions and project conventions. Application code is
-> scaffolded at the start of Phase 2 (Build), once the proposed decisions are accepted. See the
-> [roadmap](docs/strategy/roadmap.md).
+> **Status:** Phase 2, Build. Milestone 1 (foundation and phone sign-in) is
+> in progress; see the [plan](docs/plans/2026-11-13-milestone-1-phone-sign-in.md)
+> and the [roadmap](docs/strategy/roadmap.md).
 
 ## Start here
 
@@ -34,6 +33,9 @@ The full documentation map is in [docs/README.md](docs/README.md).
 ├── CHANGELOG.md              # Notable changes, newest first
 ├── .claude/                  # Shared Claude Code settings and project skills
 ├── .github/                  # PR and issue templates, CI workflows, CODEOWNERS
+├── packages/
+│   ├── config/               # Shared TypeScript, ESLint and Prettier configuration
+│   └── domain/               # Pure business rules (money so far)
 └── docs/
     ├── strategy/             # Development strategy, roadmap, open questions
     ├── product/              # Vision, features, pricing rules, meeting points
@@ -46,9 +48,20 @@ The full documentation map is in [docs/README.md](docs/README.md).
     └── glossary.md           # Shared vocabulary, English and Icelandic
 ```
 
-The planned code layout (`apps/`, `packages/`, `infra/`) is described in the
-[architecture overview](docs/architecture/overview.md#repository-layout) and is
-created in Phase 2.
+The full code layout (`apps/`, `packages/`, `infra/`) is described in the
+[architecture overview](docs/architecture/overview.md#repository-layout); parts
+are added as milestone 1 progresses.
+
+## Development
+
+You need Node.js 26 and pnpm 12 (`npm install --global pnpm@12`).
+
+```sh
+pnpm install   # install everything
+pnpm check     # lint, type check and unit tests
+```
+
+More commands are in [CLAUDE.md](CLAUDE.md#commands).
 
 ## Licence
 

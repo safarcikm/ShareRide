@@ -9,8 +9,8 @@
     // Allow inline HTML such as <br/> in Mermaid labels and tables
     "MD033": false,
     // Tables do not need padded, aligned columns
-    "MD060": false
+    "MD060": false,
   },
   "globs": ["**/*.md"],
-  "ignores": ["node_modules/**", "**/node_modules/**", ".github/pull_request_template.md"]
+  "ignores": ["node_modules/**", "**/node_modules/**", ".github/pull_request_template.md"],
 }

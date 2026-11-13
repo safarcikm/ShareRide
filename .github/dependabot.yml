@@ -1,6 +1,5 @@
 version: 2
 updates:
-  # Keep GitHub Actions current. npm is added when the monorepo is scaffolded.
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -9,3 +8,21 @@ updates:
       prefix: ci
     labels:
       - "type: dependencies"
+
+  # Workspace packages. Versions shared by several packages live in the
+  # catalog in pnpm-workspace.yaml. Minor and patch updates come as one weekly
+  # PR; each major update gets its own PR (engineering conventions).
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope
+    labels:
+      - "type: dependencies"
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
