@@ -100,6 +100,9 @@ imports end in `.ts`.
   motion.
 - Colour contrast checked in the design system; never use colour alone to
   convey meaning (seat availability, warnings).
+- Colours, sizes, the focus ring and every checked contrast pair are in the
+  [visual design system](../specs/2026-11-13-visual-design-system.md).
+  Screens use its tokens, never raw colours or sizes.
 
 ## Logging
 

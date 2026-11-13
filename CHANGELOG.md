@@ -33,6 +33,10 @@ releases follow [Semantic Versioning](https://semver.org/).
 - CI bundles the app for iOS, Android and the web and runs browser tests at
   phone and desktop sizes.
 
+- Visual design system (spec 15) with the first screen designs, and ADR 0017
+  (proposed): our own parts on React Native primitives, the fonts Fredoka and
+  Nunito, `react-native-svg` drawings and Lucide icons.
+
 ### Changed
 
 - MVP feature list rewritten with feature IDs, priorities, questions for the

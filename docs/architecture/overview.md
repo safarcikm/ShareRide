@@ -176,7 +176,7 @@ packages/
   contracts/       # Zod schemas, OpenAPI document, generated API client
   db/              # Database schema, migrations, seed data (meeting points)
   i18n/            # Translations (is, en, later pl) and formatting helpers
-  ui/              # Design tokens and shared components
+  ui/              # Design tokens and shared components (once a second client needs them, ADR 0017)
   config/          # Shared TypeScript, lint and test configuration
 infra/
   docker/          # Local development: PostgreSQL + PostGIS, mail catcher

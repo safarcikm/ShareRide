@@ -47,3 +47,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0014](0014-passenger-service-fee-from-launch.md) | A passenger service fee from public launch | Accepted |
 | [0015](0015-women-only-trips.md) | Women-only trips based on a private self-declaration | Accepted |
 | [0016](0016-own-sign-in-module.md) | Our own sign-in module instead of an auth library | Accepted |
+| [0017](0017-visual-design-system.md) | Our own visual design system on React Native primitives | Proposed |

@@ -53,6 +53,8 @@ We use the Superpowers workflow (see
   2 500 kr. Never use floating point for money.
 - **Time** is stored as UTC (`timestamptz`) and shown in `Atlantic/Reykjavik`.
 - **Text shown to users** goes through i18n. Icelandic and English from day one.
+- **Look:** screens follow the [visual design system](docs/specs/2026-11-13-visual-design-system.md)
+  and use its tokens, never raw colours or sizes.
 - **Personal data:** follow [docs/compliance/privacy-gdpr.md](docs/compliance/privacy-gdpr.md).
   No real personal data in fixtures, tests, logs or screenshots.
 - **Secrets** never enter the repository. Use environment variables and the
