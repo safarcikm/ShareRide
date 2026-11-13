@@ -28,7 +28,7 @@ Priorities:
 | A6 | Terms, privacy policy and community rules | Must | 1 |
 | B1 | Meeting point catalogue | Must | 2 |
 | B2 | Place search | Must | 2 |
-| B3 | Suggest a meeting point | Should | 2 |
+| B3 | Suggest a meeting point (dropped, decision 10) | – | – |
 | C1 | Post a trip | Must | 3 |
 | C2 | Segment prices | Must | 3 |
 | C3 | Seats and booking mode | Must | 3 |
@@ -105,8 +105,9 @@ seasonal.
 even without Icelandic letters ("Hofn" finds "Höfn"). "Near me" uses the
 phone's location once, with permission, and does not store it.
 
-**B3. Suggest a meeting point (Should).** Drop a pin, add a name and a note;
-the suggestion goes to the operator's queue.
+**B3. Suggest a meeting point (dropped 2026-11-13).** Users do not suggest
+meeting points; the operator curates them all (decision 10). Users can report a
+problem with an existing point (spec 2).
 
 ## C. Driver: trips
 
@@ -210,7 +211,7 @@ that sends the route, time, driver's first name and vehicle to a contact.
 ## H. Operator console (web)
 
 **H1. Meeting points (Must).** Create, edit, activate, deactivate; review
-suggestions; recompute distances.
+problem reports; recompute distances.
 
 **H2. Users, trips and bookings (Must).** Search and view; suspend and
 reinstate users with a reason.
@@ -256,7 +257,8 @@ with consent, to measure the beta's exit criteria.
 
 ## Decisions
 
-Accepted by Martin on 2026-11-13 as recommended.
+Decisions 1 to 9 were accepted by Martin on 2026-11-13 as recommended;
+decision 10 is his own, from the same day.
 
 | # | Question | Decision |
 | - | -------- | -------- |
@@ -269,6 +271,7 @@ Accepted by Martin on 2026-11-13 as recommended.
 | 7 | How far ahead can a trip be posted? | 60 days |
 | 8 | Should the app ever show a phone number? | No in the beta; chat only. Consider masked calling later |
 | 9 | Minimum age (open question Q7)? | 18 |
+| 10 | Can users suggest meeting points? | No. The operator curates every meeting point; users can report a problem with one |
 
 ## After the MVP
 
@@ -300,7 +303,7 @@ Each spec is written, approved, planned and built in this order. Cross-cutting
 features (I1 to I5) apply to every spec.
 
 1. Sign in, profile, settings and legal acceptance (A1, A2, A4, A6)
-2. Meeting points, place search and their admin (B1, B2, B3, H1)
+2. Meeting points, place search and their admin (B1, B2, H1)
 3. Driver setup and posting a trip with prices (A3, C1, C2, C3, C4)
 4. Search and trip details (D1, D2, D6)
 5. Booking and requests (D3, D4, C7)

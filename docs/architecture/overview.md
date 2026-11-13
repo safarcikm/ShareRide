@@ -74,7 +74,7 @@ No module reads another module's tables directly.
 | ------ | -------------- |
 | `users` | Accounts, profiles, vehicles, verification levels, blocking |
 | `auth` | Sign-in, sessions, tokens, roles |
-| `meeting-points` | Meeting points, legs, suggestions, search by name and location |
+| `meeting-points` | Meeting points, legs, problem reports, search by name and location |
 | `trips` | Creating, editing, publishing, cancelling trips; stops and segments |
 | `booking` | Requests, acceptance, cancellations, no-shows, seat capacity |
 | `pricing` | Suggested prices, caps, price snapshots, configuration |

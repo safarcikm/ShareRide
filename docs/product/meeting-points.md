@@ -85,6 +85,7 @@ Skaftafell, Höfn), Golden Circle, and ferry ports (Landeyjahöfn, Stykkishólmu
 ## Governance
 
 - Only the operator can activate a meeting point.
-- Anyone can suggest one from the app; suggestions go to the admin queue.
+- Users cannot add or suggest meeting points (decided 2026-11-13). They can
+  report a problem with one; reports go to the admin queue.
 - Each active point is reviewed once a year, and after any report about it.
 - A point is never deleted, only made inactive, so past trips stay readable.

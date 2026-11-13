@@ -26,4 +26,4 @@ Specs follow the order in [features](../product/features.md#spec-order).
 | # | Spec | Features | Status |
 | - | ---- | -------- | ------ |
 | 1 | [Sign in, profile, settings and legal acceptance](2026-11-13-sign-in-and-profile.md) | A1, A2, A4, A6 | Approved (2026-11-13) |
-| 2 | [Meeting points, place search and their admin](2026-11-13-meeting-points.md) | B1, B2, B3, H1 | Draft for review |
+| 2 | [Meeting points, place search and their admin](2026-11-13-meeting-points.md) | B1, B2, H1 | Draft for review |
