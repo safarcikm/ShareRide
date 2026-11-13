@@ -6,6 +6,18 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added (Phase 2, build)
+
+- Milestone 1 plan (foundation and phone sign-in) and ADR 0016: our own
+  sign-in module instead of an auth library.
+- Monorepo with pnpm workspaces, Turborepo and a shared tool catalog; shared
+  TypeScript, ESLint and Prettier configuration in `packages/config`.
+- `packages/domain` with the first rule: money as integer amounts with a
+  currency, and the `Result` type for domain errors. Lint rules keep the
+  domain free of I/O, frameworks, clock and randomness.
+- CI for code: format, lint, type check, unit tests and a dependency audit
+  on every pull request; Dependabot for npm packages.
+
 ### Changed
 
 - MVP feature list rewritten with feature IDs, priorities, questions for the

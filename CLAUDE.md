@@ -10,8 +10,9 @@ of curated **meeting points**; each **segment** between two consecutive meeting
 points has its own price; passengers book seats on any contiguous part of a
 trip. Clients: iOS, Android, web. Vocabulary: [docs/glossary.md](docs/glossary.md).
 
-Current phase: **Phase 1, Design** (docs and decisions only, no app code
-yet). See [docs/strategy/roadmap.md](docs/strategy/roadmap.md).
+Current phase: **Phase 2, Build**, milestone 1 (foundation and phone sign-in,
+[plan](docs/plans/2026-11-13-milestone-1-phone-sign-in.md)). See
+[docs/strategy/roadmap.md](docs/strategy/roadmap.md).
 
 ## Before you change anything
 
@@ -67,15 +68,22 @@ We use the Superpowers workflow (see
 
 ## Commands
 
-No application code yet. Docs checks run in CI (`.github/workflows/docs.yml`).
-To run the Markdown linter locally:
+Node.js 26 (`.nvmrc`) and pnpm 12. Shared tool versions live in the `catalog`
+in `pnpm-workspace.yaml`; packages refer to them with `catalog:`.
 
 ```sh
-npx --yes markdownlint-cli2@0.24.0
+pnpm install                 # install the workspace
+pnpm check                   # lint, type check and unit tests (Turborepo)
+pnpm format                  # format with Prettier (pnpm format:check in CI)
+pnpm --filter @shareride/domain test   # one package
+npx --yes markdownlint-cli2@0.24.0     # lint the docs
 ```
 
-This section gets the build, test and run commands when Phase 2 scaffolds the
-monorepo.
+Workspace packages export TypeScript source directly (`"exports":
+"./src/index.ts"`); Node.js runs it with built-in type stripping, so use
+`.ts` in relative imports, `import type` for types, and no enums or
+namespaces (`erasableSyntaxOnly`). CI: `.github/workflows/ci.yml` (code) and
+`docs.yml` (Markdown).
 
 ## Definition of done
 

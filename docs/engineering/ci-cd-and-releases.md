@@ -17,9 +17,11 @@ Runs on GitHub Actions for every pull request and every push to `main`.
 | Translation completeness | | Yes |
 | Build API image and app bundles | | Yes |
 | End-to-end (Playwright web; Maestro mobile) | | Yes, for app changes |
-| Dependency review and CodeQL | | Yes |
+| Dependency review and CodeQL | | Needs a paid GitHub security plan on a private repository; `pnpm audit` for high and critical advisories runs instead |
 | Secret scanning | GitHub setting | GitHub setting |
 
+The code checks run in `.github/workflows/ci.yml` and are added job by job
+in milestone 1 ([plan](../plans/2026-11-13-milestone-1-phone-sign-in.md)).
 Turborepo runs only the tasks affected by a change and caches results.
 Third-party actions are pinned to a full commit SHA, with the version in a
 comment, and kept current by Dependabot.

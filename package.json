@@ -1,0 +1,29 @@
+{
+  "name": "shareride",
+  "version": "0.0.0",
+  "private": true,
+  "description": "ShareRide: ride sharing between curated meeting points in Iceland",
+  "license": "UNLICENSED",
+  "type": "module",
+  "packageManager": "pnpm@12.18.0",
+  "engines": {
+    "node": ">=26.0.0 <27.0.0",
+    "pnpm": ">=12.0.0 <13.0.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "check": "turbo run lint typecheck test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "prettier": "@shareride/config/prettier",
+  "devDependencies": {
+    "@shareride/config": "workspace:*",
+    "prettier": "catalog:",
+    "turbo": "catalog:"
+  }
+}
