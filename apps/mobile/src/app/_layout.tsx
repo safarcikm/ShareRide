@@ -7,6 +7,9 @@ import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { LanguageProvider, useLanguage } from "@/i18n/language";
 import { useAppFonts } from "@/theme/fonts";
+import { installFocusRing } from "@/theme/focus-ring";
+
+installFocusRing();
 
 export default function RootLayout() {
   return (
