@@ -7,6 +7,7 @@ import type { MessageKey } from "./en.ts";
 export const is = {
   "app.name": "ShareRide",
   "common.back": "Til baka",
+  "common.loading": "Hleð",
   "language.switch": "English",
   "language.switchLabel": "Skipta yfir í ensku",
   "welcome.title": "Samferða um allt Ísland",
