@@ -1,7 +1,8 @@
 # Milestone 1 plan: foundation and phone sign-in
 
 **Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved by Martin
-(2026-11-13, PR #4); in progress
+(2026-11-13, PR #4); all six PRs merged (#4 to #8 and #11); Martin's check
+with Expo Go on his phone is the last step
 
 Implements the first half of the Phase 2 walking skeleton
 ([roadmap](../strategy/roadmap.md#phase-2-build)) and the phone sign-in parts of

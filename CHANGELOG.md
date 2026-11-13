@@ -54,6 +54,10 @@ releases follow [Semantic Versioning](https://semver.org/).
 - Draft Terms, Community Rules and Privacy Policy for development
   (`pnpm --filter @shareride/db seed`).
 
+- Milestone 2 plan (hosted and connected) and ADRs 0018 to 0022: Render in
+  Frankfurt, 46elks for SMS, Sentry's EU region, MapTiler and Hetzner Object
+  Storage in Helsinki.
+
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
   Nunito, `react-native-svg` drawings and Lucide icons.

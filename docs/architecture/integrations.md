@@ -7,17 +7,20 @@ provider can be replaced by writing one adapter. Providers that process
 personal data must offer an EEA region or adequate safeguards and sign a data
 processing agreement ([ADR 0007](../decisions/0007-eea-hosting-and-data-residency.md)).
 
-Provider names are candidates to evaluate, not commitments.
+Provider names are candidates to evaluate, not commitments, unless the row
+links an ADR that chose one.
 
 | Need | Port | Candidates | Phase | Notes |
 | ---- | ---- | ---------- | ----- | ----- |
-| Map display | `MapTiles` (client) | MapTiler, Stadia Maps, self-hosted Protomaps tiles | 2 | MapLibre renderer, OpenStreetMap data ([ADR 0009](../decisions/0009-maps-and-routing.md)) |
+| Map display | `MapTiles` (client) | **MapTiler** ([ADR 0021](../decisions/0021-map-tiles-from-maptiler.md)); self-hosted Protomaps tiles as the fallback | 2 | MapLibre renderer, OpenStreetMap data ([ADR 0009](../decisions/0009-maps-and-routing.md)) |
 | Routing (distances between meeting points) | `RoutingEngine` | Valhalla or OSRM self-hosted on the Iceland extract; or a hosted routing API | 2 | Run offline to fill the legs table; not on every request |
 | Place search (geocoding) | `Geocoder` | Our own meeting-point and place-name index; national geodata as a source | 2 | Iceland place names from the national geodata portal; addresses from the official address register |
-| SMS (sign-in codes, critical alerts) | `SmsSender` | An EU SMS provider with good Icelandic delivery | 2 | Watch cost and fraud (SMS pumping); rate-limit |
+| SMS (sign-in codes, critical alerts) | `SmsSender` | **46elks** ([ADR 0019](../decisions/0019-sms-with-46elks.md)); Sinch as the fallback | 2 | Watch cost and fraud (SMS pumping); rate-limit |
 | Email | `EmailSender` | An EU email provider | 2 | Transactional only; templates per language |
 | Push notifications | `PushSender` | Expo push service (wraps APNs and FCM) | 2 | Tokens stored per device |
-| Error tracking | n/a | Sentry (EU data region) or similar | 2 | Scrub personal data before sending |
+| Error tracking and uptime | n/a | **Sentry, EU data region** ([ADR 0020](../decisions/0020-error-tracking-with-sentry-eu.md)) | 2 | Scrub personal data before sending |
+| Object storage (photos) | `FileStorage` | **Hetzner Object Storage, Helsinki** ([ADR 0022](../decisions/0022-photo-storage-on-hetzner.md)) | 2 | Private bucket, signed links, metadata removed before storing |
+| Sign in with Apple and Google | n/a (ID tokens checked in the API) | Apple, Google | 2 | Separate controllers for their own sign-in; we keep the subject ID and email |
 | Analytics | `Analytics` | PostHog (EU cloud) or self-hosted alternative | After the beta, if needed | None in the beta (spec 12); consent-based; no session recording of personal screens |
 | Weather warnings | `WeatherWarnings` | Veðurstofa Íslands (Icelandic Met Office) data services | 4 | Match warning areas to trip routes |
 | Road conditions and closures | `RoadConditions` | Vegagerðin web services (DATEX II) | 4 | Match closed road sections to legs |
