@@ -1,0 +1,39 @@
+name: Feature
+description: Propose a new feature or a change in behaviour
+title: "feat: "
+labels: ["type: feature"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem does this solve, and for whom (driver, passenger, operator)?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should happen? Rough is fine; the spec comes later.
+    validations:
+      required: true
+  - type: textarea
+    id: rules
+    attributes:
+      label: Rules and edge cases
+      description: Pricing, seats, cancellations, weather, privacy or safety aspects you can think of.
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Roadmap phase
+      options:
+        - "1 Design"
+        - "2 Build"
+        - "3 Beta"
+        - "4 Launch"
+        - "5 Grow"
+        - "Not sure"
+  - type: textarea
+    id: notes
+    attributes:
+      label: Other notes
