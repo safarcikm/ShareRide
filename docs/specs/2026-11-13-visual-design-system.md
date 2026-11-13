@@ -1,6 +1,6 @@
 # Spec 15: Visual design system
 
-**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Draft, for review
+**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
 Covers the brand direction (colours, type, tone of voice) and the first
 screen designs from the [roadmap](../strategy/roadmap.md), Phase 1. Related:
@@ -433,7 +433,8 @@ Accepted by Martin on 2026-11-13 as recommended.
 | 3 | Which fonts? | Fredoka for titles, times, prices and buttons; Nunito for text |
 | 4 | How playful? | As drawn: shape people in seat views, empty screens and confirmations; prices, times, payment and photos plain |
 
-Calls made while writing this spec, for review:
+Calls made while writing this spec, accepted by Martin with the spec on
+2026-11-13:
 
 | # | Call | Why |
 | - | ---- | --- |
