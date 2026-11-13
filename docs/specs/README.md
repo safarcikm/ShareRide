@@ -36,5 +36,5 @@ Specs follow the order in [features](../product/features.md#spec-order).
 | 9 | [Safety and moderation](2026-11-13-safety-and-moderation.md) | G2, G4, H2, H3 | Approved (2026-11-13) |
 | 10 | [Operator settings and metrics](2026-11-13-operator-settings-and-metrics.md) | H4, H5, H6 | Approved (2026-11-13) |
 | 11 | [Privacy self-service](2026-11-13-privacy-self-service.md) | A5 | Approved (2026-11-13) |
-| 12 | [Beta access and feedback](2026-11-13-beta-access-and-feedback.md) | J1, J2, J3 | Draft for review |
+| 12 | [Beta access and feedback](2026-11-13-beta-access-and-feedback.md) | J1, J2, J3 | Approved (2026-11-13) |
 | 13 | [Payments, refunds, payouts and receipts](2026-11-13-payments.md) | D7, D8, C8, H7 | Approved (2026-11-13) |

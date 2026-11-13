@@ -194,6 +194,9 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
 - Privacy records ([spec 11](../specs/2026-11-13-privacy-self-service.md#6-data-and-api)):
   `DataExport`, `ErasedAccount`, `BlockedNumber`, `PrivacyRequest`,
   `RetentionRun`, `Hold`.
+- Beta records ([spec 12](../specs/2026-11-13-beta-access-and-feedback.md#6-data-and-api)):
+  `WaitlistEntry`, `InviteCode` (users record the code they joined with),
+  `Feedback`.
 - `NotificationPreference`, `PushToken`.
 - `Block`: blocker and blocked; hides both from each other ([spec 9](../specs/2026-11-13-safety-and-moderation.md#32-blocking-g2)).
 - `Notification` and `NotificationDelivery`: who was told what kind of thing,

@@ -69,7 +69,7 @@ Priorities:
 | I5 | Dark mode | Could | all |
 | J1 | Beta access | Must | 12 |
 | J2 | In-app feedback | Must | 12 |
-| J3 | Usage analytics with consent | Should | 12 |
+| J3 | Usage analytics with consent | Dropped for the beta | 12 |
 
 ## A. Accounts and profiles
 
@@ -282,8 +282,9 @@ the beta stays on the launch corridors and with known testers.
 **J2. In-app feedback (Must).** Send a note with an optional screenshot from any
 screen; it lands in the operator console.
 
-**J3. Usage analytics with consent (Should).** Anonymous usage events, only
-with consent, to measure the beta's exit criteria.
+**J3. Usage analytics with consent (dropped for the beta).** Not needed: the
+operator metrics (H5) measure the exit criteria without tracking anyone.
+Revisit before launch (spec 12, decision 3).
 
 ## Decisions
 

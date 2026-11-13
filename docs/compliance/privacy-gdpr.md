@@ -55,7 +55,9 @@
 | Device and push tokens | Push token, app version | Notifications | Contract | System | Until sign-out or token expiry |
 | Notification log | Recipient, kind of notification, channel, delivery status, time; no message text | Check that people were told | Contract and legitimate interest | Operator | 90 days |
 | Approximate location (on request) | Device location to find nearby meeting points | Convenience | Consent (device permission) | Not stored | Not stored |
-| Analytics | Usage events without names | Improve the product | Consent | Operator | 14 months |
+| Analytics | None in the beta ([spec 12](../specs/2026-11-13-beta-access-and-feedback.md#34-usage-analytics-j3)); if added later, usage events without names | Improve the product | Consent | Operator | 14 months |
+| Waitlist | Email, role, corridors, language, how they heard | Invite people to the beta | Consent (email confirmation) | Operator | Until they leave, 30 days after sign-up, or 12 months if never invited |
+| Feedback | Message, optional screenshot, app version, platform, screen | Improve the product | Legitimate interest | Operator | 12 months after the beta ends, or until the account is deleted |
 | Search log | From and to place, date searched for, result count, time, platform; no user, device or network identifier | Beta metrics | Not personal data by design | Operator | 14 months |
 | Technical logs | Request IDs, errors | Security and reliability | Legitimate interest | Operator | 30 days |
 | Payments | Amounts, provider references, refunds, payouts | Payment, accounting | Contract; legal obligation | Participants; operator | As bookkeeping law requires (**verify**) |

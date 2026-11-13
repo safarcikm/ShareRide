@@ -38,7 +38,8 @@ that enforce every retention period in the privacy register.
 ### 3.1 Privacy settings
 
 Settings (spec 1) has a Privacy page with: Download my data; Delete my
-account; the privacy policy; consents (usage analytics, spec 12; optional
+account; the privacy policy; consents (none in the beta, since there are no
+usage analytics, spec 12; optional
 identity verification, later); and "Ask about my data". Beta news and trip
 reminders stay under Notifications (spec 7).
 
@@ -258,7 +259,7 @@ Events: `DataExportRequested`, `DataExportReady`, `AccountDeletionRequested`,
 Data portability straight to another service; letting other people's data be
 exported on request; a self-service correction form for trips and payments;
 the privacy policy text itself (lawyer, before the beta); usage analytics
-consent (spec 12).
+(none in the beta, spec 12).
 
 ## Decisions
 

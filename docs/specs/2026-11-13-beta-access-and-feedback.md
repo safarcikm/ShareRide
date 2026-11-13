@@ -1,6 +1,6 @@
 # Spec 12: Beta access and feedback
 
-**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Draft for review
+**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
 Features: J1 Beta access, J2 In-app feedback, J3 Usage analytics with consent
 ([features](../product/features.md)). Related:
@@ -49,7 +49,10 @@ analytics are needed at all.
 4. The page is part of our own web app and posts to our API, so no
    third-party form tool is needed. It is protected against bots with a
    hidden field and rate limits, without a captcha service.
-5. Who can browse trips without an invite during the beta: question 1.
+5. Anyone can browse meeting points and search trips on the website during
+   the beta, without an invite (decision 1). Trying to book, post or chat
+   shows "ShareRide is in a closed beta" with a link to the waitlist. The
+   phone apps are only on TestFlight and Google Play testing.
 
 ### 3.2 Invite codes (J1)
 
@@ -62,7 +65,9 @@ analytics are needed at all.
    by hand.
 3. Sign-up asks for the code first (spec 1, step 3). A valid code is used up
    when the account is created. The account records which code it came from.
-4. The order and size of invitation waves: question 2. A setting caps the
+4. **Waves (decision 2):** a corridor's drivers are invited two weeks before
+   its passengers, so there are trips on day one; passengers then follow in
+   weekly waves of about 25 per corridor. A setting caps the
    number of testers (`beta_max_testers`, spec 10); codes stop working once
    it is reached, and the console shows how many places are left.
 5. At public launch, the switch "Invite code required" (spec 10) is turned
@@ -88,16 +93,16 @@ analytics are needed at all.
 
 ### 3.4 Usage analytics (J3)
 
-Whether the beta has usage analytics at all: question 3. If it does:
+The beta has no usage analytics (decision 3). The metrics in spec 10
+measure the exit criteria without tracking anyone, and feedback and talks
+with testers tell us the rest. So there is no consent screen, no analytics
+provider and no cookie banner in the beta.
 
-- they are off until the person agrees on a clear yes or no screen, and the
-  choice can be changed under Privacy (spec 11);
-- a fixed list of product events (for example "search made", "booking
-  started", "trip published") with no names, IDs, places, free text or
-  network address; a random ID per install, reset when consent is
-  withdrawn; no session recording and no advertising IDs;
-- an EEA analytics provider, chosen in an ADR, with a data processing
-  agreement ([integrations](../architecture/integrations.md)).
+If analytics are added before launch, they will need: opt-in consent that can
+be withdrawn under Privacy (spec 11); a fixed list of product events with no
+names, IDs, places, free text or network address; no session recording or
+advertising IDs; and an EEA provider chosen in an ADR, with a data processing
+agreement ([integrations](../architecture/integrations.md)).
 
 Crash and error reports are not analytics: they are covered by
 [security](../engineering/security.md), with personal data removed.
@@ -111,7 +116,7 @@ Crash and error reports are not analytics: they are covered by
 | R12.3 | No code works once the number of testers reaches `beta_max_testers`. |
 | R12.4 | A waitlist entry counts only after email confirmation, and leaving the waitlist deletes it. |
 | R12.5 | Feedback carries only the tester's message, an optional screenshot they have seen, and the app's technical details. |
-| R12.6 | Usage analytics, if any, need opt-in consent first and never carry personal data. |
+| R12.6 | The beta collects no usage analytics. |
 
 ## 5. Screens
 
@@ -119,8 +124,7 @@ Crash and error reports are not analytics: they are covered by
 2. Invite code step in sign-up (spec 1)
 3. "Closed beta" screen for people without a code
 4. Send feedback, and my feedback with replies (Settings)
-5. Analytics consent, if question 3 keeps analytics
-6. Console: waitlist with filters and "invite selected"; group codes; places
+5. Console: waitlist with filters and "invite selected"; group codes; places
    left; feedback list with status and reply
 
 ## 6. Data and API
@@ -168,8 +172,8 @@ Events: `WaitlistJoined`, `WaitlistConfirmed`, `InviteSent`, `InviteUsed`,
   ends, and deleted with the account (spec 11).
 - **Invite codes** hold no personal data apart from the link to a waitlist
   entry for personal codes.
-- These three are added to the privacy register when this spec is approved,
-  and analytics with them if question 3 keeps it.
+- All three are listed in the privacy register. The beta has no usage
+  analytics, so no analytics data is collected.
 
 ## 8. Texts (first draft; Icelandic to be reviewed by a native speaker)
 
@@ -221,10 +225,12 @@ Referral rewards; public sign-up (launch); surveys and interviews (run
 outside the app during the beta); feature flags per tester; crash reporting
 (engineering).
 
-## Questions for Martin
+## Decisions
 
-| # | Question | Recommendation |
-| - | -------- | -------------- |
+Accepted by Martin on 2026-11-13 as recommended.
+
+| # | Question | Decision |
+| - | -------- | -------- |
 | 1 | During the beta, can people without an invite browse and search trips on the website? | Yes. They see real trips and a "closed beta, join the waitlist" message when they try to book or post. It shows the product and grows the waitlist; the phone apps are only on TestFlight and Google Play testing anyway |
 | 2 | How should invitations go out? | Drivers first: invite the drivers on a corridor two weeks before its passengers, so trips are there on day one. Then passengers in weekly waves of about 25 per corridor, up to 150 testers in total |
 | 3 | Do we need usage analytics in the beta? | No. The metrics in spec 10 already measure the exit criteria without tracking anyone, and feedback plus talking to testers tells us the rest. Dropping it means no consent screen, no analytics provider and no cookie banner. Revisit before launch |

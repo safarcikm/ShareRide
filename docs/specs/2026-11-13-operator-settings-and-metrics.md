@@ -261,7 +261,7 @@ App texts only; console texts follow the same i18n catalogue.
 ## 10. Out of scope
 
 A/B tests; more than one operator role; automatic alerts on metrics; public
-statistics; product analytics in the app (Phase 3, consent-based,
+statistics; product analytics in the app (none in the beta, spec 12;
 [integrations](../architecture/integrations.md)); beta invitations and
 feedback (spec 12).
 

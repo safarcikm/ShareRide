@@ -43,7 +43,7 @@ Product and design
 
 - [ ] Review and accept or amend the strategy and ADRs 0002 to 0011
 - [ ] Answer the [open questions](open-questions.md)
-- [ ] Write MVP feature specs in `docs/specs/` (one per feature in
+- [x] Write MVP feature specs in `docs/specs/` (one per feature in
       [features](../product/features.md))
 - [ ] Draft the meeting point list v1 for the launch corridors
       ([meeting points](../product/meeting-points.md))

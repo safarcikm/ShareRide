@@ -18,7 +18,7 @@ Provider names are candidates to evaluate, not commitments.
 | Email | `EmailSender` | An EU email provider | 2 | Transactional only; templates per language |
 | Push notifications | `PushSender` | Expo push service (wraps APNs and FCM) | 2 | Tokens stored per device |
 | Error tracking | n/a | Sentry (EU data region) or similar | 2 | Scrub personal data before sending |
-| Analytics | `Analytics` | PostHog (EU cloud) or self-hosted alternative | 3 | Consent-based; no session recording of personal screens |
+| Analytics | `Analytics` | PostHog (EU cloud) or self-hosted alternative | After the beta, if needed | None in the beta (spec 12); consent-based; no session recording of personal screens |
 | Weather warnings | `WeatherWarnings` | Veðurstofa Íslands (Icelandic Met Office) data services | 4 | Match warning areas to trip routes |
 | Road conditions and closures | `RoadConditions` | Vegagerðin web services (DATEX II) | 4 | Match closed road sections to legs |
 | Electronic ID | `IdentityVerifier` | Auðkenni directly (OIDC) or through a broker such as Signicat | 4 | Optional verification badge for residents |

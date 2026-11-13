@@ -24,7 +24,7 @@ releases follow [Semantic Versioning](https://semver.org/).
 - Spec 9: safety and moderation (approved).
 - Spec 10: operator settings and metrics (approved).
 - Spec 11: privacy self-service (approved).
-- Spec 12: beta access and feedback (draft for review).
+- Spec 12: beta access and feedback (approved). All MVP specs are approved.
 - Spec 13: payments, refunds, payouts and receipts (approved).
 - ADR 0012: one price level per trip instead of per-segment price editing
   (supersedes ADR 0006).
