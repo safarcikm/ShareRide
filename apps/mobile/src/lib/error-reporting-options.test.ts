@@ -1,5 +1,5 @@
 import { scrubErrorBreadcrumb, scrubErrorReport } from "@shareride/domain";
-import { errorReportingOptions } from "./error-reporting-options";
+import { buildErrorReportingOptions, errorReportingOptions } from "./error-reporting-options";
 
 const dsn = "https://public@o1.ingest.de.sentry.io/2";
 
@@ -84,8 +84,40 @@ describe("errorReportingOptions", () => {
       attachScreenshot: false,
       attachViewHierarchy: false,
       reportAccessibilityIdentifier: false,
+      // No sessions (they carry an install ID), and no native breadcrumbs of
+      // requests or taps, which the scrubbing rule never sees.
+      enableAutoSessionTracking: false,
+      enableNetworkBreadcrumbs: false,
+      enableAutoBreadcrumbTracking: false,
       beforeSend: scrubErrorReport,
       beforeBreadcrumb: scrubErrorBreadcrumb,
     });
+  });
+});
+
+describe("buildErrorReportingOptions", () => {
+  const saved = { ...process.env };
+  /** __DEV__ is true in tests, as in the Expo development server. */
+  const setDevelopment = (value: boolean) => Reflect.set(globalThis, "__DEV__", value);
+
+  afterEach(() => {
+    process.env = { ...saved };
+    setDevelopment(true);
+  });
+
+  it("reads the settings the build was made with", () => {
+    process.env["EXPO_PUBLIC_SENTRY_DSN"] = dsn;
+    process.env["EXPO_PUBLIC_APP_ENV"] = "staging";
+    process.env["EXPO_PUBLIC_RELEASE"] = "abc1234";
+    setDevelopment(false);
+
+    expect(buildErrorReportingOptions()).toMatchObject({
+      dsn,
+      environment: "staging",
+      release: "abc1234",
+    });
+
+    setDevelopment(true);
+    expect(buildErrorReportingOptions()).toBeUndefined();
   });
 });

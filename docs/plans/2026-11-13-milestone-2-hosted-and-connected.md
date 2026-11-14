@@ -266,8 +266,9 @@ Split in two, so the server side can be checked on staging first.
 - [x] PR 4b, `feat(mobile)`: Sentry in the app (web and phones) with the same
       scrubbing (moved to the domain package), an error screen, and the web
       app's source maps uploaded from Render's build. On the web Sentry
-      loads after the first screen (it is about 320 KB compressed); taps and
-      typing are not recorded
+      loads separately from the first screen (it is about 320 KB
+      compressed); taps, typing, console output and sessions are not
+      recorded
 - Verify: a test error from staging appears in Sentry with a readable stack
 
 ### PR 5: `feat(mobile)`: development builds and Maestro
@@ -276,6 +277,11 @@ Split in two, so the server side can be checked on staging first.
 - [ ] Sentry's Expo plugin, so phone builds upload their source maps and
       native debug files, and `EXPO_PUBLIC_APP_ENV` and
       `EXPO_PUBLIC_SENTRY_DSN` per build profile
+- [ ] Sentry's native side: a native crash report does not pass the
+      JavaScript scrubbing rule, so check what a test crash from a
+      development build carries (Android tap breadcrumbs, the install ID,
+      the phone's own breadcrumbs) and turn off or scrub what the privacy
+      table does not list
 - [ ] Maestro flows and the Android emulator CI job
 - [ ] README: install the development build on a phone
 - Verify: the Maestro job passes in CI; Martin installs the build

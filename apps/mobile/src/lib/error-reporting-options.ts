@@ -29,9 +29,9 @@ function isEuDsn(dsn: string): boolean {
 /**
  * How the app reports errors to Sentry, or undefined to send nothing: in
  * development, without a DSN, or when the build does not say its
- * environment. Errors only (no tracing, replay, screenshots or logs), with
- * the scrubbing rule the API uses (privacy and GDPR, "Logs and error
- * reports").
+ * environment. Errors only (no tracing, sessions, replay, screenshots or
+ * logs), with the scrubbing rule the API uses (privacy and GDPR, "Logs and
+ * error reports").
  */
 export function errorReportingOptions(
   sources: ErrorReportingSources,
@@ -53,6 +53,12 @@ export function errorReportingOptions(
     attachScreenshot: false,
     attachViewHierarchy: false,
     reportAccessibilityIdentifier: false,
+    // Release health sessions carry an ID for the install; no need for them.
+    enableAutoSessionTracking: false,
+    // The iPhone's own breadcrumbs (requests, system events, taps on native
+    // controls) can join a native crash report, which skips beforeSend.
+    enableNetworkBreadcrumbs: false,
+    enableAutoBreadcrumbTracking: false,
     beforeSend: scrubErrorReport,
     beforeBreadcrumb: scrubErrorBreadcrumb,
   };

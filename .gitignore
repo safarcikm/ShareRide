@@ -23,6 +23,7 @@ web-build/
 *.keystore
 google-services.json
 GoogleService-Info.plist
+sentry-auth-token
 
 # Native build folders (Expo prebuild output)
 ios/

@@ -37,12 +37,13 @@ apps.
 - Security headers and a content security policy on web properties.
 - Error reports from the API and the app go to Sentry's EU region (any
   other DSN is refused) without request bodies, cookies, query strings,
-  addresses, taps or typing, or a failed query's values, with phone numbers,
-  codes, tokens, emails and kennitölur removed from all text, and without
-  trace headers on our requests to other services (one rule,
+  addresses, taps, typing, console output or a failed query's values, with
+  phone numbers, codes, tokens, emails and kennitölur removed from all text,
+  and without trace headers on our requests to other services (one rule,
   `packages/domain/src/privacy/error-report.ts`; tested there and in
   `apps/api/src/platform/error-reporting.test.ts`). The web app's source
-  maps go to Sentry and are never served.
+  maps go to Sentry and are never served, and Render's secret files are kept
+  out of the image (`.dockerignore`, checked by the smoke test).
 - Dependencies and containers scanned in CI; critical findings block merge.
 
 ## Sign-in and sessions

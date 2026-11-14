@@ -46,16 +46,39 @@ describe("scrubErrorReport", () => {
     });
   });
 
-  it("leaves the SDK's own working data as it is", () => {
+  it("leaves the SDK's own fields as they are, so reports match releases and source maps", () => {
     const scope = { kind: "scope" };
-    const report = scrubErrorReport({ sdkProcessingMetadata: { capturedSpanScope: scope } });
-    expect(report.sdkProcessingMetadata.capturedSpanScope).toBe(scope);
+    const sdkFields = {
+      event_id: "4c3b2a1987654321fedcba9876543210",
+      release: "com.shareride.app@0.1.0+2026111401",
+      dist: "2026111401",
+      environment: "staging",
+      debug_meta: {
+        images: [{ type: "sourcemap", code_file: "app:///index.bundle", debug_id: "123456789012" }],
+      },
+    };
+    const report = scrubErrorReport({ ...sdkFields, sdkProcessingMetadata: { scope } });
+    expect(report).toMatchObject(sdkFields);
+    expect(report.sdkProcessingMetadata.scope).toBe(scope);
+  });
+
+  it("puts the breadcrumbs it carries through the breadcrumb rule", () => {
+    // A phone's own breadcrumbs join a report without passing beforeBreadcrumb.
+    const report = scrubErrorReport({
+      breadcrumbs: [
+        { category: "ui.click", message: "view.id=anna" },
+        { category: "http", data: { url: "https://api.example/v1/x?name=Anna" } },
+      ],
+    });
+    expect(report.breadcrumbs).toEqual([
+      { category: "http", data: { url: "https://api.example/v1/x" } },
+    ]);
   });
 });
 
 describe("scrubErrorBreadcrumb", () => {
-  it("drops taps, clicks and typing, whose labels can hold what someone entered", () => {
-    for (const category of ["touch", "ui.click", "ui.input", "ui.keypress"]) {
+  it("drops taps, clicks, typing and console output, which can hold what someone entered", () => {
+    for (const category of ["touch", "ui.click", "ui.input", "ui.keypress", "console"]) {
       expect(scrubErrorBreadcrumb({ category, message: "button[aria-label=Anna]" })).toBeNull();
     }
   });
@@ -76,17 +99,27 @@ describe("scrubErrorBreadcrumb", () => {
       category: "fetch",
       data: { method: "GET", url: "https://api.example/v1/me", status_code: 200 },
     });
+    expect(
+      scrubErrorBreadcrumb({
+        category: "http",
+        data: {
+          url: "https://api.example/v1/x",
+          "http.query": "?name=Anna",
+          "http.fragment": "#a",
+        },
+      }),
+    ).toEqual({ category: "http", data: { url: "https://api.example/v1/x" } });
   });
 
   it("hides personal data in messages and data", () => {
     expect(
       scrubErrorBreadcrumb({
-        category: "console",
+        category: "auth",
         message: "sent to +3546901234",
         data: { phoneNumber: "+3546901234" },
       }),
     ).toEqual({
-      category: "console",
+      category: "auth",
       message: "sent to [number]",
       data: { phoneNumber: "[redacted]" },
     });

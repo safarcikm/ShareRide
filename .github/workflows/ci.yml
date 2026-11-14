@@ -65,9 +65,13 @@ jobs:
       - name: Integration tests (migrations, API against PostgreSQL)
         run: pnpm test:integration
       # The image includes the exported web app; Render builds the same
-      # Dockerfile and deploys main only after these checks pass.
+      # Dockerfile and deploys main only after these checks pass. Render puts
+      # its secret files in the build context, so a stand-in for one is there
+      # too: the smoke test checks that it stays out of the image.
       - name: Build the API container image (not pushed)
-        run: docker build --file apps/api/Dockerfile --tag shareride-api:${{ github.sha }} .
+        run: |
+          echo "ci-stand-in" > sentry-auth-token
+          docker build --file apps/api/Dockerfile --tag shareride-api:${{ github.sha }} .
       - name: Smoke test the image (migrations on an empty database, start-up, web app)
         env:
           DATABASE_URL: postgres://shareride:shareride-ci-only@localhost:5432/shareride_smoke

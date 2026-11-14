@@ -158,14 +158,16 @@ separate Sentry projects. A report from the API carries:
   as the one to 46elks.
 
 A report from the app carries the error and its stack, the release (the
-commit, for the web app), the environment, the screen's path, the browser's
-or phone's model and system, and what happened just before: screens
-visited and the app's requests to the API (method, address, status). The
-web app loads Sentry after its first screen, so the page stays light; an
-error in its first second may not be reported.
+commit, for the web app), the environment, the browser's or phone's model
+and system, and the app's requests to the API just before the error
+(method, address, status). From the web app it also carries the screen's
+path and the screens visited before it. The web app loads Sentry
+separately, so its first screen does not wait for it; an error in its first
+second may not be reported.
 
 Never request bodies, cookies, query strings, network addresses, taps or
-typing, screenshots, replays or a failed query's values. Phone numbers,
+typing, console output, screenshots, replays, usage sessions or a failed
+query's values. Phone numbers,
 codes, tokens, email addresses and kennitölur are removed from all text (one
 shared rule, `scrubErrorReport` in the domain package). Errors only: a DSN
 outside the EU region (`*.ingest.de.sentry.io`) sends nothing, and
@@ -190,7 +192,11 @@ Set it up once (Martin):
    `shareride-staging-api`, **Environment**, **Secret Files**, and add it as
    a file named `sentry-auth-token`. Each build uploads the web app's source
    maps with it and then deletes them, so the site never serves them. If
-   the upload fails, the build log says so and the deploy goes on.
+   the upload fails, the build log says so and the deploy goes on. Then use
+   **Manual Deploy**, **Clear build cache & deploy**: a build of a commit
+   already built reuses its cached upload step. Render also copies secret
+   files into the build's folder; `.dockerignore` keeps this one out of the
+   image (a new secret file needs a line there too).
 5. Check the API after the next deploy: open the API's **Shell** in Render
    and run `node apps/api/src/sentry-check-cli.ts`. A "Sentry check from
    staging" error should appear in Sentry within a minute, with the commit
@@ -199,7 +205,11 @@ Set it up once (Martin):
    developer console and run
    `setTimeout(() => { throw new Error("Web check") })`. After a few seconds
    a "Web check" error should appear in the `shareride-app` project, with
-   the commit as its release and the app's own file names in the stack.
+   the commit as its release. Code typed into the console is not the app's,
+   so the stack shows Sentry's own source files (under `@sentry/`) rather
+   than one long line of minified code: that shows the source maps
+   arrived. No release means the build did not get `RENDER_GIT_COMMIT`;
+   reports still work.
 7. Create an uptime monitor for `<staging address>/v1/health/ready`,
    checked every minute in the `staging` environment, alerting you by email
    and in the Sentry app on your phone.

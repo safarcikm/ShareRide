@@ -34,12 +34,14 @@ if (token === "") {
       ],
       {
         stdio: "inherit",
+        timeout: 120_000,
         // The organisation is in the token; its data is in the EU region.
         env: { ...process.env, SENTRY_AUTH_TOKEN: token, SENTRY_URL: "https://de.sentry.io/" },
       },
     );
   } catch {
-    // A deploy should not wait on Sentry; reports then show minified code.
+    // A deploy should not wait on Sentry (or hang on it for more than two
+    // minutes); reports then show minified code.
     process.stdout.write(
       "WARNING: the source map upload failed (see above). The deploy goes on; error reports from this build show minified code.\n",
     );
