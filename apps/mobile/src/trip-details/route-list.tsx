@@ -176,11 +176,14 @@ function Segment({
   if (kind === "solid") {
     return <View style={[style, styles.solid, { backgroundColor: palette.primary }]} />;
   }
+  // The dots sit on their own layer, so they never make the row taller (the web counts them).
   return (
     <View style={[style, styles.dotted]}>
-      {dots.map((index) => (
-        <View key={index} style={[styles.dotOfLine, { backgroundColor: palette.control }]} />
-      ))}
+      <View style={styles.dotsLayer}>
+        {dots.map((index) => (
+          <View key={index} style={[styles.dotOfLine, { backgroundColor: palette.control }]} />
+        ))}
+      </View>
     </View>
   );
 }
@@ -199,7 +202,8 @@ const styles = StyleSheet.create({
   above: { height: (minTouchTarget - dotSize) / 2, width: controlOutline },
   below: { flex: 1, width: controlOutline, minHeight: spacing.sm },
   solid: { width: controlOutline },
-  dotted: { overflow: "hidden", alignItems: "center", gap: spacing.xs },
+  dotted: { overflow: "hidden" },
+  dotsLayer: { ...StyleSheet.absoluteFill, alignItems: "center", gap: spacing.xs },
   dotOfLine: { width: controlOutline, height: controlOutline, borderRadius: radii.pill },
   dot: { width: dotSize, height: dotSize, borderRadius: radii.pill, borderWidth: controlOutline },
   content: { flex: 1, paddingBottom: spacing.ms, gap: spacing.sm },
