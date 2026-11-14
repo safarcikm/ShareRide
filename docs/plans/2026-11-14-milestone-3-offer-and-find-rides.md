@@ -232,7 +232,7 @@ merge.
 - Verify: the quote for Reykjavík to Akureyri prices the worked example's
   stops at 5 800 kr at 100% and 4 700 kr at 80%, and the stops found on the
   way at 5 600 kr and 4 600 kr, as each stretch rounds on its own (open
-  question Q16); an added stop goes where it adds the least distance
+  questions, A39); an added stop goes where it adds the least distance
   (`apps/api/src/modules/trips/trips.integration.test.ts`)
 - Done with the price, route and time rules. Publish validation moves to
   PR 5, which defines the draft it checks; the quote already reports the
