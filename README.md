@@ -124,9 +124,10 @@ code appears in the API's terminal.
 - If the phone still cannot reach the API (some office and guest networks
   block it), put `EXPO_PUBLIC_API_URL=http://<your computer's address>:3000`
   in `apps/mobile/.env.local` and restart the app.
-- To get the code by real SMS instead, set `SMS_PROVIDER=46elks` and the
-  46elks API keys in `.env` (see `.env.example`), then restart the API. Each
-  message is charged to the 46elks account.
+- To get the code by real SMS instead, set `SMS_PROVIDER=vonage` and the
+  Vonage API key and secret in `.env` (see `.env.example`), then restart the
+  API. Each message is charged to the Vonage account; a trial account only
+  sends to the numbers verified on it.
 
 ### Checks and tests
 

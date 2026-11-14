@@ -14,9 +14,10 @@ export interface ElksSmsOptions {
 const endpoint = "https://api.46elks.com/a1/sms";
 
 /**
- * Sends SMS through 46elks (ADR 0019). `dontlog=message` keeps the text, and
- * so the sign-in code, out of the 46elks message history. Errors name the
- * HTTP status only: 46elks error texts can repeat the number.
+ * Sends SMS through 46elks, the fallback provider (ADR 0023).
+ * `dontlog=message` keeps the text, and so the sign-in code, out of the
+ * 46elks message history. Errors name the HTTP status only: 46elks error
+ * texts can repeat the number.
  */
 export function createElksSmsSender(options: ElksSmsOptions): SmsSender {
   const fetch = options.fetch ?? globalThis.fetch;

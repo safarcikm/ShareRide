@@ -5,8 +5,8 @@ export interface SmsMessage {
 }
 
 /**
- * Sends text messages: 46elks in staging and production (ADR 0019), the
- * development sender locally and in tests.
+ * Sends text messages: Vonage in staging and production, 46elks as the
+ * fallback (ADR 0023), the development sender locally and in tests.
  */
 export interface SmsSender {
   /** Resolves once the provider has accepted the message; throws `SmsSendError` otherwise. */

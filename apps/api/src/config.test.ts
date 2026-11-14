@@ -117,6 +117,34 @@ describe("loadConfig", () => {
     }
   });
 
+  it("sends through Vonage with its key and secret", () => {
+    const vonage = {
+      ...development,
+      SMS_PROVIDER: "vonage",
+      VONAGE_API_KEY: "k-example",
+      VONAGE_API_SECRET: "s-example",
+    };
+    expect(loadConfig(vonage).sms).toEqual({
+      provider: "vonage",
+      apiKey: "k-example",
+      apiSecret: "s-example",
+      sender: "ShareRide",
+      paused: false,
+    });
+  });
+
+  it("needs the Vonage key and secret when Vonage sends the SMS", () => {
+    try {
+      loadConfig({ ...development, SMS_PROVIDER: "vonage" });
+      expect.unreachable();
+    } catch (error) {
+      expect((error as ConfigError).problems).toEqual([
+        "VONAGE_API_KEY: needed when SMS_PROVIDER is vonage",
+        "VONAGE_API_SECRET: needed when SMS_PROVIDER is vonage",
+      ]);
+    }
+  });
+
   it("takes a sender name of up to 11 letters and digits, starting with a letter", () => {
     expect(loadConfig({ ...valid, SMS_SENDER: "ShareRide2" }).sms).toMatchObject({
       sender: "ShareRide2",

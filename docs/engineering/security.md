@@ -103,9 +103,10 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   environment; the API refuses the example value in production. Changing it invalidates codes waiting to be used and resets the
   sending limits; sessions are not affected.
 - **SMS:** the development sender prints codes in the API terminal, outside
-  the logs, and the API refuses to start with it in production. 46elks sends
-  with `dontlog=message`, so its history does not keep the code; errors from
-  the sender never contain the number. `SMS_PAUSED=true` stops all SMS.
+  the logs, and the API refuses to start with it in production. Vonage keeps
+  the text in its records (a code works once, for ten minutes); 46elks, the
+  fallback, sends with `dontlog=message`. Errors from either sender never
+  contain the number. `SMS_PAUSED=true` stops all SMS.
 - **Clean-up:** an hourly job deletes expired codes, rate-limit events after
   24 hours and expired access and refresh tokens, ends sessions unused for 60
   days and deletes sessions 30 days after they end. A rotated refresh token

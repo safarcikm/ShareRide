@@ -15,7 +15,7 @@ port="${SMOKE_PORT:-3900}"
 name="shareride-smoke-$$"
 base="http://localhost:${port}"
 
-# Production settings with placeholder 46elks keys: nothing here sends an SMS.
+# Production settings with placeholder Vonage keys: nothing here sends an SMS.
 settings=(
   --network host
   -e NODE_ENV=production
@@ -36,7 +36,7 @@ docker run --rm "${settings[@]}" "$image" node packages/db/src/migrate-cli.ts --
 docker run -d --name "$name" "${settings[@]}" \
   -e PORT="$port" \
   -e AUTH_SECRET="smoke-$(head -c 32 /dev/urandom | base64)" \
-  -e SMS_PROVIDER=46elks -e ELKS_API_USERNAME=smoke-not-used -e ELKS_API_PASSWORD=smoke-not-used \
+  -e SMS_PROVIDER=vonage -e VONAGE_API_KEY=smoke-not-used -e VONAGE_API_SECRET=smoke-not-used \
   -e TRUST_PROXY=2 \
   "$image" > /dev/null
 

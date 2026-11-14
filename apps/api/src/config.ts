@@ -20,8 +20,13 @@ const environmentSchema = z
     DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
     /** Keys the hashes of sign-in codes, phone numbers and rate-limit keys. */
     AUTH_SECRET: z.string().min(32),
-    /** `dev` prints codes in the terminal; `46elks` sends real SMS (ADR 0019). */
-    SMS_PROVIDER: z.enum(["dev", "46elks"]).default("dev"),
+    /**
+     * `dev` prints codes in the terminal; `vonage` sends real SMS, and
+     * `46elks` is the fallback (ADR 0023).
+     */
+    SMS_PROVIDER: z.enum(["dev", "vonage", "46elks"]).default("dev"),
+    VONAGE_API_KEY: z.string().min(1).optional(),
+    VONAGE_API_SECRET: z.string().min(1).optional(),
     ELKS_API_USERNAME: z.string().min(1).optional(),
     ELKS_API_PASSWORD: z.string().min(1).optional(),
     /** The name the recipient sees: up to 11 letters and digits, starting with a letter. */
@@ -74,21 +79,31 @@ const environmentSchema = z
         message: "dev prints codes in the terminal and is not allowed in production",
       });
     }
-    if (env.SMS_PROVIDER === "46elks") {
-      for (const key of ["ELKS_API_USERNAME", "ELKS_API_PASSWORD"] as const) {
-        if (env[key] === undefined) {
-          context.addIssue({
-            code: "custom",
-            path: [key],
-            message: "needed when SMS_PROVIDER is 46elks",
-          });
-        }
+    const providerKeys = {
+      dev: [],
+      vonage: ["VONAGE_API_KEY", "VONAGE_API_SECRET"],
+      "46elks": ["ELKS_API_USERNAME", "ELKS_API_PASSWORD"],
+    } as const;
+    for (const key of providerKeys[env.SMS_PROVIDER]) {
+      if (env[key] === undefined) {
+        context.addIssue({
+          code: "custom",
+          path: [key],
+          message: `needed when SMS_PROVIDER is ${env.SMS_PROVIDER}`,
+        });
       }
     }
   });
 
 export type SmsConfig =
   | { readonly provider: "dev"; readonly paused: boolean }
+  | {
+      readonly provider: "vonage";
+      readonly apiKey: string;
+      readonly apiSecret: string;
+      readonly sender: string;
+      readonly paused: boolean;
+    }
   | {
       readonly provider: "46elks";
       readonly username: string;
@@ -181,6 +196,32 @@ function parseOrThrow<T>(schema: z.ZodType<T>, environment: unknown): T {
   );
 }
 
+/** The SMS settings for the provider chosen; the schema checked its keys are there. */
+function smsConfig(env: z.infer<typeof environmentSchema>): SmsConfig {
+  const paused = env.SMS_PAUSED;
+  const sender = env.SMS_SENDER;
+  switch (env.SMS_PROVIDER) {
+    case "vonage":
+      return {
+        provider: "vonage",
+        apiKey: env.VONAGE_API_KEY ?? "",
+        apiSecret: env.VONAGE_API_SECRET ?? "",
+        sender,
+        paused,
+      };
+    case "46elks":
+      return {
+        provider: "46elks",
+        username: env.ELKS_API_USERNAME ?? "",
+        password: env.ELKS_API_PASSWORD ?? "",
+        sender,
+        paused,
+      };
+    case "dev":
+      return { provider: "dev", paused };
+  }
+}
+
 /**
  * Reads and validates the environment once, at start-up, so a missing or
  * wrong variable stops the API immediately with a clear message.
@@ -194,17 +235,7 @@ export function loadConfig(environment: Readonly<Record<string, string | undefin
     logLevel: env.LOG_LEVEL,
     databaseUrl: env.DATABASE_URL,
     authSecret: env.AUTH_SECRET,
-    sms:
-      env.SMS_PROVIDER === "46elks"
-        ? {
-            provider: "46elks",
-            // Checked above: both are present for 46elks.
-            username: env.ELKS_API_USERNAME ?? "",
-            password: env.ELKS_API_PASSWORD ?? "",
-            sender: env.SMS_SENDER,
-            paused: env.SMS_PAUSED,
-          }
-        : { provider: "dev", paused: env.SMS_PAUSED },
+    sms: smsConfig(env),
     webOrigins: env.WEB_ORIGINS,
     trustedProxies: env.TRUST_PROXY,
     webAppDir: env.WEB_APP_DIR,
