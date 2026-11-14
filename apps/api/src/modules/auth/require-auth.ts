@@ -20,3 +20,28 @@ export function createRequireAuth(auth: AuthService): MiddlewareHandler<AppEnv> 
     return undefined;
   });
 }
+
+/**
+ * For routes anyone can use: records who made the request when it carries a
+ * valid access token. A token that is not valid gets 401, as with
+ * `requireAuth`, so the app refreshes it instead of silently searching as
+ * nobody.
+ */
+export function createOptionalAuth(auth: AuthService): MiddlewareHandler<AppEnv> {
+  return createMiddleware<AppEnv>(async (c, next) => {
+    const header = c.req.header("authorization");
+    if (header === undefined) {
+      await next();
+      return undefined;
+    }
+    const token = bearer.exec(header)?.[1];
+    const session = token === undefined ? null : await auth.authenticate(token);
+    if (session === null) {
+      c.header("WWW-Authenticate", 'Bearer realm="shareride"');
+      return errorResponse(c, 401, "unauthenticated", "Sign in again, or search without a token.");
+    }
+    c.set("auth", session);
+    await next();
+    return undefined;
+  });
+}

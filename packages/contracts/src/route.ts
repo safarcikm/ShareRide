@@ -18,8 +18,11 @@ export interface RouteDefinition {
   readonly path: string;
   readonly summary: string;
   readonly tags: readonly string[];
-  /** Needs `Authorization: Bearer <access token>`. */
-  readonly auth?: boolean;
+  /**
+   * `true`: needs `Authorization: Bearer <access token>`. `"optional"`: works
+   * without one, and a signed-in person's token changes what comes back.
+   */
+  readonly auth?: boolean | "optional";
   readonly request?: {
     readonly params?: z.ZodObject;
     readonly query?: z.ZodObject;

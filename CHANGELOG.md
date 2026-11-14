@@ -121,6 +121,14 @@ releases follow [Semantic Versioning](https://semver.org/).
 - ADR 0025 (accepted): our own date and number formatting in
   `packages/i18n` instead of Intl's locale data, which some browsers and
   phones lack. Spec 3 now says a draft keeps a paused stop (decision 9).
+- Search on the server (milestone 3, PR 6a): `GET /v1/trips/search` finds
+  trips that pass through both places in order and answers the passenger's
+  part, with its price, the seats free on every stretch and how far a
+  nearby meeting point is; filters for instant booking and time of day,
+  sorting by departure or price. `GET /v1/trips/search/alternatives`
+  counts trips on the days around the date and finds trips from meeting
+  points within 20 km. Anyone can search, without an account; searches are
+  limited per network address.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

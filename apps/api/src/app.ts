@@ -2,7 +2,11 @@ import { randomInt } from "node:crypto";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { healthReadyRoute, healthRoute } from "@shareride/contracts";
 import type { Database } from "@shareride/db";
-import { defaultTripSettings } from "@shareride/domain";
+import {
+  defaultSearchSettings,
+  defaultTripSettings,
+  searchLimitsPerAddress,
+} from "@shareride/domain";
 import type { Context } from "hono";
 import { cors } from "hono/cors";
 import { createMiddleware } from "hono/factory";
@@ -14,13 +18,19 @@ import type { AppEnv } from "./context.ts";
 import { errorBody } from "./errors.ts";
 import type { Logger } from "./logger.ts";
 import { createAccountService, registerAccountRoutes } from "./modules/account/index.ts";
-import { createAuthService, createRequireAuth, registerAuthRoutes } from "./modules/auth/index.ts";
+import {
+  createAuthService,
+  createOptionalAuth,
+  createRequireAuth,
+  registerAuthRoutes,
+} from "./modules/auth/index.ts";
 import { createDrivingService, registerDrivingRoutes } from "./modules/driving/index.ts";
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
   createMeetingPointService,
   registerMeetingPointRoutes,
 } from "./modules/meeting-points/index.ts";
+import { createSearchService, registerSearchRoutes } from "./modules/search/index.ts";
 import {
   createRouteService,
   createTripService,
@@ -29,6 +39,8 @@ import {
 } from "./modules/trips/index.ts";
 import { bearerAuth, toOpenApiRoute } from "./openapi.ts";
 import type { KeyedHasher } from "./platform/crypto.ts";
+import { addressBlock } from "./platform/client-address.ts";
+import { createMemoryRateLimiter } from "./platform/memory-rate-limiter.ts";
 import type { SmsSender } from "./platform/sms.ts";
 import { createWebApp } from "./web-app.ts";
 
@@ -167,7 +179,15 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     registerDrivingRoutes(app, driving, requireAuth);
     registerLegalRoutes(app, legal);
     registerMeetingPointRoutes(app, createMeetingPointService(features));
-    // Operator settings (feature H4) replace the defaults later.
+    // Before the trip routes, so /v1/trips/search is never taken for a trip's ID.
+    registerSearchRoutes(app, {
+      // Operator settings (feature H4) replace the defaults later.
+      search: createSearchService({ ...features, settings: defaultSearchSettings }),
+      optionalAuth: createOptionalAuth(auth),
+      limiter: createMemoryRateLimiter({ rules: searchLimitsPerAddress, clock: features.clock }),
+      // A keyed hash, as for sign-in limits: no plain address is kept, even in memory.
+      clientKey: (c) => features.hasher("search-address", addressBlock(features.clientAddress(c))),
+    });
     const settings = defaultTripSettings;
     registerTripRoutes(app, createRouteService({ ...features, settings }), requireAuth);
     registerDraftRoutes(app, createTripService({ ...features, settings, driving }), requireAuth);

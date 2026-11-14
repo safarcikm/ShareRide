@@ -10,12 +10,11 @@ export const bearerAuth = "bearerAuth";
 
 /**
  * Turns a framework-free contract route into a documented Hono route. Routes
- * marked `auth` get `requireAuth` and are documented as needing a token.
+ * marked `auth` get `auth` (requireAuth) and are documented as needing a
+ * token; routes marked `auth: "optional"` get `auth` (optionalAuth) and are
+ * documented as taking one.
  */
-export function toOpenApiRoute(
-  route: RouteDefinition,
-  requireAuth?: MiddlewareHandler,
-): RouteConfig {
+export function toOpenApiRoute(route: RouteDefinition, auth?: MiddlewareHandler): RouteConfig {
   const responses: RouteConfig["responses"] = {};
   for (const [status, response] of Object.entries(route.responses)) {
     responses[status] =
@@ -29,9 +28,18 @@ export function toOpenApiRoute(
   if (route.request?.body) {
     request.body = { content: { [json]: { schema: route.request.body } }, required: true };
   }
-  if (route.auth === true && requireAuth === undefined) {
-    throw new Error(`${route.path} needs requireAuth.`);
+  if (route.auth !== undefined && route.auth !== false && auth === undefined) {
+    throw new Error(`${route.path} needs its auth middleware.`);
   }
+  const token: Record<string, string[]> = { [bearerAuth]: [] };
+  // An empty requirement documents that the token may be left out.
+  const none: Record<string, string[]> = {};
+  const security =
+    route.auth === true
+      ? { security: [token], middleware: auth }
+      : route.auth === "optional"
+        ? { security: [token, none], middleware: auth }
+        : {};
   return createRoute({
     method: route.method,
     path: route.path,
@@ -39,7 +47,7 @@ export function toOpenApiRoute(
     tags: [...route.tags],
     request,
     responses,
-    ...(route.auth === true ? { security: [{ [bearerAuth]: [] }], middleware: requireAuth } : {}),
+    ...security,
   });
 }
 
