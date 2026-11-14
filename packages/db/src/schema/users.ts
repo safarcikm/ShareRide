@@ -23,6 +23,8 @@ export const users = pgTable(
     emailVerifiedAt: at(),
     /** When the person confirmed they are 18 or older (rule R1.7); no birth date. */
     ageConfirmedAt: at(),
+    /** When the driver declared a valid driving licence (spec 3, 3.3); nothing else about it. */
+    licenceDeclaredAt: at(),
     roles: text()
       .array()
       .notNull()

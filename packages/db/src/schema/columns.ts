@@ -1,5 +1,5 @@
-import { sql } from "drizzle-orm";
-import { customType, timestamp, uuid } from "drizzle-orm/pg-core";
+import { sql, type SQL } from "drizzle-orm";
+import { type AnyPgColumn, customType, timestamp, uuid } from "drizzle-orm/pg-core";
 
 /** UUID version 7 keys, made by PostgreSQL 18: unique and in time order. */
 export const id = () =>
@@ -18,6 +18,13 @@ export const timestamps = {
     .defaultNow()
     .$onUpdate(() => new Date()),
 };
+
+/** A check that a column holds one of the domain's values (fixed lists, never user input). */
+export const oneOf = (column: AnyPgColumn, values: readonly string[]): SQL =>
+  sql`${column} in (${sql.join(
+    values.map((value) => sql.raw(`'${value}'`)),
+    sql`, `,
+  )})`;
 
 /** A position in WGS 84, the system GPS and maps use. */
 export interface Position {

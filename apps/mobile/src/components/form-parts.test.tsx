@@ -1,7 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { colors } from "@/theme/tokens";
+import { AccessibilityInfo } from "react-native";
 import { Checkbox } from "./checkbox";
 import { Chip } from "./chip";
+import { FieldError } from "./field-error";
 import { Notice } from "./notice";
 import { TextField } from "./text-field";
 
@@ -71,6 +73,13 @@ describe("Checkbox", () => {
     await fireEvent.press(screen.getByRole("checkbox", { name: "I am 18 or older" }));
     expect(onChange).toHaveBeenCalledWith(true);
   });
+
+  // The web journeys check the same on the web build, which drops
+  // accessibilityState and needs aria-checked.
+  it("tells screen readers whether it is ticked", async () => {
+    await render(<Checkbox label="I am 18 or older" checked onChange={jest.fn()} />);
+    expect(screen.getByRole("checkbox", { name: "I am 18 or older" })).toBeChecked();
+  });
 });
 
 describe("Chip", () => {
@@ -89,6 +98,38 @@ describe("Chip", () => {
     expect(chip).toHaveStyle({ minHeight: 40, borderColor: colors.light.control });
     expect(chip.props.hitSlop).toEqual({ top: 2, bottom: 2, left: 0, right: 0 });
     expect(noIcon("chip-tick")).toBeNull();
+  });
+
+  it("can be one choice of several, or a suggestion without a state", async () => {
+    await render(
+      <>
+        <Chip role="radio" label="Blue" selected onToggle={jest.fn()} />
+        <Chip role="button" label="Toyota" selected={false} onToggle={jest.fn()} />
+      </>,
+    );
+    expect(screen.getByRole("radio", { name: "Blue" })).toBeChecked();
+    expect(screen.getByRole("button", { name: "Toyota" })).toBeOnTheScreen();
+    expect(screen.queryByRole("checkbox", { name: "Toyota" })).toBeNull();
+  });
+});
+
+describe("FieldError", () => {
+  it("shows nothing until there is an error", async () => {
+    await render(<FieldError message={undefined} />);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("is read out once when it appears, in red after an alert icon", async () => {
+    const announce = jest.spyOn(AccessibilityInfo, "announceForAccessibility");
+    const view = await render(<FieldError message={undefined} />);
+    await view.rerender(<FieldError message="Choose a colour." />);
+    expect(screen.getByRole("alert")).toHaveTextContent("Choose a colour.");
+    expect(screen.getByText("Choose a colour.")).toHaveStyle({ color: colors.light.error });
+    expect(icon("field-error-icon")).toBeOnTheScreen();
+    await view.rerender(<FieldError message="Choose a colour." />);
+    expect(announce).toHaveBeenCalledTimes(1);
+    expect(announce).toHaveBeenCalledWith("Choose a colour.");
+    announce.mockRestore();
   });
 });
 

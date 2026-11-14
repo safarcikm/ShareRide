@@ -5,9 +5,8 @@ import {
   placeKinds,
   regions,
 } from "@shareride/domain";
-import { sql, type SQL } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
-  type AnyPgColumn,
   boolean,
   check,
   date,
@@ -19,14 +18,7 @@ import {
   text,
   uuid,
 } from "drizzle-orm/pg-core";
-import { at, geographyPoint, id, timestamps } from "./columns.ts";
-
-/** A check that a column holds one of the domain's values. */
-const oneOf = (column: AnyPgColumn, values: readonly string[]): SQL =>
-  sql`${column} in (${sql.join(
-    values.map((value) => sql.raw(`'${value}'`)),
-    sql`, `,
-  )})`;
+import { at, geographyPoint, id, oneOf, timestamps } from "./columns.ts";
 
 /**
  * Curated places where trips start, stop and end (spec 2, ADR 0006). Only

@@ -11,6 +11,7 @@ import {
 } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { Icon } from "./icon";
+import { spaceKeyPresses } from "./space-key";
 
 interface CheckboxProps {
   readonly label: string;
@@ -21,14 +22,17 @@ interface CheckboxProps {
 /** A tick box with its label; the whole row is the touch target. */
 export function Checkbox({ label, checked, onChange }: CheckboxProps) {
   const palette = usePalette();
+  const toggle = () => {
+    onChange(!checked);
+  };
   return (
     <Pressable
       accessibilityRole="checkbox"
       accessibilityLabel={label}
-      accessibilityState={{ checked }}
-      onPress={() => {
-        onChange(!checked);
-      }}
+      // aria-checked rather than accessibilityState, which the web build drops.
+      aria-checked={checked}
+      onPress={toggle}
+      {...spaceKeyPresses(toggle)}
       style={styles.row}
     >
       <View

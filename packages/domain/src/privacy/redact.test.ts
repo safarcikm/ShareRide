@@ -73,6 +73,7 @@ describe("redactDeep", () => {
         "refresh-token": "x",
         device_name: "Anna's phone",
         ip_address: "203.0.113.5",
+        registration: "TEST0001",
         route_name: "kept",
       }),
     ).toEqual({
@@ -81,6 +82,7 @@ describe("redactDeep", () => {
       "refresh-token": "[redacted]",
       device_name: "[redacted]",
       ip_address: "[redacted]",
+      registration: "[redacted]",
       route_name: "kept",
     });
   });
