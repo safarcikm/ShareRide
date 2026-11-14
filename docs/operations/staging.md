@@ -144,7 +144,9 @@ many records it deleted, and a failed run exits with an error.
 
 The API and the clean-up job send unexpected errors to Sentry's EU region
 ([ADR 0020](../decisions/0020-error-tracking-with-sentry-eu.md)) once
-`SENTRY_DSN` is set. A report carries:
+`SENTRY_DSN` is set, and the web app does once `EXPO_PUBLIC_SENTRY_DSN` is
+set (it is built in, so it takes effect at the next deploy). The two are
+separate Sentry projects. A report from the API carries:
 
 - the error, its stack and the source lines around each frame;
 - the release (the commit), the environment, the route pattern and the
@@ -155,28 +157,50 @@ The API and the clean-up job send unexpected errors to Sentry's EU region
 - the API's own recent outgoing requests (method, address and status), such
   as the one to 46elks.
 
-Never request bodies, cookies, query strings, network addresses or a failed
-query's values. Phone numbers, codes, tokens, email addresses and kennitölur
-are removed from all text. Errors only: the DSN must be in the EU region
-(`*.ingest.de.sentry.io`), and `SENTRY_TRACES_SAMPLE_RATE` stops the API
-from starting, so tracing cannot be turned on by accident.
+A report from the app carries the error and its stack, the release (the
+commit, for the web app), the environment, the screen's path, the browser's
+or phone's model and system, and what happened just before: screens
+visited and the app's requests to the API (method, address, status). The
+web app loads Sentry after its first screen, so the page stays light; an
+error in its first second may not be reported.
+
+Never request bodies, cookies, query strings, network addresses, taps or
+typing, screenshots, replays or a failed query's values. Phone numbers,
+codes, tokens, email addresses and kennitölur are removed from all text (one
+shared rule, `scrubErrorReport` in the domain package). Errors only: a DSN
+outside the EU region (`*.ingest.de.sentry.io`) sends nothing, and
+`SENTRY_TRACES_SAMPLE_RATE` stops the API from starting, so tracing cannot
+be turned on by accident.
 
 Set it up once (Martin):
 
 1. At sentry.io, create the organisation and choose **EU** for data
    storage. It cannot be changed later.
-2. Create a project for the API (platform Node.js). In its **Settings**,
-   **Security & Privacy**, keep the data scrubber and its defaults on, and
-   turn on **Prevent Storing of IP Addresses**.
-3. Copy the project's DSN (**Settings**, **Client Keys**). It is not a
-   secret: it goes in the blueprint as `SENTRY_DSN` in the
-   `shareride-staging` group, which reaches both the API and the clean-up
-   job.
-4. Check it after the next deploy: open the API's **Shell** in Render and
-   run `node apps/api/src/sentry-check-cli.ts`. A "Sentry check from
+2. Create two projects: `shareride-api` (platform Node.js) and
+   `shareride-app` (platform React Native; the name matters, the web build
+   uploads to it). In each project's **Settings**, **Security & Privacy**,
+   keep the data scrubber and its defaults on, and turn on **Prevent
+   Storing of IP Addresses**.
+3. Copy each project's DSN (**Settings**, **Client Keys**). They are not
+   secrets: they go in the blueprint's `shareride-staging` group, the API's
+   as `SENTRY_DSN` (it reaches the API and the clean-up job) and the app's
+   as `EXPO_PUBLIC_SENTRY_DSN`.
+4. For readable stacks from the web app: in Sentry, **Settings**,
+   **Developer Settings**, create an **Organization Token**. In Render, open
+   `shareride-staging-api`, **Environment**, **Secret Files**, and add it as
+   a file named `sentry-auth-token`. Each build uploads the web app's source
+   maps with it and then deletes them, so the site never serves them. If
+   the upload fails, the build log says so and the deploy goes on.
+5. Check the API after the next deploy: open the API's **Shell** in Render
+   and run `node apps/api/src/sentry-check-cli.ts`. A "Sentry check from
    staging" error should appear in Sentry within a minute, with the commit
    as its release.
-5. Create an uptime monitor for `<staging address>/v1/health/ready`,
+6. Check the web app: open the staging address, open the browser's
+   developer console and run
+   `setTimeout(() => { throw new Error("Web check") })`. After a few seconds
+   a "Web check" error should appear in the `shareride-app` project, with
+   the commit as its release and the app's own file names in the stack.
+7. Create an uptime monitor for `<staging address>/v1/health/ready`,
    checked every minute in the `staging` environment, alerting you by email
    and in the Sentry app on your phone.
 

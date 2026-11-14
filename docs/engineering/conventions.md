@@ -116,9 +116,12 @@ imports end in `.ts`.
 - Log an error under the key `err`. The logger then drops the values a
   failed query lists (`withoutQueryValues` in `@shareride/db`); the query
   text and the database's error code stay.
-- Error reports (Sentry) follow the same rule: `redactDeep` hides those keys
-  and any phone number, code, token, email or kennitala in text, and request
-  bodies, cookies, query strings, addresses and query values are never sent.
+- Error reports (Sentry) follow the same rule: `scrubErrorReport` and
+  `scrubErrorBreadcrumb` in the domain package, used by the API and the
+  app, hide those keys and any phone number, code, token, email or
+  kennitala in text, and request bodies, cookies, query strings, addresses
+  and query values are never sent. In the app, report an error you catch
+  with `reportError` from `@/lib/error-reporting`.
 - Log levels: `error` for things that need action, `warn` for degraded
   behaviour, `info` for business events, `debug` off in production.
 

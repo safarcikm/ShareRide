@@ -48,6 +48,9 @@ export const en = {
   "error.about": "Keep it to {max} characters.",
   "error.languages": "Choose languages from the list.",
   "error.generic": "Something went wrong on our side. Try again.",
+  "error.unexpected_title": "Something went wrong",
+  "error.unexpected_body":
+    "ShareRide ran into a problem. Try again. If it keeps happening, close ShareRide and open it again.",
   "legal.title": "Before you start",
   "legal.changedTitle": "Our terms have changed",
   "legal.intro": "Please read and accept the Terms of Service and the Community Rules.",

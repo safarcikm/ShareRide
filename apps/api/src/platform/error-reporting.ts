@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/node";
-import type { Breadcrumb, ErrorEvent, NodeOptions } from "@sentry/node";
+import type { NodeOptions } from "@sentry/node";
 import { withoutQueryValues } from "@shareride/db";
-import { redactDeep, redactText } from "@shareride/domain";
+import { scrubErrorBreadcrumb, scrubErrorReport } from "@shareride/domain";
 import type { ErrorReporter } from "../app.ts";
 
 export interface ErrorReportingOptions {
@@ -13,38 +13,6 @@ export interface ErrorReportingOptions {
   readonly release: string | undefined;
   /** Tests replace how reports are sent. */
   readonly transport?: NodeOptions["transport"];
-}
-
-/** Headers worth keeping on a report; every other header is dropped. */
-const keptHeaders = new Set(["user-agent", "content-type", "accept-language"]);
-
-/**
- * What leaves for Sentry (ADR 0020): no request bodies, cookies, query
- * strings or addresses; a few harmless headers; the user's ID only; and
- * every other text with phone numbers, codes, tokens, emails and kennitölur
- * hidden.
- */
-export function scrubEvent(event: ErrorEvent): ErrorEvent {
-  // The SDK's own working data, removed before sending: left as it is.
-  const { request, user, sdkProcessingMetadata, ...rest } = event;
-  const scrubbed: ErrorEvent = redactDeep(rest);
-  if (sdkProcessingMetadata !== undefined) scrubbed.sdkProcessingMetadata = sdkProcessingMetadata;
-  if (request !== undefined) {
-    const headers = Object.fromEntries(
-      Object.entries(request.headers ?? {}).filter(([name]) => keptHeaders.has(name.toLowerCase())),
-    );
-    scrubbed.request = {
-      ...(request.method === undefined ? {} : { method: request.method }),
-      ...(request.url === undefined ? {} : { url: redactText(request.url.split("?")[0] ?? "") }),
-      headers: redactDeep(headers),
-    };
-  }
-  if (user?.id !== undefined) scrubbed.user = { id: user.id };
-  return scrubbed;
-}
-
-export function scrubBreadcrumb(breadcrumb: Breadcrumb): Breadcrumb {
-  return redactDeep(breadcrumb);
 }
 
 /**
@@ -61,11 +29,14 @@ export function startErrorReporting(options: ErrorReportingOptions): ErrorReport
     ...(options.transport === undefined ? {} : { transport: options.transport }),
     // Render's host name for the container says nothing a fix needs.
     includeServerName: false,
-    // Collect as little as the SDK allows; scrubEvent then removes the rest.
+    // Collect as little as the SDK allows; the shared rule then removes the rest.
     dataCollection: {
       userInfo: false,
       cookies: false,
-      httpHeaders: { request: { allow: [...keptHeaders] }, response: false },
+      httpHeaders: {
+        request: { allow: ["user-agent", "content-type", "accept-language"] },
+        response: false,
+      },
       httpBodies: [],
       urlQueryParams: false,
       graphQL: { document: false, variables: false },
@@ -75,8 +46,8 @@ export function startErrorReporting(options: ErrorReportingOptions): ErrorReport
       queues: false,
       stackFrameVariables: false,
     },
-    beforeSend: scrubEvent,
-    beforeBreadcrumb: scrubBreadcrumb,
+    beforeSend: scrubErrorReport,
+    beforeBreadcrumb: scrubErrorBreadcrumb,
     // Errors only. Tracing stays off (config refuses SENTRY_TRACES_SAMPLE_RATE),
     // no trace headers go to other services, and nothing sends logs or metrics.
     tracePropagationTargets: [],

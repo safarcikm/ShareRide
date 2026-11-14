@@ -63,4 +63,7 @@ check "web app at an app route (reload)" sh -c "curl -fsS '$base/sign-in' | grep
 check "content security policy on the page" sh -c "curl -fsSI '$base/' | grep -qi '^content-security-policy:'"
 check "unknown /v1 path is the API's 404" test "$(status_of /v1/no-such-endpoint)" = 404
 check "missing bundle is a 404, not the page" test "$(status_of /_expo/static/js/web/gone.js)" = 404
+bundle="$(curl -fsS "$base/" | grep -o '/_expo/static/js/web/entry-[^"]*\.js' | head -n 1)"
+check "the app's bundle is served" test "$(status_of "$bundle")" = 200
+check "its source map is not" test "$(status_of "$bundle.map")" = 404
 check "legal documents seeded" test "$(status_of /v1/legal/terms/current)" = 200

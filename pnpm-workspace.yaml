@@ -35,6 +35,9 @@ catalog:
 # Dependencies allowed to run install scripts; anything not listed is blocked.
 # esbuild (used by drizzle-kit) checks its platform binary. @parcel/watcher
 # (used by Jest) ships prebuilt binaries, so its build script is not needed.
+# @sentry/cli gets its binary from a platform package too; its script would
+# only download it again.
 allowBuilds:
   "@parcel/watcher": false
+  "@sentry/cli": false
   esbuild: true

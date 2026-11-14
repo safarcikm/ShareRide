@@ -19,9 +19,10 @@ const isFilePath = (path: string) =>
   (path.split("/").at(-1) ?? "").includes(".");
 
 /**
- * The web app loads only its own files and calls only its own origin. Styles
- * may be inline because React Native Web writes them at run time. Maps and
- * error reporting add their hosts here when they arrive.
+ * The web app loads only its own files and calls only its own origin, plus
+ * Sentry's EU region for error reports (ADR 0020). Styles may be inline
+ * because React Native Web writes them at run time. Maps add their hosts
+ * here when they arrive.
  */
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -29,7 +30,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
-  "connect-src 'self'",
+  "connect-src 'self' https://*.ingest.de.sentry.io",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

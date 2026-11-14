@@ -73,6 +73,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   `pnpm --filter @shareride/api sentry:check` to test a deployment. Logs
   also drop failed queries' values, and a request whose JSON does not parse
   gets 400 instead of 500.
+- Error reports from the app (web and phones) to Sentry's EU region with the
+  same scrubbing rule, now shared from the domain package; a "Something went
+  wrong" screen with a retry when a screen breaks; the web app's source maps
+  uploaded to Sentry from the image build and never served.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
