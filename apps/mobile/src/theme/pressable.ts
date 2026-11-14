@@ -20,14 +20,17 @@ export function chunky(
 
 /**
  * The keyboard focus ring on the web, as a style sheet: `:focus-visible`
- * shows it for the keyboard and not for taps or clicks. Phones keep their
+ * shows it for the keyboard and not for taps or clicks. Text fields show
+ * focus with their own moss outline instead (TextField). Phones keep their
  * own focus highlight (spec 15, section 6).
  */
 export function focusRingCss(light: Palette, dark: Palette): string {
+  const parts = ":focus-visible:not(input):not(textarea)";
   const ring = `${String(focusRing.width)}px solid`;
   return (
-    `:focus-visible{outline:${ring} ${light.focus} !important;` +
+    `${parts}{outline:${ring} ${light.focus} !important;` +
     `outline-offset:${String(focusRing.offset)}px !important}` +
-    `@media (prefers-color-scheme: dark){:focus-visible{outline-color:${dark.focus} !important}}`
+    "input:focus,textarea:focus{outline:none !important}" +
+    `@media (prefers-color-scheme: dark){${parts}{outline-color:${dark.focus} !important}}`
   );
 }

@@ -228,12 +228,12 @@ and tests need no edits. Only the look changes.
 
 | Part | Look |
 | ---- | ---- |
-| `Button` `primary` | `primary` fill, `onPrimary` label in `button`, corner `control`, 4 bottom edge in `primaryEdge`, height 48 (56 for the main action in a bottom bar) |
+| `Button` `primary` | `primary` fill, `onPrimary` label in `button`, corner `control`, 4 bottom edge in `primaryEdge`, height 48 (56 for the main action in a bottom bar). Every button fits its label, with `lg` padding each side, and does not fill the width |
 | `Button` `secondary` | `surface` fill, 2 `control` outline, `text` label, 3 bottom edge in `edge` |
 | `Button` `text` | No fill, `primary` label in `label`, at least 44 high |
 | `Button` `busy` | A small spinner before the label, which stays; it can't be pressed again; `accessibilityState.busy` |
 | `Button` `disabled` | `border` fill, `textMuted` label, no edge; never shown with opacity alone |
-| `TextField` | `label` above in `text`; input height 52, `surface`, 2 `control` outline, corner `control`; `help` below in `small` `textMuted`; with `error`, the outline and message turn `error` and the message starts with an alert icon |
+| `TextField` | `label` above in `text`; input height 52, `surface`, 2 `control` outline, corner `control`; the outline turns `primary` while you type in it; `help` below in `small` `textMuted`; with `error`, the outline and message turn `error` and the message starts with an alert icon |
 | `Checkbox` | 26 square, corner 9, 2 `control` outline; checked: `primary` fill, `onPrimary` tick, 2 `primaryEdge` bottom edge; the whole row is pressable |
 | `Chip` | 40 high, corner `pill`, `surface`, 2 `control` outline, `label` text; selected: `primarySoft` fill, `primary` outline and a tick before the label |
 | `Notice` | Corner `control`, an icon then the message in `body`; `error` on `errorSoft` with an alert icon, `info` on `infoSoft` with an info icon |
@@ -247,6 +247,8 @@ and tests need no edits. Only the look changes.
 
 **Focus:** every pressable part shows a 3 wide `focus` ring with a 2 gap
 around its shape when reached by keyboard (web, and keyboards on phones).
+A tap or click never shows it. Text fields show focus with their own
+`primary` outline instead.
 
 ### 5.2 Parts for the posting and booking screens
 
@@ -357,8 +359,8 @@ use `control`; body text is drawn at 16 and is 17.
   `lucide-react-native` with pnpm.
 - **Focus ring:** on the web, one `:focus-visible` style sheet added at
   start (`apps/mobile/src/theme/focus-ring.web.ts`), so every pressable
-  part, link and field shows the ring for the keyboard and not for clicks
-  or taps. On phones, keep the system's own focus highlight (Android
+  part and link shows the ring for the keyboard and not for clicks or taps.
+  Text fields are left out of it; their outline turns `primary` instead. On phones, keep the system's own focus highlight (Android
   keyboard navigation, iOS Full Keyboard Access).
 - The first implementation PR updates tokens, fonts and the parts in section
   5.1. The parts in 5.2 come with the screens of specs 3 to 5.

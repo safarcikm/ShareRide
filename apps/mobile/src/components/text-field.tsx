@@ -1,4 +1,5 @@
 import { CircleAlert } from "lucide-react-native";
+import { useState } from "react";
 import { StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
 import { controlOutline, iconSizes, radii, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -26,13 +27,16 @@ interface TextFieldProps extends Pick<
 
 /**
  * A labelled text field; the label is always visible, never a placeholder
- * (spec 15, section 5.1). An error turns the outline and message red and puts
- * an alert icon before the message, so it does not rely on colour alone.
+ * (spec 15, section 5.1). The outline turns moss while you type in it. An
+ * error turns the outline and message red and puts an alert icon before the
+ * message, so it does not rely on colour alone.
  */
 export function TextField({ label, value, onChangeText, help, error, ...input }: TextFieldProps) {
   const palette = usePalette();
   const hint = error ?? help;
   const hasError = error !== undefined;
+  const [focused, setFocused] = useState(false);
+  const outline = hasError ? palette.error : focused ? palette.primary : palette.control;
   return (
     <View style={styles.field}>
       <Text style={[typography.label, { color: palette.text }]}>{label}</Text>
@@ -42,13 +46,19 @@ export function TextField({ label, value, onChangeText, help, error, ...input }:
         aria-invalid={hasError}
         value={value}
         onChangeText={onChangeText}
+        onFocus={() => {
+          setFocused(true);
+        }}
+        onBlur={() => {
+          setFocused(false);
+        }}
         style={[
           typography.body,
           styles.input,
           input.multiline === true && styles.multiline,
           {
             color: palette.text,
-            borderColor: hasError ? palette.error : palette.control,
+            borderColor: outline,
             backgroundColor: palette.surface,
           },
         ]}

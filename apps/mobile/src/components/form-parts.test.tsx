@@ -21,6 +21,24 @@ describe("TextField", () => {
     });
   });
 
+  it("turns the outline moss while you type in the field", async () => {
+    await render(<TextField label="Phone number" value="" onChangeText={jest.fn()} />);
+    const input = screen.getByLabelText("Phone number");
+    await fireEvent(input, "focus");
+    expect(input).toHaveStyle({ borderColor: colors.light.primary });
+    await fireEvent(input, "blur");
+    expect(input).toHaveStyle({ borderColor: colors.light.control });
+  });
+
+  it("keeps the error colour while you type in a field with an error", async () => {
+    await render(
+      <TextField label="Phone number" value="" onChangeText={jest.fn()} error="Check the number" />,
+    );
+    const input = screen.getByLabelText("Phone number");
+    await fireEvent(input, "focus");
+    expect(input).toHaveStyle({ borderColor: colors.light.error });
+  });
+
   it("turns the outline and message to the error colour, with an icon", async () => {
     await render(
       <TextField label="Phone number" value="" onChangeText={jest.fn()} error="Check the number" />,

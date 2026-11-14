@@ -92,6 +92,11 @@ which must be merged first.
   bold text on the legal screens uses Nunito Bold instead of `fontWeight`,
   and the `fontWeight` test covers `src/app` too; a text button no longer
   places itself, so the language switch stays at the top right of welcome.
+- After Martin saw the screenshots (2026-11-13): buttons fit their label
+  instead of filling the width; text fields show focus with their own moss
+  outline instead of the blue ring; the screenshots are taken before any key
+  is pressed. Whether to keep the blue ring on buttons and links is Martin's
+  call (asked 2026-11-13).
 
 Not in this PR (they come with the screens of specs 3 to 5, spec 15
 section 5.2): tag colours, the rating star, people and car colours, shape

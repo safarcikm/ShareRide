@@ -105,7 +105,13 @@ export function Button({
 }
 
 const styles = StyleSheet.create({
-  outer: { minHeight: sizes.buttonHeight, minWidth: minTouchTarget, borderRadius: radii.control },
+  // A button fits its label (spec 15, section 5.1); the screen places it.
+  outer: {
+    minHeight: sizes.buttonHeight,
+    minWidth: minTouchTarget,
+    borderRadius: radii.control,
+    alignSelf: "flex-start",
+  },
   textOuter: { minHeight: minTouchTarget },
   face: {
     flexGrow: 1,

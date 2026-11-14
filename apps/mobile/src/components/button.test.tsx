@@ -48,12 +48,13 @@ describe("Button", () => {
     expect(StyleSheet.flatten(button.props.style)).not.toHaveProperty("height");
   });
 
-  it("lets the screen place a text button", async () => {
-    await render(<Button label="Íslenska" variant="text" onPress={jest.fn()} />);
-    expect(StyleSheet.flatten(screen.getByRole("button").props.style)).not.toHaveProperty(
-      "alignSelf",
-    );
-  });
+  it.each(["primary", "secondary", "text"] as const)(
+    "fits a %s button to its label instead of the full width",
+    async (variant) => {
+      await render(<Button label="Send code" variant={variant} onPress={jest.fn()} />);
+      expect(screen.getByRole("button")).toHaveStyle({ alignSelf: "flex-start" });
+    },
+  );
 
   it("centres a label that wraps, and lets it shrink beside the spinner", async () => {
     await render(<Button label="Continue" onPress={jest.fn()} busy />);
