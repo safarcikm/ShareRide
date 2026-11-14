@@ -25,6 +25,6 @@ export function TextLink({ label, href }: { readonly label: string; readonly hre
 }
 
 const styles = StyleSheet.create({
-  link: { minHeight: minTouchTarget, justifyContent: "center", alignSelf: "flex-start" },
+  link: { minHeight: minTouchTarget, justifyContent: "center", alignSelf: "center" },
   text: { textDecorationLine: "underline" },
 });

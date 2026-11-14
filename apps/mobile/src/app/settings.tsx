@@ -48,7 +48,10 @@ export default function SettingsScreen() {
   }
 
   const heading = (text: string) => (
-    <Text accessibilityRole="header" style={[typography.label, { color: palette.text }]}>
+    <Text
+      accessibilityRole="header"
+      style={[typography.label, styles.centre, { color: palette.text }]}
+    >
       {text}
     </Text>
   );
@@ -59,9 +62,7 @@ export default function SettingsScreen() {
       <Title>{t("settings.title")}</Title>
       <View style={styles.section}>
         {heading(t("settings.language"))}
-        <View style={styles.start}>
-          <LanguageSwitch onSwitch={(locale) => void saveLanguage(locale)} />
-        </View>
+        <LanguageSwitch onSwitch={(locale) => void saveLanguage(locale)} />
       </View>
       <View style={styles.section}>
         {heading(t("settings.legal"))}
@@ -93,5 +94,5 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   section: { gap: spacing.sm, marginTop: spacing.md },
-  start: { alignItems: "flex-start" },
+  centre: { textAlign: "center" },
 });

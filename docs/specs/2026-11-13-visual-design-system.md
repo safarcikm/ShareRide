@@ -228,7 +228,7 @@ and tests need no edits. Only the look changes.
 
 | Part | Look |
 | ---- | ---- |
-| `Button` `primary` | `primary` fill, `onPrimary` label in `button`, corner `control`, 4 bottom edge in `primaryEdge`, height 48 (56 for the main action in a bottom bar). Every button fits its label, with `lg` padding each side, and does not fill the width |
+| `Button` `primary` | `primary` fill, `onPrimary` label in `button`, corner `control`, 4 bottom edge in `primaryEdge`, height 48 (56 for the main action in a bottom bar). Every button fits its label, with `lg` padding each side, and sits in the middle of the column |
 | `Button` `secondary` | `surface` fill, 2 `control` outline, `text` label, 3 bottom edge in `edge` |
 | `Button` `text` | No fill, `primary` label in `label`, at least 44 high |
 | `Button` `busy` | A small spinner before the label, which stays; it can't be pressed again; `accessibilityState.busy` |
@@ -237,18 +237,22 @@ and tests need no edits. Only the look changes.
 | `Checkbox` | 26 square, corner 9, 2 `control` outline; checked: `primary` fill, `onPrimary` tick, 2 `primaryEdge` bottom edge; the whole row is pressable |
 | `Chip` | 40 high, corner `pill`, `surface`, 2 `control` outline, `label` text; selected: `primarySoft` fill, `primary` outline and a tick before the label |
 | `Notice` | Corner `control`, an icon then the message in `body`; `error` on `errorSoft` with an alert icon, `info` on `infoSoft` with an info icon |
-| `TextLink` | `primary`, Nunito 700, always underlined (moss on basalt text is only 2.3:1, so the underline is what marks a link) |
+| `TextLink` | `primary`, Nunito 700, always underlined (moss on basalt text is only 2.3:1, so the underline is what marks a link), centred |
 | `BackButton` | 44 round, `surface`, 3 `edge` bottom edge, chevron icon; accessible name "Back" |
 | `Loading` | A `primary` spinner centred on `background` |
 | `Screen` | `background`, safe area, `md` padding, column at most 480 wide |
-| `Title` | `title`, `text`, role header |
-| `Body` | `body`, `textMuted` (the intro or help line under a title) |
+| `Title` | `title`, `text`, role header, centred |
+| `Body` | `body`, `textMuted` (the intro or help line under a title), centred; long text such as a legal document starts at the left |
 | `LanguageSwitch` | A `text` button with the other language's name |
 
 **Focus:** every pressable part shows a 3 wide `focus` ring with a 2 gap
 around its shape when reached by keyboard (web, and keyboards on phones).
 A tap or click never shows it. Text fields show focus with their own
 `primary` outline instead.
+
+**Alignment:** screens centre their titles, intro text, buttons and links.
+Fields with their labels, tick boxes, lists and long text start at the left,
+because centred lines are hard to read and to scan in a form.
 
 ### 5.2 Parts for the posting and booking screens
 

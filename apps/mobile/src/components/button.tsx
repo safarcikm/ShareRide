@@ -105,12 +105,13 @@ export function Button({
 }
 
 const styles = StyleSheet.create({
-  // A button fits its label (spec 15, section 5.1); the screen places it.
+  // A button fits its label and sits in the middle of the column (spec 15,
+  // section 5.1); a row around it can place it elsewhere.
   outer: {
     minHeight: sizes.buttonHeight,
     minWidth: minTouchTarget,
     borderRadius: radii.control,
-    alignSelf: "flex-start",
+    alignSelf: "center",
   },
   textOuter: { minHeight: minTouchTarget },
   face: {

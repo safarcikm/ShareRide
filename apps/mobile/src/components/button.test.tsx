@@ -49,10 +49,10 @@ describe("Button", () => {
   });
 
   it.each(["primary", "secondary", "text"] as const)(
-    "fits a %s button to its label instead of the full width",
+    "fits a %s button to its label, in the middle of the column",
     async (variant) => {
       await render(<Button label="Send code" variant={variant} onPress={jest.fn()} />);
-      expect(screen.getByRole("button")).toHaveStyle({ alignSelf: "flex-start" });
+      expect(screen.getByRole("button")).toHaveStyle({ alignSelf: "center" });
     },
   );
 

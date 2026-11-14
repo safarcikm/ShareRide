@@ -37,7 +37,9 @@ export default function MyProfileScreen() {
         />
       </View>
       <Field label={t("profile.firstName")}>
-        <Text style={[typography.title, styles.name, { color: palette.text }]}>{me.firstName}</Text>
+        <Text style={[typography.title, styles.name, styles.centre, { color: palette.text }]}>
+          {me.firstName}
+        </Text>
       </Field>
       <Field label={t("profile.about")}>
         <Body>{me.about ?? t("profile.noAbout")}</Body>
@@ -67,7 +69,7 @@ function Field({ label, children }: { readonly label: string; readonly children:
   const palette = usePalette();
   return (
     <View style={styles.field}>
-      <Text style={[typography.label, { color: palette.textMuted }]}>{label}</Text>
+      <Text style={[typography.label, styles.centre, { color: palette.textMuted }]}>{label}</Text>
       {children}
     </View>
   );
@@ -77,4 +79,5 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   name: { fontSize: 22, lineHeight: 28 },
   field: { gap: spacing.xs },
+  centre: { textAlign: "center" },
 });

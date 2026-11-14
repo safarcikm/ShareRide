@@ -57,11 +57,12 @@ describe("TextLink", () => {
       fontFamily: "Nunito_700Bold",
       color: colors.light.primary,
     });
+    expect(screen.getByRole("link", { name: "Terms" })).toHaveStyle({ alignSelf: "center" });
   });
 });
 
 describe("Title and Body", () => {
-  it("sets titles in Fredoka and body text in Nunito", async () => {
+  it("sets titles in Fredoka and body text in Nunito, centred", async () => {
     await render(
       <>
         <Title>Your trips</Title>
@@ -72,11 +73,20 @@ describe("Title and Body", () => {
       fontFamily: "Fredoka_600SemiBold",
       fontSize: 28,
       color: colors.light.text,
+      textAlign: "center",
     });
     expect(screen.getByText("Nothing booked yet.")).toHaveStyle({
       fontFamily: "Nunito_400Regular",
       fontSize: 17,
       color: colors.light.textMuted,
+      textAlign: "center",
+    });
+  });
+
+  it("starts long text at the left, for reading", async () => {
+    await render(<Body align="start">These terms apply to every trip.</Body>);
+    expect(screen.getByText("These terms apply to every trip.")).not.toHaveStyle({
+      textAlign: "center",
     });
   });
 });

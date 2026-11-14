@@ -91,7 +91,7 @@ function Markdown({ text }: { readonly text: string }) {
       );
     }
     return (
-      <Body key={index}>
+      <Body key={index} align="start">
         <Inline text={block} />
       </Body>
     );

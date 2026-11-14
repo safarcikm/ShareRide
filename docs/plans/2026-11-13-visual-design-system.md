@@ -97,6 +97,9 @@ which must be merged first.
   outline instead of the blue ring; the screenshots are taken before any key
   is pressed. Martin chose to keep the blue ring on buttons and links, for
   the keyboard only (2026-11-14).
+- Martin asked for everything more centred (2026-11-14): titles, intro text,
+  buttons and links are centred; fields, tick boxes, lists and legal texts
+  start at the left (`Body align="start"`).
 
 Not in this PR (they come with the screens of specs 3 to 5, spec 15
 section 5.2): tag colours, the rating star, people and car colours, shape

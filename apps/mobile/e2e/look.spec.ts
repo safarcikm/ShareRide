@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-// The look from spec 15 in a real browser: buttons that fit their label, the
+// The look from spec 15 in a real browser: centred buttons that fit their label, the
 // keyboard focus ring, the moss outline of a field you type in, the loaded
 // fonts, and screenshots of the first screens for review (phone and desktop,
 // light in English and dark in Icelandic). Screenshots are taken before any
@@ -65,6 +65,9 @@ async function box(target: Locator) {
   return found;
 }
 
+/** The horizontal middle of a box. */
+const middle = (found: { x: number; width: number }) => found.x + found.width / 2;
+
 /** True when the face is in the page's font list and has finished loading. */
 async function fontLoaded(page: Page, family: string) {
   return page.evaluate(async (wanted) => {
@@ -106,12 +109,17 @@ for (const scheme of schemes) {
       await expectFonts(page);
       await screenshot(page, testInfo.project, "welcome");
 
-      // The language switch sits at the right; the buttons fit their labels.
+      // The language switch sits at the right; the buttons fit their labels
+      // and sit in the middle, under the centred title.
       const column = await box(title);
       const languageBox = await box(language);
       expect(languageBox.x + languageBox.width).toBeCloseTo(column.x + column.width, 0);
-      expect((await box(continuePhone)).width).toBeLessThan(column.width);
-      expect((await box(browseTrips)).width).toBeLessThan(column.width);
+      for (const button of [continuePhone, browseTrips]) {
+        const found = await box(button);
+        expect(found.width).toBeLessThan(column.width);
+        expect(middle(found)).toBeCloseTo(middle(column), 0);
+      }
+      await expect(title).toHaveCSS("text-align", "center");
 
       await tabTo(page, browseTrips);
       expect(await outlineOf(browseTrips)).toEqual(ring);
@@ -128,7 +136,10 @@ for (const scheme of schemes) {
       await expectFonts(page);
       await screenshot(page, testInfo.project, "sign-in");
 
-      expect((await box(send)).width).toBeLessThan((await box(field)).width);
+      const sendBox = await box(send);
+      const fieldBox = await box(field);
+      expect(sendBox.width).toBeLessThan(fieldBox.width);
+      expect(middle(sendBox)).toBeCloseTo(middle(fieldBox), 0);
 
       await tabTo(page, back);
       expect(await outlineOf(back)).toEqual(ring);
