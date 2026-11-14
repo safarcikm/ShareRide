@@ -61,6 +61,13 @@ export default function MyProfileScreen() {
           router.push("/profile/edit");
         }}
       />
+      <Button
+        variant="text"
+        label={t("meetingPoints.open")}
+        onPress={() => {
+          router.push("/meeting-points");
+        }}
+      />
     </Screen>
   );
 }

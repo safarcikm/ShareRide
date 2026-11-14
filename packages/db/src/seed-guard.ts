@@ -9,7 +9,7 @@ export function seedRefusal(env: Readonly<Record<string, string | undefined>>): 
     return `APP_ENV must be local, staging or production, not "${appEnv}".`;
   }
   if (appEnv === "production" || (appEnv === undefined && env["NODE_ENV"] === "production")) {
-    return "The seed adds draft documents and is not for production.";
+    return "The seed adds draft documents and sample meeting points, and is not for production.";
   }
   return null;
 }

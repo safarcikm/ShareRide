@@ -18,6 +18,10 @@ const textPairs = [
   ["onError", "error"],
   ["text", "errorSoft"],
   ["text", "infoSoft"],
+  // Tags (spec 15, section 4.1); positive is primary on primarySoft, above.
+  ["warning", "warningSoft"],
+  ["info", "infoSoft"],
+  ["womenOnly", "womenOnlySoft"],
 ] as const;
 
 const edgePairs = [

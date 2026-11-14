@@ -195,17 +195,21 @@ merge.
 
 ### PR 2: `feat(meeting-points)`: sample meeting points and place search
 
-- [ ] Domain: search normalisation (R2.6) with property tests, seasons
+- [x] Domain: search normalisation (R2.6) with property tests, seasons
       across the new year (R2.5), visibility by status
-- [ ] Schema and migration (`pg_trgm`), the `Router` port and its sample
+- [x] Schema and migration (`pg_trgm`), the `Router` port and its sample
       adapter, the sample seed with its guard
-- [ ] `GET /meeting-points`, `GET /meeting-points/{id}`,
+- [x] `GET /meeting-points`, `GET /meeting-points/{id}`,
       `GET /places/search`, `GET /places/{id}/nearest-meeting-points`, with
       integration tests for ranking (exact, ASCII, alias, misspelt) and the
       capital area
-- [ ] App: the place search screen shared by later steps; meeting points by
+- [x] App: the place search screen shared by later steps; meeting points by
       region and their details; both languages
 - Verify: "thorlakshofn", "Akureyi" and "KEF" find their places in the app
+  (a browser journey, `apps/mobile/e2e/meeting-points.spec.ts`)
+- Done with 25 sample points, 33 places and 29 road stretches. Legs come
+  from the road graph through `legsFromRoadGraph` in the seed; the `Router`
+  port is written with its first real adapter, the routing engine job.
 
 ### PR 3: `feat(trips)`: cars and the ready-to-drive list
 

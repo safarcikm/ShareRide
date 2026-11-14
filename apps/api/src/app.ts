@@ -15,6 +15,10 @@ import type { Logger } from "./logger.ts";
 import { createAccountService, registerAccountRoutes } from "./modules/account/index.ts";
 import { createAuthService, createRequireAuth, registerAuthRoutes } from "./modules/auth/index.ts";
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
+import {
+  createMeetingPointService,
+  registerMeetingPointRoutes,
+} from "./modules/meeting-points/index.ts";
 import { bearerAuth, toOpenApiRoute } from "./openapi.ts";
 import type { KeyedHasher } from "./platform/crypto.ts";
 import type { SmsSender } from "./platform/sms.ts";
@@ -22,7 +26,7 @@ import { createWebApp } from "./web-app.ts";
 
 export type { AppEnv };
 
-/** What sign-in, accounts and legal documents need. */
+/** What sign-in, accounts, legal documents and meeting points need. */
 export interface FeatureDependencies {
   readonly db: Database;
   readonly sms: SmsSender;
@@ -152,6 +156,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     registerAuthRoutes(app, { ...features, auth, account, requireAuth });
     registerAccountRoutes(app, account, requireAuth);
     registerLegalRoutes(app, legal);
+    registerMeetingPointRoutes(app, createMeetingPointService(features));
   }
 
   app.openAPIRegistry.registerComponent("securitySchemes", bearerAuth, {

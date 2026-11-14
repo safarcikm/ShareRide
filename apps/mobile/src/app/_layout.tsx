@@ -50,6 +50,9 @@ function Navigation() {
       <Stack.Screen name="index" />
       <Stack.Screen name="coming-soon" />
       <Stack.Screen name="legal/[type]" />
+      <Stack.Screen name="meeting-points/index" />
+      <Stack.Screen name="meeting-points/[id]" />
+      <Stack.Screen name="places/[id]" />
       <Stack.Protected guard={me === null}>
         <Stack.Screen name="sign-in" />
       </Stack.Protected>

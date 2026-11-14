@@ -257,10 +257,11 @@ fixed distance table and only the adapter talks to the engine.
 | `amenities.shop` | Shop | Verslun |
 | `amenities.parking` | Parking | Bílastæði |
 | `amenities.stepFree` | Step-free access | Þrepalaust aðgengi |
-| `search.placeholder` | Town or meeting point | Bær eða mótsstaður |
+| `search.label` | Town or meeting point | Bær eða mótsstaður |
 | `search.nearMe` | Near me | Nálægt mér |
 | `search.noResults` | No places found for "{query}" | Engir staðir fundust fyrir „{query}“ |
-| `search.nearestTo` | Meeting points near {place} | Mótsstaðir nálægt {place} |
+| `search.resultCount` | {count} places found | {count} staðir fundust |
+| `search.nearest` | Nearest meeting points | Næstu mótsstaðir |
 | `report.thanks` | Thanks! We'll check this meeting point. | Takk! Við förum yfir þennan mótsstað. |
 
 ## 9. Testing

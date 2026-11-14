@@ -108,7 +108,7 @@ need no changes. `border` used to outline inputs; that job moves to
 `control`, because `border` is too light to show a control's edge (WCAG
 1.4.11).
 
-Tags (text on a tinted fill, all at least 5.7:1):
+Tags (text on a tinted fill, all at least 5.3:1):
 
 | Tag | Light | Dark | Example |
 | --- | ----- | ---- | ------- |

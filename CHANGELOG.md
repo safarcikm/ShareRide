@@ -82,6 +82,16 @@ releases follow [Semantic Versioning](https://semver.org/).
 - Milestone 3 plan (offer and find rides): sample meeting points and place
   search, cars, posting a trip, search with partial routes and trip details,
   before milestone 2's remaining PRs.
+- Meeting points and place search (milestone 3, PR 2): the
+  `meeting_points`, `places` and `legs` tables; 25 sample meeting points on
+  the three launch corridors with 33 towns and landmarks, seeded on local
+  and staging with distances from a sample road graph; the search rule that
+  ignores accents, reads Icelandic letters typed in ASCII and allows small
+  typos; `GET /v1/meeting-points`, `/v1/meeting-points/{id}`,
+  `/v1/places/search` and `/v1/places/{id}/nearest-meeting-points`; in the
+  app, meeting points by region, their details with "Open in maps", the
+  place search used later by trips, and a place's nearest meeting points.
+  Tags and cards from spec 15.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

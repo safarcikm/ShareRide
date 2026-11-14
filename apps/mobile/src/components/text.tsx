@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { StyleSheet, Text } from "react-native";
+import { Platform, StyleSheet, Text } from "react-native";
 import { typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
@@ -10,6 +10,27 @@ export function Title({ children }: { readonly children: ReactNode }) {
     <Text
       accessibilityRole="header"
       style={[typography.title, styles.centre, { color: palette.text }]}
+    >
+      {children}
+    </Text>
+  );
+}
+
+/**
+ * On the web a heading without a level is an h1, like the title; section
+ * headings are h2, so screen readers can move through a screen's parts.
+ * React Native's types do not know aria-level; react-native-web reads it.
+ */
+const sectionLevel: object = Platform.OS === "web" ? { "aria-level": 2 } : {};
+
+/** A section or card heading, at the left, read out as a heading. */
+export function Heading({ children }: { readonly children: ReactNode }) {
+  const palette = usePalette();
+  return (
+    <Text
+      accessibilityRole="header"
+      {...sectionLevel}
+      style={[typography.heading, { color: palette.text }]}
     >
       {children}
     </Text>

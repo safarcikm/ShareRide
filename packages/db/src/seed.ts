@@ -1,4 +1,5 @@
 import type { Database } from "./index.ts";
+import { seedSampleMeetingPoints } from "./sample/seed.ts";
 import { legalDocuments, type LegalText } from "./schema/index.ts";
 
 const draftNotice = {
@@ -37,4 +38,15 @@ export async function seedDraftLegalDocuments(db: Database, now: Date): Promise<
       })),
     )
     .onConflictDoNothing();
+}
+
+export { sampleId, seedSampleMeetingPoints } from "./sample/seed.ts";
+
+/**
+ * What local development and staging start with: the draft legal documents
+ * and the sample meeting points, places and legs (milestone 3, decision 1).
+ */
+export async function seedDevelopmentData(db: Database, now: Date): Promise<void> {
+  await seedDraftLegalDocuments(db, now);
+  await seedSampleMeetingPoints(db, now);
 }

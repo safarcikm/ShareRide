@@ -20,6 +20,7 @@
     "seed": "node --env-file-if-exists=../../.env src/seed-cli.ts"
   },
   "dependencies": {
+    "@shareride/domain": "workspace:*",
     "drizzle-orm": "catalog:",
     "pg": "catalog:"
   },
