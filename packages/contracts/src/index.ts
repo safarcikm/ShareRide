@@ -1,5 +1,6 @@
 export * from "./auth.ts";
 export * from "./common.ts";
+export * from "./driving.ts";
 export * from "./errors.ts";
 export * from "./health.ts";
 export * from "./legal.ts";

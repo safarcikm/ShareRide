@@ -4,3 +4,4 @@ export * from "./auth.ts";
 export * from "./legal.ts";
 export * from "./meeting-points.ts";
 export * from "./users.ts";
+export * from "./vehicles.ts";

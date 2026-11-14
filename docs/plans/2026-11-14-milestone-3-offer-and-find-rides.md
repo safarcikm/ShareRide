@@ -213,10 +213,16 @@ merge.
 
 ### PR 3: `feat(trips)`: cars and the ready-to-drive list
 
-- [ ] Vehicles and the licence declaration: endpoints and rules (plate
+- [x] Vehicles and the licence declaration: endpoints and rules (plate
       format, removal while a future trip uses the car)
-- [ ] Ready to drive, add or edit a car, licence declaration screens
+- [x] Ready to drive, add or edit a car, licence declaration screens
 - Verify: a new driver adds a car and declares their licence on the web
+  (a browser journey, `apps/mobile/e2e/driving.spec.ts`)
+- Done without the check that stops removing a car a future trip uses:
+  there are no trips yet, so it comes with PR 5, which also adds
+  `removed_at` to keep removed cars that trips used. Until then removing a
+  car deletes it with its plate. The photo shows on the list but does not
+  block (choice 2), and payouts are left out (choice 3).
 
 ### PR 4: `feat(trips)`: route, times and prices
 

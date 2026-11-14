@@ -11,31 +11,38 @@ import {
 } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { Icon } from "./icon";
+import { spaceKeyPresses } from "./space-key";
 
 /** Extra touch area above and below, so a 40 high chip is 44 to tap (spec 15, section 4.4). */
 const slop = (minTouchTarget - sizes.chipHeight) / 2;
 const hitSlop = { top: slop, bottom: slop, left: 0, right: 0 } as const;
 
 /**
- * A choice that can be turned on and off, such as a spoken language. A
- * selected chip shows a tick as well as its colour.
+ * A choice that can be turned on and off, such as a spoken language
+ * (`checkbox`, the default), one choice of several, such as a car's colour
+ * (`radio`), or a suggestion that fills a field (`button`). A selected chip
+ * shows a tick as well as its colour.
  */
 export function Chip({
   label,
   selected,
   onToggle,
+  role = "checkbox",
 }: {
   readonly label: string;
   readonly selected: boolean;
   readonly onToggle: () => void;
+  readonly role?: "checkbox" | "radio" | "button";
 }) {
   const palette = usePalette();
   return (
     <Pressable
-      accessibilityRole="checkbox"
+      accessibilityRole={role}
       accessibilityLabel={label}
-      accessibilityState={{ checked: selected }}
+      // aria-checked rather than accessibilityState, which the web build drops.
+      aria-checked={role === "button" ? undefined : selected}
       onPress={onToggle}
+      {...(role === "button" ? {} : spaceKeyPresses(onToggle))}
       hitSlop={hitSlop}
       style={[
         styles.chip,

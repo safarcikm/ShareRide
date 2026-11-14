@@ -1,7 +1,7 @@
 /**
  * Removes personal data and secrets before anything leaves for a log or an
  * error report (privacy and GDPR, "Logs and error reports"): phone numbers,
- * sign-in codes, tokens, email addresses, kennitölur and the values of a
+ * sign-in codes, tokens, email addresses, kennitölur, number plates and the values of a
  * failed query. Fails towards removing too much: a six-digit number that is
  * not a code is hidden too.
  */
@@ -24,6 +24,8 @@ export const personalDataKeys = [
   "about",
   "deviceName",
   "ipAddress",
+  // A car's number plate.
+  "registration",
   "latitude",
   "longitude",
 ] as const;
