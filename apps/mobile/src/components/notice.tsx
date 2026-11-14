@@ -1,8 +1,14 @@
+import { CircleAlert, Info } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
-import { spacing, typography } from "@/theme/tokens";
+import { iconSizes, radii, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { Icon } from "./icon";
 
-/** A message about the last action, read out by screen readers when it appears. */
+/**
+ * A message about the last action, read out by screen readers when it
+ * appears. An error sits on the error fill with an alert icon, information on
+ * the info fill with an info icon (spec 15, section 5.1).
+ */
 export function Notice({
   message,
   kind = "error",
@@ -12,18 +18,32 @@ export function Notice({
 }) {
   const palette = usePalette();
   if (message === null) return null;
-  const color = kind === "error" ? palette.error : palette.text;
+  const isError = kind === "error";
   return (
     <View
-      accessibilityRole={kind === "error" ? "alert" : "text"}
+      testID="notice"
+      accessible
+      accessibilityRole={isError ? "alert" : "text"}
       accessibilityLiveRegion="polite"
-      style={[styles.notice, { borderColor: color, backgroundColor: palette.surface }]}
+      style={[styles.notice, { backgroundColor: isError ? palette.errorSoft : palette.infoSoft }]}
     >
-      <Text style={[typography.body, { color }]}>{message}</Text>
+      <Icon
+        icon={isError ? CircleAlert : Info}
+        color={isError ? palette.error : palette.text}
+        size={iconSizes.button}
+      />
+      <Text style={[typography.body, styles.message, { color: palette.text }]}>{message}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  notice: { borderLeftWidth: 4, borderRadius: 8, padding: spacing.md },
+  notice: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.sm,
+    borderRadius: radii.control,
+    padding: spacing.md,
+  },
+  message: { flex: 1 },
 });

@@ -176,9 +176,9 @@ Two free fonts (SIL Open Font License), both with every Icelandic letter
 | Group | Tokens |
 | ----- | ------ |
 | Spacing | `xs` 4, `sm` 8, `ms` 12, `md` 16, `lg` 24, `xl` 32, `xxl` 48 |
-| Corners | `seat` 4 (seat legend), `tag` 12, `control` 16 (buttons, inputs, notices), `card` 22, `pill` 999 (chips, need bubbles, icon buttons) |
+| Corners | `seat` 4 (seat legend), `checkbox` 9, `tag` 12, `control` 16 (buttons, inputs, notices), `card` 22, `pill` 999 (chips, need bubbles, icon buttons) |
 | Bottom edges | `card` 3 (`edge` colour), `buttonPrimary` 4 (`primaryEdge`), `buttonSecondary` 3 (`edge`) |
-| Sizes | `minTouchTarget` 44, `buttonHeight` 48, `mainButtonHeight` 56, `inputHeight` 52, `chipHeight` 40, `iconButton` 44, `maxContentWidth` 480 |
+| Sizes | `minTouchTarget` 44, `buttonHeight` 48, `mainButtonHeight` 56, `inputHeight` 52, `chipHeight` 40, `iconButton` 44, `checkbox` 26, `maxContentWidth` 480; `controlOutline` 2 (inputs, tick boxes, chips) |
 
 - `ms` 12 is new; the other spacing names are unchanged.
 - Screen padding is `md`; gaps between cards are `md`; inside a card, `ms`
@@ -192,8 +192,8 @@ Two free fonts (SIL Open Font License), both with every Icelandic letter
 ### 4.5 Icons
 
 [Lucide](https://lucide.dev) icons (ISC licence), 2.4 stroke, 22 points in
-buttons and 14 to 18 inside need bubbles and ticks, in the colour of the text
-next to them. An icon on its own (an icon button) always has an accessible
+buttons and 14 to 18 inside need bubbles and ticks (`iconSizes`: `button`
+22, `inline` 18, `tick` 16), in the colour of the text next to them. An icon on its own (an icon button) always has an accessible
 name. Shape people and the car are our own drawings.
 
 ### 4.6 Motion
@@ -228,25 +228,31 @@ and tests need no edits. Only the look changes.
 
 | Part | Look |
 | ---- | ---- |
-| `Button` `primary` | `primary` fill, `onPrimary` label in `button`, corner `control`, 4 bottom edge in `primaryEdge`, height 48 (56 for the main action in a bottom bar) |
+| `Button` `primary` | `primary` fill, `onPrimary` label in `button`, corner `control`, 4 bottom edge in `primaryEdge`, height 48 (56 for the main action in a bottom bar). Every button fits its label, with `lg` padding each side, and sits in the middle of the column |
 | `Button` `secondary` | `surface` fill, 2 `control` outline, `text` label, 3 bottom edge in `edge` |
 | `Button` `text` | No fill, `primary` label in `label`, at least 44 high |
 | `Button` `busy` | A small spinner before the label, which stays; it can't be pressed again; `accessibilityState.busy` |
 | `Button` `disabled` | `border` fill, `textMuted` label, no edge; never shown with opacity alone |
-| `TextField` | `label` above in `text`; input height 52, `surface`, 2 `control` outline, corner `control`; `help` below in `small` `textMuted`; with `error`, the outline and message turn `error` and the message starts with an alert icon |
+| `TextField` | `label` above in `text`; input height 52, `surface`, 2 `control` outline, corner `control`; the outline turns `primary` while you type in it; `help` below in `small` `textMuted`; with `error`, the outline and message turn `error` and the message starts with an alert icon |
 | `Checkbox` | 26 square, corner 9, 2 `control` outline; checked: `primary` fill, `onPrimary` tick, 2 `primaryEdge` bottom edge; the whole row is pressable |
 | `Chip` | 40 high, corner `pill`, `surface`, 2 `control` outline, `label` text; selected: `primarySoft` fill, `primary` outline and a tick before the label |
 | `Notice` | Corner `control`, an icon then the message in `body`; `error` on `errorSoft` with an alert icon, `info` on `infoSoft` with an info icon |
-| `TextLink` | `primary`, Nunito 700, always underlined (moss on basalt text is only 2.3:1, so the underline is what marks a link) |
+| `TextLink` | `primary`, Nunito 700, always underlined (moss on basalt text is only 2.3:1, so the underline is what marks a link), centred |
 | `BackButton` | 44 round, `surface`, 3 `edge` bottom edge, chevron icon; accessible name "Back" |
 | `Loading` | A `primary` spinner centred on `background` |
 | `Screen` | `background`, safe area, `md` padding, column at most 480 wide |
-| `Title` | `title`, `text`, role header |
-| `Body` | `body`, `text` |
+| `Title` | `title`, `text`, role header, centred |
+| `Body` | `body`, `textMuted` (the intro or help line under a title), centred; long text such as a legal document starts at the left |
 | `LanguageSwitch` | A `text` button with the other language's name |
 
 **Focus:** every pressable part shows a 3 wide `focus` ring with a 2 gap
 around its shape when reached by keyboard (web, and keyboards on phones).
+A tap or click never shows it. Text fields show focus with their own
+`primary` outline instead.
+
+**Alignment:** screens centre their titles, intro text, buttons and links.
+Fields with their labels, tick boxes, lists and long text start at the left,
+because centred lines are hard to read and to scan in a form.
 
 ### 5.2 Parts for the posting and booking screens
 
@@ -355,9 +361,11 @@ use `control`; body text is drawn at 16 and is 17.
 - **Add packages** with `npx expo install expo-font react-native-svg
   @expo-google-fonts/fredoka @expo-google-fonts/nunito`, and
   `lucide-react-native` with pnpm.
-- **Focus ring:** on the web, the `outline` style props from React Native
-  Web's `focused` state on `Pressable`. On phones, keep the system's own
-  focus highlight (Android keyboard navigation, iOS Full Keyboard Access).
+- **Focus ring:** on the web, one `:focus-visible` style sheet added at
+  start (`apps/mobile/src/theme/focus-ring.web.ts`), so every pressable
+  part and link shows the ring for the keyboard and not for clicks or taps.
+  Text fields are left out of it; their outline turns `primary` instead. On phones, keep the system's own focus highlight (Android
+  keyboard navigation, iOS Full Keyboard Access).
 - The first implementation PR updates tokens, fonts and the parts in section
   5.1. The parts in 5.2 come with the screens of specs 3 to 5.
 

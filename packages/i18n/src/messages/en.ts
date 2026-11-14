@@ -5,6 +5,7 @@
 export const en = {
   "app.name": "ShareRide",
   "common.back": "Back",
+  "common.loading": "Loading",
   "language.switch": "Íslenska",
   "language.switchLabel": "Change the language to Icelandic",
   "welcome.title": "Share the ride across Iceland",

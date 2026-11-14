@@ -6,6 +6,10 @@ import { Loading } from "@/components/loading";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { LanguageProvider, useLanguage } from "@/i18n/language";
+import { useAppFonts } from "@/theme/fonts";
+import { installFocusRing } from "@/theme/focus-ring";
+
+installFocusRing();
 
 export default function RootLayout() {
   return (
@@ -25,11 +29,14 @@ export default function RootLayout() {
  * the terms and then the profile before the rest (spec 1, 3.4 and 3.5).
  * When the session changes (signed in, a step done, signed out, or the
  * session ended elsewhere), screens that no longer fit close and the app
- * returns to the start, which leads on from there.
+ * returns to the start, which leads on from there. Fonts load at the same
+ * time; if they fail, the app opens with the system fonts.
  */
 function Navigation() {
   const state = useSessionState();
-  if (state.status === "loading") return <Loading />;
+  // Fonts load while the session is restored; both finish behind Loading.
+  const fontsReady = useAppFonts();
+  if (state.status === "loading" || !fontsReady) return <Loading />;
   if (state.status === "unreachable") return <Unreachable />;
   const me = state.status === "signedIn" ? state.me : null;
   const needsLegal = me?.missingSteps.includes("legal") ?? false;

@@ -91,11 +91,11 @@ function Markdown({ text }: { readonly text: string }) {
       );
     }
     return (
-      <Body key={index}>
+      <Body key={index} align="start">
         <Inline text={block} />
       </Body>
     );
   });
 }
 
-const styles = StyleSheet.create({ bold: { fontWeight: "700" } });
+const styles = StyleSheet.create({ bold: { fontFamily: typography.bodyStrong.fontFamily } });

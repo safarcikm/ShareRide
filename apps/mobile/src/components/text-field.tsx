@@ -1,6 +1,9 @@
+import { CircleAlert } from "lucide-react-native";
+import { useState } from "react";
 import { StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
-import { minTouchTarget, spacing, typography } from "@/theme/tokens";
+import { controlOutline, iconSizes, radii, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { Icon } from "./icon";
 
 interface TextFieldProps extends Pick<
   TextInputProps,
@@ -22,41 +25,66 @@ interface TextFieldProps extends Pick<
   readonly error?: string | undefined;
 }
 
-/** A labelled text field; the label is always visible, never a placeholder. */
+/**
+ * A labelled text field; the label is always visible, never a placeholder
+ * (spec 15, section 5.1). The outline turns moss while you type in it. An
+ * error turns the outline and message red and puts an alert icon before the
+ * message, so it does not rely on colour alone.
+ */
 export function TextField({ label, value, onChangeText, help, error, ...input }: TextFieldProps) {
   const palette = usePalette();
   const hint = error ?? help;
+  const hasError = error !== undefined;
+  const [focused, setFocused] = useState(false);
+  const outline = hasError ? palette.error : focused ? palette.primary : palette.control;
   return (
     <View style={styles.field}>
       <Text style={[typography.label, { color: palette.text }]}>{label}</Text>
       <TextInput
         accessibilityLabel={label}
         accessibilityHint={hint}
-        aria-invalid={error !== undefined}
+        aria-invalid={hasError}
         value={value}
         onChangeText={onChangeText}
+        onFocus={() => {
+          setFocused(true);
+        }}
+        onBlur={() => {
+          setFocused(false);
+        }}
         style={[
           typography.body,
           styles.input,
           input.multiline === true && styles.multiline,
           {
             color: palette.text,
-            borderColor: error === undefined ? palette.border : palette.error,
-            backgroundColor: palette.background,
+            borderColor: outline,
+            backgroundColor: palette.surface,
           },
         ]}
         {...input}
       />
       {hint === undefined ? null : (
-        <Text
-          accessibilityLiveRegion={error === undefined ? "none" : "polite"}
-          style={[
-            typography.small,
-            { color: error === undefined ? palette.textMuted : palette.error },
-          ]}
-        >
-          {hint}
-        </Text>
+        <View style={styles.hint}>
+          {hasError ? (
+            <Icon
+              icon={CircleAlert}
+              color={palette.error}
+              size={iconSizes.inline}
+              testID="field-error-icon"
+            />
+          ) : null}
+          <Text
+            accessibilityLiveRegion={hasError ? "polite" : "none"}
+            style={[
+              typography.small,
+              styles.hintText,
+              { color: hasError ? palette.error : palette.textMuted },
+            ]}
+          >
+            {hint}
+          </Text>
+        </View>
       )}
     </View>
   );
@@ -65,11 +93,13 @@ export function TextField({ label, value, onChangeText, help, error, ...input }:
 const styles = StyleSheet.create({
   field: { gap: spacing.xs },
   input: {
-    minHeight: minTouchTarget,
-    borderWidth: 1,
-    borderRadius: 12,
+    minHeight: sizes.inputHeight,
+    borderWidth: controlOutline,
+    borderRadius: radii.control,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.ms,
   },
   multiline: { minHeight: 120, textAlignVertical: "top" },
+  hint: { flexDirection: "row", alignItems: "flex-start", gap: spacing.xs },
+  hintText: { flex: 1 },
 });

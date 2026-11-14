@@ -136,7 +136,9 @@ describe("Settings", () => {
     expect(await screen.findByRole("header", { name: "Privacy Policy" })).toBeVisible();
     expect(screen.getByRole("header", { name: "What we collect" })).toBeVisible();
     expect(screen.getByText("Your phone number.")).toBeVisible();
-    expect(screen.getByText("phone number")).toHaveStyle({ fontWeight: "700" });
+    // A legal document starts each line at the left, for reading.
+    expect(screen.getByText("Your phone number.")).not.toHaveStyle({ textAlign: "center" });
+    expect(screen.getByText("phone number")).toHaveStyle({ fontFamily: "Nunito_700Bold" });
   });
 });
 

@@ -47,7 +47,7 @@ export default function Welcome() {
 }
 
 const styles = StyleSheet.create({
-  top: { alignItems: "flex-end" },
+  top: { flexDirection: "row", justifyContent: "flex-end" },
   middle: { flex: 1, justifyContent: "center", gap: spacing.md },
   actions: { gap: spacing.sm },
 });

@@ -12,7 +12,7 @@ export function LanguageSwitch({
   const { locale, setLocale, t } = useLanguage();
   return (
     <Button
-      variant="secondary"
+      variant="text"
       label={t("language.switch")}
       accessibilityLabel={t("language.switchLabel")}
       onPress={() => {

@@ -1,16 +1,57 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text } from "react-native";
-import { minTouchTarget, spacing, typography } from "@/theme/tokens";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { chunky } from "@/theme/pressable";
+import {
+  edges,
+  minTouchTarget,
+  radii,
+  sizes,
+  spacing,
+  typography,
+  type Palette,
+} from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+
+type Variant = "primary" | "secondary" | "text";
 
 interface ButtonProps {
   readonly label: string;
   readonly onPress: () => void;
   /** Read by screen readers instead of the label, when the label is not enough. */
   readonly accessibilityLabel?: string;
-  readonly variant?: "primary" | "secondary" | "text";
-  /** Waiting for the API: shows a spinner and ignores presses. */
+  readonly variant?: Variant;
+  /** Waiting for the API: shows a spinner before the label and ignores presses. */
   readonly busy?: boolean;
   readonly disabled?: boolean;
+}
+
+/** Colours and edge of each variant (spec 15, section 5.1). */
+function look(variant: Variant, palette: Palette, disabled: boolean) {
+  if (disabled) {
+    return {
+      face: { backgroundColor: palette.border },
+      label: palette.textMuted,
+      edge: 0,
+      edgeColor: "transparent",
+    };
+  }
+  switch (variant) {
+    case "primary":
+      return {
+        face: { backgroundColor: palette.primary },
+        label: palette.onPrimary,
+        edge: edges.buttonPrimary,
+        edgeColor: palette.primaryEdge,
+      };
+    case "secondary":
+      return {
+        face: { backgroundColor: palette.surface, borderWidth: 2, borderColor: palette.control },
+        label: palette.text,
+        edge: edges.buttonSecondary,
+        edgeColor: palette.edge,
+      };
+    case "text":
+      return { face: {}, label: palette.primary, edge: 0, edgeColor: "transparent" };
+  }
 }
 
 export function Button({
@@ -22,8 +63,8 @@ export function Button({
   disabled = false,
 }: ButtonProps) {
   const palette = usePalette();
-  const primary = variant === "primary";
   const inactive = busy || disabled;
+  const { face, label: labelColor, edge, edgeColor } = look(variant, palette, disabled);
   return (
     <Pressable
       accessibilityRole="button"
@@ -32,45 +73,57 @@ export function Button({
       disabled={inactive}
       onPress={onPress}
       style={({ pressed }) => [
-        styles.button,
-        primary && { backgroundColor: palette.primary },
-        variant === "secondary" && { borderColor: palette.border, borderWidth: 1 },
-        variant === "text" && styles.text,
-        (pressed || inactive) && styles.dimmed,
+        styles.outer,
+        variant === "text" && styles.textOuter,
+        chunky(edge, edgeColor, pressed && !inactive).outer,
       ]}
     >
-      {busy ? (
-        <ActivityIndicator color={primary ? palette.onPrimary : palette.text} />
-      ) : (
-        <Text
+      {({ pressed }) => (
+        <View
+          testID="button-face"
           style={[
-            typography.button,
-            {
-              color: primary
-                ? palette.onPrimary
-                : variant === "text"
-                  ? palette.primary
-                  : palette.text,
-            },
+            styles.face,
+            variant === "text" && styles.textFace,
+            face,
+            chunky(edge, edgeColor, pressed && !inactive).face,
           ]}
         >
-          {label}
-        </Text>
+          {busy ? <ActivityIndicator size="small" color={labelColor} /> : null}
+          <Text
+            style={[
+              variant === "text" ? typography.label : typography.button,
+              styles.label,
+              { color: labelColor },
+            ]}
+          >
+            {label}
+          </Text>
+        </View>
       )}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  button: {
-    minHeight: minTouchTarget,
+  // A button fits its label and sits in the middle of the column (spec 15,
+  // section 5.1); a row around it can place it elsewhere.
+  outer: {
+    minHeight: sizes.buttonHeight,
     minWidth: minTouchTarget,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: 12,
+    borderRadius: radii.control,
+    alignSelf: "center",
+  },
+  textOuter: { minHeight: minTouchTarget },
+  face: {
+    flexGrow: 1,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.control,
   },
-  text: { paddingHorizontal: spacing.sm, alignSelf: "flex-start" },
-  dimmed: { opacity: 0.7 },
+  textFace: { paddingHorizontal: spacing.sm },
+  label: { flexShrink: 1, textAlign: "center" },
 });

@@ -1,6 +1,16 @@
+import { Check } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { minTouchTarget, spacing, typography } from "@/theme/tokens";
+import {
+  controlOutline,
+  iconSizes,
+  minTouchTarget,
+  radii,
+  sizes,
+  spacing,
+  typography,
+} from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { Icon } from "./icon";
 
 interface CheckboxProps {
   readonly label: string;
@@ -22,13 +32,26 @@ export function Checkbox({ label, checked, onChange }: CheckboxProps) {
       style={styles.row}
     >
       <View
+        testID="checkbox-box"
         style={[
           styles.box,
-          { borderColor: checked ? palette.primary : palette.border },
-          checked && { backgroundColor: palette.primary },
+          checked
+            ? {
+                backgroundColor: palette.primary,
+                borderColor: palette.primary,
+                borderBottomColor: palette.primaryEdge,
+              }
+            : { backgroundColor: palette.surface, borderColor: palette.control },
         ]}
       >
-        {checked ? <Text style={[styles.tick, { color: palette.onPrimary }]}>✓</Text> : null}
+        {checked ? (
+          <Icon
+            icon={Check}
+            color={palette.onPrimary}
+            size={iconSizes.inline}
+            testID="checkbox-tick"
+          />
+        ) : null}
       </View>
       <Text style={[typography.body, styles.label, { color: palette.text }]}>{label}</Text>
     </Pressable>
@@ -36,15 +59,14 @@ export function Checkbox({ label, checked, onChange }: CheckboxProps) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: spacing.md, minHeight: minTouchTarget },
+  row: { flexDirection: "row", alignItems: "center", gap: spacing.ms, minHeight: minTouchTarget },
   box: {
-    width: 28,
-    height: 28,
-    borderWidth: 2,
-    borderRadius: 6,
+    width: sizes.checkbox,
+    height: sizes.checkbox,
+    borderWidth: controlOutline,
+    borderRadius: radii.checkbox,
     alignItems: "center",
     justifyContent: "center",
   },
-  tick: { fontSize: 18, fontWeight: "700" },
   label: { flex: 1 },
 });
