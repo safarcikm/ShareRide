@@ -206,6 +206,7 @@ export const en = {
   "trip.route.pointPaused": "This meeting point is paused right now. Choose another.",
   "trip.route.sameEnds": "Start and end must be different meeting points.",
   "trip.route.chooseBoth": "Choose where you start and where you're going.",
+  "trip.route.map": "Your route on a map of Iceland: {route}.",
   "trip.route.stopsTitle": "Stops on the way",
   "trip.stopsAdded":
     "We added the meeting points on your way, so people along it can join. You only stop where someone gets in or out. Switch off any you'd rather skip.",
@@ -431,6 +432,7 @@ export const en = {
   "trip.seats": "Seats",
   "trip.pricePerSeat": "{price} per seat",
   "trip.route": "Route",
+  "trip.routeMap": "The trip on a map of Iceland: {trip}. Your part: {part}.",
   "trip.tapStop": "Tap a stop to get in or out somewhere else.",
   "trip.getInHere": "Get in here",
   "trip.getOutHere": "Get out here",

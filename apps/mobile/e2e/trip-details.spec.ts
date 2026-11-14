@@ -38,6 +38,11 @@ test.describe("trip details without an account", () => {
       }),
     ).toBeVisible();
     await expect(page.getByText("3 of 3 seats free on your part")).toBeVisible();
+    await expect(
+      page.getByRole("img", {
+        name: /^The trip on a map of Iceland: .+\. Your part: N1 Borgarnes → Olís Blönduós\.$/,
+      }),
+    ).toBeVisible();
     await expect(page.getByText("White Toyota Yaris")).toBeVisible();
     await expect(page.getByRole("button", { name: "Booking opens soon" })).toBeDisabled();
     // Trip pages ask search engines not to index them (R4.6).

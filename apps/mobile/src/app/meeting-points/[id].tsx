@@ -115,7 +115,7 @@ function Details({ point }: { readonly point: MeetingPointDetails }) {
       )}
       <IcelandMap
         label={t("meetingPoints.pointMap", { name })}
-        dots={[{ id: point.id, position: point.position, chosen: true }]}
+        dots={[{ id: point.id, position: point.position, look: "chosen" }]}
       />
       <Button
         variant="secondary"

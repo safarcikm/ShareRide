@@ -147,7 +147,9 @@ sea `#D7E9F0`, land `#F4F1EA` with its coast `#B9CBD3`, glaciers `#FFFFFF`,
 main roads `#C6CED2` and the Ring Road `#9AA9B0` in light mode; `#142630`,
 `#24323A`, `#3E525C`, `#3A4C55`, `#3E525C` and `#6E7D85` in dark mode.
 Meeting points are `primary` dots with a `surface` outline; a chosen one is
-larger, in a soft `primary` halo. The map sits in a card's frame.
+larger, in a soft `primary` halo. A route is a `primary` line on a `surface`
+casing; the rest of a passenger's trip is a dashed `control` line, with its
+stops as small `control` dots. The map sits in a card's frame.
 
 ### 4.3 Type
 

@@ -148,7 +148,7 @@ function PointsMap({ points }: { readonly points: readonly MeetingPointSummary[]
         dots={points.map((point) => ({
           id: point.id,
           position: point.position,
-          chosen: near.includes(point.id),
+          look: near.includes(point.id) ? "chosen" : "plain",
         }))}
         onPressDots={(ids) => {
           const [only] = chosen;

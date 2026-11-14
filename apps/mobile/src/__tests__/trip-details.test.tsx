@@ -75,6 +75,11 @@ describe("Trip details (spec 4, 3.6)", () => {
     expect(
       screen.getByRole("button", { name: "09:00, BSÍ bus terminal, not on your part" }),
     ).toBeVisible();
+    expect(
+      screen.getByRole("image", {
+        name: "The trip on a map of Iceland: BSÍ bus terminal → Hof, Akureyri. Your part: Borgarnes → Blönduós.",
+      }),
+    ).toBeVisible();
 
     expect(screen.getByText("Anna")).toBeVisible();
     expect(screen.getByText("New driver")).toBeVisible();

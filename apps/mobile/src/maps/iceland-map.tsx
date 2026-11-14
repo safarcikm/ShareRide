@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import {
   type GestureResponderEvent,
   Platform,
@@ -11,22 +11,45 @@ import Svg, { Circle, G, Polygon, Polyline } from "react-native-svg";
 import { controlOutline, edges, mapDrawing, radii } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { glaciers, land, roads } from "./iceland-data";
-import { project, type Position } from "./projection";
+import { project, type MapXY, type Position } from "./projection";
+import { alongRoads } from "./roads";
 import { dotsNear, viewFor, wholeMap } from "./view";
 
 /** On the web a label counts only on an element with a role. */
 const imageRole: object = Platform.OS === "web" ? { role: "img" } : {};
 
-/** A meeting point on the map; a chosen one stands out. */
+/**
+ * A meeting point on the map: `plain` by default, `chosen` to stand out,
+ * such as the ends of a passenger's part, or `muted`, such as a stop off it.
+ */
 export interface MapDot {
   readonly id: string;
   readonly position: Position;
-  readonly chosen?: boolean;
+  readonly look?: "plain" | "chosen" | "muted";
+}
+
+/**
+ * A line through positions in order, along the drawn roads: a trip's whole
+ * `route`, muted, or the `part` a passenger rides or a driver drives.
+ */
+export interface MapLine {
+  readonly id: string;
+  readonly positions: readonly Position[];
+  readonly look: "route" | "part";
 }
 
 // Sizes on screen, in points, whatever part of the map is shown.
-const strokes = { coast: 1, road: 1.25, ringRoad: 2.25 } as const;
+const strokes = {
+  coast: 1,
+  road: 1.25,
+  ringRoad: 2.25,
+  route: 3,
+  dash: 5,
+  part: 4,
+  casing: 2,
+} as const;
 const dot = { radius: 5, outline: 1.5 } as const;
+const mutedDot = { radius: 4, outline: 1.5 } as const;
 const chosenDot = { radius: 7, outline: 2.5, halo: 14 } as const;
 /** How far from a tap a dot still counts: half the smallest touch target. */
 const reach = 22;
@@ -35,29 +58,36 @@ const guessedWidth = 343;
 
 /**
  * Our own map of Iceland (ADR 0024): the land, glaciers, main roads and the
- * Ring Road, with meeting points as dots. It shows the whole of Iceland, or
- * the part around `fit`, and does not zoom. One image for screen readers;
+ * Ring Road, with meeting points as dots and routes as lines along the
+ * roads. It shows the whole of Iceland, or with `fit` the part that holds
+ * its dots and lines, and does not zoom. One image for screen readers;
  * every screen with a map also lists its points. With `onPressDots`, a tap
  * tells which dots are near it, nearest first, or none.
  */
 export function IcelandMap({
   label,
   dots,
-  fit,
+  lines = [],
+  fit = false,
   onPressDots,
 }: {
   readonly label: string;
   readonly dots: readonly MapDot[];
-  readonly fit?: readonly Position[];
+  readonly lines?: readonly MapLine[];
+  readonly fit?: boolean;
   readonly onPressDots?: (ids: string[]) => void;
 }) {
   const palette = usePalette();
   const scheme = useColorScheme() === "dark" ? "dark" : "light";
   const [width, setWidth] = useState(0);
-  const view = fit === undefined ? wholeMap : viewFor(fit.map(project));
-  const unitsPerPoint = view.width / (width > 0 ? width : guessedWidth);
   const placed = dots.map((one) => ({ ...one, at: project(one.position) }));
+  const drawn = useDrawnLines(lines);
+  const view = fit
+    ? viewFor([...placed.map((one) => one.at), ...drawn.flatMap((line) => line.points)])
+    : wholeMap;
+  const unitsPerPoint = view.width / (width > 0 ? width : guessedWidth);
   const units = (points: number) => points * unitsPerPoint;
+  const ofLook = (look: MapDot["look"]) => placed.filter((one) => (one.look ?? "plain") === look);
 
   const onPress = (event: GestureResponderEvent) => {
     if (onPressDots === undefined || width === 0) return;
@@ -99,41 +129,97 @@ export function IcelandMap({
           importantForAccessibility="no-hide-descendants"
         >
           <Base scheme={scheme} unitsPerPoint={unitsPerPoint} />
-          {placed
-            .filter((one) => one.chosen !== true)
-            .map((one) => (
-              <Circle
-                key={one.id}
-                testID="map-dot"
-                cx={one.at.x}
-                cy={one.at.y}
-                r={units(dot.radius)}
-                fill={palette.primary}
-                stroke={palette.surface}
-                strokeWidth={units(dot.outline)}
-              />
-            ))}
-          {placed
-            .filter((one) => one.chosen === true)
-            .map((one) => (
-              <G key={one.id} testID="map-dot-chosen">
-                <Circle
-                  cx={one.at.x}
-                  cy={one.at.y}
-                  r={units(chosenDot.halo)}
-                  fill={palette.primary}
-                  opacity={0.25}
-                />
-                <Circle
-                  cx={one.at.x}
-                  cy={one.at.y}
-                  r={units(chosenDot.radius)}
-                  fill={palette.primary}
+          {drawn
+            .filter((line) => line.look === "route")
+            .map((line) => (
+              <G key={line.id}>
+                {/* Dashes on a casing, so the rest of the trip never reads as a road. */}
+                <Polyline
+                  points={line.text}
+                  fill="none"
                   stroke={palette.surface}
-                  strokeWidth={units(chosenDot.outline)}
+                  strokeWidth={units(strokes.route + 2 * strokes.casing)}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <Polyline
+                  testID="map-line-route"
+                  points={line.text}
+                  fill="none"
+                  stroke={palette.control}
+                  strokeWidth={units(strokes.route)}
+                  strokeDasharray={[units(strokes.dash), units(strokes.dash)].join(" ")}
+                  strokeLinejoin="round"
                 />
               </G>
             ))}
+          {drawn
+            .filter((line) => line.look === "part")
+            .map((line) => (
+              <G key={line.id}>
+                {/* A casing in the surface colour keeps the line clear of the roads under it. */}
+                <Polyline
+                  points={line.text}
+                  fill="none"
+                  stroke={palette.surface}
+                  strokeWidth={units(strokes.part + 2 * strokes.casing)}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <Polyline
+                  testID="map-line-part"
+                  points={line.text}
+                  fill="none"
+                  stroke={palette.primary}
+                  strokeWidth={units(strokes.part)}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </G>
+            ))}
+          {ofLook("muted").map((one) => (
+            <Circle
+              key={one.id}
+              testID="map-dot-muted"
+              cx={one.at.x}
+              cy={one.at.y}
+              r={units(mutedDot.radius)}
+              fill={palette.control}
+              stroke={palette.surface}
+              strokeWidth={units(mutedDot.outline)}
+            />
+          ))}
+          {ofLook("plain").map((one) => (
+            <Circle
+              key={one.id}
+              testID="map-dot"
+              cx={one.at.x}
+              cy={one.at.y}
+              r={units(dot.radius)}
+              fill={palette.primary}
+              stroke={palette.surface}
+              strokeWidth={units(dot.outline)}
+            />
+          ))}
+          {ofLook("chosen").map((one) => (
+            <G key={one.id} testID="map-dot-chosen">
+              <Circle
+                cx={one.at.x}
+                cy={one.at.y}
+                r={units(chosenDot.halo)}
+                fill={palette.primary}
+                opacity={0.25}
+              />
+              <Circle
+                cx={one.at.x}
+                cy={one.at.y}
+                r={units(chosenDot.radius)}
+                fill={palette.primary}
+                stroke={palette.surface}
+                strokeWidth={units(chosenDot.outline)}
+              />
+            </G>
+          ))}
         </Svg>
         {onPressDots === undefined ? null : (
           <Pressable
@@ -147,6 +233,26 @@ export function IcelandMap({
         )}
       </View>
     </View>
+  );
+}
+
+/**
+ * The lines along the roads, worked out again only when their positions
+ * change, as finding a way along the roads takes a little while.
+ */
+function useDrawnLines(lines: readonly MapLine[]) {
+  const key = JSON.stringify(lines);
+  return useMemo(
+    () =>
+      (JSON.parse(key) as MapLine[]).map((line) => {
+        const points: MapXY[] = alongRoads(line.positions.map(project));
+        return {
+          ...line,
+          points,
+          text: points.map(({ x, y }) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" "),
+        };
+      }),
+    [key],
   );
 }
 
