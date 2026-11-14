@@ -14,7 +14,7 @@ edge ([privacy providers](../compliance/privacy-gdpr.md#providers)).
 | Part | Render name | What it is |
 | ---- | ----------- | ---------- |
 | API and web app | `shareride-staging-api` | Web service built from `apps/api/Dockerfile`; serves `/v1` and the web app on one origin |
-| Clean-up | `shareride-staging-clean-up` | Cron job, every hour at minute 17 (UTC): deletes sign-in records past their retention |
+| Clean-up | `shareride-staging-clean-up` | Cron job, every hour at minute 17 (UTC): deletes sign-in records past their retention and old trip drafts |
 | Database | `shareride-staging-db` | PostgreSQL 18 with PostGIS, private network only |
 | Settings | `shareride-staging` | Environment group: `NODE_ENV=production`, `APP_ENV=staging`, `LOG_LEVEL` |
 

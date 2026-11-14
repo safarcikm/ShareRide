@@ -9,10 +9,10 @@ import {
   type VehicleError,
   type VehicleInput,
 } from "@shareride/domain";
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNull, ne } from "drizzle-orm";
 import type { AccountService } from "../account/index.ts";
 
-const { users, vehicles } = schema;
+const { trips, users, vehicles } = schema;
 
 type VehicleRow = typeof vehicles.$inferSelect;
 
@@ -41,10 +41,11 @@ export interface DrivingService {
     input: VehicleInput,
   ): Promise<Result<Vehicle, VehicleError | NotFound>>;
   /**
-   * Deletes the car with its plate: no trip uses a car yet. With trips (PR 5),
-   * a car that trips used is kept for them, and one on a future trip stays.
+   * Takes the car off my drafts and deletes it with its plate, or keeps it
+   * (`removed_at`) for the published trips that used it. A car on a trip
+   * that has not ended stays (spec 3, 3.2).
    */
-  removeVehicle(userId: string, vehicleId: string): Promise<boolean>;
+  removeVehicle(userId: string, vehicleId: string): Promise<"removed" | "not_found" | "in_use">;
 }
 
 export function createDrivingService(dependencies: {
@@ -53,14 +54,15 @@ export function createDrivingService(dependencies: {
   readonly account: AccountService;
 }): DrivingService {
   const { db, clock, account } = dependencies;
+  /** One of my cars that I have not removed. */
   const mine = (userId: string, vehicleId: string) =>
-    and(eq(vehicles.id, vehicleId), eq(vehicles.ownerId, userId));
+    and(eq(vehicles.id, vehicleId), eq(vehicles.ownerId, userId), isNull(vehicles.removedAt));
 
   async function listVehicles(userId: string): Promise<Vehicle[]> {
     const rows = await db
       .select()
       .from(vehicles)
-      .where(eq(vehicles.ownerId, userId))
+      .where(and(eq(vehicles.ownerId, userId), isNull(vehicles.removedAt)))
       .orderBy(asc(vehicles.createdAt), asc(vehicles.id));
     return rows.map(toVehicle);
   }
@@ -125,11 +127,33 @@ export function createDrivingService(dependencies: {
     },
 
     async removeVehicle(userId, vehicleId) {
-      const removed = await db
-        .delete(vehicles)
-        .where(mine(userId, vehicleId))
-        .returning({ id: vehicles.id });
-      return removed.length > 0;
+      return db.transaction(async (tx) => {
+        const [car] = await tx
+          .select({ id: vehicles.id })
+          .from(vehicles)
+          .where(mine(userId, vehicleId))
+          .for("update");
+        if (car === undefined) return "not_found";
+        const used = await tx
+          .select({ status: trips.status, arrivesAt: trips.arrivesAt })
+          .from(trips)
+          .where(and(eq(trips.vehicleId, vehicleId), ne(trips.status, "draft")));
+        const now = clock();
+        const ongoing = (trip: (typeof used)[number]) =>
+          (trip.status === "published" || trip.status === "departed") &&
+          (trip.arrivesAt === null || trip.arrivesAt > now);
+        if (used.some(ongoing)) return "in_use";
+        await tx
+          .update(trips)
+          .set({ vehicleId: null })
+          .where(and(eq(trips.vehicleId, vehicleId), eq(trips.status, "draft")));
+        if (used.length > 0) {
+          await tx.update(vehicles).set({ removedAt: now }).where(eq(vehicles.id, vehicleId));
+        } else {
+          await tx.delete(vehicles).where(eq(vehicles.id, vehicleId));
+        }
+        return "removed";
+      });
     },
   };
 }

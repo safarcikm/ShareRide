@@ -1,4 +1,12 @@
-import { defaultTripSettings } from "@shareride/domain";
+import {
+  bookingModes,
+  chatOptions,
+  defaultTripSettings,
+  luggageOptions,
+  noteMaxLength,
+  petOptions,
+  smokingOptions,
+} from "@shareride/domain";
 import { z } from "zod";
 import { moneySchema, timestampSchema } from "./common.ts";
 import { errorResponseSchema } from "./errors.ts";
@@ -147,5 +155,201 @@ export const quoteRoute = defineRoute({
       description: "distances_pending: the distances are being worked out; try again soon",
       schema: errorResponseSchema,
     },
+  },
+});
+
+/** Luggage, pets, smoking, child seat and chat (spec 3, 3.7.3). */
+export const tripPreferencesSchema = z.object({
+  luggage: z.enum(luggageOptions),
+  pets: z.enum(petOptions),
+  smoking: z.enum(smokingOptions),
+  childSeat: z.boolean(),
+  chat: z.enum(chatOptions),
+});
+
+/**
+ * What a driver sets on a draft. Left out, a value stays as it is; a new
+ * draft starts from the driver's previous trip (spec 3, 3.6.3 and 3.7).
+ */
+export const tripDraftBodySchema = z.object({
+  /** Meeting point IDs in route order; each once. */
+  stops: z.array(z.uuid()).min(2).max(maxStopsInRequest),
+  /**
+   * Departure from the first stop. The times at the other stops follow from
+   * the typical driving times, again whenever the stops or departure change.
+   */
+  departure: timestampSchema.nullable(),
+  /** One per stop, when the driver changes the planned times (spec 3, 3.5.3). */
+  plannedTimes: z.array(timestampSchema).min(2).max(maxStopsInRequest),
+  seats: z.int().min(1).max(defaultTripSettings.maxSeats),
+  /** Percent of the suggested prices, in whole steps (rule P4). */
+  priceLevel: z.int().min(0),
+  bookingMode: z.enum(bookingModes),
+  /** One of my cars; null for none yet. */
+  vehicleId: z.uuid().nullable(),
+  preferences: tripPreferencesSchema,
+  /** No contact details (R3.10); checked when publishing. */
+  note: z.string().max(noteMaxLength * 2),
+});
+
+export const createTripBodySchema = tripDraftBodySchema
+  .partial()
+  .required({ stops: true })
+  .refine((body) => body.plannedTimes === undefined || body.departure === undefined, {
+    message: "Give the departure or every planned time, not both.",
+    path: ["plannedTimes"],
+  });
+export const updateTripBodySchema = tripDraftBodySchema
+  .partial()
+  .refine((body) => body.plannedTimes === undefined || body.departure === undefined, {
+    message: "Give the departure or every planned time, not both.",
+    path: ["plannedTimes"],
+  });
+
+export type TripDraftBody = z.infer<typeof updateTripBodySchema>;
+
+/** A trip of mine, a draft or published (spec 3). */
+export const myTripSchema = z.object({
+  id: z.uuid(),
+  status: z.enum(["draft", "published"]),
+  stops: z.array(
+    z.object({
+      meetingPoint: meetingPointSummarySchema,
+      /** Null in a draft until the departure is chosen. */
+      plannedAt: timestampSchema.nullable(),
+    }),
+  ),
+  seats: z.int().min(1),
+  priceLevel: z.int().nonnegative(),
+  bookingMode: z.enum(bookingModes),
+  vehicleId: z.uuid().nullable(),
+  preferences: tripPreferencesSchema,
+  note: z.string(),
+  departsAt: timestampSchema.nullable(),
+  arrivesAt: timestampSchema.nullable(),
+  publishedAt: timestampSchema.nullable(),
+  updatedAt: timestampSchema,
+  /** A published trip's stretches with the prices it was published at; empty for a draft. */
+  segments: z.array(
+    z.object({
+      distanceM: z.int().nonnegative(),
+      durationS: z.int().nonnegative(),
+      suggestedPrice: moneySchema,
+      cap: moneySchema,
+      price: moneySchema,
+    }),
+  ),
+});
+
+export type MyTrip = z.infer<typeof myTripSchema>;
+
+const tripParams = z.object({ id: z.uuid() });
+const errors = { schema: errorResponseSchema } as const;
+const draftInvalid = {
+  description:
+    "validation_failed (a stop twice, planned times not one per stop), stop_unavailable (details name the stop) or vehicle_unavailable",
+  ...errors,
+} as const;
+const notMine = { description: "not_found: no such trip of mine", ...errors } as const;
+const notDraft = { description: "trip_not_draft: already published", ...errors } as const;
+const distancesPending = {
+  description: "distances_pending: the distances are being worked out; try again soon",
+  ...errors,
+} as const;
+
+export const myTripsRoute = defineRoute({
+  method: "get",
+  path: "/v1/me/trips",
+  summary: "My drafts, most recently changed first, then my published trips, soonest first",
+  tags: ["trips"],
+  auth: true,
+  responses: {
+    200: { description: "My trips", schema: z.object({ trips: z.array(myTripSchema) }) },
+    401: unauthenticated,
+  },
+});
+
+export const myTripRoute = defineRoute({
+  method: "get",
+  path: "/v1/me/trips/{id}",
+  summary: "One of my trips",
+  tags: ["trips"],
+  auth: true,
+  request: { params: tripParams },
+  responses: {
+    200: { description: "The trip", schema: myTripSchema },
+    401: unauthenticated,
+    404: notMine,
+  },
+});
+
+export const createTripRoute = defineRoute({
+  method: "post",
+  path: "/v1/trips",
+  summary: "Start a draft from a route",
+  tags: ["trips"],
+  auth: true,
+  request: { body: createTripBodySchema },
+  responses: {
+    201: { description: "The draft", schema: myTripSchema },
+    400: draftInvalid,
+    401: unauthenticated,
+    503: distancesPending,
+  },
+});
+
+export const updateTripRoute = defineRoute({
+  method: "patch",
+  path: "/v1/trips/{id}",
+  summary: "Change a draft",
+  tags: ["trips"],
+  auth: true,
+  request: { params: tripParams, body: updateTripBodySchema },
+  responses: {
+    200: { description: "The draft", schema: myTripSchema },
+    400: draftInvalid,
+    401: unauthenticated,
+    404: notMine,
+    409: notDraft,
+    503: distancesPending,
+  },
+});
+
+export const deleteTripRoute = defineRoute({
+  method: "delete",
+  path: "/v1/trips/{id}",
+  summary: "Delete a draft",
+  tags: ["trips"],
+  auth: true,
+  request: { params: tripParams },
+  responses: {
+    204: { description: "Deleted" },
+    401: unauthenticated,
+    404: notMine,
+    409: notDraft,
+  },
+});
+
+/**
+ * Runs every check of spec 3, section 4, again with the server's legs,
+ * settings and clock, and publishes the draft. Each broken rule is a
+ * detail: its code as the issue, and the stop (`stops.N`), stretch
+ * (`segments.N`) or field it is about as the path.
+ */
+export const publishTripRoute = defineRoute({
+  method: "post",
+  path: "/v1/trips/{id}/publish",
+  summary: "Publish a draft",
+  tags: ["trips"],
+  auth: true,
+  // An empty JSON body: every POST is JSON, which keeps other sites out.
+  request: { params: tripParams, body: z.object({}) },
+  responses: {
+    200: { description: "The published trip", schema: myTripSchema },
+    401: unauthenticated,
+    404: notMine,
+    409: notDraft,
+    422: { description: "trip_not_publishable: what to fix, in details", ...errors },
+    503: distancesPending,
   },
 });

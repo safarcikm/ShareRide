@@ -250,6 +250,7 @@ Endpoints (`/v1`, shapes defined in `packages/contracts`):
 | `PUT /me/driver-licence-declaration` | Make the licence declaration |
 | `GET /routes/stops-along?from=&to=&date=` | Meeting points on the way, in route order; with a date, only those in season then |
 | `POST /routes/quote` | For a list of stops, seats, a departure and a price level: distances, typical times, segment prices, the highest level and warnings; with an added stop, where it goes |
+| `GET /me/trips`, `GET /me/trips/{id}` | My drafts and published trips |
 | `POST /trips`, `PATCH /trips/{id}` | Create and update a draft |
 | `POST /trips/{id}/publish` | Publish after all checks |
 | `DELETE /trips/{id}` | Delete a draft |

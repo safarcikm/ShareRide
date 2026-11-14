@@ -177,6 +177,7 @@ export const is = {
   "vehicle.removeNamed": "Fjarlægja {car}",
   "vehicle.keep": "Halda honum",
   "vehicle.notFound": "Við fundum ekki þennan bíl. Hann hefur kannski verið fjarlægður.",
+  "vehicle.inUse": "Þessi bíll er á ferð sem er ekki lokið. Þú getur fjarlægt hann eftir ferðina.",
   "vehicle.error.make": "Skrifaðu tegundina, mest {max} stafi.",
   "vehicle.error.model": "Skrifaðu gerðina, mest {max} stafi.",
   "vehicle.error.colour": "Veldu lit.",

@@ -1,14 +1,14 @@
 import { carColours, vehicleRules } from "@shareride/domain";
 import { sql } from "drizzle-orm";
 import { check, index, pgTable, text, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
-import { id, oneOf, timestamps } from "./columns.ts";
+import { at, id, oneOf, timestamps } from "./columns.ts";
 import { users } from "./users.ts";
 
 /**
  * Drivers' cars (spec 3, 3.2). Any car the driver may use; who owns it does
- * not matter. A removed car is deleted; once trips exist, a car that trips
- * used is kept for them instead (PR 5 adds `removed_at`). Personal data: see
- * the record of processing (the number plate).
+ * not matter. A removed car is deleted, unless a published trip used it:
+ * then it is kept for that trip with `removed_at`. Personal data: see the
+ * record of processing (the number plate).
  */
 const nameLength = (column: AnyPgColumn) =>
   sql`char_length(btrim(${column})) between 1 and ${sql.raw(String(vehicleRules.nameMaxLength))}`;
@@ -25,6 +25,8 @@ export const vehicles = pgTable(
     colour: text().notNull(),
     /** Capitals without spaces or hyphens; null until the driver adds it (decision 4). */
     registration: text(),
+    /** Removed by the driver but kept for the published trips that used it. */
+    removedAt: at(),
     ...timestamps,
   },
   (table) => [

@@ -57,8 +57,9 @@ erDiagram
 trips to everyone), `registration` (optional until the trip departs; stored
 in capitals without spaces or hyphens, 2 to 8 letters and digits; shown only
 to booked passengers), `removed_at` (a removed car leaves the driver's list
-but stays on the trips that used it; a car no trip used is deleted, and
-until trips exist every removed car is). Who owns the car in real life does not
+and their drafts, and stays on the published trips that used it; a car no
+published trip used is deleted; a car on a trip that has not ended cannot
+be removed). Who owns the car in real life does not
 matter; the user is responsible for being allowed to use it
 ([spec 3](../specs/2026-11-13-post-a-trip.md#32-cars)).
 
@@ -100,27 +101,32 @@ ordered pair of active meeting points connected by road.
 | Field | Notes |
 | ----- | ----- |
 | `id` | UUID v7 |
-| `driver_id`, `vehicle_id` | |
+| `driver_id`, `vehicle_id` | The car may be missing while the trip is a draft |
 | `capacity` | Seats offered, 1 to `max_capacity` (8) |
 | `booking_mode` | `instant` or `approval` |
 | `price_level` | Percentage of the suggested prices, 0 (free) up to the cap ([ADR 0012](../decisions/0012-trip-price-level.md)) |
 | `status` | `draft`, `published`, `departed`, `completed`, `cancelled` |
-| `preferences` | Luggage, pets, smoking, etc. |
-| `notes` | Free text from the driver |
-| `women_only` | Shown to everyone; only women who have opted in can book it; fixed once a request or booking exists |
+| `luggage`, `pets`, `smoking`, `child_seat`, `chat` | The preferences, one column each with a fixed list of values |
+| `note` | Free text from the driver, at most 500 characters, no contact details |
+| `departs_at`, `arrives_at` | Copies of the first and last stops' planned times, for overlap checks and clean-up; empty in a draft until the departure is chosen |
+| `women_only` | Shown to everyone; only women who have opted in can book it; fixed once a request or booking exists (not built yet) |
 | `published_at`, `cancelled_at`, `cancel_reason` | |
+| `sample` | Sample data made by the seed for local development and staging |
 
 ### TripStop
 
 `id`, `trip_id`, `meeting_point_id`, `position` (0-based, contiguous),
-`planned_at` (timestamptz). Unique (`trip_id`, `position`).
+`planned_at` (timestamptz; empty in a draft until the departure is chosen).
+Unique (`trip_id`, `position`) and (`trip_id`, `meeting_point_id`).
 
 ### Segment
 
-`trip_id`, `index` (0 … stops − 2), `from_stop_id`, `to_stop_id`, `price`
-(integer, minor units), `currency`, `distance_m`, `occupancy` (maintained in
-the booking transaction, checked by `CHECK (occupancy <= capacity)` through a
-trigger or a denormalised capacity column).
+Made when the trip is published. `trip_id`, `position` (0 … stops − 2),
+`from_stop_id`, `to_stop_id`, `distance_m`, `duration_s`, the
+`suggested_price`, `cap` and `price` at publishing (integers, whole krónur),
+`currency`, `capacity` (the trip's seats, copied) and `occupancy`
+(maintained in the booking transaction, held by
+`CHECK (occupancy between 0 and capacity)`).
 
 ### TripChange
 

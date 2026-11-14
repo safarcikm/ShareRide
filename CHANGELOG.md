@@ -106,6 +106,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   the domain with property tests. `GET /v1/routes/stops-along` and
   `POST /v1/routes/quote` give a driver the stops, distances, typical times,
   prices per stretch, the highest price level and what to fix.
+- Posting a trip, the server side (milestone 3, PR 5a): drafts saved as
+  the driver goes and started from their previous trip, publishing that
+  checks every rule of spec 3 again and lists what to fix, no overlapping
+  trips, the hourly clean-up of old drafts, and sample trips on local and
+  staging. A car on a trip that has not ended cannot be removed; one that
+  published trips used is kept for them.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
