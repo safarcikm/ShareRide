@@ -108,6 +108,7 @@ export interface Config {
   /** Proxies in front of the API that append to X-Forwarded-For. */
   readonly trustedProxies: number;
   readonly webAppDir: string | undefined;
+  readonly errorReporting: ErrorReportingConfig;
 }
 
 export class ConfigError extends Error {
@@ -120,27 +121,73 @@ export class ConfigError extends Error {
   }
 }
 
+export interface ErrorReportingConfig {
+  /** Where Sentry reports go; nothing is sent without it. */
+  readonly dsn: string | undefined;
+  readonly environment: "local" | "staging" | "production";
+  /** The commit the running code was built from. */
+  readonly release: string | undefined;
+}
+
+const errorReportingSchema = z.object({
+  /** Reports are stored in Sentry's EU region only (ADR 0020). */
+  SENTRY_DSN: z
+    .url({ protocol: /^https$/ })
+    .refine((dsn) => new URL(dsn).hostname.endsWith(".ingest.de.sentry.io"), {
+      message: "not in Sentry's EU region (*.ingest.de.sentry.io)",
+    })
+    .optional(),
+  /** Read by the SDK itself, and would turn on tracing. */
+  SENTRY_TRACES_SAMPLE_RATE: z
+    .custom<undefined>((value) => value === undefined, {
+      message: "not used, error reports only (ADR 0020)",
+    })
+    .optional(),
+  /** The deployment, shared with the seed guard. */
+  APP_ENV: z.enum(["local", "staging", "production"]).default("local"),
+  SENTRY_RELEASE: z.string().min(1).optional(),
+  /** Set by Render to the commit it built. */
+  RENDER_GIT_COMMIT: z.string().min(1).optional(),
+});
+
+/**
+ * The error tracking settings alone, for commands such as the clean-up that
+ * do not need the rest of the API's settings.
+ */
+export function loadErrorReportingConfig(
+  environment: Readonly<Record<string, string | undefined>>,
+): ErrorReportingConfig {
+  const env = parseOrThrow(errorReportingSchema, environment);
+  return {
+    dsn: env.SENTRY_DSN,
+    environment: env.APP_ENV,
+    release: env.SENTRY_RELEASE ?? env.RENDER_GIT_COMMIT,
+  };
+}
+
+/** Parses, or throws a ConfigError that names each variable and rule, never a value. */
+function parseOrThrow<T>(schema: z.ZodType<T>, environment: unknown): T {
+  const result = schema.safeParse(environment);
+  if (result.success) return result.data;
+  throw new ConfigError(
+    result.error.issues.map((issue) => {
+      const variable = String(issue.path[0]);
+      if (issue.code === "invalid_type" && issue.input === undefined) return `${variable}: missing`;
+      if (issue.code === "custom" && issue.path.length === 1) {
+        return `${variable}: ${issue.message}`;
+      }
+      return `${variable}: invalid (${issue.code})`;
+    }),
+  );
+}
+
 /**
  * Reads and validates the environment once, at start-up, so a missing or
  * wrong variable stops the API immediately with a clear message.
  */
 export function loadConfig(environment: Readonly<Record<string, string | undefined>>): Config {
-  const result = environmentSchema.safeParse(environment);
-  if (!result.success) {
-    // Name the variable and the rule only: values can contain passwords.
-    throw new ConfigError(
-      result.error.issues.map((issue) => {
-        const variable = String(issue.path[0]);
-        if (issue.code === "invalid_type" && issue.input === undefined)
-          return `${variable}: missing`;
-        if (issue.code === "custom" && issue.path.length === 1) {
-          return `${variable}: ${issue.message}`;
-        }
-        return `${variable}: invalid (${issue.code})`;
-      }),
-    );
-  }
-  const env = result.data;
+  const env = parseOrThrow(environmentSchema, environment);
+  const errorReporting = loadErrorReportingConfig(environment);
   return {
     nodeEnv: env.NODE_ENV,
     port: env.PORT,
@@ -161,5 +208,6 @@ export function loadConfig(environment: Readonly<Record<string, string | undefin
     webOrigins: env.WEB_ORIGINS,
     trustedProxies: env.TRUST_PROXY,
     webAppDir: env.WEB_APP_DIR,
+    errorReporting,
   };
 }

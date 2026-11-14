@@ -35,6 +35,11 @@ apps.
 - Database: separate roles for the app, migrations and read-only analysis.
 - Backups encrypted and access-restricted.
 - Security headers and a content security policy on web properties.
+- Error reports go to Sentry's EU region (the API refuses any other DSN)
+  without request bodies, cookies, query strings, addresses or a failed
+  query's values, with phone numbers, codes, tokens, emails and kennitölur
+  removed from all text, and without trace headers on our requests to other
+  services (tested in `apps/api/src/platform/error-reporting.test.ts`).
 - Dependencies and containers scanned in CI; critical findings block merge.
 
 ## Sign-in and sessions

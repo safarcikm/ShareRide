@@ -5,6 +5,7 @@ import type { Database } from "@shareride/db";
 import type { Context } from "hono";
 import { cors } from "hono/cors";
 import { createMiddleware } from "hono/factory";
+import { HTTPException } from "hono/http-exception";
 import { requestId } from "hono/request-id";
 import { routePath } from "hono/route";
 import { secureHeaders } from "hono/secure-headers";
@@ -34,6 +35,17 @@ export interface FeatureDependencies {
   readonly randomInt?: (max: number) => number;
 }
 
+/** Where the request was when an unexpected error happened. No personal data. */
+export interface ErrorContext {
+  readonly method: string;
+  /** The route pattern, such as /v1/me, never the URL. */
+  readonly route: string;
+  readonly requestId: string | undefined;
+}
+
+/** Sends an unexpected error to error tracking (Sentry in staging and production). */
+export type ErrorReporter = (error: unknown, context: ErrorContext) => void;
+
 export interface AppDependencies {
   readonly logger: Logger;
   /** Resolves when the database answers; rejects otherwise. */
@@ -44,6 +56,8 @@ export interface AppDependencies {
   readonly webOrigins?: readonly string[];
   /** The exported web app to serve on this origin, outside /v1. */
   readonly webAppDir?: string;
+  /** Reports unexpected errors; left out where there is no error tracking. */
+  readonly reportError?: ErrorReporter;
 }
 
 export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
@@ -158,7 +172,16 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
   );
 
   app.onError((error, c) => {
+    // The client's mistake, such as JSON that does not parse: an answer, not a report.
+    if (error instanceof HTTPException && error.status < 500) {
+      return c.json(errorBody("validation_failed", "The request is not valid."), error.status);
+    }
     logger.error({ requestId: c.get("requestId"), err: error }, "unhandled error");
+    dependencies.reportError?.(error, {
+      method: c.req.method,
+      route: routePath(c),
+      requestId: c.get("requestId"),
+    });
     return c.json(errorBody("internal_error", "Something went wrong on our side."), 500);
   });
 

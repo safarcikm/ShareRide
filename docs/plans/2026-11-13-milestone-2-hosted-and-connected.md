@@ -142,10 +142,17 @@ Render, Frankfurt (deploys a commit once its checks pass)
 
 - `@sentry/node` in the API and the clean-up; `@sentry/react-native` in the
   app, including the web.
-- No personal data: `sendDefaultPii` off, and a `beforeSend` that removes
-  phone numbers, codes, tokens and the `Authorization` and `Cookie` headers,
-  with tests. No session replay. Tracing stays off for now.
-- Releases are named by commit SHA; CI uploads source maps.
+- No personal data: the SDK's optional data collection off (version 11
+  replaced `sendDefaultPii` with `dataCollection`), and a `beforeSend` that
+  keeps only the method, URL path, three harmless headers and the user ID,
+  and runs the shared `redactDeep` rule (domain package) over everything
+  else to remove phone numbers, codes and tokens, with tests. No session
+  replay. Tracing stays off for now.
+- Releases are named by commit SHA (`RENDER_GIT_COMMIT` on Render). The API
+  runs its TypeScript with type stripping, which keeps line and column
+  numbers, so its stack traces need no source maps. The web app's source
+  maps are uploaded from Render's build with a secret file; the phones'
+  with EAS builds (PR 5).
 - An uptime monitor checks `/v1/health/ready` every minute and alerts Martin
   through the Sentry app and email.
 
@@ -250,10 +257,14 @@ a code review before it opens. Tick tasks as they merge.
 
 ### PR 4: `feat(observability)`: error tracking and uptime
 
-- [ ] Sentry in the API, the clean-up and the app. Test: an event with a phone number,
+Split in two, so the server side can be checked on staging first.
+
+- [x] Sentry in the API and the clean-up. Test: an event with a phone number,
       code or token reaches the transport scrubbed
-- [ ] Releases and source maps in CI; uptime monitor and alert routing in the
-      runbook
+- [x] Releases by commit; `sentry:check` sends a test error; uptime monitor
+      and alert routing in the runbook
+- [ ] PR 4b, `feat(mobile)`: Sentry in the app (web and phones) with the same
+      scrubbing, and the web app's source maps uploaded from Render's build
 - Verify: a test error from staging appears in Sentry with a readable stack
 
 ### PR 5: `feat(mobile)`: development builds and Maestro
@@ -305,7 +316,8 @@ thread when its PR is ready.
 2. Render: open an account, connect the GitHub repository, apply the
    blueprint and paste the 46elks keys (PR 3).
 3. Sentry: open an organisation **in the EU region** (it cannot be changed
-   later), put the DSN in Render and a token in GitHub (PR 4).
+   later), send the DSN for the blueprint, and add the uptime monitor
+   (PR 4); a token as a Render secret file for the web source maps (PR 4b).
 4. Expo account, and the Apple Developer Program if decision 6 is accepted
    (PR 5).
 5. MapTiler: account and a key limited to our app IDs and the staging

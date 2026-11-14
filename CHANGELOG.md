@@ -66,6 +66,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   deploys after CI passes, migrates before it starts and finds client
   addresses behind Render's two proxies (`TRUST_PROXY=2`). CI smoke-tests
   the image. Runbook in `docs/operations/staging.md`.
+- Error reports from the API and the clean-up job to Sentry's EU region,
+  named by commit, with phone numbers, codes, tokens, emails, kennitölur,
+  bodies, cookies, addresses and failed queries' values removed (shared
+  `redactDeep` rule in the domain package), and
+  `pnpm --filter @shareride/api sentry:check` to test a deployment. Logs
+  also drop failed queries' values, and a request whose JSON does not parse
+  gets 400 instead of 500.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

@@ -8,6 +8,7 @@ import { ConfigError, loadConfig, type Config } from "./config.ts";
 import { createLogger } from "./logger.ts";
 import { clientAddress } from "./platform/client-address.ts";
 import { createKeyedHasher } from "./platform/crypto.ts";
+import { startErrorReporting } from "./platform/error-reporting.ts";
 import { selectSmsSender } from "./platform/select-sms-sender.ts";
 
 let config: Config;
@@ -22,6 +23,7 @@ try {
 }
 
 const logger = createLogger({ level: config.logLevel });
+const reportError = startErrorReporting(config.errorReporting);
 const database = connectDatabase(config.databaseUrl, { applicationName: "shareride-api" });
 // The development sender prints to the terminal, not the logs; loadConfig
 // refuses it in production.
@@ -42,6 +44,7 @@ const app = createApp({
   checkDatabase: () => pingDatabase(database.pool),
   webOrigins: config.webOrigins,
   ...(config.webAppDir === undefined ? {} : { webAppDir: config.webAppDir }),
+  ...(reportError === undefined ? {} : { reportError }),
   features: {
     db: database.db,
     sms,
@@ -69,6 +72,8 @@ const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
       smsPaused: config.sms.paused,
       trustedProxies: config.trustedProxies,
       webApp: config.webAppDir !== undefined,
+      errorReporting: reportError !== undefined,
+      release: config.errorReporting.release,
     },
     "API listening",
   );

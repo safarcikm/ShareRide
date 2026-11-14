@@ -14,11 +14,13 @@
     "test": "vitest run --exclude \"src/**/*.integration.test.ts\" --exclude \"src/**/*.contract.test.ts\"",
     "test:integration": "vitest run .integration.test",
     "test:contract": "vitest run .contract.test",
-    "clean-up": "node --env-file-if-exists=../../.env src/clean-up-cli.ts"
+    "clean-up": "node --env-file-if-exists=../../.env src/clean-up-cli.ts",
+    "sentry:check": "node --env-file-if-exists=../../.env src/sentry-check-cli.ts"
   },
   "dependencies": {
     "@hono/node-server": "catalog:",
     "@hono/zod-openapi": "catalog:",
+    "@sentry/node": "catalog:",
     "@shareride/contracts": "workspace:*",
     "@shareride/db": "workspace:*",
     "@shareride/domain": "workspace:*",
@@ -32,7 +34,9 @@
     "@shareride/api-client": "workspace:*",
     "@shareride/config": "workspace:*",
     "@types/node": "catalog:",
+    "@types/pg": "catalog:",
     "eslint": "catalog:",
+    "pg": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
