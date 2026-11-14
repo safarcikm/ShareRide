@@ -1,3 +1,4 @@
+export * from "./details.ts";
 export * from "./note.ts";
 export * from "./prices.ts";
 export * from "./publish.ts";

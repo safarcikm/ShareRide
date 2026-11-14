@@ -335,11 +335,24 @@ Split in two, like PR 5: 6a the server, 6b the screens.
 
 ### PR 7: `feat(search)`: trip details and shared links
 
-- [ ] `GET /trips/{id}` for a part; the trip details screen with the seat
-      view and route list; changing the part; share; `noindex`
-- [ ] Browser journey: search without an account, open a trip, change the
-      boarding stop, open the shared link
+Split in two, like PR 6: 7a the server, 7b the screens.
+
+- [x] 7a: `GET /trips/{id}` for a part, with what the passenger can do;
+      `X-Robots-Tag: noindex` on trip pages
+- [ ] 7b: The trip details screen with the seat view and route list;
+      changing the part; share; the robots meta tag
+- [ ] 7b: Browser journey: search without an account, open a trip, change
+      the boarding stop, open the shared link
 - Verify: a shared link opens the trip in another browser
+- 7a notes: without a part, the trip opens from its first stop to its
+  last. The answer names what the passenger can do with the part, in this
+  order: cancelled; departed, once the trip has passed the boarding stop
+  (a later stop can still be booked); own, for the signed-in driver;
+  closed, past the 15-minute cut-off (open at the cut-off itself, as in
+  search); full, when fewer seats are free than asked for; or open. Drafts
+  are not found. The number plate is never in the answer yet (only booked
+  passengers see it, spec 5). Trip pages count towards the search limit of
+  the address, as their prices and seats could be scraped the same way.
 
 ### PR 8: `feat(maps)`: maps on the web and phones
 

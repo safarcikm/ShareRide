@@ -1,9 +1,16 @@
-import { bookingModes, defaultTripSettings, timesOfDay } from "@shareride/domain";
+import {
+  bookingModes,
+  carColours,
+  defaultTripSettings,
+  partStates,
+  timesOfDay,
+} from "@shareride/domain";
 import { z } from "zod";
 import { moneySchema, timestampSchema } from "./common.ts";
 import { errorResponseSchema } from "./errors.ts";
 import { dateSchema, localisedTextSchema, meetingPointSummarySchema } from "./meeting-points.ts";
 import { defineRoute } from "./route.ts";
+import { tripPreferencesSchema } from "./trips.ts";
 
 // Searching for trips (spec 4, 3.1 to 3.5). Anyone can search; a signed-in
 // passenger's own trips are left out.
@@ -123,5 +130,82 @@ export const tripSearchAlternativesRoute = defineRoute({
       }),
     },
     ...searchErrors,
+  },
+});
+
+const stopPositionSchema = z.coerce.number<number>().int().min(0);
+
+export const tripDetailsQuerySchema = z.object({
+  /** Stop positions; left out, the part runs from the first stop or to the last. */
+  fromStop: stopPositionSchema.optional(),
+  toStop: stopPositionSchema.optional(),
+  seats: seatsSchema.default(1),
+});
+
+export type TripDetailsQuery = z.input<typeof tripDetailsQuerySchema>;
+
+/**
+ * A trip opened for one part of it (spec 4, 3.6), public by link (R4.6):
+ * what a passenger needs to decide, and nothing about other passengers but
+ * the seats free on the part (section 7).
+ */
+export const tripDetailsSchema = z.object({
+  id: z.uuid(),
+  /** Every stop in travel order; any can become the boarding or alighting stop. */
+  stops: z.array(
+    z.object({
+      position: z.int().nonnegative(),
+      meetingPoint: meetingPointSummarySchema,
+      plannedAt: timestampSchema,
+    }),
+  ),
+  part: z.object({
+    board: z.int().nonnegative(),
+    alight: z.int().positive(),
+    seats: z.int().positive(),
+    /** Seats free on every stretch of the part (rule S3). */
+    freeSeats: z.int().nonnegative(),
+    /** For one seat, and for the seats asked for (rule P1); prices as they are now (R4.4). */
+    pricePerSeat: moneySchema,
+    total: moneySchema,
+    /**
+     * What the passenger can do (3.6.9): cancelled, departed (the trip has
+     * passed the boarding stop), own (the signed-in driver's trip), closed
+     * (past the booking cut-off), full (fewer seats free than asked for) or
+     * open.
+     */
+    state: z.enum(partStates),
+  }),
+  /** Seats the driver offers on the trip (R3.9). */
+  seatsOffered: z.int().positive(),
+  /** Photos and ratings come with specs 1 and 8; until then every driver is new. */
+  driver: z.object({ firstName: z.string() }),
+  /** Make, model and colour; the number plate only after booking (spec 3, decision 7). */
+  car: z.object({ make: z.string(), model: z.string(), colour: z.enum(carColours) }).nullable(),
+  preferences: tripPreferencesSchema,
+  /** To passengers, without contact details (R3.10); empty for none. */
+  note: z.string(),
+  bookingMode: z.enum(bookingModes),
+});
+
+export type TripDetails = z.infer<typeof tripDetailsSchema>;
+
+export const tripDetailsRoute = defineRoute({
+  method: "get",
+  path: "/v1/trips/{id}",
+  summary: "A published trip for one part of it, with that part's price and free seats",
+  tags: ["search"],
+  auth: "optional",
+  request: { params: z.object({ id: z.uuid() }), query: tripDetailsQuerySchema },
+  responses: {
+    200: { description: "The trip, for the part asked for", schema: tripDetailsSchema },
+    400: {
+      description:
+        "validation_failed: a bad value, or a part that does not run forwards between two stops (details name `fromStop` or `toStop`)",
+      schema: errorResponseSchema,
+    },
+    401: searchErrors[401],
+    404: { description: "not_found: no such published trip", schema: errorResponseSchema },
+    429: searchErrors[429],
   },
 });

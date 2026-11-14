@@ -148,6 +148,14 @@ sequenceDiagram
 Iceland's scale (hundreds of meeting points, thousands of trips) means this is
 a plain SQL query with indexes. No search engine is needed.
 
+A trip opened from the results or a shared link (`GET /v1/trips/{id}`) is
+priced again for the part asked for (`tripPart`): any stop can become the
+boarding or alighting stop, and the answer says whether the part can be
+booked (open, full, closed at the cut-off, departed, cancelled, or the
+driver's own). Trip pages are public by link but never indexed: the server
+sends `X-Robots-Tag: noindex` with them (spec 4, R4.6). The search limit per
+address covers trip pages too.
+
 ## Cross-cutting concerns
 
 | Concern | Approach |

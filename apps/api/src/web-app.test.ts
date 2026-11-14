@@ -68,6 +68,16 @@ describe("the web app on the API's origin", () => {
     }
   });
 
+  it("keeps trip pages out of search engines, and only those (R4.6)", async () => {
+    const trip = await app.request("/trips/0190a1d6-0000-7000-8000-0000000000d1?fromStop=1");
+    expect(trip.status).toBe(200);
+    expect(trip.headers.get("x-robots-tag")).toBe("noindex, nofollow");
+    expect(await trip.text()).toContain("<title>ShareRide</title>");
+    for (const path of ["/", "/search", "/tripsearch"]) {
+      expect((await app.request(path)).headers.get("x-robots-tag"), path).toBeNull();
+    }
+  });
+
   it("serves bundles with content hashes for a year", async () => {
     const response = await app.request("/_expo/static/js/web/entry-abc123.js");
     expect(response.status).toBe(200);

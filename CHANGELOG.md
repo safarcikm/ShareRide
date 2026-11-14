@@ -131,11 +131,17 @@ releases follow [Semantic Versioning](https://semver.org/).
   limited per network address.
 - Search in the app (milestone 3, PR 6b): "Browse trips" and "Find a
   ride" open a search form with from, to, any day or a day, seats and the
-  last five searches on the device, which the person can clear. Results show the passenger's part,
-  times, price, booking mode, driver and seats left, grouped by day, with
-  sorting by time or price and filters for instant booking and time of
-  day. When nothing matches: other days with trips, trips from nearby
-  meeting points, or "No trips yet on this route" with "Offer a ride".
+  last five searches on the device, which the person can clear. Results
+  show the passenger's part, times, price, booking mode, driver and seats
+  left, grouped by day, with sorting by time or price and filters for
+  instant booking and time of day. When nothing matches: other days with
+  trips, trips from nearby meeting points, or "No trips yet on this route"
+  with "Offer a ride".
+- Trip details on the server (milestone 3, PR 7a): `GET /v1/trips/{id}`
+  opens a published trip for any part of it, with that part's price, the
+  seats free on it and whether it can be booked, the driver's first name,
+  the car's make, model and colour, preferences and note. Trip pages are
+  sent with `X-Robots-Tag: noindex`.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

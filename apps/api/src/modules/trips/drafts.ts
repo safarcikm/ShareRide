@@ -71,7 +71,8 @@ export interface TripService {
 /** Statuses of trips that hold the driver's time (R3.7). */
 const ongoingStatuses = ["published", "departed"];
 
-const choicesOf = (row: TripRow): TripChoices => ({
+/** A trip row's seats, price level, booking mode and preferences. */
+export const choicesOf = (row: TripRow): TripChoices => ({
   seats: row.capacity,
   priceLevel: row.priceLevel,
   bookingMode: row.bookingMode as TripChoices["bookingMode"],

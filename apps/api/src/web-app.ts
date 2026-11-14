@@ -37,6 +37,12 @@ const contentSecurityPolicy = [
   "frame-ancestors 'none'",
 ].join("; ");
 
+/**
+ * Trip pages show a person's first name and travel plans, so search engines
+ * must not index them (spec 4, R4.6). The page adds a robots meta tag too.
+ */
+const isTripPage = (path: string) => path.startsWith("/trips/");
+
 /** Lets serveStatic report a miss instead of running another handler. */
 const reportMiss = () => Promise.resolve();
 
@@ -68,6 +74,7 @@ export function createWebApp(root: string): WebApp {
     // Neither the 404 nor the page may be kept as if it were a bundle.
     c.header("Cache-Control", "no-cache");
     if (isFilePath(c.req.path)) return undefined;
+    if (isTripPage(c.req.path)) c.header("X-Robots-Tag", "noindex, nofollow");
     const fallback = await page(c, reportMiss);
     return fallback instanceof Response ? fallback : undefined;
   };
