@@ -93,7 +93,11 @@ envVarGroups:
         value: staging
       - key: LOG_LEVEL
         value: info
-      # Error reports (ADR 0020). The DSN is not a secret; add it here once
+      # Error reports (ADR 0020). DSNs are not secrets; add them here once
       # the Sentry organisation exists (runbook, "Error reports and uptime").
+      # SENTRY_DSN is the API's project; EXPO_PUBLIC_SENTRY_DSN is the app's,
+      # built into the web app (the web service's builds read this group).
       # - key: SENTRY_DSN
+      #   value: https://...@....ingest.de.sentry.io/...
+      # - key: EXPO_PUBLIC_SENTRY_DSN
       #   value: https://...@....ingest.de.sentry.io/...

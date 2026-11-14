@@ -17,11 +17,13 @@
     "typecheck": "tsc",
     "test": "jest",
     "export:web": "expo export --platform web",
-    "e2e:web": "playwright test"
+    "e2e:web": "playwright test",
+    "upload-source-maps": "node scripts/upload-source-maps.ts"
   },
   "dependencies": {
     "@expo-google-fonts/fredoka": "^0.4.1",
     "@expo-google-fonts/nunito": "^0.4.2",
+    "@sentry/react-native": "~8.28.0",
     "@shareride/api-client": "workspace:*",
     "@shareride/contracts": "workspace:*",
     "@shareride/domain": "workspace:*",
@@ -45,6 +47,7 @@
   },
   "devDependencies": {
     "@playwright/test": "catalog:",
+    "@sentry/cli": "3.8.0",
     "@shareride/config": "workspace:*",
     "@testing-library/react-native": "14.1.0",
     "@types/jest": "^30.0.0",

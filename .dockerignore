@@ -18,3 +18,7 @@ apps/mobile/playwright-report
 docs
 infra
 *.md
+# Render copies a service's secret files into the root of the build context,
+# so `COPY . .` would put them in the image. List each one here; the build's
+# secret mounts still get them (runbook, "Error reports and uptime").
+sentry-auth-token

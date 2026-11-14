@@ -51,6 +51,9 @@ export const is = {
   "error.about": "Hámark {max} stafir.",
   "error.languages": "Veldu tungumál af listanum.",
   "error.generic": "Eitthvað fór úrskeiðis hjá okkur. Reyndu aftur.",
+  "error.unexpected_title": "Eitthvað fór úrskeiðis",
+  "error.unexpected_body":
+    "ShareRide lenti í vandræðum. Reyndu aftur. Ef þetta gerist aftur skaltu loka ShareRide og opna það á ný.",
   "legal.title": "Áður en þú byrjar",
   "legal.changedTitle": "Skilmálarnir okkar hafa breyst",
   "legal.intro": "Lestu og samþykktu notendaskilmálana og samfélagsreglurnar.",

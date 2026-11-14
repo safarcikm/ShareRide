@@ -12,6 +12,8 @@ export default {
   moduleNameMapper: {
     "^lucide-react-native$":
       "<rootDir>/node_modules/lucide-react-native/dist/cjs/lucide-react-native.js",
+    // The real SDK starts timers as soon as it loads; tests check calls to it.
+    "^@sentry/react-native$": "<rootDir>/src/testing/sentry.ts",
   },
   transformIgnorePatterns: [
     nodeModulesPattern.replace("(.pnpm|", "(.pnpm|intl-messageformat|@formatjs|"),
