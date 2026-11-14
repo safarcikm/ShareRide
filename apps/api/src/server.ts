@@ -26,21 +26,36 @@ const database = connectDatabase(config.databaseUrl, { applicationName: "shareri
 // The development sender prints to the terminal, not the logs; loadConfig
 // refuses it in production.
 const sms = selectSmsSender(config.sms, (line) => process.stdout.write(`${line}\n`));
+// Without the proxies' entry every client looks like the same address and
+// shares one set of sending limits, so say so once.
+let reportedMissingProxyEntry = false;
+function reportMissingProxyEntry(): void {
+  if (reportedMissingProxyEntry) return;
+  reportedMissingProxyEntry = true;
+  logger.warn(
+    { trustedProxies: config.trustedProxies },
+    "X-Forwarded-For lacks the trusted proxies' entry; limits use the connection's address",
+  );
+}
 const app = createApp({
   logger,
   checkDatabase: () => pingDatabase(database.pool),
   webOrigins: config.webOrigins,
+  ...(config.webAppDir === undefined ? {} : { webAppDir: config.webAppDir }),
   features: {
     db: database.db,
     sms,
     hasher: createKeyedHasher(config.authSecret),
     clock: () => new Date(),
-    clientAddress: (c) =>
-      clientAddress({
+    clientAddress: (c) => {
+      const found = clientAddress({
         remote: getConnInfo(c).remote.address,
         forwardedFor: c.req.header("x-forwarded-for"),
-        trustProxy: config.trustProxy,
-      }),
+        trustedProxies: config.trustedProxies,
+      });
+      if (config.trustedProxies > 0 && found.source === "connection") reportMissingProxyEntry();
+      return found.address;
+    },
     secureCookies: config.nodeEnv === "production",
   },
 });
@@ -52,6 +67,8 @@ const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
       nodeEnv: config.nodeEnv,
       smsProvider: config.sms.provider,
       smsPaused: config.sms.paused,
+      trustedProxies: config.trustedProxies,
+      webApp: config.webAppDir !== undefined,
     },
     "API listening",
   );

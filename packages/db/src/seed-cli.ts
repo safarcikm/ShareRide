@@ -1,6 +1,8 @@
 // Adds draft legal documents to DATABASE_URL for local development
-// (`pnpm --filter @shareride/db seed`). Never run against production.
+// (`pnpm --filter @shareride/db seed`) and staging, before each deploy.
+// Never run against production (see seed-guard.ts).
 import { connectDatabase } from "./index.ts";
+import { seedRefusal } from "./seed-guard.ts";
 import { seedDraftLegalDocuments } from "./seed.ts";
 
 const url = process.env["DATABASE_URL"];
@@ -8,8 +10,9 @@ if (url === undefined || url === "") {
   process.stderr.write("DATABASE_URL is not set. Copy .env.example to .env first.\n");
   process.exit(1);
 }
-if (process.env["NODE_ENV"] === "production") {
-  process.stderr.write("The seed adds draft documents and is not for production.\n");
+const refusal = seedRefusal(process.env);
+if (refusal !== null) {
+  process.stderr.write(`${refusal}\n`);
   process.exit(1);
 }
 

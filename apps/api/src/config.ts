@@ -45,11 +45,19 @@ const environmentSchema = z
           .filter((origin) => origin !== ""),
       )
       .pipe(z.array(originSchema)),
-    /** True behind a load balancer that sets X-Forwarded-For. */
+    /**
+     * How many proxies in front of the API append to X-Forwarded-For: false
+     * (none, the default), true (one load balancer) or a count. Render is 2:
+     * Cloudflare, then Render's own proxy.
+     */
     TRUST_PROXY: z
-      .enum(["true", "false"])
+      .string()
       .default("false")
-      .transform((value) => value === "true"),
+      .transform((value) => (value === "false" ? "0" : value === "true" ? "1" : value))
+      .pipe(z.enum(["0", "1", "2", "3", "4", "5"]))
+      .transform(Number),
+    /** The exported web app, served on the API's own origin (staging, production). */
+    WEB_APP_DIR: z.string().min(1).optional(),
   })
   .superRefine((env, context) => {
     if (env.NODE_ENV === "production" && env.AUTH_SECRET.startsWith("local-only-")) {
@@ -97,7 +105,9 @@ export interface Config {
   readonly authSecret: string;
   readonly sms: SmsConfig;
   readonly webOrigins: readonly string[];
-  readonly trustProxy: boolean;
+  /** Proxies in front of the API that append to X-Forwarded-For. */
+  readonly trustedProxies: number;
+  readonly webAppDir: string | undefined;
 }
 
 export class ConfigError extends Error {
@@ -149,6 +159,7 @@ export function loadConfig(environment: Readonly<Record<string, string | undefin
           }
         : { provider: "dev", paused: env.SMS_PAUSED },
     webOrigins: env.WEB_ORIGINS,
-    trustProxy: env.TRUST_PROXY,
+    trustedProxies: env.TRUST_PROXY,
+    webAppDir: env.WEB_APP_DIR,
   };
 }

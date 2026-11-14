@@ -64,8 +64,17 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Integration tests (migrations, API against PostgreSQL)
         run: pnpm test:integration
+      # The image includes the exported web app; Render builds the same
+      # Dockerfile and deploys main only after these checks pass.
       - name: Build the API container image (not pushed)
         run: docker build --file apps/api/Dockerfile --tag shareride-api:${{ github.sha }} .
+      - name: Smoke test the image (migrations on an empty database, start-up, web app)
+        env:
+          DATABASE_URL: postgres://shareride:shareride-ci-only@localhost:5432/shareride_smoke
+        run: |
+          docker run --rm --network host postgis/postgis:18-3.7 \
+            psql "$TEST_DATABASE_URL" --command "CREATE DATABASE shareride_smoke"
+          infra/docker/smoke-test.sh shareride-api:${{ github.sha }}
 
   app:
     name: App bundles (iOS, Android, web) and web tests

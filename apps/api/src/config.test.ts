@@ -11,7 +11,8 @@ const valid = {
   ELKS_API_USERNAME: "u-example",
   ELKS_API_PASSWORD: "p-example",
   WEB_ORIGINS: "https://shareride.is, https://www.shareride.is",
-  TRUST_PROXY: "true",
+  TRUST_PROXY: "2",
+  WEB_APP_DIR: "/repo/web",
 };
 
 const development = {
@@ -36,7 +37,8 @@ describe("loadConfig", () => {
         paused: false,
       },
       webOrigins: ["https://shareride.is", "https://www.shareride.is"],
-      trustProxy: true,
+      trustedProxies: 2,
+      webAppDir: "/repo/web",
     });
   });
 
@@ -46,7 +48,18 @@ describe("loadConfig", () => {
     expect(config.logLevel).toBe("info");
     expect(config.sms).toEqual({ provider: "dev", paused: false });
     expect(config.webOrigins).toEqual([]);
-    expect(config.trustProxy).toBe(false);
+    expect(config.trustedProxies).toBe(0);
+    expect(config.webAppDir).toBeUndefined();
+  });
+
+  it("reads TRUST_PROXY as the number of proxies in front", () => {
+    const trusted = (value: string) => loadConfig({ ...development, TRUST_PROXY: value });
+    expect(trusted("false").trustedProxies).toBe(0);
+    expect(trusted("true").trustedProxies).toBe(1);
+    expect(trusted("2").trustedProxies).toBe(2);
+    for (const value of ["-1", "6", "yes", "1.5"]) {
+      expect(() => trusted(value)).toThrow(ConfigError);
+    }
   });
 
   it("refuses a short AUTH_SECRET", () => {

@@ -10,9 +10,10 @@ of curated **meeting points**; each **segment** between two consecutive meeting
 points has its own price; passengers book seats on any contiguous part of a
 trip. Clients: iOS, Android, web. Vocabulary: [docs/glossary.md](docs/glossary.md).
 
-Current phase: **Phase 2, Build**, milestone 1 (foundation and phone sign-in,
-[plan](docs/plans/2026-11-13-milestone-1-phone-sign-in.md)). See
-[docs/strategy/roadmap.md](docs/strategy/roadmap.md).
+Current phase: **Phase 2, Build**, milestone 2 (hosted and connected,
+[plan](docs/plans/2026-11-13-milestone-2-hosted-and-connected.md)). See
+[docs/strategy/roadmap.md](docs/strategy/roadmap.md). Staging:
+[runbook](docs/operations/staging.md).
 
 ## Before you change anything
 
@@ -87,6 +88,7 @@ pnpm --filter @shareride/mobile e2e:web  # build the web app; Playwright journey
 pnpm --filter @shareride/api clean-up  # delete sign-in records past retention (hourly on servers)
 pnpm --filter @shareride/api test:contract  # 46elks dry run, needs its keys; not in CI
 pnpm --filter @shareride/db generate   # SQL migration from schema changes
+infra/docker/smoke-test.sh <image>     # start the API image and check it (needs DATABASE_URL)
 pnpm --filter @shareride/domain test   # one package
 npx --yes markdownlint-cli2@0.24.0     # lint the docs
 ```
