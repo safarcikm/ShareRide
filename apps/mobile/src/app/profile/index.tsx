@@ -62,6 +62,13 @@ export default function MyProfileScreen() {
         }}
       />
       <Button
+        variant="secondary"
+        label={t("driver.offerRide")}
+        onPress={() => {
+          router.push("/drive");
+        }}
+      />
+      <Button
         variant="text"
         label={t("meetingPoints.open")}
         onPress={() => {

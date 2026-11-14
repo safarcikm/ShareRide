@@ -53,11 +53,14 @@ erDiagram
 
 ### Vehicle
 
-`id`, `owner_id`, `make`, `model`, `colour` (shown on trips to everyone),
-`registration` (optional until the trip departs; shown only to booked
-passengers), `status`. Who owns the car
-in real life does not matter; the user is responsible for being allowed to
-use it ([spec 3](../specs/2026-11-13-post-a-trip.md#32-cars)).
+`id`, `owner_id`, `make`, `model`, `colour` (one of a fixed list; shown on
+trips to everyone), `registration` (optional until the trip departs; stored
+in capitals without spaces or hyphens, 2 to 8 letters and digits; shown only
+to booked passengers), `removed_at` (a removed car leaves the driver's list
+but stays on the trips that used it; a car no trip used is deleted, and
+until trips exist every removed car is). Who owns the car in real life does not
+matter; the user is responsible for being allowed to use it
+([spec 3](../specs/2026-11-13-post-a-trip.md#32-cars)).
 
 ### MeetingPoint
 

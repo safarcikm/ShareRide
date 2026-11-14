@@ -14,6 +14,7 @@ import { errorBody } from "./errors.ts";
 import type { Logger } from "./logger.ts";
 import { createAccountService, registerAccountRoutes } from "./modules/account/index.ts";
 import { createAuthService, createRequireAuth, registerAuthRoutes } from "./modules/auth/index.ts";
+import { createDrivingService, registerDrivingRoutes } from "./modules/driving/index.ts";
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
   createMeetingPointService,
@@ -155,6 +156,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     const requireAuth = createRequireAuth(auth);
     registerAuthRoutes(app, { ...features, auth, account, requireAuth });
     registerAccountRoutes(app, account, requireAuth);
+    registerDrivingRoutes(app, createDrivingService({ ...features, account }), requireAuth);
     registerLegalRoutes(app, legal);
     registerMeetingPointRoutes(app, createMeetingPointService(features));
   }

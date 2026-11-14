@@ -92,6 +92,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   app, meeting points by region, their details with "Open in maps", the
   place search used later by trips, and a place's nearest meeting points.
   Tags and cards from spec 15.
+- Cars and the ready-to-drive list (milestone 3, PR 3): the `vehicles`
+  table and the licence declaration date; `GET /v1/me/driver-readiness`,
+  `PUT /v1/me/driver-licence-declaration` and `/v1/me/vehicles` to list,
+  add, edit and remove cars, with the plate rules in the domain. In the app,
+  "Offer a ride" on my profile leads to Before you publish, which lists what
+  is missing and lets the driver add a car (make suggestions, colours, the
+  plate now or later) and confirm their licence. Removing a car deletes it
+  with its plate; number plates are hidden in logs and error reports.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
@@ -106,6 +114,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   with iOS dark and tinted versions, the Android adaptive and themed icons,
   the opening screen on frost or night, and the browser tab icon, exported
   from drawings in `apps/mobile/assets/logo`.
+
+### Fixed
+
+- Tick boxes, chips and busy buttons now tell screen readers on the web
+  whether they are ticked or busy: the web build ignored
+  `accessibilityState`, so they use `aria-*` props instead. On the web,
+  Space ticks a tick box or picks a chip, and a text field's help or error
+  is its description (the web build also ignored `accessibilityHint`).
 
 ### Changed
 

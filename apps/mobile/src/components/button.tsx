@@ -69,7 +69,9 @@ export function Button({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ disabled: inactive, busy }}
+      // aria-* rather than accessibilityState, which the web build drops.
+      aria-disabled={inactive}
+      aria-busy={busy}
       disabled={inactive}
       onPress={onPress}
       style={({ pressed }) => [
