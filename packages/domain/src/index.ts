@@ -6,3 +6,4 @@ export * from "./money.ts";
 export * from "./result.ts";
 export * from "./privacy/index.ts";
 export * from "./time.ts";
+export * from "./trips/index.ts";

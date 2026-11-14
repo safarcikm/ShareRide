@@ -40,6 +40,7 @@ export async function seedDraftLegalDocuments(db: Database, now: Date): Promise<
     .onConflictDoNothing();
 }
 
+export { samplePoints } from "./sample/meeting-points.ts";
 export { sampleId, seedSampleMeetingPoints } from "./sample/seed.ts";
 
 /**

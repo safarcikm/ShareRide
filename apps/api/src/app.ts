@@ -2,6 +2,7 @@ import { randomInt } from "node:crypto";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { healthReadyRoute, healthRoute } from "@shareride/contracts";
 import type { Database } from "@shareride/db";
+import { defaultTripSettings } from "@shareride/domain";
 import type { Context } from "hono";
 import { cors } from "hono/cors";
 import { createMiddleware } from "hono/factory";
@@ -20,6 +21,7 @@ import {
   createMeetingPointService,
   registerMeetingPointRoutes,
 } from "./modules/meeting-points/index.ts";
+import { createRouteService, registerTripRoutes } from "./modules/trips/index.ts";
 import { bearerAuth, toOpenApiRoute } from "./openapi.ts";
 import type { KeyedHasher } from "./platform/crypto.ts";
 import type { SmsSender } from "./platform/sms.ts";
@@ -159,6 +161,9 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     registerDrivingRoutes(app, createDrivingService({ ...features, account }), requireAuth);
     registerLegalRoutes(app, legal);
     registerMeetingPointRoutes(app, createMeetingPointService(features));
+    // Operator settings (feature H4) replace the defaults later.
+    const settings = defaultTripSettings;
+    registerTripRoutes(app, createRouteService({ ...features, settings }), requireAuth);
   }
 
   app.openAPIRegistry.registerComponent("securitySchemes", bearerAuth, {

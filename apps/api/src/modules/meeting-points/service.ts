@@ -25,7 +25,7 @@ type PlaceRow = typeof places.$inferSelect;
 /** Shown on the map and in the list (spec 2, 3.1.5). */
 const visibleStatuses = meetingPointStatuses.filter(isVisible);
 /** Offered for new trips, and so near a place (rule R2.4). */
-const offeredStatuses = meetingPointStatuses.filter(isOfferedForNewTrips);
+export const offeredStatuses = meetingPointStatuses.filter(isOfferedForNewTrips);
 /** Close enough in trigrams to be worth ranking; the domain rule decides (spec 2, 3.4). */
 const trigramThreshold = 0.3;
 /** Rows of each table the domain rule ranks, best SQL matches first. */
@@ -35,7 +35,7 @@ const nearestWhenNoneInReach = 3;
 
 const localised = (is: string, en: string | null) => ({ is, en: en ?? is });
 
-function toSummary(row: MeetingPointRow): MeetingPointSummary {
+export function toSummary(row: MeetingPointRow): MeetingPointSummary {
   return {
     id: row.id,
     name: localised(row.nameIs, row.nameEn),

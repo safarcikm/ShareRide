@@ -100,6 +100,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   is missing and lets the driver add a car (make suggestions, colours, the
   plate now or later) and confirm their licence. Removing a car deletes it
   with its plate; number plates are hidden in logs and error reports.
+- Route quotes and prices (milestone 3, PR 4): the price rules P2 to P4
+  with the worked example as a test, the meeting points on the way, where
+  an added stop goes, the route and time checks and planned times, all in
+  the domain with property tests. `GET /v1/routes/stops-along` and
+  `POST /v1/routes/quote` give a driver the stops, distances, typical times,
+  prices per stretch, the highest price level and what to fix.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

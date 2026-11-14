@@ -120,8 +120,9 @@ Pure functions in `packages/domain/src/trips/`, with property tests
   example in pricing and seats is a test: 100% gives 5 800 kr, 80% gives
   4 700 kr.
 - **Stops along the way** (R3.3): every active point in season whose detour
-  is at most 5% or 3 km, in route order; where an added stop goes; the 1.5
-  route factor (R3.4) and the 20% or 20 km warning.
+  is at most 5% or 3 km, whichever is less (spec 3, decision 8), in route
+  order; where an added stop goes; the 1.5 route factor (R3.4) and the 20%
+  or 20 km warning.
 - **Times** (R3.5, R3.6): planned times from typical times rounded to 5
   minutes, the 90% floor, the long-break warning, the 30-minute notice and
   the 60-day window, in Iceland time.
@@ -226,10 +227,20 @@ merge.
 
 ### PR 4: `feat(trips)`: route, times and prices
 
-- [ ] Domain functions in 4.3 with property tests and the worked example
-- [ ] `GET /routes/stops-along`, `POST /routes/quote`
-- Verify: the quote for Reykjavík to Akureyri lists the stops on the way
-  and prices that sum to the whole-route price
+- [x] Domain functions in 4.3 with property tests and the worked example
+- [x] `GET /routes/stops-along`, `POST /routes/quote`
+- Verify: the quote for Reykjavík to Akureyri prices the worked example's
+  stops at 5 800 kr at 100% and 4 700 kr at 80%, and the stops found on the
+  way at 5 600 kr and 4 600 kr, as each stretch rounds on its own (open
+  question Q16); an added stop goes where it adds the least distance
+  (`apps/api/src/modules/trips/trips.integration.test.ts`)
+- Done with the price, route and time rules. Publish validation moves to
+  PR 5, which defines the draft it checks; the quote already reports the
+  route and time problems. The settings are domain defaults
+  (`defaultTripSettings`) until the operator settings (H4). A missing leg
+  between two active points always reads as "distances being worked out";
+  once the legs job (spec 2, 3.7.4) stores pairs with no road, the quote
+  can tell the two apart.
 
 ### PR 5: `feat(trips)`: post a trip
 
