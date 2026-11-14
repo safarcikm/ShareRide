@@ -26,8 +26,8 @@ When this milestone is done:
   development sender.
 - Errors in the app and the API reach Sentry's EU region without personal
   data, and an uptime check alerts Martin's phone.
-- Martin runs a development build of the app on his own phone, against
-  staging, without his computer.
+- Martin runs the app on his own iPhone from TestFlight, against staging,
+  without his computer, and a development build on his phone.
 - Maestro runs the sign-up journey on an Android emulator in CI.
 - Anyone can see sample meeting points on a map and in a list, in the app and
   on the web.
@@ -155,18 +155,24 @@ Render, Frankfurt (deploys a commit once its checks pass)
   runs its TypeScript with type stripping, which keeps line and column
   numbers, so its stack traces need no source maps. The web app's source
   maps are uploaded from Render's build with a secret file; the phones'
-  with EAS builds (PR 5).
+  with EAS builds (PR 5b).
 - An uptime monitor checks `/v1/health/ready` every minute and alerts Martin
   through the Sentry app and email.
 
-### 4.4 Development builds and Maestro
+### 4.4 Phone builds and Maestro
 
-- `eas.json` with `development` and `preview` profiles; `app.config.ts`
-  gives each variant its own app ID and name (for example "ShareRide Dev"),
-  so builds sit side by side. The store app ID is chosen before the first
-  store upload (the `com.shareride.app` placeholder may not be free).
-- `expo-dev-client`. Expo Go keeps working until the map arrives, which needs
-  native code.
+- iPhone first (PR 5): an `eas.json` `preview` profile builds in Expo's
+  cloud, signs for the App Store and uploads to TestFlight, where internal
+  testers install it without Apple's review. It uses its own app ID,
+  `is.shareride.app.preview`, under Martin's account (decision 6). `app.json`
+  stays static, so `eas init` and Expo's tools can write to it. The store
+  app ID is chosen before the store listing (the `com.shareride.app`
+  placeholder on Android may not be free).
+- Development builds (PR 5b): a `development` profile with
+  `expo-dev-client`, and `app.config.ts` once a variant needs its own app ID
+  and name (for example "ShareRide Dev"), so builds sit side by side. Expo
+  Go keeps working: our own map needs no native code beyond what Expo Go
+  has ([ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)).
 - Maestro flows in `apps/mobile/maestro/`: sign up in English, sign out. A
   CI job builds an Android release APK pointed at the test API, starts an
   emulator, runs the flows and keeps screenshots on failure. It runs on pull
@@ -280,12 +286,32 @@ Split in two, so the server side can be checked on staging first.
       recorded
 - Verify: a test error from staging appears in Sentry with a readable stack
 
-### PR 5: `feat(mobile)`: development builds and Maestro
+### PR 5: `feat(mobile)`: iPhone builds to TestFlight
 
-- [ ] `eas.json`, `app.config.ts` variants, `expo-dev-client`
+Martin asked for the iPhone first (2026-11-14). He works on a Windows PC, so
+the builds run in Expo's cloud and reach his phone through TestFlight.
+
+- [ ] `eas.json` with a `preview` profile: signed for the App Store, sent to
+      TestFlight as "ShareRide Preview" (the name ShareRide stays free for
+      the store app), pointed at staging, reading Expo's `preview`
+      environment rather than production's; Node.js and pnpm versions pinned
+      to the repository's. Test: the profile, the app ID and the export
+      compliance answer stay as the runbook describes
+- [ ] App ID `is.shareride.app.preview` (decision 6) and
+      `usesNonExemptEncryption: false` (the app only uses HTTPS), so
+      TestFlight asks no export questions
+- [ ] Runbook `docs/operations/app-builds.md`: Martin's first build from
+      Windows, TestFlight, failures; README section
+- Verify: Martin installs the app from TestFlight and signs in on staging
+  with a real SMS
+
+### PR 5b: `feat(mobile)`: development builds, Android and Maestro
+
+- [ ] `development` profile, `expo-dev-client`, and a variant with its own
+      app ID and name (for example "ShareRide Dev"), so builds sit side by
+      side; an Android `preview` build for Google Play internal testing
 - [ ] Sentry's Expo plugin, so phone builds upload their source maps and
-      native debug files, and `EXPO_PUBLIC_APP_ENV` and
-      `EXPO_PUBLIC_SENTRY_DSN` per build profile
+      native debug files, and `EXPO_PUBLIC_SENTRY_DSN` per build profile
 - [ ] Sentry's native side: a native crash report does not pass the
       JavaScript scrubbing rule, so check what a test crash from a
       development build carries (Android tap breadcrumbs, the install ID,
@@ -340,8 +366,10 @@ thread when its PR is ready.
 3. Sentry: open an organisation **in the EU region** (it cannot be changed
    later), send the DSN for the blueprint, and add the uptime monitor
    (PR 4); a token as a Render secret file for the web source maps (PR 4b).
-4. Expo account, and the Apple Developer Program if decision 6 is accepted
-   (PR 5).
+4. Apple Developer Program as an individual (decision 6) and an Expo
+   account with a project named `shareride`, whose ID goes in `app.json`;
+   then the first build from his PC, which signs in to Apple (PR 5,
+   [app builds runbook](../operations/app-builds.md)).
 5. MapTiler: no longer needed ([ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)).
 6. Hetzner: account, a bucket in Helsinki and its keys (PR 7).
 7. Google Cloud: a project, the consent screen and three client IDs (PR 8).
@@ -360,10 +388,15 @@ thread when its PR is ready.
   our own domain.
 - **GitHub Actions minutes:** the emulator job is the costly one, so it runs
   only for app changes and nightly.
+- **iPhone builds** wait in Expo's free queue (15 a month). If the wait
+  slows the work, the Starter plan is $19 a month. If the App Store name
+  "ShareRide" is taken, the TestFlight app gets another name in App Store
+  Connect; the name on the phone stays ShareRide.
 
 ## 8. Definition of done
 
-All nine PRs merged with green CI; staging deploys on every merge; Martin has
-signed in on his phone with a development build, received a real SMS, seen
-the map, added a photo and signed in with Google and Apple; docs, ADRs,
-roadmap and CHANGELOG are updated.
+All ten PRs (1 to 9 and 5b) merged with green CI; staging deploys on every
+merge; Martin has signed in on his iPhone with the TestFlight build and on a
+phone with a development build, received a real SMS, seen the map, added a
+photo and signed in with Google and Apple; docs, ADRs, roadmap and CHANGELOG
+are updated.

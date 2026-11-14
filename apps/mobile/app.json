@@ -9,7 +9,10 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.shareride.app",
+      "bundleIdentifier": "is.shareride.app.preview",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
       "icon": {
         "light": "./assets/icon.png",
         "dark": "./assets/icon-dark.png",

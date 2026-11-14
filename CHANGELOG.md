@@ -205,6 +205,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   seats on each stretch without and with it; "Accept", or "Decline" with an
   optional reason only the operator sees. Below come the passengers by
   where they get in and out, and the seats held on each stretch.
+- iPhone builds in Expo's cloud for TestFlight, pointed at staging
+  (`apps/mobile/eas.json`, app ID `is.shareride.app.preview`), and the app
+  builds runbook with the first build from a Windows PC.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
