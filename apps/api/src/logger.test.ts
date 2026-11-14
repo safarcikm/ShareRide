@@ -1,4 +1,5 @@
 import { Writable } from "node:stream";
+import { DrizzleQueryError } from "drizzle-orm/errors";
 import { describe, expect, it } from "vitest";
 import { createLogger } from "./logger.ts";
 
@@ -44,5 +45,20 @@ describe("createLogger", () => {
     const { lines, destination } = capture();
     createLogger({ level: "info", destination }).warn({ errorCode: "code_invalid" }, "failed");
     expect(lines[0]).toMatchObject({ errorCode: "code_invalid" });
+  });
+
+  it("logs a failed query without its values", () => {
+    const { lines, destination } = capture();
+    const failed = new DrizzleQueryError(
+      'update "users" set "first_name" = $1, "email" = $2',
+      ["Sigríður", "sigga@example.com"],
+      new Error("connection lost"),
+    );
+    createLogger({ level: "info", destination }).error({ err: failed }, "unhandled error");
+    const line = JSON.stringify(lines[0]);
+    expect(line).toContain('Failed query: update \\"users\\"');
+    expect(line).toContain("connection lost");
+    expect(line).not.toContain("Sigríður");
+    expect(line).not.toContain("sigga@example.com");
   });
 });

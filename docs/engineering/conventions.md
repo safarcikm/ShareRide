@@ -111,7 +111,14 @@ imports end in `.ts`.
 
 - Structured JSON logs with a request ID.
 - No personal data in logs: no names, phone numbers, emails, message bodies or
-  precise locations. Log IDs instead.
+  precise locations. Log IDs instead. The keys the logger hides are
+  `personalDataKeys` in `packages/domain/src/privacy/redact.ts`.
+- Log an error under the key `err`. The logger then drops the values a
+  failed query lists (`withoutQueryValues` in `@shareride/db`); the query
+  text and the database's error code stay.
+- Error reports (Sentry) follow the same rule: `redactDeep` hides those keys
+  and any phone number, code, token, email or kennitala in text, and request
+  bodies, cookies, query strings, addresses and query values are never sent.
 - Log levels: `error` for things that need action, `warn` for degraded
   behaviour, `info` for business events, `debug` off in production.
 

@@ -64,7 +64,7 @@
 | Waitlist | Email, role, corridors, language, how they heard | Invite people to the beta | Consent (email confirmation) | Operator | Until they leave, 30 days after sign-up, or 12 months if never invited |
 | Feedback | Message, optional screenshot, app version, platform, screen | Improve the product | Legitimate interest | Operator | 12 months after the beta ends, or until the account is deleted |
 | Search log | From and to place, date searched for, result count, time, platform; no user, device or network identifier | Beta metrics | Not personal data by design | Operator | 14 months |
-| Technical logs | Request IDs, errors | Security and reliability | Legitimate interest | Operator | 30 days |
+| Technical logs | Request IDs, errors (logs, and Sentry error reports) | Security and reliability | Legitimate interest | Operator | 30 days |
 | Payments | Amounts, provider references, refunds, payouts | Payment, accounting | Contract; legal obligation | Participants; operator | As bookkeeping law requires (**verify**) |
 | Payout set-up (drivers) | Identity check and bank account, held by the payment provider | Paying drivers | Contract; legal obligation (provider's checks) | Provider; operator sees status only | Per the provider's terms |
 
@@ -77,7 +77,7 @@ processing agreement; Martin signs each one when he opens the account.
 | -------- | ---- | ------------- | ----- | -------- | --- |
 | Render | Processor | Everything the API stores: the database, logs. Requests reach Render through Cloudflare (United States company), which ends TLS at its nearest edge and so handles every request in transit | Frankfurt, Germany (United States company); Cloudflare's edge nearest the user | [ADR 0018](../decisions/0018-hosting-on-render-frankfurt.md) | To sign; check that Render's DPA lists Cloudflare as a sub-processor |
 | 46elks | Separate controller under telecom law | Phone number; the message text is not kept (`dontlog`) | Sweden | [ADR 0019](../decisions/0019-sms-with-46elks.md) | Not needed by its terms; ask for one if the lawyer advises |
-| Sentry | Processor | Scrubbed error reports: app version, device model, request path, network address | Frankfurt, Germany (United States company) | [ADR 0020](../decisions/0020-error-tracking-with-sentry-eu.md) | To sign |
+| Sentry | Processor | Scrubbed error reports: the error with its stack and nearby source lines, release, route pattern, request ID, request method and path, user agent and language, server runtime and system versions, and the API's outgoing requests (method, address, status); from the app also app version and device model. Sentry sees the network address a report comes from and is set not to store it. No request bodies, cookies, query strings or query values; phone numbers, codes, tokens, email addresses and kennitölur are removed from all text | Frankfurt, Germany (United States company) | [ADR 0020](../decisions/0020-error-tracking-with-sentry-eu.md) | To sign |
 | MapTiler | Processor | Network address and the map area viewed, with each tile request | Switzerland (adequacy decision) | [ADR 0021](../decisions/0021-map-tiles-from-maptiler.md) | To sign |
 | Hetzner | Processor | Profile photos | Helsinki, Finland | [ADR 0022](../decisions/0022-photo-storage-on-hetzner.md) | To sign |
 | Apple and Google | Separate controllers, at the person's choice | Their account ID and email, when the person signs in with them | Their own terms | [Spec 1](../specs/2026-11-13-sign-in-and-profile.md) | Not applicable |

@@ -93,3 +93,7 @@ envVarGroups:
         value: staging
       - key: LOG_LEVEL
         value: info
+      # Error reports (ADR 0020). The DSN is not a secret; add it here once
+      # the Sentry organisation exists (runbook, "Error reports and uptime").
+      # - key: SENTRY_DSN
+      #   value: https://...@....ingest.de.sentry.io/...

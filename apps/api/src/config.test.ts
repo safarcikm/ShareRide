@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ConfigError, loadConfig } from "./config.ts";
+import { ConfigError, loadConfig, loadErrorReportingConfig } from "./config.ts";
 
 const valid = {
   NODE_ENV: "production",
@@ -12,6 +12,9 @@ const valid = {
   ELKS_API_PASSWORD: "p-example",
   WEB_ORIGINS: "https://shareride.is, https://www.shareride.is",
   TRUST_PROXY: "2",
+  APP_ENV: "production",
+  SENTRY_DSN: "https://public@o1.ingest.de.sentry.io/2",
+  RENDER_GIT_COMMIT: "0123abc",
   WEB_APP_DIR: "/repo/web",
 };
 
@@ -38,6 +41,11 @@ describe("loadConfig", () => {
       },
       webOrigins: ["https://shareride.is", "https://www.shareride.is"],
       trustedProxies: 2,
+      errorReporting: {
+        dsn: "https://public@o1.ingest.de.sentry.io/2",
+        environment: "production",
+        release: "0123abc",
+      },
       webAppDir: "/repo/web",
     });
   });
@@ -154,5 +162,50 @@ describe("loadConfig", () => {
       expect((error as ConfigError).message).not.toContain("secret-password");
       expect((error as ConfigError).message).not.toContain("secret-short");
     }
+  });
+});
+
+describe("loadErrorReportingConfig", () => {
+  it("sends nothing by default, and calls the environment local", () => {
+    expect(loadErrorReportingConfig({})).toEqual({
+      dsn: undefined,
+      environment: "local",
+      release: undefined,
+    });
+  });
+
+  it("names the release by the commit Render built, unless SENTRY_RELEASE says otherwise", () => {
+    const env = {
+      SENTRY_DSN: "https://public@o1.ingest.de.sentry.io/2",
+      APP_ENV: "staging",
+      RENDER_GIT_COMMIT: "0123abc",
+    };
+    expect(loadErrorReportingConfig(env)).toEqual({
+      dsn: env.SENTRY_DSN,
+      environment: "staging",
+      release: "0123abc",
+    });
+    expect(loadErrorReportingConfig({ ...env, SENTRY_RELEASE: "v1" }).release).toBe("v1");
+  });
+
+  it("refuses a DSN that is not an https URL, and an unknown APP_ENV", () => {
+    expect(() => loadErrorReportingConfig({ SENTRY_DSN: "http://x@example.com/1" })).toThrow(
+      ConfigError,
+    );
+    expect(() => loadErrorReportingConfig({ APP_ENV: "prod" })).toThrow(ConfigError);
+  });
+
+  it("refuses a DSN outside Sentry's EU region (ADR 0020)", () => {
+    for (const host of ["o1.ingest.us.sentry.io", "o1.ingest.sentry.io", "sentry.example.com"]) {
+      expect(() => loadErrorReportingConfig({ SENTRY_DSN: `https://public@${host}/1` })).toThrow(
+        ConfigError,
+      );
+    }
+  });
+
+  it("refuses to turn on tracing, which would send more than errors", () => {
+    expect(() => loadErrorReportingConfig({ SENTRY_TRACES_SAMPLE_RATE: "0.1" })).toThrow(
+      "SENTRY_TRACES_SAMPLE_RATE: not used, error reports only (ADR 0020)",
+    );
   });
 });

@@ -140,6 +140,49 @@ proxies' entry (then every client shares one address; see
 The cron job's runs are under its **Events** and **Logs**: each run logs how
 many records it deleted, and a failed run exits with an error.
 
+## Error reports and uptime
+
+The API and the clean-up job send unexpected errors to Sentry's EU region
+([ADR 0020](../decisions/0020-error-tracking-with-sentry-eu.md)) once
+`SENTRY_DSN` is set. A report carries:
+
+- the error, its stack and the source lines around each frame;
+- the release (the commit), the environment, the route pattern and the
+  request ID;
+- the request's method and path (also the report's transaction name), and
+  its `User-Agent`, `Accept-Language` and `Content-Type` headers;
+- the Node.js, operating system and machine versions and sizes;
+- the API's own recent outgoing requests (method, address and status), such
+  as the one to 46elks.
+
+Never request bodies, cookies, query strings, network addresses or a failed
+query's values. Phone numbers, codes, tokens, email addresses and kennitölur
+are removed from all text. Errors only: the DSN must be in the EU region
+(`*.ingest.de.sentry.io`), and `SENTRY_TRACES_SAMPLE_RATE` stops the API
+from starting, so tracing cannot be turned on by accident.
+
+Set it up once (Martin):
+
+1. At sentry.io, create the organisation and choose **EU** for data
+   storage. It cannot be changed later.
+2. Create a project for the API (platform Node.js). In its **Settings**,
+   **Security & Privacy**, keep the data scrubber and its defaults on, and
+   turn on **Prevent Storing of IP Addresses**.
+3. Copy the project's DSN (**Settings**, **Client Keys**). It is not a
+   secret: it goes in the blueprint as `SENTRY_DSN` in the
+   `shareride-staging` group, which reaches both the API and the clean-up
+   job.
+4. Check it after the next deploy: open the API's **Shell** in Render and
+   run `node apps/api/src/sentry-check-cli.ts`. A "Sentry check from
+   staging" error should appear in Sentry within a minute, with the commit
+   as its release.
+5. Create an uptime monitor for `<staging address>/v1/health/ready`,
+   checked every minute in the `staging` environment, alerting you by email
+   and in the Sentry app on your phone.
+
+Sentry keeps reports for 30 days on the free plan, the same as our logs
+([retention](../compliance/privacy-gdpr.md)).
+
 ## Pause SMS
 
 If someone abuses sign-in to send SMS (see SMS pumping in

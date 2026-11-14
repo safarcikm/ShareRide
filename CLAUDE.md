@@ -87,6 +87,7 @@ pnpm --filter @shareride/mobile export # bundles for iOS, Android and web (dist/
 pnpm --filter @shareride/mobile e2e:web  # build the web app; Playwright journeys against a test API
 pnpm --filter @shareride/api clean-up  # delete sign-in records past retention (hourly on servers)
 pnpm --filter @shareride/api test:contract  # 46elks dry run, needs its keys; not in CI
+pnpm --filter @shareride/api sentry:check   # send a test error (needs SENTRY_DSN)
 pnpm --filter @shareride/db generate   # SQL migration from schema changes
 infra/docker/smoke-test.sh <image>     # start the API image and check it (needs DATABASE_URL)
 pnpm --filter @shareride/domain test   # one package
