@@ -8,8 +8,12 @@ here, update or accept the linked ADR, and move the row to "Answered".
 
 ## Open
 
-None right now (2026-11-14). A new question goes in a table here with the
-next free number (Q17 onwards), a recommendation and the docs it affects.
+| #   | Question | Recommendation (the working assumption) | Affects |
+| --- | -------- | --------------------------------------- | ------- |
+| Q17 | How long does a trip's page stay open by link once the trip is over (departed, completed or cancelled)? Spec 4 makes trip pages public by link, and a finished trip's page shows the driver's first name, car and where they went. | Until a week after the last stop's planned time; after that the link answers "This trip can't be found". Passengers keep the trip in their bookings (spec 5). Raised with milestone 3, PR 7a, which builds it this way | [Spec 4](../specs/2026-11-13-search-and-trip-details.md) 3.7, [privacy](../compliance/privacy-gdpr.md) |
+
+A new question goes in the table with the next free number (Q18 onwards), a
+recommendation and the docs it affects.
 
 ## Answered
 

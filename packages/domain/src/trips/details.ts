@@ -4,6 +4,7 @@
 import type { Money } from "../money.ts";
 import { err, ok, type Result } from "../result.ts";
 import { freeSeats, partPrice, type SearchableTrip, type SearchSettings } from "./search.ts";
+import type { TripStatus } from "./trip.ts";
 
 /** Stop positions on the trip; left out, the part runs from the first stop or to the last. */
 export interface PartChoice {
@@ -83,4 +84,33 @@ export function tripPart(
     total: isk(price * choice.seats),
     state,
   });
+}
+
+/**
+ * Whether anyone with the link can open a trip's page (spec 4, R4.6): not
+ * a draft, and not once a week has passed since its last stop, as the page
+ * names the driver and where they went (the assumption for open question
+ * Q17). Its passengers will keep it in their bookings (spec 5).
+ */
+export function tripPageOpen(
+  trip: { readonly status: TripStatus; readonly lastStopAt: Date },
+  now: Date,
+  settings: Pick<SearchSettings, "tripPageDaysAfter">,
+): boolean {
+  if (trip.status === "draft") return false;
+  return now.getTime() <= trip.lastStopAt.getTime() + settings.tripPageDaysAfter * 86_400_000;
+}
+
+/** How many people colours spec 15 has (section 4.2). */
+export const peopleColourCount = 5;
+
+/**
+ * The driver's people colour, as an index: the same on every trip, so the
+ * driver's shape person and initial look the same (spec 15, 5.3). It comes
+ * from the driver's ID, which itself is never shown.
+ */
+export function peopleColourOf(id: string): number {
+  let hash = 0;
+  for (const char of id) hash = (hash * 31 + (char.codePointAt(0) ?? 0)) % 1_000_003;
+  return hash % peopleColourCount;
 }

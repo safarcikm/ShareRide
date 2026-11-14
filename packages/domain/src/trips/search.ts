@@ -16,6 +16,8 @@ export interface SearchSettings {
   readonly alternativeDays: number;
   /** Booking closes this many minutes before the boarding stop (rule S4). */
   readonly bookingCutoffMinutes: number;
+  /** A trip's page stays open by link this many days after its last stop (open question Q17). */
+  readonly tripPageDaysAfter: number;
 }
 
 export const defaultSearchSettings: SearchSettings = {
@@ -23,6 +25,7 @@ export const defaultSearchSettings: SearchSettings = {
   alternativesRadiusM: 20_000,
   alternativeDays: 3,
   bookingCutoffMinutes: 15,
+  tripPageDaysAfter: 7,
 };
 
 /**

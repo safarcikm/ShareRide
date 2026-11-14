@@ -1,6 +1,12 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { tripPart, type PartChoice } from "./details.ts";
+import {
+  peopleColourCount,
+  peopleColourOf,
+  tripPageOpen,
+  tripPart,
+  type PartChoice,
+} from "./details.ts";
 import { defaultSearchSettings, freeSeats, partPrice, type SearchableTrip } from "./search.ts";
 
 const settings = defaultSearchSettings;
@@ -178,5 +184,35 @@ describe("tripPart (spec 4, 3.6)", () => {
         },
       ),
     );
+  });
+});
+
+describe("peopleColourOf (spec 15, 5.3)", () => {
+  it("gives a driver the same colour every time, and spreads drivers over all five", () => {
+    const id = "0190a1d6-0000-7000-8000-0000000000d1";
+    expect(peopleColourOf(id)).toBe(peopleColourOf(id));
+    const colours = new Set(
+      Array.from({ length: 50 }, (_, n) =>
+        peopleColourOf(`0190a1d6-0000-7000-8000-${String(n).padStart(12, "0")}`),
+      ),
+    );
+    expect(colours).toEqual(new Set([0, 1, 2, 3, 4]));
+    expect(peopleColourCount).toBe(5);
+  });
+});
+
+describe("tripPageOpen (spec 4, R4.6; Q17)", () => {
+  const lastStopAt = at("2026-11-15T14:00:00Z");
+  const days = (n: number) => new Date(lastStopAt.getTime() + n * 86_400_000);
+
+  it("keeps a trip's page open until a week after its last stop, whatever its status", () => {
+    for (const status of ["published", "departed", "completed", "cancelled"] as const) {
+      expect(tripPageOpen({ status, lastStopAt }, days(7), settings)).toBe(true);
+      expect(tripPageOpen({ status, lastStopAt }, days(7.01), settings)).toBe(false);
+    }
+  });
+
+  it("never opens a draft", () => {
+    expect(tripPageOpen({ status: "draft", lastStopAt }, now, settings)).toBe(false);
   });
 });

@@ -3,6 +3,7 @@ import {
   carColours,
   defaultTripSettings,
   partStates,
+  peopleColourCount,
   timesOfDay,
 } from "@shareride/domain";
 import { z } from "zod";
@@ -151,11 +152,16 @@ export type TripDetailsQuery = z.input<typeof tripDetailsQuerySchema>;
  */
 export const tripDetailsSchema = z.object({
   id: z.uuid(),
-  /** Every stop in travel order; any can become the boarding or alighting stop. */
+  /**
+   * Every stop in travel order; any can become the boarding or alighting
+   * stop. A finished trip's points may have been retired since.
+   */
   stops: z.array(
     z.object({
       position: z.int().nonnegative(),
-      meetingPoint: meetingPointSummarySchema,
+      meetingPoint: meetingPointSummarySchema.extend({
+        status: z.enum(["active", "paused", "retiring", "retired"]),
+      }),
       plannedAt: timestampSchema,
     }),
   ),
@@ -178,8 +184,18 @@ export const tripDetailsSchema = z.object({
   }),
   /** Seats the driver offers on the trip (R3.9). */
   seatsOffered: z.int().positive(),
-  /** Photos and ratings come with specs 1 and 8; until then every driver is new. */
-  driver: z.object({ firstName: z.string() }),
+  /**
+   * Photos and ratings come with specs 1 and 8; until then every driver is
+   * new. `colour` picks one of spec 15's five people colours, the same on
+   * every trip of this driver.
+   */
+  driver: z.object({
+    firstName: z.string(),
+    colour: z
+      .int()
+      .min(0)
+      .max(peopleColourCount - 1),
+  }),
   /** Make, model and colour; the number plate only after booking (spec 3, decision 7). */
   car: z.object({ make: z.string(), model: z.string(), colour: z.enum(carColours) }).nullable(),
   preferences: tripPreferencesSchema,
@@ -205,7 +221,10 @@ export const tripDetailsRoute = defineRoute({
       schema: errorResponseSchema,
     },
     401: searchErrors[401],
-    404: { description: "not_found: no such published trip", schema: errorResponseSchema },
+    404: {
+      description: "not_found: no such trip, a draft, or a week past its last stop (Q17)",
+      schema: errorResponseSchema,
+    },
     429: searchErrors[429],
   },
 });

@@ -3,6 +3,8 @@ import { schema, type Database } from "@shareride/db";
 import {
   err,
   ok,
+  peopleColourOf,
+  tripPageOpen,
   tripPart,
   type CarColour,
   type InvalidPart,
@@ -20,7 +22,10 @@ const { meetingPoints, segments, trips, tripStops, users, vehicles } = schema;
 export type TripDetailsError = { readonly code: "not_found" } | InvalidPart;
 
 export interface TripDetailsService {
-  /** A trip anyone can open by link (R4.6), for one part of it; drafts are nobody's to see. */
+  /**
+   * A trip anyone can open by link (R4.6), for one part of it, until a week
+   * after its last stop (Q17); drafts are nobody's to see.
+   */
   details(
     id: string,
     choice: PartChoice,
@@ -31,7 +36,7 @@ export interface TripDetailsService {
 export function createTripDetailsService(dependencies: {
   readonly db: Database;
   readonly clock: () => Date;
-  readonly settings: Pick<SearchSettings, "bookingCutoffMinutes">;
+  readonly settings: Pick<SearchSettings, "bookingCutoffMinutes" | "tripPageDaysAfter">;
 }): TripDetailsService {
   const { db, clock, settings } = dependencies;
 
@@ -47,8 +52,16 @@ export function createTripDetailsService(dependencies: {
         .innerJoin(users, eq(users.id, trips.driverId))
         .leftJoin(vehicles, eq(vehicles.id, trips.vehicleId))
         .where(and(eq(trips.id, id), ne(trips.status, "draft")));
+      const now = clock();
       if (found === undefined) return err({ code: "not_found" });
       const { trip } = found;
+      const lastStopAt = trip.arrivesAt ?? trip.departsAt;
+      if (
+        lastStopAt === null ||
+        !tripPageOpen({ status: trip.status as TripStatus, lastStopAt }, now, settings)
+      ) {
+        return err({ code: "not_found" });
+      }
 
       const [stopRows, segmentRows] = await Promise.all([
         db
@@ -76,7 +89,7 @@ export function createTripDetailsService(dependencies: {
         },
         choice,
         viewerId,
-        clock(),
+        now,
         settings,
       );
       if (!part.ok) return part;
@@ -87,12 +100,15 @@ export function createTripDetailsService(dependencies: {
         id: trip.id,
         stops: stopRows.map((row, position) => ({
           position,
-          meetingPoint: toSummary(row.point),
+          meetingPoint: {
+            ...toSummary(row.point),
+            status: row.point.status as TripDetails["stops"][number]["meetingPoint"]["status"],
+          },
           plannedAt: (stops[position]?.plannedAt ?? new Date(0)).toISOString(),
         })),
         part: part.value,
         seatsOffered: trip.capacity,
-        driver: { firstName: found.firstName ?? "" },
+        driver: { firstName: found.firstName ?? "", colour: peopleColourOf(trip.driverId) },
         car:
           car === null
             ? null

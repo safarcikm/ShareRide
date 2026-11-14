@@ -1,6 +1,14 @@
-import { tripDetailsRoute, tripSearchRoute, type TripDetailsQuery } from "@shareride/contracts";
+import {
+  createTripRoute,
+  deleteTripRoute,
+  tripDetailsRoute,
+  tripSearchRoute,
+  updateTripRoute,
+  type TripDetailsQuery,
+} from "@shareride/contracts";
 import { schema } from "@shareride/db";
 import { sampleId, seedSampleMeetingPoints, seedSampleTrips } from "@shareride/db/seed";
+import { peopleColourOf } from "@shareride/domain";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
@@ -59,7 +67,7 @@ describe("GET /v1/trips/{id} (spec 4, 3.6)", () => {
         state: "open",
       },
       seatsOffered: 3,
-      driver: { firstName: "Anna" },
+      driver: { firstName: "Anna", colour: peopleColourOf(sampleId("user:anna")) },
       car: { make: "Toyota", model: "Yaris", colour: "white" },
       bookingMode: "approval",
       note: "",
@@ -165,6 +173,46 @@ describe("GET /v1/trips/{id} (spec 4, 3.6)", () => {
     }
   });
 
+  it("opens a finished trip whose meeting points were retired since, for a week after its last stop", async () => {
+    await api.connection.db
+      .update(schema.trips)
+      .set({ status: "completed" })
+      .where(eq(schema.trips.id, north));
+    await api.connection.db
+      .update(schema.meetingPoints)
+      .set({ status: "retired" })
+      .where(eq(schema.meetingPoints.id, point("blonduos")));
+    try {
+      const finished = await details(north);
+      expect(finished.part.state).toBe("departed");
+      expect(finished.stops[2]?.meetingPoint.status).toBe("retired");
+
+      const lastStopAt = new Date(finished.stops.at(-1)?.plannedAt ?? 0).getTime();
+      const untilClosed = (lastStopAt - api.now().getTime()) / 1000 + 7 * 86_400;
+      api.advance(untilClosed);
+      try {
+        expect((await details(north)).id).toBe(north);
+        api.advance(1);
+        const closed = await api.client.call(tripDetailsRoute, {
+          params: { id: north },
+          query: {},
+        });
+        expect(closed).toMatchObject({ status: 404, error: { code: "not_found" } });
+      } finally {
+        api.advance(-untilClosed - 1);
+      }
+    } finally {
+      await api.connection.db
+        .update(schema.meetingPoints)
+        .set({ status: "active" })
+        .where(eq(schema.meetingPoints.id, point("blonduos")));
+      await api.connection.db
+        .update(schema.trips)
+        .set({ status: "published" })
+        .where(eq(schema.trips.id, north));
+    }
+  });
+
   it("tells the signed-in driver the trip is their own, and refuses a token that is not valid", async () => {
     const { accessToken, userId } = await api.signIn(api.newPhoneNumber());
     expect((await details(north, {}, accessToken)).part.state).toBe("open");
@@ -189,7 +237,8 @@ describe("GET /v1/trips/{id} (spec 4, 3.6)", () => {
     expect(stale).toMatchObject({ status: 401, error: { code: "unauthenticated" } });
   });
 
-  it("counts towards the search limit of the address", async () => {
+  it("counts towards the search limit of the address, before the token, and leaves drafts alone", async () => {
+    const { accessToken } = await api.signIn(api.newPhoneNumber());
     api.ip = "198.51.100.9";
     let refused = false;
     for (let attempt = 0; attempt < 80 && !refused; attempt += 1) {
@@ -197,5 +246,29 @@ describe("GET /v1/trips/{id} (spec 4, 3.6)", () => {
       refused = !result.ok && result.status === 429;
     }
     expect(refused).toBe(true);
+    const stale = await api.client.call(tripDetailsRoute, {
+      params: { id: north },
+      query: {},
+      accessToken: "sr_at_not-a-real-token",
+    });
+    expect(stale).toMatchObject({ status: 429, error: { code: "rate_limited" } });
+
+    // Changing and deleting a draft at the same address are not limited.
+    const draft = await api.client.call(createTripRoute, {
+      accessToken,
+      body: { stops: [point("bsi"), point("borgarnes")] },
+    });
+    if (!draft.ok) throw new Error(draft.error.code);
+    const changed = await api.client.call(updateTripRoute, {
+      accessToken,
+      params: { id: draft.data.id },
+      body: { note: "Room for skis" },
+    });
+    expect(changed).toMatchObject({ ok: true, status: 200 });
+    const deleted = await api.client.call(deleteTripRoute, {
+      accessToken,
+      params: { id: draft.data.id },
+    });
+    expect(deleted).toMatchObject({ ok: true, status: 204 });
   });
 });
