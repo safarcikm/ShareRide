@@ -1,9 +1,4 @@
-import {
-  driverReadinessRoute,
-  listVehiclesRoute,
-  type DriverReadiness,
-  type Vehicle,
-} from "@shareride/contracts";
+import { driverReadinessRoute, listVehiclesRoute, type Vehicle } from "@shareride/contracts";
 import { router } from "expo-router";
 import { useCallback, type ReactNode } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
@@ -15,8 +10,8 @@ import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { Body, Heading, Title } from "@/components/text";
-import { TickRow } from "@/components/tick-list";
-import { carSummary, dayInIceland } from "@/driving/texts";
+import { ReadinessList } from "@/driving/readiness-list";
+import { carSummary } from "@/driving/texts";
 import { useLanguage } from "@/i18n/language";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { spacing, typography } from "@/theme/tokens";
@@ -65,7 +60,20 @@ export default function DriveScreen() {
           ) : (
             <Body>{t("driver.ready.intro")}</Body>
           )}
-          <Checklist readiness={readiness.data} />
+          <ReadinessList readiness={readiness.data} />
+          <Button
+            label={t("trip.post")}
+            onPress={() => {
+              router.push("/drive/trips/new");
+            }}
+          />
+          <Button
+            variant="secondary"
+            label={t("trip.myTrips")}
+            onPress={() => {
+              router.push("/drive/trips");
+            }}
+          />
           <Cars cars={vehicles.data.vehicles} />
         </>
       );
@@ -78,60 +86,6 @@ export default function DriveScreen() {
       <Title>{t("driver.ready.title")}</Title>
       {content}
     </Screen>
-  );
-}
-
-function Checklist({ readiness }: { readonly readiness: DriverReadiness }) {
-  const { locale, t } = useLanguage();
-  return (
-    <Card>
-      {readiness.items.map(({ item, done }) => {
-        switch (item) {
-          case "photo":
-            return (
-              <TickRow
-                key={item}
-                testID="readiness-photo"
-                label={t("driver.ready.photo")}
-                done={done}
-                detail={done ? undefined : t("driver.ready.photoLater")}
-              />
-            );
-          case "car":
-            return (
-              <TickRow
-                key={item}
-                testID="readiness-car"
-                label={t("driver.ready.car")}
-                done={done}
-                action={{ label: t("vehicle.add"), onPress: addCar }}
-              />
-            );
-          case "licence":
-            return (
-              <TickRow
-                key={item}
-                testID="readiness-licence"
-                label={t("driver.ready.licence")}
-                done={done}
-                detail={
-                  readiness.licenceDeclaredAt === null
-                    ? undefined
-                    : t("driver.ready.licenceDone", {
-                        date: dayInIceland(readiness.licenceDeclaredAt, locale),
-                      })
-                }
-                action={{
-                  label: t("driver.ready.confirmLicence"),
-                  onPress: () => {
-                    router.push("/drive/licence");
-                  },
-                }}
-              />
-            );
-        }
-      })}
-    </Card>
   );
 }
 

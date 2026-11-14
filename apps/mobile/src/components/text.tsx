@@ -21,7 +21,7 @@ export function Title({ children }: { readonly children: ReactNode }) {
  * headings are h2, so screen readers can move through a screen's parts.
  * React Native's types do not know aria-level; react-native-web reads it.
  */
-const sectionLevel: object = Platform.OS === "web" ? { "aria-level": 2 } : {};
+export const sectionLevel: object = Platform.OS === "web" ? { "aria-level": 2 } : {};
 
 /** A section or card heading, at the left, read out as a heading. */
 export function Heading({ children }: { readonly children: ReactNode }) {

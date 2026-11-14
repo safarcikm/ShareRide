@@ -248,10 +248,10 @@ Split in two, like milestone 2's PR 4: 5a the server, 5b the screens.
 
 - [x] 5a: Trips, stops, segments; drafts; publish with every check; overlap;
       draft clean-up; sample trips
-- [ ] 5b: The five steps (route, date and times, price, seats and
+- [x] 5b: The five steps (route, date and times, price, seats and
       preferences, check and publish) and the published screen; "My trips"
       lists drafts and published trips
-- [ ] 5b: Browser journey: a first-time driver sets up and publishes a trip,
+- [x] 5b: Browser journey: a first-time driver sets up and publishes a trip,
       in English and Icelandic
 - Verify: Martin publishes Reykjavík to Akureyri on the web
 - 5a notes: publishing locks the driver's row, so two publishes cannot
@@ -266,6 +266,20 @@ Split in two, like milestone 2's PR 4: 5a the server, 5b the screens.
   or is published; a paused one stays, and publishing names it. Not built
   yet from spec 3, 3.9: telling the driver a stop left, offering a point
   activated on the way, and keeping a draft on the phone while offline.
+- 5b notes: spec 15's switch, radio card, stepper, step progress, price
+  level, calendar, icon button and bottom bar are built; the price level's
+  handle is a plain round handle until the shape people and the seat view
+  are drawn (with booking, spec 5). A draft started before the first car
+  gets that car when it is published. Changing the departure moves every
+  planned time, as on the server. "Share" and "Post the return trip" on the
+  published screen wait for trip details (PR 7) and spec 6; the route map
+  waits for PR 8. Month and weekday names and digit grouping are our own,
+  not Intl's: a browser or phone without Icelandic calendar data showed
+  "M11" for November. Each step loads the draft again when it comes back
+  into view, so Back never saves an old copy, and publishing or deleting
+  closes the steps. Icelandic texts that put a preposition before a
+  meeting point's name ("Tími á Hof, Akureyri") wait for the native
+  speaker's review.
 
 ### PR 6: `feat(search)`: search and results
 

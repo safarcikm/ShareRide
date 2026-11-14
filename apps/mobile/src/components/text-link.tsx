@@ -8,12 +8,21 @@ import { usePalette } from "@/theme/use-palette";
  * underlined: moss on basalt text is only 2.3:1, so the underline is what
  * marks it as a link (spec 15, section 5.1).
  */
-export function TextLink({ label, href }: { readonly label: string; readonly href: Href }) {
+export function TextLink({
+  label,
+  href,
+  accessibilityLabel,
+}: {
+  readonly label: string;
+  readonly href: Href;
+  /** Read instead of the label when the label needs its context, such as "Edit: Route". */
+  readonly accessibilityLabel?: string;
+}) {
   const palette = usePalette();
   return (
     <Pressable
       accessibilityRole="link"
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel ?? label}
       onPress={() => {
         router.push(href);
       }}
