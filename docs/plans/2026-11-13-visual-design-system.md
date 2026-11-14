@@ -95,8 +95,8 @@ which must be merged first.
 - After Martin saw the screenshots (2026-11-13): buttons fit their label
   instead of filling the width; text fields show focus with their own moss
   outline instead of the blue ring; the screenshots are taken before any key
-  is pressed. Whether to keep the blue ring on buttons and links is Martin's
-  call (asked 2026-11-13).
+  is pressed. Martin chose to keep the blue ring on buttons and links, for
+  the keyboard only (2026-11-14).
 
 Not in this PR (they come with the screens of specs 3 to 5, spec 15
 section 5.2): tag colours, the rating star, people and car colours, shape
