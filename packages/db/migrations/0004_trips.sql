@@ -58,7 +58,7 @@ CREATE TABLE "trips" (
 	CONSTRAINT "trips_smoking_check" CHECK ("trips"."smoking" in ('no', 'breaks_outside')),
 	CONSTRAINT "trips_chat_check" CHECK ("trips"."chat" in ('quiet', 'some', 'chatty')),
 	CONSTRAINT "trips_note_check" CHECK (char_length("trips"."note") <= 500),
-	CONSTRAINT "trips_times_check" CHECK (("trips"."departs_at" is null) = ("trips"."arrives_at" is null) and ("trips"."departs_at" is null or "trips"."departs_at" < "trips"."arrives_at")),
+	CONSTRAINT "trips_times_check" CHECK (("trips"."departs_at" is null) = ("trips"."arrives_at" is null) and ("trips"."status" = 'draft' or "trips"."departs_at" is null or "trips"."departs_at" < "trips"."arrives_at")),
 	CONSTRAINT "trips_published_check" CHECK ("trips"."status" = 'draft' or ("trips"."vehicle_id" is not null and "trips"."departs_at" is not null and "trips"."published_at" is not null))
 );
 --> statement-breakpoint

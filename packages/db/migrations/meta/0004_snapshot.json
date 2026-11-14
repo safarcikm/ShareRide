@@ -1456,7 +1456,7 @@
         },
         "trips_times_check": {
           "name": "trips_times_check",
-          "value": "(\"trips\".\"departs_at\" is null) = (\"trips\".\"arrives_at\" is null) and (\"trips\".\"departs_at\" is null or \"trips\".\"departs_at\" < \"trips\".\"arrives_at\")"
+          "value": "(\"trips\".\"departs_at\" is null) = (\"trips\".\"arrives_at\" is null) and (\"trips\".\"status\" = 'draft' or \"trips\".\"departs_at\" is null or \"trips\".\"departs_at\" < \"trips\".\"arrives_at\")"
         },
         "trips_published_check": {
           "name": "trips_published_check",

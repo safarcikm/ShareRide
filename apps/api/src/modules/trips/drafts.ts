@@ -278,6 +278,49 @@ export function createTripService(dependencies: {
     );
   }
 
+  /**
+   * Takes stops whose point was retired, or put back in preparation, off a
+   * draft (spec 3, 3.9), and keeps its departure and arrival those of the
+   * stops left. Paused points stay: a pause is short, and publishing names
+   * the stop. Answers whether any stop went.
+   */
+  async function dropUnlistedStops(tx: Transaction, tripId: string): Promise<boolean> {
+    const unlisted = await tx
+      .select({ id: tripStops.id })
+      .from(tripStops)
+      .innerJoin(meetingPoints, eq(meetingPoints.id, tripStops.meetingPointId))
+      .where(
+        and(eq(tripStops.tripId, tripId), inArray(meetingPoints.status, ["draft", "retired"])),
+      );
+    if (unlisted.length === 0) return false;
+    await tx.delete(tripStops).where(
+      inArray(
+        tripStops.id,
+        unlisted.map((stop) => stop.id),
+      ),
+    );
+    const left = await tx
+      .select({ id: tripStops.id, plannedAt: tripStops.plannedAt })
+      .from(tripStops)
+      .where(eq(tripStops.tripId, tripId))
+      .orderBy(asc(tripStops.position));
+    // Positions stay contiguous from 0 (invariant 1). Each stop moves to a
+    // place freed before it, so the order never clashes.
+    for (const [position, stop] of left.entries()) {
+      await tx.update(tripStops).set({ position }).where(eq(tripStops.id, stop.id));
+    }
+    const times = left.map((stop) => stop.plannedAt);
+    const planned = left.length > 0 && times.every((time) => time !== null);
+    await tx
+      .update(trips)
+      .set({
+        departsAt: planned ? times[0] : null,
+        arrivesAt: planned ? times.at(-1) : null,
+      })
+      .where(eq(trips.id, tripId));
+    return true;
+  }
+
   const noteOf = (note: string | undefined) => note?.normalize("NFC");
   const noteTooLong = (note: string | undefined) =>
     note !== undefined && Array.from(note).length > noteMaxLength;
@@ -368,6 +411,7 @@ export function createTripService(dependencies: {
           if (!(await myCar(tx, userId, body.vehicleId)))
             return err({ code: "vehicle_unavailable" });
         }
+        await dropUnlistedStops(tx, tripId);
         const current = await tx
           .select()
           .from(tripStops)
@@ -425,6 +469,7 @@ export function createTripService(dependencies: {
         const row = await mine(tx, userId, tripId);
         if (row === undefined || row.status === "cancelled") return err({ code: "not_found" });
         if (row.status !== "draft") return err({ code: "trip_not_draft" });
+        await dropUnlistedStops(tx, tripId);
 
         const stopRows = await tx
           .select({ stop: tripStops, point: meetingPoints })

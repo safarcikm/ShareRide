@@ -74,7 +74,8 @@ export const trips = pgTable(
     check("trips_note_check", sql`char_length(${table.note}) <= ${sql.raw(String(noteMaxLength))}`),
     check(
       "trips_times_check",
-      sql`(${table.departsAt} is null) = (${table.arrivesAt} is null) and (${table.departsAt} is null or ${table.departsAt} < ${table.arrivesAt})`,
+      // A draft keeps the times as the driver left them; publishing checks them (R3.6).
+      sql`(${table.departsAt} is null) = (${table.arrivesAt} is null) and (${table.status} = 'draft' or ${table.departsAt} is null or ${table.departsAt} < ${table.arrivesAt})`,
     ),
     check(
       "trips_published_check",

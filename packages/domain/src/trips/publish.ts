@@ -8,6 +8,7 @@ import { checkNote, type NoteProblem } from "./note.ts";
 import { isPriceLevel, priceCap, segmentPrice, suggestedPrice } from "./prices.ts";
 import {
   checkRoute,
+  type CheckedRoute,
   stopsOutOfSeason,
   type DistancesMissing,
   type LegLookup,
@@ -16,7 +17,7 @@ import {
   type RouteWarning,
 } from "./route.ts";
 import type { TripSettings } from "./settings.ts";
-import { checkTimes, type TimeProblem, type TimeWarning } from "./times.ts";
+import { checkDeparture, checkTimes, type TimeProblem, type TimeWarning } from "./times.ts";
 
 export interface PublishStop {
   readonly id: string;
@@ -112,26 +113,22 @@ export function checkTripForPublishing(
   const unavailable = trip.stops.flatMap((stop, index) =>
     stop.offered ? [] : [{ code: "stop_unavailable" as const, stop: index }],
   );
-  if (unavailable.length > 0) {
-    // The legs of a paused or retired point may be gone; the driver changes
-    // the route first (spec 3, 3.9).
-    return ok({
-      problems: [...problems, ...unavailable],
-      warnings,
-      segments: [],
-      departsAt,
-      arrivesAt,
-    });
+  problems.push(...unavailable);
+  // The legs of a paused or retired point may be gone, so with one on the
+  // route only the checks that need no distances run; the driver changes
+  // the route first (spec 3, 3.9).
+  let route: CheckedRoute | null = null;
+  if (unavailable.length === 0) {
+    const checked = checkRoute(
+      trip.stops.map((stop) => stop.id),
+      legs,
+      settings,
+    );
+    if (!checked.ok) return err(checked.error);
+    route = checked.value;
+    problems.push(...route.problems);
+    warnings.push(...route.warnings);
   }
-
-  const route = checkRoute(
-    trip.stops.map((stop) => stop.id),
-    legs,
-    settings,
-  );
-  if (!route.ok) return err(route.error);
-  problems.push(...route.value.problems);
-  warnings.push(...route.value.warnings);
 
   if (times === null || departsAt === null || arrivesAt === null) {
     problems.push({ code: "times_missing" });
@@ -142,27 +139,32 @@ export function checkTripForPublishing(
         departsAt,
       ),
     );
-    const checked = checkTimes(
-      times,
-      route.value.segments.map((segment) => segment.durationS),
-      now,
-      settings,
-    );
-    problems.push(...checked.problems);
-    warnings.push(...checked.warnings);
+    if (route === null) {
+      problems.push(...checkDeparture(departsAt, now, settings));
+    } else {
+      const checked = checkTimes(
+        times,
+        route.segments.map((segment) => segment.durationS),
+        now,
+        settings,
+      );
+      problems.push(...checked.problems);
+      warnings.push(...checked.warnings);
+    }
     if (trip.otherTrips.some((other) => overlaps({ departsAt, arrivesAt }, other))) {
       problems.push({ code: "overlaps_trip" });
     }
   }
   problems.push(...checkNote(trip.note));
 
-  const segments = levelValid
-    ? route.value.segments.map((segment) => ({
-        ...segment,
-        suggestedPrice: suggestedPrice(segment.distanceM, settings),
-        cap: priceCap(segment.distanceM, trip.seats, settings),
-        price: segmentPrice(segment.distanceM, trip.priceLevel, trip.seats, settings),
-      }))
-    : [];
+  const segments =
+    levelValid && route !== null
+      ? route.segments.map((segment) => ({
+          ...segment,
+          suggestedPrice: suggestedPrice(segment.distanceM, settings),
+          cap: priceCap(segment.distanceM, trip.seats, settings),
+          price: segmentPrice(segment.distanceM, trip.priceLevel, trip.seats, settings),
+        }))
+      : [];
   return ok({ problems, warnings, segments, departsAt, arrivesAt });
 }

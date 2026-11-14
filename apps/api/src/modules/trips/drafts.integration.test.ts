@@ -12,7 +12,7 @@ import {
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
 import { sampleId, seedSampleMeetingPoints } from "@shareride/db/seed";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
 import { cleanUpDrafts } from "./clean-up.ts";
@@ -180,6 +180,68 @@ describe("drafts (spec 3, 3.4 to 3.8)", () => {
         details: [{ path: "vehicleId", issue: "unavailable" }],
       },
     });
+  });
+
+  it("keeps times in any order in a draft, and publishing refuses them", async () => {
+    const { accessToken } = await newDriver();
+    const trip = await draft(accessToken, { departure: tomorrowAt("09:00") });
+    const reversed = [tomorrowAt("11:00"), tomorrowAt("10:00"), tomorrowAt("09:00")];
+    const changed = await api.client.call(updateTripRoute, {
+      accessToken,
+      params: { id: trip.id },
+      body: { plannedTimes: reversed },
+    });
+    expect(changed).toMatchObject({
+      status: 200,
+      data: { departsAt: reversed[0], arrivesAt: reversed[2] },
+    });
+    const refused = await publish(accessToken, trip.id);
+    expect(refused).toMatchObject({
+      status: 422,
+      error: {
+        details: [
+          { path: "segments.0", issue: "times_not_increasing" },
+          { path: "segments.1", issue: "times_not_increasing" },
+        ],
+      },
+    });
+  });
+
+  it("drops a stop whose point was retired the next time the draft changes", async () => {
+    const { accessToken } = await newDriver();
+    const [borgarnes] = await api.connection.db
+      .select()
+      .from(schema.meetingPoints)
+      .where(eq(schema.meetingPoints.id, id("borgarnes")));
+    if (borgarnes === undefined) throw new Error("The sample points are missing.");
+    const retiring = sampleId("test:drafts-retiring");
+    await api.connection.db
+      .insert(schema.meetingPoints)
+      .values({ ...borgarnes, id: retiring, nameIs: "Hættir" });
+    const trip = await draft(accessToken, { stops: [id("bsi"), retiring, id("akureyri")] });
+    await api.connection.db
+      .update(schema.meetingPoints)
+      .set({ status: "retired" })
+      .where(eq(schema.meetingPoints.id, retiring));
+
+    const changed = await api.client.call(updateTripRoute, {
+      accessToken,
+      params: { id: trip.id },
+      body: { departure: tomorrowAt("09:00") },
+    });
+    expect(changed).toMatchObject({ status: 200 });
+    if (!changed.ok) return;
+    expect(changed.data.stops.map((stop) => stop.meetingPoint.id)).toEqual([
+      id("bsi"),
+      id("akureyri"),
+    ]);
+    const stored = await api.connection.db
+      .select({ position: schema.tripStops.position })
+      .from(schema.tripStops)
+      .where(eq(schema.tripStops.tripId, trip.id))
+      .orderBy(schema.tripStops.position);
+    expect(stored).toEqual([{ position: 0 }, { position: 1 }]);
+    expect(await publish(accessToken, trip.id)).toMatchObject({ status: 200 });
   });
 
   it("waits for distances not worked out yet", async () => {
@@ -377,16 +439,20 @@ describe("cleanUpDrafts (R3.11)", () => {
     const old = await draft(accessToken);
     await draft(accessToken, { departure: tomorrowAt("09:00") });
     const recent = await draft(accessToken);
+    // A published trip stays however old, and after it has left.
+    const trip = await draft(accessToken, { departure: tomorrowAt("12:00") });
+    expect(await publish(accessToken, trip.id)).toMatchObject({ status: 200 });
+    const monthAgo = new Date(api.now().getTime() - 31 * 24 * 3600 * 1000);
     await api.connection.db
       .update(schema.trips)
-      .set({ updatedAt: new Date(api.now().getTime() - 31 * 24 * 3600 * 1000) })
-      .where(eq(schema.trips.id, old.id));
+      .set({ updatedAt: monthAgo })
+      .where(inArray(schema.trips.id, [old.id, trip.id]));
     const later = new Date(api.now().getTime() + 30 * 3600 * 1000);
     expect(await cleanUpDrafts(api.connection.db, later)).toBeGreaterThanOrEqual(2);
     const left = await api.connection.db
       .select({ id: schema.trips.id })
       .from(schema.trips)
       .where(eq(schema.trips.driverId, userId));
-    expect(left.map((row) => row.id)).toEqual([recent.id]);
+    expect(left.map((row) => row.id).sort()).toEqual([recent.id, trip.id].sort());
   });
 });

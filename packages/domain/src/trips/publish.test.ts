@@ -134,6 +134,41 @@ describe("checkTripForPublishing (spec 3, section 4)", () => {
     });
   });
 
+  it("with a paused point, still lists the problems that need no distances", () => {
+    const checked = check({
+      stops: [stop("A"), { ...stop("unknown"), offered: false }, stop("D")],
+      plannedTimes: [
+        at("2027-03-01T08:10:00Z"),
+        at("2027-03-01T09:00:00Z"),
+        at("2027-03-01T11:00:00Z"),
+      ],
+      note: "Call 555 1234",
+      otherTrips: [
+        { departsAt: at("2027-03-01T10:00:00Z"), arrivesAt: at("2027-03-01T12:00:00Z") },
+      ],
+    });
+    expect(checked).toMatchObject({
+      ok: true,
+      value: {
+        problems: [
+          { code: "stop_unavailable", stop: 1 },
+          { code: "departure_too_soon" },
+          { code: "overlaps_trip" },
+          { code: "note_has_contact_details", kinds: ["phone"] },
+        ],
+        segments: [],
+      },
+    });
+    expect(
+      check({
+        stops: [stop("A"), { ...stop("B"), offered: false }, stop("D")],
+        plannedTimes: null,
+      }),
+    ).toMatchObject({
+      value: { problems: [{ code: "stop_unavailable", stop: 1 }, { code: "times_missing" }] },
+    });
+  });
+
   it("refuses a trip that overlaps another of the driver's trips", () => {
     const morning = {
       departsAt: at("2027-03-02T07:00:00Z"),

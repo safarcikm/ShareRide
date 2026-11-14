@@ -128,6 +128,9 @@ export function createDrivingService(dependencies: {
 
     async removeVehicle(userId, vehicleId) {
       return db.transaction(async (tx) => {
+        // The lock publishing takes first, so a trip cannot be published
+        // with this car while it is being removed.
+        await tx.select({ id: users.id }).from(users).where(eq(users.id, userId)).for("update");
         const [car] = await tx
           .select({ id: vehicles.id })
           .from(vehicles)

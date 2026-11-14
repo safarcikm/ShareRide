@@ -1,8 +1,8 @@
 // Applies pending migrations to DATABASE_URL. Used locally
 // (`pnpm --filter @shareride/db migrate`) and before each deploy. With
-// --seed-drafts it then adds the draft legal documents and the sample
-// meeting points, as staging's pre-deploy command does: one command, so it
-// needs no shell.
+// --seed-drafts it then adds the draft legal documents, the sample meeting
+// points and the sample trips (replaced with fresh dates each time), as
+// staging's pre-deploy command does: one command, so it needs no shell.
 import { connectDatabase, migrateDatabase } from "./index.ts";
 import { seedRefusal } from "./seed-guard.ts";
 import { seedDevelopmentData } from "./seed.ts";
@@ -28,7 +28,9 @@ try {
   process.stdout.write("Migrations applied.\n");
   if (seedDrafts) {
     await seedDevelopmentData(connection.db, new Date());
-    process.stdout.write("Draft legal documents and sample meeting points are in place.\n");
+    process.stdout.write(
+      "Draft legal documents, sample meeting points and sample trips are in place.\n",
+    );
   }
 } finally {
   await connection.close();

@@ -227,7 +227,9 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
 Enforced in the domain package and, where possible, in the database too.
 
 1. A trip has at least two stops; positions are contiguous from 0.
-2. Planned times strictly increase along a trip's stops.
+2. Planned times strictly increase along a trip's stops once it is
+   published; a draft keeps the times the driver left until publishing
+   checks them.
 3. A meeting point appears at most once in a trip.
 4. A booking's boarding stop comes before its alighting stop on the same trip.
 5. For every segment, occupancy never exceeds the trip's capacity.

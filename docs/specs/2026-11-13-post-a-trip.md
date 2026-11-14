@@ -148,7 +148,9 @@ Drivers do not edit segment prices one by one (decision 2,
    driver's responsibility.
 2. **Booking mode:** request and approval (default in the beta) or instant
    booking ([pricing and seats](../product/pricing-and-seats.md#booking-modes)).
-3. **Preferences**, all prefilled from the driver's last trip:
+3. **Preferences**, all prefilled from the driver's last trip (the first
+   time: one suitcase, ask me about pets, no smoking, no child seat, some
+   chat):
    - Luggage per passenger: small bag only, one suitcase, or more by
      arrangement
    - Pets: no, ask me, yes

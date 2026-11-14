@@ -261,7 +261,11 @@ Split in two, like milestone 2's PR 4: 5a the server, 5b the screens.
   child seat and some chat. Women-only trips and the `TripPublished` event
   wait for spec 14 and the outbox. Removing a car takes it off drafts, keeps
   it for published trips, and is refused while a trip with it has not
-  ended.
+  ended. A draft keeps planned times in any order; publishing checks them.
+  A stop whose point is retired leaves the draft the next time it changes
+  or is published; a paused one stays, and publishing names it. Not built
+  yet from spec 3, 3.9: telling the driver a stop left, offering a point
+  activated on the way, and keeping a draft on the phone while offline.
 
 ### PR 6: `feat(search)`: search and results
 
