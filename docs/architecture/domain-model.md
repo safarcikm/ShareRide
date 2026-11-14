@@ -145,7 +145,8 @@ One row per change to a published trip, so passengers can see what changed:
 | `seats` | ≥ 1 |
 | `status` | `requested`, `accepted` (awaiting payment), `confirmed` (paid), `declined`, `expired`, `cancelled`, `completed`, `no_show` |
 | `total_price`, `currency` | Snapshot at booking time |
-| `requested_at`, `decided_at`, `expires_at`, `payment_due_at` | |
+| `requested_at`, `decided_at`, `expires_at`, `payment_due_at` | A request's deadline (R5.5) and an accepted booking's payment deadline (rule M1) |
+| `confirmed_at`, `expired_at` | When it was paid (or, when free, accepted) and when a deadline passed |
 | `party_confirmed_at` | The passenger confirmed that everyone in a booking of more than one seat on a women-only trip can join |
 | `message`, `decline_reason`, `attempt_key` | Request note, reason seen only by the operator, idempotency key ([spec 5](../specs/2026-11-13-booking-and-requests.md#6-data-and-api)) |
 | `cancelled_by`, `cancel_reason`, `cancelled_at` | Reasons include `weather`, `road_closed` |
@@ -153,8 +154,8 @@ One row per change to a published trip, so passengers can see what changed:
 
 ### BookingSegmentPrice
 
-The per-segment price snapshot of a booking: `booking_id`, `segment_index`,
-`price`. Keeps receipts and disputes exact even if the trip changes later.
+The per-segment price snapshot of a booking: `booking_id`,
+`segment_position` (the segment's position when booked), `price`. Keeps receipts and disputes exact even if the trip changes later.
 
 ### Conversation and Message
 

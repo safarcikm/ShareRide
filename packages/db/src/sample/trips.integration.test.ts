@@ -1,7 +1,15 @@
+import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { DatabaseConnection } from "../index.ts";
-import { segments, trips, tripStops, users } from "../schema/index.ts";
+import {
+  bookings,
+  bookingSegmentPrices,
+  segments,
+  trips,
+  tripStops,
+  users,
+} from "../schema/index.ts";
 import { freshTestDatabase } from "../testing.ts";
 import { sampleId, seedSampleMeetingPoints } from "./seed.ts";
 import { sampleTrips, seedSampleTrips } from "./trips.ts";
@@ -39,6 +47,39 @@ describe("seedSampleTrips", () => {
     );
     const prices = await connection.db.select().from(segments).where(eq(segments.tripId, id));
     expect(prices.map((segment) => segment.price)).toEqual([1100, 2600, 2100]);
+  });
+
+  it("replaces a sample trip someone has booked, with its test bookings", async () => {
+    const { db } = connection;
+    const id = sampleId("trip:anna-akureyri");
+    const [passenger] = await db
+      .insert(users)
+      .values({ firstName: "Test", locale: "en" })
+      .returning();
+    const stops = await db
+      .select()
+      .from(tripStops)
+      .where(eq(tripStops.tripId, id))
+      .orderBy(tripStops.position);
+    const [booking] = await db
+      .insert(bookings)
+      .values({
+        tripId: id,
+        passengerId: passenger?.id ?? "",
+        fromStopId: stops[0]?.id ?? "",
+        toStopId: stops[1]?.id ?? "",
+        seats: 1,
+        status: "confirmed",
+        totalPrice: 1100,
+        attemptKey: randomUUID(),
+      })
+      .returning();
+    await db
+      .insert(bookingSegmentPrices)
+      .values({ bookingId: booking?.id ?? "", segmentPosition: 0, price: 1100 });
+    await seedSampleTrips(db, now);
+    expect(await db.select().from(bookings)).toEqual([]);
+    expect(await db.select().from(trips).where(eq(trips.id, id))).toHaveLength(1);
   });
 
   it("moves the trips on, without adding more, each time it runs", async () => {

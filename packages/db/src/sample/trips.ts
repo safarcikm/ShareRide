@@ -11,7 +11,16 @@ import {
 } from "@shareride/domain";
 import { inArray } from "drizzle-orm";
 import type { Database } from "../index.ts";
-import { legs, segments, trips, tripStops, users, vehicles } from "../schema/index.ts";
+import {
+  bookings,
+  bookingSegmentPrices,
+  legs,
+  segments,
+  trips,
+  tripStops,
+  users,
+  vehicles,
+} from "../schema/index.ts";
 import { sampleId } from "./seed.ts";
 
 interface SampleDriver {
@@ -127,12 +136,19 @@ export async function seedSampleTrips(db: Database, now: Date): Promise<void> {
         .values({ id: sampleId(`car:${driver.key}`), ownerId: id, ...driver.car })
         .onConflictDoNothing();
     }
-    await tx.delete(trips).where(
-      inArray(
-        trips.id,
-        sampleTrips.map((trip) => sampleId(`trip:${trip.key}`)),
-      ),
-    );
+    // Bookings of sample trips are test bookings: they go with the trips
+    // they were made on, which real bookings never do (spec 12).
+    const ids = sampleTrips.map((trip) => sampleId(`trip:${trip.key}`));
+    // Locked first, as booking locks a trip, so no booking lands on one
+    // while it is being replaced (the seed runs while staging serves).
+    await tx.select({ id: trips.id }).from(trips).where(inArray(trips.id, ids)).for("update");
+    const booked = tx
+      .select({ id: bookings.id })
+      .from(bookings)
+      .where(inArray(bookings.tripId, ids));
+    await tx.delete(bookingSegmentPrices).where(inArray(bookingSegmentPrices.bookingId, booked));
+    await tx.delete(bookings).where(inArray(bookings.tripId, ids));
+    await tx.delete(trips).where(inArray(trips.id, ids));
 
     for (const sample of sampleTrips) {
       const day = new Date(now.getTime() + sample.daysAhead * 24 * 3600 * 1000);

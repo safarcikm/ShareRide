@@ -157,6 +157,18 @@ stop (spec 4, decision 4) but never indexed: the server sends `X-Robots-Tag: noi
 them (spec 4, R4.6). The search limit per
 address covers trip pages too.
 
+Booking (`POST /v1/trips/{id}/bookings`, spec 5) is one transaction: it locks
+the passenger's row, then the trip's, expires the trip's requests and unpaid
+bookings past their deadlines, and lets the domain (`checkBooking`) decide on
+seats, the price last shown, overlaps and the message. It then stores the
+booking with its segment prices and adds its seats to each segment of the
+part. The database also refuses any segment holding more seats than the car
+has (R5.2). Answering, withdrawing and expiring lock only the trip, so locks
+always come in the same order. A retry with the same attempt key gets the
+booking it made (R5.4). Search, trip details and the driver's view count
+seats as of now: the stored occupancy less the seats of requests and unpaid
+bookings past their deadline whose expiry is not stored yet.
+
 ## Cross-cutting concerns
 
 | Concern | Approach |

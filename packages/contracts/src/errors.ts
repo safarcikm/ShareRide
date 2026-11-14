@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { moneySchema } from "./common.ts";
 
 /**
  * Every error response has this shape (engineering conventions, "API").
@@ -15,6 +16,10 @@ export const errorResponseSchema = z.object({
     retryAfterSeconds: z.int().nonnegative().optional(),
     /** Guesses left for a sign-in code. */
     attemptsLeft: z.int().nonnegative().optional(),
+    /** Seats free on the part now, when there are too few (`seats_taken`). */
+    freeSeats: z.int().nonnegative().optional(),
+    /** The total now, when it is not the one shown (`price_changed`, R5.3). */
+    total: moneySchema.optional(),
   }),
 });
 

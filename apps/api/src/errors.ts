@@ -8,6 +8,8 @@ export interface ErrorExtras {
   readonly details?: ErrorDetails;
   readonly retryAfterSeconds?: number;
   readonly attemptsLeft?: number;
+  readonly freeSeats?: number;
+  readonly total?: NonNullable<ErrorResponse["error"]["total"]>;
 }
 
 export function errorBody(code: string, message: string, details?: ErrorDetails): ErrorResponse {

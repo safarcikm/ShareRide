@@ -1,4 +1,5 @@
 export * from "./auth.ts";
+export * from "./bookings.ts";
 export * from "./common.ts";
 export * from "./driving.ts";
 export * from "./errors.ts";
