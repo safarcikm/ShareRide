@@ -56,7 +56,8 @@ Product and design
 - [ ] Brand direction: name check, logo, colours, tone of voice (colours,
       type and tone of voice in
       [spec 15](../specs/2026-11-13-visual-design-system.md); logo and app
-      icon to do)
+      icon in [section 4.9](../specs/2026-11-13-visual-design-system.md#49-logo-and-app-icon);
+      name check to do)
 - [ ] Clickable prototype tested with 5 to 10 potential drivers and passengers
 - [x] Set the cost-sharing price rates (ISK per km) and rounding: 15 kr
       suggested, 150 kr reference, 100 kr step (2026-11-13; legal opinion to

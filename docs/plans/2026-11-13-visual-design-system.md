@@ -1,6 +1,6 @@
 # Visual design system implementation plan
 
-**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13, PR #12); PR A in review
+**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13, PR #12); PR A merged (PR #14); PR B in review
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > superpowers:subagent-driven-development (recommended) or
@@ -509,19 +509,50 @@ Expected: all pass.
   light and dark, Icelandic and English, the largest text size, VoiceOver
   and TalkBack on the sign-in screens.
 
-- [ ] **Step 3: Request a code review**, fix what it finds, then open the
+- [x] **Step 3: Request a code review**, fix what it finds, then open the
   PR with the template, the dependency reasons and the screenshots.
 
 ## PR B: `feat(mobile)`: app icon and splash screen
 
 Martin chose logo direction A, "A shared ride" (the car from above with
-the driver and you), on 2026-11-13; it is drawn on the design canvas, row
-"Logo and app icon". Once refined: add a "Logo and app icon" section to spec 15 (icon,
-Android adaptive icon with its safe zone, splash, wordmark, minimum sizes),
-export the icon files from the chosen drawing into `apps/mobile/assets/`,
-set `icon`, `android.adaptiveIcon`, `splash` and the web favicon in
-`apps/mobile/app.json`, and check them in Expo Go and the web build. This
-part gets its own short task list once the refined icon is approved.
+the driver and you), on 2026-11-13, and approved the refined drawing on
+2026-11-14 ("Go with the icons"). The rules are in
+[spec 15, section 4.9](../specs/2026-11-13-visual-design-system.md#49-logo-and-app-icon).
+
+**Files:**
+
+- Create: `apps/mobile/assets/logo/*.svg` (one drawing per picture),
+  `apps/mobile/scripts/export-icons.ts`,
+  `apps/mobile/src/__tests__/app-icons.test.ts`,
+  `apps/mobile/assets/icon-dark.png`, `icon-tinted.png`
+- Modify: `apps/mobile/app.json`, `apps/mobile/package.json`, the template
+  pictures in `apps/mobile/assets/`, spec 15
+- Delete: `apps/mobile/assets/android-icon-background.png` (a colour now)
+
+- [x] **Step 1: Write the failing test.** `app-icons.test.ts` reads
+  `app.json` and each PNG's header and top-left pixel: the icon and the iOS
+  light icon are the same 1024 file with no alpha channel on `primary`; the
+  iOS dark icon is on dark `background`, the tinted one on black; the
+  Android layers are 1024 and see-through over a `primary` background
+  colour with no background image; the `expo-splash-screen` options use
+  light and dark `background`, the same picture and `imageWidth` 288; the
+  favicon is 48 and see-through; every PNG in `assets` is used and has a
+  drawing in `assets/logo`.
+- [x] **Step 2: Run it and see it fail** (5 of 6 fail; the template favicon
+  already passes).
+- [x] **Step 3: Install** `npx expo install expo-splash-screen` (offline:
+  `EXPO_OFFLINE=1`, which uses Expo's own list of versions).
+- [x] **Step 4: Draw and export.** Write the drawings from the refined
+  logo A, run `node scripts/export-icons.ts`, and set `ios.icon`,
+  `android.adaptiveIcon` and the `expo-splash-screen` plugin in `app.json`.
+- [x] **Step 5: Run the test again** and `expo prebuild --no-install` once
+  (not committed) to see the native icon and opening screen files.
+- [x] **Step 6: Spec 15** gets section 4.9 and decision 11, with the board
+  `images/visual-design-system/logo.png` made from the exported pictures.
+- [ ] **Step 7: Run every check**, request a code review, then open the PR.
+- [ ] **Step 8: By hand,** in an Android emulator: build the app once (README,
+  "See the app icon and opening screen") and look at the icon (light,
+  themed) and the opening screen (light and dark).
 
 ## Definition of done
 

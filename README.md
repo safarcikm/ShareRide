@@ -129,6 +129,43 @@ code appears in the API's terminal.
   API. Each message is charged to the Vonage account; a trial account only
   sends to the numbers verified on it.
 
+### On an Android emulator instead of a phone
+
+1. Install [Android Studio](https://developer.android.com/studio). In
+   **Device Manager**, add a phone and start it.
+2. Start the database, the API and the app as above, then press `a` in the
+   app's terminal. Expo installs Expo Go on the emulator and opens the app.
+3. If the app cannot reach ShareRide, put
+   `EXPO_PUBLIC_API_URL=http://10.0.2.2:3000` in `apps/mobile/.env.local`
+   and restart the app (10.0.2.2 is the computer, seen from the emulator).
+   Remove the line again before using a phone or the web app.
+
+### See the app icon and opening screen
+
+Expo Go shows its own icon. To see ShareRide's, build the app once on the
+emulator (several minutes the first time):
+
+1. Tell the build where Android Studio's tools are, as user environment
+   variables. Windows: `ANDROID_HOME` is `%LOCALAPPDATA%\Android\Sdk` and
+   `JAVA_HOME` is `C:\Program Files\Android\Android Studio\jbr`. macOS:
+   `ANDROID_HOME` is `~/Library/Android/sdk` and `JAVA_HOME` is
+   `/Applications/Android Studio.app/Contents/jbr/Contents/Home`. Open a new
+   terminal afterwards.
+2. With the emulator, the database and the API running:
+
+   ```sh
+   pnpm --filter @shareride/mobile exec expo run:android
+   ```
+
+3. The built app looks for the API on the emulator itself, so forward the
+   port each time the emulator starts: `adb reverse tcp:3000 tcp:3000`
+   (`adb` is in `platform-tools` inside `ANDROID_HOME`).
+
+The build creates `apps/mobile/android` (ignored by Git) and rewrites the
+`android` and `ios` scripts in `apps/mobile/package.json`; undo that with
+`git checkout apps/mobile/package.json`. After a change to the icon or to
+`app.json`, delete `apps/mobile/android` and build again.
+
 ### Checks and tests
 
 ```sh

@@ -89,6 +89,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   on the web, and
   restyled fields, tick boxes, chips, notices, links and the back button.
   A browser check saves screenshots of the first screens in CI.
+- The app icon and opening screen from logo A ("A shared ride"): the icon
+  with iOS dark and tinted versions, the Android adaptive and themed icons,
+  the opening screen on frost or night, and the browser tab icon, exported
+  from drawings in `apps/mobile/assets/logo`.
 
 ### Changed
 
