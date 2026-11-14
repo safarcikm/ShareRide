@@ -112,6 +112,16 @@ Milestone 3: offer and find rides
 - [ ] Search with partial routes, trip details and shared links
 - [ ] Maps on the web and phones
 
+Milestone 4: booking and requests
+([plan](../plans/2026-11-14-milestone-4-booking-and-requests.md), approved
+2026-11-15; built while milestone 3's PRs wait for review)
+
+- [ ] Booking rules in the domain
+- [ ] Book and request on the server, with deadlines
+- [ ] Paying with a test provider until the real one is chosen
+- [ ] Booking, paying and my bookings in the app
+- [ ] Requests and the trip view for drivers
+
 MVP features (each one a spec, a plan and a PR series)
 
 - [ ] Profiles, vehicles, phone verification
