@@ -128,6 +128,27 @@ code appears in the API's terminal.
   46elks API keys in `.env` (see `.env.example`), then restart the API. Each
   message is charged to the 46elks account.
 
+### On an Android emulator instead of a phone
+
+1. Install [Android Studio](https://developer.android.com/studio). In
+   **Device Manager**, add a phone and start it.
+2. Start the database, the API and the app as above, then press `a` in the
+   app's terminal. Expo installs Expo Go on the emulator and opens the app.
+3. If the app cannot reach ShareRide, put
+   `EXPO_PUBLIC_API_URL=http://10.0.2.2:3000` in `apps/mobile/.env.local`
+   and restart the app (10.0.2.2 is the computer, seen from the emulator).
+
+Expo Go shows its own icon. To see ShareRide's icon and opening screen,
+build the app once (several minutes the first time):
+
+```sh
+pnpm --filter @shareride/mobile exec expo run:android
+```
+
+It creates `apps/mobile/android` (ignored by Git) and rewrites the
+`android` and `ios` scripts in `apps/mobile/package.json`; undo that with
+`git checkout apps/mobile/package.json`.
+
 ### Checks and tests
 
 ```sh

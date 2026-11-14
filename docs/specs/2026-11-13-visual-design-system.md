@@ -4,7 +4,7 @@
 
 Covers the brand direction (colours, type, tone of voice) and the first
 screen designs from the [roadmap](../strategy/roadmap.md), Phase 1. Related:
-[ADR 0017](../decisions/0017-visual-design-system.md) (proposed),
+[ADR 0017](../decisions/0017-visual-design-system.md) (accepted),
 [ADR 0003](../decisions/0003-cross-platform-client-expo.md) (Expo),
 [ADR 0011](../decisions/0011-localization.md) (Icelandic and English),
 [conventions: accessibility](../engineering/conventions.md#accessibility),
@@ -219,6 +219,44 @@ review board shows the trip details in Icelandic and dark mode.
   action from the bottom bar into a panel 320 wide beside the column.
 - Search results put the map beside the list (spec 4).
 
+### 4.9 Logo and app icon
+
+Logo A, "A shared ride" (decision 11): the car from above, front up. The
+driver sits front left in a crowberry knitted hat, because Iceland drives on
+the right, and you sit in the back, in moss. The two empty seats say there is
+room.
+
+![Logo A as the app icon, the Android icon, the opening screen and with the name](images/visual-design-system/logo.png)
+
+- **Drawings:** `apps/mobile/assets/logo/*.svg` are the source.
+  `node scripts/export-icons.ts` (in `apps/mobile`) exports the pictures in
+  `apps/mobile/assets` from them; commit a drawing and its picture together.
+  A test checks each picture's size, background and use in `app.json`.
+- **App icon:** the car at 90% of the square on `primary` moss, filling the
+  square; phones round the corners. iOS also gets a dark icon (the car in
+  night colours on dark `background`) and a tinted icon (the car's outline,
+  windscreen and people in light grey on black, which iOS colours).
+- **Android:** an adaptive icon. The background is `primary` moss; the car
+  layer is see-through with the car at 58%, inside the safe circle (66 of
+  108), so no shape the phone cuts reaches it. The themed icon (Android 13
+  and later) is the same outline in one colour.
+- **Opening screen:** the icon with rounded corners in the middle of
+  `background` (frost, or night in dark mode), 144 points wide on both
+  platforms, and nothing else. Its picture is twice the icon's size with
+  see-through edges, so Android's round mask never cuts the corners. It
+  shows only while the app starts; the fonts and your session then load
+  behind the usual loading view.
+- **Browser tab:** the icon with rounded corners, 48 pixels.
+- **With the name:** the icon, then "ShareRide" in Fredoka SemiBold in
+  `text`, at 0.6 of the icon's height, with a gap of a quarter of the
+  icon's height. A new name later only changes the word.
+- **Rules:** keep space around the logo of at least half the icon's height.
+  Smallest sizes: the icon 24 points, the icon with the name 120 points wide.
+  Always on a plain background (frost, white or night); never on a photo,
+  never recoloured, rotated or stretched.
+- Expo Go shows its own icon. The app icon and the opening screen show only
+  in a build of the app (`npx expo run:android`, or a store build).
+
 ## 5. Parts and screens
 
 ### 5.1 Parts the app already has
@@ -358,6 +396,9 @@ use `control`; body text is drawn at 16 and is 17.
 - **Drawings** (shape people, the car, need icons) are `react-native-svg`
   components in `apps/mobile/src/components/illustrations/`.
 - **Icons** come from `lucide-react-native`.
+- **App icon and opening screen:** drawings in `apps/mobile/assets/logo`,
+  pictures exported by `scripts/export-icons.ts`, set in `app.json`, with
+  `expo-splash-screen` for the opening screen (section 4.9).
 - **Add packages** with `npx expo install expo-font react-native-svg
   @expo-google-fonts/fredoka @expo-google-fonts/nunito`, and
   `lucide-react-native` with pnpm.
@@ -425,8 +466,7 @@ Counts use ICU plural forms in both languages.
 
 ## 10. Out of scope
 
-The logo and app icon, the splash screen, the date and time step of posting,
-the my-trips and manage-bookings screens, chat, the trip day screens, the
+The date and time step of posting, the my-trips and manage-bookings screens, chat, the trip day screens, the
 operator console's look, the public website, sound and haptics. These get
 drawn when their specs are built, following this spec.
 
@@ -452,3 +492,9 @@ Calls made while writing this spec, accepted by Martin with the spec on
 | 8 | Lucide icons | Rounded strokes match the look, ISC licence, one package for every platform |
 | 9 | Tokens stay in the app until a second client needs them | `packages/ui` with one user adds a package without a benefit yet |
 | 10 | Fonts bundled, not loaded from Google | Works offline and sends no visitor data to Google |
+
+Decided by Martin after the spec was approved:
+
+| # | Question | Decision |
+| - | -------- | -------- |
+| 11 | Which logo? | A, "A shared ride": the car from above with the driver and you (chosen 2026-11-13; the refined drawing approved 2026-11-14), not B (a friend in a hat) or C (your stretch of road) |
