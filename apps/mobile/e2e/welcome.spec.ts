@@ -18,11 +18,11 @@ test.describe("welcome on the web", () => {
     await expect(page.getByRole("heading", { name: "Samferða um allt Ísland" })).toBeVisible();
   });
 
-  test("leads from Browse trips to the coming-soon page", async ({ page }) => {
+  test("leads from Browse trips to the search", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Browse trips" }).click();
-    await expect(page).toHaveURL(/\/coming-soon$/);
-    await expect(page.getByRole("heading", { name: "Coming soon" })).toBeVisible();
+    await expect(page).toHaveURL(/\/search$/);
+    await expect(page.getByRole("heading", { name: "Find a ride" })).toBeVisible();
   });
 });
 

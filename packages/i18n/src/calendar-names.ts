@@ -55,3 +55,22 @@ export const shortWeekdayNames: Record<Locale, readonly string[]> = {
   en: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
   is: ["mán.", "þri.", "mið.", "fim.", "fös.", "lau.", "sun."],
 };
+
+/** Short month names for brief dates such as "Fri 20 Nov", January first. */
+export const shortMonthNames: Record<Locale, readonly string[]> = {
+  en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+  is: [
+    "jan.",
+    "feb.",
+    "mar.",
+    "apr.",
+    "maí",
+    "jún.",
+    "júl.",
+    "ágú.",
+    "sep.",
+    "okt.",
+    "nóv.",
+    "des.",
+  ],
+};

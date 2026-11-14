@@ -57,12 +57,12 @@ describe("Welcome", () => {
     ).toBeVisible();
   });
 
-  it("leads from Browse trips to the coming-soon page and back", async () => {
+  it("leads from Browse trips to the search and back", async () => {
     deviceLanguage("en-GB");
     await renderApp("/");
     await fireEvent.press(await screen.findByRole("button", { name: "Browse trips" }));
-    expect(await screen.findByText("Coming soon")).toBeVisible();
-    expect(screen).toHavePathname("/coming-soon");
+    expect(await screen.findByRole("header", { name: "Find a ride" })).toBeVisible();
+    expect(screen).toHavePathname("/search");
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
     expect(await screen.findByText("Share the ride across Iceland")).toBeVisible();
   });

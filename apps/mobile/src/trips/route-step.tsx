@@ -11,22 +11,18 @@ import {
 import { firstTripChoices } from "@shareride/domain";
 import { formatDistance, formatDuration, type Translate } from "@shareride/i18n";
 import { router } from "expo-router";
-import { ArrowUpDown } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
-import { IconButton } from "@/components/icon-button";
+import { RouteEnds } from "@/components/route-ends";
 import { Notice } from "@/components/notice";
 import { Switch } from "@/components/switch";
 import { Tag } from "@/components/tag";
 import { Body, Heading } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { dayOf, isoDay } from "@/lib/days";
-import { controlOutline, minTouchTarget, radii, spacing, typography } from "@/theme/tokens";
-import { usePalette } from "@/theme/use-palette";
 import { PointPicker } from "./point-picker";
 import { StepScreen } from "./step-screen";
 import { goOn, stepHref } from "./steps";
@@ -68,7 +64,6 @@ export function RouteStep({
   readonly fromReview?: boolean;
 }) {
   const { locale, t } = useLanguage();
-  const palette = usePalette();
   const session = useSession();
   const [from, setFrom] = useState(trip?.stops[0]?.meetingPoint ?? null);
   const [to, setTo] = useState(trip?.stops.at(-1)?.meetingPoint ?? null);
@@ -249,44 +244,27 @@ export function RouteStep({
         />
       }
     >
-      <Card>
-        <View style={styles.ends}>
-          <View style={styles.endFields}>
-            <End
-              label={t("trip.from")}
-              point={from}
-              filled={false}
-              onPress={() => {
-                setPicking("from");
-              }}
-            />
-            <View style={[styles.divider, { backgroundColor: palette.border }]} />
-            <End
-              label={t("trip.to")}
-              point={to}
-              filled
-              onPress={() => {
-                setPicking("to");
-              }}
-            />
-          </View>
-          <IconButton
-            icon={ArrowUpDown}
-            label={t("trip.route.swap")}
-            disabled={from === null && to === null}
-            onPress={() => {
-              setFrom(to);
-              setTo(from);
-              setBetween([...between].reverse());
-              // A lookup on its way, or one that failed, is for the new direction now.
-              if (alongFor !== null) {
-                setAlongFailure(null);
-                setAlongFor({ from: alongFor.to, to: alongFor.from });
-              }
-            }}
-          />
-        </View>
-      </Card>
+      <RouteEnds
+        from={from === null ? null : from.name[locale]}
+        to={to === null ? null : to.name[locale]}
+        labels={{
+          from: t("trip.from"),
+          to: t("trip.to"),
+          choose: t("trip.route.choose"),
+          swap: t("trip.route.swap"),
+        }}
+        onPick={setPicking}
+        onSwap={() => {
+          setFrom(to);
+          setTo(from);
+          setBetween([...between].reverse());
+          // A lookup on its way, or one that failed, is for the new direction now.
+          if (alongFor !== null) {
+            setAlongFailure(null);
+            setAlongFor({ from: alongFor.to, to: alongFor.from });
+          }
+        }}
+      />
       <Notice message={message} />
       {from === null || to === null || from.id === to.id ? null : (
         <>
@@ -388,68 +366,3 @@ function QuoteSummary({
     </>
   );
 }
-
-/** From or To: what is chosen, pressed to choose again. */
-function End({
-  label,
-  point,
-  filled,
-  onPress,
-}: {
-  readonly label: string;
-  readonly point: MeetingPointSummary | null;
-  /** The end of the route has a filled dot, the start an empty one. */
-  readonly filled: boolean;
-  readonly onPress: () => void;
-}) {
-  const { locale, t } = useLanguage();
-  const palette = usePalette();
-  const value = point === null ? t("trip.route.choose") : point.name[locale];
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={t("trip.route.field", { field: label, value })}
-      onPress={onPress}
-      style={styles.end}
-    >
-      <View
-        style={[
-          styles.dot,
-          { borderColor: palette.primary },
-          filled && { backgroundColor: palette.primary },
-        ]}
-      />
-      <View style={styles.endTexts}>
-        <Text style={[typography.caption, { color: palette.textMuted }]}>{label}</Text>
-        <Text
-          style={[
-            point === null ? typography.body : typography.bodyStrong,
-            { color: point === null ? palette.textMuted : palette.text },
-          ]}
-        >
-          {value}
-        </Text>
-      </View>
-    </Pressable>
-  );
-}
-
-const styles = StyleSheet.create({
-  ends: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  endFields: { flex: 1 },
-  end: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.ms,
-    minHeight: minTouchTarget,
-    paddingVertical: spacing.xs,
-  },
-  endTexts: { flex: 1 },
-  dot: {
-    width: spacing.ms,
-    height: spacing.ms,
-    borderRadius: radii.pill,
-    borderWidth: controlOutline,
-  },
-  divider: { height: controlOutline, marginLeft: spacing.ms + spacing.ms },
-});

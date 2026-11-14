@@ -8,6 +8,7 @@ import {
   formatDuration,
   formatMoney,
   formatMonth,
+  formatShortDay,
   formatWeekdays,
 } from "./format.ts";
 
@@ -74,6 +75,15 @@ describe("formatDate", () => {
 
   it("does not move the date in any time zone", () => {
     expect(formatDate("2026-01-01", "en")).toBe("1 January 2026");
+  });
+});
+
+describe("formatShortDay", () => {
+  it("shows a calendar date briefly, with its weekday", () => {
+    expect(formatShortDay("2026-11-20", "en")).toBe("Fri 20 Nov");
+    expect(formatShortDay("2026-11-20", "is")).toBe("fös. 20. nóv.");
+    expect(formatShortDay("2027-05-03", "is")).toBe("mán. 3. maí");
+    expect(formatShortDay("2026-11-15", "en")).toBe("Sun 15 Nov");
   });
 });
 
