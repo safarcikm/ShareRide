@@ -15,7 +15,7 @@ links an ADR that chose one.
 | Map display | `MapTiles` (client) | **MapTiler** ([ADR 0021](../decisions/0021-map-tiles-from-maptiler.md)); self-hosted Protomaps tiles as the fallback | 2 | MapLibre renderer, OpenStreetMap data ([ADR 0009](../decisions/0009-maps-and-routing.md)) |
 | Routing (distances between meeting points) | `RoutingEngine` | Valhalla or OSRM self-hosted on the Iceland extract; or a hosted routing API | 2 | Run offline to fill the legs table; not on every request |
 | Place search (geocoding) | `Geocoder` | Our own meeting-point and place-name index; national geodata as a source | 2 | Iceland place names from the national geodata portal; addresses from the official address register |
-| SMS (sign-in codes, critical alerts) | `SmsSender` | **46elks** ([ADR 0019](../decisions/0019-sms-with-46elks.md)); Sinch as the fallback | 2 | Watch cost and fraud (SMS pumping); rate-limit |
+| SMS (sign-in codes, critical alerts) | `SmsSender` | **Vonage**, EU endpoint ([ADR 0023](../decisions/0023-sms-with-vonage.md)); 46elks as the fallback | 2 | Watch cost and fraud (SMS pumping); rate-limit |
 | Email | `EmailSender` | An EU email provider | 2 | Transactional only; templates per language |
 | Push notifications | `PushSender` | Expo push service (wraps APNs and FCM) | 2 | Tokens stored per device |
 | Error tracking and uptime | n/a | **Sentry, EU data region** ([ADR 0020](../decisions/0020-error-tracking-with-sentry-eu.md)) | 2 | Scrub personal data before sending |

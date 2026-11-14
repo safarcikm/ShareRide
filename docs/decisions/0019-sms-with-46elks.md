@@ -1,6 +1,6 @@
 # 0019. Send sign-in codes by SMS with 46elks
 
-- **Status:** Accepted (2026-11-13, by Martin, with the milestone 2 plan)
+- **Status:** Superseded by [ADR 0023](0023-sms-with-vonage.md)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [ADR 0016](0016-own-sign-in-module.md),

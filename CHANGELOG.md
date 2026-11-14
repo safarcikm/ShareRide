@@ -73,6 +73,8 @@ releases follow [Semantic Versioning](https://semver.org/).
   `pnpm --filter @shareride/api sentry:check` to test a deployment. Logs
   also drop failed queries' values, and a request whose JSON does not parse
   gets 400 instead of 500.
+- Sign-in codes by SMS through Vonage's EU endpoint (ADR 0023), with 46elks
+  kept as the fallback (`SMS_PROVIDER`).
 - Error reports from the app (web and phones) to Sentry's EU region with the
   same scrubbing rule, now shared from the domain package; a "Something went
   wrong" screen with a retry when a screen breaks; the web app's source maps

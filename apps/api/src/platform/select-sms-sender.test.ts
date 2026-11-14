@@ -21,7 +21,27 @@ describe("selectSmsSender", () => {
       () => undefined,
     );
     await expect(elks.send(message)).rejects.toThrow(SmsSendError);
+    const vonage = selectSmsSender(
+      { provider: "vonage", apiKey: "k", apiSecret: "s", sender: "ShareRide", paused: true },
+      () => undefined,
+    );
+    await expect(vonage.send(message)).rejects.toThrow(SmsSendError);
     expect(printed).toEqual([]);
+  });
+
+  it("sends through Vonage when configured", async () => {
+    const urls: string[] = [];
+    const fetch = ((url: string) => {
+      urls.push(url);
+      return Promise.resolve(Response.json({ "message-count": "1", messages: [{ status: "0" }] }));
+    }) as typeof globalThis.fetch;
+    const sms = selectSmsSender(
+      { provider: "vonage", apiKey: "k", apiSecret: "s", sender: "ShareRide", paused: false },
+      () => undefined,
+      fetch,
+    );
+    await sms.send(message);
+    expect(urls).toEqual(["https://api-eu.vonage.com/sms/json"]);
   });
 
   it("sends through 46elks when configured", async () => {

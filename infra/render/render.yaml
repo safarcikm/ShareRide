@@ -2,8 +2,8 @@
 # Blueprint Path infra/render/render.yaml; paths below are relative to the
 # repository root. The runbook is docs/operations/staging.md.
 #
-# No secrets here: Render generates AUTH_SECRET, and asks for the 46elks keys
-# once, when the blueprint is first applied.
+# No secrets here: Render generates AUTH_SECRET, and asks for the SMS
+# provider and the Vonage keys once, when the blueprint is first applied.
 
 services:
   # The API, which also serves the web app on the same origin, so the
@@ -37,11 +37,14 @@ services:
           property: connectionString
       - key: AUTH_SECRET
         generateValue: true
+      # vonage (ADR 0023). Asked for, not set here, so changing it to 46elks
+      # in the dashboard (with ELKS_API_USERNAME and ELKS_API_PASSWORD) switches
+      # to the fallback and stays that way through blueprint syncs.
       - key: SMS_PROVIDER
-        value: 46elks
-      - key: ELKS_API_USERNAME
         sync: false
-      - key: ELKS_API_PASSWORD
+      - key: VONAGE_API_KEY
+        sync: false
+      - key: VONAGE_API_SECRET
         sync: false
       # Two proxies append to X-Forwarded-For: Cloudflare adds the client,
       # then Render's proxy adds the Cloudflare edge. Entries before those

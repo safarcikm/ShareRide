@@ -62,7 +62,7 @@ account, not an architecture decision, so it lives here and in the roadmap. Pric
 | # | Choice | Decision (accepted) | Why | Main alternative | Per month |
 | - | ------ | -------------- | --- | ---------------- | --------- |
 | 1 | Hosting | **Render, Frankfurt**: the API container, a cron job and managed PostgreSQL | PostgreSQL 18 with PostGIS (our schema uses PostgreSQL 18's `uuidv7()`), point-in-time recovery, private network, secret store, a blueprint file in the repository as infrastructure in code | Fly.io in Stockholm is closer, but its managed PostgreSQL stops at version 17; AWS in Stockholm is more work for one person | About $15 ($7 API, $6 database plus storage, about $1 for the hourly clean-up) |
-| 2 | SMS | **46elks** (Swedish telecom operator) | All data in the EU, pay per message, no monthly fee, a small HTTP API | Sinch (also Swedish, larger, more onboarding) as the fallback | Per message; big providers charge about 6 to 7 US cents for Iceland; 46elks's rate to confirm at sign-up |
+| 2 | SMS | **46elks** (Swedish telecom operator). Changed on 2026-11-14 to **Vonage**, with 46elks as the fallback ([ADR 0023](../decisions/0023-sms-with-vonage.md)); the rest of this row is the original choice | All data in the EU, pay per message, no monthly fee, a small HTTP API | Sinch (also Swedish, larger, more onboarding) as the fallback | Per message; big providers charge about 6 to 7 US cents for Iceland; 46elks's rate to confirm at sign-up |
 | 3 | Error tracking and uptime | **Sentry, EU data region** (Frankfurt), free plan | Mature SDKs for Expo and Node.js, scrubbing hooks, one uptime monitor included | GlitchTip (Sentry-compatible); Better Stack for uptime | $0 |
 | 4 | Map tiles | **MapTiler** (Swiss) | Switzerland has an EU adequacy decision; OpenStreetMap vector tiles for MapLibre; the free plan covers testing and prototypes | Stadia Maps (United States); our own Protomaps file of Iceland, the ADR 0009 fallback | $0 while building, then $30 (Flex) from the beta, or switch to our own file |
 | 5 | Photo storage | **Hetzner Object Storage, Helsinki** (German company) | S3-compatible, EU company, close to Iceland, predictable price | Scaleway in Paris; Cloudflare R2 with EU jurisdiction (United States company) | About €5, including 1 TB of storage and traffic |
@@ -118,15 +118,18 @@ Render, Frankfurt (deploys a commit once its checks pass)
 
 - **Sign-in codes are sent by the API directly**, as in milestone 1, with a
   timeout; if sending fails the person sees "try again". A queued job would
-  have to store the number and the code in plain text until sent, and the
-  privacy inventory promises that neither is ever stored. (This changes the
-  milestone 1 plan's note that SMS would move to a queue.)
+  have to store the number and the code in plain text until sent, and we
+  never store either. (This changes the milestone 1 plan's note that SMS
+  would move to a queue.)
 - The 46elks adapter sits behind the existing `SmsSender` port. It sends
-  with `dontlog=message`, so 46elks does not keep the code either. The
+  with `dontlog=message`, so 46elks does not keep the code either. Since
+  2026-11-14 Vonage sends instead, with 46elks as the fallback (ADR 0023);
+  Vonage keeps the text in its records unless redacted. The
   sender is `ShareRide` (11 letters at most), with no link (Icelandic
   operators filter links). Both texts fit one SMS part (Icelandic letters
   such as ð and þ allow 70 characters per part).
-- A contract test calls 46elks with `dryrun=yes`, outside the normal CI run.
+- A contract test calls 46elks with `dryrun=yes`, outside the normal CI run;
+  the Vonage one sends a wrong secret, so nothing is sent.
 - Against SMS pumping: the country list and limits from milestone 1, a daily
   budget per country, an alert on unusual volume and a kill switch in the
   environment.
@@ -238,7 +241,8 @@ a code review before it opens. Tick tasks as they merge.
 - [x] Contract test with `dryrun=yes`, run by hand with the keys
 - [x] Clean-up command (`pnpm --filter @shareride/api clean-up`). Tests:
       each kind of record goes only once past its retention
-- Verify: with 46elks keys in `.env`, a real code arrives on a phone
+- Verify: with 46elks keys in `.env`, a real code arrives on a phone (now
+  with Vonage keys, ADR 0023)
 
 ### PR 3: `feat(infra)`: staging on Render
 
@@ -324,9 +328,10 @@ Split in two, so the server side can be checked on staging first.
 In the order the PRs need them. Each step gets exact instructions in the
 thread when its PR is ready.
 
-1. 46elks: open an account and add credit (PR 2).
+1. Vonage: open an account and add credit (done 2026-11-14; ADR 0023
+   replaced 46elks).
 2. Render: open an account, connect the GitHub repository, apply the
-   blueprint and paste the 46elks keys (PR 3).
+   blueprint and paste the Vonage key and secret (PR 3).
 3. Sentry: open an organisation **in the EU region** (it cannot be changed
    later), send the DSN for the blueprint, and add the uptime monitor
    (PR 4); a token as a Render secret file for the web source maps (PR 4b).
@@ -336,13 +341,14 @@ thread when its PR is ready.
    address (PR 6).
 6. Hetzner: account, a bucket in Helsinki and its keys (PR 7).
 7. Google Cloud: a project, the consent screen and three client IDs (PR 8).
-8. Sign the data processing agreement where the provider offers one (46elks
-   acts as a controller under telecom law, which the inventory records).
+8. Sign the data processing agreement where the provider offers one,
+   Vonage's included (46elks, the fallback, acts as a controller under
+   telecom law, which the inventory records).
 
 ## 7. Risks
 
 - **SMS delivery** varies by network. Test on Síminn, Nova and Vodafone
-  numbers before the beta; Sinch is the fallback.
+  numbers before the beta; 46elks is the fallback.
 - **MapLibre on React Native 0.88** may lag behind; PR 6 checks first and
   can fall back to a list plus the web map until it builds.
 - **Sign in with Apple on the web** needs a verified domain, which a
