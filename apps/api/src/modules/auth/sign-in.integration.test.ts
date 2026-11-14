@@ -279,7 +279,7 @@ describe("when the SMS cannot be sent", () => {
     const phone = api.newPhoneNumber();
     api.ip = "192.0.2.90";
     const before = api.logLines.length;
-    api.smsFailure = new SmsSendError("46elks refused the message (HTTP 400)");
+    api.smsFailure = new SmsSendError("Vonage refused the message (HTTP 400)");
     try {
       expect(await start(phone)).toMatchObject({ status: 502, error: { code: "sms_failed" } });
     } finally {

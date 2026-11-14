@@ -133,6 +133,17 @@ describe("loadConfig", () => {
     });
   });
 
+  it("refuses an empty Vonage key", () => {
+    expect(() =>
+      loadConfig({
+        ...valid,
+        SMS_PROVIDER: "vonage",
+        VONAGE_API_KEY: "",
+        VONAGE_API_SECRET: "s-example",
+      }),
+    ).toThrow(ConfigError);
+  });
+
   it("needs the Vonage key and secret when Vonage sends the SMS", () => {
     try {
       loadConfig({ ...development, SMS_PROVIDER: "vonage" });

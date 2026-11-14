@@ -104,8 +104,8 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   sending limits; sessions are not affected.
 - **SMS:** the development sender prints codes in the API terminal, outside
   the logs, and the API refuses to start with it in production. Vonage keeps
-  the text in its records (a code works once, for ten minutes); 46elks, the
-  fallback, sends with `dontlog=message`. Errors from either sender never
+  the text in its records for 13 months unless redacted (a code works once,
+  for ten minutes); 46elks, the fallback, sends with `dontlog=message`. Errors from either sender never
   contain the number. `SMS_PAUSED=true` stops all SMS.
 - **Clean-up:** an hourly job deletes expired codes, rate-limit events after
   24 hours and expired access and refresh tokens, ends sessions unused for 60

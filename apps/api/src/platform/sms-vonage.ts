@@ -9,7 +9,10 @@ export interface VonageSmsOptions {
   readonly fetch?: typeof globalThis.fetch;
 }
 
-/** The SMS API's EU endpoint: traffic and stored records stay in Dublin and Frankfurt. */
+/**
+ * The SMS API's EU endpoint. Vonage stores SMS records in Dublin and
+ * Frankfurt; processing is not limited to the EU (ADR 0023).
+ */
 const endpoint = "https://api-eu.vonage.com/sms/json";
 
 /** Vonage's send statuses worth naming in a log; any other is named by number. */
@@ -78,12 +81,19 @@ export function createVonageSmsSender(options: VonageSmsOptions): SmsSender {
   };
 }
 
-/** The status of each part in Vonage's answer, as text ("0" is accepted). */
+/**
+ * The status of each part in Vonage's answer, as text ("0" is accepted).
+ * Anything but a short number becomes "unexpected", so no odd text reaches
+ * the logs.
+ */
 function partStatuses(answer: unknown): string[] {
   if (typeof answer !== "object" || answer === null || !("messages" in answer)) return [];
   const { messages } = answer;
   if (!Array.isArray(messages)) return [];
-  return messages.map((part: unknown) =>
-    typeof part === "object" && part !== null && "status" in part ? String(part.status) : "missing",
-  );
+  return messages.map((part: unknown) => {
+    const status =
+      typeof part === "object" && part !== null && "status" in part ? part.status : undefined;
+    const text = typeof status === "string" || typeof status === "number" ? String(status) : "";
+    return /^\d{1,3}$/.test(text) ? text : "unexpected";
+  });
 }

@@ -101,6 +101,32 @@ describe("createVonageSmsSender", () => {
     expect(String(error)).not.toContain("354");
   });
 
+  it("accepts a status sent as a number", async () => {
+    const { fetch } = fakeFetch(() =>
+      Promise.resolve(Response.json({ "message-count": "1", messages: [{ status: 0 }] })),
+    );
+    await expect(sender(fetch).send(message)).resolves.toBeUndefined();
+  });
+
+  it("refuses a part without a status, and keeps odd status text out of the error", async () => {
+    for (const part of [{}, { status: `invalid ${number}` }]) {
+      const { fetch } = fakeFetch(() =>
+        Promise.resolve(Response.json({ "message-count": "1", messages: [part] })),
+      );
+      const error = await failure(sender(fetch).send(message));
+      expect(error).toBeInstanceOf(SmsSendError);
+      expect(String(error)).toContain("status unexpected");
+      expect(String(error)).not.toContain("354");
+    }
+  });
+
+  it("never puts the code or the secret in an error", async () => {
+    const { fetch } = fakeFetch(answer("4"));
+    const error = await failure(sender(fetch).send(message));
+    expect(String(error)).not.toContain("123456");
+    expect(String(error)).not.toContain("s-test");
+  });
+
   it("throws when Vonage refuses the request or the answer makes no sense", async () => {
     for (const response of [
       new Response(`Bad request for ${number}`, { status: 401 }),

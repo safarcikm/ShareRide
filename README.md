@@ -135,7 +135,7 @@ code appears in the API's terminal.
 pnpm check                                  # lint, types and unit tests
 pnpm test:integration                       # API and database tests
 pnpm --filter @shareride/mobile e2e:web     # browser journeys (needs the database)
-pnpm --filter @shareride/api test:contract  # 46elks dry run (needs its keys; sends nothing)
+pnpm --filter @shareride/api test:contract  # 46elks dry run, Vonage wrong-secret check (need their keys; send nothing)
 ```
 
 The browser journeys build the web app, start a test API on port 3001 and
