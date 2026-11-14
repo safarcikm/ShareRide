@@ -54,7 +54,8 @@ describe("the web app on the API's origin", () => {
     const policy = response.headers.get("content-security-policy") ?? "";
     expect(policy).toContain("default-src 'self'");
     expect(policy).toContain("script-src 'self'");
-    expect(policy).toContain("connect-src 'self'");
+    // Its own API, and error reports to Sentry's EU region (ADR 0020).
+    expect(policy.split("; ")).toContain("connect-src 'self' https://*.ingest.de.sentry.io");
     expect(policy).toContain("frame-ancestors 'none'");
     expect(policy).not.toContain("unsafe-eval");
   });

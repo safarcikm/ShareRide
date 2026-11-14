@@ -1,14 +1,18 @@
-import { Stack } from "expo-router";
+import { Stack, type ErrorBoundaryProps } from "expo-router";
+import { useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { SessionProvider, useSession, useSessionState } from "@/auth/session";
 import { Button } from "@/components/button";
 import { Loading } from "@/components/loading";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
+import { Body, Title } from "@/components/text";
 import { LanguageProvider, useLanguage } from "@/i18n/language";
+import { reportError, startErrorReporting } from "@/lib/error-reporting";
 import { useAppFonts } from "@/theme/fonts";
 import { installFocusRing } from "@/theme/focus-ring";
 
+startErrorReporting();
 installFocusRing();
 
 export default function RootLayout() {
@@ -74,6 +78,35 @@ function Unreachable() {
     <Screen>
       <Notice message={t("error.network_error")} />
       <Button label={t("common.retry")} onPress={() => void session.restore()} />
+    </Screen>
+  );
+}
+
+/**
+ * Shown when a screen breaks: the error is reported, and the person can try
+ * again. It replaces the whole app, so it brings its own providers; the
+ * language is the one the person chose.
+ */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  useEffect(() => {
+    reportError(error);
+  }, [error]);
+  return (
+    <SafeAreaProvider>
+      <LanguageProvider>
+        <UnexpectedError retry={retry} />
+      </LanguageProvider>
+    </SafeAreaProvider>
+  );
+}
+
+function UnexpectedError({ retry }: { readonly retry: ErrorBoundaryProps["retry"] }) {
+  const { t } = useLanguage();
+  return (
+    <Screen>
+      <Title>{t("error.unexpected_title")}</Title>
+      <Body>{t("error.unexpected_body")}</Body>
+      <Button label={t("common.retry")} onPress={() => void retry()} />
     </Screen>
   );
 }

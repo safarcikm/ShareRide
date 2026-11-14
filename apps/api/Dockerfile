@@ -9,12 +9,24 @@ FROM node:26-slim AS base
 RUN npm install --global pnpm@12.18.0 && npm cache clean --force
 WORKDIR /repo
 
-# The web app, exported once. It calls the API on its own origin.
+# The web app, exported once. It calls the API on its own origin. Render
+# passes the service's settings in as build arguments: with a Sentry DSN the
+# app reports errors, and with the sentry-auth-token secret file its source
+# maps go to Sentry. The maps are deleted either way, so they are never served
+# (runbook, "Error reports and uptime").
 FROM base AS web
 ENV CI=1 EXPO_NO_TELEMETRY=1
+ARG APP_ENV
+ARG RENDER_GIT_COMMIT
+ARG EXPO_PUBLIC_SENTRY_DSN
+ENV EXPO_PUBLIC_APP_ENV=$APP_ENV \
+  EXPO_PUBLIC_RELEASE=$RENDER_GIT_COMMIT \
+  EXPO_PUBLIC_SENTRY_DSN=$EXPO_PUBLIC_SENTRY_DSN
 COPY . .
 RUN pnpm install --frozen-lockfile --filter "@shareride/mobile..."
-RUN pnpm --filter @shareride/mobile export:web
+RUN pnpm --filter @shareride/mobile export:web --source-maps
+RUN --mount=type=secret,id=sentry-auth-token \
+  pnpm --filter @shareride/mobile upload-source-maps
 
 FROM base AS install
 COPY . .
