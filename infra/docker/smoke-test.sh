@@ -68,5 +68,6 @@ check "the page names the app's bundle" test -n "$bundle"
 check "the app's bundle is served" test "$(status_of "$bundle")" = 200
 check "its source map is not" test "$(status_of "$bundle.map")" = 404
 check "legal documents seeded" test "$(status_of /v1/legal/terms/current)" = 200
+check "sample meeting points seeded" sh -c "curl -fsS '$base/v1/meeting-points' | grep -q '\"sample\":true'"
 # Render copies secret files into the build context (see .dockerignore).
 check "no secret files in the image" docker run --rm "$image" test ! -e /repo/sentry-auth-token

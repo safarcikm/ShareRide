@@ -24,6 +24,12 @@ export const colors = {
     onError: "#FFFFFF",
     errorSoft: "#FCE8E6",
     infoSoft: "#E1EDF6",
+    // Tag text on its tinted fill (spec 15, section 4.1). Info tags use infoSoft.
+    warning: "#8A4B00",
+    warningSoft: "#FFF3DC",
+    info: "#1F5F8B",
+    womenOnly: "#6B3FA0",
+    womenOnlySoft: "#F1EAFB",
   },
   dark: {
     background: "#121A1E",
@@ -42,6 +48,11 @@ export const colors = {
     onError: "#3B0905",
     errorSoft: "#3B1A17",
     infoSoft: "#16303F",
+    warning: "#F2C46B",
+    warningSoft: "#2E2614",
+    info: "#8FCBE6",
+    womenOnly: "#CDB6F2",
+    womenOnlySoft: "#2E2340",
   },
 } as const;
 

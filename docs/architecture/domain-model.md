@@ -66,13 +66,18 @@ and [spec 2](../specs/2026-11-13-meeting-points.md#6-data-and-api).
 Location stored as PostGIS `geography(Point, 4326)`. `status` is `draft`,
 `active`, `paused`, `retiring` or `retired`. `search_text` holds the
 normalised names and aliases with a trigram index. Photos are
-`MeetingPointPhoto` records.
+`MeetingPointPhoto` records. `sample` marks the sample points that local
+and staging databases get until the real list exists (milestone 3); the app
+tags them.
 
 ### Place
 
 Towns, villages and landmarks that are not meeting points, used by place
 search to find the nearest meeting points: `name`, `aliases`, `location`,
-`kind`, `region`, `search_text`.
+`kind` (`area`, `town`, `village` or `landmark`), `region`, `search_text`,
+`sample`. Its meeting points are the active ones within `match_radius_m`, or,
+for a place with `municipalities` (such as the capital area), every active
+point in those municipalities.
 
 ### MeetingPointIssue
 
@@ -82,7 +87,8 @@ resolved), `meeting_point_id`, `reason`, `note`, `status`, `resolution`.
 ### Leg
 
 `from_meeting_point_id`, `to_meeting_point_id`, `distance_m`, `duration_s`,
-`computed_at`, `source` (routing engine and data version). Directional:
+`computed_at`, `source` (routing engine and data version, or the sample road
+graph for the sample points). Directional:
 A→B and B→A are separate legs because routes can differ. Computed for every
 ordered pair of active meeting points connected by road.
 

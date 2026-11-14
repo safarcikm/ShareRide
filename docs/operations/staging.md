@@ -90,7 +90,8 @@ Render changes its network:
 Every merge to `main` deploys by itself: when the commit's CI checks pass
 (`autoDeployTrigger: checksPass`), Render builds the same Dockerfile, runs
 `node packages/db/src/migrate-cli.ts --seed-drafts` (migrations, then the
-draft legal documents) and starts the new version. Traffic moves to it only
+draft legal documents and the sample meeting points with their distances)
+and starts the new version. Traffic moves to it only
 once `/v1/health/ready` answers 200, so a version that cannot reach the
 database never takes over. If the migration or the health check fails, the
 deploy fails and the running version stays.

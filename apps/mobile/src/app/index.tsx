@@ -41,6 +41,13 @@ export default function Welcome() {
             router.push("/coming-soon");
           }}
         />
+        <Button
+          variant="text"
+          label={t("meetingPoints.open")}
+          onPress={() => {
+            router.push("/meeting-points");
+          }}
+        />
       </View>
     </Screen>
   );

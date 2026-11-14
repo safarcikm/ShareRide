@@ -9,6 +9,9 @@ const [nodeModulesPattern, ...otherPatterns] = expoPreset.transformIgnorePattern
 export default {
   preset: "jest-expo",
   testPathIgnorePatterns: ["/node_modules/", "/e2e/"],
+  // Screen tests render the whole app; the first one in a file can pass 5 s
+  // when every package's checks run at once (pnpm check).
+  testTimeout: 15_000,
   moduleNameMapper: {
     "^lucide-react-native$":
       "<rootDir>/node_modules/lucide-react-native/dist/cjs/lucide-react-native.js",

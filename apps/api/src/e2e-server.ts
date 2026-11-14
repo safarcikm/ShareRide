@@ -1,12 +1,13 @@
 // The API for the app's browser tests (apps/mobile/e2e), started by
-// Playwright. It empties, migrates and seeds the *_test database, writes
+// Playwright. It empties, migrates and seeds the *_test database (draft legal
+// documents and the sample meeting points), writes
 // each text message as a JSON line to E2E_SMS_OUTBOX for the tests to read,
 // and runs on PORT (default 3001). Never use it for anything else.
 import { randomBytes } from "node:crypto";
 import { appendFileSync, writeFileSync } from "node:fs";
 import { serve } from "@hono/node-server";
 import { pingDatabase } from "@shareride/db";
-import { seedDraftLegalDocuments } from "@shareride/db/seed";
+import { seedDevelopmentData } from "@shareride/db/seed";
 import { freshTestDatabase } from "@shareride/db/testing";
 import { createApp } from "./app.ts";
 import { createLogger } from "./logger.ts";
@@ -24,7 +25,7 @@ const webOrigin = env["E2E_WEB_ORIGIN"] ?? "http://localhost:8082";
 
 // Refuses databases whose name does not end in _test, because it empties them.
 const connection = await freshTestDatabase();
-await seedDraftLegalDocuments(connection.db, new Date());
+await seedDevelopmentData(connection.db, new Date());
 writeFileSync(outbox, "");
 
 // Each code sent moves the clock 31 seconds on, so a test can sign in to the

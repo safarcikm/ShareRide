@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { timestamp, uuid } from "drizzle-orm/pg-core";
+import { customType, timestamp, uuid } from "drizzle-orm/pg-core";
 
 /** UUID version 7 keys, made by PostgreSQL 18: unique and in time order. */
 export const id = () =>
@@ -18,3 +18,35 @@ export const timestamps = {
     .defaultNow()
     .$onUpdate(() => new Date()),
 };
+
+/** A position in WGS 84, the system GPS and maps use. */
+export interface Position {
+  readonly latitude: number;
+  readonly longitude: number;
+}
+
+/**
+ * Reads PostGIS's hex EWKB for a point, as PostgreSQL returns a geography
+ * column: byte order, type (with flags), an optional SRID, then x and y.
+ */
+export function positionFromEwkb(hex: string): Position {
+  const bytes = Buffer.from(hex, "hex");
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const littleEndian = view.getUint8(0) === 1;
+  const type = view.getUint32(1, littleEndian);
+  const hasSrid = (type & 0x20000000) !== 0;
+  if ((type & 0x0fffffff) !== 1) throw new Error("The value is not a point.");
+  const offset = hasSrid ? 9 : 5;
+  return {
+    longitude: view.getFloat64(offset, littleEndian),
+    latitude: view.getFloat64(offset + 8, littleEndian),
+  };
+}
+
+/** `geography(Point, 4326)`: distances on it are in metres on the earth (ADR 0005). */
+export const geographyPoint = customType<{ data: Position; driverData: string }>({
+  dataType: () => "geography(Point, 4326)",
+  toDriver: ({ longitude, latitude }) =>
+    `SRID=4326;POINT(${String(longitude)} ${String(latitude)})`,
+  fromDriver: positionFromEwkb,
+});
