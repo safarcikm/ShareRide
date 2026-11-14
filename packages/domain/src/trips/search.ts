@@ -136,7 +136,7 @@ export function matchTrip(
   trip.stops.forEach((boarding, board) => {
     const boardDistanceM = fromDistances.get(boarding.meetingPointId);
     if (boardDistanceM === undefined) return;
-    if (boarding.plannedAt.getTime() < cutoff) return;
+    if (boarding.plannedAt.getTime() <= cutoff) return;
     if (search.date !== null && !sameDay(boarding.plannedAt, search.date)) return;
     if (search.timeOfDay !== null && timeOfDay(boarding.plannedAt) !== search.timeOfDay) return;
     for (let alight = board + 1; alight < trip.stops.length; alight += 1) {

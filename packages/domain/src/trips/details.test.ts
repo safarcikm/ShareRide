@@ -122,8 +122,9 @@ describe("tripPart (spec 4, 3.6)", () => {
       const found = tripPart(northTrip, { ...nearly, seats: 1 }, null, moment, settings);
       return found.ok ? found.value.state : found.error.code;
     };
-    // As in search: open at the cut-off itself, closed after it.
-    expect(stateAt(before(15))).toBe("open");
+    // As in search: open until the cut-off, closed from it.
+    expect(stateAt(new Date(before(15).getTime() - 1))).toBe("open");
+    expect(stateAt(before(15))).toBe("closed");
     expect(stateAt(before(14))).toBe("closed");
     expect(stateAt(before(0))).toBe("departed");
     // A later boarding stop can still be booked after the trip has left Reykjavík.

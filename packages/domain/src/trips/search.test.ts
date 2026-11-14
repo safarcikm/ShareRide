@@ -99,8 +99,8 @@ describe("matchTrip (spec 4, R4.1)", () => {
   it("stops matching 15 minutes before the boarding stop (rule S4)", () => {
     const boarding = northTrip.stops[1]?.plannedAt.getTime() ?? 0;
     const minutesBefore = (minutes: number) => new Date(boarding - minutes * 60_000);
-    expect(matchTrip(northTrip, search(), minutesBefore(15), settings)).not.toBeNull();
-    expect(matchTrip(northTrip, search(), minutesBefore(14), settings)).toBeNull();
+    expect(matchTrip(northTrip, search(), minutesBefore(15.001), settings)).not.toBeNull();
+    expect(matchTrip(northTrip, search(), minutesBefore(15), settings)).toBeNull();
   });
 
   it("needs the seats free on every stretch of the part (rule S3)", () => {
