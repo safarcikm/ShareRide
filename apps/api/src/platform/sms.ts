@@ -5,11 +5,27 @@ export interface SmsMessage {
 }
 
 /**
- * Sends text messages. Milestone 2 adds an adapter for an SMS provider in
- * the EEA; until then only the development sender exists.
+ * Sends text messages: 46elks in staging and production (ADR 0019), the
+ * development sender locally and in tests.
  */
 export interface SmsSender {
+  /** Resolves once the provider has accepted the message; throws `SmsSendError` otherwise. */
   send(message: SmsMessage): Promise<void>;
+}
+
+/** A message was not sent. The text never contains the phone number. */
+export class SmsSendError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = "SmsSendError";
+  }
+}
+
+/** The kill switch (`SMS_PAUSED=true`): refuses every message. */
+export function createPausedSmsSender(): SmsSender {
+  return {
+    send: () => Promise.reject(new SmsSendError("SMS sending is paused (SMS_PAUSED)")),
+  };
 }
 
 export interface DevSmsSender extends SmsSender {

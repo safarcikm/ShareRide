@@ -9,7 +9,7 @@ import { freshTestDatabase } from "@shareride/db/testing";
 import { createApp } from "./app.ts";
 import { createLogger } from "./logger.ts";
 import { createKeyedHasher } from "./platform/crypto.ts";
-import { createDevSmsSender, type DevSmsSender } from "./platform/sms.ts";
+import { createDevSmsSender, type DevSmsSender, type SmsSender } from "./platform/sms.ts";
 
 export interface TestApi {
   readonly connection: DatabaseConnection;
@@ -17,6 +17,8 @@ export interface TestApi {
   /** Requests straight to the app, for headers and cookies. */
   request(path: string, init?: RequestInit): Promise<Response>;
   readonly sms: DevSmsSender;
+  /** While set, sending fails with this error after the message reaches `sms.outbox`. */
+  smsFailure: Error | null;
   /** Every log line written so far. */
   readonly logLines: string[];
   now(): Date;
@@ -44,6 +46,13 @@ export async function startTestApi(): Promise<TestApi> {
   let now = new Date("2026-11-13T12:00:00.000Z");
   await seedDraftLegalDocuments(connection.db, new Date("2026-11-01T00:00:00.000Z"));
   const sms = createDevSmsSender({ print: () => undefined });
+  const failing: { error: Error | null } = { error: null };
+  const sender: SmsSender = {
+    async send(message) {
+      await sms.send(message);
+      if (failing.error !== null) throw failing.error;
+    },
+  };
   const logLines: string[] = [];
   const logger = createLogger({
     level: "debug",
@@ -60,7 +69,7 @@ export async function startTestApi(): Promise<TestApi> {
     checkDatabase: () => pingDatabase(connection.pool),
     features: {
       db: connection.db,
-      sms,
+      sms: sender,
       hasher: createKeyedHasher("integration-test-secret-of-32-characters"),
       clock: () => now,
       clientAddress: (c) => c.req.header("x-test-client-ip") ?? "unknown",
@@ -71,6 +80,12 @@ export async function startTestApi(): Promise<TestApi> {
   const api: TestApi = {
     connection,
     sms,
+    get smsFailure() {
+      return failing.error;
+    },
+    set smsFailure(error) {
+      failing.error = error;
+    },
     logLines,
     ip: "192.0.2.1",
     client: createApiClient({

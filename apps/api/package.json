@@ -11,8 +11,10 @@
     "e2e:serve": "node --env-file-if-exists=../../.env src/e2e-server.ts",
     "lint": "eslint .",
     "typecheck": "tsc",
-    "test": "vitest run --exclude \"src/**/*.integration.test.ts\"",
-    "test:integration": "vitest run .integration.test"
+    "test": "vitest run --exclude \"src/**/*.integration.test.ts\" --exclude \"src/**/*.contract.test.ts\"",
+    "test:integration": "vitest run .integration.test",
+    "test:contract": "vitest run .contract.test",
+    "clean-up": "node --env-file-if-exists=../../.env src/clean-up-cli.ts"
   },
   "dependencies": {
     "@hono/node-server": "catalog:",

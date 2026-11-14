@@ -9,7 +9,8 @@ export const codeRules = {
 
 /**
  * How often a code may be sent (rule R1.3). Per IP address and per country
- * calling code are starting values, tuned with real traffic.
+ * calling code are starting values, tuned with real traffic. The daily cap
+ * per country is the SMS budget: it bounds what SMS pumping fraud can cost.
  */
 export const codeSendLimits = {
   perNumber: [
@@ -17,9 +18,13 @@ export const codeSendLimits = {
     { limit: 5, windowSeconds: 3600 },
   ],
   perIpAddress: [{ limit: 10, windowSeconds: 3600 }],
-  perCallingCode: (callingCode: string) => [
-    { limit: callingCode === "354" ? 500 : 50, windowSeconds: 3600 },
-  ],
+  perCallingCode: (callingCode: string) => {
+    const iceland = callingCode === "354";
+    return [
+      { limit: iceland ? 500 : 50, windowSeconds: 3600 },
+      { limit: iceland ? 2000 : 100, windowSeconds: 24 * 3600 },
+    ];
+  },
 } as const;
 
 /**

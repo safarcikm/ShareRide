@@ -14,7 +14,7 @@ apps.
 | Threat | Example | Main controls |
 | ------ | ------- | ------------- |
 | Account takeover | SIM swap, guessed codes | Code expiry and attempt limits, device sessions list, re-verification for sensitive changes |
-| SMS fraud (SMS pumping) | Bots trigger thousands of codes to premium numbers | Rate limits per IP, number and prefix; country allow-list; bot checks; spending alerts |
+| SMS fraud (SMS pumping) | Bots trigger thousands of codes to premium numbers | Rate limits per IP, number and prefix, and a daily cap per country (the SMS budget); country allow-list; a kill switch (`SMS_PAUSED`); bot checks; spending alerts |
 | Scraping and stalking | Collecting who travels where and when | Public profiles show first name only; exact trip details and vehicle plate only to booked passengers; rate-limited search |
 | Broken access control | Editing someone else's trip, reading other people's chats | Ownership checks in every application service; tests for each endpoint as another user |
 | Overbooking or price tampering | Race conditions, manipulated requests | Server computes prices and availability; transactional capacity check; database constraints |
@@ -87,10 +87,21 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
 - **Secrets:** `AUTH_SECRET` is at least 32 characters and differs per
   environment; the API refuses the example value in production. Changing it invalidates codes waiting to be used and resets the
   sending limits; sessions are not affected.
-- **Development SMS:** the development sender prints codes in the API
-  terminal, outside the logs. The API refuses to start with it in production.
-- **Still to come:** clean-up jobs for expired codes, ended sessions and old
-  limit records (milestone 2, with the worker); the approximate country of
+- **SMS:** the development sender prints codes in the API terminal, outside
+  the logs, and the API refuses to start with it in production. 46elks sends
+  with `dontlog=message`, so its history does not keep the code; errors from
+  the sender never contain the number. `SMS_PAUSED=true` stops all SMS.
+- **Clean-up:** an hourly job deletes expired codes, rate-limit events after
+  24 hours and expired access and refresh tokens, ends sessions unused for 60
+  days and deletes sessions 30 days after they end. A rotated refresh token
+  is kept until its session ends, however old, so presenting it again is
+  still caught as reuse.
+- **Daily SMS cap per country:** it bounds what SMS pumping can cost, but
+  someone who fills it (it takes many IP addresses, at 10 codes per hour
+  each) blocks new codes to that country for up to 24 hours instead of one.
+  The warning in the logs is the signal; raise the cap or pause and
+  investigate.
+- **Still to come:** the approximate country of
   each session (needs an IP-to-country lookup); `Idempotency-Key` support
   (conventions), which these endpoints skip because a repeat is harmless or
   limited: a lost reply to "verify" means asking for a new code.

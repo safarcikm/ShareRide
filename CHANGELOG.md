@@ -57,6 +57,10 @@ releases follow [Semantic Versioning](https://semver.org/).
 - Milestone 2 plan (hosted and connected) and ADRs 0018 to 0022: Render in
   Frankfurt, 46elks for SMS, Sentry's EU region, MapTiler and Hetzner Object
   Storage in Helsinki.
+- Real SMS for sign-in codes through 46elks, a daily cap on codes per
+  country, and an `SMS_PAUSED` kill switch.
+- Hourly clean-up of sign-in records past their retention: expired codes,
+  rate-limit events, expired tokens, idle and ended sessions.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
