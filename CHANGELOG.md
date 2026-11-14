@@ -143,6 +143,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   the car's make, model and colour, preferences and note. Trip pages are
   sent with `X-Robots-Tag: noindex`, and a finished trip's page stays open
   by link until a week after its last stop (Q17, agreed by Martin).
+- Trip details in the app (milestone 3, PR 7b): a search result opens the
+  trip for that part, with its times, the seat view (the car from above
+  with the driver, taken, your and free seats), seats and price, the route
+  with every stop, where the passenger can get in or out instead, the
+  driver, the car, preferences and note. Share sends the trip's web
+  address for the part, which opens the same part without an account; the
+  page asks search engines not to index it. "Share the trip" and "See the
+  trip page" after publishing. Booking comes next (spec 5).
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

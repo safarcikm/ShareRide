@@ -137,7 +137,10 @@ modes.
 | Sun | `#F4C04E` | | Wool (hats, scarves) | `#EADFCB` |
 
 The car, seen from above: body `#D5E1E5`, glass `#A9C4CE`, cabin `#F5F8F9`
-in light mode; `#34454E`, `#557784` and `#24323A` in dark mode.
+in light mode; `#34454E`, `#557784` and `#24323A` in dark mode. Inside it,
+seats `#C9D5DA`, people on taken seats `#8E9CA3`, the steering wheel
+`#5B6B73` and the wheels `#1F2A30`; in dark mode `#3E525C`, `#7F8C93`,
+`#9AA8AE` and `#0B1013`.
 
 ### 4.3 Type
 

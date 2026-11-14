@@ -12,9 +12,12 @@ import { Icon } from "./icon";
 export function Notice({
   message,
   kind = "error",
+  selectable = false,
 }: {
   readonly message: string | null;
   readonly kind?: "error" | "info";
+  /** Lets the person select and copy the text, such as a link to share by hand. */
+  readonly selectable?: boolean;
 }) {
   const palette = usePalette();
   if (message === null) return null;
@@ -32,7 +35,12 @@ export function Notice({
         color={isError ? palette.error : palette.text}
         size={iconSizes.button}
       />
-      <Text style={[typography.body, styles.message, { color: palette.text }]}>{message}</Text>
+      <Text
+        selectable={selectable}
+        style={[typography.body, styles.message, { color: palette.text }]}
+      >
+        {message}
+      </Text>
     </View>
   );
 }

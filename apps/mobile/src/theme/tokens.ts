@@ -56,6 +56,55 @@ export const colors = {
   },
 } as const;
 
+/**
+ * People and illustration colours (spec 15, section 4.2): only for shape
+ * people, need icons and drawings, never for text and never the only way to
+ * show meaning. The same in both modes; faces are drawn in `face`.
+ */
+export const people = {
+  glacier: "#8FCBE6",
+  crowberry: "#F08C9C",
+  lupine: "#A99BEB",
+  mossLight: "#9ED0A0",
+  sun: "#F4C04E",
+  wool: "#EADFCB",
+  face: "#1F2A30",
+} as const;
+
+/** The five people colours a driver's shape person and initial can have, in a fixed order. */
+export const peopleColours = [
+  people.glacier,
+  people.crowberry,
+  people.lupine,
+  people.mossLight,
+  people.sun,
+] as const;
+
+/**
+ * The car seen from above (spec 15, sections 4.2 and 5.3): body, glass and
+ * cabin; seats and the shapes of passengers who took a seat.
+ */
+export const carDrawing = {
+  light: {
+    body: "#D5E1E5",
+    glass: "#A9C4CE",
+    cabin: "#F5F8F9",
+    seat: "#C9D5DA",
+    taken: "#8E9CA3",
+    steering: "#5B6B73",
+    wheel: "#1F2A30",
+  },
+  dark: {
+    body: "#34454E",
+    glass: "#557784",
+    cabin: "#24323A",
+    seat: "#3E525C",
+    taken: "#7F8C93",
+    steering: "#9AA8AE",
+    wheel: "#0B1013",
+  },
+} as const;
+
 export type ColorScheme = keyof typeof colors;
 export type Palette = { readonly [K in keyof (typeof colors)["light"]]: string };
 
@@ -122,6 +171,8 @@ export const sizes = {
   priceLabel: 96,
   /** A day in the calendar: the smallest touch target. */
   calendarDay: 44,
+  /** Narrowest the main action of a bottom bar gets before it moves under the price. */
+  barAction: 200,
 } as const;
 
 /** Width of the outline on inputs, tick boxes and chips. */
@@ -132,6 +183,13 @@ export const minTouchTarget = 44;
 
 /** Content column width on wide screens (spec 1, section 5). */
 export const maxContentWidth = 480;
+
+/**
+ * From this width the trip details move the price and main action from the
+ * bottom bar into a panel beside the column (spec 15, section 4.8).
+ */
+export const sidePanelFrom = 900;
+export const sidePanelWidth = 320;
 
 /** Stroke width of Lucide icons. */
 export const iconStroke = 2.4;

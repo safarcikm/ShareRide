@@ -107,6 +107,8 @@ export function Adjustable({
  */
 export function Stepper({
   label,
+  hint,
+  beside = false,
   value,
   min,
   max,
@@ -116,6 +118,10 @@ export function Stepper({
   moreLabel,
 }: {
   readonly label: string;
+  /** A line under the label, such as the price per seat. */
+  readonly hint?: string;
+  /** The label on the left and the buttons on the right, in one row. */
+  readonly beside?: boolean;
   readonly value: number;
   readonly min: number;
   readonly max: number;
@@ -132,8 +138,13 @@ export function Stepper({
     onChange(Math.min(max, value + 1));
   };
   return (
-    <View style={styles.stepper}>
-      <Text style={[typography.label, { color: palette.text }]}>{label}</Text>
+    <View style={beside ? styles.beside : styles.stepper}>
+      <View style={beside ? styles.grow : undefined}>
+        <Text style={[typography.label, { color: palette.text }]}>{label}</Text>
+        {hint === undefined ? null : (
+          <Text style={[typography.small, { color: palette.textMuted }]}>{hint}</Text>
+        )}
+      </View>
       <Adjustable
         label={label}
         value={value}
@@ -162,6 +173,8 @@ export function Stepper({
 
 const styles = StyleSheet.create({
   stepper: { gap: spacing.sm },
+  beside: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  grow: { flex: 1 },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   value: { minWidth: sizes.buttonHeight, textAlign: "center" },
   buttonOuter: {

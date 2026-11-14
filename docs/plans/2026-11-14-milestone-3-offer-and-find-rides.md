@@ -339,9 +339,9 @@ Split in two, like PR 6: 7a the server, 7b the screens.
 
 - [x] 7a: `GET /trips/{id}` for a part, with what the passenger can do;
       `X-Robots-Tag: noindex` on trip pages
-- [ ] 7b: The trip details screen with the seat view and route list;
+- [x] 7b: The trip details screen with the seat view and route list;
       changing the part; share; the robots meta tag
-- [ ] 7b: Browser journey: search without an account, open a trip, change
+- [x] 7b: Browser journey: search without an account, open a trip, change
       the boarding stop, open the shared link
 - Verify: a shared link opens the trip in another browser
 - 7a notes: without a part, the trip opens from its first stop to its
@@ -354,6 +354,24 @@ Split in two, like PR 6: 7a the server, 7b the screens.
   Martin agreed on 2026-11-15, A40). A finished trip's stops can be at retired points. The number plate is never in the answer yet (only booked
   passengers see it, spec 5). Trip pages count towards the search limit of
   the address, as their prices and seats could be scraped the same way.
+- 7b notes: a search result opens the trip for that part, with the seats
+  searched for; the address keeps the part (`?from=1&to=2`), so a shared
+  link opens the same part. Tapping a stop on the route offers "Get in
+  here", "Get out here" and the meeting point; the other end moves along
+  when it would come first; while a changed part loads, the route and
+  Share already use it and the price follows. A link that asks for more
+  seats than are free offers fewer. The seat view draws the fewest seats that hold
+  what the driver offers, as the car's own seat count is not recorded:
+  taken seats first, then yours, then free ones, with a "You" flag outside
+  the car and a legend; one image with a label in words for screen
+  readers. From 900 points wide the price and button sit in a panel beside
+  the column. Share opens the share sheet of the phone or browser, or
+  copies the link, and shows the link to copy when neither works. The page asks
+  search engines not to index it. The main button says "Booking opens
+  soon" until booking (spec 5); a part that cannot be booked says why.
+  Not built yet: the driver's public profile (spec 1), "Report this trip"
+  (spec 9), the seat pop animation, the map (PR 8), and opening shared
+  links in the app, which needs the production domain.
 
 ### PR 8: `feat(maps)`: maps on the web and phones
 

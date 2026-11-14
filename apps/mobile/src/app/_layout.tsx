@@ -55,6 +55,7 @@ function Navigation() {
       <Stack.Screen name="places/[id]" />
       <Stack.Screen name="search/index" />
       <Stack.Screen name="search/results" />
+      <Stack.Screen name="trips/[id]" />
       <Stack.Protected guard={me === null}>
         <Stack.Screen name="sign-in" />
       </Stack.Protected>
