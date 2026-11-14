@@ -151,6 +151,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   address for the part, which opens the same part without an account; the
   page asks search engines not to index it. "Share the trip" and "See the
   trip page" after publishing. Booking comes next (spec 5).
+- Our own map of Iceland (milestone 3, PR 8a; ADR 0024 replaces MapTiler):
+  the coastline, glaciers, main roads and the Ring Road from Natural Earth's
+  public-domain data, made into a small data file by
+  `apps/mobile/scripts/build-iceland-map.ts` and drawn with
+  `react-native-svg`. No account, key or map provider, and it works the same
+  on the web and in Expo Go. Meeting points are dots on it: a tap shows the
+  points at that spot, and a second tap on a lone point opens it. Wide
+  screens show the map beside the list; phones switch between them. A
+  point's details show it on the map next to "Open in maps".
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

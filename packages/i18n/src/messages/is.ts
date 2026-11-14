@@ -97,6 +97,14 @@ export const is = {
   "meetingPoints.sample": "Prufumótsstaður",
   "meetingPoints.sampleNotice":
     "Þetta eru prufumótsstaðir til að prófa ShareRide. Staðsetning þeirra er áætluð.",
+  "meetingPoints.showAs": "Sýna mótsstaðina sem",
+  "meetingPoints.map": "Kort",
+  "meetingPoints.list": "Listi",
+  "meetingPoints.mapLabel":
+    "Kort af Íslandi með {count, plural, one {# mótsstað} other {# mótsstöðum}}. Listinn sýnir sömu staði.",
+  "meetingPoints.mapHint":
+    "Veldu punkt til að sjá mótsstaðinn þar, og veldu hann aftur til að opna hann.",
+  "meetingPoints.pointMap": "{name} á korti af Íslandi",
   "meetingPoints.empty": "Engir mótsstaðir enn.",
   "meetingPoints.notFound":
     "Við fundum ekki þennan mótsstað. Hann er kannski ekki lengur í notkun.",

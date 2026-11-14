@@ -105,6 +105,30 @@ export const carDrawing = {
   },
 } as const;
 
+/**
+ * Our own map of Iceland (ADR 0024; spec 15, section 4.2): sea, land and its
+ * coast, glaciers, main roads and the Ring Road. Routes and dots use the
+ * palette's `primary`, `control` and `surface`.
+ */
+export const mapDrawing = {
+  light: {
+    sea: "#D7E9F0",
+    land: "#F4F1EA",
+    coast: "#B9CBD3",
+    glacier: "#FFFFFF",
+    road: "#C6CED2",
+    ringRoad: "#9AA9B0",
+  },
+  dark: {
+    sea: "#142630",
+    land: "#24323A",
+    coast: "#3E525C",
+    glacier: "#3A4C55",
+    road: "#3E525C",
+    ringRoad: "#6E7D85",
+  },
+} as const;
+
 export type ColorScheme = keyof typeof colors;
 export type Palette = { readonly [K in keyof (typeof colors)["light"]]: string };
 
@@ -190,6 +214,8 @@ export const maxContentWidth = 480;
  */
 export const sidePanelFrom = 900;
 export const sidePanelWidth = 320;
+/** From the same width, a map sits beside a list, at most this wide (spec 15, section 4.8). */
+export const asideMaxWidth = 640;
 
 /** Stroke width of Lucide icons. */
 export const iconStroke = 2.4;

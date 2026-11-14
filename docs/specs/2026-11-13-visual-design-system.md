@@ -142,6 +142,13 @@ seats `#C9D5DA`, people on taken seats `#8E9CA3`, the steering wheel
 `#5B6B73` and the wheels `#1F2A30`; in dark mode `#3E525C`, `#7F8C93`,
 `#9AA8AE` and `#0B1013`.
 
+Our map of Iceland ([ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)):
+sea `#D7E9F0`, land `#F4F1EA` with its coast `#B9CBD3`, glaciers `#FFFFFF`,
+main roads `#C6CED2` and the Ring Road `#9AA9B0` in light mode; `#142630`,
+`#24323A`, `#3E525C`, `#3A4C55`, `#3E525C` and `#6E7D85` in dark mode.
+Meeting points are `primary` dots with a `surface` outline; a chosen one is
+larger, in a soft `primary` halo. The map sits in a card's frame.
+
 ### 4.3 Type
 
 Two free fonts (SIL Open Font License), both with every Icelandic letter
@@ -221,6 +228,9 @@ review board shows the trip details in Icelandic and dark mode.
 - From 900 wide, the trip details and request screens move the price and main
   action from the bottom bar into a panel 320 wide beside the column.
 - Search results put the map beside the list (spec 4).
+- From 900 wide, meeting points put the map beside the list, at most 640
+  wide (spec 2, 3.1). On the web it stays in view while the list scrolls,
+  and scrolls on its own when it is taller than the window.
 
 ### 4.9 Logo and app icon
 
