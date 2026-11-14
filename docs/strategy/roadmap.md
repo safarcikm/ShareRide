@@ -102,6 +102,16 @@ Walking skeleton, milestone 2: hosted and connected
 - [ ] Apple and Google sign-in; profile photo
 - [ ] Development builds with EAS and mobile end-to-end tests
 
+Milestone 3: offer and find rides
+([plan](../plans/2026-11-14-milestone-3-offer-and-find-rides.md), approved
+2026-11-14; before milestone 2's remaining PRs, at Martin's request)
+
+- [ ] Sample meeting points and place search
+- [ ] Cars and the licence declaration
+- [ ] Post a trip with prices worked out from one price level
+- [ ] Search with partial routes, trip details and shared links
+- [ ] Maps on the web and phones
+
 MVP features (each one a spec, a plan and a PR series)
 
 - [ ] Profiles, vehicles, phone verification

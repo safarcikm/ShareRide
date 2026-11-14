@@ -79,6 +79,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   same scrubbing rule, now shared from the domain package; a "Something went
   wrong" screen with a retry when a screen breaks; the web app's source maps
   uploaded to Sentry from the image build and never served.
+- Milestone 3 plan (offer and find rides): sample meeting points and place
+  search, cars, posting a trip, search with partial routes and trip details,
+  before milestone 2's remaining PRs.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

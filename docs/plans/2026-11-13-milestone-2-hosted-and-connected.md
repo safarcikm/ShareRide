@@ -222,6 +222,12 @@ Render, Frankfurt (deploys a commit once its checks pass)
 
 ## 5. Pull requests and tasks
 
+On 2026-11-14 Martin moved the core features ahead: the
+[milestone 3 plan](2026-11-14-milestone-3-offer-and-find-rides.md) takes
+over PR 6 (meeting points, with sample data and the map last) and runs
+next. PR 5 (iPhone builds) opens once Apple approves Martin's account; PRs
+5b and 7 to 9 follow milestone 3.
+
 Tests come first in every task. Each PR updates the docs it touches and gets
 a code review before it opens. Tick tasks as they merge.
 
