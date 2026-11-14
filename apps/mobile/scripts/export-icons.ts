@@ -17,7 +17,7 @@ const pictures: Readonly<Record<string, number>> = {
   "icon-tinted": 1024,
   "android-icon-foreground": 1024,
   "android-icon-monochrome": 1024,
-  "splash-icon": 1024,
+  "splash-icon": 1152,
   favicon: 48,
 };
 

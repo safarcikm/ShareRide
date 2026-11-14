@@ -137,17 +137,33 @@ code appears in the API's terminal.
 3. If the app cannot reach ShareRide, put
    `EXPO_PUBLIC_API_URL=http://10.0.2.2:3000` in `apps/mobile/.env.local`
    and restart the app (10.0.2.2 is the computer, seen from the emulator).
+   Remove the line again before using a phone or the web app.
 
-Expo Go shows its own icon. To see ShareRide's icon and opening screen,
-build the app once (several minutes the first time):
+### See the app icon and opening screen
 
-```sh
-pnpm --filter @shareride/mobile exec expo run:android
-```
+Expo Go shows its own icon. To see ShareRide's, build the app once on the
+emulator (several minutes the first time):
 
-It creates `apps/mobile/android` (ignored by Git) and rewrites the
+1. Tell the build where Android Studio's tools are, as user environment
+   variables. Windows: `ANDROID_HOME` is `%LOCALAPPDATA%\Android\Sdk` and
+   `JAVA_HOME` is `C:\Program Files\Android\Android Studio\jbr`. macOS:
+   `ANDROID_HOME` is `~/Library/Android/sdk` and `JAVA_HOME` is
+   `/Applications/Android Studio.app/Contents/jbr/Contents/Home`. Open a new
+   terminal afterwards.
+2. With the emulator, the database and the API running:
+
+   ```sh
+   pnpm --filter @shareride/mobile exec expo run:android
+   ```
+
+3. The built app looks for the API on the emulator itself, so forward the
+   port each time the emulator starts: `adb reverse tcp:3000 tcp:3000`
+   (`adb` is in `platform-tools` inside `ANDROID_HOME`).
+
+The build creates `apps/mobile/android` (ignored by Git) and rewrites the
 `android` and `ios` scripts in `apps/mobile/package.json`; undo that with
-`git checkout apps/mobile/package.json`.
+`git checkout apps/mobile/package.json`. After a change to the icon or to
+`app.json`, delete `apps/mobile/android` and build again.
 
 ### Checks and tests
 

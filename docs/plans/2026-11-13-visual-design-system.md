@@ -550,9 +550,9 @@ the driver and you), on 2026-11-13, and approved the refined drawing on
 - [x] **Step 6: Spec 15** gets section 4.9 and decision 11, with the board
   `images/visual-design-system/logo.png` made from the exported pictures.
 - [ ] **Step 7: Run every check**, request a code review, then open the PR.
-- [ ] **Step 8: By hand,** in an Android emulator: build the app once with
-  `npx expo run:android` and look at the icon (light, themed) and the
-  opening screen (light and dark).
+- [ ] **Step 8: By hand,** in an Android emulator: build the app once (README,
+  "See the app icon and opening screen") and look at the icon (light,
+  themed) and the opening screen (light and dark).
 
 ## Definition of done
 

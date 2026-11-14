@@ -242,10 +242,11 @@ room.
   and later) is the same outline in one colour.
 - **Opening screen:** the icon with rounded corners in the middle of
   `background` (frost, or night in dark mode), 144 points wide on both
-  platforms, and nothing else. Its picture is twice the icon's size with
-  see-through edges, so Android's round mask never cuts the corners. It
-  shows only while the app starts; the fonts and your session then load
-  behind the usual loading view.
+  platforms, and nothing else. Its picture (1152 pixels, enough for the
+  sharpest Android screens) is twice the icon's size with see-through
+  edges, so Android's round mask never cuts the corners. It shows only
+  while the app starts; the fonts and your session then load behind the
+  usual loading view.
 - **Browser tab:** the icon with rounded corners, 48 pixels.
 - **With the name:** the icon, then "ShareRide" in Fredoka SemiBold in
   `text`, at 0.6 of the icon's height, with a gap of a quarter of the
@@ -466,9 +467,10 @@ Counts use ICU plural forms in both languages.
 
 ## 10. Out of scope
 
-The date and time step of posting, the my-trips and manage-bookings screens, chat, the trip day screens, the
-operator console's look, the public website, sound and haptics. These get
-drawn when their specs are built, following this spec.
+The date and time step of posting, the my-trips and manage-bookings
+screens, chat, the trip day screens, the operator console's look, the public
+website, sound and haptics. These get drawn when their specs are built,
+following this spec.
 
 ## Decisions
 

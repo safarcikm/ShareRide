@@ -121,7 +121,7 @@ describe("app icon and opening screen (spec 15, section 4.9)", () => {
     expect(splash.dark.backgroundColor).toBe(colors.dark.background);
     expect(splash.dark.image).toBe(splash.image);
     expect(splash.imageWidth).toBe(288);
-    expectSeeThrough(splash.image, 1024);
+    expectSeeThrough(splash.image, 1152);
   });
 
   it("shows the icon in the browser tab", () => {
@@ -142,7 +142,9 @@ describe("app icon and opening screen (spec 15, section 4.9)", () => {
     );
     const pictures = readdirSync(join(appDir, "assets")).filter((name) => name.endsWith(".png"));
     expect(pictures.sort()).toEqual([...used].sort());
-    const drawings = readdirSync(join(appDir, "assets", "logo"));
+    const drawings = readdirSync(join(appDir, "assets", "logo")).filter((name) =>
+      name.endsWith(".svg"),
+    );
     expect(drawings.sort()).toEqual(pictures.map((name) => name.replace(/\.png$/, ".svg")).sort());
   });
 });
