@@ -49,6 +49,9 @@ export async function renderApp(
     currentClient.answer("/v1/auth/refresh", () => ok(200, tokens(1)));
     currentClient.answer("/v1/me", () => ok(200, me));
   }
+  // My rides and Your next ride on Find, once signed in: nothing, unless a test says otherwise.
+  currentClient.answer("/v1/me/bookings", () => ok(200, { bookings: [] }));
+  currentClient.answer("/v1/me/trips", () => ok(200, { trips: [] }));
   options.setUp?.(currentClient);
   const result = await renderRouter("./src/app", { initialUrl });
   return { ...result, client: currentClient, store };

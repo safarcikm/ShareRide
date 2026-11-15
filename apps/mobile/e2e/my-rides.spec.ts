@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { english, icelandic, signUp, type Texts } from "./support/account";
 import { focused, openTrip, type TripSearch } from "./support/trips";
 
-// Spec 5's requests and My bookings on the web build, against the sample
+// Spec 5's requests and My rides (spec 16, 3.3) on the web build, against the sample
 // trips the e2e API seeds: Sigga drives Mjódd → N1 Hveragerði → N1 Selfoss
 // tomorrow at 17:15, with 4 seats, and answers requests herself. Each run
 // requests one seat and withdraws it again. Screens left behind stay in the
@@ -19,9 +19,10 @@ interface Journey extends TripSearch {
   readonly withdrawAsk: RegExp;
   readonly withdrawn: string;
   readonly withdrawnTag: string;
-  readonly myBookings: string;
+  readonly myRides: string;
+  readonly passenger: string;
   readonly past: string;
-  readonly noneUpcoming: string;
+  readonly nothing: string;
   readonly searchAgain: string;
 }
 
@@ -47,9 +48,10 @@ const journeys: readonly Journey[] = [
     withdrawAsk: /^Withdraw your request\? Sigga won't see it any more/,
     withdrawn: "You withdrew this request. That never counts against you.",
     withdrawnTag: "Withdrawn",
-    myBookings: "My bookings",
+    myRides: "My rides",
+    passenger: "Passenger",
     past: "Past",
-    noneUpcoming: "No rides coming up. Find one and book a seat.",
+    nothing: "Nothing coming up. Book a seat on a ride, or offer the empty seats in your car.",
     searchAgain: "Search again",
   },
   {
@@ -73,15 +75,16 @@ const journeys: readonly Journey[] = [
     withdrawAsk: /^Draga beiðnina til baka\? Sigga sér hana ekki lengur/,
     withdrawn: "Þú dróst þessa beiðni til baka. Það hefur aldrei áhrif á áreiðanleika þinn.",
     withdrawnTag: "Dregin til baka",
-    myBookings: "Bókanirnar mínar",
+    myRides: "Ferðirnar mínar",
+    passenger: "Farþegi",
     past: "Liðnar",
-    noneUpcoming: "Engar ferðir framundan. Finndu far og bókaðu sæti.",
+    nothing: "Ekkert framundan. Bókaðu sæti í ferð eða bjóddu laus sæti í bílnum þínum.",
     searchAgain: "Leita aftur",
   },
 ];
 
 for (const journey of journeys) {
-  test.describe(`requests and my bookings (${journey.locale})`, () => {
+  test.describe(`requests and my rides (${journey.locale})`, () => {
     test.use({ locale: journey.locale });
 
     test("withdraws a request and finds it under Past", async ({ page }) => {
@@ -107,14 +110,14 @@ for (const journey of journeys) {
 
       // My rides: nothing coming up; the request is under Past.
       await page.goto("/my-rides");
-      await expect(page.getByRole("heading", { name: journey.myBookings })).toBeVisible();
+      await expect(page.getByRole("heading", { name: journey.myRides })).toBeVisible();
       await expect(
-        page.getByText(journey.noneUpcoming, { exact: true }).filter({ visible: true }),
+        page.getByText(journey.nothing, { exact: true }).filter({ visible: true }),
       ).toBeVisible();
       await page.getByRole("radio", { name: journey.past }).click();
       await expect(page).toHaveURL(/\/my-rides\?when=past$/);
       const card = page.getByRole("button", {
-        name: new RegExp(`, ${journey.withdrawnTag}, Sigga, `),
+        name: new RegExp(`^${journey.passenger}, .*, ${journey.withdrawnTag}, Sigga, `),
       });
       await expect(card).toBeVisible();
       await card.click();

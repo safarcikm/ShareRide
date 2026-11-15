@@ -1,11 +1,18 @@
-import { act, fireEvent, screen, within } from "expo-router/testing-library";
+import { act, fireEvent, screen, waitFor, within } from "expo-router/testing-library";
 import { AccessibilityInfo, BackHandler } from "react-native";
 import { getLocales } from "expo-localization";
-import type { DriverReadiness } from "@shareride/contracts";
+import type { Booking, DriverReadiness, MyTrip } from "@shareride/contracts";
 import { readAppData, writeAppData } from "@/lib/app-data";
 import { completeMe, renderApp } from "@/testing/app";
+import {
+  bookingApi,
+  northBooking,
+  northMyTrip,
+  northSegments,
+  unpaidBooking,
+} from "@/testing/bookings";
 import type * as TestApp from "@/testing/app";
-import { ok, type FakeClient } from "@/testing/fake-client";
+import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import {
   northResult,
   searchApi,
@@ -354,5 +361,121 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
     expect(await screen.findByRole("header", { name: "Before you publish" })).toBeVisible();
     expect(screen).toHavePathname("/offer");
     expect(mockedWrite).toHaveBeenLastCalledWith("pending-offer", "");
+  });
+});
+
+describe("Your next ride (spec 16, 3.2 item 2)", () => {
+  /** Answers the rides coming up: my bookings and the trips I drive. */
+  function comingUp(client: FakeClient, bookings: Booking[], trips: MyTrip[] = []) {
+    client.answer("/v1/me/bookings", () => ok(200, { bookings }));
+    client.answer("/v1/me/trips", () => ok(200, { trips }));
+  }
+  const later = northBooking({
+    id: "0190a1d6-0000-7000-8000-0000000000c2",
+    status: "confirmed",
+    board: { ...northBooking().board, plannedAt: "2026-11-16T10:00:00.000Z" },
+    alight: { ...northBooking().alight, plannedAt: "2026-11-16T12:05:00.000Z" },
+  });
+
+  it("shows the soonest ride on top, with its status, and opens it", async () => {
+    deviceLanguage("en-GB");
+    await renderApp("/", {
+      me: completeMe,
+      setUp: (client) => {
+        comingUp(client, [northBooking(), later]);
+        bookingApi(client, () => northBooking());
+      },
+    });
+    expect(await screen.findByRole("header", { name: "Your next ride" })).toBeVisible();
+    const ride = screen.getByRole("button", {
+      name: "Passenger, Sunday 15 November, Borgarnes → Blönduós, 10:00 to 12:05, Request sent, Anna, White Toyota Yaris, 1 seat, 2,900 ISK",
+    });
+    expect(screen.queryByRole("button", { name: /^Passenger, Monday/ })).toBeNull();
+    await fireEvent.press(ride);
+    expect(await screen.findByText("Request sent. Anna has until 22:00 to answer.")).toBeVisible();
+    expect(screen).toHavePathname(`/bookings/${northBooking().id}`);
+  });
+
+  it("asks to pay when the next ride waits for payment", async () => {
+    deviceLanguage("en-GB");
+    await renderApp("/", {
+      me: completeMe,
+      setUp: (client) => {
+        comingUp(client, [unpaidBooking]);
+        bookingApi(client, () => unpaidBooking);
+      },
+    });
+    expect(await screen.findByText("Pay by 12:30 to keep your seat")).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Pay 2,900 ISK" }));
+    expect(await screen.findByText("Pay 2,900 ISK to confirm your seat")).toBeVisible();
+  });
+
+  it("shows a trip I drive with the seats booked", async () => {
+    deviceLanguage("en-GB");
+    await renderApp("/", {
+      me: completeMe,
+      setUp: (client) => {
+        comingUp(
+          client,
+          [later],
+          [
+            {
+              ...northMyTrip,
+              segments: northSegments([1, 1, 1]),
+              openRequests: 0,
+              requestsCloseAt: null,
+            },
+          ],
+        );
+      },
+    });
+    expect(
+      await screen.findByRole("button", {
+        name: "Driving, Sunday 15 November, BSÍ bus terminal → Hof, Akureyri, 09:00 to 14:00, 1 of 3 seats booked, Seats free on every stretch: 2",
+      }),
+    ).toBeVisible();
+  });
+
+  it("is left out signed out", async () => {
+    const { client } = await openFrontPage();
+    expect(await screen.findByRole("header", { name: "Where are you going?" })).toBeVisible();
+    expect(screen.queryByRole("header", { name: "Your next ride" })).toBeNull();
+    expect(client.calls.map((call) => call.path)).not.toContain("/v1/me/bookings");
+  });
+
+  it("is left out when nothing is coming up", async () => {
+    deviceLanguage("en-GB");
+    const { client } = await renderApp("/", {
+      me: completeMe,
+      setUp: (fake) => {
+        comingUp(fake, []);
+      },
+    });
+    expect(await screen.findByRole("header", { name: "Where are you going?" })).toBeVisible();
+    await waitFor(() => {
+      expect(client.calls.map((call) => call.path)).toContain("/v1/me/trips");
+    });
+    expect(screen.queryByRole("header", { name: "Your next ride" })).toBeNull();
+  });
+
+  it("says when it could not be loaded, with a retry", async () => {
+    deviceLanguage("en-GB");
+    let tries = 0;
+    await renderApp("/", {
+      me: completeMe,
+      setUp: (client) => {
+        comingUp(client, [northBooking()]);
+        client.answer("/v1/me/bookings", () => {
+          tries += 1;
+          return tries === 1
+            ? failure(500, "internal_error")
+            : ok(200, { bookings: [northBooking()] });
+        });
+      },
+    });
+    expect(await screen.findByText("Your next ride could not be loaded.")).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("header", { name: "Your next ride" })).toBeVisible();
+    expect(screen.queryByText("Your next ride could not be loaded.")).toBeNull();
   });
 });

@@ -229,7 +229,7 @@ describe("The menu (spec 16, 3.1)", () => {
       },
     });
     await fireEvent.press(await screen.findByRole("tab", { name: "My rides" }));
-    expect(await screen.findByRole("header", { name: "My bookings" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "My rides" })).toBeVisible();
     await fireEvent.press(tab("Offer"));
     expect(await screen.findByRole("header", { name: "Before you publish" })).toBeVisible();
     await fireEvent.press(tab("Profile"));

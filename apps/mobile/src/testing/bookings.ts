@@ -1,6 +1,6 @@
 // Bookings as the API returns them, and fake booking answers, for screen
 // tests. Not used by the app itself.
-import type { Booking } from "@shareride/contracts";
+import type { Booking, MyTrip } from "@shareride/contracts";
 import { failure, ok, type FakeClient } from "./fake-client";
 import { northResult, northStops } from "./search";
 import { plannedDraft } from "./trips";
@@ -60,7 +60,22 @@ export function bookingApi(client: FakeClient, booking: () => Booking) {
   client.answer("/v1/bookings/{id}", () => ok(200, booking()), "get");
 }
 
-/** Anna's north trip as she sees it in My trips, published, with one request waiting. */
+/** The north trip's three stretches as My trips lists them, with the seats taken on each. */
+export function northSegments(taken: readonly [number, number, number]): MyTrip["segments"] {
+  return [1100, 2900, 2000].map((amount, position) => ({
+    distanceM: 100_000,
+    durationS: 3600,
+    suggestedPrice: { amount, currency: "ISK" },
+    cap: { amount: amount * 2, currency: "ISK" },
+    price: { amount, currency: "ISK" },
+    seatsTaken: taken[position] ?? 0,
+  }));
+}
+
+/**
+ * Anna's north trip as she sees it in My trips, published, with Gunna's
+ * request for Borgarnes to Blönduós waiting until 22:00.
+ */
 export const northMyTrip = plannedDraft({
   id: northResult.tripId,
   status: "published",
@@ -69,7 +84,9 @@ export const northMyTrip = plannedDraft({
   departsAt: northStops[0]?.plannedAt ?? null,
   arrivesAt: northStops.at(-1)?.plannedAt ?? null,
   publishedAt: "2026-11-14T09:00:00.000Z",
+  segments: northSegments([0, 1, 0]),
   openRequests: 1,
+  requestsCloseAt: "2026-11-14T22:00:00.000Z",
 });
 
 /** Gunna's request for Borgarnes to Blönduós, as Anna, the driver, sees it. */
