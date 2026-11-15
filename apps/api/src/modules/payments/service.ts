@@ -13,6 +13,7 @@ import {
 } from "@shareride/domain";
 import { and, eq, isNull } from "drizzle-orm";
 import type { PaymentProvider } from "../../platform/payments.ts";
+import { bookingConfirmed } from "../bookings/confirmed.ts";
 import { expireDueBookings, lockTrip } from "../bookings/seats.ts";
 
 const { bookings, payments } = schema;
@@ -187,6 +188,7 @@ export function createPaymentService(dependencies: {
             .update(bookings)
             .set({ status: next.value, confirmedAt: now, updatedAt: now })
             .where(eq(bookings.id, booking.id));
+          await bookingConfirmed(tx, { id: booking.id, tripId: found.tripId }, now);
         }
         return ok({ owed: result.value.payment === "refund_due" ? payment : null });
       });

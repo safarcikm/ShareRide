@@ -24,6 +24,7 @@ import {
 import { and, asc, eq, inArray, ne, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { AccountService } from "../account/index.ts";
+import { bookingConfirmed } from "./confirmed.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import {
   changeOccupancy,
@@ -76,6 +77,8 @@ export interface BookingService {
   myBookings(passengerId: string, when: "upcoming" | "past"): Promise<Booking[]>;
   /** For its passenger or the trip's driver; undefined for anyone else. */
   booking(viewerId: string, bookingId: string): Promise<Booking | undefined>;
+  /** Those of the bookings that are the viewer's or on the viewer's trips, in no order. */
+  bookingsOf(viewerId: string, bookingIds: readonly string[]): Promise<Booking[]>;
   withdraw(passengerId: string, bookingId: string): Promise<Result<Booking, AnswerError>>;
   accept(driverId: string, bookingId: string): Promise<Result<Booking, AnswerError>>;
   decline(
@@ -303,6 +306,9 @@ export function createBookingService(dependencies: {
       if (!holdsSeats(change.status as BookingStatus)) {
         await changeOccupancy(tx, found.tripId, part, -booking.seats);
       }
+      if (change.status === "confirmed") {
+        await bookingConfirmed(tx, { id: bookingId, tripId: found.tripId }, now);
+      }
       const shown = await readOne(tx, bookingId, viewerId, now);
       if (shown === undefined) throw new Error("The booking was not stored.");
       return ok(shown);
@@ -414,6 +420,8 @@ export function createBookingService(dependencies: {
           { board: input.fromStop, alight: input.toStop },
           input.seats,
         );
+        if (plan.status === "confirmed")
+          await bookingConfirmed(tx, { id: created.id, tripId }, now);
         const booking = await readOne(tx, created.id, passengerId, now);
         if (booking === undefined) throw new Error("The booking was not stored.");
         return ok({ booking, created: true });
@@ -436,6 +444,15 @@ export function createBookingService(dependencies: {
 
     async booking(viewerId, bookingId) {
       return readOne(db, bookingId, viewerId, clock());
+    },
+
+    async bookingsOf(viewerId, bookingIds) {
+      if (bookingIds.length === 0) return [];
+      const now = clock();
+      const rows = await readBookings(db, inArray(bookings.id, [...bookingIds]));
+      return rows
+        .filter((row) => row.booking.passengerId === viewerId || row.trip.driverId === viewerId)
+        .map((row) => present(row, viewerId, now));
     },
 
     withdraw(passengerId, bookingId) {
