@@ -229,66 +229,66 @@ merge.
 
 ### PR 1: `docs(plans)`: this plan
 
-- [ ] This plan, the roadmap and the plans index
+- [x] This plan, the roadmap and the plans index
 
 ### PR 2: `feat(booking)`: booking rules in the domain
 
-- [ ] `bookings/settings.ts`, `lifecycle.ts` (every allowed and forbidden
+- [x] `bookings/settings.ts`, `lifecycle.ts` (every allowed and forbidden
       change), `deadlines.ts` (a request 2 h 31 min and 2 h 29 min before
       boarding; a payment deadline capped by the cut-off)
-- [ ] `check.ts` with a test per problem, in order; the contact check shared
+- [x] `check.ts` with a test per problem, in order; the contact check shared
       with the trip note
-- [ ] Property test: random sequences keep S2 and free seats equal S3; the
+- [x] Property test: random sequences keep S2 and free seats equal S3; the
       worked example
 - Verify: `pnpm --filter @shareride/domain test`
 
 ### PR 3: `feat(booking)`: book and request, on the server
 
-- [ ] Contracts, migration 0005 (bookings, booking segment prices), schema
+- [x] Contracts, migration 0005 (bookings, booking segment prices), schema
       checks with an integration test that an over-booking is refused by the
       database itself
-- [ ] `POST /trips/{id}/bookings`: instant, request, free; seats taken, price
+- [x] `POST /trips/{id}/bookings`: instant, request, free; seats taken, price
       changed, overlapping, cut-off, own trip, incomplete account; the same
       attempt key twice; **two passengers for the last seat at once, exactly
       one wins**
-- [ ] Withdraw, accept and decline, with who may do what; accepting a free
+- [x] Withdraw, accept and decline, with who may do what; accepting a free
       request confirms it at once (R5.11); expiry inside the booking
       transaction frees seats before checking
-- [ ] `GET /me/bookings`, `GET /bookings/{id}` (plate and where to stand only
+- [x] `GET /me/bookings`, `GET /bookings/{id}` (plate and where to stand only
       once confirmed), `GET /me/trips/{id}/bookings`
-- [ ] Trip details and search count the new occupancy, and trip details
+- [x] Trip details and search count the new occupancy, and trip details
       name the viewer's booking on the trip
-- [ ] Re-seeding the sample trips removes their test bookings first
-- [ ] Privacy inventory: request messages and decline reasons
+- [x] Re-seeding the sample trips removes their test bookings first
+- [x] Privacy inventory: request messages and decline reasons
 
 ### PR 4: `feat(payments)`: paying with the test provider, and deadlines
 
-- [ ] Migration 0006 (payments); `PaymentProvider` port, the test adapter,
+- [x] Migration 0006 (payments); `PaymentProvider` port, the test adapter,
       `PAYMENT_PROVIDER` in the config (refused as `test` in production)
-- [ ] `POST /bookings/{id}/payment`, `settlePayment` (confirms exactly once;
+- [x] `POST /bookings/{id}/payment`, `settlePayment` (confirms exactly once;
       late success refunded; failure retried), `POST /test-payments/{id}`
-- [ ] `expireDueBookings` with its timer and CLI; the e2e API serves the test
+- [x] `expireDueBookings` with its timer and CLI; the e2e API serves the test
       provider
-- [ ] Privacy inventory and integrations docs: payments
+- [x] Privacy inventory and integrations docs: payments
 
 ### PR 5: `feat(booking)`: booking and paying in the app
 
-- [ ] Trip details' button; the booking screen; seats taken; price changed;
+- [x] Trip details' button; the booking screen; seats taken; price changed;
       request sent; pay with the test sheet; confirmed
-- [ ] Signed out: sign up and come back to the choice
-- [ ] Texts in Icelandic and English (spec 5, section 8, plus new ones)
+- [x] Signed out: sign up and come back to the choice
+- [x] Texts in Icelandic and English (spec 5, section 8, plus new ones)
 - Verify: a browser journey books part of an instant trip (the sample trip
   from Selfoss to Vík; Anna's trip through Borgarnes asks for approval) and
   pays, at phone and desktop sizes, in both languages
 
 ### PR 6: `feat(booking)`: my bookings
 
-- [ ] Upcoming and past; booking details by status; withdraw; search again
+- [x] Upcoming and past; booking details by status; withdraw; search again
 - Verify: a browser journey withdraws a request and finds it under "Past"
 
 ### PR 7: `feat(booking)`: requests for drivers
 
-- [ ] Request counts on "My trips"; the driver's trip page with requests,
+- [x] Request counts on "My trips"; the driver's trip page with requests,
       accept and decline, the seat view before and after, passengers by part
 - Verify: a browser journey with two people: a passenger requests, the
   driver accepts, the passenger pays and both see it confirmed
