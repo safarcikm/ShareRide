@@ -1,4 +1,5 @@
 import type { CallFailure } from "@shareride/api-client";
+import type { Booking } from "@shareride/contracts";
 import { formatClock, type Translate } from "@shareride/i18n";
 import { errorText } from "@/auth/errors";
 import { compareDays, dayOf } from "@/lib/days";
@@ -24,6 +25,19 @@ export function requestSentText(t: Translate, driver: string, deadline: Date, at
 export function payByText(t: Translate, deadline: Date, at: Date): string {
   const { time, tomorrow } = onDay(deadline, at);
   return t(tomorrow ? "booking.payByTomorrow" : "booking.payBy", { time });
+}
+
+/**
+ * What accepting a request did, for the driver: "Request accepted. Gunna has
+ * until 12:30 to pay.", or confirmed at once for a free ride (R5.11).
+ */
+export function acceptedText(t: Translate, accepted: Booking, at: Date): string {
+  if (accepted.paymentDueAt === null) return t("request.acceptedFree");
+  const { time, tomorrow } = onDay(new Date(accepted.paymentDueAt), at);
+  return t(tomorrow ? "request.acceptedTomorrow" : "request.accepted", {
+    name: accepted.passenger.firstName,
+    time,
+  });
 }
 
 /** Why a booking was not made, for the answers that have no screen of their own. */

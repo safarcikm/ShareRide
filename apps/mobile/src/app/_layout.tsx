@@ -77,6 +77,7 @@ function Navigation() {
         <Stack.Screen name="drive/licence" />
         <Stack.Screen name="drive/trips/index" />
         <Stack.Screen name="drive/trips/new" />
+        <Stack.Screen name="drive/trips/[id]/index" />
         <Stack.Screen name="drive/trips/[id]/route" />
         <Stack.Screen name="drive/trips/[id]/time" />
         <Stack.Screen name="drive/trips/[id]/price" />

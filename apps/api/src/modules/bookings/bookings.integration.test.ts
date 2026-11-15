@@ -5,6 +5,7 @@ import {
   bookTripRoute,
   declineRequestRoute,
   myBookingsRoute,
+  myTripsRoute,
   tripBookingsRoute,
   tripSearchRoute,
   withdrawRequestRoute,
@@ -685,5 +686,28 @@ describe("reading bookings (spec 5, 3.6 and 3.7)", () => {
         params: { id: north },
       }),
     ).toMatchObject({ status: 404 });
+  });
+
+  it("counts the requests waiting for the driver on each trip in My trips (spec 5, 3.3)", async () => {
+    const anna = await driverOf(north);
+    const jon = await newMember("Jón");
+    const gunna = await newMember("Gunna");
+    await booked(jon.accessToken, north, { fromStop: 0, toStop: 1 });
+    const second = await booked(gunna.accessToken, north, { fromStop: 1, toStop: 2 });
+    const waiting = async () => {
+      const result = await api.client.call(myTripsRoute, { accessToken: anna.accessToken });
+      if (!result.ok) throw new Error(result.error.code);
+      return result.data.trips.map((trip) => [trip.id, trip.openRequests]);
+    };
+    expect(await waiting()).toEqual([[north, 2]]);
+    await api.client.call(acceptRequestRoute, {
+      accessToken: anna.accessToken,
+      params: { id: second.id },
+      body: {},
+    });
+    expect(await waiting()).toEqual([[north, 1]]);
+    // A request whose deadline passed no longer waits, before any job runs.
+    await later(hours(12), anna);
+    expect(await waiting()).toEqual([[north, 0]]);
   });
 });

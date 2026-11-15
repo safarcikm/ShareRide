@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
-import { formatDay, type Locale } from "@shareride/i18n";
+import type { Locale } from "@shareride/i18n";
 import { english, icelandic, signUp, type Texts } from "./support/account";
+import { tomorrow } from "./support/trips";
 
 // Spec 3's journey on the web build, against the test API and its sample
 // meeting points: a first-time driver posts Reykjavík to Akureyri, adds a
@@ -135,17 +136,6 @@ const inIcelandic: Journey = {
   seeTrips: "Sjá ferðirnar mínar",
   publishedTrips: "Birtar",
 };
-
-/** Tomorrow in Iceland, as the calendar names it, and whether it is next month. */
-function tomorrow(locale: Locale) {
-  const now = new Date();
-  const then = new Date(now.getTime() + 24 * 3600 * 1000);
-  const month = (moment: Date) =>
-    new Intl.DateTimeFormat("en-GB", { timeZone: "Atlantic/Reykjavik", month: "numeric" }).format(
-      moment,
-    );
-  return { name: formatDay(then, locale), nextMonth: month(then) !== month(now) };
-}
 
 async function choose(page: Page, journey: Journey, field: string, typed: string, card: RegExp) {
   await page.getByRole("button", { name: field }).click();

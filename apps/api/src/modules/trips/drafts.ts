@@ -17,11 +17,11 @@ import {
   type TripChoices,
   type TripSettings,
 } from "@shareride/domain";
-import { and, asc, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, isNull, ne, sql } from "drizzle-orm";
 import type { DrivingService } from "../driving/index.ts";
 import { toSummary } from "../meeting-points/service.ts";
 
-const { legs, meetingPoints, segments, trips, tripStops, users, vehicles } = schema;
+const { bookings, legs, meetingPoints, segments, trips, tripStops, users, vehicles } = schema;
 
 type TripRow = typeof trips.$inferSelect;
 type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
@@ -121,7 +121,7 @@ export function createTripService(dependencies: {
   async function present(q: Queryable, rows: readonly TripRow[]): Promise<MyTrip[]> {
     const ids = rows.map((row) => row.id);
     if (ids.length === 0) return [];
-    const [stopRows, segmentRows] = await Promise.all([
+    const [stopRows, segmentRows, requestRows] = await Promise.all([
       q
         .select({ stop: tripStops, point: meetingPoints })
         .from(tripStops)
@@ -133,6 +133,18 @@ export function createTripService(dependencies: {
         .from(segments)
         .where(inArray(segments.tripId, ids))
         .orderBy(asc(segments.position)),
+      // A request whose deadline passed reads as expired, as bookings show it.
+      q
+        .select({ tripId: bookings.tripId, count: count() })
+        .from(bookings)
+        .where(
+          and(
+            inArray(bookings.tripId, ids),
+            eq(bookings.status, "requested"),
+            gt(bookings.expiresAt, clock()),
+          ),
+        )
+        .groupBy(bookings.tripId),
     ]);
     return rows.map((row) => ({
       id: row.id,
@@ -161,6 +173,7 @@ export function createTripService(dependencies: {
           cap: { amount: segment.cap, currency: "ISK" as const },
           price: { amount: segment.price, currency: "ISK" as const },
         })),
+      openRequests: requestRows.find((requests) => requests.tripId === row.id)?.count ?? 0,
     }));
   }
 

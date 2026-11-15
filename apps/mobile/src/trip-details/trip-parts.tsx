@@ -10,12 +10,13 @@ import {
   PawPrint,
 } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
+import { Avatar, avatarSize } from "@/components/avatar";
 import { Icon } from "@/components/icon";
 import { NeedBubble } from "@/components/need-bubble";
 import { Tag } from "@/components/tag";
 import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
-import { people, peopleColours, radii, spacing, typography } from "@/theme/tokens";
+import { people, radii, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { carText, childSeatNeedKey, needKeys } from "./texts";
 
@@ -62,9 +63,8 @@ export function DriverAndCar({
   readonly note?: string;
   readonly luggageFirst?: boolean;
 }) {
-  const { locale, t } = useLanguage();
+  const { t } = useLanguage();
   const palette = usePalette();
-  const colour = peopleColours[driver.colour % peopleColours.length] ?? people.glacier;
   const listed =
     preferences === undefined
       ? []
@@ -96,11 +96,7 @@ export function DriverAndCar({
   return (
     <>
       <View style={styles.person}>
-        <View style={[styles.avatar, { backgroundColor: colour }]}>
-          <Text style={[typography.heading, { color: people.face }]}>
-            {driver.firstName.charAt(0).toLocaleUpperCase(locale)}
-          </Text>
-        </View>
+        <Avatar firstName={driver.firstName} colour={driver.colour} />
         <View style={styles.grow}>
           <Text style={[typography.bodyStrong, { color: palette.text }]}>{driver.firstName}</Text>
           <View style={styles.row}>
@@ -137,8 +133,6 @@ export function DriverAndCar({
     </>
   );
 }
-
-const avatarSize = spacing.xxl;
 
 const styles = StyleSheet.create({
   partStop: { flexDirection: "row", alignItems: "center", gap: spacing.ms },

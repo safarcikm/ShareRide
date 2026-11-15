@@ -104,6 +104,7 @@ describe("drafts (spec 3, 3.4 to 3.8)", () => {
         arrivesAt: null,
         publishedAt: null,
         segments: [],
+        openRequests: 0,
       },
     });
     if (!created.ok) return;
