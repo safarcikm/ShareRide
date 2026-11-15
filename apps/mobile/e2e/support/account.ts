@@ -59,6 +59,11 @@ export const icelandic: Texts = {
 export async function signIn(page: Page, texts: Texts, phone: { local: string; e164: string }) {
   await page.goto("/");
   await page.getByRole("button", { name: texts.continuePhone }).click();
+  return enterCode(page, texts, phone);
+}
+
+/** On the sign-in screen: the number, then the code from the text message. */
+export async function enterCode(page: Page, texts: Texts, phone: { local: string; e164: string }) {
   await page.getByLabel(texts.phoneLabel).fill(phone.local);
   const sentBefore = sentCount(phone.e164);
   await page.getByRole("button", { name: texts.send }).click();
@@ -71,6 +76,14 @@ export async function signIn(page: Page, texts: Texts, phone: { local: string; e
 export async function signUp(page: Page, texts: Texts, firstName: string) {
   const phone = newPhoneNumber();
   const text = await signIn(page, texts, phone);
+  await finishSignUp(page, texts, firstName);
+  await expect(page.getByRole("heading", { name: texts.myProfile })).toBeVisible();
+  await expect(page.getByText(firstName, { exact: true })).toBeVisible();
+  return { phone, text };
+}
+
+/** After the code, a new person accepts the terms and saves a profile. */
+export async function finishSignUp(page: Page, texts: Texts, firstName: string) {
   await expect(page.getByRole("heading", { name: texts.termsTitle })).toBeVisible();
   await page.getByRole("checkbox", { name: texts.age }).click();
   await page.getByRole("checkbox", { name: texts.accept }).click();
@@ -81,8 +94,4 @@ export async function signUp(page: Page, texts: Texts, firstName: string) {
   await page.getByLabel(texts.about).fill("Test account.");
   await page.getByRole("checkbox", { name: texts.icelandic }).click();
   await page.getByRole("button", { name: texts.save }).click();
-
-  await expect(page.getByRole("heading", { name: texts.myProfile })).toBeVisible();
-  await expect(page.getByText(firstName, { exact: true })).toBeVisible();
-  return { phone, text };
 }

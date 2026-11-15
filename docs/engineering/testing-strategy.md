@@ -66,7 +66,10 @@ database (`apps/api/src/e2e-server.ts`). That server writes text messages to a
 file the tests read the codes from, and moves its clock 31 seconds on with
 each code, so a test can sign in to the same account again at once. Journey 1
 runs in English and Icelandic, with "sign out on all devices"
-(`apps/mobile/e2e/sign-in.spec.ts`).
+(`apps/mobile/e2e/sign-in.spec.ts`). Journey 3 books part of an instant
+trip and pays with the test provider's sheet after a failed payment, in both
+languages, and signs up in the middle of booking
+(`apps/mobile/e2e/booking.spec.ts`).
 
 ## Coverage
 

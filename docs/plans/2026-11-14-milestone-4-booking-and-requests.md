@@ -185,14 +185,14 @@ Endpoints (`/v1`), shapes in `packages/contracts/src/bookings.ts`:
 - **Signed out:** the choice is kept on the device (`pending-booking.ts`,
   for up to an hour) and the person goes to sign-in; once their account is
   complete, the start screen opens the booking screen with it (R5.1, spec 5
-  3.1.1).
+  3.1, item 1).
 - Booking screen (3.1): the part with times, seats (1 to the seats free),
   price per seat and total or "Free", driver, car, preferences (luggage
   first), the booking mode, the payment and reliability texts, the message
   for requests (300 characters, with a counter and the contact check as you
   type), and the button. Each opening makes one attempt key; retries reuse
-  it. The key comes from `expo-crypto` (`randomUUID`) unless the global
-  `crypto.randomUUID` works on iOS, Android and the web.
+  it. The key comes from `expo-crypto` (`randomUUID`): Hermes on iOS and
+  Android has no global `crypto.randomUUID`.
 - Seats taken: "Sorry, those seats were just taken", with the seats free now
   and a way back. Price changed: the new total, and "Book at this price?".
 - Request sent: "Request sent. {driver} has until {time} to answer.", with
@@ -269,8 +269,9 @@ merge.
       request sent; pay with the test sheet; confirmed
 - [ ] Signed out: sign up and come back to the choice
 - [ ] Texts in Icelandic and English (spec 5, section 8, plus new ones)
-- Verify: a browser journey books Borgarnes to Blönduós on an instant trip
-  and pays, at phone and desktop sizes, in both languages
+- Verify: a browser journey books part of an instant trip (the sample trip
+  from Selfoss to Vík; Anna's trip through Borgarnes asks for approval) and
+  pays, at phone and desktop sizes, in both languages
 
 ### PR 6: `feat(booking)`: my bookings
 

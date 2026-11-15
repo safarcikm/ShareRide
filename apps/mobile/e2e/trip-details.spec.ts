@@ -51,7 +51,7 @@ test.describe("trip details without an account", () => {
     expect(heights).toHaveLength(4);
     expect(Math.max(...heights) - Math.min(...heights)).toBeLessThan(2);
     await expect(page.getByText("White Toyota Yaris")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Booking opens soon" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Send request" })).toBeEnabled();
     // Trip pages ask search engines not to index them (R4.6).
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
       "content",

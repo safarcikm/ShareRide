@@ -127,7 +127,7 @@ When there are no results (on a chosen date, or at all):
    badges and reliability (spec 8), about and languages; tap for the public
    profile with reviews.
 4. **Car:** make, model and colour (spec 3, decision 7). The number plate is
-   shown after booking.
+   shown after booking, once the seat is confirmed (spec 5, R5.12).
 5. **Preferences and note:** luggage, pets, smoking, child seat, chat, and the
    driver's note.
 6. **Booking mode:** "Instant booking" or "The driver approves each request".
