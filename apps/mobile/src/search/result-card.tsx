@@ -66,10 +66,11 @@ export function ResultCard({
         });
   const tripFrom = result.tripFrom[locale];
   const tripTo = result.tripTo[locale];
+  // The driver's whole trip, only when it goes further than this part.
   const wholeTrip = tripFrom === boardName && tripTo === alightName;
   const tripLine = wholeTrip
-    ? t("search.route", { from: tripFrom, to: tripTo })
-    : t("results.partOf", { from: tripFrom, to: tripTo });
+    ? null
+    : t("results.driverDrives", { driver: result.driver.firstName, from: tripFrom, to: tripTo });
   const mode = result.bookingMode === "instant" ? t("results.instant") : t("results.request");
   const seatsLeft = t("results.seatsLeft", { count: result.freeSeats });
   const day = showDay ? capitalised(formatShortDay(isoDay(dayOf(boardsAt)), locale), locale) : null;
@@ -127,7 +128,11 @@ export function ResultCard({
           </View>
         </View>
         <View style={styles.tripLine}>
-          <Text style={[typography.small, muted, styles.grow]}>{tripLine}</Text>
+          {tripLine === null ? (
+            <View style={styles.grow} />
+          ) : (
+            <Text style={[typography.small, muted, styles.grow]}>{tripLine}</Text>
+          )}
           <Tag kind="positive" label={mode} />
         </View>
         <View style={[styles.divider, { backgroundColor: palette.border }]} />

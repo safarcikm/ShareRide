@@ -3,7 +3,7 @@ import type { Locale } from "@shareride/i18n";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
-import { useSession } from "@/auth/session";
+import { useMe, useSession } from "@/auth/session";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { LanguageSwitch } from "@/components/language-switch";
@@ -12,15 +12,21 @@ import { Screen } from "@/components/screen";
 import { Body, Title } from "@/components/text";
 import { TextLink } from "@/components/text-link";
 import { useLanguage } from "@/i18n/language";
+import { BackToMenu } from "@/navigation/back-to-menu";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
  * Settings (spec 1, section 3.8), milestone 1 part: language, legal
- * documents, and signing out here or on every device. Signing out closes
- * the signed-in screens.
+ * documents, and signing out here or on every device. Signed out, it
+ * closes back to the menu.
  */
 export default function SettingsScreen() {
+  if (useMe() === null) return <BackToMenu />;
+  return <Settings />;
+}
+
+function Settings() {
   const { t } = useLanguage();
   const session = useSession();
   const palette = usePalette();

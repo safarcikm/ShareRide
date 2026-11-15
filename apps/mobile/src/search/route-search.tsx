@@ -7,6 +7,7 @@ import { Calendar } from "@/components/calendar";
 import { Chip } from "@/components/chip";
 import { Notice } from "@/components/notice";
 import { RouteEnds, type RouteEnd } from "@/components/route-ends";
+import { Stepper } from "@/components/stepper";
 import { Body, Heading } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
@@ -30,13 +31,13 @@ export interface RouteSearch {
    * date, and a message when a place is missing.
    */
   readonly fields: ReactElement;
-  /** Searches for the seats given, once both places are chosen and differ. */
-  readonly submit: (seats: number) => void;
+  /** Searches, once both places are chosen and differ. */
+  readonly submit: () => void;
 }
 
 /**
- * From, to and an optional date (spec 4, 3.1), for the search form and the
- * front page. `onSearch` gets the search once it can be made.
+ * From, to, an optional date and the seats (spec 4, 3.1; spec 16, 3.2), for
+ * the search form and Find. `onSearch` gets the search once it can be made.
  */
 export function useRouteSearch(onSearch: (query: SearchQuery) => void): RouteSearch {
   const { locale, t } = useLanguage();
@@ -44,6 +45,7 @@ export function useRouteSearch(onSearch: (query: SearchQuery) => void): RouteSea
   const [from, setFrom] = useState<SearchEnd | null>(null);
   const [to, setTo] = useState<SearchEnd | null>(null);
   const [date, setDate] = useState<Day | null>(null);
+  const [seats, setSeats] = useState(1);
   const [choosingDay, setChoosingDay] = useState(false);
   const [picking, setPicking] = useState<RouteEnd | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -65,7 +67,7 @@ export function useRouteSearch(onSearch: (query: SearchQuery) => void): RouteSea
       />
     );
 
-  const submit = (seats: number) => {
+  const submit = () => {
     if (from === null || to === null) {
       setMessage(t("search.needBoth"));
       return;
@@ -132,6 +134,16 @@ export function useRouteSearch(onSearch: (query: SearchQuery) => void): RouteSea
         />
       ) : null}
       {date === null ? null : <Body>{capitalised(formatDay(noonOf(date), locale), locale)}</Body>}
+      <Stepper
+        label={t("search.seats")}
+        value={seats}
+        min={1}
+        max={defaultTripSettings.maxSeats}
+        onChange={setSeats}
+        valueText={t("search.seatCount", { count: seats })}
+        fewerLabel={t("search.fewerSeats")}
+        moreLabel={t("search.moreSeats")}
+      />
     </>
   );
 

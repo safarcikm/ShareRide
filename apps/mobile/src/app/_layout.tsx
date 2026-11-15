@@ -1,16 +1,19 @@
 import { Stack, type ErrorBoundaryProps } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
+import { StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { SessionProvider, useSession, useSessionState } from "@/auth/session";
 import { Button } from "@/components/button";
 import { Loading } from "@/components/loading";
 import { Notice } from "@/components/notice";
-import { Screen } from "@/components/screen";
+import { Screen, ScreenEdges, useWideScreen } from "@/components/screen";
 import { Body, Title } from "@/components/text";
 import { LanguageProvider, useLanguage } from "@/i18n/language";
+import { useSaveLanguage } from "@/i18n/use-save-language";
 import { reportError, startErrorReporting } from "@/lib/error-reporting";
 import { PushNotifications } from "@/notifications/push-notifications";
 import { useAppFonts } from "@/theme/fonts";
+import { TopBar } from "@/navigation/top-bar";
 import { installFocusRing } from "@/theme/focus-ring";
 
 startErrorReporting();
@@ -30,13 +33,15 @@ export default function RootLayout() {
 }
 
 /**
- * Which screens can open depends on the session: some are open to
- * everyone, some only to signed-out people, and signed-in people go through
- * the terms and then the profile before the rest (spec 1, 3.4 and 3.5).
- * When the session changes (signed in, a step done, signed out, or the
+ * Which screens can open depends on the session: signed-in people go
+ * through the terms and then the profile before the rest (spec 1, 3.4 and
+ * 3.5). When the session changes (signed in, a step done, signed out, or the
  * session ended elsewhere), screens that no longer fit close and the app
- * returns to the start, which leads on from there. Fonts load at the same
- * time; if they fail, the app opens with the system fonts.
+ * returns to the start, which leads on from there. Sign-in and Settings,
+ * where the session changes, close themselves back to the menu instead: a
+ * guard would open a second menu on top of the first. Fonts load at the same
+ * time; if they fail, the app opens with the system fonts. Wide screens show
+ * the menu in a bar above every screen (spec 16, 3.1).
  */
 function Navigation() {
   const state = useSessionState();
@@ -47,9 +52,9 @@ function Navigation() {
   const me = state.status === "signedIn" ? state.me : null;
   const needsLegal = me?.missingSteps.includes("legal") ?? false;
   const needsProfile = me?.missingSteps.includes("profile") ?? false;
-  return (
+  const stack = (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
+      <Stack.Screen name="(tabs)" />
       <Stack.Screen name="coming-soon" />
       <Stack.Screen name="legal/[type]" />
       <Stack.Screen name="meeting-points/index" />
@@ -59,12 +64,9 @@ function Navigation() {
       <Stack.Screen name="search/index" />
       <Stack.Screen name="search/results" />
       <Stack.Screen name="trips/[id]/index" />
-      <Stack.Protected guard={me === null}>
-        <Stack.Screen name="sign-in" />
-      </Stack.Protected>
-      <Stack.Protected guard={me !== null}>
-        <Stack.Screen name="settings" />
-      </Stack.Protected>
+      {/* These two close themselves when the session changes (BackToMenu). */}
+      <Stack.Screen name="sign-in" />
+      <Stack.Screen name="settings" />
       <Stack.Protected guard={needsLegal}>
         <Stack.Screen name="onboarding/terms" />
       </Stack.Protected>
@@ -72,9 +74,7 @@ function Navigation() {
         <Stack.Screen name="onboarding/profile" />
       </Stack.Protected>
       <Stack.Protected guard={me !== null && !needsLegal && !needsProfile}>
-        <Stack.Screen name="profile/index" />
         <Stack.Screen name="profile/edit" />
-        <Stack.Screen name="drive/index" />
         <Stack.Screen name="drive/cars/new" />
         <Stack.Screen name="drive/cars/[id]" />
         <Stack.Screen name="drive/licence" />
@@ -88,12 +88,31 @@ function Navigation() {
         <Stack.Screen name="drive/trips/[id]/review" />
         <Stack.Screen name="drive/trips/[id]/published" />
         <Stack.Screen name="trips/[id]/book" />
-        <Stack.Screen name="bookings/index" />
         <Stack.Screen name="bookings/[id]" />
       </Stack.Protected>
     </Stack>
   );
+  return <WithTopBar>{stack}</WithTopBar>;
 }
+
+/**
+ * On wide screens, the top bar above every screen, which then leave its edge
+ * to it. The screens stay in the same place in the tree either way, so a
+ * window turning wide or narrow keeps what they show.
+ */
+function WithTopBar({ children }: { readonly children: ReactNode }) {
+  const wide = useWideScreen();
+  const saveLanguage = useSaveLanguage();
+  return (
+    <View style={styles.frame}>
+      {wide ? <TopBar onSwitchLanguage={saveLanguage} /> : null}
+      <ScreenEdges value={wide ? belowTopBar : allEdges}>{children}</ScreenEdges>
+    </View>
+  );
+}
+
+const belowTopBar = ["right", "bottom", "left"] as const;
+const allEdges = ["top", "right", "bottom", "left"] as const;
 
 /** The API could not be reached at start; the person is not signed out. */
 function Unreachable() {
@@ -124,6 +143,8 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({ frame: { flex: 1 } });
 
 function UnexpectedError({ retry }: { readonly retry: ErrorBoundaryProps["retry"] }) {
   const { t } = useLanguage();

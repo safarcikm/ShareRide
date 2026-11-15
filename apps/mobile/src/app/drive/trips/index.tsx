@@ -37,7 +37,7 @@ export default function MyTripsScreen() {
 
   return (
     <Screen>
-      <BackButton fallback="/drive" />
+      <BackButton fallback="/offer" />
       <Title>{t("trip.myTrips")}</Title>
       <Button label={t("trip.post")} onPress={postTrip} />
       {trips === null ? (

@@ -29,7 +29,7 @@ export default function EditCarScreen() {
 
   return (
     <Screen>
-      <BackButton fallback="/drive" />
+      <BackButton fallback="/offer" />
       {result === undefined ? (
         <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
       ) : !result.ok ? (

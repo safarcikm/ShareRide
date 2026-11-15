@@ -2,6 +2,9 @@
 
 **Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
+Amended by [spec 16](2026-11-15-one-home-and-simpler-flows.md): the menu's
+`TabBar` and `TopBar`, and the `Logo` beside the name.
+
 Covers the brand direction (colours, type, tone of voice) and the first
 screen designs from the [roadmap](../strategy/roadmap.md), Phase 1. Related:
 [ADR 0017](../decisions/0017-visual-design-system.md) (accepted),
@@ -227,6 +230,8 @@ review board shows the trip details in Icelandic and dark mode.
 ### 4.8 Wide screens
 
 - Content sits in one column at most 480 wide, centred.
+- From 900 wide, the menu is the `TopBar` above every screen instead of the
+  `TabBar` (spec 16, 3.1).
 - From 900 wide, the trip details and request screens move the price and main
   action from the bottom bar into a panel 320 wide beside the column.
 - Search results put the map beside the list (spec 4).
@@ -299,6 +304,9 @@ and tests need no edits. Only the look changes.
 | `Title` | `title`, `text`, role header, centred |
 | `Body` | `body`, `textMuted` (the intro or help line under a title), centred; long text such as a legal document starts at the left |
 | `LanguageSwitch` | A `text` button with the other language's name |
+| `TabBar` | The menu on a phone's four main screens (spec 16): `surface`, a 2 `border` line on top, room for the home indicator; four places, each an icon (22) over its name in `caption`, at least 56 high; the chosen one in `primary` with a `primarySoft` pill (56 wide) behind its icon, the others in `textMuted`. Phones read it as tabs with the chosen one selected; the web as the main navigation, with links and the current page marked |
+| `TopBar` | The menu from 900 wide, above every screen: `surface`, a 2 `border` line under it; the `Logo` (36) and "ShareRide" in `heading` at the left, the four places in `label` (the chosen one `primary` and underlined, at least 44 high), then the `LanguageSwitch` |
+| `Logo` | The app icon in small: logo A on `primary`, corners rounded like an app icon, the same in both modes; hidden from screen readers, since the name sits beside it |
 
 **Focus:** every pressable part shows a 3 wide `focus` ring with a 2 gap
 around its shape when reached by keyboard (web, and keyboards on phones).

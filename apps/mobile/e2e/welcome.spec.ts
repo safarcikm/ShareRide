@@ -1,21 +1,20 @@
 import { expect, test } from "@playwright/test";
+import { menuLink } from "./support/account";
 
-test.describe("welcome on the web", () => {
+test.describe("Find, the home, on the web", () => {
   test.use({ locale: "en-GB" });
 
   test("opens in English, switches to Icelandic and remembers it", async ({ page }) => {
     await page.goto("/");
-    await expect(
-      page.getByRole("heading", { name: "Share the ride across Iceland" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Where are you going?" })).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
 
     await page.getByRole("button", { name: "Change the language to Icelandic" }).click();
-    await expect(page.getByRole("heading", { name: "Samferða um allt Ísland" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Hvert ertu að fara?" })).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", "is");
 
     await page.reload();
-    await expect(page.getByRole("heading", { name: "Samferða um allt Ísland" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Hvert ertu að fara?" })).toBeVisible();
   });
 
   test("shows the rides leaving soon, and opens one", async ({ page }) => {
@@ -34,9 +33,7 @@ test.describe("welcome on the web", () => {
     await page.getByRole("button", { name: /^From: / }).click();
     // The place search drops down under the field, on the front page itself.
     await page.getByLabel("From", { exact: true }).fill("borgarn");
-    await expect(
-      page.getByRole("heading", { name: "Share the ride across Iceland" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Where are you going?" })).toBeVisible();
     await page.getByRole("button", { name: /^N1 Borgarnes,/ }).click();
     await page.getByRole("button", { name: /^To: / }).click();
     await page.getByLabel("To", { exact: true }).fill("blondu");
@@ -77,16 +74,40 @@ test.describe("welcome on the web", () => {
     await page.getByRole("button", { name: "Offer a ride", exact: true }).click();
     await expect(page.getByRole("heading", { name: "What's your phone number?" })).toBeVisible();
     await page.goBack();
+    await menuLink(page, "Profile").click();
+    await expect(page).toHaveURL(/\/profile$/);
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await expect(page.getByRole("heading", { name: "What's your phone number?" })).toBeVisible();
   });
+
+  test("shows the menu on every main place, marking the one you are on", async ({ page }) => {
+    await page.goto("/");
+    await expect(menuLink(page, "Find")).toHaveAttribute("aria-current", "page");
+    await menuLink(page, "My rides").click();
+    await expect(page).toHaveURL(/\/my-rides$/);
+    await expect(page.getByRole("heading", { name: "Sign in to see your rides" })).toBeVisible();
+    await expect(menuLink(page, "My rides")).toHaveAttribute("aria-current", "page");
+    await expect(menuLink(page, "Find")).not.toHaveAttribute("aria-current", "page");
+    await menuLink(page, "Offer").click();
+    await expect(page.getByRole("button", { name: "Sign in to offer a ride" })).toBeVisible();
+    // A link in the browser's sense: it has an address, and a click with
+    // Ctrl or Cmd opens it in a new tab while the app stays where it is.
+    await expect(menuLink(page, "Find")).toHaveAttribute("href", "/");
+    const [newTab] = await Promise.all([
+      page.context().waitForEvent("page"),
+      menuLink(page, "Profile").click({ modifiers: ["ControlOrMeta"] }),
+    ]);
+    await expect(newTab).toHaveURL(/\/profile$/);
+    await expect(page).toHaveURL(/\/offer$/);
+    await newTab.close();
+  });
 });
 
-test.describe("welcome in Icelandic", () => {
+test.describe("Find in Icelandic", () => {
   test.use({ locale: "is-IS" });
 
   test("opens in Icelandic when the browser prefers Icelandic", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Samferða um allt Ísland" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Hvert ertu að fara?" })).toBeVisible();
   });
 });

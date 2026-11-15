@@ -135,7 +135,7 @@ describe("Creating a profile", () => {
     expect(await screen.findByText("Keep it to 300 characters.")).toBeVisible();
   });
 
-  it("saves the profile and shows it", async () => {
+  it("saves the profile, then opens Find", async () => {
     const app = await openProfileForm();
     app.client.answer("/v1/me", (input) => {
       const body = input["body"] as Partial<Me> | undefined;
@@ -146,8 +146,10 @@ describe("Creating a profile", () => {
     await fireEvent.press(screen.getByRole("checkbox", { name: "Icelandic" }));
     await fireEvent.press(screen.getByRole("button", { name: "Save profile" }));
 
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(screen).toHavePathname("/");
+    await fireEvent.press(screen.getByRole("tab", { name: "Profile" }));
     expect(await screen.findByRole("header", { name: "My profile" })).toBeVisible();
-    expect(screen).toHavePathname("/profile");
     expect(screen.getByText("Anna")).toBeVisible();
     expect(screen.getByText("Coffee and podcasts.")).toBeVisible();
     expect(app.client.calls.find((c) => c.path === "/v1/me" && "body" in c.input)?.input).toEqual({

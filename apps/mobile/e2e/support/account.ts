@@ -5,8 +5,13 @@ import { codeIn, newPhoneNumber, sentCount, textMessage } from "./sms";
 // journey that needs an account.
 
 export interface Texts {
-  /** The front page's "Sign in". */
+  /** "Sign in" on Profile in the menu, signed out. */
   readonly signIn: string;
+  /** Find's title, where the app opens. */
+  readonly findTitle: string;
+  /** Find and Profile in the menu. */
+  readonly findTab: string;
+  readonly profileTab: string;
   readonly phoneLabel: string;
   readonly send: string;
   readonly codeLabel: string;
@@ -24,6 +29,9 @@ export interface Texts {
 
 export const english: Texts = {
   signIn: "Sign in",
+  findTitle: "Where are you going?",
+  findTab: "Find",
+  profileTab: "Profile",
   phoneLabel: "Mobile number",
   send: "Send code",
   codeLabel: "6-digit code",
@@ -41,6 +49,9 @@ export const english: Texts = {
 
 export const icelandic: Texts = {
   signIn: "Skrá inn",
+  findTitle: "Hvert ertu að fara?",
+  findTab: "Leita",
+  profileTab: "Prófíll",
   phoneLabel: "Farsímanúmer",
   send: "Senda kóða",
   codeLabel: "6 stafa kóði",
@@ -58,7 +69,7 @@ export const icelandic: Texts = {
 
 /** Enters the number, reads the code from the text message and enters it. */
 export async function signIn(page: Page, texts: Texts, phone: { local: string; e164: string }) {
-  await page.goto("/");
+  await page.goto("/profile");
   await page.getByRole("button", { name: texts.signIn, exact: true }).click();
   return enterCode(page, texts, phone);
 }
@@ -73,14 +84,27 @@ export async function enterCode(page: Page, texts: Texts, phone: { local: string
   return text;
 }
 
-/** Signs up a new person through the terms and profile, to My profile. */
+/**
+ * Signs up a new person through the terms and profile, which opens Find,
+ * then checks the profile under Profile in the menu and goes back to Find.
+ */
 export async function signUp(page: Page, texts: Texts, firstName: string) {
   const phone = newPhoneNumber();
   const text = await signIn(page, texts, phone);
   await finishSignUp(page, texts, firstName);
+  await expect(page.getByRole("heading", { name: texts.findTitle })).toBeVisible();
+  await menuLink(page, texts.profileTab).click();
   await expect(page.getByRole("heading", { name: texts.myProfile })).toBeVisible();
-  await expect(page.getByText(firstName, { exact: true })).toBeVisible();
+  // Other places of the menu stay in the page, out of sight.
+  await expect(page.getByText(firstName, { exact: true }).filter({ visible: true })).toBeVisible();
+  await menuLink(page, texts.findTab).click();
+  await expect(page.getByRole("heading", { name: texts.findTitle })).toBeVisible();
   return { phone, text };
+}
+
+/** A place of the menu: the tab bar on phones, the top bar on wide screens. */
+export function menuLink(page: Page, name: string) {
+  return page.getByRole("navigation").getByRole("link", { name, exact: true });
 }
 
 /** After the code, a new person accepts the terms and saves a profile. */

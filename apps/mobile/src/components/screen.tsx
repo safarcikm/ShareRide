@@ -21,7 +21,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 import {
   asideMaxWidth,
   controlOutline,
@@ -67,6 +67,9 @@ export function Screen({
   // An aside takes the side, so a footer then stays in the bottom bar.
   const beside = footer !== undefined && footerBeside && wide && aside === undefined;
   const { scrollRef, scroll, keyboardRoom } = useRevealing();
+  const safeEdges = useContext(ScreenEdgesContext);
+  // The height the screen scrolls in: the window less any bar above it.
+  const [viewHeight, setViewHeight] = useState<number | null>(null);
   // With `stickToEnd`: whether the reader is at the end, and whether to go
   // there at the next change in size whatever they read.
   const atEnd = useRef(true);
@@ -75,11 +78,23 @@ export function Screen({
     if (endKey !== undefined) toEnd.current = true;
   }, [endKey]);
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]}>
+    <SafeAreaView
+      edges={safeEdges}
+      style={[styles.safeArea, { backgroundColor: palette.background }]}
+    >
       {/* "handled": with the keyboard open, a tap on a button acts at once. */}
       <ScrollView
         ref={scrollRef}
         testID="screen-scroll"
+        onLayout={
+          // Only the web's sticky aside uses the height. It is measured
+          // from the start, as an aside can come later, with its data.
+          Platform.OS === "web"
+            ? (event) => {
+                setViewHeight(event.nativeEvent.layout.height);
+              }
+            : undefined
+        }
         contentContainerStyle={[styles.scroll, { paddingBottom: spacing.md + keyboardRoom }]}
         keyboardShouldPersistTaps="handled"
         {...(stickToEnd
@@ -103,7 +118,7 @@ export function Screen({
           {aside !== undefined && wide ? (
             <View style={[styles.wide, styles.wideWithAside]}>
               <View style={styles.asideColumn}>{children}</View>
-              <View testID="aside" style={[styles.aside, stickyOnWeb]}>
+              <View testID="aside" style={[styles.aside, stickyOnWeb(viewHeight)]}>
                 {aside}
               </View>
             </View>
@@ -142,6 +157,15 @@ export function Screen({
 }
 
 type ViewRef = ComponentRef<typeof View>;
+
+const allEdges: readonly Edge[] = ["top", "right", "bottom", "left"];
+const ScreenEdgesContext = createContext<readonly Edge[]>(allEdges);
+
+/**
+ * The edges of the safe area screens inside pad. A bar that pads an edge
+ * itself, such as the tab bar at the bottom, leaves it out.
+ */
+export const ScreenEdges = ScreenEdgesContext.Provider;
 
 /** Lets a part of the screen ask to be scrolled up to the top, above the keyboard. */
 export interface ScreenScroll {
@@ -227,17 +251,19 @@ export function useWideScreen() {
 
 /**
  * On the web, the aside stays in view while the column scrolls, and
- * scrolls on its own when it is taller than the window.
+ * scrolls on its own when it is taller than the screen's scroll, which is
+ * the window less any bar above it, such as the top bar.
  */
-const stickyOnWeb: object =
-  Platform.OS === "web"
-    ? {
-        position: "sticky",
-        top: spacing.md,
-        maxHeight: `calc(100vh - ${String(2 * spacing.md)}px)`,
-        overflowY: "auto",
-      }
-    : {};
+function stickyOnWeb(viewHeight: number | null): object {
+  if (Platform.OS !== "web") return {};
+  const room = 2 * spacing.md;
+  return {
+    position: "sticky",
+    top: spacing.md,
+    maxHeight: viewHeight === null ? `calc(100vh - ${String(room)}px)` : viewHeight - room,
+    overflowY: "auto",
+  };
+}
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },

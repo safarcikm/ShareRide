@@ -516,7 +516,7 @@ describe("Posting a trip (spec 3)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: "See my trips" }));
     expect(await screen.findByRole("header", { name: "My trips" })).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
-    expect(screen).toHavePathname("/drive");
+    expect(screen).toHavePathname("/offer");
   });
 
   it("clears what to fix once the driver changes the trip", async () => {
@@ -576,7 +576,7 @@ describe("My trips (spec 3, 3.8.4)", () => {
   });
 
   it("starts from the drive screen", async () => {
-    await open("/drive");
+    await open("/offer");
     await fireEvent.press(await screen.findByRole("button", { name: "Post a trip" }));
     expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
   });
