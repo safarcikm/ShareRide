@@ -299,6 +299,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   kept, or to Find, instead of My profile. Ride cards say "Book instantly" or
   "Driver approves", and name the driver's whole trip only when it goes
   further than your part.
+- My rides lists my bookings and the trips I drive together, coming up or
+  past (spec 16, 3.3). Coming up puts what needs me first under "Needs
+  you": a booking to pay, with Pay, and a trip with requests to answer
+  before they close, with Answer requests. Each row says Passenger or
+  Driving; a trip says the seats booked and the seats free on each stretch.
+  Find shows Your next ride on top when signed in. `GET /v1/me/trips` takes
+  `when` (upcoming or past), and says the seats taken on each stretch and
+  when the first open request closes.
+- Profile shows the first name, the languages and "Member since", with Edit
+  profile, "See it as others do", and rows for My cars, Driving licence,
+  Meeting points, Settings, and Terms, rules and privacy (spec 16, 3.4). The
+  phone number moves to Settings.
 - Times on the time step of posting a trip are chosen on a wheel of hours
   and minutes in 5-minute steps (24-hour clock) instead of being typed. A
   time saved earlier that is not on 5 minutes shows rounded up to the next
