@@ -23,6 +23,7 @@ import {
 } from "@/booking/status";
 import { payByText, requestSentText } from "@/booking/texts";
 import { BackButton } from "@/components/back-button";
+import { otherPerson } from "@/chat/texts";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Icon } from "@/components/icon";
@@ -196,6 +197,16 @@ function BookingDetails({
           }
         />
       </Card>
+
+      {confirmed === null ? null : (
+        <Button
+          variant="secondary"
+          label={t("chat.messageTo", { name: otherPerson(booking).firstName })}
+          onPress={() => {
+            router.push({ pathname: "/messages/[bookingId]", params: { bookingId: booking.id } });
+          }}
+        />
+      )}
 
       {confirmed === null ? null : (
         <Card>
