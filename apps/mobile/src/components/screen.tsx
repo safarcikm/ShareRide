@@ -1,5 +1,23 @@
-import type { ReactNode } from "react";
-import { Platform, ScrollView, StyleSheet, useWindowDimensions, View } from "react-native";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentRef,
+  type ReactNode,
+  type RefObject,
+} from "react";
+import {
+  Keyboard,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   asideMaxWidth,
@@ -37,41 +55,45 @@ export function Screen({
   const wide = useWideScreen();
   // An aside takes the side, so a footer then stays in the bottom bar.
   const beside = footer !== undefined && footerBeside && wide && aside === undefined;
+  const { scrollRef, scroll, keyboardRoom } = useRevealing();
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]}>
       {/* "handled": with the keyboard open, a tap on a button acts at once. */}
       <ScrollView
+        ref={scrollRef}
         testID="screen-scroll"
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[styles.scroll, { paddingBottom: spacing.md + keyboardRoom }]}
         keyboardShouldPersistTaps="handled"
       >
-        {aside !== undefined && wide ? (
-          <View style={[styles.wide, styles.wideWithAside]}>
-            <View style={styles.asideColumn}>{children}</View>
-            <View testID="aside" style={[styles.aside, stickyOnWeb]}>
-              {aside}
+        <ScreenScrollContext.Provider value={scroll}>
+          {aside !== undefined && wide ? (
+            <View style={[styles.wide, styles.wideWithAside]}>
+              <View style={styles.asideColumn}>{children}</View>
+              <View testID="aside" style={[styles.aside, stickyOnWeb]}>
+                {aside}
+              </View>
             </View>
-          </View>
-        ) : beside ? (
-          <View style={styles.wide}>
-            <View style={styles.wideColumn}>{children}</View>
-            <View
-              testID="side-panel"
-              style={[
-                styles.panel,
-                {
-                  backgroundColor: palette.surface,
-                  borderColor: palette.border,
-                  borderBottomColor: palette.edge,
-                },
-              ]}
-            >
-              {footer}
+          ) : beside ? (
+            <View style={styles.wide}>
+              <View style={styles.wideColumn}>{children}</View>
+              <View
+                testID="side-panel"
+                style={[
+                  styles.panel,
+                  {
+                    backgroundColor: palette.surface,
+                    borderColor: palette.border,
+                    borderBottomColor: palette.edge,
+                  },
+                ]}
+              >
+                {footer}
+              </View>
             </View>
-          </View>
-        ) : (
-          <View style={styles.column}>{children}</View>
-        )}
+          ) : (
+            <View style={styles.column}>{children}</View>
+          )}
+        </ScreenScrollContext.Provider>
       </ScrollView>
       {footer === undefined || beside ? null : (
         <View
@@ -83,6 +105,85 @@ export function Screen({
       )}
     </SafeAreaView>
   );
+}
+
+type ViewRef = ComponentRef<typeof View>;
+
+/** Lets a part of the screen ask to be scrolled up to the top, above the keyboard. */
+export interface ScreenScroll {
+  /**
+   * On phones, scrolls `target` to near the top of the screen and keeps
+   * room under it for the keyboard, so what it shows below itself is not
+   * hidden. Returns a function that ends this.
+   */
+  readonly reveal: (target: RefObject<ViewRef | null>) => () => void;
+}
+
+const ScreenScrollContext = createContext<ScreenScroll | null>(null);
+
+/** The screen's scroll, or null outside a `Screen`. */
+export function useScreenScroll(): ScreenScroll | null {
+  return useContext(ScreenScrollContext);
+}
+
+/**
+ * Scrolls a part being revealed to near the top. While it is, the content
+ * gets room at the bottom as tall as the keyboard, so the part can be
+ * scrolled that far even on a short page. On the web there is no keyboard
+ * to make room for, and nothing scrolls.
+ */
+function useRevealing() {
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
+  const target = useRef<RefObject<ViewRef | null> | null>(null);
+  const [revealing, setRevealing] = useState(false);
+  const [keyboard, setKeyboard] = useState(0);
+
+  useEffect(() => {
+    if (Platform.OS === "web") return undefined;
+    const shown = Keyboard.addListener("keyboardDidShow", (event) => {
+      setKeyboard(event.endCoordinates.height);
+    });
+    const hidden = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboard(0);
+    });
+    return () => {
+      shown.remove();
+      hidden.remove();
+    };
+  }, []);
+
+  const scrollToTarget = useCallback(() => {
+    const view = target.current?.current;
+    const content = scrollRef.current?.getInnerViewRef();
+    if (Platform.OS === "web" || view === null || view === undefined) return;
+    if (content === null || content === undefined) return;
+    view.measureLayout(content, (_x, y) => {
+      // Room for the label above the part, as in the screen's own padding.
+      scrollRef.current?.scrollTo({ y: Math.max(0, y - spacing.xl), animated: true });
+    });
+  }, []);
+
+  // Again once the keyboard is up and the room under the content is there.
+  useEffect(() => {
+    if (revealing) scrollToTarget();
+  }, [revealing, keyboard, scrollToTarget]);
+
+  const scroll = useMemo<ScreenScroll>(
+    () => ({
+      reveal: (ref) => {
+        target.current = ref;
+        setRevealing(true);
+        scrollToTarget();
+        return () => {
+          if (target.current !== ref) return;
+          target.current = null;
+          setRevealing(false);
+        };
+      },
+    }),
+    [scrollToTarget],
+  );
+  return { scrollRef, scroll, keyboardRoom: revealing ? keyboard : 0 };
 }
 
 /** Whether the window is wide enough for a panel beside the column. */

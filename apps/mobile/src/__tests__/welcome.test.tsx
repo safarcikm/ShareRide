@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, within } from "expo-router/testing-library";
-import { BackHandler } from "react-native";
+import { AccessibilityInfo, BackHandler } from "react-native";
 import { getLocales } from "expo-localization";
 import type { DriverReadiness } from "@shareride/contracts";
 import { readAppData, writeAppData } from "@/lib/app-data";
@@ -91,9 +91,10 @@ async function openFrontPage(setUp: (client: FakeClient) => void = () => undefin
   return renderApp("/", { setUp });
 }
 
-async function choose(field: RegExp, typed: string, name: string) {
-  await fireEvent.press(screen.getByRole("button", { name: field }));
-  await fireEvent.changeText(await screen.findByLabelText("Town or meeting point"), typed);
+/** Chooses a place in the list that drops down under From or To. */
+async function choose(field: "From" | "To", typed: string, name: string) {
+  await fireEvent.press(screen.getByRole("button", { name: new RegExp(`^${field}: `) }));
+  await fireEvent.changeText(await screen.findByLabelText(field), typed);
   await fireEvent.press(await screen.findByRole("button", { name: new RegExp(`^${name}`) }));
 }
 
@@ -157,7 +158,7 @@ describe("The front page (spec 1, 3.1; spec 4, 3.8)", () => {
     expect(await screen.findByRole("button", { name: "Offer a ride" })).toBeVisible();
     expect(screen.queryByRole("header", { name: "Leaving soon" })).toBeNull();
     expect(screen.queryByText(/could not be loaded/)).toBeNull();
-    await choose(/^From: /, "borg", "Borgarnes");
+    await choose("From", "borg", "Borgarnes");
     expect(screen.getByRole("button", { name: "From: Borgarnes" })).toBeVisible();
   });
 
@@ -169,8 +170,8 @@ describe("The front page (spec 1, 3.1; spec 4, 3.8)", () => {
     expect(
       await screen.findByText("Choose where you're leaving from and where you're going."),
     ).toBeVisible();
-    await choose(/^From: /, "borg", "Borgarnes");
-    await choose(/^To: /, "blön", "Blönduós");
+    await choose("From", "borg", "Borgarnes");
+    await choose("To", "blön", "Blönduós");
     expect(screen.getByRole("header", { name: "Share the ride across Iceland" })).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Find a ride" }));
 
@@ -190,12 +191,64 @@ describe("The front page (spec 1, 3.1; spec 4, 3.8)", () => {
     ]);
   });
 
+  it("drops the place search down under From, on the front page itself", async () => {
+    await openFrontPage((fake) => {
+      searchApi(fake);
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: /^From: / }));
+    const field = await screen.findByLabelText("From");
+    // No new screen: the page and the To field stay where they are.
+    expect(screen.getByRole("header", { name: "Share the ride across Iceland" })).toBeVisible();
+    expect(screen.getByRole("button", { name: /^To: / })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Offer a ride" })).toBeVisible();
+    // Nothing to swap while a place is being typed.
+    expect(screen.queryByRole("button", { name: "Swap from and to" })).toBeNull();
+
+    await fireEvent.changeText(field, "borg");
+    await fireEvent.press(await screen.findByRole("button", { name: /^Borgarnes/ }));
+    expect(screen.queryByLabelText("From")).toBeNull();
+    expect(screen.getByRole("button", { name: "From: Borgarnes" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Swap from and to" })).toBeVisible();
+  });
+
+  it("keeps one place search open at a time, and closes it without changing the choice", async () => {
+    await openFrontPage((fake) => {
+      searchApi(fake);
+    });
+    await choose("From", "borg", "Borgarnes");
+    await fireEvent.press(screen.getByRole("button", { name: /^To: / }));
+    expect(await screen.findByLabelText("To")).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "From: Borgarnes" }));
+    const field = await screen.findByLabelText("From");
+    expect(screen.queryByLabelText("To")).toBeNull();
+
+    // Close, or Escape on a keyboard, leaves Borgarnes chosen, and screen
+    // readers go back to From.
+    await fireEvent.changeText(field, "blön");
+    await screen.findByRole("button", { name: /^Blönduós/ });
+    const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    try {
+      await fireEvent.press(screen.getByRole("button", { name: "Close" }));
+      expect(screen.queryByLabelText("From")).toBeNull();
+      expect(screen.getByRole("button", { name: "From: Borgarnes" })).toBeVisible();
+      expect(focus).toHaveBeenLastCalledWith(expect.anything(), "focus");
+    } finally {
+      focus.mockRestore();
+    }
+    await fireEvent.press(screen.getByRole("button", { name: "From: Borgarnes" }));
+    await fireEvent(await screen.findByLabelText("From"), "keyPress", {
+      nativeEvent: { key: "Escape" },
+    });
+    expect(screen.queryByLabelText("From")).toBeNull();
+    expect(screen.getByRole("button", { name: "From: Borgarnes" })).toBeVisible();
+  });
+
   it("closes the place search with Android's back, staying on the front page", async () => {
     const listen = jest.spyOn(BackHandler, "addEventListener");
     try {
       await openFrontPage();
       await fireEvent.press(await screen.findByRole("button", { name: /^From: / }));
-      expect(await screen.findByLabelText("Town or meeting point")).toBeVisible();
+      expect(await screen.findByLabelText("From")).toBeVisible();
       // The listener added last is asked first, as on a phone.
       const [, back] = listen.mock.calls.at(-1) ?? [];
       let handled: boolean | undefined;
@@ -203,8 +256,8 @@ describe("The front page (spec 1, 3.1; spec 4, 3.8)", () => {
         handled = back?.({ type: "hardwareBackPress", timeStamp: 0 });
       });
       expect(handled).toBe(true);
-      expect(await screen.findByRole("button", { name: "Offer a ride" })).toBeVisible();
-      expect(screen.queryByLabelText("Town or meeting point")).toBeNull();
+      expect(screen.queryByLabelText("From")).toBeNull();
+      expect(screen.getByRole("button", { name: /^From: / })).toBeVisible();
     } finally {
       listen.mockRestore();
     }

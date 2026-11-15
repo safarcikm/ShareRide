@@ -6,9 +6,9 @@ import { expect, test, type Page } from "@playwright/test";
 // Blönduós, with 3 seats. The posting journey publishes the same route next
 // month, so the checks open the earliest.
 
-async function choose(page: Page, field: RegExp, typed: string, name: RegExp) {
-  await page.getByRole("button", { name: field }).click();
-  await page.getByLabel("Town or meeting point").fill(typed);
+async function choose(page: Page, end: "From" | "To", typed: string, name: RegExp) {
+  await page.getByRole("button", { name: new RegExp(`^${end}: `) }).click();
+  await page.getByLabel(end, { exact: true }).fill(typed);
   await page.getByRole("button", { name }).click();
 }
 
@@ -20,8 +20,8 @@ test.describe("trip details without an account", () => {
     browser,
   }) => {
     await page.goto("/search");
-    await choose(page, /^From: /, "borgarn", /^N1 Borgarnes,/);
-    await choose(page, /^To: /, "blondu", /^Olís Blönduós,/);
+    await choose(page, "From", "borgarn", /^N1 Borgarnes,/);
+    await choose(page, "To", "blondu", /^Olís Blönduós,/);
     await page.getByRole("button", { name: "Search", exact: true }).click();
     await page
       .getByRole("button", { name: /^Leaves N1 Borgarnes at \d\d:\d\d, .*Anna, New driver/ })

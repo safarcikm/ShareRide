@@ -1,24 +1,27 @@
 import type { MeetingPointSummary, Place } from "@shareride/contracts";
-import { StyleSheet, Text, View } from "react-native";
+import type { ReactNode } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Card } from "@/components/card";
 import { Tag, type TagKind } from "@/components/tag";
 import { useLanguage } from "@/i18n/language";
-import { spacing, typography } from "@/theme/tokens";
+import { minTouchTarget, radii, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { placeKindKeys, regionKeys, typeKeys } from "./texts";
 
 /**
  * A meeting point in a list: its name, type and municipality, an optional
  * detail such as its distance, and tags for paused and sample points. The
- * whole card opens it.
+ * whole card opens it. `compact` shows it as a row of a dropdown list.
  */
 export function MeetingPointCard({
   point,
   detail,
+  compact = false,
   onPress,
 }: {
   readonly point: MeetingPointSummary;
   readonly detail?: string;
+  readonly compact?: boolean;
   readonly onPress: () => void;
 }) {
   const { locale, t } = useLanguage();
@@ -27,8 +30,9 @@ export function MeetingPointCard({
   const tags: { kind: TagKind; label: string }[] = [];
   if (point.status === "paused") tags.push({ kind: "warning", label: t("meetingPoints.paused") });
   if (point.sample) tags.push({ kind: "info", label: t("meetingPoints.sample") });
+  const Frame = compact ? Row : Card;
   return (
-    <Card
+    <Frame
       onPress={onPress}
       accessibilityLabel={[name, detail, type, point.municipality, ...tags.map((tag) => tag.label)]
         .filter((part) => part !== undefined)
@@ -39,6 +43,7 @@ export function MeetingPointCard({
         nameTestID="meeting-point-name"
         detail={detail}
         summary={t("meetingPoints.summary", { type, municipality: point.municipality })}
+        compact={compact}
       />
       {tags.length === 0 ? null : (
         <View style={styles.tags}>
@@ -47,26 +52,58 @@ export function MeetingPointCard({
           ))}
         </View>
       )}
-    </Card>
+    </Frame>
   );
 }
 
-/** A town, village, landmark or area found by place search. */
+/** A town, village, landmark or area found by place search; `compact` as a row. */
 export function PlaceCard({
   place,
+  compact = false,
   onPress,
 }: {
   readonly place: Place;
+  readonly compact?: boolean;
   readonly onPress: () => void;
 }) {
   const { locale, t } = useLanguage();
   const name = place.name[locale];
   const kind = t(placeKindKeys[place.kind]);
   const region = t(regionKeys[place.region]);
+  const Frame = compact ? Row : Card;
   return (
-    <Card onPress={onPress} accessibilityLabel={[name, kind, region].join(", ")}>
-      <Lines name={name} summary={t("places.summary", { kind, region })} />
-    </Card>
+    <Frame onPress={onPress} accessibilityLabel={[name, kind, region].join(", ")}>
+      <Lines name={name} summary={t("places.summary", { kind, region })} compact={compact} />
+    </Frame>
+  );
+}
+
+/**
+ * A row of a dropdown list, pressed to choose it: tinted while pressed,
+ * and while the pointer is over it on the web.
+ */
+function Row({
+  children,
+  onPress,
+  accessibilityLabel,
+}: {
+  readonly children: ReactNode;
+  readonly onPress: () => void;
+  readonly accessibilityLabel: string;
+}) {
+  const palette = usePalette();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+        styles.row,
+        (pressed || hovered === true) && { backgroundColor: palette.primarySoft },
+      ]}
+    >
+      {children}
+    </Pressable>
   );
 }
 
@@ -75,11 +112,13 @@ function Lines({
   nameTestID,
   detail,
   summary,
+  compact,
 }: {
   readonly name: string;
   readonly nameTestID?: string;
   readonly detail?: string | undefined;
   readonly summary: string;
+  readonly compact: boolean;
 }) {
   const palette = usePalette();
   return (
@@ -87,7 +126,11 @@ function Lines({
       <View style={styles.top}>
         <Text
           testID={nameTestID}
-          style={[typography.heading, styles.name, { color: palette.text }]}
+          style={[
+            compact ? typography.bodyStrong : typography.heading,
+            styles.name,
+            { color: palette.text },
+          ]}
         >
           {name}
         </Text>
@@ -111,4 +154,12 @@ const styles = StyleSheet.create({
   },
   name: { flexShrink: 1 },
   tags: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  row: {
+    minHeight: minTouchTarget,
+    justifyContent: "center",
+    gap: spacing.xs,
+    paddingHorizontal: spacing.ms,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.control,
+  },
 });

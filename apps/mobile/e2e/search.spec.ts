@@ -10,7 +10,9 @@ interface Journey {
   readonly title: string;
   readonly from: RegExp;
   readonly to: RegExp;
-  readonly field: string;
+  /** The names of the fields that drop down under From and To. */
+  readonly fromLabel: string;
+  readonly toLabel: string;
   readonly borgarnes: RegExp;
   readonly blonduos: RegExp;
   readonly submit: string;
@@ -28,7 +30,8 @@ const journeys: readonly Journey[] = [
     title: "Find a ride",
     from: /^From: /,
     to: /^To: /,
-    field: "Town or meeting point",
+    fromLabel: "From",
+    toLabel: "To",
     borgarnes: /^N1 Borgarnes,/,
     blonduos: /^Olís Blönduós,/,
     submit: "Search",
@@ -44,7 +47,8 @@ const journeys: readonly Journey[] = [
     title: "Finna far",
     from: /^Frá: /,
     to: /^Til: /,
-    field: "Bær eða mótsstaður",
+    fromLabel: "Frá",
+    toLabel: "Til",
     borgarnes: /^N1 Borgarnesi,/,
     blonduos: /^Olís Blönduósi,/,
     submit: "Leita",
@@ -59,7 +63,7 @@ const journeys: readonly Journey[] = [
 
 async function choose(page: Page, field: RegExp, label: string, typed: string, name: RegExp) {
   await page.getByRole("button", { name: field }).click();
-  await page.getByLabel(label).fill(typed);
+  await page.getByLabel(label, { exact: true }).fill(typed);
   await page.getByRole("button", { name }).click();
 }
 
@@ -71,8 +75,8 @@ for (const journey of journeys) {
       await page.goto("/search");
       await expect(page.getByRole("heading", { name: journey.title })).toBeVisible();
 
-      await choose(page, journey.from, journey.field, "borgarn", journey.borgarnes);
-      await choose(page, journey.to, journey.field, "blondu", journey.blonduos);
+      await choose(page, journey.from, journey.fromLabel, "borgarn", journey.borgarnes);
+      await choose(page, journey.to, journey.toLabel, "blondu", journey.blonduos);
       await page.getByRole("button", { name: journey.submit, exact: true }).click();
 
       await expect(page.getByRole("heading", { name: journey.header })).toBeVisible();

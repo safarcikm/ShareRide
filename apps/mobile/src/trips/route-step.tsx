@@ -24,7 +24,7 @@ import { Body, Heading } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { dayOf, isoDay } from "@/lib/days";
 import { RouteMap } from "@/maps/route-map";
-import { PointPicker } from "./point-picker";
+import { PointDropdown, PointPicker } from "./point-picker";
 import { StepScreen } from "./step-screen";
 import { goOn, stepHref } from "./steps";
 import { useQuote } from "./use-quote";
@@ -200,27 +200,22 @@ export function RouteStep({
     }
   };
 
-  if (picking !== null) {
-    const titles = {
-      from: t("trip.route.pickFrom"),
-      to: t("trip.route.pickTo"),
-      add: t("trip.route.addPoint"),
-    } as const;
+  // Adding a stop has a screen of its own; From and To drop down in place.
+  if (picking === "add") {
     return (
       <PointPicker
-        title={titles[picking]}
+        title={t("trip.route.addPoint")}
         onCancel={() => {
           setPicking(null);
         }}
         onChoose={(point) => {
           setPicking(null);
-          if (picking === "from") ends(point, to);
-          else if (picking === "to") ends(from, point);
-          else void add(point);
+          void add(point);
         }}
       />
     );
   }
+  const end = picking;
 
   const addedBy = (point: MeetingPointSummary) => {
     const index = ids.indexOf(point.id);
@@ -254,6 +249,22 @@ export function RouteStep({
           choose: t("trip.route.choose"),
           swap: t("trip.route.swap"),
         }}
+        open={end}
+        search={
+          end === null ? null : (
+            <PointDropdown
+              label={end === "from" ? t("trip.from") : t("trip.to")}
+              onClose={() => {
+                setPicking(null);
+              }}
+              onChoose={(point) => {
+                setPicking(null);
+                if (end === "from") ends(point, to);
+                else ends(from, point);
+              }}
+            />
+          )
+        }
         onPick={setPicking}
         onSwap={() => {
           setFrom(to);

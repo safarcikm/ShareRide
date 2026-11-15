@@ -328,6 +328,7 @@ Built when the screens that need them are built.
 | `PriceLevel` | The price level control of spec 3, as on the price step below: a track in 10% steps with the suggested level marked, a shape person as the handle, and minus and plus buttons; adjustable role whose value reads the level and the whole-route price |
 | `SeatView` | The top-down car (section 5.3) |
 | `Avatar` | The real profile photo, round; without a photo, the first letter on a people colour. Never a shape person |
+| `PlaceDropdown` | From or To while it is being chosen: its caption and dot stay, a text field with a 2 `primary` outline takes the place of the value, with a Close `IconButton` beside it; what the search finds is listed under it in a box with a 2 `border` outline and corner `control`, as rows with the name in `bodyStrong` and the type and place in `small`, tinted `primarySoft` while pressed or under the pointer. The swap button waits until it closes |
 
 ### 5.3 Shape people and the seat view
 

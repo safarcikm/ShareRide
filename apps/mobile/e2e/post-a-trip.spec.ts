@@ -15,7 +15,9 @@ interface Journey {
   readonly routeTitle: string;
   readonly from: string;
   readonly to: string;
-  readonly search: string;
+  /** The names of the fields that drop down under From and To. */
+  readonly fromLabel: string;
+  readonly toLabel: string;
   readonly start: RegExp;
   readonly end: RegExp;
   readonly onTheWay: string;
@@ -58,7 +60,8 @@ const inEnglish: Journey = {
   routeTitle: "Where are you driving?",
   from: "From: Choose a meeting point",
   to: "To: Choose a meeting point",
-  search: "Town or meeting point",
+  fromLabel: "From",
+  toLabel: "To",
   start: /^BSÍ bus terminal,/,
   end: /^Hof bus stop, Akureyri,/,
   onTheWay: "N1 Borgarnes",
@@ -101,7 +104,8 @@ const inIcelandic: Journey = {
   routeTitle: "Hvert ertu að keyra?",
   from: "Frá: Veldu mótsstað",
   to: "Til: Veldu mótsstað",
-  search: "Bær eða mótsstaður",
+  fromLabel: "Frá",
+  toLabel: "Til",
   start: /^BSÍ,/,
   end: /^Hof, Akureyri,/,
   onTheWay: "N1 Borgarnesi",
@@ -137,9 +141,9 @@ const inIcelandic: Journey = {
   publishedTrips: "Birtar",
 };
 
-async function choose(page: Page, journey: Journey, field: string, typed: string, card: RegExp) {
+async function choose(page: Page, field: string, label: string, typed: string, card: RegExp) {
   await page.getByRole("button", { name: field }).click();
-  await page.getByLabel(journey.search).fill(typed);
+  await page.getByLabel(label, { exact: true }).fill(typed);
   await page.getByRole("button", { name: card }).click();
 }
 
@@ -150,8 +154,8 @@ async function postTrip(page: Page, journey: Journey) {
 
   // 1. The route, with the meeting points on the way.
   await expect(page.getByRole("heading", { name: journey.routeTitle })).toBeVisible();
-  await choose(page, journey, journey.from, "BSÍ", journey.start);
-  await choose(page, journey, journey.to, "Hof", journey.end);
+  await choose(page, journey.from, journey.fromLabel, "BSÍ", journey.start);
+  await choose(page, journey.to, journey.toLabel, "Hof", journey.end);
   await expect(page.getByRole("switch", { name: journey.onTheWay })).toBeChecked();
   await expect(page.getByRole("img", { name: journey.routeMap })).toBeVisible();
   await page.getByRole("button", { name: journey.toTimes }).click();

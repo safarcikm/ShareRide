@@ -3,7 +3,7 @@ import { shareLink } from "@/lib/share";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
-import { bsi, hof, kef } from "@/testing/meeting-points";
+import { bsi, fitjar, hof, kef, thorlakshofn } from "@/testing/meeting-points";
 import { blonduos, borgarnes, plannedDraft, quoteFor, tripsApi, yaris } from "@/testing/trips";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
@@ -36,9 +36,10 @@ async function open(url: string, start: Parameters<typeof tripsApi>[1] = []) {
 const bodiesOf = (client: FakeClient, path: string) =>
   client.calls.filter((call) => call.path === path).map((call) => call.input["body"]);
 
-async function choosePoint(field: RegExp, typed: string, name: string) {
-  await fireEvent.press(screen.getByRole("button", { name: field }));
-  await fireEvent.changeText(await screen.findByLabelText("Town or meeting point"), typed);
+/** Chooses a place in the list that drops down under From or To. */
+async function choosePoint(field: "From" | "To", typed: string, name: string) {
+  await fireEvent.press(screen.getByRole("button", { name: new RegExp(`^${field}: `) }));
+  await fireEvent.changeText(await screen.findByLabelText(field), typed);
   await fireEvent.press(await screen.findByRole("button", { name: new RegExp(`^${name}`) }));
 }
 
@@ -48,8 +49,8 @@ describe("Posting a trip (spec 3)", () => {
     expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
     expect(screen.getByText("Step 1 of 5")).toBeVisible();
 
-    await choosePoint(/^From: /, "bs", "BSÍ bus terminal");
-    await choosePoint(/^To: /, "hof", "Hof, Akureyri");
+    await choosePoint("From", "bs", "BSÍ bus terminal");
+    await choosePoint("To", "hof", "Hof, Akureyri");
     expect(screen.getByRole("button", { name: "From: BSÍ bus terminal" })).toBeVisible();
     // The meeting points on the way are stops; the driver skips one.
     const blonduosSwitch = await screen.findByRole("switch", { name: "Blönduós" });
@@ -142,8 +143,8 @@ describe("Posting a trip (spec 3)", () => {
 
   it("keeps the new draft's route when the driver goes back to it", async () => {
     const { api } = await open("/drive/trips/new");
-    await choosePoint(/^From: /, "bs", "BSÍ bus terminal");
-    await choosePoint(/^To: /, "hof", "Hof, Akureyri");
+    await choosePoint("From", "bs", "BSÍ bus terminal");
+    await choosePoint("To", "hof", "Hof, Akureyri");
     await fireEvent.press(await screen.findByRole("switch", { name: "Blönduós" }));
     await fireEvent.press(screen.getByRole("button", { name: "Choose date and time" }));
     expect(await screen.findByRole("header", { name: "When are you leaving?" })).toBeVisible();
@@ -160,8 +161,8 @@ describe("Posting a trip (spec 3)", () => {
   it("looks up the stops on the way for the new direction after a swap", async () => {
     const { client } = await open("/drive/trips/new");
     client.answer("/v1/routes/stops-along", () => failure(503, "distances_pending"));
-    await choosePoint(/^From: /, "bs", "BSÍ bus terminal");
-    await choosePoint(/^To: /, "hof", "Hof, Akureyri");
+    await choosePoint("From", "bs", "BSÍ bus terminal");
+    await choosePoint("To", "hof", "Hof, Akureyri");
     expect(await screen.findByRole("button", { name: "Try again" })).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Swap start and end" }));
     expect(await screen.findByRole("button", { name: "Try again" })).toBeVisible();
@@ -179,8 +180,8 @@ describe("Posting a trip (spec 3)", () => {
 
   it("adds a meeting point where it adds least, and says how far it takes you", async () => {
     const { client } = await open("/drive/trips/new");
-    await choosePoint(/^From: /, "bs", "BSÍ bus terminal");
-    await choosePoint(/^To: /, "hof", "Hof, Akureyri");
+    await choosePoint("From", "bs", "BSÍ bus terminal");
+    await choosePoint("To", "hof", "Hof, Akureyri");
     await screen.findByRole("switch", { name: "Borgarnes" });
     await fireEvent.press(screen.getByRole("button", { name: "Add a meeting point" }));
     expect(await screen.findByRole("header", { name: "Add a meeting point" })).toBeVisible();
@@ -215,8 +216,8 @@ describe("Posting a trip (spec 3)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Choose date and time" }));
     expect(await screen.findByText("Choose where you start and where you're going.")).toBeVisible();
 
-    await choosePoint(/^From: /, "bs", "BSÍ bus terminal");
-    await choosePoint(/^To: /, "hof", "Hof, Akureyri");
+    await choosePoint("From", "bs", "BSÍ bus terminal");
+    await choosePoint("To", "hof", "Hof, Akureyri");
     await screen.findByRole("switch", { name: "Borgarnes" });
     await fireEvent.press(screen.getByRole("button", { name: "Swap start and end" }));
     expect(screen.getByRole("button", { name: "From: Hof, Akureyri" })).toBeVisible();
@@ -225,6 +226,46 @@ describe("Posting a trip (spec 3)", () => {
       "Blönduós",
       "Borgarnes",
     ]);
+  });
+
+  it("lists the meeting points near a town under From, where a paused one can't be chosen", async () => {
+    const { client } = await open("/drive/trips/new");
+    await screen.findByRole("header", { name: "Where are you driving?" });
+    client.answer("/v1/places/search", () =>
+      ok(200, { results: [{ kind: "place", place: thorlakshofn }] }),
+    );
+    client.answer("/v1/places/{id}/nearest-meeting-points", () =>
+      ok(200, {
+        place: thorlakshofn,
+        withinReach: true,
+        meetingPoints: [
+          { meetingPoint: fitjar, distanceM: 2440 },
+          { meetingPoint: bsi, distanceM: 38_200 },
+        ],
+      }),
+    );
+    await fireEvent.press(screen.getByRole("button", { name: /^From: / }));
+    expect(
+      await screen.findByText(
+        "Search for a meeting point, or for a town to see the points near it.",
+      ),
+    ).toBeVisible();
+    await fireEvent.changeText(screen.getByLabelText("From"), "thorl");
+    await fireEvent.press(await screen.findByRole("button", { name: /^Þorlákshöfn/ }));
+
+    // The points near the town drop down in the same list, on the same step.
+    expect(
+      await screen.findByRole("header", { name: "Meeting points near Þorlákshöfn" }),
+    ).toBeVisible();
+    expect(screen.getByRole("header", { name: "Where are you driving?" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: /^Fitjar/ }));
+    expect(
+      await screen.findByText("This meeting point is paused right now. Choose another."),
+    ).toBeVisible();
+    expect(screen.getByLabelText("From")).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: /^BSÍ bus terminal/ }));
+    expect(screen.queryByLabelText("From")).toBeNull();
+    expect(screen.getByRole("button", { name: "From: BSÍ bus terminal" })).toBeVisible();
   });
 
   it("checks the times before going on", async () => {

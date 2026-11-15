@@ -37,7 +37,6 @@ export default function Welcome() {
 function FrontPage() {
   const { locale, t } = useLanguage();
   const session = useSession();
-  // Loaded here, so choosing a place does not load them again.
   const load = useCallback(
     () => session.call(soonestTripsRoute, { query: { limit: shownRides + 1 } }),
     [session],
@@ -47,7 +46,6 @@ function FrontPage() {
   const route = useRouteSearch((query) => {
     void openSearch(query, locale);
   });
-  if (route.picker !== null) return route.picker;
   return (
     <Screen>
       <View style={styles.top}>

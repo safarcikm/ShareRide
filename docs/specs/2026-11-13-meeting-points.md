@@ -81,7 +81,9 @@ photos of points the user has opened stay available offline (feature I4).
 ### 3.4 Place search
 
 One search field is used everywhere a place is chosen: here, when searching
-trips (spec 4) and when posting a trip (spec 3).
+trips (spec 4) and when posting a trip (spec 3). For From and To it drops
+down under the field (spec 4, 3.1); here and when adding a stop it has a
+screen of its own.
 
 1. Results appear as the user types, from the second character.
 2. Matching ignores case and accents and understands Icelandic letters typed
