@@ -10,7 +10,7 @@ export default function AddCarScreen() {
   const { t } = useLanguage();
   return (
     <Screen>
-      <BackButton fallback="/drive" />
+      <BackButton fallback="/offer" />
       <Title>{t("vehicle.add")}</Title>
       <CarForm onSaved={backToDrive} />
     </Screen>

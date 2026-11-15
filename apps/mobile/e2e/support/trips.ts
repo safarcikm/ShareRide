@@ -111,7 +111,7 @@ export async function postTripToSelfoss(page: Page, departure: string) {
     await page.getByLabel(end, { exact: true }).fill(typed);
     await page.getByRole("button", { name: card }).click();
   };
-  await page.goto("/drive");
+  await page.goto("/offer");
   await page.getByRole("button", { name: "Post a trip" }).click();
   await choose("From", "mjódd", /^Mjódd bus terminal,/);
   await choose("To", "selfo", /^N1 Selfoss,/);

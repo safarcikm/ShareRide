@@ -292,11 +292,11 @@ function Review({
 }
 
 /**
- * Opens `next` on top of the drive screen, closing the posting steps, so
+ * Opens `next` on top of Offer, closing the posting steps, so
  * Back never leads into the steps of a trip that is published or deleted.
  */
 function leaveSteps(next: Href) {
-  router.dismissTo("/drive");
+  router.dismissTo("/offer");
   router.push(next);
 }
 

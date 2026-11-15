@@ -3,6 +3,14 @@ import type { Locale } from "@shareride/i18n";
 import { english, icelandic, signUp, type Texts } from "./support/account";
 import { chooseTime, englishWheel, timeField, tomorrow, type WheelTexts } from "./support/trips";
 
+/**
+ * Text in sight. Find stays in the page under the screens opened on top,
+ * and its rides leaving soon can show the same prices.
+ */
+function shownText(page: Page, text: string) {
+  return page.getByText(text, { exact: true }).filter({ visible: true });
+}
+
 // Spec 3's journey on the web build, against the test API and its sample
 // meeting points: a first-time driver posts Reykjavík to Akureyri, adds a
 // car and confirms the licence from the check step, and publishes.
@@ -185,13 +193,13 @@ async function postTrip(page: Page, journey: Journey) {
 
   // 3. The suggested price for the whole route, then 80%.
   await expect(page.getByRole("heading", { name: journey.priceTitle })).toBeVisible();
-  await expect(page.getByText(journey.fullPrice, { exact: true })).toBeVisible();
+  await expect(shownText(page, journey.fullPrice)).toBeVisible();
   await expect(page.getByText(journey.suggested)).toBeVisible();
   // One step down with minus, then a tap on the track at 80%.
   await page.getByRole("button", { name: journey.lower }).click();
   await expect(page.getByText("90%", { exact: true })).toBeVisible();
   await page.getByTestId("price-step-80").click();
-  await expect(page.getByText(journey.lowerPrice, { exact: true })).toBeVisible();
+  await expect(shownText(page, journey.lowerPrice)).toBeVisible();
   await expect(page.getByText("80%", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: journey.toSeats }).click();
 
@@ -212,7 +220,7 @@ async function postTrip(page: Page, journey: Journey) {
   await page.getByRole("checkbox", { name: journey.declaration }).click();
   await page.getByRole("button", { name: journey.confirm, exact: true }).click();
   await expect(page.getByRole("heading", { name: journey.reviewTitle })).toBeVisible();
-  await expect(page.getByText(journey.reviewPrice, { exact: true })).toBeVisible();
+  await expect(shownText(page, journey.reviewPrice)).toBeVisible();
 
   await page.getByRole("button", { name: journey.publish }).click();
   await expect(page.getByRole("heading", { name: journey.published })).toBeVisible();

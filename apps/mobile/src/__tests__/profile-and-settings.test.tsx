@@ -15,7 +15,7 @@ jest.mock("@/lib/preferences", () => ({
 }));
 
 async function openProfile() {
-  const app = await renderApp("/", { me: completeMe });
+  const app = await renderApp("/profile", { me: completeMe });
   app.client.answer("/v1/me", (input) => {
     const body = input["body"] as Partial<Me> | undefined;
     return ok(200, { ...completeMe, ...body });
@@ -71,7 +71,7 @@ describe("My profile", () => {
     ).toMatchObject({ body: { languages: ["is"] } });
   });
 
-  it("sends a signed-out person to the welcome screen", async () => {
+  it("asks a signed-out person to sign in", async () => {
     await renderApp("/profile");
     expect(await screen.findByRole("button", { name: "Sign in" })).toBeVisible();
   });
@@ -85,10 +85,10 @@ describe("Settings", () => {
     return app;
   }
 
-  it("signs out on all devices and returns to the welcome screen", async () => {
+  it("signs out on all devices and returns to Find", async () => {
     const app = await openSettings();
     await fireEvent.press(screen.getByRole("button", { name: "Sign out on all devices" }));
-    expect(await screen.findByRole("button", { name: "Sign in" })).toBeVisible();
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
     // The front page then loads its rides; the sign-out came before.
     expect(app.client.calls.findLast((call) => call.path === "/v1/auth/sign-out")).toEqual({
       path: "/v1/auth/sign-out",
@@ -111,7 +111,7 @@ describe("Settings", () => {
   it("signs out of this device only", async () => {
     const app = await openSettings();
     await fireEvent.press(screen.getByRole("button", { name: "Sign out" }));
-    expect(await screen.findByRole("button", { name: "Sign in" })).toBeVisible();
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
     expect(app.client.calls.findLast((call) => call.path === "/v1/auth/sign-out")?.input).toEqual({
       body: { all: false },
       accessToken: "sr_at_access-1",
@@ -158,6 +158,6 @@ describe("Starting the app", () => {
 
     app.client.answer("/v1/auth/refresh", () => ok(200, tokens(2)));
     await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
-    expect(await screen.findByRole("header", { name: "My profile" })).toBeVisible();
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
   });
 });

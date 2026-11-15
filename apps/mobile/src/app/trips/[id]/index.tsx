@@ -7,7 +7,7 @@ import { Share as ShareIcon, ShieldCheck } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText, formatWait } from "@/auth/errors";
-import { nextRoute } from "@/auth/next-route";
+import { signUpRoute } from "@/auth/next-route";
 import { useMe, useSession } from "@/auth/session";
 import { bookingHref, keepPendingBooking } from "@/booking/pending-booking";
 import { BackButton } from "@/components/back-button";
@@ -82,7 +82,7 @@ export default function TripScreen() {
     return (
       <Screen>
         <NoIndex />
-        <BackButton fallback="/search" />
+        <BackButton fallback="/" />
         <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
       </Screen>
     );
@@ -91,7 +91,7 @@ export default function TripScreen() {
     return (
       <Screen>
         <NoIndex />
-        <BackButton fallback="/search" />
+        <BackButton fallback="/" />
         <Failure answer={answer} onRetry={reload} />
       </Screen>
     );
@@ -210,7 +210,7 @@ function Trip({
     <Screen footerBeside footer={<BookingBar trip={trip} pending={pending} />}>
       <NoIndex />
       <View style={styles.header}>
-        <BackButton fallback="/search" />
+        <BackButton fallback="/" />
         <IconButton
           icon={ShareIcon}
           label={t("trip.share")}
@@ -348,7 +348,7 @@ function BookingBar({ trip, pending }: { readonly trip: TripDetails; readonly pe
       return;
     }
     void keepPendingBooking(choice, now()).then(() => {
-      router.push(me === null ? "/sign-in" : nextRoute(me));
+      router.push(signUpRoute(me));
     });
   };
 

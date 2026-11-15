@@ -36,8 +36,8 @@ function myBookingsApi(client: FakeClient, lists: { upcoming?: Booking[]; past?:
 }
 
 describe("My bookings (spec 5, 3.6)", () => {
-  it("opens from the profile, lists upcoming bookings and opens one", async () => {
-    await renderApp("/profile", {
+  it("opens from My rides in the menu, lists upcoming bookings and opens one", async () => {
+    await renderApp("/", {
       me: completeMe,
       setUp: (client) => {
         myBookingsApi(client, {
@@ -49,7 +49,7 @@ describe("My bookings (spec 5, 3.6)", () => {
         bookingApi(client, () => northBooking());
       },
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "My bookings" }));
+    await fireEvent.press(await screen.findByRole("tab", { name: "My rides" }));
     expect(await screen.findByRole("header", { name: "My bookings" })).toBeVisible();
     expect(screen.getByRole("radio", { name: "Upcoming" })).toBeChecked();
     const card = await screen.findByRole("button", {
@@ -62,7 +62,7 @@ describe("My bookings (spec 5, 3.6)", () => {
   });
 
   it("shows past bookings, and says when a list is empty", async () => {
-    await renderApp("/bookings", {
+    await renderApp("/my-rides", {
       me: completeMe,
       setUp: (client) => {
         myBookingsApi(client, { past: [withdrawn, declined] });
@@ -78,7 +78,7 @@ describe("My bookings (spec 5, 3.6)", () => {
 
   it("says when the bookings could not be loaded, with a retry", async () => {
     let tries = 0;
-    await renderApp("/bookings?when=past", {
+    await renderApp("/my-rides?when=past", {
       me: completeMe,
       setUp: (client) => {
         client.answer("/v1/me/bookings", () => {

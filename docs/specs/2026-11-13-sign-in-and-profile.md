@@ -2,6 +2,9 @@
 
 **Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
+Amended by [spec 16](2026-11-15-one-home-and-simpler-flows.md): Find is the
+home for everyone and the menu is the same signed in or out (3.1, 3.2).
+
 Features: A1 Sign up and sign in, A2 Profile, A4 Settings, A6 Terms, privacy
 policy and community rules ([features](../product/features.md)).
 Related decisions: [ADR 0010](../decisions/0010-authentication-and-identity.md)

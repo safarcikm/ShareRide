@@ -4,9 +4,8 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useCallback } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
-import { useSession } from "@/auth/session";
+import { useMe, useSession } from "@/auth/session";
 import { statusKey, statusTag } from "@/booking/status";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Chip } from "@/components/chip";
@@ -16,6 +15,7 @@ import { Tag } from "@/components/tag";
 import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
+import { SignInFirst } from "@/navigation/sign-in-first";
 import { carText } from "@/trip-details/texts";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -23,11 +23,20 @@ import { usePalette } from "@/theme/use-palette";
 type When = "upcoming" | "past";
 
 /**
- * My bookings (spec 5, 3.6, screen 7): upcoming (requested, waiting for
+ * My rides, a place of the menu (spec 16, 3.1). For now it lists my
+ * bookings (spec 5, 3.6, screen 7): upcoming (requested, waiting for
  * payment and confirmed), soonest first, or past, latest first. Each opens
  * the booking. Which list shows lives in the address, so Back returns to it.
+ * Signed out, it asks to sign in.
  */
-export default function MyBookingsScreen() {
+export default function MyRidesScreen() {
+  const { t } = useLanguage();
+  const me = useMe();
+  if (me === null) return <SignInFirst title={t("nav.myRidesSignedOut")} />;
+  return <MyBookings />;
+}
+
+function MyBookings() {
   const { t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
@@ -43,7 +52,6 @@ export default function MyBookingsScreen() {
 
   return (
     <Screen>
-      <BackButton fallback="/profile" />
       <Title>{t("myBookings.title")}</Title>
       <View
         accessibilityRole="radiogroup"

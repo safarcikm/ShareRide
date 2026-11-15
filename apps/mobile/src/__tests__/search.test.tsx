@@ -87,10 +87,11 @@ describe("Searching for a ride (spec 4)", () => {
     const card = await screen.findByRole("button", {
       name:
         "Leaves Borgarnes at 10:00, arrives at Blönduós at 12:05, 2 h 5 min, 2,900 ISK per seat, " +
-        "5,800 ISK for 2 seats, Part of BSÍ bus terminal → Hof, Akureyri, Request, " +
+        "5,800 ISK for 2 seats, Anna drives BSÍ bus terminal → Hof, Akureyri, Driver approves, " +
         "Anna, New driver, 3 seats left",
     });
     expect(within(card).getByText("2,900 ISK")).toBeVisible();
+    expect(within(card).getByText("Anna drives BSÍ bus terminal → Hof, Akureyri")).toBeVisible();
     expect(screen.getByRole("header", { name: "Sunday 15 November" })).toBeVisible();
     expect(screen.getByText("That's every trip found.")).toBeVisible();
 
@@ -265,7 +266,7 @@ describe("Search results (spec 4, 3.4)", () => {
     const card = await screen.findByTestId("trip-result");
     expect(within(card).getByText("2.1 km from Borgarnes")).toBeVisible();
     expect(within(card).getByText("Free")).toBeVisible();
-    expect(within(card).getByText("Instant")).toBeVisible();
+    expect(within(card).getByText("Book instantly")).toBeVisible();
     expect(within(card).getByText("1 seat left")).toBeVisible();
   });
 
@@ -371,7 +372,7 @@ describe("Nothing matches (spec 4, 3.5)", () => {
       },
     });
     await fireEvent.press(await screen.findByRole("button", { name: "Offer a ride" }));
-    expect(screen).toHavePathname("/drive");
+    expect(screen).toHavePathname("/offer");
   });
 
   it("offers to show all trips when filters leave none", async () => {
