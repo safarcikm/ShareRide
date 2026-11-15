@@ -71,7 +71,9 @@ imports end in `.ts`.
 - Format numbers, dates and currency with the functions in `packages/i18n`
   (`formatMoney`, `formatDate`, `formatDay` and the rest) and the active
   locale. They carry their own month and weekday names and digit grouping,
-  because not every browser or phone has Intl's Icelandic data.
+  because not every browser or phone has Intl's Icelandic data
+  ([ADR 0025](../decisions/0025-own-date-and-number-formatting.md),
+  proposed).
 - Translations for Icelandic and English are required for merge; CI checks for
   missing keys.
 

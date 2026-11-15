@@ -118,6 +118,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   with spec 15's switch, radio card, stepper, price level and calendar.
   Dates, weekdays and numbers in Icelandic no longer depend on the
   device's calendar data.
+- ADR 0025 (proposed): our own date and number formatting in
+  `packages/i18n` instead of Intl's locale data, which some browsers and
+  phones lack. Spec 3 now says a draft keeps a paused stop (decision 9).
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
