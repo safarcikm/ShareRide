@@ -173,6 +173,7 @@ export const en = {
   "vehicle.removeNamed": "Remove {car}",
   "vehicle.keep": "Keep it",
   "vehicle.notFound": "We couldn't find this car. It may have been removed.",
+  "vehicle.inUse": "This car is on a trip that hasn't ended yet. You can remove it after the trip.",
   "vehicle.error.make": "Enter the make, up to {max} characters.",
   "vehicle.error.model": "Enter the model, up to {max} characters.",
   "vehicle.error.colour": "Choose a colour.",

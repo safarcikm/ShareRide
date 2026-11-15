@@ -116,7 +116,7 @@ export const updateVehicleRoute = defineRoute({
 export const removeVehicleRoute = defineRoute({
   method: "delete",
   path: "/v1/me/vehicles/{id}",
-  summary: "Remove a car; it stays on past trips",
+  summary: "Remove a car; it stays on past trips and leaves my drafts",
   tags: ["driving"],
   auth: true,
   request: { params: z.object({ id: z.uuid() }) },
@@ -124,5 +124,6 @@ export const removeVehicleRoute = defineRoute({
     204: { description: "Removed" },
     401: unauthenticated,
     404: notFound,
+    409: { description: "vehicle_in_use: on a trip of mine that has not ended", ...errors },
   },
 });

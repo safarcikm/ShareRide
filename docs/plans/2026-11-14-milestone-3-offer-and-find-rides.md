@@ -244,14 +244,28 @@ merge.
 
 ### PR 5: `feat(trips)`: post a trip
 
-- [ ] Trips, stops, segments; drafts; publish with every check; overlap;
+Split in two, like milestone 2's PR 4: 5a the server, 5b the screens.
+
+- [x] 5a: Trips, stops, segments; drafts; publish with every check; overlap;
       draft clean-up; sample trips
-- [ ] The five steps (route, date and times, price, seats and preferences,
-      check and publish) and the published screen; "My trips" lists drafts
-      and published trips
-- [ ] Browser journey: a first-time driver sets up and publishes a trip, in
-      English and Icelandic
+- [ ] 5b: The five steps (route, date and times, price, seats and
+      preferences, check and publish) and the published screen; "My trips"
+      lists drafts and published trips
+- [ ] 5b: Browser journey: a first-time driver sets up and publishes a trip,
+      in English and Icelandic
 - Verify: Martin publishes Reykjavík to Akureyri on the web
+- 5a notes: publishing locks the driver's row, so two publishes cannot
+  overlap (R3.7). A change that needs distances not worked out yet answers
+  503 and saves nothing; the app waits and tries again (spec 3, 3.9). A
+  first trip's preferences are one suitcase, ask about pets, no smoking, no
+  child seat and some chat. Women-only trips and the `TripPublished` event
+  wait for spec 14 and the outbox. Removing a car takes it off drafts, keeps
+  it for published trips, and is refused while a trip with it has not
+  ended. A draft keeps planned times in any order; publishing checks them.
+  A stop whose point is retired leaves the draft the next time it changes
+  or is published; a paused one stays, and publishing names it. Not built
+  yet from spec 3, 3.9: telling the driver a stop left, offering a point
+  activated on the way, and keeping a draft on the phone while offline.
 
 ### PR 6: `feat(search)`: search and results
 

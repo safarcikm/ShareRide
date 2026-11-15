@@ -56,7 +56,13 @@ export function registerDrivingRoutes(
 
   app.openapi(toOpenApiRoute(removeVehicleRoute, requireAuth), async (c) => {
     const { id } = validated(c, "param", removeVehicleRoute.request.params);
-    const removed = await driving.removeVehicle(authOf(c).userId, id);
-    return removed ? c.body(null, 204) : notFound(c);
+    switch (await driving.removeVehicle(authOf(c).userId, id)) {
+      case "removed":
+        return c.body(null, 204);
+      case "not_found":
+        return notFound(c);
+      case "in_use":
+        return errorResponse(c, 409, "vehicle_in_use", "The car is on a trip that has not ended.");
+    }
   });
 }

@@ -29,6 +29,13 @@
       "when": 1794677279354,
       "tag": "0003_vehicles",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794680223006,
+      "tag": "0004_trips",
+      "breakpoints": true
     }
   ]
 }

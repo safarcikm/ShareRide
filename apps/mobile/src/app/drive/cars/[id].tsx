@@ -69,6 +69,7 @@ function RemoveCar({ car }: { readonly car: Vehicle }) {
     setBusy(false);
     // Already gone counts as removed.
     if (result.ok || result.status === 404) backToDrive();
+    else if (result.error.code === "vehicle_in_use") setFailure(t("vehicle.inUse"));
     else setFailure(errorText(t, result));
   }
 

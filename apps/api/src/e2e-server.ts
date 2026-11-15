@@ -1,6 +1,6 @@
 // The API for the app's browser tests (apps/mobile/e2e), started by
 // Playwright. It empties, migrates and seeds the *_test database (draft legal
-// documents and the sample meeting points), writes
+// documents, the sample meeting points and the sample trips), writes
 // each text message as a JSON line to E2E_SMS_OUTBOX for the tests to read,
 // and runs on PORT (default 3001). Never use it for anything else.
 import { randomBytes } from "node:crypto";

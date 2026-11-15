@@ -14,7 +14,7 @@ edge ([privacy providers](../compliance/privacy-gdpr.md#providers)).
 | Part | Render name | What it is |
 | ---- | ----------- | ---------- |
 | API and web app | `shareride-staging-api` | Web service built from `apps/api/Dockerfile`; serves `/v1` and the web app on one origin |
-| Clean-up | `shareride-staging-clean-up` | Cron job, every hour at minute 17 (UTC): deletes sign-in records past their retention |
+| Clean-up | `shareride-staging-clean-up` | Cron job, every hour at minute 17 (UTC): deletes sign-in records past their retention and old trip drafts |
 | Database | `shareride-staging-db` | PostgreSQL 18 with PostGIS, private network only |
 | Settings | `shareride-staging` | Environment group: `NODE_ENV=production`, `APP_ENV=staging`, `LOG_LEVEL` |
 
@@ -90,7 +90,8 @@ Render changes its network:
 Every merge to `main` deploys by itself: when the commit's CI checks pass
 (`autoDeployTrigger: checksPass`), Render builds the same Dockerfile, runs
 `node packages/db/src/migrate-cli.ts --seed-drafts` (migrations, then the
-draft legal documents and the sample meeting points with their distances)
+draft legal documents, the sample meeting points with their distances, and
+the sample trips, replaced with fresh dates on each deploy)
 and starts the new version. Traffic moves to it only
 once `/v1/health/ready` answers 200, so a version that cannot reach the
 database never takes over. If the migration or the health check fails, the

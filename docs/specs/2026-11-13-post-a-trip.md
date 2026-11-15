@@ -148,7 +148,9 @@ Drivers do not edit segment prices one by one (decision 2,
    driver's responsibility.
 2. **Booking mode:** request and approval (default in the beta) or instant
    booking ([pricing and seats](../product/pricing-and-seats.md#booking-modes)).
-3. **Preferences**, all prefilled from the driver's last trip:
+3. **Preferences**, all prefilled from the driver's last trip (the first
+   time: one suitcase, ask me about pets, no smoking, no child seat, some
+   chat):
    - Luggage per passenger: small bag only, one suitcase, or more by
      arrangement
    - Pets: no, ask me, yes
@@ -250,6 +252,7 @@ Endpoints (`/v1`, shapes defined in `packages/contracts`):
 | `PUT /me/driver-licence-declaration` | Make the licence declaration |
 | `GET /routes/stops-along?from=&to=&date=` | Meeting points on the way, in route order; with a date, only those in season then |
 | `POST /routes/quote` | For a list of stops, seats, a departure and a price level: distances, typical times, segment prices, the highest level and warnings; with an added stop, where it goes |
+| `GET /me/trips`, `GET /me/trips/{id}` | My drafts and published trips |
 | `POST /trips`, `PATCH /trips/{id}` | Create and update a draft |
 | `POST /trips/{id}/publish` | Publish after all checks |
 | `DELETE /trips/{id}` | Delete a draft |

@@ -61,6 +61,21 @@ export interface TimeWarning {
   readonly segment: number;
 }
 
+/** A departure at least 30 minutes and at most 60 days from now (R3.5). */
+export function checkDeparture(
+  departure: Date,
+  now: Date,
+  settings: Pick<TimeRules, "minNoticeMinutes" | "maxDaysAhead">,
+): TimeProblem[] {
+  if (departure.getTime() < now.getTime() + settings.minNoticeMinutes * minuteMs) {
+    return [{ code: "departure_too_soon" }];
+  }
+  if (departure.getTime() > now.getTime() + settings.maxDaysAhead * 24 * 60 * minuteMs) {
+    return [{ code: "departure_too_far" }];
+  }
+  return [];
+}
+
 /**
  * Checks planned times, one per stop, against the typical time of each
  * stretch: departure 30 minutes to 60 days from now (R3.5), times that
@@ -79,12 +94,7 @@ export function checkTimes(
   if (departure === undefined || times.length !== typicalS.length + 1) {
     return { problems: [{ code: "times_missing" }], warnings };
   }
-  if (departure.getTime() < now.getTime() + settings.minNoticeMinutes * minuteMs) {
-    problems.push({ code: "departure_too_soon" });
-  }
-  if (departure.getTime() > now.getTime() + settings.maxDaysAhead * 24 * 60 * minuteMs) {
-    problems.push({ code: "departure_too_far" });
-  }
+  problems.push(...checkDeparture(departure, now, settings));
   typicalS.forEach((stretchS, segment) => {
     const plannedMs = (times[segment + 1]?.getTime() ?? 0) - (times[segment]?.getTime() ?? 0);
     if (plannedMs <= 0) problems.push({ code: "times_not_increasing", segment });

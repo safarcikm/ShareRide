@@ -21,7 +21,12 @@ import {
   createMeetingPointService,
   registerMeetingPointRoutes,
 } from "./modules/meeting-points/index.ts";
-import { createRouteService, registerTripRoutes } from "./modules/trips/index.ts";
+import {
+  createRouteService,
+  createTripService,
+  registerDraftRoutes,
+  registerTripRoutes,
+} from "./modules/trips/index.ts";
 import { bearerAuth, toOpenApiRoute } from "./openapi.ts";
 import type { KeyedHasher } from "./platform/crypto.ts";
 import type { SmsSender } from "./platform/sms.ts";
@@ -158,12 +163,14 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     const requireAuth = createRequireAuth(auth);
     registerAuthRoutes(app, { ...features, auth, account, requireAuth });
     registerAccountRoutes(app, account, requireAuth);
-    registerDrivingRoutes(app, createDrivingService({ ...features, account }), requireAuth);
+    const driving = createDrivingService({ ...features, account });
+    registerDrivingRoutes(app, driving, requireAuth);
     registerLegalRoutes(app, legal);
     registerMeetingPointRoutes(app, createMeetingPointService(features));
     // Operator settings (feature H4) replace the defaults later.
     const settings = defaultTripSettings;
     registerTripRoutes(app, createRouteService({ ...features, settings }), requireAuth);
+    registerDraftRoutes(app, createTripService({ ...features, settings, driving }), requireAuth);
   }
 
   app.openAPIRegistry.registerComponent("securitySchemes", bearerAuth, {

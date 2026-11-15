@@ -1,0 +1,150 @@
+import {
+  bookingModes,
+  chatOptions,
+  defaultTripSettings,
+  luggageOptions,
+  noteMaxLength,
+  petOptions,
+  smokingOptions,
+  tripStatuses,
+} from "@shareride/domain";
+import { sql } from "drizzle-orm";
+import {
+  boolean,
+  check,
+  index,
+  integer,
+  pgTable,
+  primaryKey,
+  text,
+  unique,
+  uuid,
+} from "drizzle-orm/pg-core";
+import { at, id, oneOf, timestamps } from "./columns.ts";
+import { meetingPoints } from "./meeting-points.ts";
+import { users } from "./users.ts";
+import { vehicles } from "./vehicles.ts";
+
+/**
+ * Trips a driver offers (spec 3). A draft is saved as the driver goes and
+ * may miss the car and times; a published trip has them, and its segments.
+ */
+export const trips = pgTable(
+  "trips",
+  {
+    id: id(),
+    driverId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** A car a published trip used stays (`removed_at`) instead of being deleted. */
+    vehicleId: uuid().references(() => vehicles.id),
+    status: text().notNull().default("draft"),
+    /** Seats offered (R3.9). */
+    capacity: integer().notNull(),
+    /** Percent of the suggested prices (rule P4, ADR 0012). */
+    priceLevel: integer().notNull(),
+    bookingMode: text().notNull(),
+    luggage: text().notNull(),
+    pets: text().notNull(),
+    smoking: text().notNull(),
+    childSeat: boolean().notNull(),
+    chat: text().notNull(),
+    /** To passengers, without contact details (R3.10); empty for none. */
+    note: text().notNull().default(""),
+    /** Copies of the first and last stops' planned times, for overlap and clean-up. */
+    departsAt: at(),
+    arrivesAt: at(),
+    publishedAt: at(),
+    /** Made by the seed for local and staging (sample trips). */
+    sample: boolean().notNull().default(false),
+    ...timestamps,
+  },
+  (table) => [
+    check("trips_status_check", oneOf(table.status, tripStatuses)),
+    check(
+      "trips_capacity_check",
+      sql`${table.capacity} between 1 and ${sql.raw(String(defaultTripSettings.maxSeats))}`,
+    ),
+    check("trips_price_level_check", sql`${table.priceLevel} >= 0`),
+    check("trips_booking_mode_check", oneOf(table.bookingMode, bookingModes)),
+    check("trips_luggage_check", oneOf(table.luggage, luggageOptions)),
+    check("trips_pets_check", oneOf(table.pets, petOptions)),
+    check("trips_smoking_check", oneOf(table.smoking, smokingOptions)),
+    check("trips_chat_check", oneOf(table.chat, chatOptions)),
+    check("trips_note_check", sql`char_length(${table.note}) <= ${sql.raw(String(noteMaxLength))}`),
+    check(
+      "trips_times_check",
+      // A draft keeps the times as the driver left them; publishing checks them (R3.6).
+      sql`(${table.departsAt} is null) = (${table.arrivesAt} is null) and (${table.status} = 'draft' or ${table.departsAt} is null or ${table.departsAt} < ${table.arrivesAt})`,
+    ),
+    check(
+      "trips_published_check",
+      sql`${table.status} = 'draft' or (${table.vehicleId} is not null and ${table.departsAt} is not null and ${table.publishedAt} is not null)`,
+    ),
+    index("trips_driver_index").on(table.driverId, table.status),
+    index("trips_departs_index").on(table.status, table.departsAt),
+  ],
+);
+
+/** A trip's stops in order (invariants 1 to 3); times stay null in a draft until chosen. */
+export const tripStops = pgTable(
+  "trip_stops",
+  {
+    id: id(),
+    tripId: uuid()
+      .notNull()
+      .references(() => trips.id, { onDelete: "cascade" }),
+    meetingPointId: uuid()
+      .notNull()
+      .references(() => meetingPoints.id),
+    /** 0-based and contiguous. */
+    position: integer().notNull(),
+    plannedAt: at(),
+  },
+  (table) => [
+    unique("trip_stops_position_unique").on(table.tripId, table.position),
+    unique("trip_stops_point_unique").on(table.tripId, table.meetingPointId),
+    check("trip_stops_position_check", sql`${table.position} >= 0`),
+    // Search finds trips through their stops and times (spec 4).
+    index("trip_stops_point_index").on(table.meetingPointId, table.plannedAt),
+  ],
+);
+
+/**
+ * The stretches of a published trip, with the prices it was published at
+ * (spec 3, section 6), so the operator can check caps were respected.
+ * Occupancy is kept by the booking transaction and never exceeds capacity.
+ */
+export const segments = pgTable(
+  "segments",
+  {
+    tripId: uuid()
+      .notNull()
+      .references(() => trips.id, { onDelete: "cascade" }),
+    /** 0 for the stretch from the first stop to the second. */
+    position: integer().notNull(),
+    fromStopId: uuid()
+      .notNull()
+      .references(() => tripStops.id, { onDelete: "cascade" }),
+    toStopId: uuid()
+      .notNull()
+      .references(() => tripStops.id, { onDelete: "cascade" }),
+    distanceM: integer().notNull(),
+    durationS: integer().notNull(),
+    /** Whole krónur per seat (ISK has no minor unit). */
+    suggestedPrice: integer().notNull(),
+    cap: integer().notNull(),
+    price: integer().notNull(),
+    currency: text().notNull().default("ISK"),
+    /** The trip's seats, copied so the database can hold occupancy to it. */
+    capacity: integer().notNull(),
+    occupancy: integer().notNull().default(0),
+  },
+  (table) => [
+    primaryKey({ columns: [table.tripId, table.position] }),
+    check("segments_position_check", sql`${table.position} >= 0`),
+    check("segments_price_check", sql`${table.price} between 0 and ${table.cap}`),
+    check("segments_currency_check", sql`${table.currency} = 'ISK'`),
+    check("segments_occupancy_check", sql`${table.occupancy} between 0 and ${table.capacity}`),
+  ],
+);

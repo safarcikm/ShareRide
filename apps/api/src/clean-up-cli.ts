@@ -1,4 +1,5 @@
-// Deletes sign-in records past their retention and ends idle sessions:
+// Deletes sign-in records past their retention, ends idle sessions and
+// deletes old drafts of trips:
 // `pnpm --filter @shareride/api clean-up` locally, and every hour as a cron
 // job on staging and production (ADR 0018). Needs only DATABASE_URL, and
 // reports a failure to Sentry when SENTRY_DSN is set.
@@ -7,6 +8,7 @@ import { connectDatabase } from "@shareride/db";
 import { ConfigError, loadErrorReportingConfig } from "./config.ts";
 import { createLogger } from "./logger.ts";
 import { cleanUpSignInRecords } from "./modules/auth/clean-up.ts";
+import { cleanUpDrafts } from "./modules/trips/clean-up.ts";
 import { captureError, startErrorReporting } from "./platform/error-reporting.ts";
 
 const url = process.env["DATABASE_URL"];
@@ -28,8 +30,10 @@ const connection = connectDatabase(url, {
   applicationName: "shareride-clean-up",
 });
 try {
-  const counts = await cleanUpSignInRecords(connection.db, new Date());
-  logger.info({ counts }, "clean-up done");
+  const now = new Date();
+  const counts = await cleanUpSignInRecords(connection.db, now);
+  const drafts = await cleanUpDrafts(connection.db, now);
+  logger.info({ counts: { ...counts, drafts } }, "clean-up done");
 } catch (error) {
   logger.error({ err: error }, "clean-up failed");
   // Does nothing when error reporting is off.

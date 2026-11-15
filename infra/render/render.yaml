@@ -52,7 +52,7 @@ services:
       - key: TRUST_PROXY
         value: "2"
 
-  # Deletes sign-in records past their retention, every hour (UTC).
+  # Deletes sign-in records and trip drafts past their retention, every hour (UTC).
   - type: cron
     name: shareride-staging-clean-up
     runtime: docker

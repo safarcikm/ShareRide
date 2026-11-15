@@ -236,6 +236,20 @@ describe("Edit a car", () => {
     expect(screen.queryByText("Toyota Yaris, white")).toBeNull();
   });
 
+  it("keeps a car that is on a trip that has not ended, and says why", async () => {
+    const app = await openDrive({ cars: [yaris] });
+    await fireEvent.press(screen.getByRole("button", { name: /^Toyota Yaris, white/ }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Remove car" }));
+    app.client.answer("/v1/me/vehicles/{id}", () => failure(409, "vehicle_in_use"));
+    await fireEvent.press(screen.getByRole("button", { name: "Remove Toyota Yaris" }));
+    expect(
+      await screen.findByText(
+        "This car is on a trip that hasn't ended yet. You can remove it after the trip.",
+      ),
+    ).toBeVisible();
+    expect(app.driver.cars()).toEqual([yaris]);
+  });
+
   it("says so when the car is gone", async () => {
     await renderApp(`/drive/cars/0190a1d6-0000-7000-8000-0000000000ff`, {
       me: completeMe,
