@@ -153,7 +153,7 @@ priced again for the part asked for (`tripPart`): any stop can become the
 boarding or alighting stop, and the answer says whether the part can be
 booked (open, full, closed at the cut-off, departed, cancelled, or the
 driver's own). Trip pages are public by link until a week after the last
-stop (Q17) but never indexed: the server sends `X-Robots-Tag: noindex` with
+stop (spec 4, decision 4) but never indexed: the server sends `X-Robots-Tag: noindex` with
 them (spec 4, R4.6). The search limit per
 address covers trip pages too.
 

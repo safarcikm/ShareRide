@@ -351,7 +351,7 @@ Split in two, like PR 6: 7a the server, 7b the screens.
   closed, past the 15-minute cut-off (open at the cut-off itself, as in
   search); full, when fewer seats are free than asked for; or open. Drafts
   are not found, and a trip's page closes a week after its last stop (Q17,
-  asked of Martin). A finished trip's stops can be at retired points. The number plate is never in the answer yet (only booked
+  Martin agreed on 2026-11-15, A40). A finished trip's stops can be at retired points. The number plate is never in the answer yet (only booked
   passengers see it, spec 5). Trip pages count towards the search limit of
   the address, as their prices and seats could be scraped the same way.
 

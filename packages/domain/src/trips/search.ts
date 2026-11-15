@@ -16,7 +16,7 @@ export interface SearchSettings {
   readonly alternativeDays: number;
   /** Booking closes this many minutes before the boarding stop (rule S4). */
   readonly bookingCutoffMinutes: number;
-  /** A trip's page stays open by link this many days after its last stop (open question Q17). */
+  /** A trip's page stays open by link this many days after its last stop (Martin, 2026-11-15: Q17, answer A40). */
   readonly tripPageDaysAfter: number;
 }
 

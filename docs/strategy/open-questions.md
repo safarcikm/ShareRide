@@ -1,6 +1,6 @@
 # Open questions
 
-**Owner:** Martin · **Last reviewed:** 2026-11-14
+**Owner:** Martin · **Last reviewed:** 2026-11-15
 
 Decisions the owner still needs to make. Each has a recommendation so work can
 continue on that assumption. When a question is answered, record the answer
@@ -8,12 +8,8 @@ here, update or accept the linked ADR, and move the row to "Answered".
 
 ## Open
 
-| #   | Question | Recommendation (the working assumption) | Affects |
-| --- | -------- | --------------------------------------- | ------- |
-| Q17 | How long does a trip's page stay open by link once the trip is over (departed, completed or cancelled)? Spec 4 makes trip pages public by link, and a finished trip's page shows the driver's first name, car and where they went. | Until a week after the last stop's planned time; after that the link answers "This trip can't be found". Passengers keep the trip in their bookings (spec 5). Raised with milestone 3, PR 7a, which builds it this way | [Spec 4](../specs/2026-11-13-search-and-trip-details.md) 3.7, [privacy](../compliance/privacy-gdpr.md) |
-
-A new question goes in the table with the next free number (Q18 onwards), a
-recommendation and the docs it affects.
+None right now (2026-11-15). A new question goes in a table here with the
+next free number (Q18 onwards), a recommendation and the docs it affects.
 
 ## Answered
 
@@ -58,3 +54,4 @@ recommendation and the docs it affects.
 | A37 | Q14: sign-in with the Better Auth library or our own module? | Our own small sign-in module in the API, so spec 1 is built as written: no placeholder emails, rotating refresh tokens with reuse detection, every rule tested. [ADR 0016](../decisions/0016-own-sign-in-module.md) accepted; it replaces only the implementation choice in [ADR 0010](../decisions/0010-authentication-and-identity.md). | 2026-11-13 |
 | A38 | Q15: when is a meeting point on the way? | When going through it adds at most 5% or 3 km to the direct distance, whichever is less (spec 3 said "whichever is more"). Reykjavík to Akureyri gets the 8 stops on the main road; the driver adds others. See [spec 3](../specs/2026-11-13-post-a-trip.md#decisions), decision 8. | 2026-11-14 |
 | A39 | Q16: each stretch's price and cap round to the nearest 100 kr on their own, so on a short stretch a full car can earn a little more than the cost of driving it (up to about 2 km with 3 seats, 21 km with 8). Round the cap down instead? | No: keep rounding to the nearest, as rule P3 says. The question goes to the legal opinion ([legal and regulatory](../compliance/legal-and-regulatory.md#9-questions-for-the-lawyer-phase-1-brief), question 2). The whole-route price also moves a little with the stops: 5 600 kr instead of the worked example's 5 800 kr once the stops on the way are added. | 2026-11-14 |
+| A40 | Q17: how long does a trip's page stay open by link once the trip is over (departed, completed or cancelled)? A finished trip's page shows the driver's first name, car and where they went. | As recommended: until a week after the last stop's planned time; after that the link says "This trip can't be found". Passengers keep the trip in their bookings (spec 5). Opening a trip's page counts towards the same limit as searching (60 a minute, 600 an hour per address), so trip pages cannot be used to get round it. See [spec 4](../specs/2026-11-13-search-and-trip-details.md#decisions), decision 4. | 2026-11-15 |

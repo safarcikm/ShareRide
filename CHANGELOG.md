@@ -141,7 +141,8 @@ releases follow [Semantic Versioning](https://semver.org/).
   opens a published trip for any part of it, with that part's price, the
   seats free on it and whether it can be booked, the driver's first name,
   the car's make, model and colour, preferences and note. Trip pages are
-  sent with `X-Robots-Tag: noindex`.
+  sent with `X-Robots-Tag: noindex`, and a finished trip's page stays open
+  by link until a week after its last stop (Q17, agreed by Martin).
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
