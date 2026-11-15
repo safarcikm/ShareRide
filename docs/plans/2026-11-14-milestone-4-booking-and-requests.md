@@ -204,8 +204,14 @@ Endpoints (`/v1`), shapes in `packages/contracts/src/bookings.ts`:
   departure"), where to stand and "Open in maps".
 - My bookings (3.6): from the profile, "Upcoming" and "Past" as radio chips;
   cards with date, part with times, status, driver, car, price and seats;
-  booking details by status, with "Search again" (same route and date) on
-  declined and expired ones.
+  booking details by status, with "Search again" (same route, seats and
+  date, or any day once that day has passed) on declined, expired and
+  withdrawn ones. "Withdraw request" asks once more before it withdraws. A
+  withdrawn request is cancelled by its passenger before the driver
+  decided; the API says so in the booking's `withdrawn` field, which tells
+  it apart from a cancellation (spec 6).
+  Keeping upcoming bookings for offline use (3.6 item 4, feature I4) waits
+  for the offline work.
 - Driver (3.3, 3.7): "My trips" shows a count of requests on each published
   trip. The driver's trip page lists requests first (first name and
   initial, member since, "No reviews yet", where they get in and out with

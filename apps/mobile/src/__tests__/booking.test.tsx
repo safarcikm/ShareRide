@@ -577,6 +577,7 @@ describe("Paying (spec 5, 3.5; rule M1)", () => {
       },
     });
     expect(await screen.findByText("The driver didn't answer in time")).toBeVisible();
-    expect(screen.getByText("Number plate shown once your seat is confirmed")).toBeVisible();
+    // The seat will never be confirmed, so the plate is not promised.
+    expect(screen.queryByText(/^Number plate/)).toBeNull();
   });
 });

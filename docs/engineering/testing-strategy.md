@@ -69,7 +69,9 @@ runs in English and Icelandic, with "sign out on all devices"
 (`apps/mobile/e2e/sign-in.spec.ts`). Journey 3 books part of an instant
 trip and pays with the test provider's sheet after a failed payment, in both
 languages, and signs up in the middle of booking
-(`apps/mobile/e2e/booking.spec.ts`).
+(`apps/mobile/e2e/booking.spec.ts`). Until cancellations come (spec 6),
+journey 5 withdraws a request and finds it under "Past" in My bookings
+(`apps/mobile/e2e/my-bookings.spec.ts`).
 
 ## Coverage
 

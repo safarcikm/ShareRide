@@ -56,7 +56,8 @@ export function DriverAndCar({
 }: {
   readonly driver: TripDetails["driver"];
   readonly car: TripDetails["car"];
-  readonly carNote: string;
+  /** What the passenger learns about the number plate, if anything. */
+  readonly carNote?: string;
   readonly preferences?: TripDetails["preferences"];
   readonly note?: string;
   readonly luggageFirst?: boolean;
@@ -114,7 +115,9 @@ export function DriverAndCar({
           </View>
           <View style={styles.grow}>
             <Text style={[typography.bodyStrong, { color: palette.text }]}>{carText(t, car)}</Text>
-            <Text style={[typography.small, { color: palette.textMuted }]}>{carNote}</Text>
+            {carNote === undefined ? null : (
+              <Text style={[typography.small, { color: palette.textMuted }]}>{carNote}</Text>
+            )}
           </View>
         </View>
       )}

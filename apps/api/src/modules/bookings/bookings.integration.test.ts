@@ -494,6 +494,19 @@ describe("answering and withdrawing requests (spec 5, 3.3 and 3.4)", () => {
       body: {},
     });
     expect(accepted).toMatchObject({ data: { status: "confirmed", paymentDueAt: null } });
+
+    // Cancelled later (as spec 6 will allow), it was no withdrawal: the
+    // driver had decided.
+    await api.connection.db
+      .update(schema.bookings)
+      .set({ status: "cancelled", cancelledBy: "passenger" })
+      .where(eq(schema.bookings.id, request.id));
+    expect(
+      await api.client.call(bookingRoute, {
+        accessToken: jon.accessToken,
+        params: { id: request.id },
+      }),
+    ).toMatchObject({ data: { status: "cancelled", withdrawn: false } });
   });
 
   it("lets the driver decline with a reason that only the operator sees (R5.7)", async () => {
@@ -524,7 +537,10 @@ describe("answering and withdrawing requests (spec 5, 3.3 and 3.4)", () => {
         params: { id: request.id },
         body: {},
       });
-    expect(await withdraw()).toMatchObject({ status: 200, data: { status: "cancelled" } });
+    expect(await withdraw()).toMatchObject({
+      status: 200,
+      data: { status: "cancelled", withdrawn: true },
+    });
     expect(await withdraw()).toMatchObject({
       status: 409,
       error: { code: "booking_not_requested" },

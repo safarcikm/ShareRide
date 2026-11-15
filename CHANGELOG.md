@@ -191,6 +191,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   deadline (the test sheet, where no money moves), and a confirmed seat with
   the number plate, where to stand and "Open in maps". Someone without an
   account signs up on the way and comes back to the same part and seats.
+- My bookings (milestone 4, PR 6): from the profile, upcoming and past
+  bookings with their date, part, status, driver, car, seats and price. A
+  request can be withdrawn after a second press, and never counts against
+  the passenger. Declined, expired and withdrawn bookings offer "Search
+  again" with the same route, seats and day. In the API an expired booking
+  keeps the deadline that passed, so the app can say which ran out, and a
+  booking says whether it was withdrawn.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

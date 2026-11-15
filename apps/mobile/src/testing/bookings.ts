@@ -25,6 +25,7 @@ export function northBooking(changes: Partial<Booking> = {}): Booking {
     createdAt: "2026-11-14T12:00:00.000Z",
     requestExpiresAt: "2026-11-14T22:00:00.000Z",
     paymentDueAt: null,
+    withdrawn: false,
     driver: { firstName: "Anna", colour: 1 },
     passenger: { firstName: "Gunna", colour: 2, memberSince: "2026-11" },
     car: { make: "Toyota", model: "Yaris", colour: "white" },
