@@ -1,16 +1,16 @@
-import type { CallFailure, CallResult } from "@shareride/api-client";
+import type { CallResult } from "@shareride/api-client";
 import {
   tripSearchAlternativesRoute,
   tripSearchRoute,
   type TripSearchResult,
 } from "@shareride/contracts";
 import { defaultTripSettings, timesOfDay, type TimeOfDay } from "@shareride/domain";
-import { capitalised, formatDay, formatShortDay, type Translate } from "@shareride/i18n";
+import { capitalised, formatDay, formatShortDay } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
-import { errorText, formatWait } from "@/auth/errors";
 import { useSession, useSessionState } from "@/auth/session";
+import { offerRide } from "@/drive/offer-ride";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Chip } from "@/components/chip";
@@ -21,6 +21,7 @@ import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { dayOf, isoDay, showsOtherTime } from "@/lib/days";
 import { useLoaded } from "@/lib/use-loaded";
+import { failureText } from "@/search/failure-text";
 import { ResultCard, type SearchedNames } from "@/search/result-card";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -35,15 +36,6 @@ const timeKeys = {
   afternoon: "results.afternoon",
   evening: "results.evening",
 } as const satisfies Record<TimeOfDay, string>;
-
-function failureText(t: Translate, failure: CallFailure): string {
-  if (failure.error.code === "rate_limited") {
-    return t("results.rateLimited", {
-      wait: formatWait(t, failure.error.retryAfterSeconds ?? 60),
-    });
-  }
-  return failure.error.code === "network_error" ? errorText(t, failure) : t("results.failed");
-}
 
 /**
  * Search results (spec 4, 3.4 and 3.5): trips for the passenger's part,
@@ -367,7 +359,7 @@ function NothingMatches({
           variant="secondary"
           label={t("driver.offerRide")}
           onPress={() => {
-            router.push(state.status === "signedIn" ? "/drive" : "/sign-in");
+            offerRide(state.status === "signedIn" ? state.me : null);
           }}
         />
       </>

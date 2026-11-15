@@ -18,11 +18,36 @@ test.describe("welcome on the web", () => {
     await expect(page.getByRole("heading", { name: "Samferða um allt Ísland" })).toBeVisible();
   });
 
-  test("leads from Browse trips to the search", async ({ page }) => {
+  test("shows the rides leaving soon, and opens one", async ({ page }) => {
+    // The e2e API seeds sample trips from tomorrow on.
     await page.goto("/");
-    await page.getByRole("button", { name: "Browse trips" }).click();
-    await expect(page).toHaveURL(/\/search$/);
-    await expect(page.getByRole("heading", { name: "Find a ride" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Leaving soon" })).toBeVisible();
+    const first = page.getByTestId("trip-result").first();
+    await expect(first).toBeVisible();
+    await first.click();
+    await expect(page).toHaveURL(/\/trips\/[0-9a-f-]{36}\?from=0&to=\d+$/);
+    await expect(page.getByText("You'll sign in or create an account first.")).toBeVisible();
+  });
+
+  test("searches a route from the front page", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: /^From: / }).click();
+    await page.getByLabel("Town or meeting point").fill("borgarn");
+    await page.getByRole("button", { name: /^N1 Borgarnes,/ }).click();
+    await page.getByRole("button", { name: /^To: / }).click();
+    await page.getByLabel("Town or meeting point").fill("blondu");
+    await page.getByRole("button", { name: /^Olís Blönduós,/ }).click();
+    await page.getByRole("button", { name: "Find a ride", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "N1 Borgarnes → Olís Blönduós" })).toBeVisible();
+  });
+
+  test("leads from Offer a ride and from Sign in to signing in", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Offer a ride", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "What's your phone number?" })).toBeVisible();
+    await page.goBack();
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "What's your phone number?" })).toBeVisible();
   });
 });
 

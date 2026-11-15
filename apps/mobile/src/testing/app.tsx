@@ -42,6 +42,8 @@ export async function renderApp(
     const { type } = input["params"] as { type: string };
     return ok(200, legalDocument(type, 1));
   });
+  // The front page's rides leaving soon: none, unless a test says otherwise.
+  currentClient.answer("/v1/trips/soonest", () => ok(200, { results: [] }));
   if (me !== undefined) {
     store.value = "sr_rt_stored";
     currentClient.answer("/v1/auth/refresh", () => ok(200, tokens(1)));

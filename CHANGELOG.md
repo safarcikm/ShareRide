@@ -208,6 +208,13 @@ releases follow [Semantic Versioning](https://semver.org/).
 - iPhone builds in Expo's cloud for TestFlight, pointed at staging
   (`apps/mobile/eas.json`, app ID `is.shareride.app.preview`), and the app
   builds runbook with the first build from a Windows PC.
+- A front page for people without an account: a route search on top, the
+  rides leaving soonest (each for its whole route, opening its trip page),
+  "See all rides" when there are more than five, "Offer a ride", which goes
+  through sign-up straight to Ready to drive, and a small "Sign in". It
+  replaces "Continue with phone" and "Browse trips". In the API,
+  `GET /v1/trips/soonest` lists the rides leaving soonest, counted against
+  the search limit.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

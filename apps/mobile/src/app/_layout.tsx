@@ -53,6 +53,7 @@ function Navigation() {
       <Stack.Screen name="meeting-points/index" />
       <Stack.Screen name="meeting-points/[id]" />
       <Stack.Screen name="places/[id]" />
+      <Stack.Screen name="rides/index" />
       <Stack.Screen name="search/index" />
       <Stack.Screen name="search/results" />
       <Stack.Screen name="trips/[id]/index" />

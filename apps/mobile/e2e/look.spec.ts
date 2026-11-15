@@ -15,8 +15,9 @@ const schemes = [
     primary: "rgb(47, 107, 79)",
     title: "Share the ride across Iceland",
     language: "Change the language to Icelandic",
-    continuePhone: "Continue with phone",
-    browseTrips: "Browse trips",
+    signIn: "Sign in",
+    findRide: "Find a ride",
+    offerRide: "Offer a ride",
     back: "Back",
     phoneField: "Mobile number",
     send: "Send code",
@@ -28,8 +29,9 @@ const schemes = [
     primary: "rgb(124, 196, 158)",
     title: "Samferða um allt Ísland",
     language: "Skipta yfir í ensku",
-    continuePhone: "Halda áfram með síma",
-    browseTrips: "Skoða ferðir",
+    signIn: "Skrá inn",
+    findRide: "Finna far",
+    offerRide: "Bjóða far",
     back: "Til baka",
     phoneField: "Farsímanúmer",
     send: "Senda kóða",
@@ -103,26 +105,28 @@ for (const scheme of schemes) {
       await page.goto("/");
       const title = page.getByRole("heading", { name: scheme.title });
       const language = page.getByRole("button", { name: scheme.language });
-      const continuePhone = page.getByRole("button", { name: scheme.continuePhone });
-      const browseTrips = page.getByRole("button", { name: scheme.browseTrips, exact: true });
+      const signIn = page.getByRole("button", { name: scheme.signIn, exact: true });
+      const findRide = page.getByRole("button", { name: scheme.findRide, exact: true });
+      const offerRide = page.getByRole("button", { name: scheme.offerRide, exact: true });
       await expect(title).toBeVisible();
       await expectFonts(page);
       await screenshot(page, testInfo.project, "welcome");
 
-      // The language switch sits at the right; the buttons fit their labels
-      // and sit in the middle, under the centred title.
+      // Sign in sits at the left and the language switch at the right; the
+      // buttons fit their labels and sit in the middle, under the centred title.
       const column = await box(title);
       const languageBox = await box(language);
       expect(languageBox.x + languageBox.width).toBeCloseTo(column.x + column.width, 0);
-      for (const button of [continuePhone, browseTrips]) {
+      expect((await box(signIn)).x).toBeCloseTo(column.x, 0);
+      for (const button of [findRide, offerRide]) {
         const found = await box(button);
         expect(found.width).toBeLessThan(column.width);
         expect(middle(found)).toBeCloseTo(middle(column), 0);
       }
       await expect(title).toHaveCSS("text-align", "center");
 
-      await tabTo(page, browseTrips);
-      expect(await outlineOf(browseTrips)).toEqual(ring);
+      await tabTo(page, offerRide);
+      expect(await outlineOf(offerRide)).toEqual(ring);
     });
 
     test("sign-in: fitted button, focus ring, field outline and fonts", async ({

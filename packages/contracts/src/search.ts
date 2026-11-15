@@ -135,6 +135,33 @@ export const tripSearchAlternativesRoute = defineRoute({
   },
 });
 
+/** At most this many rides leaving soon in one answer (spec 4, 3.8). */
+export const soonestTripsMaxLimit = 50;
+
+export const soonestTripsQuerySchema = z.object({
+  limit: z.coerce.number<number>().int().min(1).max(soonestTripsMaxLimit).default(20),
+});
+
+/** The front page's rides (spec 4, 3.8). */
+export const soonestTripsRoute = defineRoute({
+  method: "get",
+  path: "/v1/trips/soonest",
+  summary: "The rides leaving soonest, each for its whole route and one seat",
+  tags: ["search"],
+  auth: "optional",
+  request: { query: soonestTripsQuerySchema },
+  responses: {
+    200: {
+      description:
+        "Published trips soonest first, with booking open, a seat free on every stretch and not the caller's own",
+      schema: z.object({ results: z.array(tripSearchResultSchema) }),
+    },
+    400: { description: "validation_failed: a limit outside 1 to 50", schema: errorResponseSchema },
+    401: searchErrors[401],
+    429: searchErrors[429],
+  },
+});
+
 const stopPositionSchema = z.coerce.number<number>().int().min(0);
 
 export const tripDetailsQuerySchema = z.object({

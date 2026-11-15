@@ -73,7 +73,7 @@ describe("My profile", () => {
 
   it("sends a signed-out person to the welcome screen", async () => {
     await renderApp("/profile");
-    expect(await screen.findByRole("button", { name: "Continue with phone" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Sign in" })).toBeVisible();
   });
 });
 
@@ -88,8 +88,9 @@ describe("Settings", () => {
   it("signs out on all devices and returns to the welcome screen", async () => {
     const app = await openSettings();
     await fireEvent.press(screen.getByRole("button", { name: "Sign out on all devices" }));
-    expect(await screen.findByRole("button", { name: "Continue with phone" })).toBeVisible();
-    expect(app.client.calls.at(-1)).toEqual({
+    expect(await screen.findByRole("button", { name: "Sign in" })).toBeVisible();
+    // The front page then loads its rides; the sign-out came before.
+    expect(app.client.calls.findLast((call) => call.path === "/v1/auth/sign-out")).toEqual({
       path: "/v1/auth/sign-out",
       input: { body: { all: true }, accessToken: "sr_at_access-1" },
     });
@@ -110,8 +111,8 @@ describe("Settings", () => {
   it("signs out of this device only", async () => {
     const app = await openSettings();
     await fireEvent.press(screen.getByRole("button", { name: "Sign out" }));
-    expect(await screen.findByRole("button", { name: "Continue with phone" })).toBeVisible();
-    expect(app.client.calls.at(-1)?.input).toEqual({
+    expect(await screen.findByRole("button", { name: "Sign in" })).toBeVisible();
+    expect(app.client.calls.findLast((call) => call.path === "/v1/auth/sign-out")?.input).toEqual({
       body: { all: false },
       accessToken: "sr_at_access-1",
     });

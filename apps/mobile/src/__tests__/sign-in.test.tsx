@@ -19,7 +19,7 @@ const signedIn = { ...tokens(1), user: testMe, isNewUser: true };
 async function openPhoneScreen() {
   const app = await renderApp("/");
   app.client.answer("/v1/auth/phone/start", () => ok(202, { resendAfterSeconds: 30 }));
-  await fireEvent.press(await screen.findByRole("button", { name: "Continue with phone" }));
+  await fireEvent.press(await screen.findByRole("button", { name: "Sign in" }));
   expect(await screen.findByRole("header", { name: "What's your phone number?" })).toBeVisible();
   return app;
 }

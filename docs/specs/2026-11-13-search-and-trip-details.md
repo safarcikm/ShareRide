@@ -150,6 +150,23 @@ by link until a week after the last stop's planned time; after that the link
 says the trip can't be found (decision 4). Opening a trip's page counts towards
 the same limit as searching (section 7).
 
+### 3.8 Rides leaving soon
+
+The front page (spec 1, screen 1) shows people without an account what is on
+offer before they search (decision 5).
+
+1. Under the route search, "Leaving soon" lists the five rides leaving
+   soonest, each from its first to its last stop, as a result card for one
+   seat with its day. A ride opens its trip page for the whole route, where
+   "Book" starts sign-up (spec 5, 3.1).
+2. A ride is listed while it is published, its first stop is more than the
+   booking cut-off away (rule S4), its first and last meeting points can be searched,
+   a seat is free on every stretch, and it is not the person's own trip.
+3. "See all rides" opens the 50 soonest, and shows only when there are more
+   than five. With 50, the screen says to search a route to find more.
+4. With no rides, or when they can't be loaded, the front page leaves the
+   section out; it never says there are none.
+
 ## 4. Rules
 
 Rules P1, S3 and S4 in [pricing and seats](../product/pricing-and-seats.md)
@@ -178,6 +195,7 @@ Phone first; on wide screens results and the map are side by side.
 4. Trip details, with "your part" and the route map and list
 5. Driver's public profile (spec 1) with reviews (spec 8)
 6. Shared trip page on the web
+7. All rides leaving soon (3.8); the front page itself is spec 1, screen 1
 
 ## 6. Data and API
 
@@ -193,6 +211,7 @@ Endpoints (`/v1`, shapes defined in `packages/contracts`):
 | --------------- | ------- |
 | `GET /trips/search?from=&to=&date=&seats=&instant=&time_of_day=&sort=` | Matching trips; `from` and `to` are a meeting point, a place, or a list of meeting point IDs from "Near me" |
 | `GET /trips/search/alternatives?from=&to=&date=&seats=` | Counts on nearby days and trips from nearby meeting points |
+| `GET /trips/soonest?limit=` | The rides leaving soonest, each for its whole route (3.8); up to 50 |
 | `GET /trips/{id}?from_stop=&to_stop=&seats=` | Trip details with the price and free seats for that part |
 
 Domain functions in `packages/domain`: match a trip against a search,
@@ -213,8 +232,9 @@ upcoming trips.
   engines (R4.6).
 - Other passengers are not shown before booking, not even as names; results
   show only free seats.
-- Searching and opening trip pages are rate limited per IP address, together,
-  to prevent scraping.
+- Searching, the rides leaving soon and opening trip pages are rate limited
+  per IP address, together, to prevent scraping. The rides leaving soon show
+  what a search would: no more than first names and the route.
 
 ## 8. Texts (first draft; Icelandic to be reviewed by a native speaker)
 
@@ -244,6 +264,12 @@ upcoming trips.
 | `trip.requestToBook` | Request to book | Óska eftir fari |
 | `trip.fullOnPart` | Full on your part of the trip | Fullt á þínum hluta ferðarinnar |
 | `trip.share` | Share | Deila |
+| `welcome.findRide` | Find a ride | Finna far |
+| `welcome.soon` | Leaving soon | Á leiðinni bráðum |
+| `welcome.allRides` | See all rides | Sjá allar ferðir |
+| `rides.title` | Rides leaving soon | Ferðir á næstunni |
+| `rides.limit` | These are the 50 soonest rides. Search your route to find more. | Þetta eru 50 næstu ferðir. Leitaðu að þinni leið til að finna fleiri. |
+| `rides.none` | No rides are coming up yet. | Engar ferðir eru á döfinni enn. |
 
 ## 9. Testing
 
@@ -281,3 +307,4 @@ Accepted by Martin on 2026-11-13 as recommended.
 | 2 | Must the passenger pick a date? | No. Without a date, results show all upcoming trips on the route, grouped by day |
 | 3 | Does search find stops at meeting points being retired? | Yes: trips already posted still stop there until the last of them. Paused points are not found, because nobody can board there (2026-11-15: Martin asked for a suggestion; built as suggested) |
 | 4 | How long does a finished trip's page stay open by link? | Until a week after the last stop's planned time, then "This trip can't be found". Opening trip pages counts towards the search limit (2026-11-15: Martin, open question Q17, answer A40) |
+| 5 | What do people see before they search? | The rides leaving soonest, on the front page under the route search, so the app shows what is on offer (3.8; Martin, 2026-11-15) |

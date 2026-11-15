@@ -162,3 +162,43 @@ export function tripDetailsApi(
     "get",
   );
 }
+
+/**
+ * A ride leaving soon (spec 4, 3.8): the north trip for its whole route,
+ * on `date`, one seat. `n` tells rides on one day apart.
+ */
+export function soonRide(date: string, n = 0, changes: Partial<TripSearchResult> = {}) {
+  const ride: TripSearchResult = {
+    ...northResult,
+    tripId: `0190a1d6-0000-7000-8000-${date.replaceAll("-", "")}${String(n).padStart(4, "0")}`,
+    board: {
+      ...northResult.board,
+      position: 0,
+      meetingPoint: bsi,
+      plannedAt: `${date}T09:00:00.000Z`,
+    },
+    alight: {
+      ...northResult.alight,
+      position: 3,
+      meetingPoint: hof,
+      plannedAt: `${date}T14:00:00.000Z`,
+    },
+    pricePerSeat: { amount: 6000, currency: "ISK" },
+    total: { amount: 6000, currency: "ISK" },
+    ...changes,
+  };
+  return ride;
+}
+
+/** Rides leaving soon on the days from Sunday 15 November, one a day. */
+export const soonRides = (count: number) =>
+  Array.from({ length: count }, (_, day) => soonRide(`2026-11-${String(15 + day)}`));
+
+/** The rides leaving soon: the first `limit` of `rides`, or a failure. */
+export function soonestApi(client: FakeClient, rides: TripSearchResult[] | "failure") {
+  client.answer("/v1/trips/soonest", (input) => {
+    if (rides === "failure") return failure(500, "internal_error");
+    const { limit } = input["query"] as { limit?: number };
+    return ok(200, { results: rides.slice(0, limit ?? 20) });
+  });
+}

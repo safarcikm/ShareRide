@@ -41,7 +41,12 @@ language, and stay signed in securely on their devices.
    otherwise English. A language switch is on the welcome screen.
 2. Without an account, a person can browse meeting points and search trips
    (decision 1). Booking, posting a trip and chat need an account.
-3. During the beta, sign-up asks for an invite code first (spec 12).
+3. The welcome screen is the front page (decision 6): a route search, the
+   rides leaving soon ([spec 4, 3.8](2026-11-13-search-and-trip-details.md#38-rides-leaving-soon)),
+   "Offer a ride" and a small "Sign in" link. "Offer a ride" goes through
+   sign-up and then straight to Ready to drive (spec 3), the way a booking
+   chosen before sign-up continues afterwards (spec 5, 3.1).
+4. During the beta, sign-up asks for an invite code first (spec 12).
 
 ### 3.2 Sign up or sign in with a phone number
 
@@ -139,8 +144,9 @@ methods (Apple, Google); email; phone number; legal documents; delete account
 
 Phone first, then wide screen (web) with the same content in a centred column.
 
-1. Welcome: value statement, language switch, "Continue with phone", Apple,
-   Google, "Browse trips"
+1. Welcome, the front page (decision 6): "Sign in" and the language switch,
+   value statement, route search, rides leaving soon, "Offer a ride", "See
+   the meeting points". Apple and Google come on the sign-in screen
 2. Phone number entry with country picker
 3. Code entry with resend timer
 4. Terms and age confirmation
@@ -246,3 +252,4 @@ Accepted by Martin on 2026-11-13 as recommended.
 | 3 | Which phone numbers can sign up? | Iceland, the EEA, the UK, the US and Canada at first; others on request |
 | 4 | Is a profile photo required? | Optional for passengers, required for drivers before their first trip (spec 3) |
 | 5 | Is email required? | Optional but encouraged, for receipts and account recovery |
+| 6 | What does the welcome screen show? | A front page that makes joining more interesting: a route search on top, the rides leaving soon, "Offer a ride" as the main button and a small "Sign in" link, instead of "Continue with phone" and "Browse trips" (Martin, 2026-11-15) |

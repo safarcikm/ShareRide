@@ -1,5 +1,6 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import {
+  soonestTripsRoute,
   tripDetailsRoute,
   tripSearchAlternativesRoute,
   tripSearchRoute,
@@ -18,7 +19,7 @@ export interface SearchRoutesDependencies {
   readonly search: SearchService;
   readonly details: TripDetailsService;
   readonly optionalAuth: MiddlewareHandler<AppEnv>;
-  /** Per IP address, shared by the three routes; checked before the token. */
+  /** Per IP address, shared by the four routes; checked before the token. */
   readonly limiter: RateLimiter;
   /** What the limiter counts by: the caller's IP address, as a keyed hash. */
   readonly clientKey: (c: Context) => string;
@@ -62,6 +63,7 @@ export function registerSearchRoutes(
   });
   app.use(tripSearchRoute.path, limited);
   app.use(tripSearchAlternativesRoute.path, limited);
+  app.use(soonestTripsRoute.path, limited);
 
   app.openapi(toOpenApiRoute(tripSearchRoute, optionalAuth), async (c) => {
     const query = validated(c, "query", tripSearchRoute.request.query);
@@ -75,6 +77,13 @@ export function registerSearchRoutes(
     const found = await search.alternatives(query, c.get("auth")?.userId ?? null);
     if (!found.ok) return searchError(c, found.error);
     return c.json(found.value, 200);
+  });
+
+  // Before /v1/trips/{id}, which would otherwise take the path.
+  app.openapi(toOpenApiRoute(soonestTripsRoute, optionalAuth), async (c) => {
+    const { limit } = validated(c, "query", soonestTripsRoute.request.query);
+    const results = await search.soonest(limit, c.get("auth")?.userId ?? null);
+    return c.json({ results }, 200);
   });
 
   // Registered as the GET of /v1/trips/{id} only, so a draft's changes are not counted.
