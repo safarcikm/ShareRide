@@ -5,15 +5,24 @@ import {
   AccessibilityInfo,
   BackHandler,
   Platform,
+  Pressable,
   StyleSheet,
   TextInput,
   View,
 } from "react-native";
-import { IconButton } from "@/components/icon-button";
+import { Icon } from "@/components/icon";
 import { Notice } from "@/components/notice";
 import { useScreenScroll } from "@/components/screen";
 import { useLanguage } from "@/i18n/language";
-import { controlOutline, radii, sizes, spacing, typography } from "@/theme/tokens";
+import {
+  controlOutline,
+  iconSizes,
+  minTouchTarget,
+  radii,
+  sizes,
+  spacing,
+  typography,
+} from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { maximumQueryLength, PlaceResults, usePlaceQuery } from "./place-search";
 
@@ -21,8 +30,9 @@ import { maximumQueryLength, PlaceResults, usePlaceQuery } from "./place-search"
  * The place search of spec 2, 3.4 as a dropdown, for From and To (spec 3,
  * 3.4.1; spec 4, 3.1): a field in place of the end being chosen, and what
  * it finds listed right under it, on the same screen. Choosing a result,
- * Close, Escape and Android's back close it. On phones it scrolls up to the
- * top of the screen as it opens, so the keyboard does not hide the list.
+ * the small X inside the field (Close), Escape and Android's back close it.
+ * On phones it scrolls up to the top of the screen as it opens, so the
+ * keyboard does not hide the list.
  */
 export function PlaceDropdown({
   label,
@@ -82,7 +92,10 @@ export function PlaceDropdown({
   const shown = (message ?? null) !== null || (list !== undefined && list !== null);
   return (
     <View ref={dropdown} style={styles.dropdown} {...escapeOnWeb(onClose)}>
-      <View style={styles.field}>
+      <View
+        testID="place-field"
+        style={[styles.field, { borderColor: palette.primary, backgroundColor: palette.surface }]}
+      >
         <TextInput
           ref={field}
           accessibilityLabel={label}
@@ -100,13 +113,21 @@ export function PlaceDropdown({
           maxLength={maximumQueryLength}
           autoCapitalize="words"
           autoCorrect={false}
-          style={[
-            typography.body,
-            styles.input,
-            { color: palette.text, borderColor: palette.primary, backgroundColor: palette.surface },
-          ]}
+          style={[typography.body, styles.input, { color: palette.text }]}
         />
-        <IconButton icon={X} label={t("common.close")} onPress={onClose} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("common.close")}
+          onPress={onClose}
+          style={(state) => [
+            styles.close,
+            (state.pressed || (state as { hovered?: boolean }).hovered === true) && {
+              backgroundColor: palette.primarySoft,
+            },
+          ]}
+        >
+          <Icon icon={X} color={palette.textMuted} size={iconSizes.inline} />
+        </Pressable>
       </View>
       {shown ? (
         <View style={[styles.list, { borderColor: palette.border }]}>
@@ -134,15 +155,22 @@ function escapeOnWeb(onClose: () => void): object {
 
 const styles = StyleSheet.create({
   dropdown: { gap: spacing.sm },
-  field: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  input: {
-    flex: 1,
-    minWidth: 0,
+  field: {
+    flexDirection: "row",
+    alignItems: "center",
     minHeight: sizes.inputHeight,
     borderWidth: controlOutline,
     borderRadius: radii.control,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.ms,
+    paddingLeft: spacing.md,
+    paddingRight: spacing.xs,
+  },
+  input: { flex: 1, minWidth: 0, paddingVertical: spacing.ms },
+  close: {
+    width: minTouchTarget,
+    height: minTouchTarget,
+    borderRadius: radii.pill,
+    alignItems: "center",
+    justifyContent: "center",
   },
   list: {
     gap: spacing.xs,

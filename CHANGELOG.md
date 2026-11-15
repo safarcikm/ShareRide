@@ -250,6 +250,13 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Times on the time step of posting a trip are chosen on a wheel of hours
+  and minutes in 5-minute steps (24-hour clock) instead of being typed. A
+  time saved earlier that is not on 5 minutes shows rounded up to the next
+  5 minutes, and the departure's wheel starts at the earliest time one can
+  leave.
+- Close, while choosing From or To, is a small X inside the field rather
+  than a round button beside it.
 - MVP feature list rewritten with feature IDs, priorities, questions for the
   owner and the order in which specs are written.
 

@@ -195,6 +195,10 @@ export const sizes = {
   priceLabel: 96,
   /** A day in the calendar: the smallest touch target. */
   calendarDay: 44,
+  /** A row of the time wheel, the rows it shows at once, and the width of one wheel. */
+  wheelRow: 44,
+  wheelRows: 5,
+  wheelWidth: 64,
   /** Narrowest the main action of a bottom bar gets before it moves under the price. */
   barAction: 200,
 } as const;

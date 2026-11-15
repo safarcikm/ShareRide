@@ -20,6 +20,53 @@ export interface TripSearch {
   readonly result: RegExp;
 }
 
+/** The names on a time's wheel, in one language. */
+export interface WheelTexts {
+  readonly hour: string;
+  readonly minutes: string;
+  readonly done: string;
+}
+
+export const englishWheel: WheelTexts = { hour: "Hour", minutes: "Minutes", done: "Done" };
+
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+
+/**
+ * The field of the time named `label`, by its name and time: "Leaving BSÍ
+ * bus terminal at: 09:00" in English, "Brottför frá BSÍ kl. 09:00" in
+ * Icelandic.
+ */
+export const timeField = (page: Page, label: string) =>
+  page.getByRole("button", { name: new RegExp(`^${escapeRegExp(label)}:? `, "u") });
+
+/**
+ * Opens the wheel of the time named `label`, taps the hour and the minutes
+ * of `time` ("09:00") in it, and closes it with Done.
+ */
+export async function chooseTime(
+  page: Page,
+  label: string,
+  time: string,
+  texts: WheelTexts = englishWheel,
+) {
+  const [hour = "", minute = ""] = time.split(":");
+  await timeField(page, label).click();
+  await page.getByRole("spinbutton", { name: texts.hour }).getByText(hour, { exact: true }).click();
+  await page
+    .getByRole("spinbutton", { name: texts.minutes })
+    .getByText(minute, { exact: true })
+    .click();
+  await expect(page.getByRole("spinbutton", { name: texts.hour })).toHaveAttribute(
+    "aria-valuetext",
+    hour,
+  );
+  await expect(page.getByRole("spinbutton", { name: texts.minutes })).toHaveAttribute(
+    "aria-valuetext",
+    minute,
+  );
+  await page.getByRole("button", { name: texts.done, exact: true }).click();
+}
+
 /** Searches the part and opens the trip from the results; returns its ID. */
 export async function openTrip(page: Page, search: TripSearch) {
   await page.goto("/search");
@@ -72,7 +119,7 @@ export async function postTripToSelfoss(page: Page, departure: string) {
   const day = tomorrow("en");
   if (day.nextMonth) await page.getByRole("button", { name: "Next month" }).click();
   await page.getByRole("radio", { name: day.name }).click();
-  await page.getByLabel("Leaving Mjódd bus terminal at").fill(departure);
+  await chooseTime(page, "Leaving Mjódd bus terminal at", departure);
   await page.getByRole("button", { name: "Set your price" }).click();
   await page.getByRole("button", { name: "Choose seats" }).click();
   await page.getByRole("button", { name: "Review your trip" }).click();
