@@ -1,6 +1,6 @@
 # Open questions
 
-**Owner:** Martin · **Last reviewed:** 2026-11-13
+**Owner:** Martin · **Last reviewed:** 2026-11-14
 
 Decisions the owner still needs to make. Each has a recommendation so work can
 continue on that assumption. When a question is answered, record the answer
@@ -8,8 +8,8 @@ here, update or accept the linked ADR, and move the row to "Answered".
 
 ## Open
 
-None right now (2026-11-13). A new question goes in a table here with the
-next free number (Q15 onwards), a recommendation and the docs it affects.
+None right now (2026-11-14). A new question goes in a table here with the
+next free number (Q17 onwards), a recommendation and the docs it affects.
 
 ## Answered
 
@@ -52,3 +52,5 @@ next free number (Q15 onwards), a recommendation and the docs it affects.
 | A35 | Q6: which corridors open first | As recommended: the beta opens with three commuter corridors, Reykjavík–Hveragerði–Selfoss, Reykjavík–Reykjanesbær–Keflavík Airport and Reykjavík–Akranes–Borgarnes, plus the capital area hubs. Reykjavík–Akureyri is added if the waitlist shows demand; Selfoss–Hvolsvöllur–Vík later ([meeting points](../product/meeting-points.md#launch-corridors)). | 2026-11-13 |
 | A36 | Q12: women-only trips | Yes, in the MVP (changed by Martin from the recommendation to wait for the beta). For women only; everyone can see these trips, only women who have opted in can book them; a private self-declaration with no gender field. See [spec 14](../specs/2026-11-13-women-only-trips.md#decisions) (approved) and [ADR 0015](../decisions/0015-women-only-trips.md) (accepted); subject to the legal opinion. | 2026-11-13 |
 | A37 | Q14: sign-in with the Better Auth library or our own module? | Our own small sign-in module in the API, so spec 1 is built as written: no placeholder emails, rotating refresh tokens with reuse detection, every rule tested. [ADR 0016](../decisions/0016-own-sign-in-module.md) accepted; it replaces only the implementation choice in [ADR 0010](../decisions/0010-authentication-and-identity.md). | 2026-11-13 |
+| A38 | Q15: when is a meeting point on the way? | When going through it adds at most 5% or 3 km to the direct distance, whichever is less (spec 3 said "whichever is more"). Reykjavík to Akureyri gets the 8 stops on the main road; the driver adds others. See [spec 3](../specs/2026-11-13-post-a-trip.md#decisions), decision 8. | 2026-11-14 |
+| A39 | Q16: each stretch's price and cap round to the nearest 100 kr on their own, so on a short stretch a full car can earn a little more than the cost of driving it (up to about 2 km with 3 seats, 21 km with 8). Round the cap down instead? | No: keep rounding to the nearest, as rule P3 says. The question goes to the legal opinion ([legal and regulatory](../compliance/legal-and-regulatory.md#9-questions-for-the-lawyer-phase-1-brief), question 2). The whole-route price also moves a little with the stops: 5 600 kr instead of the worked example's 5 800 kr once the stops on the way are added. | 2026-11-14 |

@@ -89,8 +89,10 @@ missing, and each item can be done from there:
 2. **Stops are added automatically** (decision 1): every active meeting point
    that lies on the way becomes a stop, in route order. A point is on the way
    when going through it adds at most 5% or 3 km to the direct distance,
-   whichever is more. Because the operator places meeting points along the
-   main routes, this gives a sensible list without the driver choosing.
+   whichever is less (decision 8). Because the operator places meeting points
+   along the main routes, this gives a sensible list without the driver
+   choosing; points off the main road, such as shopping centres, the driver
+   adds.
 3. The driver can **remove** any added stop they will not stop at, and **add**
    another active meeting point through search. An added point is inserted
    where it adds the least distance.
@@ -246,8 +248,8 @@ Endpoints (`/v1`, shapes defined in `packages/contracts`):
 | `GET /me/vehicles`, `POST /me/vehicles` | List and add cars |
 | `PATCH /me/vehicles/{id}`, `DELETE /me/vehicles/{id}` | Edit a car (including adding the plate) or remove it |
 | `PUT /me/driver-licence-declaration` | Make the licence declaration |
-| `GET /routes/stops-along?from=&to=` | Meeting points on the way, in route order |
-| `POST /routes/quote` | For a list of stops, seats, a departure and a price level: distances, typical times, segment prices, the highest level and warnings |
+| `GET /routes/stops-along?from=&to=&date=` | Meeting points on the way, in route order; with a date, only those in season then |
+| `POST /routes/quote` | For a list of stops, seats, a departure and a price level: distances, typical times, segment prices, the highest level and warnings; with an added stop, where it goes |
 | `POST /trips`, `PATCH /trips/{id}` | Create and update a draft |
 | `POST /trips/{id}/publish` | Publish after all checks |
 | `DELETE /trips/{id}` | Delete a draft |
@@ -341,3 +343,4 @@ legal opinion).
 | 5 | Does it matter who owns the car, for example a rental car? | No. The driver picks the make, model and colour; being allowed to use the car is the driver's responsibility, not ShareRide's (Martin, 2026-11-13) |
 | 6 | Is there a limit on the number of stops? | No (Martin, 2026-11-13; replaces features decision 6) |
 | 7 | Who sees the car's make, model and colour? | Everyone viewing the trip; the number plate only booked passengers (Martin, 2026-11-13) |
+| 8 | When is a meeting point on the way? | When going through it adds at most 5% or 3 km to the direct distance, whichever is less. Reykjavík to Akureyri gets the 8 stops on the main road; the driver adds others, such as Mjódd or Smáralind (Martin, 2026-11-14; replaces "whichever is more") |

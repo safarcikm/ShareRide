@@ -132,7 +132,12 @@ Actions:
 
 1. Does a cost-capped ride-sharing model as described fall outside the Taxi Act
    and Act No. 28/2017? What conditions make it safe?
-2. What price cap, if any, should we use, and what evidence of cost?
+2. What price cap, if any, should we use, and what evidence of cost? The
+   cap is checked per stretch between stops and rounded to the nearest
+   100 kr, so on a stretch of a few kilometres a full car can earn slightly
+   more than its cost, such as 8 seats × 100 kr on 4 km costing 600 kr
+   (open questions, A39). Is that acceptable, or must the cap hold for
+   every stretch?
 3. Is ShareRide at risk of being a taxi dispatch station under the Taxi Act?
 4. What must the terms of service say about liability, insurance and the
    intermediary role?
