@@ -214,7 +214,9 @@ describe("matchTrip (spec 4, R4.1)", () => {
     expect(
       matchTrip(evening, { ...fromReykjavik, timeOfDay: "evening" }, now, settings),
     ).toMatchObject({ board: 1, pricePerSeat: kr(6000) });
-    expect(matchTrip(evening, { ...fromReykjavik, timeOfDay: "morning" }, now, settings)).toBeNull();
+    expect(
+      matchTrip(evening, { ...fromReykjavik, timeOfDay: "morning" }, now, settings),
+    ).toBeNull();
   });
 
   // Random trips and searches: what any match must satisfy.
