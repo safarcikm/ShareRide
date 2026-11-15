@@ -72,8 +72,12 @@ test("the driver and passenger of a confirmed booking message each other", async
   await expect(passenger.getByLabel("Write a message")).toHaveValue("");
 
   // The driver switches the app to Icelandic and answers from the trip page.
+  // On a wide screen the top bar has the same switch, so this is Settings' own.
   await driver.goto("/settings");
-  await driver.getByRole("button", { name: "Change the language to Icelandic" }).click();
+  await driver
+    .getByTestId("screen-scroll")
+    .getByRole("button", { name: "Change the language to Icelandic" })
+    .click();
   await driver.goto(`/drive/trips/${tripId}`);
   await driver.getByRole("button", { name: "Senda skilaboð: Dóra" }).click();
   await expect(driver.getByLabel(/^Dóra, \d\d:\d\d: Where shall I wait\?$/)).toBeVisible();
