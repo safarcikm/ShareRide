@@ -177,8 +177,11 @@ Drivers do not edit segment prices one by one (decision 2,
 
 ### 3.9 Errors and edge cases
 
-- A stop is paused or retired by the operator while the trip is a draft: the
-  draft drops it and tells the driver; the start or end must be chosen again.
+- A stop is retired by the operator while the trip is a draft: the draft
+  drops it and tells the driver; the start or end must be chosen again.
+- A stop is paused by the operator while the trip is a draft: the draft keeps
+  it, so it comes back when the point is resumed. Publishing is refused, and
+  names the stop, while it is paused (decision 9).
 - A meeting point on the way is activated while the trip is a draft: it is not
   added silently; the review screen offers it.
 - Legs are missing for a pair (for example, just after a point was activated):
@@ -347,3 +350,4 @@ legal opinion).
 | 6 | Is there a limit on the number of stops? | No (Martin, 2026-11-13; replaces features decision 6) |
 | 7 | Who sees the car's make, model and colour? | Everyone viewing the trip; the number plate only booked passengers (Martin, 2026-11-13) |
 | 8 | When is a meeting point on the way? | When going through it adds at most 5% or 3 km to the direct distance, whichever is less. Reykjavík to Akureyri gets the 8 stops on the main road; the driver adds others, such as Mjódd or Smáralind (Martin, 2026-11-14; replaces "whichever is more") |
+| 9 | What happens to a draft's stop when the operator pauses its meeting point? | The draft keeps it, and publishing is refused while it is paused; the driver can take the stop off or wait for the point to be resumed. A retired stop is dropped (Martin, 2026-11-15; replaces "the draft drops it") |
