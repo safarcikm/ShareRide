@@ -7,11 +7,13 @@ import { createApp } from "./app.ts";
 import { ConfigError, loadConfig, type Config } from "./config.ts";
 import { createLogger } from "./logger.ts";
 import { expireAllDueBookings } from "./modules/bookings/index.ts";
+import { createNotificationWorker } from "./modules/notifications/index.ts";
 import { createPaymentService } from "./modules/payments/index.ts";
 import { clientAddress } from "./platform/client-address.ts";
 import { createKeyedHasher } from "./platform/crypto.ts";
 import { captureError, startErrorReporting } from "./platform/error-reporting.ts";
 import { createTestPaymentProvider } from "./platform/payments.ts";
+import { createUnconnectedPushSender } from "./platform/push.ts";
 import { startRepeating } from "./platform/repeat.ts";
 import { selectSmsSender } from "./platform/select-sms-sender.ts";
 
@@ -70,10 +72,10 @@ const app = createApp({
   },
 });
 
-/** Runs a job inside the API every minute; a failure is logged and reported. */
-function everyMinute(job: string, run: () => Promise<unknown>) {
+/** Runs a job inside the API every so often; a failure is logged and reported. */
+function every(everyMs: number, job: string, run: () => Promise<unknown>) {
   return startRepeating({
-    everyMs: 60_000,
+    everyMs,
     run,
     onError: (error) => {
       logger.error({ err: error, job }, "job failed");
@@ -86,7 +88,7 @@ function everyMinute(job: string, run: () => Promise<unknown>) {
 // Booking deadlines (R5.5, rule M1). Every booking change also stores its
 // trip's expiries first, so a late run never keeps a seat taken.
 const jobs = [
-  everyMinute("booking-deadlines", async () => {
+  every(60_000, "booking-deadlines", async () => {
     const expired = await expireAllDueBookings(database.db, new Date());
     if (expired > 0) logger.info({ expired }, "bookings expired");
   }),
@@ -100,9 +102,36 @@ if (payments !== undefined) {
     provider: payments,
   });
   jobs.push(
-    everyMinute("owed-refunds", async () => {
+    every(60_000, "owed-refunds", async () => {
       const refunded = await owed.refundOwed();
       if (refunded > 0) logger.info({ refunded }, "owed refunds made");
+    }),
+  );
+}
+
+// Notifications (spec 7, 3.7), every 5 seconds unless WORKER=off. Push
+// and email come with the next pull requests: until then no device can
+// register for push, and email is skipped as `email_off`.
+if (config.worker) {
+  const worker = createNotificationWorker({
+    db: database.db,
+    clock: () => new Date(),
+    push: createUnconnectedPushSender((count) => {
+      logger.warn({ count }, "push is not connected yet");
+    }),
+    onSendError: (error, delivery) => {
+      logger.warn({ err: error, delivery: delivery.id, channel: delivery.channel }, "not sent");
+    },
+    // A bug: logged each time, and reported once given up.
+    onEventError: (error, event) => {
+      logger.warn({ err: error, event: event.id, kind: event.kind }, "event not handled");
+      if (event.givenUp) captureError(error, { job: "notifications", event: event.id });
+    },
+  });
+  jobs.push(
+    every(5_000, "notifications", async () => {
+      const run = await worker.runOnce();
+      if (run.events + run.scheduled + run.sent + run.failed > 0) logger.info(run, "notifications");
     }),
   );
 }
@@ -115,6 +144,7 @@ const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
       smsProvider: config.sms.provider,
       smsPaused: config.sms.paused,
       paymentProvider: config.payments.provider,
+      worker: config.worker,
       trustedProxies: config.trustedProxies,
       webApp: config.webAppDir !== undefined,
       errorReporting: reportError !== undefined,

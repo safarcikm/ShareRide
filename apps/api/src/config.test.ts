@@ -48,6 +48,7 @@ describe("loadConfig", () => {
       },
       webAppDir: "/repo/web",
       payments: { provider: "none" },
+      worker: true,
     });
   });
 
@@ -188,6 +189,13 @@ describe("loadConfig", () => {
     expect(loadConfig({ ...development, APP_ENV: undefined }).payments).toEqual({
       provider: "test",
     });
+  });
+
+  it("runs the notification worker unless WORKER is off (plan, decision 2)", () => {
+    expect(loadConfig(development).worker).toBe(true);
+    expect(loadConfig({ ...development, WORKER: "on" }).worker).toBe(true);
+    expect(loadConfig({ ...development, WORKER: "off" }).worker).toBe(false);
+    expect(() => loadConfig({ ...development, WORKER: "no" })).toThrow("WORKER: invalid");
   });
 
   it("names every missing or invalid variable", () => {

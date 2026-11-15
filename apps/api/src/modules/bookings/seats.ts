@@ -5,6 +5,7 @@
 import { schema, type Database } from "@shareride/db";
 import { and, asc, eq, gte, inArray, lt, lte, ne, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
+import { recordEvents } from "../notifications/outbox.ts";
 
 const { bookings, segments, trips, tripStops } = schema;
 
@@ -91,6 +92,7 @@ export async function expireDueBookings(
   const due = await tx
     .select({
       id: bookings.id,
+      status: bookings.status,
       seats: bookings.seats,
       fromStopId: bookings.fromStopId,
       toStopId: bookings.toStopId,
@@ -106,6 +108,15 @@ export async function expireDueBookings(
       .where(eq(bookings.id, booking.id));
     await changeOccupancy(tx, tripId, partOf(stops, booking), -booking.seats);
   }
+  await recordEvents(
+    tx,
+    due.map((booking) => ({
+      type: "BookingExpired",
+      bookingId: booking.id,
+      reason: booking.status === "requested" ? "unanswered" : "unpaid",
+    })),
+    now,
+  );
   return due.length;
 }
 

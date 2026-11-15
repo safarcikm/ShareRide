@@ -4,6 +4,7 @@ import {
   notificationKinds,
   notificationRules,
   notificationsFor,
+  stillApplies,
   type NotificationEvent,
   type Recipient,
 } from "./catalogue.ts";
@@ -235,5 +236,31 @@ describe("how one person is reached (spec 7, 3.3, 3.4 and 3.7)", () => {
     expect(
       channels("departure_moved", {}, hoursBefore(2)).map((decision) => decision.channel),
     ).toEqual(["push", "email"]);
+  });
+});
+
+describe("stillApplies", () => {
+  it("sends the request's notifications only while it waits for an answer", () => {
+    for (const kind of ["request_new", "request_halfway"] as const) {
+      expect(stillApplies(kind, "requested")).toBe(true);
+      for (const status of ["accepted", "confirmed", "declined", "expired", "cancelled"] as const) {
+        expect(stillApplies(kind, status)).toBe(false);
+      }
+    }
+  });
+
+  it("asks for the payment only while the booking waits for it", () => {
+    for (const kind of ["pay_now", "pay_reminder"] as const) {
+      expect(stillApplies(kind, "accepted")).toBe(true);
+      for (const status of ["confirmed", "expired", "requested"] as const) {
+        expect(stillApplies(kind, status)).toBe(false);
+      }
+    }
+  });
+
+  it("tells what happened whatever the booking has done since", () => {
+    for (const kind of ["booking_confirmed", "request_declined", "new_message"] as const) {
+      expect(stillApplies(kind, "expired")).toBe(true);
+    }
   });
 });

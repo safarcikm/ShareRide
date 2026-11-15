@@ -247,6 +247,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   again." and is sent once however often it is tried. `/messages` lists the
   conversations with unread counts; the Messages tab comes with the new tab
   bar.
+- Notifications, first part (milestone 5, PR 5): booking, payment and chat
+  changes write their event in the same transaction, and a worker inside the
+  API (every 5 seconds, `WORKER=off` to stop it) turns each into one
+  notification per person, with a delivery per channel that says what came
+  of it: sent, failed after an hour of retries, or skipped with the reason.
+  It reminds a driver of a request halfway to its deadline and a passenger 10
+  minutes before the payment deadline, unless answered or paid, and a retry
+  never sends a request or payment notification after the booking has moved
+  on. One event that cannot be handled never holds back the rest. Texts are
+  in the person's language. Push and email are connected in the next two
+  updates; until then nothing is sent. The hourly clean-up deletes the
+  notification log after 90 days.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

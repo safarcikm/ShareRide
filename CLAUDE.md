@@ -85,7 +85,7 @@ pnpm --filter @shareride/api dev       # migrate, seed, run the API on port 3000
 pnpm --filter @shareride/mobile dev    # the app: Expo dev server (w = web, QR = Expo Go)
 pnpm --filter @shareride/mobile export # bundles for iOS, Android and web (dist/)
 pnpm --filter @shareride/mobile e2e:web  # build the web app; Playwright journeys against a test API
-pnpm --filter @shareride/api clean-up  # delete sign-in records, drafts and chats past retention (hourly on servers)
+pnpm --filter @shareride/api clean-up  # delete sign-in records, drafts, chats and notification logs past retention (hourly on servers)
 pnpm --filter @shareride/api expire-bookings  # store booking deadlines that passed, once (the API does it every minute)
 pnpm --filter @shareride/api test:contract  # 46elks and Vonage checks, need their keys; not in CI
 pnpm --filter @shareride/api sentry:check   # send a test error (needs SENTRY_DSN)
