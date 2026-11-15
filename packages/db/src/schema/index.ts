@@ -4,6 +4,7 @@ export * from "./auth.ts";
 export * from "./bookings.ts";
 export * from "./legal.ts";
 export * from "./meeting-points.ts";
+export * from "./payments.ts";
 export * from "./trips.ts";
 export * from "./users.ts";
 export * from "./vehicles.ts";

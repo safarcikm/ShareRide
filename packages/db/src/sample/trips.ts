@@ -15,6 +15,7 @@ import {
   bookings,
   bookingSegmentPrices,
   legs,
+  payments,
   segments,
   trips,
   tripStops,
@@ -136,8 +137,8 @@ export async function seedSampleTrips(db: Database, now: Date): Promise<void> {
         .values({ id: sampleId(`car:${driver.key}`), ownerId: id, ...driver.car })
         .onConflictDoNothing();
     }
-    // Bookings of sample trips are test bookings: they go with the trips
-    // they were made on, which real bookings never do (spec 12).
+    // Bookings of sample trips are test bookings: they and their payments go
+    // with the trips they were made on, which real bookings never do (spec 12).
     const ids = sampleTrips.map((trip) => sampleId(`trip:${trip.key}`));
     // Locked first, as booking locks a trip, so no booking lands on one
     // while it is being replaced (the seed runs while staging serves).
@@ -146,6 +147,7 @@ export async function seedSampleTrips(db: Database, now: Date): Promise<void> {
       .select({ id: bookings.id })
       .from(bookings)
       .where(inArray(bookings.tripId, ids));
+    await tx.delete(payments).where(inArray(payments.bookingId, booked));
     await tx.delete(bookingSegmentPrices).where(inArray(bookingSegmentPrices.bookingId, booked));
     await tx.delete(bookings).where(inArray(bookings.tripId, ids));
     await tx.delete(trips).where(inArray(trips.id, ids));

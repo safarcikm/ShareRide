@@ -43,6 +43,13 @@
       "when": 1794698121213,
       "tag": "0005_bookings",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794701228816,
+      "tag": "0006_payments",
+      "breakpoints": true
     }
   ]
 }

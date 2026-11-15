@@ -32,6 +32,7 @@ import {
   createMeetingPointService,
   registerMeetingPointRoutes,
 } from "./modules/meeting-points/index.ts";
+import { createPaymentService, registerPaymentRoutes } from "./modules/payments/index.ts";
 import {
   createSearchService,
   createTripDetailsService,
@@ -47,6 +48,7 @@ import { bearerAuth, toOpenApiRoute } from "./openapi.ts";
 import type { KeyedHasher } from "./platform/crypto.ts";
 import { addressBlock } from "./platform/client-address.ts";
 import { createMemoryRateLimiter } from "./platform/memory-rate-limiter.ts";
+import type { PaymentProvider } from "./platform/payments.ts";
 import type { SmsSender } from "./platform/sms.ts";
 import { createWebApp } from "./web-app.ts";
 
@@ -63,6 +65,8 @@ export interface FeatureDependencies {
   readonly secureCookies: boolean;
   /** A secure random integer in [0, max); tests may replace it. */
   readonly randomInt?: (max: number) => number;
+  /** Left out where paying is unavailable (PAYMENT_PROVIDER=none). */
+  readonly payments?: PaymentProvider;
 }
 
 /** Where the request was when an unexpected error happened. No personal data. */
@@ -198,11 +202,18 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     const settings = defaultTripSettings;
     registerTripRoutes(app, createRouteService({ ...features, settings }), requireAuth);
     registerDraftRoutes(app, createTripService({ ...features, settings, driving }), requireAuth);
-    registerBookingRoutes(
-      app,
-      createBookingService({ ...features, account, settings: defaultBookingSettings }),
+    const bookings = createBookingService({
+      ...features,
+      account,
+      settings: defaultBookingSettings,
+    });
+    registerBookingRoutes(app, bookings, requireAuth);
+    registerPaymentRoutes(app, {
+      payments: createPaymentService({ ...features, provider: features.payments }),
+      bookings,
+      testProvider: features.payments?.name === "test",
       requireAuth,
-    );
+    });
   }
 
   app.openAPIRegistry.registerComponent("securitySchemes", bearerAuth, {
