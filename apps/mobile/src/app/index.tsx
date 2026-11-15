@@ -1,5 +1,5 @@
 import { soonestTripsRoute, type Me, type TripSearchResult } from "@shareride/contracts";
-import { Redirect, router, type Href } from "expo-router";
+import { Redirect, router, useIsFocused, type Href } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { nextRoute } from "@/auth/next-route";
@@ -127,14 +127,19 @@ function LeavingSoon({ rides }: { readonly rides: readonly TripSearchResult[] })
  * The next step of signing up; once it is done, the booking someone chose
  * before they had an account (spec 5, 3.1, item 1), Ready to drive when
  * they pressed "Offer a ride" (spec 1, 3.1, item 3), or else their profile.
+ * Only the front page on screen takes the choice: the one left open under a
+ * ride while signing up can't lead anywhere, since a redirect waits for its
+ * screen to show, and the app opens a new front page once the account is
+ * ready.
  */
 function SignedIn({ me }: { readonly me: Me }) {
   const next = nextRoute(me);
+  const focused = useIsFocused();
   const [target, setTarget] = useState<Href | null>(null);
   // Once per visit: taking the choice forgets it.
   const taken = useRef(false);
   useEffect(() => {
-    if (next !== "/profile" || taken.current) return;
+    if (!focused || next !== "/profile" || taken.current) return;
     taken.current = true;
     void takePendingBooking(now()).then(async (pending) => {
       if (pending !== null) {
@@ -143,7 +148,7 @@ function SignedIn({ me }: { readonly me: Me }) {
       }
       setTarget((await takePendingOffer(now())) ? "/drive" : "/profile");
     });
-  }, [next]);
+  }, [focused, next]);
   if (next !== "/profile") return <Redirect href={next} />;
   return target === null ? <Loading /> : <Redirect href={target} />;
 }

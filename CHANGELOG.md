@@ -236,6 +236,10 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- After signing up from a ride, the app opens that ride's booking again, and
+  after "Offer a ride" it opens Ready to drive. The front page left open
+  under the ride took the kept choice but could not show it, so people
+  landed on My profile.
 - Sign-in limits count an IPv6 address by its /64 network, as search does,
   so one connection cannot send more codes by changing its address.
 - Tick boxes, chips and busy buttons now tell screen readers on the web

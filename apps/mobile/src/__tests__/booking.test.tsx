@@ -6,8 +6,8 @@ import type { Me } from "@shareride/contracts";
 import { renderApp, completeMe } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { bookingApi, northBooking, paidBooking, unpaidBooking } from "@/testing/bookings";
-import { failure, ok, testMe, type FakeClient } from "@/testing/fake-client";
-import { northResult, northTrip, tripDetailsApi } from "@/testing/search";
+import { failure, ok, testMe, tokens, type FakeClient } from "@/testing/fake-client";
+import { northResult, northTrip, soonestApi, tripDetailsApi } from "@/testing/search";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -51,7 +51,7 @@ const bookCalls = (client: FakeClient) =>
 
 beforeEach(() => {
   mockedRead.mockReset().mockResolvedValue(null);
-  mockedWrite.mockClear();
+  mockedWrite.mockReset().mockResolvedValue(undefined);
   mockedKey.mockClear();
 });
 
@@ -151,6 +151,49 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Save profile" }));
     expect(await screen.findByRole("header", { name: "Request this ride" })).toBeVisible();
     expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "2" });
+  });
+
+  it("comes back to the ride after signing up from a ride on the front page", async () => {
+    // The app's storage, as on a device: what is written can be read back.
+    const stored = new Map<string, string>();
+    mockedRead.mockImplementation((name: string) => Promise.resolve(stored.get(name) ?? null));
+    mockedWrite.mockImplementation((name: string, value: string) => {
+      stored.set(name, value);
+      return Promise.resolve();
+    });
+    const afterTerms: Me = { ...testMe, ageConfirmed: true, missingSteps: ["profile"] };
+    const { client } = await renderApp("/", {
+      setUp: (fake) => {
+        soonestApi(fake, [northResult]);
+        tripDetailsApi(fake);
+        fake.answer("/v1/auth/phone/start", () => ok(202, { resendAfterSeconds: 30 }));
+        fake.answer("/v1/auth/phone/verify", () =>
+          ok(200, { ...tokens(1), user: afterTerms, isNewUser: true }),
+        );
+      },
+    });
+    // The front page stays open, out of sight, under the screens that follow.
+    await fireEvent.press(await screen.findByTestId("trip-result"));
+    const bar = await screen.findByTestId("bottom-bar");
+    await fireEvent.press(within(bar).getByRole("button", { name: "Send request" }));
+    await fireEvent.changeText(await screen.findByLabelText("Mobile number"), "690 0000");
+    await fireEvent.press(screen.getByRole("button", { name: "Send code" }));
+    await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
+    expect(await screen.findByRole("header", { name: "Tell others about you" })).toBeVisible();
+
+    client.answer("/v1/me", () => ok(200, completeMe));
+    client.answer("/v1/me", () => ok(200, completeMe), "patch");
+    await fireEvent.changeText(screen.getByLabelText("First name"), "Gunna");
+    await fireEvent.press(screen.getByRole("checkbox", { name: "Icelandic" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Save profile" }));
+    expect(await screen.findByRole("header", { name: "Request this ride" })).toBeVisible();
+    expect(screen).toHavePathname(`/trips/${id}/book`);
+    expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "1" });
+    // Only the front page on screen takes the choice. The one left open
+    // under the ride must not: its way to the booking would never show.
+    const takes = mockedRead.mock.calls.filter(([name]) => name === "pending-booking");
+    expect(takes).toHaveLength(1);
+    expect(stored.get("pending-booking")).toBe("");
   });
 
   it("shows the booking on trip details on coming back from it", async () => {
