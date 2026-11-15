@@ -1,22 +1,37 @@
-import { router, usePathname } from "expo-router";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { usePathname } from "expo-router";
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type GestureResponderEvent,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LanguageSwitch } from "@/components/language-switch";
 import { Logo } from "@/components/logo";
 import { useLanguage } from "@/i18n/language";
 import { controlOutline, minTouchTarget, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
-import { menuTabOf, menuTabs, type MenuTab } from "./menu";
+import { menuTabOf, menuTabs } from "./menu";
+import { openPlace } from "./open-place";
 
 const onWeb = Platform.OS === "web";
 
 /**
- * Goes to a place of the menu, closing the screens opened on top, so the
- * bar never piles up screens behind Back.
+ * On the web, a click with a modifier key is the browser's: it opens the
+ * link in a new tab or window, and the app stays where it is.
  */
-function openPlace(href: MenuTab["href"]) {
-  if (router.canDismiss()) router.dismissAll();
-  router.navigate(href);
+function opensElsewhere(event: GestureResponderEvent): boolean {
+  if (!onWeb) return false;
+  const click = event as unknown as Partial<MouseEvent>;
+  return (
+    click.metaKey === true ||
+    click.ctrlKey === true ||
+    click.shiftKey === true ||
+    click.altKey === true ||
+    (click.button !== undefined && click.button !== 0)
+  );
 }
 
 /**
@@ -35,7 +50,7 @@ export function TopBar({
   const current = menuTabOf(usePathname());
   const role = onWeb
     ? ({ role: "navigation", "aria-label": t("nav.main") } as const)
-    : ({ accessibilityRole: "tablist" } as const);
+    : ({ accessibilityRole: "tablist", accessibilityLabel: t("nav.main") } as const);
   return (
     <View
       testID="top-bar"
@@ -71,6 +86,7 @@ export function TopBar({
               {...a11y}
               accessibilityLabel={label}
               onPress={(event) => {
+                if (opensElsewhere(event)) return;
                 // A link on the web: the app moves, the page does not reload.
                 event.preventDefault();
                 openPlace(tab.href);

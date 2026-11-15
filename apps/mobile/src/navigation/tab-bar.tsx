@@ -29,7 +29,7 @@ export function TabBar({
   if (hidden) return null;
   const role = onWeb
     ? ({ role: "navigation", "aria-label": t("nav.main") } as const)
-    : ({ accessibilityRole: "tablist" } as const);
+    : ({ accessibilityRole: "tablist", accessibilityLabel: t("nav.main") } as const);
   return (
     <View
       {...rest}

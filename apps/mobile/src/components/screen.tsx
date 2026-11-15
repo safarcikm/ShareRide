@@ -68,9 +68,15 @@ export function Screen({
       <ScrollView
         ref={scrollRef}
         testID="screen-scroll"
-        onLayout={(event) => {
-          setViewHeight(event.nativeEvent.layout.height);
-        }}
+        onLayout={
+          // Only the web's sticky aside uses the height. It is measured
+          // from the start, as an aside can come later, with its data.
+          Platform.OS === "web"
+            ? (event) => {
+                setViewHeight(event.nativeEvent.layout.height);
+              }
+            : undefined
+        }
         contentContainerStyle={[styles.scroll, { paddingBottom: spacing.md + keyboardRoom }]}
         keyboardShouldPersistTaps="handled"
       >

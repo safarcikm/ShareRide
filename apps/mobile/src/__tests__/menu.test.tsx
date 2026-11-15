@@ -5,7 +5,7 @@ import type { DriverReadiness } from "@shareride/contracts";
 import { readAppData, writeAppData } from "@/lib/app-data";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
-import { ok, testMe } from "@/testing/fake-client";
+import { ok, testMe, tokens } from "@/testing/fake-client";
 import { northResult, searchApi, soonestApi, soonRide, tripDetailsApi } from "@/testing/search";
 import { colors } from "@/theme/tokens";
 
@@ -35,6 +35,37 @@ beforeEach(() => {
 });
 
 const tab = (name: string) => screen.getByRole("tab", { name });
+
+interface NavigationState {
+  readonly routes: readonly { readonly name: string; readonly state?: NavigationState }[];
+}
+
+/** How many copies of the menu the app's stack holds: one, or Back walks through old ones. */
+function menuCopies(state: NavigationState | undefined): number {
+  if (state === undefined) return 0;
+  const here = state.routes.filter((route) => route.name === "(tabs)").length;
+  if (here > 0) return here;
+  return state.routes.reduce((count, route) => count + menuCopies(route.state), 0);
+}
+
+/** From the phone number screen, signs in as an account that has finished signing up. */
+async function signInWithCode(fake: { answer: (path: string, reply: () => unknown) => void }) {
+  fake.answer("/v1/auth/phone/start", () => ok(202, { resendAfterSeconds: 30 }));
+  fake.answer("/v1/auth/phone/verify", () =>
+    ok(200, { ...tokens(1), user: completeMe, isNewUser: false }),
+  );
+  await fireEvent.changeText(await screen.findByLabelText("Mobile number"), "690 0000");
+  await fireEvent.press(screen.getByRole("button", { name: "Send code" }));
+  await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
+}
+
+/** On Find, chooses Borgarnes in From. */
+async function chooseFrom() {
+  await fireEvent.press(await screen.findByRole("button", { name: /^From: / }));
+  await fireEvent.changeText(await screen.findByLabelText("From"), "borg");
+  await fireEvent.press(await screen.findByRole("button", { name: /^Borgarnes/ }));
+  expect(await screen.findByRole("button", { name: "From: Borgarnes" })).toBeVisible();
+}
 
 const readiness: DriverReadiness = {
   ready: false,
@@ -169,6 +200,25 @@ describe("The menu (spec 16, 3.1)", () => {
     expect(screen).toHavePathname("/onboarding/terms");
   });
 
+  it("keeps one menu after signing in and after signing out", async () => {
+    const app = await renderApp("/", {
+      setUp: (fake) => {
+        fake.answer("/v1/me/bookings", () => ok(200, { bookings: [] }));
+        fake.answer("/v1/auth/sign-out", () => ok(204));
+      },
+    });
+    await fireEvent.press(await screen.findByRole("tab", { name: "My rides" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Sign in" }));
+    await signInWithCode(app.client);
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(menuCopies(app.getRouterState())).toBe(1);
+    await fireEvent.press(tab("Profile"));
+    await fireEvent.press(await screen.findByRole("button", { name: "Settings" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Sign out" }));
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(menuCopies(app.getRouterState())).toBe(1);
+  });
+
   it("shows the account's own pages on My rides, Offer and Profile once signed in", async () => {
     await renderApp("/", {
       me: completeMe,
@@ -253,5 +303,51 @@ describe("The top bar on wide screens", () => {
     await fireEvent.press(within(bar).getByRole("tab", { name: "Find" }));
     expect(await screen.findByRole("button", { name: "Find a ride" })).toBeVisible();
     expect(screen.queryByTestId("side-panel")).toBeNull();
+  });
+
+  it("keeps Find's search when the window turns narrow and wide again", async () => {
+    await renderApp("/", { setUp: searchApi });
+    await chooseFrom();
+    await act(() => {
+      Dimensions.set({ window: { width: 750, height: 1334, scale: 2, fontScale: 2 } });
+    });
+    expect(await screen.findByTestId("tab-bar")).toBeVisible();
+    expect(screen.getByRole("button", { name: "From: Borgarnes" })).toBeVisible();
+    await act(() => {
+      Dimensions.set({ window: { width: 1280, height: 800, scale: 1, fontScale: 1 } });
+    });
+    expect(await screen.findByTestId("top-bar")).toBeVisible();
+    expect(screen.getByRole("button", { name: "From: Borgarnes" })).toBeVisible();
+  });
+
+  it("keeps one menu and its places after opening a ride from a link", async () => {
+    const app = await renderApp(`/trips/${northResult.tripId}?from=0&to=3`, {
+      setUp: (fake) => {
+        tripDetailsApi(fake);
+        searchApi(fake);
+      },
+    });
+    expect(await screen.findByTestId("side-panel")).toBeVisible();
+    const bar = () => within(screen.getByTestId("top-bar"));
+    await fireEvent.press(bar().getByRole("tab", { name: "Find" }));
+    await chooseFrom();
+    await fireEvent.press(bar().getByRole("tab", { name: "Profile" }));
+    expect(await screen.findByRole("header", { name: "Profile" })).toBeVisible();
+    await fireEvent.press(bar().getByRole("tab", { name: "Find" }));
+    expect(await screen.findByRole("button", { name: "From: Borgarnes" })).toBeVisible();
+    expect(menuCopies(app.getRouterState())).toBe(1);
+  });
+
+  it("closes sign-in onto the menu it opened from", async () => {
+    const app = await renderApp("/profile");
+    app.client.answer("/v1/auth/phone/start", () => ok(202, { resendAfterSeconds: 30 }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Sign in" }));
+    await fireEvent.changeText(await screen.findByLabelText("Mobile number"), "690 0000");
+    await fireEvent.press(screen.getByRole("button", { name: "Send code" }));
+    expect(await screen.findByLabelText("6-digit code")).toBeVisible();
+    await fireEvent.press(within(screen.getByTestId("top-bar")).getByRole("tab", { name: "Find" }));
+    expect(await screen.findByRole("button", { name: "Find a ride" })).toBeVisible();
+    expect(screen).toHavePathname("/");
+    expect(menuCopies(app.getRouterState())).toBe(1);
   });
 });

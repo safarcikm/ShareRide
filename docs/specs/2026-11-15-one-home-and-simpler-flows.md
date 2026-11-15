@@ -293,7 +293,7 @@ plate still shows only once booked.
 ## 8. Texts
 
 The final English and Icelandic texts go into `packages/i18n` with each part.
-The main new ones:
+The main new or changed ones ("Find a ride" keeps `welcome.findRide`):
 
 | Key | English | Icelandic |
 | --- | ------- | --------- |
@@ -302,7 +302,7 @@ The main new ones:
 | `nav.offer` | Offer | Bjóða far |
 | `nav.profile` | Profile | Prófíll |
 | `home.nextRide` | Your next ride | Næsta ferðin þín |
-| `home.findRide` | Find a ride | Finna far |
+| `home.title` | Where are you going? | Hvert ertu að fara? |
 | `myRides.needsYou` | Needs you | Bíður eftir þér |
 | `myRides.comingUp` | Coming up | Framundan |
 | `myRides.past` | Past | Liðnar |
@@ -313,8 +313,9 @@ The main new ones:
 | `onboarding.aboutYou` | Last step: about you | Síðasta skref: um þig |
 | `booking.checkAndPay` | Check and pay | Yfirfara og greiða |
 | `booking.booked` | You're booked! | Sætið er þitt! |
-| `trip.bookInstantly` | Book instantly | Bóka strax |
-| `trip.driverApproves` | Driver approves | Ökumaður samþykkir |
+| `results.instant` | Book instantly | Bóka strax |
+| `results.request` | Driver approves | Ökumaður samþykkir |
+| `results.driverDrives` | {driver} drives {from} → {to} | {driver} ekur {from} → {to} |
 
 "Sætið er þitt!" ("The seat is yours!") avoids "bókuð" or "bókaður", which
 depend on gender; the Icelandic review can change it.

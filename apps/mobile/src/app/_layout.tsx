@@ -31,12 +31,13 @@ export default function RootLayout() {
 }
 
 /**
- * Which screens can open depends on the session: some are open to
- * everyone, some only to signed-out people, and signed-in people go through
- * the terms and then the profile before the rest (spec 1, 3.4 and 3.5).
- * When the session changes (signed in, a step done, signed out, or the
+ * Which screens can open depends on the session: signed-in people go
+ * through the terms and then the profile before the rest (spec 1, 3.4 and
+ * 3.5). When the session changes (signed in, a step done, signed out, or the
  * session ended elsewhere), screens that no longer fit close and the app
- * returns to the start, which leads on from there. Fonts load at the same
+ * returns to the start, which leads on from there. Sign-in and Settings,
+ * where the session changes, close themselves back to the menu instead: a
+ * guard would open a second menu on top of the first. Fonts load at the same
  * time; if they fail, the app opens with the system fonts. Wide screens show
  * the menu in a bar above every screen (spec 16, 3.1).
  */
@@ -61,12 +62,9 @@ function Navigation() {
       <Stack.Screen name="search/index" />
       <Stack.Screen name="search/results" />
       <Stack.Screen name="trips/[id]/index" />
-      <Stack.Protected guard={me === null}>
-        <Stack.Screen name="sign-in" />
-      </Stack.Protected>
-      <Stack.Protected guard={me !== null}>
-        <Stack.Screen name="settings" />
-      </Stack.Protected>
+      {/* These two close themselves when the session changes (BackToMenu). */}
+      <Stack.Screen name="sign-in" />
+      <Stack.Screen name="settings" />
       <Stack.Protected guard={needsLegal}>
         <Stack.Screen name="onboarding/terms" />
       </Stack.Protected>
@@ -95,20 +93,24 @@ function Navigation() {
   return <WithTopBar>{stack}</WithTopBar>;
 }
 
-/** On wide screens, the top bar above every screen, which then leave its edge to it. */
+/**
+ * On wide screens, the top bar above every screen, which then leave its edge
+ * to it. The screens stay in the same place in the tree either way, so a
+ * window turning wide or narrow keeps what they show.
+ */
 function WithTopBar({ children }: { readonly children: ReactNode }) {
   const wide = useWideScreen();
   const saveLanguage = useSaveLanguage();
-  if (!wide) return children;
   return (
-    <View style={styles.wide}>
-      <TopBar onSwitchLanguage={saveLanguage} />
-      <ScreenEdges value={belowTopBar}>{children}</ScreenEdges>
+    <View style={styles.frame}>
+      {wide ? <TopBar onSwitchLanguage={saveLanguage} /> : null}
+      <ScreenEdges value={wide ? belowTopBar : allEdges}>{children}</ScreenEdges>
     </View>
   );
 }
 
 const belowTopBar = ["right", "bottom", "left"] as const;
+const allEdges = ["top", "right", "bottom", "left"] as const;
 
 /** The API could not be reached at start; the person is not signed out. */
 function Unreachable() {
@@ -140,7 +142,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   );
 }
 
-const styles = StyleSheet.create({ wide: { flex: 1 } });
+const styles = StyleSheet.create({ frame: { flex: 1 } });
 
 function UnexpectedError({ retry }: { readonly retry: ErrorBoundaryProps["retry"] }) {
   const { t } = useLanguage();

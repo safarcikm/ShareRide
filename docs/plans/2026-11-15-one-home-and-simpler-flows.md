@@ -159,6 +159,8 @@ rides.
   wide (`useWideScreen`).
 - [x] **Step 4:** Run the tests and `pnpm check`; expect pass.
 - [x] **Step 5:** Commit `feat(mobile): tab bar on phones, top bar on wide screens`.
+  Tasks 1.1 to 1.3 went in as one commit, as the tab group, the bars and
+  Find only work together.
 
 ### Task 1.3: Find, the home
 

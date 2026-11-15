@@ -90,8 +90,16 @@ test.describe("Find, the home, on the web", () => {
     await expect(menuLink(page, "Find")).not.toHaveAttribute("aria-current", "page");
     await menuLink(page, "Offer").click();
     await expect(page.getByRole("button", { name: "Sign in to offer a ride" })).toBeVisible();
-    // A link in the browser's sense: it has an address to open in a new tab.
+    // A link in the browser's sense: it has an address, and a click with
+    // Ctrl or Cmd opens it in a new tab while the app stays where it is.
     await expect(menuLink(page, "Find")).toHaveAttribute("href", "/");
+    const [newTab] = await Promise.all([
+      page.context().waitForEvent("page"),
+      menuLink(page, "Profile").click({ modifiers: ["ControlOrMeta"] }),
+    ]);
+    await expect(newTab).toHaveURL(/\/profile$/);
+    await expect(page).toHaveURL(/\/offer$/);
+    await newTab.close();
   });
 });
 
