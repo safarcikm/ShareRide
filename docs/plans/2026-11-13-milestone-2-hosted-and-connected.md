@@ -64,7 +64,7 @@ account, not an architecture decision, so it lives here and in the roadmap. Pric
 | 1 | Hosting | **Render, Frankfurt**: the API container, a cron job and managed PostgreSQL | PostgreSQL 18 with PostGIS (our schema uses PostgreSQL 18's `uuidv7()`), point-in-time recovery, private network, secret store, a blueprint file in the repository as infrastructure in code | Fly.io in Stockholm is closer, but its managed PostgreSQL stops at version 17; AWS in Stockholm is more work for one person | About $15 ($7 API, $6 database plus storage, about $1 for the hourly clean-up) |
 | 2 | SMS | **46elks** (Swedish telecom operator). Changed on 2026-11-14 to **Vonage**, with 46elks as the fallback ([ADR 0023](../decisions/0023-sms-with-vonage.md)); the rest of this row is the original choice | All data in the EU, pay per message, no monthly fee, a small HTTP API | Sinch (also Swedish, larger, more onboarding) as the fallback | Per message; big providers charge about 6 to 7 US cents for Iceland; 46elks's rate to confirm at sign-up |
 | 3 | Error tracking and uptime | **Sentry, EU data region** (Frankfurt), free plan | Mature SDKs for Expo and Node.js, scrubbing hooks, one uptime monitor included | GlitchTip (Sentry-compatible); Better Stack for uptime | $0 |
-| 4 | Map tiles | **MapTiler** (Swiss) | Switzerland has an EU adequacy decision; OpenStreetMap vector tiles for MapLibre; the free plan covers testing and prototypes | Stadia Maps (United States); our own Protomaps file of Iceland, the ADR 0009 fallback | $0 while building, then $30 (Flex) from the beta, or switch to our own file |
+| 4 | Map tiles | **MapTiler** (Swiss) | Switzerland has an EU adequacy decision; OpenStreetMap vector tiles for MapLibre; the free plan covers testing and prototypes | Stadia Maps (United States); our own Protomaps file of Iceland, the ADR 0009 fallback | $0 while building, then $30 (Flex) from the beta, or switch to our own file. Replaced on 14 November by our own map, no tiles ([ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)) |
 | 5 | Photo storage | **Hetzner Object Storage, Helsinki** (German company) | S3-compatible, EU company, close to Iceland, predictable price | Scaleway in Paris; Cloudflare R2 with EU jurisdiction (United States company) | About €5, including 1 TB of storage and traffic |
 | 6 | Apple developer account | **Enrol as an individual now** ($99 a year) and use separate development app IDs; the company's own account takes the store app ID once the company exists | iOS builds on a phone and Sign in with Apple both need a paid account. Staging accounts are test data that can be thrown away, so nothing has to move later | Wait for the company: Sign in with Apple and iOS phone builds slip until then; Android, the iOS simulator and the web carry on | $99 a year |
 
@@ -186,9 +186,8 @@ Render, Frankfurt (deploys a commit once its checks pass)
 - App: a map with clusters that opens on the whole of Iceland, tapping a
   point opens a summary card, and a list grouped by the eight regions, sorted
   in Icelandic order. The list is the full screen reader alternative.
-  `@maplibre/maplibre-react-native` on phones and `maplibre-gl` on the web.
-  OpenStreetMap and MapTiler attribution are visible. The map style takes
-  the spec 15 colours later.
+  The map is now our own drawing of Iceland ([ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)), built in
+  milestone 3.
 
 ### 4.6 Profile photo
 
@@ -298,8 +297,8 @@ Split in two, so the server side can be checked on staging first.
 
 ### PR 6: `feat(meeting-points)`: map and list
 
-- [ ] Check first that `@maplibre/maplibre-react-native` builds with Expo
-      SDK 58 and React Native 0.88
+- Replaced: no map library is needed; our own map of Iceland is drawn in
+  the app ([ADR 0024](../decisions/0024-own-simple-map-of-iceland.md))
 - [ ] Schema, domain rules (visible, in use now) with tests, sample seed,
       `GET /v1/meeting-points` with integration tests
 - [ ] Map, list and summary card with component tests (list grouping and
@@ -343,8 +342,7 @@ thread when its PR is ready.
    (PR 4); a token as a Render secret file for the web source maps (PR 4b).
 4. Expo account, and the Apple Developer Program if decision 6 is accepted
    (PR 5).
-5. MapTiler: account and a key limited to our app IDs and the staging
-   address (PR 6).
+5. MapTiler: no longer needed ([ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)).
 6. Hetzner: account, a bucket in Helsinki and its keys (PR 7).
 7. Google Cloud: a project, the consent screen and three client IDs (PR 8).
 8. Sign the data processing agreement where the provider offers one,
@@ -355,8 +353,8 @@ thread when its PR is ready.
 
 - **SMS delivery** varies by network. Test on Síminn, Nova and Vodafone
   numbers before the beta; 46elks is the fallback.
-- **MapLibre on React Native 0.88** may lag behind; PR 6 checks first and
-  can fall back to a list plus the web map until it builds.
+- **MapLibre on React Native 0.88** no longer applies: our own map needs no
+  map library ([ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)).
 - **Sign in with Apple on the web** needs a verified domain, which a
   `onrender.com` address may not satisfy. If so, Apple on the web waits for
   our own domain.

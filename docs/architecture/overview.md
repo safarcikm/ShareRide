@@ -16,7 +16,7 @@ flowchart TB
   SR --> SMS[SMS provider]
   SR --> MAIL[Email provider]
   SR --> PUSH[Apple and Google push<br/>via Expo push service]
-  SR --> MAP[Map tiles and routing]
+  SR --> MAP[Routing engine]
   SR --> WX[Veðurstofa Íslands<br/>weather warnings]
   SR --> ROAD[Vegagerðin<br/>road conditions]
   SR --> EID[Auðkenni<br/>electronic ID]

@@ -1,6 +1,6 @@
 # 0021. Map tiles from MapTiler
 
-- **Status:** Accepted (2026-11-13, by Martin, with the milestone 2 plan)
+- **Status:** Superseded by [ADR 0024](0024-own-simple-map-of-iceland.md)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [ADR 0009](0009-maps-and-routing.md),

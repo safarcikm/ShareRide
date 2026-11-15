@@ -62,7 +62,7 @@ were considered in each ADR.
 | Trip model               | Curated meeting-point network, per-segment prices from one driver-chosen price level, per-segment seat capacity | [0006](../decisions/0006-meeting-points-and-segment-pricing.md), [0012](../decisions/0012-trip-price-level.md) |
 | Hosting                  | Containers on a managed platform in an EEA region; all personal data stays in the EEA | [0007](../decisions/0007-eea-hosting-and-data-residency.md) |
 | Payments                 | In the app only, from the beta, through a provider that supports Icelandic marketplaces; provider chosen in its own ADR | [0013](../decisions/0013-in-app-payments-only.md) |
-| Maps and routing         | MapLibre with OpenStreetMap-based tiles; precomputed distances between meeting points | [0009](../decisions/0009-maps-and-routing.md) |
+| Maps and routing         | Our own simple map of Iceland; precomputed distances between meeting points | [0009](../decisions/0009-maps-and-routing.md), [0024](../decisions/0024-own-simple-map-of-iceland.md) |
 | Sign-in and identity     | Phone number first, plus Apple and Google; optional Auðkenni (Icelandic electronic ID) verification | [0010](../decisions/0010-authentication-and-identity.md) |
 | Languages                | Icelandic and English at launch, Polish next; ICU messages         | [0011](../decisions/0011-localization.md) |
 

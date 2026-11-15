@@ -16,12 +16,16 @@ import { Tag } from "@/components/tag";
 import { Body, Heading, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
+import { IcelandMap } from "@/maps/iceland-map";
 import { mapsUrl } from "@/meeting-points/maps-url";
 import { amenityKeys, regionKeys, seasonText, typeKeys } from "@/meeting-points/texts";
 import { iconSizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
-/** A meeting point's details (spec 2, screen 2). Open to everyone. */
+/**
+ * A meeting point's details (spec 2, screen 2), with the point on our map
+ * of Iceland and "Open in maps" for directions (ADR 0024). Open to everyone.
+ */
 export default function MeetingPointScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useLanguage();
@@ -109,6 +113,10 @@ function Details({ point }: { readonly point: MeetingPointDetails }) {
           {t("meetingPoints.lastChecked", { date: formatDate(point.lastCheckedOn, locale) })}
         </Body>
       )}
+      <IcelandMap
+        label={t("meetingPoints.pointMap", { name })}
+        dots={[{ id: point.id, position: point.position, chosen: true }]}
+      />
       <Button
         variant="secondary"
         label={t("meetingPoints.openInMaps")}

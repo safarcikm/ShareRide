@@ -43,9 +43,12 @@ between them are computed automatically.
 ### 3.1 Meeting point map and list
 
 1. Available without an account (spec 1, decision 1).
-2. The map opens on the user's last viewed area, or on the whole of Iceland the
-   first time. Points are clustered when zoomed out. Tapping a point opens its
-   summary; tapping again opens the details.
+2. The map shows the whole of Iceland with every point as a dot; it is our own
+   drawing and does not zoom ([ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)).
+   Tapping a point opens its summary; tapping again opens the details.
+   Without zoom, points close together share a spot, so a tap there shows
+   all of them, nearest first, to choose from. On wide screens the map sits
+   beside the list; on phones a choice switches between them.
 3. A list view shows the same points grouped by region (the eight regions of
    Iceland), sorted by name. The list is a full alternative to the map for
    screen readers.
@@ -65,6 +68,7 @@ between them are computed automatically.
 - Amenities, and the shelter's weekly opening hours with a note (for example
   holiday hours). "Last checked" date.
 - Season: "In use all year", or "In use from May to September".
+- The point on the map of Iceland (3.1).
 - Actions: "Open in maps" (hands the coordinates to the phone's maps app),
   "Trips from here" (opens search, spec 4), "Something wrong here?" (3.5).
 
@@ -231,10 +235,8 @@ fixed distance table and only the adapter talks to the engine.
   that.
 - Operator photos show no recognisable faces or number plates (blurred before
   upload) and have metadata removed, as in spec 1.
-- The map tile provider receives the user's IP address and the map area being
-  viewed. It needs a data processing agreement and EEA or adequate-country
-  hosting ([ADR 0007](../decisions/0007-eea-hosting-and-data-residency.md));
-  self-hosted tiles remove this (ADR 0009).
+- The map is drawn in the app from data built into it, so no map provider
+  learns who looks at which area ([ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)).
 - "Open in maps" hands only the point's coordinates to the phone's maps app.
 - Safety comes from the activation checklist, the yearly review, problem
   reports, and the ability to pause a point at once.
@@ -250,6 +252,9 @@ fixed distance table and only the adapter talks to the engine.
 | `meetingPoints.paused` | Not in use at the moment | Ekki í notkun eins og er |
 | `meetingPoints.lastChecked` | Last checked {date} | Síðast yfirfarið {date} |
 | `meetingPoints.openInMaps` | Open in maps | Opna í kortaforriti |
+| `meetingPoints.map` | Map | Kort |
+| `meetingPoints.list` | List | Listi |
+| `meetingPoints.mapHint` | Choose a dot to see its meeting point, and choose it again to open it. | Veldu punkt til að sjá mótsstaðinn þar, og veldu hann aftur til að opna hann. |
 | `meetingPoints.tripsFromHere` | Trips from here | Ferðir héðan |
 | `meetingPoints.somethingWrong` | Something wrong here? | Er eitthvað að hér? |
 | `amenities.shelter` | Shelter | Skjól |
@@ -298,3 +303,4 @@ and places reachable only by ferry, such as Vestmannaeyjar, Hrísey and Grímsey
 | 1 | Can users suggest meeting points? | No. The operator curates every meeting point (Martin, 2026-11-13). Users can still report a problem with an existing point |
 | 2 | Must every meeting point be checked on site before it goes live? | The operator confirms every point before activation, from local knowledge or a visit; a visit is not required (Martin, 2026-11-13). The photo and "where to stand" are still required |
 | 3 | Should search find street addresses in the beta? | No. Towns, villages, landmarks and "Near me" are enough to choose a meeting point; revisit after the beta (Martin, 2026-11-13) |
+| 4 | Which map? | Our own simple drawing of Iceland, without zoom or map tiles; "Open in maps" gives directions (Martin, 2026-11-14, [ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)) |

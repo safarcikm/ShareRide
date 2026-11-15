@@ -12,7 +12,7 @@ links an ADR that chose one.
 
 | Need | Port | Candidates | Phase | Notes |
 | ---- | ---- | ---------- | ----- | ----- |
-| Map display | `MapTiles` (client) | **MapTiler** ([ADR 0021](../decisions/0021-map-tiles-from-maptiler.md)); self-hosted Protomaps tiles as the fallback | 2 | MapLibre renderer, OpenStreetMap data ([ADR 0009](../decisions/0009-maps-and-routing.md)) |
+| Map display | None (drawn in the app) | **Our own map of Iceland** from Natural Earth data ([ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)); no provider | 2 | If zoomable maps are needed: MapTiler ([ADR 0021](../decisions/0021-map-tiles-from-maptiler.md)) or our own tiles ([ADR 0009](../decisions/0009-maps-and-routing.md)) |
 | Routing (distances between meeting points) | `RoutingEngine` | Valhalla or OSRM self-hosted on the Iceland extract; or a hosted routing API | 2 | Run offline to fill the legs table; not on every request |
 | Place search (geocoding) | `Geocoder` | Our own meeting-point and place-name index; national geodata as a source | 2 | Iceland place names from the national geodata portal; addresses from the official address register |
 | SMS (sign-in codes, critical alerts) | `SmsSender` | **Vonage**, EU endpoint ([ADR 0023](../decisions/0023-sms-with-vonage.md)); 46elks as the fallback | 2 | Watch cost and fraud (SMS pumping); rate-limit |

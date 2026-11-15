@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react-native";
+import { act, render, screen, within } from "@testing-library/react-native";
 import { getLocales } from "expo-localization";
-import { StyleSheet } from "react-native";
+import { Dimensions, StyleSheet } from "react-native";
 import { renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { colors } from "@/theme/tokens";
@@ -102,5 +102,46 @@ describe("Screen", () => {
     expect(StyleSheet.flatten(scroll.props.contentContainerStyle as object)).toMatchObject({
       padding: 16,
     });
+  });
+
+  describe("on wide screens", () => {
+    beforeEach(() => {
+      Dimensions.set({ window: { width: 1280, height: 800, scale: 1, fontScale: 1 } });
+    });
+    afterEach(async () => {
+      // The screen is still on show here, so its update goes through act.
+      await act(() => {
+        Dimensions.set({ window: { width: 750, height: 1334, scale: 2, fontScale: 2 } });
+      });
+    });
+
+    it("shows an aside beside the column", async () => {
+      await render(
+        <Screen aside={<Body>Map</Body>}>
+          <Body>List</Body>
+        </Screen>,
+      );
+      expect(within(screen.getByTestId("aside")).getByText("Map")).toBeVisible();
+      expect(screen.getByText("List")).toBeVisible();
+    });
+
+    it("keeps a footer in the bottom bar when an aside takes the side", async () => {
+      await render(
+        <Screen aside={<Body>Map</Body>} footer={<Body>Book</Body>} footerBeside>
+          <Body>Trip</Body>
+        </Screen>,
+      );
+      expect(within(screen.getByTestId("bottom-bar")).getByText("Book")).toBeVisible();
+      expect(within(screen.getByTestId("aside")).getByText("Map")).toBeVisible();
+    });
+  });
+
+  it("leaves the aside out on phones", async () => {
+    await render(
+      <Screen aside={<Body>Map</Body>}>
+        <Body>List</Body>
+      </Screen>,
+    );
+    expect(screen.queryByText("Map")).toBeNull();
   });
 });

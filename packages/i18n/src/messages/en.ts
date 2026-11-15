@@ -94,6 +94,13 @@ export const en = {
   "meetingPoints.sample": "Sample meeting point",
   "meetingPoints.sampleNotice":
     "These are sample meeting points for trying ShareRide out. Their locations are approximate.",
+  "meetingPoints.showAs": "Show the meeting points as",
+  "meetingPoints.map": "Map",
+  "meetingPoints.list": "List",
+  "meetingPoints.mapLabel":
+    "Map of Iceland with {count, plural, one {# meeting point} other {# meeting points}}. The list shows the same points.",
+  "meetingPoints.mapHint": "Choose a dot to see its meeting point, and choose it again to open it.",
+  "meetingPoints.pointMap": "{name} on a map of Iceland",
   "meetingPoints.empty": "There are no meeting points yet.",
   "meetingPoints.notFound": "We couldn't find this meeting point. It may no longer be in use.",
   "meetingPoints.summary": "{type} · {municipality}",

@@ -19,9 +19,10 @@ It builds on milestones 1 and 2 and on ADRs
 [0006](../decisions/0006-meeting-points-and-segment-pricing.md) (meeting
 points and segment prices), [0009](../decisions/0009-maps-and-routing.md)
 (legs computed ahead and stored), [0012](../decisions/0012-trip-price-level.md)
-(one price level per trip) and [0021](../decisions/0021-map-tiles-from-maptiler.md)
-(MapTiler). No new ADR is needed: section 3 lists the choices, each
-temporary or inside an existing decision.
+(one price level per trip). During the milestone, Martin replaced MapTiler
+([ADR 0021](../decisions/0021-map-tiles-from-maptiler.md)) with our own simple
+map, [ADR 0024](../decisions/0024-own-simple-map-of-iceland.md). Otherwise no new ADR is needed: section 3 lists the
+choices, each temporary or inside an existing decision.
 
 ## 1. Goal
 
@@ -37,8 +38,8 @@ the TestFlight build once Apple approves Martin's account):
   the day, they see other days and nearby meeting points.
 - Anyone opens a trip: their part, the whole route, the driver, the car, the
   preferences and the note. A trip has a link that can be shared.
-- Meeting points can be browsed in a list by region, and on a map once the
-  MapTiler key is in (PR 8).
+- Meeting points can be browsed in a list by region and on our own map of
+  Iceland (PR 8).
 
 ## 2. Scope
 
@@ -63,7 +64,7 @@ iPhone build PR opens as soon as Apple approves Martin's account.
 | 1 | Meeting points and distances | **Sample data now**: about 30 real public places (bus terminals, fuel stations, the airport) on Reykjavík to Akureyri, Reykjavík to Vík and Reykjavík to Keflavík Airport, with road distances from a small hand-made road graph. Shown as sample data; local and staging only | Every feature needs meeting points and distances. The real list needs photos, "where to stand" and the operator's check for each point, and the routing engine needs its own job | Write the real list v1 first; everything waits for it |
 | 2 | Profile photo before publishing (rule R3.1) | **Shown in the ready-to-drive list, required once photo upload exists** (milestone 2, PR 7, which needs the Hetzner account) | Drivers can be tried now; the rule itself does not change | Build photo upload first |
 | 3 | Payouts before publishing a priced trip (R3.1) | **Not checked until payments are built** (spec 13); priced trips publish on staging, and no money moves | Payments are their own milestone; without this, only free trips could be tried | Only free trips until payments |
-| 4 | Maps | **Lists first, the map last** (PR 8): the route and meeting points as lists, which the specs ask for anyway for screen readers | The map needs Martin's MapTiler key and a check that MapLibre builds with Expo SDK 58 | Map first, everything waits on the key |
+| 4 | Maps | **Lists first, the map last** (PR 8): the route and meeting points as lists, which the specs ask for anyway for screen readers. Changed on 14 November: our own simple map instead of MapTiler ([ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)) | The map needs Martin's MapTiler key and a check that MapLibre builds with Expo SDK 58 | Map first, everything waits on the key |
 | 5 | Order after this milestone | **Booking and requests (spec 5) next**, then milestone 2's remaining PRs | Booking turns trips into rides; sign-in with Google and Apple matter less until then | Milestone 2's remaining PRs first |
 
 Settings the operator will change later (feature H4) start as values in the
@@ -178,11 +179,22 @@ the database.
 
 ### 4.7 Maps (PR 8)
 
-- MapLibre GL JS on the web and `@maplibre/maplibre-react-native` on phones
-  (checked first with Expo SDK 58), with MapTiler tiles and the
-  OpenStreetMap attribution. The key is limited to our app IDs and the
-  staging address; the content security policy allows MapTiler.
-- Expo Go cannot show the native map, so phones show the lists there.
+- Our own map of Iceland ([ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)): the coastline, glaciers, the
+  Ring Road and main roads from Natural Earth (public domain), simplified
+  by a script into a data file in the app and drawn with `react-native-svg`
+  in the colours of spec 15. It works the same on the web, in Expo Go and
+  in store builds, and needs no account or key.
+- Meeting points are dots: a tap opens a point's summary, a second tap its
+  details; points close together share a spot, so a tap there shows them
+  all. On wide screens the map sits beside the list; on phones a choice
+  switches between the map and the list. A point's details show it on the
+  map, next to "Open in maps".
+- A trip's route is a line along the drawn roads between its stops, with
+  the passenger's part solid; a stop away from the roads joins the line
+  straight. The map does not zoom: it shows the part of Iceland it needs.
+- MapLibre was checked first (PR 8): the web map built and drew, but phones
+  would have needed development builds, and the tiles an account, a key and
+  a processor.
 
 ## 5. Pull requests and tasks
 
@@ -373,20 +385,32 @@ Split in two, like PR 6: 7a the server, 7b the screens.
   (spec 9), the seat pop animation, the map (PR 8), and opening shared
   links in the app, which needs the production domain.
 
-### PR 8: `feat(maps)`: maps on the web and phones
+### PR 8: `feat(maps)`: our own map of Iceland
 
-- [ ] Check MapLibre with Expo SDK 58 first; map of meeting points, the
-      route on the post and trip screens
-- Verify: the map shows the sample points on the web and the Android
-  emulator (needs Martin's MapTiler key)
+Split in two, like PR 6: 8a the map and meeting points, 8b routes.
+
+- [x] 8a: ADR 0024; the data script and data file; the map drawing with
+      tests; meeting points on the map and on a point's details
+- [ ] 8b: routes along the drawn roads; the route map on trip details and
+      on the post-a-trip route step
+- Verify: the map shows the sample points and the Reykjavík to Akureyri
+  route on the web and on a phone in Expo Go
+- 8a notes: the map is Natural Earth's 1:10m coastline, glaciers and roads
+  (all but ferries), projected flat at 65° north and simplified to about
+  45 KB; the script joins road ends that Natural Earth draws within 2 km of
+  another road, so the roads form one network for 8b. The map is one image
+  for screen readers with the number of points in its label; the list is
+  the full alternative. A tap counts dots within 22 points of it, so the
+  nine capital-area points share one spot on a phone; a second tap opens a
+  lone point. On the web the map stays in view beside the list while the
+  list scrolls.
 
 ## 6. Martin's steps
 
 1. Accept or change the choices in section 3.
 2. Try each PR locally on the web as it merges (README, "Run it locally"),
    and on staging once it runs (milestone 2, Render setup).
-3. Before PR 8: a MapTiler account and a key limited to our app IDs and the
-   staging address (milestone 2 plan, step 5).
+3. Nothing for maps: our own map needs no account or key (ADR 0024).
 
 ## 7. Risks
 

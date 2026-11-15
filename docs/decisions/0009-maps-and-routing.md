@@ -1,6 +1,8 @@
 # 0009. Maps with MapLibre and OpenStreetMap; precomputed routing
 
-- **Status:** Accepted (2026-11-13, by Martin once the MVP specs were approved)
+- **Status:** Accepted (2026-11-13, by Martin once the MVP specs were approved); the
+  map display choices (MapLibre, hosted tiles) are superseded by
+  [ADR 0024](0024-own-simple-map-of-iceland.md)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [integrations](../architecture/integrations.md),

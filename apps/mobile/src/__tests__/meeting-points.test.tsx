@@ -1,6 +1,8 @@
-import { fireEvent, screen, within } from "expo-router/testing-library";
+import { act, fireEvent, screen, within } from "expo-router/testing-library";
 import { getLocales } from "expo-localization";
-import { AccessibilityInfo, Linking } from "react-native";
+import { AccessibilityInfo, Dimensions, Linking } from "react-native";
+import type { MeetingPointSummary } from "@shareride/contracts";
+import { mapSize, project } from "@/maps/projection";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -60,9 +62,16 @@ async function openMeetingPoints(setUp = catalogue) {
   return app;
 }
 
+/** Phones show the map first; this switches to the list. */
+async function openList(setUp = catalogue) {
+  const app = await openMeetingPoints(setUp);
+  await fireEvent.press(await screen.findByRole("radio", { name: "List" }));
+  return app;
+}
+
 describe("Meeting points", () => {
   it("lists the points by region, in the order of the regions, sorted by name", async () => {
-    await openMeetingPoints();
+    await openList();
     const headings = screen
       .getAllByRole("header")
       .map((heading) => heading.props.children as string);
@@ -79,7 +88,7 @@ describe("Meeting points", () => {
   });
 
   it("marks sample points and paused points", async () => {
-    await openMeetingPoints();
+    await openList();
     expect(screen.getByText(/These are sample meeting points/)).toBeVisible();
     expect(screen.getAllByText("Sample meeting point")).toHaveLength(4);
     const paused = screen.getByRole("button", { name: /^Fitjar/ });
@@ -90,6 +99,12 @@ describe("Meeting points", () => {
     deviceLanguage("is-IS");
     await renderApp("/meeting-points", { setUp: catalogue });
     expect(await screen.findByRole("header", { name: "Mótsstaðir" })).toBeVisible();
+    expect(
+      screen.getByRole("image", {
+        name: "Kort af Íslandi með 4 mótsstöðum. Listinn sýnir sömu staði.",
+      }),
+    ).toBeVisible();
+    await fireEvent.press(screen.getByRole("radio", { name: "Listi" }));
     expect(screen.getByRole("header", { name: "Höfuðborgarsvæðið" })).toBeVisible();
     expect(screen.getByText("BSÍ umferðarmiðstöð")).toBeVisible();
     expect(screen.getByText("Keflavíkurflugvöllur")).toBeVisible();
@@ -101,6 +116,7 @@ describe("Meeting points", () => {
     });
     expect(screen.getByText("There are no meeting points yet.")).toBeVisible();
     expect(screen.queryByText(/These are sample meeting points/)).toBeNull();
+    expect(screen.queryByRole("radio", { name: "Map" })).toBeNull();
   });
 
   it("shows an error and tries again when the list cannot load", async () => {
@@ -108,9 +124,10 @@ describe("Meeting points", () => {
       client.answer("/v1/meeting-points", () => failure(0, "network_error"));
     });
     expect(screen.getByText(/We couldn't reach ShareRide/)).toBeVisible();
+    expect(screen.queryByRole("radio", { name: "Map" })).toBeNull();
     catalogue(app.client);
     await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
-    expect(await screen.findByText("BSÍ bus terminal")).toBeVisible();
+    expect(await screen.findByRole("image", { name: /^Map of Iceland with 4/ })).toBeVisible();
   });
 
   it("opens from the welcome screen", async () => {
@@ -128,9 +145,104 @@ describe("Meeting points", () => {
   });
 });
 
+describe("The map of meeting points", () => {
+  /** The map as wide as a phone's column, in points. */
+  const width = 343;
+
+  async function layOutMap() {
+    await fireEvent(screen.getByTestId("map-area"), "layout", {
+      nativeEvent: {
+        layout: { x: 0, y: 0, width, height: (width * mapSize.height) / mapSize.width },
+      },
+    });
+  }
+
+  async function tapAt(point: MeetingPointSummary) {
+    const { x, y } = project(point.position);
+    const scale = width / mapSize.width;
+    await fireEvent.press(screen.getByTestId("map-touch"), {
+      nativeEvent: { locationX: x * scale, locationY: y * scale },
+    });
+  }
+
+  const names = () =>
+    screen.getAllByTestId("meeting-point-name").map((name) => name.props.children as string);
+
+  afterEach(async () => {
+    // The screen is still on show here, so its update goes through act.
+    await act(() => {
+      Dimensions.set({ window: { width: 750, height: 1334, scale: 2, fontScale: 2 } });
+    });
+  });
+
+  it("comes first on phones, with the list a choice away", async () => {
+    await openMeetingPoints();
+    expect(
+      screen.getByRole("image", {
+        name: "Map of Iceland with 4 meeting points. The list shows the same points.",
+      }),
+    ).toBeVisible();
+    expect(screen.getByRole("radio", { name: "Map" })).toBeChecked();
+    expect(screen.getByText(/These are sample meeting points/)).toBeVisible();
+    expect(
+      screen.getByText("Choose a dot to see its meeting point, and choose it again to open it."),
+    ).toBeVisible();
+    expect(screen.queryByRole("header", { name: "Capital area" })).toBeNull();
+
+    await fireEvent.press(screen.getByRole("radio", { name: "List" }));
+    expect(screen.getByRole("header", { name: "Capital area" })).toBeVisible();
+    expect(screen.queryByRole("image", { name: /^Map of Iceland/ })).toBeNull();
+  });
+
+  it("shows a point's summary on a tap, and its details on a second", async () => {
+    await openMeetingPoints();
+    await layOutMap();
+    await tapAt(hof);
+    expect(names()).toEqual(["Hof, Akureyri"]);
+    expect(screen.queryByText(/^Choose a dot/)).toBeNull();
+
+    await tapAt(hof);
+    expect(await screen.findByRole("header", { name: "Hof, Akureyri" })).toBeVisible();
+    expect(screen).toHavePathname(`/meeting-points/${hof.id}`);
+  });
+
+  it("shows every point at a spot it shares, nearest first, to choose from", async () => {
+    await openMeetingPoints();
+    await layOutMap();
+    // Keflavík Airport and Fitjar are 4 km apart: one spot on a phone.
+    await tapAt(kef);
+    expect(names()).toEqual(["Keflavík Airport", "Fitjar"]);
+    await tapAt(kef);
+    expect(screen).toHavePathname("/meeting-points");
+
+    await fireEvent.press(screen.getByRole("button", { name: /^Fitjar/ }));
+    expect(await screen.findByRole("header", { name: "Fitjar" })).toBeVisible();
+  });
+
+  it("sits beside the list on wide screens", async () => {
+    Dimensions.set({ window: { width: 1280, height: 800, scale: 1, fontScale: 1 } });
+    await openMeetingPoints();
+    expect(
+      within(screen.getByTestId("aside")).getByRole("image", { name: /^Map of Iceland with 4/ }),
+    ).toBeVisible();
+    expect(screen.getByRole("header", { name: "Capital area" })).toBeVisible();
+    expect(screen.queryByRole("radio", { name: "Map" })).toBeNull();
+  });
+
+  it("waits for the points before it shows beside the list", async () => {
+    Dimensions.set({ window: { width: 1280, height: 800, scale: 1, fontScale: 1 } });
+    await openMeetingPoints((client) => {
+      client.answer("/v1/meeting-points", () => failure(0, "network_error"));
+    });
+    expect(screen.getByText(/We couldn't reach ShareRide/)).toBeVisible();
+    expect(screen.queryByTestId("aside")).toBeNull();
+    expect(screen.queryByRole("image", { name: /^Map of Iceland/ })).toBeNull();
+  });
+});
+
 describe("Meeting point details", () => {
   async function openDetails(name: RegExp) {
-    const app = await openMeetingPoints();
+    const app = await openList();
     await fireEvent.press(screen.getByRole("button", { name }));
     return app;
   }
@@ -148,6 +260,9 @@ describe("Meeting point details", () => {
     expect(screen.getByText("In use all year")).toBeVisible();
     expect(screen.getByText("Last checked 14 November 2026")).toBeVisible();
     expect(screen.getByText("Sample meeting point")).toBeVisible();
+    expect(
+      screen.getByRole("image", { name: "BSÍ bus terminal on a map of Iceland" }),
+    ).toBeVisible();
   });
 
   it("shows the season in months and the other names", async () => {
@@ -243,7 +358,7 @@ describe("Place search", () => {
   });
 
   it("waits for a second letter and shows the list again when the field is cleared", async () => {
-    const app = await openMeetingPoints(search);
+    const app = await openList(search);
     const field = screen.getByLabelText("Town or meeting point");
     await fireEvent.changeText(field, "K");
     expect(screen.getByRole("header", { name: "Capital area" })).toBeVisible();
