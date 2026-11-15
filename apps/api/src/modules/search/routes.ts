@@ -1,17 +1,24 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
-import { tripSearchAlternativesRoute, tripSearchRoute } from "@shareride/contracts";
+import {
+  tripDetailsRoute,
+  tripSearchAlternativesRoute,
+  tripSearchRoute,
+} from "@shareride/contracts";
 import type { Context, MiddlewareHandler } from "hono";
+import { every } from "hono/combine";
 import { createMiddleware } from "hono/factory";
 import type { AppEnv } from "../../context.ts";
 import { errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
 import type { RateLimiter } from "../../platform/memory-rate-limiter.ts";
+import type { TripDetailsError, TripDetailsService } from "./details.ts";
 import type { SearchError, SearchService } from "./service.ts";
 
 export interface SearchRoutesDependencies {
   readonly search: SearchService;
+  readonly details: TripDetailsService;
   readonly optionalAuth: MiddlewareHandler<AppEnv>;
-  /** Per IP address, shared by both routes; checked before the token. */
+  /** Per IP address, shared by the three routes; checked before the token. */
   readonly limiter: RateLimiter;
   /** What the limiter counts by: the caller's IP address, as a keyed hash. */
   readonly clientKey: (c: Context) => string;
@@ -28,11 +35,20 @@ function searchError(c: Context, error: SearchError) {
   });
 }
 
+function detailsError(c: Context, error: TripDetailsError) {
+  if (error.code === "not_found") {
+    return errorResponse(c, 404, "not_found", "There is no such trip.");
+  }
+  return errorResponse(c, 400, "validation_failed", "Choose two stops of the trip, in order.", {
+    details: [{ path: error.end === "board" ? "fromStop" : "toStop", issue: error.code }],
+  });
+}
+
 export function registerSearchRoutes(
   app: OpenAPIHono<AppEnv>,
   dependencies: SearchRoutesDependencies,
 ): void {
-  const { search, optionalAuth, limiter, clientKey } = dependencies;
+  const { search, details, optionalAuth, limiter, clientKey } = dependencies;
 
   const limited = createMiddleware<AppEnv>(async (c, next) => {
     const check = limiter.hit(clientKey(c));
@@ -58,6 +74,19 @@ export function registerSearchRoutes(
     const query = validated(c, "query", tripSearchAlternativesRoute.request.query);
     const found = await search.alternatives(query, c.get("auth")?.userId ?? null);
     if (!found.ok) return searchError(c, found.error);
+    return c.json(found.value, 200);
+  });
+
+  // Registered as the GET of /v1/trips/{id} only, so a draft's changes are not counted.
+  app.openapi(toOpenApiRoute(tripDetailsRoute, every(limited, optionalAuth)), async (c) => {
+    const { id } = validated(c, "param", tripDetailsRoute.request.params);
+    const query = validated(c, "query", tripDetailsRoute.request.query);
+    const found = await details.details(
+      id,
+      { board: query.fromStop, alight: query.toStop, seats: query.seats },
+      c.get("auth")?.userId ?? null,
+    );
+    if (!found.ok) return detailsError(c, found.error);
     return c.json(found.value, 200);
   });
 }

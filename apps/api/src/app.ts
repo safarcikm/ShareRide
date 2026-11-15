@@ -30,7 +30,11 @@ import {
   createMeetingPointService,
   registerMeetingPointRoutes,
 } from "./modules/meeting-points/index.ts";
-import { createSearchService, registerSearchRoutes } from "./modules/search/index.ts";
+import {
+  createSearchService,
+  createTripDetailsService,
+  registerSearchRoutes,
+} from "./modules/search/index.ts";
 import {
   createRouteService,
   createTripService,
@@ -183,6 +187,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     registerSearchRoutes(app, {
       // Operator settings (feature H4) replace the defaults later.
       search: createSearchService({ ...features, settings: defaultSearchSettings }),
+      details: createTripDetailsService({ ...features, settings: defaultSearchSettings }),
       optionalAuth: createOptionalAuth(auth),
       limiter: createMemoryRateLimiter({ rules: searchLimitsPerAddress, clock: features.clock }),
       // A keyed hash, as for sign-in limits: no plain address is kept, even in memory.

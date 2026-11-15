@@ -145,6 +145,10 @@ When there are no results (on a chosen date, or at all):
 A trip has a public web address that opens the trip page in the web app or, if
 installed, in the app. It shows the same details as above. Trip pages are not
 indexed by search engines, because they show a person's name and travel plans.
+Once the trip is over (departed, completed or cancelled), its page stays open
+by link until a week after the last stop's planned time; after that the link
+says the trip can't be found (decision 4). Opening a trip's page counts towards
+the same limit as searching (section 7).
 
 ## 4. Rules
 
@@ -209,7 +213,8 @@ upcoming trips.
   engines (R4.6).
 - Other passengers are not shown before booking, not even as names; results
   show only free seats.
-- Searching is rate limited per IP address to prevent scraping.
+- Searching and opening trip pages are rate limited per IP address, together,
+  to prevent scraping.
 
 ## 8. Texts (first draft; Icelandic to be reviewed by a native speaker)
 
@@ -275,3 +280,4 @@ Accepted by Martin on 2026-11-13 as recommended.
 | 1 | Does a search for "Reykjavík" cover the whole capital area? | Yes: Reykjavík, Kópavogur, Garðabær, Hafnarfjörður, Seltjarnarnes and Mosfellsbær. A search for a specific meeting point or town stays precise |
 | 2 | Must the passenger pick a date? | No. Without a date, results show all upcoming trips on the route, grouped by day |
 | 3 | Does search find stops at meeting points being retired? | Yes: trips already posted still stop there until the last of them. Paused points are not found, because nobody can board there (2026-11-15: Martin asked for a suggestion; built as suggested) |
+| 4 | How long does a finished trip's page stay open by link? | Until a week after the last stop's planned time, then "This trip can't be found". Opening trip pages counts towards the search limit (2026-11-15: Martin, open question Q17, answer A40) |
