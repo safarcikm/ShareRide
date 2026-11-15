@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { formatDate, formatDistance, formatMoney, formatMonth } from "./format.ts";
+import {
+  capitalised,
+  formatClock,
+  formatDate,
+  formatDay,
+  formatDistance,
+  formatDuration,
+  formatMoney,
+  formatMonth,
+  formatWeekdays,
+} from "./format.ts";
 
 describe("formatMoney (ADR 0011)", () => {
   it("shows whole krónur in Icelandic as 2.500 kr.", () => {
@@ -12,6 +22,12 @@ describe("formatMoney (ADR 0011)", () => {
 
   it("shows a free trip as 0", () => {
     expect(formatMoney({ amount: 0, currency: "ISK" }, "en")).toBe("0 ISK");
+  });
+
+  it("groups every three digits, and none under a thousand", () => {
+    expect(formatMoney({ amount: 900, currency: "ISK" }, "is")).toBe("900 kr.");
+    expect(formatMoney({ amount: 1_234_500, currency: "ISK" }, "is")).toBe("1.234.500 kr.");
+    expect(formatMoney({ amount: 1_234_500, currency: "ISK" }, "en")).toBe("1,234,500 ISK");
   });
 });
 
@@ -26,6 +42,8 @@ describe("formatDistance", () => {
     expect(formatDistance(950, "en")).toBe("1 km");
     expect(formatDistance(2440, "en")).toBe("2.4 km");
     expect(formatDistance(2440, "is")).toBe("2,4 km");
+    expect(formatDistance(9949, "is")).toBe("9,9 km");
+    expect(formatDistance(3000, "is")).toBe("3 km");
   });
 
   it("shows whole kilometres from 10 km", () => {
@@ -40,6 +58,11 @@ describe("formatMonth", () => {
     expect(formatMonth(5, "en")).toBe("May");
     expect(formatMonth(5, "is")).toBe("maí");
     expect(formatMonth(12, "is")).toBe("desember");
+    expect(formatMonth(1, "en")).toBe("January");
+  });
+
+  it("refuses a month that does not exist", () => {
+    expect(() => formatMonth(13, "en")).toThrow(RangeError);
   });
 });
 
@@ -51,5 +74,65 @@ describe("formatDate", () => {
 
   it("does not move the date in any time zone", () => {
     expect(formatDate("2026-01-01", "en")).toBe("1 January 2026");
+  });
+});
+
+describe("formatDay", () => {
+  it("names the weekday and date in Iceland", () => {
+    const moment = new Date("2026-11-15T23:30:00Z");
+    expect(formatDay(moment, "en")).toBe("Sunday 15 November");
+    expect(formatDay(moment, "is")).toBe("sunnudagur 15. nóvember");
+  });
+
+  it("names every weekday of a week from Monday", () => {
+    const week = Array.from(
+      { length: 7 },
+      (_, index) => new Date(Date.UTC(2026, 10, 16 + index, 12)),
+    );
+    expect(week.map((moment) => formatDay(moment, "is"))).toEqual([
+      "mánudagur 16. nóvember",
+      "þriðjudagur 17. nóvember",
+      "miðvikudagur 18. nóvember",
+      "fimmtudagur 19. nóvember",
+      "föstudagur 20. nóvember",
+      "laugardagur 21. nóvember",
+      "sunnudagur 22. nóvember",
+    ]);
+    expect(formatDay(new Date("2027-01-01T00:00:00Z"), "en")).toBe("Friday 1 January");
+  });
+});
+
+describe("capitalised", () => {
+  it("puts a capital at the start of a line, Icelandic letters too", () => {
+    expect(capitalised("sunnudagur 15. nóvember kl. 09:00", "is")).toBe(
+      "Sunnudagur 15. nóvember kl. 09:00",
+    );
+    expect(capitalised("þriðjudagur", "is")).toBe("Þriðjudagur");
+    expect(capitalised("ágúst", "is")).toBe("Ágúst");
+    expect(capitalised("", "en")).toBe("");
+  });
+});
+
+describe("formatClock", () => {
+  it("shows the time on a 24-hour clock in Iceland", () => {
+    expect(formatClock(new Date("2026-11-15T07:05:00Z"))).toBe("07:05");
+    expect(formatClock(new Date("2026-11-15T23:59:59Z"))).toBe("23:59");
+  });
+});
+
+describe("formatDuration", () => {
+  it("shows minutes, or hours and minutes, rounded to the minute", () => {
+    expect(formatDuration(45 * 60 + 20, "en")).toBe("45 min");
+    expect(formatDuration(3600, "en")).toBe("1 h");
+    expect(formatDuration(5 * 3600 + 10 * 60 + 40, "en")).toBe("5 h 11 min");
+    expect(formatDuration(5 * 3600 + 10 * 60, "is")).toBe("5 klst. 10 mín.");
+    expect(formatDuration(20, "is")).toBe("0 mín.");
+  });
+});
+
+describe("formatWeekdays", () => {
+  it("names the days of the week from Monday", () => {
+    expect(formatWeekdays("en")).toEqual(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
+    expect(formatWeekdays("is")).toEqual(["mán.", "þri.", "mið.", "fim.", "fös.", "lau.", "sun."]);
   });
 });

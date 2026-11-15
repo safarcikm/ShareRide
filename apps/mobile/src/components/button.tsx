@@ -22,6 +22,8 @@ interface ButtonProps {
   /** Waiting for the API: shows a spinner before the label and ignores presses. */
   readonly busy?: boolean;
   readonly disabled?: boolean;
+  /** The screen's main action, such as a step's "Continue": full width and 56 high. */
+  readonly main?: boolean;
 }
 
 /** Colours and edge of each variant (spec 15, section 5.1). */
@@ -61,6 +63,7 @@ export function Button({
   variant = "primary",
   busy = false,
   disabled = false,
+  main = false,
 }: ButtonProps) {
   const palette = usePalette();
   const inactive = busy || disabled;
@@ -77,6 +80,7 @@ export function Button({
       style={({ pressed }) => [
         styles.outer,
         variant === "text" && styles.textOuter,
+        main && styles.mainOuter,
         chunky(edge, edgeColor, pressed && !inactive).outer,
       ]}
     >
@@ -116,6 +120,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   textOuter: { minHeight: minTouchTarget },
+  mainOuter: { minHeight: sizes.mainButtonHeight, alignSelf: "stretch" },
   face: {
     flexGrow: 1,
     flexDirection: "row",

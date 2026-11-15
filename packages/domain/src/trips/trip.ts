@@ -1,5 +1,6 @@
 // What a driver chooses for a trip besides the route and times (spec 3,
 // 3.7): seats, booking mode and preferences, with the first trip's defaults.
+import { suggestedPriceLevel } from "./prices.ts";
 
 /** A trip's life (domain model): only drafts and published trips so far. */
 export const tripStatuses = ["draft", "published", "departed", "completed", "cancelled"] as const;
@@ -36,7 +37,7 @@ export interface TripChoices {
  */
 export const firstTripChoices: TripChoices = {
   seats: 3,
-  priceLevel: 100,
+  priceLevel: suggestedPriceLevel,
   bookingMode: "approval",
   preferences: {
     luggage: "suitcase",

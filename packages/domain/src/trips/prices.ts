@@ -11,6 +11,9 @@ type PriceSettings = Pick<
 
 const isk = (amount: number): Money => ({ amount, currency: "ISK" });
 
+/** Rule P4: the level, in percent, at which every segment costs its suggested price. */
+export const suggestedPriceLevel = 100;
+
 /**
  * `numerator / denominator` krónur to the nearest whole step, halves up, for
  * values that are not negative.

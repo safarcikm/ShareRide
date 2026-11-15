@@ -108,6 +108,20 @@ export const sizes = {
   chipHeight: 40,
   iconButton: 44,
   checkbox: 26,
+  /** The round mark of a radio card. */
+  radio: 24,
+  switchWidth: 52,
+  switchHeight: 32,
+  switchThumb: 22,
+  /** The bars of StepProgress and the price level's track. */
+  bar: 8,
+  /** The price level's handle and the dots that mark its steps. */
+  priceHandle: 36,
+  priceDot: 4,
+  /** Room for a word under a point of the price level's track. */
+  priceLabel: 96,
+  /** A day in the calendar: the smallest touch target. */
+  calendarDay: 44,
 } as const;
 
 /** Width of the outline on inputs, tick boxes and chips. */

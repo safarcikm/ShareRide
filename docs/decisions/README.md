@@ -54,3 +54,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0021](0021-map-tiles-from-maptiler.md) | Map tiles from MapTiler | Accepted |
 | [0022](0022-photo-storage-on-hetzner.md) | Store photos in Hetzner Object Storage in Helsinki | Accepted |
 | [0023](0023-sms-with-vonage.md) | Send sign-in codes by SMS with Vonage, 46elks as the fallback | Accepted |
+| [0025](0025-own-date-and-number-formatting.md) | Our own date and number formatting instead of Intl's locale data | Proposed |

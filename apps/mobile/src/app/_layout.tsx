@@ -72,6 +72,14 @@ function Navigation() {
         <Stack.Screen name="drive/cars/new" />
         <Stack.Screen name="drive/cars/[id]" />
         <Stack.Screen name="drive/licence" />
+        <Stack.Screen name="drive/trips/index" />
+        <Stack.Screen name="drive/trips/new" />
+        <Stack.Screen name="drive/trips/[id]/route" />
+        <Stack.Screen name="drive/trips/[id]/time" />
+        <Stack.Screen name="drive/trips/[id]/price" />
+        <Stack.Screen name="drive/trips/[id]/seats" />
+        <Stack.Screen name="drive/trips/[id]/review" />
+        <Stack.Screen name="drive/trips/[id]/published" />
       </Stack.Protected>
     </Stack>
   );
