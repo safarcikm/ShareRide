@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createExpoPushSender } from "./push-expo.ts";
-import type { PushMessage } from "./push.ts";
+import { PushMaybeSent, type PushMessage } from "./push.ts";
 
 const message = (n: number): PushMessage => ({
   to: `ExponentPushToken[device-${String(n)}]`,
@@ -112,12 +112,37 @@ describe("createExpoPushSender", () => {
     ]);
   });
 
-  it("throws, without the text or the tokens, when Expo cannot be reached, refuses the batch or answers out of shape", async () => {
+  it("throws a plain error, to be tried again, when nothing can have been sent: Expo unreachable or refusing the request", async () => {
+    const unreachable = (code: string) => () => {
+      throw new TypeError("fetch failed", { cause: Object.assign(new Error(code), { code }) });
+    };
+    const answers: (() => Response)[] = [
+      unreachable("ECONNREFUSED"),
+      unreachable("ENOTFOUND"),
+      unreachable("UND_ERR_CONNECT_TIMEOUT"),
+      () => new Response(`Too many requests for ${message(1).to}`, { status: 429 }),
+      () => new Response("Bad gateway", { status: 502 }),
+    ];
+    for (const answer of answers) {
+      const { fetch } = fakeFetch(answer);
+      const error = await failure(createExpoPushSender({ fetch }).send([message(1)]));
+      expect(error).toBeInstanceOf(Error);
+      expect(error).not.toBeInstanceOf(PushMaybeSent);
+      expect(String(error)).not.toContain("device-1");
+      expect(String(error)).not.toContain("Jón");
+    }
+  });
+
+  it("says a push may have gone out, never to be sent again, when Expo's answer is lost or out of shape", async () => {
     const answers: (() => Response)[] = [
       () => {
-        throw new TypeError("fetch failed");
+        throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
       },
-      () => new Response(`Too many requests for ${message(1).to}`, { status: 429 }),
+      () => {
+        throw new TypeError("fetch failed", {
+          cause: Object.assign(new Error("other side closed"), { code: "UND_ERR_SOCKET" }),
+        });
+      },
       () => Response.json({ data: [] }),
       () => new Response("not JSON"),
       () => Response.json({ errors: [{ code: "PUSH_TOO_MANY_EXPERIENCE_IDS" }] }),
@@ -125,10 +150,22 @@ describe("createExpoPushSender", () => {
     for (const answer of answers) {
       const { fetch } = fakeFetch(answer);
       const error = await failure(createExpoPushSender({ fetch }).send([message(1)]));
-      expect(error).toBeInstanceOf(Error);
+      expect(error).toBeInstanceOf(PushMaybeSent);
       expect(String(error)).not.toContain("device-1");
       expect(String(error)).not.toContain("Jón");
     }
+  });
+
+  it("keeps the batches that went out when a later one fails, and counts the rest as not sent", async () => {
+    const { calls, fetch } = fakeFetch((body, call) => {
+      if (call === 1) return tickets(body);
+      throw new TypeError("fetch failed");
+    });
+    const many = Array.from({ length: 105 }, (_, n) => message(n));
+    const answer = await createExpoPushSender({ fetch }).send(many);
+    expect(calls).toHaveLength(2);
+    expect(answer.slice(0, 100).every((ticket) => ticket.status === "ok")).toBe(true);
+    expect(answer.slice(100)).toEqual(Array(5).fill({ status: "error", code: "unknown" }));
   });
 
   it("gives the receipts by ticket, asking for at most 1000 at a time", async () => {

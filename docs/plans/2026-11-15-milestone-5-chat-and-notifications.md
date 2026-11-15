@@ -259,18 +259,24 @@ Endpoints (`/v1`), shapes in `packages/contracts/src/chat.ts`:
   within the two-minute lease). A ticket or, 15 minutes later, a receipt
   that says `DeviceNotRegistered` removes the token; tickets are kept until
   their receipt is checked, 24 hours at most, as Expo keeps receipts no
-  longer. `PUT /me/sessions/current/push-token` (`{ token }` or `{ token:
+  longer, and while Expo cannot give receipts they are asked for again
+  every 15 minutes. Only a send that never left, or that Expo refused as a
+  whole, is tried again; one whose answer was lost after it may have gone
+  out (a timeout, an answer out of shape) is failed as `interrupted`, so
+  nobody gets a push twice (R7.6). `PUT /me/sessions/current/push-token` (`{ token }` or `{ token:
   null }`) stores or removes the token of the session making the request;
   the spec's `/me/devices/{id}` path becomes this one, since signed-in
   devices are sessions in the API and the app does not know its session's
   ID. A token is unique: registered again, it moves to the newest session,
-  so a phone never gets two people's news. A session that ends (signing
+  so a phone never gets two people's news. A new token is a new row, so a
+  late receipt for the old one never removes it. A session that ends (signing
   out from one device or all, signed out from another device, idle) takes
   its token with it.
 - **App:** `expo-notifications` (a new runtime dependency: the only way to
   get an Expo push token and handle taps). Permission is asked at the
   prompt (4.7), not at start. Once given, the token is registered at each
-  start and when it changes. A tap opens the notification's path (a
+  start and when it changes (getting the token also announces it, so each
+  token is registered once). A tap opens the notification's path (a
   booking, a trip, a conversation), from a cold start too. A push for the
   conversation already open refetches it instead of showing a banner.
 - **Limits:** Expo Go cannot receive push since SDK 53, so trying it needs

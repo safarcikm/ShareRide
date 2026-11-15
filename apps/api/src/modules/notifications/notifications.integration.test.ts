@@ -5,6 +5,7 @@ import {
   declineRequestRoute,
   messageAllPassengersRoute,
   sendMessageRoute,
+  setPushTokenRoute,
   withdrawRequestRoute,
   type SendMessageBody,
 } from "@shareride/contracts";
@@ -12,7 +13,12 @@ import { schema } from "@shareride/db";
 import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createFakeEmailSender, type FakeEmailSender } from "../../platform/email.ts";
-import { createFakePushSender, type FakePushSender, type PushSender } from "../../platform/push.ts";
+import {
+  PushMaybeSent,
+  createFakePushSender,
+  type FakePushSender,
+  type PushSender,
+} from "../../platform/push.ts";
 import { startTestApi, type TestApi } from "../../testing.ts";
 import {
   bookingHelpers,
@@ -807,6 +813,73 @@ describe("push tokens that no longer work (plan 4.5)", () => {
     await worker().runOnce();
     expect(await left()).toEqual([]);
     expect(await api.connection.db.select().from(schema.pushTokens)).toHaveLength(1);
+  });
+
+  it("never lets the old token's receipt remove the new one the phone registered since", async () => {
+    const anna = await driverOf(north);
+    const register = (token: string) =>
+      api.client.call(setPushTokenRoute, { accessToken: anna.accessToken, body: { token } });
+    await register("ExponentPushToken[old]");
+    const jon = await newMember("Jón");
+    await booked(jon.accessToken, north, { fromStop: 0, toStop: 1 });
+    await worker().runOnce();
+    expect(push.sent.map((sent) => sent.to)).toEqual(["ExponentPushToken[old]"]);
+    // The old token stopped working, so the phone got a new one.
+    push.receiptsGiven.set("ticket-1", { status: "error", code: "DeviceNotRegistered" });
+    await register("ExponentPushToken[new]");
+    await later(15 * 60);
+    await worker().runOnce();
+    const tokens = await api.connection.db
+      .select({ token: schema.pushTokens.token })
+      .from(schema.pushTokens);
+    expect(tokens).toEqual([{ token: "ExponentPushToken[new]" }]);
+  });
+
+  it("never tries again a push that may have gone out", async () => {
+    const anna = await driverOf(north);
+    await withDevice(anna);
+    push.failure = new PushMaybeSent("Expo's push service did not answer in time");
+    const jon = await newMember("Jón");
+    await booked(jon.accessToken, north, { fromStop: 0, toStop: 1 });
+    await worker().runOnce();
+    push.failure = null;
+    await later(3600);
+    await worker().runOnce();
+    expect(push.attempts).toBe(1);
+    expect(await logOf(anna)).toContainEqual(
+      expect.objectContaining({ channel: "push", status: "failed", reason: "interrupted" }),
+    );
+  });
+
+  it("asks again in 15 minutes when Expo cannot give receipts, and lets tickets go after a day all the same", async () => {
+    const anna = await driverOf(north);
+    await withDevice(anna);
+    const jon = await newMember("Jón");
+    await booked(jon.accessToken, north, { fromStop: 0, toStop: 1 });
+    await worker().runOnce();
+    push.receiptsFailure = new Error("Expo's push service refused the request (HTTP 503)");
+    await later(15 * 60);
+    await expect(worker().runOnce()).rejects.toThrow("HTTP 503");
+    await later(5);
+    await worker().runOnce();
+    expect(push.checked).toHaveLength(1);
+    await later(24 * 3600);
+    await expect(worker().runOnce()).resolves.toMatchObject({ receipts: 0 });
+    expect(push.checked).toHaveLength(1);
+    expect(await api.connection.db.select().from(schema.pushTickets)).toEqual([]);
+  });
+
+  it("counts a push as sent when its token went while it was on its way", async () => {
+    const anna = await driverOf(north);
+    await withDevice(anna);
+    push.whileSending = () => api.connection.db.delete(schema.pushTokens);
+    const jon = await newMember("Jón");
+    await booked(jon.accessToken, north, { fromStop: 0, toStop: 1 });
+    await expect(worker().runOnce()).resolves.toMatchObject({ sent: 1 });
+    expect(await logOf(anna)).toContainEqual(
+      expect.objectContaining({ channel: "push", status: "sent" }),
+    );
+    expect(await api.connection.db.select().from(schema.pushTickets)).toEqual([]);
   });
 });
 

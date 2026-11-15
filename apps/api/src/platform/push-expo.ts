@@ -1,4 +1,10 @@
-import type { PushMessage, PushReceipt, PushSender, PushTicket } from "./push.ts";
+import {
+  PushMaybeSent,
+  type PushMessage,
+  type PushReceipt,
+  type PushSender,
+  type PushTicket,
+} from "./push.ts";
 
 // Push through Expo's push service (plan 4.5), which passes each message to
 // Apple's or Google's. Plain fetch, no SDK: two endpoints, JSON both ways.
@@ -16,10 +22,29 @@ const receiptsEndpoint = "https://exp.host/--/api/v2/push/getReceipts";
 /** Expo takes at most this many messages, and this many receipt IDs, per request. */
 const messagesPerRequest = 100;
 const receiptsPerRequest = 1000;
+/** Connection errors that mean the request never left, so nothing was sent. */
+const neverConnected = new Set([
+  "ECONNREFUSED",
+  "ENOTFOUND",
+  "EAI_AGAIN",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "UND_ERR_CONNECT_TIMEOUT",
+]);
+
+function neverLeft(error: unknown): boolean {
+  const cause = error instanceof Error ? error.cause : undefined;
+  const code =
+    typeof cause === "object" && cause !== null && "code" in cause ? cause.code : undefined;
+  return typeof code === "string" && neverConnected.has(code);
+}
 
 /**
  * Sends push notifications through Expo. Errors name the HTTP status or
  * the shape only: never a token or a message's text, which Expo may repeat.
+ * Only a request that never left, or that Expo refused as a whole, can be
+ * tried again; anything else after sending may have reached the phones
+ * (`PushMaybeSent`).
  */
 export function createExpoPushSender(options: ExpoPushOptions = {}): PushSender {
   const fetch = options.fetch ?? globalThis.fetch;
@@ -41,30 +66,44 @@ export function createExpoPushSender(options: ExpoPushOptions = {}): PushSender 
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (error) {
-      throw new Error("Expo's push service could not be reached in time", { cause: error });
+      if (neverLeft(error)) {
+        throw new Error("Expo's push service could not be reached", { cause: error });
+      }
+      throw new PushMaybeSent("Expo's push service did not answer in time", { cause: error });
     }
     if (!response.ok) {
       throw new Error(`Expo's push service refused the request (HTTP ${String(response.status)})`);
     }
     const answer: unknown = await response.json().catch(() => null);
     if (typeof answer !== "object" || answer === null || !("data" in answer)) {
-      throw new Error("Expo's push service gave an answer without data");
+      throw new PushMaybeSent("Expo's push service gave an answer without data");
     }
     return answer.data;
   }
 
   return {
     async send(messages) {
-      const tickets: PushTicket[] = [];
-      for (const batch of batches(messages, messagesPerRequest)) {
+      const sendBatch = async (batch: readonly PushMessage[]) => {
         const data = await post(
           sendEndpoint,
-          batch.map((message: PushMessage) => ({ ...message, sound: "default", priority: "high" })),
+          batch.map((message) => ({ ...message, sound: "default", priority: "high" })),
         );
         if (!Array.isArray(data) || data.length !== batch.length) {
-          throw new Error("Expo's push service gave a ticket count that does not match");
+          throw new PushMaybeSent("Expo's push service gave a ticket count that does not match");
         }
-        tickets.push(...data.map((item: unknown) => ticketOf(item)));
+        return data.map((item: unknown) => ticketOf(item));
+      };
+      const tickets: PushTicket[] = [];
+      for (const batch of batches(messages, messagesPerRequest)) {
+        try {
+          tickets.push(...(await sendBatch(batch)));
+        } catch (error) {
+          if (tickets.length === 0) throw error;
+          // Earlier batches went out, so this send is never tried again: the
+          // rest are lost rather than the first ones sent twice.
+          const unsent: PushTicket = { status: "error", code: "unknown" };
+          return [...tickets, ...messages.slice(tickets.length).map(() => unsent)];
+        }
       }
       return tickets;
     },

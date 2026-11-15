@@ -4,11 +4,13 @@ import {
   DEFAULT_ACTION_IDENTIFIER,
   addPushTokenListener,
   clearLastNotificationResponse,
+  getDevicePushTokenAsync,
   getExpoPushTokenAsync,
   getPermissionsAsync,
   setNotificationChannelAsync,
   setNotificationHandler,
   useLastNotificationResponse,
+  type DevicePushToken,
 } from "expo-notifications";
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
@@ -59,7 +61,32 @@ export function PushNotifications() {
     // False once this person signs out, or the app goes.
     const still = { here: true };
     const gone = () => !still.here;
-    const register = async () => {
+    // The phone's token registered last, or being registered. Getting the
+    // token also announces it to the listener below, so each is registered
+    // once, never in a loop.
+    const last: { device: unknown } = { device: null };
+    const register = async (device: DevicePushToken) => {
+      if (device.data === last.device) return;
+      last.device = device.data;
+      try {
+        const { granted } = await getPermissionsAsync();
+        if (!granted || gone()) {
+          last.device = null;
+          return;
+        }
+        // From the phone's token as given, so nothing is announced again.
+        const { data: token } = await getExpoPushTokenAsync({
+          projectId: project,
+          devicePushToken: device,
+        });
+        if (gone()) return;
+        await session.call(setPushTokenRoute, { body: { token } });
+      } catch (error) {
+        last.device = null;
+        throw error;
+      }
+    };
+    const start = async () => {
       const { granted } = await getPermissionsAsync();
       if (!granted || gone()) return;
       if (Platform.OS === "android") {
@@ -68,16 +95,13 @@ export function PushNotifications() {
           importance: AndroidImportance.HIGH,
         });
       }
-      const { data: token } = await getExpoPushTokenAsync({ projectId: project });
-      if (gone()) return;
-      await session.call(setPushTokenRoute, { body: { token } });
+      await register(await getDevicePushTokenAsync());
     };
     // Not getting a token is no reason to stop the app; the next start tries again.
-    const tryRegister = () => {
-      register().catch(reportError);
-    };
-    tryRegister();
-    const changes = addPushTokenListener(tryRegister);
+    start().catch(reportError);
+    const changes = addPushTokenListener((device) => {
+      register(device).catch(reportError);
+    });
     return () => {
       still.here = false;
       changes.remove();

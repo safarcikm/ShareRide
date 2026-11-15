@@ -45,8 +45,14 @@ describe("Push notifications (plan 4.5)", () => {
     mockNotifications.permission = "granted";
     const { client } = await renderApp("/", { me: completeMe, setUp: withPush });
     await waitFor(() => {
-      expect(registered(client)).toEqual(["ExponentPushToken[test-device]"]);
+      expect(registered(client)).toHaveLength(1);
     });
+    // Getting the token announces it again, which must not register it again.
+    await act(async () => {
+      for (let tick = 0; tick < 50; tick++) await Promise.resolve();
+    });
+    expect(registered(client)).toEqual(["ExponentPushToken[test-device]"]);
+    expect(mockNotifications.deviceRequests).toBe(1);
     expect(mockNotifications.tokenRequests).toEqual([{ projectId: "test-project" }]);
   });
 
@@ -74,7 +80,7 @@ describe("Push notifications (plan 4.5)", () => {
       expect(registered(client)).toHaveLength(1);
     });
     await act(async () => {
-      mockNotifications.newToken("ExponentPushToken[new-token]");
+      mockNotifications.newToken("new-token");
       await Promise.resolve();
     });
     await waitFor(() => {
@@ -83,6 +89,8 @@ describe("Push notifications (plan 4.5)", () => {
         "ExponentPushToken[new-token]",
       ]);
     });
+    // The phone was asked for its token once, at start; the new one came with its news.
+    expect(mockNotifications.deviceRequests).toBe(1);
   });
 
   it("opens what a tapped notification is about", async () => {
@@ -103,7 +111,7 @@ describe("Push notifications (plan 4.5)", () => {
     expect(screen).toHavePathname(conversationPage);
   });
 
-  it("ignores a tap that leads anywhere else, or comes before the account is complete", async () => {
+  it("ignores a tap that leads anywhere but a booking, a trip or a conversation", async () => {
     await renderApp("/profile", { me: completeMe, setUp: withPush });
     await screen.findAllByRole("header");
     expect(screen).toHavePathname("/profile");
@@ -113,7 +121,9 @@ describe("Push notifications (plan 4.5)", () => {
       await Promise.resolve();
     });
     expect(screen).toHavePathname("/profile");
+  });
 
+  it("does not open a tap before the account is complete", async () => {
     mockNotifications.tap(conversationPage);
     await renderApp("/", { me: testMe, setUp: withPush });
     await screen.findAllByRole("header");

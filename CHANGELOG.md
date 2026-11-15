@@ -267,8 +267,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   conversation on screen fetches it instead of showing a banner. A phone's
   token goes when its session ends (signing out, signed out from another
   device, or idle) or when Expo reports it dead, and belongs to one person
-  at a time. `EXPO_ACCESS_TOKEN` is used when set. The Android test build
-  (`preview-apk`) and its Firebase set-up are in the app builds runbook.
+  at a time. A push whose answer was lost after it may have gone out is
+  never sent again. `EXPO_ACCESS_TOKEN` is used when set. The Android test
+  build (`preview-apk`) and its Firebase set-up are in the app builds
+  runbook.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

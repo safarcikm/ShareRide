@@ -9,6 +9,7 @@ import { asc, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
 import { cleanUpSignInRecords } from "../auth/clean-up.ts";
+import { setPushToken } from "./push-tokens.ts";
 
 // A device's push token (plan 4.5): stored per signed-in session, moved to
 // the newest session that registers it, and gone when the session ends.
@@ -92,6 +93,19 @@ describe("PUT /v1/me/sessions/current/push-token", () => {
     expect(await stored()).toEqual([
       expect.objectContaining({ userId: jon.userId, token: token("shared-phone") }),
     ]);
+  });
+
+  it("stores nothing for a session that ended on its way, as a sign-out at the same moment", async () => {
+    const gunna = await api.signIn(api.newPhoneNumber());
+    const sessionId = await currentSession(gunna.accessToken);
+    await api.client.call(signOutRoute, { accessToken: gunna.accessToken, body: {} });
+    await setPushToken(
+      api.connection.db,
+      { userId: gunna.userId, sessionId },
+      token("late"),
+      api.now(),
+    );
+    expect(await stored()).toEqual([]);
   });
 
   it("refuses anything but an Expo push token, and needs a signed-in device", async () => {

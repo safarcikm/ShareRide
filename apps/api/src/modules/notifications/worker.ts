@@ -21,7 +21,12 @@ import {
 import { and, asc, eq, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { EmailSender } from "../../platform/email.ts";
-import { deviceNotRegistered, type PushSender } from "../../platform/push.ts";
+import {
+  PushMaybeSent,
+  deviceNotRegistered,
+  type PushReceipt,
+  type PushSender,
+} from "../../platform/push.ts";
 import type { Queryable, Transaction } from "../bookings/seats.ts";
 import { quickOf } from "../chat/service.ts";
 import { notificationText, type NotificationFacts } from "./texts.ts";
@@ -490,10 +495,18 @@ export function createNotificationWorker(dependencies: {
   async function afterPush(outcome: PushOutcome, now: Date): Promise<void> {
     await forgetTokens(outcome.gone);
     if (outcome.tickets.length === 0) return;
+    // A token that went while the push was on its way has nothing to ask about.
+    const still = await db
+      .select({ id: pushTokens.id })
+      .from(pushTokens)
+      .where(inArray(pushTokens.id, [...new Set(outcome.tickets.map((ticket) => ticket.tokenId))]));
+    const live = new Set(still.map((token) => token.id));
+    const tickets = outcome.tickets.filter((ticket) => live.has(ticket.tokenId));
+    if (tickets.length === 0) return;
     await db
       .insert(pushTickets)
       .values(
-        outcome.tickets.map((ticket) => ({
+        tickets.map((ticket) => ({
           id: ticket.id,
           pushTokenId: ticket.tokenId,
           checkAt: new Date(now.getTime() + receiptAfterMs),
@@ -583,6 +596,11 @@ export function createNotificationWorker(dependencies: {
       result = await sendOn(delivery);
     } catch (error) {
       onSendError?.(error, { id: delivery.id, channel: delivery.channel });
+      if (error instanceof PushMaybeSent) {
+        // It may have reached the phones: never sent again (R7.6).
+        await store({ status: "failed", reason: "interrupted", nextAttemptAt: null });
+        return "failed";
+      }
       const again = retryAt(
         { queuedAt: delivery.createdAt, attempts: delivery.attempts },
         clock(),
@@ -655,10 +673,15 @@ export function createNotificationWorker(dependencies: {
   /**
    * Step 4: asks about pushes sent 15 minutes ago or more. A token the
    * phone's push service no longer knows is removed; a receipt not ready
-   * yet is asked for again, until the push service no longer keeps it.
+   * yet is asked for again, until the push service no longer keeps it
+   * (a day), whether or not it can be asked.
    */
   async function checkReceipts(): Promise<number> {
     const now = clock();
+    const later = new Date(now.getTime() + receiptAfterMs);
+    await db
+      .delete(pushTickets)
+      .where(lte(pushTickets.createdAt, new Date(now.getTime() - receiptsKeptMs)));
     const due = await db
       .select()
       .from(pushTickets)
@@ -666,7 +689,18 @@ export function createNotificationWorker(dependencies: {
       .orderBy(asc(pushTickets.checkAt))
       .limit(receiptsPerRun);
     if (due.length === 0) return 0;
-    const receipts = await push.receipts(due.map((ticket) => ticket.id));
+    const ids = due.map((ticket) => ticket.id);
+    let receipts: ReadonlyMap<string, PushReceipt>;
+    try {
+      receipts = await push.receipts(ids);
+    } catch (error) {
+      // Asked again in 15 minutes, not on every run while Expo is down.
+      await db
+        .update(pushTickets)
+        .set({ checkAt: later, updatedAt: now })
+        .where(inArray(pushTickets.id, ids));
+      throw error;
+    }
     await forgetTokens(
       due.flatMap((ticket) => {
         const receipt = receipts.get(ticket.id);
@@ -675,18 +709,13 @@ export function createNotificationWorker(dependencies: {
           : [];
       }),
     );
-    const done = due
-      .filter(
-        (ticket) =>
-          receipts.has(ticket.id) || now.getTime() - ticket.createdAt.getTime() >= receiptsKeptMs,
-      )
-      .map((ticket) => ticket.id);
+    const done = ids.filter((id) => receipts.has(id));
     if (done.length > 0) await db.delete(pushTickets).where(inArray(pushTickets.id, done));
-    const waiting = due.filter((ticket) => !done.includes(ticket.id)).map((ticket) => ticket.id);
+    const waiting = ids.filter((id) => !receipts.has(id));
     if (waiting.length > 0) {
       await db
         .update(pushTickets)
-        .set({ checkAt: new Date(now.getTime() + receiptAfterMs), updatedAt: now })
+        .set({ checkAt: later, updatedAt: now })
         .where(inArray(pushTickets.id, waiting));
     }
     return receipts.size;

@@ -35,4 +35,19 @@ describe("push senders", () => {
     );
     expect(push.checked).toEqual([["ticket-1", "ticket-2"]]);
   });
+
+  it("the fake fails a request for receipts while told to, and can take a while to send", async () => {
+    const push = createFakePushSender();
+    push.receiptsFailure = new Error("down");
+    await expect(push.receipts(["ticket-1"])).rejects.toThrow("down");
+    expect(push.checked).toEqual([["ticket-1"]]);
+    const during: number[] = [];
+    push.whileSending = () => {
+      during.push(push.sent.length);
+      return Promise.resolve();
+    };
+    await push.send([message]);
+    expect(during).toEqual([0]);
+    expect(push.sent).toEqual([message]);
+  });
 });

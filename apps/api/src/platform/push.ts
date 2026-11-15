@@ -26,10 +26,21 @@ export type PushReceipt =
 /** The error code of a token that no longer works: it is removed. */
 export const deviceNotRegistered = "DeviceNotRegistered";
 
+/**
+ * A send whose answer was lost after the push service may have taken it (a
+ * timeout, a dropped connection, an answer out of shape). The worker never
+ * tries it again, so nobody gets the same push twice (R7.6).
+ */
+export class PushMaybeSent extends Error {
+  override readonly name = "PushMaybeSent";
+}
+
 export interface PushSender {
   /**
-   * One ticket per message, in the same order. Throws when the push service
-   * could not be reached or refused the whole batch; the worker tries again.
+   * One ticket per message, in the same order. Throws `PushMaybeSent` when
+   * the messages may have gone out, and any other error when they cannot
+   * have (the push service unreachable, or refusing the whole request); the
+   * worker tries only those again.
    */
   send(messages: readonly PushMessage[]): Promise<readonly PushTicket[]>;
   /** The receipts of tickets, by ticket ID; one not ready yet is missing. */
@@ -43,6 +54,10 @@ export interface FakePushSender extends PushSender {
   readonly attempts: number;
   /** While set, each send fails with it and sends nothing. */
   failure: Error | null;
+  /** While set, each request for receipts fails with it. */
+  receiptsFailure: Error | null;
+  /** Run during each send, before the answer, as if it took a while. */
+  whileSending: (() => Promise<unknown>) | null;
   /** Tokens the service refuses, with the error code; nothing is sent to them. */
   readonly refused: Map<string, string>;
   /** The receipts the service gives, by ticket ID. */
@@ -61,24 +76,26 @@ export function createFakePushSender(): FakePushSender {
       return attempts;
     },
     failure: null,
+    receiptsFailure: null,
+    whileSending: null,
     refused: new Map(),
     receiptsGiven: new Map(),
     checked: [],
-    send(messages) {
+    async send(messages) {
       attempts += 1;
-      if (fake.failure !== null) return Promise.reject(fake.failure);
-      return Promise.resolve(
-        messages.map((message): PushTicket => {
-          const code = fake.refused.get(message.to);
-          if (code !== undefined) return { status: "error", code };
-          fake.sent.push(message);
-          tickets += 1;
-          return { status: "ok", id: `ticket-${String(tickets)}` };
-        }),
-      );
+      if (fake.failure !== null) throw fake.failure;
+      if (fake.whileSending !== null) await fake.whileSending();
+      return messages.map((message): PushTicket => {
+        const code = fake.refused.get(message.to);
+        if (code !== undefined) return { status: "error", code };
+        fake.sent.push(message);
+        tickets += 1;
+        return { status: "ok", id: `ticket-${String(tickets)}` };
+      });
     },
     receipts(ids) {
       fake.checked.push([...ids]);
+      if (fake.receiptsFailure !== null) return Promise.reject(fake.receiptsFailure);
       return Promise.resolve(
         new Map(
           ids.flatMap((id) => {
