@@ -15,6 +15,7 @@
     "test:integration": "vitest run .integration.test",
     "test:contract": "vitest run .contract.test",
     "clean-up": "node --env-file-if-exists=../../.env src/clean-up-cli.ts",
+    "expire-bookings": "node --env-file-if-exists=../../.env src/expire-bookings-cli.ts",
     "sentry:check": "node --env-file-if-exists=../../.env src/sentry-check-cli.ts"
   },
   "dependencies": {

@@ -1,6 +1,7 @@
 // The API for the app's browser tests (apps/mobile/e2e), started by
 // Playwright. It empties, migrates and seeds the *_test database (draft legal
-// documents, the sample meeting points and the sample trips), writes
+// documents, the sample meeting points and the sample trips), pays with the
+// test provider, writes
 // each text message as a JSON line to E2E_SMS_OUTBOX for the tests to read,
 // and runs on PORT (default 3001). Never use it for anything else.
 import { randomBytes } from "node:crypto";
@@ -12,6 +13,7 @@ import { freshTestDatabase } from "@shareride/db/testing";
 import { createApp } from "./app.ts";
 import { createLogger } from "./logger.ts";
 import { createKeyedHasher } from "./platform/crypto.ts";
+import { createTestPaymentProvider } from "./platform/payments.ts";
 import type { SmsSender } from "./platform/sms.ts";
 
 const env = process.env;
@@ -54,6 +56,7 @@ const app = createApp({
     clock: () => new Date(Date.now() + clockOffsetMs),
     clientAddress: () => `e2e-${String((requests += 1))}`,
     secureCookies: false,
+    payments: createTestPaymentProvider(),
   },
 });
 

@@ -70,7 +70,7 @@
 | Recent searches | The last five searches: from and to with their names, date and seats | One-tap repeat (spec 4, 3.1) | Kept only on the device; ShareRide never receives it. Functional storage the person asked for, so no consent banner (ePrivacy, strictly necessary) (**verify**) | The person using that device | Until newer searches replace it, the person taps "Clear recent searches", or the app's or site's data is cleared, or the app is deleted (they are kept in the app's own storage, not the secure storage that iOS can keep after the app is removed) |
 | Search log | From and to place, date searched for, result count, time, platform; no user, device or network identifier | Beta metrics | Not personal data by design | Operator | 14 months |
 | Technical logs | Request IDs, errors (logs, and Sentry error reports) | Security and reliability | Legitimate interest | Operator | 30 days |
-| Payments | Amounts, provider references, refunds, payouts | Payment, accounting | Contract; legal obligation | Participants; operator | As bookkeeping law requires (**verify**) |
+| Payments | Amounts, status (pending, succeeded, failed, refund owed, refunded), provider references, refunds, payouts; never card details, which only the provider sees (R13.2). Until the provider is chosen, local and staging use a test provider: no card is asked for and no money moves | Payment, accounting | Contract; legal obligation | Participants; operator | As bookkeeping law requires (**verify**) |
 | Payout set-up (drivers) | Identity check and bank account, held by the payment provider | Paying drivers | Contract; legal obligation (provider's checks) | Provider; operator sees status only | Per the provider's terms |
 
 ## Providers

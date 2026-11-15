@@ -6,9 +6,13 @@ import { connectDatabase, pingDatabase } from "@shareride/db";
 import { createApp } from "./app.ts";
 import { ConfigError, loadConfig, type Config } from "./config.ts";
 import { createLogger } from "./logger.ts";
+import { expireAllDueBookings } from "./modules/bookings/index.ts";
+import { createPaymentService } from "./modules/payments/index.ts";
 import { clientAddress } from "./platform/client-address.ts";
 import { createKeyedHasher } from "./platform/crypto.ts";
-import { startErrorReporting } from "./platform/error-reporting.ts";
+import { captureError, startErrorReporting } from "./platform/error-reporting.ts";
+import { createTestPaymentProvider } from "./platform/payments.ts";
+import { startRepeating } from "./platform/repeat.ts";
 import { selectSmsSender } from "./platform/select-sms-sender.ts";
 
 let config: Config;
@@ -39,6 +43,8 @@ function reportMissingProxyEntry(): void {
     "X-Forwarded-For lacks the trusted proxies' entry; limits use the connection's address",
   );
 }
+// loadConfig refuses the test provider in production.
+const payments = config.payments.provider === "test" ? createTestPaymentProvider() : undefined;
 const app = createApp({
   logger,
   checkDatabase: () => pingDatabase(database.pool),
@@ -60,8 +66,46 @@ const app = createApp({
       return found.address;
     },
     secureCookies: config.nodeEnv === "production",
+    ...(payments === undefined ? {} : { payments }),
   },
 });
+
+/** Runs a job inside the API every minute; a failure is logged and reported. */
+function everyMinute(job: string, run: () => Promise<unknown>) {
+  return startRepeating({
+    everyMs: 60_000,
+    run,
+    onError: (error) => {
+      logger.error({ err: error, job }, "job failed");
+      // Does nothing when error reporting is off.
+      captureError(error, { job });
+    },
+  });
+}
+
+// Booking deadlines (R5.5, rule M1). Every booking change also stores its
+// trip's expiries first, so a late run never keeps a seat taken.
+const jobs = [
+  everyMinute("booking-deadlines", async () => {
+    const expired = await expireAllDueBookings(database.db, new Date());
+    if (expired > 0) logger.info({ expired }, "bookings expired");
+  }),
+];
+// Refunds the provider has not taken yet are asked for again (R13.3).
+// Without a provider nothing is paid, so nothing is owed back.
+if (payments !== undefined) {
+  const owed = createPaymentService({
+    db: database.db,
+    clock: () => new Date(),
+    provider: payments,
+  });
+  jobs.push(
+    everyMinute("owed-refunds", async () => {
+      const refunded = await owed.refundOwed();
+      if (refunded > 0) logger.info({ refunded }, "owed refunds made");
+    }),
+  );
+}
 
 const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
   logger.info(
@@ -70,6 +114,7 @@ const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
       nodeEnv: config.nodeEnv,
       smsProvider: config.sms.provider,
       smsPaused: config.sms.paused,
+      paymentProvider: config.payments.provider,
       trustedProxies: config.trustedProxies,
       webApp: config.webAppDir !== undefined,
       errorReporting: reportError !== undefined,
@@ -81,8 +126,9 @@ const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
 
 function shutdown(signal: string): void {
   logger.info({ signal }, "shutting down");
+  const stopped = Promise.all(jobs.map((job) => job.stop()));
   server.close(() => {
-    void database.close().then(() => process.exit(0));
+    void stopped.then(() => database.close()).then(() => process.exit(0));
   });
 }
 

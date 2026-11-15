@@ -1,5 +1,5 @@
-// Helpers for the integration tests of bookings: members, sample trips'
-// details, and booking what they show. Tests only.
+// Helpers for the integration tests of bookings and payments: members,
+// sample trips' details, and booking what they show. Tests only.
 import { randomUUID } from "node:crypto";
 import {
   bookTripRoute,
@@ -29,8 +29,9 @@ export async function seedForBookings(api: TestApi): Promise<void> {
   await seedSampleMeetingPoints(api.connection.db, api.now());
 }
 
-/** The sample trips again, with no bookings on them. */
+/** The sample trips again, with no bookings or payments on them. */
 export async function freshSampleTrips(api: TestApi): Promise<void> {
+  await api.connection.db.execute(sql`delete from payments`);
   await api.connection.db.execute(sql`delete from booking_segment_prices`);
   await api.connection.db.execute(sql`delete from bookings`);
   await seedSampleTrips(api.connection.db, api.now());

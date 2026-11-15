@@ -143,3 +143,28 @@ export async function occupancyNow(
       .filter((row) => row.tripId === tripId && row.board <= position && position < row.alight)
       .reduce((sum, row) => sum + row.seats, 0);
 }
+
+/**
+ * The deadline job (R5.5, rule M1): stores the expiry of every request and
+ * unpaid booking past its deadline and frees their seats; returns how many.
+ * Each trip is locked as booking locks it, and one already locked is left
+ * for the next run, so instances never wait on each other or on a booking.
+ */
+export async function expireAllDueBookings(db: Database, now: Date): Promise<number> {
+  const due = await db
+    .selectDistinct({ tripId: bookings.tripId })
+    .from(bookings)
+    .where(pastDeadline(now));
+  let expired = 0;
+  for (const { tripId } of due) {
+    expired += await db.transaction(async (tx) => {
+      const [locked] = await tx
+        .select({ id: trips.id })
+        .from(trips)
+        .where(eq(trips.id, tripId))
+        .for("update", { skipLocked: true });
+      return locked === undefined ? 0 : expireDueBookings(tx, tripId, now);
+    });
+  }
+  return expired;
+}

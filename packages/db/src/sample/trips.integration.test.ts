@@ -5,6 +5,7 @@ import type { DatabaseConnection } from "../index.ts";
 import {
   bookings,
   bookingSegmentPrices,
+  payments,
   segments,
   trips,
   tripStops,
@@ -77,6 +78,12 @@ describe("seedSampleTrips", () => {
     await db
       .insert(bookingSegmentPrices)
       .values({ bookingId: booking?.id ?? "", segmentPosition: 0, price: 1100 });
+    await db.insert(payments).values({
+      bookingId: booking?.id ?? "",
+      provider: "test",
+      amount: 1100,
+      status: "succeeded",
+    });
     await seedSampleTrips(db, now);
     expect(await db.select().from(bookings)).toEqual([]);
     expect(await db.select().from(trips).where(eq(trips.id, id))).toHaveLength(1);

@@ -47,6 +47,7 @@ describe("loadConfig", () => {
         release: "0123abc",
       },
       webAppDir: "/repo/web",
+      payments: { provider: "none" },
     });
   });
 
@@ -58,6 +59,7 @@ describe("loadConfig", () => {
     expect(config.webOrigins).toEqual([]);
     expect(config.trustedProxies).toBe(0);
     expect(config.webAppDir).toBeUndefined();
+    expect(config.payments).toEqual({ provider: "test" });
   });
 
   it("reads TRUST_PROXY as the number of proxies in front", () => {
@@ -168,6 +170,24 @@ describe("loadConfig", () => {
   it("pauses SMS sending with the kill switch", () => {
     expect(loadConfig({ ...valid, SMS_PAUSED: "true" }).sms.paused).toBe(true);
     expect(loadConfig({ ...development, SMS_PAUSED: "true" }).sms.paused).toBe(true);
+  });
+
+  it("pays with the test provider on local and staging, and never in production (milestone 4)", () => {
+    expect(loadConfig({ ...valid, APP_ENV: "staging" }).payments).toEqual({ provider: "test" });
+    expect(loadConfig({ ...valid, APP_ENV: "staging", PAYMENT_PROVIDER: "none" }).payments).toEqual(
+      { provider: "none" },
+    );
+    expect(loadConfig(valid).payments).toEqual({ provider: "none" });
+    expect(() => loadConfig({ ...valid, PAYMENT_PROVIDER: "test" })).toThrow(
+      "PAYMENT_PROVIDER: the test provider moves no money and is not allowed in production",
+    );
+    // Without APP_ENV, NODE_ENV=production is production, as for the seed guard.
+    const unnamed = { ...valid, APP_ENV: undefined };
+    expect(loadConfig(unnamed).payments).toEqual({ provider: "none" });
+    expect(() => loadConfig({ ...unnamed, PAYMENT_PROVIDER: "test" })).toThrow(ConfigError);
+    expect(loadConfig({ ...development, APP_ENV: undefined }).payments).toEqual({
+      provider: "test",
+    });
   });
 
   it("names every missing or invalid variable", () => {

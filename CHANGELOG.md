@@ -175,6 +175,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   requests past their deadline free their seats; my bookings, a booking for
   its passenger or driver, and the driver's requests and bookings on a trip.
   The number plate and where to stand show only once a booking is confirmed.
+- Paying with a test provider (milestone 4, PR 4): an accepted booking starts
+  a payment, and the outcome confirms it once within the 30-minute window; a
+  late success is refunded (asked again every minute until the provider has
+  taken it) and a failure can be tried again. Local and staging only
+  (`PAYMENT_PROVIDER`, refused in production); no money moves.
+  The API stores expired requests and unpaid bookings every minute, and
+  `pnpm --filter @shareride/api expire-bookings` does it once.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

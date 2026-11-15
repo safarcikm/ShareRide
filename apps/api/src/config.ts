@@ -63,6 +63,17 @@ const environmentSchema = z
       .transform(Number),
     /** The exported web app, served on the API's own origin (staging, production). */
     WEB_APP_DIR: z.string().min(1).optional(),
+    /**
+     * The deployment: local, staging or production. Unset, it is production
+     * when NODE_ENV is, as for the seed guard.
+     */
+    APP_ENV: z.enum(["local", "staging", "production"]).optional(),
+    /**
+     * Who takes payments: `test` is the app's own test sheet, where no money
+     * moves (milestone 4); `none` turns paying off. By default `test`,
+     * except in production, where it is refused.
+     */
+    PAYMENT_PROVIDER: z.enum(["none", "test"]).optional(),
   })
   .superRefine((env, context) => {
     if (env.NODE_ENV === "production" && env.AUTH_SECRET.startsWith("local-only-")) {
@@ -77,6 +88,13 @@ const environmentSchema = z
         code: "custom",
         path: ["SMS_PROVIDER"],
         message: "dev prints codes in the terminal and is not allowed in production",
+      });
+    }
+    if (deploymentOf(env) === "production" && env.PAYMENT_PROVIDER === "test") {
+      context.addIssue({
+        code: "custom",
+        path: ["PAYMENT_PROVIDER"],
+        message: "the test provider moves no money and is not allowed in production",
       });
     }
     const providerKeys = {
@@ -112,6 +130,18 @@ export type SmsConfig =
       readonly paused: boolean;
     };
 
+/** The deployment, as the seed guard reads it: unset means production under NODE_ENV=production. */
+function deploymentOf(env: {
+  readonly APP_ENV?: "local" | "staging" | "production" | undefined;
+  readonly NODE_ENV: string;
+}): "local" | "staging" | "production" {
+  return env.APP_ENV ?? (env.NODE_ENV === "production" ? "production" : "local");
+}
+
+export interface PaymentsConfig {
+  readonly provider: "none" | "test";
+}
+
 export interface Config {
   readonly nodeEnv: "development" | "test" | "production";
   readonly port: number;
@@ -124,6 +154,7 @@ export interface Config {
   readonly trustedProxies: number;
   readonly webAppDir: string | undefined;
   readonly errorReporting: ErrorReportingConfig;
+  readonly payments: PaymentsConfig;
 }
 
 export class ConfigError extends Error {
@@ -240,5 +271,8 @@ export function loadConfig(environment: Readonly<Record<string, string | undefin
     trustedProxies: env.TRUST_PROXY,
     webAppDir: env.WEB_APP_DIR,
     errorReporting,
+    payments: {
+      provider: env.PAYMENT_PROVIDER ?? (deploymentOf(env) === "production" ? "none" : "test"),
+    },
   };
 }

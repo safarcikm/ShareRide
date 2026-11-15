@@ -169,6 +169,21 @@ booking it made (R5.4). Search, trip details and the driver's view count
 seats as of now: the stored occupancy less the seats of requests and unpaid
 bookings past their deadline whose expiry is not stored yet.
 
+Paying (`POST /v1/bookings/{id}/payment`, rule M1) starts a payment for an
+accepted booking, or picks up the one already started, through the
+`PaymentProvider` port. The provider's outcome goes to `settlePayment`, which
+locks the trip as booking does: success within the payment window confirms
+the booking, success after it owes the payment back in full and leaves the
+seats free, and failure leaves the booking waiting for another try. A payment
+takes one outcome only. An owed refund stays owed until the provider has
+taken it, and the API asks again every minute; the payment's ID is the
+idempotency key of every call to the provider, so a retry never pays twice. Until the real provider comes (spec 13), local and staging
+use a test provider whose outcome the app reports to
+`POST /v1/test-payments/{id}`; the API refuses it in production
+(`APP_ENV=production`, or `NODE_ENV=production` without `APP_ENV`). The API
+stores expired deadlines every minute itself (until the worker exists),
+skipping trips that a booking holds at that moment.
+
 ## Cross-cutting concerns
 
 | Concern | Approach |

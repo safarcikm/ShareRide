@@ -6,13 +6,16 @@ import { startPhoneSignInRoute, verifyPhoneCodeRoute } from "@shareride/contract
 import { pingDatabase, type DatabaseConnection } from "@shareride/db";
 import { seedDraftLegalDocuments } from "@shareride/db/seed";
 import { freshTestDatabase } from "@shareride/db/testing";
-import { createApp } from "./app.ts";
+import { createApp, type FeatureDependencies } from "./app.ts";
 import { createLogger } from "./logger.ts";
 import { createKeyedHasher } from "./platform/crypto.ts";
+import { createTestPaymentProvider } from "./platform/payments.ts";
 import { createDevSmsSender, type DevSmsSender, type SmsSender } from "./platform/sms.ts";
 
 export interface TestApi {
   readonly connection: DatabaseConnection;
+  /** What the app was given, for a test that builds another app on the same database. */
+  readonly features: FeatureDependencies;
   readonly client: ApiClient;
   /** Requests straight to the app, for headers and cookies. */
   request(path: string, init?: RequestInit): Promise<Response>;
@@ -64,21 +67,24 @@ export async function startTestApi(): Promise<TestApi> {
     }),
   });
 
+  const features: FeatureDependencies = {
+    db: connection.db,
+    sms: sender,
+    hasher: createKeyedHasher("integration-test-secret-of-32-characters"),
+    clock: () => now,
+    clientAddress: (c) => c.req.header("x-test-client-ip") ?? "unknown",
+    secureCookies: false,
+    payments: createTestPaymentProvider(),
+  };
   const app = createApp({
     logger,
     checkDatabase: () => pingDatabase(connection.pool),
-    features: {
-      db: connection.db,
-      sms: sender,
-      hasher: createKeyedHasher("integration-test-secret-of-32-characters"),
-      clock: () => now,
-      clientAddress: (c) => c.req.header("x-test-client-ip") ?? "unknown",
-      secureCookies: false,
-    },
+    features,
   });
 
   const api: TestApi = {
     connection,
+    features,
     sms,
     get smsFailure() {
       return failing.error;

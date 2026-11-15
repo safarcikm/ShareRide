@@ -146,19 +146,23 @@ Endpoints (`/v1`), shapes in `packages/contracts/src/bookings.ts`:
 ### 4.3 Paying and deadlines
 
 - `PaymentProvider` port (`apps/api/src/platform/payments.ts`):
-  `startCheckout({ paymentId, amount, description }) → { providerRef }`.
+  `startCheckout({ paymentId, amount }) → { providerRef }` and
+  `refund({ paymentId, providerRef, amount })`, with the payment's ID as the
+  idempotency key of both.
   The test adapter returns a reference and nothing else; the app knows the
   provider is `test` from the payment response and shows its own sheet.
 - Table `payments` (migration 0006): `booking_id`, `provider`,
   `provider_ref`, `amount`, `currency`, `status` (`pending`, `succeeded`,
-  `failed`, `refunded`), timestamps. Card brand and last four digits come
+  `failed`, `refund_due`, `refunded`), timestamps. A refund stays
+  `refund_due` until the provider has taken it, and the API asks again every
+  minute. Card brand and last four digits come
   with the real provider.
 - `POST /bookings/{id}/payment` reuses a pending payment for the booking or
   starts a new one, and answers `{ paymentId, provider, amount, dueAt }`.
 - `settlePayment(paymentId, outcome)` is what the provider's signed
   confirmation will call (spec 13). It works once per payment: success within
-  the window confirms the booking; success after the booking expired marks
-  the payment refunded (R13.3); failure leaves the booking accepted so the
+  the window confirms the booking; success after the booking expired owes
+  the payment back in full (R13.3); failure leaves the booking accepted so the
   passenger can try again. With the test provider,
   `POST /test-payments/{paymentId}` (`{ outcome }`, the paying passenger
   only) calls it; that route exists only when `PAYMENT_PROVIDER=test`, which
