@@ -310,17 +310,17 @@ merge.
 
 ### PR 2: `feat(chat)`: chat and notification rules in the domain
 
-- [ ] The settings; `chat/conversation.ts` (open at
+- [x] The settings; `chat/conversation.ts` (open at
       confirmation, closed exactly 7 days after arrival);
       `chat/messages.ts` (1 and 1 000 characters, 1 001 refused, only spaces
       refused, every quick message and the four late minutes)
-- [ ] `notifications/catalogue.ts`: a test per row of 3.3 for who is told
+- [x] `notifications/catalogue.ts`: a test per row of 3.3 for who is told
       and on which channel; the SMS window at 24 hours exactly and one
       minute more, a driver never, the sixth SMS of a day refused
-- [ ] `notifications/schedule.ts`: confirmed at 17:59 and 18:01 the day
+- [x] `notifications/schedule.ts`: confirmed at 17:59 and 18:01 the day
       before; confirmed 59 and 61 minutes before boarding; departing just
       after midnight; the halfway, pay and unread email times
-- [ ] Quick message and system line texts in both languages
+- [x] Quick message and system line texts in both languages
       (`packages/i18n`), rendered for each key
 - Verify: `pnpm --filter @shareride/domain test`
 
