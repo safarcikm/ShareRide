@@ -17,6 +17,7 @@ import {
 } from "@shareride/domain";
 import { createTranslator, type Locale } from "@shareride/i18n";
 import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
+import { addressBlock } from "../../platform/client-address.ts";
 import { hashToken, newToken, sameHash, type KeyedHasher } from "../../platform/crypto.ts";
 import type { SmsSender } from "../../platform/sms.ts";
 import type { Logger } from "../../logger.ts";
@@ -214,7 +215,12 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
       const phoneHash = hasher("phone", e164);
       const limits = [
         { scope: "phone", keyHash: phoneHash, rules: codeSendLimits.perNumber },
-        { scope: "ip", keyHash: hasher("ip", input.ipAddress), rules: codeSendLimits.perIpAddress },
+        {
+          // An IPv6 address counts by its /64 network, as search does.
+          scope: "ip",
+          keyHash: hasher("ip", addressBlock(input.ipAddress)),
+          rules: codeSendLimits.perIpAddress,
+        },
         {
           scope: "calling_code",
           keyHash: hasher("calling-code", callingCode),

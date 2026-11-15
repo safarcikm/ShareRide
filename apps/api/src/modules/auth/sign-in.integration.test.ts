@@ -223,6 +223,20 @@ describe("sending limits (rule R1.3)", () => {
     expect((await start(api.newPhoneNumber())).ok).toBe(true);
   });
 
+  it("count an IPv6 address by its /64 network, which one connection usually has", async () => {
+    for (let i = 0; i < 10; i++) {
+      api.ip = `2001:db8:5:6::${(i + 1).toString(16)}`;
+      expect((await start(api.newPhoneNumber())).ok).toBe(true);
+    }
+    api.ip = "2001:db8:5:6:a:b:c:d";
+    expect(await start(api.newPhoneNumber())).toMatchObject({
+      status: 429,
+      error: { code: "rate_limited" },
+    });
+    api.ip = "2001:db8:5:7::1";
+    expect((await start(api.newPhoneNumber())).ok).toBe(true);
+  });
+
   it("allow 50 codes per hour to a country calling code other than +354, and log it", async () => {
     // Norwegian mobile numbers +47 41 00 00 00 to +47 41 00 00 50.
     const norwegian = (i: number) => `+474100${String(i).padStart(4, "0")}`;

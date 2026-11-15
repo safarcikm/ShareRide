@@ -146,6 +146,8 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Sign-in limits count an IPv6 address by its /64 network, as search does,
+  so one connection cannot send more codes by changing its address.
 - Tick boxes, chips and busy buttons now tell screen readers on the web
   whether they are ticked or busy: the web build ignored
   `accessibilityState`, so they use `aria-*` props instead. On the web,

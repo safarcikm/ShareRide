@@ -305,9 +305,9 @@ Split in two, like PR 5: 6a the server, 6b the screens.
   Searches are limited to 60 a minute and 600 an hour from one network
   address (an IPv6 address by its /64), counted in the server's memory by
   a keyed hash: one instance on Render counts for all, and a restart
-  starts again (Martin agreed on 2026-11-15). Sign-in limits still count
-  each IPv6 address on its own; a follow-up moves them to the /64 too
-  (agreed the same day). Stops at points being retired are found, because
+  starts again (Martin agreed on 2026-11-15). Sign-in limits now count
+  an IPv6 address by its /64 too, in a small PR after this one (agreed
+  the same day). Stops at points being retired are found, because
   their trips still stop there; paused points are not (spec 4, decision 3).
   "Near me" waits for the screens (6b).
 
