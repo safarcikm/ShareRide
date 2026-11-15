@@ -123,6 +123,17 @@ Milestone 4: booking and requests
 - [x] Booking, paying and my bookings in the app
 - [x] Requests and the trip view for drivers
 
+Milestone 5: chat and notifications
+([plan](../plans/2026-11-15-milestone-5-chat-and-notifications.md), approved
+2026-11-15)
+
+- [ ] Chat and notification rules in the domain
+- [ ] Conversations and message all passengers, on the server and in the app
+- [ ] Outbox, worker and delivery log
+- [ ] Push on Android, then iPhone; email with a provider in the EU
+- [ ] Reminders, the Trip reminders switch and the prompt to turn on
+      notifications
+
 MVP features (each one a spec, a plan and a PR series)
 
 - [ ] Profiles, vehicles, phone verification
