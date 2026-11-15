@@ -63,6 +63,13 @@ export default function MyProfileScreen() {
       />
       <Button
         variant="secondary"
+        label={t("search.title")}
+        onPress={() => {
+          router.push("/search");
+        }}
+      />
+      <Button
+        variant="secondary"
         label={t("driver.offerRide")}
         onPress={() => {
           router.push("/drive");

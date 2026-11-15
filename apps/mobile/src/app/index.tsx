@@ -38,7 +38,7 @@ export default function Welcome() {
           variant="secondary"
           label={t("welcome.browseTrips")}
           onPress={() => {
-            router.push("/coming-soon");
+            router.push("/search");
           }}
         />
         <Button

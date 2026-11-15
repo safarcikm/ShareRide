@@ -2,7 +2,6 @@ import { updateTripRoute, type MyTrip } from "@shareride/contracts";
 import {
   checkTimes,
   defaultTripSettings,
-  inIceland,
   plannedTimes,
   type TimeProblem,
   type TimeWarning,
@@ -20,7 +19,7 @@ import { Body, Heading } from "@/components/text";
 import { TextField } from "@/components/text-field";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
-import { addDays, compareDays, dayOf, type Day } from "@/lib/days";
+import { addDays, compareDays, dayOf, showsOtherTime, type Day } from "@/lib/days";
 import { at, onOrAfter, parseClock } from "@/trips/clock-input";
 import { StepScreen } from "@/trips/step-screen";
 import { goOn } from "@/trips/steps";
@@ -42,12 +41,6 @@ export default function TimeStepScreen() {
   // A step left in the stack starts again from the draft when another step
   // changed it, so going back never saves an old copy over newer choices.
   return <TimeStep key={result.data.updatedAt} trip={result.data} fromReview={from === "review"} />;
-}
-
-/** Whether this device shows another time than a clock in Iceland. */
-function elsewhere(moment: Date): boolean {
-  const iceland = inIceland(moment);
-  return iceland.hour !== moment.getHours() || iceland.minute !== moment.getMinutes();
 }
 
 function TimeStep({ trip, fromReview }: { readonly trip: MyTrip; readonly fromReview: boolean }) {
@@ -170,7 +163,7 @@ function TimeStep({ trip, fromReview }: { readonly trip: MyTrip; readonly fromRe
     goOn(trip.id, "price", fromReview);
   };
 
-  const help = elsewhere(now()) ? t("trip.time.helpIceland") : t("trip.time.help");
+  const help = showsOtherTime(now()) ? t("trip.time.helpIceland") : t("trip.time.help");
   return (
     <StepScreen
       step="time"

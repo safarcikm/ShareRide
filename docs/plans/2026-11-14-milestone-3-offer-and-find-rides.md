@@ -289,9 +289,12 @@ Split in two, like PR 5: 6a the server, 6b the screens.
       boards before it alights, free seats follow S3, prices follow P1
 - [x] 6a: `GET /trips/search` and `/alternatives`, rate limit, integration
       tests at a fixed clock
-- [ ] 6b: Search form with recent searches, results, nothing matches
+- [x] 6b: Search form with recent searches, results, nothing matches
+- [x] 6b: Browser journey: search without an account, in English and
+      Icelandic
 - Verify: Borgarnes to Blönduós finds a Reykjavík to Akureyri trip
-  (`apps/api/src/modules/search/search.integration.test.ts`)
+  (`apps/api/src/modules/search/search.integration.test.ts` and
+  `apps/mobile/e2e/search.spec.ts`)
 - 6a notes: a meeting point also covers active points within 3 km, shown
   with their distance; a place covers its municipalities, or its match
   radius. Among the stops that match, the passenger boards at the one
@@ -309,7 +312,25 @@ Split in two, like PR 5: 6a the server, 6b the screens.
   an IPv6 address by its /64 too, in a small PR after this one (agreed
   the same day). Stops at points being retired are found, because
   their trips still stop there; paused points are not (spec 4, decision 3).
-  "Near me" waits for the screens (6b).
+- 6b notes: "Browse trips" on the welcome screen and "Find a ride" on the
+  profile open the search. From and To take a meeting point or a place,
+  the date is any day or one day, and seats go from 1 to 8. The last five
+  searches stay on the device with their names (local storage on the web,
+  secure storage on phones); one whose date has passed repeats as any day,
+  and "Clear recent searches" removes them all.
+  Results are grouped by day when sorted by time; sorted by price they are
+  one list with each trip's day. Results show the driver's initial and
+  "New driver" until photos and ratings (specs 1 and 8), and only the
+  seats left: the board's taken-seat squares would show other passengers,
+  which section 7 rules out. Other days leave out days already past and
+  days without trips; when a day has nothing on or around it, "Search any
+  day" drops the date, and "No trips yet on this route" is kept for a
+  search without one. Not built yet: opening a trip (PR 7), "Near me",
+  which needs the device's location (with maps, PR 8), the map beside the
+  list on wide screens (PR 8), and the women-only filter (spec 14). From
+  and To are one part for posting and searching. Other days and nearby
+  points are asked once per route, date and seats, with a retry when that
+  fails; filters and sorting reuse the answer.
 
 ### PR 7: `feat(search)`: trip details and shared links
 

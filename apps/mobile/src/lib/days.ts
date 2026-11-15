@@ -43,3 +43,9 @@ export function isoDay(day: Day): string {
   const pad = (value: number) => String(value).padStart(2, "0");
   return `${String(day.year)}-${pad(day.month)}-${pad(day.day)}`;
 }
+
+/** Whether this device's clock shows another time than a clock in Iceland. */
+export function showsOtherTime(moment: Date): boolean {
+  const iceland = inIceland(moment);
+  return iceland.hour !== moment.getHours() || iceland.minute !== moment.getMinutes();
+}

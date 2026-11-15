@@ -1,5 +1,5 @@
 import { inIceland, type Money } from "@shareride/domain";
-import { monthNames, shortWeekdayNames, weekdayNames } from "./calendar-names.ts";
+import { monthNames, shortMonthNames, shortWeekdayNames, weekdayNames } from "./calendar-names.ts";
 import type { Locale } from "./locales.ts";
 import { createTranslator } from "./translator.ts";
 
@@ -82,6 +82,17 @@ export function formatDay(moment: Date, locale: Locale): string {
   // getUTCDay counts from Sunday; the names count from Monday.
   const weekday = (new Date(Date.UTC(year, month - 1, day)).getUTCDay() + 6) % 7;
   return `${weekdayNames[locale][weekday] ?? ""} ${dayAndMonth(day, month, locale)}`;
+}
+
+/** A calendar date such as 2026-11-20, briefly: "Fri 20 Nov", "fös. 20. nóv.". */
+export function formatShortDay(date: string, locale: Locale): string {
+  const [year, month, day] = date.split("-").map(Number);
+  if (year === undefined || month === undefined || day === undefined) {
+    throw new RangeError(`Not a date: ${date}`);
+  }
+  const weekday = (new Date(Date.UTC(year, month - 1, day)).getUTCDay() + 6) % 7;
+  const monthName = shortMonthNames[locale][month - 1] ?? "";
+  return `${shortWeekdayNames[locale][weekday] ?? ""} ${String(day)}${locale === "is" ? "." : ""} ${monthName}`;
 }
 
 /**
