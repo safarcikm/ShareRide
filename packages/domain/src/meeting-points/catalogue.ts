@@ -50,6 +50,15 @@ export function isOfferedForNewTrips(status: MeetingPointStatus): boolean {
   return status === "active";
 }
 
+/**
+ * Found by search, near a searched point or place (spec 4, 3.2): active
+ * points, and retiring ones, whose trips still stop there until the last of
+ * them. Nobody can board at a paused point, so it is left out.
+ */
+export function isFoundBySearch(status: MeetingPointStatus): boolean {
+  return status === "active" || status === "retiring";
+}
+
 export interface Season {
   /** 1 to 12, or null for all year. */
   readonly seasonStartMonth: number | null;

@@ -15,7 +15,7 @@ import {
   type TripStatus,
 } from "@shareride/domain";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
-import { offeredStatuses, toSummary } from "../meeting-points/service.ts";
+import { searchableStatuses, toSummary } from "../meeting-points/service.ts";
 
 const { meetingPoints, places, segments, trips, tripStops, users } = schema;
 
@@ -82,7 +82,7 @@ export function createSearchService(dependencies: {
   readonly settings: SearchSettings;
 }): SearchService {
   const { db, clock, settings } = dependencies;
-  const offered = inArray(meetingPoints.status, offeredStatuses);
+  const searchable = inArray(meetingPoints.status, searchableStatuses);
 
   /** The points a meeting point or a place covers, within `radiusM` when given. */
   async function cover(id: string, radiusM?: number): Promise<Coverage | undefined> {
@@ -95,7 +95,7 @@ export function createSearchService(dependencies: {
         .from(meetingPoints)
         .where(
           and(
-            offered,
+            searchable,
             sql`st_dwithin(${meetingPoints.location}, (select ${meetingPoints.location} from ${meetingPoints} where ${meetingPoints.id} = ${id}), ${reach})`,
           ),
         );
@@ -117,7 +117,7 @@ export function createSearchService(dependencies: {
     const rows = await db
       .select({ id: meetingPoints.id, distanceM: distance })
       .from(meetingPoints)
-      .where(and(offered, reach));
+      .where(and(searchable, reach));
     return { points: rows.map(toCovered), fromPoint: false, centre: { table: "places", id } };
   }
 

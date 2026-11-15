@@ -77,6 +77,30 @@ describe("GET /v1/trips/search (spec 4, R4.1)", () => {
     expect(fromKringlan[0]?.board.nearbyM).toBeLessThan(3000);
   });
 
+  it("finds a stop at a point being retired, whose trips still stop there, but not a paused one", async () => {
+    const hlemmurIs = (status: "active" | "paused" | "retiring") =>
+      api.connection.db
+        .update(schema.meetingPoints)
+        .set({ status })
+        .where(eq(schema.meetingPoints.id, point("hlemmur")));
+    const boardsAt = async (from: string) =>
+      (await search({ query: { from, to: point("kef") } })).map(
+        (result) => result.board.meetingPoint.id,
+      );
+    try {
+      await hlemmurIs("retiring");
+      expect(await boardsAt(point("kringlan"))).toEqual([point("hlemmur")]);
+      expect(await boardsAt(place("capital-area"))).toEqual([point("hlemmur")]);
+      // Paused, nobody boards at Hlemmur: the trip's next stop in the
+      // capital area, Fjörður, is still found.
+      await hlemmurIs("paused");
+      expect(await boardsAt(point("kringlan"))).toEqual([]);
+      expect(await boardsAt(place("capital-area"))).toEqual([point("fjordur")]);
+    } finally {
+      await hlemmurIs("active");
+    }
+  });
+
   it("filters by instant booking and time of day, and sorts by time or price", async () => {
     const fromCapital = { from: place("capital-area"), to: place("selfoss-town") };
     expect(await search({ query: { ...fromCapital, instant: true } })).toEqual([]);

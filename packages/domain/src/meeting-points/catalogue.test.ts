@@ -1,6 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
+  isFoundBySearch,
   isInSeason,
   isOfferedForNewTrips,
   isVisible,
@@ -68,5 +69,9 @@ describe("meeting point status (spec 2, sections 3.1 and 3.6)", () => {
 
   it("offers only active points for new trips (rule R2.4)", () => {
     expect(meetingPointStatuses.filter(isOfferedForNewTrips)).toEqual(["active"]);
+  });
+
+  it("finds active and retiring points in search, whose trips still stop there (spec 4, 3.2)", () => {
+    expect(meetingPointStatuses.filter(isFoundBySearch)).toEqual(["active", "retiring"]);
   });
 });

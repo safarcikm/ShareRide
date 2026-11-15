@@ -54,6 +54,9 @@ their part, the price, the driver and the car.
   "nearby" with the distance ("Mjódd, 2.1 km from Kringlan").
 - **A town or landmark:** active points within its radius: 10 km for towns,
   5 km for villages and landmarks, adjustable per place by the operator.
+- **Points being retired** count as active here: trips already posted still
+  stop there until the last of them (spec 2, 3.6). Paused points do not,
+  because nobody can board there (decision 3).
 - **The capital area** is one place (decision 1): "Reykjavík" covers every
   active meeting point in Reykjavík, Kópavogur, Garðabær, Hafnarfjörður,
   Seltjarnarnes and Mosfellsbær. Searching one of those towns by name stays
@@ -106,8 +109,8 @@ When there are no results (on a chosen date, or at all):
 
 1. **Other days** (when a date was chosen): the number of matching trips on
    each of the three days before and after, tap to switch.
-2. **Nearby meeting points:** trips from or to active points within 20 km of
-   the searched places, with distances.
+2. **Nearby meeting points:** trips from or to active points (or points being
+   retired) within 20 km of the searched places, with distances.
 3. If neither finds anything: "No trips yet on this route", with "Offer a ride"
    for drivers. Ride alerts come after the MVP.
 
@@ -151,7 +154,7 @@ apply. This spec adds:
 | ID | Rule |
 | -- | ---- |
 | R4.1 | A trip matches a search only under all six conditions in 3.3. |
-| R4.2 | A meeting point search also covers active points within 3 km; a place covers active points within its radius (10 km towns, 5 km villages and landmarks, adjustable per place); "Reykjavík" covers the whole capital area. |
+| R4.2 | A meeting point search also covers active points within 3 km; a place covers active points within its radius (10 km towns, 5 km villages and landmarks, adjustable per place); "Reykjavík" covers the whole capital area. Points being retired count as active; paused points do not. |
 | R4.3 | The date is optional. The date of a result is the date of the planned time at the passenger's boarding stop, in Iceland time. |
 | R4.4 | Prices shown are the current segment prices (rule P1). The price is fixed when the booking is made (spec 5). |
 | R4.5 | Searching needs no account; searches are not stored with a user or device on the server. |
@@ -271,3 +274,4 @@ Accepted by Martin on 2026-11-13 as recommended.
 | - | -------- | -------- |
 | 1 | Does a search for "Reykjavík" cover the whole capital area? | Yes: Reykjavík, Kópavogur, Garðabær, Hafnarfjörður, Seltjarnarnes and Mosfellsbær. A search for a specific meeting point or town stays precise |
 | 2 | Must the passenger pick a date? | No. Without a date, results show all upcoming trips on the route, grouped by day |
+| 3 | Does search find stops at meeting points being retired? | Yes: trips already posted still stop there until the last of them. Paused points are not found, because nobody can board there (2026-11-15: Martin asked for a suggestion; built as suggested) |
