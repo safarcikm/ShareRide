@@ -160,6 +160,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   points at that spot, and a second tap on a lone point opens it. Wide
   screens show the map beside the list; phones switch between them. A
   point's details show it on the map next to "Open in maps".
+- Routes on our map (milestone 3, PR 8b): trip details show the trip along
+  the drawn roads, the passenger's part solid and the rest dashed, in the
+  part of Iceland the trip needs; the route step of posting a trip shows
+  the driver's route through the stops they keep.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

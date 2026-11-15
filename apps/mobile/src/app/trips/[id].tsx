@@ -36,6 +36,7 @@ import { now } from "@/lib/clock";
 import { showsOtherTime } from "@/lib/days";
 import { shareLink, type Shared } from "@/lib/share";
 import { useLoaded } from "@/lib/use-loaded";
+import { RouteMap } from "@/maps/route-map";
 import { RouteList } from "@/trip-details/route-list";
 import { SeatView } from "@/trip-details/seat-view";
 import { carText, childSeatNeedKey, needKeys } from "@/trip-details/texts";
@@ -284,6 +285,14 @@ function Trip({
       </Card>
 
       <Heading>{t("trip.route")}</Heading>
+      <RouteMap
+        label={t("trip.routeMap", {
+          trip: t("search.route", { from: name(first), to: name(last) }),
+          part: route,
+        })}
+        stops={trip.stops.map((stop) => stop.meetingPoint.position)}
+        part={part}
+      />
       <RouteList stops={trip.stops} part={part} onChange={changePart} />
       <Body>{t("trip.tapStop")}</Body>
 

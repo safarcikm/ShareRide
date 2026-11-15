@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 import { glaciers, land, roads } from "./iceland-data";
 import { IcelandMap, type MapDot } from "./iceland-map";
 import { mapSize, project, type Position } from "./projection";
+import { RouteMap } from "./route-map";
 
 const bsi: MapDot = { id: "bsi", position: { latitude: 64.1376, longitude: -21.9365 } };
 const hof: MapDot = { id: "hof", position: { latitude: 65.6839, longitude: -18.0878 } };
@@ -38,7 +39,12 @@ describe("Our map of Iceland", () => {
   });
 
   it("draws the land, the glaciers, the roads with the Ring Road on top, and the dots", async () => {
-    await render(<IcelandMap label="Map" dots={[bsi, { ...hof, chosen: true }]} />);
+    await render(
+      <IcelandMap
+        label="Map"
+        dots={[bsi, { ...hof, look: "chosen" }, { ...kef, look: "muted" }]}
+      />,
+    );
     // The drawing is hidden from screen readers: the image's label says it.
     const drawn = (testID: string) =>
       screen.getAllByTestId(testID, { includeHiddenElements: true });
@@ -49,15 +55,60 @@ describe("Our map of Iceland", () => {
     expect(drawn("map-ring-road")[0]?.children).toHaveLength(ringRoad);
     expect(drawn("map-dot")).toHaveLength(1);
     expect(drawn("map-dot-chosen")).toHaveLength(1);
+    expect(drawn("map-dot-muted")).toHaveLength(1);
   });
 
-  it("shows the whole of Iceland, or the part around the points it fits", async () => {
+  it("draws a trip's route along the roads, and the passenger's part over it", async () => {
+    await render(
+      <IcelandMap
+        label="Map"
+        dots={[kef, bsi, hof]}
+        lines={[
+          { id: "route", positions: [kef, bsi, hof].map((stop) => stop.position), look: "route" },
+          { id: "part", positions: [bsi, hof].map((stop) => stop.position), look: "part" },
+        ]}
+      />,
+    );
+    const drawn = (testID: string) =>
+      screen.getAllByTestId(testID, { includeHiddenElements: true });
+    expect(drawn("map-line-route")).toHaveLength(1);
+    expect(drawn("map-line-part")).toHaveLength(1);
+    // Along the roads, Reykjavík to Akureyri takes many more points than its two
+    // stops. The drawing's path is "M x y x y …".
+    const path = String(drawn("map-line-part")[0]?.props.d);
+    expect(path.slice(1).trim().split(/\s+/).length / 2).toBeGreaterThan(20);
+  });
+
+  it("shows the whole of Iceland, or the part that holds its dots and lines", async () => {
     await render(<IcelandMap label="Map" dots={[bsi]} />);
     expect(screen.getByTestId("map-area")).toHaveStyle({
       aspectRatio: mapSize.width / mapSize.height,
     });
-    await render(<IcelandMap label="Map" dots={[bsi]} fit={[bsi.position]} />);
+    await render(<IcelandMap label="Map" dots={[bsi]} fit />);
     expect(screen.getByTestId("map-area")).toHaveStyle({ aspectRatio: 1.6 });
+    await render(
+      <IcelandMap
+        label="Map"
+        dots={[kef, bsi]}
+        lines={[{ id: "part", positions: [kef.position, bsi.position], look: "part" }]}
+        fit
+      />,
+    );
+    expect(screen.getByTestId("map-area")).not.toHaveStyle({
+      aspectRatio: mapSize.width / mapSize.height,
+    });
+    // A line alone sets the part shown: more than one spot, less than the whole.
+    await render(
+      <IcelandMap
+        label="Map"
+        dots={[]}
+        lines={[{ id: "part", positions: [bsi.position, hof.position], look: "part" }]}
+        fit
+      />,
+    );
+    const area = screen.getByTestId("map-area");
+    expect(area).not.toHaveStyle({ aspectRatio: 1.6 });
+    expect(area).not.toHaveStyle({ aspectRatio: mapSize.width / mapSize.height });
   });
 
   it("tells which dots a tap is near, nearest first", async () => {
@@ -84,5 +135,29 @@ describe("Our map of Iceland", () => {
   it("cannot be tapped when nothing happens on a tap", async () => {
     await render(<IcelandMap label="Map" dots={[bsi]} />);
     expect(screen.queryByTestId("map-touch")).toBeNull();
+  });
+});
+
+describe("A trip's route on the map", () => {
+  const drawn = (testID: string) =>
+    screen.queryAllByTestId(testID, { includeHiddenElements: true });
+  const stops = [kef, bsi, fitjar, hof].map((stop) => stop.position);
+
+  it("mutes the trip outside the passenger's part and marks the part's ends", async () => {
+    await render(<RouteMap label="Route" stops={stops} part={{ board: 1, alight: 3 }} />);
+    expect(screen.getByRole("image", { name: "Route" })).toBeVisible();
+    expect(drawn("map-line-route")).toHaveLength(1);
+    expect(drawn("map-line-part")).toHaveLength(1);
+    expect(drawn("map-dot-chosen")).toHaveLength(2);
+    expect(drawn("map-dot")).toHaveLength(1);
+    expect(drawn("map-dot-muted")).toHaveLength(1);
+  });
+
+  it("draws a driver's whole route as the part", async () => {
+    await render(<RouteMap label="Route" stops={stops} />);
+    expect(drawn("map-line-route")).toHaveLength(0);
+    expect(drawn("map-line-part")).toHaveLength(1);
+    expect(drawn("map-dot-chosen")).toHaveLength(2);
+    expect(drawn("map-dot")).toHaveLength(2);
   });
 });

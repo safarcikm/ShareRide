@@ -23,6 +23,7 @@ import { Tag } from "@/components/tag";
 import { Body, Heading } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { dayOf, isoDay } from "@/lib/days";
+import { RouteMap } from "@/maps/route-map";
 import { PointPicker } from "./point-picker";
 import { StepScreen } from "./step-screen";
 import { goOn, stepHref } from "./steps";
@@ -268,6 +269,16 @@ export function RouteStep({
       <Notice message={message} />
       {from === null || to === null || from.id === to.id ? null : (
         <>
+          {alongFor === null ? (
+            <RouteMap
+              label={t("trip.route.map", {
+                route: t("search.route", { from: from.name[locale], to: to.name[locale] }),
+              })}
+              stops={[from, ...between.filter((stop) => stop.on).map((stop) => stop.point), to].map(
+                (point) => point.position,
+              )}
+            />
+          ) : null}
           <Heading>{t("trip.route.stopsTitle")}</Heading>
           {alongFailure !== null ? (
             <>

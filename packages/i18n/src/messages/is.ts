@@ -211,6 +211,7 @@ export const is = {
   "trip.route.pointPaused": "Þessi mótsstaður er í hléi núna. Veldu annan.",
   "trip.route.sameEnds": "Upphaf og endir verða að vera ólíkir mótsstaðir.",
   "trip.route.chooseBoth": "Veldu hvaðan þú leggur af stað og hvert þú ferð.",
+  "trip.route.map": "Leiðin þín á korti af Íslandi: {route}.",
   "trip.route.stopsTitle": "Viðkomustaðir á leiðinni",
   "trip.stopsAdded":
     "Við bættum við mótsstöðunum á leiðinni svo fólk á leiðinni geti komið með. Þú stoppar bara þar sem einhver kemur inn eða fer út. Slökktu á þeim sem þú vilt sleppa.",
@@ -437,6 +438,7 @@ export const is = {
   "trip.seats": "Sæti",
   "trip.pricePerSeat": "{price} á sæti",
   "trip.route": "Leið",
+  "trip.routeMap": "Ferðin á korti af Íslandi: {trip}. Þinn hluti: {part}.",
   "trip.tapStop": "Ýttu á stopp til að fara inn eða út annars staðar.",
   "trip.getInHere": "Fara inn hér",
   "trip.getOutHere": "Fara út hér",

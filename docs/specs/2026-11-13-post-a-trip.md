@@ -103,8 +103,9 @@ missing, and each item can be done from there:
    warning ("This stop adds 35 km"), but is allowed.
 6. The driver stops only where someone gets on or off. Other stops are passed
    without stopping, so many stops do not slow the trip down.
-7. A map shows the route through the stops, using the stored route lines of
-   the legs.
+7. A map shows the route through the stops along the main roads of our own
+   map ([ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)); a stop
+   away from them joins the line straight.
 
 ### 3.5 Date and times
 
@@ -243,7 +244,8 @@ Entities (see [domain model](../architecture/domain-model.md)):
   price at the time of publishing, so the operator can check that caps were
   respected.
 - `Leg` gains a simplified route line (computed by the legs job in spec 2),
-  used to draw routes and, later, to match weather warnings and road closures.
+  later used to match weather warnings and road closures. The app draws
+  routes on its own map along its own roads (ADR 0024), not from this line.
 
 Endpoints (`/v1`, shapes defined in `packages/contracts`):
 

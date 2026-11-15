@@ -55,6 +55,11 @@ describe("Posting a trip (spec 3)", () => {
     const blonduosSwitch = await screen.findByRole("switch", { name: "Blönduós" });
     expect(blonduosSwitch).toBeChecked();
     expect(screen.getByRole("switch", { name: "Borgarnes" })).toBeChecked();
+    expect(
+      screen.getByRole("image", {
+        name: "Your route on a map of Iceland: BSÍ bus terminal → Hof, Akureyri.",
+      }),
+    ).toBeVisible();
     await fireEvent.press(blonduosSwitch);
     expect(blonduosSwitch).not.toBeChecked();
     expect(await screen.findByText("200 km · about 2 h")).toBeVisible();

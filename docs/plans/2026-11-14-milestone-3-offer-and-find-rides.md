@@ -391,19 +391,29 @@ Split in two, like PR 6: 8a the map and meeting points, 8b routes.
 
 - [x] 8a: ADR 0024; the data script and data file; the map drawing with
       tests; meeting points on the map and on a point's details
-- [ ] 8b: routes along the drawn roads; the route map on trip details and
+- [x] 8b: routes along the drawn roads; the route map on trip details and
       on the post-a-trip route step
 - Verify: the map shows the sample points and the Reykjavík to Akureyri
   route on the web and on a phone in Expo Go
 - 8a notes: the map is Natural Earth's 1:10m coastline, glaciers and roads
   (all but ferries), projected flat at 65° north and simplified to about
-  45 KB; the script joins road ends that Natural Earth draws within 2 km of
-  another road, so the roads form one network for 8b. The map is one image
+  45 KB. The map is one image
   for screen readers with the number of points in its label; the list is
   the full alternative. A tap counts dots within 22 points of it, so the
   nine capital-area points share one spot on a phone; a second tap opens a
   lone point. On the web the map stays in view beside the list while the
   list scrolls.
+- 8b notes: a route follows the shortest way along the drawn roads between
+  stops, which is only a drawing: prices and times still come from the
+  legs' distances. Natural Earth's roads meet without sharing points, so
+  the script joins roads where they cross and where a road ends within
+  about 3.5 km of another; a group of roads still apart (the road into
+  Höfn) joins the network where the two come nearest. A stop joins the
+  nearest road it can reach without crossing the sea, so Hof in Akureyri
+  joins the Ring Road on its own side of the fjord. A stop more than about
+  10 km from every road joins the line straight. The map shows the part of Iceland that holds the
+  route, at least about 85 km wide, or the whole country when that is
+  most of it. The review step's map (spec 3, 3.8) waits for a later PR.
 
 ## 6. Martin's steps
 

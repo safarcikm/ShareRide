@@ -38,6 +38,18 @@ test.describe("trip details without an account", () => {
       }),
     ).toBeVisible();
     await expect(page.getByText("3 of 3 seats free on your part")).toBeVisible();
+    await expect(
+      page.getByRole("img", {
+        name: /^The trip on a map of Iceland: .+\. Your part: N1 Borgarnes → Olís Blönduós\.$/,
+      }),
+    ).toBeVisible();
+    // A stop off the part is no taller than one on it: the dotted line fits its row.
+    const heights = await page
+      .getByTestId("route-stop")
+      .filter({ visible: true })
+      .evaluateAll((rows) => rows.map((row) => row.getBoundingClientRect().height));
+    expect(heights).toHaveLength(4);
+    expect(Math.max(...heights) - Math.min(...heights)).toBeLessThan(2);
     await expect(page.getByText("White Toyota Yaris")).toBeVisible();
     await expect(page.getByRole("button", { name: "Booking opens soon" })).toBeDisabled();
     // Trip pages ask search engines not to index them (R4.6).

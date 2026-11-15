@@ -18,6 +18,7 @@ interface Journey {
   readonly start: RegExp;
   readonly end: RegExp;
   readonly onTheWay: string;
+  readonly routeMap: RegExp;
   readonly toTimes: string;
   readonly timeTitle: string;
   readonly nextMonth: string;
@@ -60,6 +61,7 @@ const inEnglish: Journey = {
   start: /^BSÍ bus terminal,/,
   end: /^Hof bus stop, Akureyri,/,
   onTheWay: "N1 Borgarnes",
+  routeMap: /^Your route on a map of Iceland: BSÍ bus terminal → Hof bus stop, Akureyri\.$/,
   toTimes: "Choose date and time",
   timeTitle: "When are you leaving?",
   nextMonth: "Next month",
@@ -102,6 +104,7 @@ const inIcelandic: Journey = {
   start: /^BSÍ,/,
   end: /^Hof, Akureyri,/,
   onTheWay: "N1 Borgarnesi",
+  routeMap: /^Leiðin þín á korti af Íslandi: BSÍ → Hof, Akureyri\.$/,
   toTimes: "Velja dag og tíma",
   timeTitle: "Hvenær leggur þú af stað?",
   nextMonth: "Næsti mánuður",
@@ -160,6 +163,7 @@ async function postTrip(page: Page, journey: Journey) {
   await choose(page, journey, journey.from, "BSÍ", journey.start);
   await choose(page, journey, journey.to, "Hof", journey.end);
   await expect(page.getByRole("switch", { name: journey.onTheWay })).toBeChecked();
+  await expect(page.getByRole("img", { name: journey.routeMap })).toBeVisible();
   await page.getByRole("button", { name: journey.toTimes }).click();
 
   // 2. Tomorrow at nine; the other times follow.
