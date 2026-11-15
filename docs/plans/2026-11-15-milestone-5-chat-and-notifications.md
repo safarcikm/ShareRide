@@ -340,11 +340,11 @@ merge.
 
 ### PR 4: `feat(chat)`: chat in the app
 
-- [ ] The conversation, the list, the entry points, message all; Seen,
+- [x] The conversation, the list, the entry points, message all; Seen,
       quick messages, the safety tip, read-only, "Not sent" with retry
 - [ ] The Messages tab with its badge, if the new tab bar has merged (else
-      a short follow-up PR once it has)
-- [ ] Texts in Icelandic and English (spec 7, section 8, plus new ones)
+      a short follow-up PR once it has): not yet merged, so a follow-up
+- [x] Texts in Icelandic and English (spec 7, section 8, plus new ones)
 - Verify: a browser journey with two people: the passenger books and pays,
   both write, a quick message sent in Icelandic reads in English, "Seen"
   appears, at phone and desktop sizes
