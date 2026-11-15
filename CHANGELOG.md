@@ -169,6 +169,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   booking passes before it is stored (rule S4, the price last shown, no
   overlapping bookings, a request's message), with a property test that
   seats never exceed the car's.
+- Booking on the server (milestone 4, PR 3): book an instant trip or request
+  seats on an approval trip, safe to retry and with exactly one winner for
+  the last seat; the driver accepts or declines, the passenger withdraws;
+  requests past their deadline free their seats; my bookings, a booking for
+  its passenger or driver, and the driver's requests and bookings on a trip.
+  The number plate and where to stand show only once a booking is confirmed.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

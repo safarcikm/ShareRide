@@ -15,6 +15,7 @@ import {
   type TripStatus,
 } from "@shareride/domain";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { occupancyNow } from "../bookings/seats.ts";
 import { searchableStatuses, toSummary } from "../meeting-points/service.ts";
 
 const { meetingPoints, places, segments, trips, tripStops, users } = schema;
@@ -164,7 +165,7 @@ export function createSearchService(dependencies: {
           fromIds.map((id) => sql`${id}::uuid`),
           sql`, `,
         )})
-        and boarding.planned_at >= ${earliest.toISOString()}
+        and boarding.planned_at > ${earliest.toISOString()}
         ${between === undefined ? sql`` : sql`and boarding.planned_at >= ${between.start.toISOString()} and boarding.planned_at < ${between.end.toISOString()}`}
       join ${tripStops} alighting on alighting.trip_id = ${trips.id}
         and alighting.meeting_point_id in (${sql.join(
@@ -177,7 +178,7 @@ export function createSearchService(dependencies: {
     `);
     const ids = found.rows.map((row) => row.id);
     if (ids.length === 0) return [];
-    const [tripRows, stopRows, segmentRows] = await Promise.all([
+    const [tripRows, stopRows, segmentRows, asOfNow] = await Promise.all([
       db
         .select({ trip: trips, firstName: users.firstName })
         .from(trips)
@@ -194,6 +195,7 @@ export function createSearchService(dependencies: {
         .from(segments)
         .where(inArray(segments.tripId, ids))
         .orderBy(asc(segments.position)),
+      occupancyNow(db, ids, clock()),
     ]);
     return tripRows.map(({ trip, firstName }) => {
       const stops = stopRows.filter((row) => row.stop.tripId === trip.id);
@@ -208,7 +210,10 @@ export function createSearchService(dependencies: {
         })),
         segments: segmentRows
           .filter((row) => row.tripId === trip.id)
-          .map((row) => ({ price: row.price, occupancy: row.occupancy })),
+          .map((row) => ({
+            price: row.price,
+            occupancy: asOfNow(trip.id, row.position, row.occupancy),
+          })),
       };
       return {
         searchable,

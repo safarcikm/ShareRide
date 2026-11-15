@@ -109,12 +109,15 @@ Pure functions in `packages/domain/src/bookings/`, with property tests:
   `seats`, `status`, `total_price` and `currency`, the timestamps, `message`,
   `decline_reason`, `attempt_key` unique per passenger) and
   `booking_segment_prices`. Checks mirror the domain: seats ≥ 1, statuses,
-  a message of at most 300 characters. Segments get `CHECK (occupancy >= 0)`
-  next to the existing `occupancy <= capacity`.
-- **Booking transaction:** lock the trip row (`FOR UPDATE`), expire its
-  bookings past their deadlines, load what `checkBooking` needs, insert the
-  booking and its prices, and add the seats to the occupancy of every segment
-  of the part. Freeing seats subtracts them in the same transaction as the
+  a message of at most 300 characters. Segments already hold occupancy
+  between 0 and the capacity.
+- **Booking transaction:** lock the passenger's row, then the trip row
+  (`FOR UPDATE`), expire the trip's bookings past their deadlines, load what
+  `checkBooking` needs, insert the booking and its prices, and add the seats
+  to the occupancy of every segment of the part. The passenger's lock keeps
+  their overlap check and attempt key to one booking at a time; answering,
+  withdrawing and the expiry job lock only the trip, so locks are always
+  taken in the same order. Freeing seats subtracts them in the same transaction as the
   status change. The database check stops an over-booking even if the
   application check is bypassed (R5.2).
 - **Retries:** the same attempt key from the same passenger returns the
@@ -132,8 +135,8 @@ Endpoints (`/v1`), shapes in `packages/contracts/src/bookings.ts`:
 
 | Method and path | Answers |
 | --------------- | ------- |
-| `POST /trips/{id}/bookings` | 201 the booking; 200 the same booking on a retry; 409 `seats_taken` with the seats free; 409 `price_changed` with the current total; 409 `overlapping_booking`; 422 for the other problems; 403 `account_incomplete` |
-| `GET /me/bookings?when=upcoming\|past` | Upcoming: requested, accepted and confirmed, soonest first. Past: the rest, latest first |
+| `POST /trips/{id}/bookings` | 201 the booking; 200 the same booking on a retry; 409 `seats_taken` with the seats free, `price_changed` with the current total, `overlapping_booking`, `booking_closed` or `trip_not_bookable`; 400 for the part or the message; 403 `account_incomplete` or `own_trip` |
+| `GET /me/bookings?when=upcoming\|past` | Upcoming: requested, accepted and confirmed until the passenger gets out, soonest first. Past: the rest, latest first |
 | `GET /bookings/{id}` | The passenger's or the driver's view; 404 for anyone else |
 | `POST /bookings/{id}/withdraw` | The passenger, while requested (R5.8) |
 | `POST /bookings/{id}/accept`, `POST /bookings/{id}/decline` | The driver, while requested and before its deadline; decline takes an optional reason (`plans_changed`, `luggage`, `other`) |
@@ -146,7 +149,7 @@ Endpoints (`/v1`), shapes in `packages/contracts/src/bookings.ts`:
   `startCheckout({ paymentId, amount, description }) → { providerRef }`.
   The test adapter returns a reference and nothing else; the app knows the
   provider is `test` from the payment response and shows its own sheet.
-- Table `payments` (migration 0005): `booking_id`, `provider`,
+- Table `payments` (migration 0006): `booking_id`, `provider`,
   `provider_ref`, `amount`, `currency`, `status` (`pending`, `succeeded`,
   `failed`, `refunded`), timestamps. Card brand and last four digits come
   with the real provider.
@@ -161,8 +164,10 @@ Endpoints (`/v1`), shapes in `packages/contracts/src/bookings.ts`:
   only) calls it; that route exists only when `PAYMENT_PROVIDER=test`, which
   the config refuses when `APP_ENV=production`.
 - `expireDueBookings(now)`: requested bookings past `expires_at` and
-  accepted ones past `payment_due_at` become `expired` and free their seats,
-  a batch at a time with `FOR UPDATE SKIP LOCKED`. The API runs it every
+  accepted ones past `payment_due_at` become `expired` and free their seats.
+  It picks the trips that have such bookings and, for each, locks the trip
+  (`FOR UPDATE SKIP LOCKED`: a trip being changed waits for the next run)
+  and stores the expiries, so it takes locks in the same order as booking. The API runs it every
   minute (a timer that does not keep the process alive), the booking
   transaction runs it for its trip, and `expire-bookings-cli.ts` runs it
   once for tests and by hand.
@@ -227,9 +232,9 @@ merge.
 
 ### PR 3: `feat(booking)`: book and request, on the server
 
-- [ ] Contracts, migration 0005 (bookings, booking segment prices,
-      payments), schema checks with an integration test that an over-booking
-      is refused by the database itself
+- [ ] Contracts, migration 0005 (bookings, booking segment prices), schema
+      checks with an integration test that an over-booking is refused by the
+      database itself
 - [ ] `POST /trips/{id}/bookings`: instant, request, free; seats taken, price
       changed, overlapping, cut-off, own trip, incomplete account; the same
       attempt key twice; **two passengers for the last seat at once, exactly
@@ -239,17 +244,20 @@ merge.
       transaction frees seats before checking
 - [ ] `GET /me/bookings`, `GET /bookings/{id}` (plate and where to stand only
       once confirmed), `GET /me/trips/{id}/bookings`
-- [ ] Trip details and search count the new occupancy (existing tests)
+- [ ] Trip details and search count the new occupancy, and trip details
+      name the viewer's booking on the trip
+- [ ] Re-seeding the sample trips removes their test bookings first
+- [ ] Privacy inventory: request messages and decline reasons
 
 ### PR 4: `feat(payments)`: paying with the test provider, and deadlines
 
-- [ ] `PaymentProvider` port, the test adapter, `PAYMENT_PROVIDER` in the
-      config (refused as `test` in production)
+- [ ] Migration 0006 (payments); `PaymentProvider` port, the test adapter,
+      `PAYMENT_PROVIDER` in the config (refused as `test` in production)
 - [ ] `POST /bookings/{id}/payment`, `settlePayment` (confirms exactly once;
       late success refunded; failure retried), `POST /test-payments/{id}`
 - [ ] `expireDueBookings` with its timer and CLI; the e2e API serves the test
       provider
-- [ ] Privacy inventory and integrations docs: booking messages, payments
+- [ ] Privacy inventory and integrations docs: payments
 
 ### PR 5: `feat(booking)`: booking and paying in the app
 

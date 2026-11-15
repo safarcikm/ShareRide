@@ -3,6 +3,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { healthReadyRoute, healthRoute } from "@shareride/contracts";
 import type { Database } from "@shareride/db";
 import {
+  defaultBookingSettings,
   defaultSearchSettings,
   defaultTripSettings,
   searchLimitsPerAddress,
@@ -24,6 +25,7 @@ import {
   createRequireAuth,
   registerAuthRoutes,
 } from "./modules/auth/index.ts";
+import { createBookingService, registerBookingRoutes } from "./modules/bookings/index.ts";
 import { createDrivingService, registerDrivingRoutes } from "./modules/driving/index.ts";
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
@@ -196,6 +198,11 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     const settings = defaultTripSettings;
     registerTripRoutes(app, createRouteService({ ...features, settings }), requireAuth);
     registerDraftRoutes(app, createTripService({ ...features, settings, driving }), requireAuth);
+    registerBookingRoutes(
+      app,
+      createBookingService({ ...features, account, settings: defaultBookingSettings }),
+      requireAuth,
+    );
   }
 
   app.openAPIRegistry.registerComponent("securitySchemes", bearerAuth, {

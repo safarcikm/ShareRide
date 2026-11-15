@@ -1,5 +1,6 @@
 import {
   bookingModes,
+  bookingStatuses,
   carColours,
   defaultTripSettings,
   partStates,
@@ -202,6 +203,8 @@ export const tripDetailsSchema = z.object({
   /** To passengers, without contact details (R3.10); empty for none. */
   note: z.string(),
   bookingMode: z.enum(bookingModes),
+  /** The signed-in viewer's booking on this trip that holds seats, if any (spec 5). */
+  myBooking: z.object({ id: z.uuid(), status: z.enum(bookingStatuses) }).nullable(),
 });
 
 export type TripDetails = z.infer<typeof tripDetailsSchema>;

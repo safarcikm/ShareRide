@@ -2,22 +2,26 @@ import type { TripDetails } from "@shareride/contracts";
 import { schema, type Database } from "@shareride/db";
 import {
   err,
+  holdsSeats,
   ok,
   peopleColourOf,
+  statusAt,
   tripPageOpen,
   tripPart,
   type CarColour,
   type InvalidPart,
   type PartChoice,
+  type BookingStatus,
   type Result,
   type SearchSettings,
   type TripStatus,
 } from "@shareride/domain";
-import { and, asc, eq, ne } from "drizzle-orm";
+import { and, asc, eq, inArray, ne } from "drizzle-orm";
+import { occupancyNow } from "../bookings/seats.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import { choicesOf } from "../trips/drafts.ts";
 
-const { meetingPoints, segments, trips, tripStops, users, vehicles } = schema;
+const { bookings, meetingPoints, segments, trips, tripStops, users, vehicles } = schema;
 
 export type TripDetailsError = { readonly code: "not_found" } | InvalidPart;
 
@@ -63,7 +67,7 @@ export function createTripDetailsService(dependencies: {
         return err({ code: "not_found" });
       }
 
-      const [stopRows, segmentRows] = await Promise.all([
+      const [stopRows, segmentRows, mine, asOfNow] = await Promise.all([
         db
           .select({ stop: tripStops, point: meetingPoints })
           .from(tripStops)
@@ -71,7 +75,34 @@ export function createTripDetailsService(dependencies: {
           .where(eq(tripStops.tripId, id))
           .orderBy(asc(tripStops.position)),
         db.select().from(segments).where(eq(segments.tripId, id)).orderBy(asc(segments.position)),
+        viewerId === null
+          ? []
+          : db
+              .select({
+                id: bookings.id,
+                status: bookings.status,
+                requestExpiresAt: bookings.expiresAt,
+                paymentDueAt: bookings.paymentDueAt,
+              })
+              .from(bookings)
+              .innerJoin(tripStops, eq(tripStops.id, bookings.fromStopId))
+              .where(
+                and(
+                  eq(bookings.tripId, id),
+                  eq(bookings.passengerId, viewerId),
+                  inArray(bookings.status, ["requested", "accepted", "confirmed"]),
+                ),
+              )
+              .orderBy(asc(tripStops.position)),
+        occupancyNow(db, [id], now),
       ]);
+      // The first stretch the viewer has seats on, if any (spec 5).
+      const myBooking = mine
+        .map((row) => ({
+          id: row.id,
+          status: statusAt({ ...row, status: row.status as BookingStatus }, now),
+        }))
+        .find((booking) => holdsSeats(booking.status));
       const stops = stopRows.map((row) => ({
         meetingPointId: row.point.id,
         // Every stop of a published trip has its time.
@@ -85,7 +116,10 @@ export function createTripDetailsService(dependencies: {
           status: trip.status as TripStatus,
           capacity: trip.capacity,
           stops,
-          segments: segmentRows.map((row) => ({ price: row.price, occupancy: row.occupancy })),
+          segments: segmentRows.map((row) => ({
+            price: row.price,
+            occupancy: asOfNow(id, row.position, row.occupancy),
+          })),
         },
         choice,
         viewerId,
@@ -116,6 +150,7 @@ export function createTripDetailsService(dependencies: {
         preferences: choices.preferences,
         note: trip.note,
         bookingMode: choices.bookingMode,
+        myBooking: myBooking ?? null,
       });
     },
   };

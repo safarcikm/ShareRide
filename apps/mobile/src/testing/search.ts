@@ -124,6 +124,7 @@ export function northTrip(
     },
     note: "",
     bookingMode: "approval",
+    myBooking: null,
     ...rest,
   };
 }
