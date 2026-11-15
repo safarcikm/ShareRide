@@ -213,11 +213,13 @@ Endpoints (`/v1`), shapes in `packages/contracts/src/bookings.ts`:
   Keeping upcoming bookings for offline use (3.6 item 4, feature I4) waits
   for the offline work.
 - Driver (3.3, 3.7): "My trips" shows a count of requests on each published
-  trip. The driver's trip page lists requests first (first name and
-  initial, member since, "No reviews yet", where they get in and out with
-  times, seats, price, message, time left), with "Accept" and "Decline"
-  (an optional reason, seen only by the operator), and the seat view before
-  and after accepting; then passengers by part, with seats per segment.
+  trip (`openRequests`: requested, with the deadline still to come). The
+  driver's trip page lists requests first (first name, with its initial as
+  the avatar, member since, "No reviews yet", where they get in and out
+  with times, seats, price, message, time left), with "Accept" and
+  "Decline" (an optional reason, seen only by the operator), and the seat
+  view before and after accepting; then passengers by part, with seats per
+  segment.
 
 ## 5. Pull requests and tasks
 

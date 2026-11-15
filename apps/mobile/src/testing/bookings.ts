@@ -1,10 +1,12 @@
 // Bookings as the API returns them, and fake booking answers, for screen
 // tests. Not used by the app itself.
 import type { Booking } from "@shareride/contracts";
-import { ok, type FakeClient } from "./fake-client";
+import { failure, ok, type FakeClient } from "./fake-client";
 import { northResult, northStops } from "./search";
+import { plannedDraft } from "./trips";
 
-const at = (position: number) => {
+/** A stop of the north trip, as a booking holds it. */
+export const northStop = (position: number) => {
   const stop = northStops[position];
   if (stop === undefined) throw new Error(`No stop ${String(position)}`);
   return stop;
@@ -17,8 +19,8 @@ export function northBooking(changes: Partial<Booking> = {}): Booking {
     status: "requested",
     viewer: "passenger",
     trip: { id: northResult.tripId, bookingMode: "approval" },
-    board: at(1),
-    alight: at(2),
+    board: northStop(1),
+    alight: northStop(2),
     seats: 1,
     total: { amount: 2900, currency: "ISK" },
     message: "",
@@ -56,4 +58,85 @@ export const paidBooking = northBooking({
 /** Answers GET /v1/bookings/{id} with `booking`. */
 export function bookingApi(client: FakeClient, booking: () => Booking) {
   client.answer("/v1/bookings/{id}", () => ok(200, booking()), "get");
+}
+
+/** Anna's north trip as she sees it in My trips, published, with one request waiting. */
+export const northMyTrip = plannedDraft({
+  id: northResult.tripId,
+  status: "published",
+  stops: northStops.map(({ meetingPoint, plannedAt }) => ({ meetingPoint, plannedAt })),
+  seats: 3,
+  departsAt: northStops[0]?.plannedAt ?? null,
+  arrivesAt: northStops.at(-1)?.plannedAt ?? null,
+  publishedAt: "2026-11-14T09:00:00.000Z",
+  openRequests: 1,
+});
+
+/** Gunna's request for Borgarnes to Blönduós, as Anna, the driver, sees it. */
+export const requestToDrive = northBooking({ viewer: "driver", message: "One small bag." });
+
+/** Statuses that hold seats (rule S1), as the server counts them. */
+const holding = new Set<Booking["status"]>(["requested", "accepted", "confirmed"]);
+
+/**
+ * Answers the driver's trip page for the north trip: its requests and
+ * bookings, with the seats each stretch holds, and accepting and declining.
+ * `answers` can replace what accepting or declining answers.
+ */
+export function driverApi(
+  client: FakeClient,
+  start: readonly Booking[],
+  answers: { accept?: () => unknown; decline?: () => unknown } = {},
+) {
+  let bookings = [...start];
+  const change = (id: string, changes: Partial<Booking>) => {
+    const next = bookings.map((booking) =>
+      booking.id === id ? { ...booking, ...changes } : booking,
+    );
+    bookings = next;
+    return next.find((booking) => booking.id === id);
+  };
+  const idOf = (input: Record<string, unknown>) => (input["params"] as { id: string }).id;
+  client.answer("/v1/me/trips/{id}/bookings", () =>
+    ok(200, {
+      bookings: [
+        ...bookings.filter((booking) => booking.status === "requested"),
+        ...bookings.filter((booking) => booking.status !== "requested"),
+      ],
+      segments: [0, 1, 2].map((position) => ({
+        position,
+        occupancy: bookings
+          .filter(
+            (booking) =>
+              holding.has(booking.status) &&
+              booking.board.position <= position &&
+              position < booking.alight.position,
+          )
+          .reduce((sum, booking) => sum + booking.seats, 0),
+      })),
+      capacity: 3,
+    }),
+  );
+  client.answer("/v1/bookings/{id}/accept", (input) => {
+    if (answers.accept !== undefined) return answers.accept();
+    const accepted = change(idOf(input), {
+      status: "accepted",
+      requestExpiresAt: null,
+      paymentDueAt: "2026-11-14T12:30:00.000Z",
+    });
+    return accepted === undefined ? failure(404, "not_found") : ok(200, accepted);
+  });
+  client.answer("/v1/bookings/{id}/decline", (input) => {
+    if (answers.decline !== undefined) return answers.decline();
+    const declined = change(idOf(input), { status: "declined", requestExpiresAt: null });
+    return declined === undefined ? failure(404, "not_found") : ok(200, declined);
+  });
+  return {
+    remove: (id: string) => {
+      bookings = bookings.filter((booking) => booking.id !== id);
+    },
+    add: (booking: Booking) => {
+      bookings = [...bookings, booking];
+    },
+  };
 }

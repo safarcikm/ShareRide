@@ -2,16 +2,17 @@ import { myTripsRoute, type MyTrip } from "@shareride/contracts";
 import { capitalised, formatClock, formatDay } from "@shareride/i18n";
 import { router } from "expo-router";
 import { useCallback } from "react";
-import { Text } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useSession } from "@/auth/session";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Screen } from "@/components/screen";
+import { Tag } from "@/components/tag";
 import { Body, Heading, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
-import { typography } from "@/theme/tokens";
+import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { stepHref } from "@/trips/steps";
 import { routeText } from "@/trips/texts";
@@ -58,7 +59,13 @@ export default function MyTripsScreen() {
           ))}
           {published.length === 0 ? null : <Heading>{t("trip.mine.published")}</Heading>}
           {published.map((trip) => (
-            <TripCard key={trip.id} trip={trip} />
+            <TripCard
+              key={trip.id}
+              trip={trip}
+              onPress={() => {
+                router.push({ pathname: "/drive/trips/[id]", params: { id: trip.id } });
+              }}
+            />
           ))}
         </>
       )}
@@ -66,7 +73,11 @@ export default function MyTripsScreen() {
   );
 }
 
-/** A trip's route and when it leaves; a draft opens to carry on with it. */
+/**
+ * A trip's route and when it leaves. A draft opens to carry on with it; a
+ * published trip opens the driver's trip page, with the requests waiting
+ * on it counted here (spec 5, 3.3).
+ */
 function TripCard({ trip, onPress }: { readonly trip: MyTrip; readonly onPress?: () => void }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
@@ -80,11 +91,25 @@ function TripCard({ trip, onPress }: { readonly trip: MyTrip; readonly onPress?:
           locale,
         );
   const seats = t("trip.seats.count", { count: trip.seats });
+  const requests =
+    trip.openRequests === 0 ? null : t("trip.mine.requests", { count: trip.openRequests });
   return (
-    <Card onPress={onPress} accessibilityLabel={[route, when, seats].join(", ")}>
+    <Card
+      onPress={onPress}
+      accessibilityLabel={[route, when, seats, requests].filter((part) => part !== null).join(", ")}
+    >
       <Text style={[typography.heading, { color: palette.text }]}>{route}</Text>
       <Text style={[typography.small, { color: palette.textMuted }]}>{when}</Text>
       <Text style={[typography.small, { color: palette.textMuted }]}>{seats}</Text>
+      {requests === null ? null : (
+        <View style={styles.row}>
+          <Tag kind="info" label={requests} />
+        </View>
+      )}
     </Card>
   );
 }
+
+const styles = StyleSheet.create({
+  row: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+});

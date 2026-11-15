@@ -239,6 +239,8 @@ export const myTripSchema = z.object({
       price: moneySchema,
     }),
   ),
+  /** Requests waiting for the driver's answer, their deadline still to come (spec 5, 3.3). */
+  openRequests: z.int().nonnegative(),
 });
 
 export type MyTrip = z.infer<typeof myTripSchema>;

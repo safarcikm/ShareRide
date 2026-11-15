@@ -198,6 +198,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   again" with the same route, seats and day. In the API an expired booking
   keeps the deadline that passed, so the app can say which ran out, and a
   booking says whether it was withdrawn.
+- Requests for drivers (milestone 4, PR 7): "My trips" counts the requests
+  waiting on each published trip and opens the driver's trip page. There
+  each request shows who asks (first name, member since, "No reviews yet"),
+  where they get in and out, seats, price, message and time left, with the
+  seats on each stretch without and with it; "Accept", or "Decline" with an
+  optional reason only the operator sees. Below come the passengers by
+  where they get in and out, and the seats held on each stretch.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

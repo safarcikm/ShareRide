@@ -164,6 +164,7 @@ export function tripsApi(client: FakeClient, start: MyTrip[] = []): TripsApi {
       publishedAt: null,
       updatedAt: "2026-11-14T12:00:00.000Z",
       segments: [],
+      openRequests: 0,
     };
     return ok(201, store(trip));
   });
@@ -247,6 +248,7 @@ export function plannedDraft(changes: Partial<MyTrip> = {}): MyTrip {
     publishedAt: null,
     updatedAt: "2026-11-14T12:00:00.000Z",
     segments: [],
+    openRequests: 0,
     ...changes,
   };
 }

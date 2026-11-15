@@ -1,0 +1,82 @@
+import { expect, test } from "@playwright/test";
+import { english, signUp } from "./support/account";
+import { focused, postTripToSelfoss } from "./support/trips";
+
+// Spec 5's request from both sides on the web build, in two browsers: a new
+// driver posts Mjódd to N1 Selfoss for tomorrow, a passenger requests a
+// seat with a message, the driver accepts it from My trips, the passenger
+// pays on the test sheet, and both see the seat confirmed. Each project
+// posts its own trip, so phone and desktop runs never meet. Screens left
+// behind stay in the page, hidden, so text checks look only at what shows.
+
+test.use({ locale: "en-GB" });
+
+test("a passenger requests a seat, the driver accepts, the passenger pays", async ({
+  page: driver,
+  browser,
+}, testInfo) => {
+  const { viewport, userAgent, deviceScaleFactor, isMobile, hasTouch, baseURL } =
+    testInfo.project.use;
+  const passengerContext = await browser.newContext({
+    viewport,
+    userAgent,
+    deviceScaleFactor,
+    isMobile,
+    hasTouch,
+    baseURL,
+    locale: "en-GB",
+  });
+  const passenger = await passengerContext.newPage();
+  const visible = { visible: true } as const;
+
+  // The driver posts the trip; the passenger opens it from its link.
+  await signUp(driver, english, "Bára");
+  const tripId = await postTripToSelfoss(driver, "18:30");
+  await signUp(passenger, english, "Dóra");
+  await passenger.goto(`/trips/${tripId}?from=0&to=1`);
+  await passenger.getByRole("button", { name: "Send request", exact: true }).click();
+  await passenger.getByLabel("Message to the driver (optional)").fill("A small rucksack.");
+  await passenger.getByRole("button", { name: "Send request", exact: true }).click();
+  await expect(passenger).toHaveURL(/\/bookings\/[0-9a-f-]+$/);
+  await expect(
+    passenger
+      .getByText(/^Request sent\. Bára has until \d\d:\d\d( tomorrow)? to answer\.$/)
+      .filter(visible),
+  ).toBeVisible();
+
+  // My trips counts the request; the trip page shows who asks, and accepts.
+  await driver.goto("/drive/trips");
+  await driver.getByRole("button", { name: /, 1 request$/ }).click();
+  await expect(driver).toHaveURL(`/drive/trips/${tripId}`);
+  await expect(driver.getByRole("heading", { name: "Requests" })).toBeVisible();
+  await expect(driver.getByText("Dóra", { exact: true }).filter(visible)).toBeVisible();
+  await expect(driver.getByText("No reviews yet").filter(visible)).toBeVisible();
+  await expect(driver.getByText("A small rucksack.").filter(visible)).toBeVisible();
+  await expect(driver.getByText(/ left to answer$/).filter(visible)).toBeVisible();
+  await driver.getByRole("button", { name: "Accept", exact: true }).click();
+  const accepted = /^Request accepted\. Dóra has until \d\d:\d\d( tomorrow)? to pay\.$/;
+  await expect(driver.getByText(accepted).filter(visible)).toBeVisible();
+  await expect.poll(() => focused(driver)).toMatch(/^Request accepted\./);
+  await expect(driver.getByRole("heading", { name: "Requests" })).toBeHidden();
+  await expect(driver.getByRole("heading", { name: "Passengers" })).toBeVisible();
+  await expect(driver.getByLabel("Dóra, 1 seat, Waiting for payment")).toBeVisible();
+
+  // The passenger sees the answer on coming back, and pays.
+  await passenger.reload();
+  await expect(
+    passenger.getByText(/^Pay [\d,]+ ISK to confirm your seat$/).filter(visible),
+  ).toBeVisible();
+  await passenger.getByRole("button", { name: /^Pay [\d,]+ ISK$/ }).click();
+  await expect(
+    passenger.getByRole("heading", { name: "Test payment: no money moves" }),
+  ).toBeVisible();
+  await passenger.getByRole("button", { name: /^Pay [\d,]+ ISK$/ }).click();
+  await expect(
+    passenger.getByText("Your seat is confirmed", { exact: true }).filter(visible),
+  ).toBeVisible();
+
+  // The driver's trip shows the seat confirmed.
+  await driver.reload();
+  await expect(driver.getByLabel("Dóra, 1 seat, Confirmed")).toBeVisible();
+  await passengerContext.close();
+});
