@@ -55,7 +55,7 @@ function Navigation() {
       <Stack.Screen name="places/[id]" />
       <Stack.Screen name="search/index" />
       <Stack.Screen name="search/results" />
-      <Stack.Screen name="trips/[id]" />
+      <Stack.Screen name="trips/[id]/index" />
       <Stack.Protected guard={me === null}>
         <Stack.Screen name="sign-in" />
       </Stack.Protected>
@@ -83,6 +83,8 @@ function Navigation() {
         <Stack.Screen name="drive/trips/[id]/seats" />
         <Stack.Screen name="drive/trips/[id]/review" />
         <Stack.Screen name="drive/trips/[id]/published" />
+        <Stack.Screen name="trips/[id]/book" />
+        <Stack.Screen name="bookings/[id]" />
       </Stack.Protected>
     </Stack>
   );

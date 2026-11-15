@@ -1,12 +1,17 @@
-import { Redirect, router } from "expo-router";
+import type { Me } from "@shareride/contracts";
+import { Redirect, router, type Href } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { nextRoute } from "@/auth/next-route";
 import { useSessionState } from "@/auth/session";
+import { bookingHref, takePendingBooking } from "@/booking/pending-booking";
 import { Button } from "@/components/button";
 import { LanguageSwitch } from "@/components/language-switch";
+import { Loading } from "@/components/loading";
 import { Screen } from "@/components/screen";
 import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
+import { now } from "@/lib/clock";
 import { spacing } from "@/theme/tokens";
 
 /**
@@ -17,7 +22,7 @@ import { spacing } from "@/theme/tokens";
 export default function Welcome() {
   const { t } = useLanguage();
   const state = useSessionState();
-  if (state.status === "signedIn") return <Redirect href={nextRoute(state.me)} />;
+  if (state.status === "signedIn") return <SignedIn me={state.me} />;
   return (
     <Screen>
       <View style={styles.top}>
@@ -51,6 +56,26 @@ export default function Welcome() {
       </View>
     </Screen>
   );
+}
+
+/**
+ * The next step of signing up; once it is done, the booking someone chose
+ * before they had an account (spec 5, 3.1, item 1), or else their profile.
+ */
+function SignedIn({ me }: { readonly me: Me }) {
+  const next = nextRoute(me);
+  const [target, setTarget] = useState<Href | null>(null);
+  // Once per visit: taking the choice forgets it.
+  const taken = useRef(false);
+  useEffect(() => {
+    if (next !== "/profile" || taken.current) return;
+    taken.current = true;
+    void takePendingBooking(now()).then((pending) => {
+      setTarget(pending === null ? "/profile" : bookingHref(pending));
+    });
+  }, [next]);
+  if (next !== "/profile") return <Redirect href={next} />;
+  return target === null ? <Loading /> : <Redirect href={target} />;
 }
 
 const styles = StyleSheet.create({

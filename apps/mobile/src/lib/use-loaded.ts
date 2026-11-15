@@ -4,7 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 interface Loaded<T> {
   /** Undefined while the first result is on its way and after `reload`. */
   readonly value: T | undefined;
+  /** Loads again, showing the loading state meanwhile, such as after a failure. */
   readonly reload: () => void;
+  /** Loads again and keeps the last result on screen until the new one comes. */
+  readonly refresh: () => void;
 }
 
 /**
@@ -19,6 +22,9 @@ export function useLoaded<T>(load: () => Promise<T>): Loaded<T> {
     value,
     reload: () => {
       setValue(undefined);
+      setAttempt((count) => count + 1);
+    },
+    refresh: () => {
       setAttempt((count) => count + 1);
     },
   };
@@ -43,6 +49,9 @@ export function useLoadedOnFocus<T>(load: () => Promise<T>): Loaded<T> {
     value,
     reload: () => {
       setValue(undefined);
+      setRound((count) => count + 1);
+    },
+    refresh: () => {
       setRound((count) => count + 1);
     },
   };

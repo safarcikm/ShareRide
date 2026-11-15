@@ -3,13 +3,23 @@ import { Platform, StyleSheet, Text } from "react-native";
 import { typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
-/** A screen's title, centred, read out as a heading. */
-export function Title({ children }: { readonly children: ReactNode }) {
+/**
+ * A screen's title, centred, read out as a heading. A title that heads a
+ * block of facts about a trip, with its date and status, starts at the left
+ * like them (`align="start"`), as on trip details.
+ */
+export function Title({
+  children,
+  align = "center",
+}: {
+  readonly children: ReactNode;
+  readonly align?: "center" | "start";
+}) {
   const palette = usePalette();
   return (
     <Text
       accessibilityRole="header"
-      style={[typography.title, styles.centre, { color: palette.text }]}
+      style={[typography.title, align === "center" && styles.centre, { color: palette.text }]}
     >
       {children}
     </Text>

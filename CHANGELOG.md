@@ -182,6 +182,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   (`PAYMENT_PROVIDER`, refused in production); no money moves.
   The API stores expired requests and unpaid bookings every minute, and
   `pnpm --filter @shareride/api expire-bookings` does it once.
+- Booking and paying in the app (milestone 4, PR 5): trip details' "Book" or
+  "Send request" opens the booking screen (spec 5, 3.1) with the part, seats,
+  total, driver and car with luggage first, and the message for requests,
+  checked for length and contact details as you type. Seats just taken and a
+  changed price are explained, with a way back or the new total. The booking
+  screen shows a request waiting for the driver, a booking to pay by its
+  deadline (the test sheet, where no money moves), and a confirmed seat with
+  the number plate, where to stand and "Open in maps". Someone without an
+  account signs up on the way and comes back to the same part and seats.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

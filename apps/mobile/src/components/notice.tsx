@@ -12,10 +12,13 @@ import { Icon } from "./icon";
 export function Notice({
   message,
   kind = "error",
+  urgent = kind === "error",
   selectable = false,
 }: {
   readonly message: string | null;
   readonly kind?: "error" | "info";
+  /** Read out at once, as an alert: errors, and information that needs an answer. */
+  readonly urgent?: boolean;
   /** Lets the person select and copy the text, such as a link to share by hand. */
   readonly selectable?: boolean;
 }) {
@@ -26,7 +29,7 @@ export function Notice({
     <View
       testID="notice"
       accessible
-      accessibilityRole={isError ? "alert" : "text"}
+      accessibilityRole={urgent ? "alert" : "text"}
       accessibilityLiveRegion="polite"
       style={[styles.notice, { backgroundColor: isError ? palette.errorSoft : palette.infoSoft }]}
     >

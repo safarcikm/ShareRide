@@ -83,7 +83,7 @@ export const searchesOf = (client: FakeClient, path = "/v1/trips/search") =>
   client.calls.filter((call) => call.path === path).map((call) => call.input["query"]);
 
 /** The north trip's stops, a stretch apiece priced 1100, 2900 and 2000 kr. */
-const northStops = [
+export const northStops = [
   { meetingPoint: bsi, plannedAt: "2026-11-15T09:00:00.000Z" },
   { meetingPoint: borgarnes, plannedAt: "2026-11-15T10:00:00.000Z" },
   { meetingPoint: blonduos, plannedAt: "2026-11-15T12:05:00.000Z" },

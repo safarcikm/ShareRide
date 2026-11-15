@@ -84,7 +84,7 @@ describe("Trip details (spec 4, 3.6)", () => {
     expect(screen.getByText("Anna")).toBeVisible();
     expect(screen.getByText("New driver")).toBeVisible();
     expect(screen.getByText("White Toyota Yaris")).toBeVisible();
-    expect(screen.getByText("Number plate shown once you're booked")).toBeVisible();
+    expect(screen.getByText("Number plate shown once your seat is confirmed")).toBeVisible();
     for (const need of [
       "Some chat",
       "One suitcase",
@@ -100,7 +100,8 @@ describe("Trip details (spec 4, 3.6)", () => {
     const bar = screen.getByTestId("bottom-bar");
     expect(within(bar).getByText("2,900 ISK")).toBeVisible();
     expect(within(bar).getByText("1 seat")).toBeVisible();
-    expect(within(bar).getByRole("button", { name: "Booking opens soon" })).toBeDisabled();
+    expect(within(bar).getByRole("button", { name: "Send request" })).toBeEnabled();
+    expect(within(bar).getByText("You'll sign in or create an account first.")).toBeVisible();
   });
 
   it("gets in or out at another stop on the route, and keeps the part in the address", async () => {
@@ -192,7 +193,7 @@ describe("Trip details (spec 4, 3.6)", () => {
     expect(screen.getByRole("button", { name: "One seat more" })).toBeDisabled();
     await fireEvent.press(screen.getByRole("button", { name: "One seat fewer" }));
     expect(await within(bar).findByText("2,900 ISK")).toBeVisible();
-    expect(within(bar).getByRole("button", { name: "Booking opens soon" })).toBeDisabled();
+    expect(within(bar).getByRole("button", { name: "Send request" })).toBeEnabled();
     expect(detailsCalls(client).at(-1)).toEqual({ seats: 1, fromStop: 1, toStop: 2 });
   });
 
@@ -234,7 +235,7 @@ describe("Trip details (spec 4, 3.6)", () => {
     await openTrip(undefined, () => ok(200, northTrip({ board: 1, alight: 2 }, { part })));
     const bar = await screen.findByTestId("bottom-bar");
     expect(await within(bar).findByText(text)).toBeVisible();
-    expect(within(bar).queryByRole("button", { name: "Booking opens soon" })).toBeNull();
+    expect(within(bar).queryByRole("button", { name: "Send request" })).toBeNull();
     const tryAnother = within(bar).queryByText("Try another part of the trip.");
     if (part.state === "full") expect(tryAnother).toBeVisible();
     else expect(tryAnother).toBeNull();
