@@ -161,14 +161,15 @@ describe("GET /v1/trips/search (spec 4, R4.1)", () => {
     const query = { from: point("hlemmur"), to: point("kef") };
     const [found] = await search({ query });
     const boarding = new Date(found?.board.plannedAt ?? 0).getTime();
+    // A second before the cut-off, then at it.
     const untilCutoff = (boarding - api.now().getTime()) / 1000 - 15 * 60;
-    api.advance(untilCutoff);
+    api.advance(untilCutoff - 1);
     try {
       expect(await search({ query })).toHaveLength(1);
       api.advance(1);
       expect(await search({ query })).toEqual([]);
     } finally {
-      api.advance(-untilCutoff - 1);
+      api.advance(-untilCutoff);
     }
   });
 

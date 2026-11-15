@@ -164,6 +164,11 @@ releases follow [Semantic Versioning](https://semver.org/).
   the drawn roads, the passenger's part solid and the rest dashed, in the
   part of Iceland the trip needs; the route step of posting a trip shows
   the driver's route through the stops they keep.
+- Booking rules (milestone 4, PR 2): the booking lifecycle and which
+  statuses hold seats, request and payment deadlines, and the check a
+  booking passes before it is stored (rule S4, the price last shown, no
+  overlapping bookings, a request's message), with a property test that
+  seats never exceed the car's.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

@@ -70,8 +70,9 @@ export function tripPart(
     if (trip.status === "departed" || trip.status === "completed") return "departed";
     if (boardsAt <= now.getTime()) return "departed";
     if (viewerId !== null && viewerId === trip.driverId) return "own";
-    // As in search: the boarding stop must be at least the cut-off away.
-    if (boardsAt < cutoff) return "closed";
+    // As in search: the boarding stop must be more than the cut-off away,
+    // so a request or payment has some time before its deadline (R5.5, M1).
+    if (boardsAt <= cutoff) return "closed";
     return free < choice.seats ? "full" : "open";
   })();
 
