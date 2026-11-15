@@ -4,6 +4,7 @@ import { healthReadyRoute, healthRoute } from "@shareride/contracts";
 import type { Database } from "@shareride/db";
 import {
   defaultBookingSettings,
+  defaultChatSettings,
   defaultSearchSettings,
   defaultTripSettings,
   searchLimitsPerAddress,
@@ -26,6 +27,7 @@ import {
   registerAuthRoutes,
 } from "./modules/auth/index.ts";
 import { createBookingService, registerBookingRoutes } from "./modules/bookings/index.ts";
+import { createChatService, registerChatRoutes } from "./modules/chat/index.ts";
 import { createDrivingService, registerDrivingRoutes } from "./modules/driving/index.ts";
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
@@ -208,6 +210,11 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       settings: defaultBookingSettings,
     });
     registerBookingRoutes(app, bookings, requireAuth);
+    registerChatRoutes(
+      app,
+      createChatService({ ...features, bookings, settings: defaultChatSettings }),
+      requireAuth,
+    );
     registerPaymentRoutes(app, {
       payments: createPaymentService({ ...features, provider: features.payments }),
       bookings,

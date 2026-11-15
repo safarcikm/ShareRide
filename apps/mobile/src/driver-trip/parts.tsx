@@ -1,7 +1,9 @@
 import type { Booking, MyTrip, TripBookings } from "@shareride/contracts";
 import { formatClock, formatMoney, type Locale, type Translate } from "@shareride/i18n";
+import { router } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import { Avatar } from "@/components/avatar";
+import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Tag } from "@/components/tag";
 import { statusKey, statusTag } from "@/booking/status";
@@ -201,25 +203,50 @@ export function PassengersByPart({ bookings }: { readonly bookings: readonly Boo
             {riding.map((booking) => (
               <View
                 key={booking.id}
-                accessible
-                accessibilityLabel={passengerLabel(t, booking)}
-                style={[styles.passenger, { borderTopColor: palette.border }]}
+                style={[styles.passengerRow, { borderTopColor: palette.border }]}
               >
-                <Avatar firstName={booking.passenger.firstName} colour={booking.passenger.colour} />
-                <View style={styles.grow}>
-                  <Text style={[typography.bodyStrong, { color: palette.text }]}>
-                    {booking.passenger.firstName}
-                  </Text>
-                  <Text style={[typography.small, { color: palette.textMuted }]}>
-                    {[
-                      t("search.seatCount", { count: booking.seats }),
-                      booking.total.amount === 0
-                        ? t("results.free")
-                        : formatMoney(booking.total, locale),
-                    ].join(" · ")}
-                  </Text>
+                <View
+                  accessible
+                  accessibilityLabel={passengerLabel(t, booking)}
+                  style={styles.passenger}
+                >
+                  <Avatar
+                    firstName={booking.passenger.firstName}
+                    colour={booking.passenger.colour}
+                  />
+                  <View style={styles.grow}>
+                    <Text style={[typography.bodyStrong, { color: palette.text }]}>
+                      {booking.passenger.firstName}
+                    </Text>
+                    <Text style={[typography.small, { color: palette.textMuted }]}>
+                      {[
+                        t("search.seatCount", { count: booking.seats }),
+                        booking.total.amount === 0
+                          ? t("results.free")
+                          : formatMoney(booking.total, locale),
+                      ].join(" · ")}
+                    </Text>
+                  </View>
+                  <Tag kind={statusTag(booking)} label={t(statusKey(booking))} />
                 </View>
-                <Tag kind={statusTag(booking)} label={t(statusKey(booking))} />
+                {/* A confirmed booking has its conversation (spec 7, R7.1). */}
+                {booking.confirmed === null ? null : (
+                  <View style={styles.end}>
+                    <Button
+                      variant="text"
+                      label={t("chat.message")}
+                      accessibilityLabel={t("chat.messageTo", {
+                        name: booking.passenger.firstName,
+                      })}
+                      onPress={() => {
+                        router.push({
+                          pathname: "/messages/[bookingId]",
+                          params: { bookingId: booking.id },
+                        });
+                      }}
+                    />
+                  </View>
+                )}
               </View>
             ))}
           </Card>
@@ -239,12 +266,8 @@ const styles = StyleSheet.create({
     borderWidth: controlOutline,
     overflow: "hidden",
   },
-  passenger: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.ms,
-    paddingTop: spacing.sm,
-    borderTopWidth: controlOutline,
-  },
+  passengerRow: { gap: spacing.xs, paddingTop: spacing.sm, borderTopWidth: controlOutline },
+  passenger: { flexDirection: "row", alignItems: "center", gap: spacing.ms },
+  end: { flexDirection: "row", justifyContent: "flex-end" },
   grow: { flex: 1 },
 });

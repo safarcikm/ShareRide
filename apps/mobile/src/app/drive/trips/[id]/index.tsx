@@ -1,7 +1,7 @@
 import type { CallFailure } from "@shareride/api-client";
 import { myTripRoute, tripBookingsRoute, type Booking } from "@shareride/contracts";
 import { capitalised, formatClock, formatDay } from "@shareride/i18n";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
@@ -149,6 +149,15 @@ export default function DriverTripScreen() {
         <>
           <Heading>{t("driverTrip.passengers")}</Heading>
           <PassengersByPart bookings={riding} />
+          {riding.some((booking) => booking.confirmed !== null) ? (
+            <Button
+              variant="secondary"
+              label={t("chat.messageAll")}
+              onPress={() => {
+                router.push({ pathname: "/drive/trips/[id]/message", params: { id } });
+              }}
+            />
+          ) : null}
         </>
       )}
       {bookings.length === 0 ? <Body>{t("driverTrip.none")}</Body> : null}

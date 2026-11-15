@@ -4,6 +4,8 @@ import { randomUUID } from "node:crypto";
 import {
   bookTripRoute,
   refreshRoute,
+  startPaymentRoute,
+  testPaymentRoute,
   tripDetailsRoute,
   type BookTripBody,
 } from "@shareride/contracts";
@@ -148,6 +150,23 @@ export function bookingHelpers(apiOf: () => TestApi) {
     return result.data;
   }
 
+  /** Pays for an accepted booking on the test payment screen, which confirms it. */
+  async function paid(accessToken: string, bookingId: string) {
+    const api = apiOf();
+    const payment = await api.client.call(startPaymentRoute, {
+      accessToken,
+      params: { id: bookingId },
+      body: {},
+    });
+    if (!payment.ok) throw new Error(payment.error.code);
+    const outcome = await api.client.call(testPaymentRoute, {
+      accessToken,
+      params: { id: payment.data.paymentId },
+      body: { outcome: "succeeded" },
+    });
+    if (!outcome.ok) throw new Error(outcome.error.code);
+  }
+
   /** The seats held on each segment, as stored. */
   async function occupancy(tripId: string) {
     const rows = await apiOf()
@@ -199,6 +218,7 @@ export function bookingHelpers(apiOf: () => TestApi) {
     details,
     book,
     booked,
+    paid,
     occupancy,
     heldByBookings,
   };

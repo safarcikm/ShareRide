@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -14,6 +15,8 @@ import {
   Keyboard,
   Platform,
   ScrollView,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   StyleSheet,
   useWindowDimensions,
   View,
@@ -39,17 +42,25 @@ import { usePalette } from "@/theme/use-palette";
  * show the footer in a panel beside the column instead (section 4.8).
  * Wide screens show an `aside`, such as a map, beside the column; phones
  * leave it out, and the screen shows it its own way (see `useWideScreen`).
+ * With `stickToEnd`, as for a conversation, the screen opens at its end and
+ * stays there as it grows while the reader is there, not while they read
+ * further up; a new `endKey`, such as my own message on its way, brings it
+ * back to the end.
  */
 export function Screen({
   children,
   footer,
   footerBeside = false,
   aside,
+  stickToEnd = false,
+  endKey,
 }: {
   readonly children: ReactNode;
   readonly footer?: ReactNode;
   readonly footerBeside?: boolean;
   readonly aside?: ReactNode;
+  readonly stickToEnd?: boolean;
+  readonly endKey?: string | undefined;
 }) {
   const palette = usePalette();
   const wide = useWideScreen();
@@ -59,6 +70,13 @@ export function Screen({
   const safeEdges = useContext(ScreenEdgesContext);
   // The height the screen scrolls in: the window less any bar above it.
   const [viewHeight, setViewHeight] = useState<number | null>(null);
+  // With `stickToEnd`: whether the reader is at the end, and whether to go
+  // there at the next change in size whatever they read.
+  const atEnd = useRef(true);
+  const toEnd = useRef(false);
+  useLayoutEffect(() => {
+    if (endKey !== undefined) toEnd.current = true;
+  }, [endKey]);
   return (
     <SafeAreaView
       edges={safeEdges}
@@ -79,6 +97,22 @@ export function Screen({
         }
         contentContainerStyle={[styles.scroll, { paddingBottom: spacing.md + keyboardRoom }]}
         keyboardShouldPersistTaps="handled"
+        {...(stickToEnd
+          ? {
+              scrollEventThrottle: 100,
+              onScroll: ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
+                const { contentOffset, layoutMeasurement, contentSize } = nativeEvent;
+                atEnd.current =
+                  contentOffset.y + layoutMeasurement.height >= contentSize.height - spacing.xxl;
+              },
+              onContentSizeChange: () => {
+                if (!atEnd.current && !toEnd.current) return;
+                toEnd.current = false;
+                atEnd.current = true;
+                scrollRef.current?.scrollToEnd({ animated: false });
+              },
+            }
+          : {})}
       >
         <ScreenScrollContext.Provider value={scroll}>
           {aside !== undefined && wide ? (
