@@ -204,7 +204,7 @@ merge.
 
 ### PR 1: `docs(plans)`: this plan
 
-- [ ] This plan, the roadmap and the milestone 2 plan's order
+- [x] This plan, the roadmap and the milestone 2 plan's order
 
 ### PR 2: `feat(meeting-points)`: sample meeting points and place search
 
