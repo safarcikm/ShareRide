@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createFakePushSender, createUnconnectedPushSender, type PushMessage } from "./push.ts";
+import { createFakePushSender, type PushMessage } from "./push.ts";
 
 const message: PushMessage = {
   to: "ExponentPushToken[test]",
@@ -21,10 +21,33 @@ describe("push senders", () => {
     expect(push.attempts).toBe(2);
   });
 
-  it("the unconnected sender sends nothing and reports only how many", async () => {
-    const counts: number[] = [];
-    const push = createUnconnectedPushSender((count) => counts.push(count));
-    expect(await push.send([message])).toEqual([{ status: "error", code: "NotConnected" }]);
-    expect(counts).toEqual([1]);
+  it("the fake refuses the tokens it is told to, and gives the receipts it is told to", async () => {
+    const push = createFakePushSender();
+    push.refused.set("ExponentPushToken[gone]", "DeviceNotRegistered");
+    expect(await push.send([{ ...message, to: "ExponentPushToken[gone]" }, message])).toEqual([
+      { status: "error", code: "DeviceNotRegistered" },
+      { status: "ok", id: "ticket-1" },
+    ]);
+    expect(push.sent).toEqual([message]);
+    push.receiptsGiven.set("ticket-1", { status: "ok" });
+    expect(await push.receipts(["ticket-1", "ticket-2"])).toEqual(
+      new Map([["ticket-1", { status: "ok" }]]),
+    );
+    expect(push.checked).toEqual([["ticket-1", "ticket-2"]]);
+  });
+
+  it("the fake fails a request for receipts while told to, and can take a while to send", async () => {
+    const push = createFakePushSender();
+    push.receiptsFailure = new Error("down");
+    await expect(push.receipts(["ticket-1"])).rejects.toThrow("down");
+    expect(push.checked).toEqual([["ticket-1"]]);
+    const during: number[] = [];
+    push.whileSending = () => {
+      during.push(push.sent.length);
+      return Promise.resolve();
+    };
+    await push.send([message]);
+    expect(during).toEqual([0]);
+    expect(push.sent).toEqual([message]);
   });
 });

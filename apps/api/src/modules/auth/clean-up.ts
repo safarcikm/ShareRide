@@ -2,7 +2,7 @@ import { schema, type Database } from "@shareride/db";
 import { retentionCutoffs } from "@shareride/domain";
 import { and, eq, inArray, isNotNull, isNull, lt, or } from "drizzle-orm";
 
-const { rateLimitEvents, sessionTokens, sessions, verificationCodes } = schema;
+const { pushTokens, rateLimitEvents, sessionTokens, sessions, verificationCodes } = schema;
 
 export interface CleanUpCounts {
   readonly codes: number;
@@ -41,6 +41,10 @@ export async function cleanUpSignInRecords(db: Database, now: Date): Promise<Cle
       .where(and(isNull(sessions.endedAt), lt(sessions.lastActiveAt, cutoff.sessionsIdleSince)))
       .returning({ id: sessions.id });
     const endedIds = ended.map((row) => row.id);
+    // An idle device gets no more news either.
+    if (endedIds.length > 0) {
+      await tx.delete(pushTokens).where(inArray(pushTokens.sessionId, endedIds));
+    }
 
     // A rotated refresh token stays until its session ends, however old: if
     // it is ever presented again, that is reuse and ends the session (ADR 0016).

@@ -11,6 +11,7 @@ import { Body, Title } from "@/components/text";
 import { LanguageProvider, useLanguage } from "@/i18n/language";
 import { useSaveLanguage } from "@/i18n/use-save-language";
 import { reportError, startErrorReporting } from "@/lib/error-reporting";
+import { PushNotifications } from "@/notifications/push-notifications";
 import { useAppFonts } from "@/theme/fonts";
 import { TopBar } from "@/navigation/top-bar";
 import { installFocusRing } from "@/theme/focus-ring";
@@ -24,6 +25,7 @@ export default function RootLayout() {
       <LanguageProvider>
         <SessionProvider>
           <Navigation />
+          <PushNotifications />
         </SessionProvider>
       </LanguageProvider>
     </SafeAreaProvider>

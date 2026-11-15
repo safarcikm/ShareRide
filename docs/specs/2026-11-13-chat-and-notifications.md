@@ -218,7 +218,9 @@ Entities (see [domain model](../architecture/domain-model.md)):
   status (`queued`, `sent`, `failed`, `skipped`), attempts, provider
   reference, sent at. Both are kept 90 days.
 - `PushToken`: user, signed-in device (spec 1), platform, token, updated at;
-  removed at sign-out or when reported invalid.
+  removed when the device's session ends (sign-out, signed out elsewhere,
+  idle) or when reported invalid. A token belongs to one session at a time:
+  registered again, it moves to the newest one.
 - `NotificationPreference`: user, reminders on or off, beta news on or off.
 
 Endpoints (`/v1`, shapes defined in `packages/contracts`):
@@ -230,7 +232,7 @@ Endpoints (`/v1`, shapes defined in `packages/contracts`):
 | `POST /bookings/{id}/messages` | Send a text or quick message, with a client id so a retry never sends twice |
 | `POST /bookings/{id}/messages/read` | Mark messages read up to a given one |
 | `POST /trips/{id}/messages` | Driver: the same message to every confirmed passenger |
-| `PUT /me/devices/{id}/push-token` | Register or refresh the push token of a signed-in device |
+| `PUT /me/sessions/current/push-token` | Register, refresh or remove (`null`) the push token of the signed-in device making the request (signed-in devices are sessions in the API) |
 | `GET /me/notification-settings`, `PATCH /me/notification-settings` | Read or change the reminders switch |
 
 Domain functions in `packages/domain`: the notification catalogue (event to

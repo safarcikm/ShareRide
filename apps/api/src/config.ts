@@ -83,6 +83,11 @@ const environmentSchema = z
       .enum(["on", "off"])
       .default("on")
       .transform((value) => value === "on"),
+    /**
+     * Expo's access token, needed once "enhanced push security" is on for
+     * the project; push works without it until then (plan 4.5).
+     */
+    EXPO_ACCESS_TOKEN: z.string().min(1).optional(),
   })
   .superRefine((env, context) => {
     if (env.NODE_ENV === "production" && env.AUTH_SECRET.startsWith("local-only-")) {
@@ -166,6 +171,7 @@ export interface Config {
   readonly payments: PaymentsConfig;
   /** Whether this process runs the notification worker. */
   readonly worker: boolean;
+  readonly push: { readonly accessToken: string | undefined };
 }
 
 export class ConfigError extends Error {
@@ -286,5 +292,6 @@ export function loadConfig(environment: Readonly<Record<string, string | undefin
       provider: env.PAYMENT_PROVIDER ?? (deploymentOf(env) === "production" ? "none" : "test"),
     },
     worker: env.WORKER,
+    push: { accessToken: env.EXPO_ACCESS_TOKEN },
   };
 }

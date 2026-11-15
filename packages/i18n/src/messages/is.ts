@@ -672,5 +672,7 @@ export const is = {
   "notify.unpaid": "Sætið var ekki greitt í tæka tíð",
   "notify.unpaidDriver": "Ekki greitt í tæka tíð: {name}",
   "notify.newMessage": "{name}",
+  /** The name of the app's notifications in Android's settings. */
+  "notify.channel": "Ferðir og skilaboð",
   "sms.signInCode": "{code} er ShareRide kóðinn þinn. Hann gildir í 10 mínútur.",
 } as const satisfies Record<MessageKey, string>;

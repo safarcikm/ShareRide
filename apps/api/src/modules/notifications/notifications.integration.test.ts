@@ -5,6 +5,7 @@ import {
   declineRequestRoute,
   messageAllPassengersRoute,
   sendMessageRoute,
+  setPushTokenRoute,
   withdrawRequestRoute,
   type SendMessageBody,
 } from "@shareride/contracts";
@@ -12,7 +13,12 @@ import { schema } from "@shareride/db";
 import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createFakeEmailSender, type FakeEmailSender } from "../../platform/email.ts";
-import { createFakePushSender, type FakePushSender, type PushSender } from "../../platform/push.ts";
+import {
+  PushMaybeSent,
+  createFakePushSender,
+  type FakePushSender,
+  type PushSender,
+} from "../../platform/push.ts";
 import { startTestApi, type TestApi } from "../../testing.ts";
 import {
   bookingHelpers,
@@ -46,6 +52,7 @@ beforeEach(async () => {
   await api.connection.db.execute(sql`delete from outbox_events`);
   await api.connection.db.execute(sql`delete from notifications`);
   await api.connection.db.execute(sql`delete from scheduled_notifications`);
+  await api.connection.db.execute(sql`delete from push_tokens`);
   push = createFakePushSender();
   email = createFakeEmailSender();
 });
@@ -659,6 +666,7 @@ describe("the worker (plan 4.4)", () => {
         if (outcome === "fails") throw new Error("Timed out.");
         return messages.map((_, index) => ({ status: "ok", id: `late-${String(index)}` }));
       },
+      receipts: () => Promise.resolve(new Map()),
     });
     await worker({ push: hanging("fails") }).runOnce();
     await later(3600);
@@ -746,6 +754,132 @@ describe("the worker (plan 4.4)", () => {
     expect(await logOf(anna)).toContainEqual(
       expect.objectContaining({ channel: "push", status: "failed", reason: "interrupted" }),
     );
+  });
+});
+
+describe("push tokens that no longer work (plan 4.5)", () => {
+  it("removes a token the push service refuses as no longer registered, and skips the push", async () => {
+    const anna = await driverOf(north);
+    const device = await withDevice(anna);
+    push.refused.set(device.token, "DeviceNotRegistered");
+    const jon = await newMember("Jón");
+    await booked(jon.accessToken, north, { fromStop: 0, toStop: 1 });
+    await worker().runOnce();
+    expect(await api.connection.db.select().from(schema.pushTokens)).toEqual([]);
+    await later(30);
+    await worker().runOnce();
+    expect(push.sent).toEqual([]);
+    expect(await logOf(anna)).toContainEqual(
+      expect.objectContaining({ channel: "push", status: "skipped", reason: "no_device" }),
+    );
+  });
+
+  it("asks for the receipt 15 minutes after a push, and removes the token if it is no longer registered", async () => {
+    const anna = await driverOf(north);
+    await withDevice(anna);
+    const jon = await newMember("Jón");
+    await booked(jon.accessToken, north, { fromStop: 0, toStop: 1 });
+    await worker().runOnce();
+    expect(push.sent).toHaveLength(1);
+    push.receiptsGiven.set("ticket-1", { status: "error", code: "DeviceNotRegistered" });
+    await later(14 * 60);
+    await worker().runOnce();
+    expect(push.checked).toEqual([]);
+    await later(60);
+    expect(await worker().runOnce()).toMatchObject({ receipts: 1 });
+    expect(push.checked).toEqual([["ticket-1"]]);
+    expect(await api.connection.db.select().from(schema.pushTokens)).toEqual([]);
+    expect(await api.connection.db.select().from(schema.pushTickets)).toEqual([]);
+  });
+
+  it("keeps a token whose receipt is fine, asks again for one not ready, and lets it go after a day", async () => {
+    const anna = await driverOf(north);
+    await withDevice(anna);
+    for (const name of ["Jón", "Gunna"]) {
+      const member = await newMember(name);
+      await booked(member.accessToken, north, { fromStop: 0, toStop: 1 });
+    }
+    await worker().runOnce();
+    push.receiptsGiven.set("ticket-1", { status: "ok" });
+    await later(15 * 60);
+    await worker().runOnce();
+    const left = () =>
+      api.connection.db.select({ id: schema.pushTickets.id }).from(schema.pushTickets);
+    expect(await left()).toEqual([{ id: "ticket-2" }]);
+    await later(15 * 60);
+    await worker().runOnce();
+    expect(push.checked).toEqual([["ticket-1", "ticket-2"], ["ticket-2"]]);
+    await later(24 * 3600);
+    await worker().runOnce();
+    expect(await left()).toEqual([]);
+    expect(await api.connection.db.select().from(schema.pushTokens)).toHaveLength(1);
+  });
+
+  it("never lets the old token's receipt remove the new one the phone registered since", async () => {
+    const anna = await driverOf(north);
+    const register = (token: string) =>
+      api.client.call(setPushTokenRoute, { accessToken: anna.accessToken, body: { token } });
+    await register("ExponentPushToken[old]");
+    const jon = await newMember("Jón");
+    await booked(jon.accessToken, north, { fromStop: 0, toStop: 1 });
+    await worker().runOnce();
+    expect(push.sent.map((sent) => sent.to)).toEqual(["ExponentPushToken[old]"]);
+    // The old token stopped working, so the phone got a new one.
+    push.receiptsGiven.set("ticket-1", { status: "error", code: "DeviceNotRegistered" });
+    await register("ExponentPushToken[new]");
+    await later(15 * 60);
+    await worker().runOnce();
+    const tokens = await api.connection.db
+      .select({ token: schema.pushTokens.token })
+      .from(schema.pushTokens);
+    expect(tokens).toEqual([{ token: "ExponentPushToken[new]" }]);
+  });
+
+  it("never tries again a push that may have gone out", async () => {
+    const anna = await driverOf(north);
+    await withDevice(anna);
+    push.failure = new PushMaybeSent("Expo's push service did not answer in time");
+    const jon = await newMember("Jón");
+    await booked(jon.accessToken, north, { fromStop: 0, toStop: 1 });
+    await worker().runOnce();
+    push.failure = null;
+    await later(3600);
+    await worker().runOnce();
+    expect(push.attempts).toBe(1);
+    expect(await logOf(anna)).toContainEqual(
+      expect.objectContaining({ channel: "push", status: "failed", reason: "interrupted" }),
+    );
+  });
+
+  it("asks again in 15 minutes when Expo cannot give receipts, and lets tickets go after a day all the same", async () => {
+    const anna = await driverOf(north);
+    await withDevice(anna);
+    const jon = await newMember("Jón");
+    await booked(jon.accessToken, north, { fromStop: 0, toStop: 1 });
+    await worker().runOnce();
+    push.receiptsFailure = new Error("Expo's push service refused the request (HTTP 503)");
+    await later(15 * 60);
+    await expect(worker().runOnce()).rejects.toThrow("HTTP 503");
+    await later(5);
+    await worker().runOnce();
+    expect(push.checked).toHaveLength(1);
+    await later(24 * 3600);
+    await expect(worker().runOnce()).resolves.toMatchObject({ receipts: 0 });
+    expect(push.checked).toHaveLength(1);
+    expect(await api.connection.db.select().from(schema.pushTickets)).toEqual([]);
+  });
+
+  it("counts a push as sent when its token went while it was on its way", async () => {
+    const anna = await driverOf(north);
+    await withDevice(anna);
+    push.whileSending = () => api.connection.db.delete(schema.pushTokens);
+    const jon = await newMember("Jón");
+    await booked(jon.accessToken, north, { fromStop: 0, toStop: 1 });
+    await expect(worker().runOnce()).resolves.toMatchObject({ sent: 1 });
+    expect(await logOf(anna)).toContainEqual(
+      expect.objectContaining({ channel: "push", status: "sent" }),
+    );
+    expect(await api.connection.db.select().from(schema.pushTickets)).toEqual([]);
   });
 });
 

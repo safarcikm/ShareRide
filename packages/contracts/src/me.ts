@@ -44,6 +44,19 @@ export const sessionSchema = z.object({
 
 export const sessionsResponseSchema = z.object({ sessions: z.array(sessionSchema) });
 
+/** An Expo push token, as the app's notifications module gives it. */
+export const pushTokenSchema = z
+  .string()
+  .max(200)
+  .regex(/^Expo(nent)?PushToken\[[^\]\s]+\]$/);
+
+export const pushTokenBodySchema = z.object({
+  /** Null stops push on this device. */
+  token: pushTokenSchema.nullable(),
+});
+
+export type PushTokenBody = z.infer<typeof pushTokenBodySchema>;
+
 export const legalAcceptancesBodySchema = z.object({
   /** "I am 18 or older" (rule R1.7). */
   ageConfirmed: z.literal(true).optional(),
@@ -115,6 +128,25 @@ export const endSessionRoute = defineRoute({
     204: { description: "Signed out" },
     401: unauthenticated,
     404: { description: "not_found: no such signed-in device of mine", ...errors },
+  },
+});
+
+/**
+ * Stores the push token of the device making the request, or removes it
+ * with null (plan 4.5). A token another session had moves to this one, and
+ * signing out removes it.
+ */
+export const setPushTokenRoute = defineRoute({
+  method: "put",
+  path: "/v1/me/sessions/current/push-token",
+  summary: "Turn push on or off for this device",
+  tags: ["me"],
+  auth: true,
+  request: { body: pushTokenBodySchema },
+  responses: {
+    204: { description: "Stored or removed" },
+    400: { description: "validation_failed: not an Expo push token", ...errors },
+    401: unauthenticated,
   },
 });
 

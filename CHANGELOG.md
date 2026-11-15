@@ -259,6 +259,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   in the person's language. Push and email are connected in the next two
   updates; until then nothing is sent. The hourly clean-up deletes the
   notification log after 90 days.
+- Push notifications (milestone 5, PR 6, ADR 0026 proposed): on Android
+  and iPhone builds, once notifications are allowed, the app registers the
+  phone with `PUT /v1/me/sessions/current/push-token`, and again when its
+  token changes. Pushes go through Expo's push service; a tap opens the
+  booking, trip or conversation, from a closed app too, and a push about the
+  conversation on screen fetches it instead of showing a banner. A phone's
+  token goes when its session ends (signing out, signed out from another
+  device, or idle) or when Expo reports it dead, and belongs to one person
+  at a time. A push whose answer was lost after it may have gone out is
+  never sent again. `EXPO_ACCESS_TOKEN` is used when set. The Android test
+  build (`preview-apk`) and its Firebase set-up are in the app builds
+  runbook.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

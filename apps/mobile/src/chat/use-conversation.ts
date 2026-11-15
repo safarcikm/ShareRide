@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AppState } from "react-native";
 import { useSession } from "@/auth/session";
 import { useLanguage } from "@/i18n/language";
+import { showConversation } from "@/notifications/open-conversation";
 import { newClientId } from "./client-id";
 import { merged, newestTheirs, type Outgoing, type Pending } from "./messages";
 import { messageText, otherPerson, spokenMessage } from "./texts";
@@ -96,7 +97,7 @@ export function useConversation(bookingId: string) {
         const state = AppState.currentState;
         return state !== "background" && state !== "inactive";
       };
-      const timer = setInterval(() => {
+      const fetchNew = () => {
         if (fetching || !inFront()) return;
         fetching = true;
         void page().then((answer) => {
@@ -121,12 +122,16 @@ export function useConversation(bookingId: string) {
           );
           setPolls((count) => count + 1);
         });
-      }, pollMs);
+      };
+      const timer = setInterval(fetchNew, pollMs);
+      // A push about this conversation fetches it at once (plan 4.5).
+      const hide = showConversation(bookingId, fetchNew);
       return () => {
         inView = false;
         clearInterval(timer);
+        hide();
       };
-    }, [page, t, announce]),
+    }, [page, t, announce, bookingId]),
   );
 
   // Reads the other person's messages as they show; one that failed is

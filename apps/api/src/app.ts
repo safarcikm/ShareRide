@@ -34,6 +34,7 @@ import {
   createMeetingPointService,
   registerMeetingPointRoutes,
 } from "./modules/meeting-points/index.ts";
+import { registerNotificationRoutes } from "./modules/notifications/index.ts";
 import { createPaymentService, registerPaymentRoutes } from "./modules/payments/index.ts";
 import {
   createSearchService,
@@ -215,6 +216,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       createChatService({ ...features, bookings, settings: defaultChatSettings }),
       requireAuth,
     );
+    registerNotificationRoutes(app, { ...features, requireAuth });
     registerPaymentRoutes(app, {
       payments: createPaymentService({ ...features, provider: features.payments }),
       bookings,

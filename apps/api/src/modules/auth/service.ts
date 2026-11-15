@@ -22,7 +22,7 @@ import { hashToken, newToken, sameHash, type KeyedHasher } from "../../platform/
 import type { SmsSender } from "../../platform/sms.ts";
 import type { Logger } from "../../logger.ts";
 
-const { rateLimitEvents, sessions, sessionTokens, users, verificationCodes } = schema;
+const { pushTokens, rateLimitEvents, sessions, sessionTokens, users, verificationCodes } = schema;
 
 type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 type Executor = Database | Transaction;
@@ -191,7 +191,10 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
     };
   }
 
-  /** Ends sessions and deletes their tokens, so none of them works again. */
+  /**
+   * Ends sessions and deletes their tokens, so none of them works again, and
+   * their push tokens, so the devices get no more news.
+   */
   async function endSessions(
     executor: Executor,
     sessionIds: readonly string[],
@@ -204,6 +207,7 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
       .set({ endedAt: now, endReason: reason, updatedAt: now })
       .where(and(inArray(sessions.id, [...sessionIds]), isNull(sessions.endedAt)));
     await executor.delete(sessionTokens).where(inArray(sessionTokens.sessionId, [...sessionIds]));
+    await executor.delete(pushTokens).where(inArray(pushTokens.sessionId, [...sessionIds]));
   }
 
   return {

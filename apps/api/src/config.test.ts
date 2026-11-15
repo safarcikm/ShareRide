@@ -49,6 +49,7 @@ describe("loadConfig", () => {
       webAppDir: "/repo/web",
       payments: { provider: "none" },
       worker: true,
+      push: { accessToken: undefined },
     });
   });
 
@@ -196,6 +197,16 @@ describe("loadConfig", () => {
     expect(loadConfig({ ...development, WORKER: "on" }).worker).toBe(true);
     expect(loadConfig({ ...development, WORKER: "off" }).worker).toBe(false);
     expect(() => loadConfig({ ...development, WORKER: "no" })).toThrow("WORKER: invalid");
+  });
+
+  it("sends push with Expo's access token when it is set (plan 4.5)", () => {
+    expect(loadConfig(development).push).toEqual({ accessToken: undefined });
+    expect(loadConfig({ ...development, EXPO_ACCESS_TOKEN: "expo-test" }).push).toEqual({
+      accessToken: "expo-test",
+    });
+    expect(() => loadConfig({ ...development, EXPO_ACCESS_TOKEN: "" })).toThrow(
+      "EXPO_ACCESS_TOKEN",
+    );
   });
 
   it("names every missing or invalid variable", () => {

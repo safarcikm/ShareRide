@@ -664,6 +664,8 @@ export const en = {
   "notify.unpaid": "Seat not paid for in time",
   "notify.unpaidDriver": "Not paid for in time: {name}",
   "notify.newMessage": "{name}",
+  /** The name of the app's notifications in Android's settings. */
+  "notify.channel": "Rides and messages",
   "sms.signInCode": "{code} is your ShareRide code. It expires in 10 minutes.",
 } as const satisfies Record<string, string>;
 
