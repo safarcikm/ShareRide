@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientAddress } from "./client-address.ts";
+import { addressBlock, clientAddress } from "./client-address.ts";
 
 describe("clientAddress", () => {
   it("uses the connection's address when there is no trusted proxy", () => {
@@ -48,5 +48,25 @@ describe("clientAddress", () => {
     expect(
       clientAddress({ remote: undefined, forwardedFor: undefined, trustedProxies: 0 }),
     ).toEqual({ address: "unknown", source: "connection" });
+  });
+});
+
+describe("addressBlock", () => {
+  it("keeps an IPv4 address whole", () => {
+    expect(addressBlock("198.51.100.7")).toBe("198.51.100.7");
+    expect(addressBlock("::ffff:198.51.100.7")).toBe("198.51.100.7");
+  });
+
+  it("takes an IPv6 address's /64, which one home or server usually holds whole", () => {
+    expect(addressBlock("2001:db8:1:2:3:4:5:6")).toBe("2001:db8:1:2::/64");
+    expect(addressBlock("2001:DB8:1:2::9")).toBe("2001:db8:1:2::/64");
+    expect(addressBlock("2001:db8::1")).toBe("2001:db8:0:0::/64");
+    expect(addressBlock("2001:0db8:0001:0002:ffff::")).toBe("2001:db8:1:2::/64");
+    expect(addressBlock("::1")).toBe("0:0:0:0::/64");
+    expect(addressBlock("1::2:3:4:5:198.51.100.7")).toBe("1:0:2:3::/64");
+  });
+
+  it("leaves anything else as it is", () => {
+    expect(addressBlock("unknown")).toBe("unknown");
   });
 });

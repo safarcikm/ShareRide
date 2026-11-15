@@ -1,9 +1,9 @@
 # 0025. Our own date and number formatting instead of Intl's locale data
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-15, by Martin in chat)
 - **Date:** 2026-11-15
 - **Deciders:** Martin
-- **Related:** would supersede the formatting line of
+- **Related:** supersedes the formatting line of
   [ADR 0011](0011-localization.md);
   [conventions](../engineering/conventions.md#internationalisation),
   [spec 3](../specs/2026-11-13-post-a-trip.md) (the first screens with dates)
@@ -59,8 +59,6 @@ zone, and for sorting. The rest of ADR 0011 stands.
 - Adding Polish means adding its names, marks and grammar for dates by hand.
 - Sorting still uses `Intl.Collator` with Icelandic rules (ADR 0011). It has
   the same data risk; check it when the meeting point list grows.
-- Once accepted, ADR 0011's status notes that its formatting line is
-  superseded by this ADR.
 
 ## Revisit when
 

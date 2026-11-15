@@ -283,12 +283,33 @@ Split in two, like milestone 2's PR 4: 5a the server, 5b the screens.
 
 ### PR 6: `feat(search)`: search and results
 
-- [ ] Domain matching (R4.1 to R4.3) with property tests: every match
+Split in two, like PR 5: 6a the server, 6b the screens.
+
+- [x] 6a: Domain matching (R4.1 to R4.3) with property tests: every match
       boards before it alights, free seats follow S3, prices follow P1
-- [ ] `GET /trips/search` and `/alternatives`, rate limit, integration tests
-      at a fixed clock
-- [ ] Search form with recent searches, results, nothing matches
+- [x] 6a: `GET /trips/search` and `/alternatives`, rate limit, integration
+      tests at a fixed clock
+- [ ] 6b: Search form with recent searches, results, nothing matches
 - Verify: Borgarnes to Blönduós finds a Reykjavík to Akureyri trip
+  (`apps/api/src/modules/search/search.integration.test.ts`)
+- 6a notes: a meeting point also covers active points within 3 km, shown
+  with their distance; a place covers its municipalities, or its match
+  radius. Among the stops that match, the passenger boards at the one
+  closest to what was searched, then alights at the closest after it.
+  Morning is before noon and afternoon until six, at the boarding stop in
+  Iceland. A search answers at most 50 trips, and "nothing matches" at
+  most 10 from nearby points. Results show the driver's first name only;
+  photos and ratings come with specs 1 and 8, so every driver reads as new
+  for now. Anyone can search; a signed-in person's own trips are left out,
+  and a token that is no longer valid is refused so the app refreshes it.
+  Searches are limited to 60 a minute and 600 an hour from one network
+  address (an IPv6 address by its /64), counted in the server's memory by
+  a keyed hash: one instance on Render counts for all, and a restart
+  starts again (Martin agreed on 2026-11-15). Sign-in limits still count
+  each IPv6 address on its own; a follow-up moves them to the /64 too
+  (agreed the same day). Stops at points being retired are found, because
+  their trips still stop there; paused points are not (spec 4, decision 3).
+  "Near me" waits for the screens (6b).
 
 ### PR 7: `feat(search)`: trip details and shared links
 

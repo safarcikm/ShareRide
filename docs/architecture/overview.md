@@ -134,13 +134,16 @@ sequenceDiagram
 
 ### Search
 
-1. Resolve the "from" and "to" inputs to candidate meeting points (by name or
-   within a radius of a chosen location).
-2. Find published trips on the date where a "from" candidate stop comes before
-   a "to" candidate stop.
-3. Keep trips with enough free seats on that range; compute the price for the
-   range.
-4. Rank by departure time closeness, then price, then driver reliability.
+1. Resolve the "from" and "to" inputs to candidate meeting points: a meeting
+   point and the active points near it, or the points of a place.
+2. One SQL query finds published trips where a "from" candidate stop, late
+   enough to book and on the date when one is given, comes before a "to"
+   candidate stop.
+3. The domain (`matchTrip`) decides: the date at the boarding stop in
+   Iceland, enough free seats on every stretch of the part, the price of the
+   part, and which stops when several match.
+4. Sort by the time at the boarding stop, or by price and then time. Driver
+   reliability joins the order with spec 8.
 
 Iceland's scale (hundreds of meeting points, thousands of trips) means this is
 a plain SQL query with indexes. No search engine is needed.
@@ -157,7 +160,7 @@ a plain SQL query with indexes. No search engine is needed.
 | Observability | Structured JSON logs, OpenTelemetry traces, error tracking with an EU data region, uptime checks |
 | Configuration | Environment variables validated at start-up; operator settings (rates, timeouts) in the database with an audit log |
 | Feature flags | Simple database-backed flags at first |
-| Rate limiting | Per IP and per user on sign-in codes, search and booking |
+| Rate limiting | Per IP and per user on sign-in codes, search and booking; sign-in limits in the database, search limits in the server's memory |
 | Time | UTC in storage, `Atlantic/Reykjavik` for display |
 
 ## Repository layout

@@ -7,6 +7,7 @@ import type {
 } from "@shareride/contracts";
 import { schema, type Database } from "@shareride/db";
 import {
+  isFoundBySearch,
   isOfferedForNewTrips,
   isVisible,
   meetingPointStatuses,
@@ -26,6 +27,8 @@ type PlaceRow = typeof places.$inferSelect;
 const visibleStatuses = meetingPointStatuses.filter(isVisible);
 /** Offered for new trips, and so near a place (rule R2.4). */
 export const offeredStatuses = meetingPointStatuses.filter(isOfferedForNewTrips);
+/** Covered by a trip search: active, and retiring ones whose trips still stop there (spec 4, 3.2). */
+export const searchableStatuses = meetingPointStatuses.filter(isFoundBySearch);
 /** Close enough in trigrams to be worth ranking; the domain rule decides (spec 2, 3.4). */
 const trigramThreshold = 0.3;
 /** Rows of each table the domain rule ranks, best SQL matches first. */

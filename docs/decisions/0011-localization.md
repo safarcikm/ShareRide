@@ -1,6 +1,8 @@
 # 0011. Icelandic and English from day one
 
-- **Status:** Accepted (2026-11-13, by Martin once the MVP specs were approved)
+- **Status:** Accepted (2026-11-13, by Martin once the MVP specs were approved); the
+  formatting line (numbers, dates and currency with `Intl`) is superseded by
+  [ADR 0025](0025-own-date-and-number-formatting.md)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [conventions](../engineering/conventions.md#internationalisation),
