@@ -2,6 +2,7 @@
 // `pnpm --filter @shareride/db generate` and a review of the generated SQL.
 export * from "./auth.ts";
 export * from "./bookings.ts";
+export * from "./chat.ts";
 export * from "./legal.ts";
 export * from "./meeting-points.ts";
 export * from "./payments.ts";

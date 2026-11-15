@@ -133,8 +133,8 @@ the recipient's (`users.locale`, ADR 0011), both with `@shareride/i18n`.
   characters, the kinds.
 - **Opening:** milestone 4 confirms a booking in three places (a free
   instant booking, accepting a free request, a successful payment). They
-  call one `confirmBooking(tx, …)` in the bookings module, which sets the
-  status, opens the conversation with its first system line
+  call one `bookingConfirmed(tx, …)` in the bookings module, which opens
+  the conversation with its first system line
   (`chat.opened`) and, from PR 5, writes `BookingConfirmed` to the outbox,
   all in the same transaction.
 - **Who may read and write:** the booking's driver and passenger only
@@ -143,7 +143,10 @@ the recipient's (`users.locale`, ADR 0011), both with `@shareride/i18n`.
 - **Rate limit (R7.5):** sends with different client ids by the same person
   in the last minute, counted in the database so it holds with more than one
   API instance; 429 `too_many_messages` after 10. A message to all
-  passengers counts once.
+  passengers counts once. A client id names one message: used again in
+  another conversation, or on another trip, it is refused (400, `clientId`
+  `reused`), and a message to all passengers sent again with its client id
+  sends nothing more.
 - **Message all passengers (R7.4):** one message per confirmed passenger's
   conversation, with the same client id, in one transaction. A passenger
   confirmed later does not get it.
@@ -326,14 +329,14 @@ merge.
 
 ### PR 3: `feat(chat)`: conversations on the server
 
-- [ ] Contracts, migration 0007 (conversations, messages) with its checks
-- [ ] `confirmBooking` shared by the three ways a booking is confirmed;
+- [x] Contracts, migration 0007 (conversations, messages) with its checks
+- [x] `bookingConfirmed` shared by the three ways a booking is confirmed;
       each opens one conversation with `chat.opened`
-- [ ] The endpoints of 4.2: only the two people (a third gets 404); closed
+- [x] The endpoints of 4.2: only the two people (a third gets 404); closed
       at `closes_at` (409); the same client id twice stores one message;
       the eleventh message in a minute refused (429); read up to a message;
       message all reaches each confirmed passenger and nobody else
-- [ ] Clean-up after 12 months; privacy register and inventory: messages
+- [x] Clean-up after 12 months; privacy register and inventory: messages
 
 ### PR 4: `feat(chat)`: chat in the app
 

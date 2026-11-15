@@ -226,6 +226,17 @@ releases follow [Semantic Versioning](https://semver.org/).
   daily limit, and when reminders and the other timed notifications come.
   Quick messages and the conversation's first line are in Icelandic and
   English.
+- Conversations on the server (milestone 5, PR 3): a booking's conversation
+  opens as it is confirmed (paid, or free), with the line "Booking
+  confirmed. You can message each other here.", and is read-only 7 days
+  after the trip. `GET /v1/me/conversations` lists them with unread counts,
+  and `/v1/bookings/{id}/messages` reads a page of 50, sends a text or quick
+  message (a retry with the same client ID is stored once, and 10 a minute
+  at most) and marks messages read. A driver sends one message to every
+  confirmed passenger with `POST /v1/trips/{id}/messages`, each in their own
+  conversation. Only the two people can read a conversation; the hourly
+  clean-up deletes it 12 months after the trip. Bookings confirmed before
+  this update get their conversation when it is deployed.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
