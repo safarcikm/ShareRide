@@ -46,6 +46,7 @@ beforeEach(async () => {
   await api.connection.db.execute(sql`delete from outbox_events`);
   await api.connection.db.execute(sql`delete from notifications`);
   await api.connection.db.execute(sql`delete from scheduled_notifications`);
+  await api.connection.db.execute(sql`delete from push_tokens`);
   push = createFakePushSender();
   email = createFakeEmailSender();
 });
@@ -659,6 +660,7 @@ describe("the worker (plan 4.4)", () => {
         if (outcome === "fails") throw new Error("Timed out.");
         return messages.map((_, index) => ({ status: "ok", id: `late-${String(index)}` }));
       },
+      receipts: () => Promise.resolve(new Map()),
     });
     await worker({ push: hanging("fails") }).runOnce();
     await later(3600);
@@ -746,6 +748,65 @@ describe("the worker (plan 4.4)", () => {
     expect(await logOf(anna)).toContainEqual(
       expect.objectContaining({ channel: "push", status: "failed", reason: "interrupted" }),
     );
+  });
+});
+
+describe("push tokens that no longer work (plan 4.5)", () => {
+  it("removes a token the push service refuses as no longer registered, and skips the push", async () => {
+    const anna = await driverOf(north);
+    const device = await withDevice(anna);
+    push.refused.set(device.token, "DeviceNotRegistered");
+    const jon = await newMember("Jón");
+    await booked(jon.accessToken, north, { fromStop: 0, toStop: 1 });
+    await worker().runOnce();
+    expect(await api.connection.db.select().from(schema.pushTokens)).toEqual([]);
+    await later(30);
+    await worker().runOnce();
+    expect(push.sent).toEqual([]);
+    expect(await logOf(anna)).toContainEqual(
+      expect.objectContaining({ channel: "push", status: "skipped", reason: "no_device" }),
+    );
+  });
+
+  it("asks for the receipt 15 minutes after a push, and removes the token if it is no longer registered", async () => {
+    const anna = await driverOf(north);
+    await withDevice(anna);
+    const jon = await newMember("Jón");
+    await booked(jon.accessToken, north, { fromStop: 0, toStop: 1 });
+    await worker().runOnce();
+    expect(push.sent).toHaveLength(1);
+    push.receiptsGiven.set("ticket-1", { status: "error", code: "DeviceNotRegistered" });
+    await later(14 * 60);
+    await worker().runOnce();
+    expect(push.checked).toEqual([]);
+    await later(60);
+    expect(await worker().runOnce()).toMatchObject({ receipts: 1 });
+    expect(push.checked).toEqual([["ticket-1"]]);
+    expect(await api.connection.db.select().from(schema.pushTokens)).toEqual([]);
+    expect(await api.connection.db.select().from(schema.pushTickets)).toEqual([]);
+  });
+
+  it("keeps a token whose receipt is fine, asks again for one not ready, and lets it go after a day", async () => {
+    const anna = await driverOf(north);
+    await withDevice(anna);
+    for (const name of ["Jón", "Gunna"]) {
+      const member = await newMember(name);
+      await booked(member.accessToken, north, { fromStop: 0, toStop: 1 });
+    }
+    await worker().runOnce();
+    push.receiptsGiven.set("ticket-1", { status: "ok" });
+    await later(15 * 60);
+    await worker().runOnce();
+    const left = () =>
+      api.connection.db.select({ id: schema.pushTickets.id }).from(schema.pushTickets);
+    expect(await left()).toEqual([{ id: "ticket-2" }]);
+    await later(15 * 60);
+    await worker().runOnce();
+    expect(push.checked).toEqual([["ticket-1", "ticket-2"], ["ticket-2"]]);
+    await later(24 * 3600);
+    await worker().runOnce();
+    expect(await left()).toEqual([]);
+    expect(await api.connection.db.select().from(schema.pushTokens)).toHaveLength(1);
   });
 });
 

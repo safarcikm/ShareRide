@@ -27,7 +27,7 @@ notifications is a block that the new finish screens can hold.
 
 ## 1. Goal
 
-When this milestone is done, on the web and on an Android development build:
+When this milestone is done, on the web and on an Android test build:
 
 - Once Anna's passenger has paid, both open the conversation from the
   booking or the Messages tab and write to each other. "I'm running 10
@@ -253,14 +253,20 @@ Endpoints (`/v1`), shapes in `packages/contracts/src/chat.ts`:
 ### 4.5 Push
 
 - **Server:** the Expo push service over `fetch`, no SDK
-  (`https://exp.host/--/api/v2/push/send`, batches of up to 100, with
-  `EXPO_ACCESS_TOKEN` when set). A ticket or, 15 minutes later, a receipt
-  that says `DeviceNotRegistered` removes the token. `PUT
-  /me/sessions/{id}/push-token` (`{ token }` or `{ token: null }`, only for
-  the session making the request) stores or removes it; the spec's
-  `/me/devices/{id}` path becomes this one, since signed-in devices are
-  sessions in the API. Signing out, from one device or all, removes the
-  tokens of the sessions it ends.
+  ([ADR 0026](../decisions/0026-push-through-expo.md);
+  `https://exp.host/--/api/v2/push/send`, batches of up to 100, with
+  `EXPO_ACCESS_TOKEN` when set, and 30 seconds at most for each call, well
+  within the two-minute lease). A ticket or, 15 minutes later, a receipt
+  that says `DeviceNotRegistered` removes the token; tickets are kept until
+  their receipt is checked, 24 hours at most, as Expo keeps receipts no
+  longer. `PUT /me/sessions/current/push-token` (`{ token }` or `{ token:
+  null }`) stores or removes the token of the session making the request;
+  the spec's `/me/devices/{id}` path becomes this one, since signed-in
+  devices are sessions in the API and the app does not know its session's
+  ID. A token is unique: registered again, it moves to the newest session,
+  so a phone never gets two people's news. A session that ends (signing
+  out from one device or all, signed out from another device, idle) takes
+  its token with it.
 - **App:** `expo-notifications` (a new runtime dependency: the only way to
   get an Expo push token and handle taps). Permission is asked at the
   prompt (4.7), not at start. Once given, the token is registered at each
@@ -268,9 +274,12 @@ Endpoints (`/v1`), shapes in `packages/contracts/src/chat.ts`:
   booking, a trip, a conversation), from a cold start too. A push for the
   conversation already open refetches it instead of showing a banner.
 - **Limits:** Expo Go cannot receive push since SDK 53, so trying it needs
-  the Android development build with Firebase Cloud Messaging credentials
+  a build: the `preview-apk` profile makes an APK on staging to install by
+  hand, and reads Firebase's `google-services.json` from an EAS file
+  variable through `app.config.ts`, so it never enters the repository
   (section 7). Without the expo.dev project ID the app skips registering
-  and says nothing.
+  and says nothing; until the prompt (PR 8), notifications are allowed in
+  Android's settings.
 
 ### 4.6 Email
 
@@ -377,20 +386,20 @@ merge.
 
 ### PR 6: `feat(notifications)`: push
 
-- [ ] Expo push adapter (`fetch`), tickets and receipts, invalid tokens
-      removed; `PUT /me/sessions/{id}/push-token`; sign-out removes tokens;
-      a token of an ended session is never sent to
-- [ ] A send times out well within the two-minute lease, so a hung push
+- [x] Expo push adapter (`fetch`), tickets and receipts, invalid tokens
+      removed; `PUT /me/sessions/current/push-token`; an ended session
+      takes its token, so a token of an ended session is never sent to
+- [x] A send times out well within the two-minute lease, so a hung push
       service never stops the worker; a token is unique, and registering
       it again moves it to the newest session (never two people's news on
       one device)
-- [ ] `expo-notifications` in the app: register, refresh, tap routing (cold
+- [x] `expo-notifications` in the app: register, refresh, tap routing (cold
       start too), refetch an open conversation
-- [ ] Integrations doc, privacy inventory (push tokens, Expo as a
-      processor), spec 7's push token path; the development build runbook
-      gets the Firebase step
+- [x] ADR 0026 (Expo's push service), integrations doc, privacy inventory
+      (push tokens, Expo as a processor), spec 7's push token path; the app
+      builds runbook gets the Android test build and the Firebase steps
 - Verify: unit and screen tests with Expo's module mocked; Martin's check
-  on the Android development build (section 7)
+  on the Android test build (section 7)
 
 ### PR 7: `feat(notifications)`: email
 
@@ -446,8 +455,10 @@ What the spec implies and a person would meet first, each with its test:
    window) let two people chat.
 3. For push on Android, before PR 6 can be tried: the expo.dev project ID
    (still to come from milestone 2), a Firebase project whose Cloud
-   Messaging key (FCM V1) is uploaded to EAS, and an Android development
-   build installed on the emulator. The runbook will list each click.
+   Messaging key (FCM V1) is uploaded to EAS, and the Android test build
+   installed on a phone or the emulator. The
+   [app builds runbook](../operations/app-builds.md#android-build-with-push)
+   lists each click.
 4. For email beyond the development outbox: a domain for ShareRide, a
    Mailjet account with the domain's SPF, DKIM and DMARC records, and its
    keys in Render's secret store. Until then, staging sends no email.
@@ -470,6 +481,6 @@ What the spec implies and a person would meet first, each with its test:
 ## 9. Definition of done
 
 All eight PRs merged with green CI; Martin has chatted between two accounts
-on the web, received a push on the Android development build and opened it,
+on the web, received a push on the Android test build and opened it,
 and seen an email in the development outbox (or in his inbox once there is a
 domain); docs, roadmap and CHANGELOG are updated.

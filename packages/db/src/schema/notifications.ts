@@ -134,7 +134,9 @@ export const scheduledNotifications = pgTable(
 
 /**
  * The Expo push token of a signed-in device (spec 7, section 6): one per
- * session, gone when the session ends or the token is reported invalid.
+ * session, gone when the session ends or the token is reported invalid. A
+ * token belongs to one session only: registered again, it moves to the
+ * newest, so a device never gets two people's news.
  */
 export const pushTokens = pgTable(
   "push_tokens",
@@ -152,7 +154,27 @@ export const pushTokens = pgTable(
   },
   (table) => [
     unique("push_tokens_session_unique").on(table.sessionId),
+    unique("push_tokens_token_unique").on(table.token),
     check("push_tokens_platform_check", sql`${table.platform} in ('ios', 'android', 'web')`),
     index("push_tokens_user_index").on(table.userId),
   ],
+);
+
+/**
+ * A push the push service took, to ask 15 minutes later whether the phone's
+ * own push service did: a token it reports as no longer registered is
+ * removed. Gone once asked about, or with its token.
+ */
+export const pushTickets = pgTable(
+  "push_tickets",
+  {
+    /** The push service's ticket ID. */
+    id: text().primaryKey(),
+    pushTokenId: uuid()
+      .notNull()
+      .references(() => pushTokens.id, { onDelete: "cascade" }),
+    checkAt: at().notNull(),
+    ...timestamps,
+  },
+  (table) => [index("push_tickets_check_index").on(table.checkAt)],
 );

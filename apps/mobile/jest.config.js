@@ -17,6 +17,8 @@ export default {
       "<rootDir>/node_modules/lucide-react-native/dist/cjs/lucide-react-native.js",
     // The real SDK starts timers as soon as it loads; tests check calls to it.
     "^@sentry/react-native$": "<rootDir>/src/testing/sentry.ts",
+    // Native only; tests set the permission, the token and taps themselves.
+    "^expo-notifications$": "<rootDir>/src/testing/notifications.ts",
   },
   transformIgnorePatterns: [
     nodeModulesPattern.replace("(.pnpm|", "(.pnpm|intl-messageformat|@formatjs|"),

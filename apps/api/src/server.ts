@@ -13,7 +13,7 @@ import { clientAddress } from "./platform/client-address.ts";
 import { createKeyedHasher } from "./platform/crypto.ts";
 import { captureError, startErrorReporting } from "./platform/error-reporting.ts";
 import { createTestPaymentProvider } from "./platform/payments.ts";
-import { createUnconnectedPushSender } from "./platform/push.ts";
+import { createExpoPushSender } from "./platform/push-expo.ts";
 import { startRepeating } from "./platform/repeat.ts";
 import { selectSmsSender } from "./platform/select-sms-sender.ts";
 
@@ -110,15 +110,15 @@ if (payments !== undefined) {
 }
 
 // Notifications (spec 7, 3.7), every 5 seconds unless WORKER=off. Push
-// and email come with the next pull requests: until then no device can
-// register for push, and email is skipped as `email_off`.
+// goes through Expo's push service to the devices that registered a token;
+// email comes with the next pull request, and is skipped as `email_off`.
 if (config.worker) {
   const worker = createNotificationWorker({
     db: database.db,
     clock: () => new Date(),
-    push: createUnconnectedPushSender((count) => {
-      logger.warn({ count }, "push is not connected yet");
-    }),
+    push: createExpoPushSender(
+      config.push.accessToken === undefined ? {} : { accessToken: config.push.accessToken },
+    ),
     onSendError: (error, delivery) => {
       logger.warn({ err: error, delivery: delivery.id, channel: delivery.channel }, "not sent");
     },
@@ -131,7 +131,9 @@ if (config.worker) {
   jobs.push(
     every(5_000, "notifications", async () => {
       const run = await worker.runOnce();
-      if (run.events + run.scheduled + run.sent + run.failed > 0) logger.info(run, "notifications");
+      if (run.events + run.scheduled + run.sent + run.failed + run.receipts > 0) {
+        logger.info(run, "notifications");
+      }
     }),
   );
 }

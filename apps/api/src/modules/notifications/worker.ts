@@ -21,7 +21,7 @@ import {
 import { and, asc, eq, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { EmailSender } from "../../platform/email.ts";
-import type { PushSender } from "../../platform/push.ts";
+import { deviceNotRegistered, type PushSender } from "../../platform/push.ts";
 import type { Queryable, Transaction } from "../bookings/seats.ts";
 import { quickOf } from "../chat/service.ts";
 import { notificationText, type NotificationFacts } from "./texts.ts";
@@ -38,6 +38,7 @@ const {
   notificationDeliveries,
   notifications,
   outboxEvents,
+  pushTickets,
   pushTokens,
   scheduledNotifications,
   sessions,
@@ -49,6 +50,16 @@ const {
 /** Rows each step takes per run; the rest wait for the next run. */
 const batchSize = 50;
 
+const minuteMs = 60_000;
+/**
+ * A push's receipt is asked for this long after it was sent; one not ready
+ * is asked for again, until the push service no longer keeps it.
+ */
+const receiptAfterMs = 15 * minuteMs;
+const receiptsKeptMs = 24 * 60 * minuteMs;
+/** The push service answers about at most this many tickets at a time. */
+const receiptsPerRun = 1000;
+
 export interface WorkerRun {
   /** Events turned into notifications. */
   readonly events: number;
@@ -57,10 +68,12 @@ export interface WorkerRun {
   readonly sent: number;
   /** Sends that failed, to be tried again or given up. */
   readonly failed: number;
+  /** Push receipts that came back. */
+  readonly receipts: number;
 }
 
 export interface NotificationWorker {
-  /** One pass: events, then scheduled notifications that are due, then sends that are due. */
+  /** One pass: events, scheduled notifications that are due, sends that are due, then push receipts. */
   runOnce(): Promise<WorkerRun>;
 }
 
@@ -90,7 +103,7 @@ async function partiesOf(q: Queryable, bookingId: string) {
 /** The push tokens of the person's sessions that have not ended (plan 4.4, channels). */
 function tokensOf(q: Queryable, userId: string) {
   return q
-    .select({ token: pushTokens.token })
+    .select({ id: pushTokens.id, token: pushTokens.token })
     .from(pushTokens)
     .innerJoin(sessions, eq(sessions.id, pushTokens.sessionId))
     .where(and(eq(pushTokens.userId, userId), isNull(sessions.endedAt)));
@@ -185,7 +198,14 @@ async function factsOf(q: Queryable, notificationId: string) {
   } as const;
 }
 
-type SendResult = { readonly ref: string } | { readonly skipped: string };
+/** What a push did to the device's tokens: tickets to ask about later, and tokens gone. */
+interface PushOutcome {
+  readonly tickets: readonly { readonly id: string; readonly tokenId: string }[];
+  readonly gone: readonly string[];
+}
+
+type SendResult =
+  { readonly ref: string; readonly push?: PushOutcome } | { readonly skipped: string };
 
 export function createNotificationWorker(dependencies: {
   readonly db: Database;
@@ -461,6 +481,29 @@ export function createNotificationWorker(dependencies: {
     return claimed;
   }
 
+  /** Tokens the push service says no longer work. */
+  async function forgetTokens(ids: readonly string[]): Promise<void> {
+    if (ids.length > 0) await db.delete(pushTokens).where(inArray(pushTokens.id, [...ids]));
+  }
+
+  /** After a push went out: its tickets, to ask about later, and the tokens gone. */
+  async function afterPush(outcome: PushOutcome, now: Date): Promise<void> {
+    await forgetTokens(outcome.gone);
+    if (outcome.tickets.length === 0) return;
+    await db
+      .insert(pushTickets)
+      .values(
+        outcome.tickets.map((ticket) => ({
+          id: ticket.id,
+          pushTokenId: ticket.tokenId,
+          checkAt: new Date(now.getTime() + receiptAfterMs),
+          createdAt: now,
+          updatedAt: now,
+        })),
+      )
+      .onConflictDoNothing();
+  }
+
   async function sendOn(delivery: Delivery): Promise<SendResult | undefined> {
     const found = await factsOf(db, delivery.notificationId);
     if (found === undefined) return undefined;
@@ -478,9 +521,27 @@ export function createNotificationWorker(dependencies: {
         const tickets = await push.send(
           tokens.map(({ token }) => ({ to: token, title, body, data: { path } })),
         );
-        const ids = tickets.flatMap((ticket) => (ticket.status === "ok" ? [ticket.id] : []));
-        if (ids.length === 0) throw new Error("The push service refused every message.");
-        return { ref: ids.join(" ") };
+        const outcome: PushOutcome = {
+          tickets: tokens.flatMap(({ id: tokenId }, index) => {
+            const ticket = tickets[index];
+            return ticket?.status === "ok" && ticket.id !== "" ? [{ id: ticket.id, tokenId }] : [];
+          }),
+          gone: tokens.flatMap(({ id: tokenId }, index) => {
+            const ticket = tickets[index];
+            return ticket?.status === "error" && ticket.code === deviceNotRegistered
+              ? [tokenId]
+              : [];
+          }),
+        };
+        if (!tickets.some((ticket) => ticket.status === "ok")) {
+          // Nothing went out, so the next try goes to the tokens still there.
+          await forgetTokens(outcome.gone);
+          throw new Error("The push service refused every message.");
+        }
+        return {
+          ref: outcome.tickets.map((ticket) => ticket.id).join(" "),
+          push: outcome,
+        };
       }
       case "email": {
         if (email === undefined) return { skipped: "email_off" };
@@ -559,6 +620,9 @@ export function createNotificationWorker(dependencies: {
         ),
       ),
     );
+    // Book-keeping only, once the send is stored: a failure here is reported,
+    // never taken for a failed send.
+    if (result.push !== undefined) await afterPush(result.push, clock());
     return "sent";
   }
 
@@ -588,6 +652,46 @@ export function createNotificationWorker(dependencies: {
     return { sent, failed };
   }
 
+  /**
+   * Step 4: asks about pushes sent 15 minutes ago or more. A token the
+   * phone's push service no longer knows is removed; a receipt not ready
+   * yet is asked for again, until the push service no longer keeps it.
+   */
+  async function checkReceipts(): Promise<number> {
+    const now = clock();
+    const due = await db
+      .select()
+      .from(pushTickets)
+      .where(lte(pushTickets.checkAt, now))
+      .orderBy(asc(pushTickets.checkAt))
+      .limit(receiptsPerRun);
+    if (due.length === 0) return 0;
+    const receipts = await push.receipts(due.map((ticket) => ticket.id));
+    await forgetTokens(
+      due.flatMap((ticket) => {
+        const receipt = receipts.get(ticket.id);
+        return receipt?.status === "error" && receipt.code === deviceNotRegistered
+          ? [ticket.pushTokenId]
+          : [];
+      }),
+    );
+    const done = due
+      .filter(
+        (ticket) =>
+          receipts.has(ticket.id) || now.getTime() - ticket.createdAt.getTime() >= receiptsKeptMs,
+      )
+      .map((ticket) => ticket.id);
+    if (done.length > 0) await db.delete(pushTickets).where(inArray(pushTickets.id, done));
+    const waiting = due.filter((ticket) => !done.includes(ticket.id)).map((ticket) => ticket.id);
+    if (waiting.length > 0) {
+      await db
+        .update(pushTickets)
+        .set({ checkAt: new Date(now.getTime() + receiptAfterMs), updatedAt: now })
+        .where(inArray(pushTickets.id, waiting));
+    }
+    return receipts.size;
+  }
+
   return {
     async runOnce() {
       // Each step runs even when one before it failed; the first failure is
@@ -604,8 +708,9 @@ export function createNotificationWorker(dependencies: {
       const events = await step(takeEvents, 0);
       const scheduled = await step(takeSchedules, 0);
       const { sent, failed } = await step(sendDue, { sent: 0, failed: 0 });
+      const receipts = await step(checkReceipts, 0);
       if (failures.length > 0) throw failures[0];
-      return { events, scheduled, sent, failed };
+      return { events, scheduled, sent, failed, receipts };
     },
   };
 }

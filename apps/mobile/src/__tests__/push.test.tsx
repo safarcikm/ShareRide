@@ -1,0 +1,142 @@
+import { act, screen, waitFor } from "expo-router/testing-library";
+import { completeMe, renderApp } from "@/testing/app";
+import type * as TestApp from "@/testing/app";
+import { chatBooking, chatServer } from "@/testing/chat";
+import { ok, testMe, type FakeClient } from "@/testing/fake-client";
+import { mockNotifications } from "@/testing/notifications";
+
+jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
+jest.mock("@/auth/token-store", () => {
+  return jest.requireActual<typeof TestApp>("@/testing/app").mockTokenStoreModule;
+});
+jest.mock("expo-localization", () => ({ getLocales: () => [{ languageTag: "en-GB" }] }));
+jest.mock("@/lib/preferences", () => ({
+  readPreference: jest.fn(() => Promise.resolve(null)),
+  writePreference: jest.fn(() => Promise.resolve()),
+}));
+jest.mock("@/lib/clock", () => ({ now: () => new Date("2026-11-14T12:00:00Z") }));
+const mockProject = { id: "test-project" as string | undefined };
+jest.mock("@/notifications/project-id", () => ({ projectId: () => mockProject.id }));
+
+const conversationPage = `/messages/${chatBooking.id}`;
+
+const registered = (client: FakeClient) =>
+  client.calls
+    .filter((call) => call.path === "/v1/me/sessions/current/push-token")
+    .map((call) => (call.input["body"] as { token: string | null }).token);
+
+const pages = (client: FakeClient) =>
+  client.calls.filter(
+    (call) => call.path === "/v1/bookings/{id}/messages" && !("body" in call.input),
+  ).length;
+
+function withPush(client: FakeClient) {
+  client.answer("/v1/me/sessions/current/push-token", () => ok(204), "put");
+  chatServer(client);
+}
+
+beforeEach(() => {
+  mockNotifications.reset();
+  mockProject.id = "test-project";
+});
+
+describe("Push notifications (plan 4.5)", () => {
+  it("registers this device's token once notifications are allowed, without asking", async () => {
+    mockNotifications.permission = "granted";
+    const { client } = await renderApp("/", { me: completeMe, setUp: withPush });
+    await waitFor(() => {
+      expect(registered(client)).toEqual(["ExponentPushToken[test-device]"]);
+    });
+    expect(mockNotifications.tokenRequests).toEqual([{ projectId: "test-project" }]);
+  });
+
+  it("registers nothing while notifications are not allowed, when signed out, or before the app has its project", async () => {
+    const asked = await renderApp("/", { me: completeMe, setUp: withPush });
+    await screen.findAllByRole("header");
+    expect(registered(asked.client)).toEqual([]);
+
+    mockNotifications.permission = "granted";
+    const signedOut = await renderApp("/", { setUp: withPush });
+    await screen.findAllByRole("header");
+    expect(registered(signedOut.client)).toEqual([]);
+
+    mockProject.id = undefined;
+    const noProject = await renderApp("/", { me: completeMe, setUp: withPush });
+    await screen.findAllByRole("header");
+    expect(registered(noProject.client)).toEqual([]);
+    expect(mockNotifications.tokenRequests).toEqual([]);
+  });
+
+  it("registers the new token when the device's token changes", async () => {
+    mockNotifications.permission = "granted";
+    const { client } = await renderApp("/", { me: completeMe, setUp: withPush });
+    await waitFor(() => {
+      expect(registered(client)).toHaveLength(1);
+    });
+    await act(async () => {
+      mockNotifications.newToken("ExponentPushToken[new-token]");
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(registered(client)).toEqual([
+        "ExponentPushToken[test-device]",
+        "ExponentPushToken[new-token]",
+      ]);
+    });
+  });
+
+  it("opens what a tapped notification is about", async () => {
+    await renderApp("/", { me: completeMe, setUp: withPush });
+    await screen.findAllByRole("header");
+    await act(async () => {
+      mockNotifications.tap(conversationPage);
+      await Promise.resolve();
+    });
+    expect(await screen.findByRole("header", { name: "Anna" })).toBeVisible();
+    expect(screen).toHavePathname(conversationPage);
+  });
+
+  it("opens it once signed in when the tap started the app", async () => {
+    mockNotifications.tap(conversationPage);
+    await renderApp("/", { me: completeMe, setUp: withPush });
+    expect(await screen.findByRole("header", { name: "Anna" })).toBeVisible();
+    expect(screen).toHavePathname(conversationPage);
+  });
+
+  it("ignores a tap that leads anywhere else, or comes before the account is complete", async () => {
+    await renderApp("/profile", { me: completeMe, setUp: withPush });
+    await screen.findAllByRole("header");
+    expect(screen).toHavePathname("/profile");
+    await act(async () => {
+      mockNotifications.tap("/settings");
+      mockNotifications.tap("https://example.com/messages/x");
+      await Promise.resolve();
+    });
+    expect(screen).toHavePathname("/profile");
+
+    mockNotifications.tap(conversationPage);
+    await renderApp("/", { me: testMe, setUp: withPush });
+    await screen.findAllByRole("header");
+    expect(screen).not.toHavePathname(conversationPage);
+  });
+
+  it("fetches the conversation on screen when a push about it arrives, instead of showing it", async () => {
+    const { client } = await renderApp(conversationPage, { me: completeMe, setUp: withPush });
+    expect(await screen.findByRole("header", { name: "Anna" })).toBeVisible();
+    const before = pages(client);
+
+    let behavior: unknown;
+    await act(async () => {
+      behavior = await mockNotifications.receive(conversationPage);
+    });
+    expect(behavior).toMatchObject({ shouldShowBanner: false, shouldShowList: false });
+    await waitFor(() => {
+      expect(pages(client)).toBe(before + 1);
+    });
+
+    await act(async () => {
+      behavior = await mockNotifications.receive("/messages/0190a1d6-0000-7000-8000-0000000000ff");
+    });
+    expect(behavior).toMatchObject({ shouldShowBanner: true, shouldShowList: true });
+  });
+});

@@ -16,6 +16,14 @@
       "ios": {
         "autoIncrement": true
       }
+    },
+    "preview-apk": {
+      "extends": "preview",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk",
+        "autoIncrement": true
+      }
     }
   },
   "submit": {
