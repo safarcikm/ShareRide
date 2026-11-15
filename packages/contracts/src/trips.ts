@@ -237,10 +237,14 @@ export const myTripSchema = z.object({
       suggestedPrice: moneySchema,
       cap: moneySchema,
       price: moneySchema,
+      /** Seats bookings hold on this stretch now (rule S1), for the seats booked and free. */
+      seatsTaken: z.int().nonnegative(),
     }),
   ),
   /** Requests waiting for the driver's answer, their deadline still to come (spec 5, 3.3). */
   openRequests: z.int().nonnegative(),
+  /** The first deadline among those requests, for "Answer by" (spec 16, 3.3); null for none. */
+  requestsCloseAt: timestampSchema.nullable(),
 });
 
 export type MyTrip = z.infer<typeof myTripSchema>;
@@ -259,12 +263,23 @@ const distancesPending = {
   ...errors,
 } as const;
 
+/**
+ * Upcoming (the default): drafts, then published trips whose last stop is
+ * still to come, a trip under way included. Past: published trips whose
+ * last stop has passed (spec 16, section 6).
+ */
+export const myTripsQuerySchema = z.object({
+  when: z.enum(["upcoming", "past"]).default("upcoming"),
+});
+
 export const myTripsRoute = defineRoute({
   method: "get",
   path: "/v1/me/trips",
-  summary: "My drafts, most recently changed first, then my published trips, soonest first",
+  summary:
+    "My trips: upcoming, my drafts most recently changed first then my published trips soonest first, or past, latest first",
   tags: ["trips"],
   auth: true,
+  request: { query: myTripsQuerySchema },
   responses: {
     200: { description: "My trips", schema: z.object({ trips: z.array(myTripSchema) }) },
     401: unauthenticated,

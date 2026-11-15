@@ -17,8 +17,9 @@ import {
   type TripChoices,
   type TripSettings,
 } from "@shareride/domain";
-import { and, asc, count, desc, eq, gt, inArray, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, isNull, lte, min, ne, or, sql } from "drizzle-orm";
 import type { DrivingService } from "../driving/index.ts";
+import { occupancyNow } from "../bookings/seats.ts";
 import { toSummary } from "../meeting-points/service.ts";
 
 const { bookings, legs, meetingPoints, segments, trips, tripStops, users, vehicles } = schema;
@@ -50,7 +51,12 @@ export interface NotPublishable {
 
 /** A driver's drafts and publishing them (spec 3, 3.4 to 3.8, and section 4). */
 export interface TripService {
-  myTrips(userId: string): Promise<MyTrip[]>;
+  /**
+   * Upcoming: drafts, most recently changed first, then published trips
+   * whose last stop is still to come, soonest first. Past: published trips
+   * whose last stop has passed, latest first.
+   */
+  myTrips(userId: string, when: "upcoming" | "past"): Promise<MyTrip[]>;
   myTrip(userId: string, tripId: string): Promise<MyTrip | undefined>;
   create(
     userId: string,
@@ -121,7 +127,8 @@ export function createTripService(dependencies: {
   async function present(q: Queryable, rows: readonly TripRow[]): Promise<MyTrip[]> {
     const ids = rows.map((row) => row.id);
     if (ids.length === 0) return [];
-    const [stopRows, segmentRows, requestRows] = await Promise.all([
+    const now = clock();
+    const [stopRows, segmentRows, requestRows, occupancy] = await Promise.all([
       q
         .select({ stop: tripStops, point: meetingPoints })
         .from(tripStops)
@@ -135,16 +142,17 @@ export function createTripService(dependencies: {
         .orderBy(asc(segments.position)),
       // A request whose deadline passed reads as expired, as bookings show it.
       q
-        .select({ tripId: bookings.tripId, count: count() })
+        .select({ tripId: bookings.tripId, count: count(), closesAt: min(bookings.expiresAt) })
         .from(bookings)
         .where(
           and(
             inArray(bookings.tripId, ids),
             eq(bookings.status, "requested"),
-            gt(bookings.expiresAt, clock()),
+            gt(bookings.expiresAt, now),
           ),
         )
         .groupBy(bookings.tripId),
+      occupancyNow(q, ids, now),
     ]);
     return rows.map((row) => ({
       id: row.id,
@@ -172,8 +180,11 @@ export function createTripService(dependencies: {
           suggestedPrice: { amount: segment.suggestedPrice, currency: "ISK" as const },
           cap: { amount: segment.cap, currency: "ISK" as const },
           price: { amount: segment.price, currency: "ISK" as const },
+          seatsTaken: occupancy(row.id, segment.position, segment.occupancy),
         })),
       openRequests: requestRows.find((requests) => requests.tripId === row.id)?.count ?? 0,
+      requestsCloseAt:
+        requestRows.find((requests) => requests.tripId === row.id)?.closesAt?.toISOString() ?? null,
     }));
   }
 
@@ -340,17 +351,41 @@ export function createTripService(dependencies: {
     note !== undefined && Array.from(note).length > noteMaxLength;
 
   return {
-    async myTrips(userId) {
-      const rows = await db
-        .select()
-        .from(trips)
-        .where(and(eq(trips.driverId, userId), inArray(trips.status, ["draft", "published"])))
-        .orderBy(
-          sql`${trips.status} <> 'draft'`,
-          sql`case when ${trips.status} = 'draft' then ${trips.updatedAt} end desc`,
-          asc(trips.departsAt),
-          asc(trips.id),
-        );
+    async myTrips(userId, when) {
+      const now = clock();
+      // A published trip is past once its last stop is, as a booking is past
+      // once its passenger is out (spec 16, section 6).
+      const rows =
+        when === "upcoming"
+          ? await db
+              .select()
+              .from(trips)
+              .where(
+                and(
+                  eq(trips.driverId, userId),
+                  or(
+                    eq(trips.status, "draft"),
+                    and(eq(trips.status, "published"), gt(trips.arrivesAt, now)),
+                  ),
+                ),
+              )
+              .orderBy(
+                sql`${trips.status} <> 'draft'`,
+                sql`case when ${trips.status} = 'draft' then ${trips.updatedAt} end desc`,
+                asc(trips.departsAt),
+                asc(trips.id),
+              )
+          : await db
+              .select()
+              .from(trips)
+              .where(
+                and(
+                  eq(trips.driverId, userId),
+                  eq(trips.status, "published"),
+                  lte(trips.arrivesAt, now),
+                ),
+              )
+              .orderBy(desc(trips.departsAt), asc(trips.id));
       return present(db, rows);
     },
 

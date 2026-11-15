@@ -3,6 +3,7 @@ import {
   acceptRequestRoute,
   bookingRoute,
   bookTripRoute,
+  createTripRoute,
   declineRequestRoute,
   myBookingsRoute,
   myTripsRoute,
@@ -695,11 +696,29 @@ describe("reading bookings (spec 5, 3.6 and 3.7)", () => {
     await booked(jon.accessToken, north, { fromStop: 0, toStop: 1 });
     const second = await booked(gunna.accessToken, north, { fromStop: 1, toStop: 2 });
     const waiting = async () => {
-      const result = await api.client.call(myTripsRoute, { accessToken: anna.accessToken });
+      const result = await api.client.call(myTripsRoute, {
+        accessToken: anna.accessToken,
+        query: {},
+      });
       if (!result.ok) throw new Error(result.error.code);
       return result.data.trips.map((trip) => [trip.id, trip.openRequests]);
     };
+    const closing = async () => {
+      const result = await api.client.call(myTripsRoute, {
+        accessToken: anna.accessToken,
+        query: {},
+      });
+      if (!result.ok) throw new Error(result.error.code);
+      return result.data.trips.find((trip) => trip.id === north)?.requestsCloseAt;
+    };
     expect(await waiting()).toEqual([[north, 2]]);
+    // The first deadline among the open requests, for "Answer by" (spec 16, 3.3).
+    const first = await api.client.call(bookingRoute, {
+      accessToken: anna.accessToken,
+      params: { id: second.id },
+    });
+    if (!first.ok) throw new Error(first.error.code);
+    expect(await closing()).toBe(first.data.requestExpiresAt);
     await api.client.call(acceptRequestRoute, {
       accessToken: anna.accessToken,
       params: { id: second.id },
@@ -709,5 +728,60 @@ describe("reading bookings (spec 5, 3.6 and 3.7)", () => {
     // A request whose deadline passed no longer waits, before any job runs.
     await later(hours(12), anna);
     expect(await waiting()).toEqual([[north, 0]]);
+    expect(await closing()).toBeNull();
+  });
+
+  it("lists My trips as upcoming or past by the trip's last stop (spec 16, section 6)", async () => {
+    const anna = await driverOf(north);
+    const created = await api.client.call(createTripRoute, {
+      accessToken: anna.accessToken,
+      body: { stops: [sampleId("point:bsi"), sampleId("point:borgarnes")] },
+    });
+    if (!created.ok) throw new Error(created.error.code);
+    const listed = async (when?: "upcoming" | "past") => {
+      const result = await api.client.call(myTripsRoute, {
+        accessToken: anna.accessToken,
+        query: when === undefined ? {} : { when },
+      });
+      if (!result.ok) throw new Error(result.error.code);
+      return result.data.trips.map((trip) => trip.id);
+    };
+    expect(await listed()).toEqual([created.data.id, north]);
+    expect(await listed("upcoming")).toEqual([created.data.id, north]);
+    expect(await listed("past")).toEqual([]);
+    // Saturday at 10:00: under way since BSÍ at 09:00, so still to come.
+    await later(hours(22), anna);
+    expect(await listed("upcoming")).toEqual([created.data.id, north]);
+    // Saturday at 16:00, after Hof, Akureyri: past. A draft is never past.
+    await later(hours(6), anna);
+    expect(await listed("upcoming")).toEqual([created.data.id]);
+    expect(await listed("past")).toEqual([north]);
+  });
+
+  it("counts the seats taken on each stretch in My trips (spec 16, section 6)", async () => {
+    const anna = await driverOf(north);
+    const jon = await newMember("Jón");
+    const taken = async () => {
+      const result = await api.client.call(myTripsRoute, {
+        accessToken: anna.accessToken,
+        query: {},
+      });
+      if (!result.ok) throw new Error(result.error.code);
+      return result.data.trips.find((trip) => trip.id === north)?.segments.map((s) => s.seatsTaken);
+    };
+    expect(await taken()).toEqual([0, 0, 0]);
+    const request = await booked(jon.accessToken, north, { fromStop: 1, toStop: 2, seats: 2 });
+    expect(await taken()).toEqual([0, 2, 0]);
+    await api.client.call(withdrawRequestRoute, {
+      accessToken: jon.accessToken,
+      params: { id: request.id },
+      body: {},
+    });
+    expect(await taken()).toEqual([0, 0, 0]);
+    // A request whose deadline passed holds no seats, before any job runs.
+    await booked(jon.accessToken, north, { fromStop: 0, toStop: 3 });
+    expect(await taken()).toEqual([1, 1, 1]);
+    await later(hours(12), anna);
+    expect(await taken()).toEqual([0, 0, 0]);
   });
 });
