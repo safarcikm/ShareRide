@@ -1,0 +1,28 @@
+{
+  "cli": {
+    "version": ">= 27.10.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "preview": {
+      "distribution": "store",
+      "environment": "preview",
+      "node": "26.13.1",
+      "pnpm": "12.18.0",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://shareride-staging-api.onrender.com",
+        "EXPO_PUBLIC_APP_ENV": "staging"
+      },
+      "ios": {
+        "autoIncrement": true
+      }
+    }
+  },
+  "submit": {
+    "preview": {
+      "ios": {
+        "appName": "ShareRide Preview"
+      }
+    }
+  }
+}

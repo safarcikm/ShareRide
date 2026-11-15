@@ -166,6 +166,13 @@ The build creates `apps/mobile/android` (ignored by Git) and rewrites the
 `git checkout apps/mobile/package.json`. After a change to the icon or to
 `app.json`, delete `apps/mobile/android` and build again.
 
+### The iPhone app without a computer
+
+A build of the app for iPhone, pointed at staging, comes from Expo's cloud
+and installs through Apple's **TestFlight** app. A Windows PC is enough to
+start a build. The steps, from the Apple Developer account to the first
+build, are in the [app builds runbook](docs/operations/app-builds.md).
+
 ### Checks and tests
 
 ```sh

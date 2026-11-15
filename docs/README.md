@@ -38,6 +38,7 @@ Everything needed to understand, build and run ShareRide. Start with the
 ## Operations
 
 - [Staging runbook](operations/staging.md): set up, deploy, roll back, logs, restore
+- [App builds runbook](operations/app-builds.md): iPhone builds in Expo's cloud and TestFlight
 
 ## Compliance
 

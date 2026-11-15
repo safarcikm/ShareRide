@@ -68,7 +68,7 @@ the repository.
 | Channel | Who | How |
 | ------- | --- | --- |
 | Development builds | Developers | EAS Build `development` profile |
-| Preview | Owner and testers | EAS Build `preview` profile; TestFlight and Google Play internal testing |
+| Preview | Owner and testers | EAS Build `preview` profile; TestFlight (iPhone, [runbook](../operations/app-builds.md)) and Google Play internal testing |
 | Production | Everyone | EAS Build `production` profile, EAS Submit to App Store and Google Play |
 | Over-the-air updates | Users on a matching runtime version | EAS Update to the `preview` or `production` channel |
 

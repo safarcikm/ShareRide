@@ -100,7 +100,8 @@ Walking skeleton, milestone 2: hosted and connected
 - [ ] Error tracking and uptime checks connected
 - [ ] Meeting points shown on a map and in a list
 - [ ] Apple and Google sign-in; profile photo
-- [ ] Development builds with EAS and mobile end-to-end tests
+- [ ] iPhone builds to TestFlight against staging, then development builds
+      with EAS and mobile end-to-end tests
 
 Milestone 3: offer and find rides
 ([plan](../plans/2026-11-14-milestone-3-offer-and-find-rides.md), approved
@@ -147,7 +148,8 @@ Legal and company (in parallel)
 - [ ] Record of processing activities and data protection impact assessment
 - [ ] Data processing agreements with every provider
 - [ ] Apple and Google developer accounts in the company's name (until then,
-      Martin's individual Apple account is used for development builds only,
+      Martin's individual Apple account signs the team's test builds only,
+      under its own app ID, `is.shareride.app.preview`,
       [milestone 2 plan](../plans/2026-11-13-milestone-2-hosted-and-connected.md#3-decisions-for-martin))
 
 Community (in parallel)
