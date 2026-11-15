@@ -52,9 +52,10 @@ async function openResults(extra = "", answers: SearchAnswers = {}) {
   });
 }
 
-async function choose(field: RegExp, typed: string, name: string) {
-  await fireEvent.press(screen.getByRole("button", { name: field }));
-  await fireEvent.changeText(await screen.findByLabelText("Town or meeting point"), typed);
+/** Chooses a place in the list that drops down under From or To. */
+async function choose(field: "From" | "To", typed: string, name: string) {
+  await fireEvent.press(screen.getByRole("button", { name: new RegExp(`^${field}: `) }));
+  await fireEvent.changeText(await screen.findByLabelText(field), typed);
   await fireEvent.press(await screen.findByRole("button", { name: new RegExp(`^${name}`) }));
 }
 
@@ -71,8 +72,8 @@ describe("Searching for a ride (spec 4)", () => {
       await screen.findByText("Choose where you're leaving from and where you're going."),
     ).toBeVisible();
 
-    await choose(/^From: /, "borg", "Borgarnes");
-    await choose(/^To: /, "blön", "Blönduós");
+    await choose("From", "borg", "Borgarnes");
+    await choose("To", "blön", "Blönduós");
     expect(screen.getByRole("button", { name: "From: Borgarnes" })).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "One seat more" }));
     await fireEvent.press(screen.getByRole("button", { name: "Search" }));
@@ -115,8 +116,8 @@ describe("Searching for a ride (spec 4)", () => {
         searchApi(fake);
       },
     });
-    await choose(/^From: /, "borg", "Borgarnes");
-    await choose(/^To: /, "þorl", "Þorlákshöfn");
+    await choose("From", "borg", "Borgarnes");
+    await choose("To", "þorl", "Þorlákshöfn");
     await fireEvent.press(screen.getByRole("button", { name: "Swap from and to" }));
     expect(screen.getByRole("button", { name: "From: Þorlákshöfn" })).toBeVisible();
     await fireEvent.press(screen.getByRole("radio", { name: "Choose a day" }));
@@ -135,10 +136,26 @@ describe("Searching for a ride (spec 4)", () => {
         searchApi(fake);
       },
     });
-    await choose(/^From: /, "borg", "Borgarnes");
-    await choose(/^To: /, "borg", "Borgarnes");
+    await choose("From", "borg", "Borgarnes");
+    await choose("To", "borg", "Borgarnes");
     await fireEvent.press(screen.getByRole("button", { name: "Search" }));
     expect(await screen.findByText("Choose two different places.")).toBeVisible();
+  });
+
+  it("finds places again when the text is cut short and typed again before the pause", async () => {
+    await renderApp("/search", {
+      setUp: (fake) => {
+        searchApi(fake);
+      },
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: /^From: / }));
+    const field = await screen.findByLabelText("From");
+    await fireEvent.changeText(field, "borg");
+    expect(await screen.findByRole("button", { name: /^Borgarnes/ })).toBeVisible();
+    await fireEvent.changeText(field, "b");
+    expect(screen.queryByRole("button", { name: /^Borgarnes/ })).toBeNull();
+    await fireEvent.changeText(field, "borg");
+    expect(await screen.findByRole("button", { name: /^Borgarnes/ })).toBeVisible();
   });
 
   it("repeats a recent search, as any day once its date has passed", async () => {

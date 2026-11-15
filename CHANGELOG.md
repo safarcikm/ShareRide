@@ -215,6 +215,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   replaces "Continue with phone" and "Browse trips". In the API,
   `GET /v1/trips/soonest` lists the rides leaving soonest, counted against
   the search limit.
+- Choosing From or To no longer opens a screen of its own: on the front
+  page, the search form and the route step of posting a trip, the field
+  turns into a text box and the places found drop down under it. On the
+  route step a town lists its nearest meeting points in the same list.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

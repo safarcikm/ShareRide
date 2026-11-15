@@ -1,8 +1,8 @@
 import { defaultTripSettings } from "@shareride/domain";
 import { capitalised, formatDay, formatShortDay, type Locale } from "@shareride/i18n";
 import { router } from "expo-router";
-import { useEffect, useState, type ReactElement } from "react";
-import { BackHandler, StyleSheet, View } from "react-native";
+import { useState, type ReactElement } from "react";
+import { StyleSheet, View } from "react-native";
 import { Calendar } from "@/components/calendar";
 import { Chip } from "@/components/chip";
 import { Notice } from "@/components/notice";
@@ -11,7 +11,8 @@ import { Body, Heading } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { addDays, dayOf, isoDay, noonOf, type Day } from "@/lib/days";
-import { SearchPlacePicker } from "./place-picker";
+import { PlaceDropdown } from "@/meeting-points/place-dropdown";
+import { searchEndOf } from "./search-end";
 import { saveRecentSearch, type SearchEnd, type SearchQuery } from "./recent-searches";
 import { resultsHref } from "./results-href";
 import { spacing } from "@/theme/tokens";
@@ -24,10 +25,11 @@ export async function openSearch(query: SearchQuery, locale: Locale): Promise<Se
 }
 
 export interface RouteSearch {
-  /** From and to, the date, and a message when a place is missing. */
+  /**
+   * From and to, each with a place search that drops down under it, the
+   * date, and a message when a place is missing.
+   */
   readonly fields: ReactElement;
-  /** The place search, shown instead of the screen while a place is chosen. */
-  readonly picker: ReactElement | null;
   /** Searches for the seats given, once both places are chosen and differ. */
   readonly submit: (seats: number) => void;
 }
@@ -46,31 +48,19 @@ export function useRouteSearch(onSearch: (query: SearchQuery) => void): RouteSea
   const [picking, setPicking] = useState<RouteEnd | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  // Android's back closes the place search, as it would a screen, rather
-  // than leaving the screen under it (or the app, on the front page).
-  useEffect(() => {
-    if (picking === null) return undefined;
-    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
-      setPicking(null);
-      return true;
-    });
-    return () => {
-      subscription.remove();
-    };
-  }, [picking]);
-
-  const picker =
+  const search =
     picking === null ? null : (
-      <SearchPlacePicker
-        title={picking === "from" ? t("search.pickFrom") : t("search.pickTo")}
-        onCancel={() => {
+      <PlaceDropdown
+        label={picking === "from" ? t("search.from") : t("search.to")}
+        placeholder={t("search.typePlace")}
+        onClose={() => {
           setPicking(null);
         }}
-        onChoose={(end) => {
+        onChoose={(result) => {
           setPicking(null);
           setMessage(null);
-          if (picking === "from") setFrom(end);
-          else setTo(end);
+          if (picking === "from") setFrom(searchEndOf(result));
+          else setTo(searchEndOf(result));
         }}
       />
     );
@@ -98,6 +88,8 @@ export function useRouteSearch(onSearch: (query: SearchQuery) => void): RouteSea
           choose: t("search.choose"),
           swap: t("search.swap"),
         }}
+        open={picking}
+        search={search}
         onPick={setPicking}
         onSwap={() => {
           setFrom(to);
@@ -143,7 +135,7 @@ export function useRouteSearch(onSearch: (query: SearchQuery) => void): RouteSea
     </>
   );
 
-  return { fields, picker, submit };
+  return { fields, submit };
 }
 
 const styles = StyleSheet.create({

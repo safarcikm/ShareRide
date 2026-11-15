@@ -84,8 +84,9 @@ missing, and each item can be done from there:
 
 ### 3.4 Building the route
 
-1. **From** and **To**: the place search from spec 2. Choosing a town offers
-   its nearest meeting points.
+1. **From** and **To**: the place search from spec 2, dropping down under
+   the field on the route step, as in search (spec 4, 3.1; decision 10).
+   Choosing a town lists its nearest meeting points in the same list.
 2. **Stops are added automatically** (decision 1): every active meeting point
    that lies on the way becomes a stop, in route order. A point is on the way
    when going through it adds at most 5% or 3 km to the direct distance,
@@ -353,3 +354,4 @@ legal opinion).
 | 7 | Who sees the car's make, model and colour? | Everyone viewing the trip; the number plate only booked passengers (Martin, 2026-11-13) |
 | 8 | When is a meeting point on the way? | When going through it adds at most 5% or 3 km to the direct distance, whichever is less. Reykjavík to Akureyri gets the 8 stops on the main road; the driver adds others, such as Mjódd or Smáralind (Martin, 2026-11-14; replaces "whichever is more") |
 | 9 | What happens to a draft's stop when the operator pauses its meeting point? | The draft keeps it, and publishing is refused while it is paused; the driver can take the stop off or wait for the point to be resumed. A retired stop is dropped (Martin, 2026-11-15; replaces "the draft drops it") |
+| 10 | Does choosing From or To open a screen of its own? | No: the place search drops down under the field on the route step. Adding another stop keeps its own screen (Martin, 2026-11-15) |

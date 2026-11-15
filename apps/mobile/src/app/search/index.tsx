@@ -45,7 +45,6 @@ export default function SearchForm() {
   const route = useRouteSearch((query) => {
     void search(query);
   });
-  if (route.picker !== null) return route.picker;
 
   return (
     <Screen

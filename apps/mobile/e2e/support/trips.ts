@@ -12,8 +12,9 @@ export interface TripSearch {
   readonly toField: RegExp;
   readonly to: string;
   readonly toPoint: RegExp;
-  /** The place field's label. */
-  readonly field: string;
+  /** The names of the fields that drop down under From and To. */
+  readonly fromLabel: string;
+  readonly toLabel: string;
   readonly search: string;
   /** The result to open: the earliest that matches. */
   readonly result: RegExp;
@@ -22,12 +23,12 @@ export interface TripSearch {
 /** Searches the part and opens the trip from the results; returns its ID. */
 export async function openTrip(page: Page, search: TripSearch) {
   await page.goto("/search");
-  for (const [field, typed, point] of [
-    [search.fromField, search.from, search.fromPoint],
-    [search.toField, search.to, search.toPoint],
+  for (const [field, label, typed, point] of [
+    [search.fromField, search.fromLabel, search.from, search.fromPoint],
+    [search.toField, search.toLabel, search.to, search.toPoint],
   ] as const) {
     await page.getByRole("button", { name: field }).click();
-    await page.getByLabel(search.field).fill(typed);
+    await page.getByLabel(label, { exact: true }).fill(typed);
     await page.getByRole("button", { name: point }).click();
   }
   await page.getByRole("button", { name: search.search, exact: true }).click();
@@ -58,15 +59,15 @@ export function tomorrow(locale: Locale) {
  * added on the way; returns the trip's ID.
  */
 export async function postTripToSelfoss(page: Page, departure: string) {
-  const choose = async (field: RegExp, typed: string, card: RegExp) => {
-    await page.getByRole("button", { name: field }).click();
-    await page.getByLabel("Town or meeting point").fill(typed);
+  const choose = async (end: "From" | "To", typed: string, card: RegExp) => {
+    await page.getByRole("button", { name: new RegExp(`^${end}: `) }).click();
+    await page.getByLabel(end, { exact: true }).fill(typed);
     await page.getByRole("button", { name: card }).click();
   };
   await page.goto("/drive");
   await page.getByRole("button", { name: "Post a trip" }).click();
-  await choose(/^From: /, "mjódd", /^Mjódd bus terminal,/);
-  await choose(/^To: /, "selfo", /^N1 Selfoss,/);
+  await choose("From", "mjódd", /^Mjódd bus terminal,/);
+  await choose("To", "selfo", /^N1 Selfoss,/);
   await page.getByRole("button", { name: "Choose date and time" }).click();
   const day = tomorrow("en");
   if (day.nextMonth) await page.getByRole("button", { name: "Next month" }).click();

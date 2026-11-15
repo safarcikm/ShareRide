@@ -42,7 +42,12 @@ their part, the price, the driver and the car.
 
 1. **From** and **To** use the place search from spec 2: a meeting point, a
    town or landmark, or "Near me" (computed on the device; only the matching
-   meeting point IDs are sent, never the position).
+   meeting point IDs are sent, never the position). Tapping From or To turns
+   it into a text field, and what the search finds drops down right under
+   it, on the same screen (decision 6). On phones the field scrolls up to
+   the top as it opens, so the keyboard does not hide the list. Choosing a
+   place, Close, Escape on a keyboard and Android's back close the list, and
+   focus goes back to the field's button; one end is open at a time.
 2. **Date**, optional (decision 2), and **seats** (1 to 8, default 1).
 3. Available without an account (spec 1, decision 1). Booking needs one
    (spec 5).
@@ -308,3 +313,4 @@ Accepted by Martin on 2026-11-13 as recommended.
 | 3 | Does search find stops at meeting points being retired? | Yes: trips already posted still stop there until the last of them. Paused points are not found, because nobody can board there (2026-11-15: Martin asked for a suggestion; built as suggested) |
 | 4 | How long does a finished trip's page stay open by link? | Until a week after the last stop's planned time, then "This trip can't be found". Opening trip pages counts towards the search limit (2026-11-15: Martin, open question Q17, answer A40) |
 | 5 | What do people see before they search? | The rides leaving soonest, on the front page under the route search, so the app shows what is on offer (3.8; Martin, 2026-11-15) |
+| 6 | Does choosing From or To open a screen of its own? | No: the place search drops down under the field, so the page stays in view (3.1; Martin, 2026-11-15; replaces a full-screen place search) |
