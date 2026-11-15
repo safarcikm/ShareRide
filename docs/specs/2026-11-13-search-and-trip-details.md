@@ -73,8 +73,8 @@ A trip matches when all of these hold (rule R4.1):
 3. If a date is chosen, the planned time at the boarding stop falls on it, in
    Iceland time. For partial routes this is the passenger's own departure, not
    the trip's start. Without a date, every upcoming trip matches.
-4. The boarding stop is at least the booking cut-off away (15 minutes, rule
-   S4).
+4. The boarding stop is more than the booking cut-off away (15 minutes,
+   rule S4: a booking arrives before the cut-off).
 5. At least the requested number of seats is free on every segment between the
    two stops (rule S3).
 6. The searcher is not the driver, and neither has blocked the other.
