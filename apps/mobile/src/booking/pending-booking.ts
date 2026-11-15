@@ -1,4 +1,5 @@
 import type { Href } from "expo-router";
+import { forgetPendingOffer } from "@/drive/pending-offer";
 import { readAppData, writeAppData } from "@/lib/app-data";
 
 // The part and seats someone chose before they had an account (spec 5, 3.1,
@@ -19,8 +20,10 @@ const key = "pending-booking";
 /** Signing up takes a few minutes; a choice older than this is forgotten. */
 export const pendingBookingLifetimeMs = 60 * 60 * 1000;
 
-export function keepPendingBooking(choice: PendingBooking, at: Date): Promise<void> {
-  return writeAppData(key, JSON.stringify({ ...choice, keptAt: at.toISOString() }));
+/** Keeps the choice, and forgets an offer to drive kept before it (drive/pending-offer.ts). */
+export async function keepPendingBooking(choice: PendingBooking, at: Date): Promise<void> {
+  await forgetPendingOffer();
+  await writeAppData(key, JSON.stringify({ ...choice, keptAt: at.toISOString() }));
 }
 
 /** The choice kept within the last hour, once: taking it forgets it. */

@@ -36,10 +36,10 @@ test.describe("sign out on all devices", () => {
 
     await other.getByRole("button", { name: "Settings" }).click();
     await other.getByRole("button", { name: "Sign out on all devices" }).click();
-    await expect(other.getByRole("button", { name: english.continuePhone })).toBeVisible();
+    await expect(other.getByRole("button", { name: english.signIn, exact: true })).toBeVisible();
 
     await page.reload();
-    await expect(page.getByRole("button", { name: english.continuePhone })).toBeVisible();
+    await expect(page.getByRole("button", { name: english.signIn, exact: true })).toBeVisible();
     await otherDevice.close();
   });
 });

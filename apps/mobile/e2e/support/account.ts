@@ -5,7 +5,8 @@ import { codeIn, newPhoneNumber, sentCount, textMessage } from "./sms";
 // journey that needs an account.
 
 export interface Texts {
-  readonly continuePhone: string;
+  /** The front page's "Sign in". */
+  readonly signIn: string;
   readonly phoneLabel: string;
   readonly send: string;
   readonly codeLabel: string;
@@ -22,7 +23,7 @@ export interface Texts {
 }
 
 export const english: Texts = {
-  continuePhone: "Continue with phone",
+  signIn: "Sign in",
   phoneLabel: "Mobile number",
   send: "Send code",
   codeLabel: "6-digit code",
@@ -39,7 +40,7 @@ export const english: Texts = {
 };
 
 export const icelandic: Texts = {
-  continuePhone: "Halda áfram með síma",
+  signIn: "Skrá inn",
   phoneLabel: "Farsímanúmer",
   send: "Senda kóða",
   codeLabel: "6 stafa kóði",
@@ -58,7 +59,7 @@ export const icelandic: Texts = {
 /** Enters the number, reads the code from the text message and enters it. */
 export async function signIn(page: Page, texts: Texts, phone: { local: string; e164: string }) {
   await page.goto("/");
-  await page.getByRole("button", { name: texts.continuePhone }).click();
+  await page.getByRole("button", { name: texts.signIn, exact: true }).click();
   return enterCode(page, texts, phone);
 }
 

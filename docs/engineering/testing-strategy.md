@@ -74,7 +74,9 @@ driver posts a trip, a passenger requests a seat on it, the driver accepts
 from "My trips", the passenger pays, and both see the seat confirmed
 (`apps/mobile/e2e/driver-requests.spec.ts`). Until cancellations come
 (spec 6), journey 5 withdraws a request and finds it under "Past" in My
-bookings (`apps/mobile/e2e/my-bookings.spec.ts`).
+bookings (`apps/mobile/e2e/my-bookings.spec.ts`). The front page opens a
+ride leaving soon, searches a route, and leads from "Offer a ride" and
+"Sign in" to signing in (`apps/mobile/e2e/welcome.spec.ts`).
 
 ## Coverage
 

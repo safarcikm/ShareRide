@@ -42,6 +42,11 @@ export interface SearchService {
     request: SearchRequest,
     searcherId: string | null,
   ): Promise<Result<TripSearchResult[], SearchError>>;
+  /**
+   * The rides leaving soonest, each for its whole route and one seat, for
+   * the front page (spec 4, 3.8).
+   */
+  soonest(limit: number, searcherId: string | null): Promise<TripSearchResult[]>;
   /** For "nothing matches": the days around the date, and trips from points nearby. */
   alternatives(
     request: SearchRequest,
@@ -64,6 +69,13 @@ interface Coverage {
 const resultLimit = 50;
 /** At most this many trips from nearby points when nothing matches. */
 const nearbyLimit = 10;
+/**
+ * The rides leaving soon: the trips read at a time, three for each shown
+ * and at most 150, and at most ten such batches, after which fewer are shown.
+ */
+const soonestOverfetch = 3;
+const soonestMaxBatch = 150;
+const soonestMaxRounds = 10;
 
 const toDay = (date: string): CalendarDay => {
   const [year = 0, month = 0, day = 0] = date.split("-").map(Number);
@@ -176,26 +188,30 @@ export function createSearchService(dependencies: {
       where ${trips.status} = 'published'
         ${options.instant === true ? sql`and ${trips.bookingMode} = 'instant'` : sql``}
     `);
-    const ids = found.rows.map((row) => row.id);
+    return load(found.rows.map((row) => row.id));
+  }
+
+  /** The trips, with everything the domain rules need. */
+  async function load(ids: readonly string[]) {
     if (ids.length === 0) return [];
     const [tripRows, stopRows, segmentRows, asOfNow] = await Promise.all([
       db
         .select({ trip: trips, firstName: users.firstName })
         .from(trips)
         .innerJoin(users, eq(users.id, trips.driverId))
-        .where(inArray(trips.id, ids)),
+        .where(inArray(trips.id, [...ids])),
       db
         .select({ stop: tripStops, point: meetingPoints })
         .from(tripStops)
         .innerJoin(meetingPoints, eq(meetingPoints.id, tripStops.meetingPointId))
-        .where(inArray(tripStops.tripId, ids))
+        .where(inArray(tripStops.tripId, [...ids]))
         .orderBy(asc(tripStops.position)),
       db
         .select()
         .from(segments)
-        .where(inArray(segments.tripId, ids))
+        .where(inArray(segments.tripId, [...ids]))
         .orderBy(asc(segments.position)),
-      occupancyNow(db, ids, clock()),
+      occupancyNow(db, [...ids], clock()),
     ]);
     return tripRows.map(({ trip, firstName }) => {
       const stops = stopRows.filter((row) => row.stop.tripId === trip.id);
@@ -273,7 +289,9 @@ export function createSearchService(dependencies: {
       .sort(
         (a, b) =>
           (sort === "price" ? a.result.pricePerSeat.amount - b.result.pricePerSeat.amount : 0) ||
-          a.boardsAt.getTime() - b.boardsAt.getTime(),
+          a.boardsAt.getTime() - b.boardsAt.getTime() ||
+          // The same order every time for trips leaving together.
+          (a.result.tripId < b.result.tripId ? -1 : a.result.tripId > b.result.tripId ? 1 : 0),
       )
       .map(({ result }) => result);
   }
@@ -309,6 +327,69 @@ export function createSearchService(dependencies: {
         return [{ result: toResult(candidate, match, shown), boardsAt }];
       });
       return ok(sorted(matches, request.sort).slice(0, resultLimit));
+    },
+
+    async soonest(limit, searcherId) {
+      const now = clock();
+      const earliest = new Date(now.getTime() + settings.bookingCutoffMinutes * 60_000);
+      const searchableStatus = sql.join(
+        searchableStatuses.map((status) => sql`${status}`),
+        sql`, `,
+      );
+      const whole = { from: () => null, to: () => null };
+      const matchWhole = (candidate: Candidate) => {
+        const { stops } = candidate.searchable;
+        const first = stops[0];
+        const last = stops.at(-1);
+        if (first === undefined || last === undefined) return [];
+        const match = matchTrip(
+          candidate.searchable,
+          {
+            from: [{ meetingPointId: first.meetingPointId, distanceM: 0 }],
+            to: [{ meetingPointId: last.meetingPointId, distanceM: 0 }],
+            date: null,
+            timeOfDay: null,
+            seats: 1,
+            searcherId,
+          },
+          now,
+          settings,
+        );
+        // Listed only for the whole route, from the first stop to the last.
+        if (match?.board !== 0 || match.alight !== stops.length - 1) return [];
+        return [{ result: toResult(candidate, match, whole), boardsAt: first.plannedAt }];
+      };
+
+      // The SQL only narrows: some trips are full on a stretch or the
+      // searcher's own, which the domain decides. So it reads the trips
+      // soonest first in batches, until enough match or none are left.
+      const batch = Math.min(limit * soonestOverfetch, soonestMaxBatch);
+      const found: { result: TripSearchResult; boardsAt: Date }[] = [];
+      let after: { plannedAt: string; id: string } | null = null;
+      for (let round = 0; round < soonestMaxRounds && found.length < limit; round += 1) {
+        const page: { rows: { id: string; planned_at: string }[] } = await db.execute(sql`
+          select ${trips.id} as id, first.planned_at::text as planned_at
+          from ${trips}
+          join ${tripStops} first on first.trip_id = ${trips.id} and first.position = 0
+          join ${meetingPoints} first_point on first_point.id = first.meeting_point_id
+          join ${tripStops} last on last.trip_id = ${trips.id}
+            and last.position = (select max(position) from ${tripStops} where trip_id = ${trips.id})
+          join ${meetingPoints} last_point on last_point.id = last.meeting_point_id
+          where ${trips.status} = 'published'
+            and first.planned_at > ${earliest.toISOString()}
+            and first_point.status in (${searchableStatus})
+            and last_point.status in (${searchableStatus})
+            ${after === null ? sql`` : sql`and (first.planned_at, ${trips.id}) > (${after.plannedAt}::timestamptz, ${after.id}::uuid)`}
+          order by first.planned_at, ${trips.id}
+          limit ${batch}
+        `);
+        const loaded = await load(page.rows.map((row) => row.id));
+        found.push(...loaded.flatMap(matchWhole));
+        const last = page.rows.at(-1);
+        if (page.rows.length < batch || last === undefined) break;
+        after = { plannedAt: last.planned_at, id: last.id };
+      }
+      return sorted(found, "departure").slice(0, limit);
     },
 
     async alternatives(request, searcherId) {

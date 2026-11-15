@@ -7,7 +7,6 @@ import { expect, test, type Page } from "@playwright/test";
 
 interface Journey {
   readonly locale: string;
-  readonly browse: string;
   readonly title: string;
   readonly from: RegExp;
   readonly to: RegExp;
@@ -26,7 +25,6 @@ interface Journey {
 const journeys: readonly Journey[] = [
   {
     locale: "en-GB",
-    browse: "Browse trips",
     title: "Find a ride",
     from: /^From: /,
     to: /^To: /,
@@ -43,7 +41,6 @@ const journeys: readonly Journey[] = [
   },
   {
     locale: "is-IS",
-    browse: "Skoða ferðir",
     title: "Finna far",
     from: /^Frá: /,
     to: /^Til: /,
@@ -71,8 +68,7 @@ for (const journey of journeys) {
     test.use({ locale: journey.locale });
 
     test("Borgarnes to Blönduós finds Reykjavík to Akureyri", async ({ page }) => {
-      await page.goto("/");
-      await page.getByRole("button", { name: journey.browse }).click();
+      await page.goto("/search");
       await expect(page.getByRole("heading", { name: journey.title })).toBeVisible();
 
       await choose(page, journey.from, journey.field, "borgarn", journey.borgarnes);
