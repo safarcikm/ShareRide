@@ -1,6 +1,7 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { english, enterCode, finishSignUp, icelandic, signUp, type Texts } from "./support/account";
 import { newPhoneNumber } from "./support/sms";
+import { focused, openTrip, type TripSearch } from "./support/trips";
 
 // Spec 5's booking on the web build, against the sample trips the e2e API
 // seeds: Jón drives N1 Selfoss → N1 Hella → N1 Hvolsvöllur → N1 Vík in two
@@ -11,19 +12,10 @@ import { newPhoneNumber } from "./support/sms";
 // before booking. Screens left behind stay in the page, hidden, so text
 // checks look only at what shows.
 
-interface Journey {
+interface Journey extends TripSearch {
   readonly locale: string;
   readonly account: Texts;
   readonly name: string;
-  readonly from: string;
-  readonly fromPoint: RegExp;
-  readonly to: string;
-  readonly toPoint: RegExp;
-  readonly fromField: RegExp;
-  readonly toField: RegExp;
-  readonly field: string;
-  readonly search: string;
-  readonly result: RegExp;
   readonly part: string;
   readonly book: string;
   readonly title: string;
@@ -105,27 +97,6 @@ const inIcelandic: Journey = {
 };
 
 const journeys = [inEnglish, inIcelandic];
-
-/** The text of what has keyboard and screen-reader focus. */
-const focused = (page: Page) => page.evaluate(() => document.activeElement?.textContent ?? "");
-
-/** Searches the part and opens Jón's trip from the results. */
-async function openTrip(page: Page, journey: Journey) {
-  await page.goto("/search");
-  for (const [field, typed, point] of [
-    [journey.fromField, journey.from, journey.fromPoint],
-    [journey.toField, journey.to, journey.toPoint],
-  ] as const) {
-    await page.getByRole("button", { name: field }).click();
-    await page.getByLabel(journey.field).fill(typed);
-    await page.getByRole("button", { name: point }).click();
-  }
-  await page.getByRole("button", { name: journey.search, exact: true }).click();
-  await page.getByRole("button", { name: journey.result }).first().click();
-  await expect(page).toHaveURL(/\/trips\/[0-9a-f-]+\?from=\d&to=\d$/);
-  const [, id] = /\/trips\/([0-9a-f-]+)/.exec(page.url()) ?? [];
-  return id ?? "";
-}
 
 for (const journey of journeys) {
   test.describe(`booking (${journey.locale})`, () => {

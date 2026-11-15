@@ -3,16 +3,24 @@ import {
   bookingRoute,
   startPaymentRoute,
   testPaymentRoute,
+  withdrawRequestRoute,
   type Booking,
   type Payment,
 } from "@shareride/contracts";
 import { capitalised, formatDay, formatMoney } from "@shareride/i18n";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { CircleCheck } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Linking, Platform, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
+import {
+  isWithdrawn,
+  offersSearchAgain,
+  searchAgainHref,
+  statusKey,
+  statusTag,
+} from "@/booking/status";
 import { payByText, requestSentText } from "@/booking/texts";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
@@ -20,7 +28,7 @@ import { Card } from "@/components/card";
 import { Icon } from "@/components/icon";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
-import { Tag, type TagKind } from "@/components/tag";
+import { Tag } from "@/components/tag";
 import { TakesFocus } from "@/components/takes-focus";
 import { Body, Heading, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
@@ -32,10 +40,11 @@ import { controlOutline, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
- * A booking (spec 5, screens 3, 4 and 8): a request waiting for the driver,
- * an accepted booking to pay for, or a confirmed seat with the number plate
- * and where to stand. Until the real provider comes (spec 13), paying opens
- * the test sheet, where no money moves.
+ * A booking (spec 5, screens 3, 4, 6 and 8): a request waiting for the
+ * driver, which can be withdrawn; an accepted booking to pay for; a confirmed
+ * seat with the number plate and where to stand; or one that ended, with
+ * "Search again". Until the real provider comes (spec 13), paying opens the
+ * test sheet, where no money moves.
  */
 export default function BookingScreen() {
   const { t } = useLanguage();
@@ -44,15 +53,17 @@ export default function BookingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const load = useCallback(() => session.call(bookingRoute, { params: { id } }), [session, id]);
   const { value: answer, reload, refresh } = useLoaded(load);
-  // The booking as the last payment outcome left it, until it loads again.
-  const [paid, setPaid] = useState<Booking | null>(null);
-  // Whether paying changed what shows, so focus moves to the outcome.
+  // The booking as the last payment or withdrawal left it, until it loads again.
+  const [changed, setChanged] = useState<Booking | null>(null);
+  // Whether an action here changed what shows, so focus moves to the outcome.
   const [acted, setActed] = useState(false);
-  // The booking stays on screen while it loads again, so a notice about why
-  // stays with it.
-  const loadAgain = () => {
-    setPaid(null);
-    setActed(true);
+  // Why the booking is loading again, such as the driver answering first. It
+  // stays, with focus, while what shows below it changes.
+  const [stale, setStale] = useState<string | null>(null);
+  const loadAgain = (why: string) => {
+    setChanged(null);
+    setActed(false);
+    setStale(why);
     refresh();
   };
 
@@ -81,13 +92,17 @@ export default function BookingScreen() {
       </Screen>
     );
   }
-  const booking = paid?.id === answer.data.id ? paid : answer.data;
+  const booking = changed?.id === answer.data.id ? changed : answer.data;
   return (
     <BookingDetails
       booking={booking}
       announce={acted}
-      onPaid={(outcome) => {
-        setPaid(outcome);
+      stale={stale}
+      onAction={() => {
+        setStale(null);
+      }}
+      onChanged={(outcome) => {
+        setChanged(outcome);
         setActed(true);
       }}
       onStale={loadAgain}
@@ -95,30 +110,25 @@ export default function BookingScreen() {
   );
 }
 
-const statusTags: Record<Booking["status"], TagKind> = {
-  requested: "info",
-  accepted: "warning",
-  confirmed: "positive",
-  declined: "warning",
-  expired: "warning",
-  cancelled: "warning",
-  completed: "positive",
-  no_show: "warning",
-};
-
 function BookingDetails({
   booking,
   announce,
-  onPaid,
+  stale,
+  onAction,
+  onChanged,
   onStale,
 }: {
   readonly booking: Booking;
   /** The status changed on this screen: focus moves to it when it shows. */
   readonly announce: boolean;
-  /** The booking as a payment's outcome left it. */
-  readonly onPaid: (booking: Booking) => void;
-  /** Something changed on the server: load the booking again. */
-  readonly onStale: () => void;
+  /** Why the booking was loaded again, if it was. */
+  readonly stale: string | null;
+  /** The passenger starts paying or withdrawing. */
+  readonly onAction: () => void;
+  /** The booking as a payment or withdrawal left it. */
+  readonly onChanged: (booking: Booking) => void;
+  /** Something changed on the server meanwhile: say why and load it again. */
+  readonly onStale: (why: string) => void;
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
@@ -138,12 +148,23 @@ function BookingDetails({
         </Text>
         <Title align="start">{t("search.route", { from: name(board), to: name(alight) })}</Title>
         <View style={styles.row}>
-          <Tag kind={statusTags[booking.status]} label={t(`booking.status.${booking.status}`)} />
+          <Tag kind={statusTag(booking)} label={t(statusKey(booking))} />
         </View>
       </View>
 
+      {stale === null ? null : (
+        <TakesFocus key={stale}>
+          <Notice message={stale} />
+        </TakesFocus>
+      )}
       {passenger ? (
-        <Status booking={booking} announce={announce} onPaid={onPaid} onStale={onStale} />
+        <Status
+          booking={booking}
+          announce={announce}
+          onAction={onAction}
+          onChanged={onChanged}
+          onStale={onStale}
+        />
       ) : null}
 
       <Card>
@@ -165,11 +186,13 @@ function BookingDetails({
           driver={booking.driver}
           car={booking.car}
           carNote={
-            confirmed === null
-              ? t("trip.plateLater")
-              : confirmed.registration === null
+            confirmed !== null
+              ? confirmed.registration === null
                 ? t("booking.plateLater")
                 : t("booking.plate", { plate: confirmed.registration })
+              : booking.status === "requested" || booking.status === "accepted"
+                ? t("trip.plateLater")
+                : undefined
           }
         />
       </Card>
@@ -200,25 +223,47 @@ function BookingDetails({
   );
 }
 
-/** Where the booking stands for its passenger, and paying when it is due. */
+/**
+ * Where the booking stands for its passenger: paying when it is due,
+ * withdrawing a request, and searching again once it ended.
+ */
 function Status({
   booking,
   announce,
-  onPaid,
+  onAction,
+  onChanged,
   onStale,
 }: {
   readonly booking: Booking;
   readonly announce: boolean;
-  readonly onPaid: (booking: Booking) => void;
-  readonly onStale: () => void;
+  readonly onAction: () => void;
+  readonly onChanged: (booking: Booking) => void;
+  readonly onStale: (why: string) => void;
 }) {
+  const { locale, t } = useLanguage();
   if (booking.status === "accepted") {
-    return <Pay booking={booking} onPaid={onPaid} onStale={onStale} />;
+    return <Pay booking={booking} onStart={onAction} onPaid={onChanged} onStale={onStale} />;
   }
-  // Paying that ends in another status, such as confirmed, moves focus to it.
+  if (booking.status === "requested") {
+    return (
+      <Requested booking={booking} onStart={onAction} onWithdrawn={onChanged} onStale={onStale} />
+    );
+  }
+  // An action that ends in another status, such as confirmed, moves focus to it.
   return (
-    <TakesFocus key={booking.status} when={announce}>
-      <StatusText booking={booking} />
+    <TakesFocus key={statusKey(booking)} when={announce}>
+      <View style={styles.status}>
+        <StatusText booking={booking} />
+        {offersSearchAgain(booking) ? (
+          <Button
+            variant="secondary"
+            label={t("booking.searchAgain")}
+            onPress={() => {
+              router.push(searchAgainHref(booking, locale, now()));
+            }}
+          />
+        ) : null}
+      </View>
     </TakesFocus>
   );
 }
@@ -227,18 +272,6 @@ function StatusText({ booking }: { readonly booking: Booking }) {
   const { t } = useLanguage();
   const palette = usePalette();
   switch (booking.status) {
-    case "requested":
-      return booking.requestExpiresAt === null ? null : (
-        <Notice
-          kind="info"
-          message={requestSentText(
-            t,
-            booking.driver.firstName,
-            new Date(booking.requestExpiresAt),
-            now(),
-          )}
-        />
-      );
     case "confirmed":
       return (
         <View style={styles.row} accessibilityLiveRegion="polite">
@@ -263,10 +296,112 @@ function StatusText({ booking }: { readonly booking: Booking }) {
           }
         />
       );
+    case "cancelled":
+      // Cancelling a booking comes with spec 6; until then only a request
+      // can end this way, withdrawn.
+      return isWithdrawn(booking) ? <Notice kind="info" message={t("booking.withdrawn")} /> : null;
     default:
-      // Cancelled, completed and no-show come with spec 6 and spec 8.
+      // Completed and no-show come with spec 8.
       return null;
   }
+}
+
+/**
+ * A request waiting for the driver, with its deadline; it can be withdrawn
+ * at any time, after a second press to make sure (spec 5, 3.4; R5.8).
+ */
+function Requested({
+  booking,
+  onStart,
+  onWithdrawn,
+  onStale,
+}: {
+  readonly booking: Booking;
+  readonly onStart: () => void;
+  readonly onWithdrawn: (booking: Booking) => void;
+  readonly onStale: (why: string) => void;
+}) {
+  const { t } = useLanguage();
+  const session = useSession();
+  const [asking, setAsking] = useState(false);
+  // Backing out of withdrawing puts focus back on the button.
+  const [keptAfterAsking, setKeptAfterAsking] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const driver = booking.driver.firstName;
+
+  const withdraw = async () => {
+    setNotice(null);
+    onStart();
+    setBusy(true);
+    const answer = await session.call(withdrawRequestRoute, {
+      params: { id: booking.id },
+      body: {},
+    });
+    setBusy(false);
+    if (answer.ok) {
+      onWithdrawn(answer.data);
+      return;
+    }
+    if (answer.error.code === "booking_not_requested" || answer.error.code === "not_found") {
+      // The driver answered, or the deadline passed, meanwhile.
+      onStale(t("booking.notRequested"));
+      return;
+    }
+    // A lost connection leaves the question open, to try again.
+    setNotice(errorText(t, answer));
+  };
+
+  return (
+    <View style={styles.status}>
+      {booking.requestExpiresAt === null ? null : (
+        <Notice
+          kind="info"
+          message={requestSentText(t, driver, new Date(booking.requestExpiresAt), now())}
+        />
+      )}
+      {notice === null ? null : (
+        <TakesFocus key={notice}>
+          <Notice message={notice} />
+        </TakesFocus>
+      )}
+      {asking ? (
+        <TakesFocus>
+          <Card>
+            <Body align="start">{t("booking.withdrawAsk", { driver, seats: booking.seats })}</Body>
+            <Button
+              busy={busy}
+              label={t("booking.withdraw")}
+              onPress={() => {
+                void withdraw();
+              }}
+            />
+            <Button
+              variant="secondary"
+              disabled={busy}
+              label={t("booking.withdrawKeep")}
+              onPress={() => {
+                setNotice(null);
+                setAsking(false);
+                setKeptAfterAsking(true);
+              }}
+            />
+          </Card>
+        </TakesFocus>
+      ) : (
+        <TakesFocus when={keptAfterAsking}>
+          <Button
+            variant="secondary"
+            label={t("booking.withdraw")}
+            onPress={() => {
+              setNotice(null);
+              setAsking(true);
+            }}
+          />
+        </TakesFocus>
+      )}
+    </View>
+  );
 }
 
 type Paying =
@@ -281,12 +416,14 @@ type Paying =
  */
 function Pay({
   booking,
+  onStart,
   onPaid,
   onStale,
 }: {
   readonly booking: Booking;
+  readonly onStart: () => void;
   readonly onPaid: (booking: Booking) => void;
-  readonly onStale: () => void;
+  readonly onStale: (why: string) => void;
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
@@ -300,8 +437,7 @@ function Pay({
       case "booking_not_payable":
       case "payment_settled":
       case "not_found":
-        setNotice(t("booking.paymentClosed"));
-        onStale();
+        onStale(t("booking.paymentClosed"));
         return;
       case "payments_unavailable":
         setNotice(t("booking.paymentsUnavailable"));
@@ -312,6 +448,7 @@ function Pay({
   };
 
   const start = async () => {
+    onStart();
     setNotice(null);
     setPaying({ stage: "starting" });
     const answer = await session.call(startPaymentRoute, {
@@ -403,4 +540,5 @@ const styles = StyleSheet.create({
   divider: { height: controlOutline / 2 },
   spread: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   pay: { gap: spacing.sm },
+  status: { gap: spacing.sm },
 });

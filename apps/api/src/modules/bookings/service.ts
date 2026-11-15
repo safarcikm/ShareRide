@@ -188,6 +188,10 @@ function present(row: BookingRow, viewerId: string, now: Date): Booking {
       status === "accepted" || status === "expired"
         ? (booking.paymentDueAt?.toISOString() ?? null)
         : null,
+    // Cancelled by the passenger before the driver decided: only a request
+    // can be, and that never counts against them (R5.8).
+    withdrawn:
+      status === "cancelled" && booking.cancelledBy === "passenger" && booking.decidedAt === null,
     driver: { firstName: row.driverName ?? "", colour: peopleColourOf(trip.driverId) },
     passenger: {
       firstName: row.passengerName ?? "",

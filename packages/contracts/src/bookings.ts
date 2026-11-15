@@ -79,6 +79,11 @@ export const bookingSchema = z.object({
    * expired unpaid, the deadline that passed.
    */
   paymentDueAt: timestampSchema.nullable(),
+  /**
+   * A cancelled request the passenger withdrew before the driver answered,
+   * which never counts against them (R5.8); false for every other booking.
+   */
+  withdrawn: z.boolean(),
   driver: z.object({ firstName: z.string(), colour: peopleColourSchema }),
   /** Ratings and reliability come with spec 8; until then every member is new. */
   passenger: z.object({

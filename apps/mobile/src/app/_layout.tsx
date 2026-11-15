@@ -84,6 +84,7 @@ function Navigation() {
         <Stack.Screen name="drive/trips/[id]/review" />
         <Stack.Screen name="drive/trips/[id]/published" />
         <Stack.Screen name="trips/[id]/book" />
+        <Stack.Screen name="bookings/index" />
         <Stack.Screen name="bookings/[id]" />
       </Stack.Protected>
     </Stack>
