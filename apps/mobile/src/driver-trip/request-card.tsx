@@ -7,13 +7,7 @@ import {
   type TripBookings,
 } from "@shareride/contracts";
 import { declineReasons, type DeclineReason } from "@shareride/domain";
-import {
-  formatDuration,
-  formatMoney,
-  formatMonth,
-  type Locale,
-  type Translate,
-} from "@shareride/i18n";
+import { formatDuration, formatMoney, type Locale, type Translate } from "@shareride/i18n";
 import { useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
@@ -28,6 +22,7 @@ import { TakesFocus } from "@/components/takes-focus";
 import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
+import { memberSinceText, monthOf } from "@/people/texts";
 import { PartStop } from "@/trip-details/trip-parts";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -38,15 +33,6 @@ const reasonKeys = {
   luggage: "request.reason.luggage",
   other: "request.reason.other",
 } as const;
-
-/** "Member since November 2026", from the year and month they joined. */
-function memberSinceText(t: Translate, locale: Locale, memberSince: string) {
-  const [year, month] = memberSince.split("-").map(Number);
-  return t("request.memberSince", {
-    month: formatMonth(month ?? 1, locale),
-    year: String(year),
-  });
-}
 
 /**
  * "3 h 20 min left to answer", rounded down to the minute and never below
@@ -139,7 +125,7 @@ export function RequestCard({
         <View style={styles.grow}>
           <Text style={[typography.bodyStrong, { color: palette.text }]}>{name}</Text>
           <Text style={[typography.small, { color: palette.textMuted }]}>
-            {memberSinceText(t, locale, booking.passenger.memberSince)}
+            {memberSinceText(t, locale, monthOf(booking.passenger.memberSince))}
           </Text>
           <View style={styles.row}>
             <Tag kind="warning" label={t("request.noReviews")} />

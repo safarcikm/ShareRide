@@ -1,4 +1,5 @@
-import { updateMeRoute } from "@shareride/contracts";
+import { updateMeRoute, type Me } from "@shareride/contracts";
+import { formatPhoneNumber } from "@shareride/domain";
 import type { Locale } from "@shareride/i18n";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -17,16 +18,18 @@ import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
- * Settings (spec 1, section 3.8), milestone 1 part: language, legal
- * documents, and signing out here or on every device. Signed out, it
+ * Settings (spec 1, section 3.8), milestone 1 part: the private phone
+ * number (spec 16, 3.4), language, legal documents, and signing out here
+ * or on every device. Signed out, it
  * closes back to the menu.
  */
 export default function SettingsScreen() {
-  if (useMe() === null) return <BackToMenu />;
-  return <Settings />;
+  const me = useMe();
+  if (me === null) return <BackToMenu />;
+  return <Settings me={me} />;
 }
 
-function Settings() {
+function Settings({ me }: { readonly me: Me }) {
   const { t } = useLanguage();
   const session = useSession();
   const palette = usePalette();
@@ -66,6 +69,13 @@ function Settings() {
     <Screen>
       <BackButton fallback="/profile" />
       <Title>{t("settings.title")}</Title>
+      {me.phoneNumber === null ? null : (
+        <View style={styles.section}>
+          {heading(t("profile.phone"))}
+          <Body>{formatPhoneNumber(me.phoneNumber)}</Body>
+          <Body>{t("profile.phoneHelp")}</Body>
+        </View>
+      )}
       <View style={styles.section}>
         {heading(t("settings.language"))}
         <LanguageSwitch onSwitch={(locale) => void saveLanguage(locale)} />

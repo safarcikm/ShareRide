@@ -1,29 +1,32 @@
-import type { Me } from "@shareride/contracts";
-import { formatPhoneNumber, spokenLanguages } from "@shareride/domain";
-import { languageNames } from "@shareride/i18n";
+import { driverReadinessRoute, type Me } from "@shareride/contracts";
+import { peopleColourOf } from "@shareride/domain";
 import { router } from "expo-router";
-import type { ReactNode } from "react";
+import { useCallback } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { useMe } from "@/auth/session";
+import { useMe, useSession } from "@/auth/session";
+import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/button";
+import { Card } from "@/components/card";
 import { LanguageSwitch } from "@/components/language-switch";
+import { Row } from "@/components/row";
 import { Screen } from "@/components/screen";
-import { Body, Title } from "@/components/text";
+import { Title } from "@/components/text";
 import { TextLink } from "@/components/text-link";
 import { useLanguage } from "@/i18n/language";
 import { useSaveLanguage } from "@/i18n/use-save-language";
+import { dayOf } from "@/lib/days";
+import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { SignInFirst } from "@/navigation/sign-in-first";
+import { languagesText } from "@/people/languages";
+import { memberSinceText } from "@/people/texts";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
-const isSpokenLanguage = (code: string): code is (typeof spokenLanguages)[number] =>
-  spokenLanguages.some((known) => known === code);
-
 /**
  * Profile, a place of the menu (spec 16, 3.1). Signed in, my profile
- * (spec 1, screen 6): what others see, and the private phone number.
- * Signed out: Sign in, the language, the meeting points and the legal
- * documents.
+ * (spec 16, 3.4): who I am, then rows for my cars, my licence, the meeting
+ * points, Settings and the legal documents. Signed out: Sign in, the
+ * language, the meeting points and the legal documents.
  */
 export default function ProfileScreen() {
   const me = useMe();
@@ -53,74 +56,109 @@ function SignedOut() {
 }
 
 function MyProfile({ me }: { readonly me: Me }) {
-  const { locale, t } = useLanguage();
-  const palette = usePalette();
-  const languages = me.languages
-    .filter(isSpokenLanguage)
-    .map((code) => languageNames[locale][code])
-    .join(", ");
+  const { t } = useLanguage();
+  const session = useSession();
+  const load = useCallback(() => session.call(driverReadinessRoute, {}), [session]);
+  const { value: readiness } = useLoadedOnFocus(load);
+  // Without an answer the row just leaves the value out.
+  const licence =
+    readiness?.ok === true
+      ? readiness.data.items.find((item) => item.item === "licence")?.done
+      : undefined;
   return (
     <Screen>
-      <View style={styles.header}>
-        <Title>{t("profile.title")}</Title>
-        <Button
-          variant="secondary"
-          label={t("settings.open")}
-          onPress={() => {
-            router.push("/settings");
-          }}
-        />
-      </View>
-      <Field label={t("profile.firstName")}>
-        <Text style={[typography.title, styles.name, styles.centre, { color: palette.text }]}>
-          {me.firstName}
-        </Text>
-      </Field>
-      <Field label={t("profile.about")}>
-        <Body>{me.about ?? t("profile.noAbout")}</Body>
-      </Field>
-      {languages === "" ? null : (
-        <Field label={t("profile.languages")}>
-          <Body>{languages}</Body>
-        </Field>
-      )}
-      {me.phoneNumber === null ? null : (
-        <Field label={t("profile.phone")}>
-          <Body>{formatPhoneNumber(me.phoneNumber)}</Body>
-          <Body>{t("profile.phoneHelp")}</Body>
-        </Field>
-      )}
+      <Title>{t("profile.title")}</Title>
+      <Person me={me} />
       <Button
+        variant="secondary"
         label={t("profile.edit")}
         onPress={() => {
           router.push("/profile/edit");
         }}
       />
-      <Button
-        variant="text"
-        label={t("meetingPoints.open")}
-        onPress={() => {
-          router.push("/meeting-points");
-        }}
-      />
+      <TextLink label={t("profile.preview")} href="/profile/preview" />
+      <Card>
+        <Row
+          title={t("profile.myCars")}
+          onPress={() => {
+            router.push("/drive/cars");
+          }}
+        />
+        <Row
+          title={t("driver.ready.licence")}
+          value={
+            licence === undefined
+              ? undefined
+              : t(licence ? "profile.licenceConfirmed" : "profile.licenceNotYet")
+          }
+          onPress={() => {
+            router.push("/drive/licence");
+          }}
+        />
+        <Row
+          title={t("meetingPoints.title")}
+          onPress={() => {
+            router.push("/meeting-points");
+          }}
+        />
+      </Card>
+      <Card>
+        <Row
+          title={t("settings.open")}
+          onPress={() => {
+            router.push("/settings");
+          }}
+        />
+        <Row
+          title={t("profile.legal")}
+          onPress={() => {
+            router.push("/legal");
+          }}
+        />
+      </Card>
+      <Small>{t("profile.inSettings")}</Small>
     </Screen>
   );
 }
 
-function Field({ label, children }: { readonly label: string; readonly children: ReactNode }) {
+/** My avatar, first name, languages and when I joined (3.4 item 1). */
+function Person({ me }: { readonly me: Me }) {
+  const { locale, t } = useLanguage();
   const palette = usePalette();
+  const firstName = me.firstName ?? "";
+  const languages = languagesText(me, locale);
+  const summary = [
+    languages === "" ? null : t("profile.speaks", { languages }),
+    memberSinceText(t, locale, dayOf(new Date(me.memberSince))),
+  ]
+    .filter((part) => part !== null)
+    .join(" · ");
   return (
-    <View style={styles.field}>
-      <Text style={[typography.label, styles.centre, { color: palette.textMuted }]}>{label}</Text>
-      {children}
+    <View style={styles.person}>
+      <Avatar firstName={firstName} colour={peopleColourOf(me.id)} />
+      <Text style={[typography.figure, styles.centre, { color: palette.text }]}>{firstName}</Text>
+      <Small centre>{summary}</Small>
     </View>
   );
 }
 
+function Small({
+  children,
+  centre = false,
+}: {
+  readonly children: string;
+  readonly centre?: boolean;
+}) {
+  const palette = usePalette();
+  return (
+    <Text style={[typography.small, centre ? styles.centre : null, { color: palette.textMuted }]}>
+      {children}
+    </Text>
+  );
+}
+
 const styles = StyleSheet.create({
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  name: { fontSize: 22, lineHeight: 28 },
-  field: { gap: spacing.xs },
+  person: { alignItems: "center", gap: spacing.xs },
   links: { gap: spacing.sm, paddingTop: spacing.lg },
   centre: { textAlign: "center" },
 });

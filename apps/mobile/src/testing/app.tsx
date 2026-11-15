@@ -5,7 +5,7 @@
 //   jest.mock("@/auth/api", () => jest.requireActual("@/testing/app").mockApiModule);
 //   jest.mock("@/auth/token-store", () => jest.requireActual("@/testing/app").mockTokenStoreModule);
 import type { ApiClient } from "@shareride/api-client";
-import type { Me } from "@shareride/contracts";
+import type { DriverReadiness, Me } from "@shareride/contracts";
 import { renderRouter } from "expo-router/testing-library";
 import { createFakeClient, ok, testMe, tokens, type FakeClient } from "./fake-client";
 import { memoryTokenStore } from "./memory-token-store";
@@ -49,13 +49,26 @@ export async function renderApp(
     currentClient.answer("/v1/auth/refresh", () => ok(200, tokens(1)));
     currentClient.answer("/v1/me", () => ok(200, me));
   }
-  // My rides and Your next ride on Find, once signed in: nothing, unless a test says otherwise.
+  // Once signed in, unless a test says otherwise: nothing in My rides and
+  // Your next ride, and a new driver for the licence row on Profile.
   currentClient.answer("/v1/me/bookings", () => ok(200, { bookings: [] }));
   currentClient.answer("/v1/me/trips", () => ok(200, { trips: [] }));
+  currentClient.answer("/v1/me/driver-readiness", () => ok(200, newDriver));
   options.setUp?.(currentClient);
   const result = await renderRouter("./src/app", { initialUrl });
   return { ...result, client: currentClient, store };
 }
+
+/** A driver who has done nothing yet: no photo, car or licence. */
+export const newDriver: DriverReadiness = {
+  ready: false,
+  items: [
+    { item: "photo", done: false, blocking: false },
+    { item: "car", done: false, blocking: true },
+    { item: "licence", done: false, blocking: true },
+  ],
+  licenceDeclaredAt: null,
+};
 
 /** An account that has finished signing up. */
 export const completeMe: Me = {
