@@ -124,7 +124,7 @@ Milestone 4: booking and requests
 - [x] Requests and the trip view for drivers
 
 Milestone 5: chat and notifications
-([plan](../plans/2026-11-15-milestone-5-chat-and-notifications.md), proposed
+([plan](../plans/2026-11-15-milestone-5-chat-and-notifications.md), approved
 2026-11-15)
 
 - [ ] Chat and notification rules in the domain

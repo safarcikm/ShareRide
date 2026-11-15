@@ -1,6 +1,7 @@
 # Milestone 5 plan: chat and notifications
 
-**Owner:** Martin · **Date:** 2026-11-15 · **Status:** Proposed
+**Owner:** Martin · **Date:** 2026-11-15 · **Status:** Approved by Martin
+(2026-11-15: all three choices in section 3 accepted)
 
 Lets the driver and the passenger reach each other through ShareRide, and
 tells them at once when something happens to a booking. It implements
@@ -60,7 +61,7 @@ When this milestone is done, on the web and on an Android development build:
 
 ## 3. Decisions for Martin
 
-| # | Choice | Recommendation | Why | Alternative |
+| # | Choice | Decision (accepted) | Why | Alternative |
 | - | ------ | -------------- | --- | ----------- |
 | 1 | Where conversations live | **A fifth tab, "Messages"**, with the unread count as its badge, added once the new tab bar is in. Each booking and the driver's trip page also open their conversation | Spec 7 (3.1, item 9) asks for a badge on a tab; the approved four tabs (Find, My rides, Offer, Profile) have no place for it, and the UX work confirms a fifth tab fits | No tab: conversations only from each booking and trip, with the unread count on "My rides". One less tab, but a message is harder to find |
 | 2 | Where notifications are sent from | **Inside the API process**, every 5 seconds, from our own outbox and job tables in PostgreSQL. A setting (`WORKER=off`) lets a separate worker service take over later without code changes | ADR 0004's queue in PostgreSQL, with no new service to pay for or library to add; staging's API is always on. Writing the event in the same transaction as the booking is plain SQL with our tables | A separate Render background worker now (another always-on service), or the pg-boss library (a new dependency with its own tables and connection, harder to write to in our transactions) |
@@ -81,33 +82,41 @@ delivery log kept 90 days and messages 12 months after the trip.
 Pure functions in `packages/domain/src/chat/` and
 `packages/domain/src/notifications/`, with unit tests:
 
-- `notifications/settings.ts`: `NotificationSettings` and
-  `defaultNotificationSettings` with the values above
-  (`chatCloseAfterDays: 7`, `reminderEveningAt: { hour: 18, minute: 0 }`,
-  `reminderBeforeBoardingMinutes: 60`, `smsWindowHours: 24`,
-  `unreadEmailAfterMinutes: 15`, `unreadEmailEveryMinutes: 60`,
-  `chatRateLimitPerMinute: 10`, `smsDailyLimit: 5`,
-  `payReminderBeforeMinutes: 10`, `retryForMinutes: 60`).
+- `chat/settings.ts` and `notifications/settings.ts`: `ChatSettings`
+  (`closeAfterDays: 7`, `messageMaxLength: 1000`, `rateLimitPerMinute:
+  10`) and `NotificationSettings` (`reminderEveningAt: { hour: 18, minute:
+  0 }`, `reminderBeforeMinutes: 60`, `smsWindowHours: 24`, `smsDailyLimit:
+  5`, `unreadEmailAfterMinutes: 15`, `unreadEmailEveryMinutes: 60`,
+  `payReminderBeforeMinutes: 10`, `retryForMinutes: 60`), with their
+  defaults.
 - `chat/conversation.ts`: `conversationWindow({ confirmedAt, arrivesAt },
   settings) → { opensAt, closesAt }` (closes 7 days after the trip's last
   planned stop) and `canWrite(window, now)`; closed exactly at `closesAt`.
-- `chat/messages.ts`: `quickMessages` (`late` with minutes 5, 10, 15 or 30;
-  `atPoint`, `onMyWay`, `whereAreYou`, `seeYou`, `thanks`) and
-  `checkMessage(input) → Result<MessageBody, MessageProblem>`: problems
-  `empty` (only spaces), `too_long` (over 1 000 characters, counted as the
-  person sees them), `unknown_quick_message`, `invalid_minutes`. Free text
-  keeps phone numbers, emails and links (spec 7, decision 3).
-- `notifications/catalogue.ts`: `notificationKinds`, one per row of 3.3,
-  and `recipientsOf(event)` and `channelsOf(kind, recipient)`: push yes or
-  no, email `always`, `fallback` or `never`, and SMS through
-  `smsAllowed({ kind, role, boardsAt, now, sentToday })` (passengers only,
-  within 24 hours of boarding, the four events of 3.4, at most 5 a day).
-- `notifications/reminders.ts`: `passengerReminders({ boardsAt,
-  confirmedAt })` and `driverReminders({ departsAt, now })` give the
-  reminders still to come, each `{ kind, at }`: 18:00 the day before in
+- `chat/messages.ts`: `quickMessageKeys` (`late` with `lateMinutes` 5, 10,
+  15 or 30; `atPoint`, `onMyWay`, `whereAreYou`, `seeYou`, `thanks`),
+  `systemLineKeys` (`opened` for now) and `checkMessage(input, settings) →
+  Result<MessageBody, MessageProblem>`: problems `empty` (only spaces),
+  `too_long` (over 1 000 characters, counted as the booking message is),
+  `unknown_quick_message`, `invalid_minutes`. Free text keeps phone
+  numbers, emails and links (spec 7, decision 3).
+- `notifications/catalogue.ts`: `notificationKinds` with their
+  `notificationRules` (push yes or no, email `always`, `fallback` or
+  `never`, SMS yes or no), one or more kinds per row of 3.3;
+  `notificationsFor(event)` gives each kind and whether it goes to the
+  driver or the passenger; `channelsFor(kind, recipient, now, settings)`
+  says, per channel, send or skip with the reason (`no_device`,
+  `no_email`, `has_push`, `no_phone`, `outside_sms_window`, `sms_limit`).
+  SMS goes only to passengers, from 24 hours before boarding until
+  boarding, at most 5 a day (`startOfIcelandDay` in `time.ts` starts the
+  day).
+- `notifications/schedule.ts`: `reminderTimes({ startsAt, since },
+  settings)` gives the reminders still to come for a boarding or a
+  departure, each `{ which, at }`: 18:00 the day before in
   `Atlantic/Reykjavik` (with `inIceland` and `fromIceland`) and 60 minutes
-  before. A reminder whose time has passed when the booking is confirmed is
-  skipped.
+  before. A reminder whose time has passed at `since` is skipped. Also
+  `requestHalfwayAt`, `payReminderAt` (none for a window of 10 minutes or
+  less) and `unreadSummaryAt` (15 minutes after the message, an hour after
+  the last summary).
 
 Quick messages and system lines are stored as keys with parameters and put
 into words by whoever shows them: the app in its language, the worker in
@@ -297,20 +306,20 @@ merge.
 
 ### PR 1: `docs(plans)`: this plan
 
-- [ ] This plan, the roadmap and the plans index
+- [x] This plan, the roadmap and the plans index
 
 ### PR 2: `feat(chat)`: chat and notification rules in the domain
 
-- [ ] `notifications/settings.ts`; `chat/conversation.ts` (open at
+- [ ] The settings; `chat/conversation.ts` (open at
       confirmation, closed exactly 7 days after arrival);
       `chat/messages.ts` (1 and 1 000 characters, 1 001 refused, only spaces
       refused, every quick message and the four late minutes)
 - [ ] `notifications/catalogue.ts`: a test per row of 3.3 for who is told
       and on which channel; the SMS window at 24 hours exactly and one
       minute more, a driver never, the sixth SMS of a day refused
-- [ ] `notifications/reminders.ts`: confirmed at 17:59 and 18:01 the day
+- [ ] `notifications/schedule.ts`: confirmed at 17:59 and 18:01 the day
       before; confirmed 59 and 61 minutes before boarding; departing just
-      after midnight
+      after midnight; the halfway, pay and unread email times
 - [ ] Quick message and system line texts in both languages
       (`packages/i18n`), rendered for each key
 - Verify: `pnpm --filter @shareride/domain test`
@@ -412,7 +421,8 @@ What the spec implies and a person would meet first, each with its test:
 
 ## 7. Martin's steps
 
-1. Accept or change the choices in section 3.
+1. Accept or change the choices in section 3 (done: all accepted on
+   2026-11-15).
 2. Try each PR on the web as it merges: two browsers (or one private
    window) let two people chat.
 3. For push on Android, before PR 6 can be tried: the expo.dev project ID
