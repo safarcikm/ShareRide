@@ -8,7 +8,8 @@ export type FakeAnswer = (input: Record<string, unknown>) => unknown;
 export interface FakeClient extends ApiClient {
   /** Calls made, oldest first: route path and input. */
   readonly calls: { path: string; input: Record<string, unknown> }[];
-  answer(path: string, answer: FakeAnswer): void;
+  /** With a method, only that method's calls; such an answer comes first. */
+  answer(path: string, answer: FakeAnswer, method?: string): void;
 }
 
 export const testMe: Me = {
@@ -43,13 +44,13 @@ export function createFakeClient(): FakeClient {
   const calls: FakeClient["calls"] = [];
   return {
     calls,
-    answer(path, answer) {
-      answers.set(path, answer);
+    answer(path, answer, method) {
+      answers.set(method === undefined ? path : `${method} ${path}`, answer);
     },
     call<R extends RouteDefinition>(route: R, input: object) {
       const values = input as Record<string, unknown>;
       calls.push({ path: route.path, input: values });
-      const answer = answers.get(route.path);
+      const answer = answers.get(`${route.method} ${route.path}`) ?? answers.get(route.path);
       if (answer === undefined) throw new Error(`No fake answer for ${route.path}`);
       return Promise.resolve(answer(values) as CallResult<R>);
     },

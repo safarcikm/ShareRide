@@ -7,19 +7,15 @@ import {
   formatMoney,
   formatShortDay,
 } from "@shareride/i18n";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
+import { StyleSheet, Text, View } from "react-native";
 import { Card } from "@/components/card";
 import { Tag } from "@/components/tag";
 import { useLanguage } from "@/i18n/language";
 import { dayOf, isoDay } from "@/lib/days";
+import { tripHref } from "@/trip-details/trip-link";
 import { controlOutline, radii, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
-
-/**
- * On the web a label counts only on an element with a role; a group keeps
- * the card's parts readable one by one as well.
- */
-const groupRole: object = Platform.OS === "web" ? { role: "group" } : {};
 
 /** The searched places, for "1.3 km from Kringlan" under a nearby stop. */
 export interface SearchedNames {
@@ -32,7 +28,7 @@ export interface SearchedNames {
  * results board): times and stops of the part, the whole trip, the price
  * for one seat and for the seats searched, the booking mode, the driver
  * and the seats left. Other passengers are never shown, not even as taken
- * seats (spec 4, section 7). Opening the trip comes with trip details.
+ * seats (spec 4, section 7). The card opens the trip for this part.
  */
 export function ResultCard({
   result,
@@ -98,14 +94,19 @@ export function ResultCard({
 
   const muted = { color: palette.textMuted };
   return (
-    <Card>
-      <View
-        accessible
-        accessibilityLabel={label}
-        {...groupRole}
-        style={styles.content}
-        testID="trip-result"
-      >
+    <Card
+      accessibilityLabel={label}
+      onPress={() => {
+        router.push(
+          tripHref(
+            result.tripId,
+            { board: result.board.position, alight: result.alight.position },
+            seats,
+          ),
+        );
+      }}
+    >
+      <View style={styles.content} testID="trip-result">
         {day === null ? null : <Text style={[typography.caption, muted]}>{day}</Text>}
         <View style={styles.top}>
           <View style={styles.stops}>

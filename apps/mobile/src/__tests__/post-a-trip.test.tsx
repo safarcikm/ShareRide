@@ -1,4 +1,5 @@
 import { fireEvent, screen, within } from "expo-router/testing-library";
+import { shareLink } from "@/lib/share";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
@@ -16,6 +17,9 @@ jest.mock("@/lib/preferences", () => ({
 }));
 // Saturday 14 November 2026, noon in Iceland.
 jest.mock("@/lib/clock", () => ({ now: () => new Date("2026-11-14T12:00:00Z") }));
+jest.mock("@/lib/share", () => ({ shareLink: jest.fn(() => Promise.resolve("copied")) }));
+
+const mockedShare = shareLink as jest.Mock;
 
 async function open(url: string, start: Parameters<typeof tripsApi>[1] = []) {
   let api: ReturnType<typeof tripsApi> | undefined;
@@ -120,6 +124,15 @@ describe("Posting a trip (spec 3)", () => {
     expect(await screen.findByRole("header", { name: "Your trip is published" })).toBeVisible();
     expect(screen).toHavePathname(`/drive/trips/${id}/published`);
     expect(screen.getByText("People can now find it and book a seat.")).toBeVisible();
+
+    // The driver shares the trip's page, or sees it as passengers do.
+    await fireEvent.press(screen.getByRole("button", { name: "Share the trip" }));
+    expect(mockedShare).toHaveBeenCalledWith(
+      expect.stringMatching(new RegExp(`^http://localhost:3000/trips/${id}\\?from=0&to=\\d$`)),
+      expect.stringMatching(/ on ShareRide$/),
+    );
+    expect(await screen.findByText("Link copied. Paste it wherever you like.")).toBeVisible();
+    expect(screen.getByRole("link", { name: "See the trip page" })).toBeVisible();
   });
 
   it("keeps the new draft's route when the driver goes back to it", async () => {

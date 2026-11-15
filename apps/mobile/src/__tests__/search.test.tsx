@@ -82,12 +82,13 @@ describe("Searching for a ride (spec 4)", () => {
     expect(searchesOf(client)).toEqual([
       { from: borgarnes.id, to: blonduos.id, seats: 2, sort: "departure" },
     ]);
-    const card = await screen.findByTestId("trip-result");
-    expect(card).toHaveAccessibleName(
-      "Leaves Borgarnes at 10:00, arrives at Blönduós at 12:05, 2 h 5 min, 2,900 ISK per seat, " +
+    // The card opens the trip, and says everything on it in one line.
+    const card = await screen.findByRole("button", {
+      name:
+        "Leaves Borgarnes at 10:00, arrives at Blönduós at 12:05, 2 h 5 min, 2,900 ISK per seat, " +
         "5,800 ISK for 2 seats, Part of BSÍ bus terminal → Hof, Akureyri, Request, " +
         "Anna, New driver, 3 seats left",
-    );
+    });
     expect(within(card).getByText("2,900 ISK")).toBeVisible();
     expect(screen.getByRole("header", { name: "Sunday 15 November" })).toBeVisible();
     expect(screen.getByText("That's every trip found.")).toBeVisible();
@@ -219,7 +220,11 @@ describe("Search results (spec 4, 3.4)", () => {
   });
 
   it("groups by day when sorted by time, and shows the day on each trip by price", async () => {
-    const results = [resultOn("2026-11-15"), resultOn("2026-11-16"), resultOn("2026-11-16")];
+    const results = [
+      resultOn("2026-11-15"),
+      resultOn("2026-11-16"),
+      resultOn("2026-11-16", { tripId: "0190a1d6-0000-7000-8000-0000000611b6" }),
+    ];
     await openResults("", { results: () => results });
     expect(await screen.findByRole("header", { name: "Sunday 15 November" })).toBeVisible();
     expect(screen.getByRole("header", { name: "Monday 16 November" })).toBeVisible();

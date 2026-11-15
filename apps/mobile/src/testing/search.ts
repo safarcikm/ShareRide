@@ -1,7 +1,7 @@
 // Search results as the API returns them, and a fake search API, for screen
 // tests. Not used by the app itself.
-import type { TripSearchResult } from "@shareride/contracts";
-import { ok, type FakeClient } from "./fake-client";
+import type { TripDetails, TripSearchResult } from "@shareride/contracts";
+import { failure, ok, type FakeClient } from "./fake-client";
 import { bsi, hof, thorlakshofn } from "./meeting-points";
 import { blonduos, borgarnes, tripPoints } from "./trips";
 
@@ -81,3 +81,83 @@ export function searchApi(client: FakeClient, answers: SearchAnswers = {}) {
 /** The query of each trip search made, oldest first. */
 export const searchesOf = (client: FakeClient, path = "/v1/trips/search") =>
   client.calls.filter((call) => call.path === path).map((call) => call.input["query"]);
+
+/** The north trip's stops, a stretch apiece priced 1100, 2900 and 2000 kr. */
+const northStops = [
+  { meetingPoint: bsi, plannedAt: "2026-11-15T09:00:00.000Z" },
+  { meetingPoint: borgarnes, plannedAt: "2026-11-15T10:00:00.000Z" },
+  { meetingPoint: blonduos, plannedAt: "2026-11-15T12:05:00.000Z" },
+  { meetingPoint: hof, plannedAt: "2026-11-15T14:00:00.000Z" },
+].map((stop, position) => ({ ...stop, position }));
+const stretchPrices = [1100, 2900, 2000];
+
+/** The north trip opened for a part, as the API answers it; `changes` override the rest. */
+export function northTrip(
+  part: { board: number; alight: number; seats?: number },
+  changes: Partial<Omit<TripDetails, "part">> & { part?: Partial<TripDetails["part"]> } = {},
+): TripDetails {
+  const seats = part.seats ?? 1;
+  const price = stretchPrices.slice(part.board, part.alight).reduce((sum, kr) => sum + kr, 0);
+  const { part: partChanges, ...rest } = changes;
+  return {
+    id: northResult.tripId,
+    stops: northStops,
+    part: {
+      board: part.board,
+      alight: part.alight,
+      seats,
+      freeSeats: 2,
+      pricePerSeat: { amount: price, currency: "ISK" },
+      total: { amount: price * seats, currency: "ISK" },
+      state: seats > 2 ? "full" : "open",
+      ...partChanges,
+    },
+    seatsOffered: 3,
+    driver: { firstName: "Anna", colour: 1 },
+    car: { make: "Toyota", model: "Yaris", colour: "white" },
+    preferences: {
+      luggage: "suitcase",
+      pets: "ask",
+      smoking: "no",
+      childSeat: false,
+      chat: "some",
+    },
+    note: "",
+    bookingMode: "approval",
+    ...rest,
+  };
+}
+
+/**
+ * Trip details for the north trip, for any part asked for; `answer` can
+ * replace the trip or the whole answer.
+ */
+export function tripDetailsApi(
+  client: FakeClient,
+  answer: (query: Record<string, unknown>) => unknown = (query) => {
+    const board = Number(query["fromStop"] ?? 0);
+    const alight = Number(query["toStop"] ?? northStops.length - 1);
+    if (board >= alight || alight >= northStops.length) {
+      return failure(400, "validation_failed", {
+        details: [{ path: board >= alight ? "fromStop" : "toStop", issue: "invalid_part" }],
+      });
+    }
+    return ok(200, northTrip({ board, alight, seats: Number(query["seats"] ?? 1) }));
+  },
+) {
+  client.answer(
+    "/v1/trips/{id}",
+    (input) => {
+      const { id } = input["params"] as { id: string };
+      // As the server: an address that is not a trip id fails its check.
+      if (!/^[0-9a-f-]{36}$/.test(id)) {
+        return failure(400, "validation_failed", {
+          details: [{ path: "id", issue: "invalid_format" }],
+        });
+      }
+      if (id !== northResult.tripId) return failure(404, "not_found");
+      return answer(input["query"] as Record<string, unknown>);
+    },
+    "get",
+  );
+}
