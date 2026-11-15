@@ -41,7 +41,7 @@ export default function LicenceScreen() {
 
   return (
     <Screen>
-      <BackButton fallback="/drive" />
+      <BackButton fallback="/offer" />
       <Title>{t("licence.title")}</Title>
       <Body>{t("licence.intro")}</Body>
       <View style={styles.group}>

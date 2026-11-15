@@ -13,9 +13,8 @@ const schemes = [
     locale: "en-GB",
     focus: "rgb(31, 95, 139)",
     primary: "rgb(47, 107, 79)",
-    title: "Share the ride across Iceland",
+    title: "Where are you going?",
     language: "Change the language to Icelandic",
-    signIn: "Sign in",
     findRide: "Find a ride",
     offerRide: "Offer a ride",
     back: "Back",
@@ -27,9 +26,8 @@ const schemes = [
     locale: "is-IS",
     focus: "rgb(143, 203, 230)",
     primary: "rgb(124, 196, 158)",
-    title: "Samferða um allt Ísland",
+    title: "Hvert ertu að fara?",
     language: "Skipta yfir í ensku",
-    signIn: "Skrá inn",
     findRide: "Finna far",
     offerRide: "Bjóða far",
     back: "Til baka",
@@ -101,23 +99,28 @@ for (const scheme of schemes) {
         fullPage: true,
       });
 
-    test("welcome: fitted buttons, focus ring and fonts", async ({ page }, testInfo) => {
+    test("Find: fitted buttons, focus ring and fonts", async ({ page }, testInfo) => {
       await page.goto("/");
       const title = page.getByRole("heading", { name: scheme.title });
       const language = page.getByRole("button", { name: scheme.language });
-      const signIn = page.getByRole("button", { name: scheme.signIn, exact: true });
       const findRide = page.getByRole("button", { name: scheme.findRide, exact: true });
       const offerRide = page.getByRole("button", { name: scheme.offerRide, exact: true });
       await expect(title).toBeVisible();
       await expectFonts(page);
       await screenshot(page, testInfo.project, "welcome");
 
-      // Sign in sits at the left and the language switch at the right; the
-      // buttons fit their labels and sit in the middle, under the centred title.
+      // On phones the language switch sits at the right of the column; wide
+      // screens have it in the top bar. The buttons fit their labels and sit
+      // in the middle, under the centred title.
       const column = await box(title);
       const languageBox = await box(language);
-      expect(languageBox.x + languageBox.width).toBeCloseTo(column.x + column.width, 0);
-      expect((await box(signIn)).x).toBeCloseTo(column.x, 0);
+      if ((page.viewportSize()?.width ?? 0) < 900) {
+        expect(languageBox.x + languageBox.width).toBeCloseTo(column.x + column.width, 0);
+      } else {
+        await expect(
+          page.getByTestId("top-bar").getByRole("button", { name: scheme.language }),
+        ).toBeVisible();
+      }
       for (const button of [findRide, offerRide]) {
         const found = await box(button);
         expect(found.width).toBeLessThan(column.width);

@@ -64,7 +64,7 @@ function driver(client: FakeClient, start: { cars?: Vehicle[]; licence?: string 
 
 async function openDrive(start: Parameters<typeof driver>[1] = {}) {
   let state: ReturnType<typeof driver> | undefined;
-  const app = await renderApp("/drive", {
+  const app = await renderApp("/offer", {
     me: completeMe,
     setUp: (client) => {
       state = driver(client, start);
@@ -90,16 +90,16 @@ describe("Before you publish (spec 3, 3.1)", () => {
     expect(screen.queryByText("Everything is ready for your first trip.")).toBeNull();
   });
 
-  it("opens from my profile", async () => {
+  it("opens from Offer in the menu", async () => {
     await renderApp("/", { me: completeMe, setUp: (client) => driver(client) });
-    await fireEvent.press(await screen.findByRole("button", { name: "Offer a ride" }));
+    await fireEvent.press(await screen.findByRole("tab", { name: "Offer" }));
     expect(await screen.findByRole("header", { name: "Before you publish" })).toBeVisible();
-    expect(screen).toHavePathname("/drive");
+    expect(screen).toHavePathname("/offer");
   });
 
   it("offers to try again when it does not load", async () => {
     let down = true;
-    await renderApp("/drive", {
+    await renderApp("/offer", {
       me: completeMe,
       setUp: (client) => {
         driver(client);
@@ -122,8 +122,9 @@ describe("Before you publish (spec 3, 3.1)", () => {
   });
 
   it("is only for signed-in people", async () => {
-    await renderApp("/drive");
-    expect(await screen.findByText("Share the ride across Iceland")).toBeVisible();
+    await renderApp("/offer");
+    expect(await screen.findByRole("button", { name: "Sign in to offer a ride" })).toBeVisible();
+    expect(screen.queryByRole("header", { name: "Before you publish" })).toBeNull();
   });
 });
 
@@ -144,7 +145,7 @@ describe("Add a car (spec 3, 3.2)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Save car" }));
 
     expect(await screen.findByText("Toyota Yaris, blue")).toBeVisible();
-    expect(screen).toHavePathname("/drive");
+    expect(screen).toHavePathname("/offer");
     expect(
       app.client.calls.find((call) => call.path === "/v1/me/vehicles" && "body" in call.input)
         ?.input,
@@ -278,7 +279,7 @@ describe("Driving licence (spec 3, 3.3)", () => {
     );
     await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
     expect(await screen.findByText("Confirmed on 14 November 2026")).toBeVisible();
-    expect(screen).toHavePathname("/drive");
+    expect(screen).toHavePathname("/offer");
     expect(
       app.client.calls.find((call) => call.path === "/v1/me/driver-licence-declaration")?.input,
     ).toEqual({ body: { declared: true }, accessToken: "sr_at_access-1" });

@@ -248,8 +248,10 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
       Promise.resolve(name === "pending-booking" ? JSON.stringify(old) : null),
     );
     await openBooking({}, "/");
-    expect(await screen.findByText("My profile")).toBeVisible();
-    expect(screen).toHavePathname("/profile");
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(screen).toHavePathname("/");
+    // Taken and forgotten, so it never leads anywhere later.
+    expect(mockedWrite).toHaveBeenLastCalledWith("pending-booking", "");
   });
 
   it("leads someone who already has a booking on the trip to it", async () => {
@@ -453,7 +455,7 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "1" });
     // The trip page was the one beneath, so Back leaves the trip.
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
-    expect(screen).toHavePathname("/search");
+    expect(screen).toHavePathname("/");
   });
 
   it("shows a changed price, names it on the button and books at it", async () => {

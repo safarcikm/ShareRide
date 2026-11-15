@@ -70,7 +70,7 @@ export default function BookingScreen() {
   if (answer === undefined) {
     return (
       <Screen>
-        <BackButton fallback="/search" />
+        <BackButton fallback="/my-rides" />
         <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
       </Screen>
     );
@@ -78,7 +78,7 @@ export default function BookingScreen() {
   if (!answer.ok) {
     return (
       <Screen>
-        <BackButton fallback="/search" />
+        <BackButton fallback="/my-rides" />
         <Notice
           message={
             answer.status === 404 || answer.status === 400

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { english, icelandic, signIn, signUp } from "./support/account";
+import { english, icelandic, menuLink, signIn, signUp } from "./support/account";
 
 // Journeys from spec 1 (section 9) on the web build, against the test API.
 
@@ -10,6 +10,8 @@ test.describe("sign up in English", () => {
     const { text } = await signUp(page, english, "Anna");
     expect(text).toContain("is your ShareRide code");
     await page.reload();
+    await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+    await menuLink(page, english.profileTab).click();
     await expect(page.getByRole("heading", { name: english.myProfile })).toBeVisible();
   });
 });
@@ -32,13 +34,20 @@ test.describe("sign out on all devices", () => {
     const otherDevice = await browser.newContext({ locale: "en-GB" });
     const other = await otherDevice.newPage();
     await signIn(other, english, phone);
+    // Signing in leads to Find, with the menu as it was.
+    await expect(other.getByRole("heading", { name: english.findTitle })).toBeVisible();
+    await menuLink(other, english.profileTab).click();
     await expect(other.getByRole("heading", { name: english.myProfile })).toBeVisible();
 
     await other.getByRole("button", { name: "Settings" }).click();
     await other.getByRole("button", { name: "Sign out on all devices" }).click();
+    await expect(other.getByRole("heading", { name: english.findTitle })).toBeVisible();
+    await menuLink(other, english.profileTab).click();
     await expect(other.getByRole("button", { name: english.signIn, exact: true })).toBeVisible();
 
     await page.reload();
+    await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+    await menuLink(page, english.profileTab).click();
     await expect(page.getByRole("button", { name: english.signIn, exact: true })).toBeVisible();
     await otherDevice.close();
   });

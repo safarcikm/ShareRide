@@ -34,7 +34,7 @@ async function renderBrokenScreen() {
     if (broken) throw error;
     return <Text>Screen works</Text>;
   }
-  await renderRouter({ _layout: RootLayout, index: Screen }, { initialUrl: "/" });
+  await renderRouter({ _layout: RootLayout, "(tabs)/index": Screen }, { initialUrl: "/" });
   return {
     error,
     mend: () => {

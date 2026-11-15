@@ -3,17 +3,18 @@ import { router } from "expo-router";
 import { useCallback, type ReactNode } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
-import { useSession } from "@/auth/session";
-import { BackButton } from "@/components/back-button";
+import { useMe, useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { Body, Heading, Title } from "@/components/text";
+import { offerRide } from "@/drive/offer-ride";
 import { ReadinessList } from "@/driving/readiness-list";
 import { carSummary } from "@/driving/texts";
 import { useLanguage } from "@/i18n/language";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
+import { SignInFirst } from "@/navigation/sign-in-first";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
@@ -22,11 +23,33 @@ const addCar = () => {
 };
 
 /**
+ * Offer, a place of the menu (spec 16, 3.1). Signed out, it asks to sign in,
+ * keeping the offer so Offer opens after signing up.
+ */
+export default function OfferScreen() {
+  const { t } = useLanguage();
+  const me = useMe();
+  if (me === null) {
+    return (
+      <SignInFirst
+        title={t("driver.offerRide")}
+        body={t("nav.offerSignedOut")}
+        signInLabel={t("nav.offerSignIn")}
+        onSignIn={() => {
+          offerRide(null);
+        }}
+      />
+    );
+  }
+  return <ReadyToDrive />;
+}
+
+/**
  * Ready to drive (spec 3, screen 1): what is still needed before the first
  * trip, each with a way to do it, and the driver's cars. Loads again when the
  * driver comes back from adding a car or confirming the licence.
  */
-export default function DriveScreen() {
+function ReadyToDrive() {
   const { t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
@@ -82,7 +105,6 @@ export default function DriveScreen() {
 
   return (
     <Screen>
-      <BackButton fallback="/profile" />
       <Title>{t("driver.ready.title")}</Title>
       {content}
     </Screen>

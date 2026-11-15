@@ -29,18 +29,18 @@ describe("Fonts at start", () => {
     mockedUseFonts.mockReturnValue([false, null]);
     await renderApp("/");
     expect(screen.getByLabelText("Loading")).toBeOnTheScreen();
-    expect(screen.queryByText("Share the ride across Iceland")).toBeNull();
+    expect(screen.queryByText("Where are you going?")).toBeNull();
   });
 
   it("opens the app with system fonts when loading fails", async () => {
     mockedUseFonts.mockReturnValue([false, new Error("offline")]);
     await renderApp("/");
-    expect(await screen.findByText("Share the ride across Iceland")).toBeVisible();
+    expect(await screen.findByText("Where are you going?")).toBeVisible();
   });
 
   it("opens the app once the fonts are loaded", async () => {
     mockedUseFonts.mockReturnValue([true, null]);
     await renderApp("/");
-    expect(await screen.findByText("Share the ride across Iceland")).toBeVisible();
+    expect(await screen.findByText("Where are you going?")).toBeVisible();
   });
 });

@@ -1,4 +1,3 @@
-import { defaultTripSettings } from "@shareride/domain";
 import { capitalised, formatShortDay } from "@shareride/i18n";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -6,7 +5,6 @@ import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Screen } from "@/components/screen";
-import { Stepper } from "@/components/stepper";
 import { Heading, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
@@ -26,7 +24,6 @@ import { usePalette } from "@/theme/use-palette";
  */
 export default function SearchForm() {
   const { locale, t } = useLanguage();
-  const [seats, setSeats] = useState(1);
   const [recent, setRecent] = useState<SearchQuery[]>([]);
 
   useEffect(() => {
@@ -53,7 +50,7 @@ export default function SearchForm() {
           main
           label={t("search.submit")}
           onPress={() => {
-            route.submit(seats);
+            route.submit();
           }}
         />
       }
@@ -63,16 +60,6 @@ export default function SearchForm() {
       </View>
       <Title>{t("search.title")}</Title>
       {route.fields}
-      <Stepper
-        label={t("search.seats")}
-        value={seats}
-        min={1}
-        max={defaultTripSettings.maxSeats}
-        onChange={setSeats}
-        valueText={t("search.seatCount", { count: seats })}
-        fewerLabel={t("search.fewerSeats")}
-        moreLabel={t("search.moreSeats")}
-      />
       {recent.length === 0 ? null : (
         <>
           <Heading>{t("search.recent")}</Heading>

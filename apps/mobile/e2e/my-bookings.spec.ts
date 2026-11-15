@@ -105,14 +105,14 @@ for (const journey of journeys) {
       await expect.poll(() => focused(page)).toContain(journey.withdrawn);
       await expect(page.getByRole("button", { name: journey.withdraw })).toBeHidden();
 
-      // My bookings: nothing coming up; the request is under Past.
-      await page.goto("/profile");
-      await page.getByRole("button", { name: journey.myBookings }).click();
+      // My rides: nothing coming up; the request is under Past.
+      await page.goto("/my-rides");
+      await expect(page.getByRole("heading", { name: journey.myBookings })).toBeVisible();
       await expect(
         page.getByText(journey.noneUpcoming, { exact: true }).filter({ visible: true }),
       ).toBeVisible();
       await page.getByRole("radio", { name: journey.past }).click();
-      await expect(page).toHaveURL(/\/bookings\?when=past$/);
+      await expect(page).toHaveURL(/\/my-rides\?when=past$/);
       const card = page.getByRole("button", {
         name: new RegExp(`, ${journey.withdrawnTag}, Sigga, `),
       });

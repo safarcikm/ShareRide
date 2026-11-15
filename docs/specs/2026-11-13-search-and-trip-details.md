@@ -2,6 +2,10 @@
 
 **Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
+Amended by [spec 16](2026-11-15-one-home-and-simpler-flows.md): the seats are
+in the search form on Find, and ride cards say "Book instantly" or "Driver
+approves" (3.2).
+
 Features: D1 Search trips, including partial routes, D2 Trip details, D6 Help
 when nothing matches ([features](../product/features.md)).
 Related: [pricing and seats](../product/pricing-and-seats.md) (rules P1, S3,

@@ -201,6 +201,11 @@ export const sizes = {
   wheelWidth: 64,
   /** Narrowest the main action of a bottom bar gets before it moves under the price. */
   barAction: 200,
+  /** A place of the menu's tab bar, and the pill behind its icon when chosen. */
+  tab: 56,
+  tabPill: 56,
+  /** The logo beside the name in the top bar on wide screens. */
+  logoSmall: 36,
 } as const;
 
 /** Width of the outline on inputs, tick boxes and chips. */

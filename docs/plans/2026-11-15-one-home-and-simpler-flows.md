@@ -97,7 +97,7 @@ rides.
   (null when the account is ready). `offerRide` goes to `/offer`.
 - Produces: My rides at `/my-rides?when=past`, as `/bookings?when=past` was.
 
-- [ ] **Step 1: Write the failing tests** in `menu.test.tsx`:
+- [x] **Step 1: Write the failing tests** in `menu.test.tsx`:
   - signed out at `/`: tabs Find, My rides, Offer, Profile in that order,
     Find selected;
   - signed out, My rides shows "Sign in to see your rides" and Sign in opens
@@ -112,16 +112,17 @@ rides.
   - signed in, terms not accepted, `/my-rides` opens Terms (Review Focus 1);
   - signed in and ready, after sign-in the app shows Find, not My profile;
     with a kept offer, Offer.
-- [ ] **Step 2:** Run `pnpm --filter @shareride/mobile test menu`; expect failures.
-- [ ] **Step 3: Implement.** `(tabs)/_layout.tsx` renders `Tabs` with
+- [x] **Step 2:** Run `pnpm --filter @shareride/mobile test menu`; expect failures.
+- [x] **Step 3: Implement.** `(tabs)/_layout.tsx` renders `Tabs` with
   `TabSlot` and a `TabList` built from `menuTabs` (the visible bar is Task
   1.2's `TabBar`, passed as `asChild`). Signed-out content comes from one
-  `SignInFirst({ title, body?, action })` part in `navigation/sign-in-first.tsx`.
-  The group's layout redirects to `nextRoute(me)` when it is not null. If
-  tab state is lost on switching, keep visited tabs mounted (the test
-  decides).
-- [ ] **Step 4:** Run the app tests, `pnpm check`; expect pass.
-- [ ] **Step 5:** Commit `feat(mobile): one menu with Find, My rides, Offer and Profile`.
+  `SignInFirst({ title, body?, signInLabel?, onSignIn?, children? })` part
+  in `navigation/sign-in-first.tsx`. The group's layout redirects to
+  `nextRoute(me)` when it is not null, and once the account is ready takes
+  the choice kept through sign-up (`navigation/kept-choice.ts`), whichever
+  tab is showing. Visited tabs stay mounted, so they keep their state.
+- [x] **Step 4:** Run the app tests, `pnpm check`; expect pass.
+- [x] **Step 5:** Commit `feat(mobile): one menu with Find, My rides, Offer and Profile`.
 
 ### Task 1.2: Tab bar and top bar
 
@@ -129,45 +130,46 @@ rides.
 
 - Create: `apps/mobile/src/navigation/tab-bar.tsx`, `apps/mobile/src/navigation/top-bar.tsx`, `apps/mobile/src/components/logo.tsx`
 - Modify: `app/_layout.tsx` (top bar above the `Stack` when wide),
-  `theme/tokens.ts` (`sizes.tabBar`), spec 15 (rows `TabBar`, `TopBar`,
+  `theme/tokens.ts` (`sizes.tab`, `sizes.tabPill`, `sizes.logoSmall`), spec 15 (rows `TabBar`, `TopBar`,
   `Logo`)
-- Test: `components/navigation-parts.test.tsx`, `__tests__/menu.test.tsx`
+- Test: `navigation/menu.test.ts`, `__tests__/menu.test.tsx`
 
 **Interfaces:**
 
 - Produces: `TabBar()`: `surface`, 2 `border` top line, safe area at the
-  bottom; each tab an icon (`iconSizes.inline`) over its name in `caption`,
+  bottom; each tab an icon (`iconSizes.button`) over its name in `caption`,
   at least 48 high, selected in `primary` with a `primarySoft` pill behind
   the icon, others `textMuted`.
 - Produces: `TopBar()`: the `Logo` and "ShareRide" (`heading`) on the left,
   the four links in `label`, the selected one `primary` and underlined, and
-  `LanguageSwitch` on the right. Links use `router.dismissTo(href)` so the
-  stack never grows from the bar.
+  `LanguageSwitch` on the right. Links close the screens opened on top
+  (`router.dismissAll()`) and then go to `href`, so the stack never grows
+  from the bar.
 - Produces: `Logo({ size: number })`: the car of `assets/logo/icon.svg` in
   `react-native-svg`, `accessible={false}`.
 
-- [ ] **Step 1: Write the failing tests:** at 390 wide, a tab list and no
-  top bar; at 1280 wide (`Dimensions.set`), a navigation bar named "Main"
+- [x] **Step 1: Write the failing tests:** at 390 wide, a tab list and no
+  top bar; at 1280 wide (`Dimensions.set`), a navigation bar named "Main menu"
   with the logo, four links and the language, on Find and on a trip page,
   and no tab list; on a trip page at 1280, pressing Find shows Find with no
   Back; the selected tab has `primary` text; at `fontScale` 2 every label
   shows in full (`numberOfLines` not set).
-- [ ] **Step 2:** Run `pnpm --filter @shareride/mobile test navigation-parts menu`; expect failures.
-- [ ] **Step 3: Implement** as in Interfaces; the tab bar hides itself when
+- [x] **Step 2:** Run `pnpm --filter @shareride/mobile test menu`; expect failures.
+- [x] **Step 3: Implement** as in Interfaces; the tab bar hides itself when
   wide (`useWideScreen`).
-- [ ] **Step 4:** Run the tests and `pnpm check`; expect pass.
-- [ ] **Step 5:** Commit `feat(mobile): tab bar on phones, top bar on wide screens`.
+- [x] **Step 4:** Run the tests and `pnpm check`; expect pass.
+- [x] **Step 5:** Commit `feat(mobile): tab bar on phones, top bar on wide screens`.
 
 ### Task 1.3: Find, the home
 
 **Files:**
 
 - Modify: `app/(tabs)/index.tsx`, `search/route-search.tsx` (seats in the
-  form), `app/search/results.tsx` (seats leave the results),
+  form), `app/search/index.tsx` (its own seats stepper goes),
   `search/result-card.tsx` (tags and the whole-trip line)
 - Modify: `packages/i18n/src/messages/en.ts`, `is.ts` (`nav.*`,
-  `home.findRide`, `trip.bookInstantly`, `trip.driverApproves`, signed-out
-  texts)
+  `home.title`, `results.driverDrives`, new wording for `results.instant`
+  and `results.request`, signed-out texts)
 - Test: `__tests__/welcome.test.tsx`, `__tests__/search.test.tsx`
 
 **Interfaces:**
@@ -175,16 +177,17 @@ rides.
 - Consumes: `useRouteSearch(onSubmit)`; its `submit()` now takes no seats
   argument and the query carries `seats` (1 to 4).
 
-- [ ] **Step 1: Write the failing tests:** Find signed in shows the same
+- [x] **Step 1: Write the failing tests:** Find signed in shows the same
   page as signed out, without Sign in; the logo and "ShareRide" on top;
   "Find a ride" is the primary button; seats 2 in the form open results for
   2 seats; ride cards say "Book instantly" or "Driver approves"; a card for
   the driver's whole route has no "drives" line, and a part of it shows
   "Anna drives BSÍ → Akureyri"; Offer a ride at the bottom is secondary.
-- [ ] **Step 2:** Run `pnpm --filter @shareride/mobile test welcome search`; expect failures.
-- [ ] **Step 3: Implement.** Results keep their own seats control only for
-  changing a search (PR 6 moves it into the header).
-- [ ] **Step 4:** Run the tests, then update the e2e journeys
+- [x] **Step 2:** Run `pnpm --filter @shareride/mobile test welcome search`; expect failures.
+- [x] **Step 3: Implement.** The seats stepper moves into `useRouteSearch`,
+  so Find and the search form both have it; results take the seats from
+  the address, as before.
+- [x] **Step 4:** Run the tests, then update the e2e journeys
   (`welcome`, `sign-in`, `booking`, `my-bookings`, `driving`,
   `post-a-trip`) for the new addresses and names; push and read the CI e2e
   job.

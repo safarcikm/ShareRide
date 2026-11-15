@@ -210,7 +210,7 @@ export default function SearchResults() {
   return (
     <Screen>
       <View style={styles.header}>
-        <BackButton fallback="/search" />
+        <BackButton fallback="/" />
         <View style={styles.headerTexts}>
           <Text accessibilityRole="header" style={[typography.heading, { color: palette.text }]}>
             {title}

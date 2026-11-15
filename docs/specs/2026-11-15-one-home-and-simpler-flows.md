@@ -1,6 +1,6 @@
 # Spec 16: One home and simpler flows
 
-**Owner:** Martin · **Date:** 2026-11-15 · **Status:** Draft, layouts approved
+**Owner:** Martin · **Date:** 2026-11-15 · **Status:** Approved
 (2026-11-15)
 
 Amends: [spec 1](2026-11-13-sign-in-and-profile.md) (front page, sign-up,
@@ -347,7 +347,7 @@ depend on gender; the Icelandic review can change it.
 | 1 | Which proposals? | All six, as on the canvas (Martin, 2026-11-15) |
 | 2 | Time wheel | 24-hour hours and minutes in 5-minute steps; times not on 5 minutes rounded up (Martin, 2026-11-15) |
 | 3 | Clear X in text fields | Small, inside the field (Martin, 2026-11-15) |
-| 4 | Signed out, what do My rides, Offer and Profile show? | Proposed: a short page with Sign in, so the menu never changes (3.1, item 3) |
-| 5 | Is the tab bar on screens opened on top? | Proposed: no on phones (back button instead); the top bar is on every screen on wide screens (3.1, item 2) |
-| 6 | Where do drafts live? | Proposed: on Offer, as "Continue your draft" (3.6, item 2) |
-| 7 | Request trips: pay where? | Proposed: from My rides, under Needs you, when the driver says yes (3.7, item 2) |
+| 4 | Signed out, what do My rides, Offer and Profile show? | A short page with Sign in, so the menu never changes (3.1, item 3) (Martin, 2026-11-15) |
+| 5 | Is the tab bar on screens opened on top? | No on phones (back button instead); the top bar is on every screen on wide screens (3.1, item 2) (Martin, 2026-11-15) |
+| 6 | Where do drafts live? | On Offer, as "Continue your draft" (3.6, item 2) (Martin, 2026-11-15) |
+| 7 | Request trips: pay where? | From My rides, under Needs you, when the driver says yes (3.7, item 2) (Martin, 2026-11-15) |

@@ -257,6 +257,15 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- One menu that never moves (spec 16): Find, My rides, Offer and Profile, as
+  a tab bar on a phone's four main screens and as a top bar on every screen
+  of a wide one. Signed out, My rides, Offer and Profile each say what they
+  are for, with Sign in. Find is the home for everyone: the logo, a route
+  search with the seats and Find a ride as the main button, the rides
+  leaving soon, and Offer a ride. Signing in or up leads to the ride or offer
+  kept, or to Find, instead of My profile. Ride cards say "Book instantly" or
+  "Driver approves", and name the driver's whole trip only when it goes
+  further than your part.
 - Times on the time step of posting a trip are chosen on a wheel of hours
   and minutes in 5-minute steps (24-hour clock) instead of being typed. A
   time saved earlier that is not on 5 minutes shows rounded up to the next
