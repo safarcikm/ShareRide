@@ -40,3 +40,4 @@ Specs follow the order in [features](../product/features.md#spec-order).
 | 13 | [Payments, refunds, payouts and receipts](2026-11-13-payments.md) | D7, D8, C8, H7 | Approved (2026-11-13) |
 | 14 | [Women-only trips](2026-11-13-women-only-trips.md) | G5 | Approved (2026-11-13) |
 | 15 | [Visual design system](2026-11-13-visual-design-system.md) | All screens | Approved (2026-11-13) |
+| 16 | [One home and simpler flows](2026-11-15-one-home-and-simpler-flows.md) | All screens | Draft |
