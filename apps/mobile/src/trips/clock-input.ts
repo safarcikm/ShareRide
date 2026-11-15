@@ -1,26 +1,30 @@
-// Times the driver types on the time step, read as a clock in Iceland.
-import { fromIceland } from "@shareride/domain";
+// Times the driver chooses on the time step, as a clock in Iceland.
+import { defaultTripSettings, fromIceland, inIceland } from "@shareride/domain";
+import { minuteStep, roundUpClock, type Clock } from "@/lib/clock-time";
 import { addDays, dayOf, type Day } from "@/lib/days";
 
-export interface Clock {
-  readonly hour: number;
-  readonly minute: number;
-}
-
-/**
- * A time as people type it: "9", "930", "0930", "9:30", "09.30" or "9 30",
- * on a 24-hour clock; null when it is not a time.
- */
-export function parseClock(text: string): Clock | null {
-  const match = /^(\d{1,2})(?:[:.\s]?(\d{2}))?$/u.exec(text.trim());
-  if (match === null) return null;
-  const hour = Number(match[1]);
-  const minute = Number(match[2] ?? "0");
-  return hour <= 23 && minute <= 59 ? { hour, minute } : null;
-}
+export type { Clock } from "@/lib/clock-time";
 
 /** The moment of a clock time on a day in Iceland. */
 export const at = (day: Day, clock: Clock): Date => fromIceland({ ...day, ...clock });
+
+/**
+ * The clock in Iceland at a moment, rounded up to 5 minutes, as the wheel
+ * shows it; with `keepDay`, never past 23:55 (see `roundUpClock`).
+ */
+export function clockOf(moment: Date, keepDay = false): Clock {
+  const { hour, minute } = inIceland(moment);
+  // Iceland's offset is whole hours, so the part of a minute is that of UTC.
+  const pastTheMinuteMs = moment.getTime() % 60_000;
+  return roundUpClock({ hour, minute: pastTheMinuteMs > 0 ? minute + 1 : minute }, keepDay);
+}
+
+/** The first 5-minute mark one can leave at: at least 30 minutes from now (R3.5). */
+export function earliestDeparture(now: Date): Clock {
+  const stepMs = minuteStep * 60_000;
+  const earliest = now.getTime() + defaultTripSettings.minNoticeMinutes * 60_000;
+  return clockOf(new Date(Math.ceil(earliest / stepMs) * stepMs));
+}
 
 /**
  * The first moment at a clock time not before `previous`, so a stop after

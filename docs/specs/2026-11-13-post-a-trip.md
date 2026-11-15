@@ -120,7 +120,12 @@ missing, and each item can be done from there:
    than 2 hours longer than typical shows a warning ("Planning a long break?").
 4. All times are entered and shown in Iceland time. When the phone is set to
    another time zone, the screen says "Iceland time".
-5. A driver cannot publish a trip that overlaps in time with another of their
+5. Times are chosen on a wheel (spec 15, `TimeField`): hours on a 24-hour
+   clock and minutes in 5-minute steps, so every time is on 5 minutes. A
+   time saved before the wheel that is not on 5 minutes shows rounded up to
+   the next 5 minutes. The departure's wheel starts at the earliest time
+   one can leave: the first 5 minutes at least 30 minutes from now.
+6. A driver cannot publish a trip that overlaps in time with another of their
    published trips.
 
 ### 3.6 Price level

@@ -1,20 +1,21 @@
-import { onOrAfter, parseClock } from "./clock-input";
+import { clockOf, earliestDeparture, onOrAfter } from "./clock-input";
 
-describe("parseClock", () => {
-  it.each([
-    ["9", { hour: 9, minute: 0 }],
-    ["930", { hour: 9, minute: 30 }],
-    ["0930", { hour: 9, minute: 30 }],
-    ["9:30", { hour: 9, minute: 30 }],
-    [" 09.30 ", { hour: 9, minute: 30 }],
-    ["21 05", { hour: 21, minute: 5 }],
-    ["23:59", { hour: 23, minute: 59 }],
-  ])("reads %j", (text, clock) => {
-    expect(parseClock(text)).toEqual(clock);
+describe("clockOf", () => {
+  it("reads the clock in Iceland, rounded up to 5 minutes", () => {
+    expect(clockOf(new Date("2026-11-15T09:32:10Z"))).toEqual({ hour: 9, minute: 35 });
+    expect(clockOf(new Date("2026-11-15T09:30:00Z"))).toEqual({ hour: 9, minute: 30 });
   });
 
-  it.each(["", "24:00", "9:60", "9:3", "nine", "9:30 am", "12345"])("refuses %j", (text) => {
-    expect(parseClock(text)).toBeNull();
+  it("keeps a departure late in the evening on its day", () => {
+    expect(clockOf(new Date("2026-11-15T23:58:00Z"))).toEqual({ hour: 0, minute: 0 });
+    expect(clockOf(new Date("2026-11-15T23:58:00Z"), true)).toEqual({ hour: 23, minute: 55 });
+  });
+});
+
+describe("earliestDeparture", () => {
+  it("is the first 5-minute mark at least 30 minutes from now", () => {
+    expect(earliestDeparture(new Date("2026-11-14T12:00:00Z"))).toEqual({ hour: 12, minute: 30 });
+    expect(earliestDeparture(new Date("2026-11-14T12:01:00Z"))).toEqual({ hour: 12, minute: 35 });
   });
 });
 

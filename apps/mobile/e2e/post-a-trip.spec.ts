@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import type { Locale } from "@shareride/i18n";
 import { english, icelandic, signUp, type Texts } from "./support/account";
-import { tomorrow } from "./support/trips";
+import { chooseTime, englishWheel, timeField, tomorrow, type WheelTexts } from "./support/trips";
 
 // Spec 3's journey on the web build, against the test API and its sample
 // meeting points: a first-time driver posts Reykjavík to Akureyri, adds a
@@ -27,6 +27,7 @@ interface Journey {
   readonly nextMonth: string;
   readonly departure: string;
   readonly arrival: string;
+  readonly wheel: WheelTexts;
   readonly toPrice: string;
   readonly priceTitle: string;
   readonly suggested: string;
@@ -71,6 +72,7 @@ const inEnglish: Journey = {
   nextMonth: "Next month",
   departure: "Leaving BSÍ bus terminal at",
   arrival: "Time at Hof bus stop, Akureyri",
+  wheel: englishWheel,
   toPrice: "Set your price",
   priceTitle: "Set your price",
   suggested: "Suggested price",
@@ -115,6 +117,7 @@ const inIcelandic: Journey = {
   nextMonth: "Næsti mánuður",
   departure: "Brottför frá BSÍ kl.",
   arrival: "Tími á Hof, Akureyri",
+  wheel: { hour: "Klukkustund", minutes: "Mínútur", done: "Lokið" },
   toPrice: "Ákveða verð",
   priceTitle: "Ákveddu verðið",
   suggested: "Ráðlagt verð",
@@ -165,8 +168,19 @@ async function postTrip(page: Page, journey: Journey) {
   const day = tomorrow(journey.locale);
   if (day.nextMonth) await page.getByRole("button", { name: journey.nextMonth }).click();
   await page.getByRole("radio", { name: day.name }).click();
-  await page.getByLabel(journey.departure).fill("09:00");
-  await expect(page.getByLabel(journey.arrival)).toHaveValue(/^1[34]:\d\d$/);
+  await chooseTime(page, journey.departure, "09:00", journey.wheel);
+  await expect(timeField(page, journey.arrival)).toHaveAccessibleName(/ 1[34]:\d[05]$/u);
+  // The keyboard turns a wheel too, and Escape closes it back onto the field.
+  await timeField(page, journey.departure).click();
+  const minutes = page.getByRole("spinbutton", { name: journey.wheel.minutes });
+  await minutes.press("ArrowUp");
+  await expect(minutes).toHaveAttribute("aria-valuetext", "05");
+  await minutes.press("ArrowDown");
+  await expect(minutes).toHaveAttribute("aria-valuetext", "00");
+  await page.keyboard.press("Escape");
+  await expect(timeField(page, journey.departure)).toBeFocused();
+  await expect(timeField(page, journey.departure)).toHaveAccessibleName(/ 09:00$/u);
+  await expect(minutes).toBeHidden();
   await page.getByRole("button", { name: journey.toPrice }).click();
 
   // 3. The suggested price for the whole route, then 80%.

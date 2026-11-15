@@ -16,6 +16,7 @@ import {
   tripDetailsApi,
 } from "@/testing/search";
 import { blonduos, borgarnes } from "@/testing/trips";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -221,6 +222,10 @@ describe("The front page (spec 1, 3.1; spec 4, 3.8)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "From: Borgarnes" }));
     const field = await screen.findByLabelText("From");
     expect(screen.queryByLabelText("To")).toBeNull();
+    // Close is a small X inside the field's moss outline, at its end.
+    const box = screen.getByTestId("place-field");
+    expect(box).toHaveStyle({ borderColor: colors.light.primary });
+    expect(within(box).getByRole("button", { name: "Close" })).toBeVisible();
 
     // Close, or Escape on a keyboard, leaves Borgarnes chosen, and screen
     // readers go back to From.

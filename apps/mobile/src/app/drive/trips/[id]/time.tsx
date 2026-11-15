@@ -6,7 +6,7 @@ import {
   type TimeProblem,
   type TimeWarning,
 } from "@shareride/domain";
-import { formatClock, formatDay, formatDuration } from "@shareride/i18n";
+import { formatDay, formatDuration } from "@shareride/i18n";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { errorText } from "@/auth/errors";
@@ -16,11 +16,12 @@ import { Calendar } from "@/components/calendar";
 import { FieldError } from "@/components/field-error";
 import { Notice } from "@/components/notice";
 import { Body, Heading } from "@/components/text";
-import { TextField } from "@/components/text-field";
+import { TimeField } from "@/components/time-field";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
+import { minuteStep, roundUpClock } from "@/lib/clock-time";
 import { addDays, compareDays, dayOf, showsOtherTime, type Day } from "@/lib/days";
-import { at, onOrAfter, parseClock } from "@/trips/clock-input";
+import { at, clockOf, earliestDeparture, onOrAfter, type Clock } from "@/trips/clock-input";
 import { StepScreen } from "@/trips/step-screen";
 import { goOn } from "@/trips/steps";
 import { Loading, useDraftOnFocus } from "@/trips/use-draft";
@@ -50,16 +51,20 @@ function TimeStep({ trip, fromReview }: { readonly trip: MyTrip; readonly fromRe
   const names = trip.stops.map((stop) => stop.meetingPoint.name[locale]);
   const departsAt = trip.departsAt === null ? null : new Date(trip.departsAt);
   const [date, setDate] = useState<Day | null>(departsAt === null ? null : dayOf(departsAt));
-  const [written, setTexts] = useState<readonly string[]>(() =>
-    trip.stops.map((stop) =>
-      stop.plannedAt === null ? "" : formatClock(new Date(stop.plannedAt)),
+  // Times not on 5 minutes, from before the wheel, show rounded up; the
+  // departure stays on its day.
+  const [chosen, setChosen] = useState<readonly (Clock | null)[]>(() =>
+    trip.stops.map((stop, index) =>
+      stop.plannedAt === null ? null : clockOf(new Date(stop.plannedAt), index === 0),
     ),
   );
-  // Once the driver types a stop's time, empty fields stay empty: clearing
-  // one to type it again must not fill it back in.
+  // Once the driver chooses a stop's time, the others are not planned again
+  // until the departure changes.
   const [ownTimes, setOwnTimes] = useState(() =>
     trip.stops.slice(1).some((stop) => stop.plannedAt !== null),
   );
+  /** The time whose wheel is open, by stop; one at a time. */
+  const [open, setOpen] = useState<number | null>(null);
   const [tried, setTried] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -73,22 +78,24 @@ function TimeStep({ trip, fromReview }: { readonly trip: MyTrip; readonly fromRe
     quoted.result?.ok === true ? quoted.result.data.segments.map((s) => s.durationS) : null;
 
   /** The times at the other stops from the typical driving times. */
-  const planFrom = (day: Day | null, departure: string, current: readonly string[]) => {
-    const clock = parseClock(departure);
-    if (day === null || clock === null || durations === null) {
+  const planFrom = (
+    day: Day | null,
+    departure: Clock | null,
+    current: readonly (Clock | null)[],
+  ) => {
+    if (day === null || departure === null || durations === null) {
       return [departure, ...current.slice(1)];
     }
-    const times = plannedTimes(at(day, clock), durations, defaultTripSettings);
-    return [departure, ...times.slice(1).map(formatClock)];
+    const times = plannedTimes(at(day, departure), durations, defaultTripSettings);
+    return [departure, ...times.slice(1).map((moment) => clockOf(moment))];
   };
 
   // Times not planned yet show as soon as the typical times arrive.
-  const texts =
-    !ownTimes && written.slice(1).every((text) => text === "")
-      ? planFrom(date, written[0] ?? "", written)
-      : written;
+  const clocks =
+    !ownTimes && chosen.slice(1).every((clock) => clock === null)
+      ? planFrom(date, chosen[0] ?? null, chosen)
+      : chosen;
 
-  const clocks = texts.map(parseClock);
   const moments: Date[] = [];
   if (date !== null) {
     for (const clock of clocks) {
@@ -97,7 +104,7 @@ function TimeStep({ trip, fromReview }: { readonly trip: MyTrip; readonly fromRe
       moments.push(previous === undefined ? at(date, clock) : onOrAfter(previous, clock));
     }
   }
-  const complete = moments.length === texts.length;
+  const complete = moments.length === clocks.length;
   const checked =
     complete && durations !== null
       ? checkTimes(moments, durations, now(), defaultTripSettings)
@@ -106,7 +113,9 @@ function TimeStep({ trip, fromReview }: { readonly trip: MyTrip; readonly fromRe
   /** The error under a stop's time, after the first try to continue. */
   const errorAt = (index: number): string | undefined => {
     if (!tried) return undefined;
-    if (clocks[index] === null) return t("trip.time.invalid");
+    if (clocks[index] === null) {
+      return index === 0 ? t("trip.time.chooseTime") : t("trip.time.chooseStop");
+    }
     for (const problem of checked.problems) {
       if (
         index === 0 &&
@@ -129,7 +138,7 @@ function TimeStep({ trip, fromReview }: { readonly trip: MyTrip; readonly fromRe
 
   /**
    * The day when a stop falls on a later one, and a long break. Both show
-   * together, so a time typed earlier than the stop before, which moves to
+   * together, so a time chosen earlier than the stop before, which moves to
    * the next day, is never hidden behind the break.
    */
   const helpAt = (index: number): string | undefined => {
@@ -163,7 +172,26 @@ function TimeStep({ trip, fromReview }: { readonly trip: MyTrip; readonly fromRe
     goOn(trip.id, "price", fromReview);
   };
 
-  const help = showsOtherTime(now()) ? t("trip.time.helpIceland") : t("trip.time.help");
+  const help = showsOtherTime(now()) ? t("trip.icelandTime") : undefined;
+  /** Where a wheel starts when its stop has no time yet: after the time before it. */
+  const suggestedAt = (index: number): Clock => {
+    const before = clocks
+      .slice(0, index)
+      .reverse()
+      .find((clock) => clock !== null);
+    if (before === undefined) return earliestDeparture(now());
+    return roundUpClock({ hour: before.hour, minute: before.minute + minuteStep });
+  };
+  const wheel = (index: number) => ({
+    open: open === index,
+    onOpen: () => {
+      setOpen(index);
+    },
+    onClose: () => {
+      setOpen(null);
+    },
+    suggested: suggestedAt(index),
+  });
   return (
     <StepScreen
       step="time"
@@ -186,18 +214,17 @@ function TimeStep({ trip, fromReview }: { readonly trip: MyTrip; readonly fromRe
         last={addDays(today, defaultTripSettings.maxDaysAhead)}
         onChange={(day) => {
           setDate(day);
-          setTexts(planFrom(day, texts[0] ?? "", texts));
+          setChosen(planFrom(day, clocks[0] ?? null, clocks));
         }}
       />
       <FieldError message={tried && date === null ? t("trip.time.chooseDate") : undefined} />
-      <TextField
+      <TimeField
         label={t("trip.time.departure", { name: names[0] ?? "" })}
-        value={texts[0] ?? ""}
-        onChangeText={(text) => {
-          setTexts(planFrom(date, text, texts));
+        value={clocks[0] ?? null}
+        onChange={(clock) => {
+          setChosen(planFrom(date, clock, clocks));
         }}
-        keyboardType="numbers-and-punctuation"
-        maxLength={5}
+        {...wheel(0)}
         help={help}
         error={errorAt(0)}
       />
@@ -211,16 +238,15 @@ function TimeStep({ trip, fromReview }: { readonly trip: MyTrip; readonly fromRe
           {names.slice(1).map((name, offset) => {
             const index = offset + 1;
             return (
-              <TextField
+              <TimeField
                 key={trip.stops[index]?.meetingPoint.id ?? index}
                 label={t("trip.time.atStop", { name })}
-                value={texts[index] ?? ""}
-                onChangeText={(text) => {
+                value={clocks[index] ?? null}
+                onChange={(clock) => {
                   setOwnTimes(true);
-                  setTexts(texts.map((known, position) => (position === index ? text : known)));
+                  setChosen(clocks.map((known, position) => (position === index ? clock : known)));
                 }}
-                keyboardType="numbers-and-punctuation"
-                maxLength={5}
+                {...wheel(index)}
                 help={helpAt(index)}
                 error={errorAt(index)}
               />

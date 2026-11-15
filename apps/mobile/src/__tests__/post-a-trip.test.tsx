@@ -43,6 +43,23 @@ async function choosePoint(field: "From" | "To", typed: string, name: string) {
   await fireEvent.press(await screen.findByRole("button", { name: new RegExp(`^${name}`) }));
 }
 
+/**
+ * Opens the wheel of a time, taps the hour and the minutes in it and closes
+ * it with Done, as a driver does on the time step.
+ */
+async function chooseTime(label: string, time: string) {
+  const [hour = "", minute = ""] = time.split(":");
+  await fireEvent.press(await screen.findByRole("button", { name: new RegExp(`^${label}: `) }));
+  await fireEvent.press(within(screen.getByRole("adjustable", { name: "Hour" })).getByText(hour));
+  await fireEvent.press(
+    within(screen.getByRole("adjustable", { name: "Minutes" })).getByText(minute),
+  );
+  await fireEvent.press(screen.getByRole("button", { name: "Done" }));
+}
+
+/** The time a field shows, from its name: "Time at Borgarnes: 10:00". */
+const timeOf = (label: string) => screen.getByRole("button", { name: new RegExp(`^${label}: `) });
+
 describe("Posting a trip (spec 3)", () => {
   it("goes from the route to a published trip", async () => {
     const { client, api } = await open("/drive/trips/new");
@@ -70,9 +87,9 @@ describe("Posting a trip (spec 3)", () => {
     expect(bodiesOf(client, "/v1/trips")).toEqual([{ stops: [bsi.id, borgarnes.id, hof.id] }]);
 
     await fireEvent.press(screen.getByRole("radio", { name: "Sunday 15 November" }));
-    await fireEvent.changeText(screen.getByLabelText("Leaving BSÍ bus terminal at"), "9");
-    expect(screen.getByLabelText("Time at Borgarnes")).toHaveDisplayValue("10:00");
-    expect(screen.getByLabelText("Time at Hof, Akureyri")).toHaveDisplayValue("11:00");
+    await chooseTime("Leaving BSÍ bus terminal at", "09:00");
+    expect(timeOf("Time at Borgarnes")).toHaveAccessibleName("Time at Borgarnes: 10:00");
+    expect(timeOf("Time at Hof, Akureyri")).toHaveAccessibleName("Time at Hof, Akureyri: 11:00");
     await fireEvent.press(screen.getByRole("button", { name: "Set your price" }));
     expect(await screen.findByRole("header", { name: "Set your price" })).toBeVisible();
     const id = api.trips()[0]?.id ?? "";
@@ -270,12 +287,14 @@ describe("Posting a trip (spec 3)", () => {
 
   it("checks the times before going on", async () => {
     const { client } = await open(`/drive/trips/${plannedDraft().id}/time`, [plannedDraft()]);
-    expect(await screen.findByLabelText("Leaving BSÍ bus terminal at")).toHaveDisplayValue("09:00");
+    expect(
+      await screen.findByRole("button", { name: "Leaving BSÍ bus terminal at: 09:00" }),
+    ).toBeVisible();
     expect(screen.getByRole("radio", { name: "Sunday 15 November" })).toBeChecked();
 
     // Ten minutes for an hour's drive, then a long break.
-    await fireEvent.changeText(screen.getByLabelText("Time at Borgarnes"), "9:10");
-    await fireEvent.changeText(screen.getByLabelText("Time at Hof, Akureyri"), "14:00");
+    await chooseTime("Time at Borgarnes", "09:10");
+    await chooseTime("Time at Hof, Akureyri", "14:00");
     expect(
       screen.getByText("Planning a long break? This stretch usually takes 1 h."),
     ).toBeVisible();
@@ -286,17 +305,15 @@ describe("Posting a trip (spec 3)", () => {
     expect(bodiesOf(client, "/v1/trips/{id}")).toEqual([]);
 
     // A time past midnight is the next day.
-    await fireEvent.changeText(screen.getByLabelText("Time at Borgarnes"), "23:00");
-    await fireEvent.changeText(screen.getByLabelText("Time at Hof, Akureyri"), "0:00");
+    await chooseTime("Time at Borgarnes", "23:00");
+    await chooseTime("Time at Hof, Akureyri", "00:00");
     expect(screen.getByText("On Monday 16 November")).toBeVisible();
-    await fireEvent.changeText(screen.getByLabelText("Leaving BSÍ bus terminal at"), "nine");
-    expect(screen.getByText("Write the time as hours and minutes, such as 09:30.")).toBeVisible();
   });
 
   it("says when a time earlier than the stop before falls on the next day", async () => {
     await open(`/drive/trips/${plannedDraft().id}/time`, [plannedDraft()]);
     // 08:30 after leaving at 09:00 is the next morning, and a long break too.
-    await fireEvent.changeText(await screen.findByLabelText("Time at Borgarnes"), "8:30");
+    await chooseTime("Time at Borgarnes", "08:30");
     expect(
       screen.getByText(
         "On Monday 16 November. Planning a long break? This stretch usually takes 1 h.",
@@ -304,21 +321,72 @@ describe("Posting a trip (spec 3)", () => {
     ).toBeVisible();
   });
 
-  it("lets the driver clear a time to type it again", async () => {
+  it("plans the stops again from a new departure", async () => {
     await open(`/drive/trips/${plannedDraft().id}/time`, [plannedDraft()]);
-    await fireEvent.changeText(await screen.findByLabelText("Time at Borgarnes"), "");
-    await fireEvent.changeText(screen.getByLabelText("Time at Hof, Akureyri"), "");
-    expect(screen.getByLabelText("Time at Hof, Akureyri")).toHaveDisplayValue("");
-    expect(screen.getByLabelText("Time at Borgarnes")).toHaveDisplayValue("");
-    // A new departure plans them again.
-    await fireEvent.changeText(screen.getByLabelText("Leaving BSÍ bus terminal at"), "10:00");
-    expect(screen.getByLabelText("Time at Hof, Akureyri")).toHaveDisplayValue("12:00");
+    await chooseTime("Time at Borgarnes", "10:30");
+    await chooseTime("Leaving BSÍ bus terminal at", "10:00");
+    expect(timeOf("Time at Borgarnes")).toHaveAccessibleName("Time at Borgarnes: 11:00");
+    expect(timeOf("Time at Hof, Akureyri")).toHaveAccessibleName("Time at Hof, Akureyri: 12:00");
+  });
+
+  it("starts the departure at the earliest time one can leave", async () => {
+    const draft = plannedDraft({
+      stops: plannedDraft().stops.map((stop) => ({ ...stop, plannedAt: null })),
+      departsAt: null,
+      arrivesAt: null,
+    });
+    const { client } = await open(`/drive/trips/${draft.id}/time`, [draft]);
+    await fireEvent.press(await screen.findByRole("radio", { name: "Saturday 14 November" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Set your price" }));
+    expect(await screen.findByText("Choose the time you're leaving.")).toBeVisible();
+    expect(bodiesOf(client, "/v1/trips/{id}")).toEqual([]);
+    // It is noon, so 12:30 is the earliest; the stops follow from it.
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Leaving BSÍ bus terminal at: Choose a time" }),
+    );
+    expect(screen.getByRole("adjustable", { name: "Hour" })).toHaveAccessibilityValue({
+      text: "12",
+    });
+    expect(timeOf("Leaving BSÍ bus terminal at")).toHaveAccessibleName(
+      "Leaving BSÍ bus terminal at: 12:30",
+    );
+    expect(timeOf("Time at Borgarnes")).toHaveAccessibleName("Time at Borgarnes: 13:30");
+    expect(screen.queryByText("Choose the time you're leaving.")).toBeNull();
+  });
+
+  it("rounds times that are not on 5 minutes up to the next 5 minutes", async () => {
+    const odd = plannedDraft({
+      stops: plannedDraft().stops.map((stop, index) => ({
+        ...stop,
+        plannedAt: ["2026-11-15T09:02:00.000Z", "2026-11-15T10:03:00.000Z", null][index] ?? null,
+      })),
+    });
+    const { client } = await open(`/drive/trips/${odd.id}/time`, [odd]);
+    expect(
+      await screen.findByRole("button", { name: "Leaving BSÍ bus terminal at: 09:05" }),
+    ).toBeVisible();
+    expect(timeOf("Time at Borgarnes")).toHaveAccessibleName("Time at Borgarnes: 10:05");
+    expect(timeOf("Time at Hof, Akureyri")).toHaveAccessibleName(
+      "Time at Hof, Akureyri: Choose a time",
+    );
+    await chooseTime("Time at Hof, Akureyri", "11:05");
+    await fireEvent.press(screen.getByRole("button", { name: "Set your price" }));
+    expect(await screen.findByRole("header", { name: "Set your price" })).toBeVisible();
+    expect(bodiesOf(client, "/v1/trips/{id}")).toEqual([
+      {
+        plannedTimes: [
+          "2026-11-15T09:05:00.000Z",
+          "2026-11-15T10:05:00.000Z",
+          "2026-11-15T11:05:00.000Z",
+        ],
+      },
+    ]);
   });
 
   it("refuses a departure less than 30 minutes away", async () => {
     await open(`/drive/trips/${plannedDraft().id}/time`, [plannedDraft()]);
     await fireEvent.press(await screen.findByRole("radio", { name: "Saturday 14 November" }));
-    await fireEvent.changeText(screen.getByLabelText("Leaving BSÍ bus terminal at"), "12:10");
+    await chooseTime("Leaving BSÍ bus terminal at", "12:10");
     await fireEvent.press(screen.getByRole("button", { name: "Set your price" }));
     expect(await screen.findByText("Leave at least 30 minutes from now.")).toBeVisible();
     expect(screen.getByRole("radio", { name: "Friday 13 November" })).toBeDisabled();
@@ -457,10 +525,7 @@ describe("Posting a trip (spec 3)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: "Publish trip" }));
     expect(await screen.findByTestId("publish-problems")).toBeVisible();
     await fireEvent.press(screen.getByRole("link", { name: "Edit: Date and times" }));
-    await fireEvent.changeText(
-      await screen.findByLabelText("Leaving BSÍ bus terminal at"),
-      "10:00",
-    );
+    await chooseTime("Leaving BSÍ bus terminal at", "10:00");
     await fireEvent.press(screen.getByRole("button", { name: "Save changes" }));
     expect(await screen.findByText("10:00  BSÍ bus terminal")).toBeVisible();
     expect(screen.queryByTestId("publish-problems")).toBeNull();
