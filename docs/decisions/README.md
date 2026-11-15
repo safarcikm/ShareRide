@@ -41,7 +41,7 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0008](0008-payments-phased.md) | Phased payments behind a provider-agnostic port | Superseded by ADR 0013 |
 | [0009](0009-maps-and-routing.md) | Maps with MapLibre and OpenStreetMap; precomputed routing | Accepted |
 | [0010](0010-authentication-and-identity.md) | Phone-first authentication and layered identity verification | Accepted (implementation superseded by ADR 0016) |
-| [0011](0011-localization.md) | Icelandic and English from day one | Accepted |
+| [0011](0011-localization.md) | Icelandic and English from day one | Accepted (formatting superseded by ADR 0025) |
 | [0012](0012-trip-price-level.md) | One price level per trip instead of per-segment price editing | Accepted |
 | [0013](0013-in-app-payments-only.md) | All payments through the app, from the beta | Accepted |
 | [0014](0014-passenger-service-fee-from-launch.md) | A passenger service fee from public launch | Accepted |
@@ -54,4 +54,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0021](0021-map-tiles-from-maptiler.md) | Map tiles from MapTiler | Accepted |
 | [0022](0022-photo-storage-on-hetzner.md) | Store photos in Hetzner Object Storage in Helsinki | Accepted |
 | [0023](0023-sms-with-vonage.md) | Send sign-in codes by SMS with Vonage, 46elks as the fallback | Accepted |
-| [0025](0025-own-date-and-number-formatting.md) | Our own date and number formatting instead of Intl's locale data | Proposed |
+| [0025](0025-own-date-and-number-formatting.md) | Our own date and number formatting instead of Intl's locale data | Accepted |
