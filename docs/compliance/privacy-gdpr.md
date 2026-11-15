@@ -62,7 +62,7 @@
 | Audit log | Operator actions, record IDs, device and network address, before and after values | Accountability and security | Legitimate interest; legal obligation where applicable | Operator | 3 years (**verify**) |
 | Verification | Phone verified, Auðkenni verified flag | Trust and safety | Consent (optional badges); contract (phone) | Badge public; details operator | While the account exists |
 | Device and push tokens | Push token, app version | Notifications | Contract | System | Until sign-out or token expiry |
-| Notification log | Recipient, kind of notification, channel, delivery status, time; no message text | Check that people were told | Contract and legitimate interest | Operator | 90 days |
+| Notification log | Recipient, kind of notification, the booking or message it is about, channel, delivery status and attempts, the provider's reference, time; no text. The events that lead to it hold IDs only | Check that people were told | Contract and legitimate interest | Operator | 90 days; the events 7 days once processed. Both by the hourly clean-up |
 | Approximate location (on request) | Device location to find nearby meeting points | Convenience | Consent (device permission) | Not stored | Not stored |
 | Analytics | None in the beta ([spec 12](../specs/2026-11-13-beta-access-and-feedback.md#34-usage-analytics-j3)); if added later, usage events without names | Improve the product | Consent | Operator | 14 months |
 | Waitlist | Email, role, corridors, language, how they heard | Invite people to the beta | Consent (email confirmation) | Operator | Until they leave, 30 days after sign-up, or 12 months if never invited |

@@ -222,8 +222,14 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
 - `NotificationPreference`, `PushToken`.
 - `Block`: blocker and blocked; hides both from each other ([spec 9](../specs/2026-11-13-safety-and-moderation.md#32-blocking-g2)).
 - `Notification` and `NotificationDelivery`: who was told what kind of thing,
-  on which channel and whether it arrived, without the text; kept 90 days
+  about which booking or message, on which channel and what came of it
+  (`queued`, `sending`, `sent`, `failed` or `skipped` with the reason, the
+  attempts and the provider's reference), without the text; kept 90 days
   ([spec 7](../specs/2026-11-13-chat-and-notifications.md#6-data-and-api)).
+  A notification's unique key, from its event and the person, makes it once.
+  `OutboxEvent` (the domain events below, IDs only, kept 7 days once
+  processed) and `ScheduledNotification` (one that waits for a moment, such
+  as the halfway reminder of a request, unique by key) feed them.
 - `WeatherWarning`, `RoadCondition`: cached external data with validity times.
 
 ## Invariants
@@ -268,7 +274,9 @@ Modules communicate changes through events written in the same transaction (an
 outbox table) and processed by the worker:
 
 `TripPublished`, `TripChanged`, `TripCancelled`, `BookingRequested`,
-`BookingAccepted`, `BookingDeclined`, `BookingExpired`, `BookingCancelled`,
+`BookingAccepted`, `BookingConfirmed`, `BookingDeclined`, `BookingExpired`
+(a request nobody answered, or an accepted booking nobody paid for),
+`BookingWithdrawn`, `BookingCancelled`,
 `TripDeparted`, `CheckedIn`, `PassengerNoShow`, `DriverAbsentReported`,
 `DisputeAnswered`, `DisputeDecided`, `TripCompleted`, `MessageSent`, `ReviewSubmitted`, `ReviewsRevealed`, `ReportFiled`, `ReportResolved`,
 `UserBlocked`, `UserSuspended`, `UserReinstated`, `ContentHidden`,
@@ -276,4 +284,6 @@ outbox table) and processed by the worker:
 `WeatherWarningMatched`, `RoadClosureMatched`.
 
 Notifications, review reminders and analytics subscribe to these events, so
-the booking code never calls the notification code directly.
+the booking code never calls the notification code directly. Spec 5's
+booking events and `MessageSent` are written to the outbox from milestone 5;
+the others come with the specs that make them happen.

@@ -74,6 +74,15 @@ const environmentSchema = z
      * except in production, where it is refused.
      */
     PAYMENT_PROVIDER: z.enum(["none", "test"]).optional(),
+    /**
+     * `off` stops the notification worker in this process, such as on an
+     * instance that only serves requests; the worker runs every 5 seconds
+     * otherwise (milestone 5 plan, decision 2).
+     */
+    WORKER: z
+      .enum(["on", "off"])
+      .default("on")
+      .transform((value) => value === "on"),
   })
   .superRefine((env, context) => {
     if (env.NODE_ENV === "production" && env.AUTH_SECRET.startsWith("local-only-")) {
@@ -155,6 +164,8 @@ export interface Config {
   readonly webAppDir: string | undefined;
   readonly errorReporting: ErrorReportingConfig;
   readonly payments: PaymentsConfig;
+  /** Whether this process runs the notification worker. */
+  readonly worker: boolean;
 }
 
 export class ConfigError extends Error {
@@ -274,5 +285,6 @@ export function loadConfig(environment: Readonly<Record<string, string | undefin
     payments: {
       provider: env.PAYMENT_PROVIDER ?? (deploymentOf(env) === "production" ? "none" : "test"),
     },
+    worker: env.WORKER,
   };
 }

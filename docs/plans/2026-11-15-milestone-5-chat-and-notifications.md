@@ -192,16 +192,17 @@ Endpoints (`/v1`), shapes in `packages/contracts/src/chat.ts`:
 ### 4.4 Delivery
 
 - Tables (migration 0008): `outbox_events` (`kind`, `payload` with IDs
-  only, `created_at`, `processed_at`); `notifications` (`recipient_id`,
-  `kind`, `booking_id`, `trip_id`, `unique_key` unique, `created_at`);
-  `notification_deliveries` (`notification_id`, `channel`, `status`
-  `queued`, `sending`, `sent`, `failed` or `skipped`, `attempts`,
+  only, `created_at`, `processed_at`, `attempts`, `failed_at`); `notifications` (`recipient_id`,
+  `kind`, `booking_id`, `message_id` for a new message, `unique_key` unique,
+  `created_at`); `notification_deliveries` (`notification_id`, `channel`,
+  `status` `queued`, `sending`, `sent`, `failed` or `skipped`, `attempts`,
   `next_attempt_at`, `provider_ref`, `reason`, `sent_at`; unique per
   notification and channel); `scheduled_notifications` (`key` unique,
-  `kind`, the booking, trip or conversation, `run_at`, `done_at`);
-  `push_tokens` (`session_id` unique, `user_id`, `platform`, `token`,
-  `updated_at`); `notification_preferences` (`user_id`, `reminders`, `beta_news`, both on by
-  default). No message text is stored outside `messages` (R7.9).
+  `kind`, the booking, `run_at`, `done_at`); `push_tokens` (`session_id`
+  unique, `user_id`, `platform`, `token`, `updated_at`). PR 8 adds
+  `notification_preferences` (`user_id`, `reminders`, `beta_news`, both on
+  by default) and the trip of a driver's trip reminder, with the code that
+  uses them. No message text is stored outside `messages` (R7.9).
 - **Events:** booking, payment and chat code writes `BookingRequested`,
   `BookingAccepted`, `BookingConfirmed`, `BookingDeclined`,
   `BookingExpired` (with `unanswered` or `unpaid`), `BookingWithdrawn` and
@@ -214,7 +215,10 @@ Endpoints (`/v1`), shapes in `packages/contracts/src/chat.ts`:
      `unique_key` from the event and the person) and their deliveries, and
      schedules what follows from it (the halfway and pay reminders, the trip
      reminders, the unread email check). A second run, or a second
-     instance, finds nothing new to insert.
+     instance, finds nothing new to insert. Each event has its own
+     savepoint: one that fails is tried again on the next runs, then given
+     up (`failed_at`) after 5 tries and reported, and never holds back the
+     events after it. The three steps run even when one before them fails.
   2. Turns due scheduled notifications into notifications the same way,
      after checking they still apply: the request is still open, the
      booking is still unpaid or still confirmed, the message still unread,
@@ -225,12 +229,20 @@ Endpoints (`/v1`), shapes in `packages/contracts/src/chat.ts`:
      back to `queued` with backoff (30 seconds, doubling) until an hour has
      passed, then `failed`. A lease that runs out, because the process
      stopped in the middle of a send, becomes `failed` and is not sent
-     again, so nobody gets the same thing twice (R7.6).
+     again, so nobody gets the same thing twice (R7.6). Results are stored
+     only while the worker still holds the lease, except a send that went
+     through; if storing that fails, the lease runs out and it is not sent
+     again either. Before each try, a request or payment notification is
+     dropped once the booking has moved on (`no_longer_applies`, the
+     domain's `stillApplies`), so a retry never asks for a payment after
+     the seat was lost.
 - **Channels:** push to every push token of the person whose session has
   not ended; email to the verified address, `always` or as the `fallback`
-  when the person has no such push token at the time of sending. A channel
+  when the person has no such push token when the notification is made
+  (a push finds the tokens again when it is sent). A channel
   that cannot be used is stored as `skipped` with the reason (`no_device`,
-  `no_email`, `email_off`), so "nobody told me" can be checked.
+  `no_email`, `email_off`, `sms_off`, `no_longer_applies`), so "nobody told
+  me" can be checked.
 - **Ports** in `apps/api/src/platform/`: `PushSender.send(messages) →
   tickets` and `receipts(ids)`, `EmailSender.send({ to, subject, text,
   html, idempotencyKey })`. Fakes record what was sent, for tests and for
@@ -351,16 +363,16 @@ merge.
 
 ### PR 5: `feat(notifications)`: outbox, worker and delivery log
 
-- [ ] Migration 0008; events written in the booking, payment and chat
+- [x] Migration 0008; events written in the booking, payment and chat
       transactions (a rolled-back booking leaves no event)
-- [ ] The worker of 4.4 with fake senders: an event processed twice, and by
+- [x] The worker of 4.4 with fake senders: an event processed twice, and by
       two workers at once, gives one notification per person and channel;
       retries with backoff, then `failed`; a lost lease is not resent;
       `skipped` with its reason
-- [ ] Push and email texts for the spec 5 rows and new messages, in both
+- [x] Push and email texts for the spec 5 rows and new messages, in both
       languages; the halfway and pay reminders, dropped once answered or
       paid
-- [ ] `WORKER=off`; clean-up after 90 days; architecture overview, domain
+- [x] `WORKER=off`; clean-up after 90 days; architecture overview, domain
       model events, privacy register (notification log)
 
 ### PR 6: `feat(notifications)`: push
@@ -368,6 +380,10 @@ merge.
 - [ ] Expo push adapter (`fetch`), tickets and receipts, invalid tokens
       removed; `PUT /me/sessions/{id}/push-token`; sign-out removes tokens;
       a token of an ended session is never sent to
+- [ ] A send times out well within the two-minute lease, so a hung push
+      service never stops the worker; a token is unique, and registering
+      it again moves it to the newest session (never two people's news on
+      one device)
 - [ ] `expo-notifications` in the app: register, refresh, tap routing (cold
       start too), refetch an open conversation
 - [ ] Integrations doc, privacy inventory (push tokens, Expo as a

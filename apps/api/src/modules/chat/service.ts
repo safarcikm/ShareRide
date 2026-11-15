@@ -16,6 +16,7 @@ import {
 import { and, desc, eq, gt, inArray, isNotNull, isNull, ne, or, sql, type SQL } from "drizzle-orm";
 import type { BookingService } from "../bookings/index.ts";
 import type { Queryable } from "../bookings/seats.ts";
+import { recordEvents } from "../notifications/outbox.ts";
 
 const { bookings, conversations, messages, trips, users } = schema;
 
@@ -98,7 +99,8 @@ function present(row: MessageRow, viewerId: string): ChatMessage {
   };
 }
 
-function quickOf(row: MessageRow): QuickMessage {
+/** A stored quick message, as the app and the push show it. */
+export function quickOf(row: Pick<MessageRow, "key" | "params">): QuickMessage {
   const minutes = row.params?.["minutes"];
   return row.key === "late"
     ? ({ key: "late", minutes } as QuickMessage)
@@ -321,6 +323,7 @@ export function createChatService(dependencies: {
           })
           .returning();
         if (created === undefined) throw new Error("The message was not stored.");
+        await recordEvents(tx, [{ type: "MessageSent", messageId: created.id }], now);
         return ok({ message: present(created, userId), created: true });
       });
     },
@@ -373,7 +376,7 @@ export function createChatService(dependencies: {
         if ((await sentLastMinute(tx, driverId, now)) >= settings.rateLimitPerMinute) {
           return err({ code: "too_many_messages" });
         }
-        await tx
+        const created = await tx
           .insert(messages)
           .values(
             open.map((row) => ({
@@ -384,7 +387,13 @@ export function createChatService(dependencies: {
               ...columnsOf(checked.value),
             })),
           )
-          .onConflictDoNothing();
+          .onConflictDoNothing()
+          .returning({ id: messages.id });
+        await recordEvents(
+          tx,
+          created.map((message) => ({ type: "MessageSent", messageId: message.id })),
+          now,
+        );
         return ok({ sent: open.length });
       });
     },

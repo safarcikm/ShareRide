@@ -56,10 +56,15 @@ flowchart LR
   console is a separate web app section with its own sign-in and roles.
 - **API service:** a TypeScript modular monolith
   ([ADR 0004](../decisions/0004-backend-modular-monolith.md)).
-- **Worker:** the same codebase started in worker mode. Runs scheduled and
-  queued jobs: request expiry, reminders, trip completion, weather and road
-  checks, data retention clean-up. The job queue lives in PostgreSQL (for
-  example pg-boss) so there is no extra infrastructure to run.
+- **Worker:** the same codebase, running scheduled and queued jobs: request
+  expiry, reminders, trip completion, weather and road checks, data
+  retention clean-up. For the beta the jobs run inside the API process
+  ([milestone 5 plan](../plans/2026-11-15-milestone-5-chat-and-notifications.md),
+  decision 2): booking deadlines and owed refunds every minute, and the
+  notification worker every 5 seconds unless `WORKER=off`. The queue is our
+  own outbox and job tables in PostgreSQL, taken with `FOR UPDATE SKIP
+  LOCKED`, so more than one instance shares the work and there is no extra
+  infrastructure to run. The hourly clean-up is a separate cron job.
 - **Database:** PostgreSQL with PostGIS
   ([ADR 0005](../decisions/0005-postgresql-postgis.md)).
 - **Object storage:** S3-compatible storage in the EEA for profile and meeting

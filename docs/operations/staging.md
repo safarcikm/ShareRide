@@ -14,9 +14,9 @@ edge ([privacy providers](../compliance/privacy-gdpr.md#providers)).
 | Part | Render name | What it is |
 | ---- | ----------- | ---------- |
 | API and web app | `shareride-staging-api` | Web service built from `apps/api/Dockerfile`; serves `/v1` and the web app on one origin |
-| Clean-up | `shareride-staging-clean-up` | Cron job, every hour at minute 17 (UTC): deletes sign-in records past their retention, old trip drafts, and conversations 12 months after their trip |
+| Clean-up | `shareride-staging-clean-up` | Cron job, every hour at minute 17 (UTC): deletes sign-in records past their retention, old trip drafts, conversations 12 months after their trip, and the notification log after 90 days |
 | Database | `shareride-staging-db` | PostgreSQL 18 with PostGIS, private network only |
-| Settings | `shareride-staging` | Environment group: `NODE_ENV=production`, `APP_ENV=staging`, `LOG_LEVEL`. `PAYMENT_PROVIDER` is unset, so staging pays with the test provider: no card, no money moves |
+| Settings | `shareride-staging` | Environment group: `NODE_ENV=production`, `APP_ENV=staging`, `LOG_LEVEL`. `PAYMENT_PROVIDER` is unset, so staging pays with the test provider: no card, no money moves. `WORKER` is unset, so the API runs the notification worker; until push and email are connected it only records who would be told |
 
 The address is the one Render shows for `shareride-staging-api`, usually
 `https://shareride-staging-api.onrender.com`. The web app and the API share

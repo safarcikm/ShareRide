@@ -26,6 +26,7 @@ import { alias } from "drizzle-orm/pg-core";
 import type { AccountService } from "../account/index.ts";
 import { bookingConfirmed } from "./confirmed.ts";
 import { toSummary } from "../meeting-points/service.ts";
+import { recordEvents } from "../notifications/outbox.ts";
 import {
   changeOccupancy,
   expireDueBookings,
@@ -308,6 +309,13 @@ export function createBookingService(dependencies: {
       }
       if (change.status === "confirmed") {
         await bookingConfirmed(tx, { id: bookingId, tripId: found.tripId }, now);
+      } else {
+        const told = {
+          accept: "BookingAccepted",
+          decline: "BookingDeclined",
+          withdraw: "BookingWithdrawn",
+        } as const;
+        await recordEvents(tx, [{ type: told[event], bookingId }], now);
       }
       const shown = await readOne(tx, bookingId, viewerId, now);
       if (shown === undefined) throw new Error("The booking was not stored.");
@@ -420,8 +428,12 @@ export function createBookingService(dependencies: {
           { board: input.fromStop, alight: input.toStop },
           input.seats,
         );
-        if (plan.status === "confirmed")
+        if (plan.status === "confirmed") {
           await bookingConfirmed(tx, { id: created.id, tripId }, now);
+        } else {
+          const type = plan.status === "requested" ? "BookingRequested" : "BookingAccepted";
+          await recordEvents(tx, [{ type, bookingId: created.id }], now);
+        }
         const booking = await readOne(tx, created.id, passengerId, now);
         if (booking === undefined) throw new Error("The booking was not stored.");
         return ok({ booking, created: true });

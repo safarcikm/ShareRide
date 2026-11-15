@@ -1,3 +1,4 @@
+import type { BookingStatus } from "../bookings/lifecycle.ts";
 import type { NotificationSettings } from "./settings.ts";
 
 // The notification catalogue (spec 7, 3.3 and 3.4): who is told about each
@@ -178,12 +179,35 @@ export interface Recipient {
   readonly smsSentToday: number;
 }
 
-export type Channel = "push" | "email" | "sms";
+/**
+ * Some notifications ask for something the booking is waiting for: the
+ * driver's answer to a request, or the passenger's payment. Once the booking
+ * has moved on (its status as of now, `statusAt`), they are not sent, not
+ * even when a failed send is tried again: a passenger is never asked to pay
+ * for a seat already lost. The rest tell what happened, and always apply.
+ */
+export function stillApplies(kind: NotificationKind, status: BookingStatus): boolean {
+  switch (kind) {
+    case "request_new":
+    case "request_halfway":
+      return status === "requested";
+    case "pay_now":
+    case "pay_reminder":
+      return status === "accepted";
+    default:
+      return true;
+  }
+}
+
+export const channels = ["push", "email", "sms"] as const;
+export type Channel = (typeof channels)[number];
 
 /**
  * Why a channel was not used. `has_push`: the email is only a fallback and
- * the person has push. `email_off`: no email provider is set up (the
- * worker's own reason).
+ * the person has push. The worker's own reasons: `email_off`, no email
+ * provider is set up; `sms_off`, SMS is not sent yet (spec 6);
+ * `no_longer_applies`, the booking moved on before it was sent
+ * (`stillApplies`).
  */
 export const skipReasons = [
   "no_device",
@@ -193,6 +217,8 @@ export const skipReasons = [
   "outside_sms_window",
   "sms_limit",
   "email_off",
+  "sms_off",
+  "no_longer_applies",
 ] as const;
 export type SkipReason = (typeof skipReasons)[number];
 
