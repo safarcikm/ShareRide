@@ -219,6 +219,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   page, the search form and the route step of posting a trip, the field
   turns into a text box and the places found drop down under it. On the
   route step a town lists its nearest meeting points in the same list.
+- Chat and notification rules (milestone 5, PR 2): when a booking's
+  conversation opens and closes, the checks for a message (1 to 1 000
+  characters, or a quick message such as "I'm running 10 minutes late"),
+  who is told about each event and on which channels, the SMS window and
+  daily limit, and when reminders and the other timed notifications come.
+  Quick messages and the conversation's first line are in Icelandic and
+  English.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

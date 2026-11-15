@@ -48,3 +48,8 @@ export function fromIceland(parts: CalendarParts): Date {
     Date.UTC(shown.year, shown.month - 1, shown.day, shown.hour, shown.minute) - asIfUtc;
   return new Date(asIfUtc - offsetMs);
 }
+
+/** Midnight on a clock in Iceland on the day of this moment. */
+export function startOfIcelandDay(moment: Date): Date {
+  return fromIceland({ ...inIceland(moment), hour: 0, minute: 0 });
+}

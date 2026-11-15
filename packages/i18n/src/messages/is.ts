@@ -606,5 +606,12 @@ export const is = {
   "format.minutes": "{minutes} mín.",
   "format.hours": "{hours} klst.",
   "format.hoursMinutes": "{hours} klst. {minutes} mín.",
+  "chat.opened": "Bókunin er staðfest. Þið getið skrifast á hér.",
+  "quick.late": "Mér seinkar um {minutes} mínútur",
+  "quick.atPoint": "Ég er á mótsstaðnum",
+  "quick.onMyWay": "Ég er á leiðinni",
+  "quick.whereAreYou": "Hvar ertu?",
+  "quick.seeYou": "Sjáumst bráðum",
+  "quick.thanks": "Takk fyrir!",
   "sms.signInCode": "{code} er ShareRide kóðinn þinn. Hann gildir í 10 mínútur.",
 } as const satisfies Record<MessageKey, string>;

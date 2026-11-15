@@ -599,6 +599,13 @@ export const en = {
   "format.minutes": "{minutes} min",
   "format.hours": "{hours} h",
   "format.hoursMinutes": "{hours} h {minutes} min",
+  "chat.opened": "Booking confirmed. You can message each other here.",
+  "quick.late": "I'm running {minutes} minutes late",
+  "quick.atPoint": "I'm at the meeting point",
+  "quick.onMyWay": "I'm on my way",
+  "quick.whereAreYou": "Where are you?",
+  "quick.seeYou": "See you soon",
+  "quick.thanks": "Thank you!",
   "sms.signInCode": "{code} is your ShareRide code. It expires in 10 minutes.",
 } as const satisfies Record<string, string>;
 
