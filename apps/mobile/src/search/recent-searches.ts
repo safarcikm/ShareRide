@@ -1,7 +1,7 @@
 // The last five searches, kept on this device only (spec 4, 3.1 and section
 // 7): never sent to the API or stored with an account.
 import type { MeetingPointSummary } from "@shareride/contracts";
-import { readPreference, writePreference } from "@/lib/preferences";
+import { readAppData, writeAppData } from "@/lib/app-data";
 
 /** A name in Icelandic and English. */
 export type LocalisedText = MeetingPointSummary["name"];
@@ -57,7 +57,7 @@ const sameSearch = (a: SearchQuery, b: SearchQuery) =>
  * Anything unreadable is left out.
  */
 export async function loadRecentSearches(today: string): Promise<SearchQuery[]> {
-  const stored = await readPreference(storageKey);
+  const stored = await readAppData(storageKey);
   if (stored === null) return [];
   let parsed: unknown;
   try {
@@ -81,11 +81,11 @@ export async function saveRecentSearch(query: SearchQuery, today: string): Promi
     0,
     recentLimit,
   );
-  await writePreference(storageKey, JSON.stringify(recent));
+  await writeAppData(storageKey, JSON.stringify(recent));
   return recent;
 }
 
 /** Forgets every saved search on this device. */
 export async function clearRecentSearches(): Promise<void> {
-  await writePreference(storageKey, JSON.stringify([]));
+  await writeAppData(storageKey, JSON.stringify([]));
 }

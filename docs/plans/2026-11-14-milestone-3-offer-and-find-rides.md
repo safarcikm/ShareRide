@@ -316,7 +316,8 @@ Split in two, like PR 5: 6a the server, 6b the screens.
   profile open the search. From and To take a meeting point or a place,
   the date is any day or one day, and seats go from 1 to 8. The last five
   searches stay on the device with their names (local storage on the web,
-  secure storage on phones); one whose date has passed repeats as any day,
+  the app's own files on phones, which go when the app is deleted, as
+  Martin chose on 2026-11-15); one whose date has passed repeats as any day,
   and "Clear recent searches" removes them all.
   Results are grouped by day when sorted by time; sorted by price they are
   one list with each trip's day. Results show the driver's initial and

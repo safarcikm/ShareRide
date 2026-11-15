@@ -1,7 +1,8 @@
 import { fireEvent, screen, within } from "expo-router/testing-library";
 import type * as Days from "@/lib/days";
 import { showsOtherTime } from "@/lib/days";
-import { readPreference, writePreference } from "@/lib/preferences";
+import { readAppData, writeAppData } from "@/lib/app-data";
+import { writePreference } from "@/lib/preferences";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { failure, ok } from "@/testing/fake-client";
@@ -18,6 +19,11 @@ jest.mock("@/lib/preferences", () => ({
   readPreference: jest.fn(() => Promise.resolve(null)),
   writePreference: jest.fn(() => Promise.resolve()),
 }));
+// Recent searches live in the app's own storage, which goes with the app.
+jest.mock("@/lib/app-data", () => ({
+  readAppData: jest.fn(() => Promise.resolve(null)),
+  writeAppData: jest.fn(() => Promise.resolve()),
+}));
 // Saturday 14 November 2026, noon in Iceland.
 jest.mock("@/lib/clock", () => ({ now: () => new Date("2026-11-14T12:00:00Z") }));
 // The device's time zone, which one test changes.
@@ -26,8 +32,8 @@ jest.mock("@/lib/days", () => ({
   showsOtherTime: jest.fn(() => false),
 }));
 
-const mockedRead = readPreference as jest.Mock;
-const mockedWrite = writePreference as jest.Mock;
+const mockedRead = readAppData as jest.Mock;
+const mockedWrite = writeAppData as jest.Mock;
 const mockedShowsOtherTime = showsOtherTime as jest.Mock;
 
 beforeEach(() => {
@@ -86,9 +92,12 @@ describe("Searching for a ride (spec 4)", () => {
     expect(screen.getByRole("header", { name: "Sunday 15 November" })).toBeVisible();
     expect(screen.getByText("That's every trip found.")).toBeVisible();
 
-    // The search is kept on this device, with its names.
+    // The search is kept on this device, with its names, in the app's own
+    // storage rather than the secure storage, which iOS can keep after the
+    // app is deleted.
     const [key, value] = (mockedWrite.mock.calls as [string, string][]).at(-1) ?? [];
     expect(key).toBe("recentSearches");
+    expect(writePreference).not.toHaveBeenCalledWith("recentSearches", expect.anything());
     expect(JSON.parse(value ?? "null")).toEqual([
       {
         from: { id: borgarnes.id, name: borgarnes.name },
