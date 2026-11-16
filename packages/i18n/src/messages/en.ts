@@ -139,6 +139,11 @@ export const en = {
   "settings.addEmail": "Add an email",
   "settings.changeEmail": "Change your email",
   "settings.emailWaiting": "Waiting for you to open the link sent to {email}.",
+  "settings.notifications": "Notifications",
+  "settings.reminders": "Trip reminders",
+  "settings.remindersHelp": "The evening before and an hour before each trip.",
+  "settings.alwaysOn":
+    "Notifications about bookings, trips, payments and messages are always on, because others rely on them.",
   "addEmail.title": "Your email",
   "addEmail.intro":
     "Booking news reaches you by email when a push notification can't. Nobody else sees your email.",
@@ -740,6 +745,18 @@ export const en = {
   "notify.newMessage": "{name}",
   /** The name of the app's notifications in Android's settings. */
   "notify.channel": "Rides and messages",
+  /** Trip reminders (spec 7, 3.5): names and places after a colon or a dot. */
+  "reminder.evening": "Tomorrow at {time} · Meeting point: {point}",
+  "reminder.hour": "In one hour, at {time} · Meeting point: {point}",
+  "reminder.driverEvening":
+    "Tomorrow at {time}: {count, plural, one {# passenger} other {# passengers}}",
+  "reminder.driverHour":
+    "In one hour, at {time}: {count, plural, one {# passenger} other {# passengers}}",
+  "reminder.driver": "Driver: {name} · {car}",
+  "reminder.driverWithoutCar": "Driver: {name}",
+  "reminder.passenger": "{name}: {from} – {to}",
+  "reminder.addPlate": "Add your number plate so passengers can find your car.",
+  "reminder.directions": "Directions",
   /** An email about chat messages: never their text (spec 7, 3.6 and R7.9). */
   "email.unreadMessages": "You have unread messages about your trip on {date}",
   "email.unreadMessagesBody": "Open the chat in ShareRide to read them.",

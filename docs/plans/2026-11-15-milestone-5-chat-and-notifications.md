@@ -345,7 +345,17 @@ Endpoints (`/v1`), shapes in `packages/contracts/src/chat.ts`:
 - The texts follow 3.5: time, where to get in, driver and car for the
   passenger; passengers and where each gets in and out for the driver, with
   "Add your number plate" while it is missing. "Directions" opens the
-  meeting point page.
+  meeting point page: a passenger's reminder opens it when tapped, and its
+  email's link is called "Directions".
+- A driver's reminder is about the trip, not one booking: the notification
+  and its schedule carry `trip_id`, and its text is made when sent from the
+  bookings still confirmed. A passenger's is skipped when its booking is no
+  longer confirmed (`stillApplies`); both are skipped once reminders are
+  off, also when a failed send is tried again. The schedule starts from
+  when the booking was confirmed (the event's time), so a reminder whose
+  moment passed while the worker was stopped still goes, but only while it
+  is of use (`reminderStillTimely`): the evening one until midnight, the
+  hour one until boarding, also on a retry.
 - `GET /me/notification-settings` and `PATCH` (`{ reminders }`). Settings
   gets a "Notifications" group between Language and "Your account": the
   Trip reminders switch and `settings.alwaysOn` under it.
@@ -456,16 +466,24 @@ lets people add an address to send it to.
 - Verify: a browser journey adds an email, opens the link from the test
   API's outbox, and gets the "Pay now" email after a request is accepted
 
-### PR 8: `feat(notifications)`: reminders and settings
+PR 8 is split in two: the prompt waits for the finish screens of the UX
+work (spec 16, proposal 4), which leave a slot for it.
 
-- [ ] Passenger and driver reminders with their texts; dropped when the
-      booking ends or reminders are off; replaced by key
-- [ ] `GET` and `PATCH /me/notification-settings`; the "Notifications"
+### PR 8a: `feat(notifications)`: trip reminders and settings
+
+- [x] Passenger and driver reminders with their texts; dropped when the
+      booking ends, reminders are off or it comes too late; replaced by key
+- [x] `GET` and `PATCH /me/notification-settings`; the "Notifications"
       group in Settings
-- [ ] `NotificationsPrompt` on the finish screens of booking and posting,
-      and when a request is accepted
 - Verify: an integration test with a fake clock sends the evening and the
   hour reminders once each; a browser journey turns reminders off
+
+### PR 8b: `feat(notifications)`: the prompt to turn on notifications
+
+- [ ] `NotificationsPrompt` on the finish screens of booking and posting,
+      and when a request is accepted
+- Verify: a screen test shows it once per occasion to someone with no push
+  token and no verified email, and "Not now" closes it
 
 ## 6. Review focus
 

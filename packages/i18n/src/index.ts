@@ -1,3 +1,4 @@
+export * from "./car.ts";
 export * from "./chat.ts";
 export * from "./country-names.generated.ts";
 export * from "./format.ts";

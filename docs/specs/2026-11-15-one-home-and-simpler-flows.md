@@ -270,7 +270,8 @@ Find replaces both the front page and My profile as the place the app opens.
    Íslenska, with the current one ticked. Rows are grouped: Language, Your
    account (Phone number, Email, Signed-in devices), Legal documents, then
    Sign out and Sign out on all devices. Your account with Phone number and
-   Email came first, with adding an email (milestone 5, PR 7b).
+   Email came first, with adding an email (milestone 5, PR 7b), then
+   Notifications (the Trip reminders switch, spec 7) after it (PR 8a).
 5. **Rows start at the left:** list rows, settings rows and their texts start
    at the left, so they are easy to scan. Titles and buttons stay centred
    (spec 15, 5.1).

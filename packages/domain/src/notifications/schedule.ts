@@ -1,4 +1,4 @@
-import { fromIceland, inIceland } from "../time.ts";
+import { fromIceland, inIceland, startOfIcelandDay } from "../time.ts";
 import type { NotificationSettings } from "./settings.ts";
 
 // When the notifications that wait for a moment come (spec 7, 3.3 and 3.5).
@@ -35,6 +35,22 @@ export function reminderTimes(
     { which: "hour", at: hour },
   ];
   return reminders.filter((reminder) => reminder.at >= trip.since);
+}
+
+/**
+ * Whether a reminder may still go at `now`. Its words are relative
+ * ("Tomorrow at…", "In one hour…"), so one that comes late, as after the
+ * API was stopped or after failed tries, is dropped: the evening one once
+ * the trip's day has begun in Iceland, the hour one at the boarding or
+ * departure time.
+ */
+export function reminderStillTimely(
+  reminder: { readonly which: Reminder["which"]; readonly startsAt: Date },
+  now: Date,
+): boolean {
+  const until =
+    reminder.which === "evening" ? startOfIcelandDay(reminder.startsAt) : reminder.startsAt;
+  return now < until;
 }
 
 /** The driver hears again about an unanswered request halfway to its deadline. */

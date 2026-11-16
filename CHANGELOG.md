@@ -300,6 +300,19 @@ releases follow [Semantic Versioning](https://semver.org/).
   Waits over an hour are shown in hours. The browser tests' API writes its
   emails to a file and runs the notification worker, so a journey can open
   a link and see the "Pay now" email.
+- Trip reminders (milestone 5, PR 8a, spec 7, 3.5): a passenger hears at
+  18:00 the evening before and an hour before boarding ("Tomorrow at 05:30 ·
+  Meeting point: Hlemmur", with the driver and the car); tapping it opens
+  the meeting point page, and the evening one comes by email to someone
+  without push, with a "Directions" link. The driver gets one reminder for
+  the trip, listing who gets in and out where, and "Add your number plate"
+  while it is missing. A reminder is skipped if its moment passed before
+  the booking was confirmed, and dropped if the booking ended, nobody is
+  booked, or it comes too late (the evening one after midnight, any after
+  the trip left), also when a failed send is tried again. Settings gains "Notifications" with a Trip reminders switch,
+  saved to the account (`GET` and `PATCH /v1/me/notification-settings`);
+  the rest of the news stays on, and Settings says so. Quick taps on the
+  switch are saved one after the other, so the last one is kept.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

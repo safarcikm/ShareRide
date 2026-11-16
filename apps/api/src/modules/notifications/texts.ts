@@ -7,7 +7,9 @@ import type {
 } from "@shareride/domain";
 import {
   capitalised,
+  carText,
   createTranslator,
+  type CarFacts,
   formatClock,
   formatDay,
   formatMoney,
@@ -25,7 +27,7 @@ import {
  * or payment details (R7.9).
  */
 export interface NotificationFacts {
-  readonly kind: NotificationKind;
+  readonly kind: Exclude<NotificationKind, TripReminderFacts["kind"]>;
   /** The recipient's place on the trip. */
   readonly role: TripRole;
   readonly bookingId: string;
@@ -42,6 +44,26 @@ export interface NotificationFacts {
   readonly paymentDueAt: Date | null;
   /** For a new message: its text, or its quick message. */
   readonly message: { readonly text: string } | { readonly quick: QuickMessage } | null;
+  /** The meeting point where the passenger gets in, for "Directions". */
+  readonly boardPointId: string;
+  /** The trip's car: make, model and colour, never its number plate. */
+  readonly car: CarFacts | null;
+}
+
+/** A driver's trip reminder (3.5): about the trip and everyone booked on it. */
+export interface TripReminderFacts {
+  readonly kind: "reminder_evening_driver" | "reminder_hour_driver";
+  readonly role: "driver";
+  readonly tripId: string;
+  readonly departsAt: Date;
+  /** Booked and confirmed, in the order they get in. */
+  readonly passengers: readonly {
+    readonly name: string;
+    readonly from: string;
+    readonly to: string;
+  }[];
+  /** Whether the car has no number plate yet: the reminder asks for it (spec 3). */
+  readonly plateMissing: boolean;
 }
 
 export interface NotificationText {
@@ -49,6 +71,8 @@ export interface NotificationText {
   readonly body: string;
   /** The screen a tap opens. */
   readonly path: string;
+  /** The words of an email's link to it, when not the usual "Open in ShareRide". */
+  readonly open?: string;
 }
 
 function required(moment: Date | null, what: string): Date {
@@ -58,9 +82,19 @@ function required(moment: Date | null, what: string): Date {
 
 /**
  * The title, body and screen of a notification: the kinds of spec 5's
- * events, new messages, and the email about unread ones.
+ * events, new messages, the email about unread ones, and trip reminders.
  */
 export function notificationText(
+  facts: NotificationFacts | TripReminderFacts,
+  locale: Locale,
+  settings: NotificationSettings,
+): NotificationText {
+  return "passengers" in facts
+    ? tripReminderText(facts, locale)
+    : bookingText(facts, locale, settings);
+}
+
+function bookingText(
   facts: NotificationFacts,
   locale: Locale,
   settings: NotificationSettings,
@@ -125,21 +159,56 @@ export function notificationText(
           t("email.unreadMessages", { date: formatDay(facts.boardsAt, locale) }),
           t("email.unreadMessagesBody"),
         ];
+      case "reminder_evening":
+      case "reminder_hour": {
+        const values = { time: formatClock(facts.boardsAt), point: from };
+        const { car } = facts;
+        return [
+          t(facts.kind === "reminder_evening" ? "reminder.evening" : "reminder.hour", values),
+          car === null
+            ? t("reminder.driverWithoutCar", { name })
+            : t("reminder.driver", { name, car: carText(t, car) }),
+        ];
+      }
       default:
         throw new Error(`No text for ${facts.kind} yet.`);
     }
   })();
 
+  const reminder = facts.kind === "reminder_evening" || facts.kind === "reminder_hour";
   const path =
     facts.kind === "new_message" || facts.kind === "unread_messages"
       ? `/messages/${facts.bookingId}`
-      : facts.role === "driver"
-        ? `/drive/trips/${facts.tripId}`
-        : `/bookings/${facts.bookingId}`;
+      : reminder
+        ? // "Directions" opens the meeting point page, with its photo (3.5).
+          `/meeting-points/${facts.boardPointId}`
+        : facts.role === "driver"
+          ? `/drive/trips/${facts.tripId}`
+          : `/bookings/${facts.bookingId}`;
   return {
     title: capitalised(title, locale),
     // A message is shown as its sender wrote it.
     body: facts.kind === "new_message" ? body : capitalised(body, locale),
     path,
+    ...(reminder ? { open: t("reminder.directions") } : {}),
+  };
+}
+
+/** Who gets in and out where, one line each, and the number plate if it is missing. */
+function tripReminderText(facts: TripReminderFacts, locale: Locale): NotificationText {
+  const t = createTranslator(locale);
+  const values = { time: formatClock(facts.departsAt), count: facts.passengers.length };
+  const lines = facts.passengers.map((passenger) => t("reminder.passenger", { ...passenger }));
+  if (facts.plateMissing) lines.push(t("reminder.addPlate"));
+  return {
+    title: capitalised(
+      t(
+        facts.kind === "reminder_evening_driver" ? "reminder.driverEvening" : "reminder.driverHour",
+        values,
+      ),
+      locale,
+    ),
+    body: lines.join("\n"),
+    path: `/drive/trips/${facts.tripId}`,
   };
 }

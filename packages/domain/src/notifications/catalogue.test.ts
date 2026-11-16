@@ -258,6 +258,15 @@ describe("stillApplies", () => {
     }
   });
 
+  it("reminds a passenger only of a booking still confirmed (R7.11)", () => {
+    for (const kind of ["reminder_evening", "reminder_hour"] as const) {
+      expect(stillApplies(kind, "confirmed")).toBe(true);
+      for (const status of ["cancelled", "accepted", "expired", "requested"] as const) {
+        expect(stillApplies(kind, status)).toBe(false);
+      }
+    }
+  });
+
   it("tells what happened whatever the booking has done since", () => {
     for (const kind of ["booking_confirmed", "request_declined", "new_message"] as const) {
       expect(stillApplies(kind, "expired")).toBe(true);

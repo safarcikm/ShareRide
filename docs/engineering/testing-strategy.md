@@ -81,7 +81,9 @@ ride" and from Sign in under Profile to signing in, and shows the menu of
 five places on every main screen, marking the one you are on
 (`apps/mobile/e2e/welcome.spec.ts`). A passenger adds an email in Settings,
 opens the link from the email, and gets the "Pay now" email once a request
-is accepted (`apps/mobile/e2e/email.spec.ts`).
+is accepted (`apps/mobile/e2e/email.spec.ts`). Trip reminders are turned off
+in Settings and stay off after a reload
+(`apps/mobile/e2e/notification-settings.spec.ts`).
 
 ## Coverage
 

@@ -3,6 +3,7 @@ import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { chatBooking, chatServer } from "@/testing/chat";
 import { ok, testMe, type FakeClient } from "@/testing/fake-client";
+import { bsi, details } from "@/testing/meeting-points";
 import { mockNotifications } from "@/testing/notifications";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
@@ -111,7 +112,25 @@ describe("Push notifications (plan 4.5)", () => {
     expect(screen).toHavePathname(conversationPage);
   });
 
-  it("ignores a tap that leads anywhere but a booking, a trip or a conversation", async () => {
+  it("opens the meeting point of a tapped trip reminder, for Directions (spec 7, 3.5)", async () => {
+    const page = `/meeting-points/${bsi.id}`;
+    await renderApp("/", {
+      me: completeMe,
+      setUp: (client) => {
+        withPush(client);
+        client.answer("/v1/meeting-points/{id}", () => ok(200, details(bsi)));
+      },
+    });
+    await screen.findAllByRole("header");
+    await act(async () => {
+      mockNotifications.tap(page);
+      await Promise.resolve();
+    });
+    expect(await screen.findByRole("header", { name: "BSÍ bus terminal" })).toBeVisible();
+    expect(screen).toHavePathname(page);
+  });
+
+  it("ignores a tap that leads anywhere but a booking, a trip, a conversation or a meeting point", async () => {
     await renderApp("/profile", { me: completeMe, setUp: withPush });
     await screen.findAllByRole("header");
     expect(screen).toHavePathname("/profile");

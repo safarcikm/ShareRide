@@ -141,6 +141,11 @@ export const is = {
   "settings.addEmail": "Bæta við netfangi",
   "settings.changeEmail": "Breyta netfangi",
   "settings.emailWaiting": "Bíður þess að þú opnir hlekkinn sem var sendur á {email}.",
+  "settings.notifications": "Tilkynningar",
+  "settings.reminders": "Áminningar um ferðir",
+  "settings.remindersHelp": "Kvöldið áður og klukkustund fyrir hverja ferð.",
+  "settings.alwaysOn":
+    "Tilkynningar um bókanir, ferðir, greiðslur og skilaboð eru alltaf á, því aðrir treysta á þær.",
   "addEmail.title": "Netfangið þitt",
   "addEmail.intro":
     "Fréttir af bókunum berast þér í tölvupósti þegar tilkynning kemst ekki til skila. Enginn annar sér netfangið þitt.",
@@ -746,6 +751,17 @@ export const is = {
   "notify.newMessage": "{name}",
   /** The name of the app's notifications in Android's settings. */
   "notify.channel": "Ferðir og skilaboð",
+  "reminder.evening": "Á morgun kl. {time} · Mótsstaður: {point}",
+  "reminder.hour": "Eftir klukkustund, kl. {time} · Mótsstaður: {point}",
+  "reminder.driverEvening":
+    "Á morgun kl. {time}: {count, plural, one {# farþegi} other {# farþegar}}",
+  "reminder.driverHour":
+    "Eftir klukkustund, kl. {time}: {count, plural, one {# farþegi} other {# farþegar}}",
+  "reminder.driver": "Bílstjóri: {name} · {car}",
+  "reminder.driverWithoutCar": "Bílstjóri: {name}",
+  "reminder.passenger": "{name}: {from} – {to}",
+  "reminder.addPlate": "Bættu við bílnúmerinu svo farþegarnir finni bílinn.",
+  "reminder.directions": "Leiðarlýsing",
   "email.unreadMessages": "Þú átt ólesin skilaboð um ferðina: {date}",
   "email.unreadMessagesBody": "Opnaðu spjallið í ShareRide til að lesa þau.",
   "email.open": "Opna í ShareRide",

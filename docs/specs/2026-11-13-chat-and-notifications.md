@@ -300,10 +300,15 @@ inside a sentence.
 | `reminder.evening` | Tomorrow at {time} · Meeting point: {point} | Á morgun kl. {time} · Mótsstaður: {point} |
 | `reminder.hour` | In one hour, at {time} · Meeting point: {point} | Eftir klukkustund, kl. {time} · Mótsstaður: {point} |
 | `reminder.driverEvening` | Tomorrow at {time}: {count, plural, one {# passenger} other {# passengers}} | Á morgun kl. {time}: {count, plural, one {# farþegi} other {# farþegar}} |
+| `reminder.driverHour` | In one hour, at {time}: {count, plural, one {# passenger} other {# passengers}} | Eftir klukkustund, kl. {time}: {count, plural, one {# farþegi} other {# farþegar}} |
+| `reminder.driver` | Driver: {name} · {car} | Bílstjóri: {name} · {car} |
+| `reminder.driverWithoutCar` | Driver: {name} | Bílstjóri: {name} |
+| `reminder.passenger` | {name}: {from} – {to} | {name}: {from} – {to} |
 | `reminder.addPlate` | Add your number plate so passengers can find your car. | Bættu við bílnúmerinu svo farþegarnir finni bílinn. |
 | `reminder.directions` | Directions | Leiðarlýsing |
 | `settings.notifications` | Notifications | Tilkynningar |
 | `settings.reminders` | Trip reminders | Áminningar um ferðir |
+| `settings.remindersHelp` | The evening before and an hour before each trip. | Kvöldið áður og klukkustund fyrir hverja ferð. |
 | `settings.alwaysOn` | Notifications about bookings, trips, payments and messages are always on, because others rely on them. | Tilkynningar um bókanir, ferðir, greiðslur og skilaboð eru alltaf á, því aðrir treysta á þær. |
 | `notifications.turnOn` | Turn on notifications so you hear at once if your trip changes. | Kveiktu á tilkynningum svo þú fáir strax að vita ef ferðin breytist. |
 | `notifications.addEmail` | Add an email so we can reach you if your trip changes. | Bættu við netfangi svo við getum látið þig vita ef ferðin breytist. |

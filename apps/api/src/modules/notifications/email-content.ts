@@ -37,7 +37,7 @@ export function emailContent(
 ): EmailContent {
   const t = createTranslator(locale);
   const link = `${webAppUrl}${notification.path}`;
-  const open = words?.open ?? t("email.open");
+  const open = words?.open ?? notification.open ?? t("email.open");
   const footer = words?.footer ?? t("email.footer");
   const text = [notification.body, "", `${open}: ${link}`, "", footer].join("\n");
   const html = [

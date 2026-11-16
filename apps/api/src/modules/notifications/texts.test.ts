@@ -1,7 +1,7 @@
-import { defaultNotificationSettings, type NotificationKind } from "@shareride/domain";
+import { defaultNotificationSettings } from "@shareride/domain";
 import { locales } from "@shareride/i18n";
 import { describe, expect, it } from "vitest";
-import { notificationText, type NotificationFacts } from "./texts.ts";
+import { notificationText, type NotificationFacts, type TripReminderFacts } from "./texts.ts";
 
 // Saturday 14 November 2026: boarding at 09:00 in Iceland (UTC all year).
 const facts: NotificationFacts = {
@@ -18,13 +18,28 @@ const facts: NotificationFacts = {
   requestExpiresAt: new Date("2026-11-14T00:05:00Z"),
   paymentDueAt: new Date("2026-11-13T12:30:00Z"),
   message: null,
+  boardPointId: "point-bsi",
+  car: { make: "Toyota", model: "Yaris", colour: "white" },
 };
+
+const gunna = { name: "Gunna", from: "BSÍ", to: "Hof, Akureyri" };
+const tripFacts: TripReminderFacts = {
+  kind: "reminder_evening_driver",
+  role: "driver",
+  tripId: "trip-1",
+  departsAt: new Date("2026-11-14T09:00:00Z"),
+  passengers: [gunna, { name: "Siggi", from: "Borgarnes", to: "Blönduós" }],
+  plateMissing: false,
+};
+
+const tripText = (changes: Partial<TripReminderFacts>, locale: "is" | "en" = "en") =>
+  notificationText({ ...tripFacts, ...changes }, locale, defaultNotificationSettings);
 
 const text = (changes: Partial<NotificationFacts>, locale: "is" | "en" = "en") =>
   notificationText({ ...facts, ...changes }, locale, defaultNotificationSettings);
 
 /** The kinds spec 5's events and new messages give (PR 5), with whom they go to. */
-const kinds: readonly [NotificationKind, "driver" | "passenger"][] = [
+const kinds: readonly [NotificationFacts["kind"], "driver" | "passenger"][] = [
   ["request_new", "driver"],
   ["request_halfway", "driver"],
   ["pay_now", "passenger"],
@@ -39,6 +54,8 @@ const kinds: readonly [NotificationKind, "driver" | "passenger"][] = [
   ["payment_window_ended_driver", "driver"],
   ["new_message", "passenger"],
   ["unread_messages", "passenger"],
+  ["reminder_evening", "passenger"],
+  ["reminder_hour", "passenger"],
 ];
 
 describe("notification texts", () => {
@@ -47,6 +64,13 @@ describe("notification texts", () => {
     (locale) => {
       for (const [kind, role] of kinds) {
         const { title, body } = text({ kind, role, message: { text: "Halló" } }, locale);
+        for (const line of [title, body]) {
+          expect(line, kind).not.toMatch(/[{}]/);
+          expect(line.charAt(0), kind).toBe(line.charAt(0).toLocaleUpperCase(locale));
+        }
+      }
+      for (const kind of ["reminder_evening_driver", "reminder_hour_driver"] as const) {
+        const { title, body } = tripText({ kind, plateMissing: true }, locale);
         for (const line of [title, body]) {
           expect(line, kind).not.toMatch(/[{}]/);
           expect(line.charAt(0), kind).toBe(line.charAt(0).toLocaleUpperCase(locale));
@@ -114,6 +138,44 @@ describe("notification texts", () => {
       title: "Þú átt ólesin skilaboð um ferðina: laugardagur 14. nóvember",
       body: "Opnaðu spjallið í ShareRide til að lesa þau.",
       path: "/messages/booking-1",
+    });
+  });
+
+  it("remind a passenger of the time, the meeting point, the driver and the car, with Directions (3.5)", () => {
+    expect(text({ kind: "reminder_evening", role: "passenger" })).toEqual({
+      title: "Tomorrow at 09:00 · Meeting point: BSÍ",
+      body: "Driver: Jón · White Toyota Yaris",
+      path: "/meeting-points/point-bsi",
+      open: "Directions",
+    });
+    expect(text({ kind: "reminder_hour", role: "passenger" }, "is")).toEqual({
+      title: "Eftir klukkustund, kl. 09:00 · Mótsstaður: BSÍ",
+      body: "Bílstjóri: Jón · Hvítur Toyota Yaris",
+      path: "/meeting-points/point-bsi",
+      open: "Leiðarlýsing",
+    });
+    expect(text({ kind: "reminder_hour", role: "passenger", car: null }).body).toBe("Driver: Jón");
+    expect(
+      text({
+        kind: "reminder_hour",
+        role: "passenger",
+        car: { make: "Kia", model: "Ceed", colour: "other" },
+      }).body,
+    ).toBe("Driver: Jón · Kia Ceed");
+  });
+
+  it("remind a driver who gets in and out where, and of a missing number plate (3.5)", () => {
+    expect(tripText({})).toEqual({
+      title: "Tomorrow at 09:00: 2 passengers",
+      body: "Gunna: BSÍ – Hof, Akureyri\nSiggi: Borgarnes – Blönduós",
+      path: "/drive/trips/trip-1",
+    });
+    expect(
+      tripText({ kind: "reminder_hour_driver", passengers: [gunna], plateMissing: true }, "is"),
+    ).toEqual({
+      title: "Eftir klukkustund, kl. 09:00: 1 farþegi",
+      body: "Gunna: BSÍ – Hof, Akureyri\nBættu við bílnúmerinu svo farþegarnir finni bílinn.",
+      path: "/drive/trips/trip-1",
     });
   });
 });

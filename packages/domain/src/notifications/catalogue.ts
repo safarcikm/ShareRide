@@ -184,7 +184,8 @@ export interface Recipient {
  * driver's answer to a request, or the passenger's payment. Once the booking
  * has moved on (its status as of now, `statusAt`), they are not sent, not
  * even when a failed send is tried again: a passenger is never asked to pay
- * for a seat already lost. The rest tell what happened, and always apply.
+ * for a seat already lost. A passenger's reminder needs the booking still
+ * confirmed. The rest tell what happened, and always apply.
  */
 export function stillApplies(kind: NotificationKind, status: BookingStatus): boolean {
   switch (kind) {
@@ -194,6 +195,12 @@ export function stillApplies(kind: NotificationKind, status: BookingStatus): boo
     case "pay_now":
     case "pay_reminder":
       return status === "accepted";
+    // A reminder of a booking that has ended is dropped (R7.11). The
+    // driver's reminders are about the trip: the worker checks someone is
+    // still booked.
+    case "reminder_evening":
+    case "reminder_hour":
+      return status === "confirmed";
     default:
       return true;
   }
