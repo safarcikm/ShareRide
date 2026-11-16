@@ -391,6 +391,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   a free ride, "You're booked!" says when and where the driver picks you
   up, what happens next and where to stand, with "See it in My rides";
   after a request, "Request sent" says until when the driver can answer.
+- Offer opens the first step of posting a trip, "Where are you driving?",
+  instead of "Before you publish" (spec 16, 3.6). The newest draft shows on
+  top as "Continue your draft", with "See all drafts" when there are more.
+  The times at the other stops are worked out and folded, with Change; a
+  problem with one unfolds them. Step 5 starts with what is still missing,
+  "Two things before you publish" (your car and your licence), and Publish
+  trip waits until both are done, saying why under it. The profile photo
+  row goes until photos exist. Cars and the licence are in Profile.
 - Times on the time step of posting a trip are chosen on a wheel of hours
   and minutes in 5-minute steps (24-hour clock) instead of being typed. A
   time saved earlier that is not on 5 minutes shows rounded up to the next

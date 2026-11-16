@@ -13,7 +13,8 @@ function shownText(page: Page, text: string) {
 
 // Spec 3's journey on the web build, against the test API and its sample
 // meeting points: a first-time driver posts Reykjavík to Akureyri, adds a
-// car and confirms the licence from the check step, and publishes.
+// car and confirms the licence from the check step, and publishes. Offer,
+// the folded stop times and step 5 follow spec 16, 3.6.
 
 interface Journey {
   readonly locale: Locale;
@@ -34,6 +35,9 @@ interface Journey {
   readonly nextMonth: string;
   readonly departure: string;
   readonly arrival: string;
+  /** The folded time at the end, worked out from the departure. */
+  readonly arrivalLine: RegExp;
+  readonly changeStops: string;
   readonly wheel: WheelTexts;
   readonly toPrice: string;
   readonly priceTitle: string;
@@ -46,6 +50,7 @@ interface Journey {
   readonly pets: string;
   readonly toReview: string;
   readonly reviewTitle: string;
+  readonly missing: string;
   readonly addCar: string;
   readonly make: string;
   readonly model: string;
@@ -80,6 +85,8 @@ const inEnglish: Journey = {
   nextMonth: "Next month",
   departure: "Leaving BSÍ bus terminal at",
   arrival: "Time at Hof bus stop, Akureyri",
+  arrivalLine: /^1[34]:\d[05]\s+Hof bus stop, Akureyri$/u,
+  changeStops: "Change the times at the stops",
   wheel: englishWheel,
   toPrice: "Set your price",
   priceTitle: "Set your price",
@@ -92,6 +99,7 @@ const inEnglish: Journey = {
   pets: "Pets welcome",
   toReview: "Review your trip",
   reviewTitle: "Check and publish",
+  missing: "Two things before you publish",
   addCar: "Add a car",
   make: "Make",
   model: "Model",
@@ -126,6 +134,8 @@ const inIcelandic: Journey = {
   nextMonth: "Næsti mánuður",
   departure: "Brottför frá BSÍ kl.",
   arrival: "Tími á Hof, Akureyri",
+  arrivalLine: /^1[34]:\d[05]\s+Hof, Akureyri$/u,
+  changeStops: "Breyta tímum á viðkomustöðum",
   wheel: { hour: "Klukkustund", minutes: "Mínútur", done: "Lokið" },
   toPrice: "Ákveða verð",
   priceTitle: "Ákveddu verðið",
@@ -138,6 +148,7 @@ const inIcelandic: Journey = {
   pets: "Gæludýr velkomin",
   toReview: "Fara yfir ferðina",
   reviewTitle: "Yfirfara og birta",
+  missing: "Tvennt áður en þú birtir",
   addCar: "Bæta við bíl",
   make: "Tegund",
   model: "Gerð",
@@ -174,12 +185,15 @@ async function postTrip(page: Page, journey: Journey) {
   await expect(page.getByRole("img", { name: journey.routeMap })).toBeVisible();
   await page.getByRole("button", { name: journey.toTimes }).click();
 
-  // 2. Tomorrow at nine; the other times follow.
+  // 2. Tomorrow at nine; the other times follow, folded until Change.
   await expect(page.getByRole("heading", { name: journey.timeTitle })).toBeVisible();
   const day = tomorrow(journey.locale);
   if (day.nextMonth) await page.getByRole("button", { name: journey.nextMonth }).click();
   await page.getByRole("radio", { name: day.name }).click();
   await chooseTime(page, journey.departure, "09:00", journey.wheel);
+  await expect(page.getByText(journey.arrivalLine)).toBeVisible();
+  await expect(timeField(page, journey.arrival)).toBeHidden();
+  await page.getByRole("button", { name: journey.changeStops }).click();
   await expect(timeField(page, journey.arrival)).toHaveAccessibleName(/ 1[34]:\d[05]$/u);
   // The keyboard turns a wheel too, and Escape closes it back onto the field.
   await timeField(page, journey.departure).click();
@@ -211,8 +225,11 @@ async function postTrip(page: Page, journey: Journey) {
   await expect(page.getByRole("radio", { name: journey.pets })).toBeChecked();
   await page.getByRole("button", { name: journey.toReview }).click();
 
-  // 5. Check: the car and licence are done from here, then publish.
+  // 5. Check: the car and licence come first and are done from here;
+  // Publish waits for them.
   await expect(page.getByRole("heading", { name: journey.reviewTitle })).toBeVisible();
+  await expect(page.getByRole("heading", { name: journey.missing })).toBeVisible();
+  await expect(page.getByRole("button", { name: journey.publish })).toBeDisabled();
   await page.getByRole("button", { name: journey.addCar }).click();
   await page.getByLabel(journey.make).fill("Toyota");
   await page.getByLabel(journey.model).fill("Yaris");
@@ -224,6 +241,7 @@ async function postTrip(page: Page, journey: Journey) {
   await page.getByRole("button", { name: journey.confirm, exact: true }).click();
   await expect(page.getByRole("heading", { name: journey.reviewTitle })).toBeVisible();
   await expect(shownText(page, journey.reviewPrice)).toBeVisible();
+  await expect(page.getByRole("heading", { name: journey.missing })).toBeHidden();
 
   await page.getByRole("button", { name: journey.publish }).click();
   await expect(page.getByRole("heading", { name: journey.published })).toBeVisible();

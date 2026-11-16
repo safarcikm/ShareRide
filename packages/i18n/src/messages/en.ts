@@ -244,12 +244,7 @@ export const en = {
   "time.hour": "Hour",
   "time.minutes": "Minutes",
   "driver.offerRide": "Offer a ride",
-  "driver.ready.title": "Before you publish",
-  "driver.ready.photo": "Profile photo",
-  "driver.ready.photoLater": "Adding a photo comes soon. Until then you can publish without one.",
-  "driver.ready.car": "A car",
   "driver.ready.licence": "Driving licence",
-  "driver.ready.licenceDone": "Confirmed on {date}",
   "driver.ready.confirmLicence": "Confirm your licence",
   "vehicle.add": "Add a car",
   "vehicle.editTitle": "Edit your car",
@@ -315,6 +310,11 @@ export const en = {
   "trip.icelandTime": "Iceland time",
   "trip.time.chooseTime": "Choose the time you're leaving.",
   "trip.time.chooseStop": "Choose a time for this stop.",
+  "trip.time.stopsFolded": "{count, plural, one {Time at the stop} other {Times at the # stops}}",
+  "trip.time.workedOut": "Worked out from typical driving times.",
+  "trip.time.workedOutLater":
+    "Worked out from typical driving times once you choose the date and the time you leave.",
+  "trip.time.changeStops": "Change the times at the stops",
   "trip.time.stopsTitle": "Times at the stops",
   "trip.time.stopsIntro":
     "We worked these out from typical driving times. Change any of them, for example for a break.",
@@ -399,6 +399,16 @@ export const en = {
   "trip.review.edit": "Edit",
   "trip.review.editLabel": "Edit: {section}",
   "trip.review.fix": "Fix these before you publish:",
+  "trip.review.missing":
+    "{count, plural, one {One thing before you publish} other {Two things before you publish}}",
+  "trip.review.yourCar": "Your car",
+  "trip.review.carDetail": "Make, model and colour",
+  "trip.review.licenceDetail": "One tick, no upload",
+  "trip.review.waitsForBoth":
+    "Add your car and confirm your licence to publish. Your trip is saved as a draft until then.",
+  "trip.review.waitsForCar": "Add your car to publish. Your trip is saved as a draft until then.",
+  "trip.review.waitsForLicence":
+    "Confirm your licence to publish. Your trip is saved as a draft until then.",
   "trip.publish": "Publish trip",
   "trip.review.delete": "Delete draft",
   "trip.review.deleteConfirm": "Delete this draft? You can't undo this.",

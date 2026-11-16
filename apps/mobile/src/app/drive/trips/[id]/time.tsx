@@ -6,21 +6,26 @@ import {
   type TimeProblem,
   type TimeWarning,
 } from "@shareride/domain";
-import { formatDay, formatDuration } from "@shareride/i18n";
+import { formatClock, formatDay, formatDuration } from "@shareride/i18n";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { Calendar } from "@/components/calendar";
+import { Card } from "@/components/card";
 import { FieldError } from "@/components/field-error";
 import { Notice } from "@/components/notice";
+import { TakesFocus } from "@/components/takes-focus";
 import { Body, Heading } from "@/components/text";
 import { TimeField } from "@/components/time-field";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { minuteStep, roundUpClock } from "@/lib/clock-time";
 import { addDays, compareDays, dayOf, showsOtherTime, type Day } from "@/lib/days";
+import { spacing, typography } from "@/theme/tokens";
+import { usePalette } from "@/theme/use-palette";
 import { at, clockOf, earliestDeparture, onOrAfter, type Clock } from "@/trips/clock-input";
 import { StepScreen } from "@/trips/step-screen";
 import { goOn } from "@/trips/steps";
@@ -46,6 +51,7 @@ export default function TimeStepScreen() {
 
 function TimeStep({ trip, fromReview }: { readonly trip: MyTrip; readonly fromReview: boolean }) {
   const { locale, t } = useLanguage();
+  const palette = usePalette();
   const session = useSession();
   const today = dayOf(now());
   const names = trip.stops.map((stop) => stop.meetingPoint.name[locale]);
@@ -172,6 +178,34 @@ function TimeStep({ trip, fromReview }: { readonly trip: MyTrip; readonly fromRe
     goOn(trip.id, "price", fromReview);
   };
 
+  // The times at the stops start folded, worked out for the driver (spec 16,
+  // 3.6, item 3). Change unfolds them, and so does a problem with one once
+  // the departure is known, or a stop still without a time when the others
+  // are. Unfolded, they stay so, even once that stop has a time.
+  const [changing, setChanging] = useState(false);
+  const [unfoldedBySelf, setUnfoldedBySelf] = useState(false);
+  const stopsKnown = clocks.slice(1).every((clock) => clock !== null);
+  // "Worked out" only while the stops show what the typical driving times
+  // give, never for times the driver chose.
+  const planned = planFrom(date, clocks[0] ?? null, clocks);
+  const workedOut =
+    durations !== null && clocks.every((clock, index) => sameClock(clock, planned[index]));
+  const departureKnown = date !== null && clocks[0] !== null && clocks[0] !== undefined;
+  const stopProblem = clocks.slice(1).some((_, offset) => errorAt(offset + 1) !== undefined);
+  const needsUnfolding = departureKnown && (stopProblem || (durations !== null && !stopsKnown));
+  if (needsUnfolding && !unfoldedBySelf) setUnfoldedBySelf(true);
+  const unfolded = changing || unfoldedBySelf || needsUnfolding;
+  /** A stop as the folded times show it: its time and name, and the day when later. */
+  const foldedLine = (index: number) => {
+    const name = names[index] ?? "";
+    const moment = moments[index];
+    if (moment === undefined || date === null) return name;
+    const time = formatClock(moment);
+    return compareDays(dayOf(moment), date) > 0
+      ? t("trip.review.stopTimeOnDay", { time, name, day: formatDay(moment, locale) })
+      : t("trip.review.stopTime", { time, name });
+  };
+
   const help = showsOtherTime(now()) ? t("trip.icelandTime") : undefined;
   /** Where a wheel starts when its stop has no time yet: after the time before it. */
   const suggestedAt = (index: number): Clock => {
@@ -231,9 +265,51 @@ function TimeStep({ trip, fromReview }: { readonly trip: MyTrip; readonly fromRe
       {quoted.result?.ok === false ? (
         <Loading failure={quoted.result} onRetry={quoted.retry} />
       ) : null}
-      {trip.stops.length > 1 ? (
+      {trip.stops.length > 1 && !unfolded ? (
+        <Card>
+          <View style={styles.foldedHeader}>
+            <View style={styles.grow}>
+              <Heading>{t("trip.time.stopsFolded", { count: trip.stops.length - 1 })}</Heading>
+            </View>
+            <Button
+              variant="text"
+              label={t("trip.change")}
+              accessibilityLabel={t("trip.time.changeStops")}
+              expanded={false}
+              onPress={() => {
+                setChanging(true);
+              }}
+            />
+          </View>
+          {departureKnown ? (
+            <>
+              {workedOut ? (
+                <Text style={[typography.small, { color: palette.textMuted }]}>
+                  {t("trip.time.workedOut")}
+                </Text>
+              ) : null}
+              {names.slice(1).map((name, offset) => (
+                <Text
+                  key={trip.stops[offset + 1]?.meetingPoint.id ?? name}
+                  style={[typography.body, { color: palette.text }]}
+                >
+                  {foldedLine(offset + 1)}
+                </Text>
+              ))}
+            </>
+          ) : (
+            <Text style={[typography.small, { color: palette.textMuted }]}>
+              {t("trip.time.workedOutLater")}
+            </Text>
+          )}
+        </Card>
+      ) : null}
+      {trip.stops.length > 1 && unfolded ? (
         <>
-          <Heading>{t("trip.time.stopsTitle")}</Heading>
+          {/* Opened with Change, it takes the focus Change had. */}
+          <TakesFocus when={changing}>
+            <Heading>{t("trip.time.stopsTitle")}</Heading>
+          </TakesFocus>
           <Body align="start">{t("trip.time.stopsIntro")}</Body>
           {names.slice(1).map((name, offset) => {
             const index = offset + 1;
@@ -258,3 +334,20 @@ function TimeStep({ trip, fromReview }: { readonly trip: MyTrip; readonly fromRe
     </StepScreen>
   );
 }
+
+/** Both times known and the same. */
+function sameClock(a: Clock | null | undefined, b: Clock | null | undefined): boolean {
+  return (
+    a !== null &&
+    a !== undefined &&
+    b !== null &&
+    b !== undefined &&
+    a.hour === b.hour &&
+    a.minute === b.minute
+  );
+}
+
+const styles = StyleSheet.create({
+  foldedHeader: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  grow: { flex: 1 },
+});

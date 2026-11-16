@@ -1,6 +1,6 @@
 import type { Vehicle } from "@shareride/contracts";
-import { inIceland, type CarColour } from "@shareride/domain";
-import { formatDate, type Locale, type MessageKey, type Translate } from "@shareride/i18n";
+import type { CarColour } from "@shareride/domain";
+import type { Locale, MessageKey, Translate } from "@shareride/i18n";
 
 export const colourKeys = {
   white: "vehicle.colour.white",
@@ -24,11 +24,4 @@ export function carSummary(t: Translate, locale: Locale, car: Vehicle): string {
     model: car.model,
     colour: t(colourKeys[car.colour]).toLocaleLowerCase(locale),
   });
-}
-
-/** The day of a moment in Iceland, such as "14 November 2026". */
-export function dayInIceland(moment: string, locale: Locale): string {
-  const { year, month, day } = inIceland(new Date(moment));
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return formatDate(`${String(year)}-${pad(month)}-${pad(day)}`, locale);
 }
