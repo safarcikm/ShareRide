@@ -81,7 +81,7 @@ describe("All rides leaving soon (spec 4, 3.8)", () => {
     await renderApp("/rides");
     expect(await screen.findByText("No rides are coming up yet.")).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Offer a ride" }));
-    expect(await screen.findByText("What's your phone number?")).toBeVisible();
+    expect(await screen.findByText("Sign in or create an account")).toBeVisible();
     expect(writeAppData).toHaveBeenLastCalledWith(
       "pending-offer",
       JSON.stringify({ keptAt: "2026-11-14T12:00:00.000Z" }),

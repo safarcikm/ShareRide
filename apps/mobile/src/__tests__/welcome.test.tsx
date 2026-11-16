@@ -328,7 +328,7 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
   it("leads from Offer a ride to signing in, keeping the offer", async () => {
     await openFrontPage();
     await fireEvent.press(await screen.findByRole("button", { name: "Offer a ride" }));
-    expect(await screen.findByText("What's your phone number?")).toBeVisible();
+    expect(await screen.findByText("Sign in or create an account")).toBeVisible();
     const [key, kept] = mockedWrite.mock.calls.at(-1) as [string, string];
     expect(key).toBe("pending-offer");
     expect(JSON.parse(kept)).toEqual({ keptAt: "2026-11-14T12:00:00.000Z" });

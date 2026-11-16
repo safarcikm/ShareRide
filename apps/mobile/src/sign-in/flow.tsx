@@ -1,10 +1,12 @@
 import type { SupportedCountry } from "@shareride/domain";
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { useKeptRide, type KeptRide } from "./kept-ride";
 
 /**
- * What the sign-in screens share: the number as typed, its country, and the
- * number a code was sent to. Kept in memory, never in the address bar, so
- * the number does not end up in browser history.
+ * What the sign-in screens share: the number as typed, its country, the
+ * number a code was sent to, and the ride kept through signing in. Kept in
+ * memory, never in the address bar, so the number does not end up in
+ * browser history.
  */
 export interface SignInFlow {
   readonly country: SupportedCountry;
@@ -18,6 +20,8 @@ export interface SignInFlow {
   readonly codeSent: (phoneNumber: string, resendAfterSeconds: number) => void;
   /** After a wait the API asked for, such as too many wrong codes. */
   readonly waitBeforeResend: (seconds: number) => void;
+  /** Looked at once for both steps; undefined while it loads. */
+  readonly keptRide: KeptRide | undefined;
 }
 
 const SignInFlowContext = createContext<SignInFlow | null>(null);
@@ -27,6 +31,7 @@ export function SignInFlowProvider({ children }: { readonly children: ReactNode 
   const [typed, setTyped] = useState("");
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [resendAt, setResendAt] = useState(0);
+  const keptRide = useKeptRide();
   const value = useMemo<SignInFlow>(
     () => ({
       country,
@@ -42,8 +47,9 @@ export function SignInFlowProvider({ children }: { readonly children: ReactNode 
       waitBeforeResend: (seconds) => {
         setResendAt(Date.now() + seconds * 1000);
       },
+      keptRide,
     }),
-    [country, typed, sentTo, resendAt],
+    [country, typed, sentTo, resendAt, keptRide],
   );
   return <SignInFlowContext value={value}>{children}</SignInFlowContext>;
 }

@@ -1,5 +1,9 @@
-import { keepPendingBooking, takePendingBooking } from "@/booking/pending-booking";
-import { keepPendingOffer, takePendingOffer } from "./pending-offer";
+import {
+  keepPendingBooking,
+  peekPendingBooking,
+  takePendingBooking,
+} from "@/booking/pending-booking";
+import { keepPendingOffer, peekPendingOffer, takePendingOffer } from "./pending-offer";
 
 // The app's own storage, in memory.
 const mockStored = new Map<string, string>();
@@ -47,5 +51,25 @@ describe("an offer kept while someone signs up", () => {
     await keepPendingOffer(minutesLater(4));
     expect(await takePendingBooking(minutesLater(5))).toBeNull();
     expect(await takePendingOffer(minutesLater(5))).toBe(true);
+  });
+});
+
+describe("looking at what is kept, for the sign-up steps (spec 16, 3.5)", () => {
+  it("shows the booking without taking it, until the hour is up", async () => {
+    await keepPendingBooking(booking, noon);
+    expect(await peekPendingBooking(minutesLater(10))).toEqual(booking);
+    expect(await peekPendingBooking(minutesLater(20))).toEqual(booking);
+    expect(await peekPendingBooking(minutesLater(61))).toBeNull();
+    expect(await takePendingBooking(minutesLater(30))).toEqual(booking);
+    expect(await peekPendingBooking(minutesLater(31))).toBeNull();
+  });
+
+  it("shows the offer without taking it, until the hour is up", async () => {
+    expect(await peekPendingOffer(noon)).toBe(false);
+    await keepPendingOffer(noon);
+    expect(await peekPendingOffer(minutesLater(10))).toBe(true);
+    expect(await peekPendingOffer(minutesLater(61))).toBe(false);
+    expect(await takePendingOffer(minutesLater(30))).toBe(true);
+    expect(await peekPendingOffer(minutesLater(31))).toBe(false);
   });
 });
