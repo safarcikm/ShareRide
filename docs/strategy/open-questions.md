@@ -11,7 +11,9 @@ here, update or accept the linked ADR, and move the row to "Answered".
 A new question goes in a table here with the next free number (Q19
 onwards), a recommendation and the docs it affects.
 
-No questions are open.
+| #   | Question | Recommendation | Affects |
+| --- | -------- | -------------- | ------- |
+| Q19 | When a passenger contests a no-show and the operator finds the driver was wrong, what happens? Spec 8 has one outcome, "reversed", which does not say whether the passenger rode or was left behind. | The operator picks one of two outcomes. "They rode": the booking completes, the driver is paid, and nothing counts on either side. "They were left behind": as a driver absence, a full refund that counts on the driver. | [Spec 8](../specs/2026-11-13-trip-day-reviews-and-reliability.md) 3.3 and 3.5, [milestone 7 plan](../plans/2026-11-16-milestone-7-trip-day-reviews-and-reliability.md) decision 4 |
 
 ## Answered
 
