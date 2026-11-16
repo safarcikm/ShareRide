@@ -11,6 +11,7 @@ export interface ErrorExtras {
   readonly freeSeats?: number;
   readonly total?: NonNullable<ErrorResponse["error"]["total"]>;
   readonly terms?: NonNullable<ErrorResponse["error"]["terms"]>;
+  readonly countsOnReliability?: boolean;
 }
 
 export function errorBody(code: string, message: string, details?: ErrorDetails): ErrorResponse {

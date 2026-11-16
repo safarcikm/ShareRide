@@ -1,6 +1,6 @@
-import { expect, test, type Browser, type Page, type TestInfo } from "@playwright/test";
-import { english, signUp } from "./support/account";
-import { focused, postTripToSelfoss } from "./support/trips";
+import { expect, test } from "@playwright/test";
+import { confirmedBooking, secondPage, visible } from "./support/cancelling";
+import { focused } from "./support/trips";
 
 // Spec 6's cancelling of one booking, on the web build: a driver posts
 // Mjódd to N1 Selfoss for tomorrow, less than 24 hours from now, a
@@ -14,65 +14,6 @@ import { focused, postTripToSelfoss } from "./support/trips";
 // desktop runs never meet.
 
 test.use({ locale: "en-GB" });
-
-/**
- * A departure tomorrow earlier in the day than now, so it is less than 24
- * hours away: an hour before now, on a quarter hour (Iceland is UTC all
- * year), or midnight just after midnight.
- */
-function withinADay(): string {
-  const now = new Date();
-  const minutes = Math.max(0, now.getUTCHours() * 60 + now.getUTCMinutes() - 60);
-  const rounded = minutes - (minutes % 15);
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${pad(Math.floor(rounded / 60))}:${pad(rounded % 60)}`;
-}
-
-const visible = { visible: true } as const;
-
-/** A second person's page, the same size as the test's own. */
-async function secondPage(browser: Browser, testInfo: TestInfo) {
-  const { viewport, userAgent, deviceScaleFactor, isMobile, hasTouch, baseURL } =
-    testInfo.project.use;
-  const context = await browser.newContext({
-    viewport,
-    userAgent,
-    deviceScaleFactor,
-    isMobile,
-    hasTouch,
-    baseURL,
-    locale: "en-GB",
-  });
-  return { page: await context.newPage(), close: () => context.close() };
-}
-
-/**
- * Bára posts a trip for tomorrow, Dóra requests a seat, Bára accepts and
- * Dóra pays, as in the request journey. Gives the trip and the booking's
- * address.
- */
-async function confirmedBooking(driver: Page, passenger: Page) {
-  await signUp(driver, english, "Bára");
-  const tripId = await postTripToSelfoss(driver, withinADay());
-  await signUp(passenger, english, "Dóra");
-  await passenger.goto(`/trips/${tripId}?from=0&to=1`);
-  await passenger.getByRole("button", { name: "Send request", exact: true }).click();
-  await passenger.getByLabel("Message to the driver (optional)").fill("One small bag.");
-  await passenger.getByRole("button", { name: "Send request", exact: true }).click();
-  await expect(passenger).toHaveURL(/\/bookings\/[0-9a-f-]+\/booked$/);
-  await driver.goto(`/drive/trips/${tripId}`);
-  await driver.getByRole("button", { name: "Accept", exact: true }).click();
-  await expect(driver.getByLabel("Dóra, 1 seat, Waiting for payment")).toBeVisible();
-  await passenger.reload();
-  await expect(passenger).toHaveURL(/\/bookings\/[0-9a-f-]+$/);
-  const booking = passenger.url();
-  await passenger.getByRole("button", { name: /^Pay [\d,]+ ISK$/ }).click();
-  await passenger.getByRole("button", { name: /^Pay [\d,]+ ISK$/ }).click();
-  await expect(
-    passenger.getByText("Your seat is confirmed", { exact: true }).filter(visible),
-  ).toBeVisible();
-  return { tripId, booking };
-}
 
 test("a passenger cancels a paid booking the day before, with a full refund", async ({
   page: driver,

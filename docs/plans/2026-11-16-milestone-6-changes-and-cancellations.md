@@ -282,9 +282,9 @@ PR 4a, `feat(bookings)`: the driver cancels one booking.
 
 PR 4b, `feat(trips)`: the driver cancels the trip.
 
-- [ ] `POST /trips/{id}/cancel`; `TripCancelled`; requests declined and
+- [x] `POST /trips/{id}/cancel`; `TripCancelled`; requests declined and
       unpaid bookings cancelled
-- [ ] The Cancel trip screen
+- [x] The Cancel trip screen
 - Verify: integration tests (three passengers each refunded once, a
   request declined, an unpaid booking cancelled); a browser journey
   cancels a trip with three passengers

@@ -1,6 +1,6 @@
 import type { CallFailure } from "@shareride/api-client";
 import { myTripRoute, tripBookingsRoute, type Booking } from "@shareride/contracts";
-import { capitalised, formatClock, formatDay } from "@shareride/i18n";
+import { cancelReasonText, capitalised, formatClock, formatDay } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
@@ -26,16 +26,21 @@ import { routeText } from "@/trips/texts";
 /**
  * The driver's trip (spec 5, screens 5 and 9): requests first, each to
  * accept or decline; then passengers by where they get in and out, each
- * booking to cancel (spec 6, 3.4); then the seats held on each stretch. It
- * loads again each time it comes into view. `cancelled`, the booking just
- * cancelled, says so with focus. Changing or cancelling the trip comes
- * later in spec 6.
+ * booking to cancel (spec 6, 3.4); then the seats held on each stretch,
+ * and "Cancel trip" until it leaves (3.3). It loads again each time it
+ * comes into view. `cancelled`, the booking just cancelled, says so with
+ * focus; so does `tripCancelled`, once the trip is. A cancelled trip says
+ * why, and nothing more. Changing the trip comes later in spec 6.
  */
 export default function DriverTripScreen() {
   const { locale, t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
-  const { id, cancelled } = useLocalSearchParams<{ id: string; cancelled?: string }>();
+  const { id, cancelled, tripCancelled } = useLocalSearchParams<{
+    id: string;
+    cancelled?: string;
+    tripCancelled?: string;
+  }>();
   const load = useCallback(
     () =>
       Promise.all([
@@ -85,6 +90,51 @@ export default function DriverTripScreen() {
     );
   }
 
+  const departure = trip.data.departsAt === null ? null : new Date(trip.data.departsAt);
+  const head = (
+    <>
+      <BackButton fallback="/drive/trips" />
+      <View>
+        {departure === null ? null : (
+          <Text style={[typography.small, { color: palette.textMuted }]}>
+            {capitalised(
+              t("trip.mine.when", {
+                day: formatDay(departure, locale),
+                time: formatClock(departure),
+              }),
+              locale,
+            )}
+          </Text>
+        )}
+        <Title align="start">{routeText(t, locale, trip.data)}</Title>
+      </View>
+    </>
+  );
+
+  if (trip.data.status === "cancelled") {
+    const { cancellation } = trip.data;
+    return (
+      <Screen>
+        {head}
+        <TakesFocus when={tripCancelled !== undefined}>
+          <Notice
+            kind="info"
+            message={
+              cancellation === null
+                ? t("trip.cancelled")
+                : t("driverTrip.cancelledTrip", {
+                    reason: cancelReasonText(t, cancellation.reason),
+                  })
+            }
+          />
+        </TakesFocus>
+        {cancellation === null || cancellation.note === "" ? null : (
+          <Body align="start">{t("driverTrip.yourNote", { note: cancellation.note })}</Body>
+        )}
+      </Screen>
+    );
+  }
+
   // Answers show at once. A request never becomes one again, so a list that
   // still shows it as a request was loaded before the answer.
   const bookings = onTrip.data.bookings
@@ -102,7 +152,9 @@ export default function DriverTripScreen() {
     setOutcome((last) => ({ text: said, count: (last?.count ?? 0) + 1, cancelled }));
     refresh();
   };
-  const departure = trip.data.departsAt === null ? null : new Date(trip.data.departsAt);
+  // From the planned departure, the trip day takes over (R6.1; spec 8).
+  const cancellable =
+    trip.data.status === "published" && departure !== null && departure.getTime() > now().getTime();
   const said =
     outcome !== null && outcome.cancelled === cancelled
       ? { text: outcome.text, key: String(outcome.count) }
@@ -112,21 +164,7 @@ export default function DriverTripScreen() {
 
   return (
     <Screen>
-      <BackButton fallback="/drive/trips" />
-      <View>
-        {departure === null ? null : (
-          <Text style={[typography.small, { color: palette.textMuted }]}>
-            {capitalised(
-              t("trip.mine.when", {
-                day: formatDay(departure, locale),
-                time: formatClock(departure),
-              }),
-              locale,
-            )}
-          </Text>
-        )}
-        <Title align="start">{routeText(t, locale, trip.data)}</Title>
-      </View>
+      {head}
       {said === null ? null : (
         <TakesFocus key={said.key}>
           <Notice kind="info" message={said.text} />
@@ -182,6 +220,15 @@ export default function DriverTripScreen() {
           capacity={onTrip.data.capacity}
         />
       </Card>
+      {cancellable ? (
+        <Button
+          variant="secondary"
+          label={t("trip.cancel")}
+          onPress={() => {
+            router.push({ pathname: "/drive/trips/[id]/cancel", params: { id } });
+          }}
+        />
+      ) : null}
     </Screen>
   );
 }

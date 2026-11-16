@@ -68,7 +68,11 @@ export const bookings = pgTable(
     confirmedAt: at(),
     expiredAt: at(),
     cancelledAt: at(),
-    /** `passenger` for a withdrawn request or a cancelled booking, or `driver` (spec 6). */
+    /**
+     * `passenger` for a withdrawn request or a cancelled booking, or `driver`
+     * (spec 6); `driver` also on a request declined because the trip was
+     * cancelled, with the trip's reason and note (3.3).
+     */
     cancelledBy: text(),
     /** Why it was cancelled (spec 6, 3.3 to 3.5); null for a withdrawn request. */
     cancelReason: text(),

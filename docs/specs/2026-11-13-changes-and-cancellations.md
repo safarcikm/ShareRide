@@ -84,6 +84,33 @@ What can change follows
 4. The cancellation counts on the driver's reliability, unless the reason is
    weather or a road closure (spec 8 decides how that is checked).
 
+As built (milestone 6, PR 4b):
+
+1. "Cancel trip" is the last thing on the driver's trip page, until the
+   planned departure (R6.1): from then on, what happens is the trip day's
+   (spec 8). It opens its own screen: the reasons, then how many paid and
+   get a full refund, and how many more with a booking or request (not yet
+   accepted or paid, or a free ride) are told; nobody, when nobody booked.
+2. It shows on the driver's profile, once for the trip and not for each
+   booking, only when a booking on it is confirmed (paid, or a free ride)
+   and the reason is not weather or a road closure. The screen works it out
+   with the domain, as the server does, and sends what it showed: if
+   someone paid or left meanwhile, the server cancels nothing and the
+   screen shows it again, keeping the reason and the note.
+3. The note follows the same rules as for one booking (3.4): up to 500
+   characters, without contact details, shown in the app only. Each
+   passenger reads "{driver} cancelled the trip: {reason}" with the note, on
+   the booking and in the chat; a request declined this way says the same.
+   Push and email give the reason and the refund; an SMS within 24 hours of
+   boarding gives only the day, the time and whether it is refunded.
+4. Accepted bookings not yet paid are cancelled with nothing to refund
+   ("lapse" in R6.6), so the passenger reads why, like everyone else.
+5. Asked again, as a retry is, the answer is the same trip, and nobody is
+   refunded or told twice. The trip then says it is cancelled, with focus,
+   and offers nothing more. It is listed under Past in My rides at once
+   (3.1), marked Cancelled with the reason. A booking the driver cancelled
+   alone before keeps its own reason.
+
 ### 3.4 Cancelling one booking (driver)
 
 The driver can cancel a single confirmed booking with a reason (for example the
@@ -216,7 +243,26 @@ IDs only). Notifications for each come in spec 7; refunds in spec 13.
 | `myTrips.seatView` | Who rides where | Hver situr hvar |
 | `trip.edit` | Edit trip | Breyta ferð |
 | `trip.cancel` | Cancel trip | Hætta við ferð |
-| `trip.cancelAffects` | {count, plural, one {# passenger gets} other {# passengers get}} a full refund and will be told now. | {count, plural, one {# farþegi fær} other {# farþegar fá}} fulla endurgreiðslu og fá að vita það strax. |
+| `trip.cancelTitle` | Cancel your trip | Hætta við ferðina |
+| `trip.cancelWhy` | Why are you cancelling? | Af hverju hættirðu við ferðina? |
+| `trip.cancelAffects` | {count, plural, one {# passenger gets} other {# passengers get}} a full refund and will be told now. | {count, plural, one {# farþegi fær fulla endurgreiðslu og fær} other {# farþegar fá fulla endurgreiðslu og fá}} að vita það strax. |
+| `trip.cancelAlsoTold` | {count, plural, one {# more person with a booking or request is} other {# more people with a booking or request are}} told too. | {count, plural, one {# í viðbót með bókun eða beiðni fær} other {# í viðbót með bókun eða beiðni fá}} líka að vita það. |
+| `trip.cancelTold` | {count, plural, one {# person with a booking or request will} other {# people with a booking or request will}} be told now. | {count, plural, one {# með bókun eða beiðni fær} other {# með bókun eða beiðni fá}} að vita það strax. |
+| `trip.cancelNobody` | Nobody has booked this trip, so nobody needs to be told. | Enginn hefur bókað þessa ferð svo enginn þarf að fá að vita það. |
+| `trip.cancelCounts` | This cancellation shows on your profile | Að hætta við ferðina sést á prófílnum þínum |
+| `trip.cancelNote` | Note to passengers (optional) | Skilaboð til farþega (valfrjálst) |
+| `trip.cancelNoteHelp` | Up to {max} characters, without phone numbers or links. Everyone on the trip sees it with your reason. | Allt að {max} stafir, án símanúmera eða tengla. Allir í ferðinni sjá þau með ástæðunni. |
+| `trip.keep` | Keep the trip | Halda ferðinni |
+| `trip.notCancellable` | This trip can no longer be cancelled. | Ekki er lengur hægt að hætta við þessa ferð. |
+| `trip.termsChanged` | Something changed since you opened this. Check who is affected again. | Eitthvað breyttist síðan þú opnaðir þetta. Athugaðu aftur hverjir verða fyrir áhrifum. |
+| `driverTrip.cancelledTrip` | You cancelled this trip: {reason} | Þú hættir við þessa ferð: {reason} |
+| `driverTrip.yourNote` | Your note: {note} | Skilaboðin þín: {note} |
+| `booking.tripCancelledBy` | {name} cancelled the trip: {reason} | {name} hætti við ferðina: {reason} |
+| `chat.tripCancelledByMe` | You cancelled the trip: {reason} | Þú hættir við ferðina: {reason} |
+| `chat.tripCancelledByThem` | {name} cancelled the trip: {reason} | {name} hætti við ferðina: {reason} |
+| `notify.tripCancelled` | Trip cancelled: {reason} | Ferð aflýst: {reason} |
+| `sms.tripCancelled` | ShareRide: your trip on {date} at {time} is cancelled. Full refund. Details in the app. | ShareRide: Ferðinni þinni var aflýst: {date} kl. {time}. Full endurgreiðsla. Nánar í appinu. |
+| `sms.tripCancelledUnpaid` | ShareRide: your trip on {date} at {time} is cancelled. Details in the app. | ShareRide: Ferðinni þinni var aflýst: {date} kl. {time}. Nánar í appinu. |
 | `trip.changed` | Departure changed from {old} to {new} | Brottför breytt úr {old} í {new} |
 | `trip.keepBooking` | Keep my booking | Halda bókuninni |
 | `trip.cancelWithRefund` | Cancel with full refund | Afbóka með fullri endurgreiðslu |

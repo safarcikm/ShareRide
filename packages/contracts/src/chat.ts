@@ -55,7 +55,7 @@ export const chatMessageSchema = z.object({
   /** A text message's text, as written. */
   text: z.string().nullable(),
   quick: quickMessageSchema.nullable(),
-  /** A line about the booking: opened, or cancelled by me or them, with the reason (spec 6). */
+  /** A line about the booking: opened, or it or its trip cancelled by me or them, with the reason (spec 6). */
   system: z
     .discriminatedUnion("key", [
       z.object({ key: z.literal("opened") }),
@@ -65,6 +65,8 @@ export const chatMessageSchema = z.object({
         reason: z.enum(cancelReasons),
         /** The driver's note, as written; empty for none. */
         note: z.string(),
+        /** The driver cancelled the whole trip (spec 6, 3.3), not this booking alone. */
+        wholeTrip: z.boolean(),
       }),
     ])
     .nullable(),

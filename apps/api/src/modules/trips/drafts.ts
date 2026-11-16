@@ -15,6 +15,7 @@ import {
   type PublishProblem,
   type Result,
   type TripChoices,
+  type TripCancelReason,
   type TripSettings,
 } from "@shareride/domain";
 import { and, asc, count, desc, eq, gt, inArray, isNull, lte, min, ne, or, sql } from "drizzle-orm";
@@ -185,6 +186,14 @@ export function createTripService(dependencies: {
       openRequests: requestRows.find((requests) => requests.tripId === row.id)?.count ?? 0,
       requestsCloseAt:
         requestRows.find((requests) => requests.tripId === row.id)?.closesAt?.toISOString() ?? null,
+      cancellation:
+        row.status === "cancelled" && row.cancelReason !== null
+          ? {
+              reason: row.cancelReason as TripCancelReason,
+              note: row.cancelNote,
+              countsOnReliability: row.countsOnReliability,
+            }
+          : null,
     }));
   }
 
@@ -354,7 +363,8 @@ export function createTripService(dependencies: {
     async myTrips(userId, when) {
       const now = clock();
       // A published trip is past once its last stop is, as a booking is past
-      // once its passenger is out (spec 16, section 6).
+      // once its passenger is out (spec 16, section 6); a cancelled one at
+      // once (spec 6, 3.1).
       const rows =
         when === "upcoming"
           ? await db
@@ -381,8 +391,10 @@ export function createTripService(dependencies: {
               .where(
                 and(
                   eq(trips.driverId, userId),
-                  eq(trips.status, "published"),
-                  lte(trips.arrivesAt, now),
+                  or(
+                    and(eq(trips.status, "published"), lte(trips.arrivesAt, now)),
+                    eq(trips.status, "cancelled"),
+                  ),
                 ),
               )
               .orderBy(desc(trips.departsAt), asc(trips.id));
@@ -393,9 +405,7 @@ export function createTripService(dependencies: {
       const [row] = await db
         .select()
         .from(trips)
-        .where(
-          and(eq(trips.id, tripId), eq(trips.driverId, userId), ne(trips.status, "cancelled")),
-        );
+        .where(and(eq(trips.id, tripId), eq(trips.driverId, userId)));
       return row === undefined ? undefined : presentOne(db, row);
     },
 

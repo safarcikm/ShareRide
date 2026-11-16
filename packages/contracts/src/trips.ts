@@ -6,6 +6,7 @@ import {
   noteMaxLength,
   petOptions,
   smokingOptions,
+  tripCancelReasons,
 } from "@shareride/domain";
 import { z } from "zod";
 import { moneySchema, timestampSchema } from "./common.ts";
@@ -208,10 +209,10 @@ export const updateTripBodySchema = tripDraftBodySchema
 
 export type TripDraftBody = z.infer<typeof updateTripBodySchema>;
 
-/** A trip of mine, a draft or published (spec 3). */
+/** A trip of mine, a draft, published or cancelled (spec 3; spec 6, 3.3). */
 export const myTripSchema = z.object({
   id: z.uuid(),
-  status: z.enum(["draft", "published"]),
+  status: z.enum(["draft", "published", "cancelled"]),
   stops: z.array(
     z.object({
       meetingPoint: meetingPointSummarySchema,
@@ -245,6 +246,15 @@ export const myTripSchema = z.object({
   openRequests: z.int().nonnegative(),
   /** The first deadline among those requests, for "Answer by" (spec 16, 3.3); null for none. */
   requestsCloseAt: timestampSchema.nullable(),
+  /** Why the driver cancelled it, with their note; null unless cancelled (spec 6, 3.3). */
+  cancellation: z
+    .object({
+      reason: z.enum(tripCancelReasons),
+      note: z.string(),
+      /** Once for the trip (R6.7; spec 8, 3.8). */
+      countsOnReliability: z.boolean(),
+    })
+    .nullable(),
 });
 
 export type MyTrip = z.infer<typeof myTripSchema>;
@@ -276,7 +286,7 @@ export const myTripsRoute = defineRoute({
   method: "get",
   path: "/v1/me/trips",
   summary:
-    "My trips: upcoming, my drafts most recently changed first then my published trips soonest first, or past, latest first",
+    "My trips: upcoming, my drafts most recently changed first then my published trips soonest first, or past (ended or cancelled), latest first",
   tags: ["trips"],
   auth: true,
   request: { query: myTripsQuerySchema },
@@ -368,5 +378,46 @@ export const publishTripRoute = defineRoute({
     409: notDraft,
     422: { description: "trip_not_publishable: what to fix, in details", ...errors },
     503: distancesPending,
+  },
+});
+
+/** Why the driver cancels the trip, and an optional note to everyone on it (spec 6, 3.3). */
+export const cancelTripBodySchema = z.object({
+  reason: z.enum(tripCancelReasons),
+  // Twice the limit, as the API counts characters as the database does (code points).
+  note: z
+    .string()
+    .max(noteMaxLength * 2)
+    .optional(),
+  /** What the screen showed: whether it shows on the driver's profile (R6.7). */
+  countsOnReliability: z.boolean(),
+});
+
+export type CancelTripBody = z.infer<typeof cancelTripBodySchema>;
+
+export const cancelTripRoute = defineRoute({
+  method: "post",
+  path: "/v1/trips/{id}/cancel",
+  summary:
+    "The driver cancels a published trip before it leaves: each booking is cancelled with a full refund of what was paid, requests are declined, and everyone is told (spec 6, 3.3)",
+  tags: ["trips"],
+  auth: true,
+  request: { params: tripParams, body: cancelTripBodySchema },
+  responses: {
+    200: { description: "The cancelled trip; asked again, the same trip", schema: myTripSchema },
+    400: {
+      description: "validation_failed: a note over 500 characters or with contact details (`note`)",
+      ...errors,
+    },
+    401: unauthenticated,
+    404: {
+      ...errors,
+      description: "not_found: no such trip of mine, or a draft (deleted instead)",
+    },
+    409: {
+      description:
+        "trip_not_cancellable: the planned departure has come; terms_changed (with `countsOnReliability` now): someone paid or left since the screen showed it",
+      ...errors,
+    },
   },
 });

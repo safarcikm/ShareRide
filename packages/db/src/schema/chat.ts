@@ -51,7 +51,7 @@ export const messages = pgTable(
     /** A quick message's or system line's key. */
     key: text(),
     /** Such as `{ "minutes": 10 }` for "I'm running 10 minutes late". */
-    params: jsonb().$type<Readonly<Record<string, string | number>>>(),
+    params: jsonb().$type<Readonly<Record<string, string | number | boolean>>>(),
     /** Made by the app for each message, so a retry never sends it twice. */
     clientId: uuid(),
     sentAt: at().notNull(),

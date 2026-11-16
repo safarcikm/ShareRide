@@ -66,6 +66,7 @@ const kinds: readonly [NotificationFacts["kind"], "driver" | "passenger"][] = [
   ["booking_cancelled_by_passenger", "driver"],
   ["refund_issued", "passenger"],
   ["booking_cancelled_by_driver", "passenger"],
+  ["trip_cancelled", "passenger"],
 ];
 
 describe("notification texts", () => {
@@ -178,8 +179,36 @@ describe("notification texts", () => {
     expect(() => smsText({ ...facts, kind: "request_new" }, "en")).toThrow(/No SMS/);
   });
 
+  it("tell everyone on a cancelled trip why, and the refund, never the note (spec 6, 3.3)", () => {
+    const cancelled = {
+      kind: "trip_cancelled",
+      role: "passenger",
+      cancelReason: "weather",
+      refund: { amount: 5600, currency: "ISK" },
+    } as const;
+    expect(text(cancelled)).toEqual({
+      title: "Trip cancelled: Weather",
+      body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00. Full refund of 5,600 ISK.",
+      path: "/bookings/booking-1",
+    });
+    // A request, or a booking not paid for: nothing to refund.
+    expect(text({ ...cancelled, refund: { amount: 0, currency: "ISK" } }, "is")).toMatchObject({
+      title: "Ferð aflýst: Veður",
+      body: "BSÍ – Hof, Akureyri · laugardagur 14. nóvember kl. 09:00. Leitaðu að annarri ferð.",
+    });
+    expect(smsText({ ...facts, ...cancelled }, "en")).toBe(
+      "ShareRide: your trip on Saturday 14 November at 09:00 is cancelled. Full refund. Details in the app.",
+    );
+    expect(smsText({ ...facts, ...cancelled }, "is")).toBe(
+      "ShareRide: Ferðinni þinni var aflýst: laugardagur 14. nóvember kl. 09:00. Full endurgreiðsla. Nánar í appinu.",
+    );
+    expect(smsText({ ...facts, ...cancelled, refund: { amount: 0, currency: "ISK" } }, "en")).toBe(
+      "ShareRide: your trip on Saturday 14 November at 09:00 is cancelled. Details in the app.",
+    );
+  });
+
   it("refuse a kind that has no text yet", () => {
-    expect(() => text({ kind: "trip_cancelled" })).toThrow(/No text for trip_cancelled/);
+    expect(() => text({ kind: "trip_changed" })).toThrow(/No text for trip_changed/);
   });
 
   it("tell of unread messages by the trip's day, never their text, and open the chat (3.6, item 3)", () => {

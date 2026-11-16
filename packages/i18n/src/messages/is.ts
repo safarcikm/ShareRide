@@ -589,6 +589,24 @@ export const is = {
   "trip.closed": "Lokað er fyrir bókanir á þessum hluta.",
   "trip.departed": "Þessi ferð er farin.",
   "trip.cancelled": "Þessari ferð var aflýst.",
+  "trip.cancel": "Hætta við ferð",
+  "trip.cancelTitle": "Hætta við ferðina",
+  "trip.cancelWhy": "Af hverju hættirðu við ferðina?",
+  "trip.cancelAffects":
+    "{count, plural, one {# farþegi fær fulla endurgreiðslu og fær} other {# farþegar fá fulla endurgreiðslu og fá}} að vita það strax.",
+  "trip.cancelAlsoTold":
+    "{count, plural, one {# í viðbót með bókun eða beiðni fær} other {# í viðbót með bókun eða beiðni fá}} líka að vita það.",
+  "trip.cancelTold":
+    "{count, plural, one {# með bókun eða beiðni fær} other {# með bókun eða beiðni fá}} að vita það strax.",
+  "trip.cancelNobody": "Enginn hefur bókað þessa ferð svo enginn þarf að fá að vita það.",
+  "trip.cancelCounts": "Að hætta við ferðina sést á prófílnum þínum",
+  "trip.cancelNote": "Skilaboð til farþega (valfrjálst)",
+  "trip.cancelNoteHelp":
+    "Allt að {max} stafir, án símanúmera eða tengla. Allir í ferðinni sjá þau með ástæðunni.",
+  "trip.keep": "Halda ferðinni",
+  "trip.notCancellable": "Ekki er lengur hægt að hætta við þessa ferð.",
+  "trip.termsChanged":
+    "Eitthvað breyttist síðan þú opnaðir þetta. Athugaðu aftur hverjir verða fyrir áhrifum.",
   "trip.own": "Þetta er ferðin þín.",
   "trip.share": "Deila",
   "trip.shareText": "{route} á ShareRide",
@@ -721,6 +739,7 @@ export const is = {
   "booking.notCancellable": "Ekki er lengur hægt að afbóka þessa bókun.",
   "booking.cancelledByYou": "Þú afbókaðir þessa bókun: {reason}",
   "booking.cancelledByOther": "{name} afbókaði þessa bókun: {reason}",
+  "booking.tripCancelledBy": "{name} hætti við ferðina: {reason}",
   "booking.cancelledByOperator": "ShareRide afbókaði þessa bókun.",
   "booking.refundOnItsWay": "Full endurgreiðsla, {amount}, aftur á kortið sem þú greiddir með.",
   "cancelReason.weather": "Veður",
@@ -762,6 +781,8 @@ export const is = {
   "driverTrip.failed": "Ekki tókst að sækja beiðnir og bókanir ferðarinnar.",
   "driverTrip.cancelBooking": "Afbóka: {name}",
   "driverTrip.cancelledBooking": "Bókunin var afbókuð. Farþeginn hefur fengið að vita það.",
+  "driverTrip.cancelledTrip": "Þú hættir við þessa ferð: {reason}",
+  "driverTrip.yourNote": "Skilaboðin þín: {note}",
   "request.accept": "Samþykkja",
   "request.decline": "Hafna",
   "request.timeLeft": "{time} eftir til að svara",
@@ -823,6 +844,8 @@ export const is = {
   "chat.withNote": "{line} „{note}“",
   "chat.cancelledByMe": "Þú afbókaðir: {reason}",
   "chat.cancelledByThem": "{name} afbókaði: {reason}",
+  "chat.tripCancelledByMe": "Þú hættir við ferðina: {reason}",
+  "chat.tripCancelledByThem": "{name} hætti við ferðina: {reason}",
   "quick.late": "Mér seinkar um {minutes} mínútur",
   "quick.atPoint": "Ég er á mótsstaðnum",
   "quick.onMyWay": "Ég er á leiðinni",
@@ -850,6 +873,7 @@ export const is = {
   "notify.cancelledByDriver": "Bílstjórinn afbókaði: {reason}",
   "notify.cancelledRefundBody": "{from} – {to} · {when}. Full endurgreiðsla, {total}.",
   "notify.cancelledByPassenger": "Bókun afbókuð: {name}",
+  "notify.tripCancelled": "Ferð aflýst: {reason}",
   "notify.refunded": "Endurgreiðsla, {total}",
   "notify.refundedBody": "{from} – {to} · {when}. Hún fer aftur á kortið sem þú greiddir með.",
   "notify.newMessage": "{name}",
@@ -882,4 +906,8 @@ export const is = {
     "ShareRide: Bílstjórinn aflýsti bókun þinni: {date} kl. {time}. Full endurgreiðsla. Nánar í appinu.",
   "sms.bookingCancelledUnpaid":
     "ShareRide: Bílstjórinn aflýsti bókun þinni: {date} kl. {time}. Nánar í appinu.",
+  "sms.tripCancelled":
+    "ShareRide: Ferðinni þinni var aflýst: {date} kl. {time}. Full endurgreiðsla. Nánar í appinu.",
+  "sms.tripCancelledUnpaid":
+    "ShareRide: Ferðinni þinni var aflýst: {date} kl. {time}. Nánar í appinu.",
 } as const satisfies Record<MessageKey, string>;

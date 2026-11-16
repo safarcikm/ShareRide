@@ -4,12 +4,14 @@ import {
   bookTripRoute,
   cancelBookingRoute,
   cancellationPreviewRoute,
+  cancelTripRoute,
   declineRequestRoute,
   messageAllPassengersRoute,
   readMessagesRoute,
   sendMessageRoute,
   setPushTokenRoute,
   withdrawRequestRoute,
+  type CancelTripBody,
   type SendMessageBody,
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
@@ -290,6 +292,23 @@ async function phoneOf(member: Member) {
     .from(schema.users)
     .where(eq(schema.users.id, member.userId));
   return user?.phone;
+}
+
+/**
+ * The driver cancels the whole trip (spec 6, 3.3), with someone on it who
+ * paid, and a note that never leaves the app.
+ */
+async function cancelTripAs(driver: Member, tripId: string, reason: CancelTripBody["reason"]) {
+  const result = await api.client.call(cancelTripRoute, {
+    accessToken: driver.accessToken,
+    params: { id: tripId },
+    body: {
+      reason,
+      note: "Sorry, the snow came early.",
+      countsOnReliability: reason !== "weather" && reason !== "road_closed",
+    },
+  });
+  if (!result.ok) throw new Error(result.error.code);
 }
 
 /** A driver and a passenger with a paid booking on the airport trip. */
@@ -728,6 +747,69 @@ describe("the worker (plan 4.4)", () => {
     await later(hours(1), jon, dora);
     await worker().runOnce();
     expect(sms.outbox.at(-1)?.to).toBe(await phoneOf(dora));
+  });
+
+  it("tells everyone on a cancelled trip at once, by SMS too within 24 hours, never with the note (spec 6, 3.3)", async () => {
+    const anna = await driverOf(north);
+    const gunna = await newMember("Gunna");
+    const confirmed = await booked(gunna.accessToken, north, { fromStop: 0, toStop: 3 });
+    await accept(anna, confirmed.id);
+    await paid(gunna.accessToken, confirmed.id);
+    await withEmail(gunna, "gunna-trip@example.com");
+    const oli = await newMember("Óli");
+    await speaks(oli, "is");
+    const request = await booked(oli.accessToken, north, { fromStop: 0, toStop: 1 });
+    for (const member of [anna, gunna, oli]) await withDevice(member);
+    await worker().runOnce();
+    push.sent.length = 0;
+
+    await cancelTripAs(anna, north, "weather");
+    await worker().runOnce();
+    // Saturday 09:00 is under 24 hours away. The driver is told nothing: it was their own doing.
+    expect(push.sent).toHaveLength(2);
+    expect(push.sent).toEqual(
+      expect.arrayContaining([
+        {
+          to: `ExponentPushToken[${gunna.userId}]`,
+          title: "Trip cancelled: Weather",
+          body: `BSÍ bus terminal – Hof bus stop, Akureyri · Saturday 14 November at 09:00. Full refund of ${formatMoney(confirmed.total, "en")}.`,
+          data: { path: `/bookings/${confirmed.id}` },
+        },
+        {
+          to: `ExponentPushToken[${oli.userId}]`,
+          title: "Ferð aflýst: Veður",
+          body: "BSÍ – N1 Borgarnesi · laugardagur 14. nóvember kl. 09:00. Leitaðu að annarri ferð.",
+          data: { path: `/bookings/${request.id}` },
+        },
+      ]),
+    );
+    expect(sms.outbox).toHaveLength(2);
+    expect(sms.outbox).toEqual(
+      expect.arrayContaining([
+        {
+          to: await phoneOf(gunna),
+          text: "ShareRide: your trip on Saturday 14 November at 09:00 is cancelled. Full refund. Details in the app.",
+        },
+        {
+          to: await phoneOf(oli),
+          text: "ShareRide: Ferðinni þinni var aflýst: laugardagur 14. nóvember kl. 09:00. Nánar í appinu.",
+        },
+      ]),
+    );
+    expect(email.sent.at(-1)).toMatchObject({
+      to: "gunna-trip@example.com",
+      subject: "Trip cancelled: Weather",
+      text: expect.stringMatching(
+        /^BSÍ bus terminal – Hof bus stop, Akureyri · Saturday 14 November at 09:00\. Full refund of /,
+      ) as unknown,
+    });
+    expect(JSON.stringify([push.sent, sms.outbox, email.sent])).not.toMatch(/snow/);
+    expect((await logOf(anna)).filter((row) => row.kind === "trip_cancelled")).toEqual([]);
+
+    // Run again: nobody is told twice.
+    await worker().runOnce();
+    expect(push.sent).toHaveLength(2);
+    expect(sms.outbox).toHaveLength(2);
   });
 
   it("pushes a chat message with its text, and a quick message in the reader's language", async () => {
@@ -1581,6 +1663,19 @@ describe("trip reminders (spec 7, 3.5)", () => {
       { kind: "reminder_evening", doneAt: expect.any(Date) as unknown },
       { kind: "reminder_evening_driver", doneAt: expect.any(Date) as unknown },
     ]);
+  });
+
+  it("reminds nobody of a trip the driver cancelled", async () => {
+    const { jon, passenger } = await confirmedBooking();
+    await withDevice(passenger);
+    await withDevice(jon);
+    await worker().runOnce();
+    await cancelTripAs(jon, airport, "illness");
+    await worker().runOnce();
+    push.sent.length = 0;
+    await until(friday18);
+    await worker().runOnce();
+    expect(push.sent).toEqual([]);
   });
 
   it("sends no reminders to someone who turned them off, and the rest still", async () => {

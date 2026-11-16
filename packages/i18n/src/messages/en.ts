@@ -585,6 +585,23 @@ export const en = {
   "trip.closed": "Booking for this part has closed.",
   "trip.departed": "This trip has left.",
   "trip.cancelled": "This trip was cancelled.",
+  "trip.cancel": "Cancel trip",
+  "trip.cancelTitle": "Cancel your trip",
+  "trip.cancelWhy": "Why are you cancelling?",
+  "trip.cancelAffects":
+    "{count, plural, one {# passenger gets} other {# passengers get}} a full refund and will be told now.",
+  "trip.cancelAlsoTold":
+    "{count, plural, one {# more person with a booking or request is} other {# more people with a booking or request are}} told too.",
+  "trip.cancelTold":
+    "{count, plural, one {# person with a booking or request will} other {# people with a booking or request will}} be told now.",
+  "trip.cancelNobody": "Nobody has booked this trip, so nobody needs to be told.",
+  "trip.cancelCounts": "This cancellation shows on your profile",
+  "trip.cancelNote": "Note to passengers (optional)",
+  "trip.cancelNoteHelp":
+    "Up to {max} characters, without phone numbers or links. Everyone on the trip sees it with your reason.",
+  "trip.keep": "Keep the trip",
+  "trip.notCancellable": "This trip can no longer be cancelled.",
+  "trip.termsChanged": "Something changed since you opened this. Check who is affected again.",
   "trip.own": "This is your trip.",
   "trip.share": "Share",
   "trip.shareText": "{route} on ShareRide",
@@ -713,6 +730,7 @@ export const en = {
   "booking.notCancellable": "This booking can no longer be cancelled.",
   "booking.cancelledByYou": "You cancelled this booking: {reason}",
   "booking.cancelledByOther": "{name} cancelled this booking: {reason}",
+  "booking.tripCancelledBy": "{name} cancelled the trip: {reason}",
   "booking.cancelledByOperator": "ShareRide cancelled this booking.",
   "booking.refundOnItsWay": "Full refund of {amount}, back to the card you paid with.",
   "cancelReason.weather": "Weather",
@@ -754,6 +772,8 @@ export const en = {
   "driverTrip.failed": "The trip's requests and bookings could not be loaded.",
   "driverTrip.cancelBooking": "Cancel booking: {name}",
   "driverTrip.cancelledBooking": "Booking cancelled. The passenger has been told.",
+  "driverTrip.cancelledTrip": "You cancelled this trip: {reason}",
+  "driverTrip.yourNote": "Your note: {note}",
   "request.accept": "Accept",
   "request.decline": "Decline",
   "request.timeLeft": "{time} left to answer",
@@ -814,6 +834,8 @@ export const en = {
   "chat.withNote": "{line} “{note}”",
   "chat.cancelledByMe": "You cancelled the booking: {reason}",
   "chat.cancelledByThem": "{name} cancelled the booking: {reason}",
+  "chat.tripCancelledByMe": "You cancelled the trip: {reason}",
+  "chat.tripCancelledByThem": "{name} cancelled the trip: {reason}",
   "quick.late": "I'm running {minutes} minutes late",
   "quick.atPoint": "I'm at the meeting point",
   "quick.onMyWay": "I'm on my way",
@@ -841,6 +863,7 @@ export const en = {
   "notify.cancelledByDriver": "The driver cancelled: {reason}",
   "notify.cancelledRefundBody": "{from} – {to} · {when}. Full refund of {total}.",
   "notify.cancelledByPassenger": "Booking cancelled: {name}",
+  "notify.tripCancelled": "Trip cancelled: {reason}",
   "notify.refunded": "Refund of {total}",
   "notify.refundedBody": "{from} – {to} · {when}. It goes back to the card you paid with.",
   "notify.newMessage": "{name}",
@@ -877,6 +900,10 @@ export const en = {
     "ShareRide: the driver cancelled your booking for {date} at {time}. Full refund. Details in the app.",
   "sms.bookingCancelledUnpaid":
     "ShareRide: the driver cancelled your booking for {date} at {time}. Details in the app.",
+  "sms.tripCancelled":
+    "ShareRide: your trip on {date} at {time} is cancelled. Full refund. Details in the app.",
+  "sms.tripCancelledUnpaid":
+    "ShareRide: your trip on {date} at {time} is cancelled. Details in the app.",
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;

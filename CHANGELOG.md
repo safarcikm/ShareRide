@@ -359,6 +359,21 @@ releases follow [Semantic Versioning](https://semver.org/).
   hours of boarding (at most 5 a day) with the day, time and refund; never
   the note. Back on the trip, "Booking cancelled" takes focus. The SMS
   senders now say when a message may have gone, so it is never sent twice.
+- The driver cancels the whole trip (milestone 6, PR 4b, spec 6, 3.3):
+  "Cancel trip" at the end of the driver's trip page, until the planned
+  departure, opens a screen with the reasons, who is affected ("1 passenger
+  gets a full refund and will be told now", and those who asked or haven't
+  paid yet), whether it shows on the driver's profile, and an optional note
+  to everyone on it. Every booking is cancelled with a full refund of what
+  was paid, requests are declined, and everyone is told at once by push and
+  email, and by SMS within 24 hours of boarding; never the note. Each
+  passenger reads "Bára cancelled the trip: Car problem" with the note on
+  their booking and in the chat; a declined request says so too. The trip
+  page then says it is cancelled, with focus, and offers nothing more, and
+  the trip moves to Past in My rides, marked Cancelled. If someone paid or
+  left while the screen was open, nothing is cancelled and it shows again.
+  `POST /v1/trips/{id}/cancel`; a trip keeps its reason, note and whether
+  it counts.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

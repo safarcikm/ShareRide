@@ -1,5 +1,6 @@
 import type { Booking, MyTrip } from "@shareride/contracts";
 import {
+  cancelReasonText,
   capitalised,
   formatClock,
   formatDay,
@@ -103,6 +104,24 @@ function freeLines(t: Translate, locale: Locale, trip: MyTrip): string[] {
 }
 
 function tripParts(t: Translate, locale: Locale, trip: MyTrip): Parts {
+  // Cancelled, nobody rides along (spec 6, 3.1): it says so, and why.
+  if (trip.status === "cancelled") {
+    return {
+      tag: { label: t("booking.status.cancelled"), kind: "warning" },
+      lines:
+        trip.cancellation === null
+          ? []
+          : [
+              {
+                text: t("driverTrip.cancelledTrip", {
+                  reason: cancelReasonText(t, trip.cancellation.reason),
+                }),
+                look: "muted",
+              },
+            ],
+      seatsAndPrice: null,
+    };
+  }
   return {
     tag:
       trip.openRequests === 0
