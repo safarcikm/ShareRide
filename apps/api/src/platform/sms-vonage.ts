@@ -1,4 +1,5 @@
-import { SmsSendError, type SmsSender } from "./sms.ts";
+import { neverLeft } from "./maybe-sent.ts";
+import { SmsMaybeSent, SmsSendError, type SmsSender } from "./sms.ts";
 
 export interface VonageSmsOptions {
   readonly apiKey: string;
@@ -30,11 +31,18 @@ const statuses: Readonly<Record<string, string>> = {
   "29": "number not verified on a trial account",
 };
 
+/** Server errors that can come after Vonage took the message. */
+const afterTaking = new Set([500, 502, 504]);
+
 /**
  * Sends SMS through Vonage's SMS API (ADR 0023). Every message goes as
  * unicode, because Icelandic letters such as ð and þ are not in the GSM
- * alphabet; the texts fit one part (sms-texts.test.ts). Errors name the
- * status only: Vonage's error texts can repeat the number.
+ * alphabet: a sign-in code fits one part, a booking's news two
+ * (sms-texts.test.ts). Errors name the status only: Vonage's error texts can
+ * repeat the number. A request that never left, or that Vonage refused in
+ * full, can be tried again; a lost or odd answer after sending, or a message
+ * taken only in part, may mean it went out (`SmsMaybeSent`), as the SMS API
+ * has no idempotency key.
  */
 export function createVonageSmsSender(options: VonageSmsOptions): SmsSender {
   const fetch = options.fetch ?? globalThis.fetch;
@@ -63,19 +71,30 @@ export function createVonageSmsSender(options: VonageSmsOptions): SmsSender {
           signal: AbortSignal.timeout(timeoutMs),
         });
       } catch (error) {
-        throw new SmsSendError("Vonage could not be reached in time", { cause: error });
+        if (neverLeft(error))
+          throw new SmsSendError("Vonage could not be reached", { cause: error });
+        throw new SmsMaybeSent("Vonage did not answer in time", { cause: error });
       }
       if (!response.ok) {
-        throw new SmsSendError(`Vonage refused the message (HTTP ${String(response.status)})`);
+        const status = `HTTP ${String(response.status)}`;
+        if (afterTaking.has(response.status)) {
+          throw new SmsMaybeSent(`Vonage failed with ${status}`);
+        }
+        throw new SmsSendError(`Vonage refused the message (${status})`);
       }
       const parts = partStatuses(await response.json().catch(() => null));
-      if (parts.length === 0) throw new SmsSendError("Vonage gave an answer without a status");
+      if (parts.length === 0 || parts.includes("unexpected")) {
+        throw new SmsMaybeSent("Vonage gave an answer without a status (status unexpected)");
+      }
       const refused = parts.find((status) => status !== "0");
       if (refused !== undefined) {
         const reason = statuses[refused];
-        throw new SmsSendError(
-          `Vonage could not send the message (status ${refused}${reason === undefined ? "" : `: ${reason}`})`,
-        );
+        const said = `status ${refused}${reason === undefined ? "" : `: ${reason}`}`;
+        // A part taken may reach the phone, so the message is not sent again.
+        if (parts.includes("0")) {
+          throw new SmsMaybeSent(`Vonage took only part of the message (${said})`);
+        }
+        throw new SmsSendError(`Vonage could not send the message (${said})`);
       }
     },
   };

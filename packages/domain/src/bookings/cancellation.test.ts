@@ -217,11 +217,19 @@ describe("a passenger cancelling a booking not yet paid (spec 6, 3.5.4)", () => 
 });
 
 describe("the driver cancelling a booking (rules M2 and R6.7)", () => {
-  it("refunds in full and counts, whenever it is", () => {
-    for (const minutes of [7 * 24 * 60, 60, 5, -5]) {
+  it("refunds in full and counts, whenever it is before boarding", () => {
+    for (const minutes of [7 * 24 * 60, 60, 5]) {
       expect(
         cancellationTerms(paid, { by: "driver", reason: "car_problem" }, before(minutes)),
       ).toEqual({ ok: true, value: { ...full, countsOnReliability: true } });
+    }
+  });
+
+  it("cannot cancel from the time to get in: a passenger who did not come is a no-show (spec 8)", () => {
+    for (const minutes of [0, -5]) {
+      expect(
+        cancellationTerms(paid, { by: "driver", reason: "car_problem" }, before(minutes)),
+      ).toEqual({ ok: false, error: { code: "boarding_passed" } });
     }
   });
 

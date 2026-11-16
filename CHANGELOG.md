@@ -348,6 +348,17 @@ releases follow [Semantic Versioning](https://semver.org/).
   booking, the outcome takes focus. `GET /v1/bookings/{id}/cancellation-preview`
   and `POST /v1/bookings/{id}/cancel`; a booking keeps its departure when
   booked, its reason, refund and whether it counts.
+- The driver cancels one booking (milestone 6, PR 4a, spec 6, 3.4):
+  "Cancel booking" under each passenger on the driver's trip page, until
+  the time to get in, opens the same screen in the driver's words, with the
+  driver's reasons, the passenger's refund ("Gunna gets a full refund of
+  2,900 ISK", or nothing to refund before paying), whether it shows on the
+  driver's profile, and an optional note to the passenger. The passenger
+  sees the reason and the note on the booking and in the chat, and is told
+  by push and email with the reason and the refund, and by SMS within 24
+  hours of boarding (at most 5 a day) with the day, time and refund; never
+  the note. Back on the trip, "Booking cancelled" takes focus. The SMS
+  senders now say when a message may have gone, so it is never sent twice.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

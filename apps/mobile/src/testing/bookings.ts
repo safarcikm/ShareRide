@@ -1,7 +1,7 @@
 // Bookings as the API returns them, and fake booking answers, for screen
 // tests. Not used by the app itself.
-import type { Booking, CancellationPreview, MyTrip } from "@shareride/contracts";
-import { passengerCancelReasons, type Money } from "@shareride/domain";
+import type { Booking, CancelBookingBody, CancellationPreview, MyTrip } from "@shareride/contracts";
+import { cancelReasonsFor, type BookingStatus, type Money } from "@shareride/domain";
 import { failure, ok, type FakeClient } from "./fake-client";
 import { northResult, northStops } from "./search";
 import { plannedDraft } from "./trips";
@@ -65,21 +65,27 @@ export const cancelledBooking = northBooking({
   cancellation: {
     by: "passenger",
     reason: "plans_changed",
+    note: "",
     refund: paidBooking.total,
     countsOnReliability: true,
   },
 });
 
-/** What cancelling now does for each of the passenger's reasons; weather never counts (R6.8). */
+/**
+ * What cancelling now does for each of the passenger's reasons, or the
+ * driver's; weather and road closures never count (R6.7, R6.8).
+ */
 export function cancellationPreview(
   refund: Money,
   countsOnReliability: boolean,
+  by: "passenger" | "driver" = "passenger",
 ): CancellationPreview {
   return {
-    reasons: passengerCancelReasons.map((reason) => ({
+    reasons: cancelReasonsFor(by).map((reason) => ({
       reason,
       refund,
-      countsOnReliability: reason === "weather" ? false : countsOnReliability,
+      countsOnReliability:
+        reason === "weather" || reason === "road_closed" ? false : countsOnReliability,
     })),
   };
 }
@@ -122,17 +128,27 @@ export const northMyTrip = plannedDraft({
 export const requestToDrive = northBooking({ viewer: "driver", message: "One small bag." });
 
 /** Statuses that hold seats (rule S1), as the server counts them. */
-const holding = new Set<Booking["status"]>(["requested", "accepted", "confirmed"]);
+const holding = new Set<BookingStatus>(["requested", "accepted", "confirmed"]);
+/** Who the driver's trip page lists, as the server does: who is, or was, riding along. */
+const onTrip = new Set<BookingStatus>([...holding, "completed", "no_show"]);
 
 /**
  * Answers the driver's trip page for the north trip: its requests and
- * bookings, with the seats each stretch holds, and accepting and declining.
- * `answers` can replace what accepting or declining answers.
+ * bookings, with the seats each stretch holds; accepting and declining; and
+ * each booking, its cancellation preview and cancelling it, which always
+ * refunds what was paid (rule M2). `answers` can replace what accepting,
+ * declining, the preview or cancelling answers.
  */
 export function driverApi(
   client: FakeClient,
   start: readonly Booking[],
-  answers: { accept?: () => unknown; decline?: () => unknown } = {},
+  answers: {
+    accept?: () => unknown;
+    decline?: () => unknown;
+    preview?: () => unknown;
+    /** What cancelling answers; `undefined` cancels as the server would. */
+    cancel?: () => unknown;
+  } = {},
 ) {
   let bookings = [...start];
   const change = (id: string, changes: Partial<Booking>) => {
@@ -143,11 +159,15 @@ export function driverApi(
     return next.find((booking) => booking.id === id);
   };
   const idOf = (input: Record<string, unknown>) => (input["params"] as { id: string }).id;
+  const byId = (input: Record<string, unknown>) =>
+    bookings.find((booking) => booking.id === idOf(input));
   client.answer("/v1/me/trips/{id}/bookings", () =>
     ok(200, {
       bookings: [
         ...bookings.filter((booking) => booking.status === "requested"),
-        ...bookings.filter((booking) => booking.status !== "requested"),
+        ...bookings.filter(
+          (booking) => booking.status !== "requested" && onTrip.has(booking.status),
+        ),
       ],
       segments: [0, 1, 2].map((position) => ({
         position,
@@ -176,6 +196,32 @@ export function driverApi(
     if (answers.decline !== undefined) return answers.decline();
     const declined = change(idOf(input), { status: "declined", requestExpiresAt: null });
     return declined === undefined ? failure(404, "not_found") : ok(200, declined);
+  });
+  client.answer(
+    "/v1/bookings/{id}",
+    (input) => {
+      const booking = byId(input);
+      return booking === undefined ? failure(404, "not_found") : ok(200, booking);
+    },
+    "get",
+  );
+  client.answer("/v1/bookings/{id}/cancellation-preview", (input) => {
+    if (answers.preview !== undefined) return answers.preview();
+    const booking = byId(input);
+    if (booking === undefined) return failure(404, "not_found");
+    const paid = booking.status === "confirmed" ? booking.total : { ...booking.total, amount: 0 };
+    return ok(200, cancellationPreview(paid, booking.status === "confirmed", "driver"));
+  });
+  client.answer("/v1/bookings/{id}/cancel", (input) => {
+    const answered = answers.cancel?.();
+    if (answered !== undefined) return answered;
+    const { reason, terms, note } = input["body"] as CancelBookingBody;
+    const cancelled = change(idOf(input), {
+      status: "cancelled",
+      confirmed: null,
+      cancellation: { by: "driver", reason, note: note ?? "", ...terms },
+    });
+    return cancelled === undefined ? failure(404, "not_found") : ok(200, cancelled);
   });
   return {
     remove: (id: string) => {

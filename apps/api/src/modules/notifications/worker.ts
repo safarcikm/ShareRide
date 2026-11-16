@@ -10,10 +10,12 @@ import {
   requestHalfwayAt,
   retryAt,
   sendLeaseSeconds,
+  startOfIcelandDay,
   statusAt,
   stillApplies,
   unreadSummaryAt,
   type BookingStatus,
+  type CancelReason,
   type CarColour,
   type ChannelDecision,
   type NotificationEvent,
@@ -28,11 +30,17 @@ import { alias } from "drizzle-orm/pg-core";
 import type { EmailChannel } from "../../platform/email.ts";
 import { MaybeSent } from "../../platform/maybe-sent.ts";
 import { deviceNotRegistered, type PushReceipt, type PushSender } from "../../platform/push.ts";
+import { SmsMaybeSent, type SmsSender } from "../../platform/sms.ts";
 import type { Queryable, Transaction } from "../bookings/seats.ts";
 import { quickOf } from "../chat/service.ts";
 import { emailContent } from "./email-content.ts";
 import { preferencesOf } from "./preferences.ts";
-import { notificationText, type NotificationFacts, type TripReminderFacts } from "./texts.ts";
+import {
+  notificationText,
+  smsText,
+  type NotificationFacts,
+  type TripReminderFacts,
+} from "./texts.ts";
 
 // The notification worker (spec 7, 3.7; plan 4.4), every few seconds inside
 // the API. Each step takes rows with FOR UPDATE SKIP LOCKED, so two API
@@ -240,6 +248,8 @@ async function factsOf(q: Queryable, notificationId: string) {
         locale: recipients.locale,
         email: recipients.email,
         emailVerifiedAt: recipients.emailVerifiedAt,
+        phone: recipients.phoneE164,
+        phoneVerifiedAt: recipients.phoneVerifiedAt,
       },
       driverName: drivers.firstName,
       passengerName: passengers.firstName,
@@ -273,6 +283,8 @@ async function factsOf(q: Queryable, notificationId: string) {
     name: (role === "driver" ? row.passengerName : row.driverName) ?? "",
     seats: booking.seats,
     total: { amount: booking.totalPrice, currency: "ISK" },
+    cancelReason: booking.cancelReason as CancelReason | null,
+    refund: { amount: booking.refundAmount ?? 0, currency: "ISK" },
     from: named(locale, row.board),
     to: named(locale, row.alight),
     boardsAt: row.boardsAt,
@@ -292,6 +304,7 @@ async function factsOf(q: Queryable, notificationId: string) {
     locale,
     recipientId: notification.recipientId,
     email: recipient.emailVerifiedAt === null ? null : recipient.email,
+    phone: recipient.phoneVerifiedAt === null ? null : recipient.phone,
     booking: {
       status: booking.status as BookingStatus,
       requestExpiresAt: booking.expiresAt,
@@ -319,6 +332,11 @@ export function createNotificationWorker(dependencies: {
    */
   readonly email?: EmailChannel;
   readonly settings?: NotificationSettings;
+  /**
+   * Text messages for last-minute news (spec 7, 3.4; ADR 0023). Without
+   * it, SMS is skipped as `sms_off`.
+   */
+  readonly sms?: SmsSender;
   /** A send that failed, for the logs: never the text or the address. */
   readonly onSendError?: (error: unknown, delivery: { id: string; channel: string }) => void;
   /**
@@ -330,11 +348,20 @@ export function createNotificationWorker(dependencies: {
     event: { id: string; kind: string; givenUp: boolean },
   ) => void;
 }): NotificationWorker {
-  const { db, clock, push, email, onSendError, onEventError } = dependencies;
+  const { db, clock, push, email, sms, onSendError, onEventError } = dependencies;
   const settings = dependencies.settings ?? defaultNotificationSettings;
 
-  /** What the catalogue needs to know about a person to pick the channels. */
-  async function recipientOf(q: Queryable, userId: string, role: TripRole): Promise<Recipient> {
+  /**
+   * What the catalogue needs to know about a person to pick the channels:
+   * for a passenger's booking, when they get in, for the SMS window.
+   */
+  async function recipientOf(
+    q: Queryable,
+    userId: string,
+    role: TripRole,
+    bookingId: string | null,
+    now: Date,
+  ): Promise<Recipient> {
     const [user] = await q
       .select({
         email: users.email,
@@ -349,11 +376,40 @@ export function createNotificationWorker(dependencies: {
       hasPushDevice: tokens.length > 0,
       hasVerifiedEmail: (user?.email ?? null) !== null && (user?.emailVerifiedAt ?? null) !== null,
       hasVerifiedPhone: (user?.phoneVerifiedAt ?? null) !== null,
-      // SMS news comes with the trip changes of spec 6; none of the events
-      // here use it, and without a boarding time it is never sent.
-      boardsAt: null,
-      smsSentToday: 0,
+      boardsAt:
+        role === "passenger" && bookingId !== null
+          ? ((await timesOf(q, bookingId))?.boardsAt ?? null)
+          : null,
+      smsSentToday: await smsSince(q, userId, startOfIcelandDay(now)),
     };
+  }
+
+  /**
+   * SMS news to the person since `since`, sent, on its way, or interrupted
+   * after it may have gone (R7.10). Two events for one person at the same
+   * moment can each count before the other is stored, so the limit can be
+   * passed by one; rare, and it never sends anything twice.
+   */
+  async function smsSince(q: Queryable, userId: string, since: Date): Promise<number> {
+    const [row] = await q
+      .select({ count: sql<number>`count(*)::int` })
+      .from(notificationDeliveries)
+      .innerJoin(notifications, eq(notifications.id, notificationDeliveries.notificationId))
+      .where(
+        and(
+          eq(notifications.recipientId, userId),
+          eq(notificationDeliveries.channel, "sms"),
+          or(
+            inArray(notificationDeliveries.status, ["queued", "sending", "sent"]),
+            and(
+              eq(notificationDeliveries.status, "failed"),
+              eq(notificationDeliveries.reason, "interrupted"),
+            ),
+          ),
+          gt(notificationDeliveries.createdAt, since),
+        ),
+      );
+    return row?.count ?? 0;
   }
 
   function deliveryOf(notificationId: string, decision: ChannelDecision, now: Date) {
@@ -362,7 +418,9 @@ export function createNotificationWorker(dependencies: {
     if (decision.channel === "email" && email === undefined) {
       return { ...base, status: "skipped", reason: "email_off" };
     }
-    if (decision.channel === "sms") return { ...base, status: "skipped", reason: "sms_off" };
+    if (decision.channel === "sms" && sms === undefined) {
+      return { ...base, status: "skipped", reason: "sms_off" };
+    }
     return { ...base, status: "queued", nextAttemptAt: now };
   }
 
@@ -419,7 +477,8 @@ export function createNotificationWorker(dependencies: {
       .onConflictDoNothing()
       .returning({ id: notifications.id });
     if (created === undefined) return;
-    const decisions = channelsFor(kind, await recipientOf(tx, recipientId, to), now, settings);
+    const recipient = await recipientOf(tx, recipientId, to, notification.bookingId ?? null, now);
+    const decisions = channelsFor(kind, recipient, now, settings);
     if (decisions.length === 0) return;
     await tx
       .insert(notificationDeliveries)
@@ -919,8 +978,23 @@ export function createNotificationWorker(dependencies: {
         });
         return { ref: sent.id };
       }
+      case "sms": {
+        if (sms === undefined) return { skipped: "sms_off" };
+        if (found.booking === null) throw new Error("An SMS is about a booking.");
+        if (found.phone === null) return { skipped: "no_phone" };
+        try {
+          await sms.send({ to: found.phone, text: smsText(found.facts, found.locale) });
+        } catch (error) {
+          // A message the provider may have taken is never sent again (R7.6).
+          if (error instanceof SmsMaybeSent) {
+            throw new MaybeSent("The SMS provider may have sent it.", { cause: error });
+          }
+          throw error;
+        }
+        return { ref: "" };
+      }
       default:
-        return { skipped: "sms_off" };
+        throw new Error(`No such channel: ${delivery.channel}.`);
     }
   }
 

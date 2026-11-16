@@ -1,7 +1,12 @@
 import { defaultNotificationSettings } from "@shareride/domain";
 import { locales } from "@shareride/i18n";
 import { describe, expect, it } from "vitest";
-import { notificationText, type NotificationFacts, type TripReminderFacts } from "./texts.ts";
+import {
+  notificationText,
+  smsText,
+  type NotificationFacts,
+  type TripReminderFacts,
+} from "./texts.ts";
 
 // Saturday 14 November 2026: boarding at 09:00 in Iceland (UTC all year).
 const facts: NotificationFacts = {
@@ -12,6 +17,8 @@ const facts: NotificationFacts = {
   name: "Jón",
   seats: 2,
   total: { amount: 5600, currency: "ISK" },
+  cancelReason: null,
+  refund: { amount: 0, currency: "ISK" },
   from: "BSÍ",
   to: "Hof, Akureyri",
   boardsAt: new Date("2026-11-14T09:00:00Z"),
@@ -58,6 +65,7 @@ const kinds: readonly [NotificationFacts["kind"], "driver" | "passenger"][] = [
   ["reminder_hour", "passenger"],
   ["booking_cancelled_by_passenger", "driver"],
   ["refund_issued", "passenger"],
+  ["booking_cancelled_by_driver", "passenger"],
 ];
 
 describe("notification texts", () => {
@@ -65,7 +73,10 @@ describe("notification texts", () => {
     "are complete sentences in %s for every kind, starting with a capital",
     (locale) => {
       for (const [kind, role] of kinds) {
-        const { title, body } = text({ kind, role, message: { text: "Halló" } }, locale);
+        const { title, body } = text(
+          { kind, role, message: { text: "Halló" }, cancelReason: "car_problem" },
+          locale,
+        );
         for (const line of [title, body]) {
           expect(line, kind).not.toMatch(/[{}]/);
           expect(line.charAt(0), kind).toBe(line.charAt(0).toLocaleUpperCase(locale));
@@ -140,6 +151,31 @@ describe("notification texts", () => {
       title: "Endurgreiðsla, 5.600 kr.",
       body: "BSÍ – Hof, Akureyri · laugardagur 14. nóvember kl. 09:00. Hún fer aftur á kortið sem þú greiddir með.",
     });
+  });
+
+  it("tell the passenger why the driver cancelled and the refund, never the note (spec 6, 3.4)", () => {
+    const cancelled = {
+      kind: "booking_cancelled_by_driver",
+      role: "passenger",
+      cancelReason: "car_problem",
+      refund: { amount: 5600, currency: "ISK" },
+    } as const;
+    expect(text(cancelled)).toEqual({
+      title: "The driver cancelled: Car problem",
+      body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00. Full refund of 5,600 ISK.",
+      path: "/bookings/booking-1",
+    });
+    expect(text({ ...cancelled, refund: { amount: 0, currency: "ISK" } }, "is")).toMatchObject({
+      title: "Bílstjórinn afbókaði: Bilun í bíl",
+      body: "BSÍ – Hof, Akureyri · laugardagur 14. nóvember kl. 09:00. Leitaðu að annarri ferð.",
+    });
+    expect(smsText({ ...facts, ...cancelled }, "en")).toBe(
+      "ShareRide: the driver cancelled your booking for Saturday 14 November at 09:00. Full refund. Details in the app.",
+    );
+    expect(smsText({ ...facts, ...cancelled, refund: { amount: 0, currency: "ISK" } }, "is")).toBe(
+      "ShareRide: Bílstjórinn aflýsti bókun þinni: laugardagur 14. nóvember kl. 09:00. Nánar í appinu.",
+    );
+    expect(() => smsText({ ...facts, kind: "request_new" }, "en")).toThrow(/No SMS/);
   });
 
   it("refuse a kind that has no text yet", () => {

@@ -21,7 +21,7 @@ import {
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
 import { sampleId } from "@shareride/db/seed";
-import { passengerCancelReasons } from "@shareride/domain";
+import { driverCancelReasons, passengerCancelReasons } from "@shareride/domain";
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
@@ -972,7 +972,7 @@ describe("cancelling a booking (spec 6, 3.5)", () => {
     });
   });
 
-  it("refuses a request, a reason only drivers give, and anyone but the passenger", async () => {
+  it("refuses a request, a reason or note the other gives, and anyone else", async () => {
     const anna = await driverOf(north);
     const jon = await newMember("Jón");
     const stranger = await newMember("Óli");
@@ -997,15 +997,151 @@ describe("cancelling a booking (spec 6, 3.5)", () => {
       status: 400,
       error: { code: "validation_failed", details: [{ path: "reason", issue: "not_offered" }] },
     });
-    // The driver cancels with milestone 6's next step (PR 4).
-    for (const who of [anna, stranger]) {
-      expect(await preview(who, request.id)).toMatchObject({ status: 404 });
-      expect(
-        await cancel(who, request.id, { reason: "plans_changed", terms: nothing }),
-      ).toMatchObject({ status: 404 });
-    }
+    // A passenger gives no note; that is the driver's (spec 6, 3.4).
+    expect(
+      await cancel(jon, request.id, { reason: "plans_changed", note: "Sorry", terms: nothing }),
+    ).toMatchObject({
+      status: 400,
+      error: { code: "validation_failed", details: [{ path: "note", issue: "not_offered" }] },
+    });
+    // Nor does the driver give a passenger's reason.
+    expect(
+      await cancel(anna, request.id, { reason: "found_another", terms: nothing }),
+    ).toMatchObject({
+      status: 400,
+      error: { code: "validation_failed", details: [{ path: "reason", issue: "not_offered" }] },
+    });
+    // The driver's note keeps contact in the app, like a trip's note (R3.10).
+    expect(
+      await cancel(anna, request.id, {
+        reason: "illness",
+        note: "Sorry! Call me on 555 1234",
+        terms: nothing,
+      }),
+    ).toMatchObject({
+      status: 400,
+      error: {
+        code: "validation_failed",
+        details: [{ path: "note", issue: "contact_details" }],
+      },
+    });
+    expect(
+      await cancel(anna, request.id, { reason: "illness", note: "a".repeat(501), terms: nothing }),
+    ).toMatchObject({
+      status: 400,
+      error: { code: "validation_failed", details: [{ path: "note", issue: "too_long" }] },
+    });
+    expect(await preview(stranger, request.id)).toMatchObject({ status: 404 });
+    expect(
+      await cancel(stranger, request.id, { reason: "plans_changed", terms: nothing }),
+    ).toMatchObject({ status: 404 });
     expect(await stored(request.id)).toMatchObject({ status: "accepted" });
     expect(await occupancy(north)).toEqual([1, 0, 0]);
+  });
+
+  it("lets the driver cancel one booking with a note: a full refund that counts on the driver (spec 6, 3.4)", async () => {
+    const jon = await driverOf(vik, "Jón");
+    const gunna = await newMember("Gunna");
+    const booking = await paidBooking(vik, gunna);
+    expect(await preview(jon, booking.id)).toEqual({
+      ok: true,
+      status: 200,
+      data: {
+        reasons: driverCancelReasons.map((reason) => ({
+          reason,
+          refund: booking.total,
+          countsOnReliability: reason !== "weather" && reason !== "road_closed",
+        })),
+      },
+    });
+    const terms = { refund: booking.total, countsOnReliability: true };
+    const note = "Því miður bilaði bíllinn. Strætó 51 fer kl. 10:00.";
+    // Stored trimmed and composed, as the database counts its characters.
+    const typed = `  ${note.normalize("NFD")}\n`;
+    const cancelled = await cancel(jon, booking.id, { reason: "car_problem", note: typed, terms });
+    expect(cancelled).toMatchObject({
+      status: 200,
+      data: {
+        status: "cancelled",
+        viewer: "driver",
+        cancellation: { by: "driver", reason: "car_problem", note, ...terms },
+      },
+    });
+    expect(await stored(booking.id)).toMatchObject({
+      cancelledBy: "driver",
+      cancelReason: "car_problem",
+      cancelNote: note,
+      refundAmount: booking.total.amount,
+      countsOnReliability: true,
+    });
+    expect(await paymentsOf(booking.id)).toEqual([{ status: "refund_due" }]);
+    expect(await occupancy(vik)).toEqual([0, 0, 0]);
+    expect(await eventsOf(booking.id, "BookingCancelled")).toEqual([
+      { payload: { bookingId: booking.id, by: "driver" } },
+    ]);
+    // The passenger sees why, with the note, but not whether it counts on the driver.
+    expect(
+      await api.client.call(bookingRoute, {
+        accessToken: gunna.accessToken,
+        params: { id: booking.id },
+      }),
+    ).toMatchObject({
+      data: {
+        cancellation: { by: "driver", reason: "car_problem", note, countsOnReliability: null },
+      },
+    });
+    // The passenger can no longer cancel it.
+    expect(await preview(gunna, booking.id)).toMatchObject({ status: 409 });
+  });
+
+  it("answers the driver's cancellation again when asked twice, even at once, and refunds once", async () => {
+    const jon = await driverOf(vik, "Jón");
+    const gunna = await newMember("Gunna");
+    const booking = await paidBooking(vik, gunna);
+    const body = {
+      reason: "illness",
+      note: "Sorry.",
+      terms: { refund: booking.total, countsOnReliability: true },
+    } as const;
+    const [first, second] = await Promise.all([
+      cancel(jon, booking.id, body),
+      cancel(jon, booking.id, body),
+    ]);
+    if (!first.ok || !second.ok) throw new Error("not cancelled");
+    expect(first.data).toMatchObject({
+      status: "cancelled",
+      cancellation: { by: "driver", reason: "illness", note: "Sorry." },
+    });
+    expect(second.data).toEqual(first.data);
+    expect(await cancel(jon, booking.id, { ...body, reason: "other" })).toEqual(first);
+    expect(await paymentsOf(booking.id)).toEqual([{ status: "refund_due" }]);
+    expect(await eventsOf(booking.id, "BookingCancelled")).toHaveLength(1);
+    // The passenger's own try is not a retry of the driver's.
+    expect(
+      await cancel(gunna, booking.id, {
+        reason: "plans_changed",
+        terms: { refund: booking.total, countsOnReliability: false },
+      }),
+    ).toMatchObject({ status: 409, error: { code: "booking_not_cancellable" } });
+  });
+
+  it("lets the driver cancel an unpaid booking with nothing to refund, until the time to get in", async () => {
+    const anna = await driverOf(airport);
+    const gunna = await newMember("Gunna");
+    const unpaid = await booked(gunna.accessToken, airport, { fromStop: 0, toStop: 2 });
+    const nothing = { refund: none, countsOnReliability: false };
+    expect(await cancel(anna, unpaid.id, { reason: "car_smaller", terms: nothing })).toMatchObject({
+      status: 200,
+      data: { cancellation: { by: "driver", note: "", ...nothing } },
+    });
+    const paidOne = await paidBooking(airport, await newMember("Dóra"));
+    await later(untilBoarding(paidOne), anna);
+    expect(
+      await cancel(anna, paidOne.id, {
+        reason: "car_problem",
+        terms: { refund: paidOne.total, countsOnReliability: true },
+      }),
+    ).toMatchObject({ status: 409, error: { code: "booking_not_cancellable" } });
   });
 
   it("tells both in the conversation, each in their own words (spec 7, 3.1)", async () => {
@@ -1032,7 +1168,26 @@ describe("cancelling a booking (spec 6, 3.5)", () => {
     });
     expect(await lastLine(jon)).toMatchObject({
       from: "system",
-      system: { key: "cancelled", by: "them", reason: "found_another" },
+      system: { key: "cancelled", by: "them", reason: "found_another", note: "" },
+    });
+
+    // The driver's note goes with their line, as written.
+    const dora = await newMember("Dóra");
+    const other = await paidBooking(vik, dora);
+    const note = "So sorry, Dóra.";
+    await cancel(jon, other.id, {
+      reason: "illness",
+      note,
+      terms: { refund: other.total, countsOnReliability: true },
+    });
+    const page = await api.client.call(conversationMessagesRoute, {
+      accessToken: dora.accessToken,
+      params: { id: other.id },
+      query: {},
+    });
+    if (!page.ok) throw new Error(page.error.code);
+    expect(page.data.messages[0]).toMatchObject({
+      system: { key: "cancelled", by: "them", reason: "illness", note },
     });
   });
 });

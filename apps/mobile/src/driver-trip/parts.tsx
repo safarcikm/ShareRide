@@ -6,8 +6,9 @@ import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Tag } from "@/components/tag";
-import { statusKey, statusTag } from "@/booking/status";
+import { canCancel, statusKey, statusTag } from "@/booking/status";
 import { useLanguage } from "@/i18n/language";
+import { now } from "@/lib/clock";
 import { controlOutline, radii, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
@@ -200,55 +201,76 @@ export function PassengersByPart({ bookings }: { readonly bookings: readonly Boo
                 {t("trip.stretch", clock)}
               </Text>
             </View>
-            {riding.map((booking) => (
-              <View
-                key={booking.id}
-                style={[styles.passengerRow, { borderTopColor: palette.border }]}
-              >
+            {riding.map((booking) => {
+              const cancellable = canCancel(booking, now());
+              return (
                 <View
-                  accessible
-                  accessibilityLabel={passengerLabel(t, booking)}
-                  style={styles.passenger}
+                  key={booking.id}
+                  style={[styles.passengerRow, { borderTopColor: palette.border }]}
                 >
-                  <Avatar
-                    firstName={booking.passenger.firstName}
-                    colour={booking.passenger.colour}
-                  />
-                  <View style={styles.grow}>
-                    <Text style={[typography.bodyStrong, { color: palette.text }]}>
-                      {booking.passenger.firstName}
-                    </Text>
-                    <Text style={[typography.small, { color: palette.textMuted }]}>
-                      {[
-                        t("search.seatCount", { count: booking.seats }),
-                        booking.total.amount === 0
-                          ? t("results.free")
-                          : formatMoney(booking.total, locale),
-                      ].join(" · ")}
-                    </Text>
-                  </View>
-                  <Tag kind={statusTag(booking)} label={t(statusKey(booking))} />
-                </View>
-                {/* A confirmed booking has its conversation (spec 7, R7.1). */}
-                {booking.confirmed === null ? null : (
-                  <View style={styles.end}>
-                    <Button
-                      variant="text"
-                      label={t("chat.message")}
-                      accessibilityLabel={t("chat.messageTo", {
-                        name: booking.passenger.firstName,
-                      })}
-                      onPress={() => {
-                        router.push({
-                          pathname: "/messages/[bookingId]",
-                          params: { bookingId: booking.id },
-                        });
-                      }}
+                  <View
+                    accessible
+                    accessibilityLabel={passengerLabel(t, booking)}
+                    style={styles.passenger}
+                  >
+                    <Avatar
+                      firstName={booking.passenger.firstName}
+                      colour={booking.passenger.colour}
                     />
+                    <View style={styles.grow}>
+                      <Text style={[typography.bodyStrong, { color: palette.text }]}>
+                        {booking.passenger.firstName}
+                      </Text>
+                      <Text style={[typography.small, { color: palette.textMuted }]}>
+                        {[
+                          t("search.seatCount", { count: booking.seats }),
+                          booking.total.amount === 0
+                            ? t("results.free")
+                            : formatMoney(booking.total, locale),
+                        ].join(" · ")}
+                      </Text>
+                    </View>
+                    <Tag kind={statusTag(booking)} label={t(statusKey(booking))} />
                   </View>
-                )}
-              </View>
-            ))}
+                  {/* A confirmed booking has its conversation (spec 7, R7.1); a
+                      booking can be cancelled until the time to get in (spec 6, 3.4). */}
+                  {booking.confirmed === null && !cancellable ? null : (
+                    <View style={styles.end}>
+                      {booking.confirmed === null ? null : (
+                        <Button
+                          variant="text"
+                          label={t("chat.message")}
+                          accessibilityLabel={t("chat.messageTo", {
+                            name: booking.passenger.firstName,
+                          })}
+                          onPress={() => {
+                            router.push({
+                              pathname: "/messages/[bookingId]",
+                              params: { bookingId: booking.id },
+                            });
+                          }}
+                        />
+                      )}
+                      {cancellable ? (
+                        <Button
+                          variant="text"
+                          label={t("booking.cancel")}
+                          accessibilityLabel={t("driverTrip.cancelBooking", {
+                            name: booking.passenger.firstName,
+                          })}
+                          onPress={() => {
+                            router.push({
+                              pathname: "/bookings/[id]/cancel",
+                              params: { id: booking.id },
+                            });
+                          }}
+                        />
+                      ) : null}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
           </Card>
         );
       })}
@@ -268,6 +290,6 @@ const styles = StyleSheet.create({
   },
   passengerRow: { gap: spacing.xs, paddingTop: spacing.sm, borderTopWidth: controlOutline },
   passenger: { flexDirection: "row", alignItems: "center", gap: spacing.ms },
-  end: { flexDirection: "row", justifyContent: "flex-end" },
+  end: { flexDirection: "row", flexWrap: "wrap", justifyContent: "flex-end", gap: spacing.sm },
   grow: { flex: 1 },
 });

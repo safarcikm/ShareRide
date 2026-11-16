@@ -93,10 +93,16 @@ function cancelError(c: Context, error: CancelError | PreviewError) {
         c,
         409,
         "booking_not_cancellable",
-        "Only an accepted or confirmed booking can be cancelled.",
+        "Only an accepted or confirmed booking can be cancelled, until the time to get in.",
       );
     case "reason_not_offered":
       return invalid(c, "reason", "not_offered", "Choose one of the reasons offered to you.");
+    case "note_not_offered":
+      return invalid(c, "note", "not_offered", "Only the driver writes a note.");
+    case "note_too_long":
+      return invalid(c, "note", "too_long", "The note is too long.");
+    case "note_has_contact_details":
+      return invalid(c, "note", "contact_details", "Leave contact details out of the note.");
     case "terms_changed":
       return errorResponse(c, 409, "terms_changed", "What cancelling does has changed.", {
         terms: error.terms,

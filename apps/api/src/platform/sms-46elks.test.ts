@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createElksSmsSender } from "./sms-46elks.ts";
-import { SmsSendError } from "./sms.ts";
+import { SmsMaybeSent, SmsSendError } from "./sms.ts";
 
 const number = "+3546912345";
 const message = { to: number, text: "123456 is your ShareRide code." };
@@ -92,11 +92,23 @@ describe("createElksSmsSender", () => {
     expect(String(error)).not.toContain("354");
   });
 
-  it("throws when 46elks cannot be reached or does not answer in time", async () => {
-    const { fetch } = fakeFetch(() =>
+  it("throws when 46elks cannot be reached, or may have sent it when it does not answer in time", async () => {
+    const late = fakeFetch(() =>
       Promise.reject(new DOMException("The operation timed out.", "TimeoutError")),
     );
-    await expect(sender(fetch).send(message)).rejects.toThrow(SmsSendError);
+    await expect(sender(late.fetch).send(message)).rejects.toThrow(SmsMaybeSent);
+    const unreachable = fakeFetch(() =>
+      Promise.reject(
+        new TypeError("fetch failed", {
+          cause: Object.assign(new Error("getaddrinfo ENOTFOUND"), { code: "ENOTFOUND" }),
+        }),
+      ),
+    );
+    const error: unknown = await sender(unreachable.fetch)
+      .send(message)
+      .catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(SmsSendError);
+    expect(error).not.toBeInstanceOf(SmsMaybeSent);
   });
 
   it("gives up after the timeout", async () => {

@@ -74,7 +74,7 @@ async function openBooking(
         const { reason, terms } = input["body"] as CancelBookingBody;
         booking = {
           ...cancelledBooking,
-          cancellation: { by: "passenger", reason, ...terms },
+          cancellation: { by: "passenger", reason, note: "", ...terms },
         };
         return ok(200, booking);
       });
@@ -159,6 +159,8 @@ describe("Cancelling a booking (spec 6, 3.5)", () => {
     expect(screen).toHavePathname(`/bookings/${bookingId}/cancel`);
     expect(screen.getByText("Full refund of 2,900 ISK")).toBeVisible();
     expect(screen.queryByText("This cancellation shows on your profile")).toBeNull();
+    // Only the driver writes a note (spec 6, 3.4).
+    expect(screen.queryByLabelText("Note to the passenger (optional)")).toBeNull();
     await choose("Plans changed");
     expect(screen.getByText("This cancellation shows on your profile")).toBeVisible();
     expect(screen.getByText("Anna is told, and the seat is freed for others.")).toBeVisible();
@@ -284,7 +286,7 @@ describe("Cancelling a booking (spec 6, 3.5)", () => {
 });
 
 describe("A cancelled booking (spec 6, 3.4 and 3.5)", () => {
-  it("says the driver cancelled and why, with the refund, and offers the same search again", async () => {
+  it("says the driver cancelled and why, with their note and the refund, and offers the same search again", async () => {
     await openBooking({
       ...cancelledBooking,
       cancellation: {
@@ -292,9 +294,11 @@ describe("A cancelled booking (spec 6, 3.4 and 3.5)", () => {
         reason: "car_problem",
         refund: full,
         countsOnReliability: null,
+        note: "Sorry, the clutch went.",
       },
     });
     expect(await screen.findByText("Anna cancelled this booking: Car problem")).toBeVisible();
+    expect(screen.getByText("Note from the driver: Sorry, the clutch went.")).toBeVisible();
     expect(
       screen.getByText("Full refund of 2,900 ISK, back to the card you paid with."),
     ).toBeVisible();
@@ -310,6 +314,7 @@ describe("A cancelled booking (spec 6, 3.4 and 3.5)", () => {
         reason: "found_another",
         refund: none,
         countsOnReliability: false,
+        note: "",
       },
     });
     expect(await screen.findByText("You cancelled this booking: Found another ride")).toBeVisible();

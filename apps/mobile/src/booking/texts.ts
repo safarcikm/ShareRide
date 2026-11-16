@@ -93,10 +93,16 @@ export function refundText(
   terms: CancellationTerms,
 ): string {
   if (booking.total.amount === 0) return t("booking.nothingToRefund");
-  if (booking.status === "accepted") return t("booking.nothingPaid");
-  return terms.refund.amount > 0
-    ? t("booking.fullRefund", { amount: formatMoney(terms.refund, locale) })
-    : t("booking.noRefund");
+  const name = booking.passenger.firstName;
+  if (booking.status === "accepted") {
+    return booking.viewer === "driver"
+      ? t("booking.driverNothingPaid", { name })
+      : t("booking.nothingPaid");
+  }
+  const amount = formatMoney(terms.refund, locale);
+  // A driver's cancellation always refunds in full (rule M2).
+  if (booking.viewer === "driver") return t("booking.driverRefund", { name, amount });
+  return terms.refund.amount > 0 ? t("booking.fullRefund", { amount }) : t("booking.noRefund");
 }
 
 /**
@@ -109,6 +115,8 @@ export function cancellationTexts(
   booking: Booking,
 ): {
   readonly said: string | null;
+  /** The driver's note, as written, if they gave one. */
+  readonly note: string | null;
   readonly refund: string | null;
   readonly counts: boolean;
 } | null {
@@ -126,6 +134,7 @@ export function cancellationTexts(
           : t("booking.cancelledByOther", { name: booking.driver.firstName, reason });
   return {
     said,
+    note: cancellation.note === "" ? null : t("booking.driverNote", { note: cancellation.note }),
     refund:
       cancellation.refund.amount > 0
         ? t("booking.refundOnItsWay", { amount: formatMoney(cancellation.refund, locale) })

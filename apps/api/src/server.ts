@@ -127,6 +127,8 @@ if (config.worker) {
       config.push.accessToken === undefined ? {} : { accessToken: config.push.accessToken },
     ),
     ...(email === undefined ? {} : { email }),
+    // Last-minute news by SMS (spec 7, 3.4), through the same sender as codes.
+    sms,
     onSendError: (error, delivery) => {
       logger.warn({ err: error, delivery: delivery.id, channel: delivery.channel }, "not sent");
     },

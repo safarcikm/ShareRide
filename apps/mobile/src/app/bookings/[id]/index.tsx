@@ -219,7 +219,7 @@ function BookingDetails({
 
       <WhereToStand booking={booking} />
 
-      {canCancel(booking, now()) ? (
+      {booking.viewer === "passenger" && canCancel(booking, now()) ? (
         <Button
           variant="text"
           label={t("booking.cancel")}
@@ -326,6 +326,7 @@ function Cancelled({ booking }: { readonly booking: Booking }) {
   return (
     <View style={styles.status}>
       {texts.said === null ? null : <Notice kind="info" message={texts.said} />}
+      {texts.note === null ? null : <Body align="start">{texts.note}</Body>}
       {texts.refund === null ? null : <Body align="start">{texts.refund}</Body>}
       {texts.counts ? <Body align="start">{t("booking.countsOnReliability")}</Body> : null}
     </View>

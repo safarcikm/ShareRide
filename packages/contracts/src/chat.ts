@@ -63,6 +63,8 @@ export const chatMessageSchema = z.object({
         key: z.literal("cancelled"),
         by: z.enum(["me", "them"]),
         reason: z.enum(cancelReasons),
+        /** The driver's note, as written; empty for none. */
+        note: z.string(),
       }),
     ])
     .nullable(),

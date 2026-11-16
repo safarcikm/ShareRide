@@ -27,10 +27,18 @@ import {
   type FakePushSender,
   type PushSender,
 } from "../../platform/push.ts";
+import {
+  createDevSmsSender,
+  SmsMaybeSent,
+  SmsSendError,
+  type DevSmsSender,
+  type SmsSender,
+} from "../../platform/sms.ts";
 import { startTestApi, type TestApi } from "../../testing.ts";
 import {
   bookingHelpers,
   freshSampleTrips,
+  hours,
   sampleTrip,
   seedForBookings,
   type Member,
@@ -48,8 +56,9 @@ import { createNotificationWorker } from "./worker.ts";
 let api: TestApi;
 let push: FakePushSender;
 let email: FakeEmailSender;
+let sms: DevSmsSender;
 
-const { airport, north } = sampleTrip;
+const { airport, north, vik } = sampleTrip;
 const { outboxEvents, notifications, notificationDeliveries, scheduledNotifications } = schema;
 
 beforeAll(async () => {
@@ -65,6 +74,7 @@ beforeEach(async () => {
   await api.connection.db.execute(sql`delete from push_tokens`);
   push = createFakePushSender();
   email = createFakeEmailSender();
+  sms = createDevSmsSender({ print: () => undefined });
 });
 
 afterEach(() => {
@@ -84,6 +94,7 @@ function worker(
   options: {
     email?: FakeEmailSender | null;
     push?: PushSender;
+    sms?: SmsSender | null;
     onEventError?: (error: unknown, event: { id: string; givenUp: boolean }) => void;
   } = {},
 ) {
@@ -93,6 +104,7 @@ function worker(
     clock: () => api.now(),
     push: options.push ?? push,
     ...(sender === null ? {} : { email: { sender, webAppUrl } }),
+    ...(options.sms === null ? {} : { sms: options.sms ?? sms }),
     ...(options.onEventError === undefined ? {} : { onEventError: options.onEventError }),
   });
 }
@@ -217,6 +229,67 @@ async function cancelAsShown(passenger: Member, bookingId: string) {
   });
   if (!result.ok) throw new Error(result.error.code);
   return result.data;
+}
+
+/** The driver cancels the booking for the reason, with the terms the preview shows. */
+async function cancelAsDriver(driver: Member, bookingId: string, reason = "car_problem") {
+  const preview = await api.client.call(cancellationPreviewRoute, {
+    accessToken: driver.accessToken,
+    params: { id: bookingId },
+  });
+  if (!preview.ok) throw new Error(preview.error.code);
+  const shown = preview.data.reasons.find((option) => option.reason === reason);
+  if (shown === undefined) throw new Error(`${reason} is not offered`);
+  const result = await api.client.call(cancelBookingRoute, {
+    accessToken: driver.accessToken,
+    params: { id: bookingId },
+    body: {
+      reason: shown.reason,
+      note: "Call me if you need help.",
+      terms: { refund: shown.refund, countsOnReliability: shown.countsOnReliability },
+    },
+  });
+  if (!result.ok) throw new Error(result.error.code);
+  return result.data;
+}
+
+/**
+ * As if `count` SMS had gone to the member since midnight (R7.10), the
+ * last `interrupted` of them with their answer lost, so they may have gone.
+ */
+async function smsSentToday(member: Member, count: number, interrupted = 0) {
+  const { db } = api.connection;
+  for (let index = 0; index < count; index += 1) {
+    const lost = index >= count - interrupted;
+    const [notification] = await db
+      .insert(notifications)
+      .values({
+        recipientId: member.userId,
+        kind: "meeting_point_changed",
+        uniqueKey: `test:${member.userId}:${String(index)}`,
+        createdAt: api.now(),
+        updatedAt: api.now(),
+      })
+      .returning({ id: notifications.id });
+    if (notification === undefined) throw new Error("not stored");
+    await db.insert(notificationDeliveries).values({
+      notificationId: notification.id,
+      channel: "sms",
+      ...(lost ? { status: "failed", reason: "interrupted" } : { status: "sent" }),
+      attempts: 1,
+      createdAt: api.now(),
+      updatedAt: api.now(),
+    });
+  }
+}
+
+/** The member's verified phone number, where their SMS goes. */
+async function phoneOf(member: Member) {
+  const [user] = await api.connection.db
+    .select({ phone: schema.users.phoneE164 })
+    .from(schema.users)
+    .where(eq(schema.users.id, member.userId));
+  return user?.phone;
 }
 
 /** A driver and a passenger with a paid booking on the airport trip. */
@@ -524,6 +597,137 @@ describe("the worker (plan 4.4)", () => {
       ) as unknown,
     });
     expect(push.sent.slice(pushedBefore)).toHaveLength(1);
+  });
+
+  it("tells the passenger when the driver cancels, by SMS too within 24 hours of boarding (spec 7, 3.4)", async () => {
+    const { jon, passenger, bookingId } = await confirmedBooking();
+    await withDevice(passenger);
+    await worker().runOnce();
+    push.sent.length = 0;
+
+    const cancelled = await cancelAsDriver(jon, bookingId);
+    const refund = formatMoney(cancelled.total, "en");
+    await worker().runOnce();
+    expect(push.sent).toEqual([
+      {
+        to: `ExponentPushToken[${passenger.userId}]`,
+        title: "The driver cancelled: Car problem",
+        body: `Hlemmur – Fjörður shopping centre · Saturday 14 November at 05:30. Full refund of ${refund}.`,
+        data: { path: `/bookings/${bookingId}` },
+      },
+    ]);
+    // Boarding is Saturday 05:30, under 24 hours away; the note is never in it (R7.9).
+    expect(sms.outbox).toEqual([
+      {
+        to: await phoneOf(passenger),
+        text: "ShareRide: the driver cancelled your booking for Saturday 14 November at 05:30. Full refund. Details in the app.",
+      },
+    ]);
+    expect(
+      (await logOf(passenger)).filter((row) => row.kind === "booking_cancelled_by_driver"),
+    ).toEqual([
+      {
+        kind: "booking_cancelled_by_driver",
+        channel: "email",
+        status: "skipped",
+        reason: "no_email",
+        attempts: 0,
+      },
+      {
+        kind: "booking_cancelled_by_driver",
+        channel: "push",
+        status: "sent",
+        reason: null,
+        attempts: 1,
+      },
+      {
+        kind: "booking_cancelled_by_driver",
+        channel: "sms",
+        status: "sent",
+        reason: null,
+        attempts: 1,
+      },
+    ]);
+  });
+
+  it("sends no SMS for an unpaid booking's refund, more than 24 hours ahead, or past 5 a day (R7.10)", async () => {
+    // Unpaid, in the window: the SMS says nothing of a refund.
+    const jon = await driverOf(airport, "Jón");
+    const gunna = await newMember("Gunna");
+    await speaks(gunna, "is");
+    const unpaid = await booked(gunna.accessToken, airport, { fromStop: 0, toStop: 1 });
+    await cancelAsDriver(jon, unpaid.id, "illness");
+    await worker().runOnce();
+    expect(sms.outbox.map((message) => message.text)).toEqual([
+      "ShareRide: Bílstjórinn aflýsti bókun þinni: laugardagur 14. nóvember kl. 05:30. Nánar í appinu.",
+    ]);
+
+    // Two days ahead: outside the window.
+    const vikDriver = await driverOf(vik, "Sigga");
+    const dora = await newMember("Dóra");
+    const far = await booked(dora.accessToken, vik, { fromStop: 0, toStop: 1 });
+    await paid(dora.accessToken, far.id);
+    await cancelAsDriver(vikDriver, far.id);
+    await worker().runOnce();
+    expect(await logOf(dora)).toContainEqual({
+      kind: "booking_cancelled_by_driver",
+      channel: "sms",
+      status: "skipped",
+      reason: "outside_sms_window",
+      attempts: 0,
+    });
+
+    // Five already today, one of them lost on its way: the sixth waits for the app and email.
+    const { passenger: oli, bookingId } = await confirmedBooking("Óli", jon);
+    await smsSentToday(oli, 5, 1);
+    await cancelAsDriver(jon, bookingId);
+    await worker().runOnce();
+    expect(await logOf(oli)).toContainEqual({
+      kind: "booking_cancelled_by_driver",
+      channel: "sms",
+      status: "skipped",
+      reason: "sms_limit",
+      attempts: 0,
+    });
+    expect(sms.outbox).toHaveLength(1);
+  });
+
+  it("never sends an SMS twice when its answer was lost, and tries again when it never left", async () => {
+    const { jon, passenger, bookingId } = await confirmedBooking();
+    let tries = 0;
+    const lost: SmsSender = {
+      send: () => {
+        tries += 1;
+        return Promise.reject(
+          new SmsMaybeSent("Vonage did not answer in time", {
+            cause: new DOMException("The operation timed out.", "TimeoutError"),
+          }),
+        );
+      },
+    };
+    await cancelAsDriver(jon, bookingId);
+    await worker({ sms: lost }).runOnce();
+    await later(hours(1), jon, passenger);
+    await worker({ sms: lost }).runOnce();
+    expect(tries).toBe(1);
+    expect((await logOf(passenger)).find((row) => row.channel === "sms")).toMatchObject({
+      status: "failed",
+      reason: "interrupted",
+    });
+
+    const refused: SmsSender = {
+      send: () => Promise.reject(new SmsSendError("Vonage refused the message (HTTP 401)")),
+    };
+    const { passenger: dora, bookingId: second } = await confirmedBooking("Dóra", jon);
+    await cancelAsDriver(jon, second);
+    await worker({ sms: refused }).runOnce();
+    expect((await logOf(dora)).find((row) => row.channel === "sms")).toMatchObject({
+      status: "queued",
+      attempts: 1,
+    });
+    await later(hours(1), jon, dora);
+    await worker().runOnce();
+    expect(sms.outbox.at(-1)?.to).toBe(await phoneOf(dora));
   });
 
   it("pushes a chat message with its text, and a quick message in the reader's language", async () => {
