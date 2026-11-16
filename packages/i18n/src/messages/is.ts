@@ -32,10 +32,11 @@ export const is = {
   "common.retry": "Reyna aftur",
   "signIn.title": "Skráðu þig inn eða stofnaðu aðgang",
   "signIn.help":
-    "Við sendum þér {length} stafa kóða með SMS. Fyrsta skiptið á ShareRide? Sami kóðinn stofnar aðganginn þinn.",
+    "Við sendum þér {length} stafa kóða með SMS. Í fyrsta sinn á ShareRide? Sami kóðinn stofnar aðganginn þinn.",
   "signIn.keptRide": "Þú ert að bóka",
   "signIn.keptRideTrip": "{day} · {boardTime} {board} → {alightTime} {alight}",
   "signIn.keptRideDetails": "{seats} · {price} · Ökumaður: {driver}",
+  "signIn.keptRideDriver": "Ökumaður: {driver}",
   "signIn.keptRideBack": "Við komum með þig hingað aftur eftir innskráningu.",
   "signIn.keptOffer": "Næst: bjóða far",
   "signIn.keptOfferBack": "Við förum með þig þangað eftir innskráningu.",

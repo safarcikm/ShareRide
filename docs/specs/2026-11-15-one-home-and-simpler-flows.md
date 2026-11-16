@@ -159,9 +159,14 @@ Find replaces both the front page and My profile as the place the app opens.
    which needs no case ending in Icelandic), and "We bring you back here
    after signing in." Step 3 is long, so its card keeps only the date, times
    and route. For Offer a ride the card says "Next: offer a ride" and "We
-   take you there after signing in." The steps only look at what is kept;
-   the menu takes it once the account is ready, as before. The card loads
-   the trip once and is left out if that fails.
+   take you there after signing in." A part that filled up, closed or was
+   cancelled since says so ("Full on your part of the trip") instead of
+   promising to come back, and step 3's button then just says "Create
+   account". Screen readers hear the card in words ("Leaves Borgarnes at
+   10:00, arrives at Blönduós at 12:05"). The steps only look at what is
+   kept; the menu takes it once the account is ready, as before. The card
+   loads the trip once on steps 1 and 2 and again on step 3, and is left out
+   if that fails.
 4. **Step 3, about you**, replaces Terms and Create profile:
    - first name, with "Everyone sees it. We never show your last name.";
    - the languages you speak, as chips: the language the app is in is ticked

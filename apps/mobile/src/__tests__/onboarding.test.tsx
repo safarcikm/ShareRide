@@ -1,4 +1,5 @@
-import { fireEvent, screen } from "expo-router/testing-library";
+import { router } from "expo-router";
+import { act, fireEvent, screen } from "expo-router/testing-library";
 import type { Me } from "@shareride/contracts";
 import { failure, ok, testMe, type FakeClient } from "@/testing/fake-client";
 import { completeMe, legalDocument, renderApp } from "@/testing/app";
@@ -43,11 +44,11 @@ async function openAboutYou(
   const app = await renderApp("/", {
     me,
     setUp: (client) => {
-      setUp(client);
       client.answer("/v1/legal/{type}/current", (input) => {
         const { type } = input["params"] as { type: string };
         return ok(200, legalDocument(type, type === "terms" ? versions.terms : versions.rules));
       });
+      setUp(client);
     },
   });
   expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
@@ -194,11 +195,54 @@ describe("Step 3 of signing up, about you (spec 16, 3.5)", () => {
     ).toBeVisible();
     expect(screen.getByLabelText("First name")).toHaveDisplayValue("Anna");
     expect(screen.getByRole("checkbox", { name: "English" })).toBeChecked();
+    // Nothing moves: the boxes stay, ticked, though the terms are accepted.
+    expect(screen.getByRole("checkbox", { name: "I am 18 or older" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: accept })).toBeChecked();
 
     await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
     expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
     expect(callsTo(app, "/v1/me/legal-acceptances")).toHaveLength(1);
     expect(callsTo(app, "/v1/me", "patch")).toHaveLength(2);
+  });
+
+  it("never asks for the terms again once accepted, even when step 3 opens afresh", async () => {
+    const app = await openAboutYou();
+    app.client.answer("/v1/me/legal-acceptances", () => ok(200, afterLegal));
+    app.client.answer("/v1/me", (input) => {
+      const body = input["body"] as Partial<Me> | undefined;
+      return body === undefined ? ok(200, testMe) : failure(0, "network_error");
+    });
+    await fireEvent.changeText(screen.getByLabelText("First name"), "Anna");
+    await tickBoth();
+    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+    expect(
+      await screen.findByText("We couldn't reach ShareRide. Check your connection and try again."),
+    ).toBeVisible();
+    // Leaving for Find comes back to step 3, now without the terms.
+    await act(() => {
+      router.navigate("/");
+    });
+    expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
+    expect(screen.queryByRole("checkbox", { name: accept })).toBeNull();
+    expect(callsTo(app, "/v1/me/legal-acceptances")).toHaveLength(1);
+  });
+
+  it("offers Try again when the terms cannot be loaded, and saves nothing", async () => {
+    const app = await openAboutYou(undefined, testMe, (client) => {
+      client.answer("/v1/legal/{type}/current", () => failure(0, "network_error"));
+    });
+    expect(
+      await screen.findByText("We couldn't reach ShareRide. Check your connection and try again."),
+    ).toBeVisible();
+    await fireEvent.changeText(screen.getByLabelText("First name"), "Anna");
+    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+    expect(callsTo(app, "/v1/me", "patch")).toHaveLength(0);
+    app.client.answer("/v1/legal/{type}/current", (input) => {
+      const { type } = input["params"] as { type: string };
+      return ok(200, legalDocument(type, 1));
+    });
+    await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByText("Terms of Service, version 1")).toBeVisible();
   });
 
   it("shows the new version when the terms changed while reading", async () => {
@@ -258,7 +302,7 @@ describe("The button names what comes after step 3 (3.5 item 4)", () => {
       await screen.findByRole("button", { name: "Create account and send request" }),
     ).toBeVisible();
     expect(screen.getByTestId("kept-ride")).toHaveAccessibleName(
-      "You're booking, Sunday 15 November · 10:00 Borgarnes → 12:05 Blönduós",
+      "You're booking, Sunday 15 November, Leaves Borgarnes at 10:00, arrives at Blönduós at 12:05",
     );
   });
 
@@ -276,6 +320,36 @@ describe("The button names what comes after step 3 (3.5 item 4)", () => {
       );
     });
     expect(await screen.findByRole("button", { name: "Create account and book" })).toBeVisible();
+  });
+
+  it.each([
+    [
+      "is full now",
+      (client: FakeClient) => {
+        tripDetailsApi(client, (query) =>
+          ok(
+            200,
+            northTrip(
+              { board: Number(query["fromStop"]), alight: Number(query["toStop"]) },
+              { part: { state: "full", freeSeats: 0 } },
+            ),
+          ),
+        );
+      },
+    ],
+    [
+      "cannot be loaded",
+      (client: FakeClient) => {
+        client.answer("/v1/trips/{id}", () => failure(0, "network_error"));
+      },
+    ],
+  ])("just says Create account when the trip %s", async (_case, setUp) => {
+    keepBooking();
+    const app = await openAboutYou(undefined, testMe, setUp);
+    await screen.findByText("Step 3 of 3");
+    expect(app.client.calls.some((call) => call.path === "/v1/trips/{id}")).toBe(true);
+    expect(await screen.findByRole("button", { name: "Create account" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: /^Create account and / })).toBeNull();
   });
 
   it("says offer a ride after Offer a ride", async () => {

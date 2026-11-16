@@ -142,6 +142,24 @@ describe("My profile (spec 16, 3.4)", () => {
     });
   });
 
+  it("ticks no language for someone who chose none, and shows the rest after the common ones", async () => {
+    await renderApp("/profile/edit", {
+      me: { ...completeMe, languages: [] },
+      setUp: drivingApi,
+    });
+    expect(await screen.findByRole("checkbox", { name: "English" })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Icelandic" })).not.toBeChecked();
+    // The field is open on Edit profile.
+    expect(screen.getByLabelText("About you")).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "More languages" }));
+    const names = screen
+      .getAllByRole("checkbox")
+      .map((chip) => chip.props.accessibilityLabel as string)
+      .slice(0, 6);
+    // The common ones keep their place; the rest come after them.
+    expect(names).toEqual(["Icelandic", "English", "Polish", "German", "Spanish", "Lithuanian"]);
+  });
+
   it("keeps a language this version does not know off the form", async () => {
     const me = { ...completeMe, languages: ["is", "xx"] };
     const app = await renderApp("/profile/edit", {

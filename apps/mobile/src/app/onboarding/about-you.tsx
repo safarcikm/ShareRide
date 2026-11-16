@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { errorText } from "@/auth/errors";
-import { useMe } from "@/auth/session";
+import { useMe, useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
@@ -25,18 +25,19 @@ import { spacing } from "@/theme/tokens";
  */
 export default function AboutYouScreen() {
   const { t } = useLanguage();
+  const session = useSession();
   const me = useMe();
   const kept = useKeptRide();
-  // Asked once: the terms part stays on screen after it is accepted, so
-  // nothing moves if saving the profile then fails.
+  // Asked once: the terms part stays as it opened after the terms are
+  // accepted, so nothing moves if saving the profile then fails.
   const [askTerms] = useState(() => me?.missingSteps.includes("legal") ?? false);
+  const [askAge] = useState(() => me?.ageConfirmed === false);
   const terms = useCurrentDocuments(askTerms);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [termsDone, setTermsDone] = useState(false);
 
   if (me === null) return null;
-  const askAge = !me.ageConfirmed;
 
   /** Accepts the terms first, once; a text says why not. */
   async function acceptTerms(): Promise<string | null> {
@@ -48,6 +49,9 @@ export default function AboutYouScreen() {
     if (!accepted || (askAge && !ageConfirmed)) return t("legal.needBoth");
     const result = await terms.accept(terms.documents, askAge);
     if (result.ok) {
+      // The account now has only the profile left: if step 3 opens again,
+      // it does not ask for the terms a second time (item 6).
+      session.update(result.data);
       setTermsDone(true);
       return null;
     }
@@ -66,6 +70,7 @@ export default function AboutYouScreen() {
       <Title>{t("onboarding.aboutYou")}</Title>
       <ProfileForm
         me={me}
+        tickAppLanguage
         foldAbout
         submitLabel={t(createAccountKey(kept))}
         beforeSave={acceptTerms}

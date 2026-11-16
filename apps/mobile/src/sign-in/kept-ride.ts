@@ -41,11 +41,17 @@ export function useKeptRide(): KeptRide | undefined {
   return useLoaded(load).value;
 }
 
-/** The last step's button, naming what comes after it (3.5 item 4). */
+/**
+ * The last step's button, naming what comes after it (3.5 item 4): only a
+ * part that can still be booked as chosen gets "and book" or "and send
+ * request"; one that filled up, or a trip that could not be loaded, gets
+ * plain "Create account".
+ */
 export function createAccountKey(kept: KeptRide | undefined): MessageKey {
   switch (kept?.kind) {
     case "booking":
-      return kept.trip?.bookingMode === "approval"
+      if (kept.trip?.part.state !== "open") return "onboarding.create";
+      return kept.trip.bookingMode === "approval"
         ? "onboarding.createAndRequest"
         : "onboarding.createAndBook";
     case "offer":

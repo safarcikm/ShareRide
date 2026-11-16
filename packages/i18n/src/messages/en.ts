@@ -34,6 +34,7 @@ export const en = {
   "signIn.keptRide": "You're booking",
   "signIn.keptRideTrip": "{day} · {boardTime} {board} → {alightTime} {alight}",
   "signIn.keptRideDetails": "{seats} · {price} · Driver: {driver}",
+  "signIn.keptRideDriver": "Driver: {driver}",
   "signIn.keptRideBack": "We bring you back here after signing in.",
   "signIn.keptOffer": "Next: offer a ride",
   "signIn.keptOfferBack": "We take you there after signing in.",

@@ -214,8 +214,8 @@ Events: `UserRegistered`, `PhoneVerified`, `EmailVerified`, `LegalAccepted`,
 
 | Key | English | Icelandic (draft) |
 | --- | ------- | ----------------- |
-| `auth.phone.title` | What's your phone number? | Hvert er símanúmerið þitt? |
-| `auth.phone.help` | We'll text you a 6-digit code. | Við sendum þér 6 stafa kóða með SMS. |
+| `signIn.title` | Sign in or create an account (spec 16) | Skráðu þig inn eða stofnaðu aðgang |
+| `signIn.help` | We text you a 6-digit code. New to ShareRide? The same code creates your account. | Við sendum þér 6 stafa kóða með SMS. Í fyrsta sinn á ShareRide? Sami kóðinn stofnar aðganginn þinn. |
 | `auth.code.title` | Enter the code | Sláðu inn kóðann |
 | `auth.code.resend` | Send a new code | Senda nýjan kóða |
 | `auth.continueApple` | Continue with Apple | Halda áfram með Apple |

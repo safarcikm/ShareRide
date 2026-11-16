@@ -2,7 +2,7 @@ import { act, fireEvent, screen } from "expo-router/testing-library";
 import { failure, ok, testMe, tokens, type FakeClient } from "@/testing/fake-client";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
-import { northResult, tripDetailsApi } from "@/testing/search";
+import { northResult, northTrip, tripDetailsApi } from "@/testing/search";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -267,8 +267,9 @@ describe("Signing in with a ride kept (spec 16, 3.5)", () => {
     keepBooking();
     await openSignIn();
     const card = await screen.findByTestId("kept-ride");
+    // Screen readers hear words, not the dot and the arrow.
     expect(card).toHaveAccessibleName(
-      "You're booking, Sunday 15 November · 10:00 Borgarnes → 12:05 Blönduós, 2 seats · 5,800 ISK · Driver: Anna, We bring you back here after signing in.",
+      "You're booking, Sunday 15 November, Leaves Borgarnes at 10:00, arrives at Blönduós at 12:05, 2 seats, 5,800 ISK, Driver: Anna, We bring you back here after signing in.",
     );
     expect(screen.getByText("Sunday 15 November · 10:00 Borgarnes → 12:05 Blönduós")).toBeVisible();
     expect(screen.getByText("2 seats · 5,800 ISK · Driver: Anna")).toBeVisible();
@@ -289,6 +290,29 @@ describe("Signing in with a ride kept (spec 16, 3.5)", () => {
       params: { id: northResult.tripId },
       query: { fromStop: 1, toStop: 2, seats: 2 },
     });
+  });
+
+  it.each([
+    ["full", "Full on your part of the trip"],
+    ["cancelled", "This trip was cancelled."],
+  ] as const)("says when the ride kept is %s now", async (state, text) => {
+    keepBooking();
+    await openSignIn((client) => {
+      tripDetailsApi(client, (query) =>
+        ok(
+          200,
+          northTrip(
+            { board: Number(query["fromStop"]), alight: Number(query["toStop"]), seats: 2 },
+            { part: { state, freeSeats: 0 } },
+          ),
+        ),
+      );
+    });
+    expect(await screen.findByTestId("kept-ride")).toHaveAccessibleName(
+      new RegExp(`^You're booking, .*, Driver: Anna, ${text.replace(".", "\\.")}$`),
+    );
+    expect(screen.getByText(text)).toBeVisible();
+    expect(screen.queryByText("We bring you back here after signing in.")).toBeNull();
   });
 
   it("says what comes next for an offer to drive", async () => {

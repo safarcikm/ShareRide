@@ -40,13 +40,13 @@ const commonLanguages = new Set<string>(["is", "en", "pl", "de", "es"]);
 
 /**
  * First name, about and spoken languages (spec 1, section 3.5), checked with
- * the same rules as the API before saving. Photo and email come later. A
- * new profile starts with the app's language ticked (spec 16, 3.5 item 4).
+ * the same rules as the API before saving. Photo and email come later.
  */
 export function ProfileForm({
   me,
   onSaved,
   submitLabel,
+  tickAppLanguage = false,
   foldAbout = false,
   beforeSave,
   waiting = false,
@@ -57,6 +57,8 @@ export function ProfileForm({
   readonly onSaved?: (me: Me) => void;
   /** The main button; "Save profile" unless given. */
   readonly submitLabel?: string;
+  /** A new profile starts with the app's language ticked, when none is chosen yet. */
+  readonly tickAppLanguage?: boolean;
   /** Folds an empty About you behind "Add a few words about you (optional)". */
   readonly foldAbout?: boolean;
   /**
@@ -77,7 +79,7 @@ export function ProfileForm({
   // A language a newer version added is kept off the form rather than refused.
   const [languages, setLanguages] = useState<readonly string[]>(() => {
     const known = me.languages.filter((language) => knownLanguages.has(language));
-    return known.length > 0 || !knownLanguages.has(locale) ? known : [locale];
+    return known.length > 0 || !tickAppLanguage || !knownLanguages.has(locale) ? known : [locale];
   });
   // The chips that show: the common ones and those chosen when the form
   // opened, so a chip never disappears when it is unticked.
@@ -160,18 +162,20 @@ export function ProfileForm({
       <View style={styles.languages}>
         <Text style={[typography.label, { color: palette.text }]}>{t("profile.languages")}</Text>
         <View style={styles.chips}>
-          {spokenLanguages
-            .filter((language) => allLanguages || shown.has(language))
-            .map((language) => (
-              <Chip
-                key={language}
-                label={languageNames[locale][language]}
-                selected={languages.includes(language)}
-                onToggle={() => {
-                  toggle(language);
-                }}
-              />
-            ))}
+          {[
+            // The ones shown keep their place; "More languages" adds the rest after them.
+            ...spokenLanguages.filter((language) => shown.has(language)),
+            ...(allLanguages ? spokenLanguages.filter((language) => !shown.has(language)) : []),
+          ].map((language) => (
+            <Chip
+              key={language}
+              label={languageNames[locale][language]}
+              selected={languages.includes(language)}
+              onToggle={() => {
+                toggle(language);
+              }}
+            />
+          ))}
         </View>
         {allLanguages || spokenLanguages.every((language) => shown.has(language)) ? null : (
           <Button

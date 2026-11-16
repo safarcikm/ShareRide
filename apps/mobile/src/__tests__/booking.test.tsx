@@ -181,7 +181,7 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
     await fireEvent.press(within(bar).getByRole("button", { name: "Send request" }));
     // Each step of signing up shows the ride (spec 16, 3.5 item 3).
     expect(await screen.findByTestId("kept-ride")).toHaveAccessibleName(
-      /^You're booking, Sunday 15 November · 10:00 Borgarnes → 12:05 Blönduós, 1 seat · 2,900 ISK/,
+      /^You're booking, Sunday 15 November, Leaves Borgarnes at 10:00, arrives at Blönduós at 12:05, 1 seat, 2,900 ISK, Driver: Anna/,
     );
     await fireEvent.changeText(await screen.findByLabelText("Mobile number"), "690 0000");
     await fireEvent.press(screen.getByRole("button", { name: "Send code" }));
@@ -191,7 +191,7 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
     expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
     expect(screen.getByText("Step 3 of 3")).toBeVisible();
     expect(await screen.findByTestId("kept-ride")).toHaveAccessibleName(
-      "You're booking, Sunday 15 November · 10:00 Borgarnes → 12:05 Blönduós",
+      "You're booking, Sunday 15 November, Leaves Borgarnes at 10:00, arrives at Blönduós at 12:05",
     );
 
     client.answer("/v1/me", () => ok(200, completeMe));
