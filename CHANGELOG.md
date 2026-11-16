@@ -475,6 +475,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   the opening screen on frost or night, and the browser tab icon, exported
   from drawings in `apps/mobile/assets/logo`.
 
+- Privacy self-service, part 1 (spec 11): the rules in the domain (what
+  is open before deleting an account, the 7-day wait, what deletion does to
+  each kind of data, retention cutoffs, holds, one export a day, blocked
+  numbers, due dates of privacy requests), and a catalogue of every
+  table's personal data that a test keeps complete.
+
 ### Fixed
 
 - After signing up from a ride, the app opens that ride's booking again, and

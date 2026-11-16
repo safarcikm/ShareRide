@@ -5,6 +5,7 @@ import pg from "pg";
 import * as schema from "./schema/index.ts";
 
 export { schema };
+export { personalData, type Deletion, type TablePrivacy } from "./personal-data.ts";
 export { withoutQueryValues } from "./safe-error.ts";
 export type Database = NodePgDatabase<typeof schema>;
 
