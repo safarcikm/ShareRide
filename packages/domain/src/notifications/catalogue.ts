@@ -52,12 +52,23 @@ export const notificationRules = {
   payout_sent: { push: false, email: "always", sms: false },
   checked_in: { push: true, email: "never", sms: false },
   checked_in_driver: { push: true, email: "never", sms: false },
+  // News about the account rather than a trip (spec 11): the texts say what
+  // is ready and until when, never a link (spec 11, 7).
+  data_export_ready: { push: true, email: "always", sms: false },
 } as const satisfies Record<string, NotificationRule>;
 
 export type NotificationKind = keyof typeof notificationRules;
 export const notificationKinds = Object.keys(notificationRules) as NotificationKind[];
 
 export type TripRole = "driver" | "passenger";
+
+/** The kinds about the person's account, which no booking or trip event gives. */
+export const accountNoticeKinds = ["data_export_ready"] as const;
+export type AccountNoticeKind = (typeof accountNoticeKinds)[number];
+
+export function isAccountNotice(kind: NotificationKind): kind is AccountNoticeKind {
+  return (accountNoticeKinds as readonly NotificationKind[]).includes(kind);
+}
 
 /**
  * What can happen, as the catalogue sees it: the domain events of spec 5, 6,
@@ -171,7 +182,8 @@ const reminderKinds = {
 
 /** What the worker knows about one person when it sends. */
 export interface Recipient {
-  readonly role: TripRole;
+  /** Their place on the trip concerned; null for news about the account. */
+  readonly role: TripRole | null;
   /** A signed-in device with a push token (3.6, item 1). */
   readonly hasPushDevice: boolean;
   readonly hasVerifiedEmail: boolean;

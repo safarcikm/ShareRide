@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  accountNoticeKinds,
   channelsFor,
+  isAccountNotice,
   notificationKinds,
   notificationRules,
   notificationsFor,
@@ -95,9 +97,9 @@ describe("who is told about each event (spec 7, 3.3)", () => {
     expect(notificationsFor(event)).toEqual(expected);
   });
 
-  it("covers every kind of notification", () => {
+  it("covers every kind of notification, with news about the account", () => {
     const told = new Set(cases.flatMap(([event]) => notificationsFor(event).map((n) => n.kind)));
-    expect([...told].sort()).toEqual([...notificationKinds].sort());
+    expect([...told, ...accountNoticeKinds].sort()).toEqual([...notificationKinds].sort());
   });
 });
 
@@ -134,6 +136,7 @@ describe("the channels of each kind (spec 7, 3.3 and 3.4)", () => {
     // Push only (spec 8, 3.9): it matters at the stop, and nowhere later.
     ["checked_in", true, "never", false],
     ["checked_in_driver", true, "never", false],
+    ["data_export_ready", true, "always", false],
   ] as const)("%s: push %s, email %s, SMS %s", (kind, push, email, sms) => {
     expect(notificationRules[kind]).toEqual({ push, email, sms });
   });
@@ -173,6 +176,16 @@ describe("how one person is reached (spec 7, 3.3, 3.4 and 3.7)", () => {
       { channel: "push", send: true },
       { channel: "email", send: false, reason: "no_email" },
     ]);
+  });
+
+  it("tells about the account by push and email, never by SMS (spec 11, 3.2)", () => {
+    const account = { role: null, boardsAt: null };
+    expect(channels("data_export_ready", account, hoursBefore(1))).toEqual([
+      { channel: "push", send: true },
+      { channel: "email", send: true },
+    ]);
+    expect(isAccountNotice("data_export_ready")).toBe(true);
+    expect(isAccountNotice("booking_confirmed")).toBe(false);
   });
 
   it("emails as the fallback only when there is no device with push", () => {

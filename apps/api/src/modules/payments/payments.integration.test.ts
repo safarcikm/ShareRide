@@ -109,11 +109,11 @@ describe("POST /v1/bookings/{id}/payment (spec 5, 3.5; rule M1)", () => {
     // A payment started while the test provider was on, which only its route could settle.
     const pending = await startPaying(gunna.accessToken, booking.id);
     if (!pending.ok) throw new Error(pending.error.code);
-    const { db, sms, hasher, clock, clientAddress, secureCookies } = api.features;
+    const { db, sms, hasher, exportCipher, clock, clientAddress, secureCookies } = api.features;
     const app = createApp({
       logger: createLogger({ level: "silent" }),
       checkDatabase: () => Promise.resolve(),
-      features: { db, sms, hasher, clock, clientAddress, secureCookies },
+      features: { db, sms, hasher, exportCipher, clock, clientAddress, secureCookies },
     });
     const post = (path: string, body: object) =>
       app.request(path, {

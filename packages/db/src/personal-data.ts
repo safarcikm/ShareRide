@@ -190,6 +190,12 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     onDeletion: keep(["kind"], ["body", "key", "params"]),
     otherIds: ["clientId"],
   },
+  data_exports: {
+    category: "exports",
+    export: { leftOut: "the exports themselves, kept 7 days" },
+    personColumns: ["userId"],
+    onDeletion: erase,
+  },
   outbox_events: notAboutAPerson("IDs of what happened, kept 7 days once processed"),
   notifications: {
     category: "notification_log",

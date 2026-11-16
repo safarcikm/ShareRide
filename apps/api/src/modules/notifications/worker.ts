@@ -3,6 +3,7 @@ import {
   channelsFor,
   defaultNotificationSettings,
   eventAttempts,
+  isAccountNotice,
   notificationsFor,
   payReminderAt,
   reminderStillTimely,
@@ -39,6 +40,7 @@ import { preferencesOf } from "./preferences.ts";
 import {
   notificationText,
   smsText,
+  type AccountNoticeFacts,
   type NotificationFacts,
   type TripReminderFacts,
 } from "./texts.ts";
@@ -50,6 +52,7 @@ import {
 const {
   bookings,
   conversations,
+  dataExports,
   meetingPoints,
   messages,
   notificationDeliveries,
@@ -238,7 +241,8 @@ const isDriverReminder = (kind: string): kind is keyof typeof driverReminders =>
   kind in driverReminders;
 
 /** Which reminder a notification is, and the moment its words count to; null for the rest. */
-function reminderOf(facts: NotificationFacts | TripReminderFacts) {
+function reminderOf(facts: NotificationFacts | TripReminderFacts | AccountNoticeFacts) {
+  if (isAccountNotice(facts.kind)) return null;
   if ("passengers" in facts) {
     return { which: driverReminders[facts.kind], startsAt: facts.departsAt };
   }
@@ -308,10 +312,55 @@ async function tripFactsOf(q: Queryable, notification: typeof notifications.$inf
   } as const;
 }
 
+/**
+ * News about the person's account (spec 11): for a data export, until when
+ * the file can be downloaded. `current` is false once the person's latest
+ * export cannot be downloaded: it expired or failed, or a newer one was
+ * asked for, which deleted this file.
+ */
+async function accountFactsOf(
+  q: Queryable,
+  notification: typeof notifications.$inferSelect,
+  now: Date,
+) {
+  const kind = notification.kind as NotificationKind;
+  if (!isAccountNotice(kind)) return undefined;
+  const [row] = await q
+    .select({
+      locale: recipients.locale,
+      email: recipients.email,
+      emailVerifiedAt: recipients.emailVerifiedAt,
+      readyAt: dataExports.readyAt,
+      failedAt: dataExports.failedAt,
+      expiresAt: dataExports.expiresAt,
+      hasFile: sql<boolean>`${dataExports.file} is not null`,
+    })
+    .from(recipients)
+    .leftJoin(dataExports, eq(dataExports.userId, recipients.id))
+    .where(eq(recipients.id, notification.recipientId))
+    .orderBy(desc(dataExports.askedAt))
+    .limit(1);
+  if (row === undefined) return undefined;
+  const until = row.expiresAt;
+  const current =
+    row.readyAt !== null && row.failedAt === null && row.hasFile && until !== null && until > now;
+  const facts: AccountNoticeFacts = { kind, expiresAt: until ?? now };
+  return {
+    facts,
+    current,
+    locale: row.locale === "is" ? "is" : "en",
+    recipientId: notification.recipientId,
+    email: row.emailVerifiedAt === null ? null : row.email,
+    phone: null,
+    booking: null,
+  } as const;
+}
+
 /** What a notification's text is made from, and where it goes, as of now. */
-async function factsOf(q: Queryable, notificationId: string) {
+async function factsOf(q: Queryable, notificationId: string, now: Date) {
   const [found] = await q.select().from(notifications).where(eq(notifications.id, notificationId));
   if (found === undefined) return undefined;
+  if (isAccountNotice(found.kind as NotificationKind)) return accountFactsOf(q, found, now);
   if (found.bookingId === null) return tripFactsOf(q, found);
   const [row] = await q
     .select({
@@ -472,7 +521,7 @@ export function createNotificationWorker(dependencies: {
   async function recipientOf(
     q: Queryable,
     userId: string,
-    role: TripRole,
+    role: TripRole | null,
     bookingId: string | null,
     now: Date,
     tripChangeId: string | null = null,
@@ -574,7 +623,8 @@ export function createNotificationWorker(dependencies: {
     tx: Transaction,
     notification: {
       readonly kind: NotificationKind;
-      readonly to: TripRole;
+      /** Null for news about the account. */
+      readonly to: TripRole | null;
       readonly recipientId: string;
       readonly bookingId?: string;
       readonly tripId?: string;
@@ -827,6 +877,15 @@ export function createNotificationWorker(dependencies: {
   ): Promise<void> {
     const type = event.kind as OutboxEventType;
     const key = `event:${event.id}`;
+    if (type === "DataExportReady") {
+      const userId = idIn(event.payload, "userId");
+      if (userId === undefined) return;
+      // Gone with the account in the meantime: nobody to tell.
+      const [user] = await tx.select({ id: users.id }).from(users).where(eq(users.id, userId));
+      if (user === undefined) return;
+      await add(tx, { kind: "data_export_ready", to: null, recipientId: userId }, key, now);
+      return;
+    }
     if (type === "MessageSent") {
       const messageId = idIn(event.payload, "messageId");
       if (messageId === undefined) return;
@@ -1087,14 +1146,19 @@ export function createNotificationWorker(dependencies: {
   }
 
   async function sendOn(delivery: Delivery): Promise<SendResult | undefined> {
-    const found = await factsOf(db, delivery.notificationId);
+    const found = await factsOf(db, delivery.notificationId, clock());
     if (found === undefined) return undefined;
     // Looked at again on every try: a retry after the booking moved on, after
     // the messages were read, after everyone's booking ended, or after
     // reminders were turned off, is dropped.
-    if (found.booking === null) {
+    if ("current" in found) {
+      if (!found.current) return { skipped: "no_longer_applies" };
+    } else if ("passengers" in found.facts) {
       if (found.facts.passengers.length === 0) return { skipped: "no_longer_applies" };
-    } else if (!stillApplies(found.facts.kind, statusAt(found.booking, clock()))) {
+    } else if (
+      found.booking !== null &&
+      !stillApplies(found.facts.kind, statusAt(found.booking, clock()))
+    ) {
       return { skipped: "no_longer_applies" };
     }
     const reminder = reminderOf(found.facts);
