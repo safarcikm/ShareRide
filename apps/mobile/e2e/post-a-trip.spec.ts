@@ -19,7 +19,6 @@ interface Journey {
   readonly locale: Locale;
   readonly account: Texts;
   readonly offerRide: string;
-  readonly postTrip: string;
   readonly routeTitle: string;
   readonly from: string;
   readonly to: string;
@@ -67,7 +66,6 @@ const inEnglish: Journey = {
   locale: "en",
   account: english,
   offerRide: "Offer a ride",
-  postTrip: "Post a trip",
   routeTitle: "Where are you driving?",
   from: "From: Choose a meeting point",
   to: "To: Choose a meeting point",
@@ -114,7 +112,6 @@ const inIcelandic: Journey = {
   locale: "is",
   account: icelandic,
   offerRide: "Bjóða far",
-  postTrip: "Setja inn ferð",
   routeTitle: "Hvert ertu að keyra?",
   from: "Frá: Veldu mótsstað",
   to: "Til: Veldu mótsstað",
@@ -166,8 +163,8 @@ async function choose(page: Page, field: string, label: string, typed: string, c
 
 async function postTrip(page: Page, journey: Journey) {
   await signUp(page, journey.account, "Anna");
+  // Offer opens straight on step 1 (spec 16, 3.6).
   await page.getByRole("button", { name: journey.offerRide }).click();
-  await page.getByRole("button", { name: journey.postTrip }).click();
 
   // 1. The route, with the meeting points on the way.
   await expect(page.getByRole("heading", { name: journey.routeTitle })).toBeVisible();

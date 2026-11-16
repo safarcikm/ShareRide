@@ -10,7 +10,7 @@ import { FieldError } from "@/components/field-error";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { Body, Title } from "@/components/text";
-import { backToDrive } from "@/driving/back-to-drive";
+import { backTo } from "@/driving/back-to-drive";
 import { useLanguage } from "@/i18n/language";
 import { spacing } from "@/theme/tokens";
 
@@ -35,13 +35,13 @@ export default function LicenceScreen() {
     setBusy(true);
     const result = await session.call(declareLicenceRoute, { body: { declared: true } });
     setBusy(false);
-    if (result.ok) backToDrive();
+    if (result.ok) backTo("/profile");
     else setFailure(errorText(t, result));
   }
 
   return (
     <Screen>
-      <BackButton fallback="/offer" />
+      <BackButton fallback="/profile" />
       <Title>{t("licence.title")}</Title>
       <Body>{t("licence.intro")}</Body>
       <View style={styles.group}>

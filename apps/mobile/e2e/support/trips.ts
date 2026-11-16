@@ -112,7 +112,7 @@ export async function postTripToSelfoss(page: Page, departure: string) {
     await page.getByRole("button", { name: card }).click();
   };
   await page.goto("/offer");
-  await page.getByRole("button", { name: "Post a trip" }).click();
+  await expect(page.getByRole("heading", { name: "Where are you driving?" })).toBeVisible();
   await choose("From", "mjódd", /^Mjódd bus terminal,/);
   await choose("To", "selfo", /^N1 Selfoss,/);
   await page.getByRole("button", { name: "Choose date and time" }).click();

@@ -575,9 +575,94 @@ describe("My trips (spec 3, 3.8.4)", () => {
     expect(await screen.findByRole("header", { name: "When are you leaving?" })).toBeVisible();
   });
 
-  it("starts from the drive screen", async () => {
-    await open("/offer");
+  it("starts a trip from Post a trip", async () => {
+    await open("/drive/trips");
     await fireEvent.press(await screen.findByRole("button", { name: "Post a trip" }));
     expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
+  });
+});
+
+describe("Offer opens the form (spec 16, 3.6)", () => {
+  const newestId = "0190a1d6-0000-7000-8000-000000000302";
+  /** A draft with no times yet, changed after the planned one. */
+  const unplanned = () =>
+    plannedDraft({
+      id: newestId,
+      stops: plannedDraft().stops.map((stop) => ({ ...stop, plannedAt: null })),
+      departsAt: null,
+      arrivesAt: null,
+      updatedAt: "2026-11-14T11:00:00.000Z",
+    });
+  const planned = () =>
+    plannedDraft({
+      id: "0190a1d6-0000-7000-8000-000000000301",
+      updatedAt: "2026-11-14T10:00:00.000Z",
+    });
+  const continueDraft = "Continue your draft: BSÍ bus terminal → Hof, Akureyri";
+
+  it("opens Where are you driving? straight away, with no Back on a place of the menu", async () => {
+    await open("/offer");
+    expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
+    expect(screen.getByText("Step 1 of 5")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Continue your draft/ })).toBeNull();
+    expect(screen.queryByRole("header", { name: "Before you publish" })).toBeNull();
+  });
+
+  it("opens the form even when the drafts do not load", async () => {
+    const { client } = await open("/offer", [planned()]);
+    expect(await screen.findByRole("button", { name: continueDraft })).toBeVisible();
+    client.answer("/v1/me/trips", () => failure(503, "server_error"));
+    await fireEvent.press(screen.getByRole("tab", { name: "Find" }));
+    await fireEvent.press(await screen.findByRole("tab", { name: "Offer" }));
+    expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "From: Choose a meeting point" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: continueDraft })).toBeNull();
+  });
+
+  it("continues the newest draft at the step where it was left", async () => {
+    // The API lists the older one first; the newest still comes on top.
+    await open("/offer", [planned(), unplanned()]);
+    await fireEvent.press(await screen.findByRole("button", { name: continueDraft }));
+    expect(await screen.findByRole("header", { name: "When are you leaving?" })).toBeVisible();
+    expect(screen).toHavePathname(`/drive/trips/${newestId}/time`);
+  });
+
+  it("opens a draft with its times at the review, and has no list for one draft", async () => {
+    await open("/offer", [planned()]);
+    await fireEvent.press(await screen.findByRole("button", { name: continueDraft }));
+    expect(await screen.findByRole("header", { name: "Check and publish" })).toBeVisible();
+    expect(screen).toHavePathname("/drive/trips/0190a1d6-0000-7000-8000-000000000301/review");
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "See all drafts" })).toBeNull();
+  });
+
+  it("lists every draft from See all drafts", async () => {
+    await open("/offer", [planned(), unplanned()]);
+    await fireEvent.press(await screen.findByRole("link", { name: "See all drafts" }));
+    expect(await screen.findByRole("header", { name: "Drafts" })).toBeVisible();
+    expect(screen).toHavePathname("/drive/trips");
+  });
+
+  it("starts a new draft, and the form is empty again back on Offer", async () => {
+    const { client } = await open("/offer");
+    await choosePoint("From", "bs", "BSÍ bus terminal");
+    await choosePoint("To", "hof", "Hof, Akureyri");
+    expect(await screen.findByText(/ km · about /)).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Choose date and time" }));
+    expect(await screen.findByRole("header", { name: "When are you leaving?" })).toBeVisible();
+    const [created] = bodiesOf(client, "/v1/trips");
+    expect(created).toEqual({ stops: [bsi.id, borgarnes.id, blonduos.id, hof.id] });
+    expect(screen).toHavePathname("/drive/trips/0190a1d6-0000-7000-8000-000000000100/time");
+
+    // Back finds the new draft's own route, as saved, then Offer.
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
+    expect(screen).toHavePathname("/drive/trips/0190a1d6-0000-7000-8000-000000000100/route");
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("button", { name: continueDraft })).toBeVisible();
+    expect(screen).toHavePathname("/offer");
+    expect(screen.getByRole("button", { name: "From: Choose a meeting point" })).toBeVisible();
   });
 });

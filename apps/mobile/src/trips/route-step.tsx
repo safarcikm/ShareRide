@@ -11,7 +11,7 @@ import {
 import { firstTripChoices } from "@shareride/domain";
 import { formatDistance, formatDuration, type Translate } from "@shareride/i18n";
 import { router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import { Button } from "@/components/button";
@@ -55,14 +55,23 @@ function failureText(t: Translate, failure: CallFailure): string {
  * off, and others the driver adds, each put where it adds the least
  * distance. Continue saves the draft: a new one, or `trip` when changing
  * one. The draft keeps only the stops switched on. A new draft's own route
- * screen then takes this one's place, so Back finds the route as saved.
+ * screen then takes this one's place, so Back finds the route as saved. On
+ * Offer, a place of the menu, it opens on top of Offer instead, and
+ * `onStarted` empties Offer's form for the next trip; `top` is what Offer
+ * shows above the form, such as the draft to continue (spec 16, 3.6).
  */
 export function RouteStep({
   trip,
   fromReview = false,
+  onOffer = false,
+  onStarted,
+  top,
 }: {
   readonly trip?: MyTrip;
   readonly fromReview?: boolean;
+  readonly onOffer?: boolean;
+  readonly onStarted?: () => void;
+  readonly top?: ReactNode;
 }) {
   const { locale, t } = useLanguage();
   const session = useSession();
@@ -193,7 +202,12 @@ export function RouteStep({
       return;
     }
     if (trip === undefined) {
-      router.replace(stepHref(result.data.id, "route"));
+      if (onOffer) {
+        router.push(stepHref(result.data.id, "route"));
+        onStarted?.();
+      } else {
+        router.replace(stepHref(result.data.id, "route"));
+      }
       router.push(stepHref(result.data.id, "time"));
     } else {
       goOn(result.data.id, "time", fromReview);
@@ -229,6 +243,7 @@ export function RouteStep({
     <StepScreen
       step="route"
       title={t("trip.route.title")}
+      onOffer={onOffer}
       footer={
         <Button
           main
@@ -240,6 +255,7 @@ export function RouteStep({
         />
       }
     >
+      {top}
       <RouteEnds
         from={from === null ? null : from.name[locale]}
         to={to === null ? null : to.name[locale]}
