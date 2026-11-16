@@ -123,7 +123,8 @@ As built (milestone 6, PR 4):
 
 1. "Cancel booking" shows under each passenger on the driver's trip page,
    after their chat, until the planned time at their boarding stop, as for
-   the passenger (decision 3; open question Q18 asks Martin to confirm). A booking accepted and waiting for payment
+   the passenger (decision 3, confirmed for the driver by Martin on
+   2026-11-16). A booking accepted and waiting for payment
    can be cancelled too: there is nothing to refund and it never counts.
 2. The driver's own screen gives the reasons, the refund in the passenger's
    name, whether it shows on the driver's profile for the reason chosen
@@ -351,4 +352,4 @@ Accepted by Martin on 2026-11-13 as recommended.
 | - | -------- | -------- |
 | 1 | How far can a driver move the departure once people have booked? | Up to 2 hours, earlier or later. A bigger change is really a different trip: the driver cancels (everyone refunded) and posts a new one |
 | 2 | Which passenger cancellations count on their reliability? | Only those in the last 24 hours before boarding, and no-shows. Never weather or road-closure cancellations, or cancellations after the driver moved the trip by more than 30 minutes |
-| 3 | Until when can a passenger cancel? | Until the planned time at their boarding stop. After that it is the trip day's (spec 8), so a cancellation never stands in for a no-show, which always counts (decided by Martin 2026-11-16, in milestone 6, PR 3). For the driver, see open question Q18 (recommended: the same) |
+| 3 | Until when can a passenger cancel? | Until the planned time at their boarding stop. After that it is the trip day's (spec 8), so a cancellation never stands in for a no-show, which always counts (decided by Martin 2026-11-16, in milestone 6, PR 3). The same for a driver cancelling one booking (decided by Martin 2026-11-16, open question Q18) |
