@@ -10,6 +10,7 @@ export interface ErrorExtras {
   readonly attemptsLeft?: number;
   readonly freeSeats?: number;
   readonly total?: NonNullable<ErrorResponse["error"]["total"]>;
+  readonly terms?: NonNullable<ErrorResponse["error"]["terms"]>;
 }
 
 export function errorBody(code: string, message: string, details?: ErrorDetails): ErrorResponse {

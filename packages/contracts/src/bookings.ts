@@ -1,19 +1,21 @@
 import {
   bookingModes,
   bookingStatuses,
+  cancelReasons,
   carColours,
   declineReasons,
   defaultTripSettings,
   peopleColourCount,
 } from "@shareride/domain";
 import { z } from "zod";
-import { moneySchema, timestampSchema } from "./common.ts";
+import { cancellationTermsSchema, moneySchema, timestampSchema } from "./common.ts";
 import { errorResponseSchema } from "./errors.ts";
 import { localisedTextSchema, meetingPointSummarySchema } from "./meeting-points.ts";
 import { defineRoute } from "./route.ts";
 
 // Booking and requests (spec 5): a passenger books or requests seats on a
 // part of a trip; the driver decides on requests; both see their bookings.
+// Cancelling a booking (spec 6, 3.4 and 3.5).
 
 const errors = { schema: errorResponseSchema } as const;
 const unauthenticated = { description: "unauthenticated", ...errors } as const;
@@ -84,6 +86,18 @@ export const bookingSchema = z.object({
    * which never counts against them (R5.8); false for every other booking.
    */
   withdrawn: z.boolean(),
+  /** A cancelled booking's cancellation (spec 6); null for any other, and for a withdrawn request. */
+  cancellation: z
+    .object({
+      by: z.enum(["passenger", "driver", "operator"]),
+      /** Null when the operator cancelled. */
+      reason: z.enum(cancelReasons).nullable(),
+      /** What went back to the passenger (rule M2): all they paid, or nothing. */
+      refund: moneySchema,
+      /** Whether it shows on the viewer's profile, for their own cancellation; null for the other person's. */
+      countsOnReliability: z.boolean().nullable(),
+    })
+    .nullable(),
   driver: z.object({ firstName: z.string(), colour: peopleColourSchema }),
   /** Ratings and reliability come with spec 8; until then every member is new. */
   passenger: z.object({
@@ -190,6 +204,76 @@ export const withdrawRequestRoute = defineRoute({
     401: unauthenticated,
     404: notFound,
     409: notRequested,
+  },
+});
+
+export type CancellationTerms = z.infer<typeof cancellationTermsSchema>;
+
+export const cancellationPreviewSchema = z.object({
+  /**
+   * The reasons the viewer can give, in the order to offer them, each with
+   * what cancelling for it does now: weather and road closures never count
+   * (R6.7, R6.8).
+   */
+  reasons: z.array(cancellationTermsSchema.extend({ reason: z.enum(cancelReasons) })),
+});
+
+export type CancellationPreview = z.infer<typeof cancellationPreviewSchema>;
+
+const notCancellable = {
+  description:
+    "booking_not_cancellable: only an accepted or confirmed booking can be cancelled; a request is withdrawn instead",
+  ...errors,
+} as const;
+
+export const cancellationPreviewRoute = defineRoute({
+  method: "get",
+  path: "/v1/bookings/{id}/cancellation-preview",
+  summary:
+    "The reasons to choose from, each with the refund and reliability effect of cancelling now",
+  tags: ["bookings"],
+  auth: true,
+  request: { params: bookingParams },
+  responses: {
+    200: { description: "What cancelling now does", schema: cancellationPreviewSchema },
+    401: unauthenticated,
+    404: notFound,
+    409: notCancellable,
+  },
+});
+
+export const cancelBookingBodySchema = z.object({
+  reason: z.enum(cancelReasons),
+  /** The terms the person was shown; others give `terms_changed`, with the terms now. */
+  terms: cancellationTermsSchema,
+});
+
+export type CancelBookingBody = z.input<typeof cancelBookingBodySchema>;
+
+export const cancelBookingRoute = defineRoute({
+  method: "post",
+  path: "/v1/bookings/{id}/cancel",
+  summary:
+    "The passenger cancels a booking: the seats are freed, the refund starts and the driver is told (spec 6, 3.5)",
+  tags: ["bookings"],
+  auth: true,
+  request: { params: bookingParams, body: cancelBookingBodySchema },
+  responses: {
+    200: {
+      description: "The cancelled booking; asked again, the same booking, refunded once",
+      schema: bookingSchema,
+    },
+    400: {
+      description: "validation_failed: a reason not offered to you (details name `reason`)",
+      ...errors,
+    },
+    401: unauthenticated,
+    404: notFound,
+    409: {
+      description:
+        "booking_not_cancellable; terms_changed (with the current `refund` and `countsOnReliability`), as a time limit passed or the trip moved since the preview",
+      ...errors,
+    },
   },
 });
 

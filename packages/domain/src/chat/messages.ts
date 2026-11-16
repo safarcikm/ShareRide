@@ -1,3 +1,4 @@
+import type { CancelReason } from "../bookings/cancellation.ts";
 import { err, ok, type Result } from "../result.ts";
 import type { ChatSettings } from "./settings.ts";
 
@@ -26,10 +27,20 @@ export type QuickMessage =
 
 /**
  * What happened to the booking, as lines in its conversation (spec 7, 3.1,
- * item 3), shown in the reader's language. Spec 6 adds its changes.
+ * item 3), shown in the reader's language: the conversation opened, and
+ * the booking cancelled, by whom and why (spec 6). Spec 6 adds its changes.
  */
-export const systemLineKeys = ["opened"] as const;
+export const systemLineKeys = ["opened", "cancelled"] as const;
 export type SystemLineKey = (typeof systemLineKeys)[number];
+
+/** A system line as stored, with the canceller's reason (stored in `params`). */
+export type SystemLine =
+  | { readonly key: "opened" }
+  | {
+      readonly key: "cancelled";
+      readonly by: "passenger" | "driver";
+      readonly reason: CancelReason;
+    };
 
 /** A message as someone sends it, before it is checked. */
 export type MessageInput =

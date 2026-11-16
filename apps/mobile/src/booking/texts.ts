@@ -1,6 +1,12 @@
 import type { CallFailure } from "@shareride/api-client";
-import type { Booking } from "@shareride/contracts";
-import { formatClock, type Translate } from "@shareride/i18n";
+import type { Booking, CancellationTerms } from "@shareride/contracts";
+import {
+  cancelReasonText,
+  formatClock,
+  formatMoney,
+  type Locale,
+  type Translate,
+} from "@shareride/i18n";
 import { errorText } from "@/auth/errors";
 import { compareDays, dayOf } from "@/lib/days";
 
@@ -74,4 +80,56 @@ export function bookErrorText(t: Translate, failure: CallFailure): string {
     default:
       return errorText(t, failure);
   }
+}
+
+/**
+ * What cancelling does to the money, before confirming (spec 6, 3.5.2):
+ * all of it back, none, or nothing to give back, unpaid or free.
+ */
+export function refundText(
+  t: Translate,
+  locale: Locale,
+  booking: Booking,
+  terms: CancellationTerms,
+): string {
+  if (booking.total.amount === 0) return t("booking.nothingToRefund");
+  if (booking.status === "accepted") return t("booking.nothingPaid");
+  return terms.refund.amount > 0
+    ? t("booking.fullRefund", { amount: formatMoney(terms.refund, locale) })
+    : t("booking.noRefund");
+}
+
+/**
+ * A cancelled booking's outcome for its passenger: who cancelled and why,
+ * the refund if there was one, and whether it shows on their profile.
+ */
+export function cancellationTexts(
+  t: Translate,
+  locale: Locale,
+  booking: Booking,
+): {
+  readonly said: string | null;
+  readonly refund: string | null;
+  readonly counts: boolean;
+} | null {
+  const { cancellation } = booking;
+  if (cancellation === null) return null;
+  const reason = cancellation.reason === null ? null : cancelReasonText(t, cancellation.reason);
+  // The operator gives no reason; a passenger or driver always does.
+  const said =
+    cancellation.by === "operator"
+      ? t("booking.cancelledByOperator")
+      : reason === null
+        ? null
+        : cancellation.by === "passenger"
+          ? t("booking.cancelledByYou", { reason })
+          : t("booking.cancelledByOther", { name: booking.driver.firstName, reason });
+  return {
+    said,
+    refund:
+      cancellation.refund.amount > 0
+        ? t("booking.refundOnItsWay", { amount: formatMoney(cancellation.refund, locale) })
+        : null,
+    counts: cancellation.countsOnReliability === true,
+  };
 }

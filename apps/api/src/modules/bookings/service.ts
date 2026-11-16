@@ -1,11 +1,13 @@
-import type { Booking, TripBookings } from "@shareride/contracts";
+import type { Booking, CancellationPreview, TripBookings } from "@shareride/contracts";
 import { schema, type Database } from "@shareride/db";
 import {
+  cancellationTerms,
   checkBooking,
   err,
   holdsSeats,
   nextStatus,
   ok,
+  passengerCancelReasons,
   paymentDeadline,
   peopleColourOf,
   statusAt,
@@ -15,15 +17,21 @@ import {
   type BookingProblem,
   type BookingSettings,
   type BookingStatus,
+  type BookingToCancel,
+  type CancellationTerms,
+  type CancelReason,
   type CarColour,
   type DeclineReason,
   type Money,
+  type PassengerCancelReason,
   type Result,
   type TripStatus,
 } from "@shareride/domain";
 import { and, asc, eq, inArray, ne, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { AccountService } from "../account/index.ts";
+import { addSystemLine } from "../chat/conversations.ts";
+import { oweRefund } from "../payments/refunds.ts";
 import { bookingConfirmed } from "./confirmed.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import { recordEvents } from "../notifications/outbox.ts";
@@ -58,6 +66,21 @@ export type BookError = NotFound | { readonly code: "account_incomplete" } | Boo
 /** The booking is no longer a request: answered, withdrawn or expired. */
 export type AnswerError = NotFound | { readonly code: "booking_not_requested" };
 
+/** Only an accepted or confirmed booking can be cancelled; a request is withdrawn instead. */
+export type PreviewError = NotFound | { readonly code: "booking_not_cancellable" };
+
+export type CancelError =
+  | PreviewError
+  | { readonly code: "reason_not_offered" }
+  /** A time limit passed, or the trip moved, since the terms were shown. */
+  | { readonly code: "terms_changed"; readonly terms: CancellationTerms };
+
+export interface CancelInput {
+  readonly reason: CancelReason;
+  /** The terms the passenger was shown. */
+  readonly terms: CancellationTerms;
+}
+
 export interface BookInput {
   readonly fromStop: number;
   readonly toStop: number;
@@ -81,6 +104,21 @@ export interface BookingService {
   /** Those of the bookings that are the viewer's or on the viewer's trips, in no order. */
   bookingsOf(viewerId: string, bookingIds: readonly string[]): Promise<Booking[]>;
   withdraw(passengerId: string, bookingId: string): Promise<Result<Booking, AnswerError>>;
+  /** The reasons the passenger can give, each with what cancelling for it does now (spec 6, 3.5). */
+  cancellationPreview(
+    passengerId: string,
+    bookingId: string,
+  ): Promise<Result<CancellationPreview, PreviewError>>;
+  /**
+   * The passenger cancels an accepted or confirmed booking (spec 6, 3.5):
+   * the seats are freed, a refund is owed and the driver is told. Asked
+   * again, it answers the cancellation already made.
+   */
+  cancel(
+    passengerId: string,
+    bookingId: string,
+    input: CancelInput,
+  ): Promise<Result<Booking, CancelError>>;
   accept(driverId: string, bookingId: string): Promise<Result<Booking, AnswerError>>;
   decline(
     driverId: string,
@@ -152,6 +190,39 @@ const localised = (is: string, en: string | null) => ({ is, en: en ?? is });
 /** Every stop of a booked trip has its time; the epoch stands in for one that does not. */
 const plannedAt = (stop: { readonly plannedAt: Date | null }) => stop.plannedAt ?? new Date(0);
 
+type BookingColumns = typeof bookings.$inferSelect;
+
+/** Cancelled by the passenger before the driver decided: only a request can be (R5.8). */
+const isWithdrawal = (booking: BookingColumns) =>
+  booking.status === "cancelled" &&
+  booking.cancelledBy === "passenger" &&
+  booking.decidedAt === null;
+
+/** What `cancellationTerms` needs of a booking, its boarding time and its trip's departure. */
+function toCancel(
+  booking: BookingColumns,
+  status: BookingStatus,
+  departsAt: Date | null,
+  boardsAt: Date,
+): BookingToCancel {
+  if (departsAt === null) throw new Error("A booked trip has its departure.");
+  return {
+    status,
+    total: isk(booking.totalPrice),
+    boardsAt,
+    departsAt,
+    // Null only for a booking the previous version made during a deploy.
+    departsAtWhenBooked: booking.departsAtWhenBooked ?? departsAt,
+  };
+}
+
+const isPassengerReason = (reason: CancelReason): reason is PassengerCancelReason =>
+  (passengerCancelReasons as readonly CancelReason[]).includes(reason);
+
+// Refunds are in ISK, the only currency the contracts take.
+const sameTerms = (a: CancellationTerms, b: CancellationTerms) =>
+  a.refund.amount === b.refund.amount && a.countsOnReliability === b.countsOnReliability;
+
 /** The status as of `now`: a request or unpaid booking past its deadline reads as expired. */
 function shownStatus(booking: BookingRow["booking"], now: Date): BookingStatus {
   return statusAt(
@@ -167,6 +238,8 @@ function shownStatus(booking: BookingRow["booking"], now: Date): BookingStatus {
 function present(row: BookingRow, viewerId: string, now: Date): Booking {
   const { booking, trip, car } = row;
   const status = shownStatus(booking, now);
+  const viewer = viewerId === booking.passengerId ? "passenger" : "driver";
+  const withdrawn = isWithdrawal(booking);
   const stopOf = (point: typeof row.boardPoint, stop: typeof row.boardStop): Booking["board"] => ({
     position: stop.position,
     meetingPoint: toSummary(point),
@@ -175,7 +248,7 @@ function present(row: BookingRow, viewerId: string, now: Date): Booking {
   return {
     id: booking.id,
     status,
-    viewer: viewerId === booking.passengerId ? "passenger" : "driver",
+    viewer,
     trip: { id: trip.id, bookingMode: trip.bookingMode as BookingMode },
     board: stopOf(row.boardPoint, row.boardStop),
     alight: stopOf(row.alightPoint, row.alightStop),
@@ -192,10 +265,19 @@ function present(row: BookingRow, viewerId: string, now: Date): Booking {
       status === "accepted" || status === "expired"
         ? (booking.paymentDueAt?.toISOString() ?? null)
         : null,
-    // Cancelled by the passenger before the driver decided: only a request
-    // can be, and that never counts against them (R5.8).
-    withdrawn:
-      status === "cancelled" && booking.cancelledBy === "passenger" && booking.decidedAt === null,
+    // A withdrawn request never counts against the passenger (R5.8).
+    withdrawn,
+    cancellation:
+      status === "cancelled" && !withdrawn
+        ? {
+            by: booking.cancelledBy as "passenger" | "driver" | "operator",
+            reason: booking.cancelReason as CancelReason | null,
+            refund: isk(booking.refundAmount ?? 0),
+            // Whether it counts is the canceller's own business (spec 8).
+            countsOnReliability:
+              booking.cancelledBy === viewer ? booking.countsOnReliability : null,
+          }
+        : null,
     driver: { firstName: row.driverName ?? "", colour: peopleColourOf(trip.driverId) },
     passenger: {
       firstName: row.passengerName ?? "",
@@ -410,6 +492,7 @@ export function createBookingService(dependencies: {
             expiresAt: plan.requestExpiresAt,
             paymentDueAt: plan.paymentDueAt,
             confirmedAt: plan.status === "confirmed" ? now : null,
+            departsAtWhenBooked: trip.departsAt,
             createdAt: now,
             updatedAt: now,
           })
@@ -478,6 +561,95 @@ export function createBookingService(dependencies: {
           cancelledBy: "passenger",
         }),
       );
+    },
+
+    async cancellationPreview(passengerId, bookingId) {
+      const [found] = await db
+        .select({ booking: bookings, departsAt: trips.departsAt, boardsAt: boardStops.plannedAt })
+        .from(bookings)
+        .innerJoin(trips, eq(trips.id, bookings.tripId))
+        .innerJoin(boardStops, eq(boardStops.id, bookings.fromStopId))
+        .where(and(eq(bookings.id, bookingId), eq(bookings.passengerId, passengerId)));
+      if (found === undefined) return err({ code: "not_found" });
+      const now = clock();
+      const booking = toCancel(
+        found.booking,
+        shownStatus(found.booking, now),
+        found.departsAt,
+        plannedAt({ plannedAt: found.boardsAt }),
+      );
+      const reasons: CancellationPreview["reasons"] = [];
+      for (const reason of passengerCancelReasons) {
+        const terms = cancellationTerms(booking, { by: "passenger", reason }, now);
+        if (!terms.ok) return err({ code: "booking_not_cancellable" });
+        reasons.push({ reason, ...terms.value });
+      }
+      return ok({ reasons });
+    },
+
+    async cancel(passengerId, bookingId, input) {
+      const [found] = await db
+        .select({ tripId: bookings.tripId, passengerId: bookings.passengerId })
+        .from(bookings)
+        .where(eq(bookings.id, bookingId));
+      if (found === undefined || found.passengerId !== passengerId)
+        return err({ code: "not_found" });
+      const { reason } = input;
+      if (!isPassengerReason(reason)) return err({ code: "reason_not_offered" });
+
+      return db.transaction(async (tx) => {
+        const trip = await lockTrip(tx, found.tripId);
+        if (trip === undefined) return err({ code: "not_found" });
+        // After the lock, which may have waited while a deadline passed.
+        const now = clock();
+        await expireDueBookings(tx, found.tripId, now);
+        const [booking] = await tx.select().from(bookings).where(eq(bookings.id, bookingId));
+        if (booking === undefined) return err({ code: "not_found" });
+        const shown = async () => {
+          const read = await readOne(tx, bookingId, passengerId, now);
+          if (read === undefined) throw new Error("The booking was not stored.");
+          return ok(read);
+        };
+        // Asked again, as a retry is: the cancellation already made, refunded
+        // once. One the driver made meanwhile is not this one's answer.
+        const again =
+          booking.status === "cancelled" &&
+          booking.cancelledBy === "passenger" &&
+          !isWithdrawal(booking);
+        if (again) return shown();
+
+        const stops = await stopsOf(tx, found.tripId);
+        const part = partOf(stops, booking);
+        const boardsAt = plannedAt(stops[part.board] ?? { plannedAt: null });
+        const terms = cancellationTerms(
+          toCancel(booking, booking.status as BookingStatus, trip.departsAt, boardsAt),
+          { by: "passenger", reason },
+          now,
+        );
+        if (!terms.ok) return err({ code: "booking_not_cancellable" });
+        if (!sameTerms(terms.value, input.terms)) {
+          return err({ code: "terms_changed", terms: terms.value });
+        }
+        const { refund, countsOnReliability } = terms.value;
+        await tx
+          .update(bookings)
+          .set({
+            status: "cancelled",
+            cancelledAt: now,
+            cancelledBy: "passenger",
+            cancelReason: reason,
+            refundAmount: refund.amount,
+            countsOnReliability,
+            updatedAt: now,
+          })
+          .where(eq(bookings.id, bookingId));
+        // An accepted or confirmed booking holds its seats until now (rule S1).
+        await changeOccupancy(tx, found.tripId, part, -booking.seats);
+        if (refund.amount > 0) await oweRefund(tx, bookingId, refund, now);
+        await addSystemLine(tx, bookingId, { key: "cancelled", by: "passenger", reason }, now);
+        await recordEvents(tx, [{ type: "BookingCancelled", bookingId, by: "passenger" }], now);
+        return shown();
+      });
     },
 
     accept(driverId, bookingId) {

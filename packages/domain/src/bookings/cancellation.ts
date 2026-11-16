@@ -35,6 +35,19 @@ export const passengerCancelReasons = [
 ] as const;
 export type PassengerCancelReason = (typeof passengerCancelReasons)[number];
 
+/** Every reason a cancellation can store, each once. */
+export const cancelReasons = [
+  ...new Set([...driverCancelReasons, ...passengerCancelReasons]),
+] as readonly (DriverCancelReason | PassengerCancelReason)[];
+export type CancelReason = (typeof cancelReasons)[number];
+
+/** The reasons offered to the one who cancels. */
+export function cancelReasonsFor(
+  by: "passenger" | "driver",
+): readonly PassengerCancelReason[] | readonly DriverCancelReason[] {
+  return by === "passenger" ? passengerCancelReasons : driverCancelReasons;
+}
+
 export type Canceller =
   | { readonly by: "passenger"; readonly reason: PassengerCancelReason }
   | { readonly by: "driver"; readonly reason: DriverCancelReason };
@@ -87,6 +100,15 @@ export interface CancellationTerms {
 }
 
 /**
+ * The planned time at the passenger's boarding stop has passed: what happens
+ * then is the trip day's (spec 8), such as a no-show or a driver who never
+ * came, not a cancellation.
+ */
+export interface BoardingPassed {
+  readonly code: "boarding_passed";
+}
+
+/**
  * The terms of cancelling an accepted or confirmed booking. A request is
  * withdrawn by the passenger or declined by the driver instead (spec 5).
  *
@@ -97,16 +119,19 @@ export interface CancellationTerms {
  *   R6.3's "before the new departure" is the passenger's own, at their
  *   boarding stop, as spec 6 says "departure" for it in "less than 15
  *   minutes before departure". It counts only less than 24 hours before
- *   boarding, and never for weather or after such a move.
+ *   boarding, and never for weather or after such a move. Once the planned
+ *   time at the boarding stop has come, the passenger can no longer cancel.
  * - An accepted booking not yet paid has nothing to refund and never counts.
  */
 export function cancellationTerms(
   booking: BookingToCancel,
   canceller: Canceller,
   now: Date,
-): Result<CancellationTerms, ChangeNotAllowed> {
+): Result<CancellationTerms, ChangeNotAllowed | BoardingPassed> {
   const allowed = nextStatus(booking.status, "cancel");
   if (!allowed.ok) return err(allowed.error);
+  const untilBoardingMs = booking.boardsAt.getTime() - now.getTime();
+  if (canceller.by === "passenger" && untilBoardingMs <= 0) return err({ code: "boarding_passed" });
   const nothing: Money = { amount: 0, currency: booking.total.currency };
   if (booking.status !== "confirmed") return ok({ refund: nothing, countsOnReliability: false });
 
@@ -114,10 +139,8 @@ export function cancellationTerms(
   if (canceller.by === "driver") {
     return ok({ refund: booking.total, countsOnReliability: !excused });
   }
-  const untilBoardingMs = booking.boardsAt.getTime() - now.getTime();
   const far = movedFar(booking.departsAtWhenBooked, booking.departsAt);
-  const refunded =
-    untilBoardingMs >= refundCutoffMinutes * minuteMs || (far && untilBoardingMs > 0);
+  const refunded = untilBoardingMs >= refundCutoffMinutes * minuteMs || far;
   const late = untilBoardingMs < reliabilityWindowHours * 60 * minuteMs;
   return ok({
     refund: refunded ? booking.total : nothing,

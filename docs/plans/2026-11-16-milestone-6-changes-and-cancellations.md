@@ -156,8 +156,9 @@ still pass, and every booking is within 2 hours of its time.
   cancelled with nothing to refund (R6.6). One transaction. The
   cancellation counts once, on the trip, and only with passengers (spec 8,
   3.8), so its bookings do not count one by one.
-- Events in the outbox, in the same transaction: `BookingCancelled` (who,
-  reason, refund), `TripCancelled`, and `RefundIssued` once the provider has
+- Events in the outbox, in the same transaction: `BookingCancelled` (the
+  booking and who cancelled; the reason and refund are read from the
+  booking), `TripCancelled`, and `RefundIssued` once the provider has
   refunded. The catalogue already maps them; the worker gains their texts.
 - **SMS:** the worker sends the catalogue's SMS rows through `SmsSender` to
   the passenger's verified number, only within 24 hours of boarding and at
@@ -252,13 +253,15 @@ the browser journeys, and gets a code review before it opens.
 
 ### PR 3: `feat(bookings)`: the passenger cancels a booking
 
-- [ ] Migration; the preview and `POST /bookings/{id}/cancel` for the
+- [x] Migration; the preview and `POST /bookings/{id}/cancel` for the
       passenger; refunds; `BookingCancelled` and `RefundIssued` with their
       texts; system lines
-- [ ] The cancel screen and the booking page's outcome
+- [x] The cancel screen and the booking page's outcome
 - Verify: integration tests (the preview matches confirming; twice
   refunds once; a payment that settles after cancelling is refunded; the
-  seats are free again); a browser journey cancels in time and late
+  seats are free again); a browser journey cancels in time. Cancelling
+  late, in the last 15 minutes, is tested in the API and screen tests,
+  because the browser tests' API keeps the real clock
 
 ### PR 4: `feat(trips)`: the driver cancels a booking or the trip
 

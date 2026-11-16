@@ -3,6 +3,8 @@ import {
   acceptRequestRoute,
   bookingRoute,
   bookTripRoute,
+  cancelBookingRoute,
+  cancellationPreviewRoute,
   declineRequestRoute,
   myBookingsRoute,
   tripBookingsRoute,
@@ -12,7 +14,13 @@ import type { Context, MiddlewareHandler } from "hono";
 import { authOf, type AppEnv } from "../../context.ts";
 import { errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
-import type { AnswerError, BookError, BookingService } from "./service.ts";
+import type {
+  AnswerError,
+  BookError,
+  BookingService,
+  CancelError,
+  PreviewError,
+} from "./service.ts";
 
 const invalid = (c: Context, path: string, issue: string, message: string) =>
   errorResponse(c, 400, "validation_failed", message, { details: [{ path, issue }] });
@@ -76,6 +84,26 @@ function answerError(c: Context, error: AnswerError) {
     : errorResponse(c, 409, "booking_not_requested", "The booking is no longer a request.");
 }
 
+function cancelError(c: Context, error: CancelError | PreviewError) {
+  switch (error.code) {
+    case "not_found":
+      return bookingNotFound(c);
+    case "booking_not_cancellable":
+      return errorResponse(
+        c,
+        409,
+        "booking_not_cancellable",
+        "Only an accepted or confirmed booking can be cancelled.",
+      );
+    case "reason_not_offered":
+      return invalid(c, "reason", "not_offered", "Choose one of the reasons offered to you.");
+    case "terms_changed":
+      return errorResponse(c, 409, "terms_changed", "What cancelling does has changed.", {
+        terms: error.terms,
+      });
+  }
+}
+
 export function registerBookingRoutes(
   app: OpenAPIHono<AppEnv>,
   service: BookingService,
@@ -105,6 +133,19 @@ export function registerBookingRoutes(
     validated(c, "json", withdrawRequestRoute.request.body);
     const result = await service.withdraw(authOf(c).userId, id);
     return result.ok ? c.json(result.value, 200) : answerError(c, result.error);
+  });
+
+  app.openapi(toOpenApiRoute(cancellationPreviewRoute, requireAuth), async (c) => {
+    const { id } = validated(c, "param", cancellationPreviewRoute.request.params);
+    const result = await service.cancellationPreview(authOf(c).userId, id);
+    return result.ok ? c.json(result.value, 200) : cancelError(c, result.error);
+  });
+
+  app.openapi(toOpenApiRoute(cancelBookingRoute, requireAuth), async (c) => {
+    const { id } = validated(c, "param", cancelBookingRoute.request.params);
+    const body = validated(c, "json", cancelBookingRoute.request.body);
+    const result = await service.cancel(authOf(c).userId, id, body);
+    return result.ok ? c.json(result.value, 200) : cancelError(c, result.error);
   });
 
   app.openapi(toOpenApiRoute(acceptRequestRoute, requireAuth), async (c) => {

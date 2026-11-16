@@ -84,7 +84,7 @@ function ConversationRow({ conversation }: { readonly conversation: Conversation
     from: booking.board.meetingPoint.name[locale],
     to: booking.alight.meetingPoint.name[locale],
   };
-  const preview = lastMessage === null ? null : previewText(t, lastMessage);
+  const preview = lastMessage === null ? null : previewText(t, lastMessage, other.firstName);
   const unreadText = unread === 0 ? null : t("chat.unread", { count: unread });
   const label = [other.firstName, day, t("trip.stretchSpoken", names), preview, unreadText]
     .filter((part) => part !== null)

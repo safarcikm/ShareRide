@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   cancellationTerms,
+  cancelReasons,
+  cancelReasonsFor,
   driverCancelReasons,
   passengerCancelReasons,
   tripCancelReasons,
@@ -52,6 +54,26 @@ describe("the reasons (spec 6, 3.3 to 3.5)", () => {
       "weather",
       "other",
     ]);
+  });
+
+  it("are each stored once, whoever gave them", () => {
+    expect(cancelReasons).toEqual([
+      "weather",
+      "road_closed",
+      "car_problem",
+      "illness",
+      "plans_changed",
+      "other",
+      "passenger_asked",
+      "car_smaller",
+      "found_another",
+      "trip_changed",
+    ]);
+  });
+
+  it("are offered by who cancels", () => {
+    expect(cancelReasonsFor("passenger")).toBe(passengerCancelReasons);
+    expect(cancelReasonsFor("driver")).toBe(driverCancelReasons);
   });
 });
 
@@ -142,15 +164,35 @@ describe("a passenger cancelling a paid booking (rules M2 and R6.8)", () => {
     });
   });
 
-  it("is refunded after a big move only until boarding (R6.3), and never counts", () => {
+  it("is refunded after a big move until boarding (R6.3), and never counts", () => {
     const late = moved(45);
-    expect(cancellationTerms(late, byPassenger, late.boardsAt)).toEqual({
-      ok: true,
-      value: { ...none, countsOnReliability: false },
-    });
     expect(cancellationTerms(late, byPassenger, new Date(late.boardsAt.getTime() - 1))).toEqual({
       ok: true,
       value: { ...full, countsOnReliability: false },
+    });
+  });
+
+  it("can cancel until the planned time at the boarding stop, then no more (spec 8 takes over)", () => {
+    const lastMoment = new Date(boardsAt.getTime() - 1);
+    expect(cancellationTerms(paid, byPassenger, lastMoment)).toEqual({
+      ok: true,
+      value: { ...none, countsOnReliability: true },
+    });
+    for (const now of [boardsAt, before(-5), before(-3 * 24 * 60)]) {
+      expect(cancellationTerms(paid, byPassenger, now)).toEqual({
+        ok: false,
+        error: { code: "boarding_passed" },
+      });
+      expect(cancellationTerms({ ...paid, status: "accepted" }, byPassenger, now)).toEqual({
+        ok: false,
+        error: { code: "boarding_passed" },
+      });
+    }
+    // After a move, the new time at the boarding stop.
+    expect(cancellationTerms(moved(45), byPassenger, boardsAt).ok).toBe(true);
+    expect(cancellationTerms(moved(45), byPassenger, moved(45).boardsAt)).toEqual({
+      ok: false,
+      error: { code: "boarding_passed" },
     });
   });
 

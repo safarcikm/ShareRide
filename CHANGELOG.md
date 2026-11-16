@@ -332,6 +332,22 @@ releases follow [Semantic Versioning](https://semver.org/).
   new prices and who is told and may now cancel for free (R6.1 to R6.4,
   S5); and
   `stopsToCopy` gives the stops for posting a trip again or its return.
+- The passenger cancels a booking (milestone 6, PR 3, spec 6, 3.5): "Cancel
+  booking" on an accepted or confirmed booking, until the time to get in,
+  opens its own screen with the
+  refund first ("Full refund of 2,900 ISK", or none in the last 15 minutes
+  before boarding), the reasons, and for the reason chosen whether it shows
+  on the passenger's profile (less than 24 hours before boarding, never for
+  the weather or a road closure, or after the driver moved the departure by
+  more than 30 minutes). Confirming sends the terms shown; if a time limit
+  passed meanwhile, the new terms show to confirm again. The seats are
+  freed, a payment is refunded once (also one that settles afterwards, which the
+  booking then shows), the
+  driver is told by push and email, the conversation says who cancelled and why,
+  and the passenger is told by email once the refund is made. Back on the
+  booking, the outcome takes focus. `GET /v1/bookings/{id}/cancellation-preview`
+  and `POST /v1/bookings/{id}/cancel`; a booking keeps its departure when
+  booked, its reason, refund and whether it counts.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

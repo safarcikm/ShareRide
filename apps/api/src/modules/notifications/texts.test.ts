@@ -38,7 +38,7 @@ const tripText = (changes: Partial<TripReminderFacts>, locale: "is" | "en" = "en
 const text = (changes: Partial<NotificationFacts>, locale: "is" | "en" = "en") =>
   notificationText({ ...facts, ...changes }, locale, defaultNotificationSettings);
 
-/** The kinds spec 5's events and new messages give (PR 5), with whom they go to. */
+/** The kinds spec 5's events, new messages and spec 6's cancellations give, with whom they go to. */
 const kinds: readonly [NotificationFacts["kind"], "driver" | "passenger"][] = [
   ["request_new", "driver"],
   ["request_halfway", "driver"],
@@ -56,6 +56,8 @@ const kinds: readonly [NotificationFacts["kind"], "driver" | "passenger"][] = [
   ["unread_messages", "passenger"],
   ["reminder_evening", "passenger"],
   ["reminder_hour", "passenger"],
+  ["booking_cancelled_by_passenger", "driver"],
+  ["refund_issued", "passenger"],
 ];
 
 describe("notification texts", () => {
@@ -121,6 +123,23 @@ describe("notification texts", () => {
     expect(
       text({ kind: "new_message", message: { quick: { key: "late", minutes: 10 } } }, "is").body,
     ).toBe("Mér seinkar um 10 mínútur");
+  });
+
+  it("tell the driver who cancelled, and the passenger what is refunded and where (spec 6)", () => {
+    expect(text({ kind: "booking_cancelled_by_passenger", name: "Gunna" })).toEqual({
+      title: "Booking cancelled: Gunna",
+      body: "2 seats · BSÍ – Hof, Akureyri · Saturday 14 November at 09:00",
+      path: "/drive/trips/trip-1",
+    });
+    expect(text({ kind: "refund_issued", role: "passenger" })).toEqual({
+      title: "Refund of 5,600 ISK",
+      body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00. It goes back to the card you paid with.",
+      path: "/bookings/booking-1",
+    });
+    expect(text({ kind: "refund_issued", role: "passenger" }, "is")).toMatchObject({
+      title: "Endurgreiðsla, 5.600 kr.",
+      body: "BSÍ – Hof, Akureyri · laugardagur 14. nóvember kl. 09:00. Hún fer aftur á kortið sem þú greiddir með.",
+    });
   });
 
   it("refuse a kind that has no text yet", () => {

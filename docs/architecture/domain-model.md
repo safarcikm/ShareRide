@@ -149,8 +149,9 @@ One row per change to a published trip, so passengers can see what changed:
 | `confirmed_at`, `expired_at` | When it was paid (or, when free, accepted) and when a deadline passed |
 | `party_confirmed_at` | The passenger confirmed that everyone in a booking of more than one seat on a women-only trip can join |
 | `message`, `decline_reason`, `attempt_key` | Request note, reason seen only by the operator, idempotency key ([spec 5](../specs/2026-11-13-booking-and-requests.md#6-data-and-api)) |
-| `cancelled_by`, `cancel_reason`, `cancelled_at` | Reasons include `weather`, `road_closed` |
-| `refund_amount`, `counts_on_reliability` | Worked out by the domain when the booking is cancelled ([spec 6](../specs/2026-11-13-changes-and-cancellations.md#4-rules)) |
+| `cancelled_by`, `cancel_reason`, `cancel_note`, `cancelled_at` | Reasons from a fixed list, including `weather`, `road_closed` and `plans_changed`; the note, up to 500 characters, only from a driver |
+| `refund_amount`, `counts_on_reliability` | Worked out by the domain when the booking is cancelled ([spec 6](../specs/2026-11-13-changes-and-cancellations.md#4-rules)); the refund is at most the total, and is the payment once one comes through after cancelling |
+| `departs_at_when_booked` | The trip's departure when the booking was made: moved more than 30 minutes from it, the passenger may cancel for free (R6.3) |
 
 ### BookingSegmentPrice
 

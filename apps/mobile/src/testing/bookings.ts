@@ -1,6 +1,7 @@
 // Bookings as the API returns them, and fake booking answers, for screen
 // tests. Not used by the app itself.
-import type { Booking, MyTrip } from "@shareride/contracts";
+import type { Booking, CancellationPreview, MyTrip } from "@shareride/contracts";
+import { passengerCancelReasons, type Money } from "@shareride/domain";
 import { failure, ok, type FakeClient } from "./fake-client";
 import { northResult, northStops } from "./search";
 import { plannedDraft } from "./trips";
@@ -28,6 +29,7 @@ export function northBooking(changes: Partial<Booking> = {}): Booking {
     requestExpiresAt: "2026-11-14T22:00:00.000Z",
     paymentDueAt: null,
     withdrawn: false,
+    cancellation: null,
     driver: { firstName: "Anna", colour: 1 },
     passenger: { firstName: "Gunna", colour: 2, memberSince: "2026-11" },
     car: { make: "Toyota", model: "Yaris", colour: "white" },
@@ -54,6 +56,33 @@ export const paidBooking = northBooking({
     whereToStand: { is: "Við dælurnar", en: "By the petrol pumps" },
   },
 });
+
+/** The paid booking once its passenger cancelled it in time, with a full refund. */
+export const cancelledBooking = northBooking({
+  ...paidBooking,
+  status: "cancelled",
+  confirmed: null,
+  cancellation: {
+    by: "passenger",
+    reason: "plans_changed",
+    refund: paidBooking.total,
+    countsOnReliability: true,
+  },
+});
+
+/** What cancelling now does for each of the passenger's reasons; weather never counts (R6.8). */
+export function cancellationPreview(
+  refund: Money,
+  countsOnReliability: boolean,
+): CancellationPreview {
+  return {
+    reasons: passengerCancelReasons.map((reason) => ({
+      reason,
+      refund,
+      countsOnReliability: reason === "weather" ? false : countsOnReliability,
+    })),
+  };
+}
 
 /** Answers GET /v1/bookings/{id} with `booking`. */
 export function bookingApi(client: FakeClient, booking: () => Booking) {

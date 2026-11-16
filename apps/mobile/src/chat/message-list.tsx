@@ -9,7 +9,7 @@ import { useLanguage } from "@/i18n/language";
 import { controlOutline, iconSizes, radii, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { lastSeenId, type Pending } from "./messages";
-import { messageText, otherPerson, spokenMessage } from "./texts";
+import { messageText, otherPerson, outgoingText, spokenMessage } from "./texts";
 
 const dayOf = (moment: string) => {
   const { year, month, day } = inIceland(new Date(moment));
@@ -73,10 +73,10 @@ export function MessageList({
           <View
             key={item.clientId}
             accessible
-            accessibilityLabel={`${t("chat.sending")}: ${messageText(t, item.outgoing)}`}
+            accessibilityLabel={`${t("chat.sending")}: ${outgoingText(t, item.outgoing)}`}
             style={[styles.item, styles.mine]}
           >
-            <Bubble mine>{messageText(t, item.outgoing)}</Bubble>
+            <Bubble mine>{outgoingText(t, item.outgoing)}</Bubble>
             <Text style={[typography.caption, { color: palette.textMuted }]}>
               {t("chat.sending")}
             </Text>
@@ -85,13 +85,13 @@ export function MessageList({
           <Pressable
             key={item.clientId}
             accessibilityRole="button"
-            accessibilityLabel={`${t("chat.notSent")} ${messageText(t, item.outgoing)}`}
+            accessibilityLabel={`${t("chat.notSent")} ${outgoingText(t, item.outgoing)}`}
             onPress={() => {
               onRetry(item);
             }}
             style={[styles.item, styles.mine]}
           >
-            <Bubble mine>{messageText(t, item.outgoing)}</Bubble>
+            <Bubble mine>{outgoingText(t, item.outgoing)}</Bubble>
             <View style={styles.failed}>
               <Icon icon={CircleAlert} color={palette.error} size={iconSizes.inline} />
               <Text style={[typography.caption, { color: palette.error }]}>
@@ -119,7 +119,7 @@ function Message({
   if (message.from === "system") {
     return (
       <Text style={[typography.small, styles.centre, { color: palette.textMuted }]}>
-        {messageText(t, message)}
+        {messageText(t, message, other)}
       </Text>
     );
   }
@@ -131,7 +131,7 @@ function Message({
       accessibilityLabel={spokenMessage(t, message, other, seen)}
       style={[styles.item, mine ? styles.mine : styles.theirs]}
     >
-      <Bubble mine={mine}>{messageText(t, message)}</Bubble>
+      <Bubble mine={mine}>{messageText(t, message, other)}</Bubble>
       <Text style={[typography.caption, { color: palette.textMuted }]}>
         {seen ? `${time} · ${t("chat.seen")}` : time}
       </Text>

@@ -7,6 +7,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import {
+  canCancel,
   isWithdrawn,
   offersSearchAgain,
   promptOccasion,
@@ -15,7 +16,7 @@ import {
   statusTag,
 } from "@/booking/status";
 import { PaymentSheet, usePayment } from "@/booking/payment";
-import { payByText, requestSentText } from "@/booking/texts";
+import { cancellationTexts, payByText, requestSentText } from "@/booking/texts";
 import { WhereToStand } from "@/booking/where-to-stand";
 import { BackButton } from "@/components/back-button";
 import { otherPerson } from "@/chat/texts";
@@ -29,7 +30,7 @@ import { TakesFocus } from "@/components/takes-focus";
 import { Body, Heading, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
-import { useLoaded } from "@/lib/use-loaded";
+import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { NotificationsPrompt } from "@/notifications/notifications-prompt";
 import { DriverAndCar, PartStop } from "@/trip-details/trip-parts";
 import { controlOutline, spacing, typography } from "@/theme/tokens";
@@ -42,17 +43,24 @@ import { usePalette } from "@/theme/use-palette";
  * "Search again". Until the real provider comes (spec 13), paying opens the
  * test sheet, where no money moves. Once a request is accepted, or a booking
  * paid here, someone we could not reach yet is asked to turn on
- * notifications or add an email (spec 7, 3.6.2).
+ * notifications or add an email (spec 7, 3.6.2). An accepted or confirmed
+ * booking ends with "Cancel booking", which opens its own screen (spec 6,
+ * 3.5); coming back from it with `cancelled`, focus moves to the outcome.
+ * It loads again each time it comes into view.
  */
 export default function BookingScreen() {
   const { t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, cancelled } = useLocalSearchParams<{ id: string; cancelled?: string }>();
   const load = useCallback(() => session.call(bookingRoute, { params: { id } }), [session, id]);
-  const { value: answer, reload, refresh } = useLoaded(load);
-  // The booking as the last payment or withdrawal left it, until it loads again.
-  const [changed, setChanged] = useState<Booking | null>(null);
+  const { value: answer, reload, refresh } = useLoadedOnFocus(load);
+  // The booking as the last payment or withdrawal left it, until it loads
+  // again: kept with the answer it changed, so a newer answer wins.
+  const [changed, setChanged] = useState<{
+    readonly after: typeof answer;
+    readonly booking: Booking;
+  } | null>(null);
   // Whether an action here changed what shows, so focus moves to the outcome.
   const [acted, setActed] = useState(false);
   // Why the booking is loading again, such as the driver answering first. It
@@ -90,17 +98,20 @@ export default function BookingScreen() {
       </Screen>
     );
   }
-  const booking = changed?.id === answer.data.id ? changed : answer.data;
+  const booking =
+    changed?.after === answer && changed.booking.id === answer.data.id
+      ? changed.booking
+      : answer.data;
   return (
     <BookingDetails
       booking={booking}
-      announce={acted}
+      announce={acted || cancelled === "1"}
       stale={stale}
       onAction={() => {
         setStale(null);
       }}
       onChanged={(outcome) => {
-        setChanged(outcome);
+        setChanged({ after: answer, booking: outcome });
         setActed(true);
       }}
       onStale={loadAgain}
@@ -207,6 +218,17 @@ function BookingDetails({
       )}
 
       <WhereToStand booking={booking} />
+
+      {canCancel(booking, now()) ? (
+        <Button
+          variant="text"
+          label={t("booking.cancel")}
+          onPress={() => {
+            onAction();
+            router.push({ pathname: "/bookings/[id]/cancel", params: { id: booking.id } });
+          }}
+        />
+      ) : null}
     </Screen>
   );
 }
@@ -285,13 +307,29 @@ function StatusText({ booking }: { readonly booking: Booking }) {
         />
       );
     case "cancelled":
-      // Cancelling a booking comes with spec 6; until then only a request
-      // can end this way, withdrawn.
-      return isWithdrawn(booking) ? <Notice kind="info" message={t("booking.withdrawn")} /> : null;
+      return isWithdrawn(booking) ? (
+        <Notice kind="info" message={t("booking.withdrawn")} />
+      ) : (
+        <Cancelled booking={booking} />
+      );
     default:
       // Completed and no-show come with spec 8.
       return null;
   }
+}
+
+/** Who cancelled and why, the refund, and whether it shows on the passenger's profile (spec 6). */
+function Cancelled({ booking }: { readonly booking: Booking }) {
+  const { locale, t } = useLanguage();
+  const texts = cancellationTexts(t, locale, booking);
+  if (texts === null) return null;
+  return (
+    <View style={styles.status}>
+      {texts.said === null ? null : <Notice kind="info" message={texts.said} />}
+      {texts.refund === null ? null : <Body align="start">{texts.refund}</Body>}
+      {texts.counts ? <Body align="start">{t("booking.countsOnReliability")}</Body> : null}
+    </View>
+  );
 }
 
 /**

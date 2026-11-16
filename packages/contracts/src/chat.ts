@@ -1,4 +1,4 @@
-import { lateMinutes, quickMessageKeys, systemLineKeys } from "@shareride/domain";
+import { cancelReasons, lateMinutes, quickMessageKeys } from "@shareride/domain";
 import { z } from "zod";
 import { bookingSchema } from "./bookings.ts";
 import { timestampSchema } from "./common.ts";
@@ -55,7 +55,17 @@ export const chatMessageSchema = z.object({
   /** A text message's text, as written. */
   text: z.string().nullable(),
   quick: quickMessageSchema.nullable(),
-  system: z.object({ key: z.enum(systemLineKeys) }).nullable(),
+  /** A line about the booking: opened, or cancelled by me or them, with the reason (spec 6). */
+  system: z
+    .discriminatedUnion("key", [
+      z.object({ key: z.literal("opened") }),
+      z.object({
+        key: z.literal("cancelled"),
+        by: z.enum(["me", "them"]),
+        reason: z.enum(cancelReasons),
+      }),
+    ])
+    .nullable(),
   /** On my messages: the ID the app sent it with. */
   clientId: z.uuid().nullable(),
   sentAt: timestampSchema,

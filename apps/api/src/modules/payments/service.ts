@@ -15,6 +15,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import type { PaymentProvider } from "../../platform/payments.ts";
 import { bookingConfirmed } from "../bookings/confirmed.ts";
 import { expireDueBookings, lockTrip } from "../bookings/seats.ts";
+import { recordEvents } from "../notifications/outbox.ts";
 
 const { bookings, payments } = schema;
 
@@ -59,7 +60,8 @@ export function createPaymentService(dependencies: {
   const { db, clock, provider } = dependencies;
 
   /**
-   * Pays an owed refund back through the provider, then marks it refunded.
+   * Pays an owed refund back through the provider, then marks it refunded
+   * and tells the passenger.
    * The status says it is owed until the provider has taken it, so a failed
    * call is retried; the payment's ID keeps a retry from paying twice.
    */
@@ -73,11 +75,18 @@ export function createPaymentService(dependencies: {
       providerRef: payment.providerRef,
       amount: isk(payment.amount),
     });
-    const now = clock();
-    await db
-      .update(payments)
-      .set({ status: "refunded", updatedAt: now })
-      .where(and(eq(payments.id, payment.id), eq(payments.status, "refund_due")));
+    await db.transaction(async (tx) => {
+      const now = clock();
+      const refunded = await tx
+        .update(payments)
+        .set({ status: "refunded", updatedAt: now })
+        .where(and(eq(payments.id, payment.id), eq(payments.status, "refund_due")))
+        .returning({ id: payments.id });
+      // Only the run that marked it tells the passenger (spec 7, 3.3).
+      if (refunded.length > 0) {
+        await recordEvents(tx, [{ type: "RefundIssued", bookingId: payment.bookingId }], now);
+      }
+    });
   }
 
   return {
@@ -190,7 +199,16 @@ export function createPaymentService(dependencies: {
             .where(eq(bookings.id, booking.id));
           await bookingConfirmed(tx, { id: booking.id, tripId: found.tripId }, now);
         }
-        return ok({ owed: result.value.payment === "refund_due" ? payment : null });
+        const owed = result.value.payment === "refund_due";
+        // A booking cancelled before its payment came through says it is
+        // refunded after all (R6.7).
+        if (owed && status === "cancelled") {
+          await tx
+            .update(bookings)
+            .set({ refundAmount: payment.amount, updatedAt: now })
+            .where(eq(bookings.id, booking.id));
+        }
+        return ok({ owed: owed ? payment : null });
       });
       if (!settled.ok) return settled;
 

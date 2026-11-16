@@ -97,6 +97,7 @@ function Navigation() {
         <Stack.Screen name="trips/[id]/book" />
         <Stack.Screen name="bookings/[id]/index" />
         <Stack.Screen name="bookings/[id]/booked" />
+        <Stack.Screen name="bookings/[id]/cancel" />
       </Stack.Protected>
     </Stack>
   );
