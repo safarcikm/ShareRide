@@ -23,6 +23,7 @@ import {
   tripDetailsApi,
 } from "@/testing/search";
 import { blonduos, borgarnes } from "@/testing/trips";
+import { hof, kef } from "@/testing/meeting-points";
 import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
@@ -222,6 +223,48 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
     expect(screen.queryByLabelText("From")).toBeNull();
     expect(screen.getByRole("button", { name: "From: Borgarnes" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Swap from and to" })).toBeVisible();
+  });
+
+  it("lists towns and areas first, then meeting points, with the sample tag once (spec 16, 3.8)", async () => {
+    const akureyri = {
+      id: "0190a1d6-0000-7000-8000-0000000000c2",
+      name: { is: "Akureyri", en: "Akureyri" },
+      kind: "town" as const,
+      region: "northeast" as const,
+    };
+    await openFrontPage((fake) => {
+      searchApi(fake);
+      // The API's order: a meeting point, the town, another meeting point.
+      fake.answer("/v1/places/search", () =>
+        ok(200, {
+          results: [
+            { kind: "meetingPoint", meetingPoint: hof },
+            { kind: "place", place: akureyri },
+            { kind: "meetingPoint", meetingPoint: kef },
+          ],
+        }),
+      );
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: /^From: / }));
+    await fireEvent.changeText(await screen.findByLabelText("From"), "akur");
+    expect(await screen.findByText("3 places found")).toBeVisible();
+
+    const listed = screen
+      .getAllByText(/^(Towns and areas|Meeting points|Akureyri|Hof, Akureyri|Keflavík Airport)$/)
+      .map((text) => String(text.props.children));
+    expect(listed).toEqual([
+      "Towns and areas",
+      "Akureyri",
+      "Meeting points",
+      "Hof, Akureyri",
+      "Keflavík Airport",
+    ]);
+    expect(screen.getByRole("header", { name: "Towns and areas" })).toBeVisible();
+    expect(screen.getByRole("header", { name: "Meeting points" })).toBeVisible();
+    expect(screen.getAllByText("Sample meeting points")).toHaveLength(1);
+    expect(screen.queryByText("Sample meeting point")).toBeNull();
+    // Each row leaves the tag out, and so does what screen readers hear.
+    expect(screen.getByRole("button", { name: /^Hof, Akureyri, .*, Akureyrarbær$/ })).toBeVisible();
   });
 
   it("keeps one place search open at a time, and closes it without changing the choice", async () => {

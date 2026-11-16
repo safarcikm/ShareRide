@@ -207,6 +207,28 @@ describe("Settings", () => {
     return app;
   }
 
+  it("groups the rows: Language, Your account, Notifications, Legal documents, then signing out (spec 16, 3.8)", async () => {
+    await openSettings();
+    const headings = screen.getAllByRole("header").map((heading) => String(heading.props.children));
+    expect(headings).toEqual([
+      "Settings",
+      "Language",
+      "Your account",
+      "Notifications",
+      "Legal documents",
+    ]);
+    // The language is two choices side by side, the current one ticked.
+    expect(screen.getByRole("radio", { name: "English" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Íslenska" })).not.toBeChecked();
+    // Rows and their headings start at the left.
+    expect(screen.getByRole("header", { name: "Language" })).not.toHaveStyle({
+      textAlign: "center",
+    });
+    expect(screen.getByRole("header", { name: "Legal documents" })).not.toHaveStyle({
+      textAlign: "center",
+    });
+  });
+
   it("shows the phone number, marked as private", async () => {
     await openSettings();
     expect(screen.getByText("+354 690 0000")).toBeVisible();
@@ -349,20 +371,22 @@ describe("Settings", () => {
 
   it("changes the language of the app and of the account", async () => {
     const app = await openSettings();
-    await fireEvent.press(screen.getByRole("button", { name: "Change the language to Icelandic" }));
+    await fireEvent.press(screen.getByRole("radio", { name: "Íslenska" }));
     expect(await screen.findByRole("header", { name: "Stillingar" })).toBeVisible();
+    expect(screen.getByRole("radio", { name: "Íslenska" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "English" })).not.toBeChecked();
     expect(app.client.calls.at(-1)?.input).toEqual({
       body: { locale: "is" },
       accessToken: "sr_at_access-1",
     });
   });
 
-  it("links to the Privacy Policy", async () => {
+  it("opens the Privacy Policy from its row", async () => {
     const app = await openSettings();
     app.client.answer("/v1/legal/{type}/current", () =>
       ok(200, legalDocument("privacy", 1, "## What we collect\n\nYour **phone number**.")),
     );
-    await fireEvent.press(screen.getByRole("link", { name: "Read the Privacy Policy" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Privacy Policy" }));
     expect(await screen.findByRole("header", { name: "Privacy Policy" })).toBeVisible();
     expect(screen.getByRole("header", { name: "What we collect" })).toBeVisible();
     expect(screen.getByText("Your phone number.")).toBeVisible();

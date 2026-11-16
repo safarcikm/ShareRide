@@ -78,13 +78,11 @@ test("the driver and passenger of a confirmed booking message each other", async
     driver.getByRole("link", { name: "Messages, 1 unread", exact: true }).filter(visible),
   ).toBeVisible();
 
-  // The driver switches the app to Icelandic and answers from the trip page.
-  // On a wide screen the top bar has the same switch, so this is Settings' own.
+  // The driver switches the app to Icelandic in Settings and answers from
+  // the trip page.
   await driver.goto("/settings");
-  await driver
-    .getByTestId("screen-scroll")
-    .getByRole("button", { name: "Change the language to Icelandic" })
-    .click();
+  await driver.getByRole("radio", { name: "Íslenska" }).click();
+  await expect(driver.getByRole("radio", { name: "Íslenska" })).toBeChecked();
   await driver.goto(`/drive/trips/${tripId}`);
   await driver.getByRole("button", { name: "Senda skilaboð: Dóra" }).click();
   await expect(driver.getByLabel(/^Dóra, \d\d:\d\d: Where shall I wait\?$/)).toBeVisible();

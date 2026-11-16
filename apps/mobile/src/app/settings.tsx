@@ -1,16 +1,19 @@
 import { updateMeRoute, type Me } from "@shareride/contracts";
 import { formatPhoneNumber } from "@shareride/domain";
 import type { Locale } from "@shareride/i18n";
+import { router } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
-import { LanguageSwitch } from "@/components/language-switch";
+import { Card } from "@/components/card";
+import { Chip } from "@/components/chip";
 import { Notice } from "@/components/notice";
+import { Row } from "@/components/row";
 import { Screen } from "@/components/screen";
-import { Body, Title } from "@/components/text";
+import { Body, sectionLevel, Title } from "@/components/text";
 import { TextLink } from "@/components/text-link";
 import { useLanguage } from "@/i18n/language";
 import { BackToMenu } from "@/navigation/back-to-menu";
@@ -19,11 +22,11 @@ import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
- * Settings (spec 1, section 3.8): Your account, with the private phone
- * number (spec 16, 3.4) and the email (plan 4.6), Notifications with the
- * Trip reminders switch (spec 7, 3.6), language, legal documents, and
- * signing out here or on every device. Signed out, it closes back to the
- * menu.
+ * Settings (spec 1, section 3.8; spec 16, 3.8): the language as two choices
+ * side by side, Your account with the private phone number (spec 16, 3.4)
+ * and the email (plan 4.6), Notifications with the Trip reminders switch
+ * (spec 7, 3.6), legal documents, and signing out here or on every device.
+ * Rows start at the left. Signed out, it closes back to the menu.
  */
 export default function SettingsScreen() {
   const me = useMe();
@@ -32,7 +35,7 @@ export default function SettingsScreen() {
 }
 
 function Settings({ me }: { readonly me: Me }) {
-  const { t } = useLanguage();
+  const { locale, setLocale, t } = useLanguage();
   const session = useSession();
   const palette = usePalette();
   const [signingOut, setSigningOut] = useState<"one" | "all" | null>(null);
@@ -58,10 +61,11 @@ function Settings({ me }: { readonly me: Me }) {
     else setError(errorText(t, result));
   }
 
-  const heading = (text: string, align: "center" | "start" = "center") => (
+  const heading = (text: string) => (
     <Text
       accessibilityRole="header"
-      style={[typography.label, align === "center" && styles.centre, { color: palette.text }]}
+      {...sectionLevel}
+      style={[typography.label, { color: palette.text }]}
     >
       {text}
     </Text>
@@ -75,9 +79,26 @@ function Settings({ me }: { readonly me: Me }) {
     <Screen>
       <BackButton fallback="/profile" />
       <Title>{t("settings.title")}</Title>
-      {/* Its rows start at the left (spec 16, 3.8); the other groups follow with proposal 6. */}
       <View style={styles.section}>
-        {heading(t("settings.yourAccount"), "start")}
+        {heading(t("settings.language"))}
+        <View accessibilityRole="radiogroup" aria-label={t("settings.language")} style={styles.row}>
+          {(["en", "is"] as const).map((choice) => (
+            <Chip
+              key={choice}
+              role="radio"
+              label={choice === "en" ? t("language.english") : t("language.icelandic")}
+              selected={locale === choice}
+              onToggle={() => {
+                if (choice === locale) return;
+                setLocale(choice);
+                void saveLanguage(choice);
+              }}
+            />
+          ))}
+        </View>
+      </View>
+      <View style={styles.section}>
+        {heading(t("settings.yourAccount"))}
         {me.phoneNumber === null ? null : (
           <View style={styles.item}>
             {label(t("profile.phone"))}
@@ -99,18 +120,22 @@ function Settings({ me }: { readonly me: Me }) {
         </View>
       </View>
       <View style={styles.section}>
-        {heading(t("settings.notifications"), "start")}
+        {heading(t("settings.notifications"))}
         <TripReminders />
       </View>
       <View style={styles.section}>
-        {heading(t("settings.language"))}
-        <LanguageSwitch onSwitch={(locale) => void saveLanguage(locale)} />
-      </View>
-      <View style={styles.section}>
         {heading(t("settings.legal"))}
-        <TextLink label={t("legal.readTerms")} href="/legal/terms" />
-        <TextLink label={t("legal.readRules")} href="/legal/community-rules" />
-        <TextLink label={t("legal.readPrivacy")} href="/legal/privacy" />
+        <Card>
+          {legalDocuments.map(({ title, href }) => (
+            <Row
+              key={href}
+              title={t(title)}
+              onPress={() => {
+                router.push(href);
+              }}
+            />
+          ))}
+        </Card>
       </View>
       <View style={styles.section}>
         <Button
@@ -134,8 +159,14 @@ function Settings({ me }: { readonly me: Me }) {
   );
 }
 
+const legalDocuments = [
+  { title: "legal.terms", href: "/legal/terms" },
+  { title: "legal.rules", href: "/legal/community-rules" },
+  { title: "legal.privacy", href: "/legal/privacy" },
+] as const;
+
 const styles = StyleSheet.create({
   section: { gap: spacing.sm, marginTop: spacing.md },
   item: { gap: spacing.xs },
-  centre: { textAlign: "center" },
+  row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
 });

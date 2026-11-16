@@ -15,12 +15,14 @@ import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
+import { Tag } from "@/components/tag";
 import { TextField } from "@/components/text-field";
-import { Body } from "@/components/text";
+import { Body, sectionLevel } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useDebounced } from "@/lib/use-debounced";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { groupPlaces } from "./group-places";
 import { MeetingPointCard, PlaceCard } from "./result-cards";
 
 /** How long typing pauses before the search runs. */
@@ -104,7 +106,9 @@ export function usePlaceQuery(): PlaceQuery {
 /**
  * What the place search found: a loading sign, the failure with a retry,
  * or the count and the meeting points and places to choose from. `compact`
- * shows them as rows in a list rather than as cards.
+ * shows them as rows in a list rather than as cards: towns and areas first,
+ * then meeting points, each under a small heading, and the sample tag once
+ * under the list (spec 16, 3.8).
  */
 export function PlaceResults({
   search,
@@ -152,28 +156,94 @@ export function PlaceResults({
           <Text style={[typography.small, { color: palette.textMuted }]}>{status}</Text>
         )}
       </View>
-      {found.map((result) =>
-        result.kind === "meetingPoint" ? (
-          <MeetingPointCard
-            key={result.meetingPoint.id}
-            point={result.meetingPoint}
-            compact={compact}
-            onPress={() => {
-              onChoose(result);
-            }}
-          />
-        ) : (
-          <PlaceCard
-            key={result.place.id}
-            place={result.place}
-            compact={compact}
-            onPress={() => {
-              onChoose(result);
-            }}
-          />
-        ),
+      {compact ? (
+        <Grouped found={found} onChoose={onChoose} />
+      ) : (
+        <Rows found={found} onChoose={onChoose} />
       )}
     </>
+  );
+}
+
+/** Meeting points and places, as cards or, `compact`, as rows of a list. */
+function Rows({
+  found,
+  onChoose,
+  compact = false,
+}: {
+  readonly found: readonly PlaceSearchResult[];
+  readonly onChoose: (result: PlaceSearchResult) => void;
+  readonly compact?: boolean;
+}) {
+  return found.map((result) =>
+    result.kind === "meetingPoint" ? (
+      <MeetingPointCard
+        key={result.meetingPoint.id}
+        point={result.meetingPoint}
+        compact={compact}
+        onPress={() => {
+          onChoose(result);
+        }}
+      />
+    ) : (
+      <PlaceCard
+        key={result.place.id}
+        place={result.place}
+        compact={compact}
+        onPress={() => {
+          onChoose(result);
+        }}
+      />
+    ),
+  );
+}
+
+/** The rows of the From and To list, grouped, with the sample tag once. */
+function Grouped({
+  found,
+  onChoose,
+}: {
+  readonly found: readonly PlaceSearchResult[];
+  readonly onChoose: (result: PlaceSearchResult) => void;
+}) {
+  const { t } = useLanguage();
+  const { places, meetingPoints } = groupPlaces(found);
+  const anySample = meetingPoints.some(
+    (result) => result.kind === "meetingPoint" && result.meetingPoint.sample,
+  );
+  return (
+    <>
+      {places.length === 0 ? null : (
+        <>
+          <GroupHeading label={t("search.townsAndAreas")} />
+          <Rows found={places} onChoose={onChoose} compact />
+        </>
+      )}
+      {meetingPoints.length === 0 ? null : (
+        <>
+          <GroupHeading label={t("search.meetingPoints")} />
+          <Rows found={meetingPoints} onChoose={onChoose} compact />
+        </>
+      )}
+      {anySample ? (
+        <View style={styles.compactNote}>
+          <Tag kind="info" label={t("search.samplePoints")} />
+        </View>
+      ) : null}
+    </>
+  );
+}
+
+function GroupHeading({ label }: { readonly label: string }) {
+  const palette = usePalette();
+  return (
+    <Text
+      accessibilityRole="header"
+      {...sectionLevel}
+      style={[typography.caption, styles.compactNote, { color: palette.textMuted }]}
+    >
+      {label}
+    </Text>
   );
 }
 
@@ -219,4 +289,6 @@ const styles = StyleSheet.create({
   status: { gap: spacing.xs },
   // In line with the text of the rows under it.
   compactStatus: { paddingHorizontal: spacing.ms, paddingTop: spacing.xs },
+  // Group headings and the sample tag, in line with the rows' text.
+  compactNote: { paddingHorizontal: spacing.ms, paddingTop: spacing.sm },
 });
