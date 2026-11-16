@@ -17,8 +17,7 @@ import { useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
-import { Heading, sectionLevel } from "@/components/text";
-import { TextLink } from "@/components/text-link";
+import { Heading } from "@/components/text";
 import { TickRow } from "@/components/tick-list";
 import { carSummary } from "@/driving/texts";
 import { useLanguage } from "@/i18n/language";
@@ -26,8 +25,15 @@ import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { StepScreen } from "@/trips/step-screen";
+import { SummarySection } from "@/trips/summary-section";
 import { fromReviewParams, type StepName } from "@/trips/steps";
-import { bookingModeKeys, levelText, preferenceTexts, problemText } from "@/trips/texts";
+import {
+  bookingModeKeys,
+  levelText,
+  preferenceTexts,
+  problemText,
+  stopNameAt,
+} from "@/trips/texts";
 import { Loading, useDraftOnFocus } from "@/trips/use-draft";
 import { useQuote } from "@/trips/use-quote";
 
@@ -108,15 +114,6 @@ function Review({
   // A draft started before the first car was added gets that car on publishing.
   const car = trip.vehicleId === null ? cars[0] : cars.find((known) => known.id === trip.vehicleId);
 
-  /** The stop a problem's path names: `stops.N`, or the end of `segments.N`. */
-  const nameAt = (path: string) => {
-    const [kind, position] = path.split(".");
-    const index = Number(position);
-    if (kind === "stops") return names[index] ?? "";
-    if (kind === "segments") return names[index + 1] ?? "";
-    return "";
-  };
-
   const missing = stillMissing(readiness);
 
   const publish = async () => {
@@ -142,7 +139,9 @@ function Review({
     } else if (result.error.code === "trip_not_publishable") {
       const details = result.error.details ?? [];
       setProblems([
-        ...new Set(details.map((detail) => problemText(t, detail.issue, nameAt(detail.path)))),
+        ...new Set(
+          details.map((detail) => problemText(t, detail.issue, stopNameAt(names, detail.path))),
+        ),
       ]);
     } else if (result.error.code === "distances_pending") {
       setFailure(t("trip.distancesPending"));
@@ -385,38 +384,22 @@ function Section({
   readonly lines: readonly string[];
 }) {
   const { t } = useLanguage();
-  const palette = usePalette();
   return (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <Text
-          accessibilityRole="header"
-          {...sectionLevel}
-          style={[typography.label, styles.sectionTitle, { color: palette.textMuted }]}
-        >
-          {title}
-        </Text>
-        <TextLink
-          label={t("trip.review.edit")}
-          accessibilityLabel={t("trip.review.editLabel", { section: title })}
-          href={fromReviewParams(id, step)}
-        />
-      </View>
-      {lines.map((line, index) => (
-        <Text key={`${String(index)}-${line}`} style={[typography.body, { color: palette.text }]}>
-          {line}
-        </Text>
-      ))}
-    </View>
+    <SummarySection
+      title={title}
+      lines={lines}
+      link={{
+        label: t("trip.review.edit"),
+        accessibilityLabel: t("trip.review.editLabel", { section: title }),
+        href: fromReviewParams(id, step),
+      }}
+    />
   );
 }
 
 const styles = StyleSheet.create({
   problems: { gap: spacing.xs },
   problem: { paddingHorizontal: spacing.md },
-  section: { gap: spacing.xs },
-  sectionHeader: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  sectionTitle: { flex: 1 },
   confirm: { gap: spacing.sm },
   centre: { textAlign: "center" },
 });

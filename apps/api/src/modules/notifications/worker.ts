@@ -58,6 +58,7 @@ const {
   pushTokens,
   scheduledNotifications,
   sessions,
+  tripChanges,
   trips,
   tripStops,
   users,
@@ -143,6 +144,40 @@ function cancelledBy(payload: Readonly<Record<string, string>>): TripRole {
 
 const boards = alias(tripStops, "boards");
 const alights = alias(tripStops, "alights");
+
+/**
+ * A moved departure as one passenger sees it (spec 6, 3.2): their boarding
+ * time before and after this change, and how far the departure is now from
+ * where it was when they booked (R6.3). Every stop moves with the departure
+ * (R6.2), so the boarding time is always as far from it.
+ */
+async function moveOf(q: Queryable, tripChangeId: string, bookingId: string) {
+  const [row] = await q
+    .select({
+      before: tripChanges.before,
+      after: tripChanges.after,
+      boardsAt: boards.plannedAt,
+      departsAt: trips.departsAt,
+      departsAtWhenBooked: bookings.departsAtWhenBooked,
+    })
+    .from(tripChanges)
+    .innerJoin(bookings, eq(bookings.tripId, tripChanges.tripId))
+    .innerJoin(trips, eq(trips.id, bookings.tripId))
+    .innerJoin(boards, eq(boards.id, bookings.fromStopId))
+    .where(and(eq(tripChanges.id, tripChangeId), eq(bookings.id, bookingId)));
+  if (row === undefined || row.boardsAt === null || row.departsAt === null) return undefined;
+  const before = new Date(String(row.before["departsAt"]));
+  const after = new Date(String(row.after["departsAt"]));
+  const boardingAfterMs = row.boardsAt.getTime() - row.departsAt.getTime();
+  // Null only for a booking the previous version made during a deploy.
+  const booked = row.departsAtWhenBooked ?? before;
+  return {
+    from: new Date(before.getTime() + boardingAfterMs),
+    to: new Date(after.getTime() + boardingAfterMs),
+    // Not rounded, so it is far exactly when the domain's `movedFar` says so (R6.3).
+    byMinutes: (after.getTime() - booked.getTime()) / minuteMs,
+  };
+}
 const boardPoint = alias(meetingPoints, "board_point");
 const alightPoint = alias(meetingPoints, "alight_point");
 const recipients = alias(users, "recipient");
@@ -275,6 +310,10 @@ async function factsOf(q: Queryable, notificationId: string) {
       : await q.select().from(messages).where(eq(messages.id, notification.messageId));
   const locale = recipient.locale === "is" ? "is" : "en";
   const role: TripRole = notification.recipientId === row.driverId ? "driver" : "passenger";
+  const moved =
+    notification.tripChangeId === null
+      ? undefined
+      : await moveOf(q, notification.tripChangeId, booking.id);
   const facts: NotificationFacts = {
     kind: notification.kind as NotificationFacts["kind"],
     role,
@@ -298,6 +337,8 @@ async function factsOf(q: Queryable, notificationId: string) {
           : { quick: quickOf(message) },
     boardPointId: row.boardPointId,
     car: row.car === null ? null : { ...row.car, colour: row.car.colour as CarColour },
+    moved: moved === undefined ? null : { from: moved.from, to: moved.to },
+    paid: booking.status === "confirmed" && booking.totalPrice > 0,
   };
   return {
     facts,
@@ -352,6 +393,20 @@ export function createNotificationWorker(dependencies: {
   const settings = dependencies.settings ?? defaultNotificationSettings;
 
   /**
+   * When the passenger gets in, for the SMS window: for a moved departure,
+   * the earlier of the old and the new time, so the window is never missed.
+   */
+  async function boardingFor(
+    q: Queryable,
+    bookingId: string,
+    tripChangeId: string | null,
+  ): Promise<Date | null> {
+    const moved = tripChangeId === null ? undefined : await moveOf(q, tripChangeId, bookingId);
+    if (moved !== undefined) return moved.from < moved.to ? moved.from : moved.to;
+    return (await timesOf(q, bookingId))?.boardsAt ?? null;
+  }
+
+  /**
    * What the catalogue needs to know about a person to pick the channels:
    * for a passenger's booking, when they get in, for the SMS window.
    */
@@ -361,6 +416,7 @@ export function createNotificationWorker(dependencies: {
     role: TripRole,
     bookingId: string | null,
     now: Date,
+    tripChangeId: string | null = null,
   ): Promise<Recipient> {
     const [user] = await q
       .select({
@@ -378,7 +434,7 @@ export function createNotificationWorker(dependencies: {
       hasVerifiedPhone: (user?.phoneVerifiedAt ?? null) !== null,
       boardsAt:
         role === "passenger" && bookingId !== null
-          ? ((await timesOf(q, bookingId))?.boardsAt ?? null)
+          ? await boardingFor(q, bookingId, tripChangeId)
           : null,
       smsSentToday: await smsSince(q, userId, startOfIcelandDay(now)),
     };
@@ -433,14 +489,21 @@ export function createNotificationWorker(dependencies: {
     tx: Transaction,
     event: NotificationEvent,
     booking: Parties,
-    source: { readonly key: string; readonly messageId?: string },
+    source: { readonly key: string; readonly messageId?: string; readonly tripChangeId?: string },
     now: Date,
   ): Promise<void> {
     for (const { kind, to } of notificationsFor(event)) {
       const recipientId = to === "driver" ? booking.driverId : booking.passengerId;
       await add(
         tx,
-        { kind, to, recipientId, bookingId: booking.id, messageId: source.messageId ?? null },
+        {
+          kind,
+          to,
+          recipientId,
+          bookingId: booking.id,
+          messageId: source.messageId ?? null,
+          tripChangeId: source.tripChangeId ?? null,
+        },
         source.key,
         now,
       );
@@ -457,6 +520,7 @@ export function createNotificationWorker(dependencies: {
       readonly bookingId?: string;
       readonly tripId?: string;
       readonly messageId?: string | null;
+      readonly tripChangeId?: string | null;
     },
     key: string,
     now: Date,
@@ -470,6 +534,7 @@ export function createNotificationWorker(dependencies: {
         bookingId: notification.bookingId ?? null,
         tripId: notification.tripId ?? null,
         messageId: notification.messageId ?? null,
+        tripChangeId: notification.tripChangeId ?? null,
         uniqueKey: `${key}:${kind}:${recipientId}`,
         createdAt: now,
         updatedAt: now,
@@ -477,7 +542,14 @@ export function createNotificationWorker(dependencies: {
       .onConflictDoNothing()
       .returning({ id: notifications.id });
     if (created === undefined) return;
-    const recipient = await recipientOf(tx, recipientId, to, notification.bookingId ?? null, now);
+    const recipient = await recipientOf(
+      tx,
+      recipientId,
+      to,
+      notification.bookingId ?? null,
+      now,
+      notification.tripChangeId ?? null,
+    );
     const decisions = channelsFor(kind, recipient, now, settings);
     if (decisions.length === 0) return;
     await tx
@@ -497,6 +569,7 @@ export function createNotificationWorker(dependencies: {
     confirmedAt: Date,
     now: Date,
   ): Promise<void> {
+    await holdTrip(tx, booking.tripId);
     const times = await timesOf(tx, booking.id);
     if (times === undefined) return;
     const rows: (typeof scheduledNotifications.$inferInsert)[] = [];
@@ -546,13 +619,26 @@ export function createNotificationWorker(dependencies: {
     return found !== undefined;
   }
 
+  /**
+   * Waits for a move of the trip's departure that is being saved, and keeps
+   * the next one until this transaction ends, so reminders are worked out
+   * from the times as they are, and a move finds them to move (spec 6, 3.2).
+   */
+  async function holdTrip(tx: Transaction, tripId: string): Promise<void> {
+    await tx.select({ id: trips.id }).from(trips).where(eq(trips.id, tripId)).for("share");
+  }
+
   /** The halfway and pay reminders that follow a request and an acceptance. */
   async function scheduleAfter(
     tx: Transaction,
     type: OutboxEventType,
-    booking: Parties,
+    parties: Parties,
     now: Date,
   ): Promise<void> {
+    // The deadlines as they are once no move is being saved.
+    await holdTrip(tx, parties.tripId);
+    const [booking] = await tx.select().from(bookings).where(eq(bookings.id, parties.id));
+    if (booking === undefined) return;
     const schedule = (kind: "request_halfway" | "pay_reminder", runAt: Date) =>
       tx
         .insert(scheduledNotifications)
@@ -565,11 +651,21 @@ export function createNotificationWorker(dependencies: {
           updatedAt: now,
         })
         .onConflictDoNothing();
-    const { requestedAt, expiresAt, decidedAt, paymentDueAt } = booking;
-    if (type === "BookingRequested" && requestedAt !== null && expiresAt !== null) {
+    const { status, requestedAt, expiresAt, decidedAt, paymentDueAt } = booking;
+    if (
+      type === "BookingRequested" &&
+      status === "requested" &&
+      requestedAt !== null &&
+      expiresAt !== null
+    ) {
       await schedule("request_halfway", requestHalfwayAt({ requestedAt, expiresAt }));
     }
-    if (type === "BookingAccepted" && decidedAt !== null && paymentDueAt !== null) {
+    if (
+      type === "BookingAccepted" &&
+      status === "accepted" &&
+      decidedAt !== null &&
+      paymentDueAt !== null
+    ) {
       const at = payReminderAt({ acceptedAt: decidedAt, dueAt: paymentDueAt }, settings);
       if (at !== null) await schedule("pay_reminder", at);
     }
@@ -693,6 +789,14 @@ export function createNotificationWorker(dependencies: {
     const booking = bookingId === undefined ? undefined : await partiesOf(tx, bookingId);
     // A booking deleted since, with its account, tells nobody.
     if (booking === undefined) return;
+    if (type === "DepartureMoved") {
+      const tripChangeId = idIn(event.payload, "tripChangeId");
+      const moved =
+        tripChangeId === undefined ? undefined : await moveOf(tx, tripChangeId, booking.id);
+      if (tripChangeId === undefined || moved === undefined) return;
+      await notify(tx, { type, byMinutes: moved.byMinutes }, booking, { key, tripChangeId }, now);
+      return;
+    }
     const happened: NotificationEvent =
       type === "BookingExpired"
         ? { type, reason: event.payload["reason"] === "unpaid" ? "unpaid" : "unanswered" }

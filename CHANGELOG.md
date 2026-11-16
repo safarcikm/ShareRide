@@ -374,6 +374,20 @@ releases follow [Semantic Versioning](https://semver.org/).
   left while the screen was open, nothing is cancelled and it shows again.
   `POST /v1/trips/{id}/cancel`; a trip keeps its reason, note and whether
   it counts.
+- The driver moves a trip's departure (milestone 6, PR 5a, spec 6, 3.2):
+  "Edit trip", before "Cancel trip", opens the trip's parts; "Change the
+  time" gives the date and the departure, with every stop moving along.
+  "Check the change" names any rule the move breaks (more than 2 hours from
+  when a passenger booked, too soon, another trip of the driver's), then
+  shows the new times, who is told and who may now cancel with a full
+  refund. Saved, passengers read "Departure changed from 10:00 to 10:45" at
+  their own stop, on the booking and in the chat, and are told by push and
+  email, and by SMS within 24 hours when it moved more than 30 minutes. A
+  paid booking moved more than 30 minutes offers "Keep my booking" or
+  "Cancel with full refund", with "The trip changed" chosen. Deadlines to
+  answer and to pay, and the reminders, move with the trip; a reminder
+  already sent is not sent again. `POST /v1/trips/{id}/changes`, with
+  `?preview=true` for the check; each change is kept in `trip_changes`.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

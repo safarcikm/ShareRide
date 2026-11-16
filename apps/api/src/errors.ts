@@ -12,6 +12,7 @@ export interface ErrorExtras {
   readonly total?: NonNullable<ErrorResponse["error"]["total"]>;
   readonly terms?: NonNullable<ErrorResponse["error"]["terms"]>;
   readonly countsOnReliability?: boolean;
+  readonly departureWindow?: NonNullable<ErrorResponse["error"]["departureWindow"]>;
 }
 
 export function errorBody(code: string, message: string, details?: ErrorDetails): ErrorResponse {

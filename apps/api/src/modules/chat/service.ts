@@ -89,6 +89,12 @@ function systemLineOf(row: MessageRow, viewer: TripRole): NonNullable<ChatMessag
   switch (row.key) {
     case "opened":
       return { key: "opened" };
+    case "departure_changed":
+      return {
+        key: "departure_changed",
+        from: String(row.params?.["from"]),
+        to: String(row.params?.["to"]),
+      };
     case "cancelled":
       return {
         key: "cancelled",

@@ -12,7 +12,7 @@ export type OutboxEvent =
   | {
       readonly type: Exclude<
         OutboxEventType,
-        "BookingExpired" | "BookingCancelled" | "TripCancelled" | "MessageSent"
+        "BookingExpired" | "BookingCancelled" | "DepartureMoved" | "TripCancelled" | "MessageSent"
       >;
       readonly bookingId: string;
     }
@@ -27,6 +27,12 @@ export type OutboxEvent =
       readonly bookingId: string;
       /** Who cancelled: the other person is told (spec 7, 3.3). */
       readonly by: "passenger" | "driver";
+    }
+  | {
+      /** One for each booked passenger, with the change for the times before and after (spec 6, 3.2). */
+      readonly type: "DepartureMoved";
+      readonly bookingId: string;
+      readonly tripChangeId: string;
     }
   | {
       /** One for each booking and request on the trip, so each passenger is told (spec 7). */

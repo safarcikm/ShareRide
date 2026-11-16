@@ -607,6 +607,34 @@ export const is = {
   "trip.notCancellable": "Ekki er lengur hægt að hætta við þessa ferð.",
   "trip.termsChanged":
     "Eitthvað breyttist síðan þú opnaðir þetta. Athugaðu aftur hverjir verða fyrir áhrifum.",
+  "trip.edit": "Breyta ferð",
+  "trip.editIntro": "Breyttu einu í einu. Áður en þú vistar sérðu hvað það þýðir fyrir farþegana.",
+  "trip.editTime": "Tími",
+  "trip.editTimeAction": "Breyta tímanum",
+  "trip.editTimeTitle": "Breyta brottför",
+  "trip.editTimeIntro": "Allir viðkomustaðir færast með brottförinni.",
+  "trip.editTimeBooked":
+    "Þegar bókanir eru komnar má færa brottförina um allt að 2 klukkustundir frá þeim tíma sem farþegarnir bókuðu.",
+  "trip.editTimeSame": "Ferðin fer nú þegar á þessum tíma. Veldu annan tíma.",
+  "trip.editCheck": "Skoða breytinguna",
+  "trip.editReviewTitle": "Skoðaðu breytinguna",
+  "trip.editNewTimes": "Nýir tímar",
+  "trip.editForPassengers": "Hvað breytist fyrir farþegana",
+  "trip.editTold":
+    "{count, plural, one {# farþegi fær} other {# farþegar fá}} að vita af nýja tímanum strax.",
+  "trip.editFreeCancel":
+    "Brottförin færist um meira en 30 mínútur frá því þeir bókuðu svo {count, plural, one {# farþegi getur} other {# farþegar geta}} afbókað með fullri endurgreiðslu án þess að það telji gegn þeim.",
+  "trip.editNobody": "Enginn hefur bókað enn svo enginn þarf að fá að vita það.",
+  "trip.editRequests":
+    "{count, plural, one {# sem bað um sæti sér} other {# sem báðu um sæti sjá}} nýja tímann í appinu.",
+  "trip.editRequestsExpire":
+    "Ekki er lengur hægt að svara {count, plural, one {# beiðni} other {# beiðnum}} í tæka tíð svo {count, plural, one {hún rennur} other {þær renna}} út.",
+  "trip.editSave": "Vista breytinguna",
+  "trip.notChangeable": "Ekki er lengur hægt að breyta þessari ferð.",
+  "trip.moveTooFar": "Með bókunum getur brottförin verið frá kl. {earliest} til kl. {latest}.",
+  "trip.changed": "Brottför breytt úr {old} í {new}",
+  "trip.keepBooking": "Halda bókuninni",
+  "trip.cancelWithRefund": "Afbóka með fullri endurgreiðslu",
   "trip.own": "Þetta er ferðin þín.",
   "trip.share": "Deila",
   "trip.shareText": "{route} á ShareRide",
@@ -733,6 +761,11 @@ export const is = {
     "Vinsamlegast ekki deila símanúmerum, netföngum eða tenglum í skilaboðunum.",
   "booking.keepTheirs": "Halda bókuninni",
   "booking.driverNote": "Skilaboð frá bílstjóranum: {note}",
+  "booking.changesTitle": "Breytingar frá því þú bókaðir",
+  "booking.movedFar":
+    "Brottförin færðist um meira en 30 mínútur svo þú getur afbókað með fullri endurgreiðslu án þess að það telji gegn þér.",
+  "booking.movedFarFree":
+    "Brottförin færðist um meira en 30 mínútur svo þú getur afbókað án þess að það telji gegn þér.",
   "booking.backToBooking": "Aftur í bókunina",
   "booking.termsChanged":
     "Eitthvað breyttist síðan þú opnaðir þetta. Athugaðu endurgreiðsluna aftur.",
@@ -782,6 +815,8 @@ export const is = {
   "driverTrip.cancelBooking": "Afbóka: {name}",
   "driverTrip.cancelledBooking": "Bókunin var afbókuð. Farþeginn hefur fengið að vita það.",
   "driverTrip.cancelledTrip": "Þú hættir við þessa ferð: {reason}",
+  "driverTrip.changed": "Ferðinni var breytt. Farþegarnir hafa fengið að vita það.",
+  "driverTrip.changedNobody": "Ferðinni var breytt.",
   "driverTrip.yourNote": "Skilaboðin þín: {note}",
   "request.accept": "Samþykkja",
   "request.decline": "Hafna",
@@ -872,6 +907,9 @@ export const is = {
   "notify.unpaidDriver": "Ekki greitt í tæka tíð: {name}",
   "notify.cancelledByDriver": "Bílstjórinn afbókaði: {reason}",
   "notify.cancelledRefundBody": "{from} – {to} · {when}. Full endurgreiðsla, {total}.",
+  "notify.movedBody": "{from} – {to} · {when}.",
+  "notify.movedFarBody":
+    "{from} – {to} · {when}. Þú getur haldið bókuninni eða afbókað með fullri endurgreiðslu.",
   "notify.cancelledByPassenger": "Bókun afbókuð: {name}",
   "notify.tripCancelled": "Ferð aflýst: {reason}",
   "notify.refunded": "Endurgreiðsla, {total}",
@@ -910,4 +948,7 @@ export const is = {
     "ShareRide: Ferðinni þinni var aflýst: {date} kl. {time}. Full endurgreiðsla. Nánar í appinu.",
   "sms.tripCancelledUnpaid":
     "ShareRide: Ferðinni þinni var aflýst: {date} kl. {time}. Nánar í appinu.",
+  "sms.departureMoved":
+    "ShareRide: Ný brottför: {date} kl. {time}. Haltu bókuninni eða afbókaðu með fullri endurgreiðslu í appinu.",
+  "sms.departureMovedUnpaid": "ShareRide: Ný brottför: {date} kl. {time}. Nánar í appinu.",
 } as const satisfies Record<MessageKey, string>;

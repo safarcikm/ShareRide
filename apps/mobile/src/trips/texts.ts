@@ -109,3 +109,12 @@ export function problemText(t: Translate, code: string, name: string): string {
   if (code === "note_too_long") return t("trip.note.tooLong", { max: noteMaxLength });
   return t("error.generic");
 }
+
+/** The stop a refusal's path names: `stops.N`, or the end of `segments.N`. */
+export function stopNameAt(names: readonly string[], path: string): string {
+  const [kind, position] = path.split(".");
+  const index = Number(position);
+  if (kind === "stops") return names[index] ?? "";
+  if (kind === "segments") return names[index + 1] ?? "";
+  return "";
+}

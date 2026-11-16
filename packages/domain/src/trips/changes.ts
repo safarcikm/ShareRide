@@ -53,6 +53,19 @@ export interface BookingOnTrip {
   readonly departsAtWhenBooked: Date;
 }
 
+/**
+ * What a change is to, as each one is recorded (spec 6, section 6:
+ * `TripChange`). Adding and removing a stop join with milestone 6's PR 6.
+ */
+export const tripChangeKinds = [
+  "departure",
+  "seats",
+  "priceLevel",
+  "vehicle",
+  "bookingMode",
+  "details",
+] as const satisfies readonly TripChange["kind"][];
+
 /** One change at a time, as the driver saves it from Edit trip. */
 export type TripChange =
   | { readonly kind: "departure"; readonly departsAt: Date }

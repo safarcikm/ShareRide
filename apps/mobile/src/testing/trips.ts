@@ -7,6 +7,8 @@ import type {
   MeetingPointSummary,
   MyTrip,
   Quote,
+  TripChangeBody,
+  TripChangeEffect,
   Vehicle,
 } from "@shareride/contracts";
 import { firstTripChoices } from "@shareride/domain";
@@ -117,13 +119,20 @@ interface TripsApi {
 
 /**
  * A driver with a car, ready to drive, and the trips API around them.
- * `answers.cancel` can replace what cancelling a trip answers; `undefined`
- * cancels it.
+ * `answers.cancel` can replace what cancelling a trip answers, and
+ * `answers.change` what changing one answers, with or without `preview`;
+ * `undefined` does it. `answers.told` says whom a change tells (`told`, of
+ * whom `freeCancellations` may cancel for free) and the requests it leaves
+ * waiting or makes expire; nobody by default.
  */
 export function tripsApi(
   client: FakeClient,
   start: MyTrip[] = [],
-  answers: { cancel?: () => unknown } = {},
+  answers: {
+    cancel?: () => unknown;
+    change?: (preview: boolean) => unknown;
+    told?: Partial<Pick<TripChangeEffect, "told" | "freeCancellations" | "requests" | "expiring">>;
+  } = {},
 ): TripsApi {
   let trips = [...start];
   let refusal: { path: string; issue: string }[] | null = null;
@@ -251,6 +260,43 @@ export function tripsApi(
         updatedAt: stamp(),
       }),
     );
+  });
+  client.answer("/v1/trips/{id}/changes", (input) => {
+    const { preview = false } = (input["query"] ?? {}) as { preview?: boolean };
+    const answered = answers.change?.(preview);
+    if (answered !== undefined) return answered;
+    const trip = find(input);
+    if (trip === undefined) return failure(404, "not_found");
+    if (trip.status !== "published") return failure(409, "trip_not_changeable");
+    const { departsAt } = input["body"] as TripChangeBody;
+    // Every stop moves with the departure (R6.2).
+    const byMs = new Date(departsAt).getTime() - new Date(trip.departsAt ?? departsAt).getTime();
+    const plannedTimes = trip.stops.map((stop) =>
+      new Date(new Date(stop.plannedAt ?? departsAt).getTime() + byMs).toISOString(),
+    );
+    const effect: TripChangeEffect = {
+      departsAt: plannedTimes[0] ?? departsAt,
+      arrivesAt: plannedTimes.at(-1) ?? departsAt,
+      plannedTimes,
+      told: 0,
+      freeCancellations: 0,
+      requests: 0,
+      expiring: 0,
+      ...answers.told,
+    };
+    if (!preview) {
+      store({
+        ...trip,
+        stops: trip.stops.map((stop, index) => ({
+          ...stop,
+          plannedAt: plannedTimes[index] ?? null,
+        })),
+        departsAt: effect.departsAt,
+        arrivesAt: effect.arrivesAt,
+        updatedAt: stamp(),
+      });
+    }
+    return ok(200, effect);
   });
   return {
     trips: () => trips,

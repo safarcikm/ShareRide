@@ -173,10 +173,14 @@ still pass, and every booking is within 2 hours of its time.
 
 ### 4.3 Changing a published trip on the server
 
-- `PATCH /trips/{id}` keeps changing drafts. For a published trip it takes
-  one change at a time (4.1) and, with `?preview=true`, answers the effect
-  without saving. Refused changes answer 409 with the problems as details,
-  so the app can say which rule and why (3.2).
+- `PATCH /trips/{id}` keeps changing drafts only. A published trip takes
+  one change at a time (4.1) at `POST /trips/{id}/changes` (as built in PR
+  5a: a draft's partial body and a published trip's one change read
+  differently, so each has its own endpoint). With `?preview=true` it
+  answers the effect without saving. A change that breaks a rule answers
+  422 `change_not_allowed` with the problems as details, as publishing
+  does, so the app can say which rule and why (3.2); a departed or
+  cancelled trip answers 409 `trip_not_changeable`.
 - A departure move shifts every stop's planned time, the trip's departure
   and arrival, and every booking's reminders. Requests' and unpaid
   bookings' deadlines are worked out again from the new boarding time
@@ -291,14 +295,29 @@ PR 4b, `feat(trips)`: the driver cancels the trip.
 
 ### PR 5: `feat(trips)`: changing a published trip
 
-- [ ] The published trip's `PATCH` with `preview`; `trip_changes`;
-      `DepartureMoved` and `TripChanged`; reminders moved with the trip
-- [ ] Edit trip and its review; "Trip changed" on the booking with "Keep my
-      booking" and "Cancel with full refund"
+In two parts, so each stays reviewable: the departure first, end to end,
+then the other changes.
+
+PR 5a, `feat(trips)`: the driver moves the departure.
+
+- [x] `POST /trips/{id}/changes` with `preview`, for a new departure;
+      `trip_changes`; `DepartureMoved`, with its push, email and SMS;
+      reminders and deadlines moved with the trip
+- [x] Edit trip with its time row and the review; "Trip changed" on the
+      booking with "Keep my booking" and "Cancel with full refund"
 - Verify: integration tests (a move of 45 minutes lets each passenger
-  cancel for free; over 2 hours refused; seats below the highest occupancy
-  refused; a change and a booking at the same moment); a browser journey
+  cancel for free; over 2 hours refused; a change and a booking at the
+  same moment; the preview matches what saving does); a browser journey
   moves a trip by 45 minutes and a passenger cancels with a full refund
+
+PR 5b, `feat(trips)`: the other changes.
+
+- [ ] Seats, price level, car (`TripChanged`), booking mode, and
+      preferences and note, on the same endpoint
+- [ ] Their rows on Edit trip
+- Verify: integration tests (seats below the highest occupancy refused;
+  more seats lower the price level; pending requests stay open when the
+  booking mode changes; a new car tells each passenger)
 
 ### PR 6: `feat(trips)`: adding and removing a stop
 

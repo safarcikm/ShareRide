@@ -7,6 +7,7 @@ import {
   petOptions,
   smokingOptions,
   tripCancelReasons,
+  tripChangeKinds,
   tripStatuses,
 } from "@shareride/domain";
 import { sql } from "drizzle-orm";
@@ -15,6 +16,7 @@ import {
   check,
   index,
   integer,
+  jsonb,
   pgTable,
   primaryKey,
   text,
@@ -159,5 +161,31 @@ export const segments = pgTable(
     check("segments_price_check", sql`${table.price} between 0 and ${table.cap}`),
     check("segments_currency_check", sql`${table.currency} = 'ISK'`),
     check("segments_occupancy_check", sql`${table.occupancy} between 0 and ${table.capacity}`),
+  ],
+);
+
+/**
+ * Each change to a published trip (spec 6, 3.2 and section 6), so its
+ * passengers see what changed since they booked: "Departure changed from
+ * 08:00 to 08:45". Kept as long as the trip (privacy register).
+ */
+export const tripChanges = pgTable(
+  "trip_changes",
+  {
+    id: id(),
+    tripId: uuid()
+      .notNull()
+      .references(() => trips.id, { onDelete: "cascade" }),
+    kind: text().notNull(),
+    /** What it was and what it became, such as `{ "departsAt": "…" }` in ISO 8601. */
+    before: jsonb().$type<Readonly<Record<string, string | number | boolean | null>>>().notNull(),
+    after: jsonb().$type<Readonly<Record<string, string | number | boolean | null>>>().notNull(),
+    changedAt: at().notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    check("trip_changes_kind_check", oneOf(table.kind, tripChangeKinds)),
+    // A trip's changes in order, for its bookings.
+    index("trip_changes_trip_index").on(table.tripId, table.changedAt),
   ],
 );

@@ -34,6 +34,8 @@ export function northBooking(changes: Partial<Booking> = {}): Booking {
     passenger: { firstName: "Gunna", colour: 2, memberSince: "2026-11" },
     car: { make: "Toyota", model: "Yaris", colour: "white" },
     confirmed: null,
+    changes: [],
+    movedFar: false,
     ...changes,
   };
 }

@@ -27,6 +27,8 @@ const facts: NotificationFacts = {
   message: null,
   boardPointId: "point-bsi",
   car: { make: "Toyota", model: "Yaris", colour: "white" },
+  moved: { from: new Date("2026-11-14T08:15:00Z"), to: new Date("2026-11-14T09:00:00Z") },
+  paid: true,
 };
 
 const gunna = { name: "Gunna", from: "BSÍ", to: "Hof, Akureyri" };
@@ -67,6 +69,8 @@ const kinds: readonly [NotificationFacts["kind"], "driver" | "passenger"][] = [
   ["refund_issued", "passenger"],
   ["booking_cancelled_by_driver", "passenger"],
   ["trip_cancelled", "passenger"],
+  ["departure_moved", "passenger"],
+  ["departure_moved_far", "passenger"],
 ];
 
 describe("notification texts", () => {
@@ -205,6 +209,31 @@ describe("notification texts", () => {
     expect(smsText({ ...facts, ...cancelled, refund: { amount: 0, currency: "ISK" } }, "en")).toBe(
       "ShareRide: your trip on Saturday 14 November at 09:00 is cancelled. Details in the app.",
     );
+  });
+
+  it("tell a passenger the new boarding time, and after a move of more than 30 minutes that a paid booking can be cancelled with a full refund (spec 6, 3.2)", () => {
+    const moved = { kind: "departure_moved", role: "passenger" } as const;
+    expect(text(moved)).toEqual({
+      title: "Departure changed from 08:15 to 09:00",
+      body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00.",
+      path: "/bookings/booking-1",
+    });
+    expect(text({ ...moved, kind: "departure_moved_far" }, "is")).toMatchObject({
+      title: "Brottför breytt úr 08:15 í 09:00",
+      body: "BSÍ – Hof, Akureyri · laugardagur 14. nóvember kl. 09:00. Þú getur haldið bókuninni eða afbókað með fullri endurgreiðslu.",
+    });
+    // Not paid yet, or free: nothing to refund, so no offer.
+    expect(text({ ...moved, kind: "departure_moved_far", paid: false })).toMatchObject({
+      body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00.",
+    });
+    const far = { ...facts, ...moved, kind: "departure_moved_far" } as const;
+    expect(smsText(far, "en")).toBe(
+      "ShareRide: your trip on Saturday 14 November now leaves at 09:00. Keep it or cancel with a full refund in the app.",
+    );
+    expect(smsText({ ...far, paid: false }, "is")).toBe(
+      "ShareRide: Ný brottför: laugardagur 14. nóvember kl. 09:00. Nánar í appinu.",
+    );
+    expect(() => text({ ...moved, moved: null })).toThrow(/needs the move/);
   });
 
   it("refuse a kind that has no text yet", () => {
