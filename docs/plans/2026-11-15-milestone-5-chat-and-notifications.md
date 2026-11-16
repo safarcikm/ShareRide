@@ -365,6 +365,19 @@ Endpoints (`/v1`), shapes in `packages/contracts/src/chat.ts`:
   question) or "Add an email"; on the web "Add an email". "Not now" closes
   it. It is one block (`NotificationsPrompt`) that the finish screens of the
   UX work can hold.
+  - As 3.6.2 says, "no device with push on": `GET /me` gains `pushOn`,
+    whether any of their signed-in phones has a push token. This phone
+    cannot reach them when push is not allowed, or the app has no expo.dev
+    project yet (no token can be registered). Once the phone has been told
+    no (the first no, though Android may ask twice), or on the web, only
+    "Add an email" is offered.
+  - An occasion (`posted:<trip>`, `booked:<booking>`, `accepted:<booking>`)
+    is asked until answered: "Not now", "Add an email", or notifications
+    turned on. The newest 20 answered are kept in the app's own storage on
+    the device.
+  - On Android the notification channel is made before asking, as Android
+    13 asks only once the app has one. Once allowed, the phone's token is
+    registered as at start.
 
 ## 5. Pull requests and tasks
 
@@ -480,10 +493,17 @@ work (spec 16, proposal 4), which leave a slot for it.
 
 ### PR 8b: `feat(notifications)`: the prompt to turn on notifications
 
-- [ ] `NotificationsPrompt` on the finish screens of booking and posting,
-      and when a request is accepted
+- [x] `NotificationsPrompt`, on the screen after posting a trip
 - Verify: a screen test shows it once per occasion to someone with no push
-  token and no verified email, and "Not now" closes it
+  token and no verified email, and "Not now" closes it; the posting journey
+  sees it on the web
+
+### PR 8c: `feat(notifications)`: the prompt after booking and being accepted
+
+- [ ] `NotificationsPrompt` on the booking finish screen (spec 16, proposal
+      4, whose screen leaves a slot under the main message) and when a
+      request is accepted
+- Verify: screen tests for both occasions
 
 ## 6. Review focus
 

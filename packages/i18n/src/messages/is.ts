@@ -146,6 +146,11 @@ export const is = {
   "settings.remindersHelp": "Kvöldið áður og klukkustund fyrir hverja ferð.",
   "settings.alwaysOn":
     "Tilkynningar um bókanir, ferðir, greiðslur og skilaboð eru alltaf á, því aðrir treysta á þær.",
+  "notifications.turnOn": "Kveiktu á tilkynningum svo þú fáir strax að vita ef ferðin breytist.",
+  "notifications.addEmail": "Bættu við netfangi svo við getum látið þig vita ef ferðin breytist.",
+  "notifications.turnOnAction": "Kveikja á tilkynningum",
+  "notifications.addEmailAction": "Bæta við netfangi",
+  "notifications.notNow": "Ekki núna",
   "addEmail.title": "Netfangið þitt",
   "addEmail.intro":
     "Fréttir af bókunum berast þér í tölvupósti þegar tilkynning kemst ekki til skila. Enginn annar sér netfangið þitt.",

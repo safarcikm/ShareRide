@@ -18,6 +18,8 @@ export const meSchema = z.object({
   email: z.string().nullable(),
   /** An address waiting for its link to be opened (plan 4.6). */
   pendingEmail: z.string().nullable(),
+  /** Whether any of my signed-in phones gets push (spec 7, 3.6.2). */
+  pushOn: z.boolean(),
   ageConfirmed: z.boolean(),
   memberSince: timestampSchema,
   /** What is still needed, in order; empty when the account is complete. */
