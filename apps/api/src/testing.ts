@@ -11,7 +11,8 @@ import { eq } from "drizzle-orm";
 import { createApp, type FeatureDependencies } from "./app.ts";
 import { createLogger } from "./logger.ts";
 import { createOperatorSessionService, operatorCookie } from "./modules/admin/index.ts";
-import { createKeyedHasher } from "./platform/crypto.ts";
+import { exportCipherPurpose } from "./modules/privacy/index.ts";
+import { createFileCipher, createKeyedHasher } from "./platform/crypto.ts";
 import { createFakeEmailSender, type FakeEmailSender } from "./platform/email.ts";
 import { createTestPaymentProvider } from "./platform/payments.ts";
 import { createDevSmsSender, type DevSmsSender, type SmsSender } from "./platform/sms.ts";
@@ -90,6 +91,7 @@ export async function startTestApi(): Promise<TestApi> {
     sms: sender,
     email: { sender: email, webAppUrl: testWebAppUrl },
     hasher: createKeyedHasher("integration-test-secret-of-32-characters"),
+    exportCipher: createFileCipher("integration-test-secret-of-32-characters", exportCipherPurpose),
     clock: () => now,
     clientAddress: (c) => c.req.header("x-test-client-ip") ?? "unknown",
     secureCookies: false,

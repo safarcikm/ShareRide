@@ -103,6 +103,16 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   transaction: a wrong code is counted even though the action does not run,
   and the code is used up only when the action succeeds, so a route checks
   whatever else can refuse before asking for the code.
+- **Data exports:** kept in the database sealed with AES-256-GCM under a key
+  derived from `AUTH_SECRET` (HKDF, `shareride-data-export-v1`), a fresh IV
+  per file, so a copy of the database alone cannot read them. They leave
+  only through a link the signed-in person asks for: a 256-bit token, stored
+  as a hash, working once and for 2 minutes, answered with
+  `Cache-Control: no-store`. The API logs the route pattern, never the
+  link. Each file is bound to its export's ID, so it cannot be moved to
+  another person's record. A new `AUTH_SECRET` makes files not yet
+  downloaded unreadable: the download marks such a file failed, and the
+  person asks again at once.
 - **Suspended accounts:** their access tokens stop working at once, and a
   refresh ends the session.
 - **Sign-out** ends the session and deletes its tokens at once; there are no
