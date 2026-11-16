@@ -1,2 +1,3 @@
+export * from "./email.ts";
 export * from "./routes.ts";
 export * from "./service.ts";

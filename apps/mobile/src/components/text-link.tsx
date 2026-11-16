@@ -12,11 +12,14 @@ export function TextLink({
   label,
   href,
   accessibilityLabel,
+  align = "center",
 }: {
   readonly label: string;
   readonly href: Href;
   /** Read instead of the label when the label needs its context, such as "Edit: Route". */
   readonly accessibilityLabel?: string;
+  /** In a settings row, it starts at the left with the row's text (spec 16, 3.8). */
+  readonly align?: "center" | "start";
 }) {
   const palette = usePalette();
   return (
@@ -26,7 +29,7 @@ export function TextLink({
       onPress={() => {
         router.push(href);
       }}
-      style={styles.link}
+      style={[styles.link, align === "start" && styles.start]}
     >
       <Text style={[typography.bodyStrong, styles.text, { color: palette.primary }]}>{label}</Text>
     </Pressable>
@@ -35,5 +38,6 @@ export function TextLink({
 
 const styles = StyleSheet.create({
   link: { minHeight: minTouchTarget, justifyContent: "center", alignSelf: "center" },
+  start: { alignSelf: "flex-start" },
   text: { textDecorationLine: "underline" },
 });

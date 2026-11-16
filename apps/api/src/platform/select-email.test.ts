@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { EmailMessage } from "./email.ts";
-import { selectEmailSender } from "./select-email-sender.ts";
+import { selectEmail } from "./select-email.ts";
 
 const message: EmailMessage = {
   to: "anna@example.com",
@@ -10,18 +10,18 @@ const message: EmailMessage = {
   idempotencyKey: "delivery-1",
 };
 
-describe("selectEmailSender (ADR 0027)", () => {
-  it("sends nothing with no provider: the worker skips email", () => {
-    expect(selectEmailSender({ provider: "none" }, () => undefined)).toBeUndefined();
+describe("selectEmail (ADR 0027)", () => {
+  it("sends nothing with no provider: email is off", () => {
+    expect(selectEmail({ provider: "none" }, () => undefined)).toBeUndefined();
   });
 
   it("prints emails with the development outbox", async () => {
     const printed: string[] = [];
-    const email = selectEmailSender(
-      { provider: "dev", webAppUrl: "http://localhost:8081" },
-      (line) => printed.push(line),
+    const email = selectEmail({ provider: "dev", webAppUrl: "http://localhost:8081" }, (line) =>
+      printed.push(line),
     );
-    await email?.send(message);
+    expect(email?.webAppUrl).toBe("http://localhost:8081");
+    await email?.sender.send(message);
     expect(printed).toHaveLength(1);
   });
 
@@ -33,7 +33,7 @@ describe("selectEmailSender (ADR 0027)", () => {
         Response.json({ Messages: [{ Status: "success", To: [{ MessageUUID: "uuid-1" }] }] }),
       );
     };
-    const email = selectEmailSender(
+    const email = selectEmail(
       {
         provider: "mailjet",
         apiKey: "public",
@@ -44,7 +44,8 @@ describe("selectEmailSender (ADR 0027)", () => {
       () => undefined,
       fetch as typeof globalThis.fetch,
     );
-    expect(await email?.send(message)).toEqual({ id: "uuid-1" });
+    expect(email?.webAppUrl).toBe("https://shareride.is");
+    expect(await email?.sender.send(message)).toEqual({ id: "uuid-1" });
     expect(
       JSON.parse(typeof requests[0]?.body === "string" ? requests[0].body : "null"),
     ).toMatchObject({

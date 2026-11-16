@@ -57,6 +57,7 @@ export const is = {
   "auth.code.incomplete": "Sláðu inn alla {length} tölustafi kóðans.",
   "auth.wait.seconds": "{count, plural, one {# sekúndu} other {# sekúndur}}",
   "auth.wait.minutes": "{count, plural, one {# mínútu} other {# mínútur}}",
+  "auth.wait.hours": "{count, plural, one {# klukkustund} other {# klukkustundir}}",
   "error.phone_invalid": "Sláðu inn farsímanúmer. Heimasímar geta ekki tekið við SMS.",
   "error.phone_country_unsupported": "Við getum ekki enn sent kóða í númer frá þessu landi.",
   "error.rate_limited": "Þú hefur beðið um marga kóða. Reyndu aftur eftir {wait}.",
@@ -74,6 +75,11 @@ export const is = {
   "error.about": "Hámark {max} stafir.",
   "error.languages": "Veldu tungumál af listanum.",
   "error.generic": "Eitthvað fór úrskeiðis hjá okkur. Reyndu aftur.",
+  "error.email": "Sláðu inn netfang, til dæmis anna@example.com.",
+  "error.email_rate_limited": "Þú baðst um hlekk rétt í þessu. Reyndu aftur eftir {wait}.",
+  "error.email_rate_limited_day": "Þú getur beðið um 5 hlekki á dag. Reyndu aftur eftir {wait}.",
+  "error.email_failed": "Við gátum ekki sent póstinn. Reyndu aftur eftir mínútu.",
+  "error.email_unavailable": "Ekki er hægt að bæta við netfangi enn. Reyndu aftur síðar.",
   "error.unexpected_title": "Eitthvað fór úrskeiðis",
   "error.unexpected_body":
     "ShareRide lenti í vandræðum. Reyndu aftur. Ef þetta gerist aftur skaltu loka ShareRide og opna það á ný.",
@@ -130,6 +136,35 @@ export const is = {
   "settings.signOutAll": "Skrá út á öllum tækjum",
   "settings.signOutAllHelp":
     "Notaðu þetta ef þú týndir síma eða skráðir þig inn á tæki sem aðrir nota.",
+  "settings.yourAccount": "Aðgangurinn þinn",
+  "settings.email": "Netfang",
+  "settings.addEmail": "Bæta við netfangi",
+  "settings.changeEmail": "Breyta netfangi",
+  "settings.emailWaiting": "Bíður þess að þú opnir hlekkinn sem var sendur á {email}.",
+  "addEmail.title": "Netfangið þitt",
+  "addEmail.intro":
+    "Fréttir af bókunum berast þér í tölvupósti þegar tilkynning kemst ekki til skila. Enginn annar sér netfangið þitt.",
+  "addEmail.current": "Netfangið þitt er {email}.",
+  "addEmail.field": "Netfang",
+  "addEmail.fieldHelp": "Við sendum hlekk til að athuga að það sé þitt.",
+  "addEmail.send": "Senda hlekkinn",
+  "addEmail.sent":
+    "Við sendum hlekk á {email}. Opnaðu hann innan sólarhrings til að bæta netfanginu við.",
+  "addEmail.sendAgain": "Senda hlekkinn aftur",
+  "verifyEmail.checking": "Athuga hlekkinn…",
+  "verifyEmail.done": "Netfanginu er bætt við",
+  "verifyEmail.doneBody": "{email} er nú netfang ShareRide-aðgangsins þíns.",
+  "verifyEmail.invalid": "Þessi hlekkur virkar ekki lengur",
+  "verifyEmail.invalidBody":
+    "Hlekkur virkar einu sinni, í sólarhring, og aðeins sá nýjasti. Biddu um nýjan í Stillingum.",
+  "verifyEmail.taken": "Þetta netfang tilheyrir öðrum aðgangi",
+  "verifyEmail.takenBody":
+    "Annar ShareRide-aðgangur notar þegar þetta netfang. Bættu öðru við í Stillingum.",
+  "verifyEmail.toSettings": "Fara í Stillingar",
+  "verifyEmail.toApp": "Opna ShareRide",
+  "verifyEmail.noLink": "Opnaðu hlekkinn í tölvupóstinum",
+  "verifyEmail.noLinkBody":
+    "Þessi síða bætir netfangi við þegar hún er opnuð úr hlekknum sem við sendum. Ef þú opnaðir hann nú þegar er netfangið þitt í Stillingum.",
   "comingSoon.title": "Kemur fljótlega",
   "comingSoon.body": "Leit og bókun ferða opnar með prufuútgáfunni. Takk fyrir þolinmæðina.",
   "meetingPoints.open": "Skoða mótsstaði",
@@ -716,5 +751,11 @@ export const is = {
   "email.open": "Opna í ShareRide",
   "email.footer":
     "Þú færð þennan póst því þú ert með aðgang að ShareRide. Fréttir af bókunum þínum eru alltaf sendar, því aðrir treysta á þær.",
+  "email.verifySubject": "Staðfestu netfangið þitt hjá ShareRide",
+  "email.verifyBody":
+    "Opnaðu hlekkinn innan sólarhrings til að staðfesta að þetta sé netfangið þitt. Eftir það geturðu beðið um nýjan í Stillingum.",
+  "email.verifyOpen": "Staðfesta netfangið",
+  "email.verifyFooter":
+    "Þú færð þennan póst því þetta netfang var slegið inn í ShareRide. Ef það varst ekki þú skaltu hunsa hann: netfanginu er ekki bætt við.",
   "sms.signInCode": "{code} er ShareRide kóðinn þinn. Hann gildir í 10 mínútur.",
 } as const satisfies Record<MessageKey, string>;

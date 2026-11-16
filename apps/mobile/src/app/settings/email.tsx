@@ -1,0 +1,119 @@
+import { putEmailRoute, type Me } from "@shareride/contracts";
+import { normaliseEmail } from "@shareride/domain";
+import { useRef, useState } from "react";
+import { StyleSheet, View } from "react-native";
+import { errorText, formatWait } from "@/auth/errors";
+import { useMe, useSession } from "@/auth/session";
+import { BackButton } from "@/components/back-button";
+import { Button } from "@/components/button";
+import { Notice } from "@/components/notice";
+import { Screen } from "@/components/screen";
+import { TextField } from "@/components/text-field";
+import { Body, Title } from "@/components/text";
+import { useLanguage } from "@/i18n/language";
+import { BackToMenu } from "@/navigation/back-to-menu";
+import { spacing } from "@/theme/tokens";
+
+/**
+ * Adding or changing one's email (spec 1, 3.5; plan 4.6): a link goes to
+ * the address, and it is the account's once the link is opened. The
+ * address is checked with the API's own rule before sending.
+ */
+export default function EmailScreen() {
+  const me = useMe();
+  if (me === null) return <BackToMenu />;
+  return <EmailForm me={me} />;
+}
+
+function EmailForm({ me }: { readonly me: Me }) {
+  const { t } = useLanguage();
+  const session = useSession();
+  const [address, setAddress] = useState("");
+  const [fieldError, setFieldError] = useState<string | undefined>();
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const sending = useRef(false);
+
+  async function send(input: string) {
+    if (sending.current) return;
+    setError(null);
+    const valid = normaliseEmail(input);
+    if (!valid.ok) {
+      setFieldError(t("error.email"));
+      return;
+    }
+    sending.current = true;
+    setBusy(true);
+    const result = await session.call(putEmailRoute, { body: { email: valid.value } });
+    sending.current = false;
+    setBusy(false);
+    if (result.ok) {
+      session.update(result.data);
+      setAddress("");
+      return;
+    }
+    const { code, retryAfterSeconds = 0 } = result.error;
+    if (code === "rate_limited") {
+      // Over a minute to wait: the day's five links are used.
+      const limit =
+        retryAfterSeconds > 60 ? "error.email_rate_limited_day" : "error.email_rate_limited";
+      setError(t(limit, { wait: formatWait(t, retryAfterSeconds) }));
+    } else if (code === "email_invalid") {
+      setFieldError(t("error.email"));
+    } else if (code === "email_failed" || code === "email_unavailable") {
+      setError(t(`error.${code}`));
+    } else {
+      setError(errorText(t, result));
+    }
+  }
+
+  const { pendingEmail } = me;
+  return (
+    <Screen>
+      <BackButton fallback="/settings" />
+      <Title>{t("addEmail.title")}</Title>
+      <Body>{t("addEmail.intro")}</Body>
+      {me.email === null ? null : <Body>{t("addEmail.current", { email: me.email })}</Body>}
+      {pendingEmail === null ? null : (
+        <View style={styles.waiting}>
+          <Notice
+            kind="info"
+            urgent={false}
+            message={t("addEmail.sent", { email: pendingEmail })}
+          />
+          <Button
+            variant="secondary"
+            label={t("addEmail.sendAgain")}
+            disabled={busy}
+            onPress={() => void send(pendingEmail)}
+          />
+        </View>
+      )}
+      <View style={styles.form}>
+        <TextField
+          label={t("addEmail.field")}
+          help={t("addEmail.fieldHelp")}
+          error={fieldError}
+          value={address}
+          onChangeText={(value) => {
+            setAddress(value);
+            setFieldError(undefined);
+          }}
+          keyboardType="email-address"
+          autoComplete="email"
+          textContentType="emailAddress"
+          autoCapitalize="none"
+          maxLength={320}
+          onSubmitEditing={() => void send(address)}
+        />
+        <Notice message={error} />
+        <Button label={t("addEmail.send")} busy={busy} onPress={() => void send(address)} />
+      </View>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  waiting: { gap: spacing.sm },
+  form: { gap: spacing.lg, marginTop: spacing.md },
+});

@@ -78,6 +78,13 @@
       "when": 1794790632475,
       "tag": "0010_unread_email",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794793439761,
+      "tag": "0011_email_verifications",
+      "breakpoints": true
     }
   ]
 }

@@ -1,8 +1,15 @@
 import { schema, type Database } from "@shareride/db";
 import { retentionCutoffs } from "@shareride/domain";
-import { and, eq, inArray, isNotNull, isNull, lt, or } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, lt, lte, or } from "drizzle-orm";
 
-const { pushTokens, rateLimitEvents, sessionTokens, sessions, verificationCodes } = schema;
+const {
+  emailVerifications,
+  pushTokens,
+  rateLimitEvents,
+  sessionTokens,
+  sessions,
+  verificationCodes,
+} = schema;
 
 export interface CleanUpCounts {
   readonly codes: number;
@@ -10,6 +17,8 @@ export interface CleanUpCounts {
   readonly tokens: number;
   readonly sessionsEnded: number;
   readonly sessionsDeleted: number;
+  /** Links to verify an email, a day after they were sent. */
+  readonly emailLinks: number;
 }
 
 /**
@@ -64,7 +73,13 @@ export async function cleanUpSignInRecords(db: Database, now: Date): Promise<Cle
       .where(lt(sessions.endedAt, cutoff.sessionsEndedBefore))
       .returning({ id: sessions.id });
 
+    const links = await tx
+      .delete(emailVerifications)
+      .where(lte(emailVerifications.sentAt, cutoff.emailLinksSentBefore))
+      .returning({ id: emailVerifications.id });
+
     return {
+      emailLinks: links.length,
       codes: codes.length,
       rateLimitEvents: events.length,
       tokens: tokens.length,

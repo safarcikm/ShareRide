@@ -5,13 +5,14 @@ import { defineConfig, devices } from "@playwright/test";
 // Browser tests of the web build against a real API with a test database.
 // Playwright builds the web app pointing at the test API (port 3001), serves
 // it on port 8082 (scripts/serve-web.ts), and starts the API from
-// apps/api/src/e2e-server.ts, which writes text messages to a file instead of
-// sending them.
+// apps/api/src/e2e-server.ts, which writes text messages and emails to files
+// instead of sending them.
 const webPort = 8082;
 const apiPort = 3001;
 // Expo types process.env loosely; read it as plain strings.
 const env = process.env as Readonly<Record<string, string | undefined>>;
 export const smsOutbox = join(tmpdir(), "shareride-e2e-sms.jsonl");
+export const emailOutbox = join(tmpdir(), "shareride-e2e-email.jsonl");
 
 export default defineConfig({
   testDir: "e2e",
@@ -41,6 +42,7 @@ export default defineConfig({
       env: {
         PORT: String(apiPort),
         E2E_SMS_OUTBOX: smsOutbox,
+        E2E_EMAIL_OUTBOX: emailOutbox,
         E2E_WEB_ORIGIN: `http://localhost:${String(webPort)}`,
       },
       reuseExistingServer: false,

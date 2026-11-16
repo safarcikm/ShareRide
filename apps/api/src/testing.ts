@@ -9,6 +9,7 @@ import { freshTestDatabase } from "@shareride/db/testing";
 import { createApp, type FeatureDependencies } from "./app.ts";
 import { createLogger } from "./logger.ts";
 import { createKeyedHasher } from "./platform/crypto.ts";
+import { createFakeEmailSender, type FakeEmailSender } from "./platform/email.ts";
 import { createTestPaymentProvider } from "./platform/payments.ts";
 import { createDevSmsSender, type DevSmsSender, type SmsSender } from "./platform/sms.ts";
 
@@ -20,6 +21,8 @@ export interface TestApi {
   /** Requests straight to the app, for headers and cookies. */
   request(path: string, init?: RequestInit): Promise<Response>;
   readonly sms: DevSmsSender;
+  /** The emails sent from requests, such as links to verify an address. */
+  readonly email: FakeEmailSender;
   /** While set, sending fails with this error after the message reaches `sms.outbox`. */
   smsFailure: Error | null;
   /** Every log line written so far. */
@@ -40,6 +43,9 @@ export interface TestApi {
   ): Promise<{ accessToken: string; refreshToken: string; userId: string; isNewUser: boolean }>;
   close(): Promise<void>;
 }
+
+/** Where links in emails lead in integration tests. */
+export const testWebAppUrl = "https://shareride.test";
 
 let numbers = 0;
 let addresses = 0;
@@ -67,9 +73,11 @@ export async function startTestApi(): Promise<TestApi> {
     }),
   });
 
+  const email = createFakeEmailSender();
   const features: FeatureDependencies = {
     db: connection.db,
     sms: sender,
+    email: { sender: email, webAppUrl: testWebAppUrl },
     hasher: createKeyedHasher("integration-test-secret-of-32-characters"),
     clock: () => now,
     clientAddress: (c) => c.req.header("x-test-client-ip") ?? "unknown",
@@ -86,6 +94,7 @@ export async function startTestApi(): Promise<TestApi> {
     connection,
     features,
     sms,
+    email,
     get smsFailure() {
       return failing.error;
     },

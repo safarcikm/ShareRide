@@ -84,3 +84,29 @@ export const rateLimitEvents = pgTable(
   },
   (table) => [index().on(table.scope, table.keyHash, table.createdAt)],
 );
+
+/**
+ * A link sent to verify an email address (spec 1, 3.5; plan 4.6). The
+ * address waits here until the link is opened, and only then becomes the
+ * account's. The token is kept only as a hash. Only the newest link of an
+ * account works; links are deleted a day after they were sent.
+ */
+export const emailVerifications = pgTable(
+  "email_verifications",
+  {
+    id: id(),
+    userId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    email: text().notNull(),
+    tokenHash: text().notNull().unique("email_verifications_token_unique"),
+    /** When it was asked for, whether or not the email went out. */
+    sentAt: at().notNull(),
+    /** When it was opened, or given up by asking for the email in use. */
+    usedAt: at(),
+    /** When the email was refused: it never works, but counts towards the limits. */
+    failedAt: at(),
+    ...timestamps,
+  },
+  (table) => [index("email_verifications_user_index").on(table.userId, table.sentAt)],
+);

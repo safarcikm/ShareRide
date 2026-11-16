@@ -18,9 +18,9 @@ import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
- * Settings (spec 1, section 3.8), milestone 1 part: the private phone
- * number (spec 16, 3.4), language, legal documents, and signing out here
- * or on every device. Signed out, it
+ * Settings (spec 1, section 3.8): Your account, with the private phone
+ * number (spec 16, 3.4) and the email (plan 4.6), language, legal
+ * documents, and signing out here or on every device. Signed out, it
  * closes back to the menu.
  */
 export default function SettingsScreen() {
@@ -56,26 +56,46 @@ function Settings({ me }: { readonly me: Me }) {
     else setError(errorText(t, result));
   }
 
-  const heading = (text: string) => (
+  const heading = (text: string, align: "center" | "start" = "center") => (
     <Text
       accessibilityRole="header"
-      style={[typography.label, styles.centre, { color: palette.text }]}
+      style={[typography.label, align === "center" && styles.centre, { color: palette.text }]}
     >
       {text}
     </Text>
+  );
+
+  const label = (text: string) => (
+    <Text style={[typography.bodyStrong, { color: palette.text }]}>{text}</Text>
   );
 
   return (
     <Screen>
       <BackButton fallback="/profile" />
       <Title>{t("settings.title")}</Title>
-      {me.phoneNumber === null ? null : (
-        <View style={styles.section}>
-          {heading(t("profile.phone"))}
-          <Body>{formatPhoneNumber(me.phoneNumber)}</Body>
-          <Body>{t("profile.phoneHelp")}</Body>
+      {/* Its rows start at the left (spec 16, 3.8); the other groups follow with proposal 6. */}
+      <View style={styles.section}>
+        {heading(t("settings.yourAccount"), "start")}
+        {me.phoneNumber === null ? null : (
+          <View style={styles.item}>
+            {label(t("profile.phone"))}
+            <Body align="start">{formatPhoneNumber(me.phoneNumber)}</Body>
+            <Body align="start">{t("profile.phoneHelp")}</Body>
+          </View>
+        )}
+        <View style={styles.item}>
+          {label(t("settings.email"))}
+          {me.email === null ? null : <Body align="start">{me.email}</Body>}
+          {me.pendingEmail === null ? null : (
+            <Body align="start">{t("settings.emailWaiting", { email: me.pendingEmail })}</Body>
+          )}
+          <TextLink
+            label={t(me.email === null ? "settings.addEmail" : "settings.changeEmail")}
+            href="/settings/email"
+            align="start"
+          />
         </View>
-      )}
+      </View>
       <View style={styles.section}>
         {heading(t("settings.language"))}
         <LanguageSwitch onSwitch={(locale) => void saveLanguage(locale)} />
@@ -110,5 +130,6 @@ function Settings({ me }: { readonly me: Me }) {
 
 const styles = StyleSheet.create({
   section: { gap: spacing.sm, marginTop: spacing.md },
+  item: { gap: spacing.xs },
   centre: { textAlign: "center" },
 });

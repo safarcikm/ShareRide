@@ -55,6 +55,7 @@ export const en = {
   "auth.code.incomplete": "Enter all {length} digits of the code.",
   "auth.wait.seconds": "{count, plural, one {# second} other {# seconds}}",
   "auth.wait.minutes": "{count, plural, one {# minute} other {# minutes}}",
+  "auth.wait.hours": "{count, plural, one {# hour} other {# hours}}",
   "error.phone_invalid": "Enter a mobile number. Landlines can't get texts.",
   "error.phone_country_unsupported": "We can't send codes to numbers from this country yet.",
   "error.rate_limited": "You've asked for a lot of codes. Try again in {wait}.",
@@ -71,6 +72,11 @@ export const en = {
   "error.about": "Keep it to {max} characters.",
   "error.languages": "Choose languages from the list.",
   "error.generic": "Something went wrong on our side. Try again.",
+  "error.email": "Enter an email address, such as anna@example.com.",
+  "error.email_rate_limited": "You asked for a link just now. Try again in {wait}.",
+  "error.email_rate_limited_day": "You can ask for 5 links a day. Try again in {wait}.",
+  "error.email_failed": "We couldn't send the email. Try again in a minute.",
+  "error.email_unavailable": "Adding an email isn't possible yet. Try again later.",
   "error.unexpected_title": "Something went wrong",
   "error.unexpected_body":
     "ShareRide ran into a problem. Try again. If it keeps happening, close ShareRide and open it again.",
@@ -127,6 +133,36 @@ export const en = {
   "settings.signOutAll": "Sign out on all devices",
   "settings.signOutAllHelp":
     "Use this if you lost a phone or signed in on a device other people use.",
+  /** Settings, Your account: the email row (spec 16, 3.8; plan 4.6). */
+  "settings.yourAccount": "Your account",
+  "settings.email": "Email",
+  "settings.addEmail": "Add an email",
+  "settings.changeEmail": "Change your email",
+  "settings.emailWaiting": "Waiting for you to open the link sent to {email}.",
+  "addEmail.title": "Your email",
+  "addEmail.intro":
+    "Booking news reaches you by email when a push notification can't. Nobody else sees your email.",
+  "addEmail.current": "Your email is {email}.",
+  "addEmail.field": "Email",
+  "addEmail.fieldHelp": "We send a link to check that it is yours.",
+  "addEmail.send": "Send the link",
+  "addEmail.sent": "We sent a link to {email}. Open it within 24 hours to add the address.",
+  "addEmail.sendAgain": "Send the link again",
+  /** The page the email's link opens. */
+  "verifyEmail.checking": "Checking your link…",
+  "verifyEmail.done": "Your email is added",
+  "verifyEmail.doneBody": "{email} is now the email of your ShareRide account.",
+  "verifyEmail.invalid": "This link no longer works",
+  "verifyEmail.invalidBody":
+    "A link works once, for 24 hours, and only the newest one. Ask for a new one in Settings.",
+  "verifyEmail.taken": "This email belongs to another account",
+  "verifyEmail.takenBody":
+    "Another ShareRide account already uses this address. Add a different one in Settings.",
+  "verifyEmail.toSettings": "Go to Settings",
+  "verifyEmail.toApp": "Open ShareRide",
+  "verifyEmail.noLink": "Open the link from your email",
+  "verifyEmail.noLinkBody":
+    "This page adds an email when it is opened from the link we sent. If you opened it already, your email is in Settings.",
   "comingSoon.title": "Coming soon",
   "comingSoon.body": "Finding and booking trips opens with the beta. Thank you for your patience.",
   "meetingPoints.open": "See the meeting points",
@@ -711,6 +747,13 @@ export const en = {
   "email.open": "Open in ShareRide",
   "email.footer":
     "You get this email because you have a ShareRide account. News about your bookings is always sent, because others rely on it.",
+  /** The email with the link that verifies an address (spec 1, 3.5). */
+  "email.verifySubject": "Confirm your email for ShareRide",
+  "email.verifyBody":
+    "Open the link within 24 hours to confirm that this is your email address. After that, ask for a new one in Settings.",
+  "email.verifyOpen": "Confirm my email",
+  "email.verifyFooter":
+    "You get this email because this address was entered in ShareRide. If that was not you, ignore it: the address is not added.",
   "sms.signInCode": "{code} is your ShareRide code. It expires in 10 minutes.",
 } as const satisfies Record<string, string>;
 

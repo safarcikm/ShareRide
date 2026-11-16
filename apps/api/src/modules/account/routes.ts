@@ -1,9 +1,16 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
-import { acceptLegalRoute, getMeRoute, updateMeRoute } from "@shareride/contracts";
+import {
+  acceptLegalRoute,
+  getMeRoute,
+  putEmailRoute,
+  updateMeRoute,
+  verifyEmailRoute,
+} from "@shareride/contracts";
 import type { MiddlewareHandler } from "hono";
 import { authOf, type AppEnv } from "../../context.ts";
 import { errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
+import type { EmailService } from "./email.ts";
 import type { AccountService } from "./service.ts";
 
 export function registerAccountRoutes(
@@ -38,5 +45,41 @@ export function registerAccountRoutes(
         : errorResponse(c, 400, result.error.code, "A document is listed twice.", { details });
     }
     return c.json(result.value, 200);
+  });
+}
+
+/** Adding an email (plan 4.6): the link is asked for signed in, and opened signed in or not. */
+export function registerEmailRoutes(
+  app: OpenAPIHono<AppEnv>,
+  email: EmailService,
+  account: AccountService,
+  requireAuth: MiddlewareHandler,
+): void {
+  app.openapi(toOpenApiRoute(putEmailRoute, requireAuth), async (c) => {
+    const body = validated(c, "json", putEmailRoute.request.body);
+    const { userId } = authOf(c);
+    const asked = await email.ask(userId, body.email);
+    if (asked.ok) return c.json(await account.me(userId), 200);
+    switch (asked.error.code) {
+      case "email_invalid":
+        return errorResponse(c, 400, "email_invalid", "This is not an email address.");
+      case "rate_limited":
+        return errorResponse(c, 429, "rate_limited", "A link was sent just now. Wait a little.", {
+          retryAfterSeconds: asked.error.retryAfterSeconds,
+        });
+      case "email_failed":
+        return errorResponse(c, 502, "email_failed", "The email could not be sent. Try again.");
+      case "email_unavailable":
+        return errorResponse(c, 503, "email_unavailable", "This server sends no email.");
+    }
+  });
+
+  app.openapi(toOpenApiRoute(verifyEmailRoute), async (c) => {
+    const body = validated(c, "json", verifyEmailRoute.request.body);
+    const verified = await email.verify(body.token);
+    if (verified.ok) return c.json(verified.value, 200);
+    return verified.error.code === "email_taken"
+      ? errorResponse(c, 409, "email_taken", "Another account has this email address.")
+      : errorResponse(c, 400, "link_invalid", "This link no longer works. Ask for a new one.");
   });
 }

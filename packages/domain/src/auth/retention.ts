@@ -1,3 +1,4 @@
+import { emailLinkRules } from "./email-address.ts";
 import { sessionRules } from "./session-tokens.ts";
 
 /**
@@ -21,6 +22,11 @@ export interface RetentionCutoffs {
   readonly sessionsIdleSince: Date;
   /** Sessions that ended before this time are deleted. */
   readonly sessionsEndedBefore: Date;
+  /**
+   * Links to verify an email sent before this time are deleted: they no
+   * longer work, and the send limits look back no further.
+   */
+  readonly emailLinksSentBefore: Date;
 }
 
 export function retentionCutoffs(now: Date): RetentionCutoffs {
@@ -31,5 +37,6 @@ export function retentionCutoffs(now: Date): RetentionCutoffs {
     tokensExpiredBefore: now,
     sessionsIdleSince: ago(sessionRules.refreshTokenIdleSeconds),
     sessionsEndedBefore: ago(retention.endedSessionsSeconds),
+    emailLinksSentBefore: ago(emailLinkRules.validForSeconds),
   };
 }

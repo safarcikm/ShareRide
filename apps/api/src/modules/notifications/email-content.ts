@@ -22,16 +22,23 @@ const escapes: Readonly<Record<string, string>> = {
 
 const escaped = (text: string) => text.replace(/[&<>"']/g, (character) => escapes[character] ?? "");
 
+/** The link's words and the footer, when not those of a notification. */
+export interface EmailWords {
+  readonly open: string;
+  readonly footer: string;
+}
+
 /** `webAppUrl` is an origin, such as https://shareride.is. */
 export function emailContent(
   notification: NotificationText,
   locale: Locale,
   webAppUrl: string,
+  words?: EmailWords,
 ): EmailContent {
   const t = createTranslator(locale);
   const link = `${webAppUrl}${notification.path}`;
-  const open = t("email.open");
-  const footer = t("email.footer");
+  const open = words?.open ?? t("email.open");
+  const footer = words?.footer ?? t("email.footer");
   const text = [notification.body, "", `${open}: ${link}`, "", footer].join("\n");
   const html = [
     "<!doctype html>",

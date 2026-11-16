@@ -19,7 +19,12 @@ import { secureHeaders } from "hono/secure-headers";
 import type { AppEnv } from "./context.ts";
 import { errorBody } from "./errors.ts";
 import type { Logger } from "./logger.ts";
-import { createAccountService, registerAccountRoutes } from "./modules/account/index.ts";
+import {
+  createAccountService,
+  createEmailService,
+  registerAccountRoutes,
+  registerEmailRoutes,
+} from "./modules/account/index.ts";
 import {
   createAuthService,
   createOptionalAuth,
@@ -52,6 +57,7 @@ import type { KeyedHasher } from "./platform/crypto.ts";
 import { addressBlock } from "./platform/client-address.ts";
 import { createMemoryRateLimiter } from "./platform/memory-rate-limiter.ts";
 import type { PaymentProvider } from "./platform/payments.ts";
+import type { EmailChannel } from "./platform/email.ts";
 import type { SmsSender } from "./platform/sms.ts";
 import { createWebApp } from "./web-app.ts";
 
@@ -61,6 +67,11 @@ export type { AppEnv };
 export interface FeatureDependencies {
   readonly db: Database;
   readonly sms: SmsSender;
+  /**
+   * Email sent from requests (ADR 0027), and the web app its links open;
+   * none when `EMAIL_PROVIDER=none`.
+   */
+  readonly email?: EmailChannel;
   readonly hasher: KeyedHasher;
   readonly clock: () => Date;
   /** The caller's IP address, for per-address limits. */
@@ -188,6 +199,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     const requireAuth = createRequireAuth(auth);
     registerAuthRoutes(app, { ...features, auth, account, requireAuth });
     registerAccountRoutes(app, account, requireAuth);
+    registerEmailRoutes(app, createEmailService({ ...features, logger }), account, requireAuth);
     const driving = createDrivingService({ ...features, account });
     registerDrivingRoutes(app, driving, requireAuth);
     registerLegalRoutes(app, legal);

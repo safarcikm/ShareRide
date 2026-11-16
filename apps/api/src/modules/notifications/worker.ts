@@ -21,7 +21,7 @@ import {
 } from "@shareride/domain";
 import { and, asc, desc, eq, gt, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-import type { EmailSender } from "../../platform/email.ts";
+import type { EmailChannel } from "../../platform/email.ts";
 import { MaybeSent } from "../../platform/maybe-sent.ts";
 import { deviceNotRegistered, type PushReceipt, type PushSender } from "../../platform/push.ts";
 import type { Queryable, Transaction } from "../bookings/seats.ts";
@@ -218,7 +218,7 @@ export function createNotificationWorker(dependencies: {
    * The email provider (ADR 0027), and the web app its links open. Without
    * it, email is skipped as `email_off` (`EMAIL_PROVIDER=none`).
    */
-  readonly email?: { readonly sender: EmailSender; readonly webAppUrl: string };
+  readonly email?: EmailChannel;
   readonly settings?: NotificationSettings;
   /** A send that failed, for the logs: never the text or the address. */
   readonly onSendError?: (error: unknown, delivery: { id: string; channel: string }) => void;

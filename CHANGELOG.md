@@ -288,8 +288,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   once an hour per conversation. Mailjet sends it when
   `EMAIL_PROVIDER=mailjet`; locally the API prints each email in its
   terminal, and staging sends none until there is a domain. An email whose
-  answer was lost after it may have gone out is never sent again. Adding
-  an address comes next.
+  answer was lost after it may have gone out is never sent again.
+- Adding an email (milestone 5, PR 7b): "Your account" in Settings shows the
+  phone number and the email, with "Add an email" or "Change your email".
+  A link goes to the address, valid once for 24 hours and only the newest,
+  at most one a minute and five a day (refused sends count, and are logged);
+  the address becomes the account's when the link is opened in a browser,
+  signed in or not. The email in use stays until a new one is confirmed,
+  asking for it again gives up the change, and an address another account
+  has is refused. Links are stored only as hashes and deleted after a day.
+  Waits over an hour are shown in hours. The browser tests' API writes its
+  emails to a file and runs the notification worker, so a journey can open
+  a link and see the "Pay now" email.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
