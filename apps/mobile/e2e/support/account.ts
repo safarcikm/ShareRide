@@ -95,6 +95,9 @@ export async function signUp(page: Page, texts: Texts, firstName: string) {
   await expect(page.getByText(firstName, { exact: true }).filter({ visible: true })).toBeVisible();
   await menuLink(page, texts.findTab).click();
   await expect(page.getByRole("heading", { name: texts.findTitle })).toBeVisible();
+  // Back to Find goes back in the browser's history, which moves the address
+  // a moment after the screen. A reload before then opens My profile again.
+  await expect(page).toHaveURL("/");
   return { phone, text };
 }
 
