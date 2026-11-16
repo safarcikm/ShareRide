@@ -22,7 +22,10 @@ const allowed: Readonly<Record<string, BookingStatus>> = {
   "confirmed cancel": "cancelled",
   "confirmed complete": "completed",
   "confirmed no_show": "no_show",
+  "confirmed driver_absent": "cancelled",
   "completed driver_absent": "cancelled",
+  "no_show rode": "completed",
+  "no_show left_behind": "cancelled",
 };
 
 describe("the booking lifecycle", () => {

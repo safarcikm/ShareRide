@@ -432,6 +432,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   date and times. Stops the driver removed are left out, and so are
   meeting points no longer in use, which the next step names.
   `POST /v1/trips/{id}/copy?reverse=`.
+- Trip day, dispute, review and reliability rules in the domain (milestone 7,
+  PR 2, spec 8): when a trip departs and completes, when its pages become
+  the trip day, the windows for "I'm here", a no-show and "The driver didn't
+  come", the time to answer a report and what each outcome does to the
+  booking, the refund, the payout and reliability; reviews on completed
+  bookings, hidden until both sides have written theirs; the rating from
+  revealed reviews only; and the reliability figure over 12 months, shown
+  once 5 count. The booking lifecycle gains a driver absence before
+  completion and the operator's two outcomes for a contested no-show.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
