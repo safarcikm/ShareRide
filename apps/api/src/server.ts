@@ -3,12 +3,14 @@
 import { serve } from "@hono/node-server";
 import { getConnInfo } from "@hono/node-server/conninfo";
 import { connectDatabase, pingDatabase } from "@shareride/db";
+import { defaultTripDaySettings } from "@shareride/domain";
 import { createApp } from "./app.ts";
 import { ConfigError, loadConfig, type Config } from "./config.ts";
 import { createLogger } from "./logger.ts";
 import { expireAllDueBookings } from "./modules/bookings/index.ts";
 import { createNotificationWorker } from "./modules/notifications/index.ts";
 import { createPaymentService } from "./modules/payments/index.ts";
+import { moveTripsOn } from "./modules/trips/index.ts";
 import { clientAddress } from "./platform/client-address.ts";
 import { createKeyedHasher } from "./platform/crypto.ts";
 import { captureError, startErrorReporting } from "./platform/error-reporting.ts";
@@ -98,6 +100,12 @@ const jobs = [
   every(60_000, "booking-deadlines", async () => {
     const expired = await expireAllDueBookings(database.db, new Date());
     if (expired > 0) logger.info({ expired }, "bookings expired");
+  }),
+  // Trips depart at their first stop and complete 2 hours after their last,
+  // with their confirmed bookings (spec 8, R8.1 and R8.2).
+  every(60_000, "trip-day", async () => {
+    const moved = await moveTripsOn(database.db, new Date(), defaultTripDaySettings);
+    if (moved.departed + moved.completed > 0) logger.info(moved, "trips moved on");
   }),
 ];
 // Refunds the provider has not taken yet are asked for again (R13.3).

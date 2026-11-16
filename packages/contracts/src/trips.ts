@@ -7,6 +7,7 @@ import {
   petOptions,
   smokingOptions,
   tripCancelReasons,
+  tripStatuses,
 } from "@shareride/domain";
 import { z } from "zod";
 import { moneySchema, timestampSchema } from "./common.ts";
@@ -209,10 +210,14 @@ export const updateTripBodySchema = tripDraftBodySchema
 
 export type TripDraftBody = z.infer<typeof updateTripBodySchema>;
 
-/** A trip of mine, a draft, published or cancelled (spec 3; spec 6, 3.3). */
+/**
+ * A trip of mine: a draft, published, departed at its first stop and
+ * completed 2 hours after its last (spec 8, R8.1), or cancelled (spec 3;
+ * spec 6, 3.3).
+ */
 export const myTripSchema = z.object({
   id: z.uuid(),
-  status: z.enum(["draft", "published", "cancelled"]),
+  status: z.enum(tripStatuses),
   stops: z.array(
     z.object({
       meetingPoint: meetingPointSummarySchema,

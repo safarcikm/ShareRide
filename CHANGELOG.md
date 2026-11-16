@@ -442,6 +442,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   once 5 count, with the cancellations the operator can overrule. The
   booking lifecycle gains a driver absence before completion and the
   operator's two outcomes for a contested no-show.
+- Trips depart and complete on their own (milestone 7, PR 3, spec 8,
+  R8.1 and R8.2): every minute the API departs a trip at its first stop's
+  planned time and completes it 2 hours after its last, with its
+  confirmed bookings, which then hold no seats. Migration
+  `0019_trip_completion` adds `completed_at` to trips and bookings. The
+  driver's trips keep a trip under way as upcoming until its last stop,
+  and "Message all" still reaches passengers whose bookings completed.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

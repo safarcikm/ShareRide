@@ -36,7 +36,8 @@ export default function MyTripsScreen() {
   const { value: result, reload } = useLoadedOnFocus(load);
   const trips = result?.ok === true ? result.data.trips : null;
   const drafts = trips?.filter((trip) => trip.status === "draft") ?? [];
-  const published = trips?.filter((trip) => trip.status === "published") ?? [];
+  // Upcoming lists a trip until its last stop, so one under way is here too (spec 8, R8.1).
+  const published = trips?.filter((trip) => trip.status !== "draft") ?? [];
 
   return (
     <Screen>
