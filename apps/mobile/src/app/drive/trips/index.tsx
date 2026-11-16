@@ -14,7 +14,7 @@ import { useLanguage } from "@/i18n/language";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
-import { stepHref } from "@/trips/steps";
+import { resumeStep, stepHref } from "@/trips/steps";
 import { routeText } from "@/trips/texts";
 import { Loading } from "@/trips/use-draft";
 
@@ -55,8 +55,7 @@ export default function MyTripsScreen() {
               key={trip.id}
               trip={trip}
               onPress={() => {
-                // Without a departure the next thing to do is the date.
-                router.push(stepHref(trip.id, trip.departsAt === null ? "time" : "review"));
+                router.push(stepHref(trip.id, resumeStep(trip)));
               }}
             />
           ))}

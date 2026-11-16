@@ -4,7 +4,12 @@
 
 Amended by [spec 16](2026-11-15-one-home-and-simpler-flows.md): `GET
 /me/trips` takes `when` (upcoming or past) and says the seats taken on each
-stretch and when the first open request closes (section 6).
+stretch and when the first open request closes (section 6). Offer a ride
+opens the route step directly, with the newest draft to continue on top;
+the checklist of 3.1 ("Before you publish", screen 1) goes, cars and the
+licence are in Profile, and step 5 starts with what is still missing, with
+Publish waiting until the car and licence are done. The times at the other
+stops (3.5, item 2) show folded, with Change (spec 16, 3.6).
 
 Features: A3 Driver setup, C1 Post a trip, C2 Segment prices, C3 Seats and
 booking mode, C4 Trip preferences and notes ([features](../product/features.md)).
@@ -297,7 +302,6 @@ Events: `VehicleAdded`, `VehicleRemoved`, `LicenceDeclared`, `TripPublished`.
 | Key | English | Icelandic (draft) |
 | --- | ------- | ----------------- |
 | `driver.offerRide` | Offer a ride | Bjóða far |
-| `driver.ready.title` | Before you publish | Áður en þú birtir |
 | `vehicle.add` | Add a car | Bæta við bíl |
 | `vehicle.registration` | Number plate | Bílnúmer |
 | `vehicle.plateLater` | You can add the number plate later, before you set off. | Þú getur bætt bílnúmerinu við síðar, áður en þú leggur af stað. |

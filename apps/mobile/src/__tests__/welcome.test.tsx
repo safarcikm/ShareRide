@@ -336,7 +336,7 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
     expect(mockedWrite).toHaveBeenCalledWith("pending-booking", "");
   });
 
-  it("opens Ready to drive once the account is ready, when an offer was kept", async () => {
+  it("opens the form to offer a ride once the account is ready, when an offer was kept", async () => {
     mockedRead.mockImplementation((name: string) =>
       Promise.resolve(
         name === "pending-offer" ? JSON.stringify({ keptAt: "2026-11-14T11:30:00.000Z" }) : null,
@@ -358,7 +358,7 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
         client.answer("/v1/me/vehicles", () => ok(200, { vehicles: [] }));
       },
     });
-    expect(await screen.findByRole("header", { name: "Before you publish" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
     expect(screen).toHavePathname("/offer");
     expect(mockedWrite).toHaveBeenLastCalledWith("pending-offer", "");
   });

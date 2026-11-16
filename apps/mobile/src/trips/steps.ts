@@ -1,3 +1,4 @@
+import type { MyTrip } from "@shareride/contracts";
 import { router } from "expo-router";
 
 /** The five steps of posting a trip (spec 3, screens 4 to 9). */
@@ -8,6 +9,16 @@ export const stepNumber = (step: StepName) => stepNames.indexOf(step) + 1;
 
 export function stepHref(id: string, step: StepName) {
   return { pathname: `/drive/trips/[id]/${step}` as const, params: { id } };
+}
+
+/**
+ * Where a draft carries on: the date and times while it has none, then the
+ * review, which shows every other step with a way to change it. A draft
+ * keeps no record of the steps after the times, which all have a choice
+ * made already (spec 3, 3.8.4; spec 16, 3.6).
+ */
+export function resumeStep(trip: Pick<MyTrip, "departsAt">): StepName {
+  return trip.departsAt === null ? "time" : "review";
 }
 
 /**
