@@ -374,6 +374,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   under "More languages"), a few words (folded) and the terms in one go, and
   its button names what comes next, such as "Create account and book". The
   terms show on their own only when they change later.
+- Booking takes fewer steps (spec 16, 3.7). Trip details starts with your
+  part: how booking works, Get in and Get out with Change, and the seats
+  free with the price per seat; then who you ride with, then the route and
+  the free cancellation line. Check and pay replaces the booking screen:
+  for instant booking, "Pay {total}" books the seats and opens the payment
+  at once. A payment that does not finish keeps the seat held, says until
+  when, and Pay tries again for the same booking. After paying, or booking
+  a free ride, "You're booked!" says when and where the driver picks you
+  up, what happens next and where to stand, with "See it in My rides";
+  after a request, "Request sent" says until when the driver can answer.
 - Times on the time step of posting a trip are chosen on a wheel of hours
   and minutes in 5-minute steps (24-hour clock) instead of being typed. A
   time saved earlier that is not on 5 minutes shows rounded up to the next

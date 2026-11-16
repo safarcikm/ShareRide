@@ -343,16 +343,16 @@ rides.
 - Create: `trip-details/stop-choice.tsx`
 - Test: `__tests__/trip-details.test.tsx`
 
-- [ ] **Step 1: Write the failing tests:** the order is date and route,
+- [x] **Step 1: Write the failing tests:** the order is date and route,
   Your part (tag, Get in, Get out, each with Change, seats "2 free on your
   part" with minus and plus), Who you ride with, map and stops, the
   cancellation line; Change on Get in lists only stops before Get out, and
   choosing one updates the price in the bottom bar.
-- [ ] **Step 2:** Run `pnpm --filter @shareride/mobile test trip-details`; expect failures.
-- [ ] **Step 3: Implement.** Changing a stop replaces the address
+- [x] **Step 2:** Run `pnpm --filter @shareride/mobile test trip-details`; expect failures.
+- [x] **Step 3: Implement.** Changing a stop replaces the address
   parameters, as tapping a stop does today.
-- [ ] **Step 4:** Run the tests and `pnpm check`; expect pass.
-- [ ] **Step 5:** Commit `feat(mobile): your part of the trip comes first`.
+- [x] **Step 4:** Run the tests and `pnpm check`; expect pass.
+- [x] **Step 5:** Commit `feat(mobile): your part of the trip comes first`.
 
 ### Task 4.2: Check and pay
 
@@ -367,7 +367,7 @@ rides.
 - Produces: `usePayment(bookingId: string): { start(): Promise<void>; sheet: Payment | null; notice: string | null }`
   and `<PaymentSheet />`, used by Check and pay and the booking page.
 
-- [ ] **Step 1: Write the failing tests:** the date, the part with times,
+- [x] **Step 1: Write the failing tests:** the date, the part with times,
   the driver and car, seats times price and total (or "Free"), the three
   ticks and the reliability note; instant: "Pay 5 000 kr." books
   and opens the payment sheet with no second Book; a double tap sends one
@@ -375,10 +375,10 @@ rides.
   paid yet. Your seat is held until 20:46." and Pay starts it again with
   the same booking (Review Focus 5); request: "Send request" and "You pay
   when Jón says yes."; free: "Book" confirms without a payment.
-- [ ] **Step 2:** Run `pnpm --filter @shareride/mobile test booking`; expect failures.
-- [ ] **Step 3: Implement** with the attempt key kept for the screen's life.
-- [ ] **Step 4:** Run the tests and `pnpm check`; expect pass.
-- [ ] **Step 5:** Commit `feat(mobile): check and pay in one step`.
+- [x] **Step 2:** Run `pnpm --filter @shareride/mobile test booking`; expect failures.
+- [x] **Step 3: Implement** with the attempt key kept for the screen's life.
+- [x] **Step 4:** Run the tests and `pnpm check`; expect pass.
+- [x] **Step 5:** Commit `feat(mobile): check and pay in one step`.
 
 ### Task 4.3: You're booked and request sent
 
@@ -387,17 +387,17 @@ rides.
 - Create: `app/bookings/[id]/booked.tsx` (move `app/bookings/[id].tsx` to `app/bookings/[id]/index.tsx`)
 - Test: `__tests__/booking.test.tsx`, `__tests__/driver-requests.test.tsx`
 
-- [ ] **Step 1: Write the failing tests:** after paying, "You're booked!",
+- [x] **Step 1: Write the failing tests:** after paying, "You're booked!",
   "Jón picks you up at 05:30 at Hlemmur", What happens next (three lines),
   Where to stand with Open in maps, "See it in My rides" (primary) and
   "Find another ride"; after a request, "Request sent" and "Jón has until
   20:46 to answer".
-- [ ] **Step 2:** Run `pnpm --filter @shareride/mobile test booking driver-requests`; expect failures.
-- [ ] **Step 3: Implement**; the screen replaces Check and pay, so Back
+- [x] **Step 2:** Run `pnpm --filter @shareride/mobile test booking driver-requests`; expect failures.
+- [x] **Step 3: Implement**; the screen replaces Check and pay, so Back
   goes to the trip.
-- [ ] **Step 4:** Run the tests, `pnpm check`, update `e2e/booking.spec.ts`
+- [x] **Step 4:** Run the tests, `pnpm check`, update `e2e/booking.spec.ts`
   and `e2e/driver-requests.spec.ts`; push and read the e2e job.
-- [ ] **Step 5:** Commit `feat(mobile): a clear finish after booking`; tell the
+- [x] **Step 5:** Commit `feat(mobile): a clear finish after booking`; tell the
   build thread the finish screens' addresses.
 
 ## PR 5: Offer a ride

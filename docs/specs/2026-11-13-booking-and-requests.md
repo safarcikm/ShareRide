@@ -4,6 +4,11 @@
 
 Amended by [spec 16](2026-11-15-one-home-and-simpler-flows.md): My bookings
 becomes My rides, with the trips you drive and "Needs you" on top (3.3).
+Check and pay replaces the booking screen: for instant booking, "Pay
+{total}" books the seats and opens the payment at once, with no second
+Book; a payment that does not finish keeps the seats held and Pay starts it
+again. "You're booked!" or "Request sent" follows, with what happens next
+(3.7).
 
 Features: D3 Book seats on the whole trip or only part of it, D4 My bookings,
 C7 Accept or decline requests ([features](../product/features.md)).
