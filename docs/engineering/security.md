@@ -98,6 +98,25 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   the web only the API can delete the cookie, and "sign out on all devices"
   must reach the API, so those show the failure and the person stays signed
   in to try again. The phone number never appears in a web address.
+- **Confirming a sensitive action:** downloading my data and deleting my
+  account need a fresh code sent to the account's own number
+  (`POST /v1/me/confirm-code`, spec 11). It is a code of its own purpose: it
+  never signs in, a sign-in code never confirms, and neither replaces the
+  other. It shares the sign-in rules (10 minutes, 5 attempts, single use)
+  and sending limits. `withConfirmCode` checks it and runs the action in one
+  transaction: a wrong code is counted even though the action does not run,
+  and the code is used up only when the action succeeds, so a route checks
+  whatever else can refuse before asking for the code.
+- **Data exports:** kept in the database sealed with AES-256-GCM under a key
+  derived from `AUTH_SECRET` (HKDF, `shareride-data-export-v1`), a fresh IV
+  per file, so a copy of the database alone cannot read them. They leave
+  only through a link the signed-in person asks for: a 256-bit token, stored
+  as a hash, working once and for 2 minutes, answered with
+  `Cache-Control: no-store`. The API logs the route pattern, never the
+  link. Each file is bound to its export's ID, so it cannot be moved to
+  another person's record. A new `AUTH_SECRET` makes files not yet
+  downloaded unreadable: the download marks such a file failed, and the
+  person asks again at once.
 - **Suspended accounts:** their access tokens stop working at once, and a
   refresh ends the session.
 - **Sign-out** ends the session and deletes its tokens at once; there are no

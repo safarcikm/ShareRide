@@ -478,9 +478,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   does each booking on the block screen. With no one to message, the
   driver's message to all passengers says that no passenger is confirmed
   or their chat is closed. `blocks` is in the personal data catalogue,
-  erased with either account, and gets its own export section (the blocks
-  a person made). `POST /v1/bookings/{id}/block`, `GET /v1/me/blocks`,
-  `DELETE /v1/me/blocks/{id}`.
+  erased with either account, and gets its own export section, People you
+  blocked: each by first name, and since when, never who blocked them.
+  Migration `0023_blocks`. `POST /v1/bookings/{id}/block`,
+  `GET /v1/me/blocks`, `DELETE /v1/me/blocks/{id}`.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its
@@ -517,6 +518,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   each kind of data, retention cutoffs, holds, one export a day, blocked
   numbers, due dates of privacy requests), and a catalogue of every
   table's personal data that a test keeps complete.
+- Confirming with a fresh code (spec 11): `POST /v1/me/confirm-code` sends
+  a code to the person's own number, which only confirms and never signs
+  in, under the sign-in limits, for downloading data and deleting an
+  account.
+- Download my data, the API (spec 11, 3.2): asked for with a fresh code,
+  one a day; built within seconds as a ZIP of `shareride-data.json` and a
+  readable page in the person's language, with other people by first name
+  only; kept encrypted for 7 days and downloaded through a one-time link
+  that works for 2 minutes. A push and an email say when it is ready,
+  without a link.
 
 ### Fixed
 

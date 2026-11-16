@@ -111,9 +111,12 @@ threads meet it.
 - `POST /v1/me/confirm-code` sends a code to the account's own number
   under the sign-in limits, with its own text: "Your ShareRide code to
   confirm: {code}. Never share it."
-- Download and delete take `{ code }` and check it in the same
-  transaction as the action, with the sign-in rules for expiry and
-  attempts and the same errors.
+- Download and delete take `{ code }` and run through
+  `auth.withConfirmCode(userId, code, action)`: it checks the code and
+  runs the action in one transaction, with the sign-in rules for expiry
+  and attempts and the same errors. A wrong code is counted even though
+  the action does not run; the code is used up only when the action
+  succeeds, so each route checks its other refusals first.
 - In the app, `ConfirmWithCode` shows the number's last two digits, the
   code field and "Send a new code" after the wait.
 
@@ -123,24 +126,30 @@ threads meet it.
   encrypted file and its size, and the hash of the current download link
   with its expiry.
 - `POST /v1/me/export` (with the code) refuses a second request within
-  24 hours (`export_too_soon`, 429, with when) and queues the event
-  `data_export_requested`. The worker builds the file, sets it to expire
-  7 days later, and sends `data_export_ready` by push and email. The texts
-  say it is ready and until when, never a link (spec 11, 7).
+  24 hours (`export_too_soon`, 429, with when) and stores the request; a
+  new request deletes the earlier file. A job every 10 seconds builds the
+  files asked for (3 tries, a 5-minute lease per try), sets each to expire
+  7 days later, and sends `data_export_ready` by push and email, the first
+  account notice (not about a booking or trip). The texts say it is ready
+  and until when, never a link (spec 11, 7).
 - `GET /v1/me/export` answers the latest one: `none`, `preparing`,
   `ready`, `expired` or `failed`, with its dates and when the next one
   can be asked for.
 - `POST /v1/me/export/link` gives a one-time link valid for 2 minutes.
   `GET /v1/exports/{token}` needs no sign-in, since the link is the key;
-  it answers the ZIP once, with `Cache-Control: no-store`. The app opens
+  it answers the ZIP once, with `Cache-Control: no-store`; `HEAD` answers
+  the headers and leaves the link to use. The app opens
   it in the browser on phones and downloads it on the web, so no new
   package is needed.
 - Encryption: AES-256-GCM with a key derived from `AUTH_SECRET` (HKDF,
-  info `shareride-data-export-v1`) and a fresh IV per file.
+  info `shareride-data-export-v1`), a fresh IV per file, and the export's
+  ID as associated data. A file that cannot be opened is marked failed,
+  so the person can ask again at once.
 - The file: `shareride-data.json` (`format`, `version` 1, `createdAt`,
   one key per section) and `shareride-data.html`, made from the same data
   in the person's language with inline styles and no scripts or outside
-  links. A small ZIP writer in `apps/api/src/platform/zip.ts` uses
+  links: stored codes such as statuses in words, and dates in Iceland's
+  time. A small ZIP writer in `apps/api/src/platform/zip.ts` uses
   `node:zlib` (deflate and `crc32`).
 - Sections today: account, legal acceptances, settings, devices, email
   waiting to be verified, vehicles, trips posted (stops, times, prices,
@@ -248,34 +257,42 @@ journeys, and gets a code review before it opens.
 
 ### PR 2: `feat(privacy)`: rules in the domain and the personal data catalogue
 
-- [ ] `privacy/settings.ts`, `deletion.ts`, `effects.ts`, `retention.ts`
-      (today's cutoffs moved in), with the tests of 4.1
-- [ ] `packages/db/src/personal-data.ts` and its schema test (4.2)
+- [x] `privacy/settings.ts`, `deletion.ts`, `effects.ts`, `retention.ts`
+      (every rule listed; today's cutoffs stay with their modules), with
+      the tests of 4.1
+- [x] `packages/db/src/personal-data.ts` and its schema test (4.2)
 - Verify: `pnpm --filter @shareride/domain test`, `pnpm --filter
   @shareride/db test`
 
 ### PR 3: `feat(account)`: confirm with a fresh code
 
-- [ ] Migration (`purpose`); `POST /me/confirm-code`; `checkConfirmCode`;
-      the SMS text; `ConfirmWithCode` in the app
+- [x] Migration (`purpose`); `POST /me/confirm-code`; `withConfirmCode`;
+      the SMS text. `ConfirmWithCode` in the app moved to PR 5, where
+      its first screen uses it.
 - Verify: integration tests (a confirm code never signs in and a sign-in
   code never confirms; limits shared with sign-in; wrong, expired and too
-  many attempts); a screen test
+  many attempts; wrong codes sent at once all counted; an action that
+  refuses keeps the code)
 
 ### PR 4: `feat(privacy)`: download my data, the API
 
-- [ ] `data_exports`; the ZIP writer; the sections of 4.4 and the
-      readable page; encryption; the worker's job; the four routes;
-      `data_export_ready`; exports deleted after 7 days
+- [x] `data_exports`; the ZIP writer; the sections of 4.4 and the
+      readable page; encryption; the job; the four routes;
+      `data_export_ready`, the first account notice; exports deleted after
+      7 days
 - Verify: integration tests (refused without a fresh code; one per 24
   hours; the file opens and holds exactly the expected sections; a
   three-passenger trip shows the others by first name only; the link works
-  once and expires); unit tests of the ZIP writer read back
+  once and expires; a file that cannot be opened fails; the ready notice
+  has no link); unit tests of the ZIP writer read back and of the page's
+  words for every stored code
 
 ### PR 5: `feat(privacy)`: Privacy page and Download my data in the app
 
-- [ ] Settings, Privacy; the download screens (ask, code, preparing,
-      ready, expired)
+- [ ] `ConfirmWithCode` (from PR 3); Settings, Privacy; the download
+      screens (ask, code, preparing, ready, expired) at
+      `/settings/privacy/download`, which the ready notice opens: add it
+      to the paths a notification may open (`notifications/paths.ts`)
 - Verify: screen tests; a browser journey downloads the file and opens
   both files
 

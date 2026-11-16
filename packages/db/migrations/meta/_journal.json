@@ -152,8 +152,22 @@
     {
       "idx": 21,
       "version": "7",
-      "when": 1794871052969,
-      "tag": "0021_blocks",
+      "when": 1794871064036,
+      "tag": "0021_confirm_codes",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1794871282072,
+      "tag": "0022_data_exports",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794872872721,
+      "tag": "0023_blocks",
       "breakpoints": true
     }
   ]
