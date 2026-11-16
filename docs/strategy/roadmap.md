@@ -148,9 +148,9 @@ Milestone 6: changes and cancellations
 
 Milestone 7: trip day, reviews and reliability
 ([plan](../plans/2026-11-16-milestone-7-trip-day-reviews-and-reliability.md),
-proposed 2026-11-16)
+accepted 2026-11-16)
 
-- [ ] Trip day, dispute, review and reliability rules in the domain
+- [x] Trip day, dispute, review and reliability rules in the domain
 - [ ] Trips depart and complete on their own
 - [ ] The trip day and "I'm here"
 - [ ] No-shows, the driver didn't come, and the operator's decision

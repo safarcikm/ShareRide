@@ -1,7 +1,7 @@
 # Milestone 7 plan: trip day, reviews and reliability
 
-**Owner:** Martin · **Date:** 2026-11-16 · **Status:** Proposed; the
-choices in section 3 wait for Martin
+**Owner:** Martin · **Date:** 2026-11-16 · **Status:** In progress; the
+choices in section 3 accepted by Martin on 2026-11-16 as recommended
 
 Helps people find each other on the day, settle a passenger or driver who
 doesn't come, finish trips on their own, and show reviews and a
@@ -55,6 +55,9 @@ When this milestone is done, on the web and on an Android test build:
 
 ## 3. Decisions for Martin
 
+Accepted by Martin on 2026-11-16: all four as recommended. Decision 4
+answers question Q19 (A43).
+
 | # | Choice | Recommendation | Why | Alternative |
 | - | ------ | -------------- | --- | ----------- |
 | 1 | How the operator decides contested cases before the console exists | **A command** in the API's package, like `expire-bookings`. It lists open cases with what the system knows, decides one, overrules a weather or road-closure reason, and lists people below 80%. The console's pages (spec 10) later call the same functions | The rules and their effects are built and tested now, and the beta does not start before the console. A command is small and cannot be reached from the internet | Build a first console page now: operator sign-in, roles and a dispute page. It is spec 10's work brought forward, and makes this milestone about a third bigger |
@@ -62,48 +65,76 @@ When this milestone is done, on the web and on an Android test build:
 | 3 | Public profiles | **In this milestone.** Spec 1's public profile (first name, about, languages, member since, rating, reliability and reviews) opens from the driver on trip details and from each passenger on the driver's trip page and requests | Reviews need somewhere to be read, and the driver checks a passenger before accepting (spec 8's user stories). Spec 4 already asks for the driver's profile | Only the figures, on trip details and the requests, with the reviews later. It is one PR smaller, but nobody can read a review |
 | 4 | A contested no-show that the operator finds wrong (open question Q19) | **The operator picks one of two outcomes.** "They rode": the booking completes, the driver is paid, and nothing counts on either side. "They were left behind": as a driver absence, a full refund that counts on the driver | Spec 8 has one outcome, "reversed", which does not say which of these happened. They lead to different money and reliability | Always "they rode", the simpler rule. But a driver who left a waiting passenger behind and marked them a no-show would keep the money |
 
-A contested "The driver didn't come" that the operator finds wrong has
-one outcome: the booking stays completed, the driver is paid, and nothing
-counts.
+A contested "The driver didn't come" that the operator finds wrong also
+says what happened instead (Q20, accepted by Martin on 2026-11-16, A44). "They rode":
+the booking goes on and completes, the driver is paid, and nothing counts
+against either side. "They didn't come": the passenger's no-show, with no
+refund, counted on them. Without the second, a passenger who didn't come
+could report the driver first, since a booking is reported once, and
+escape the no-show.
 
 ## 4. Design notes
 
 ### 4.1 Rules (domain)
 
-In `packages/domain`, free of I/O like the rest, with spec 8's settings in
-`trips/settings.ts` and `bookings/settings.ts`: `noShowWait` 10 minutes,
-`completionDelay` 2 hours, `answerWindow` 24 hours, `reviewWindow` 14 days,
-`reliabilityPeriod` 12 months, `reliabilityMinCount` 5, `watchLevel` 80%.
+In `packages/domain`, free of I/O like the rest. Spec 8's settings live
+next to the rules that use them, each with its starting value, for the
+operator to set later (feature H4): `TripDaySettings` in `trips/day.ts`
+(trip day 3 hours, "I'm here" from 30 minutes before to 60 after, the wait
+10 minutes, completion 2 hours, the answer window 24 hours),
+`ReviewSettings` in `reviews/review.ts` (14 days) and `ReliabilitySettings`
+in `people/reliability.ts` (12 months, 5 to show, 80% watch level).
 
 - `trips/day.ts`:
-  - `dayPhase(trip, stop, now)` returns `upcoming`, `trip_day` (from 3
-    hours before the passenger's boarding stop, or the first stop for the
-    driver), `departed` or `completed` (R8.1).
-  - `checkInWindow(stop)` runs from 30 minutes before to 60 minutes after
-    the stop's planned time (R8.3).
-  - `checkNoShow(booking, checkIns, now)` refuses with
-    `not_confirmed`, `too_early` (before the 10-minute wait),
-    `driver_not_here` (no check-in at that stop) or `trip_completed`
-    (R8.4).
-  - `checkDriverAbsent(booking, trip, now)` refuses with `too_early` or
-    `too_late`, more than 24 hours after completion (R8.5).
+  - `tripStatusAt(trip, now, settings)`: a published trip departs at its
+    first stop's planned time and completes 2 hours after its last
+    (R8.1). `completesWithTrip(booking)`: a confirmed booking completes
+    with it unless a report on it is open (R8.2).
+  - `dayPhase(from, lastStopAt, now, settings)` returns `upcoming`,
+    `trip_day` (from 3 hours before `from`: the passenger's boarding stop,
+    or the driver's first stop) or `completed`.
+  - `checkCheckIn(stopAt, now, settings)` refuses with `check_in_not_open`
+    (and when it opens) or `check_in_closed` (R8.3).
+  - `checkNoShow(booking, now, settings)` refuses with `not_confirmed`,
+    `already_reported`, `trip_completed`, `no_show_too_early` (and when
+    it is allowed) or `driver_not_checked_in` (R8.4).
+  - `checkDriverAbsent(booking, now, settings)` refuses with
+    `not_boarding`, `already_reported`, `report_too_early` or
+    `report_too_late`, more than 24 hours after completion (R8.5).
+  - A booking is reported once: after a no-show the passenger answers it,
+    and after "The driver didn't come" the driver does, so the operator
+    decides one question.
   - Every window follows the stop's planned time now, after any move
     (spec 6). A removed stop has no window.
-- `bookings/disputes.ts`, `disputeOutcome(dispute, answer, decision)`:
-  the booking's next status, the refund, whether a payout may go, and
-  what counts on whose reliability, for every path: agreed, no answer
-  within 24 hours, contested and decided (decision 4) (R8.6, R8.7).
+- `bookings/disputes.ts`: `answerDeadline` and `checkAnswer` (one answer,
+  until the deadline), `settlesUnanswered` (after the deadline),
+  `checkDecision` (the operator's outcomes for each kind, decision 4 and
+  Q20) and `disputeEffect(kind, outcome, booking)`: the booking's next
+  event, a cancellation as if by the driver with the reason
+  `driver_absent`, the refund, whether a payout may go, whose reliability
+  it counts on, and whether the booking's reviews go (R8.6, R8.7). A
+  driver absence found wrong, where the passenger rode, completes a
+  booking whose trip completed meanwhile; where the passenger didn't come,
+  it is their no-show.
 - `reviews/review.ts`:
-  - `checkReview(booking, author, now, existing)` refuses with
-    `not_completed`, `window_closed`, `already_reviewed`, `rating_invalid`
-    or the comment's problems: over 500 characters, contact details or a
-    link (as the trip note's check) (R8.8).
-  - `isRevealed(pair, now)` is true once both have reviewed or 14 days have
-    passed since completion (R8.9).
-- `people/reliability.ts`, `reliabilityOf(records, now)`: kept and counted
-  over the last 12 months across both roles, and the figure only once 5
-  count (R8.10, R8.11). `ratingOf(reviews)` averages revealed reviews only,
-  to one decimal.
+  - `checkReview(review, now, settings)` refuses with `not_completed`,
+    `review_window_closed`, `already_reviewed`, `report_open`,
+    `rating_invalid` or the comment's problems: over 500 characters,
+    contact details or a link (as the trip note's check) (R8.8).
+  - `isRevealed(pair, now, settings)` is true once both have reviewed or
+    14 days have passed since completion (R8.9).
+  - `ratingOf(reviews)` averages revealed reviews the operator has not
+    hidden, to one decimal.
+- `people/reliability.ts`: `passengerRecord`, `driverBookingRecord` and
+  `driverTripRecord` say what counts, and `reliabilityOf(records, now,
+  settings)` gives kept and counted over the last 12 months across both
+  roles, by role, and the figure only once 5 count, rounded down
+  (R8.10). A no-show counts once it stands. A trip counts as kept when
+  the driver came for at least one passenger, even if all were no-shows.
+  `canOverrule` allows the operator to overrule only a cancellation that
+  does not count because of its weather or road-closure reason alone
+  (`excusedByReason` in `bookings/cancellation.ts`,
+  `tripExcusedByReason` in `trips/cancel.ts`) (R8.11).
 
 Tests: each rule at its edges (29 and 30 minutes before a stop, 60 and 61
 after; the wait at 9 and 10 minutes; exactly 24 hours after completion;
@@ -159,7 +190,7 @@ the rating.
 
 - `disputes`: booking, kind (`no_show`, `driver_absent`), raised by, when,
   note, answer (`agreed`, `contested`), answer note, outcome (`stands`,
-  `rode`, `left_behind`, `reversed`), decided by (`system` or `operator`),
+  `rode`, `left_behind`, `passenger_absent`), decided by (`system` or `operator`),
   and when.
 - `POST /bookings/{id}/no-show` (driver) sets the booking to `no_show` and
   opens a dispute. `POST /bookings/{id}/driver-absent` (passenger) opens
@@ -167,9 +198,11 @@ the rating.
   `POST /disputes/{id}/answer` takes "That's right" or "That's not right"
   with a note.
 - The minute job settles disputes once their 24 hours pass without an
-  answer. A driver absence that stands cancels the booking with a full
-  refund through `refund_due`, counts on the driver, and removes the
-  booking's reviews.
+  answer. A driver absence that stands cancels the booking as if by the
+  driver, with the new cancellation reason `driver_absent` (a migration
+  widens the reasons' check), a full refund through `refund_due`; it
+  counts on the driver and removes the booking's reviews. A passenger
+  left behind is cancelled the same way, as `disputeEffect` says.
 - Notes are seen by the operator only. The other side sees that the
   report was contested, and later the outcome (spec 8, section 7).
 - The operator's command (decision 1):
@@ -195,7 +228,9 @@ the rating.
   this is a small query per profile, so spec 8's `ReliabilityRecord` and
   `UserStats` tables are not needed yet. They come back if profiles get
   slow. The operator's overrule is a column on the booking or trip, with
-  who changed it, when and why.
+  who changed it, when and why. Whether a cancellation could be overruled
+  (`excusedByReason`) is saved when it is made, as it depends on the time
+  and the bookings then.
 - Profiles show the rating ("4.8 (12 ratings)"), "Reliability: 96%" or
   "Not enough trips yet", and the reviews with "As a driver" or "As a
   passenger". Tapping the figure shows "Kept 24 of 25 trips and bookings"
@@ -209,12 +244,12 @@ the browser journeys, and gets a code review before it opens.
 
 ### PR 1: `docs(plans)`: this plan
 
-- [ ] This plan, the roadmap's milestone 7, the plans index and question
+- [x] This plan, the roadmap's milestone 7, the plans index and question
       Q19
 
 ### PR 2: `feat(trips)`: trip day, dispute, review and reliability rules in the domain
 
-- [ ] `trips/day.ts`, `bookings/disputes.ts`, `reviews/review.ts` and
+- [x] `trips/day.ts`, `bookings/disputes.ts`, `reviews/review.ts` and
       `people/reliability.ts`, with spec 8's settings and the tests of 4.1
 - Verify: `pnpm --filter @shareride/domain test`
 

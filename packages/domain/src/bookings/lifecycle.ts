@@ -18,8 +18,10 @@ export type BookingStatus = (typeof bookingStatuses)[number];
 /**
  * What can happen to a booking: the driver accepts or declines a request; a
  * deadline passes; the passenger withdraws a request, pays or cancels; the
- * trip completes; the driver marks the passenger absent; or, after the trip,
- * the driver's own absence stands (spec 8).
+ * trip completes; the driver marks the passenger absent; the driver's own
+ * absence stands, before or after the trip completes; or the operator finds
+ * a contested report wrong: the passenger rode, was left behind, or didn't
+ * come after reporting the driver (spec 8, 3.5).
  */
 export const bookingEvents = [
   "accept",
@@ -31,6 +33,8 @@ export const bookingEvents = [
   "complete",
   "no_show",
   "driver_absent",
+  "rode",
+  "left_behind",
 ] as const;
 export type BookingEvent = (typeof bookingEvents)[number];
 
@@ -40,12 +44,17 @@ const changes: Readonly<
 > = {
   requested: { accept: "accepted", decline: "declined", expire: "expired", withdraw: "cancelled" },
   accepted: { pay: "confirmed", expire: "expired", cancel: "cancelled" },
-  confirmed: { cancel: "cancelled", complete: "completed", no_show: "no_show" },
+  confirmed: {
+    cancel: "cancelled",
+    complete: "completed",
+    no_show: "no_show",
+    driver_absent: "cancelled",
+  },
   declined: {},
   expired: {},
   cancelled: {},
-  completed: { driver_absent: "cancelled" },
-  no_show: {},
+  completed: { driver_absent: "cancelled", no_show: "no_show" },
+  no_show: { rode: "completed", left_behind: "cancelled" },
 };
 
 export interface ChangeNotAllowed {

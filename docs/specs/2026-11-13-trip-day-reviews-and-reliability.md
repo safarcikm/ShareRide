@@ -102,6 +102,15 @@ The operator console lists contested cases with what the system knows: both
 booking's chat, which the operator may read for this purpose (spec 7, R7.3).
 The operator decides which side is right; the decision sets the refund, the
 payout and the reliability effect as in 3.3 and 3.4, and both sides are told.
+A contested no-show the operator finds wrong ends in one of two ways
+(decision 4): the passenger rode, so the booking completes, the driver is
+paid and nothing counts against either side; or the passenger was left
+behind, which is a driver absence: a full refund that counts on the
+driver. A contested driver absence found wrong ends in one of two ways
+too (decision 5): the passenger rode, so the booking goes
+on and nothing counts against either side; or the passenger didn't come,
+which is their no-show: no refund, the driver is paid, and it counts on
+the passenger.
 The operator's decision is final in the app; the terms of use say how to
 complain further.
 
@@ -207,7 +216,7 @@ Entities (see [domain model](../architecture/domain-model.md)):
 - `CheckIn`: trip stop, user, at.
 - `Dispute`: booking, kind (`no_show`, `driver_absent`), raised by, raised at,
   note, answer (`agreed`, `contested`, none), answered at, answer note,
-  outcome (`stands`, `reversed`), decided by (system or operator), decided at.
+  outcome (`stands`, `rode`, `left_behind`, `passenger_absent`), decided by (system or operator), decided at.
 - `Review` (existing): adds `hidden_at` for moderation (spec 9).
 - `ReliabilityRecord`: user, role, booking or trip, outcome (`kept`,
   `cancelled`, `no_show`, `driver_absent`), counts or not, why not (for
@@ -337,3 +346,5 @@ Accepted by Martin on 2026-11-13 as recommended.
 | 1 | How are weather and road-closure cancellations checked in the beta, before we connect the Met Office and Road Administration data? | Trust the reason the person gives. The console lists these cancellations so you can overrule a clearly wrong one, which then counts. Repeated misuse leads to a warning |
 | 2 | How long must a driver wait before marking a passenger as a no-show? | 10 minutes after the planned time at that stop. The passenger can report that the driver didn't come after the same wait |
 | 3 | How is reliability counted and shown? | One figure per person, across both roles, over the last 12 months: kept trips and bookings out of those that count. Shown once there are 5 that count. Counted: completed bookings and trips with passengers (kept); no-shows, driver absences and cancellations that count under spec 6 (not kept). The operator watches anyone below 80% |
+| 4 | When a passenger contests a no-show and the operator finds the driver was wrong, what happens? (Q19, accepted by Martin on 2026-11-16) | The operator picks one of two outcomes. "They rode": the booking completes, the driver is paid, and nothing counts on either side. "They were left behind": as a driver absence, a full refund that counts on the driver |
+| 5 | When the driver contests a passenger's "The driver didn't come" and the operator finds the driver was there, what happens? (Q20, accepted by Martin on 2026-11-16) | The operator picks one of two outcomes, as for a no-show. "They rode": the booking goes on and completes, the driver is paid, and nothing counts against either side. "They didn't come": the passenger's no-show, with no refund, the driver paid, and it counts on the passenger |
