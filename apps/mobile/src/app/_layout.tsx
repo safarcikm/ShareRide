@@ -56,6 +56,7 @@ function Navigation() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="coming-soon" />
+      <Stack.Screen name="legal/index" />
       <Stack.Screen name="legal/[type]" />
       <Stack.Screen name="meeting-points/index" />
       <Stack.Screen name="meeting-points/[id]" />
@@ -75,6 +76,8 @@ function Navigation() {
       </Stack.Protected>
       <Stack.Protected guard={me !== null && !needsLegal && !needsProfile}>
         <Stack.Screen name="profile/edit" />
+        <Stack.Screen name="profile/preview" />
+        <Stack.Screen name="drive/cars/index" />
         <Stack.Screen name="drive/cars/new" />
         <Stack.Screen name="drive/cars/[id]" />
         <Stack.Screen name="drive/licence" />

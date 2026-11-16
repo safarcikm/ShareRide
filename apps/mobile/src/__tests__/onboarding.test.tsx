@@ -151,7 +151,7 @@ describe("Creating a profile", () => {
     await fireEvent.press(screen.getByRole("tab", { name: "Profile" }));
     expect(await screen.findByRole("header", { name: "My profile" })).toBeVisible();
     expect(screen.getByText("Anna")).toBeVisible();
-    expect(screen.getByText("Coffee and podcasts.")).toBeVisible();
+    expect(screen.getByText("Speaks Icelandic · Member since November 2026")).toBeVisible();
     expect(app.client.calls.find((c) => c.path === "/v1/me" && "body" in c.input)?.input).toEqual({
       body: { firstName: "Anna", about: "Coffee and podcasts.", languages: ["is"] },
       accessToken: "sr_at_access-1",

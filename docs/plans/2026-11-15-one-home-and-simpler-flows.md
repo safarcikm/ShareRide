@@ -193,7 +193,7 @@ rides.
   (`welcome`, `sign-in`, `booking`, `my-bookings`, `driving`,
   `post-a-trip`) for the new addresses and names; push and read the CI e2e
   job.
-- [ ] **Step 5:** Commit `feat(mobile): Find is the home for everyone`, open the
+- [x] **Step 5:** Commit `feat(mobile): Find is the home for everyone`, open the
   PR with spec 16 and this plan, and tell the build thread about
   `menuTabs`.
 
@@ -216,14 +216,14 @@ rides.
   whose last stop passed, latest first. `seatsTaken` counts seats held
   (`holdsSeats`) on that stretch.
 
-- [ ] **Step 1: Write the failing tests:** a trip under way is upcoming; a
+- [x] **Step 1: Write the failing tests:** a trip under way is upcoming; a
   finished trip is past and not upcoming; drafts only with `upcoming`; one
   booking for 2 seats on stretch 2 of 3 gives `seatsTaken` `[0, 2, 0]`; a
   cancelled booking counts 0.
-- [ ] **Step 2:** Run `pnpm --filter @shareride/api test:integration drafts`; expect failures.
-- [ ] **Step 3: Implement** with the same `plannedAt` rule as `myBookings`.
-- [ ] **Step 4:** Run the integration tests and `pnpm check`; expect pass.
-- [ ] **Step 5:** Commit `feat(api): my trips by upcoming or past, with seats taken`.
+- [x] **Step 2:** Run `pnpm --filter @shareride/api test:integration drafts`; expect failures.
+- [x] **Step 3: Implement** with the same `plannedAt` rule as `myBookings`.
+- [x] **Step 4:** Run the integration tests and `pnpm check`; expect pass.
+- [x] **Step 5:** Commit `feat(api): my trips by upcoming or past, with seats taken`.
 
 ### Task 2.2: My rides and Your next ride
 
@@ -241,7 +241,7 @@ rides.
 - Produces: `needsYou(ride: Ride, at: Date): "pay" | "answer" | null`
   (`pay`: `paymentDueAt` still to come; `answer`: `openRequests` above 0).
 
-- [ ] **Step 1: Write the failing tests:** `mergeRides` orders a booking at
+- [x] **Step 1: Write the failing tests:** `mergeRides` orders a booking at
   09:00 before a trip at 10:00, keeps a ride under way, leaves out drafts;
   My rides shows Needs you first ("Pay by 20:46 to keep your seat" with Pay,
   "Answer by 08:10 tomorrow, or the requests close" with Answer requests),
@@ -249,12 +249,12 @@ rides.
   booked" and the seats free on each stretch; Past has no Needs you; nothing
   coming up shows Find a ride and Offer a ride; Find shows Your next ride
   with its status and opens it.
-- [ ] **Step 2:** Run `pnpm --filter @shareride/mobile test rides my-rides welcome`; expect failures.
-- [ ] **Step 3: Implement.** Both screens load bookings and trips together
+- [x] **Step 2:** Run `pnpm --filter @shareride/mobile test rides my-rides welcome`; expect failures.
+- [x] **Step 3: Implement.** Both screens load bookings and trips together
   and show one notice with Retry if either fails.
-- [ ] **Step 4:** Run the tests and `pnpm check`; update `e2e/my-bookings.spec.ts`
+- [x] **Step 4:** Run the tests and `pnpm check`; update `e2e/my-bookings.spec.ts`
   into `my-rides.spec.ts`; expect pass.
-- [ ] **Step 5:** Commit `feat(mobile): My rides lists bookings and trips together`.
+- [x] **Step 5:** Commit `feat(mobile): My rides lists bookings and trips together`.
 
 ### Task 2.3: Profile rows
 
@@ -266,18 +266,18 @@ rides.
 - Modify: `app/(tabs)/profile.tsx`
 - Test: `__tests__/profile-and-settings.test.tsx`
 
-- [ ] **Step 1: Write the failing tests:** the first name, languages and
+- [x] **Step 1: Write the failing tests:** the first name, languages and
   "Member since"; Edit profile secondary; "See it as others do" link; rows
   My cars, Driving licence ("Confirmed" or "Not confirmed yet"), Meeting
   points, Settings, Terms, rules and privacy, each opening its screen; the
   Settings note under them; See it as others do shows the first name, the
   languages and "Member since" with no phone number.
-- [ ] **Step 2:** Run `pnpm --filter @shareride/mobile test profile-and-settings`; expect failures.
-- [ ] **Step 3: Implement** with a `Row` part (`components/row.tsx`):
+- [x] **Step 2:** Run `pnpm --filter @shareride/mobile test profile-and-settings`; expect failures.
+- [x] **Step 3: Implement** with a `Row` part (`components/row.tsx`):
   left-aligned title in `bodyStrong`, value in `small` `textMuted`, chevron,
   at least 56 high; add it to spec 15.
-- [ ] **Step 4:** Run the tests and `pnpm check`; expect pass.
-- [ ] **Step 5:** Commit `feat(mobile): profile with cars, licence and settings rows`.
+- [x] **Step 4:** Run the tests and `pnpm check`; expect pass.
+- [x] **Step 5:** Commit `feat(mobile): profile with cars, licence and settings rows`.
 
 ## PR 3: Sign up without losing your ride
 

@@ -284,12 +284,15 @@ describe("drafts (spec 3, 3.4 to 3.8)", () => {
       params: { id: trip.id },
     });
     expect(removed.status).toBe(404);
-    const theirs = await api.client.call(myTripsRoute, { accessToken: other.accessToken });
+    const theirs = await api.client.call(myTripsRoute, {
+      accessToken: other.accessToken,
+      query: {},
+    });
     expect(theirs).toMatchObject({ status: 200, data: { trips: [] } });
   });
 
   it("needs a signed-in person", async () => {
-    expect((await api.client.call(myTripsRoute, {})).status).toBe(401);
+    expect((await api.client.call(myTripsRoute, { query: {} })).status).toBe(401);
     expect((await api.client.call(createTripRoute, { body: { stops: route } })).status).toBe(401);
   });
 });
@@ -383,7 +386,7 @@ describe("publishing (spec 3, 3.8 and section 4)", () => {
     await publish(accessToken, trip.id);
     const next = await draft(accessToken);
     expect(next).toMatchObject({ seats: 5, priceLevel: 80, bookingMode: "instant", preferences });
-    const listed = await api.client.call(myTripsRoute, { accessToken });
+    const listed = await api.client.call(myTripsRoute, { accessToken, query: {} });
     expect(listed).toMatchObject({
       data: {
         trips: [

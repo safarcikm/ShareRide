@@ -27,6 +27,12 @@ export function payByText(t: Translate, deadline: Date, at: Date): string {
   return t(tomorrow ? "booking.payByTomorrow" : "booking.payBy", { time });
 }
 
+/** "Answer by 08:10 tomorrow, or the requests close", for a driver (spec 16, 3.3). */
+export function answerByText(t: Translate, deadline: Date, at: Date): string {
+  const { time, tomorrow } = onDay(deadline, at);
+  return t(tomorrow ? "myRides.answerByTomorrow" : "myRides.answerBy", { time });
+}
+
 /**
  * What accepting a request did, for the driver: "Request accepted. Gunna has
  * until 12:30 to pay.", or confirmed at once for a free ride (R5.11).

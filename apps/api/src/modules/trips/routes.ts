@@ -143,9 +143,10 @@ export function registerDraftRoutes(
   drafts: TripService,
   requireAuth: MiddlewareHandler,
 ): void {
-  app.openapi(toOpenApiRoute(myTripsRoute, requireAuth), async (c) =>
-    c.json({ trips: await drafts.myTrips(authOf(c).userId) }, 200),
-  );
+  app.openapi(toOpenApiRoute(myTripsRoute, requireAuth), async (c) => {
+    const { when } = validated(c, "query", myTripsRoute.request.query);
+    return c.json({ trips: await drafts.myTrips(authOf(c).userId, when) }, 200);
+  });
 
   app.openapi(toOpenApiRoute(myTripRoute, requireAuth), async (c) => {
     const { id } = validated(c, "param", myTripRoute.request.params);

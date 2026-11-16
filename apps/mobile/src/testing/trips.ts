@@ -165,10 +165,15 @@ export function tripsApi(client: FakeClient, start: MyTrip[] = []): TripsApi {
       updatedAt: "2026-11-14T12:00:00.000Z",
       segments: [],
       openRequests: 0,
+      requestsCloseAt: null,
     };
     return ok(201, store(trip));
   });
-  client.answer("/v1/me/trips", () => ok(200, { trips }));
+  // The fake trips are all still to come, so none are past.
+  client.answer("/v1/me/trips", (input) => {
+    const { when } = input["query"] as { when: "upcoming" | "past" };
+    return ok(200, { trips: when === "past" ? [] : trips });
+  });
   client.answer("/v1/me/trips/{id}", (input) => {
     const trip = find(input);
     return trip === undefined ? failure(404, "not_found") : ok(200, trip);
@@ -249,6 +254,7 @@ export function plannedDraft(changes: Partial<MyTrip> = {}): MyTrip {
     updatedAt: "2026-11-14T12:00:00.000Z",
     segments: [],
     openRequests: 0,
+    requestsCloseAt: null,
     ...changes,
   };
 }

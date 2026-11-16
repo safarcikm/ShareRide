@@ -3,7 +3,7 @@
 **Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
 Amended by [spec 16](2026-11-15-one-home-and-simpler-flows.md): the menu's
-`TabBar` and `TopBar`, and the `Logo` beside the name.
+`TabBar` and `TopBar`, the `Logo` beside the name, and the `Row` part.
 
 Covers the brand direction (colours, type, tone of voice) and the first
 screen designs from the [roadmap](../strategy/roadmap.md), Phase 1. Related:
@@ -193,7 +193,7 @@ Two free fonts (SIL Open Font License), both with every Icelandic letter
 | Spacing | `xs` 4, `sm` 8, `ms` 12, `md` 16, `lg` 24, `xl` 32, `xxl` 48 |
 | Corners | `seat` 4 (seat legend), `checkbox` 9, `tag` 12, `control` 16 (buttons, inputs, notices), `card` 22, `pill` 999 (chips, need bubbles, icon buttons) |
 | Bottom edges | `card` 3 (`edge` colour), `buttonPrimary` 4 (`primaryEdge`), `buttonSecondary` 3 (`edge`) |
-| Sizes | `minTouchTarget` 44, `buttonHeight` 48, `mainButtonHeight` 56, `inputHeight` 52, `chipHeight` 40, `iconButton` 44, `checkbox` 26, `maxContentWidth` 480; `controlOutline` 2 (inputs, tick boxes, chips) |
+| Sizes | `minTouchTarget` 44, `buttonHeight` 48, `mainButtonHeight` 56, `inputHeight` 52, `chipHeight` 40, `iconButton` 44, `checkbox` 26, `row` 56, `maxContentWidth` 480; `controlOutline` 2 (inputs, tick boxes, chips) |
 
 - `ms` 12 is new; the other spacing names are unchanged.
 - Screen padding is `md`; gaps between cards are `md`; inside a card, `ms`
@@ -337,6 +337,7 @@ Built when the screens that need them are built.
 | `PriceLevel` | The price level control of spec 3, as on the price step below: a track in 10% steps with the suggested level marked, a shape person as the handle, and minus and plus buttons; adjustable role whose value reads the level and the whole-route price |
 | `SeatView` | The top-down car (section 5.3) |
 | `Avatar` | The real profile photo, round; without a photo, the first letter on a people colour. Never a shape person |
+| `Row` | A row that opens a screen, in a `Card`: the title on the left in `bodyStrong`, a value such as "Confirmed" in `small` `textMuted`, then a chevron in `textMuted`; at least `row` 56 high; tinted `primarySoft` while pressed (spec 16, 3.4) |
 | `PlaceDropdown` | From or To while it is being chosen: its caption and dot stay, a text field with a 2 `primary` outline takes the place of the value, with Close as a small X (18) in `textMuted` inside its end, 44 square to press; what the search finds is listed under it in a box with a 2 `border` outline and corner `control`, as rows with the name in `bodyStrong` and the type and place in `small`, tinted `primarySoft` while pressed or under the pointer. The swap button waits until it closes |
 
 ### 5.3 Shape people and the seat view

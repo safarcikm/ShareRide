@@ -1,13 +1,13 @@
 # Spec 16: One home and simpler flows
 
 **Owner:** Martin · **Date:** 2026-11-15 · **Status:** Approved
-(2026-11-15)
+(2026-11-15); proposals 1 and 2 built
 
 Amends: [spec 1](2026-11-13-sign-in-and-profile.md) (front page, sign-up,
 profile, settings), [spec 3](2026-11-13-post-a-trip.md) (driver setup and the
 posting steps), [spec 4](2026-11-13-search-and-trip-details.md) (front page
 rides, results, trip details), [spec 5](2026-11-13-booking-and-requests.md)
-(booking screen, paying) and [spec 15](2026-11-13-visual-design-system.md)
+(booking screen, paying, My bookings) and [spec 15](2026-11-13-visual-design-system.md)
 (navigation parts). Rules on prices, seats, payments and cancellations do not
 change.
 
@@ -87,9 +87,13 @@ Find replaces both the front page and My profile as the place the app opens.
    screen these are in the top bar instead.
 2. **Your next ride** (signed in, when one is coming up): the soonest
    confirmed, requested or unpaid booking, or the soonest published trip you
-   drive, with its status ("Confirmed", "Waiting for Jón", "Pay by 20:46",
-   "You're driving · 1 of 3 seats booked"), date, time, route, and driver
-   and car for a booking. Pressing it opens the booking or the trip.
+   drive, a ride under way included. It is the same row as in My rides
+   (3.3), so it reads the same in both places: Passenger or Driving, the
+   status ("Confirmed", "Request sent", "Waiting for payment"), date, times
+   and route, the driver and car for a booking, or "1 of 3 seats taken" for
+   a trip. A ride that needs you adds its line and button ("Pay by 20:46 to
+   keep your seat", with Pay). Pressing it opens the booking or the trip. If
+   it can't be loaded, one notice says so, with Try again.
 3. **Search:** "Where are you going?", From, To, date ("Any day") and seats
    (1 to 4, as on the results today), then **Find a ride** as the main, filled
    button. Seats move from the results into this form.
@@ -110,10 +114,16 @@ Find replaces both the front page and My profile as the place the app opens.
      with Pay);
    - a trip you drive with requests to answer ("Answer by 08:10 tomorrow, or
      the requests close", with Answer requests).
-3. After that, every booking and every published trip you drive, soonest
-   first. Each row says **Passenger** or **Driving**, its status, the date,
-   times and route. A booking adds the driver and car and the price. A trip
-   adds the seats booked and the seats free on every stretch.
+3. After that, under "Coming up", every other booking and published trip
+   you drive, soonest first. Each row says **Passenger** or **Driving**, its
+   status, the date, times and route. A booking adds the driver and car and
+   the price. A trip adds the requests waiting, the seats taken on its
+   fullest stretch ("1 of 3 seats taken", as on the driver's trip page,
+   since a request holds its seats until it is answered, rule S1) and the
+   seats free: "Seats free on every stretch: 2" when every stretch is the
+   same, otherwise one line a stretch ("Borgarnes → Blönduós: 2 free").
+   Answer requests opens the driver's trip page. Until Check and pay comes
+   (3.7), Pay opens the booking, where the payment starts.
 4. Pressing a row opens the booking (spec 5) or the driver's trip page
    (spec 3), as today.
 5. **Past:** the same rows, latest first, without "Needs you".
@@ -127,10 +137,15 @@ Find replaces both the front page and My profile as the place the app opens.
    secondary button, and "See it as others do" is a link.
 2. Rows, left-aligned: My cars, Driving licence ("Confirmed" or "Not
    confirmed yet"), Meeting points, Settings, and Terms, rules and privacy.
+   My cars lists the cars, each opening to edit it, with Add a car. Terms,
+   rules and privacy lists the three documents. "See it as others do" shows
+   the public profile of spec 1: the avatar, first name, languages, "Member
+   since" and About you, never the phone number.
 3. My cars and Driving licence replace the car and licence parts of "Before
    you publish", which goes (3.6).
 4. Under the rows: "Phone number, language and signing out are in
-   Settings."
+   Settings." The phone number, marked as private, moves from Profile to
+   the top of Settings.
 
 ### 3.5 Sign up without losing your ride (proposal 3)
 
@@ -274,7 +289,11 @@ No new tables. Changes to the API:
   `GET /v1/me/bookings` does, so My rides can list past trips. Drafts come
   only with `upcoming`.
 - Each stretch of a trip in `GET /v1/me/trips` says how many seats are taken
-  on it, for "1 of 3 seats booked" and the seats free on every stretch.
+  on it (`seatsTaken`, the seats bookings and open requests hold now, rule
+  S1), for "1 of 3 seats taken" and the seats free on every stretch.
+- Each trip in `GET /v1/me/trips` says when its first open request closes
+  (`requestsCloseAt`, null when none waits), for "Answer by 08:10 tomorrow,
+  or the requests close".
 - "Your next ride" and My rides read `GET /v1/me/bookings` and
   `GET /v1/me/trips` and merge them in the app, soonest first.
 - Check and pay creates the booking (`POST /v1/trips/{id}/bookings`), then

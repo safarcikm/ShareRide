@@ -29,7 +29,10 @@ const postTrip = () => {
 export default function MyTripsScreen() {
   const { t } = useLanguage();
   const session = useSession();
-  const load = useCallback(() => session.call(myTripsRoute, {}), [session]);
+  const load = useCallback(
+    () => session.call(myTripsRoute, { query: { when: "upcoming" } }),
+    [session],
+  );
   const { value: result, reload } = useLoadedOnFocus(load);
   const trips = result?.ok === true ? result.data.trips : null;
   const drafts = trips?.filter((trip) => trip.status === "draft") ?? [];

@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useMe, useSession } from "@/auth/session";
 import { Button } from "@/components/button";
+import { Notice } from "@/components/notice";
 import { LanguageSwitch } from "@/components/language-switch";
 import { Logo } from "@/components/logo";
 import { Screen, useWideScreen } from "@/components/screen";
@@ -11,7 +12,10 @@ import { Body, Heading, Title } from "@/components/text";
 import { offerRide } from "@/drive/offer-ride";
 import { useLanguage } from "@/i18n/language";
 import { useSaveLanguage } from "@/i18n/use-save-language";
+import { now } from "@/lib/clock";
 import { useLoaded } from "@/lib/use-loaded";
+import { RideItem } from "@/my-rides/ride-row";
+import { useRides } from "@/my-rides/use-rides";
 import { ResultCard } from "@/search/result-card";
 import { openSearch, useRouteSearch } from "@/search/route-search";
 import { sizes, spacing, typography } from "@/theme/tokens";
@@ -22,8 +26,8 @@ const shownRides = 5;
 
 /**
  * Find, the home of the app for everyone, signed in or not (spec 16, 3.2):
- * the logo and the language (in the top bar on wide screens), a route
- * search with the seats, the rides leaving soon (spec 4, 3.8) and "Offer a
+ * the logo and the language (in the top bar on wide screens), Your next
+ * ride when signed in, a route search with the seats, the rides leaving soon (spec 4, 3.8) and "Offer a
  * ride". Signing in is in the menu.
  */
 export default function FindScreen() {
@@ -57,6 +61,7 @@ function FrontPage() {
           <LanguageSwitch onSwitch={saveLanguage} />
         </View>
       )}
+      {me === null ? null : <NextRide />}
       <View style={styles.intro}>
         <Title>{t("home.title")}</Title>
       </View>
@@ -86,6 +91,33 @@ function FrontPage() {
         />
       </View>
     </Screen>
+  );
+}
+
+/**
+ * Your next ride, signed in (spec 16, 3.2 item 2): the soonest of My rides
+ * coming up, a ride under way included, as My rides shows it. Left out when
+ * nothing is coming up; one notice with a retry when it can't be loaded.
+ */
+function NextRide() {
+  const { t } = useLanguage();
+  const { loaded, reload } = useRides("upcoming");
+  if (loaded === undefined) return null;
+  if ("failure" in loaded) {
+    return (
+      <View style={styles.next}>
+        <Notice message={t("home.nextRideFailed")} />
+        <Button variant="secondary" label={t("common.retry")} onPress={reload} />
+      </View>
+    );
+  }
+  const [next] = loaded.rides;
+  if (next === undefined) return null;
+  return (
+    <View style={styles.next}>
+      <Heading>{t("home.nextRide")}</Heading>
+      <RideItem ride={next} at={now()} />
+    </View>
   );
 }
 
@@ -126,6 +158,7 @@ const styles = StyleSheet.create({
   top: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   brand: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   intro: { gap: spacing.md, paddingVertical: spacing.lg },
+  next: { gap: spacing.sm, paddingTop: spacing.md },
   rides: { gap: spacing.md },
   actions: { gap: spacing.sm, paddingTop: spacing.lg },
 });

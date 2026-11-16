@@ -201,6 +201,8 @@ export const sizes = {
   wheelWidth: 64,
   /** Narrowest the main action of a bottom bar gets before it moves under the price. */
   barAction: 200,
+  /** A row that opens a screen, such as My cars on Profile. */
+  row: 56,
   /** A place of the menu's tab bar, and the pill behind its icon when chosen. */
   tab: 56,
   tabPill: 56,

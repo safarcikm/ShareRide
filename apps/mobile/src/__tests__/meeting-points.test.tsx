@@ -140,7 +140,7 @@ describe("Meeting points", () => {
   it("opens from my profile", async () => {
     await renderApp("/profile", { me: completeMe, setUp: catalogue });
     await screen.findByRole("header", { name: "My profile" });
-    await fireEvent.press(screen.getByRole("button", { name: "See the meeting points" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Meeting points" }));
     expect(await screen.findByRole("header", { name: "Meeting points" })).toBeVisible();
   });
 });
