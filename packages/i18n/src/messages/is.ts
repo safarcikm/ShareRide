@@ -558,8 +558,6 @@ export const is = {
   "trip.needs.chat.quiet": "Róleg ferð",
   "trip.needs.chat.some": "Smá spjall",
   "trip.needs.chat.chatty": "Mikið spjall",
-  "trip.instantBooking": "Bókun strax",
-  "trip.approvalBooking": "Ökumaðurinn samþykkir hverja beiðni",
   "trip.fullOnPart": "Fullt á þínum hluta ferðarinnar",
   "trip.tooFewSeats":
     "Aðeins {count, plural, one {# sæti er laust} other {# sæti eru laus}} á þínum hluta.",
@@ -589,6 +587,7 @@ export const is = {
   "booking.titleInstant": "Bóka þessa ferð",
   "booking.titleRequest": "Óska eftir sæti í þessari ferð",
   "booking.checkAndPay": "Yfirfara og greiða",
+  "booking.driver": "Ökumaður: {driver}",
   "booking.driverAndCar": "Ökumaður: {driver} · {car}",
   "booking.seatsTimesPrice": "{seats} × {price}",
   "booking.confirmedOnPay": "Sætið þitt er staðfest um leið og þú greiðir.",
@@ -629,7 +628,7 @@ export const is = {
   "booking.freeNow":
     "{count, plural, =0 {Engin sæti eru laus á þínum hluta núna.} one {# sæti er laust á þínum hluta núna.} other {# sæti eru laus á þínum hluta núna.}}",
   "booking.backToTrip": "Aftur í ferðina",
-  "booking.priceChanged": "Verðið hefur breyst í {total}. Bóka á þessu verði?",
+  "booking.priceChanged": "Verðið hefur breyst í {total}. Greiða þetta verð?",
   "booking.priceChangedRequest": "Verðið hefur breyst í {total}. Senda beiðnina á þessu verði?",
   "booking.overlapping":
     "Þú átt þegar bókun eða beiðni á sama tíma. Dragðu hana til baka eða afbókaðu fyrst.",

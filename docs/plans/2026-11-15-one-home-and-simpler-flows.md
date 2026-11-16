@@ -364,8 +364,8 @@ rides.
 
 **Interfaces:**
 
-- Produces: `usePayment(bookingId: string): { start(): Promise<void>; sheet: Payment | null; notice: string | null }`
-  and `<PaymentSheet />`, used by Check and pay and the booking page.
+- Produces: `usePayment({ onSettled(booking), onStale(why) }): { start(bookingId): Promise<void>; settle(outcome): Promise<void>; starting; sheet: Payment | null; settling; notice: string | null }`
+  and `<PaymentSheet payment />`, used by Check and pay and the booking page.
 
 - [x] **Step 1: Write the failing tests:** the date, the part with times,
   the driver and car, seats times price and total (or "Free"), the three

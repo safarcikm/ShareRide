@@ -248,18 +248,21 @@ Find replaces both the front page and My profile as the place the app opens.
    - **Instant booking:** the button is "Pay {total}". It books the seats
      and opens the payment straight away: the test sheet opens at the
      bottom, in place of the button. There is no second Book and no waiting
-     screen. After "price changed", the button names the new total.
+     screen. After "price changed", the notice asks "The price has changed
+     to {total}. Pay this price?" and the button names the new total.
    - **Request:** the button is "Send request", with the optional message, as
      today. Paying happens from My rides, under Needs you.
    - **Free trips:** the button is "Book", and the booking is confirmed
      without a payment, as today.
-3. **If the payment does not finish** (failed, offline or not started), the
-   seats stay held until the payment deadline (rule M1), as today. Check and
-   pay stays open with "Not paid yet. Your seat is held until {time}.", the
-   reason, and the same Pay button, which pays for the same booking: one
-   booking only, even on a double tap. A booking that can no longer be paid
-   here, such as when the time to pay ran out, opens its own page. The
-   booking also shows under Needs you in My rides.
+3. **If the payment does not finish** (closed, failed, offline or not
+   started), the seats stay held until the payment deadline (rule M1), as
+   today. Check and pay stays open with "Not paid yet. Your seat is held
+   until {time}.", the reason, and the same Pay button, which pays for the
+   same booking: one booking only, even on a double tap. The held line
+   shows only once a payment did not go through, not while it starts. A
+   booking that can no longer be paid here, such as when the time to pay
+   ran out, opens its own page. The booking also shows under Needs you in
+   My rides.
 4. **You're booked**, after paying (or after booking a free trip): your
    seat on its own with a moss shape person, as the seat view draws it
    (spec 15), "You're booked!", then "Monday 16 November. Jón picks you up

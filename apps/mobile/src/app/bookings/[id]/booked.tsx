@@ -153,7 +153,12 @@ function Steps({ steps }: { readonly steps: readonly string[] }) {
     <View style={styles.steps}>
       {steps.map((step, index) => (
         <View key={step} style={styles.step}>
-          <View style={[styles.number, { backgroundColor: palette.primarySoft }]}>
+          {/* The order shows; read aloud, the lines are enough. */}
+          <View
+            aria-hidden
+            importantForAccessibility="no-hide-descendants"
+            style={[styles.number, { backgroundColor: palette.primarySoft }]}
+          >
             <Text style={[typography.label, { color: palette.primary }]}>{index + 1}</Text>
           </View>
           <Text style={[typography.body, styles.grow, { color: palette.text }]}>{step}</Text>
@@ -168,8 +173,9 @@ const styles = StyleSheet.create({
   steps: { gap: spacing.ms },
   step: { flexDirection: "row", alignItems: "flex-start", gap: spacing.ms },
   number: {
-    width: sizes.checkbox,
-    height: sizes.checkbox,
+    // At least the size of a box, and larger with larger text.
+    minWidth: sizes.checkbox,
+    minHeight: sizes.checkbox,
     borderRadius: radii.pill,
     alignItems: "center",
     justifyContent: "center",

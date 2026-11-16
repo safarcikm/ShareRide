@@ -4,6 +4,7 @@ import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Button } from "@/components/button";
 import { RadioCard } from "@/components/radio-card";
+import { TakesFocus } from "@/components/takes-focus";
 import { useLanguage } from "@/i18n/language";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -14,7 +15,8 @@ type Stop = TripDetails["stops"][number];
 /**
  * Where the passenger gets in or out, with Change (spec 16, 3.7, item 1):
  * "Get in", the time and the stop. Change opens the stops that can take its
- * place, as choices, and closes again on a choice or a second press.
+ * place, as choices, and closes again on a choice or a second press; focus
+ * then goes back to Change. With no other stop to choose, there is no Change.
  */
 export function StopChoice({
   getIn,
@@ -31,6 +33,9 @@ export function StopChoice({
   const { locale, t } = useLanguage();
   const palette = usePalette();
   const [open, setOpen] = useState(false);
+  // How many choices closed the list: each one gives focus back to Change,
+  // which the chosen card held before it went.
+  const [chosen, setChosen] = useState(0);
   const name = (each: Stop) => each.meetingPoint.name[locale];
   return (
     <View testID="stop-choice" style={styles.choice}>
@@ -48,16 +53,21 @@ export function StopChoice({
             </Text>
           </View>
         </View>
-        <Button
-          variant="text"
-          label={t("trip.change")}
-          accessibilityLabel={getIn ? t("trip.changeGetIn") : t("trip.changeGetOut")}
-          onPress={() => {
-            setOpen((was) => !was);
-          }}
-        />
+        {choices.length > 1 ? (
+          <TakesFocus key={chosen} when={chosen > 0}>
+            <Button
+              variant="text"
+              label={t("trip.change")}
+              accessibilityLabel={getIn ? t("trip.changeGetIn") : t("trip.changeGetOut")}
+              expanded={open}
+              onPress={() => {
+                setOpen((was) => !was);
+              }}
+            />
+          </TakesFocus>
+        ) : null}
       </View>
-      {open ? (
+      {open && choices.length > 1 ? (
         <View
           accessibilityRole="radiogroup"
           accessibilityLabel={getIn ? t("trip.getInChoices") : t("trip.getOutChoices")}
@@ -73,6 +83,7 @@ export function StopChoice({
               selected={each.position === stop.position}
               onSelect={() => {
                 setOpen(false);
+                setChosen((count) => count + 1);
                 if (each.position !== stop.position) onChoose(each.position);
               }}
             />

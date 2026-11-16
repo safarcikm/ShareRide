@@ -286,38 +286,39 @@ function BookForm({
     if (made === null && pending) return;
     sendingNow.current = true;
     setSending(true);
-    let booking = made;
-    if (booking === null) {
-      const answer = await session.call(bookTripRoute, {
-        params: { id: trip.id },
-        body: {
-          fromStop: part.board,
-          toStop: part.alight,
-          seats: part.seats,
-          total,
-          message: instant ? "" : trimmed,
-          attemptKey,
-        },
-      });
-      if (!answer.ok) {
-        sendingNow.current = false;
-        setSending(false);
-        failed(answer);
-        return;
+    try {
+      let booking = made;
+      if (booking === null) {
+        const answer = await session.call(bookTripRoute, {
+          params: { id: trip.id },
+          body: {
+            fromStop: part.board,
+            toStop: part.alight,
+            seats: part.seats,
+            total,
+            message: instant ? "" : trimmed,
+            attemptKey,
+          },
+        });
+        if (!answer.ok) {
+          failed(answer);
+          return;
+        }
+        booking = answer.data;
+        // A request, or a free ride confirmed at once, needs nothing more here.
+        if (booking.status !== "accepted") {
+          finished(booking);
+          return;
+        }
+        setProblem(null);
+        madeNow.current = booking;
+        setMade(booking);
       }
-      booking = answer.data;
-      // A request, or a free ride confirmed at once, needs nothing more here.
-      if (booking.status !== "accepted") {
-        finished(booking);
-        return;
-      }
-      setProblem(null);
-      madeNow.current = booking;
-      setMade(booking);
+      await payment.start(booking.id);
+    } finally {
+      sendingNow.current = false;
+      setSending(false);
     }
-    await payment.start(booking.id);
-    sendingNow.current = false;
-    setSending(false);
   };
   const shownTotal = formatMoney(total, locale);
   const label = paysNow
@@ -380,7 +381,7 @@ function BookForm({
         <PartStop stop={alightStop} getIn={false} />
         <Text style={[typography.small, { color: palette.text }]}>
           {trip.car === null
-            ? t("signIn.keptRideDriver", { driver })
+            ? t("booking.driver", { driver })
             : t("booking.driverAndCar", { driver, car: carText(t, trip.car) })}
         </Text>
         <View style={[styles.divider, { backgroundColor: palette.border }]} />
@@ -400,7 +401,12 @@ function BookForm({
         </View>
       </Card>
 
-      {made !== null && made.paymentDueAt !== null && payment.sheet === null ? (
+      {/* Only once a payment did not go through: while it starts, the seat
+          is on its way to being paid, not left waiting. */}
+      {made !== null &&
+      made.paymentDueAt !== null &&
+      payment.sheet === null &&
+      payment.notice !== null ? (
         <Notice kind="info" message={heldUntilText(t, new Date(made.paymentDueAt), now())} />
       ) : null}
       {payment.notice === null ? null : (

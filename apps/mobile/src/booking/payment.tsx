@@ -42,7 +42,6 @@ export interface PaymentState {
   readonly start: (bookingId: string) => Promise<void>;
   /** The test sheet's answer: the payment goes through or fails. */
   readonly settle: (outcome: "succeeded" | "failed") => Promise<void>;
-  readonly clearNotice: () => void;
 }
 
 /**
@@ -86,11 +85,15 @@ export function usePayment({
     callingNow.current = true;
     setNotice(null);
     setPaying({ stage: "starting" });
-    const answer = await session.call(startPaymentRoute, {
-      params: { id: bookingId },
-      body: {},
-    });
-    callingNow.current = false;
+    let answer;
+    try {
+      answer = await session.call(startPaymentRoute, {
+        params: { id: bookingId },
+        body: {},
+      });
+    } finally {
+      callingNow.current = false;
+    }
     if (answer.ok) {
       setPaying({ stage: "sheet", payment: answer.data });
       return;
@@ -105,11 +108,15 @@ export function usePayment({
     const { payment } = paying;
     setNotice(null);
     setPaying({ stage: "settling", payment });
-    const answer = await session.call(testPaymentRoute, {
-      params: { id: payment.paymentId },
-      body: { outcome },
-    });
-    callingNow.current = false;
+    let answer;
+    try {
+      answer = await session.call(testPaymentRoute, {
+        params: { id: payment.paymentId },
+        body: { outcome },
+      });
+    } finally {
+      callingNow.current = false;
+    }
     if (!answer.ok) {
       // A failed call leaves the payment as it was: the sheet stays.
       setPaying(
@@ -130,9 +137,6 @@ export function usePayment({
     notice,
     start,
     settle,
-    clearNotice: () => {
-      setNotice(null);
-    },
   };
 }
 

@@ -24,6 +24,8 @@ interface ButtonProps {
   readonly disabled?: boolean;
   /** The screen's main action, such as a step's "Continue": full width and 56 high. */
   readonly main?: boolean;
+  /** For a button that opens and closes something below it: whether it is open. */
+  readonly expanded?: boolean;
 }
 
 /** Colours and edge of each variant (spec 15, section 5.1). */
@@ -64,6 +66,7 @@ export function Button({
   busy = false,
   disabled = false,
   main = false,
+  expanded,
 }: ButtonProps) {
   const palette = usePalette();
   const inactive = busy || disabled;
@@ -75,6 +78,7 @@ export function Button({
       // aria-* rather than accessibilityState, which the web build drops.
       aria-disabled={inactive}
       aria-busy={busy}
+      aria-expanded={expanded}
       disabled={inactive}
       onPress={onPress}
       style={({ pressed }) => [

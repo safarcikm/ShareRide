@@ -3,7 +3,7 @@ import { shareLink } from "@/lib/share";
 import { renderApp, completeMe } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { failure, ok } from "@/testing/fake-client";
-import { northResult, northTrip, searchApi, tripDetailsApi } from "@/testing/search";
+import { northResult, northStops, northTrip, searchApi, tripDetailsApi } from "@/testing/search";
 import { blonduos, borgarnes } from "@/testing/trips";
 import { getInAt, getOutAt } from "@/trip-details/route-list";
 
@@ -182,13 +182,30 @@ describe("Trip details (spec 4, 3.6)", () => {
     ]);
   });
 
+  it("offers no Change on a trip with only two stops", async () => {
+    await openTrip(`/trips/${id}?from=0&to=1`, () =>
+      ok(200, northTrip({ board: 0, alight: 1 }, { stops: northStops.slice(0, 2) })),
+    );
+    const [getIn] = await screen.findAllByTestId("stop-choice");
+    expect(getIn).toHaveTextContent(/^Get in/);
+    expect(screen.queryByRole("button", { name: "Change where you get in" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Change where you get out" })).toBeNull();
+  });
+
   it("closes the stops again when Change is pressed a second time", async () => {
     await openTrip();
     const change = await screen.findByRole("button", { name: "Change where you get out" });
+    expect(change).not.toBeExpanded();
     await fireEvent.press(change);
     expect(screen.getAllByRole("radio")).toHaveLength(2);
+    expect(screen.getByLabelText("Where you get out")).toHaveProp(
+      "accessibilityRole",
+      "radiogroup",
+    );
+    expect(screen.getByRole("button", { name: "Change where you get out" })).toBeExpanded();
     await fireEvent.press(screen.getByRole("button", { name: "Change where you get out" }));
     expect(screen.queryAllByRole("radio")).toEqual([]);
+    expect(screen.getByRole("button", { name: "Change where you get out" })).not.toBeExpanded();
     expect(screen).toHaveSearchParams({ id, from: "1", to: "2" });
   });
 

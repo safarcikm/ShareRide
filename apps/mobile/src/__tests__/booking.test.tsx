@@ -389,6 +389,40 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     expect(screen).toHavePathname(`/bookings/${bookingId}/booked`);
   });
 
+  it("says nothing about an unpaid seat while the payment starts", async () => {
+    let release: () => void = () => undefined;
+    await openCheckAndPay({
+      pay: () =>
+        new Promise((resolve) => {
+          release = () => {
+            resolve(ok(200, paymentFor(unpaidBooking)));
+          };
+        }),
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Pay 2,900 ISK" }));
+    expect(await screen.findByRole("button", { name: "Pay 2,900 ISK", busy: true })).toBeVisible();
+    expect(screen.queryByText(/^Not paid yet/)).toBeNull();
+    await act(async () => {
+      release();
+      await Promise.resolve();
+    });
+    expect(
+      await screen.findByRole("header", { name: "Test payment: no money moves" }),
+    ).toBeVisible();
+    expect(screen.queryByText(/^Not paid yet/)).toBeNull();
+  });
+
+  it("settles once for a double tap on the sheet's Pay", async () => {
+    const { client } = await openCheckAndPay();
+    await fireEvent.press(await screen.findByRole("button", { name: "Pay 2,900 ISK" }));
+    const pay = await screen.findByRole("button", { name: "Pay 2,900 ISK" });
+    await act(async () => {
+      await Promise.all([fireEvent.press(pay), fireEvent.press(pay)]);
+    });
+    expect(await screen.findByRole("header", { name: "You're booked!" })).toBeVisible();
+    expect(client.calls.filter((call) => call.path === "/v1/test-payments/{id}")).toHaveLength(1);
+  });
+
   it("makes one booking and one payment for a double tap on Pay", async () => {
     const { client } = await openCheckAndPay();
     const pay = await screen.findByRole("button", { name: "Pay 2,900 ISK" });
@@ -656,7 +690,7 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     expect(await screen.findByText("1 seat × 2,900 ISK")).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Pay 2,900 ISK" }));
     expect(
-      await screen.findByText("The price has changed to 3,100 ISK. Book at this price?"),
+      await screen.findByText("The price has changed to 3,100 ISK. Pay this price?"),
     ).toBeVisible();
     // The price per seat is asked for again, and the button names the new total.
     expect(await screen.findByText("1 seat × 3,100 ISK")).toBeVisible();
@@ -723,6 +757,50 @@ describe("You're booked and Request sent (spec 16, 3.7, items 4 and 5)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "See it in My rides" }));
     expect(await screen.findByRole("tab", { name: "My rides", selected: true })).toBeVisible();
     expect(screen).toHavePathname("/my-rides");
+  });
+
+  it("goes back to the trip from You're booked, which now leads to the booking", async () => {
+    let booked = false;
+    await renderApp(`/trips/${id}?from=1&to=2`, {
+      me: completeMe,
+      setUp: (client) => {
+        tripDetailsApi(client, () =>
+          ok(
+            200,
+            northTrip(
+              { board: 1, alight: 2 },
+              {
+                bookingMode: "instant",
+                ...(booked ? { myBooking: { id: bookingId, status: "confirmed" as const } } : {}),
+              },
+            ),
+          ),
+        );
+        client.answer(
+          "/v1/trips/{id}/bookings",
+          () => {
+            booked = true;
+            return ok(201, unpaidBooking);
+          },
+          "post",
+        );
+        bookingApi(client, () => paidBooking);
+        client.answer(
+          "/v1/bookings/{id}/payment",
+          () => ok(200, paymentFor(unpaidBooking)),
+          "post",
+        );
+        client.answer("/v1/test-payments/{id}", () => ok(200, paidBooking), "post");
+      },
+    });
+    const bar = await screen.findByTestId("bottom-bar");
+    await fireEvent.press(within(bar).getByRole("button", { name: "Book" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Pay 2,900 ISK" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Pay 2,900 ISK" }));
+    expect(await screen.findByRole("header", { name: "You're booked!" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByText("You have a booking on this trip.")).toBeVisible();
+    expect(screen).toHavePathname(`/trips/${id}`);
   });
 
   it("says the plate shows later when the driver has not added it", async () => {

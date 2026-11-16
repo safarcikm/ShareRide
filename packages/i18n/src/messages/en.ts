@@ -554,8 +554,6 @@ export const en = {
   "trip.needs.chat.quiet": "A quiet ride",
   "trip.needs.chat.some": "Some chat",
   "trip.needs.chat.chatty": "Happy to chat",
-  "trip.instantBooking": "Instant booking",
-  "trip.approvalBooking": "The driver approves each request",
   "trip.fullOnPart": "Full on your part of the trip",
   "trip.tooFewSeats":
     "Only {count, plural, one {# seat is} other {# seats are}} free on your part.",
@@ -585,6 +583,7 @@ export const en = {
   "booking.titleInstant": "Book this ride",
   "booking.titleRequest": "Request this ride",
   "booking.checkAndPay": "Check and pay",
+  "booking.driver": "Driver: {driver}",
   "booking.driverAndCar": "Driver: {driver} · {car}",
   "booking.seatsTimesPrice": "{seats} × {price}",
   "booking.confirmedOnPay": "Your seat is confirmed as soon as you pay.",
@@ -623,7 +622,7 @@ export const en = {
   "booking.freeNow":
     "{count, plural, =0 {No seats are free on your part now.} one {# seat is free on your part now.} other {# seats are free on your part now.}}",
   "booking.backToTrip": "Back to the trip",
-  "booking.priceChanged": "The price has changed to {total}. Book at this price?",
+  "booking.priceChanged": "The price has changed to {total}. Pay this price?",
   "booking.priceChangedRequest":
     "The price has changed to {total}. Send the request at this price?",
   "booking.overlapping":
