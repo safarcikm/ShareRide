@@ -34,6 +34,8 @@ interface Journey extends TripSearch {
   readonly openInMaps: string;
   readonly yours: string;
   readonly see: string;
+  readonly addEmailPrompt: string;
+  readonly notNow: string;
 }
 
 const inEnglish: Journey = {
@@ -67,6 +69,8 @@ const inEnglish: Journey = {
   openInMaps: "Open in maps",
   yours: "You have a booking on this trip.",
   see: "See your booking",
+  addEmailPrompt: "Add an email so we can reach you if your trip changes.",
+  notNow: "Not now",
 };
 
 const inIcelandic: Journey = {
@@ -100,6 +104,8 @@ const inIcelandic: Journey = {
   openInMaps: "Opna í kortaforriti",
   yours: "Þú átt bókun í þessari ferð.",
   see: "Sjá bókunina",
+  addEmailPrompt: "Bættu við netfangi svo við getum látið þig vita ef ferðin breytist.",
+  notNow: "Ekki núna",
 };
 
 const journeys = [inEnglish, inIcelandic];
@@ -148,6 +154,11 @@ for (const journey of journeys) {
       await expect(page.getByRole("heading", { name: journey.next })).toBeVisible();
       await expect(page.getByRole("heading", { name: journey.whereToStand })).toBeVisible();
       await expect(page.getByRole("button", { name: journey.openInMaps })).toBeVisible();
+      // On the web nothing can reach them yet, so they are asked to add an
+      // email (spec 7, 3.6.2); "Not now" closes it.
+      await expect(page.getByText(journey.addEmailPrompt)).toBeVisible();
+      await page.getByRole("button", { name: journey.notNow }).click();
+      await expect(page.getByText(journey.addEmailPrompt)).toBeHidden();
       const booking = page.url().replace(/\/booked$/, "");
 
       // The confirmed seat is kept, and the trip page now leads to it.

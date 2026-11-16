@@ -31,6 +31,23 @@ const statusTags: Record<Booking["status"], TagKind> = {
 export const statusTag = (booking: Booking): TagKind =>
   isWithdrawn(booking) ? "info" : statusTags[booking.status];
 
+/**
+ * When the booking's own page asks its passenger to turn on notifications or
+ * add an email (spec 7, 3.6.2), and for which occasion: a request the driver
+ * said yes to, waiting for payment or confirmed (a free one is at once,
+ * R5.11); or an instant booking once confirmed, which may be paid here after
+ * leaving Check and pay, and shares the finish screen's occasion.
+ */
+export function promptOccasion(booking: Booking): string | null {
+  if (booking.viewer !== "passenger") return null;
+  if (booking.trip.bookingMode === "approval") {
+    return booking.status === "accepted" || booking.status === "confirmed"
+      ? `accepted:${booking.id}`
+      : null;
+  }
+  return booking.status === "confirmed" ? `booked:${booking.id}` : null;
+}
+
 /** Declined, expired and withdrawn bookings offer the same search again. */
 export const offersSearchAgain = (booking: Booking) =>
   booking.status === "declined" || booking.status === "expired" || isWithdrawn(booking);

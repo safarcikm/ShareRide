@@ -85,7 +85,8 @@ is accepted (`apps/mobile/e2e/email.spec.ts`). Trip reminders are turned off
 in Settings and stay off after a reload
 (`apps/mobile/e2e/notification-settings.spec.ts`). After posting a trip on
 the web, the driver is asked to add an email and closes it with "Not now"
-(`apps/mobile/e2e/post-a-trip.spec.ts`).
+(`apps/mobile/e2e/post-a-trip.spec.ts`); so is the passenger after booking
+(journey 3) and once a request is accepted (journey 4).
 
 ## Coverage
 

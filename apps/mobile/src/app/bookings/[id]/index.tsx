@@ -9,6 +9,7 @@ import { useSession } from "@/auth/session";
 import {
   isWithdrawn,
   offersSearchAgain,
+  promptOccasion,
   searchAgainHref,
   statusKey,
   statusTag,
@@ -29,6 +30,7 @@ import { Body, Heading, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { useLoaded } from "@/lib/use-loaded";
+import { NotificationsPrompt } from "@/notifications/notifications-prompt";
 import { DriverAndCar, PartStop } from "@/trip-details/trip-parts";
 import { controlOutline, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -38,7 +40,9 @@ import { usePalette } from "@/theme/use-palette";
  * driver, which can be withdrawn; an accepted booking to pay for; a confirmed
  * seat with the number plate and where to stand; or one that ended, with
  * "Search again". Until the real provider comes (spec 13), paying opens the
- * test sheet, where no money moves.
+ * test sheet, where no money moves. Once a request is accepted, or a booking
+ * paid here, someone we could not reach yet is asked to turn on
+ * notifications or add an email (spec 7, 3.6.2).
  */
 export default function BookingScreen() {
   const { t } = useLanguage();
@@ -131,6 +135,7 @@ function BookingDetails({
   const total = formatMoney(booking.total, locale);
   const free = booking.total.amount === 0;
   const passenger = booking.viewer === "passenger";
+  const occasion = promptOccasion(booking);
 
   return (
     <Screen>
@@ -159,6 +164,7 @@ function BookingDetails({
           onStale={onStale}
         />
       ) : null}
+      {occasion === null ? null : <NotificationsPrompt occasion={occasion} />}
 
       <Card>
         <PartStop stop={board} getIn />

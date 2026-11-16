@@ -371,10 +371,16 @@ Endpoints (`/v1`), shapes in `packages/contracts/src/chat.ts`:
     project yet (no token can be registered). Once the phone has been told
     no (the first no, though Android may ask twice), or on the web, only
     "Add an email" is offered.
-  - An occasion (`posted:<trip>`, `booked:<booking>`, `accepted:<booking>`)
-    is asked until answered: "Not now", "Add an email", or notifications
-    turned on. The newest 20 answered are kept in the app's own storage on
-    the device.
+  - Where: under the trip card after posting (`posted:<trip>`); under the
+    main message of the booking finish screen, booked or requested
+    (`booked:<booking>`); and on the booking under its status. There it is
+    `accepted:<booking>` once a request is accepted, while it waits for
+    payment and once confirmed (a free one at once); and `booked:<booking>`
+    for an instant booking once confirmed, as it may be paid there after
+    leaving Check and pay.
+  - An occasion is asked until answered: "Not now", "Add an email", or
+    notifications turned on. The newest 20 answered are kept in the app's
+    own storage on the device.
   - On Android the notification channel is made before asking, as Android
     13 asks only once the app has one. Once allowed, the phone's token is
     registered as at start.
@@ -500,10 +506,11 @@ work (spec 16, proposal 4), which leave a slot for it.
 
 ### PR 8c: `feat(notifications)`: the prompt after booking and being accepted
 
-- [ ] `NotificationsPrompt` on the booking finish screen (spec 16, proposal
+- [x] `NotificationsPrompt` on the booking finish screen (spec 16, proposal
       4, whose screen leaves a slot under the main message) and when a
       request is accepted
-- Verify: screen tests for both occasions
+- Verify: screen tests for both occasions; the booking and request
+  journeys see it on the web
 
 ## 6. Review focus
 

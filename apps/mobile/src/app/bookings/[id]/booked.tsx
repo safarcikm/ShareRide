@@ -16,6 +16,7 @@ import { Body, Heading, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { useLoaded } from "@/lib/use-loaded";
+import { NotificationsPrompt } from "@/notifications/notifications-prompt";
 import { YourSeat } from "@/trip-details/seat-view";
 import { radii, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -23,9 +24,11 @@ import { usePalette } from "@/theme/use-palette";
 /**
  * The finish after booking (spec 16, 3.7, items 4 and 5): "You're booked!"
  * once paid or booked free, or "Request sent", with what happens next and,
- * once confirmed, where to stand. It takes the place of Check and pay, so
- * Back opens the trip; opened on its own, Back opens the booking. Any other
- * booking opens on its own page, which says where it stands.
+ * once confirmed, where to stand. Someone we could not reach yet is asked
+ * to turn on notifications or add an email (spec 7, 3.6.2). It takes the
+ * place of Check and pay, so Back opens the trip; opened on its own, Back
+ * opens the booking. Any other booking opens on its own page, which says
+ * where it stands.
  */
 export default function BookedScreen() {
   const { t } = useLanguage();
@@ -137,8 +140,7 @@ function Finished({ booking }: { readonly booking: Booking }) {
           })}
         </Body>
       )}
-      {/* Milestone 5's notifications prompt (PR 8b) goes here, under the main message. */}
-
+      <NotificationsPrompt occasion={`booked:${booking.id}`} />
       <Heading>{t("booking.next")}</Heading>
       <Steps steps={steps} />
       <WhereToStand booking={booking} />
