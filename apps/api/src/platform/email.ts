@@ -32,6 +32,13 @@ export interface EmailSender {
   send(message: EmailMessage): Promise<{ readonly id: string }>;
 }
 
+/** The email the API sends, and the web app its links open. */
+export interface EmailChannel {
+  readonly sender: EmailSender;
+  /** The web app's origin, such as `https://shareride.is`. */
+  readonly webAppUrl: string;
+}
+
 export interface FakeEmailSender extends EmailSender {
   /** What was sent, oldest first. */
   readonly sent: EmailMessage[];

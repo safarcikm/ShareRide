@@ -1,11 +1,11 @@
 import type { CallFailure } from "@shareride/api-client";
 import type { Translate } from "@shareride/i18n";
 
-/** A wait in words: seconds under a minute, otherwise whole minutes rounded up. */
+/** A wait in words: seconds under a minute, then whole minutes, then whole hours, rounded up. */
 export function formatWait(t: Translate, seconds: number): string {
-  return seconds < 60
-    ? t("auth.wait.seconds", { count: seconds })
-    : t("auth.wait.minutes", { count: Math.ceil(seconds / 60) });
+  if (seconds < 60) return t("auth.wait.seconds", { count: seconds });
+  if (seconds < 3600) return t("auth.wait.minutes", { count: Math.ceil(seconds / 60) });
+  return t("auth.wait.hours", { count: Math.ceil(seconds / 3600) });
 }
 
 /** What to tell the person about a failed call, in their language. */

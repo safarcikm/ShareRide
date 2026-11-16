@@ -1,3 +1,4 @@
+export * from "./email-address.ts";
 export * from "./legal.ts";
 export * from "./onboarding.ts";
 export * from "./phone-number.ts";

@@ -20,6 +20,7 @@ export const testMe: Me = {
   languages: [],
   locale: "en",
   email: null,
+  pendingEmail: null,
   ageConfirmed: false,
   memberSince: "2026-11-13T12:00:00.000Z",
   missingSteps: ["legal", "profile"],

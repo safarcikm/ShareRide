@@ -15,7 +15,7 @@ import { captureError, startErrorReporting } from "./platform/error-reporting.ts
 import { createTestPaymentProvider } from "./platform/payments.ts";
 import { createExpoPushSender } from "./platform/push-expo.ts";
 import { startRepeating } from "./platform/repeat.ts";
-import { selectEmailSender } from "./platform/select-email-sender.ts";
+import { selectEmail } from "./platform/select-email.ts";
 import { selectSmsSender } from "./platform/select-sms-sender.ts";
 
 let config: Config;
@@ -48,6 +48,11 @@ function reportMissingProxyEntry(): void {
 }
 // loadConfig refuses the test provider in production.
 const payments = config.payments.provider === "test" ? createTestPaymentProvider() : undefined;
+// Email through Mailjet (ADR 0027), or the terminal in development; none
+// when EMAIL_PROVIDER is none. Adding an email and the worker share it.
+const email = selectEmail(config.email, (line) => {
+  process.stdout.write(`${line}\n`);
+});
 const app = createApp({
   logger,
   checkDatabase: () => pingDatabase(database.pool),
@@ -70,6 +75,7 @@ const app = createApp({
     },
     secureCookies: config.nodeEnv === "production",
     ...(payments === undefined ? {} : { payments }),
+    ...(email === undefined ? {} : { email }),
   },
 });
 
@@ -112,21 +118,15 @@ if (payments !== undefined) {
 
 // Notifications (spec 7, 3.7), every 5 seconds unless WORKER=off. Push
 // goes through Expo's push service to the devices that registered a token;
-// email through Mailjet (ADR 0027), or the terminal in development, and is
-// skipped as `email_off` when EMAIL_PROVIDER is none.
+// email is skipped as `email_off` when EMAIL_PROVIDER is none.
 if (config.worker) {
-  const emailSender = selectEmailSender(config.email, (line) => {
-    process.stdout.write(`${line}\n`);
-  });
   const worker = createNotificationWorker({
     db: database.db,
     clock: () => new Date(),
     push: createExpoPushSender(
       config.push.accessToken === undefined ? {} : { accessToken: config.push.accessToken },
     ),
-    ...(emailSender === undefined || config.email.provider === "none"
-      ? {}
-      : { email: { sender: emailSender, webAppUrl: config.email.webAppUrl } }),
+    ...(email === undefined ? {} : { email }),
     onSendError: (error, delivery) => {
       logger.warn({ err: error, delivery: delivery.id, channel: delivery.channel }, "not sent");
     },

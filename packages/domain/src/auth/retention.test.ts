@@ -32,6 +32,7 @@ describe("retentionCutoffs", () => {
       tokensExpiredBefore: now,
       sessionsIdleSince: new Date(now.getTime() - sessionRules.refreshTokenIdleSeconds * 1000),
       sessionsEndedBefore: new Date("2026-10-14T12:00:00Z"),
+      emailLinksSentBefore: new Date("2026-11-12T12:00:00Z"),
     });
   });
 });

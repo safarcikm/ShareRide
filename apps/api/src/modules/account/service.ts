@@ -15,6 +15,7 @@ import {
 import type { Locale } from "@shareride/i18n";
 import { eq } from "drizzle-orm";
 import type { LegalService } from "../legal/index.ts";
+import { pendingEmailOf } from "./email.ts";
 
 const { legalAcceptances, legalDocuments, users } = schema;
 
@@ -56,7 +57,8 @@ export function createAccountService(dependencies: {
       about: user.about,
       languages: user.languages,
       locale: user.locale === "is" ? "is" : "en",
-      email: user.email,
+      email: user.emailVerifiedAt === null ? null : user.email,
+      pendingEmail: await pendingEmailOf(db, userId, clock()),
       ageConfirmed: user.ageConfirmedAt !== null,
       memberSince: user.createdAt.toISOString(),
       missingSteps: steps,

@@ -1,4 +1,9 @@
-import { refreshRoute, signOutRoute, startPhoneSignInRoute } from "@shareride/contracts";
+import {
+  putEmailRoute,
+  refreshRoute,
+  signOutRoute,
+  startPhoneSignInRoute,
+} from "@shareride/contracts";
 import { schema } from "@shareride/db";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -55,6 +60,25 @@ describe("cleanUpSignInRecords", () => {
     await sendCode();
     expect(await cleanUp()).toMatchObject({ codes: 1 });
     expect(await count(verificationCodes)).toBe(1);
+  });
+
+  it("deletes links to verify an email a day after they were sent", async () => {
+    const phone = api.newPhoneNumber();
+    const ask = async () => {
+      // Signed in again each time: an access token lasts less than a day.
+      const { accessToken } = await api.signIn(phone);
+      return api.client.call(putEmailRoute, {
+        accessToken,
+        body: { email: "anna-clean@example.com" },
+      });
+    };
+    const first = api.now().getTime() + 31_000;
+    expect((await ask()).ok).toBe(true);
+    api.advance(day - 120);
+    expect((await ask()).ok).toBe(true);
+    api.advance((first + day * 1000 - api.now().getTime()) / 1000);
+    expect(await cleanUp()).toMatchObject({ emailLinks: 1 });
+    expect(await api.connection.db.select().from(schema.emailVerifications)).toHaveLength(1);
   });
 
   it("deletes rate-limit events after 24 hours", async () => {

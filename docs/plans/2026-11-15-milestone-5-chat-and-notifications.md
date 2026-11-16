@@ -307,6 +307,27 @@ Endpoints (`/v1`), shapes in `packages/contracts/src/chat.ts`:
   hours; `POST /email-verifications` with its token sets the address as
   verified, signed in or not. "Add an email" sits under "Your account" in
   Settings, where the new Settings layout puts it.
+  - The address waits in `email_verifications` (the address, a hash of the
+    link's token, when it was sent, used or refused) until the link is
+    opened; only then does it become the account's email. A verified email
+    stays until a new one is verified, and asking for it again gives up a
+    change still waiting for its link.
+  - Only the newest link sent works. A link is asked for at most once a
+    minute and 5 times a day per account, counting ones the provider
+    refused (they are logged); the hourly clean-up deletes links a day old.
+  - The link is `{WEB_APP_URL}/verify-email#{token}`: the token is after
+    the `#`, so it never reaches the server's request logs.
+  - The email goes from the request, like a sign-in code, not through the
+    worker: it is not about a booking. One that may have gone out counts as
+    sent; with `EMAIL_PROVIDER=none` the API says email is not available.
+    The requests and the worker share one sender (`selectEmail`).
+  - The link's page says when the link no longer works or the address is
+    another account's; any other failure leaves the link working, so it
+    offers to try again. A reload finds no token (it left the address bar)
+    and asks to open the link from the email.
+  - An address another account has verified is not revealed when asked
+    for; opening its link says it belongs to another account.
+  - `GET /me` gains `pendingEmail`, the address waiting for its link.
 - **Unread messages:** 15 minutes after a message, if it is still unread
   and its reader has no push token, one email "You have unread messages
   about your trip on {date}", at most once an hour per conversation, without
@@ -430,11 +451,10 @@ lets people add an address to send it to.
 
 ### PR 7b: `feat(notifications)`: adding an email
 
-- [ ] Adding and verifying an email: API, Settings ("Your account") and the
+- [x] Adding and verifying an email: API, Settings ("Your account") and the
       link's screen
-- Verify: a browser journey adds an email, opens the link from the
-  development outbox, and gets the "Pay now" email after a request is
-  accepted
+- Verify: a browser journey adds an email, opens the link from the test
+  API's outbox, and gets the "Pay now" email after a request is accepted
 
 ### PR 8: `feat(notifications)`: reminders and settings
 

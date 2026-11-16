@@ -64,7 +64,8 @@ checks that exactly one succeeds.
 On the web, Playwright runs these journeys against the real API with a test
 database (`apps/api/src/e2e-server.ts`). That server writes text messages to a
 file the tests read the codes from, and moves its clock 31 seconds on with
-each code, so a test can sign in to the same account again at once. Journey 1
+each code, so a test can sign in to the same account again at once. It writes
+emails to another file, and runs the notification worker every second. Journey 1
 runs in English and Icelandic, with "sign out on all devices"
 (`apps/mobile/e2e/sign-in.spec.ts`). Journey 3 books part of an instant
 trip and pays with the test provider's sheet after a failed payment, in both
@@ -78,7 +79,9 @@ rides (`apps/mobile/e2e/my-rides.spec.ts`). Find, where the app
 opens, shows a ride leaving soon and searches a route, leads from "Offer a
 ride" and from Sign in under Profile to signing in, and shows the menu of
 five places on every main screen, marking the one you are on
-(`apps/mobile/e2e/welcome.spec.ts`).
+(`apps/mobile/e2e/welcome.spec.ts`). A passenger adds an email in Settings,
+opens the link from the email, and gets the "Pay now" email once a request
+is accepted (`apps/mobile/e2e/email.spec.ts`).
 
 ## Coverage
 

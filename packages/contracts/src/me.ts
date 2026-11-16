@@ -14,7 +14,10 @@ export const meSchema = z.object({
   about: z.string().nullable(),
   languages: z.array(z.string()),
   locale: localeSchema,
+  /** The verified email address, if any. */
   email: z.string().nullable(),
+  /** An address waiting for its link to be opened (plan 4.6). */
+  pendingEmail: z.string().nullable(),
   ageConfirmed: z.boolean(),
   memberSince: timestampSchema,
   /** What is still needed, in order; empty when the account is complete. */
@@ -43,6 +46,16 @@ export const sessionSchema = z.object({
 });
 
 export const sessionsResponseSchema = z.object({ sessions: z.array(sessionSchema) });
+
+/** The address to verify; the API checks its shape (spec 1, 3.5). */
+export const emailBodySchema = z.object({ email: z.string().max(320) });
+
+export const emailVerificationBodySchema = z.object({
+  /** From the link, after `#`. */
+  token: z.string().min(1).max(200),
+});
+
+export const emailVerifiedSchema = z.object({ email: z.string() });
 
 /** An Expo push token, as the app's notifications module gives it. */
 export const pushTokenSchema = z
@@ -165,5 +178,39 @@ export const acceptLegalRoute = defineRoute({
       description: "legal_version_outdated: a newer version exists; show it and ask again",
       ...errors,
     },
+  },
+});
+
+export const putEmailRoute = defineRoute({
+  method: "put",
+  path: "/v1/me/email",
+  summary: "Send a link to verify my email address",
+  tags: ["me"],
+  auth: true,
+  request: { body: emailBodySchema },
+  responses: {
+    200: {
+      description:
+        "The link was sent (or may have been) and the address waits as pendingEmail; an address already mine changes nothing",
+      schema: meSchema,
+    },
+    400: { description: "email_invalid", ...errors },
+    401: unauthenticated,
+    429: { description: "rate_limited, with retryAfterSeconds", ...errors },
+    502: { description: "email_failed: it was not sent; try again", ...errors },
+    503: { description: "email_unavailable: this server sends no email", ...errors },
+  },
+});
+
+export const verifyEmailRoute = defineRoute({
+  method: "post",
+  path: "/v1/email-verifications",
+  summary: "Verify an email address with the link's token, signed in or not",
+  tags: ["me"],
+  request: { body: emailVerificationBodySchema },
+  responses: {
+    200: { description: "The address is the account's, verified", schema: emailVerifiedSchema },
+    400: { description: "link_invalid: unknown, used, older than 24 hours or replaced", ...errors },
+    409: { description: "email_taken: another account has verified this address", ...errors },
   },
 });
