@@ -11,6 +11,7 @@ import {
   ok,
   plannedTimes,
   routeLegPairs,
+  runsOrRan,
   stopsToCopy,
   type DistancesMissing,
   type MeetingPointStatus,
@@ -25,7 +26,7 @@ import { and, asc, count, desc, eq, gt, inArray, isNull, lte, min, ne, or, sql }
 import type { DrivingService } from "../driving/index.ts";
 import { seatsTakenNow } from "../bookings/seats.ts";
 import { toSummary } from "../meeting-points/service.ts";
-import { checkedInAt, checkInsAt, shownWindow } from "../trip-day/check-ins.ts";
+import { checkInsAt, driverCheckedInAt, shownWindow } from "../trip-day/check-ins.ts";
 
 const { bookings, legs, meetingPoints, segments, trips, tripStops, users, vehicles } = schema;
 
@@ -186,7 +187,7 @@ export function createTripService(dependencies: {
     );
     return rows.map((row) => {
       // The trip day is for a trip that runs, or ran (spec 8, 3.1).
-      const runs = row.status !== "draft" && row.status !== "cancelled";
+      const runs = runsOrRan(row.status as MyTrip["status"]);
       return {
         id: row.id,
         status: row.status as MyTrip["status"],
@@ -202,7 +203,7 @@ export function createTripService(dependencies: {
               runs && stop.plannedAt !== null
                 ? {
                     ...shownWindow(stop.plannedAt, tripDaySettings),
-                    at: checkedInAt(checkIns, stop.id, row.driverId)?.toISOString() ?? null,
+                    at: driverCheckedInAt(checkIns, stop.id)?.toISOString() ?? null,
                   }
                 : null,
           })),

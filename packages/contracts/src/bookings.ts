@@ -191,7 +191,10 @@ export const bookingSchema = z.object({
       passengerCheckedInAt: timestampSchema.nullable(),
       /** When the driver said "I'm here" there; null until then. */
       driverCheckedInAt: timestampSchema.nullable(),
-      /** Whether the passenger is at their stop, as the driver sees it. */
+      /**
+       * Whether the passenger is at their stop, as the driver sees it on the
+       * trip day; after it, the status says how the ride went.
+       */
       arrival: z.enum(arrivals),
     })
     .nullable(),

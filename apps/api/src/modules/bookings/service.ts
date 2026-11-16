@@ -8,6 +8,7 @@ import {
   checkNote,
   dayPhase,
   err,
+  hasTripDay,
   holdsSeats,
   movedFar,
   nextStatus,
@@ -43,7 +44,12 @@ import { oweRefund } from "../payments/refunds.ts";
 import { bookingConfirmed } from "./confirmed.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import { recordEvents } from "../notifications/outbox.ts";
-import { checkedInAt, checkInsAt, shownWindow } from "../trip-day/check-ins.ts";
+import {
+  checkInsAt,
+  driverCheckedInAt,
+  passengerCheckedInAt,
+  shownWindow,
+} from "../trip-day/check-ins.ts";
 import {
   changeOccupancy,
   expireDueBookings,
@@ -240,8 +246,8 @@ async function readBookings(q: Queryable, where: SQL | undefined) {
     const endedAt = cancelledAt ?? expiredAt ?? (status === "declined" ? decidedAt : null);
     return {
       ...row,
-      passengerCheckedInAt: checkedInAt(checkIns, row.boardStop.id, row.booking.passengerId),
-      driverCheckedInAt: checkedInAt(checkIns, row.boardStop.id, row.trip.driverId),
+      passengerCheckedInAt: passengerCheckedInAt(checkIns, row.booking.id),
+      driverCheckedInAt: driverCheckedInAt(checkIns, row.boardStop.id),
       // Made under the trip's lock, so one at the same moment came before the booking.
       changes: changes.filter(
         (change) =>
@@ -360,9 +366,6 @@ function shownStatus(booking: BookingRow["booking"], now: Date): BookingStatus {
   );
 }
 
-/** The booking statuses that had a trip day: confirmed, and what a confirmed booking becomes. */
-const boardingStatuses: readonly BookingStatus[] = ["confirmed", "completed", "no_show"];
-
 /** The trip day at the boarding stop (spec 8, 3.1 and 3.2), for a booking that boards. */
 function tripDayOf(
   row: BookingRow,
@@ -370,7 +373,7 @@ function tripDayOf(
   now: Date,
   settings: TripDaySettings,
 ): Booking["tripDay"] {
-  if (!boardingStatuses.includes(status)) return null;
+  if (!hasTripDay(status)) return null;
   const boardsAt = plannedAt(row.boardStop);
   const window = shownWindow(boardsAt, settings);
   return {

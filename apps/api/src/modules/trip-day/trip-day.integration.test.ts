@@ -1,5 +1,7 @@
 import {
   bookingRoute,
+  cancelBookingRoute,
+  cancellationPreviewRoute,
   conversationMessagesRoute,
   driverCheckInRoute,
   myTripRoute,
@@ -69,10 +71,10 @@ async function until(time: Date, minutes: number, ...members: Member[]) {
   await later(Math.round(seconds), ...members);
 }
 
-/** A confirmed booking of a new member's on the airport trip, from `fromStop` to the airport. */
-async function rider(name: string, fromStop: number) {
+/** A confirmed booking of a new member's on the airport trip, to the airport unless told. */
+async function rider(name: string, fromStop: number, toStop = 3) {
   const member = await newMember(name);
-  const booking = await booked(member.accessToken, airport, { fromStop, toStop: 3 });
+  const booking = await booked(member.accessToken, airport, { fromStop, toStop });
   await paid(member.accessToken, booking.id);
   return { member, booking };
 }
@@ -116,6 +118,24 @@ async function bookingAs(member: Member, bookingId: string) {
   });
   if (!found.ok) throw new Error(found.error.code);
   return found.data;
+}
+
+/** The passenger cancels, with the terms the preview shows. */
+async function cancelled(member: Member, bookingId: string) {
+  const preview = await api.client.call(cancellationPreviewRoute, {
+    accessToken: member.accessToken,
+    params: { id: bookingId },
+  });
+  if (!preview.ok) throw new Error(preview.error.code);
+  const [{ reason, refund, countsOnReliability }] = preview.data.reasons as [
+    (typeof preview.data.reasons)[number],
+  ];
+  const result = await api.client.call(cancelBookingRoute, {
+    accessToken: member.accessToken,
+    params: { id: bookingId },
+    body: { reason, terms: { refund, countsOnReliability } },
+  });
+  if (!result.ok) throw new Error(result.error.code);
 }
 
 async function tripAs(member: Member, tripId: string) {
@@ -185,14 +205,24 @@ describe("the passenger's \"I'm here\" (spec 8, 3.2; R8.3)", () => {
     });
   });
 
-  it("shows the driver who is at their stop and who is not here yet", async () => {
+  it("shows the driver who is at their stop and who is not here yet, and each passenger only their own", async () => {
     const jon = await driverOf(airport, "Jón");
     const gunna = await rider("Gunna", 0);
+    // The car has two seats: Óli gets out at Fjörður before Sigga gets in.
+    const oli = await rider("Óli", 0, 1);
     const sigga = await rider("Sigga", 2);
     const [hlemmur] = await stopsOf(airport);
     if (hlemmur === undefined) throw new Error("No stop at Hlemmur.");
-    await until(hlemmur.plannedAt, -10, gunna.member, jon);
+    await until(hlemmur.plannedAt, -10, gunna.member, oli.member, jon);
     await passengerCheckIn(gunna.member, gunna.booking.id);
+    // Óli gets in at the same stop and sees nothing of Gunna's.
+    expect((await bookingAs(oli.member, oli.booking.id)).tripDay).toMatchObject({
+      passengerCheckedInAt: null,
+      arrival: "not_here",
+    });
+    expect(await checkedInEvents()).toEqual([
+      { payload: { bookingId: gunna.booking.id, by: "passenger" } },
+    ]);
 
     const onTrip = await api.client.call(tripBookingsRoute, {
       accessToken: jon.accessToken,
@@ -202,7 +232,57 @@ describe("the passenger's \"I'm here\" (spec 8, 3.2; R8.3)", () => {
     const arrivalOf = (id: string) =>
       onTrip.data.bookings.find((booking) => booking.id === id)?.tripDay?.arrival;
     expect(arrivalOf(gunna.booking.id)).toBe("here");
+    expect(arrivalOf(oli.booking.id)).toBe("not_here");
     expect(arrivalOf(sigga.booking.id)).toBe("not_here");
+  });
+
+  it("starts afresh with a new booking at the same stop", async () => {
+    const jon = await driverOf(airport, "Jón");
+    const { member: gunna, booking: first } = await rider("Gunna", 0);
+    const [hlemmur] = await stopsOf(airport);
+    if (hlemmur === undefined) throw new Error("No stop at Hlemmur.");
+    // "I'm here" opens 30 minutes before the stop; booking closes 15 before.
+    await until(hlemmur.plannedAt, -25, gunna, jon);
+    await passengerCheckIn(gunna, first.id);
+    await cancelled(gunna, first.id);
+    // The check-in stays with the booking it was for.
+    expect(await passengerCheckIn(gunna, first.id)).toMatchObject({ ok: true });
+
+    const second = await booked(gunna.accessToken, airport, { fromStop: 0, toStop: 3 });
+    await paid(gunna.accessToken, second.id);
+    expect((await bookingAs(gunna, second.id)).tripDay).toMatchObject({
+      passengerCheckedInAt: null,
+      arrival: "not_here",
+    });
+    await later(minute, gunna, jon);
+    expect(await passengerCheckIn(gunna, second.id)).toMatchObject({
+      ok: true,
+      data: { checkedInAt: api.now().toISOString() },
+    });
+    expect(await checkedInEvents()).toEqual([
+      { payload: { bookingId: first.id, by: "passenger" } },
+      { payload: { bookingId: second.id, by: "passenger" } },
+    ]);
+  });
+
+  it("keeps the trip day on a booking that completed or was a no-show", async () => {
+    const jon = await driverOf(airport, "Jón");
+    const gunna = await rider("Gunna", 0);
+    const oli = await rider("Óli", 0);
+    const { db } = api.connection;
+    await db
+      .update(schema.bookings)
+      .set({ status: "completed", completedAt: api.now() })
+      .where(eq(schema.bookings.id, gunna.booking.id));
+    await db
+      .update(schema.bookings)
+      .set({ status: "no_show" })
+      .where(eq(schema.bookings.id, oli.booking.id));
+    expect((await bookingAs(gunna.member, gunna.booking.id)).tripDay).toMatchObject({
+      phase: "upcoming",
+      arrival: "not_here",
+    });
+    expect((await bookingAs(jon, oli.booking.id)).tripDay).toMatchObject({ arrival: "no_show" });
   });
 
   it("is refused without a confirmed booking, and once the hour after the stop has passed", async () => {
@@ -215,6 +295,14 @@ describe("the passenger's \"I'm here\" (spec 8, 3.2; R8.3)", () => {
       error: { code: "not_confirmed" },
     });
     expect((await bookingAs(dora, unpaid.id)).tripDay).toBeNull();
+
+    const { member: sigga, booking: gone } = await rider("Sigga", 1);
+    await cancelled(sigga, gone.id);
+    expect(await passengerCheckIn(sigga, gone.id)).toMatchObject({
+      ok: false,
+      status: 409,
+      error: { code: "not_confirmed" },
+    });
 
     const { member: gunna, booking } = await rider("Gunna", 0);
     const [hlemmur] = await stopsOf(airport);
@@ -297,6 +385,14 @@ describe("the driver's \"I'm here\" (spec 8, 3.2; R8.3)", () => {
       status: 409,
       error: { code: "check_in_not_open" },
     });
+
+    // At Fjörður nobody gets in: it is stored, and nobody is told.
+    const [, fjordur] = await stopsOf(airport);
+    if (fjordur === undefined) throw new Error("No stop at Fjörður.");
+    await until(fjordur.plannedAt, 0, jon);
+    expect(await driverCheckIn(jon, airport, fjordur.id)).toMatchObject({ ok: true });
+    expect(await checkedInEvents()).toHaveLength(1);
+    expect((await tripAs(jon, airport)).stops[1]?.checkIn?.at).toBe(api.now().toISOString());
   });
 
   it("is only for the trip's driver, at a stop of that trip", async () => {
@@ -306,9 +402,16 @@ describe("the driver's \"I'm here\" (spec 8, 3.2; R8.3)", () => {
     const [elsewhere] = await stopsOf(north);
     if (hlemmur === undefined || elsewhere === undefined) throw new Error("No such stops.");
     await until(hlemmur.plannedAt, -10, jon, gunna);
+    const [, fjordur] = await stopsOf(airport);
+    if (fjordur === undefined) throw new Error("No stop at Fjörður.");
+    await api.connection.db
+      .update(schema.tripStops)
+      .set({ removedAt: api.now() })
+      .where(eq(schema.tripStops.id, fjordur.id));
     for (const [member, stopId] of [
       [gunna, hlemmur.id],
       [jon, elsewhere.id],
+      [jon, fjordur.id],
     ] as const) {
       expect(await driverCheckIn(member, airport, stopId)).toMatchObject({
         ok: false,
@@ -316,6 +419,22 @@ describe("the driver's \"I'm here\" (spec 8, 3.2; R8.3)", () => {
         error: { code: "not_found" },
       });
     }
+  });
+
+  it("is refused on a draft", async () => {
+    const jon = await driverOf(airport, "Jón");
+    const [hlemmur] = await stopsOf(airport);
+    if (hlemmur === undefined) throw new Error("No stop at Hlemmur.");
+    await until(hlemmur.plannedAt, -10, jon);
+    await api.connection.db
+      .update(schema.trips)
+      .set({ status: "draft", publishedAt: null })
+      .where(eq(schema.trips.id, airport));
+    expect(await driverCheckIn(jon, airport, hlemmur.id)).toMatchObject({
+      ok: false,
+      status: 409,
+      error: { code: "trip_not_running" },
+    });
   });
 
   it("is refused on a cancelled trip", async () => {

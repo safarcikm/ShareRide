@@ -177,8 +177,9 @@ the rating.
 
 ### 4.3 The trip day
 
-- `check_ins`: trip stop, user and time, one per person per stop. No
-  location is collected (spec 8, section 7).
+- `check_ins`: trip stop, user, the passenger's booking and time: one per
+  booking, so a new booking at the same stop starts afresh, and one per
+  stop for the driver. No location is collected (spec 8, section 7).
 - `POST /trips/{id}/stops/{stopId}/check-in` (driver) and
   `POST /bookings/{id}/check-in` (passenger). A repeat answers with the
   first check-in and tells nobody again.

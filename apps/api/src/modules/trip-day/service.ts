@@ -65,10 +65,11 @@ export function createTripDayService(dependencies: {
   }
 
   /**
-   * Records `userId`'s "I'm here" at the stop and tells the other side on
-   * each of `told`, the bookings getting in there. A repeat answers with
-   * the first and tells nobody again. Call it with the trip locked, so two
-   * at once are one after the other.
+   * Records `userId`'s "I'm here" at the stop, for the passenger's booking
+   * or, with none, as the driver, and tells the other side on each of
+   * `told`, the bookings getting in there. A repeat answers with the first
+   * and tells nobody again; a new booking at the same stop starts afresh.
+   * Call it with the trip locked, so two at once are one after the other.
    */
   async function checkIn(
     tx: Transaction,
@@ -76,26 +77,39 @@ export function createTripDayService(dependencies: {
       readonly trip: TripRow;
       readonly stop: StopRow;
       readonly userId: string;
-      readonly by: TripRole;
-      readonly bookingStatus: BookingStatus | null;
+      readonly booking: { readonly id: string; readonly status: BookingStatus } | null;
     },
     told: () => Promise<readonly string[]>,
     now: Date,
   ): Promise<Result<CheckIn, CheckInError>> {
-    const { trip, stop, userId, by, bookingStatus } = found;
+    const { trip, stop, userId, booking } = found;
+    const by: TripRole = booking === null ? "driver" : "passenger";
     const [earlier] = await tx
       .select({ at: checkIns.checkedInAt })
       .from(checkIns)
-      .where(and(eq(checkIns.tripStopId, stop.id), eq(checkIns.userId, userId)));
+      .where(
+        booking === null
+          ? and(eq(checkIns.tripStopId, stop.id), isNull(checkIns.bookingId))
+          : eq(checkIns.bookingId, booking.id),
+      );
     if (earlier !== undefined) return ok(shown(stop.id, earlier.at));
     if (stop.plannedAt === null) throw new Error("A published trip's stop has its time.");
     const allowed = checkCheckIn(
-      { stopAt: stop.plannedAt, tripStatus: statusNow(trip, now), bookingStatus },
+      {
+        stopAt: stop.plannedAt,
+        tripStatus: statusNow(trip, now),
+        bookingStatus: booking?.status ?? null,
+      },
       now,
       settings,
     );
     if (!allowed.ok) return allowed;
-    await tx.insert(checkIns).values({ tripStopId: stop.id, userId, checkedInAt: now });
+    await tx.insert(checkIns).values({
+      tripStopId: stop.id,
+      userId,
+      bookingId: booking?.id ?? null,
+      checkedInAt: now,
+    });
     const bookingIds = await told();
     await recordEvents(
       tx,
@@ -131,8 +145,7 @@ export function createTripDayService(dependencies: {
             trip,
             stop: row.stop,
             userId,
-            by: "passenger",
-            bookingStatus: row.booking.status as BookingStatus,
+            booking: { id: bookingId, status: row.booking.status as BookingStatus },
           },
           () => Promise.resolve([bookingId]),
           now,
@@ -174,12 +187,7 @@ export function createTripDayService(dependencies: {
             );
           return rows.map((row) => row.id);
         };
-        return checkIn(
-          tx,
-          { trip, stop, userId, by: "driver", bookingStatus: null },
-          boarding,
-          now,
-        );
+        return checkIn(tx, { trip, stop, userId, booking: null }, boarding, now);
       });
     },
   };
