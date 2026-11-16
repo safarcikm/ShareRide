@@ -148,3 +148,30 @@ export function cancellationTerms(
     countsOnReliability: late && !excused && !far,
   });
 }
+
+/**
+ * Whether a cancellation does not count only because of its weather or
+ * road-closure reason: the one the operator can overrule, so that it counts
+ * (R8.11). One that would not count for any reason, such as a passenger's
+ * two days before boarding, is not.
+ */
+export function excusedByReason(
+  booking: BookingToCancel,
+  canceller: Canceller,
+  now: Date,
+): boolean {
+  const asGiven = cancellationTerms(booking, canceller, now);
+  const without = cancellationTerms(
+    booking,
+    canceller.by === "driver"
+      ? { by: "driver", reason: "other" }
+      : { by: "passenger", reason: "other" },
+    now,
+  );
+  return (
+    asGiven.ok &&
+    without.ok &&
+    !asGiven.value.countsOnReliability &&
+    without.value.countsOnReliability
+  );
+}
