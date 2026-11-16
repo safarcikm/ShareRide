@@ -11,7 +11,10 @@ import type { NotificationSettings } from "./settings.ts";
 export const deliveryStatuses = ["queued", "sending", "sent", "failed", "skipped"] as const;
 export type DeliveryStatus = (typeof deliveryStatuses)[number];
 
-/** The events booking, payment and chat code writes to the outbox, in the same transaction. */
+/**
+ * The events booking, payment, chat and privacy code writes to the outbox,
+ * in the same transaction.
+ */
 export const outboxEventTypes = [
   "BookingRequested",
   "BookingAccepted",
@@ -26,6 +29,7 @@ export const outboxEventTypes = [
   "RefundIssued",
   "MessageSent",
   "CheckedIn",
+  "DataExportReady",
 ] as const;
 export type OutboxEventType = (typeof outboxEventTypes)[number];
 

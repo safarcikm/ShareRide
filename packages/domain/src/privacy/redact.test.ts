@@ -35,6 +35,9 @@ describe("redactText", () => {
   it("hides tokens", () => {
     expect(redactText("Bearer sr_at_Zm9vYmFy-_x")).toBe("Bearer [token]");
     expect(redactText("sr_rt_abc123 reused")).toBe("[token] reused");
+    // Email links and data export links too, wherever they appear.
+    expect(redactText("GET /v1/exports/sr_dx_Zm9v-_YmFy")).toBe("GET /v1/exports/[token]");
+    expect(redactText("/verify-email?token=sr_ev_abc123")).toBe("/verify-email?token=[token]");
   });
 
   it("keeps what a stack trace needs: lines, columns, dates and IDs", () => {

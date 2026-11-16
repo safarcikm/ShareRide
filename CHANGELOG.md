@@ -483,7 +483,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   tells nobody again. A booking that boards, and the driver's trip, now
   give the trip day: its phase, when "I'm here" opens and closes, who has
   said it, and for the driver whether each passenger is at their stop. The
-  driver's trip gives each stop's ID. Migration `0022_trip_day_check_ins`
+  driver's trip gives each stop's ID. Migration `0023_trip_day_check_ins`
   adds the `check_ins` table, one per booking and one per stop for the
   driver, and the new notification kinds.
 - The trip day in the app (milestone 7, PR 4b, spec 8, 3.1 and 3.2): from
@@ -524,6 +524,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   a code to the person's own number, which only confirms and never signs
   in, under the sign-in limits, for downloading data and deleting an
   account.
+- Download my data, the API (spec 11, 3.2): asked for with a fresh code,
+  one a day; built within seconds as a ZIP of `shareride-data.json` and a
+  readable page in the person's language, with other people by first name
+  only; kept encrypted for 7 days and downloaded through a one-time link
+  that works for 2 minutes. A push and an email say when it is ready,
+  without a link.
 
 ### Fixed
 

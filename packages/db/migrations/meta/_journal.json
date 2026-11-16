@@ -159,8 +159,15 @@
     {
       "idx": 22,
       "version": "7",
-      "when": 1794872086334,
-      "tag": "0022_trip_day_check_ins",
+      "when": 1794871282072,
+      "tag": "0022_data_exports",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794872883902,
+      "tag": "0023_trip_day_check_ins",
       "breakpoints": true
     }
   ]

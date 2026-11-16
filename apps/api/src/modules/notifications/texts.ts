@@ -1,4 +1,5 @@
 import type {
+  AccountNoticeKind,
   CancelReason,
   Money,
   NotificationKind,
@@ -30,7 +31,7 @@ import {
  * or payment details (R7.9).
  */
 export interface NotificationFacts {
-  readonly kind: Exclude<NotificationKind, TripReminderFacts["kind"]>;
+  readonly kind: Exclude<NotificationKind, TripReminderFacts["kind"] | AccountNoticeKind>;
   /** The recipient's place on the trip. */
   readonly role: TripRole;
   readonly bookingId: string;
@@ -82,6 +83,15 @@ export interface TripReminderFacts {
   readonly plateMissing: boolean;
 }
 
+/** News about the person's account (spec 11): a data export, and until when it can be downloaded. */
+export interface AccountNoticeFacts {
+  readonly kind: AccountNoticeKind;
+  readonly expiresAt: Date;
+}
+
+/** The app's screen for downloading one's data (spec 11, 3.2). */
+export const downloadDataPath = "/settings/privacy/download";
+
 export interface NotificationText {
   readonly title: string;
   readonly body: string;
@@ -129,13 +139,28 @@ export function smsText(facts: NotificationFacts, locale: Locale): string {
  * events, new messages, the email about unread ones, and trip reminders.
  */
 export function notificationText(
-  facts: NotificationFacts | TripReminderFacts,
+  facts: NotificationFacts | TripReminderFacts | AccountNoticeFacts,
   locale: Locale,
   settings: NotificationSettings,
 ): NotificationText {
+  if ("expiresAt" in facts) return accountText(facts, locale);
   return "passengers" in facts
     ? tripReminderText(facts, locale)
     : bookingText(facts, locale, settings);
+}
+
+/** What is ready and until when, never a link (spec 11, 7). */
+function accountText(facts: AccountNoticeFacts, locale: Locale): NotificationText {
+  const t = createTranslator(locale);
+  const until = t("notify.when", {
+    date: formatDay(facts.expiresAt, locale),
+    time: formatClock(facts.expiresAt),
+  });
+  return {
+    title: t("notify.dataExportReady"),
+    body: t("notify.dataExportReadyBody", { until }),
+    path: downloadDataPath,
+  };
 }
 
 function bookingText(

@@ -32,8 +32,10 @@ export const retentionRules = [
 export type RetentionRule = (typeof retentionRules)[number];
 
 export interface PrivacyCutoffs {
-  /** Exports whose 7 days ended at or before this are deleted. */
+  /** The files of exports whose 7 days ended at or before this are deleted. */
   readonly exportsExpiredBy: Date;
+  /** Exports that expired before this are deleted, dates and all. */
+  readonly exportRecordsExpiredBefore: Date;
   /** Accounts whose waiting period ended at or before this are erased. */
   readonly deletionsDueBy: Date;
   /** Blocked numbers kept until at or before this are deleted. */
@@ -52,6 +54,7 @@ export function privacyCutoffs(now: Date): PrivacyCutoffs {
   const yearsAgo = (years: number) => addIcelandMonths(now, -12 * years);
   return {
     exportsExpiredBy: now,
+    exportRecordsExpiredBefore: addDays(now, -privacySettings.exportRecordsKeptDays),
     deletionsDueBy: now,
     blockedNumbersUntil: now,
     erasedAccountsBefore: addDays(now, -privacySettings.erasedAccountsKeptDays),

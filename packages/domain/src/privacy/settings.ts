@@ -8,6 +8,8 @@ export const privacySettings = {
   exportValidDays: 7,
   /** One export per 24 hours (spec 11, 3.2). */
   exportEveryHours: 24,
+  /** After an export's file is deleted, its dates are kept this long, to show it expired. */
+  exportRecordsKeptDays: 30,
   /** A one-time download link works this long. */
   exportLinkSeconds: 120,
   /** Data is erased 7 days after deletion is asked for, unless undone (R11.8, decision 1). */

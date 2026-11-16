@@ -12,7 +12,8 @@ import { createNotificationWorker } from "./modules/notifications/index.ts";
 import { createPaymentService } from "./modules/payments/index.ts";
 import { moveTripsOn } from "./modules/trips/index.ts";
 import { clientAddress } from "./platform/client-address.ts";
-import { createKeyedHasher } from "./platform/crypto.ts";
+import { createExportBuilder, exportCipherPurpose } from "./modules/privacy/index.ts";
+import { createFileCipher, createKeyedHasher } from "./platform/crypto.ts";
 import { captureError, startErrorReporting } from "./platform/error-reporting.ts";
 import { createTestPaymentProvider } from "./platform/payments.ts";
 import { createExpoPushSender } from "./platform/push-expo.ts";
@@ -55,6 +56,7 @@ const payments = config.payments.provider === "test" ? createTestPaymentProvider
 const email = selectEmail(config.email, (line) => {
   process.stdout.write(`${line}\n`);
 });
+const exportCipher = createFileCipher(config.authSecret, exportCipherPurpose);
 const app = createApp({
   logger,
   checkDatabase: () => pingDatabase(database.pool),
@@ -65,6 +67,7 @@ const app = createApp({
     db: database.db,
     sms,
     hasher: createKeyedHasher(config.authSecret),
+    exportCipher,
     clock: () => new Date(),
     clientAddress: (c) => {
       const found = clientAddress({
@@ -108,6 +111,19 @@ const jobs = [
     if (moved.departed + moved.completed > 0) logger.info(moved, "trips moved on");
   }),
 ];
+// "Download my data" files (spec 11, 3.2), built within seconds of asking.
+const exportBuilder = createExportBuilder({
+  db: database.db,
+  cipher: exportCipher,
+  clock: () => new Date(),
+  logger,
+});
+jobs.push(
+  every(10_000, "data-exports", async () => {
+    const built = await exportBuilder.buildDue();
+    if (built > 0) logger.info({ built }, "data exports built");
+  }),
+);
 // Refunds the provider has not taken yet are asked for again (R13.3).
 // Without a provider nothing is paid, so nothing is owed back.
 if (payments !== undefined) {
