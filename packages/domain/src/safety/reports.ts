@@ -1,5 +1,6 @@
 // Reporting (spec 9, 3.1 and 3.4; rules R9.1, R9.3 and R9.9): what can be
 // reported and by whom, which reports are urgent, and the operator's queue.
+import { addIcelandMonths } from "../privacy/calendar.ts";
 import { err, ok, type Result } from "../result.ts";
 import { characterCount, type SafetySettings } from "./settings.ts";
 
@@ -143,4 +144,18 @@ export function queueOrder(
 ): number {
   if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
   return a.filedAt.getTime() - b.filedAt.getTime();
+}
+
+/** The 24 hours' reports a person filed reach the limit: the next is refused. */
+export function reportLimitReached(filedInLastDay: number, settings: SafetySettings): boolean {
+  return filedInLastDay >= settings.reportsPerDay;
+}
+
+/**
+ * Reports closed at or before this moment are past their retention, and so
+ * no longer keep the conversation they cover (spec 9, section 7): 3 years,
+ * on Iceland's calendar.
+ */
+export function reportsClosedBy(now: Date, settings: SafetySettings): Date {
+  return addIcelandMonths(now, -12 * settings.reportKeptYears);
 }

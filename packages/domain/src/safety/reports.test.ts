@@ -5,6 +5,8 @@ import {
   isUrgent,
   queueOrder,
   reportCategories,
+  reportLimitReached,
+  reportsClosedBy,
   responseDueAt,
   type ReportContext,
 } from "./reports.ts";
@@ -165,5 +167,22 @@ describe("a booking problem holds its payout (R9.3)", () => {
     expect(holdsPayout({ subject: "booking", status: "open" })).toBe(true);
     expect(holdsPayout({ subject: "booking", status: "closed" })).toBe(false);
     expect(holdsPayout({ subject: "trip", status: "open" })).toBe(false);
+  });
+});
+
+describe("how many reports a day (against abuse of reports)", () => {
+  it("allows 10 in 24 hours, and refuses the 11th", () => {
+    expect(reportLimitReached(9, settings)).toBe(false);
+    expect(reportLimitReached(10, settings)).toBe(true);
+  });
+});
+
+describe("how long a report is kept (spec 9, section 7)", () => {
+  const gone = (closedAt: string, at: string) =>
+    new Date(closedAt) <= reportsClosedBy(new Date(at), settings);
+
+  it("is 3 years after it was closed", () => {
+    expect(gone("2026-11-20T12:00:00Z", "2029-11-20T11:59:00Z")).toBe(false);
+    expect(gone("2026-11-20T12:00:00Z", "2029-11-20T12:00:00Z")).toBe(true);
   });
 });

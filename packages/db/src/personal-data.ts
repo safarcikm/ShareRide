@@ -222,6 +222,17 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     ),
     otherIds: ["operatorSessionId"],
   },
+  reports: {
+    category: "moderation",
+    // Only the reports the person filed, with their outcomes: never who reported them (3.1.6).
+    export: { section: "reports" },
+    personColumns: ["reporterId", "subjectUserId", "closedById"],
+    onDeletion: keep(
+      ["subject", "category", "description", "status", "outcome"],
+      [],
+      "kept 3 years after closure for safety, the person's side emptied (spec 9, section 7)",
+    ),
+  },
   blocks: {
     category: "blocks",
     // Only the blocks the person made: who blocked them is never shown (R9.4).

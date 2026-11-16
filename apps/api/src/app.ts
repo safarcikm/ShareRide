@@ -49,7 +49,11 @@ import {
 } from "./modules/meeting-points/index.ts";
 import { registerNotificationRoutes } from "./modules/notifications/index.ts";
 import { createPaymentService, registerPaymentRoutes } from "./modules/payments/index.ts";
-import { createBlockService, registerSafetyRoutes } from "./modules/safety/index.ts";
+import {
+  createBlockService,
+  createReportService,
+  registerSafetyRoutes,
+} from "./modules/safety/index.ts";
 import {
   createSearchService,
   createTripDetailsService,
@@ -261,7 +265,14 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       requireAuth,
     );
     registerNotificationRoutes(app, { ...features, requireAuth });
-    registerSafetyRoutes(app, createBlockService({ ...features, bookings }), requireAuth);
+    registerSafetyRoutes(
+      app,
+      {
+        blocks: createBlockService({ ...features, bookings }),
+        reports: createReportService(features),
+      },
+      requireAuth,
+    );
     registerPaymentRoutes(app, {
       payments: createPaymentService({ ...features, provider: features.payments }),
       bookings,
