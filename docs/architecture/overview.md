@@ -60,7 +60,8 @@ flowchart LR
   expiry, reminders, trip completion, weather and road checks, data
   retention clean-up. For the beta the jobs run inside the API process
   ([milestone 5 plan](../plans/2026-11-15-milestone-5-chat-and-notifications.md),
-  decision 2): booking deadlines and owed refunds every minute, and the
+  decision 2): booking deadlines, owed refunds and trips departing and
+  completing (spec 8) every minute, and the
   notification worker every 5 seconds unless `WORKER=off`. The queue is our
   own outbox and job tables in PostgreSQL, taken with `FOR UPDATE SKIP
   LOCKED`, so more than one instance shares the work and there is no extra

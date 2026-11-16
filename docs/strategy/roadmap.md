@@ -151,7 +151,7 @@ Milestone 7: trip day, reviews and reliability
 accepted 2026-11-16)
 
 - [x] Trip day, dispute, review and reliability rules in the domain
-- [ ] Trips depart and complete on their own
+- [x] Trips depart and complete on their own
 - [ ] The trip day and "I'm here"
 - [ ] No-shows, the driver didn't come, and the operator's decision
 - [ ] Rate and review
