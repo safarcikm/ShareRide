@@ -484,6 +484,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   with iOS dark and tinted versions, the Android adaptive and themed icons,
   the opening screen on frost or night, and the browser tab icon, exported
   from drawings in `apps/mobile/assets/logo`.
+- Operator console, milestone 8: the plan and ADR 0028; console sessions,
+  the guard on `/admin/v1` and the append-only audit log in the API
+  (`recordAudit`, a trigger that refuses changes).
 
 - Privacy self-service, part 1 (spec 11): the rules in the domain (what
   is open before deleting an account, the 7-day wait, what deletion does to
