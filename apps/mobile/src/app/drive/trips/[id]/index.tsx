@@ -22,6 +22,7 @@ import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { tripShareText } from "@/safety/share-details";
+import { DriverTripDay, onTripDay } from "@/trip-day/driver";
 import { TripSafety } from "@/safety/trip-safety";
 import { typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -188,6 +189,9 @@ export default function DriverTripScreen() {
           />
         </TakesFocus>
       )}
+      {onTripDay(trip.data) ? (
+        <DriverTripDay trip={trip.data} bookings={riding} onSaid={refresh} />
+      ) : null}
       {requests.length === 0 ? null : (
         <>
           <Heading>{t("driverTrip.requests")}</Heading>

@@ -5,7 +5,9 @@
 // each text message as a JSON line to E2E_SMS_OUTBOX and each email to
 // E2E_EMAIL_OUTBOX for the tests to read, runs the notification worker
 // every second with email only (no push from a browser), and runs on PORT
-// (default 3001). Never use it for anything else.
+// (default 3001). `POST /e2e/trips/{id}/move` with `{ "minutes": 10 }` puts a
+// trip's first stop that many minutes from now, for the trip day journeys.
+// Never use it for anything else.
 import { randomBytes } from "node:crypto";
 import { appendFileSync, writeFileSync } from "node:fs";
 import { serve } from "@hono/node-server";
@@ -15,6 +17,7 @@ import { freshTestDatabase } from "@shareride/db/testing";
 import { createApp } from "./app.ts";
 import { createLogger } from "./logger.ts";
 import { createNotificationWorker } from "./modules/notifications/index.ts";
+import { moveTripForTests } from "./modules/trip-day/testing.ts";
 import { createKeyedHasher } from "./platform/crypto.ts";
 import type { EmailSender } from "./platform/email.ts";
 import { createTestPaymentProvider } from "./platform/payments.ts";
@@ -84,6 +87,17 @@ const app = createApp({
     secureCookies: false,
     payments: createTestPaymentProvider(),
   },
+});
+
+// The trip day journeys move one trip's times, never the shared clock
+// (milestone 7 plan, 4.2).
+app.post("/e2e/trips/:id/move", async (c) => {
+  const body: unknown = await c.req.json();
+  const minutes =
+    typeof body === "object" && body !== null && "minutes" in body ? body.minutes : undefined;
+  if (typeof minutes !== "number") return c.json({ error: "Send { minutes }." }, 400);
+  await moveTripForTests(connection.db, c.req.param("id"), minutes, clock());
+  return c.body(null, 204);
 });
 
 // A browser registers no push token, so nothing is pushed.

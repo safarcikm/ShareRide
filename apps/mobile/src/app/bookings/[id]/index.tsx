@@ -36,6 +36,7 @@ import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { bookingShareText } from "@/safety/share-details";
 import { TripSafety } from "@/safety/trip-safety";
 import { NotificationsPrompt } from "@/notifications/notifications-prompt";
+import { onTripDay, PassengerImHere, TripDayHeading } from "@/trip-day/passenger";
 import { DriverAndCar, PartStop } from "@/trip-details/trip-parts";
 import { controlOutline, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -121,6 +122,7 @@ export default function BookingScreen() {
         setActed(true);
       }}
       onStale={loadAgain}
+      onReload={refresh}
     />
   );
 }
@@ -132,6 +134,7 @@ function BookingDetails({
   onAction,
   onChanged,
   onStale,
+  onReload,
 }: {
   readonly booking: Booking;
   /** The status changed on this screen: focus moves to it when it shows. */
@@ -144,6 +147,8 @@ function BookingDetails({
   readonly onChanged: (booking: Booking) => void;
   /** Something changed on the server meanwhile: say why and load it again. */
   readonly onStale: (why: string) => void;
+  /** Load the booking again, quietly, as after "I'm here". */
+  readonly onReload: () => void;
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
@@ -154,6 +159,24 @@ function BookingDetails({
   const passenger = booking.viewer === "passenger";
   const occasion = promptOccasion(booking);
   const moveChoice = useMoveChoice(booking, now());
+  // The trip day (spec 8, 3.1): when and where first, then the car and the
+  // driver, then "I'm here" and the chat. It is used while parked.
+  const tripDay = onTripDay(booking);
+  const part = (
+    <Card>
+      <PartStop stop={board} getIn />
+      <PartStop stop={alight} getIn={false} />
+      <View style={[styles.divider, { backgroundColor: palette.border }]} />
+      <View style={styles.spread}>
+        <Text style={[typography.label, { color: palette.text }]}>
+          {t("search.seatCount", { count: booking.seats })}
+        </Text>
+        <Text style={[typography.figure, { color: palette.text }]}>
+          {free ? t("results.free") : total}
+        </Text>
+      </View>
+    </Card>
+  );
 
   return (
     <Screen>
@@ -191,21 +214,17 @@ function BookingDetails({
           onCancel={onAction}
         />
       ) : null}
-      {occasion === null ? null : <NotificationsPrompt occasion={occasion} />}
+      {/* Not on the trip day, when time and place come first. */}
+      {occasion === null || tripDay ? null : <NotificationsPrompt occasion={occasion} />}
 
-      <Card>
-        <PartStop stop={board} getIn />
-        <PartStop stop={alight} getIn={false} />
-        <View style={[styles.divider, { backgroundColor: palette.border }]} />
-        <View style={styles.spread}>
-          <Text style={[typography.label, { color: palette.text }]}>
-            {t("search.seatCount", { count: booking.seats })}
-          </Text>
-          <Text style={[typography.figure, { color: palette.text }]}>
-            {free ? t("results.free") : total}
-          </Text>
-        </View>
-      </Card>
+      {tripDay ? (
+        <>
+          <TripDayHeading booking={booking} />
+          <WhereToStand booking={booking} />
+        </>
+      ) : (
+        part
+      )}
 
       <Card>
         <DriverAndCar
@@ -223,6 +242,8 @@ function BookingDetails({
         />
       </Card>
 
+      {tripDay ? <PassengerImHere booking={booking} onSaid={onReload} /> : null}
+
       {confirmed === null ? null : (
         <Button
           variant="secondary"
@@ -233,7 +254,7 @@ function BookingDetails({
         />
       )}
 
-      <WhereToStand booking={booking} />
+      {tripDay ? null : <WhereToStand booking={booking} />}
 
       {/* Until the passenger gets out: no trip to be safe on after that. */}
       {holdsSeats(booking.status) && new Date(alight.plannedAt) > now() ? (
@@ -242,6 +263,8 @@ function BookingDetails({
           share={bookingShareText(t, locale, booking)}
         />
       ) : null}
+
+      {tripDay ? part : null}
 
       {/* After a move, the choice above cancels, with its reason. */}
       {passenger && canCancel(booking, now()) && !moveChoice.offered && !moveChoice.pending ? (
