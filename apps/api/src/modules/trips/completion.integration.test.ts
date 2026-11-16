@@ -50,7 +50,7 @@ afterAll(async () => {
   await api.close();
 });
 
-const { newMember, later, rewind, driverOf, booked, paid, occupancy, heldByBookings } =
+const { newMember, later, rewind, driverOf, book, booked, paid, occupancy, heldByBookings } =
   bookingHelpers(() => api);
 
 const hourMs = 3_600_000;
@@ -181,15 +181,19 @@ describe("a trip under way (rule S4, Martin 2026-11-16)", () => {
       .where(and(eq(schema.tripStops.tripId, airport), eq(schema.tripStops.position, 2)));
     if (fitjar === undefined || fitjar.plannedAt === null) throw new Error("No stop at Fitjar.");
     const sigga = await newMember("Sigga");
-    await until(fitjar.plannedAt, -20 * 60, sigga);
+    const gunna = await newMember("Gunna");
+    await until(fitjar.plannedAt, -20 * 60, sigga, gunna);
     await run();
     expect((await trip(airport)).status).toBe("departed");
 
-    const search = await api.client.call(tripSearchRoute, {
-      query: { from: sampleId("point:fitjar"), to: sampleId("point:kef"), seats: 1 },
-    });
-    if (!search.ok) throw new Error(search.error.code);
-    expect(search.data.results.map(({ tripId }) => tripId)).toContain(airport);
+    const found = async () => {
+      const search = await api.client.call(tripSearchRoute, {
+        query: { from: sampleId("point:fitjar"), to: sampleId("point:kef"), seats: 1 },
+      });
+      if (!search.ok) throw new Error(search.error.code);
+      return search.data.results.some(({ tripId }) => tripId === airport);
+    };
+    expect(await found()).toBe(true);
     const part = async (fromStop: number) => {
       const found = await api.client.call(tripDetailsRoute, {
         params: { id: airport },
@@ -201,9 +205,18 @@ describe("a trip under way (rule S4, Martin 2026-11-16)", () => {
     expect(await part(0)).toBe("departed");
     expect(await part(2)).toBe("open");
     await booked(sigga.accessToken, airport, { fromStop: 2, toStop: 3 });
+    expect(await book(gunna.accessToken, airport, { fromStop: 0, toStop: 3 })).toMatchObject({
+      ok: false,
+      error: { code: "trip_not_bookable" },
+    });
 
-    await until(fitjar.plannedAt, -15 * 60, sigga);
+    await until(fitjar.plannedAt, -15 * 60, gunna);
     expect(await part(2)).toBe("closed");
+    expect(await found()).toBe(false);
+    expect(await book(gunna.accessToken, airport, { fromStop: 2, toStop: 3 })).toMatchObject({
+      ok: false,
+      error: { code: "booking_closed" },
+    });
   });
 });
 

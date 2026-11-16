@@ -324,6 +324,17 @@ function Trip({
 }
 
 /**
+ * Whether a trip that has left the boarding stop can still be joined further
+ * on: a trip under way takes bookings at each later stop until its own
+ * cut-off (rule S4), which the trip page then says when that part is chosen.
+ */
+function laterStopAhead(trip: TripDetails, board: number): boolean {
+  return trip.stops
+    .slice(board + 1, -1)
+    .some((stop) => new Date(stop.plannedAt).getTime() > now().getTime());
+}
+
+/**
  * The bottom bar, or the panel beside the column on wide screens: the
  * price for the seats chosen and what can be done. Booking opens the booking
  * screen for the part on screen; someone without a finished account keeps
@@ -412,7 +423,8 @@ function BookingBar({ trip, pending }: { readonly trip: TripDetails; readonly pe
         <Text accessibilityLiveRegion="polite" style={[typography.label, { color: palette.text }]}>
           {status}
         </Text>
-        {part.state === "full" && trip.stops.length > 2 ? (
+        {(part.state === "full" && trip.stops.length > 2) ||
+        (part.state === "departed" && laterStopAhead(trip, part.board)) ? (
           <Text style={[typography.small, { color: palette.textMuted }]}>
             {t("trip.tryAnotherPart")}
           </Text>

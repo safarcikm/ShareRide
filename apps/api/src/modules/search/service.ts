@@ -155,9 +155,10 @@ export function createSearchService(dependencies: {
   }
 
   /**
-   * Published trips with a stop among `from` boarding late enough (and in
-   * `between` when given), and a later stop among `to`, with everything the
-   * domain rules need. The SQL only narrows; `matchTrip` decides.
+   * Published trips and trips under way (rule S4) with a stop among `from`
+   * boarding late enough (and in `between` when given), and a later stop
+   * among `to`, with everything the domain rules need. The SQL only narrows;
+   * `matchTrip` decides.
    */
   async function candidates(
     from: readonly CoveredPoint[],
