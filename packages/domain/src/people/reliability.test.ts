@@ -24,11 +24,22 @@ const broken = (role: "driver" | "passenger", days = 1): ReliabilityRecord => ({
 });
 
 describe("what counts on reliability (spec 8, 3.8)", () => {
-  const booking = { cancelledBy: null, countsOnReliability: false, at: now } as const;
+  const booking = {
+    cancelledBy: null,
+    countsOnReliability: false,
+    reportOutcome: null,
+    at: now,
+  } as const;
 
-  it("counts a completed booking as kept and a no-show as not, for the passenger", () => {
+  it("counts a completed booking as kept and a no-show that stands as not, for the passenger", () => {
     expect(passengerRecord({ ...booking, status: "completed" })).toEqual(kept("passenger", 0));
-    expect(passengerRecord({ ...booking, status: "no_show" })).toEqual(broken("passenger", 0));
+    expect(passengerRecord({ ...booking, status: "no_show", reportOutcome: "stands" })).toEqual(
+      broken("passenger", 0),
+    );
+  });
+
+  it("leaves out a no-show while the passenger can still answer or the operator decides (R8.6)", () => {
+    expect(passengerRecord({ ...booking, status: "no_show" })).toBeNull();
   });
 
   it("counts a passenger's cancellation only when it counts (spec 6, R6.8)", () => {
@@ -57,9 +68,9 @@ describe("what counts on reliability (spec 8, 3.8)", () => {
   });
 
   it("counts a completed trip with passengers as kept, and a cancelled trip that counts as not", () => {
-    const trip = { countsOnReliability: false, passengersCarried: 2, at: now } as const;
+    const trip = { countsOnReliability: false, passengersDue: 2, at: now } as const;
     expect(driverTripRecord({ ...trip, status: "completed" })).toEqual(kept("driver", 0));
-    expect(driverTripRecord({ ...trip, status: "completed", passengersCarried: 0 })).toBeNull();
+    expect(driverTripRecord({ ...trip, status: "completed", passengersDue: 0 })).toBeNull();
     expect(driverTripRecord({ ...trip, status: "cancelled" })).toBeNull();
     expect(driverTripRecord({ ...trip, status: "cancelled", countsOnReliability: true })).toEqual(
       broken("driver", 0),
@@ -67,11 +78,11 @@ describe("what counts on reliability (spec 8, 3.8)", () => {
     expect(driverTripRecord({ ...trip, status: "published" })).toBeNull();
   });
 
-  it("lets the operator overrule only a weather or road-closure reason (R8.11)", () => {
-    expect(canOverrule("weather")).toBe(true);
-    expect(canOverrule("road_closed")).toBe(true);
-    expect(canOverrule("car_problem")).toBe(false);
-    expect(canOverrule(null)).toBe(false);
+  it("lets the operator overrule a cancellation that doesn't count only for its reason (R8.11)", () => {
+    expect(canOverrule({ countsOnReliability: false, excusedByReason: true })).toBe(true);
+    // Too early to count whatever the reason, or already counting.
+    expect(canOverrule({ countsOnReliability: false, excusedByReason: false })).toBe(false);
+    expect(canOverrule({ countsOnReliability: true, excusedByReason: false })).toBe(false);
   });
 });
 
@@ -128,6 +139,30 @@ describe("the reliability figure (R8.10)", () => {
     expect(reliabilityOf([...records, broken("passenger")], now, settings).belowWatchLevel).toBe(
       true,
     );
+  });
+
+  it("watches from just below 80%: 80% is not on the list, 79% is", () => {
+    const keptOf = (k: number) => [
+      ...Array.from({ length: k }, () => kept("passenger")),
+      ...Array.from({ length: 100 - k }, () => broken("passenger")),
+    ];
+    expect(reliabilityOf(keptOf(80), now, settings)).toMatchObject({
+      percent: 80,
+      belowWatchLevel: false,
+    });
+    expect(reliabilityOf(keptOf(79), now, settings)).toMatchObject({
+      percent: 79,
+      belowWatchLevel: true,
+    });
+  });
+
+  it("goes back 12 months to the same day, or the month's last day when it has none", () => {
+    const leapDay = new Date("2028-02-29T12:00:00Z");
+    const records = [
+      { role: "driver", at: new Date("2027-02-28T11:59:59Z"), kept: false },
+      { role: "driver", at: new Date("2027-02-28T12:00:00Z"), kept: true },
+    ] as const;
+    expect(reliabilityOf(records, leapDay, settings)).toMatchObject({ kept: 1, counted: 1 });
   });
 
   it("always matches the records it comes from", () => {

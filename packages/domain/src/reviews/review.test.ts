@@ -17,6 +17,7 @@ const good: ReviewToCheck = {
   bookingStatus: "completed",
   completedAt,
   alreadyReviewed: false,
+  openReport: false,
   rating: 5,
   comment: "  Lovely trip, on time.  ",
 };
@@ -48,6 +49,13 @@ describe("writing a review (R8.8)", () => {
     expect(checkReview(good, after(14), settings)).toEqual({
       ok: false,
       error: { code: "review_window_closed" },
+    });
+  });
+
+  it("waits while the passenger's report that the driver didn't come is open (3.4)", () => {
+    expect(checkReview({ ...good, openReport: true }, after(1), settings)).toEqual({
+      ok: false,
+      error: { code: "report_open" },
     });
   });
 

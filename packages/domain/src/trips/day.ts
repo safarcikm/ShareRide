@@ -59,6 +59,19 @@ export function tripStatusAt(trip: TripTimes, now: Date, settings: TripDaySettin
   return now >= trip.firstStopAt ? "departed" : "published";
 }
 
+/**
+ * R8.2: when the trip completes, a confirmed booking completes with it,
+ * unless the passenger was marked a no-show (no longer confirmed) or has
+ * reported that the driver didn't come and that is still open. Such a
+ * booking completes when its report is decided (`disputeEffect`).
+ */
+export function completesWithTrip(booking: {
+  readonly status: BookingStatus;
+  readonly openReport: boolean;
+}): boolean {
+  return booking.status === "confirmed" && !booking.openReport;
+}
+
 export type DayPhase = "upcoming" | "trip_day" | "completed";
 
 /**
@@ -102,10 +115,13 @@ export interface NoShowCheck {
   readonly lastStopAt: Date;
   /** Whether the driver has said "I'm here" at that stop. */
   readonly driverCheckedIn: boolean;
+  /** Whether either side has already reported this booking, open or decided. */
+  readonly reported: boolean;
 }
 
 export type NoShowProblem =
   | { readonly code: "not_confirmed" }
+  | { readonly code: "already_reported" }
   | { readonly code: "trip_completed" }
   | { readonly code: "no_show_too_early"; readonly allowedAt: Date }
   | { readonly code: "driver_not_checked_in" };
@@ -115,6 +131,10 @@ export type NoShowProblem =
  * the planned time at their boarding stop, once the driver has said "I'm
  * here" there, and before the trip completes. That the passenger is on the
  * driver's own trip is the caller's to check.
+ *
+ * A booking is reported once. When the passenger has already said the
+ * driver didn't come, the driver answers that report instead, so the two
+ * never cross and the operator decides one question.
  */
 export function checkNoShow(
   booking: NoShowCheck,
@@ -122,6 +142,7 @@ export function checkNoShow(
   settings: TripDaySettings,
 ): Result<null, NoShowProblem> {
   if (booking.bookingStatus !== "confirmed") return err({ code: "not_confirmed" });
+  if (booking.reported) return err({ code: "already_reported" });
   if (now >= completesAt(booking.lastStopAt, settings)) return err({ code: "trip_completed" });
   const allowedAt = later(booking.boardsAt, settings.noShowWaitMinutes);
   if (now < allowedAt) return err({ code: "no_show_too_early", allowedAt });
@@ -133,10 +154,13 @@ export interface DriverAbsentCheck {
   readonly bookingStatus: BookingStatus;
   readonly boardsAt: Date;
   readonly lastStopAt: Date;
+  /** Whether either side has already reported this booking, open or decided. */
+  readonly reported: boolean;
 }
 
 export type DriverAbsentProblem =
   | { readonly code: "not_boarding" }
+  | { readonly code: "already_reported" }
   | { readonly code: "report_too_early"; readonly allowedAt: Date }
   | { readonly code: "report_too_late" };
 
@@ -144,7 +168,9 @@ export type DriverAbsentProblem =
  * R8.5: a passenger with a confirmed booking, or one completed since,
  * reports that the driver didn't come, from the same wait after their
  * boarding time until 24 hours after the trip completes: the same 24 hours
- * the other side has to answer a report (R8.6).
+ * the other side has to answer a report (R8.6). A booking is reported once:
+ * after a no-show the passenger answers it instead, and a decided report is
+ * final (3.5).
  */
 export function checkDriverAbsent(
   booking: DriverAbsentCheck,
@@ -154,6 +180,7 @@ export function checkDriverAbsent(
   if (booking.bookingStatus !== "confirmed" && booking.bookingStatus !== "completed") {
     return err({ code: "not_boarding" });
   }
+  if (booking.reported) return err({ code: "already_reported" });
   const allowedAt = later(booking.boardsAt, settings.noShowWaitMinutes);
   if (now < allowedAt) return err({ code: "report_too_early", allowedAt });
   const closesAt = later(

@@ -4,6 +4,7 @@ import {
   checkDriverAbsent,
   checkNoShow,
   completesAt,
+  completesWithTrip,
   dayPhase,
   defaultTripDaySettings as settings,
   tripStatusAt,
@@ -83,6 +84,7 @@ describe("marking a no-show (R8.4)", () => {
     boardsAt,
     lastStopAt,
     driverCheckedIn: true,
+    reported: false,
   } as const;
 
   it("is allowed after the 10-minute wait at the passenger's boarding stop", () => {
@@ -113,7 +115,15 @@ describe("marking a no-show (R8.4)", () => {
     },
   );
 
-  it("is refused once the trip has completed", () => {
+  it("is refused once the passenger has reported that the driver didn't come", () => {
+    expect(checkNoShow({ ...ready, reported: true }, at(boardsAt, 20), settings)).toEqual({
+      ok: false,
+      error: { code: "already_reported" },
+    });
+  });
+
+  it("is allowed until the trip completes, and refused from then on", () => {
+    expect(checkNoShow(ready, at(lastStopAt, 119), settings)).toEqual({ ok: true, value: null });
     expect(checkNoShow(ready, at(lastStopAt, 120), settings)).toEqual({
       ok: false,
       error: { code: "trip_completed" },
@@ -122,7 +132,19 @@ describe("marking a no-show (R8.4)", () => {
 });
 
 describe("the driver didn't come (R8.5)", () => {
-  const confirmed = { bookingStatus: "confirmed", boardsAt, lastStopAt } as const;
+  const confirmed = { bookingStatus: "confirmed", boardsAt, lastStopAt, reported: false } as const;
+
+  it("is refused once the booking has been reported, open or decided", () => {
+    for (const bookingStatus of ["confirmed", "completed"] as const) {
+      expect(
+        checkDriverAbsent(
+          { ...confirmed, bookingStatus, reported: true },
+          at(boardsAt, 20),
+          settings,
+        ),
+      ).toEqual({ ok: false, error: { code: "already_reported" } });
+    }
+  });
 
   it("can be reported from the wait after the boarding time", () => {
     expect(checkDriverAbsent(confirmed, at(boardsAt, 10), settings)).toEqual({
@@ -156,4 +178,17 @@ describe("the driver didn't come (R8.5)", () => {
       ).toEqual({ ok: false, error: { code: "not_boarding" } });
     },
   );
+});
+
+describe("which bookings complete with the trip (R8.2)", () => {
+  it("completes a confirmed booking without an open report", () => {
+    expect(completesWithTrip({ status: "confirmed", openReport: false })).toBe(true);
+  });
+
+  it("leaves a booking with an open report, a no-show and every other status as they are", () => {
+    expect(completesWithTrip({ status: "confirmed", openReport: true })).toBe(false);
+    for (const status of ["requested", "accepted", "cancelled", "no_show", "completed"] as const) {
+      expect(completesWithTrip({ status, openReport: false })).toBe(false);
+    }
+  });
 });

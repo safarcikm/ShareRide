@@ -439,8 +439,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   booking, the refund, the payout and reliability; reviews on completed
   bookings, hidden until both sides have written theirs; the rating from
   revealed reviews only; and the reliability figure over 12 months, shown
-  once 5 count. The booking lifecycle gains a driver absence before
-  completion and the operator's two outcomes for a contested no-show.
+  once 5 count, with the cancellations the operator can overrule. The
+  booking lifecycle gains a driver absence before completion and the
+  operator's two outcomes for a contested no-show.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

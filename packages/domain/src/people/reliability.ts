@@ -3,6 +3,7 @@
 // those that count over the last 12 months. It helps people choose; it
 // never suspends anyone. The operator watches who falls below 80% and
 // decides, as a person, on a warning or a suspension.
+import type { DisputeOutcome } from "../bookings/disputes.ts";
 import type { BookingStatus } from "../bookings/lifecycle.ts";
 import type { TripStatus } from "../trips/trip.ts";
 
@@ -36,21 +37,30 @@ export interface ReliabilityRecord {
 export interface BookingForReliability {
   readonly status: BookingStatus;
   readonly cancelledBy: "passenger" | "driver" | "operator" | null;
-  /** Whether its cancellation counts (spec 6), or the operator overruled its reason (R8.11). */
+  /**
+   * Whether its cancellation counts (spec 6), or the operator overruled its
+   * reason (R8.11). A driver absence that stood, or a passenger left
+   * behind, is cancelled as if by the driver and counts (`disputeEffect`).
+   */
   readonly countsOnReliability: boolean;
+  /** How a report on it ended; null while it is open, or with none. */
+  readonly reportOutcome: DisputeOutcome | null;
   readonly at: Date;
 }
 
 /**
  * The passenger's side of a booking: kept once completed; not kept as a
- * no-show, or when their own cancellation counts (spec 6, R6.8). Nothing
- * else counts: early cancellations, withdrawn or declined requests, unpaid
- * bookings.
+ * no-show that stands, or when their own cancellation counts (spec 6,
+ * R6.8). A no-show counts only once it stands: while the passenger can
+ * answer, or the operator decides, it may yet end as "rode" or "left
+ * behind" (R8.6, R8.7). Nothing else counts: early cancellations, withdrawn
+ * or declined requests, unpaid bookings.
  */
 export function passengerRecord(booking: BookingForReliability): ReliabilityRecord | null {
   const record = (kept: boolean) => ({ role: "passenger", at: booking.at, kept }) as const;
   if (booking.status === "completed") return record(true);
-  if (booking.status === "no_show") return record(false);
+  if (booking.status === "no_show")
+    return booking.reportOutcome === "stands" ? record(false) : null;
   if (
     booking.status === "cancelled" &&
     booking.cancelledBy === "passenger" &&
@@ -77,18 +87,22 @@ export function driverBookingRecord(booking: BookingForReliability): Reliability
 export interface TripForReliability {
   readonly status: TripStatus;
   readonly countsOnReliability: boolean;
-  /** Its completed bookings. */
-  readonly passengersCarried: number;
+  /**
+   * The passengers the driver came for: its completed bookings and its
+   * no-shows that stand. A driver whose passengers all failed to come
+   * still kept the trip.
+   */
+  readonly passengersDue: number;
   readonly at: Date;
 }
 
 /**
- * A trip, for its driver: kept once completed with at least one passenger;
- * not kept when cancelled and that counts. A trip without passengers does
- * not count.
+ * A trip, for its driver: kept once completed with at least one passenger
+ * due; not kept when cancelled and that counts. A trip without passengers
+ * does not count.
  */
 export function driverTripRecord(trip: TripForReliability): ReliabilityRecord | null {
-  if (trip.status === "completed" && trip.passengersCarried > 0) {
+  if (trip.status === "completed" && trip.passengersDue > 0) {
     return { role: "driver", at: trip.at, kept: true };
   }
   if (trip.status === "cancelled" && trip.countsOnReliability) {
@@ -100,10 +114,14 @@ export function driverTripRecord(trip: TripForReliability): ReliabilityRecord | 
 /**
  * R8.11: in the beta a weather or road-closure reason is trusted, so it
  * does not count; the operator can overrule a clearly wrong one, and it
- * then counts. No other reason is the operator's to change here.
+ * then counts. Only a cancellation that does not count because of that
+ * reason alone (`excusedByReason`, `tripExcusedByReason`), and once.
  */
-export function canOverrule(reason: string | null): boolean {
-  return reason === "weather" || reason === "road_closed";
+export function canOverrule(cancellation: {
+  readonly countsOnReliability: boolean;
+  readonly excusedByReason: boolean;
+}): boolean {
+  return cancellation.excusedByReason && !cancellation.countsOnReliability;
 }
 
 export interface Reliability {
@@ -117,13 +135,23 @@ export interface Reliability {
   readonly belowWatchLevel: boolean;
 }
 
+/** The same day and time some months earlier, or that month's last day when it is shorter. */
+function monthsBefore(now: Date, months: number): Date {
+  const since = new Date(now);
+  since.setUTCDate(1);
+  since.setUTCMonth(since.getUTCMonth() - months);
+  const year = since.getUTCFullYear();
+  const lastDay = new Date(Date.UTC(year, since.getUTCMonth() + 1, 0)).getUTCDate();
+  since.setUTCDate(Math.min(now.getUTCDate(), lastDay));
+  return since;
+}
+
 export function reliabilityOf(
   records: readonly ReliabilityRecord[],
   now: Date,
   settings: ReliabilitySettings,
 ): Reliability {
-  const since = new Date(now);
-  since.setUTCMonth(since.getUTCMonth() - settings.periodMonths);
+  const since = monthsBefore(now, settings.periodMonths);
   const byRole = {
     driver: { kept: 0, counted: 0 },
     passenger: { kept: 0, counted: 0 },

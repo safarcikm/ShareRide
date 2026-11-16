@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { tripCancellation, type BookingToCancelWithTrip } from "./cancel.ts";
+import { tripCancellation, tripExcusedByReason, type BookingToCancelWithTrip } from "./cancel.ts";
 
 const kr = (amount: number) => ({ amount, currency: "ISK" as const });
 const departsAt = new Date("2026-11-20T08:00:00Z");
@@ -60,5 +60,17 @@ describe("cancelling a trip (spec 6, 3.3; R6.6, R6.7)", () => {
     expect(tripCancellation(trip, [gunna], "other", new Date(departsAt.getTime() - 1)).ok).toBe(
       true,
     );
+  });
+});
+
+describe("a trip cancellation the operator can overrule (R8.11)", () => {
+  it("is one with a passenger, for weather or a road closure", () => {
+    expect(tripExcusedByReason([gunna, sigga], "weather")).toBe(true);
+    expect(tripExcusedByReason([gunna], "road_closed")).toBe(true);
+  });
+
+  it("is not one without a passenger, which never counts, or for another reason", () => {
+    expect(tripExcusedByReason([jon, sigga], "weather")).toBe(false);
+    expect(tripExcusedByReason([gunna], "illness")).toBe(false);
   });
 });

@@ -65,3 +65,15 @@ export function tripCancellation(
     })),
   });
 }
+
+/**
+ * Whether a trip's cancellation does not count only because of its weather
+ * or road-closure reason: the one the operator can overrule (R8.11). A trip
+ * without a passenger never counts, whatever the reason.
+ */
+export function tripExcusedByReason(
+  bookings: readonly Pick<BookingToCancelWithTrip, "status">[],
+  reason: TripCancelReason,
+): boolean {
+  return bookings.some((booking) => booking.status === "confirmed") && excused.has(reason);
+}

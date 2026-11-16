@@ -23,6 +23,11 @@ export interface ReviewToCheck {
   readonly completedAt: Date | null;
   /** Whether this author has already reviewed this booking. */
   readonly alreadyReviewed: boolean;
+  /**
+   * Whether the passenger has reported that the driver didn't come and that
+   * is still open: if it stands, the booking's reviews are removed (3.4).
+   */
+  readonly openReport: boolean;
   readonly rating: number;
   readonly comment: string;
 }
@@ -31,6 +36,7 @@ export type ReviewProblem =
   | { readonly code: "not_completed" }
   | { readonly code: "review_window_closed" }
   | { readonly code: "already_reviewed" }
+  | { readonly code: "report_open" }
   | { readonly code: "rating_invalid" }
   | { readonly code: "comment_too_long" }
   | { readonly code: "comment_has_contact_details"; readonly kinds: readonly ContactKind[] };
@@ -45,8 +51,9 @@ function windowEnd(completedAt: Date, settings: ReviewSettings): Date {
  * R8.8: one review per author per completed booking, within 14 days, 1 to 5
  * whole stars and an optional comment of up to 500 characters without
  * contact details or links. It cannot be changed once sent. No-shows,
- * cancellations and open disputes go through reliability and the operator
- * instead, so they are never reviewed.
+ * cancellations and open reports go through reliability and the operator
+ * instead, so they are never reviewed: a completed booking whose driver is
+ * reported absent waits until that is decided.
  */
 export function checkReview(
   review: ReviewToCheck,
@@ -58,6 +65,7 @@ export function checkReview(
   }
   if (now >= windowEnd(review.completedAt, settings)) return err({ code: "review_window_closed" });
   if (review.alreadyReviewed) return err({ code: "already_reviewed" });
+  if (review.openReport) return err({ code: "report_open" });
   if (!Number.isInteger(review.rating) || review.rating < 1 || review.rating > 5) {
     return err({ code: "rating_invalid" });
   }

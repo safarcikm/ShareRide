@@ -4,6 +4,7 @@ import {
   cancelReasons,
   cancelReasonsFor,
   driverCancelReasons,
+  excusedByReason,
   passengerCancelReasons,
   tripCancelReasons,
   type BookingToCancel,
@@ -269,4 +270,30 @@ describe("a booking that cannot be cancelled", () => {
       ).toEqual({ ok: false, error: { code: "not_allowed", status, event: "cancel" } });
     },
   );
+});
+
+describe("a cancellation the operator can overrule (R8.11)", () => {
+  it("is one that counts but for its weather or road-closure reason", () => {
+    expect(excusedByReason(paid, { by: "passenger", reason: "weather" }, before(60))).toBe(true);
+    expect(excusedByReason(paid, { by: "driver", reason: "road_closed" }, before(60))).toBe(true);
+  });
+
+  it("is not one that would not count anyway, or that counts", () => {
+    // Two days before boarding, a passenger's cancellation never counts.
+    expect(excusedByReason(paid, { by: "passenger", reason: "weather" }, before(2 * 24 * 60))).toBe(
+      false,
+    );
+    // After a big move, it never counts either (R6.3).
+    expect(excusedByReason(moved(31), { by: "passenger", reason: "weather" }, before(60))).toBe(
+      false,
+    );
+    expect(excusedByReason(paid, { by: "driver", reason: "car_problem" }, before(60))).toBe(false);
+    expect(
+      excusedByReason(
+        { ...paid, status: "accepted" },
+        { by: "driver", reason: "weather" },
+        before(60),
+      ),
+    ).toBe(false);
+  });
 });

@@ -6,7 +6,7 @@
 // and whose reliability it counts on.
 import { err, ok, type Result } from "../result.ts";
 import type { TripDaySettings } from "../trips/day.ts";
-import type { BookingEvent } from "./lifecycle.ts";
+import type { BookingEvent, BookingStatus } from "./lifecycle.ts";
 
 /** What was reported: the passenger didn't come, or the driver didn't. */
 export const disputeKinds = ["no_show", "driver_absent"] as const;
@@ -55,17 +55,22 @@ export function answerDeadline(
 }
 
 export type AnswerProblem =
-  { readonly code: "already_answered" } | { readonly code: "answer_window_closed" };
+  | { readonly code: "already_answered" }
+  | { readonly code: "already_decided" }
+  | { readonly code: "answer_window_closed" };
 
+/**
+ * The other side answers once, until the deadline. A report that stood
+ * because nobody answered in time is decided, so it takes no late answer.
+ */
 export function checkAnswer(
   dispute: Dispute,
   completedAt: Date,
   now: Date,
   settings: TripDaySettings,
 ): Result<null, AnswerProblem> {
-  if (dispute.answer !== null || dispute.outcome !== null) {
-    return err({ code: "already_answered" });
-  }
+  if (dispute.answer !== null) return err({ code: "already_answered" });
+  if (dispute.outcome !== null) return err({ code: "already_decided" });
   if (now > answerDeadline(dispute, completedAt, settings)) {
     return err({ code: "answer_window_closed" });
   }
@@ -77,7 +82,10 @@ export function outcomeOfAnswer(answer: DisputeAnswer): DisputeOutcome | null {
   return answer === "agreed" ? "stands" : null;
 }
 
-/** An unanswered report stands once the time to answer has passed (R8.6). */
+/**
+ * An unanswered report stands once the time to answer has passed (R8.6):
+ * after the deadline, so that an answer at the deadline itself still counts.
+ */
 export function settlesUnanswered(
   dispute: Dispute,
   completedAt: Date,
@@ -87,7 +95,7 @@ export function settlesUnanswered(
   return (
     dispute.answer === null &&
     dispute.outcome === null &&
-    now >= answerDeadline(dispute, completedAt, settings)
+    now > answerDeadline(dispute, completedAt, settings)
   );
 }
 
@@ -107,9 +115,33 @@ export function checkDecision(
   return ok(null);
 }
 
+/** Whose reliability a decided report counts on, if anyone's (spec 8, 3.8). */
+export function reportCountsOn(
+  kind: DisputeKind,
+  outcome: DisputeOutcome,
+): "passenger" | "driver" | null {
+  if (kind === "no_show") {
+    if (outcome === "stands") return "passenger";
+    return outcome === "left_behind" ? "driver" : null;
+  }
+  return outcome === "stands" ? "driver" : null;
+}
+
 export interface DisputeEffect {
   /** What happens to the booking: none when it stays as the report left it. */
-  readonly bookingEvent: Extract<BookingEvent, "driver_absent" | "rode" | "left_behind"> | null;
+  readonly bookingEvent: Extract<
+    BookingEvent,
+    "driver_absent" | "rode" | "left_behind" | "complete"
+  > | null;
+  /**
+   * A booking cancelled because the driver didn't come is cancelled as if by
+   * the driver, and counts on them like a driver's cancellation (3.4, spec 6).
+   */
+  readonly cancellation: {
+    readonly by: "driver";
+    readonly reason: "driver_absent";
+    readonly countsOnReliability: true;
+  } | null;
   /** All the passenger paid goes back, or nothing (rules M2, M3). */
   readonly refund: "full" | "none";
   /** Whether the driver is paid for the booking once payouts exist (spec 13). */
@@ -120,24 +152,51 @@ export interface DisputeEffect {
   readonly removesReviews: boolean;
 }
 
+/** The booking a report is about, when its outcome is applied. */
+export interface DisputedBooking {
+  readonly status: BookingStatus;
+  /** Whether its trip has completed (R8.1). */
+  readonly tripCompleted: boolean;
+}
+
+const asDriverCancelled = {
+  by: "driver",
+  reason: "driver_absent",
+  countsOnReliability: true,
+} as const;
+
 /**
  * R8.7. A no-show already left the booking as `no_show` when it was marked,
  * so standing changes nothing more. A driver absence leaves the booking as
- * it was until it stands.
+ * it was until it stands. One found wrong lets the booking go on: if its
+ * trip has completed meanwhile, the booking completes then, as it would
+ * have with the trip (R8.2).
  */
-export function disputeEffect(kind: DisputeKind, outcome: DisputeOutcome): DisputeEffect {
+export function disputeEffect(
+  kind: DisputeKind,
+  outcome: DisputeOutcome,
+  booking: DisputedBooking,
+): DisputeEffect {
+  const countsOn = reportCountsOn(kind, outcome);
   const driverAtFault = {
+    cancellation: asDriverCancelled,
     refund: "full",
     payout: "withhold",
-    countsOn: "driver",
+    countsOn,
   } as const;
-  const driverPaid = { refund: "none", payout: "pay", removesReviews: false } as const;
+  const driverPaid = {
+    cancellation: null,
+    refund: "none",
+    payout: "pay",
+    countsOn,
+    removesReviews: false,
+  } as const;
   if (kind === "no_show") {
     switch (outcome) {
       case "stands":
-        return { bookingEvent: null, ...driverPaid, countsOn: "passenger" };
+        return { bookingEvent: null, ...driverPaid };
       case "rode":
-        return { bookingEvent: "rode", ...driverPaid, countsOn: null };
+        return { bookingEvent: "rode", ...driverPaid };
       case "left_behind":
         return { bookingEvent: "left_behind", ...driverAtFault, removesReviews: false };
       case "reversed":
@@ -147,8 +206,10 @@ export function disputeEffect(kind: DisputeKind, outcome: DisputeOutcome): Dispu
   switch (outcome) {
     case "stands":
       return { bookingEvent: "driver_absent", ...driverAtFault, removesReviews: true };
-    case "reversed":
-      return { bookingEvent: null, ...driverPaid, countsOn: null };
+    case "reversed": {
+      const completes = booking.status === "confirmed" && booking.tripCompleted;
+      return { bookingEvent: completes ? "complete" : null, ...driverPaid };
+    }
     case "rode":
     case "left_behind":
       throw new Error("A driver absence stands or is reversed.");
