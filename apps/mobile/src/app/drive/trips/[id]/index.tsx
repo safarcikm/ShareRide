@@ -31,8 +31,8 @@ import { routeText } from "@/trips/texts";
  * and "Edit trip" (3.2) and "Cancel trip" (3.3) until it leaves. It loads
  * again each time it comes into view. `cancelled`, the booking just
  * cancelled, says so with focus; so does `tripCancelled`, once the trip is,
- * and `changed`, the new departure once saved, with `told`, how many
- * passengers were told. A cancelled trip says why, and nothing more.
+ * and `changed`, which changes once each change is saved, with `told`, how
+ * many passengers were told. A cancelled trip says why, and nothing more.
  */
 export default function DriverTripScreen() {
   const { locale, t } = useLanguage();

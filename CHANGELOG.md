@@ -388,6 +388,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   answer and to pay, and the reminders, move with the trip; a reminder
   already sent is not sent again. `POST /v1/trips/{id}/changes`, with
   `?preview=true` for the check; each change is kept in `trip_changes`.
+- The driver changes a published trip's price, seats, how people book, and
+  preferences and note (milestone 6, PR 5b, spec 6, 3.2), each from its own
+  row on Edit trip. The price shows each stretch's new price and is for new
+  bookings only; the seats go no lower than are taken on any stretch, and
+  more seats can lower the price level, which the screen says before
+  saving; requests waiting for an answer stay open when the booking mode
+  changes; the note never holds contact details. Nobody is notified: the
+  trip shows the change. Each change is kept in `trip_changes`.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

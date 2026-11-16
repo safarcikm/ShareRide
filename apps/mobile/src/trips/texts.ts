@@ -58,12 +58,16 @@ export function routeText(t: Translate, locale: Locale, trip: MyTrip): string {
 
 type QuoteProblem = Quote["problems"][number]["code"];
 
-/** Codes the server gives when a trip cannot be published (spec 3, section 4). */
+/**
+ * Codes the server gives when a trip cannot be published (spec 3, section
+ * 4) or changed (spec 6, 3.2).
+ */
 export type ProblemCode =
   | QuoteProblem
   | "driver_not_ready"
   | "car_missing"
   | "seats_invalid"
+  | "seats_below_taken"
   | "price_level_invalid"
   | "stop_unavailable"
   | "overlaps_trip"
@@ -74,6 +78,7 @@ export type ProblemCode =
 const plainProblems = {
   driver_not_ready: "trip.problem.driver_not_ready",
   car_missing: "trip.problem.car_missing",
+  seats_below_taken: "trip.problem.seats_below_taken",
   price_level_invalid: "trip.problem.price_level_invalid",
   times_missing: "trip.problem.times_missing",
   departure_too_soon: "trip.problem.departure_too_soon",

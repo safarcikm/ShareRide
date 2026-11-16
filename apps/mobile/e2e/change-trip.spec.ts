@@ -1,6 +1,13 @@
 import { expect, test } from "@playwright/test";
-import { confirmedBooking, secondPage, visible } from "./support/cancelling";
-import { chooseTime, focused, timeField } from "./support/trips";
+import { english, signUp } from "./support/account";
+import {
+  confirmedBooking,
+  requestSeat,
+  secondPage,
+  visible,
+  withinADay,
+} from "./support/cancelling";
+import { chooseTime, focused, postTripToSelfoss, timeField } from "./support/trips";
 
 // Spec 6, 3.2, on the web build: a driver posts Mjódd to N1 Selfoss for
 // tomorrow and Dóra pays for a seat. The driver moves the departure 45
@@ -89,6 +96,68 @@ test("a driver moves the departure 45 minutes, and the passenger cancels with a 
   await expect(dora.getByText(cancelled, { exact: true }).filter(visible)).toBeVisible();
   await expect(
     dora.getByText(/^Full refund of [\d,]+ ISK, back to the card you paid with\.$/).filter(visible),
+  ).toBeVisible();
+  await close();
+});
+
+// Spec 6, 3.2, items 8 to 10: with Dóra's request holding a seat, the
+// driver offers no more seats than are taken, then raises the price for
+// new bookings; nobody is told, and Edit trip shows both.
+test("a driver offers fewer seats and a higher price, each saved from Edit trip", async ({
+  page: driver,
+  browser,
+}, testInfo) => {
+  test.slow();
+  const { page: dora, close } = await secondPage(browser, testInfo);
+  await signUp(driver, english, "Bára");
+  const tripId = await postTripToSelfoss(driver, withinADay());
+  await requestSeat(dora, "Dóra", tripId);
+
+  const edit = async () => {
+    await driver.goto(`/drive/trips/${tripId}/edit`);
+    await expect(driver.getByRole("heading", { name: "Edit trip" })).toBeVisible();
+  };
+  const saved = async () => {
+    await driver.getByRole("button", { name: "Save the change", exact: true }).click();
+    await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}\\?changed=`));
+    const outcome = "Trip changed.";
+    await expect(driver.getByText(outcome, { exact: true }).filter(visible)).toBeVisible();
+    await expect.poll(() => focused(driver)).toContain(outcome);
+  };
+
+  await edit();
+  await driver.getByRole("link", { name: "Change the seats" }).click();
+  await expect(
+    driver
+      .getByText("1 seat is taken on part of the trip, so you can offer no fewer.", {
+        exact: true,
+      })
+      .filter(visible),
+  ).toBeVisible();
+  const fewer = driver.getByRole("button", { name: "One seat fewer" });
+  while (await fewer.isEnabled()) await fewer.click();
+  await saved();
+
+  await edit();
+  await expect(driver.getByText("1 seat", { exact: true }).filter(visible)).toBeVisible();
+  await expect(
+    driver.getByText(/^100% · the whole route [\d,]+ ISK$/).filter(visible),
+  ).toBeVisible();
+  await driver.getByRole("link", { name: "Change the price" }).click();
+  await expect(
+    driver
+      .getByText(
+        "The new price is for new bookings. Passengers who booked keep the price they booked at.",
+        { exact: true },
+      )
+      .filter(visible),
+  ).toBeVisible();
+  await driver.getByRole("button", { name: "Raise the price" }).click();
+  await saved();
+
+  await edit();
+  await expect(
+    driver.getByText(/^110% · the whole route [\d,]+ ISK$/).filter(visible),
   ).toBeVisible();
   await close();
 });

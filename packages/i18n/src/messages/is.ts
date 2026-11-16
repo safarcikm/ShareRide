@@ -438,6 +438,7 @@ export const is = {
     "Tíminn á {name} verður að vera seinna en á viðkomustaðnum á undan.",
   "trip.problem.stretch_too_fast": "Tíminn á {name} gefur of lítinn tíma til að keyra þangað.",
   "trip.problem.overlaps_trip": "Þú ert með aðra ferð á þeim tíma.",
+  "trip.problem.seats_below_taken": "Farþegar hafa tekið fleiri sæti en það á hluta leiðarinnar.",
   "trip.published.title": "Ferðin þín er birt",
   "trip.published.approval":
     "Fólk getur nú fundið hana og beðið um sæti. Þú samþykkir hvern og einn.",
@@ -630,6 +631,22 @@ export const is = {
   "trip.editRequestsExpire":
     "Ekki er lengur hægt að svara {count, plural, one {# beiðni} other {# beiðnum}} í tæka tíð svo {count, plural, one {hún rennur} other {þær renna}} út.",
   "trip.editSave": "Vista breytinguna",
+  "trip.editSame": "Ferðin er nú þegar svona. Breyttu einhverju fyrst.",
+  "trip.editPriceAction": "Breyta verðinu",
+  "trip.editPriceHelp":
+    "Nýja verðið gildir fyrir nýjar bókanir. Farþegar sem hafa bókað halda verðinu sem þeir bókuðu á.",
+  "trip.editSeats": "Sæti",
+  "trip.editSeatsAction": "Breyta sætunum",
+  "trip.editSeatsTaken":
+    "{count, plural, one {# sæti er tekið} other {# sæti eru tekin}} á hluta leiðarinnar svo þú getur ekki boðið færri.",
+  "trip.editSeatsLowers":
+    "Með {seats, plural, one {# sæti} other {# sætum}} er hæsta verðstigið {level}%, svo þitt lækkar niður í það fyrir nýjar bókanir.",
+  "trip.editBookingAction": "Breyta því hvernig fólk bókar",
+  "trip.editBookingRequests":
+    "{count, plural, one {# beiðni sem bíður svars þíns er áfram opin} other {# beiðnir sem bíða svars þíns eru áfram opnar}}.",
+  "trip.editDetails": "Óskir og skilaboð",
+  "trip.editDetailsAction": "Breyta óskum og skilaboðum",
+  "trip.editDetailsHelp": "Farþegar sjá breytinguna á ferðinni. Enginn fær tilkynningu.",
   "trip.notChangeable": "Ekki er lengur hægt að breyta þessari ferð.",
   "trip.moveTooFar": "Með bókunum getur brottförin verið frá kl. {earliest} til kl. {latest}.",
   "trip.changed": "Brottför breytt úr {old} í {new}",

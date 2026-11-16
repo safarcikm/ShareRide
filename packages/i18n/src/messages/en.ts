@@ -434,6 +434,8 @@ export const en = {
   "trip.problem.times_not_increasing": "The time at {name} must be later than at the stop before.",
   "trip.problem.stretch_too_fast": "The time at {name} leaves too little time to drive there.",
   "trip.problem.overlaps_trip": "You have another trip at that time.",
+  "trip.problem.seats_below_taken":
+    "Passengers have taken more seats than that on part of the trip.",
   "trip.published.title": "Your trip is published",
   "trip.published.approval": "People can now find it and ask for a seat. You approve each one.",
   "trip.published.instant": "People can now find it and book a seat.",
@@ -626,6 +628,22 @@ export const en = {
   "trip.editRequestsExpire":
     "{count, plural, one {# request} other {# requests}} can no longer be answered in time, so {count, plural, one {it expires} other {they expire}}.",
   "trip.editSave": "Save the change",
+  "trip.editSame": "This is what the trip has now. Change something first.",
+  "trip.editPriceAction": "Change the price",
+  "trip.editPriceHelp":
+    "The new price is for new bookings. Passengers who booked keep the price they booked at.",
+  "trip.editSeats": "Seats",
+  "trip.editSeatsAction": "Change the seats",
+  "trip.editSeatsTaken":
+    "{count, plural, one {# seat is} other {# seats are}} taken on part of the trip, so you can offer no fewer.",
+  "trip.editSeatsLowers":
+    "With {seats, plural, one {# seat} other {# seats}} the highest price level is {level}%, so yours goes down to it for new bookings.",
+  "trip.editBookingAction": "Change how people book",
+  "trip.editBookingRequests":
+    "{count, plural, one {# request waiting for your answer stays} other {# requests waiting for your answer stay}} open.",
+  "trip.editDetails": "Preferences and note",
+  "trip.editDetailsAction": "Change the preferences and note",
+  "trip.editDetailsHelp": "Passengers see the change on the trip. Nobody is notified.",
   "trip.notChangeable": "This trip can no longer be changed.",
   "trip.moveTooFar": "With bookings, the departure can be between {earliest} and {latest}.",
   "trip.changed": "Departure changed from {old} to {new}",

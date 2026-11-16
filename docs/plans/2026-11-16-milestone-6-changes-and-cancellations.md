@@ -295,8 +295,8 @@ PR 4b, `feat(trips)`: the driver cancels the trip.
 
 ### PR 5: `feat(trips)`: changing a published trip
 
-In two parts, so each stays reviewable: the departure first, end to end,
-then the other changes.
+In three parts, so each stays reviewable: the departure first, end to end,
+then the changes nobody is told of, then the car, which tells passengers.
 
 PR 5a, `feat(trips)`: the driver moves the departure.
 
@@ -310,14 +310,24 @@ PR 5a, `feat(trips)`: the driver moves the departure.
   same moment; the preview matches what saving does); a browser journey
   moves a trip by 45 minutes and a passenger cancels with a full refund
 
-PR 5b, `feat(trips)`: the other changes.
+PR 5b, `feat(trips)`: seats, price level, booking mode, and preferences
+and note.
 
-- [ ] Seats, price level, car (`TripChanged`), booking mode, and
-      preferences and note, on the same endpoint
-- [ ] Their rows on Edit trip
+- [x] The four changes on the same endpoint, each stretch's seats, cap and
+      price stored for new bookings; nobody told
+- [x] Their rows on Edit trip, each with its own screen that saves
 - Verify: integration tests (seats below the highest occupancy refused;
-  more seats lower the price level; pending requests stay open when the
-  booking mode changes; a new car tells each passenger)
+  more seats lower the price level; bookings keep their prices; pending
+  requests stay open when the booking mode changes; a note with contact
+  details refused; the same value saves nothing)
+
+PR 5c, `feat(trips)`: the car.
+
+- [ ] A new car on the same endpoint; `TripChanged`, with its push and
+      email, and the change on each booking
+- [ ] The car row on Edit trip
+- Verify: integration tests (a new car tells each passenger; the same car
+  tells nobody)
 
 ### PR 6: `feat(trips)`: adding and removing a stop
 

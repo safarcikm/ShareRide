@@ -139,8 +139,10 @@ One row per change to a published trip, so passengers can see what changed:
 As built (milestone 6, PR 5a): the table `trip_changes`, with `kind` one of
 `departure`, `seats`, `priceLevel`, `vehicle`, `bookingMode` and `details`
 (the domain's `tripChangeKinds`; the stops join in PR 6), and `before` and
-`after` as small JSON objects, such as `{ "departsAt": "…" }`. It goes with
-the trip. A booking shows the moves made after it was booked, and a
+`after` as small flat JSON objects, such as `{ "departsAt": "…" }`, or for
+the seats `{ "seats": 3, "priceLevel": 120 }` with the level they left (PR
+5b). For the preferences and note, `after` says only whether the note
+changed (`noteChanged`), never its text. It goes with the trip. A booking shows the moves made after it was booked, and a
 notification about a move points to its row (`notifications.trip_change_id`),
 so each move is told with its own times.
 

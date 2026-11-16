@@ -507,3 +507,263 @@ describe("moving a trip's departure (spec 6, 3.2)", () => {
     expect(await changesOf(north)).toEqual([]);
   });
 });
+
+describe("changing the seats, price level, booking mode and details (spec 6, 3.2)", () => {
+  /** The trip as its driver reads it. */
+  async function mine(member: Member, id: string) {
+    const trip = await api.client.call(myTripRoute, {
+      accessToken: member.accessToken,
+      params: { id },
+    });
+    if (!trip.ok) throw new Error(trip.error.code);
+    return trip.data;
+  }
+
+  async function segmentsOf(id: string) {
+    return api.connection.db
+      .select({
+        capacity: schema.segments.capacity,
+        cap: schema.segments.cap,
+        price: schema.segments.price,
+      })
+      .from(schema.segments)
+      .where(eq(schema.segments.tripId, id))
+      .orderBy(asc(schema.segments.position));
+  }
+
+  const isk = (amount: number) => ({ amount, currency: "ISK" });
+
+  it("refuses fewer seats than passengers hold on any stretch, and takes more (rule S5)", async () => {
+    const anna = await driverOf(north);
+    // Requests for two seats to Hof and one from Borgarnes to Blönduós.
+    await booked((await newMember("Gunna")).accessToken, north, {
+      fromStop: 0,
+      toStop: 3,
+      seats: 2,
+    });
+    await booked((await newMember("Óli")).accessToken, north, { fromStop: 1, toStop: 2 });
+    const before = await mine(anna, north);
+
+    expect(await change(anna, north, { kind: "seats", seats: 2 }, true)).toMatchObject({
+      status: 422,
+      error: {
+        code: "change_not_allowed",
+        details: [{ path: "seats", issue: "seats_below_taken" }],
+      },
+    });
+    for (const seats of [0, 9]) {
+      expect(await change(anna, north, { kind: "seats", seats })).toMatchObject({
+        status: 400,
+        error: { code: "validation_failed" },
+      });
+    }
+    expect(await mine(anna, north)).toEqual(before);
+    expect(await changesOf(north)).toEqual([]);
+
+    const effect = await change(anna, north, { kind: "seats", seats: 4 });
+    expect(effect).toMatchObject({
+      status: 200,
+      data: {
+        seats: 4,
+        priceLevel: 100,
+        priceLevelLowered: false,
+        told: 0,
+        requests: 2,
+      },
+    });
+    const after = await mine(anna, north);
+    expect(after.seats).toBe(4);
+    // The car shares its cost with one more seat: each stretch may cost less (rule P3).
+    const stored = await segmentsOf(north);
+    expect(stored.map((segment) => segment.capacity)).toEqual([4, 4, 4]);
+    for (const [index, segment] of stored.entries()) {
+      expect(segment.cap).toBeLessThan(before.segments[index]?.cap.amount ?? 0);
+    }
+    expect(effect.ok && effect.data.prices).toEqual(after.segments.map((segment) => segment.price));
+    expect((await details(north, 1, 2)).part.freeSeats).toBe(1);
+    expect(await changesOf(north)).toEqual([
+      {
+        id: expect.any(String) as unknown,
+        kind: "seats",
+        before: { seats: 3, priceLevel: 100 },
+        after: { seats: 4, priceLevel: 100 },
+      },
+    ]);
+    // Nobody is told of seats (spec 7, 3.3).
+    expect(await eventsOf("TripChanged")).toEqual([]);
+  });
+
+  it("lowers the price level when more seats need it; bookings keep the price they booked at (rules P1, P4)", async () => {
+    const anna = await driverOf(north);
+    const gunna = await newMember("Gunna");
+
+    // The highest level 3 seats allow, first only previewed.
+    const preview = await change(anna, north, { kind: "priceLevel", priceLevel: 250 }, true);
+    expect(preview).toMatchObject({
+      status: 200,
+      data: { seats: 3, priceLevel: 250, priceLevelLowered: false },
+    });
+    expect((await mine(anna, north)).priceLevel).toBe(100);
+    const saved = await change(anna, north, { kind: "priceLevel", priceLevel: 250 });
+    expect(saved.ok && saved.data).toEqual(preview.ok && preview.data);
+    const raised = await mine(anna, north);
+    expect(raised.priceLevel).toBe(250);
+    expect(raised.segments.map((segment) => segment.price)).toEqual(
+      preview.ok ? preview.data.prices : [],
+    );
+
+    const booking = await paidBooking(anna, gunna);
+    const shown = await details(north, 0, 3);
+    expect(booking.total).toEqual(shown.part.total);
+
+    // A fourth seat allows 200 at most.
+    const more = await change(anna, north, { kind: "seats", seats: 4 });
+    expect(more).toMatchObject({
+      status: 200,
+      data: { seats: 4, priceLevel: 200, priceLevelLowered: true },
+    });
+    const lowered = await mine(anna, north);
+    expect(lowered.priceLevel).toBe(200);
+    const prices = lowered.segments.map((segment) => segment.price.amount);
+    expect((await segmentsOf(north)).map((segment) => segment.price)).toEqual(prices);
+    expect((await details(north, 0, 3)).part.pricePerSeat).toEqual(
+      isk(prices.reduce((sum, price) => sum + price, 0)),
+    );
+    expect((await details(north, 0, 3)).part.pricePerSeat.amount).toBeLessThan(
+      shown.part.pricePerSeat.amount,
+    );
+    // Gunna keeps what she paid, and her booking shows no change.
+    const kept = await read(gunna, booking.id);
+    expect(kept.total).toEqual(booking.total);
+    expect(kept.changes).toEqual([]);
+    expect(
+      (await changesOf(north)).map(({ kind, before, after }) => ({ kind, before, after })),
+    ).toEqual([
+      { kind: "priceLevel", before: { priceLevel: 100 }, after: { priceLevel: 250 } },
+      {
+        kind: "seats",
+        before: { seats: 3, priceLevel: 250 },
+        after: { seats: 4, priceLevel: 200 },
+      },
+    ]);
+  });
+
+  it("refuses a price level the seats do not allow (rule P4)", async () => {
+    const anna = await driverOf(north);
+    for (const priceLevel of [260, 105]) {
+      expect(await change(anna, north, { kind: "priceLevel", priceLevel })).toMatchObject({
+        status: 422,
+        error: {
+          code: "change_not_allowed",
+          details: [{ path: "priceLevel", issue: "price_level_invalid" }],
+        },
+      });
+    }
+    expect((await mine(anna, north)).priceLevel).toBe(100);
+  });
+
+  it("keeps requests open when the booking mode changes", async () => {
+    const anna = await driverOf(north);
+    const request = await booked((await newMember("Óli")).accessToken, north, {
+      fromStop: 2,
+      toStop: 3,
+    });
+
+    expect(
+      await change(anna, north, { kind: "bookingMode", bookingMode: "instant" }),
+    ).toMatchObject({
+      status: 200,
+      data: { told: 0, requests: 1 },
+    });
+    expect((await details(north)).bookingMode).toBe("instant");
+    expect((await stored(request.id))?.status).toBe("requested");
+    expect((await mine(anna, north)).openRequests).toBe(1);
+    // A new booking is accepted at once.
+    const instant = await booked((await newMember("Dóra")).accessToken, north, {
+      fromStop: 0,
+      toStop: 1,
+    });
+    expect(instant.status).toBe("accepted");
+    expect(await changesOf(north)).toMatchObject([
+      {
+        kind: "bookingMode",
+        before: { bookingMode: "approval" },
+        after: { bookingMode: "instant" },
+      },
+    ]);
+  });
+
+  it("changes the preferences and note, without contact details, and tells nobody (R3.10)", async () => {
+    const anna = await driverOf(north);
+    const gunna = await newMember("Gunna");
+    const booking = await paidBooking(anna, gunna);
+    const trip = await mine(anna, north);
+    const preferences = { ...trip.preferences, pets: "yes" as const, chat: "quiet" as const };
+    const chat = async () => {
+      const messages = await api.client.call(conversationMessagesRoute, {
+        accessToken: gunna.accessToken,
+        params: { id: booking.id },
+        query: {},
+      });
+      if (!messages.ok) throw new Error(messages.error.code);
+      return messages.data.messages;
+    };
+    const lines = await chat();
+
+    expect(
+      await change(anna, north, { kind: "details", preferences, note: "Call me on 555 1234" }),
+    ).toMatchObject({
+      status: 422,
+      error: {
+        code: "change_not_allowed",
+        details: [{ path: "note", issue: "note_has_contact_details" }],
+      },
+    });
+    expect(await mine(anna, north)).toEqual(trip);
+
+    // Kept as the database counts characters (NFC), whatever the keyboard sent.
+    const note = "Pick-up by the café.";
+    expect(
+      await change(anna, north, { kind: "details", preferences, note: note.normalize("NFD") }),
+    ).toMatchObject({ status: 200, data: { told: 0 } });
+    expect(await details(north)).toMatchObject({ preferences, note });
+    // Back to the old preferences, keeping the note.
+    expect(
+      await change(anna, north, { kind: "details", preferences: trip.preferences, note }),
+    ).toMatchObject({ status: 200 });
+    // The note's text is not kept, only whether it changed.
+    expect(
+      (await changesOf(north)).map(({ kind, before, after }) => ({ kind, before, after })),
+    ).toEqual([
+      {
+        kind: "details",
+        before: trip.preferences,
+        after: { ...preferences, noteChanged: true },
+      },
+      {
+        kind: "details",
+        before: preferences,
+        after: { ...trip.preferences, noteChanged: false },
+      },
+    ]);
+    // Shown on the trip, with no notification and no line in the chat.
+    expect(await eventsOf("TripChanged")).toEqual([]);
+    expect(await chat()).toEqual(lines);
+  });
+
+  it("saves nothing when the value is the one the trip has", async () => {
+    const anna = await driverOf(north);
+    const trip = await mine(anna, north);
+    const same: TripChangeBody[] = [
+      { kind: "seats", seats: trip.seats },
+      { kind: "priceLevel", priceLevel: trip.priceLevel },
+      { kind: "bookingMode", bookingMode: trip.bookingMode },
+      { kind: "details", preferences: trip.preferences, note: trip.note },
+    ];
+    for (const body of same) {
+      expect(await change(anna, north, body)).toMatchObject({ status: 200, data: { told: 0 } });
+    }
+    expect(await changesOf(north)).toEqual([]);
+    expect((await mine(anna, north)).updatedAt).toBe(trip.updatedAt);
+  });
+});

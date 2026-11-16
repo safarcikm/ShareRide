@@ -71,12 +71,13 @@ What can change follows
   changed from 08:00 to 08:20".
 - If a change would break a rule, the app says which and why, before saving.
 
-As built (milestone 6, PR 5a, the departure; PR 5b adds the rest):
+As built (milestone 6, PR 5a, the departure; PR 5b, the seats, price
+level, booking mode, preferences and note; PR 5c adds the car):
 
 1. "Edit trip" sits just before "Cancel trip" on the driver's trip page,
    until the planned departure (R6.1). It opens Edit trip, a row for each
-   part of the trip with a link to change it; for now the time: the day and
-   every stop's time, and "Change the time".
+   part of the trip with a link to change it, the first being the time: the
+   day and every stop's time, and "Change the time".
 2. Change the departure gives the date and the departure; every stop moves
    with it, and the screen shows their new times (R6.2). With a booking or
    a request on the trip, it says the departure can move by up to 2 hours
@@ -116,6 +117,32 @@ As built (milestone 6, PR 5a, the departure; PR 5b adds the rest):
    at a time, with `?preview=true` for the check; a draft keeps `PATCH`.
    A change that breaks a rule is refused with each rule named; from the
    planned departure on, or once cancelled, nothing changes.
+8. Edit trip also has the price, the seats, how people book, and the
+   preferences and note, each with a link to its own screen. Nobody is
+   told of these (spec 7, 3.3), so each screen says what the change means
+   and "Save the change" saves it there; the trip page then says "Trip
+   changed." with focus. Saving what the trip already has says "This is
+   what the trip has now. Change something first." and saves nothing.
+9. The price: the level control with each stretch's new price, worked out
+   on the phone by the rules publishing uses (P3, P4) from the stretches'
+   distances. It is for new bookings: bookings keep the price they booked
+   at (P1).
+10. The seats: no fewer than are taken on any stretch, requests counting
+    (S5), up to 8, and the screen says how many are taken. More seats can
+    lower the price level to the highest they allow, which the screen says
+    before saving; each stretch's cap and price for new bookings follow.
+11. How people book: requests already waiting for an answer stay open,
+    and the screen says how many.
+12. The preferences and note change together. Passengers see them on the
+    trip, with no notification and no line in the chat. The note never
+    holds contact details (R3.10), checked on the phone and on the server.
+13. Each of these is recorded with its time, as a move is, for the
+    operator to answer questions about what the trip offered and when; for
+    the note, only whether it changed, not its text. "Changes since you
+    booked" lists only the moves, as the rest shows on the trip as it is
+    now. The change's effect also gives the seats, the price level,
+    whether more seats lowered it, and each stretch's price for new
+    bookings.
 
 ### 3.3 Cancelling a trip (driver)
 
@@ -249,7 +276,10 @@ Entities (see [domain model](../architecture/domain-model.md)):
 - `TripChange`: trip, kind (time, stop added, stop removed, seats, price level,
   car, booking mode, details), before and after, changed at. As built
   (PR 5a): `trip_changes` with the kinds `departure`, `seats`, `priceLevel`,
-  `vehicle`, `bookingMode` and `details`; the stops join in PR 6.
+  `vehicle`, `bookingMode` and `details`; the stops join in PR 6. PR 5b
+  records the seats with the price level they left, the price level, the
+  booking mode, and the preferences, each before and after, with whether
+  the note changed (not its text).
 - `Booking` uses its cancellation fields (`cancelled_by`, `cancel_reason`,
   `cancel_note`, `cancelled_at`) plus `refund_amount`,
   `counts_on_reliability` and `departs_at_when_booked`.
@@ -333,6 +363,19 @@ IDs only). Notifications for each come in spec 7; refunds in spec 13.
 | `trip.editRequests` | {count, plural, one {# person who asked for a seat sees} other {# people who asked for a seat see}} the new time in the app. | {count, plural, one {# sem bað um sæti sér} other {# sem báðu um sæti sjá}} nýja tímann í appinu. |
 | `trip.editRequestsExpire` | {count, plural, one {# request} other {# requests}} can no longer be answered in time, so {count, plural, one {it expires} other {they expire}}. | Ekki er lengur hægt að svara {count, plural, one {# beiðni} other {# beiðnum}} í tæka tíð svo {count, plural, one {hún rennur} other {þær renna}} út. |
 | `trip.editSave` | Save the change | Vista breytinguna |
+| `trip.editSame` | This is what the trip has now. Change something first. | Ferðin er nú þegar svona. Breyttu einhverju fyrst. |
+| `trip.editPriceAction` | Change the price | Breyta verðinu |
+| `trip.editPriceHelp` | The new price is for new bookings. Passengers who booked keep the price they booked at. | Nýja verðið gildir fyrir nýjar bókanir. Farþegar sem hafa bókað halda verðinu sem þeir bókuðu á. |
+| `trip.editSeats` | Seats | Sæti |
+| `trip.editSeatsAction` | Change the seats | Breyta sætunum |
+| `trip.editSeatsTaken` | {count, plural, one {# seat is} other {# seats are}} taken on part of the trip, so you can offer no fewer. | {count, plural, one {# sæti er tekið} other {# sæti eru tekin}} á hluta leiðarinnar svo þú getur ekki boðið færri. |
+| `trip.editSeatsLowers` | With {seats, plural, one {# seat} other {# seats}} the highest price level is {level}%, so yours goes down to it for new bookings. | Með {seats, plural, one {# sæti} other {# sætum}} er hæsta verðstigið {level}%, svo þitt lækkar niður í það fyrir nýjar bókanir. |
+| `trip.editBookingAction` | Change how people book | Breyta því hvernig fólk bókar |
+| `trip.editBookingRequests` | {count, plural, one {# request waiting for your answer stays} other {# requests waiting for your answer stay}} open. | {count, plural, one {# beiðni sem bíður svars þíns er áfram opin} other {# beiðnir sem bíða svars þíns eru áfram opnar}}. |
+| `trip.editDetails` | Preferences and note | Óskir og skilaboð |
+| `trip.editDetailsAction` | Change the preferences and note | Breyta óskum og skilaboðum |
+| `trip.editDetailsHelp` | Passengers see the change on the trip. Nobody is notified. | Farþegar sjá breytinguna á ferðinni. Enginn fær tilkynningu. |
+| `trip.problem.seats_below_taken` | Passengers have taken more seats than that on part of the trip. | Farþegar hafa tekið fleiri sæti en það á hluta leiðarinnar. |
 | `trip.notChangeable` | This trip can no longer be changed. | Ekki er lengur hægt að breyta þessari ferð. |
 | `trip.moveTooFar` | With bookings, the departure can be between {earliest} and {latest}. | Með bókunum getur brottförin verið frá kl. {earliest} til kl. {latest}. |
 | `driverTrip.changed` | Trip changed. Your passengers have been told. | Ferðinni var breytt. Farþegarnir hafa fengið að vita það. |

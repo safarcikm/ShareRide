@@ -11,7 +11,12 @@ import type {
   TripChangeEffect,
   Vehicle,
 } from "@shareride/contracts";
-import { firstTripChoices } from "@shareride/domain";
+import {
+  defaultTripSettings,
+  firstTripChoices,
+  fitPriceLevel,
+  segmentPrice,
+} from "@shareride/domain";
 import { failure, ok, type FakeClient } from "./fake-client";
 import { bsi, hof, kef } from "./meeting-points";
 
@@ -268,11 +273,24 @@ export function tripsApi(
     const trip = find(input);
     if (trip === undefined) return failure(404, "not_found");
     if (trip.status !== "published") return failure(409, "trip_not_changeable");
-    const { departsAt } = input["body"] as TripChangeBody;
+    const body = input["body"] as TripChangeBody;
+    const departsAt = body.kind === "departure" ? body.departsAt : (trip.departsAt ?? "");
     // Every stop moves with the departure (R6.2).
     const byMs = new Date(departsAt).getTime() - new Date(trip.departsAt ?? departsAt).getTime();
     const plannedTimes = trip.stops.map((stop) =>
       new Date(new Date(stop.plannedAt ?? departsAt).getTime() + byMs).toISOString(),
+    );
+    // As the rules work out seats and price levels (P3, P4).
+    const seats = body.kind === "seats" ? body.seats : trip.seats;
+    const fitted =
+      body.kind === "priceLevel"
+        ? { level: body.priceLevel, lowered: false }
+        : fitPriceLevel(trip.priceLevel, seats, defaultTripSettings);
+    const repriced = body.kind === "seats" || body.kind === "priceLevel";
+    const prices = trip.segments.map((segment) =>
+      repriced
+        ? segmentPrice(segment.distanceM, fitted.level, seats, defaultTripSettings)
+        : segment.price,
     );
     const effect: TripChangeEffect = {
       departsAt: plannedTimes[0] ?? departsAt,
@@ -282,6 +300,10 @@ export function tripsApi(
       freeCancellations: 0,
       requests: 0,
       expiring: 0,
+      seats,
+      priceLevel: fitted.level,
+      priceLevelLowered: fitted.lowered,
+      prices,
       ...answers.told,
     };
     if (!preview) {
@@ -293,6 +315,14 @@ export function tripsApi(
         })),
         departsAt: effect.departsAt,
         arrivesAt: effect.arrivesAt,
+        seats,
+        priceLevel: fitted.level,
+        segments: trip.segments.map((segment, index) => ({
+          ...segment,
+          price: prices[index] ?? segment.price,
+        })),
+        ...(body.kind === "bookingMode" ? { bookingMode: body.bookingMode } : {}),
+        ...(body.kind === "details" ? { preferences: body.preferences, note: body.note } : {}),
         updatedAt: stamp(),
       });
     }
