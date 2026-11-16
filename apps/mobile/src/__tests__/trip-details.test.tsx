@@ -149,6 +149,8 @@ describe("Trip details (spec 4, 3.6)", () => {
     );
     expect(await screen.findByText("Book instantly")).toBeVisible();
     expect(screen.getByText("2 free on your part · Free")).toBeVisible();
+    // Nothing is paid, so there is nothing to refund.
+    expect(screen.queryByText(/^Free cancellation/)).toBeNull();
     expect(
       within(screen.getByTestId("bottom-bar")).getByRole("button", { name: "Book" }),
     ).toBeEnabled();

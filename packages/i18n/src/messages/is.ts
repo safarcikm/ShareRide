@@ -581,7 +581,6 @@ export const is = {
   "trip.rateLimited": "Of margar ferðir opnaðar á stuttum tíma. Reyndu aftur eftir {wait}.",
   "booking.book": "Bóka",
   "booking.sendRequest": "Senda beiðni",
-  "booking.bookAt": "Bóka á {total}",
   "booking.sendRequestAt": "Senda beiðni á {total}",
   "booking.signInFirst": "Þú skráir þig fyrst inn eða stofnar aðgang.",
   "booking.finishAccountFirst": "Þú klárar fyrst að setja upp aðganginn þinn.",
@@ -589,9 +588,16 @@ export const is = {
   "booking.see": "Sjá bókunina",
   "booking.titleInstant": "Bóka þessa ferð",
   "booking.titleRequest": "Óska eftir sæti í þessari ferð",
+  "booking.checkAndPay": "Yfirfara og greiða",
+  "booking.driverAndCar": "Ökumaður: {driver} · {car}",
+  "booking.seatsTimesPrice": "{seats} × {price}",
+  "booking.confirmedOnPay": "Sætið þitt er staðfest um leið og þú greiðir.",
+  "booking.payWhenYes": "Þú greiðir þegar {driver} samþykkir.",
+  "booking.plateOnceConfirmed": "Þú sérð bílnúmerið þegar sætið þitt hefur verið staðfest.",
+  "booking.heldUntil": "Ekki greitt enn. Sætið er frátekið fyrir þig til kl. {time}.",
+  "booking.heldUntilTomorrow":
+    "Ekki greitt enn. Sætið er frátekið fyrir þig til kl. {time} á morgun.",
   "booking.total": "Samtals",
-  "booking.payInApp":
-    "Þú greiðir {total} í appinu þegar bókunin hefur verið samþykkt. Ókeypis afbókun, með fullri endurgreiðslu, allt að 15 mínútum fyrir brottför.",
   "booking.freeRide": "Þessi ferð er ókeypis: það er ekkert að greiða.",
   "booking.reliabilityNote":
     "Ef þú kemst ekki skaltu afbóka eins fljótt og hægt er. Seinar afbókanir og fjarvistir sjást á prófílnum þínum.",

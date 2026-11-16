@@ -311,12 +311,14 @@ function Trip({
       />
       <RouteList stops={trip.stops} part={part} onChange={changePart} />
       <Body>{t("trip.tapStop")}</Body>
-      <View style={styles.row}>
-        <Icon icon={ShieldCheck} color={palette.primary} />
-        <Text style={[typography.small, styles.grow, { color: palette.text }]}>
-          {t("trip.freeCancellation")}
-        </Text>
-      </View>
+      {trip.part.pricePerSeat.amount === 0 ? null : (
+        <View style={styles.row}>
+          <Icon icon={ShieldCheck} color={palette.primary} />
+          <Text style={[typography.small, styles.grow, { color: palette.text }]}>
+            {t("trip.freeCancellation")}
+          </Text>
+        </View>
+      )}
     </Screen>
   );
 }

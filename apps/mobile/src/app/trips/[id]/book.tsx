@@ -1,5 +1,10 @@
 import type { CallFailure } from "@shareride/api-client";
-import { bookTripRoute, tripDetailsRoute, type TripDetails } from "@shareride/contracts";
+import {
+  bookTripRoute,
+  tripDetailsRoute,
+  type Booking,
+  type TripDetails,
+} from "@shareride/contracts";
 import {
   contactDetailsIn,
   defaultBookingSettings,
@@ -8,22 +13,21 @@ import {
 } from "@shareride/domain";
 import { capitalised, formatDay, formatMoney } from "@shareride/i18n";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
-import { ShieldCheck } from "lucide-react-native";
+import { CircleCheck } from "lucide-react-native";
 import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText, formatWait } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import { newAttemptKey } from "@/booking/attempt-key";
 import { keepPendingBooking } from "@/booking/pending-booking";
-import { bookErrorText } from "@/booking/texts";
+import { PaymentSheet, usePayment } from "@/booking/payment";
+import { bookErrorText, heldUntilText } from "@/booking/texts";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Icon } from "@/components/icon";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
-import { Stepper } from "@/components/stepper";
-import { Tag } from "@/components/tag";
 import { TakesFocus } from "@/components/takes-focus";
 import { TextField } from "@/components/text-field";
 import { Body, Title } from "@/components/text";
@@ -31,7 +35,8 @@ import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { useLoaded } from "@/lib/use-loaded";
 import { positionParam } from "@/trip-details/trip-link";
-import { DriverAndCar, PartStop } from "@/trip-details/trip-parts";
+import { carText } from "@/trip-details/texts";
+import { PartStop } from "@/trip-details/trip-parts";
 import { controlOutline, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
@@ -125,7 +130,6 @@ export default function BookScreen() {
   return (
     <BookForm
       trip={trip}
-      seats={seats}
       pending={pending}
       back={back}
       onReload={() => {
@@ -142,16 +146,26 @@ type Problem =
   | { readonly kind: "message"; readonly text: string }
   | { readonly kind: "other"; readonly text: string };
 
+/** Where a booking made here is shown: its page, which says where it stands. */
+const finished = (booking: Booking) => {
+  router.replace({ pathname: "/bookings/[id]", params: { id: booking.id } });
+};
+
+/**
+ * Check and pay (spec 16, 3.7, items 2 and 3): the ride as it will be
+ * booked, what happens next, and one button. For instant booking it is
+ * "Pay {total}", which books the seats and opens the payment at once. A
+ * payment that does not finish leaves the seats held until the deadline
+ * (rule M1), and Pay starts it again for the same booking. A request is
+ * sent with its optional message; a free ride is booked with Book.
+ */
 function BookForm({
   trip,
-  seats,
   pending,
   back,
   onReload,
 }: {
   readonly trip: TripDetails;
-  /** The seats asked for in the address, which the stepper shows at once. */
-  readonly seats: number;
   /** The trip's answer is for other seats, or is loading again. */
   readonly pending: boolean;
   readonly back: ReactNode;
@@ -170,17 +184,31 @@ function BookForm({
   // double tap sends one request.
   const sendingNow = useRef(false);
   const [problem, setProblem] = useState<Problem | null>(null);
+  // The booking made here that waits for payment: paying again uses it.
+  const [made, setMade] = useState<Booking | null>(null);
+  // The same, for a payment's answer that comes after the press that made it.
+  const madeNow = useRef<Booking | null>(null);
+  const payment = usePayment({
+    onSettled: (booking) => {
+      if (booking.status === "accepted") setMade(booking);
+      else finished(booking);
+    },
+    // It can no longer be paid here, such as the time to pay having run
+    // out: its page says where it stands.
+    onStale: () => {
+      if (madeNow.current !== null) finished(madeNow.current);
+    },
+  });
 
   const boardStop = trip.stops[part.board];
   const alightStop = trip.stops[part.alight];
   if (boardStop === undefined || alightStop === undefined) return null;
-  const name = (stop: TripDetails["stops"][number]) => stop.meetingPoint.name[locale];
   // After "price changed", the new total is the one shown, sent and named on
   // the button, so it is never booked without being seen.
   const priceChanged = problem?.kind === "price_changed";
-  const total = problem?.kind === "price_changed" ? problem.total : part.total;
+  const total = made?.total ?? (problem?.kind === "price_changed" ? problem.total : part.total);
   const free = total.amount === 0;
-  const most = Math.max(1, Math.min(part.freeSeats, defaultTripSettings.maxSeats));
+  const paysNow = instant && !free;
   const max = defaultBookingSettings.messageMaxLength;
   const trimmed = message.trim();
   const length = Array.from(trimmed.normalize("NFC")).length;
@@ -193,7 +221,7 @@ function BookForm({
           ? problem.text
           : undefined;
   const status =
-    part.state === "open"
+    made !== null || part.state === "open"
       ? null
       : part.state === "full"
         ? part.freeSeats === 0
@@ -245,96 +273,116 @@ function BookForm({
   };
 
   const book = async () => {
-    if (sendingNow.current || pending || messageError !== undefined || status !== null) return;
+    if (sendingNow.current || messageError !== undefined || status !== null) return;
+    if (made === null && pending) return;
     sendingNow.current = true;
     setSending(true);
-    const answer = await session.call(bookTripRoute, {
-      params: { id: trip.id },
-      body: {
-        fromStop: part.board,
-        toStop: part.alight,
-        seats: part.seats,
-        total,
-        message: instant ? "" : trimmed,
-        attemptKey,
-      },
-    });
-    if (answer.ok) {
-      router.replace({ pathname: "/bookings/[id]", params: { id: answer.data.id } });
-      return;
+    let booking = made;
+    if (booking === null) {
+      const answer = await session.call(bookTripRoute, {
+        params: { id: trip.id },
+        body: {
+          fromStop: part.board,
+          toStop: part.alight,
+          seats: part.seats,
+          total,
+          message: instant ? "" : trimmed,
+          attemptKey,
+        },
+      });
+      if (!answer.ok) {
+        sendingNow.current = false;
+        setSending(false);
+        failed(answer);
+        return;
+      }
+      booking = answer.data;
+      // A request, or a free ride confirmed at once, needs nothing more here.
+      if (booking.status !== "accepted") {
+        finished(booking);
+        return;
+      }
+      setProblem(null);
+      madeNow.current = booking;
+      setMade(booking);
     }
+    await payment.start(booking.id);
     sendingNow.current = false;
     setSending(false);
-    failed(answer);
   };
   const shownTotal = formatMoney(total, locale);
-  const label = instant
-    ? priceChanged
-      ? t("booking.bookAt", { total: shownTotal })
-      : t("booking.book")
-    : priceChanged
-      ? t("booking.sendRequestAt", { total: shownTotal })
-      : t("booking.sendRequest");
+  const label = paysNow
+    ? t("booking.pay", { total: shownTotal })
+    : instant
+      ? t("booking.book")
+      : priceChanged
+        ? t("booking.sendRequestAt", { total: shownTotal })
+        : t("booking.sendRequest");
+  const driver = trip.driver.firstName;
+  const ticks = [
+    paysNow
+      ? t("booking.confirmedOnPay")
+      : free
+        ? t("booking.freeRide")
+        : t("booking.payWhenYes", { driver }),
+    ...(free ? [] : [t("trip.freeCancellation")]),
+    t("booking.plateOnceConfirmed"),
+  ];
+
+  const footer = (() => {
+    if (status !== null) {
+      return (
+        <Text accessibilityLiveRegion="polite" style={[typography.label, { color: palette.text }]}>
+          {status}
+        </Text>
+      );
+    }
+    // The payment sheet opens in place of Pay, at the bottom of the screen.
+    if (payment.sheet !== null) return <PaymentSheet payment={payment} />;
+    return (
+      <Button
+        main
+        busy={sending || payment.starting || (made === null && pending)}
+        disabled={messageError !== undefined}
+        label={label}
+        onPress={() => {
+          void book();
+        }}
+      />
+    );
+  })();
 
   return (
-    <Screen
-      footer={
-        status === null ? (
-          <Button
-            main
-            busy={sending || pending}
-            disabled={messageError !== undefined}
-            label={label}
-            onPress={() => {
-              void book();
-            }}
-          />
-        ) : (
-          <Text
-            accessibilityLiveRegion="polite"
-            style={[typography.label, { color: palette.text }]}
-          >
-            {status}
-          </Text>
-        )
-      }
-    >
+    <Screen footer={footer}>
       {back}
-      <View>
-        <Title align="start">
-          {instant ? t("booking.titleInstant") : t("booking.titleRequest")}
-        </Title>
+      <Title align="start">
+        {paysNow
+          ? t("booking.checkAndPay")
+          : instant
+            ? t("booking.titleInstant")
+            : t("booking.titleRequest")}
+      </Title>
+
+      <Card>
         <Text style={[typography.small, { color: palette.textMuted }]}>
           {capitalised(formatDay(new Date(boardStop.plannedAt), locale), locale)}
         </Text>
-        <Text style={[typography.bodyStrong, { color: palette.text }]}>
-          {t("search.route", { from: name(boardStop), to: name(alightStop) })}
-        </Text>
-      </View>
-
-      <Card>
         <PartStop stop={boardStop} getIn />
         <PartStop stop={alightStop} getIn={false} />
+        <Text style={[typography.small, { color: palette.text }]}>
+          {trip.car === null
+            ? t("signIn.keptRideDriver", { driver })
+            : t("booking.driverAndCar", { driver, car: carText(t, trip.car) })}
+        </Text>
         <View style={[styles.divider, { backgroundColor: palette.border }]} />
-        <Stepper
-          beside
-          label={t("trip.seats")}
-          hint={
-            part.pricePerSeat.amount === 0
-              ? t("results.free")
-              : t("trip.pricePerSeat", { price: formatMoney(part.pricePerSeat, locale) })
-          }
-          value={seats}
-          min={1}
-          max={most}
-          onChange={(value) => {
-            setProblem(null);
-            router.setParams({ seats: String(value) });
-          }}
-          valueText={t("search.seatCount", { count: seats })}
-          fewerLabel={t("search.fewerSeats")}
-          moreLabel={t("search.moreSeats")}
-        />
+        <Text style={[typography.small, { color: palette.textMuted }]}>
+          {free
+            ? t("search.seatCount", { count: part.seats })
+            : t("booking.seatsTimesPrice", {
+                seats: t("search.seatCount", { count: part.seats }),
+                price: formatMoney(part.pricePerSeat, locale),
+              })}
+        </Text>
         <View style={styles.total}>
           <Text style={[typography.label, { color: palette.text }]}>{t("booking.total")}</Text>
           <Text style={[typography.figure, { color: palette.text }]}>
@@ -343,6 +391,14 @@ function BookForm({
         </View>
       </Card>
 
+      {made !== null && made.paymentDueAt !== null && payment.sheet === null ? (
+        <Notice kind="info" message={heldUntilText(t, new Date(made.paymentDueAt), now())} />
+      ) : null}
+      {payment.notice === null ? null : (
+        <TakesFocus key={payment.notice}>
+          <Notice message={payment.notice} />
+        </TakesFocus>
+      )}
       {problem?.kind === "seats_taken" ? (
         <TakesFocus>
           <View style={styles.problem}>
@@ -385,20 +441,13 @@ function BookForm({
         </TakesFocus>
       ) : null}
 
-      <Card>
-        <DriverAndCar
-          driver={trip.driver}
-          car={trip.car}
-          carNote={t("trip.plateLater")}
-          preferences={trip.preferences}
-          luggageFirst
-        />
-      </Card>
-      <View style={styles.row}>
-        <Tag
-          kind={instant ? "positive" : "info"}
-          label={instant ? t("trip.instantBooking") : t("trip.approvalBooking")}
-        />
+      <View style={styles.ticks}>
+        {ticks.map((tick) => (
+          <View key={tick} style={styles.row}>
+            <Icon icon={CircleCheck} color={palette.primary} />
+            <Text style={[typography.small, styles.grow, { color: palette.text }]}>{tick}</Text>
+          </View>
+        ))}
       </View>
 
       {instant ? null : (
@@ -421,12 +470,6 @@ function BookForm({
         </View>
       )}
 
-      <View style={styles.row}>
-        <Icon icon={ShieldCheck} color={palette.primary} />
-        <Text style={[typography.small, styles.grow, { color: palette.text }]}>
-          {free ? t("booking.freeRide") : t("booking.payInApp", { total: shownTotal })}
-        </Text>
-      </View>
       <Body align="start">{t("booking.reliabilityNote")}</Body>
     </Screen>
   );
@@ -436,6 +479,7 @@ const styles = StyleSheet.create({
   divider: { height: controlOutline / 2 },
   total: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   problem: { gap: spacing.sm },
+  ticks: { gap: spacing.sm },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   grow: { flex: 1 },
   count: { textAlign: "right" },
