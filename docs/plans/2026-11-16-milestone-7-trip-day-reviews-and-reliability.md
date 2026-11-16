@@ -1,7 +1,7 @@
 # Milestone 7 plan: trip day, reviews and reliability
 
-**Owner:** Martin · **Date:** 2026-11-16 · **Status:** Proposed; the
-choices in section 3 wait for Martin
+**Owner:** Martin · **Date:** 2026-11-16 · **Status:** In progress; the
+choices in section 3 accepted by Martin on 2026-11-16 as recommended
 
 Helps people find each other on the day, settle a passenger or driver who
 doesn't come, finish trips on their own, and show reviews and a
@@ -54,6 +54,9 @@ When this milestone is done, on the web and on an Android test build:
 | Notifications for every row of spec 8, 3.9, and lines in the conversations | The operator's watch list below 80% as a page (spec 10). The command lists it until then |
 
 ## 3. Decisions for Martin
+
+Accepted by Martin on 2026-11-16: all four as recommended. Decision 4
+answers question Q19 (A43).
 
 | # | Choice | Recommendation | Why | Alternative |
 | - | ------ | -------------- | --- | ----------- |
@@ -209,7 +212,7 @@ the browser journeys, and gets a code review before it opens.
 
 ### PR 1: `docs(plans)`: this plan
 
-- [ ] This plan, the roadmap's milestone 7, the plans index and question
+- [x] This plan, the roadmap's milestone 7, the plans index and question
       Q19
 
 ### PR 2: `feat(trips)`: trip day, dispute, review and reliability rules in the domain

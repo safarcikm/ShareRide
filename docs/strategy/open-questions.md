@@ -8,12 +8,10 @@ here, update or accept the linked ADR, and move the row to "Answered".
 
 ## Open
 
-A new question goes in a table here with the next free number (Q19
+A new question goes in a table here with the next free number (Q20
 onwards), a recommendation and the docs it affects.
 
-| #   | Question | Recommendation | Affects |
-| --- | -------- | -------------- | ------- |
-| Q19 | When a passenger contests a no-show and the operator finds the driver was wrong, what happens? Spec 8 has one outcome, "reversed", which does not say whether the passenger rode or was left behind. | The operator picks one of two outcomes. "They rode": the booking completes, the driver is paid, and nothing counts on either side. "They were left behind": as a driver absence, a full refund that counts on the driver. | [Spec 8](../specs/2026-11-13-trip-day-reviews-and-reliability.md) 3.3 and 3.5, [milestone 7 plan](../plans/2026-11-16-milestone-7-trip-day-reviews-and-reliability.md) decision 4 |
+No questions are open.
 
 ## Answered
 
@@ -61,3 +59,4 @@ onwards), a recommendation and the docs it affects.
 | A40 | Q17: how long does a trip's page stay open by link once the trip is over (departed, completed or cancelled)? A finished trip's page shows the driver's first name, car and where they went. | As recommended: until a week after the last stop's planned time; after that the link says "This trip can't be found". Passengers keep the trip in their bookings (spec 5). Opening a trip's page counts towards the same limit as searching (60 a minute, 600 an hour per address), so trip pages cannot be used to get round it. See [spec 4](../specs/2026-11-13-search-and-trip-details.md#decisions), decision 4. | 2026-11-15 |
 | A41 | Spec 6, decision 3: until when can a passenger cancel? | Until the planned time at their boarding stop. After that it is the trip day's (spec 8), so a cancellation never stands in for a no-show, which always counts. See [spec 6](../specs/2026-11-13-changes-and-cancellations.md#decisions), decision 3. | 2026-11-16 |
 | A42 | Q18: until when can a driver cancel one booking (spec 6, 3.4)? | Until the planned time at the passenger's boarding stop, as for the passenger (A41). After that a driver who does not come is the trip day's (spec 8), and the passenger's full refund comes from there, so a cancellation never stands in for a no-show. See [spec 6](../specs/2026-11-13-changes-and-cancellations.md#decisions), decision 3. | 2026-11-16 |
+| A43 | Q19: when a passenger contests a no-show and the operator finds the driver was wrong, what happens? Spec 8 had one outcome, "reversed", which did not say whether the passenger rode or was left behind. | The operator picks one of two outcomes. "They rode": the booking completes, the driver is paid, and nothing counts on either side. "They were left behind": as a driver absence, a full refund that counts on the driver. See [spec 8](../specs/2026-11-13-trip-day-reviews-and-reliability.md#decisions), decision 4. | 2026-11-16 |
