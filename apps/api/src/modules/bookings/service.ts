@@ -198,33 +198,36 @@ const alightStops = alias(tripStops, "alight_stops");
 const boardPoints = alias(meetingPoints, "board_points");
 const alightPoints = alias(meetingPoints, "alight_points");
 
+/** The changes a passenger reads on their booking: the moves and the cars (spec 6, 3.2). */
+const toldKinds = ["departure", "vehicle"];
+
 /**
  * Bookings with everything their passenger or driver sees, oldest first,
- * each with its trip's moves since it was made (spec 6, 3.2).
+ * each with its trip's moves and new cars since it was made (spec 6, 3.2).
  */
 async function readBookings(q: Queryable, where: SQL | undefined) {
   const rows = await bookingRows(q, where);
   const tripIds = [...new Set(rows.map((row) => row.trip.id))];
-  const moves =
+  const changes =
     tripIds.length === 0
       ? []
       : await q
           .select()
           .from(tripChanges)
-          .where(and(inArray(tripChanges.tripId, tripIds), eq(tripChanges.kind, "departure")))
+          .where(and(inArray(tripChanges.tripId, tripIds), inArray(tripChanges.kind, toldKinds)))
           .orderBy(asc(tripChanges.changedAt), asc(tripChanges.id));
   return rows.map((row) => {
     const { createdAt, status, cancelledAt, expiredAt, decidedAt } = row.booking;
-    // A booking that ended shows only the moves made while it held seats.
+    // A booking that ended shows only the changes made while it held seats.
     const endedAt = cancelledAt ?? expiredAt ?? (status === "declined" ? decidedAt : null);
     return {
       ...row,
       // Made under the trip's lock, so one at the same moment came before the booking.
-      moves: moves.filter(
-        (move) =>
-          move.tripId === row.trip.id &&
-          move.changedAt > createdAt &&
-          (endedAt === null || move.changedAt < endedAt),
+      changes: changes.filter(
+        (change) =>
+          change.tripId === row.trip.id &&
+          change.changedAt > createdAt &&
+          (endedAt === null || change.changedAt < endedAt),
       ),
     };
   });
@@ -396,12 +399,24 @@ function present(row: BookingRow, viewerId: string, now: Date): Booking {
                   : booking.countsOnReliability,
           }
         : null,
-    changes: row.moves.map((move) => ({
-      kind: "departure" as const,
-      from: boardingAt(move.before["departsAt"]),
-      to: boardingAt(move.after["departsAt"]),
-      changedAt: move.changedAt.toISOString(),
-    })),
+    changes: row.changes.map(({ kind, before, after, changedAt }) =>
+      kind === "vehicle"
+        ? {
+            kind: "vehicle" as const,
+            car: {
+              make: String(after["make"]),
+              model: String(after["model"]),
+              colour: after["colour"] as CarColour,
+            },
+            changedAt: changedAt.toISOString(),
+          }
+        : {
+            kind: "departure" as const,
+            from: boardingAt(before["departsAt"]),
+            to: boardingAt(after["departsAt"]),
+            changedAt: changedAt.toISOString(),
+          },
+    ),
     // Null only for a booking the previous version made during a deploy.
     movedFar: movedFar(booking.departsAtWhenBooked ?? departsAt, departsAt),
     driver: { firstName: row.driverName ?? "", colour: peopleColourOf(trip.driverId) },

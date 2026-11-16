@@ -229,6 +229,8 @@ function changeProblemPath(problem: ChangeNotAllowed["problems"][number]): strin
       return "seats";
     case "price_level_invalid":
       return "priceLevel";
+    case "car_missing":
+      return "vehicleId";
     case "note_too_long":
     case "note_has_contact_details":
       return "note";

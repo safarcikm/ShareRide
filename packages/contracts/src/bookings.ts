@@ -18,6 +18,13 @@ import { defineRoute } from "./route.ts";
 // part of a trip; the driver decides on requests; both see their bookings.
 // Cancelling a booking (spec 6, 3.4 and 3.5).
 
+/** A car as passengers see it: make, model and colour, never its number plate. */
+export const carSummarySchema = z.object({
+  make: z.string(),
+  model: z.string(),
+  colour: z.enum(carColours),
+});
+
 const errors = { schema: errorResponseSchema } as const;
 const unauthenticated = { description: "unauthenticated", ...errors } as const;
 const notFound = {
@@ -110,15 +117,18 @@ export const bookingSchema = z.object({
   /**
    * The trip's changes since the booking was made, oldest first (spec 6,
    * 3.2): for a moved departure, the passenger's boarding time before and
-   * after.
+   * after; for a new car, the car.
    */
   changes: z.array(
-    z.object({
-      kind: z.literal("departure"),
-      from: timestampSchema,
-      to: timestampSchema,
-      changedAt: timestampSchema,
-    }),
+    z.discriminatedUnion("kind", [
+      z.object({
+        kind: z.literal("departure"),
+        from: timestampSchema,
+        to: timestampSchema,
+        changedAt: timestampSchema,
+      }),
+      z.object({ kind: z.literal("vehicle"), car: carSummarySchema, changedAt: timestampSchema }),
+    ]),
   ),
   /**
    * The departure is more than 30 minutes from where it was when the
@@ -134,7 +144,7 @@ export const bookingSchema = z.object({
     /** The year and month they joined, such as 2026-11. */
     memberSince: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
   }),
-  car: z.object({ make: z.string(), model: z.string(), colour: z.enum(carColours) }).nullable(),
+  car: carSummarySchema.nullable(),
   /**
    * Only once the booking is confirmed (R5.12): the number plate, if added
    * yet, and where to stand at the boarding stop.

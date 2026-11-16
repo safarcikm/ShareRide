@@ -25,6 +25,7 @@ import {
   type Recipient,
   type TripRole,
 } from "@shareride/domain";
+import type { CarFacts } from "@shareride/i18n";
 import { and, asc, desc, eq, gt, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { EmailChannel } from "../../platform/email.ts";
@@ -145,6 +146,20 @@ function cancelledBy(payload: Readonly<Record<string, string>>): TripRole {
 const boards = alias(tripStops, "boards");
 const alights = alias(tripStops, "alights");
 
+/** The new car of a change of car, as passengers read it (spec 6, 3.2). */
+async function newCarOf(q: Queryable, tripChangeId: string): Promise<CarFacts | undefined> {
+  const [row] = await q
+    .select({ kind: tripChanges.kind, after: tripChanges.after })
+    .from(tripChanges)
+    .where(eq(tripChanges.id, tripChangeId));
+  if (row?.kind !== "vehicle") return undefined;
+  return {
+    make: String(row.after["make"]),
+    model: String(row.after["model"]),
+    colour: row.after["colour"] as CarColour,
+  };
+}
+
 /**
  * A moved departure as one passenger sees it (spec 6, 3.2): their boarding
  * time before and after this change, and how far the departure is now from
@@ -154,6 +169,7 @@ const alights = alias(tripStops, "alights");
 async function moveOf(q: Queryable, tripChangeId: string, bookingId: string) {
   const [row] = await q
     .select({
+      kind: tripChanges.kind,
       before: tripChanges.before,
       after: tripChanges.after,
       boardsAt: boards.plannedAt,
@@ -165,7 +181,9 @@ async function moveOf(q: Queryable, tripChangeId: string, bookingId: string) {
     .innerJoin(trips, eq(trips.id, bookings.tripId))
     .innerJoin(boards, eq(boards.id, bookings.fromStopId))
     .where(and(eq(tripChanges.id, tripChangeId), eq(bookings.id, bookingId)));
-  if (row === undefined || row.boardsAt === null || row.departsAt === null) return undefined;
+  if (row?.kind !== "departure" || row.boardsAt === null || row.departsAt === null) {
+    return undefined;
+  }
   const before = new Date(String(row.before["departsAt"]));
   const after = new Date(String(row.after["departsAt"]));
   const boardingAfterMs = row.boardsAt.getTime() - row.departsAt.getTime();
@@ -314,6 +332,9 @@ async function factsOf(q: Queryable, notificationId: string) {
     notification.tripChangeId === null
       ? undefined
       : await moveOf(q, notification.tripChangeId, booking.id);
+  // Each notification of a new car names its own, should it change again.
+  const newCar =
+    notification.tripChangeId === null ? undefined : await newCarOf(q, notification.tripChangeId);
   const facts: NotificationFacts = {
     kind: notification.kind as NotificationFacts["kind"],
     role,
@@ -337,6 +358,7 @@ async function factsOf(q: Queryable, notificationId: string) {
           : { quick: quickOf(message) },
     boardPointId: row.boardPointId,
     car: row.car === null ? null : { ...row.car, colour: row.car.colour as CarColour },
+    newCar: newCar ?? null,
     moved: moved === undefined ? null : { from: moved.from, to: moved.to },
     paid: booking.status === "confirmed" && booking.totalPrice > 0,
   };
@@ -795,6 +817,13 @@ export function createNotificationWorker(dependencies: {
         tripChangeId === undefined ? undefined : await moveOf(tx, tripChangeId, booking.id);
       if (tripChangeId === undefined || moved === undefined) return;
       await notify(tx, { type, byMinutes: moved.byMinutes }, booking, { key, tripChangeId }, now);
+      return;
+    }
+    if (type === "TripChanged") {
+      // Only a new car so far; anything else tells nobody until it has its words.
+      const tripChangeId = idIn(event.payload, "tripChangeId");
+      if (tripChangeId === undefined || (await newCarOf(tx, tripChangeId)) === undefined) return;
+      await notify(tx, { type }, booking, { key, tripChangeId }, now);
       return;
     }
     const happened: NotificationEvent =

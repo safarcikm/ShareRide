@@ -3,8 +3,8 @@ import { fireEvent, screen } from "expo-router/testing-library";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { driverApi, northMyTrip, northSegments } from "@/testing/bookings";
-import { failure, type FakeClient } from "@/testing/fake-client";
-import { tripsApi } from "@/testing/trips";
+import { failure, ok, type FakeClient } from "@/testing/fake-client";
+import { tripsApi, volvo, yaris } from "@/testing/trips";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -75,13 +75,14 @@ async function saveAndSeeIt() {
   focusMoves.mockRestore();
 }
 
-describe("Edit trip: the seats, price, booking mode and details (spec 6, 3.2)", () => {
+describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.2)", () => {
   it("lists each part of the trip, each with a way to change it", async () => {
     await openEdit();
     for (const [title, line, link] of [
       ["Time", "Sunday 15 November", "Change the time"],
       ["Price", "100% · the whole route 4,500 ISK", "Change the price"],
       ["Seats", "3 seats", "Change the seats"],
+      ["Car", "Toyota Yaris, white", "Change the car"],
       ["How people book", "I approve each passenger", "Change how people book"],
       ["Preferences and note", "Ask me", "Change the preferences and note"],
     ] as const) {
@@ -117,6 +118,7 @@ describe("Edit trip: the seats, price, booking mode and details (spec 6, 3.2)", 
   it.each([
     "Change the price",
     "Change the seats",
+    "Change the car",
     "Change how people book",
     "Change the preferences and note",
   ])("says when nothing has changed, without saving (%s)", async (link) => {
@@ -170,6 +172,49 @@ describe("Edit trip: the seats, price, booking mode and details (spec 6, 3.2)", 
       await screen.findByText("Passengers have taken more seats than that on part of the trip."),
     ).toBeVisible();
     expect(screen).toHavePathname(`${tripPage}/edit/seats`);
+  });
+
+  it("changes the car, telling the passengers who booked", async () => {
+    const { client } = await openPart("Change the car", north, {
+      cars: [yaris, volvo],
+      told: { told: 2 },
+    });
+    expect(
+      screen.getByText("Passengers who have booked are told about the new car when you save."),
+    ).toBeVisible();
+    expect(screen.getByRole("radio", { name: /^Toyota Yaris, white/ })).toBeChecked();
+    await fireEvent.press(screen.getByRole("radio", { name: /^Volvo XC40, red/ }));
+    await fireEvent.press(screen.getByRole("button", { name: "Save the change" }));
+    expect(await screen.findByText("Trip changed. Your passengers have been told.")).toBeVisible();
+    expect(changes(client)).toEqual([
+      { preview: saved, body: { kind: "vehicle", vehicleId: volvo.id } },
+    ]);
+    await fireEvent.press(screen.getByRole("button", { name: "Edit trip" }));
+    expect(await screen.findByText("Volvo XC40, red")).toBeVisible();
+  });
+
+  it("offers to add a car, and offers it on coming back", async () => {
+    const { client } = await openPart("Change the car");
+    await fireEvent.press(screen.getByRole("link", { name: "Add a car" }));
+    expect(screen).toHavePathname("/drive/cars/new");
+    client.answer("/v1/me/vehicles", () => ok(200, { vehicles: [yaris, volvo] }));
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("radio", { name: /^Volvo XC40, red/ })).toBeVisible();
+    expect(screen).toHavePathname(`${tripPage}/edit/car`);
+  });
+
+  it("says why the server refused the car", async () => {
+    await openPart("Change the car", north, {
+      cars: [yaris, volvo],
+      change: () =>
+        failure(422, "change_not_allowed", {
+          details: [{ path: "vehicleId", issue: "car_missing" }],
+        }),
+    });
+    await fireEvent.press(screen.getByRole("radio", { name: /^Volvo XC40, red/ }));
+    await fireEvent.press(screen.getByRole("button", { name: "Save the change" }));
+    expect(await screen.findByText("Choose the car you're driving.")).toBeVisible();
+    expect(screen).toHavePathname(`${tripPage}/edit/car`);
   });
 
   it("changes how people book, keeping requests open", async () => {
@@ -233,7 +278,7 @@ describe("Edit trip: the seats, price, booking mode and details (spec 6, 3.2)", 
     ]);
   });
 
-  it.each(["price", "seats", "booking", "details"])(
+  it.each(["price", "seats", "car", "booking", "details"])(
     "changes nothing on a trip that has left, opened from a link (%s)",
     async (part) => {
       const left = { ...north, departsAt: "2026-11-14T12:00:00.000Z" };

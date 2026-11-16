@@ -144,6 +144,20 @@ describe("A trip that changed, as its passenger sees it (spec 6, 3.2; screen 7)"
     expect(await screen.findByRole("button", { name: keep })).toBeVisible();
   });
 
+  it("shows a new car, which does not bring back the offer once kept", async () => {
+    mockedRead.mockImplementation(() => Promise.resolve(movedAt));
+    const newCar = {
+      kind: "vehicle" as const,
+      car: { make: "Volvo", model: "XC40", colour: "red" as const },
+      changedAt: "2026-11-14T11:30:00.000Z",
+    };
+    await openBooking({ ...moved, changes: [...moved.changes, newCar] });
+    expect(await screen.findByRole("button", { name: "Cancel booking" })).toBeVisible();
+    expect(screen.getByText("Departure changed from 10:00 to 10:45")).toBeVisible();
+    expect(screen.getByText("New car: Red Volvo XC40")).toBeVisible();
+    expect(screen.queryByRole("button", { name: keep })).toBeNull();
+  });
+
   it("only shows a move of 30 minutes or less", async () => {
     await openBooking({ ...moved, movedFar: false });
     expect(await screen.findByText("Departure changed from 10:00 to 10:45")).toBeVisible();

@@ -1,4 +1,4 @@
-import { myTripRoute } from "@shareride/contracts";
+import { listVehiclesRoute, myTripRoute } from "@shareride/contracts";
 import { routePrice } from "@shareride/domain";
 import { formatMoney } from "@shareride/i18n";
 import { useLocalSearchParams } from "expo-router";
@@ -8,6 +8,7 @@ import { BackButton } from "@/components/back-button";
 import { Card } from "@/components/card";
 import { Screen } from "@/components/screen";
 import { Body } from "@/components/text";
+import { carSummary } from "@/driving/texts";
 import {
   isChangeable,
   NotChangeable,
@@ -26,27 +27,37 @@ import { bookingModeKeys, levelText, preferenceTexts } from "@/trips/texts";
  * Edit trip (spec 6, 3.2; screen 3): what the published trip holds, one
  * part at a time, each opening its own screen; before saving, that screen
  * shows what the change means for passengers. The time, the price, the
- * seats, how people book, and the preferences and note; the car follows
- * in milestone 6's PR 5c and the stops in PR 6. It loads again each time
- * it comes into view.
+ * seats, the car, how people book, and the preferences and note; the
+ * stops follow in milestone 6's PR 6. It loads again each time it comes
+ * into view.
  */
 export default function EditTripScreen() {
   const { locale, t } = useLanguage();
   const session = useSession();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const load = useCallback(() => session.call(myTripRoute, { params: { id } }), [session, id]);
-  const { value: trip, reload } = useLoadedOnFocus(load);
+  const load = useCallback(
+    () =>
+      Promise.all([
+        session.call(myTripRoute, { params: { id } }),
+        session.call(listVehiclesRoute, {}),
+      ]),
+    [session, id],
+  );
+  const { value, reload } = useLoadedOnFocus(load);
+  const [trip, cars] = value ?? [];
 
-  if (trip === undefined || !trip.ok) {
-    return <NotLoaded id={id} title={t("trip.edit")} failure={trip} onRetry={reload} />;
+  if (trip === undefined || !trip.ok || cars === undefined || !cars.ok) {
+    const failure = trip?.ok === false ? trip : cars?.ok === false ? cars : undefined;
+    return <NotLoaded id={id} title={t("trip.edit")} failure={failure} onRetry={reload} />;
   }
   if (!isChangeable(trip.data, now())) {
     return <NotChangeable trip={trip.data} title={t("trip.edit")} />;
   }
   const { departsAt } = trip.data;
   const times = trip.data.stops.map((stop) => new Date(stop.plannedAt ?? departsAt));
-  const { priceLevel, seats, bookingMode, preferences, note } = trip.data;
-  const part = (name: "time" | "price" | "seats" | "booking" | "details") => ({
+  const { priceLevel, seats, vehicleId, bookingMode, preferences, note } = trip.data;
+  const car = cars.data.vehicles.find((known) => known.id === vehicleId);
+  const part = (name: "time" | "price" | "seats" | "car" | "booking" | "details") => ({
     pathname: `/drive/trips/[id]/edit/${name}` as const,
     params: { id },
   });
@@ -75,6 +86,11 @@ export default function EditTripScreen() {
           title={t("trip.editSeats")}
           lines={[t("trip.seats.count", { count: seats })]}
           link={{ label: t("trip.editSeatsAction"), href: part("seats") }}
+        />
+        <SummarySection
+          title={t("trip.review.car")}
+          lines={[car === undefined ? t("trip.review.noCar") : carSummary(t, locale, car)]}
+          link={{ label: t("trip.editCarAction"), href: part("car") }}
         />
         <SummarySection
           title={t("trip.bookingMode.title")}

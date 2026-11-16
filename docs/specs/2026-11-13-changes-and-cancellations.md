@@ -139,10 +139,23 @@ level, booking mode, preferences and note; PR 5c adds the car):
 13. Each of these is recorded with its time, as a move is, for the
     operator to answer questions about what the trip offered and when; for
     the note, only whether it changed, not its text. "Changes since you
-    booked" lists only the moves, as the rest shows on the trip as it is
-    now. The change's effect also gives the seats, the price level,
-    whether more seats lowered it, and each stretch's price for new
+    booked" lists only the moves and new cars, as the rest shows on the
+    trip as it is now. The change's effect also gives the seats, the price
+    level, whether more seats lowered it, and each stretch's price for new
     bookings.
+14. The car: Edit trip shows it ("Toyota Yaris, white") with "Change the
+    car", which lists the driver's cars to choose from, with "Add a car",
+    which comes back to the list. The screen says that passengers who
+    booked are told when it is saved. Only a car of the driver's that is
+    not removed can be chosen (`car_missing` otherwise); the car the trip
+    has stays, even once removed. Saving another car records it, before
+    and after, by make, model and colour; each accepted or confirmed
+    booking reads "New car: Red Volvo XC40" under "Changes since you
+    booked" and in the chat, and is told by push and email (spec 7, 3.3),
+    never by SMS. A request is not told; it sees the new car in the app,
+    on the trip and under "Changes since you booked", as it sees a move.
+    A new car does not bring back "Keep my booking" after a move. The
+    number plate is never in the line, the push or the email (R7.9).
 
 ### 3.3 Cancelling a trip (driver)
 
@@ -279,7 +292,8 @@ Entities (see [domain model](../architecture/domain-model.md)):
   `vehicle`, `bookingMode` and `details`; the stops join in PR 6. PR 5b
   records the seats with the price level they left, the price level, the
   booking mode, and the preferences, each before and after, with whether
-  the note changed (not its text).
+  the note changed (not its text). PR 5c records the car by its ID, make,
+  model and colour, never its number plate.
 - `Booking` uses its cancellation fields (`cancelled_by`, `cancel_reason`,
   `cancel_note`, `cancelled_at`) plus `refund_amount`,
   `counts_on_reliability` and `departs_at_when_booked`.
@@ -301,7 +315,8 @@ and return its effect; the refund and reliability effect of a cancellation;
 reverse a trip's stops.
 
 Events: `DepartureMoved` (the booking and the recorded change, as built in
-PR 5a), `TripChanged`, `TripCancelled`, `BookingCancelled` (the booking and
+PR 5a), `TripChanged` (a new car: the booking and the recorded change, as
+built in PR 5c), `TripCancelled`, `BookingCancelled` (the booking and
 who cancelled; the reason and refund are read from the booking, as events hold
 IDs only). Notifications for each come in spec 7; refunds in spec 13.
 
@@ -372,6 +387,9 @@ IDs only). Notifications for each come in spec 7; refunds in spec 13.
 | `trip.editSeatsLowers` | With {seats, plural, one {# seat} other {# seats}} the highest price level is {level}%, so yours goes down to it for new bookings. | Með {seats, plural, one {# sæti} other {# sætum}} er hæsta verðstigið {level}%, svo þitt lækkar niður í það fyrir nýjar bókanir. |
 | `trip.editBookingAction` | Change how people book | Breyta því hvernig fólk bókar |
 | `trip.editBookingRequests` | {count, plural, one {# request waiting for your answer stays} other {# requests waiting for your answer stay}} open. | {count, plural, one {# beiðni sem bíður svars þíns er áfram opin} other {# beiðnir sem bíða svars þíns eru áfram opnar}}. |
+| `trip.editCarAction` | Change the car | Breyta bílnum |
+| `trip.editCarHelp` | Passengers who have booked are told about the new car when you save. | Farþegar sem hafa bókað fá að vita af nýja bílnum þegar þú vistar. |
+| `trip.carChanged` | New car: {car} | Nýr bíll: {car} |
 | `trip.editDetails` | Preferences and note | Óskir og skilaboð |
 | `trip.editDetailsAction` | Change the preferences and note | Breyta óskum og skilaboðum |
 | `trip.editDetailsHelp` | Passengers see the change on the trip. Nobody is notified. | Farþegar sjá breytinguna á ferðinni. Enginn fær tilkynningu. |

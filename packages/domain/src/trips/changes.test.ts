@@ -37,6 +37,7 @@ const northTrip: ChangeableTrip = {
   seats: 3,
   priceLevel: 100,
   vehicleId: "car-yaris",
+  cars: ["car-yaris", "car-van"],
   bookingMode: "approval",
   preferences: { luggage: "suitcase", pets: "ask", smoking: "no", childSeat: false, chat: "some" },
   note: "",
@@ -342,6 +343,17 @@ describe("the car", () => {
     ]);
   });
 
+  it("is one of the driver's cars, not removed", () => {
+    const stranger = { kind: "vehicle", vehicleId: "car-someone-elses" } as const;
+    expect(problems(checkTripChange(bookedTrip, bookings, stranger, now, settings))).toEqual([
+      "car_missing",
+    ]);
+    // The car the trip has is kept, even once removed: nothing changes.
+    const removed = { ...bookedTrip, vehicleId: "car-old", cars: ["car-van"] };
+    const same = { kind: "vehicle", vehicleId: "car-old" } as const;
+    expect(effect(checkTripChange(removed, bookings, same, now, settings)).told).toEqual([]);
+  });
+
   it("tells nobody when it stays the same, or nobody has booked", () => {
     const same = { kind: "vehicle", vehicleId: "car-yaris" } as const;
     expect(effect(checkTripChange(bookedTrip, bookings, same, now, settings)).told).toEqual([]);
@@ -415,7 +427,7 @@ describe("any sequence of changes the rules allow", () => {
       .integer({ min: 0, max: 30 })
       .map((steps) => ({ kind: "priceLevel", priceLevel: steps * 10 }) as const),
     fc
-      .constantFrom("car-yaris", "car-van")
+      .constantFrom("car-yaris", "car-van", "car-someone-elses")
       .map((vehicleId) => ({ kind: "vehicle", vehicleId }) as const),
     fc
       .constantFrom("approval", "instant")
@@ -457,6 +469,7 @@ describe("any sequence of changes the rules allow", () => {
           change.priceLevel <= highestPriceLevel(trip.seats, settings)
         );
       case "vehicle":
+        return change.vehicleId === trip.vehicleId || trip.cars.includes(change.vehicleId);
       case "bookingMode":
       case "details":
         return true;

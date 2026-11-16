@@ -53,6 +53,8 @@ export interface NotificationFacts {
   readonly boardPointId: string;
   /** The trip's car: make, model and colour, never its number plate. */
   readonly car: CarFacts | null;
+  /** For a new car: the car that change made, as `car` (spec 6, 3.2). */
+  readonly newCar: CarFacts | null;
   /** For a moved departure: the passenger's boarding time before and after (spec 6, 3.2). */
   readonly moved: { readonly from: Date; readonly to: Date } | null;
   /** Confirmed and not free: what they paid would come back if they cancelled (R6.3). */
@@ -212,6 +214,13 @@ function bookingText(
             : t("notify.movedBody", where),
         ];
       }
+      case "trip_changed":
+        // The new car (spec 6, 3.2), never its number plate (R7.9).
+        return [
+          t("trip.carChanged", { car: carText(t, required(facts.newCar, "the new car")) }),
+          // Their part and when they get in, as for a move.
+          t("notify.movedBody", { from, to, when: when(facts.boardsAt) }),
+        ];
       case "refund_issued":
         return [
           t("notify.refunded", { total: formatMoney(facts.total, locale) }),

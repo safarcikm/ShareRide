@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import {
   acceptRequestRoute,
+  addVehicleRoute,
   bookTripRoute,
   cancelBookingRoute,
   cancellationPreviewRoute,
@@ -319,6 +320,26 @@ async function moveTo(driver: Member, tripId: string, departsAt: string) {
     params: { id: tripId },
     query: {},
     body: { kind: "departure", departsAt },
+  });
+  if (!result.ok) throw new Error(result.error.code);
+}
+
+/** Another car of the driver's, and the trip changed to it. */
+async function newCarFor(
+  driver: Member,
+  tripId: string,
+  car: { make: string; model: string; colour: "red" | "grey"; registration: string | null },
+) {
+  const added = await api.client.call(addVehicleRoute, {
+    accessToken: driver.accessToken,
+    body: car,
+  });
+  if (!added.ok) throw new Error(added.error.code);
+  const result = await api.client.call(changeTripRoute, {
+    accessToken: driver.accessToken,
+    params: { id: tripId },
+    query: {},
+    body: { kind: "vehicle", vehicleId: added.data.id },
   });
   if (!result.ok) throw new Error(result.error.code);
 }
@@ -922,6 +943,94 @@ describe("the worker (plan 4.4)", () => {
         text: "ShareRide: your trip on Saturday 14 November now leaves at 12:30. Keep it or cancel with a full refund in the app.",
       },
     ]);
+  });
+
+  it("tells each booked passenger of a new car by push and email, each of its own car, never by SMS (spec 6, 3.2)", async () => {
+    const { jon, passenger: gunna, bookingId } = await confirmedBooking();
+    await withEmail(gunna, "gunna-car@example.com");
+    const dora = await newMember("Dóra");
+    await speaks(dora, "is");
+    const unpaid = await booked(dora.accessToken, airport, { fromStop: 1, toStop: 3 });
+    for (const member of [jon, gunna, dora]) await withDevice(member);
+    await worker().runOnce();
+    push.sent.length = 0;
+    const smsBefore = sms.outbox.length;
+
+    // Two new cars before the worker runs: each notification names its own.
+    await newCarFor(jon, airport, {
+      make: "Volvo",
+      model: "XC40",
+      colour: "red",
+      registration: "AB 123",
+    });
+    await newCarFor(jon, airport, {
+      make: "Skoda",
+      model: "Octavia",
+      colour: "grey",
+      registration: null,
+    });
+    await worker().runOnce();
+    const to = (member: Member) => `ExponentPushToken[${member.userId}]`;
+    expect(push.sent).toHaveLength(4);
+    expect(push.sent).toEqual(
+      expect.arrayContaining([
+        {
+          to: to(gunna),
+          title: "New car: Red Volvo XC40",
+          body: "Hlemmur – Fjörður shopping centre · Saturday 14 November at 05:30.",
+          data: { path: `/bookings/${bookingId}` },
+        },
+        expect.objectContaining({ to: to(gunna), title: "New car: Grey Skoda Octavia" }),
+        expect.objectContaining({
+          to: to(dora),
+          title: "Nýr bíll: Rauður Volvo XC40",
+          data: { path: `/bookings/${unpaid.id}` },
+        }),
+        expect.objectContaining({ to: to(dora), title: "Nýr bíll: Grár Skoda Octavia" }),
+      ]),
+    );
+    expect(email.sent.slice(-2).map(({ to: address, subject }) => [address, subject])).toEqual(
+      expect.arrayContaining([
+        ["gunna-car@example.com", "New car: Red Volvo XC40"],
+        ["gunna-car@example.com", "New car: Grey Skoda Octavia"],
+      ]),
+    );
+    // Never the number plate (R7.9), never by SMS (spec 7, 3.4), and the
+    // driver, who made it, is told nothing.
+    expect(JSON.stringify([push.sent, email.sent])).not.toContain("AB 123");
+    expect(sms.outbox).toHaveLength(smsBefore);
+    expect((await logOf(jon)).filter((row) => row.kind === "trip_changed")).toEqual([]);
+
+    // Run again: nobody is told twice.
+    await worker().runOnce();
+    expect(push.sent).toHaveLength(4);
+  });
+
+  it("tells nobody of a TripChanged event whose change is not a new car (stops come with PR 6)", async () => {
+    const { jon, passenger, bookingId } = await confirmedBooking();
+    await withDevice(passenger);
+    await worker().runOnce();
+    push.sent.length = 0;
+    const mode = await api.client.call(changeTripRoute, {
+      accessToken: jon.accessToken,
+      params: { id: airport },
+      query: {},
+      body: { kind: "bookingMode", bookingMode: "approval" },
+    });
+    if (!mode.ok) throw new Error(mode.error.code);
+    const [recorded] = await api.connection.db
+      .select({ id: schema.tripChanges.id })
+      .from(schema.tripChanges)
+      .where(eq(schema.tripChanges.tripId, airport));
+    if (recorded === undefined) throw new Error("The change was not recorded.");
+    await api.connection.db.insert(outboxEvents).values({
+      kind: "TripChanged",
+      payload: { bookingId, tripChangeId: recorded.id },
+      createdAt: api.now(),
+    });
+    await worker().runOnce();
+    expect(push.sent).toEqual([]);
+    expect((await logOf(passenger)).filter((row) => row.kind === "trip_changed")).toEqual([]);
   });
 
   it("pushes a chat message with its text, and a quick message in the reader's language", async () => {

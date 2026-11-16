@@ -11,6 +11,7 @@ import {
   type MessageProblem,
   type QuickMessage,
   type CancelReason,
+  type CarColour,
   type Result,
   type TripRole,
 } from "@shareride/domain";
@@ -94,6 +95,15 @@ function systemLineOf(row: MessageRow, viewer: TripRole): NonNullable<ChatMessag
         key: "departure_changed",
         from: String(row.params?.["from"]),
         to: String(row.params?.["to"]),
+      };
+    case "car_changed":
+      return {
+        key: "car_changed",
+        car: {
+          make: String(row.params?.["make"]),
+          model: String(row.params?.["model"]),
+          colour: row.params?.["colour"] as CarColour,
+        },
       };
     case "cancelled":
       return {

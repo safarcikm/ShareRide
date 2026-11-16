@@ -1,5 +1,6 @@
 import {
   acceptRequestRoute,
+  addVehicleRoute,
   bookingRoute,
   cancelBookingRoute,
   cancellationPreviewRoute,
@@ -288,7 +289,7 @@ describe("moving a trip's departure (spec 6, 3.2)", () => {
     });
     const booking = await read(gunna, confirmed.id);
     expect(booking.movedFar).toBe(false);
-    expect(booking.changes.map(({ from, to }) => [from, to])).toEqual([
+    expect(booking.changes.map((one) => one.kind === "departure" && [one.from, one.to])).toEqual([
       [iso(leaves), iso(moved(leaves, 20))],
       [iso(moved(leaves, 20)), iso(moved(leaves, 40))],
       [iso(moved(leaves, 40)), iso(moved(leaves, 10))],
@@ -765,5 +766,117 @@ describe("changing the seats, price level, booking mode and details (spec 6, 3.2
     }
     expect(await changesOf(north)).toEqual([]);
     expect((await mine(anna, north)).updatedAt).toBe(trip.updatedAt);
+  });
+});
+
+describe("changing the car (spec 6, 3.2)", () => {
+  async function newCar(member: Member) {
+    const car = await api.client.call(addVehicleRoute, {
+      accessToken: member.accessToken,
+      body: { make: "Volvo", model: "XC40", colour: "red", registration: "AB 123" },
+    });
+    if (!car.ok) throw new Error(car.error.code);
+    return car.data.id;
+  }
+
+  async function vehicleOf(id: string) {
+    const [trip] = await api.connection.db
+      .select({ vehicleId: schema.trips.vehicleId })
+      .from(schema.trips)
+      .where(eq(schema.trips.id, id));
+    return trip?.vehicleId;
+  }
+
+  it("tells each booked passenger of a new car, on the booking and in the chat; a request is not told", async () => {
+    const anna = await driverOf(north);
+    const gunna = await newMember("Gunna");
+    const dora = await newMember("Dóra");
+    const confirmed = await paidBooking(anna, gunna);
+    const unpaid = await booked(dora.accessToken, north, { fromStop: 1, toStop: 2 });
+    await accepted(anna, unpaid.id);
+    await booked((await newMember("Óli")).accessToken, north, { fromStop: 2, toStop: 3 });
+    const before = await vehicleOf(north);
+    const volvo = await newCar(anna);
+
+    const preview = await change(anna, north, { kind: "vehicle", vehicleId: volvo }, true);
+    expect(preview).toMatchObject({ status: 200, data: { told: 2, requests: 1 } });
+    expect(await vehicleOf(north)).toBe(before);
+    expect(await eventsOf("TripChanged")).toEqual([]);
+
+    const saved = await change(anna, north, { kind: "vehicle", vehicleId: volvo });
+    expect(saved.ok && saved.data).toEqual(preview.ok && preview.data);
+    expect(await vehicleOf(north)).toBe(volvo);
+    const [recorded] = await changesOf(north);
+    expect(await changesOf(north)).toEqual([
+      {
+        id: expect.any(String) as unknown,
+        kind: "vehicle",
+        before: { vehicleId: before, make: "Toyota", model: "Yaris", colour: "white" },
+        after: { vehicleId: volvo, make: "Volvo", model: "XC40", colour: "red" },
+      },
+    ]);
+    // One event for each booked passenger, pointing at the change (spec 7, 3.3).
+    expect((await eventsOf("TripChanged")).map(({ payload }) => payload)).toEqual(
+      expect.arrayContaining([
+        { bookingId: confirmed.id, tripChangeId: recorded?.id },
+        { bookingId: unpaid.id, tripChangeId: recorded?.id },
+      ]),
+    );
+    expect(await eventsOf("TripChanged")).toHaveLength(2);
+
+    // On the booking, with the car as it is now; and in the chat.
+    const read_ = await read(gunna, confirmed.id);
+    expect(read_.changes).toEqual([
+      {
+        kind: "vehicle",
+        car: { make: "Volvo", model: "XC40", colour: "red" },
+        changedAt: expect.any(String) as unknown,
+      },
+    ]);
+    expect(read_.movedFar).toBe(false);
+    const chat = await api.client.call(conversationMessagesRoute, {
+      accessToken: gunna.accessToken,
+      params: { id: confirmed.id },
+      query: {},
+    });
+    if (!chat.ok) throw new Error(chat.error.code);
+    expect(chat.data.messages.map((message) => message.system)).toContainEqual({
+      key: "car_changed",
+      car: { make: "Volvo", model: "XC40", colour: "red" },
+    });
+  });
+
+  it("refuses a car that is not the driver's, or was removed", async () => {
+    const anna = await driverOf(north);
+    const jon = await driverOf(vik, "Jón");
+    const refused = {
+      status: 422,
+      error: { code: "change_not_allowed", details: [{ path: "vehicleId", issue: "car_missing" }] },
+    };
+    expect(
+      await change(anna, north, { kind: "vehicle", vehicleId: await newCar(jon) }, true),
+    ).toMatchObject(refused);
+    const removed = await newCar(anna);
+    await api.connection.db
+      .update(schema.vehicles)
+      .set({ removedAt: api.now() })
+      .where(eq(schema.vehicles.id, removed));
+    expect(await change(anna, north, { kind: "vehicle", vehicleId: removed })).toMatchObject(
+      refused,
+    );
+    expect(await changesOf(north)).toEqual([]);
+  });
+
+  it("tells nobody when the car is the one the trip has", async () => {
+    const anna = await driverOf(north);
+    await paidBooking(anna, await newMember("Gunna"));
+    const car = await vehicleOf(north);
+    if (car === undefined || car === null) throw new Error("No car");
+    expect(await change(anna, north, { kind: "vehicle", vehicleId: car })).toMatchObject({
+      status: 200,
+      data: { told: 0 },
+    });
+    expect(await changesOf(north)).toEqual([]);
+    expect(await eventsOf("TripChanged")).toEqual([]);
   });
 });

@@ -38,6 +38,8 @@ export interface ChangeableTrip {
   readonly seats: number;
   readonly priceLevel: number;
   readonly vehicleId: string;
+  /** The driver's cars the trip can take: theirs and not removed (spec 4). */
+  readonly cars: readonly string[];
   readonly bookingMode: BookingMode;
   readonly preferences: TripPreferences;
   readonly note: string;
@@ -87,6 +89,8 @@ export type ChangeProblem =
   /** The most seats taken on any segment, the fewest the trip can offer (rule S5). */
   | { readonly code: "seats_below_taken"; readonly taken: number }
   | { readonly code: "price_level_invalid" }
+  /** Not one of the driver's cars, or removed (spec 6, 3.2). */
+  | { readonly code: "car_missing" }
   | NoteProblem;
 
 /** What one booked passenger is told of a change (spec 7, 3.3). */
@@ -222,6 +226,10 @@ function changeProblems(
     case "details":
       return checkNote(change.note);
     case "vehicle":
+      // The car the trip has stays, even once removed: nothing changes.
+      return change.vehicleId === trip.vehicleId || trip.cars.includes(change.vehicleId)
+        ? []
+        : [{ code: "car_missing" }];
     case "bookingMode":
       return [];
   }

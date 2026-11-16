@@ -78,6 +78,15 @@ describe("system lines in the reader's language (spec 7, 3.1, item 3)", () => {
     expect(systemLineText(is, moved, "Anna")).toBe("Brottför breytt úr 09:00 í 09:45");
   });
 
+  it("says the car changed, by its colour, make and model (spec 6, 3.2)", () => {
+    const car = {
+      key: "car_changed",
+      car: { make: "Volvo", model: "XC40", colour: "red" },
+    } as const;
+    expect(systemLineText(en, car, "Anna")).toBe("New car: Red Volvo XC40");
+    expect(systemLineText(is, car, "Anna")).toBe("Nýr bíll: Rauður Volvo XC40");
+  });
+
   it("says when the driver cancelled the whole trip (spec 6, 3.3)", () => {
     const trip = {
       key: "cancelled",
