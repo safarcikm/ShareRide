@@ -1,7 +1,7 @@
 # Spec 16: One home and simpler flows
 
 **Owner:** Martin · **Date:** 2026-11-15 · **Status:** Approved
-(2026-11-15); proposals 1 and 2 built
+(2026-11-15); proposals 1 to 3 built
 
 Amends: [spec 1](2026-11-13-sign-in-and-profile.md) (front page, sign-up,
 profile, settings), [spec 3](2026-11-13-post-a-trip.md) (driver setup and the
@@ -155,15 +155,21 @@ Find replaces both the front page and My profile as the place the app opens.
    code. New to ShareRide? The same code creates your account."
 3. **The ride stays in view.** While a ride is kept through sign-up (spec 5,
    3.1), every step starts with a small card: "You're booking", the date,
-   times and route, the seats, the price and the driver, and "We bring you
-   back here after signing in." For Offer a ride the card says "Next: offer a
-   ride".
+   times and route, the seats, the price and the driver ("Driver: Anna",
+   which needs no case ending in Icelandic), and "We bring you back here
+   after signing in." Step 3 is long, so its card keeps only the date, times
+   and route. For Offer a ride the card says "Next: offer a ride" and "We
+   take you there after signing in." The steps only look at what is kept;
+   the menu takes it once the account is ready, as before. The card loads
+   the trip once and is left out if that fails.
 4. **Step 3, about you**, replaces Terms and Create profile:
    - first name, with "Everyone sees it. We never show your last name.";
    - the languages you speak, as chips: the language the app is in is ticked
-     already, a few common ones show, and the rest are behind "More
-     languages";
-   - "Add a few words about you (optional)", folded;
+     already, Icelandic, English, Polish, German and Spanish show (as on the
+     canvas), and the rest are behind "More languages". Edit profile shows
+     the same chips, with the languages already chosen;
+   - "Add a few words about you (optional)", folded (Edit profile shows the
+     field open);
    - "I am 18 or older" and "I accept the Terms of Service and the Community
      Rules", as two tick boxes, with links;
    - "The Privacy Policy explains what we collect and why", with a link;
@@ -174,7 +180,10 @@ Find replaces both the front page and My profile as the place the app opens.
    the terms part of step 3, as today.
 6. Rules R1.6 to R1.8 and what is stored do not change. The step accepts the
    current documents and saves the profile in that order; if saving fails,
-   the person stays on the step with their answers kept.
+   the person stays on the step with their answers kept, and trying again
+   does not accept the documents a second time. An account that accepted
+   the terms but has no profile yet (signed up with an older app) sees step
+   3 without the terms part.
 
 ### 3.6 Offer a ride (proposal 5)
 

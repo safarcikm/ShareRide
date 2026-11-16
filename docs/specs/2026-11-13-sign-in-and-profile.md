@@ -6,6 +6,9 @@ Amended by [spec 16](2026-11-15-one-home-and-simpler-flows.md): Find is the
 home for everyone and the menu is the same signed in or out (3.1, 3.2).
 Profile becomes rows (My cars, Driving licence, Meeting points, Settings,
 Terms, rules and privacy) and the phone number moves to Settings (3.4).
+Signing up takes three steps, the number, the code and "about you", with the
+ride kept in view; step 3 takes the profile and the terms together, and the
+terms show on their own only when they change later (3.5).
 
 Features: A1 Sign up and sign in, A2 Profile, A4 Settings, A6 Terms, privacy
 policy and community rules ([features](../product/features.md)).
