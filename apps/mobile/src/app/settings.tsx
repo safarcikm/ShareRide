@@ -25,7 +25,8 @@ import { usePalette } from "@/theme/use-palette";
  * Settings (spec 1, section 3.8; spec 16, 3.8): the language as two choices
  * side by side, Your account with the private phone number (spec 16, 3.4)
  * and the email (plan 4.6), Notifications with the Trip reminders switch
- * (spec 7, 3.6), legal documents, and signing out here or on every device.
+ * (spec 7, 3.6), Safety with Blocked people (spec 9, 3.2), legal documents,
+ * and signing out here or on every device.
  * Rows start at the left. Signed out, it closes back to the menu.
  */
 export default function SettingsScreen() {
@@ -123,6 +124,17 @@ function Settings({ me }: { readonly me: Me }) {
       <View style={styles.section}>
         {heading(t("settings.notifications"))}
         <TripReminders />
+      </View>
+      <View style={styles.section}>
+        {heading(t("safety.title"))}
+        <Card>
+          <Row
+            title={t("blocks.title")}
+            onPress={() => {
+              router.push("/settings/blocked");
+            }}
+          />
+        </Card>
       </View>
       <View style={styles.section}>
         {heading(t("settings.legal"))}

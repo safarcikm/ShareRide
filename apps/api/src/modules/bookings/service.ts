@@ -40,6 +40,7 @@ import { oweRefund } from "../payments/refunds.ts";
 import { bookingConfirmed } from "./confirmed.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import { recordEvents } from "../notifications/outbox.ts";
+import { closedTrips } from "../safety/blocks.ts";
 import {
   changeOccupancy,
   expireDueBookings,
@@ -599,6 +600,10 @@ export function createBookingService(dependencies: {
         if (trip === undefined) return err({ code: "not_found" });
         const now = clock();
         await expireDueBookings(tx, tripId, now);
+        // Closed by a block, silently: as if the trip did not exist (R9.4).
+        if ((await closedTrips(tx, passengerId, [tripId])).has(tripId)) {
+          return err({ code: "not_found" });
+        }
 
         // One query at a time: a transaction has one connection.
         const stops = await stopsOf(tx, tripId);

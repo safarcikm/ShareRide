@@ -205,4 +205,11 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
       note: "reminders of the person's trips and bookings, all cancelled or over by then",
     },
   },
+  blocks: {
+    category: "blocks",
+    // Only the blocks the person made: who blocked them is never shown (R9.4).
+    export: { section: "blocks" },
+    personColumns: ["blockerId", "blockedId"],
+    onDeletion: { rows: "erase", note: "blocks made by the person and blocks of them" },
+  },
 };

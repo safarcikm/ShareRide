@@ -17,7 +17,7 @@ const notFound = {
 } as const;
 const notConfirmed = {
   description:
-    "not_confirmed: the booking is not confirmed, so it has no conversation yet; chat_closed: read-only since `closesAt` (R7.1)",
+    "not_confirmed: the booking is not confirmed, so it has no conversation yet; chat_closed: read-only since `closesAt` (R7.1), or since one of the two blocked the other (R9.4)",
   ...errors,
 } as const;
 const tooMany = {
@@ -105,7 +105,10 @@ export const conversationSchema = z.object({
   booking: bookingSchema,
   /** Read-only from then on (R7.1). */
   closesAt: timestampSchema,
+  /** False once closed, and while a block stands between the two, never saying whose (R9.4). */
   canWrite: z.boolean(),
+  /** I blocked the other person; false for the person blocked, who is never told (R9.4). */
+  blockedByMe: z.boolean(),
   /** The other person's messages I have not read. */
   unread: z.int().nonnegative(),
   lastMessage: chatMessageSchema.nullable(),

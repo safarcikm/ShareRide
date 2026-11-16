@@ -158,12 +158,12 @@ accepted 2026-11-16)
 - [ ] Public profiles with rating, reviews and reliability
 
 Milestone 9: safety and moderation
-([plan](../plans/2026-11-16-milestone-9-safety-and-moderation.md), proposed
-2026-11-16; built alongside milestones 7 and 8)
+([plan](../plans/2026-11-16-milestone-9-safety-and-moderation.md), choices
+accepted 2026-11-16; built alongside milestones 7 and 8)
 
 - [x] Safety rules in the domain
 - [x] Emergency 112, "Before you go" and sharing trip details
-- [ ] Block and unblock
+- [x] Block and unblock
 - [ ] Reports and the operator's alert
 - [ ] Moderation actions, suspension and appeals
 - [ ] Console: the reports queue, the report page and appeals

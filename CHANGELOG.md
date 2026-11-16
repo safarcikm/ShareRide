@@ -460,6 +460,21 @@ releases follow [Semantic Versioning](https://semver.org/).
   plate, or the driver's date, time and route, through the share sheet, or
   copies it in a browser without one, or else shows it to copy. Nothing is stored (R9.8). On trip
   details, the booking page and the driver's trip page.
+- Block and unblock (milestone 9, PR 4, spec 9, 3.2; R9.4): "Block" in a
+  conversation asks first and blocks silently, then lists the bookings and
+  requests the two still have together, each with the usual way out:
+  cancel under the normal rules, withdraw or decline. Neither then finds
+  the other's trips in search, rides leaving soon or "nothing matches",
+  nor opens or books them; nor a trip the other is booked on (milestone 9
+  decision 2). Their chats become read-only for both; only the blocker's
+  says who blocked whom (`blockedByMe`), and the driver's message to all
+  passengers skips them. Settings has a Safety section with Blocked
+  people and Unblock. No user ID is shown to another person: blocking
+  goes through a booking, unblocking through the block's own ID. A
+  conversation coming back into view fetches at once. `blocks` is in the
+  personal data catalogue, erased with either account, and gets its own
+  export section (the blocks a person made). `POST /v1/bookings/{id}/block`,
+  `GET /v1/me/blocks`, `DELETE /v1/me/blocks/{id}`.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

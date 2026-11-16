@@ -5,6 +5,7 @@ import {
   canWrite,
   checkMessage,
   err,
+  isBlockedBetween,
   ok,
   type ChatSettings,
   type MessageBody,
@@ -19,6 +20,7 @@ import { and, desc, eq, gt, inArray, isNotNull, isNull, ne, or, sql, type SQL } 
 import type { BookingService } from "../bookings/index.ts";
 import type { Queryable } from "../bookings/seats.ts";
 import { recordEvents } from "../notifications/outbox.ts";
+import { blocksOf } from "../safety/blocks.ts";
 
 const { bookings, conversations, messages, trips, users } = schema;
 
@@ -195,7 +197,15 @@ export function createChatService(dependencies: {
     userId: string,
     bookingId: string,
   ): Promise<
-    Result<{ readonly conversation: ConversationRow; readonly viewer: TripRole }, ChatError>
+    Result<
+      {
+        readonly conversation: ConversationRow;
+        readonly viewer: TripRole;
+        /** The passenger and the driver. */
+        readonly people: readonly [string, string];
+      },
+      ChatError
+    >
   > {
     const [row] = await q
       .select({
@@ -214,6 +224,7 @@ export function createChatService(dependencies: {
     return ok({
       conversation: row.conversation,
       viewer: row.passengerId === userId ? "passenger" : "driver",
+      people: [row.passengerId, row.driverId],
     });
   }
 
@@ -229,7 +240,7 @@ export function createChatService(dependencies: {
   async function summaries(userId: string, rows: readonly ConversationRow[]) {
     if (rows.length === 0) return [];
     const ids = rows.map((row) => row.id);
-    const [booked, unread, last] = await Promise.all([
+    const [booked, unread, last, people, blocks] = await Promise.all([
       dependencies.bookings.bookingsOf(
         userId,
         rows.map((row) => row.bookingId),
@@ -244,8 +255,34 @@ export function createChatService(dependencies: {
         .from(messages)
         .where(inArray(messages.conversationId, ids))
         .orderBy(messages.conversationId, desc(messages.sentAt), desc(messages.id)),
+      db
+        .select({
+          bookingId: bookings.id,
+          passengerId: bookings.passengerId,
+          driverId: trips.driverId,
+        })
+        .from(bookings)
+        .innerJoin(trips, eq(trips.id, bookings.tripId))
+        .where(
+          inArray(
+            bookings.id,
+            rows.map((row) => row.bookingId),
+          ),
+        ),
+      blocksOf(db, userId),
     ]);
     const now = clock();
+    /** A block between the two makes the chat read-only, never saying whose (R9.4). */
+    const blocked = (bookingId: string) => {
+      const pair = people.find((row) => row.bookingId === bookingId);
+      return pair !== undefined && isBlockedBetween(blocks, pair.passengerId, pair.driverId);
+    };
+    /** Only the blocker learns it was them. */
+    const blockedByMe = (bookingId: string) => {
+      const pair = people.find((row) => row.bookingId === bookingId);
+      const other = pair?.passengerId === userId ? pair.driverId : pair?.passengerId;
+      return blocks.some((block) => block.blockerId === userId && block.blockedId === other);
+    };
     return rows.flatMap((row): Conversation[] => {
       const booking = booked.find((found) => found.id === row.bookingId);
       if (booking === undefined) return [];
@@ -254,7 +291,10 @@ export function createChatService(dependencies: {
         {
           booking,
           closesAt: row.closesAt.toISOString(),
-          canWrite: canWrite({ opensAt: row.openedAt, closesAt: row.closesAt }, now),
+          canWrite:
+            canWrite({ opensAt: row.openedAt, closesAt: row.closesAt }, now) &&
+            !blocked(row.bookingId),
+          blockedByMe: blockedByMe(row.bookingId),
           unread: unread.find((count) => count.conversationId === row.id)?.count ?? 0,
           lastMessage:
             lastMessage === undefined ? null : present(lastMessage, userId, booking.viewer),
@@ -334,7 +374,7 @@ export function createChatService(dependencies: {
     async send(userId, bookingId, body) {
       const found = await access(db, userId, bookingId);
       if (!found.ok) return found;
-      const { conversation, viewer } = found.value;
+      const { conversation, viewer, people } = found.value;
       // A retry gets what was sent, even once the conversation has closed.
       const earlier = async (q: Queryable): Promise<Result<MessageRow | null, ClientIdReused>> => {
         const rows = await q
@@ -356,7 +396,10 @@ export function createChatService(dependencies: {
       return db.transaction(async (tx) => {
         await lockSender(tx, userId);
         const now = clock();
-        if (!canWrite({ opensAt: conversation.openedAt, closesAt: conversation.closesAt }, now)) {
+        if (
+          !canWrite({ opensAt: conversation.openedAt, closesAt: conversation.closesAt }, now) ||
+          isBlockedBetween(await blocksOf(tx, userId), ...people)
+        ) {
           return err({ code: "chat_closed" });
         }
         const again = await earlier(tx);
@@ -419,13 +462,16 @@ export function createChatService(dependencies: {
         if (earlier.some((row) => row.tripId !== tripId)) return err({ code: "client_id_reused" });
         // A retry sends nothing more, not even to a passenger confirmed since.
         if (earlier.length > 0) return ok({ sent: earlier.length });
+        const blocks = await blocksOf(tx, driverId);
         const open = (
           await tx
-            .select({ conversation: conversations })
+            .select({ conversation: conversations, passengerId: bookings.passengerId })
             .from(conversations)
             .innerJoin(bookings, eq(bookings.id, conversations.bookingId))
             .where(and(eq(bookings.tripId, tripId), eq(bookings.status, "confirmed")))
         )
+          // A passenger in a block with the driver is left out (R9.4).
+          .filter((row) => !isBlockedBetween(blocks, driverId, row.passengerId))
           .map((row) => row.conversation)
           .filter((row) => canWrite({ opensAt: row.openedAt, closesAt: row.closesAt }, now));
         if (open.length === 0) return ok({ sent: 0 });

@@ -19,6 +19,7 @@ import {
 import { and, asc, eq, inArray, isNull, ne } from "drizzle-orm";
 import { occupancyNow } from "../bookings/seats.ts";
 import { toSummary } from "../meeting-points/service.ts";
+import { closedTrips } from "../safety/blocks.ts";
 import { choicesOf } from "../trips/drafts.ts";
 
 const { bookings, meetingPoints, segments, trips, tripStops, users, vehicles } = schema;
@@ -66,6 +67,8 @@ export function createTripDetailsService(dependencies: {
       ) {
         return err({ code: "not_found" });
       }
+      // Closed by a block: as if it did not exist (R9.4).
+      if ((await closedTrips(db, viewerId, [id])).has(id)) return err({ code: "not_found" });
 
       const [stopRows, segmentRows, mine, asOfNow] = await Promise.all([
         db
