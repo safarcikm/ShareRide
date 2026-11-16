@@ -20,7 +20,12 @@ export const adminPrefix = "/admin/v1";
  * ones that sign in. Everything else under /admin/v1 is closed, including
  * paths no route matches.
  */
-export const openAdminRoutes: ReadonlySet<string> = new Set<string>();
+export const openAdminRoutes: ReadonlySet<string> = new Set<string>([
+  "POST /admin/v1/auth/setup/options",
+  "POST /admin/v1/auth/setup",
+  "POST /admin/v1/auth/sign-in/options",
+  "POST /admin/v1/auth/sign-in",
+]);
 
 export function setOperatorCookie(c: Context, token: string, secure: boolean): void {
   setCookie(c, operatorCookie.name, token, {

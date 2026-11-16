@@ -5,11 +5,12 @@ const tokenPrefixes = {
   refresh: "sr_rt",
   emailLink: "sr_ev",
   operatorSession: "sr_os",
+  operatorSetup: "sr_ol",
 } as const;
 
 /**
  * A new opaque token: 256 random bits (ADR 0016). The prefix tells access and
- * refresh tokens, email links and console sessions apart and lets secret scanners recognise
+ * refresh tokens, email links, console sessions and setup links apart and lets secret scanners recognise
  * leaked tokens.
  */
 export function newToken(kind: keyof typeof tokenPrefixes): string {

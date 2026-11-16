@@ -489,7 +489,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   from drawings in `apps/mobile/assets/logo`.
 - Operator console, milestone 8: the plan and ADR 0028; console sessions,
   the guard on `/admin/v1` and the append-only audit log in the API
-  (`recordAudit`, a trigger that refuses changes).
+  (`recordAudit`, a trigger that refuses changes); passkey sign-in with
+  `@simplewebauthn/server` (setup link, sign-in, adding and removing
+  passkeys) and the `operator` command that gives or removes the role.
 
 - Privacy self-service, part 1 (spec 11): the rules in the domain (what
   is open before deleting an account, the 7-day wait, what deletion does to

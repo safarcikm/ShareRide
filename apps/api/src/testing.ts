@@ -55,6 +55,8 @@ export interface TestApi {
 
 /** Where links in emails lead in integration tests. */
 export const testWebAppUrl = "https://shareride.test";
+/** The console origin passkeys are bound to in tests (ADR 0028). */
+export const testAdminOrigin = "https://shareride.test";
 
 let numbers = 0;
 let addresses = 0;
@@ -92,6 +94,7 @@ export async function startTestApi(): Promise<TestApi> {
     clientAddress: (c) => c.req.header("x-test-client-ip") ?? "unknown",
     secureCookies: false,
     payments: createTestPaymentProvider(),
+    adminOrigin: testAdminOrigin,
   };
   const app = createApp({
     logger,

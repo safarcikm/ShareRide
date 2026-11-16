@@ -8,6 +8,7 @@ import {
   defaultNotificationSettings,
   defaultSearchSettings,
   defaultTripSettings,
+  operatorSignInLimitsPerAddress,
   searchLimitsPerAddress,
 } from "@shareride/domain";
 import type { Context } from "hono";
@@ -22,9 +23,11 @@ import { errorBody } from "./errors.ts";
 import type { Logger } from "./logger.ts";
 import {
   createOperatorSessionService,
+  createPasskeyService,
   createRequireOperator,
   guardAdminPaths,
   operatorCookie,
+  registerAdminAuthRoutes,
   registerAdminRoutes,
 } from "./modules/admin/index.ts";
 import {
@@ -91,6 +94,11 @@ export interface FeatureDependencies {
   readonly randomInt?: (max: number) => number;
   /** Left out where paying is unavailable (PAYMENT_PROVIDER=none). */
   readonly payments?: PaymentProvider;
+  /**
+   * The operator console's origin, which passkeys are bound to (ADR 0028).
+   * Left out, the console's sign-in is off.
+   */
+  readonly adminOrigin?: string;
 }
 
 /** Where the request was when an unexpected error happened. No personal data. */
@@ -209,6 +217,24 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     const requireOperator = createRequireOperator(operatorSessions, features.secureCookies);
     app.use(guardAdminPaths(requireOperator));
     registerAdminRoutes(app, { ...features, sessions: operatorSessions, requireOperator });
+    if (features.adminOrigin !== undefined) {
+      registerAdminAuthRoutes(app, {
+        ...features,
+        logger,
+        passkeys: createPasskeyService({
+          ...features,
+          sessions: operatorSessions,
+          adminOrigin: features.adminOrigin,
+        }),
+        requireOperator,
+        limiter: createMemoryRateLimiter({
+          rules: operatorSignInLimitsPerAddress,
+          clock: features.clock,
+        }),
+        clientKey: (c) =>
+          features.hasher("operator-sign-in", addressBlock(features.clientAddress(c))),
+      });
+    }
     const legal = createLegalService(features);
     const account = createAccountService({ ...features, legal });
     const auth = createAuthService({
