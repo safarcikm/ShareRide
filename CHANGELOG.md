@@ -519,6 +519,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   (`recordAudit`, a trigger that refuses changes); passkey sign-in with
   `@simplewebauthn/server` (setup link, sign-in, adding and removing
   passkeys) and the `operator` command that gives or removes the role.
+- `packages/ui`: the design tokens and the map of Iceland (data,
+  projection, roads and views) moved out of the app, to be shared with the
+  operator console; the app looks the same.
 
 - Privacy self-service, part 1 (spec 11): the rules in the domain (what
   is open before deleting an account, the 7-day wait, what deletion does to

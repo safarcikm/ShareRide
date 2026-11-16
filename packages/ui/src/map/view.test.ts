@@ -1,5 +1,6 @@
-import { mapSize, project } from "./projection";
-import { dotsNear, viewFor, wholeMap } from "./view";
+import { describe, expect, it } from "vitest";
+import { mapSize, project } from "./projection.ts";
+import { dotsNear, viewFor, wholeMap } from "./view.ts";
 
 const reykjavik = project({ longitude: -21.86, latitude: 64.13 });
 const keflavik = project({ longitude: -22.6, latitude: 63.99 });

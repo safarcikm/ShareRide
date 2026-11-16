@@ -408,13 +408,14 @@ use `control`; body text is drawn at 16 and is 17.
 
 ## 6. Implementation
 
-- **Tokens** stay in `apps/mobile/src/theme/tokens.ts`, with the new values
-  and keys from section 4. `Palette` gains the new colour keys. Typography
-  tokens name the font face (`Fredoka_600SemiBold`, `Nunito_400Regular`,
-  `Nunito_600SemiBold`, `Nunito_700Bold`, `Fredoka_500Medium`) and never set
-  `fontWeight`, because Android ignores weights for custom fonts. Tokens move
-  to `packages/ui` when a second client (the operator console) needs them
-  ([ADR 0017](../decisions/0017-visual-design-system.md)).
+- **Tokens** live in `packages/ui/src/tokens.ts`, shared by the app and the
+  operator console ([ADR 0017](../decisions/0017-visual-design-system.md)),
+  with the values and keys from section 4. `Palette` has every colour key.
+  The type scale names the font face (`Fredoka_600SemiBold`,
+  `Nunito_400Regular`, `Nunito_600SemiBold`, `Nunito_700Bold`,
+  `Fredoka_500Medium`) and never sets `fontWeight`, because Android ignores
+  weights for custom fonts. The app's `apps/mobile/src/theme/tokens.ts`
+  passes the shared tokens on and turns each face into a font family.
 - **Fonts** come from `@expo-google-fonts/fredoka` and
   `@expo-google-fonts/nunito`, loaded with `expo-font`'s `useFonts` in the
   root layout while the existing `Loading` view shows. If loading fails, the
