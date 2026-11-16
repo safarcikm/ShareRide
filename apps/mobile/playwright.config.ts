@@ -21,6 +21,9 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${String(webPort)}`,
     trace: "off",
+    // A failed journey keeps a picture of the page beside Playwright's own
+    // page snapshot (error-context.md); CI keeps both (ci.yml).
+    screenshot: "only-on-failure",
     launchOptions: {
       // Lets a machine with a preinstalled Chromium use it; CI installs its own.
       executablePath: env["PLAYWRIGHT_CHROMIUM_PATH"],
