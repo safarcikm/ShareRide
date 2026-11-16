@@ -22,6 +22,12 @@ jest.mock("@/lib/share", () => ({ shareLink: jest.fn(() => Promise.resolve("copi
 
 const mockedShare = shareLink as jest.Mock;
 const id = northResult.tripId;
+/** The screen's headings, title first, in the order they show. */
+const headings = () =>
+  screen.getAllByRole("header").map((heading) => String(heading.props.children));
+/** The stops offered by Change, in route order. */
+const radioNames = () =>
+  screen.getAllByRole("radio").map((radio) => String(radio.props.accessibilityLabel));
 const detailsCalls = (client: { calls: { path: string; input: Record<string, unknown> }[] }) =>
   client.calls.filter((call) => call.path === "/v1/trips/{id}").map((call) => call.input["query"]);
 
@@ -56,31 +62,29 @@ describe("Trip details (spec 4, 3.6)", () => {
     expect(detailsCalls(client)).toEqual([{ seats: 2, fromStop: 1, toStop: 2 }]);
   });
 
-  it("shows the part, its seats and price, the route, the driver, the car and what to expect", async () => {
+  it("puts your part first, then who you ride with, then the route (spec 16, 3.7)", async () => {
     await openTrip();
     expect(await screen.findByRole("header", { name: "Borgarnes → Blönduós" })).toBeVisible();
+    expect(headings()).toEqual(["Borgarnes → Blönduós", "Your part", "Who you ride with", "Route"]);
     expect(screen.getByText("Sunday 15 November")).toBeVisible();
     expect(screen.getByText("Part of BSÍ bus terminal → Hof, Akureyri")).toBeVisible();
-    expect(screen.getByText("Your part of the trip")).toBeVisible();
-    expect(
-      screen.getByRole("image", {
-        name: "Seats on your part: 3 offered, 1 taken, 1 yours and 1 free.",
-      }),
-    ).toBeVisible();
-    expect(screen.getByText("2 of 3 seats free on your part")).toBeVisible();
-    expect(screen.getByText("2,900 ISK per seat")).toBeVisible();
 
-    expect(screen.getByRole("button", { name: "10:00, Borgarnes, getting in" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "12:05, Blönduós, getting out" })).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: "09:00, BSÍ bus terminal, not on your part" }),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("image", {
-        name: "The trip on a map of Iceland: BSÍ bus terminal → Hof, Akureyri. Your part: Borgarnes → Blönduós.",
-      }),
-    ).toBeVisible();
+    // Your part: how booking works, where you get in and out, and the seats.
+    expect(screen.getByText("Driver approves")).toBeVisible();
+    const [getIn, getOut] = screen.getAllByTestId("stop-choice").map((row) => within(row));
+    expect(getIn?.getByText("Get in")).toBeVisible();
+    expect(getIn?.getByText("10:00")).toBeVisible();
+    expect(getIn?.getByText("Borgarnes")).toBeVisible();
+    expect(getIn?.getByRole("button", { name: "Change where you get in" })).toBeVisible();
+    expect(getOut?.getByText("Get out")).toBeVisible();
+    expect(getOut?.getByText("12:05")).toBeVisible();
+    expect(getOut?.getByText("Blönduós")).toBeVisible();
+    expect(getOut?.getByRole("button", { name: "Change where you get out" })).toBeVisible();
+    expect(screen.getByText("2 free on your part · 2,900 ISK per seat")).toBeVisible();
+    expect(screen.getByRole("button", { name: "One seat fewer" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "One seat more" })).toBeEnabled();
 
+    // Who you ride with: the driver, the car, their preferences and the seats.
     expect(screen.getByText("Anna")).toBeVisible();
     expect(screen.getByText("New driver")).toBeVisible();
     expect(screen.getByText("White Toyota Yaris")).toBeVisible();
@@ -94,14 +98,96 @@ describe("Trip details (spec 4, 3.6)", () => {
     ]) {
       expect(screen.getByText(need)).toBeVisible();
     }
-    expect(screen.getByText("The driver approves each request")).toBeVisible();
-    expect(screen.getByText(/^Pay in the app once your booking is accepted/)).toBeVisible();
+    expect(
+      screen.getByRole("image", {
+        name: "Seats on your part: 3 offered, 1 taken, 1 yours and 1 free.",
+      }),
+    ).toBeVisible();
+
+    // The route, its stops and what cancelling costs.
+    expect(screen.getByRole("button", { name: "10:00, Borgarnes, getting in" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "12:05, Blönduós, getting out" })).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "09:00, BSÍ bus terminal, not on your part" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("image", {
+        name: "The trip on a map of Iceland: BSÍ bus terminal → Hof, Akureyri. Your part: Borgarnes → Blönduós.",
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Free cancellation, with a full refund, up to 15 minutes before you get in.",
+      ),
+    ).toBeVisible();
+    // Said once, in Your part, rather than again further down.
+    expect(screen.queryByText("The driver approves each request")).toBeNull();
+    expect(screen.queryByText(/free on your part$/)).toBeNull();
 
     const bar = screen.getByTestId("bottom-bar");
     expect(within(bar).getByText("2,900 ISK")).toBeVisible();
     expect(within(bar).getByText("1 seat")).toBeVisible();
     expect(within(bar).getByRole("button", { name: "Send request" })).toBeEnabled();
     expect(within(bar).getByText("You'll sign in or create an account first.")).toBeVisible();
+  });
+
+  it("tags a trip people book straight away, and a free one", async () => {
+    await openTrip(undefined, () =>
+      ok(
+        200,
+        northTrip(
+          { board: 1, alight: 2 },
+          {
+            bookingMode: "instant",
+            part: {
+              pricePerSeat: { amount: 0, currency: "ISK" },
+              total: { amount: 0, currency: "ISK" },
+            },
+          },
+        ),
+      ),
+    );
+    expect(await screen.findByText("Book instantly")).toBeVisible();
+    expect(screen.getByText("2 free on your part · Free")).toBeVisible();
+    expect(
+      within(screen.getByTestId("bottom-bar")).getByRole("button", { name: "Book" }),
+    ).toBeEnabled();
+  });
+
+  it("changes where you get in from the stops before you get out, and the other way", async () => {
+    const { client } = await openTrip();
+    await fireEvent.press(await screen.findByRole("button", { name: "Change where you get in" }));
+    expect(radioNames()).toEqual(["09:00, BSÍ bus terminal", "10:00, Borgarnes"]);
+    expect(screen.getByRole("radio", { name: "10:00, Borgarnes" })).toBeChecked();
+    await fireEvent.press(screen.getByRole("radio", { name: "09:00, BSÍ bus terminal" }));
+    expect(
+      await screen.findByRole("header", { name: "BSÍ bus terminal → Blönduós" }),
+    ).toBeVisible();
+    expect(screen.queryAllByRole("radio")).toEqual([]);
+    expect(screen).toHaveSearchParams({ id, from: "0", to: "2" });
+    expect(await within(screen.getByTestId("bottom-bar")).findByText("4,000 ISK")).toBeVisible();
+
+    await fireEvent.press(screen.getByRole("button", { name: "Change where you get out" }));
+    expect(radioNames()).toEqual(["10:00, Borgarnes", "12:05, Blönduós", "14:00, Hof, Akureyri"]);
+    expect(screen.getByRole("radio", { name: "12:05, Blönduós" })).toBeChecked();
+    await fireEvent.press(screen.getByRole("radio", { name: "14:00, Hof, Akureyri" }));
+    expect(await screen.findByText("The whole trip")).toBeVisible();
+    expect(await within(screen.getByTestId("bottom-bar")).findByText("6,000 ISK")).toBeVisible();
+    expect(detailsCalls(client)).toEqual([
+      { seats: 1, fromStop: 1, toStop: 2 },
+      { seats: 1, fromStop: 0, toStop: 2 },
+      { seats: 1, fromStop: 0, toStop: 3 },
+    ]);
+  });
+
+  it("closes the stops again when Change is pressed a second time", async () => {
+    await openTrip();
+    const change = await screen.findByRole("button", { name: "Change where you get out" });
+    await fireEvent.press(change);
+    expect(screen.getAllByRole("radio")).toHaveLength(2);
+    await fireEvent.press(screen.getByRole("button", { name: "Change where you get out" }));
+    expect(screen.queryAllByRole("radio")).toEqual([]);
+    expect(screen).toHaveSearchParams({ id, from: "1", to: "2" });
   });
 
   it("gets in or out at another stop on the route, and keeps the part in the address", async () => {

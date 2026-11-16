@@ -25,13 +25,16 @@ import { carText, childSeatNeedKey, needKeys } from "./texts";
 
 type Stop = Pick<TripDetails["stops"][number], "meetingPoint" | "plannedAt">;
 
+/** A stop's time keeps one width, so the names after it line up. */
+export const partStopTime = { minWidth: spacing.xxl + spacing.md };
+
 /** A stop of the part: its time, name and "Get in" or "Get out". */
 export function PartStop({ stop, getIn }: { readonly stop: Stop; readonly getIn: boolean }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
   return (
     <View style={styles.partStop}>
-      <Text style={[typography.figure, styles.partTime, { color: palette.text }]}>
+      <Text style={[typography.figure, partStopTime, { color: palette.text }]}>
         {formatClock(new Date(stop.plannedAt))}
       </Text>
       <Text style={[typography.bodyStrong, styles.grow, { color: palette.text }]}>
@@ -136,7 +139,6 @@ export function DriverAndCar({
 
 const styles = StyleSheet.create({
   partStop: { flexDirection: "row", alignItems: "center", gap: spacing.ms },
-  partTime: { minWidth: spacing.xxl + spacing.md },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   grow: { flex: 1 },
   person: { flexDirection: "row", alignItems: "center", gap: spacing.ms },

@@ -510,11 +510,19 @@ export const is = {
   "results.rateLimited": "Of margar leitir á stuttum tíma. Reyndu aftur eftir {wait}.",
   "search.tripCount": "{count, plural, =0 {Engar ferðir} one {# ferð} other {# ferðir}}",
   "trip.wholeTrip": "Öll ferðin",
-  "trip.yourPart": "Þinn hluti ferðarinnar",
+  "trip.yourPart": "Þinn hluti",
   "trip.getIn": "Inn",
   "trip.getOut": "Út",
-  "trip.freeOnPart":
-    "{free} af {offered, plural, one {# sæti} other {# sætum}} {free, plural, one {laust} other {laus}} á þínum hluta",
+  "trip.seatsHint": "{free} {free, plural, one {laust} other {laus}} á þínum hluta · {price}",
+  "trip.change": "Breyta",
+  "trip.changeGetIn": "Breyta hvar þú ferð inn",
+  "trip.changeGetOut": "Breyta hvar þú ferð út",
+  "trip.getInChoices": "Hvar þú ferð inn",
+  "trip.getOutChoices": "Hvar þú ferð út",
+  "trip.timeAndStop": "{time}, {name}",
+  "trip.whoYouRideWith": "Með hverjum þú ferð",
+  "trip.freeCancellation":
+    "Ókeypis afbókun, með fullri endurgreiðslu, allt að 15 mínútum áður en þú ferð inn.",
   "trip.seatView.you": "Þú",
   "trip.seatView.taken": "Upptekið",
   "trip.seatView.free": "Laust",
@@ -552,8 +560,6 @@ export const is = {
   "trip.needs.chat.chatty": "Mikið spjall",
   "trip.instantBooking": "Bókun strax",
   "trip.approvalBooking": "Ökumaðurinn samþykkir hverja beiðni",
-  "trip.payInApp":
-    "Þú greiðir í appinu þegar bókunin hefur verið samþykkt. Ókeypis afbókun allt að 15 mínútum fyrir brottför.",
   "trip.fullOnPart": "Fullt á þínum hluta ferðarinnar",
   "trip.tooFewSeats":
     "Aðeins {count, plural, one {# sæti er laust} other {# sæti eru laus}} á þínum hluta.",

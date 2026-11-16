@@ -465,7 +465,7 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     await fireEvent.press(within(bar).getByRole("button", { name: "Send request" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Back to the trip" }));
-    expect(await screen.findByText("1 of 3 seats free on your part")).toBeVisible();
+    expect(await screen.findByText("1 free on your part · 2,900 ISK per seat")).toBeVisible();
     expect(screen).toHavePathname(`/trips/${id}`);
     expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "1" });
     // The trip page was the one beneath, so Back leaves the trip.

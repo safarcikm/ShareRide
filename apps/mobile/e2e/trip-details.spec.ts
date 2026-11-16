@@ -37,7 +37,7 @@ test.describe("trip details without an account", () => {
         name: "Seats on your part: 3 offered, 0 taken, 1 yours and 2 free.",
       }),
     ).toBeVisible();
-    await expect(page.getByText("3 of 3 seats free on your part")).toBeVisible();
+    await expect(page.getByText(/^3 free on your part · [\d,]+ ISK per seat$/)).toBeVisible();
     await expect(
       page.getByRole("img", {
         name: /^The trip on a map of Iceland: .+\. Your part: N1 Borgarnes → Olís Blönduós\.$/,
@@ -83,7 +83,7 @@ test.describe("trip details without an account", () => {
       await expect(
         elsewhere.getByRole("heading", { name: "BSÍ → Olís Blönduósi" }).filter({ visible: true }),
       ).toBeVisible();
-      await expect(elsewhere.getByText("Þinn hluti ferðarinnar")).toBeVisible();
+      await expect(elsewhere.getByText("Þinn hluti", { exact: true })).toBeVisible();
       await expect(elsewhere.getByText("Hvítur Toyota Yaris")).toBeVisible();
     } finally {
       await other.close();
