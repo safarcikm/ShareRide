@@ -10,9 +10,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LanguageSwitch } from "@/components/language-switch";
 import { Logo } from "@/components/logo";
+import { useUnread } from "@/chat/unread";
 import { useLanguage } from "@/i18n/language";
 import { controlOutline, minTouchTarget, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { CountBadge } from "./count-badge";
 import { menuTabOf, menuTabs } from "./menu";
 import { openPlace } from "./open-place";
 
@@ -35,9 +37,10 @@ function opensElsewhere(event: GestureResponderEvent): boolean {
 }
 
 /**
- * The menu on wide screens (spec 16, 3.1): the logo and name, the four
- * places and the language, in a bar at the top of every screen. The place
- * the screen belongs to is chosen: `primary` and underlined.
+ * The menu on wide screens (spec 16, 3.1): the logo and name, the places
+ * and the language, in a bar at the top of every screen. The place the
+ * screen belongs to is chosen: `primary` and underlined. Messages shows its
+ * unread count after its name.
  */
 export function TopBar({
   onSwitchLanguage,
@@ -48,6 +51,7 @@ export function TopBar({
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const current = menuTabOf(usePathname());
+  const { total } = useUnread();
   const role = onWeb
     ? ({ role: "navigation", "aria-label": t("nav.main") } as const)
     : ({ accessibilityRole: "tablist", accessibilityLabel: t("nav.main") } as const);
@@ -73,6 +77,8 @@ export function TopBar({
         {menuTabs.map((tab) => {
           const chosen = tab.name === current;
           const label = t(tab.label);
+          const count = tab.name === "messages" ? total : 0;
+          const spoken = count > 0 ? `${label}, ${t("chat.unread", { count })}` : label;
           const a11y = onWeb
             ? ({
                 role: "link",
@@ -84,7 +90,7 @@ export function TopBar({
             <Pressable
               key={tab.name}
               {...a11y}
-              accessibilityLabel={label}
+              accessibilityLabel={spoken}
               onPress={(event) => {
                 if (opensElsewhere(event)) return;
                 // A link on the web: the app moves, the page does not reload.
@@ -102,6 +108,7 @@ export function TopBar({
               >
                 {label}
               </Text>
+              <CountBadge count={count} />
             </Pressable>
           );
         })}
@@ -123,7 +130,9 @@ const styles = StyleSheet.create({
   places: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
   place: {
     minHeight: minTouchTarget,
-    justifyContent: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
     paddingHorizontal: spacing.ms,
   },
   chosen: { textDecorationLine: "underline" },

@@ -4,9 +4,8 @@ import { router } from "expo-router";
 import { useCallback } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
-import { useSession } from "@/auth/session";
+import { useMe, useSession } from "@/auth/session";
 import { Avatar } from "@/components/avatar";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
@@ -14,27 +13,44 @@ import { Screen } from "@/components/screen";
 import { Tag } from "@/components/tag";
 import { Body, Title } from "@/components/text";
 import { otherPerson, previewText } from "@/chat/texts";
+import { useUnread } from "@/chat/unread";
 import { useLanguage } from "@/i18n/language";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
+import { SignInFirst } from "@/navigation/sign-in-first";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
- * My conversations (spec 7, 3.1, item 9, screen 1): one row per confirmed
- * booking, the latest message first, with the other person, the trip day
- * and part, the last message and the unread count. It loads again each time
- * it comes into view.
+ * Messages, a place of the menu: my conversations (spec 7, 3.1, item 9,
+ * screen 1). One row per confirmed booking, the latest message first, with
+ * the other person, the trip day and part, the last message and the unread
+ * count. It loads again each time it comes into view, and sets the badge
+ * from the same answer. Signed out, it asks to sign in.
  */
-export default function ConversationsScreen() {
+export default function MessagesScreen() {
+  const { t } = useLanguage();
+  const me = useMe();
+  if (me === null) return <SignInFirst title={t("nav.messagesSignedOut")} />;
+  return <Conversations />;
+}
+
+function Conversations() {
   const { t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
-  const load = useCallback(() => session.call(myConversationsRoute, {}), [session]);
+  const { show } = useUnread();
+  const load = useCallback(
+    () =>
+      session.call(myConversationsRoute, {}).then((answer) => {
+        if (answer.ok) show(answer.data.unread);
+        return answer;
+      }),
+    [session, show],
+  );
   const { value: answer, reload } = useLoadedOnFocus(load);
 
   return (
     <Screen>
-      <BackButton fallback="/profile" />
       <Title>{t("chat.title")}</Title>
       {answer === undefined ? (
         <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />

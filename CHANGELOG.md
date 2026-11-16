@@ -259,7 +259,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   in the person's language. Push and email are connected in the next two
   updates; until then nothing is sent. The hourly clean-up deletes the
   notification log after 90 days.
-- Push notifications (milestone 5, PR 6, ADR 0026 proposed): on Android
+- Push notifications (milestone 5, PR 6, ADR 0026 accepted): on Android
   and iPhone builds, once notifications are allowed, the app registers the
   phone with `PUT /v1/me/sessions/current/push-token`, and again when its
   token changes. Pushes go through Expo's push service; a tap opens the
@@ -271,6 +271,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   never sent again. `EXPO_ACCESS_TOKEN` is used when set. The Android test
   build (`preview-apk`) and its Firebase set-up are in the app builds
   runbook.
+- Messages in the menu (milestone 5, spec 7, 3.1, item 9): a fifth place,
+  between Offer and Profile, opens my conversations. Its badge counts the
+  messages not yet read, up to "9+", on the phone's tab bar and the wide
+  screens' top bar, and screen readers hear it with the name ("Messages, 3
+  unread"). The count is fetched once signed in, when the app comes to the
+  front, when a push arrives, after a conversation is read and, on the web,
+  every minute while the page is on show. Signed out, Messages asks to sign
+  in.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

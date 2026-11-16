@@ -77,12 +77,12 @@ const readiness: DriverReadiness = {
 };
 
 describe("The menu (spec 16, 3.1)", () => {
-  it("shows Find, My rides, Offer and Profile in that order, with Find chosen", async () => {
+  it("shows Find, My rides, Offer, Messages and Profile in that order, with Find chosen", async () => {
     await renderApp("/");
     const tabs = await screen.findAllByRole("tab");
     expect(
       tabs.map((each) => (each.props as { accessibilityLabel?: string }).accessibilityLabel),
-    ).toEqual(["Find", "My rides", "Offer", "Profile"]);
+    ).toEqual(["Find", "My rides", "Offer", "Messages", "Profile"]);
     expect(tab("Find")).toBeSelected();
     expect(tab("My rides")).not.toBeSelected();
     expect(screen.getByTestId("tab-bar")).toBeVisible();
@@ -249,7 +249,7 @@ describe("The tab bar on phones", () => {
     // The text is twice the usual size in these tests; no name is cut short.
     expect(Dimensions.get("window").fontScale).toBe(2);
     const labels = within(screen.getByTestId("tab-bar")).getAllByText(/./u);
-    expect(labels).toHaveLength(4);
+    expect(labels).toHaveLength(5);
     for (const label of labels) {
       expect((label.props as { numberOfLines?: number }).numberOfLines).toBeUndefined();
     }
@@ -268,7 +268,7 @@ describe("The top bar on wide screens", () => {
     });
   });
 
-  it("shows the logo, the name, the four places and the language, instead of the tab bar", async () => {
+  it("shows the logo, the name, the places and the language, instead of the tab bar", async () => {
     await renderApp("/");
     const bar = await screen.findByTestId("top-bar");
     expect(within(bar).getByTestId("logo", { includeHiddenElements: true })).toBeTruthy();
@@ -276,6 +276,7 @@ describe("The top bar on wide screens", () => {
     expect(within(bar).getByRole("tab", { name: "Find", selected: true })).toBeVisible();
     expect(within(bar).getByRole("tab", { name: "My rides" })).toBeVisible();
     expect(within(bar).getByRole("tab", { name: "Offer" })).toBeVisible();
+    expect(within(bar).getByRole("tab", { name: "Messages" })).toBeVisible();
     expect(within(bar).getByRole("tab", { name: "Profile" })).toBeVisible();
     expect(
       within(bar).getByRole("button", { name: "Change the language to Icelandic" }),

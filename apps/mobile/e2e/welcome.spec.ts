@@ -88,6 +88,10 @@ test.describe("Find, the home, on the web", () => {
     await expect(page.getByRole("heading", { name: "Sign in to see your rides" })).toBeVisible();
     await expect(menuLink(page, "My rides")).toHaveAttribute("aria-current", "page");
     await expect(menuLink(page, "Find")).not.toHaveAttribute("aria-current", "page");
+    await menuLink(page, "Messages").click();
+    await expect(page).toHaveURL(/\/messages$/);
+    await expect(page.getByRole("heading", { name: "Sign in to see your messages" })).toBeVisible();
+    await expect(menuLink(page, "Messages")).toHaveAttribute("aria-current", "page");
     await menuLink(page, "Offer").click();
     await expect(page.getByRole("button", { name: "Sign in to offer a ride" })).toBeVisible();
     // A link in the browser's sense: it has an address, and a click with

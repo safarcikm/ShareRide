@@ -50,10 +50,12 @@ export async function renderApp(
     currentClient.answer("/v1/me", () => ok(200, me));
   }
   // Once signed in, unless a test says otherwise: nothing in My rides and
-  // Your next ride, and a new driver for the licence row on Profile.
+  // Your next ride, a new driver for the licence row on Profile, and no
+  // chats for the Messages badge.
   currentClient.answer("/v1/me/bookings", () => ok(200, { bookings: [] }));
   currentClient.answer("/v1/me/trips", () => ok(200, { trips: [] }));
   currentClient.answer("/v1/me/driver-readiness", () => ok(200, newDriver));
+  currentClient.answer("/v1/me/conversations", () => ok(200, { conversations: [], unread: 0 }));
   options.setUp?.(currentClient);
   const result = await renderRouter("./src/app", { initialUrl });
   return { ...result, client: currentClient, store };

@@ -304,8 +304,9 @@ and tests need no edits. Only the look changes.
 | `Title` | `title`, `text`, role header, centred |
 | `Body` | `body`, `textMuted` (the intro or help line under a title), centred; long text such as a legal document starts at the left |
 | `LanguageSwitch` | A `text` button with the other language's name |
-| `TabBar` | The menu on a phone's four main screens (spec 16): `surface`, a 2 `border` line on top, room for the home indicator; four places, each an icon (22) over its name in `caption`, at least 56 high; the chosen one in `primary` with a `primarySoft` pill (56 wide) behind its icon, the others in `textMuted`. Phones read it as tabs with the chosen one selected; the web as the main navigation, with links and the current page marked |
-| `TopBar` | The menu from 900 wide, above every screen: `surface`, a 2 `border` line under it; the `Logo` (36) and "ShareRide" in `heading` at the left, the four places in `label` (the chosen one `primary` and underlined, at least 44 high), then the `LanguageSwitch` |
+| `TabBar` | The menu on a phone's main screens (spec 16): `surface`, a 2 `border` line on top, room for the home indicator; five places, each an icon (22) over its name in `caption`, at least 56 high; the chosen one in `primary` with a `primarySoft` pill (56 wide) behind its icon, the others in `textMuted`. Phones read it as tabs with the chosen one selected; the web as the main navigation, with links and the current page marked |
+| `TopBar` | The menu from 900 wide, above every screen: `surface`, a 2 `border` line under it; the `Logo` (36) and "ShareRide" in `heading` at the left, the five places in `label` (the chosen one `primary` and underlined, at least 44 high), then the `LanguageSwitch` |
+| `CountBadge` | The unread count on Messages (spec 7, 3.1, item 9): `onPrimary` figures in `caption` on a `primary` pill, at least 20 (`sizes.badge`) wide and high, with a 2 `surface` ring; up to 9, then "9+"; nothing at zero. On the tab bar it sits on the icon's top corner, in the top bar after the name. Screen readers skip it: the place's name says the count ("Messages, 3 unread") |
 | `Logo` | The app icon in small: logo A on `primary`, corners rounded like an app icon, the same in both modes; hidden from screen readers, since the name sits beside it |
 
 **Focus:** every pressable part shows a 3 wide `focus` ring with a 2 gap

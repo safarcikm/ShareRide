@@ -208,6 +208,8 @@ export const sizes = {
   tabPill: 56,
   /** The logo beside the name in the top bar on wide screens. */
   logoSmall: 36,
+  /** The height, and narrowest width, of the unread count on Messages in the menu. */
+  badge: 20,
 } as const;
 
 /** Width of the outline on inputs, tick boxes and chips. */

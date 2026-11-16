@@ -69,7 +69,10 @@ keep its cost down.
    conversation read-only at once.
 9. **Conversations list:** one row per booking, with the trip date, route,
    the other person's first name and photo, the last message and an unread
-   count. A badge on the tab shows the total unread.
+   count. A badge on the tab shows the total unread. The tab is
+   **Messages**, between Offer and Profile
+   ([milestone 5 plan](../plans/2026-11-15-milestone-5-chat-and-notifications.md),
+   decision 1).
 10. While a conversation is open, the app fetches new messages every 5 seconds
     and as soon as a push for that conversation arrives; otherwise it relies on
     push. A live connection can replace polling later if usage needs it.

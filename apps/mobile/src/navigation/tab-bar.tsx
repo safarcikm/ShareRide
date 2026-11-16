@@ -6,12 +6,13 @@ import { Icon } from "@/components/icon";
 import { useLanguage } from "@/i18n/language";
 import { controlOutline, iconSizes, radii, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { CountBadge } from "./count-badge";
 import type { MenuTab } from "./menu";
 
 const onWeb = Platform.OS === "web";
 
 /**
- * The menu as a bar at the bottom of a phone's four main screens (spec 16,
+ * The menu as a bar at the bottom of a phone's five main screens (spec 16,
  * 3.1): `surface`, a 2 `border` line on top, and room for the phone's home
  * indicator. Phones read it as a tab list; the web as the main navigation.
  * `TabList` passes the tabs in as `children`. Hidden on wide screens, where
@@ -55,29 +56,35 @@ export function TabBar({
 /**
  * One place of the menu: its icon over its name. The chosen one is in
  * `primary`, with a `primarySoft` pill behind the icon; the others are in
- * `textMuted`. `TabTrigger` passes in whether it is chosen and what a press
- * does.
+ * `textMuted`. A count, such as unread messages, sits on the icon's corner
+ * and is said with the name. `TabTrigger` passes in whether it is chosen
+ * and what a press does.
  */
 export function TabButton({
   tab,
+  count = 0,
   isFocused = false,
   href,
   // The bar lays the tabs out itself.
   style: _style,
   ref: _ref,
   ...pressable
-}: TabTriggerSlotProps & { readonly tab: MenuTab }) {
+}: TabTriggerSlotProps & { readonly tab: MenuTab; readonly count?: number }) {
   const palette = usePalette();
   const { t } = useLanguage();
   const label = t(tab.label);
+  const spoken = count > 0 ? `${label}, ${t("chat.unread", { count })}` : label;
   const colour = isFocused ? palette.primary : palette.textMuted;
   const role = onWeb
     ? ({ role: "link", href, "aria-current": isFocused ? "page" : undefined } as const)
     : ({ accessibilityRole: "tab", accessibilityState: { selected: isFocused } } as const);
   return (
-    <Pressable {...pressable} {...role} accessibilityLabel={label} style={styles.tab}>
+    <Pressable {...pressable} {...role} accessibilityLabel={spoken} style={styles.tab}>
       <View style={[styles.pill, { backgroundColor: isFocused ? palette.primarySoft : undefined }]}>
         <Icon icon={tab.icon} color={colour} size={iconSizes.button} />
+        <View style={styles.corner}>
+          <CountBadge count={count} />
+        </View>
       </View>
       <Text style={[typography.caption, styles.label, { color: colour }]}>{label}</Text>
     </Pressable>
@@ -105,4 +112,5 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
   },
   label: { textAlign: "center" },
+  corner: { position: "absolute", top: 0, right: spacing.xs },
 });

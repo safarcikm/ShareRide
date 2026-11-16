@@ -1,6 +1,6 @@
 # 0026. Send push notifications through Expo's push service
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-15, by Martin in the project chat)
 - **Date:** 2026-11-15
 - **Deciders:** Martin
 - **Related:** [spec 7](../specs/2026-11-13-chat-and-notifications.md),

@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { StyleSheet } from "react-native";
 import { nextRoute } from "@/auth/next-route";
 import { useSessionState } from "@/auth/session";
+import { useUnread } from "@/chat/unread";
 import { ScreenEdges, useWideScreen } from "@/components/screen";
 import { now } from "@/lib/clock";
 import { takeKeptChoice } from "@/navigation/kept-choice";
@@ -11,8 +12,8 @@ import { menuTabs } from "@/navigation/menu";
 import { TabBar, TabButton } from "@/navigation/tab-bar";
 
 /**
- * The four places of the menu (spec 16, 3.1). Phones show them as a tab bar
- * under these four screens only; screens opened from them come on top,
+ * The places of the menu (spec 16, 3.1, and Messages). Phones show them as a tab bar
+ * under these screens only; screens opened from them come on top,
  * without it. Wide screens show the top bar of the root layout instead.
  * Each place keeps its state while another is shown. An account with
  * sign-up steps left goes on to the next one, and once it is ready, to the
@@ -21,6 +22,7 @@ import { TabBar, TabButton } from "@/navigation/tab-bar";
 export default function MenuLayout() {
   const state = useSessionState();
   const wide = useWideScreen();
+  const { total: unread } = useUnread();
   const me = state.status === "signedIn" ? state.me : null;
   const next = me === null ? null : nextRoute(me);
   useKeptChoice(me !== null && next === null);
@@ -34,7 +36,7 @@ export default function MenuLayout() {
         <TabBar hidden={wide}>
           {menuTabs.map((tab) => (
             <TabTrigger key={tab.name} name={tab.name} href={tab.href} asChild>
-              <TabButton tab={tab} />
+              <TabButton tab={tab} count={tab.name === "messages" ? unread : 0} />
             </TabTrigger>
           ))}
         </TabBar>

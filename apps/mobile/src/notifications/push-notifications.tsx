@@ -16,6 +16,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 import { useSession, useSessionState } from "@/auth/session";
+import { useUnread } from "@/chat/unread";
 import { useLanguage } from "@/i18n/language";
 import { reportError } from "@/lib/error-reporting";
 import { fetchIfShowing } from "./open-conversation";
@@ -39,10 +40,18 @@ export function PushNotifications() {
   const userId = me?.id ?? null;
   const complete = me !== null && me.missingSteps.length === 0;
   const channelName = t("notify.channel");
+  const { refresh: refreshUnread } = useUnread();
+  // The handler is set once; it reaches the badge's latest refresh through this.
+  const unread = useRef(refreshUnread);
+  useEffect(() => {
+    unread.current = refreshUnread;
+  }, [refreshUnread]);
 
   useEffect(() => {
     setNotificationHandler({
       handleNotification: (notification) => {
+        // A push is often a new message: the badge asks again.
+        unread.current();
         const path = notificationPath(notification.request.content.data);
         const quiet = path !== null && fetchIfShowing(path);
         return Promise.resolve({
