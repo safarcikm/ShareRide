@@ -407,7 +407,7 @@ rides.
 **Files:**
 
 - Modify: `app/(tabs)/offer.tsx` (signed in: `RouteStep` with a draft
-  card on top), `drive/offer-ride.ts`, `driving/back-to-drive.ts`
+  card on top), `drive/offer-ride.ts`, `driving/back-to-drive.ts` (now `driving/back-to.ts`)
 - Remove: the Ready to drive content (cars moved to My cars in Task 2.3)
 - Test: `__tests__/driving.test.tsx`, `__tests__/post-a-trip.test.tsx`
 

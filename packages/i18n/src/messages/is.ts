@@ -322,6 +322,7 @@ export const is = {
   "trip.time.stopsTitle": "Tímar á viðkomustöðum",
   "trip.time.stopsIntro":
     "Við reiknuðum þá út frá venjulegum aksturstíma. Breyttu þeim að vild, til dæmis fyrir hlé.",
+  "trip.time.stopsIntroOwn": "Breyttu þeim að vild, til dæmis fyrir hlé.",
   "trip.time.atStop": "Tími á {name}",
   "trip.time.onDay": "Dagur: {day}",
   "trip.time.onDayLongBreak":

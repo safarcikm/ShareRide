@@ -310,7 +310,9 @@ function TimeStep({ trip, fromReview }: { readonly trip: MyTrip; readonly fromRe
           <TakesFocus when={changing}>
             <Heading>{t("trip.time.stopsTitle")}</Heading>
           </TakesFocus>
-          <Body align="start">{t("trip.time.stopsIntro")}</Body>
+          <Body align="start">
+            {t(workedOut ? "trip.time.stopsIntro" : "trip.time.stopsIntroOwn")}
+          </Body>
           {names.slice(1).map((name, offset) => {
             const index = offset + 1;
             return (

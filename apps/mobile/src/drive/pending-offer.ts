@@ -1,8 +1,8 @@
 import { readAppData, writeAppData } from "@/lib/app-data";
 
 // "Offer a ride" pressed before someone had an account (spec 1, 3.1, item
-// 3): kept on the device while they sign up, so Ready to drive opens
-// afterwards. Only the time it was kept, in the app's own storage. Keeping
+// 3): kept on the device while they sign up, so Offer's form opens
+// afterwards (spec 16, 3.6). Only the time it was kept, in the app's own storage. Keeping
 // it forgets a booking kept before (pending-booking.ts), and the other way
 // round, so sign-up goes on to the last thing chosen.
 

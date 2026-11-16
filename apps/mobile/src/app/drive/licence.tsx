@@ -10,7 +10,7 @@ import { FieldError } from "@/components/field-error";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { Body, Title } from "@/components/text";
-import { backTo } from "@/driving/back-to-drive";
+import { backTo } from "@/driving/back-to";
 import { useLanguage } from "@/i18n/language";
 import { spacing } from "@/theme/tokens";
 

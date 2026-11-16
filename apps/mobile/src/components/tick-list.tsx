@@ -24,7 +24,6 @@ interface TickRowProps {
         readonly accessibilityLabel?: string;
       }
     | undefined;
-  readonly testID?: string;
 }
 
 /**
@@ -35,12 +34,12 @@ interface TickRowProps {
  * a label on a plain element, so there the status follows the label as
  * hidden text.
  */
-export function TickRow({ label, done, detail, action, testID }: TickRowProps) {
+export function TickRow({ label, done, detail, action }: TickRowProps) {
   const { t } = useLanguage();
   const palette = usePalette();
   const status = done ? t("common.done") : t("common.notDone");
   return (
-    <View testID={testID} style={styles.row}>
+    <View style={styles.row}>
       <View
         {...(onWeb
           ? {}

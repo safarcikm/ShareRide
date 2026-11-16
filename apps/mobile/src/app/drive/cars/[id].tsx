@@ -10,7 +10,7 @@ import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { Body, Title } from "@/components/text";
-import { backTo } from "@/driving/back-to-drive";
+import { backTo } from "@/driving/back-to";
 import { CarForm } from "@/driving/car-form";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";

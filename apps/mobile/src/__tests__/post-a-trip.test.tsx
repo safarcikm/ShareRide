@@ -357,6 +357,7 @@ describe("Posting a trip (spec 3)", () => {
     await open(`/drive/trips/${plannedDraft().id}/time`, [plannedDraft()]);
     await changeStopTimes();
     expect(screen.getByRole("header", { name: "Times at the stops" })).toBeVisible();
+    expect(screen.getByText(/^We worked these out from typical driving times\./)).toBeVisible();
     expect(timeOf("Time at Borgarnes")).toHaveAccessibleName("Time at Borgarnes: 10:00");
     expect(timeOf("Time at Hof, Akureyri")).toHaveAccessibleName("Time at Hof, Akureyri: 11:00");
     expect(screen.queryByRole("button", { name: "Change the times at the stops" })).toBeNull();
@@ -378,6 +379,8 @@ describe("Posting a trip (spec 3)", () => {
       await screen.findByText("Too soon after BSÍ bus terminal: the drive usually takes 1 h."),
     ).toBeVisible();
     expect(timeOf("Time at Borgarnes")).toHaveAccessibleName("Time at Borgarnes: 09:10");
+    expect(screen.getByText("Change any of them, for example for a break.")).toBeVisible();
+    expect(screen.queryByText(/^We worked these out/)).toBeNull();
     expect(bodiesOf(client, "/v1/trips/{id}")).toEqual([]);
   });
 

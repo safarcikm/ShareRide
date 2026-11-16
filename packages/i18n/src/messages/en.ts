@@ -318,6 +318,7 @@ export const en = {
   "trip.time.stopsTitle": "Times at the stops",
   "trip.time.stopsIntro":
     "We worked these out from typical driving times. Change any of them, for example for a break.",
+  "trip.time.stopsIntroOwn": "Change any of them, for example for a break.",
   "trip.time.atStop": "Time at {name}",
   "trip.time.onDay": "On {day}",
   "trip.time.onDayLongBreak":
