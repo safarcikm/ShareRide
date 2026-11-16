@@ -207,7 +207,7 @@ export type Channel = (typeof channels)[number];
  * the person has push. The worker's own reasons: `email_off`, no email
  * provider is set up; `sms_off`, SMS is not sent yet (spec 6);
  * `no_longer_applies`, the booking moved on before it was sent
- * (`stillApplies`).
+ * (`stillApplies`), or the unread messages were read.
  */
 export const skipReasons = [
   "no_device",

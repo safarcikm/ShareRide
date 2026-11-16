@@ -1,3 +1,4 @@
+import { neverLeft } from "./maybe-sent.ts";
 import {
   PushMaybeSent,
   type PushMessage,
@@ -22,22 +23,6 @@ const receiptsEndpoint = "https://exp.host/--/api/v2/push/getReceipts";
 /** Expo takes at most this many messages, and this many receipt IDs, per request. */
 const messagesPerRequest = 100;
 const receiptsPerRequest = 1000;
-/** Connection errors that mean the request never left, so nothing was sent. */
-const neverConnected = new Set([
-  "ECONNREFUSED",
-  "ENOTFOUND",
-  "EAI_AGAIN",
-  "EHOSTUNREACH",
-  "ENETUNREACH",
-  "UND_ERR_CONNECT_TIMEOUT",
-]);
-
-function neverLeft(error: unknown): boolean {
-  const cause = error instanceof Error ? error.cause : undefined;
-  const code =
-    typeof cause === "object" && cause !== null && "code" in cause ? cause.code : undefined;
-  return typeof code === "string" && neverConnected.has(code);
-}
 
 /**
  * Sends push notifications through Expo. Errors name the HTTP status or

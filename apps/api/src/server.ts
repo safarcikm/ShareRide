@@ -15,6 +15,7 @@ import { captureError, startErrorReporting } from "./platform/error-reporting.ts
 import { createTestPaymentProvider } from "./platform/payments.ts";
 import { createExpoPushSender } from "./platform/push-expo.ts";
 import { startRepeating } from "./platform/repeat.ts";
+import { selectEmailSender } from "./platform/select-email-sender.ts";
 import { selectSmsSender } from "./platform/select-sms-sender.ts";
 
 let config: Config;
@@ -111,14 +112,21 @@ if (payments !== undefined) {
 
 // Notifications (spec 7, 3.7), every 5 seconds unless WORKER=off. Push
 // goes through Expo's push service to the devices that registered a token;
-// email comes with the next pull request, and is skipped as `email_off`.
+// email through Mailjet (ADR 0027), or the terminal in development, and is
+// skipped as `email_off` when EMAIL_PROVIDER is none.
 if (config.worker) {
+  const emailSender = selectEmailSender(config.email, (line) => {
+    process.stdout.write(`${line}\n`);
+  });
   const worker = createNotificationWorker({
     db: database.db,
     clock: () => new Date(),
     push: createExpoPushSender(
       config.push.accessToken === undefined ? {} : { accessToken: config.push.accessToken },
     ),
+    ...(emailSender === undefined || config.email.provider === "none"
+      ? {}
+      : { email: { sender: emailSender, webAppUrl: config.email.webAppUrl } }),
     onSendError: (error, delivery) => {
       logger.warn({ err: error, delivery: delivery.id, channel: delivery.channel }, "not sent");
     },
@@ -146,6 +154,7 @@ const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
       smsProvider: config.sms.provider,
       smsPaused: config.sms.paused,
       paymentProvider: config.payments.provider,
+      emailProvider: config.email.provider,
       worker: config.worker,
       trustedProxies: config.trustedProxies,
       webApp: config.webAppDir !== undefined,

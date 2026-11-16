@@ -1,6 +1,7 @@
 // Push notifications through a push service: Expo's (plan 4.5,
 // push-expo.ts). The worker calls the port; the fake records what it was
 // given.
+import { MaybeSent } from "./maybe-sent.ts";
 
 export interface PushMessage {
   /** An Expo push token. */
@@ -26,12 +27,8 @@ export type PushReceipt =
 /** The error code of a token that no longer works: it is removed. */
 export const deviceNotRegistered = "DeviceNotRegistered";
 
-/**
- * A send whose answer was lost after the push service may have taken it (a
- * timeout, a dropped connection, an answer out of shape). The worker never
- * tries it again, so nobody gets the same push twice (R7.6).
- */
-export class PushMaybeSent extends Error {
+/** A push whose answer was lost after the push service may have taken it. */
+export class PushMaybeSent extends MaybeSent {
   override readonly name = "PushMaybeSent";
 }
 

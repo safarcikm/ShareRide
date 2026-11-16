@@ -704,6 +704,13 @@ export const en = {
   "notify.newMessage": "{name}",
   /** The name of the app's notifications in Android's settings. */
   "notify.channel": "Rides and messages",
+  /** An email about chat messages: never their text (spec 7, 3.6 and R7.9). */
+  "email.unreadMessages": "You have unread messages about your trip on {date}",
+  "email.unreadMessagesBody": "Open the chat in ShareRide to read them.",
+  /** The link in every email, to the screen it is about. */
+  "email.open": "Open in ShareRide",
+  "email.footer":
+    "You get this email because you have a ShareRide account. News about your bookings is always sent, because others rely on it.",
   "sms.signInCode": "{code} is your ShareRide code. It expires in 10 minutes.",
 } as const satisfies Record<string, string>;
 

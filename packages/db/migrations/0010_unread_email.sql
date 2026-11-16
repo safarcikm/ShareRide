@@ -1,0 +1,3 @@
+ALTER TABLE "scheduled_notifications" ADD COLUMN "recipient" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "scheduled_notifications_unread_waiting_unique" ON "scheduled_notifications" USING btree ("booking_id","recipient") WHERE "scheduled_notifications"."kind" = 'unread_messages' and "scheduled_notifications"."done_at" is null;--> statement-breakpoint
+ALTER TABLE "scheduled_notifications" ADD CONSTRAINT "scheduled_notifications_recipient_check" CHECK ("scheduled_notifications"."recipient" in ('driver', 'passenger'));

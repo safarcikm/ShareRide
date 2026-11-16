@@ -279,6 +279,17 @@ releases follow [Semantic Versioning](https://semver.org/).
   front, when a push arrives, after a conversation is read and, on the web,
   every minute while the page is on show. Signed out, Messages asks to sign
   in.
+- Email (milestone 5, PR 7a, ADR 0027): news about a booking goes by email
+  to someone with a verified address (the most important always, the rest
+  only without a push device), in their language, in plain text and simple
+  HTML with a link to the screen it is about, and no tracking. Someone
+  without push who leaves a chat message unread for 15 minutes gets "You
+  have unread messages about your trip on {date}", never the text, at most
+  once an hour per conversation. Mailjet sends it when
+  `EMAIL_PROVIDER=mailjet`; locally the API prints each email in its
+  terminal, and staging sends none until there is a domain. An email whose
+  answer was lost after it may have gone out is never sent again. Adding
+  an address comes next.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

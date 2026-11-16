@@ -4,6 +4,7 @@ import {
   bookTripRoute,
   declineRequestRoute,
   messageAllPassengersRoute,
+  readMessagesRoute,
   sendMessageRoute,
   setPushTokenRoute,
   withdrawRequestRoute,
@@ -12,7 +13,11 @@ import {
 import { schema } from "@shareride/db";
 import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { createFakeEmailSender, type FakeEmailSender } from "../../platform/email.ts";
+import {
+  createFakeEmailSender,
+  EmailMaybeSent,
+  type FakeEmailSender,
+} from "../../platform/email.ts";
 import {
   PushMaybeSent,
   createFakePushSender,
@@ -67,6 +72,9 @@ afterAll(async () => {
 
 const { newMember, later, rewind, driverOf, booked, paid } = bookingHelpers(() => api);
 
+/** Where links in emails lead in these tests. */
+const webAppUrl = "https://shareride.test";
+
 function worker(
   options: {
     email?: FakeEmailSender | null;
@@ -79,7 +87,7 @@ function worker(
     db: api.connection.db,
     clock: () => api.now(),
     push: options.push ?? push,
-    ...(sender === null ? {} : { email: sender }),
+    ...(sender === null ? {} : { email: { sender, webAppUrl } }),
     ...(options.onEventError === undefined ? {} : { onEventError: options.onEventError }),
   });
 }
@@ -391,9 +399,15 @@ describe("the worker (plan 4.4)", () => {
         text: expect.stringMatching(
           /^1 seat · BSÍ bus terminal – N1 Borgarnes · Saturday/,
         ) as unknown,
+        html: expect.stringContaining(
+          "<p>1 seat · BSÍ bus terminal – N1 Borgarnes · Saturday",
+        ) as unknown,
         idempotencyKey: expect.any(String) as unknown,
       },
     ]);
+    // A plain link to the trip, in both parts (plan 4.6).
+    expect(email.sent[0]?.text).toContain(`Open in ShareRide: ${webAppUrl}/drive/trips/${north}`);
+    expect(email.sent[0]?.html).toContain(`<a href="${webAppUrl}/drive/trips/${north}">`);
 
     const gunna = await newMember("Gunna");
     await booked(gunna.accessToken, north, { fromStop: 1, toStop: 2 });
@@ -954,6 +968,215 @@ describe("notifications that wait for a moment (spec 7, 3.3)", () => {
       "Gunna: 10 minutes left to pay",
     ]);
     expect(unpaid.status).toBe("accepted");
+  });
+});
+
+describe("email (plan 4.6)", () => {
+  it("never tries again an email that may have gone out, and tries again one that was refused", async () => {
+    const anna = await driverOf(north);
+    await withEmail(anna, "anna-retry@example.com");
+    email.failure = new EmailMaybeSent("Mailjet did not answer in time");
+    const jon = await newMember("Jón");
+    await booked(jon.accessToken, north, { fromStop: 0, toStop: 1 });
+    await worker().runOnce();
+    email.failure = new Error("Mailjet refused the email (HTTP 503)");
+    const gunna = await newMember("Gunna");
+    await booked(gunna.accessToken, north, { fromStop: 1, toStop: 2 });
+    await worker().runOnce();
+    email.failure = null;
+    await later(3600);
+    await worker().runOnce();
+    expect(email.sent.map((sent) => sent.subject)).toEqual(["New request: Gunna"]);
+    expect((await logOf(anna)).filter((row) => row.channel === "email")).toMatchObject([
+      { kind: "request_new", status: "failed", reason: "interrupted", attempts: 1 },
+      { kind: "request_new", status: "sent", attempts: 2 },
+    ]);
+  });
+
+  it("tells someone without push of unread messages 15 minutes on, never their text, at most once an hour per conversation (3.6, item 3)", async () => {
+    const { jon, passenger, bookingId } = await confirmedBooking();
+    await withEmail(passenger, "gunna-unread@example.com");
+    await worker().runOnce();
+    email.sent.length = 0;
+    await send(jon, bookingId, { text: "My door code is 4512" });
+    await worker().runOnce();
+    await later(14 * 60);
+    await worker().runOnce();
+    expect(email.sent).toEqual([]);
+
+    await later(60);
+    await worker().runOnce();
+    expect(email.sent.map((sent) => [sent.to, sent.subject])).toEqual([
+      [
+        "gunna-unread@example.com",
+        expect.stringMatching(/^You have unread messages about your trip on \w+day \d+ \w+$/),
+      ],
+    ]);
+    expect(email.sent[0]?.text).toMatch(/^Open the chat in ShareRide to read them\.\n/);
+    expect(email.sent[0]?.text).toContain(`Open in ShareRide: ${webAppUrl}/messages/${bookingId}`);
+    expect(JSON.stringify(email.sent)).not.toContain("4512");
+
+    // Five minutes on, another message: its email waits for the hour.
+    await later(5 * 60, jon);
+    await send(jon, bookingId, { text: "Are you there?" });
+    await send(jon, bookingId, { quick: { key: "whereAreYou" } });
+    await worker().runOnce();
+    await later(54 * 60);
+    await worker().runOnce();
+    expect(email.sent).toHaveLength(1);
+    await later(60);
+    await worker().runOnce();
+    expect(email.sent).toHaveLength(2);
+    expect((await logOf(passenger)).filter((row) => row.kind === "unread_messages")).toEqual([
+      { kind: "unread_messages", channel: "email", status: "sent", reason: null, attempts: 1 },
+      { kind: "unread_messages", channel: "email", status: "sent", reason: null, attempts: 1 },
+    ]);
+  });
+
+  it("sends nothing once the messages are read", async () => {
+    const { jon, passenger, bookingId } = await confirmedBooking();
+    await withEmail(passenger, "gunna-read@example.com");
+    await worker().runOnce();
+    email.sent.length = 0;
+    const message = await send(jon, bookingId, { text: "On my way" });
+    await worker().runOnce();
+    await later(10 * 60, passenger);
+    const read = await api.client.call(readMessagesRoute, {
+      accessToken: passenger.accessToken,
+      params: { id: bookingId },
+      body: { upTo: message.id },
+    });
+    expect(read.ok).toBe(true);
+    await later(10 * 60);
+    await worker().runOnce();
+    expect(email.sent).toEqual([]);
+    expect(await logOf(passenger)).not.toContainEqual(
+      expect.objectContaining({ kind: "unread_messages" }),
+    );
+    const schedules = await api.connection.db
+      .select({ kind: scheduledNotifications.kind, doneAt: scheduledNotifications.doneAt })
+      .from(scheduledNotifications)
+      .where(eq(scheduledNotifications.kind, "unread_messages"));
+    expect(schedules).toEqual([{ kind: "unread_messages", doneAt: expect.any(Date) as unknown }]);
+  });
+
+  it("gives a message written after the others were read its own 15 minutes", async () => {
+    const { jon, passenger, bookingId } = await confirmedBooking();
+    await withEmail(passenger, "gunna-newer@example.com");
+    await worker().runOnce();
+    email.sent.length = 0;
+    const first = await send(jon, bookingId, { text: "On my way" });
+    await worker().runOnce();
+    await later(10 * 60, passenger);
+    await api.client.call(readMessagesRoute, {
+      accessToken: passenger.accessToken,
+      params: { id: bookingId },
+      body: { upTo: first.id },
+    });
+    await later(2 * 60, jon);
+    await send(jon, bookingId, { text: "I am at the gate" });
+    await worker().runOnce();
+    await later(3 * 60);
+    await worker().runOnce();
+    await later(11 * 60);
+    await worker().runOnce();
+    expect(email.sent).toEqual([]);
+    await later(60);
+    await worker().runOnce();
+    expect(email.sent).toHaveLength(1);
+  });
+
+  it("never counts the reader's own messages as unread", async () => {
+    const { jon, passenger, bookingId } = await confirmedBooking();
+    await withEmail(jon, "jon-own@example.com");
+    await withEmail(passenger, "gunna-own@example.com");
+    await worker().runOnce();
+    email.sent.length = 0;
+    await send(jon, bookingId, { text: "I have a big bag" });
+    const asked = await send(passenger, bookingId, { text: "Is there room for skis?" });
+    await worker().runOnce();
+    await later(5 * 60, jon);
+    await api.client.call(readMessagesRoute, {
+      accessToken: jon.accessToken,
+      params: { id: bookingId },
+      body: { upTo: asked.id },
+    });
+    await later(10 * 60);
+    await worker().runOnce();
+    expect(email.sent.map((sent) => sent.to)).toEqual(["gunna-own@example.com"]);
+  });
+
+  it("drops a refused unread email, when it is tried again, once the messages are read", async () => {
+    const { jon, passenger, bookingId } = await confirmedBooking();
+    await withEmail(passenger, "gunna-retried@example.com");
+    await worker().runOnce();
+    email.sent.length = 0;
+    const message = await send(jon, bookingId, { text: "On my way" });
+    await worker().runOnce();
+    await later(15 * 60, passenger);
+    email.failure = new Error("Mailjet refused the email (HTTP 503)");
+    await worker().runOnce();
+    email.failure = null;
+    await api.client.call(readMessagesRoute, {
+      accessToken: passenger.accessToken,
+      params: { id: bookingId },
+      body: { upTo: message.id },
+    });
+    await later(10 * 60);
+    await worker().runOnce();
+    expect(email.sent).toEqual([]);
+    expect((await logOf(passenger)).filter((row) => row.kind === "unread_messages")).toEqual([
+      {
+        kind: "unread_messages",
+        channel: "email",
+        status: "skipped",
+        reason: "no_longer_applies",
+        attempts: 2,
+      },
+    ]);
+  });
+
+  it("keeps one unread email waiting per conversation and reader, even when two workers schedule one at once", async () => {
+    const { jon, bookingId } = await confirmedBooking();
+    await send(jon, bookingId, { text: "On my way" });
+    await worker().runOnce();
+    const now = api.now();
+    const second = await api.connection.db
+      .insert(scheduledNotifications)
+      .values({
+        key: `unread_messages:${bookingId}:passenger:another`,
+        kind: "unread_messages",
+        bookingId,
+        recipient: "passenger",
+        runAt: now,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoNothing()
+      .returning();
+    expect(second).toEqual([]);
+  });
+
+  it("emails nobody with push about unread messages: the push has told them", async () => {
+    const { jon, passenger, bookingId } = await confirmedBooking();
+    await withEmail(jon, "jon-push@example.com");
+    await withDevice(jon);
+    await worker().runOnce();
+    email.sent.length = 0;
+    await send(passenger, bookingId, { text: "Where shall I wait?" });
+    await worker().runOnce();
+    await later(15 * 60);
+    await worker().runOnce();
+    expect(email.sent).toEqual([]);
+    expect((await logOf(jon)).filter((row) => row.kind === "unread_messages")).toEqual([
+      {
+        kind: "unread_messages",
+        channel: "email",
+        status: "skipped",
+        reason: "has_push",
+        attempts: 0,
+      },
+    ]);
   });
 });
 

@@ -57,3 +57,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0024](0024-own-simple-map-of-iceland.md) | Our own simple map of Iceland instead of map tiles | Accepted |
 | [0025](0025-own-date-and-number-formatting.md) | Our own date and number formatting instead of Intl's locale data | Accepted |
 | [0026](0026-push-through-expo.md) | Send push notifications through Expo's push service | Accepted |
+| [0027](0027-email-through-mailjet.md) | Send email through Mailjet | Accepted |

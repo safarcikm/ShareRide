@@ -10,6 +10,7 @@ import {
   sendLeaseSeconds,
   statusAt,
   stillApplies,
+  unreadSummaryAt,
   type BookingStatus,
   type ChannelDecision,
   type NotificationEvent,
@@ -18,17 +19,14 @@ import {
   type Recipient,
   type TripRole,
 } from "@shareride/domain";
-import { and, asc, eq, inArray, isNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { EmailSender } from "../../platform/email.ts";
-import {
-  PushMaybeSent,
-  deviceNotRegistered,
-  type PushReceipt,
-  type PushSender,
-} from "../../platform/push.ts";
+import { MaybeSent } from "../../platform/maybe-sent.ts";
+import { deviceNotRegistered, type PushReceipt, type PushSender } from "../../platform/push.ts";
 import type { Queryable, Transaction } from "../bookings/seats.ts";
 import { quickOf } from "../chat/service.ts";
+import { emailContent } from "./email-content.ts";
 import { notificationText, type NotificationFacts } from "./texts.ts";
 
 // The notification worker (spec 7, 3.7; plan 4.4), every few seconds inside
@@ -216,8 +214,11 @@ export function createNotificationWorker(dependencies: {
   readonly db: Database;
   readonly clock: () => Date;
   readonly push: PushSender;
-  /** Without it, email is skipped as `email_off` (until decision 3's provider, PR 7). */
-  readonly email?: EmailSender;
+  /**
+   * The email provider (ADR 0027), and the web app its links open. Without
+   * it, email is skipped as `email_off` (`EMAIL_PROVIDER=none`).
+   */
+  readonly email?: { readonly sender: EmailSender; readonly webAppUrl: string };
   readonly settings?: NotificationSettings;
   /** A send that failed, for the logs: never the text or the address. */
   readonly onSendError?: (error: unknown, delivery: { id: string; channel: string }) => void;
@@ -331,6 +332,96 @@ export function createNotificationWorker(dependencies: {
     }
   }
 
+  /**
+   * When the email about unread messages may go to the driver or the
+   * passenger (3.6, item 3): 15 minutes after the oldest message from the
+   * other person they have not read, and an hour after the last such email
+   * about the booking. Messages that email already told of are not counted
+   * again; none left to tell of gives null. (A message stored just after an
+   * email was made, but written before it, counts as told of: the email
+   * came as it arrived, and opening the chat shows it.)
+   */
+  async function unreadEmailAt(q: Queryable, booking: Parties, to: TripRole): Promise<Date | null> {
+    const recipientId = to === "driver" ? booking.driverId : booking.passengerId;
+    const [last] = await q
+      .select({ at: notifications.createdAt })
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.bookingId, booking.id),
+          eq(notifications.recipientId, recipientId),
+          eq(notifications.kind, "unread_messages"),
+        ),
+      )
+      .orderBy(desc(notifications.createdAt))
+      .limit(1);
+    const lastSummaryAt = last?.at ?? null;
+    const [oldest] = await q
+      .select({ sentAt: messages.sentAt })
+      .from(messages)
+      .innerJoin(conversations, eq(conversations.id, messages.conversationId))
+      .where(
+        and(
+          eq(conversations.bookingId, booking.id),
+          // The other person's: never one's own, nor a system line (no sender).
+          ne(messages.senderId, recipientId),
+          isNull(messages.readAt),
+          lastSummaryAt === null ? undefined : gt(messages.sentAt, lastSummaryAt),
+        ),
+      )
+      .orderBy(asc(messages.sentAt))
+      .limit(1);
+    if (oldest === undefined) return null;
+    return unreadSummaryAt({ sentAt: oldest.sentAt, lastSummaryAt }, settings);
+  }
+
+  /** Whether the other person's messages in the booking's chat are not all read. */
+  async function anyUnread(q: Queryable, bookingId: string, recipientId: string) {
+    const [unread] = await q
+      .select({ id: messages.id })
+      .from(messages)
+      .innerJoin(conversations, eq(conversations.id, messages.conversationId))
+      .where(
+        and(
+          eq(conversations.bookingId, bookingId),
+          ne(messages.senderId, recipientId),
+          isNull(messages.readAt),
+        ),
+      )
+      .limit(1);
+    return unread !== undefined;
+  }
+
+  /**
+   * The email about unread messages that a chat message may lead to. One
+   * already waiting for the booking and reader covers this message too: the
+   * unique index on waiting ones makes the insert do nothing, and waits for
+   * a worker that is taking that one, so this message is never left out.
+   * Its moment is worked out again when it comes.
+   */
+  async function scheduleUnread(
+    tx: Transaction,
+    booking: Parties,
+    to: TripRole,
+    messageId: string,
+    now: Date,
+  ): Promise<void> {
+    const runAt = await unreadEmailAt(tx, booking, to);
+    if (runAt === null) return;
+    await tx
+      .insert(scheduledNotifications)
+      .values({
+        key: `unread_messages:${booking.id}:${to}:${messageId}`,
+        kind: "unread_messages",
+        bookingId: booking.id,
+        recipient: to,
+        runAt,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoNothing();
+  }
+
   async function handleEvent(
     tx: Transaction,
     event: typeof outboxEvents.$inferSelect,
@@ -352,6 +443,7 @@ export function createNotificationWorker(dependencies: {
       if (booking === undefined) return;
       const to = found.senderId === booking.driverId ? "passenger" : "driver";
       await notify(tx, { type, to }, booking, { key, messageId }, now);
+      await scheduleUnread(tx, booking, to, messageId, now);
       return;
     }
     const bookingId = idIn(event.payload, "bookingId");
@@ -424,7 +516,11 @@ export function createNotificationWorker(dependencies: {
     return null;
   }
 
-  /** Step 2: scheduled notifications whose moment came, sent if they still apply, else dropped. */
+  /**
+   * Step 2: scheduled notifications whose moment came, sent if they still
+   * apply, else dropped. An unread messages email whose messages were read
+   * meanwhile, but not newer ones, waits for those instead.
+   */
   function takeSchedules(): Promise<number> {
     return db.transaction(async (tx) => {
       const now = clock();
@@ -435,26 +531,37 @@ export function createNotificationWorker(dependencies: {
         .orderBy(asc(scheduledNotifications.runAt))
         .limit(batchSize)
         .for("update", { skipLocked: true });
+      const done: string[] = [];
       for (const scheduled of due) {
         const booking =
           scheduled.bookingId === null ? undefined : await partiesOf(tx, scheduled.bookingId);
-        const event = booking === undefined ? null : stillDue(scheduled.kind, booking, now);
-        if (booking !== undefined && event !== null) {
-          await notify(tx, event, booking, { key: `schedule:${scheduled.key}` }, now);
+        const source = { key: `schedule:${scheduled.key}` };
+        const to = scheduled.recipient;
+        if (booking !== undefined && scheduled.kind === "unread_messages") {
+          if (to === "driver" || to === "passenger") {
+            const at = await unreadEmailAt(tx, booking, to);
+            if (at !== null && at > now) {
+              await tx
+                .update(scheduledNotifications)
+                .set({ runAt: at, updatedAt: now })
+                .where(eq(scheduledNotifications.id, scheduled.id));
+              continue;
+            }
+            if (at !== null) await notify(tx, { type: "UnreadMessages", to }, booking, source, now);
+          }
+        } else if (booking !== undefined) {
+          const event = stillDue(scheduled.kind, booking, now);
+          if (event !== null) await notify(tx, event, booking, source, now);
         }
+        done.push(scheduled.id);
       }
-      if (due.length > 0) {
+      if (done.length > 0) {
         await tx
           .update(scheduledNotifications)
           .set({ doneAt: now, updatedAt: now })
-          .where(
-            inArray(
-              scheduledNotifications.id,
-              due.map((scheduled) => scheduled.id),
-            ),
-          );
+          .where(inArray(scheduledNotifications.id, done));
       }
-      return due.length;
+      return done.length;
     });
   }
 
@@ -520,8 +627,15 @@ export function createNotificationWorker(dependencies: {
   async function sendOn(delivery: Delivery): Promise<SendResult | undefined> {
     const found = await factsOf(db, delivery.notificationId);
     if (found === undefined) return undefined;
-    // Looked at again on every try: a retry after the booking moved on is dropped.
+    // Looked at again on every try: a retry after the booking moved on, or
+    // after the messages were read, is dropped.
     if (!stillApplies(found.facts.kind, statusAt(found.booking, clock()))) {
+      return { skipped: "no_longer_applies" };
+    }
+    if (
+      found.facts.kind === "unread_messages" &&
+      !(await anyUnread(db, found.facts.bookingId, found.recipientId))
+    ) {
       return { skipped: "no_longer_applies" };
     }
     const text = () => notificationText(found.facts, found.locale, settings);
@@ -559,11 +673,10 @@ export function createNotificationWorker(dependencies: {
       case "email": {
         if (email === undefined) return { skipped: "email_off" };
         if (found.email === null) return { skipped: "no_email" };
-        const { title, body } = text();
-        const sent = await email.send({
+        const content = emailContent(text(), found.locale, email.webAppUrl);
+        const sent = await email.sender.send({
           to: found.email,
-          subject: title,
-          text: body,
+          ...content,
           idempotencyKey: delivery.id,
         });
         return { ref: sent.id };
@@ -596,8 +709,8 @@ export function createNotificationWorker(dependencies: {
       result = await sendOn(delivery);
     } catch (error) {
       onSendError?.(error, { id: delivery.id, channel: delivery.channel });
-      if (error instanceof PushMaybeSent) {
-        // It may have reached the phones: never sent again (R7.6).
+      if (error instanceof MaybeSent) {
+        // It may have reached the phones or the inbox: never sent again (R7.6).
         await store({ status: "failed", reason: "interrupted", nextAttemptAt: null });
         return "failed";
       }
