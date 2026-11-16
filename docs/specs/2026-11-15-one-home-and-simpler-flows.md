@@ -1,7 +1,7 @@
 # Spec 16: One home and simpler flows
 
 **Owner:** Martin · **Date:** 2026-11-15 · **Status:** Approved
-(2026-11-15); proposals 1 to 4 built
+(2026-11-15); proposals 1 to 5 built
 
 Amends: [spec 1](2026-11-13-sign-in-and-profile.md) (front page, sign-up,
 profile, settings), [spec 3](2026-11-13-post-a-trip.md) (driver setup and the
@@ -198,14 +198,22 @@ Find replaces both the front page and My profile as the place the app opens.
 
 1. **Offer opens step 1 of the form** ("Where are you driving?") directly.
    "Before you publish" goes. The car and licence are asked once, at step 5,
-   as today.
+   as today. Offer is a place of the menu, so its step 1 has no Back; a trip
+   started there opens step 2 on top, and Offer shows an empty form again.
 2. **Drafts:** when you have a draft, step 1 starts with "Continue your draft:
    Mjódd → N1 Selfoss", which opens it at the step where you left off. With
-   more than one, the newest shows, with "See all drafts".
+   more than one, the newest shows, with "See all drafts". The API keeps no
+   step, so a draft with no departure time opens at step 2 and any other at
+   step 5, where every step has Edit. If the drafts cannot be loaded, the
+   form opens without the card.
 3. **Step 2:** the times at the stops are worked out for you and folded: "Times
    at the 3 stops", a line with each stop and its time, and Change. Change
    unfolds the stop times to change them. A problem with a stop's time
-   unfolds them.
+   unfolds them, and so does a stop still without a time once the departure
+   is chosen; unfolded, they stay so. Until the date and departure are
+   chosen, the fold says the times are worked out then. "Worked out from
+   typical driving times" shows only while the times are the ones those
+   give, not times the driver chose.
 4. **Step 5:** what is still missing comes first, as "Two things before you
    publish" (or one): Your car, with Add a car, and Driving licence, with
    Confirm. Until both are done, Publish trip waits, and the text under it
@@ -387,6 +395,9 @@ The main new or changed ones ("Find a ride" keeps `welcome.findRide`):
 | `results.instant` | Book instantly | Bóka strax |
 | `results.request` | Driver approves | Ökumaður samþykkir |
 | `results.driverDrives` | {driver} drives {from} → {to} | {driver} ekur {from} → {to} |
+| `trip.continueDraft` | Continue your draft: {route} | Halda áfram með drögin: {route} |
+| `trip.time.stopsFolded` | Times at the 3 stops | Tímar á 3 viðkomustöðum |
+| `trip.review.missing` | Two things before you publish | Tvennt áður en þú birtir |
 
 "Sætið er þitt!" ("The seat is yours!") avoids "bókuð" or "bókaður", which
 depend on gender; the Icelandic review can change it.

@@ -1,7 +1,7 @@
 import { BackButton } from "@/components/back-button";
 import { Screen } from "@/components/screen";
 import { Title } from "@/components/text";
-import { backToDrive } from "@/driving/back-to-drive";
+import { backTo } from "@/driving/back-to";
 import { CarForm } from "@/driving/car-form";
 import { useLanguage } from "@/i18n/language";
 
@@ -10,9 +10,13 @@ export default function AddCarScreen() {
   const { t } = useLanguage();
   return (
     <Screen>
-      <BackButton fallback="/offer" />
+      <BackButton fallback="/drive/cars" />
       <Title>{t("vehicle.add")}</Title>
-      <CarForm onSaved={backToDrive} />
+      <CarForm
+        onSaved={() => {
+          backTo("/drive/cars");
+        }}
+      />
     </Screen>
   );
 }

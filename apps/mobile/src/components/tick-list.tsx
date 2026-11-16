@@ -13,9 +13,17 @@ interface TickRowProps {
   readonly done: boolean;
   /** A line under the label, such as when it was done. */
   readonly detail?: string | undefined;
-  /** What to do about it, shown while it is not done. */
-  readonly action?: { readonly label: string; readonly onPress: () => void } | undefined;
-  readonly testID?: string;
+  /**
+   * What to do about it, shown while it is not done; `accessibilityLabel`
+   * when the label needs its context, such as "Confirm your licence".
+   */
+  readonly action?:
+    | {
+        readonly label: string;
+        readonly onPress: () => void;
+        readonly accessibilityLabel?: string;
+      }
+    | undefined;
 }
 
 /**
@@ -26,12 +34,12 @@ interface TickRowProps {
  * a label on a plain element, so there the status follows the label as
  * hidden text.
  */
-export function TickRow({ label, done, detail, action, testID }: TickRowProps) {
+export function TickRow({ label, done, detail, action }: TickRowProps) {
   const { t } = useLanguage();
   const palette = usePalette();
   const status = done ? t("common.done") : t("common.notDone");
   return (
-    <View testID={testID} style={styles.row}>
+    <View style={styles.row}>
       <View
         {...(onWeb
           ? {}
@@ -64,7 +72,12 @@ export function TickRow({ label, done, detail, action, testID }: TickRowProps) {
       </View>
       {action === undefined || done ? null : (
         <View style={styles.action}>
-          <Button variant="secondary" label={action.label} onPress={action.onPress} />
+          <Button
+            variant="secondary"
+            label={action.label}
+            accessibilityLabel={action.accessibilityLabel}
+            onPress={action.onPress}
+          />
         </View>
       )}
     </View>

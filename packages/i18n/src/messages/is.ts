@@ -247,17 +247,8 @@ export const is = {
   "time.hour": "Klukkustund",
   "time.minutes": "Mínútur",
   "driver.offerRide": "Bjóða far",
-  "driver.ready.title": "Áður en þú birtir",
-  "driver.ready.intro":
-    "Fyrir fyrstu ferðina skaltu bæta við bílnum þínum og staðfesta ökuskírteinið.",
-  "driver.ready.allSet": "Allt er tilbúið fyrir fyrstu ferðina.",
-  "driver.ready.photo": "Prófílmynd",
-  "driver.ready.photoLater": "Brátt geturðu bætt við mynd. Þangað til geturðu birt ferð án hennar.",
-  "driver.ready.car": "Bíll",
   "driver.ready.licence": "Ökuskírteini",
-  "driver.ready.licenceDone": "Staðfest {date}",
   "driver.ready.confirmLicence": "Staðfesta ökuskírteini",
-  "driver.cars": "Bílarnir þínir",
   "vehicle.add": "Bæta við bíl",
   "vehicle.editTitle": "Breyta bílnum",
   "vehicle.make": "Tegund",
@@ -291,6 +282,8 @@ export const is = {
   "trip.stretchSpoken": "{from} til {to}",
   "trip.from": "Frá",
   "trip.to": "Til",
+  "trip.continueDraft": "Halda áfram með drögin: {route}",
+  "trip.allDrafts": "Sjá öll drög",
   "trip.route.title": "Hvert ertu að keyra?",
   "trip.route.field": "{field}: {value}",
   "trip.route.choose": "Veldu mótsstað",
@@ -320,9 +313,16 @@ export const is = {
   "trip.icelandTime": "Íslenskur tími",
   "trip.time.chooseTime": "Veldu hvenær þú leggur af stað.",
   "trip.time.chooseStop": "Veldu tíma fyrir þennan viðkomustað.",
+  "trip.time.stopsFolded":
+    "{count, plural, one {Tími á viðkomustaðnum} other {Tímar á # viðkomustöðum}}",
+  "trip.time.workedOut": "Reiknað út frá venjulegum aksturstíma.",
+  "trip.time.workedOutLater":
+    "Reiknað út frá venjulegum aksturstíma þegar þú hefur valið dag og brottfarartíma.",
+  "trip.time.changeStops": "Breyta tímum á viðkomustöðum",
   "trip.time.stopsTitle": "Tímar á viðkomustöðum",
   "trip.time.stopsIntro":
     "Við reiknuðum þá út frá venjulegum aksturstíma. Breyttu þeim að vild, til dæmis fyrir hlé.",
+  "trip.time.stopsIntroOwn": "Breyttu þeim að vild, til dæmis fyrir hlé.",
   "trip.time.atStop": "Tími á {name}",
   "trip.time.onDay": "Dagur: {day}",
   "trip.time.onDayLongBreak":
@@ -403,6 +403,16 @@ export const is = {
   "trip.review.edit": "Breyta",
   "trip.review.editLabel": "Breyta: {section}",
   "trip.review.fix": "Lagaðu þetta áður en þú birtir:",
+  "trip.review.missing":
+    "{count, plural, one {Eitt áður en þú birtir} other {Tvennt áður en þú birtir}}",
+  "trip.review.yourCar": "Bíllinn þinn",
+  "trip.review.carDetail": "Tegund, gerð og litur",
+  "trip.review.licenceDetail": "Eitt hak, ekkert að hlaða upp",
+  "trip.review.waitsForBoth":
+    "Bættu bílnum við og staðfestu ökuskírteinið til að birta. Ferðin er vistuð sem drög þangað til.",
+  "trip.review.waitsForCar": "Bættu bílnum við til að birta. Ferðin er vistuð sem drög þangað til.",
+  "trip.review.waitsForLicence":
+    "Staðfestu ökuskírteinið til að birta. Ferðin er vistuð sem drög þangað til.",
   "trip.publish": "Birta ferð",
   "trip.review.delete": "Eyða drögum",
   "trip.review.deleteConfirm": "Eyða þessum drögum? Það er ekki hægt að afturkalla.",

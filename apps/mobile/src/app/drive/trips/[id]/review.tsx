@@ -19,7 +19,7 @@ import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
 import { Heading, sectionLevel } from "@/components/text";
 import { TextLink } from "@/components/text-link";
-import { ReadinessList } from "@/driving/readiness-list";
+import { TickRow } from "@/components/tick-list";
 import { carSummary } from "@/driving/texts";
 import { useLanguage } from "@/i18n/language";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
@@ -32,9 +32,10 @@ import { Loading, useDraftOnFocus } from "@/trips/use-draft";
 import { useQuote } from "@/trips/use-quote";
 
 /**
- * Step 5, check and publish (spec 3, 3.8): what is still needed to drive,
- * a summary of every step with a way to change it, and Publish, which runs
- * every check again on the server. Loads again when the driver comes back
+ * Step 5, check and publish (spec 3, 3.8; spec 16, 3.6): what is still
+ * needed to drive, first, a summary of every step with a way to change it,
+ * and Publish, which waits for the car and licence and runs every check
+ * again on the server. Loads again when the driver comes back
  * from changing something.
  */
 export default function ReviewStepScreen() {
@@ -116,7 +117,10 @@ function Review({
     return "";
   };
 
+  const missing = stillMissing(readiness);
+
   const publish = async () => {
+    if (missing.length > 0) return;
     setFailure(null);
     setProblems([]);
     setBusy(true);
@@ -180,10 +184,16 @@ function Review({
             main
             label={t("trip.publish")}
             busy={busy}
+            disabled={missing.length > 0}
             onPress={() => {
               void publish();
             }}
           />
+          {missing.length === 0 ? null : (
+            <Text style={[typography.small, styles.centre, { color: palette.textMuted }]}>
+              {t(waitsFor(missing))}
+            </Text>
+          )}
         </>
       }
     >
@@ -202,8 +212,7 @@ function Review({
           ))}
         </View>
       )}
-      <Heading>{t("driver.ready.title")}</Heading>
-      <ReadinessList readiness={readiness} />
+      <StillMissing missing={missing} />
       <Card>
         <Section id={trip.id} step="route" title={t("trip.review.route")} lines={names} />
         <Section
@@ -288,6 +297,69 @@ function Review({
         />
       )}
     </StepScreen>
+  );
+}
+
+type Missing = "car" | "licence";
+
+/**
+ * What the driver still has to do before publishing (rules R3.1 and R3.2):
+ * the car and the licence. The photo does not count until photos exist
+ * (spec 16, 3.6, item 5).
+ */
+function stillMissing(readiness: DriverReadiness): Missing[] {
+  return readiness.items.flatMap(({ item, done, blocking }) =>
+    (item === "car" || item === "licence") && blocking && !done ? [item] : [],
+  );
+}
+
+/** Why Publish waits, under it. */
+function waitsFor(missing: readonly Missing[]) {
+  if (missing.length > 1) return "trip.review.waitsForBoth";
+  return missing[0] === "car" ? "trip.review.waitsForCar" : "trip.review.waitsForLicence";
+}
+
+/**
+ * What is still missing, first on the review (spec 16, 3.6, item 4): "Two
+ * things before you publish", each with a way to do it here.
+ */
+function StillMissing({ missing }: { readonly missing: readonly Missing[] }) {
+  const { t } = useLanguage();
+  if (missing.length === 0) return null;
+  return (
+    <Card>
+      <Heading>{t("trip.review.missing", { count: missing.length })}</Heading>
+      {missing.map((item) =>
+        item === "car" ? (
+          <TickRow
+            key={item}
+            label={t("trip.review.yourCar")}
+            detail={t("trip.review.carDetail")}
+            done={false}
+            action={{
+              label: t("vehicle.add"),
+              onPress: () => {
+                router.push("/drive/cars/new");
+              },
+            }}
+          />
+        ) : (
+          <TickRow
+            key={item}
+            label={t("driver.ready.licence")}
+            detail={t("trip.review.licenceDetail")}
+            done={false}
+            action={{
+              label: t("licence.confirm"),
+              accessibilityLabel: t("driver.ready.confirmLicence"),
+              onPress: () => {
+                router.push("/drive/licence");
+              },
+            }}
+          />
+        ),
+      )}
+    </Card>
   );
 }
 

@@ -8,7 +8,8 @@ Profile becomes rows (My cars, Driving licence, Meeting points, Settings,
 Terms, rules and privacy) and the phone number moves to Settings (3.4).
 Signing up takes three steps, the number, the code and "about you", with the
 ride kept in view; step 3 takes the profile and the terms together, and the
-terms show on their own only when they change later (3.5).
+terms show on their own only when they change later (3.5). "Offer a ride"
+leads to Offer's form, "Where are you driving?", after signing up (3.6).
 
 Features: A1 Sign up and sign in, A2 Profile, A4 Settings, A6 Terms, privacy
 policy and community rules ([features](../product/features.md)).
@@ -52,7 +53,8 @@ language, and stay signed in securely on their devices.
 3. The welcome screen is the front page (decision 6): a route search, the
    rides leaving soon ([spec 4, 3.8](2026-11-13-search-and-trip-details.md#38-rides-leaving-soon)),
    "Offer a ride" and a small "Sign in" link. "Offer a ride" goes through
-   sign-up and then straight to Ready to drive (spec 3), the way a booking
+   sign-up and then straight to Offer, the first step of posting a trip
+   (spec 3; spec 16, 3.6), the way a booking
    chosen before sign-up continues afterwards (spec 5, 3.1).
 4. During the beta, sign-up asks for an invite code first (spec 12).
 

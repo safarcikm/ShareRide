@@ -407,18 +407,18 @@ rides.
 **Files:**
 
 - Modify: `app/(tabs)/offer.tsx` (signed in: `RouteStep` with a draft
-  card on top), `drive/offer-ride.ts`, `driving/back-to-drive.ts`
+  card on top), `drive/offer-ride.ts`, `driving/back-to-drive.ts` (now `driving/back-to.ts`)
 - Remove: the Ready to drive content (cars moved to My cars in Task 2.3)
 - Test: `__tests__/driving.test.tsx`, `__tests__/post-a-trip.test.tsx`
 
-- [ ] **Step 1: Write the failing tests:** Offer shows "Where are you
+- [x] **Step 1: Write the failing tests:** Offer shows "Where are you
   driving?" straight away; with a draft, "Continue your draft: Mjódd → N1
   Selfoss" opens it at its first unfinished step; with two, the newest and
   "See all drafts"; after signing up from Offer, the form opens.
-- [ ] **Step 2:** Run `pnpm --filter @shareride/mobile test driving post-a-trip`; expect failures.
-- [ ] **Step 3: Implement** with `steps.ts` deciding the first unfinished step.
-- [ ] **Step 4:** Run the tests and `pnpm check`; expect pass.
-- [ ] **Step 5:** Commit `feat(mobile): offer a ride opens the form`.
+- [x] **Step 2:** Run `pnpm --filter @shareride/mobile test driving post-a-trip`; expect failures.
+- [x] **Step 3: Implement** with `steps.ts` deciding the first unfinished step.
+- [x] **Step 4:** Run the tests and `pnpm check`; expect pass.
+- [x] **Step 5:** Commit `feat(mobile): offer a ride opens the form`.
 
 ### Task 5.2: Stop times folded, step 5 asks once
 
@@ -427,16 +427,16 @@ rides.
 - Modify: `app/drive/trips/[id]/time.tsx`, `app/drive/trips/[id]/review.tsx`
 - Test: `__tests__/post-a-trip.test.tsx`
 
-- [ ] **Step 1: Write the failing tests:** step 2 shows "Times at the 3
+- [x] **Step 1: Write the failing tests:** step 2 shows "Times at the 3
   stops" folded with each stop's time and Change; Change and a stop time
   error unfold them; step 5 without a car starts with "Two things before
   you publish" (Add a car, Confirm), Publish trip waits and the line under
   it says why; no photo row.
-- [ ] **Step 2:** Run `pnpm --filter @shareride/mobile test post-a-trip`; expect failures.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4:** Run the tests, `pnpm check`, update `e2e/post-a-trip.spec.ts`
+- [x] **Step 2:** Run `pnpm --filter @shareride/mobile test post-a-trip`; expect failures.
+- [x] **Step 3: Implement.**
+- [x] **Step 4:** Run the tests, `pnpm check`, update `e2e/post-a-trip.spec.ts`
   and `e2e/driving.spec.ts`; push and read the e2e job.
-- [ ] **Step 5:** Commit `feat(mobile): fold stop times and ask for the car once`.
+- [x] **Step 5:** Commit `feat(mobile): fold stop times and ask for the car once`.
 
 ## PR 6: Small fixes
 

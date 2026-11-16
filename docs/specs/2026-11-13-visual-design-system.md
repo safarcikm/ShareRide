@@ -399,7 +399,7 @@ in the specs named under each.
 | Step 1, route: from, to, the map and the stops on the way, each with a switch | ![Route step](images/visual-design-system/post-route.png) |
 | Step 3, price: the whole-route price, the price level control with a shape person as the handle, minus and plus buttons, each stretch's price and why there is a limit | ![Price step](images/visual-design-system/post-price.png) |
 | Step 4, seats and preferences: the seats offered in the seat view, booking mode, preferences and a note | ![Seats step](images/visual-design-system/post-seats.png) |
-| Step 5, check and publish: the ready-to-drive list, a summary with Edit links and "Publish trip" | ![Check and publish step](images/visual-design-system/post-review.png) |
+| Step 5, check and publish: what is still missing ("Two things before you publish", spec 16), a summary with Edit links and "Publish trip" | ![Check and publish step](images/visual-design-system/post-review.png) |
 
 Some details in the drawings are older than this spec, and the tables above
 win: the message box on "Request to book", the filter and preference chips

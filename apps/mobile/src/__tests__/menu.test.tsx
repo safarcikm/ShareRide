@@ -189,7 +189,7 @@ describe("The menu (spec 16, 3.1)", () => {
         client.answer("/v1/me/vehicles", () => ok(200, { vehicles: [] }));
       },
     });
-    expect(await screen.findByRole("header", { name: "Before you publish" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
     expect(screen).toHavePathname("/offer");
     expect(tab("Offer")).toBeSelected();
   });
@@ -231,7 +231,7 @@ describe("The menu (spec 16, 3.1)", () => {
     await fireEvent.press(await screen.findByRole("tab", { name: "My rides" }));
     expect(await screen.findByRole("header", { name: "My rides" })).toBeVisible();
     await fireEvent.press(tab("Offer"));
-    expect(await screen.findByRole("header", { name: "Before you publish" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
     await fireEvent.press(tab("Profile"));
     expect(await screen.findByRole("header", { name: "My profile" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Back" })).toBeNull();

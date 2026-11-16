@@ -10,7 +10,7 @@ import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { Body, Title } from "@/components/text";
-import { backToDrive } from "@/driving/back-to-drive";
+import { backTo } from "@/driving/back-to";
 import { CarForm } from "@/driving/car-form";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
@@ -29,7 +29,7 @@ export default function EditCarScreen() {
 
   return (
     <Screen>
-      <BackButton fallback="/offer" />
+      <BackButton fallback="/drive/cars" />
       {result === undefined ? (
         <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
       ) : !result.ok ? (
@@ -42,7 +42,12 @@ export default function EditCarScreen() {
       ) : (
         <>
           <Title>{t("vehicle.editTitle")}</Title>
-          <CarForm car={car} onSaved={backToDrive} />
+          <CarForm
+            car={car}
+            onSaved={() => {
+              backTo("/drive/cars");
+            }}
+          />
           <RemoveCar car={car} />
         </>
       )}
@@ -68,7 +73,7 @@ function RemoveCar({ car }: { readonly car: Vehicle }) {
     const result = await session.call(removeVehicleRoute, { params: { id: car.id } });
     setBusy(false);
     // Already gone counts as removed.
-    if (result.ok || result.status === 404) backToDrive();
+    if (result.ok || result.status === 404) backTo("/drive/cars");
     else if (result.error.code === "vehicle_in_use") setFailure(t("vehicle.inUse"));
     else setFailure(errorText(t, result));
   }
