@@ -146,9 +146,18 @@ type Problem =
   | { readonly kind: "message"; readonly text: string }
   | { readonly kind: "other"; readonly text: string };
 
-/** Where a booking made here is shown: its page, which says where it stands. */
+/**
+ * Where a booking made here goes next, in place of this screen: You're
+ * booked or Request sent, or the booking's own page for any other outcome.
+ */
 const finished = (booking: Booking) => {
-  router.replace({ pathname: "/bookings/[id]", params: { id: booking.id } });
+  router.replace({
+    pathname:
+      booking.status === "confirmed" || booking.status === "requested"
+        ? "/bookings/[id]/booked"
+        : "/bookings/[id]",
+    params: { id: booking.id },
+  });
 };
 
 /**

@@ -343,6 +343,38 @@ function SeatShape({
   }
 }
 
+/**
+ * Your seat on its own, with you in it, as the seat view draws it: the
+ * picture that greets a booking just made (spec 16, 3.7, item 4). Only a
+ * picture: the words beside it say what it means.
+ */
+export function YourSeat() {
+  const palette = usePalette();
+  const size = seat * scale * 2;
+  return (
+    <View
+      testID="your-seat"
+      aria-hidden
+      importantForAccessibility="no-hide-descendants"
+      style={styles.yourSeat}
+    >
+      <Svg width={size} height={size} viewBox={`0 0 ${String(seat)} ${String(seat)}`}>
+        <Rect
+          x={1.5}
+          y={1.5}
+          width={seat - 3}
+          height={seat - 3}
+          rx={8}
+          fill={palette.primarySoft}
+          stroke={palette.primary}
+          strokeWidth={3}
+        />
+        <Person shape="pebble" cx={seat / 2} cy={seat / 2} colour={people.mossLight} />
+      </Svg>
+    </View>
+  );
+}
+
 type Shape = "pebble" | "mountain" | "dome";
 const shapes: readonly Shape[] = ["pebble", "mountain", "dome"];
 /** Shapes vary by seat, never by person: they say nothing about who sits there. */
@@ -410,6 +442,7 @@ function KnittedHat({ cx, cy }: { readonly cx: number; readonly cy: number }) {
 
 const styles = StyleSheet.create({
   view: { gap: spacing.sm },
+  yourSeat: { alignSelf: "center" },
   drawing: { width: "100%", alignSelf: "center" },
   legend: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
   legendItem: { flexDirection: "row", alignItems: "center", gap: spacing.xs },

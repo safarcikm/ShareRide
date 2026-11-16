@@ -3,7 +3,7 @@ import { capitalised, formatDay, formatMoney } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { CircleCheck } from "lucide-react-native";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Linking, Platform, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import {
@@ -15,6 +15,7 @@ import {
 } from "@/booking/status";
 import { PaymentSheet, usePayment } from "@/booking/payment";
 import { payByText, requestSentText } from "@/booking/texts";
+import { WhereToStand } from "@/booking/where-to-stand";
 import { BackButton } from "@/components/back-button";
 import { otherPerson } from "@/chat/texts";
 import { Button } from "@/components/button";
@@ -28,7 +29,6 @@ import { Body, Heading, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { useLoaded } from "@/lib/use-loaded";
-import { mapsUrl } from "@/meeting-points/maps-url";
 import { DriverAndCar, PartStop } from "@/trip-details/trip-parts";
 import { controlOutline, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -126,7 +126,6 @@ function BookingDetails({
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
-  const [mapsFailed, setMapsFailed] = useState(false);
   const { board, alight, confirmed } = booking;
   const name = (stop: Booking["board"]) => stop.meetingPoint.name[locale];
   const total = formatMoney(booking.total, locale);
@@ -201,28 +200,7 @@ function BookingDetails({
         />
       )}
 
-      {confirmed === null ? null : (
-        <Card>
-          <Heading>{t("meetingPoints.whereToStand")}</Heading>
-          <Text style={[typography.bodyStrong, { color: palette.text }]}>{name(board)}</Text>
-          {confirmed.whereToStand === null ? null : (
-            <Body align="start">{confirmed.whereToStand[locale]}</Body>
-          )}
-          <Button
-            variant="secondary"
-            label={t("meetingPoints.openInMaps")}
-            onPress={() => {
-              setMapsFailed(false);
-              Linking.openURL(mapsUrl(board.meetingPoint.position, name(board), Platform.OS)).catch(
-                () => {
-                  setMapsFailed(true);
-                },
-              );
-            }}
-          />
-          <Notice message={mapsFailed ? t("meetingPoints.mapsFailed") : null} />
-        </Card>
-      )}
+      <WhereToStand booking={booking} />
     </Screen>
   );
 }

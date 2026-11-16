@@ -597,6 +597,23 @@ export const is = {
   "booking.heldUntil": "Ekki greitt enn. Sætið er frátekið fyrir þig til kl. {time}.",
   "booking.heldUntilTomorrow":
     "Ekki greitt enn. Sætið er frátekið fyrir þig til kl. {time} á morgun.",
+  "booking.booked": "Sætið er þitt!",
+  "booking.pickUp": "{day}. {driver} sækir þig kl. {time}. Mótsstaður: {stop}.",
+  "booking.requestSentTitle": "Beiðni send",
+  "booking.answerBy": "{driver} hefur til {time} til að svara.",
+  "booking.answerByTomorrow": "{driver} hefur til {time} á morgun til að svara.",
+  "booking.next": "Hvað gerist næst",
+  "booking.next.plateLater": "Bílnúmerið birtist í Ferðunum mínum fyrir brottför.",
+  "booking.next.beThere": "Mættu á mótsstaðinn nokkrum mínútum fyrir kl. {time}.",
+  "booking.next.cancel":
+    "Breytast plönin? Þú getur afbókað án kostnaðar allt að 15 mínútum áður en þú ferð inn.",
+  "booking.next.answer": "Svarið birtist í Ferðunum mínum.",
+  "booking.next.payWhenYes":
+    "Þegar {driver} samþykkir greiðir þú í Ferðunum mínum, undir Bíður eftir þér, til að staðfesta sætið.",
+  "booking.next.confirmedWhenYes": "Þegar {driver} samþykkir er sætið þitt staðfest.",
+  "booking.next.noAnswer": "Ekkert svar í tæka tíð? Beiðnin fellur niður og þú greiðir ekkert.",
+  "booking.seeInMyRides": "Sjá í Ferðunum mínum",
+  "booking.findAnother": "Finna aðra ferð",
   "booking.total": "Samtals",
   "booking.freeRide": "Þessi ferð er ókeypis: það er ekkert að greiða.",
   "booking.reliabilityNote":
