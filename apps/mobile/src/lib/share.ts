@@ -17,12 +17,29 @@ const isAbort = (error: unknown) => error instanceof Error && error.name === "Ab
  * that is not https) answers "failed", so the screen can show the link to
  * copy by hand.
  */
-export async function shareLink(url: string, text: string): Promise<ShareOutcome> {
+export function shareLink(url: string, text: string): Promise<ShareOutcome> {
+  return share(text, url);
+}
+
+/**
+ * Shares a text, such as a trip's details (spec 9, 3.3.3), the same way, or
+ * copies it. Nothing is stored and no link is made (R9.8).
+ */
+export function shareText(text: string): Promise<ShareOutcome> {
+  return share(text, null);
+}
+
+/** A text, with a web address or without. */
+async function share(text: string, url: string | null): Promise<ShareOutcome> {
   if (Platform.OS !== "web") {
     try {
       // iOS shares the address on its own; Android only shares a message.
       const result = await Share.share(
-        Platform.OS === "ios" ? { message: text, url } : { message: `${text}\n${url}` },
+        url === null
+          ? { message: text }
+          : Platform.OS === "ios"
+            ? { message: text, url }
+            : { message: `${text}\n${url}` },
       );
       return result.action === Share.dismissedAction ? "dismissed" : "shared";
     } catch {
@@ -32,7 +49,7 @@ export async function shareLink(url: string, text: string): Promise<ShareOutcome
   const browser = globalThis.navigator as Partial<Navigator> | undefined;
   if (typeof browser?.share === "function") {
     try {
-      await browser.share({ title: text, text, url });
+      await browser.share(url === null ? { text } : { title: text, text, url });
       return "shared";
     } catch (error) {
       if (isAbort(error)) return "dismissed";
@@ -41,7 +58,7 @@ export async function shareLink(url: string, text: string): Promise<ShareOutcome
   }
   try {
     if (browser?.clipboard === undefined) return "failed";
-    await browser.clipboard.writeText(url);
+    await browser.clipboard.writeText(url ?? text);
     return "copied";
   } catch {
     return "failed";

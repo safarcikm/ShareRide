@@ -227,13 +227,29 @@ stateDiagram-v2
   confirmed --> cancelled : passenger or driver cancels
   confirmed --> completed : trip completed
   confirmed --> no_show : driver marks passenger absent
+  confirmed --> cancelled : driver absence stands (spec 8)
   declined --> [*]
   expired --> [*]
   cancelled --> [*]
   completed --> cancelled : driver absence stands (spec 8)
+  completed --> no_show : operator finds the passenger didn't come (spec 8)
   completed --> [*]
+  no_show --> completed : operator finds the passenger rode (spec 8)
+  no_show --> cancelled : operator finds the passenger was left behind (spec 8)
   no_show --> [*]
 ```
+
+A no-show or a driver absence can be contested, and the operator decides
+([spec 8, 3.5](../specs/2026-11-13-trip-day-reviews-and-reliability.md#35-when-the-two-sides-disagree)).
+A contested no-show found wrong ends in one of two ways ([spec 8](../specs/2026-11-13-trip-day-reviews-and-reliability.md#decisions),
+decision 4): the passenger rode, so the booking completes and the driver
+is paid; or the passenger was left behind, which is treated as a driver
+absence. A driver absence that stands cancels the booking as if by the
+driver, with a full refund that counts on the driver. One found wrong says
+what happened instead ([spec 8](../specs/2026-11-13-trip-day-reviews-and-reliability.md#decisions), decision 5): the passenger rode,
+so the booking goes on and completes with the trip, or at once if the trip
+completed while the report was open; or the passenger didn't come, which
+is their no-show, from confirmed or completed.
 
 A cancellation records who cancelled, when, and the reason (including
 `weather` and `road_closed`).

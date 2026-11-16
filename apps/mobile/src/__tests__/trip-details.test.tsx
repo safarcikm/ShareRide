@@ -62,10 +62,16 @@ describe("Trip details (spec 4, 3.6)", () => {
     expect(detailsCalls(client)).toEqual([{ seats: 2, fromStop: 1, toStop: 2 }]);
   });
 
-  it("puts your part first, then who you ride with, then the route (spec 16, 3.7)", async () => {
+  it("puts your part first, then who you ride with, the route and safety (spec 16, 3.7)", async () => {
     await openTrip();
     expect(await screen.findByRole("header", { name: "Borgarnes → Blönduós" })).toBeVisible();
-    expect(headings()).toEqual(["Borgarnes → Blönduós", "Your part", "Who you ride with", "Route"]);
+    expect(headings()).toEqual([
+      "Borgarnes → Blönduós",
+      "Your part",
+      "Who you ride with",
+      "Route",
+      "Safety",
+    ]);
     expect(screen.getByText("Sunday 15 November")).toBeVisible();
     expect(screen.getByText("Part of BSÍ bus terminal → Hof, Akureyri")).toBeVisible();
 

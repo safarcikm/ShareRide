@@ -1,6 +1,6 @@
 # Roadmap
 
-**Owner:** Martin · **Last reviewed:** 2026-11-13
+**Owner:** Martin · **Last reviewed:** 2026-11-16
 
 The roadmap follows the four phases Martin set out, design, build, beta and
 launch, plus a fifth phase for growth. Phases end on **exit criteria**, not
@@ -148,9 +148,9 @@ Milestone 6: changes and cancellations
 
 Milestone 7: trip day, reviews and reliability
 ([plan](../plans/2026-11-16-milestone-7-trip-day-reviews-and-reliability.md),
-proposed 2026-11-16)
+accepted 2026-11-16)
 
-- [ ] Trip day, dispute, review and reliability rules in the domain
+- [x] Trip day, dispute, review and reliability rules in the domain
 - [ ] Trips depart and complete on their own
 - [ ] The trip day and "I'm here"
 - [ ] No-shows, the driver didn't come, and the operator's decision
@@ -159,13 +159,106 @@ proposed 2026-11-16)
 
 Milestone 8: the operator console and meeting points
 ([plan](../plans/2026-11-16-milestone-8-operator-console-and-meeting-points.md),
-accepted 2026-11-16; built alongside milestone 7)
+accepted 2026-11-16; built alongside milestones 7, 9 and 10)
 
 - [ ] The operator role, passkey sign-in and the audit log
 - [ ] The console app, its home and the audit log page
 - [ ] Meeting points: create, edit, activate, pause, retire and move
 - [ ] Photos, import and problem reports
 - [ ] Distances for real meeting points
+
+Milestone 9: safety and moderation
+([plan](../plans/2026-11-16-milestone-9-safety-and-moderation.md), proposed
+2026-11-16; built alongside milestones 7 and 8)
+
+- [x] Safety rules in the domain
+- [x] Emergency 112, "Before you go" and sharing trip details
+- [ ] Block and unblock
+- [ ] Reports and the operator's alert
+- [ ] Moderation actions, suspension and appeals
+- [ ] Console: the reports queue, the report page and appeals
+- [ ] Console: users, trips and bookings
+
+Milestone 10: privacy self-service
+([spec 11](../specs/2026-11-13-privacy-self-service.md); built alongside
+milestones 7 to 9)
+
+- [ ] Download my data
+- [ ] Delete my account, with 7 days to undo
+- [ ] Retention periods run on their own and leave a record
+
+Milestones 7 to 10 are built at the same time, each in its own thread, at
+Martin's request (2026-11-16). The rest of the way to the closed beta follows
+the order Martin approved on 2026-11-16: first the parts the beta needs
+whatever the legal opinion says, then the parts that need his accounts, and
+last the parts the legal opinion or the company may still change. A milestone
+can start alongside the others, or move up, as soon as what it waits for is
+ready, for example milestone 12 once there is a domain. Each one gets its own
+plan in `docs/plans/` before it starts.
+
+Milestone 11: beta gate, feedback and operator settings
+([spec 12](../specs/2026-11-13-beta-access-and-feedback.md),
+[spec 10](../specs/2026-11-13-operator-settings-and-metrics.md); needs the
+console from milestone 8)
+
+- [ ] Invite codes, waves and the closed-beta gate
+- [ ] In-app feedback
+- [ ] Settings and switches in the console
+- [ ] Beta metrics and announcements
+
+Milestone 12: production and the waitlist
+([spec 12](../specs/2026-11-13-beta-access-and-feedback.md#31-waitlist);
+needs Martin's domain and Mailjet account)
+
+- [ ] Production environment, separate from staging
+- [ ] Email from our own domain
+- [ ] Waitlist page with double opt-in, so driver recruiting can start
+
+Milestone 13: photos and Apple and Google sign-in
+(the rest of [milestone 2](../plans/2026-11-13-milestone-2-hosted-and-connected.md);
+needs Hetzner storage, a Google sign-in client and the Apple account)
+
+- [ ] Profile photos, required for drivers before their first trip
+- [ ] Google sign-in
+- [ ] Sign in with Apple
+
+Milestone 14: women-only trips
+([spec 14](../specs/2026-11-13-women-only-trips.md); after the lawyer answers
+[question 9](../compliance/legal-and-regulatory.md#9-questions-for-the-lawyer-phase-1-brief))
+
+- [ ] Opt in, post, find and book women-only trips
+
+Milestone 15: real payments
+([spec 13](../specs/2026-11-13-payments.md); needs the company and a signed
+provider contract, after the provider ADR)
+
+- [ ] Receipts
+- [ ] Payments and refunds through the chosen provider
+- [ ] Driver payout setup and payouts
+- [ ] Payments in the console
+
+Milestone 16: ready for the beta
+
+- [ ] Accessibility pass to WCAG 2.2 AA
+- [ ] Icelandic texts checked by a native speaker
+- [ ] TestFlight and Google Play internal testing builds against production
+- [ ] The real meeting points for the beta corridors in production
+
+Martin's steps, in the order of what they unblock:
+
+1. Send the brief to an Icelandic lawyer (section 9 of
+   [legal and regulatory](../compliance/legal-and-regulatory.md)): the beta
+   itself, the price cap, women-only trips, payments and the company form.
+2. Talk to Rapyd, Teya and Straumur: milestone 15.
+3. Set up staging ([runbook](../operations/staging.md)): every check on the
+   web, and the console on a server.
+4. A domain and a Mailjet account: milestone 12 and email.
+5. Register the company and open a business bank account: the payment
+   contract and the store accounts in the company's name.
+6. Apple Developer, the expo.dev project and Firebase: iPhone test builds,
+   Sign in with Apple and real push.
+7. Hetzner storage and a Google sign-in client: photos (milestones 8 and 13)
+   and Google sign-in.
 
 MVP features (each one a spec, a plan and a PR series)
 

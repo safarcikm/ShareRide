@@ -432,6 +432,34 @@ releases follow [Semantic Versioning](https://semver.org/).
   date and times. Stops the driver removed are left out, and so are
   meeting points no longer in use, which the next step names.
   `POST /v1/trips/{id}/copy?reverse=`.
+- Trip day, dispute, review and reliability rules in the domain (milestone 7,
+  PR 2, spec 8): when a trip departs and completes, when its pages become
+  the trip day, the windows for "I'm here", a no-show and "The driver didn't
+  come", the time to answer a report and what each outcome does to the
+  booking, the refund, the payout and reliability; reviews on completed
+  bookings, hidden until both sides have written theirs; the rating from
+  revealed reviews only; and the reliability figure over 12 months, shown
+  once 5 count, with the cancellations the operator can overrule. The
+  booking lifecycle gains a driver absence before completion and the
+  operator's two outcomes for a contested no-show.
+- Safety rules in the domain (milestone 9, PR 2, spec 9): blocks in either
+  direction and the trips they close, also to a blocked passenger booked on
+  them (R9.4); `checkReport` with whom a report is about, the 24 hours to
+  report a booking problem and the 1 000-character description (R9.1);
+  urgent safety reports, the 24-hour response target, the queue's order and
+  the payout a booking problem holds (R9.3, R9.9); the operator's alert by
+  push, and SMS from 07:00 to 23:00; what a suspended person cannot do and
+  what a suspension cancels (R9.10); statements of reasons and appeals
+  within 14 days (R9.5); the operator's trip cancellation; and whether a
+  trip leaves the capital area.
+- Safety on the trip (milestone 9, PR 3, spec 9, 3.3): "Emergency: 112"
+  opens the dialler; "Before you go" links to vedur.is, umferdin.is and
+  safetravel.is, in the reader's language where the site has it, on a trip
+  that leaves the capital area; "Share trip details" sends a confirmed
+  booking's date, time, route, meeting point, driver and car with its
+  plate, or the driver's date, time and route, through the share sheet, or
+  copies it in a browser without one, or else shows it to copy. Nothing is stored (R9.8). On trip
+  details, the booking page and the driver's trip page.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
@@ -446,6 +474,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   with iOS dark and tinted versions, the Android adaptive and themed icons,
   the opening screen on frost or night, and the browser tab icon, exported
   from drawings in `apps/mobile/assets/logo`.
+
+- Privacy self-service, part 1 (spec 11): the rules in the domain (what
+  is open before deleting an account, the 7-day wait, what deletion does to
+  each kind of data, retention cutoffs, holds, one export a day, blocked
+  numbers, due dates of privacy requests), and a catalogue of every
+  table's personal data that a test keeps complete.
 
 ### Fixed
 

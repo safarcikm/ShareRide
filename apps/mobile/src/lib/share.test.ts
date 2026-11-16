@@ -1,5 +1,5 @@
 import { Platform, Share } from "react-native";
-import { shareLink } from "./share";
+import { shareLink, shareText } from "./share";
 
 const url = "https://shareride.is/trips/0190a1d6-0000-7000-8000-0000000000d1?from=1&to=2";
 const text = "Borgarnes → Blönduós on ShareRide";
@@ -84,5 +84,30 @@ describe("Sharing a link on the web", () => {
   ])("fails when the browser %s, so the screen shows the link", async (_, navigator) => {
     browserWith(navigator);
     await expect(shareLink(url, text)).resolves.toBe("failed");
+  });
+});
+
+describe("Sharing a text, such as a trip's details (spec 9, 3.3.3)", () => {
+  const details = "My trip: Saturday 14 November at 13:00 · Borgarnes → Blönduós";
+
+  it.each(["ios", "android"] as const)("opens the share sheet with the text on %s", async (os) => {
+    jest.replaceProperty(Platform, "OS", os);
+    shareSheet.mockResolvedValueOnce({ action: Share.sharedAction, activityType: undefined });
+    await expect(shareText(details)).resolves.toBe("shared");
+    expect(shareSheet).toHaveBeenCalledWith({ message: details });
+  });
+
+  it("uses the browser's share sheet where it has one", async () => {
+    const share = jest.fn(() => Promise.resolve());
+    browserWith({ share });
+    await expect(shareText(details)).resolves.toBe("shared");
+    expect(share).toHaveBeenCalledWith({ text: details });
+  });
+
+  it("copies the text in a browser without a share sheet", async () => {
+    const writeText = jest.fn(() => Promise.resolve());
+    browserWith({ clipboard: { writeText } as unknown as Clipboard });
+    await expect(shareText(details)).resolves.toBe("copied");
+    expect(writeText).toHaveBeenCalledWith(details);
   });
 });
