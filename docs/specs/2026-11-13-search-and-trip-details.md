@@ -266,7 +266,7 @@ upcoming trips.
 | `results.request` | Request | Beiðni |
 | `results.sortEarliest` | Earliest | Fyrst |
 | `results.sortCheapest` | Cheapest | Ódýrast |
-| `results.instantOnly` | Instant booking only | Aðeins bókun strax |
+| `results.instantOnly` | Book instantly only (spec 16) | Aðeins bókun strax |
 | `results.none` | No trips on {date} | Engar ferðir {date} |
 | `results.otherDays` | Trips on other days | Ferðir aðra daga |
 | `results.nearbyPoints` | Trips from nearby meeting points | Ferðir frá nálægum mótsstöðum |

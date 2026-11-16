@@ -1,4 +1,5 @@
 import { fireEvent, screen, within } from "expo-router/testing-library";
+import { AccessibilityInfo } from "react-native";
 import type * as Days from "@/lib/days";
 import { showsOtherTime } from "@/lib/days";
 import { readAppData, writeAppData } from "@/lib/app-data";
@@ -255,6 +256,44 @@ describe("Results header and chips (spec 16, 3.8)", () => {
     });
   });
 
+  it("keeps the header a heading, with the button inside it", async () => {
+    await openResults();
+    const heading = await screen.findByTestId("results-heading");
+    expect(heading).toHaveProp("accessibilityRole", "header");
+    expect(
+      within(heading).getByRole("button", {
+        name: "Change search: Borgarnes → Blönduós, Any day, 1 seat",
+      }),
+    ).toBeVisible();
+  });
+
+  it("does not show the last route's trips while a changed search loads", async () => {
+    let answerTwoSeats: (value: unknown) => void = () => undefined;
+    await renderApp(resultsUrl(), {
+      setUp: (client) => {
+        searchApi(client);
+        client.answer("/v1/trips/search", (input) => {
+          const query = input["query"] as Record<string, unknown>;
+          if (query["seats"] === 1) return ok(200, { results: [northResult] });
+          return new Promise((resolve) => {
+            answerTwoSeats = resolve;
+          });
+        });
+      },
+    });
+    await screen.findByTestId("trip-result");
+    await fireEvent.press(await changeSearch("Borgarnes → Blönduós", "Any day, 1 seat"));
+    await fireEvent.press(await screen.findByRole("button", { name: "One seat more" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Find a ride" }));
+
+    // Its totals were for one seat, so they wait for the answer for two.
+    expect(await changeSearch("Borgarnes → Blönduós", "Any day, 2 seats")).toBeVisible();
+    expect(screen.queryByTestId("trip-result")).toBeNull();
+    expect(screen.getByLabelText("Loading")).toBeVisible();
+    answerTwoSeats(ok(200, { results: [{ ...northResult, freeSeats: 2 }] }));
+    expect(await screen.findByTestId("trip-result")).toBeVisible();
+  });
+
   it("keeps the day searched in the form, and Cancel leaves the search as it was", async () => {
     const { client } = await openResults("&date=2026-11-15");
     await fireEvent.press(await changeSearch("Borgarnes → Blönduós", "Sun 15 Nov, 1 seat"));
@@ -277,7 +316,16 @@ describe("Results header and chips (spec 16, 3.8)", () => {
     await fireEvent.press(sort);
     expect(screen.getByRole("button", { name: "Sort: Earliest" })).toBeExpanded();
     expect(screen.getByRole("radio", { name: "Earliest" })).toBeChecked();
-    await fireEvent.press(screen.getByRole("radio", { name: "Cheapest" }));
+    // The radio pressed goes, so screen readers go back to the Sort chip.
+    const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    focus.mockClear();
+    try {
+      await fireEvent.press(screen.getByRole("radio", { name: "Cheapest" }));
+      expect(focus).toHaveBeenCalledTimes(1);
+      expect(focus).toHaveBeenLastCalledWith(expect.anything(), "focus");
+    } finally {
+      focus.mockRestore();
+    }
 
     expect(await screen.findByRole("button", { name: "Sort: Cheapest" })).toBeVisible();
     expect(screen.queryByRole("radio", { name: "Earliest" })).toBeNull();

@@ -165,7 +165,10 @@ export function PlaceResults({
   );
 }
 
-/** Meeting points and places, as cards or, `compact`, as rows of a list. */
+/**
+ * Meeting points and places, as cards or, `compact`, as rows of a list
+ * that shows the sample tag once, under it.
+ */
 function Rows({
   found,
   onChoose,
@@ -181,6 +184,7 @@ function Rows({
         key={result.meetingPoint.id}
         point={result.meetingPoint}
         compact={compact}
+        sampleTag={!compact}
         onPress={() => {
           onChoose(result);
         }}

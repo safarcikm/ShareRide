@@ -74,6 +74,8 @@ export default function SearchResults() {
   // Counts the times the form closed, to give focus back to the header.
   const [closed, setClosed] = useState(0);
   const [choosingOrder, setChoosingOrder] = useState(false);
+  // Counts the orders chosen, to give focus back to the Sort chip.
+  const [orderChosen, setOrderChosen] = useState(0);
 
   const query = useMemo(
     () => ({
@@ -92,10 +94,17 @@ export default function SearchResults() {
     [session, query],
   );
   const { value: loaded, reload } = useLoaded(load);
-  // The last answer stays on screen while a changed search loads.
   const result = loaded?.answer;
   const found = result?.ok === true ? result.data.results : undefined;
   const current = loaded?.query === query;
+  // The last answer stays on screen while a changed order, filter or day
+  // loads, not a changed route or seat count: its totals and places were
+  // for another search.
+  const sameRoute =
+    loaded !== undefined &&
+    loaded.query.from === from &&
+    loaded.query.to === to &&
+    loaded.query.seats === seats;
 
   // Other days and nearby points: when nothing matches, and other days at
   // the end of a day's list. Asked for once per place, date and seats, and
@@ -162,9 +171,13 @@ export default function SearchResults() {
     );
 
   let body: ReactNode;
-  // An old answer stays while a changed search loads only when it has trips:
-  // "nothing matches" and failures speak about the search they answered.
-  if (result === undefined || (!current && (found === undefined || found.length === 0))) {
+  // An old answer stays while a changed search loads only when it has trips
+  // for the same route and seats: "nothing matches" and failures speak about
+  // the search they answered.
+  if (
+    result === undefined ||
+    (!current && (!sameRoute || found === undefined || found.length === 0))
+  ) {
     body = <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />;
   } else if (!result.ok) {
     body = (
@@ -248,7 +261,9 @@ export default function SearchResults() {
     <Screen>
       <View style={styles.header}>
         <BackButton fallback="/" />
-        <View style={styles.grow}>
+        {/* The screen's heading, with the button inside it as in an
+            accordion: on the web an h1 around the button. */}
+        <View testID="results-heading" accessibilityRole="header" style={styles.grow}>
           <TakesFocus key={closed} when={closed > 0}>
             <Card
               accessibilityLabel={t("results.changeSearchLabel", { route: title, summary })}
@@ -272,15 +287,17 @@ export default function SearchResults() {
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
         <View style={styles.chips}>
-          <Chip
-            role="button"
-            label={t("results.sort", { order: sortLabel })}
-            selected={false}
-            expanded={choosingOrder}
-            onToggle={() => {
-              setChoosingOrder(!choosingOrder);
-            }}
-          />
+          <TakesFocus key={orderChosen} when={orderChosen > 0}>
+            <Chip
+              role="button"
+              label={t("results.sort", { order: sortLabel })}
+              selected={false}
+              expanded={choosingOrder}
+              onToggle={() => {
+                setChoosingOrder(!choosingOrder);
+              }}
+            />
+          </TakesFocus>
           <Chip
             label={t("results.instantOnly")}
             selected={instant}
@@ -311,6 +328,7 @@ export default function SearchResults() {
               onToggle={() => {
                 setSort(order);
                 setChoosingOrder(false);
+                setOrderChosen((count) => count + 1);
               }}
             />
           ))}

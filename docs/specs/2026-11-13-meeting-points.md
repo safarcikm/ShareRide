@@ -11,6 +11,11 @@ Related: [meeting points](../product/meeting-points.md),
 [ADR 0009](../decisions/0009-maps-and-routing.md) (accepted),
 [spec 1](2026-11-13-sign-in-and-profile.md).
 
+Amended by [spec 16](2026-11-15-one-home-and-simpler-flows.md): the list
+under From and To shows towns and areas first, then meeting points, each
+under a small heading, with "Sample meeting points" once under the list
+(3.8).
+
 ## 1. Problem and goal
 
 Every trip is built from curated meeting points, so passengers must be able to
@@ -94,7 +99,9 @@ screen of its own.
    well-known landmarks. Choosing a place shows the nearest active meeting
    points and how far they are from it in a straight line.
 4. Order: exact and prefix matches first, then aliases, then close matches;
-   meeting points before places when equally good.
+   meeting points before places when equally good. The list under From and
+   To groups them, towns and areas first, each group in this order
+   (spec 16, 3.8).
 5. Street addresses are not searched in the beta (decision 3).
 6. **Near me:** asks for location permission when first tapped, takes one
    position, and lists the nearest active meeting points with straight-line

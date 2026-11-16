@@ -4,7 +4,8 @@
 (2026-11-15); all six proposals built
 
 Amends: [spec 1](2026-11-13-sign-in-and-profile.md) (front page, sign-up,
-profile, settings), [spec 3](2026-11-13-post-a-trip.md) (driver setup and the
+profile, settings), [spec 2](2026-11-13-meeting-points.md) (the From and To
+list), [spec 3](2026-11-13-post-a-trip.md) (driver setup and the
 posting steps), [spec 4](2026-11-13-search-and-trip-details.md) (front page
 rides, results, trip details), [spec 5](2026-11-13-booking-and-requests.md)
 (booking screen, paying, My bookings) and [spec 15](2026-11-13-visual-design-system.md)
@@ -303,18 +304,24 @@ Find replaces both the front page and My profile as the place the app opens.
    Borgarnes → Blönduós, Any day, 1 seat". It opens the search form in place,
    filled in, under "Change search", and Find a ride shows the new results on
    the same screen; Cancel keeps the ones before. Focus goes back to the
-   header. A search changed here is not added to the recent searches, which
-   keep the ones made from Find.
+   header. The button sits inside the screen's heading, an h1 on the web.
+   While a new route or seat count loads, the results before it give way to
+   the loading sign, as their totals were for another search. A search
+   changed here is not added to the recent searches, which keep the ones
+   made from Find.
 2. **Sorting and filtering apart:** "Sort: Earliest ▾" is one chip that opens
    Earliest and Cheapest under the chips, and "Book instantly only" is a
-   separate filter chip, before the times of day.
+   separate filter chip, before the times of day. Choosing an order closes
+   them and gives focus back to the Sort chip.
 3. **From and To list:** towns and areas come first, then meeting points, each
    under a small heading ("Towns and areas", "Meeting points"). The
    sample-data tag ("Sample meeting points") shows once under the list
    instead of on every row. Place search on a page of its own (meeting
-   points, adding a stop) keeps its cards as they are.
+   points, adding a stop) keeps its cards as they are, and the meeting points
+   near a chosen town keep the tag on each row, as nothing is under them.
 4. **Settings:** the language is two choices side by side, English and
-   Íslenska, with the current one ticked. Rows are grouped: Language, Your
+   Íslenska, with the current one ticked. Each name is read out in its own
+   language. Rows are grouped: Language, Your
    account (Phone number, Email, Signed-in devices), Legal documents, then
    Sign out and Sign out on all devices. Your account with Phone number and
    Email came first, with adding an email (milestone 5, PR 7b), then

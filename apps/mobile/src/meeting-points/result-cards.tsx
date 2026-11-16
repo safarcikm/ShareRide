@@ -11,18 +11,21 @@ import { placeKindKeys, regionKeys, typeKeys } from "./texts";
 /**
  * A meeting point in a list: its name, type and municipality, an optional
  * detail such as its distance, and tags for paused and sample points. The
- * whole card opens it. `compact` shows it as a row of a dropdown list, which
- * leaves the sample tag to the list (spec 16, 3.8).
+ * whole card opens it. `compact` shows it as a row of a dropdown list.
+ * `sampleTag={false}` leaves the sample tag to a list that shows it once
+ * (spec 16, 3.8).
  */
 export function MeetingPointCard({
   point,
   detail,
   compact = false,
+  sampleTag = true,
   onPress,
 }: {
   readonly point: MeetingPointSummary;
   readonly detail?: string;
   readonly compact?: boolean;
+  readonly sampleTag?: boolean;
   readonly onPress: () => void;
 }) {
   const { locale, t } = useLanguage();
@@ -30,7 +33,7 @@ export function MeetingPointCard({
   const type = t(typeKeys[point.type]);
   const tags: { kind: TagKind; label: string }[] = [];
   if (point.status === "paused") tags.push({ kind: "warning", label: t("meetingPoints.paused") });
-  if (point.sample && !compact) tags.push({ kind: "info", label: t("meetingPoints.sample") });
+  if (point.sample && sampleTag) tags.push({ kind: "info", label: t("meetingPoints.sample") });
   const Frame = compact ? Row : Card;
   return (
     <Frame

@@ -220,6 +220,15 @@ describe("Settings", () => {
     // The language is two choices side by side, the current one ticked.
     expect(screen.getByRole("radio", { name: "English" })).toBeChecked();
     expect(screen.getByRole("radio", { name: "Íslenska" })).not.toBeChecked();
+    // Each name is read in its own language.
+    expect(screen.getByRole("radio", { name: "Íslenska" })).toHaveProp(
+      "accessibilityLanguage",
+      "is",
+    );
+    expect(screen.getByRole("radio", { name: "English" })).toHaveProp(
+      "accessibilityLanguage",
+      "en",
+    );
     // Rows and their headings start at the left.
     expect(screen.getByRole("header", { name: "Language" })).not.toHaveStyle({
       textAlign: "center",

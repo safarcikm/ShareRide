@@ -87,6 +87,7 @@ function Settings({ me }: { readonly me: Me }) {
               key={choice}
               role="radio"
               label={choice === "en" ? t("language.english") : t("language.icelandic")}
+              lang={choice}
               selected={locale === choice}
               onToggle={() => {
                 if (choice === locale) return;

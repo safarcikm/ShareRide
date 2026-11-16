@@ -89,6 +89,10 @@ for (const journey of journeys) {
 
       const header = page.getByRole("button", { name: journey.header });
       await expect(header).toBeVisible();
+      // The button is inside the screen's heading, so the screen keeps an h1.
+      await expect(
+        page.getByRole("heading", { level: 1, name: journey.header }).filter({ visible: true }),
+      ).toBeVisible();
       // The header opens the search in place, filled in; Find a ride searches again.
       await header.click();
       await expect(page.getByRole("heading", { name: journey.changeSearch })).toBeVisible();
