@@ -61,17 +61,21 @@ say where you are and what happens next.
 1. Four places, always in the same order: **Find**, **My rides**, **Offer**
    and **Profile**. On a phone they are a tab bar at the bottom. On a wide
    screen (spec 15, 4.8) they are links in a bar at the top, with the logo
-   and name, and they show on every screen there.
-2. On a phone, the tab bar shows on the four main screens. A screen opened
+   and name, and they show on every screen there. Spec 7 (chat) adds a
+   fifth, **Messages**, between Offer and Profile, with the unread count
+   ([milestone 5 plan](../plans/2026-11-15-milestone-5-chat-and-notifications.md),
+   decision 1).
+2. On a phone, the tab bar shows on the main screens. A screen opened
    from one of them, such as a trip, a posting step or Check and pay, comes
    on top with a back button and no tab bar. Going back shows the tab bar
    again. A tab keeps its place: going to Profile and back to Find keeps the
    search you were on.
-3. The same four places show when signed out:
+3. The same places show when signed out:
    - **Find** works as for anyone.
    - **My rides** says "Sign in to see your rides", with Sign in.
    - **Offer** says "Driving somewhere? Share the empty seats in your car.",
      with "Sign in to offer a ride". After signing up, the posting form opens.
+   - **Messages** says "Sign in to see your messages", with Sign in.
    - **Profile** shows Sign in, the language choice, the meeting points and
      the legal documents.
 4. Pressing the tab you are on takes that tab back to its main screen.
@@ -341,7 +345,7 @@ depend on gender; the Icelandic review can change it.
 
 ## 9. Testing
 
-- **Screen tests** for each part: the tab bar on the four main screens and
+- **Screen tests** for each part: the tab bar on the main screens and
   not on screens on top; the signed-out tabs; Your next ride; My rides order
   and Needs you; sign-up with a kept ride through all three steps and back;
   Check and pay through payment, including a payment that does not finish;
@@ -354,8 +358,8 @@ depend on gender; the Icelandic review can change it.
 
 ## 10. Out of scope
 
-- A Messages place in the menu. Spec 7 (chat) may add one later as a fifth
-  tab.
+- A Messages place in the menu. Spec 7 (chat) adds it as a fifth tab, in
+  milestone 5.
 - Profile photos (the row comes back with them).
 - Apple and Google sign-in (spec 1, 3.3), still later.
 - Changing booking, payment or cancellation rules.

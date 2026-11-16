@@ -1,25 +1,34 @@
 import type { MessageKey } from "@shareride/i18n";
-import { CarFront, CircleUserRound, Search, Ticket, type LucideIcon } from "lucide-react-native";
+import {
+  CarFront,
+  CircleUserRound,
+  MessageCircle,
+  Search,
+  Ticket,
+  type LucideIcon,
+} from "lucide-react-native";
 
-export type MenuTabName = "index" | "my-rides" | "offer" | "profile";
+export type MenuTabName = "index" | "my-rides" | "offer" | "messages" | "profile";
 
 export interface MenuTab {
   /** The route's name in the `(tabs)` group. */
   readonly name: MenuTabName;
-  readonly href: "/" | "/my-rides" | "/offer" | "/profile";
+  readonly href: "/" | "/my-rides" | "/offer" | "/messages" | "/profile";
   readonly label: MessageKey;
   readonly icon: LucideIcon;
 }
 
 /**
- * The four places of the menu, always in this order (spec 16, 3.1). A
- * place added later, such as Messages, is one more entry here and one more
- * screen in `app/(tabs)`.
+ * The places of the menu, always in this order: spec 16's four (3.1) and
+ * Messages (spec 7, 3.1, item 9; milestone 5 plan, decision 1) before
+ * Profile. A place added later is one more entry here and one more screen
+ * in `app/(tabs)`.
  */
 export const menuTabs: readonly MenuTab[] = [
   { name: "index", href: "/", label: "nav.find", icon: Search },
   { name: "my-rides", href: "/my-rides", label: "nav.myRides", icon: Ticket },
   { name: "offer", href: "/offer", label: "nav.offer", icon: CarFront },
+  { name: "messages", href: "/messages", label: "nav.messages", icon: MessageCircle },
   { name: "profile", href: "/profile", label: "nav.profile", icon: CircleUserRound },
 ];
 
@@ -29,6 +38,7 @@ const belongsTo: readonly [prefix: string, tab: MenuTabName][] = [
   ["/bookings", "my-rides"],
   ["/offer", "offer"],
   ["/drive", "offer"],
+  ["/messages", "messages"],
   ["/profile", "profile"],
   ["/settings", "profile"],
   ["/search", "index"],

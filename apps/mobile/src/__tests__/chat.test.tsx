@@ -490,19 +490,17 @@ describe("Conversations list (spec 7, 3.1, item 9)", () => {
   });
 
   it("says chats open once a booking is confirmed, and when the list could not be loaded", async () => {
-    let tries = 0;
+    const server = { down: true };
     await renderApp("/messages", {
       me: completeMe,
       setUp: (client) => {
-        conversationsApi(client, () => {
-          tries += 1;
-          return tries === 1
-            ? failure(500, "internal_error")
-            : ok(200, { conversations: [], unread: 0 });
-        });
+        conversationsApi(client, () =>
+          server.down ? failure(500, "internal_error") : ok(200, { conversations: [], unread: 0 }),
+        );
       },
     });
     expect(await screen.findByText("The messages could not be loaded.")).toBeVisible();
+    server.down = false;
     await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
     expect(
       await screen.findByText(

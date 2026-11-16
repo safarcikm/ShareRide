@@ -15,6 +15,7 @@ import { showConversation } from "@/notifications/open-conversation";
 import { newClientId } from "./client-id";
 import { merged, newestTheirs, type Outgoing, type Pending } from "./messages";
 import { messageText, otherPerson, spokenMessage } from "./texts";
+import { useUnread } from "./unread";
 
 /** While a conversation is open, new messages are fetched this often (spec 7, 3.1, item 10). */
 export const pollMs = 5_000;
@@ -36,6 +37,7 @@ export interface Shown {
 export function useConversation(bookingId: string) {
   const { t } = useLanguage();
   const session = useSession();
+  const { refresh: refreshUnread } = useUnread();
   const [loaded, setLoaded] = useState<Shown | CallFailure>();
   const [attempt, setAttempt] = useState(0);
   const [pending, setPending] = useState<readonly Pending[]>([]);
@@ -134,8 +136,8 @@ export function useConversation(bookingId: string) {
     }, [page, t, announce, bookingId]),
   );
 
-  // Reads the other person's messages as they show; one that failed is
-  // tried again after the next fetch.
+  // Reads the other person's messages as they show, and the badge follows;
+  // one that failed is tried again after the next fetch.
   const upTo = shown === null ? null : (newestTheirs(shown.messages)?.id ?? null);
   useEffect(() => {
     if (upTo === null || upTo === markedUpTo.current) return;
@@ -143,9 +145,10 @@ export function useConversation(bookingId: string) {
     void session
       .call(readMessagesRoute, { params: { id: bookingId }, body: { upTo } })
       .then((answer) => {
-        if (!answer.ok && markedUpTo.current === upTo) markedUpTo.current = null;
+        if (answer.ok) refreshUnread();
+        else if (markedUpTo.current === upTo) markedUpTo.current = null;
       });
-  }, [session, bookingId, upTo, polls]);
+  }, [session, bookingId, upTo, polls, refreshUnread]);
 
   const send = async (outgoing: Outgoing, clientId: string = newClientId()) => {
     // The same message tapped twice while the first is on its way goes once.

@@ -77,7 +77,7 @@ from "My trips", the passenger pays, and both see the seat confirmed
 rides (`apps/mobile/e2e/my-rides.spec.ts`). Find, where the app
 opens, shows a ride leaving soon and searches a route, leads from "Offer a
 ride" and from Sign in under Profile to signing in, and shows the menu of
-four places on every main screen, marking the one you are on
+five places on every main screen, marking the one you are on
 (`apps/mobile/e2e/welcome.spec.ts`).
 
 ## Coverage

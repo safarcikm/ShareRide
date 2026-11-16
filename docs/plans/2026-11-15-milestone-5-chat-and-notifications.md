@@ -177,15 +177,19 @@ Endpoints (`/v1`), shapes in `packages/contracts/src/chat.ts`:
   seconds (3.1, item 10) and marks them read. A message that fails to send
   stays in the list as "Not sent. Tap to try again" and keeps its client id.
   Read-only after closing: `chat.closed` in place of the field.
-- **Conversations list** (`src/app/messages/index.tsx`): rows of 3.1, item
-  9, with the unread count; an empty state that says chats open once a
-  booking is confirmed. The badge's total is fetched when the app comes to
-  the front, when a push arrives and, on the web, every minute while the
-  page is visible.
+- **Conversations list** (`src/app/(tabs)/messages.tsx`, the Messages tab):
+  rows of 3.1, item 9, with the unread count; an empty state that says
+  chats open once a booking is confirmed; signed out, a page that asks to
+  sign in. The badge's total (`src/chat/unread.tsx`) is fetched once
+  signed in, when the app comes to the front, when a push arrives, after a
+  conversation is read and, on the web, every minute while the page is
+  visible; the list's own answer sets it too. It shows up to 9, then "9+",
+  and screen readers hear it with the tab's name ("Messages, 3 unread").
 - **Entry points:** "Message {driver}" on a confirmed booking's details,
   "Message" by each passenger and "Message all passengers" on the driver's
-  trip page (`src/app/drive/trips/[id]/message.tsx`). The Messages tab is
-  added to the new tab bar once it merges (decision 1).
+  trip page (`src/app/drive/trips/[id]/message.tsx`). The Messages tab sits
+  between Offer and Profile in the tab bar and the wide screens' top bar
+  (decision 1).
 - Screen readers: each message is read as one item ("Anna, 08:12: I'm on my
   way. Seen"); new messages are announced while the conversation is open.
 
@@ -369,8 +373,8 @@ merge.
 
 - [x] The conversation, the list, the entry points, message all; Seen,
       quick messages, the safety tip, read-only, "Not sent" with retry
-- [ ] The Messages tab with its badge, if the new tab bar has merged (else
-      a short follow-up PR once it has): not yet merged, so a follow-up
+- [x] The Messages tab with its badge, if the new tab bar has merged (else
+      a short follow-up PR once it has): a follow-up PR after PR 6
 - [x] Texts in Icelandic and English (spec 7, section 8, plus new ones)
 - Verify: a browser journey with two people: the passenger books and pays,
   both write, a quick message sent in Icelandic reads in English, "Seen"

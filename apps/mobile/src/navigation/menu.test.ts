@@ -1,8 +1,14 @@
 import { menuTabOf, menuTabs } from "./menu";
 
 describe("menuTabOf (spec 16, 3.1)", () => {
-  it("names the four places in order", () => {
-    expect(menuTabs.map((tab) => tab.href)).toEqual(["/", "/my-rides", "/offer", "/profile"]);
+  it("names the places in order, Messages before Profile", () => {
+    expect(menuTabs.map((tab) => tab.href)).toEqual([
+      "/",
+      "/my-rides",
+      "/offer",
+      "/messages",
+      "/profile",
+    ]);
   });
 
   it("finds the place a screen belongs to", () => {
@@ -12,6 +18,8 @@ describe("menuTabOf (spec 16, 3.1)", () => {
     expect(menuTabOf("/my-rides")).toBe("my-rides");
     expect(menuTabOf("/bookings/0190a1d6-0000-7000-8000-0000000000b4")).toBe("my-rides");
     expect(menuTabOf("/drive/trips/new")).toBe("offer");
+    expect(menuTabOf("/messages")).toBe("messages");
+    expect(menuTabOf("/messages/0190a1d6-0000-7000-8000-0000000000b4")).toBe("messages");
     expect(menuTabOf("/settings")).toBe("profile");
     expect(menuTabOf("/profile/edit")).toBe("profile");
   });

@@ -4,7 +4,8 @@ import { postTripToSelfoss } from "./support/trips";
 
 // Spec 7's chat on the web build, in two browsers: a driver posts Mjódd to
 // N1 Selfoss for tomorrow, a passenger requests a seat, the driver accepts
-// and the passenger pays. Then they write to each other: the driver answers
+// and the passenger pays. Then they write to each other: the driver sees the
+// passenger's message counted on Messages in the menu, answers
 // with a quick message in Icelandic, which the passenger reads in English,
 // and the passenger sees "Seen" once the driver has opened the chat. Each
 // project posts its own trip, so phone and desktop runs never meet.
@@ -70,6 +71,12 @@ test("the driver and passenger of a confirmed booking message each other", async
   await passenger.getByRole("button", { name: "Send", exact: true }).click();
   await expect(passenger.getByLabel(/^You, \d\d:\d\d: Where shall I wait\?$/)).toBeVisible();
   await expect(passenger.getByLabel("Write a message")).toHaveValue("");
+
+  // The driver's Messages place counts it.
+  await driver.goto("/");
+  await expect(
+    driver.getByRole("link", { name: "Messages, 1 unread", exact: true }).filter(visible),
+  ).toBeVisible();
 
   // The driver switches the app to Icelandic and answers from the trip page.
   // On a wide screen the top bar has the same switch, so this is Settings' own.

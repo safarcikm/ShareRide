@@ -3,6 +3,7 @@ import { useEffect, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { SessionProvider, useSession, useSessionState } from "@/auth/session";
+import { UnreadProvider } from "@/chat/unread";
 import { Button } from "@/components/button";
 import { Loading } from "@/components/loading";
 import { Notice } from "@/components/notice";
@@ -24,8 +25,10 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <LanguageProvider>
         <SessionProvider>
-          <Navigation />
-          <PushNotifications />
+          <UnreadProvider>
+            <Navigation />
+            <PushNotifications />
+          </UnreadProvider>
         </SessionProvider>
       </LanguageProvider>
     </SafeAreaProvider>
