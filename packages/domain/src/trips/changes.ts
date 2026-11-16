@@ -1,7 +1,7 @@
 // Changing a published trip (spec 6, 3.2; rules R6.1 to R6.4, S5, P4): what
 // the rules allow, and what a change does for the booked passengers, so
-// the app can show it before saving and the API saves the same. Stops are
-// added and removed with milestone 6's PR 6.
+// the app can show it before saving and the API saves the same. A stop is
+// added with milestone 6's PR 6a, and removed with PR 6b.
 import { movedFar } from "../bookings/cancellation.ts";
 import type { Season } from "../meeting-points/catalogue.ts";
 import type { NotificationEvent } from "../notifications/catalogue.ts";
@@ -10,9 +10,15 @@ import { err, ok, type Result } from "../result.ts";
 import { checkNote, type NoteProblem } from "./note.ts";
 import { fitPriceLevel, isPriceLevel, priceCap, segmentPrice } from "./prices.ts";
 import { overlaps, type TimeWindow } from "./publish.ts";
-import { stopsOutOfSeason } from "./route.ts";
+import {
+  insertionLegPairs,
+  insertStop,
+  stopsOutOfSeason,
+  type DistancesMissing,
+  type LegLookup,
+} from "./route.ts";
 import type { TripSettings } from "./settings.ts";
-import { checkTimes, type TimeProblem } from "./times.ts";
+import { checkTimes, stopTimeBetween, type TimeProblem } from "./times.ts";
 import type { BookingMode, TripPreferences, TripStatus } from "./trip.ts";
 
 /**
@@ -28,7 +34,11 @@ const minuteMs = 60_000;
 export interface ChangeableTrip {
   readonly status: Exclude<TripStatus, "draft">;
   /** In order, the departure first. */
-  readonly stops: readonly { readonly plannedAt: Date; readonly season: Season }[];
+  readonly stops: readonly {
+    readonly meetingPointId: string;
+    readonly plannedAt: Date;
+    readonly season: Season;
+  }[];
   /** Each segment's typical driving time in seconds, from its leg as it is now (R3.6). */
   readonly typicalS: readonly number[];
   /** Each segment's distance in metres, for its price and cap (rules P3, P4). */
@@ -55,9 +65,17 @@ export interface BookingOnTrip {
   readonly departsAtWhenBooked: Date;
 }
 
+/** A meeting point the driver adds to a published trip (spec 6, 3.2). */
+export interface StopToAdd {
+  readonly meetingPointId: string;
+  readonly season: Season;
+  /** Offered for new trips (R3.2): a paused, retiring or retired point is not. */
+  readonly offered: boolean;
+}
+
 /**
  * What a change is to, as each one is recorded (spec 6, section 6:
- * `TripChange`). Adding and removing a stop join with milestone 6's PR 6.
+ * `TripChange`). Removing a stop joins with milestone 6's PR 6b.
  */
 export const tripChangeKinds = [
   "departure",
@@ -66,6 +84,7 @@ export const tripChangeKinds = [
   "vehicle",
   "bookingMode",
   "details",
+  "addStop",
 ] as const satisfies readonly TripChange["kind"][];
 
 /** One change at a time, as the driver saves it from Edit trip. */
@@ -75,7 +94,12 @@ export type TripChange =
   | { readonly kind: "priceLevel"; readonly priceLevel: number }
   | { readonly kind: "vehicle"; readonly vehicleId: string }
   | { readonly kind: "bookingMode"; readonly bookingMode: BookingMode }
-  | { readonly kind: "details"; readonly preferences: TripPreferences; readonly note: string };
+  | { readonly kind: "details"; readonly preferences: TripPreferences; readonly note: string }
+  /**
+   * A stop where it adds the least distance, as when posting (spec 3,
+   * 3.4.3), with the legs `addStopLegPairs` names.
+   */
+  | { readonly kind: "addStop"; readonly stop: StopToAdd; readonly legs: LegLookup };
 
 export type ChangeProblem =
   | { readonly code: "trip_cancelled" }
@@ -91,7 +115,21 @@ export type ChangeProblem =
   | { readonly code: "price_level_invalid" }
   /** Not one of the driver's cars, or removed (spec 6, 3.2). */
   | { readonly code: "car_missing" }
-  | NoteProblem;
+  | NoteProblem
+  /** The point is on the trip already, at this position (R3.2). */
+  | { readonly code: "stop_on_trip"; readonly stop: number }
+  /** The point is paused or retired (R3.2). */
+  | { readonly code: "stop_unavailable" }
+  /** The route would be over 1.5 times the direct distance (R3.4). */
+  | { readonly code: "route_too_long" }
+  /**
+   * The stretches to the new stop and on from it need more than the time
+   * between its neighbours, the ends of this segment (R3.6; milestone 6
+   * plan, decision 2).
+   */
+  | { readonly code: "stop_does_not_fit"; readonly segment: number }
+  /** The legs of a new point are still being worked out (spec 2, 3.7). */
+  | DistancesMissing;
 
 /** What one booked passenger is told of a change (spec 7, 3.3). */
 export interface PassengerTold {
@@ -108,6 +146,12 @@ export interface SegmentPricing {
   readonly cap: Money;
 }
 
+/** Where a stop was added, splitting the segment before its position in two. */
+export interface AddedStop {
+  readonly position: number;
+  readonly stretches: readonly [SegmentPricing, SegmentPricing];
+}
+
 export interface ChangeEffect {
   /** The trip as it will be. */
   readonly trip: ChangeableTrip;
@@ -120,8 +164,14 @@ export interface ChangeEffect {
    */
   readonly pricing: readonly SegmentPricing[] | null;
   /**
-   * Who is told: each booked passenger, accepted or confirmed, for a move or
-   * a new car; nobody for the seats, price level, booking mode or details,
+   * A stop added: its position, and the stretch to it and the one on from
+   * it, each priced for new bookings as when publishing (rules P3, P4); null
+   * for other changes. The other stretches keep their prices.
+   */
+  readonly addedStop: AddedStop | null;
+  /**
+   * Who is told: each booked passenger, accepted or confirmed, for a move, a
+   * new car or a new stop; nobody for the seats, price level, booking mode or details,
    * or when nothing changed. A request's passenger is told only if the trip
    * is cancelled (spec 7, 3.3).
    */
@@ -130,7 +180,33 @@ export interface ChangeEffect {
 
 type ChangeSettings = Parameters<typeof checkTimes>[3] &
   Parameters<typeof isPriceLevel>[2] &
-  Pick<TripSettings, "maxSeats">;
+  Pick<TripSettings, "maxSeats" | "routeFactorPercent">;
+
+/**
+ * The legs `checkTripChange` looks up to add `stop` to a trip with these
+ * stops: those that place it, and the first stop to the last (R3.4).
+ */
+export function addStopLegPairs(stops: readonly string[], stop: string): [string, string][] {
+  const placing = insertionLegPairs(stops, stop);
+  const first = stops[0];
+  const last = stops.at(-1);
+  if (placing.length === 0 || first === undefined || last === undefined) return placing;
+  return [...placing, [first, last]];
+}
+
+/**
+ * A booking's price for a stretch a new stop splits (spec 6, 3.2): shared
+ * by the new stretches' distances, as prices are, and rounded so that the
+ * booking keeps its total (rule P1). Whole krónur.
+ */
+export function splitPrice(
+  price: number,
+  distancesM: readonly [there: number, onwards: number],
+): [number, number] {
+  const [there, onwards] = distancesM;
+  const first = Math.round((price * there) / (there + onwards));
+  return [first, price - first];
+}
 
 /**
  * Whether a published trip can take a change now, and its effect. Every
@@ -149,6 +225,17 @@ export function checkTripChange(
   const departsAt = trip.stops[0]?.plannedAt ?? now;
   if (trip.status !== "published" || departsAt <= now) return err([{ code: "trip_departed" }]);
 
+  if (change.kind === "addStop") {
+    const added = withStopAdded(trip, change, settings);
+    if (!added.ok) return added;
+    return ok({
+      trip: added.value.trip,
+      priceLevelLowered: false,
+      pricing: null,
+      addedStop: added.value.addedStop,
+      told: whoIsTold(trip, change, added.value.trip, bookings),
+    });
+  }
   const changed = applied(trip, change, settings);
   const problems = changeProblems(trip, bookings, change, changed.trip, now, settings);
   if (problems.length > 0) return err(problems);
@@ -162,13 +249,94 @@ export function checkTripChange(
         }))
       : null;
   const told = whoIsTold(trip, change, after, bookings);
-  return ok({ ...changed, pricing, told });
+  return ok({ ...changed, pricing, addedStop: null, told });
+}
+
+/**
+ * The trip with a stop added where it adds the least distance (spec 3,
+ * 3.4.3), at a time between its neighbours, which keep theirs (decision
+ * 2), or the rules it breaks. Both halves of the stretch it splits keep its
+ * occupancy, since everyone riding it rides both.
+ */
+function withStopAdded(
+  trip: ChangeableTrip,
+  change: Extract<TripChange, { readonly kind: "addStop" }>,
+  settings: ChangeSettings,
+): Result<{ readonly trip: ChangeableTrip; readonly addedStop: AddedStop }, ChangeProblem[]> {
+  const { stop, legs } = change;
+  const points = trip.stops.map((each) => each.meetingPointId);
+  const onTrip = points.indexOf(stop.meetingPointId);
+  if (onTrip !== -1) return err([{ code: "stop_on_trip", stop: onTrip }]);
+  // Nothing else matters for a point that cannot be added.
+  if (!stop.offered) return err([{ code: "stop_unavailable" }]);
+  const placed = insertStop(points, stop.meetingPointId, legs);
+  if (!placed.ok) return err([placed.error]);
+  const position = placed.value.indexOf(stop.meetingPointId);
+  const segment = position - 1;
+  const before = trip.stops[segment];
+  const after = trip.stops[position];
+  const first = points[0] ?? "";
+  const direct = legs(first, points.at(-1) ?? "");
+  const there = before && legs(before.meetingPointId, stop.meetingPointId);
+  const onwards = after && legs(stop.meetingPointId, after.meetingPointId);
+  if (!before || !after || !direct || !there || !onwards) {
+    // Only a trip with fewer than two stops; a published one has them (R3.2).
+    return err([{ code: "distances_missing", pairs: [[first, stop.meetingPointId]] }]);
+  }
+
+  const problems: ChangeProblem[] = [];
+  const departsAt = trip.stops[0]?.plannedAt ?? before.plannedAt;
+  if (stopsOutOfSeason([stop.season], departsAt).length > 0) {
+    problems.push({ code: "stop_out_of_season", stop: position });
+  }
+  const distanceM =
+    trip.distancesM.reduce((total, each) => total + each, 0) -
+    (trip.distancesM[segment] ?? 0) +
+    there.distanceM +
+    onwards.distanceM;
+  if (100 * distanceM > settings.routeFactorPercent * direct.distanceM) {
+    problems.push({ code: "route_too_long" });
+  }
+  const plannedAt = stopTimeBetween(
+    before.plannedAt,
+    after.plannedAt,
+    there.durationS,
+    onwards.durationS,
+    settings,
+  );
+  if (plannedAt === undefined) problems.push({ code: "stop_does_not_fit", segment });
+  if (plannedAt === undefined || problems.length > 0) return err(problems);
+
+  const split = <T>(list: readonly T[], halves: readonly [T, T]): T[] => [
+    ...list.slice(0, segment),
+    ...halves,
+    ...list.slice(position),
+  ];
+  const taken = trip.occupancy[segment] ?? 0;
+  const priced = (stretchM: number): SegmentPricing => ({
+    price: segmentPrice(stretchM, trip.priceLevel, trip.seats, settings),
+    cap: priceCap(stretchM, trip.seats, settings),
+  });
+  return ok({
+    trip: {
+      ...trip,
+      stops: [
+        ...trip.stops.slice(0, position),
+        { meetingPointId: stop.meetingPointId, plannedAt, season: stop.season },
+        ...trip.stops.slice(position),
+      ],
+      typicalS: split(trip.typicalS, [there.durationS, onwards.durationS]),
+      distancesM: split(trip.distancesM, [there.distanceM, onwards.distanceM]),
+      occupancy: split(trip.occupancy, [taken, taken]),
+    },
+    addedStop: { position, stretches: [priced(there.distanceM), priced(onwards.distanceM)] },
+  });
 }
 
 /** The trip with the change made, before any rule is checked. */
 function applied(
   trip: ChangeableTrip,
-  change: TripChange,
+  change: Exclude<TripChange, { readonly kind: "addStop" }>,
   settings: ChangeSettings,
 ): { readonly trip: ChangeableTrip; readonly priceLevelLowered: boolean } {
   switch (change.kind) {
@@ -204,7 +372,7 @@ function applied(
 function changeProblems(
   trip: ChangeableTrip,
   bookings: readonly BookingOnTrip[],
-  change: TripChange,
+  change: Exclude<TripChange, { readonly kind: "addStop" }>,
   after: ChangeableTrip,
   now: Date,
   settings: ChangeSettings,
@@ -297,6 +465,8 @@ function whoIsTold(
       }));
     case "vehicle":
       return change.vehicleId === trip.vehicleId ? [] : tell({ type: "TripChanged" });
+    case "addStop":
+      return tell({ type: "TripChanged" });
     case "seats":
     case "priceLevel":
     case "bookingMode":

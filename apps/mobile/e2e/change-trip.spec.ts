@@ -209,3 +209,53 @@ test("a driver changes the car, and the passenger reads it on the booking and in
   await expect(dora.getByText(newCar, { exact: true }).filter(visible)).toBeVisible();
   await close();
 });
+
+// Spec 6, 3.2 (milestone 6 plan, decision 2): the driver skipped N1
+// Hveragerði when posting, and adds it back between Olís Norðlingaholt and
+// N1 Selfoss. The check says where and when it goes, what the new stretches
+// cost new passengers and that Dóra is told; Dóra keeps her stops and
+// price, and reads the new stop on her booking and in the chat.
+test("a driver adds a stop on the way, and the passenger reads it on the booking and in the chat", async ({
+  page: driver,
+  browser,
+}, testInfo) => {
+  test.slow();
+  const { page: dora, close } = await secondPage(browser, testInfo);
+  const { tripId, booking } = await confirmedBooking(driver, dora, ["N1 Hveragerði"]);
+
+  await driver.goto(`/drive/trips/${tripId}/edit`);
+  await expect(
+    driver
+      .getByText("Mjódd bus terminal → Olís Norðlingaholt → N1 Selfoss", { exact: true })
+      .filter(visible),
+  ).toBeVisible();
+  await driver.getByRole("link", { name: "Add a stop" }).click();
+  await driver.getByLabel("Town or meeting point").fill("hverag");
+  await driver.getByRole("button", { name: /^N1 Hveragerði,/ }).click();
+
+  // The check, before anything is saved.
+  await expect(driver.getByRole("heading", { name: "Check the change" })).toBeVisible();
+  const newStop = /^New stop: N1 Hveragerði at \d\d:\d\d$/;
+  await expect(driver.getByText(newStop).filter(visible)).toBeVisible();
+  await expect(
+    driver.getByText(/^Olís Norðlingaholt → N1 Hveragerði · [\d,]+ ISK per seat$/).filter(visible),
+  ).toBeVisible();
+  await expect(
+    driver.getByText(/^N1 Hveragerði → N1 Selfoss · [\d,]+ ISK per seat$/).filter(visible),
+  ).toBeVisible();
+  await expect(
+    driver.getByText("1 passenger is told of the new stop now.", { exact: true }).filter(visible),
+  ).toBeVisible();
+  await driver.getByRole("button", { name: "Save the change", exact: true }).click();
+  await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}\\?changed=`));
+  const outcome = "Trip changed. Your passengers have been told.";
+  await expect(driver.getByText(outcome, { exact: true }).filter(visible)).toBeVisible();
+
+  await dora.goto(booking);
+  await expect(dora.getByRole("heading", { name: "Changes since you booked" })).toBeVisible();
+  await expect(dora.getByText(newStop).filter(visible)).toBeVisible();
+  const [, bookingId = ""] = /\/bookings\/([0-9a-f-]+)$/.exec(booking) ?? [];
+  await dora.goto(`/messages/${bookingId}`);
+  await expect(dora.getByText(newStop).filter(visible)).toBeVisible();
+  await close();
+});

@@ -38,7 +38,16 @@ export const blonduos: MeetingPointSummary = {
   type: "fuel-station",
 };
 
-export const tripPoints = [bsi, borgarnes, blonduos, hof, kef];
+/** On the way from BSÍ to Borgarnes, for a stop added to a published trip. */
+export const mosfellsbaer: MeetingPointSummary = {
+  ...bsi,
+  id: "0190a1d6-0000-7000-8000-0000000000b7",
+  name: { is: "Mosfellsbæ", en: "Mosfellsbær" },
+  municipality: "Mosfellsbær",
+  type: "fuel-station",
+};
+
+export const tripPoints = [bsi, borgarnes, blonduos, hof, kef, mosfellsbaer];
 
 export const yaris: Vehicle = {
   id: "0190a1d6-0000-7000-8000-0000000000a1",
@@ -277,6 +286,52 @@ export function tripsApi(
       }),
     );
   });
+  /**
+   * A stop added as the rules would place it here: after the first stop,
+   * half way to the second on 5 minutes, splitting that stretch and its
+   * price in two (spec 6, 3.2).
+   */
+  function addStop(trip: MyTrip, meetingPointId: string, preview: boolean) {
+    const meetingPoint = tripPoints.find((point) => point.id === meetingPointId);
+    const [first, second, ...rest] = trip.stops;
+    const [split, ...others] = trip.segments;
+    if (meetingPoint === undefined || first === undefined || second === undefined) {
+      return failure(422, "change_not_allowed");
+    }
+    const fiveMinutes = 5 * 60_000;
+    const between =
+      (new Date(first.plannedAt ?? 0).getTime() + new Date(second.plannedAt ?? 0).getTime()) / 2;
+    const plannedAt = new Date(Math.round(between / fiveMinutes) * fiveMinutes).toISOString();
+    const stops = [first, { meetingPoint, plannedAt }, second, ...rest];
+    // A fifth of the stretch to the new stop, the rest on from it.
+    const halves =
+      split === undefined
+        ? []
+        : [0.2, 0.8].map((share) => ({
+            ...split,
+            distanceM: Math.round(split.distanceM * share),
+            durationS: Math.round(split.durationS * share),
+            price: { ...split.price, amount: Math.round(split.price.amount * share) },
+          }));
+    const segments = [...halves, ...others];
+    if (!preview) store({ ...trip, stops, segments, updatedAt: stamp() });
+    return ok(200, {
+      departsAt: trip.departsAt ?? "",
+      arrivesAt: trip.arrivesAt ?? "",
+      stops: stops.map((stop) => stop.meetingPoint.id),
+      plannedTimes: stops.map((stop) => stop.plannedAt ?? ""),
+      told: 0,
+      freeCancellations: 0,
+      requests: 0,
+      expiring: 0,
+      seats: trip.seats,
+      priceLevel: trip.priceLevel,
+      priceLevelLowered: false,
+      prices: segments.map((segment) => segment.price),
+      ...answers.told,
+    } satisfies TripChangeEffect);
+  }
+
   client.answer("/v1/trips/{id}/changes", (input) => {
     const { preview = false } = (input["query"] ?? {}) as { preview?: boolean };
     const answered = answers.change?.(preview);
@@ -285,6 +340,7 @@ export function tripsApi(
     if (trip === undefined) return failure(404, "not_found");
     if (trip.status !== "published") return failure(409, "trip_not_changeable");
     const body = input["body"] as TripChangeBody;
+    if (body.kind === "addStop") return addStop(trip, body.meetingPointId, preview);
     const departsAt = body.kind === "departure" ? body.departsAt : (trip.departsAt ?? "");
     // Every stop moves with the departure (R6.2).
     const byMs = new Date(departsAt).getTime() - new Date(trip.departsAt ?? departsAt).getTime();
@@ -306,6 +362,7 @@ export function tripsApi(
     const effect: TripChangeEffect = {
       departsAt: plannedTimes[0] ?? departsAt,
       arrivesAt: plannedTimes.at(-1) ?? departsAt,
+      stops: trip.stops.map((stop) => stop.meetingPoint.id),
       plannedTimes,
       told: 0,
       freeCancellations: 0,

@@ -1,7 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { defaultTripSettings as settings } from "./settings.ts";
-import { checkTimes, plannedTimes } from "./times.ts";
+import { checkTimes, plannedTimes, stopTimeBetween } from "./times.ts";
 
 const at = (time: string) => new Date(`2026-12-01T${time}:00.000Z`);
 const minutes = (value: number) => value * 60;
@@ -96,5 +96,62 @@ describe("checkTimes (R3.5, R3.6, spec 3, 3.5.3)", () => {
     expect(checkTimes([at("10:00"), at("11:00")], typicalS, now, settings).problems).toEqual([
       { code: "times_missing" },
     ]);
+  });
+});
+
+describe("stopTimeBetween (spec 6, 3.2: a stop added to a published trip)", () => {
+  const place = (before: string, after: string, thereS: number, onwardsS: number) => {
+    const time = stopTimeBetween(at(before), at(after), thereS, onwardsS, settings);
+    return time === undefined ? undefined : clock([time])[0];
+  };
+
+  it("shares the time between the neighbours by the typical times, rounded to 5 minutes", () => {
+    // 2 hours between 10:00 and 12:00; 30 and 60 minutes typical: a third of the way.
+    expect(place("10:00", "12:00", minutes(30), minutes(60))).toBe("10:40");
+    // Half way on a 70-minute stretch is 10:35, already on 5 minutes.
+    expect(place("10:00", "11:10", minutes(30), minutes(30))).toBe("10:35");
+  });
+
+  it("rounds the other way, or to the minute, when 5 minutes would ask for speeding (R3.6)", () => {
+    // About 10:58 rounds to 11:00, which leaves under 90% of the 12 minutes
+    // on; 10:55 leaves enough each way.
+    expect(place("10:00", "11:10", minutes(60), 733)).toBe("10:55");
+    // From 10:11 to 10:13 fits, and no time on 5 minutes does: the nearest minute.
+    expect(place("10:00", "10:24", 733, 667)).toBe("10:13");
+  });
+
+  it("does not fit when the new stretches need more than the gap (R3.6's 90%)", () => {
+    // 100 minutes between; 60 and 60 typical need at least 54 each.
+    expect(place("10:00", "11:40", minutes(60), minutes(60))).toBeUndefined();
+    // Exactly 90% of each fits.
+    expect(place("10:00", "11:48", minutes(60), minutes(60))).toBe("10:54");
+  });
+
+  it("always places a time that passes the checks, or none", () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: minutes(300) }),
+        fc.integer({ min: 0, max: minutes(200) }),
+        fc.integer({ min: 0, max: minutes(200) }),
+        (gapS, thereS, onwardsS) => {
+          const before = at("10:00");
+          const after = new Date(before.getTime() + gapS * 1000);
+          const time = stopTimeBetween(before, after, thereS, onwardsS, settings);
+          if (time === undefined) {
+            // None only when no whole minute leaves 90% each way.
+            const earliest =
+              before.getTime() + Math.max(Math.ceil(thereS * 10 * settings.timeFloorPercent), 1);
+            const latest =
+              after.getTime() - Math.max(Math.ceil(onwardsS * 10 * settings.timeFloorPercent), 1);
+            expect(Math.ceil(earliest / 60_000) * 60_000).toBeGreaterThan(latest);
+            return;
+          }
+          expect(time.getTime() % 60_000).toBe(0);
+          expect(
+            checkTimes([before, time, after], [thereS, onwardsS], now, settings).problems,
+          ).toEqual([]);
+        },
+      ),
+    );
   });
 });

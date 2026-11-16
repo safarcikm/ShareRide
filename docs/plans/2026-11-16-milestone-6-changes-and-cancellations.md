@@ -204,7 +204,9 @@ still pass, and every booking is within 2 hours of its time.
   every booking on it still rides both. The new segments' prices come from
   the trip's price level, as when posting. Each booking over the split keeps
   its total: its price for the old segment is shared between the two new
-  ones in proportion to their prices, rounded so the sum stays the same.
+  ones in proportion to their distances, rounded so the sum stays the same.
+  (As built in PR 6a: by distance rather than by the new prices, which
+  follow distance anyway and are all zero on a free trip.)
 - Removing a stop no booking uses joins two segments. Their occupancy is
   equal, since no booking gets in or out there, and a booking's prices for
   the two are added.
@@ -212,8 +214,15 @@ still pass, and every booking is within 2 hours of its time.
   transaction, with `booking_segment_prices`.
 - The new stop's planned time lies between its neighbours, from the typical
   times of the two new stretches. If they take longer than the gap allows
-  (R3.6's 90%), the change is refused with `stop_does_not_fit`, and the
-  driver moves the departure first.
+  (R3.6's 90%), the change is refused with `stop_does_not_fit`, naming the
+  stretch the stop would split. (As built in PR 6a: moving the departure
+  cannot make room, since every stop moves with it, so the screen says the
+  stop is too far out of the way between its neighbours instead.)
+- The server places a new stop where it adds the least distance, never
+  before the first stop or after the last (PR 6a).
+- A booking sends the meeting points shown as well as the stop positions,
+  so a part chosen before a stop was added or removed is refused with
+  `stops_changed` rather than booked on other stops (PR 6a).
 
 ### 4.5 In the app
 
@@ -331,13 +340,27 @@ PR 5c, `feat(trips)`: the car.
 
 ### PR 6: `feat(trips)`: adding and removing a stop
 
-- [ ] Splitting and joining segments with occupancy and booking prices;
-      the new stop's time; `stop_in_use` and `stop_does_not_fit`; the
-      property test gains stops (bookings keep their stops and prices)
-- [ ] The stops row of Edit trip
+Split in two as it was built: PR 6a adds a stop, PR 6b removes one.
+
+PR 6a, `feat(trips)`: adding a stop.
+
+- [x] Splitting a segment with occupancy and booking prices; the new
+      stop's place and time; `stop_does_not_fit` and the other refusals;
+      the property test gains stops (bookings keep their stops and prices)
+- [x] `TripChanged` for a new stop, with its push and email, and the
+      change on each booking and in the chat; `stops_changed` for a booking
+      whose part moved
+- [x] The stops row of Edit trip and Add a stop
 - Verify: integration tests (a booking over the new stop keeps its total
-  and stops; a used stop cannot be removed); a browser journey adds a stop
-  and books from it
+  and stops; a booking from the new stop; search finds it); a browser
+  journey adds a stop the passenger reads
+
+PR 6b, `feat(trips)`: removing a stop.
+
+- [ ] Joining segments with occupancy and booking prices; `stop_in_use`
+- [ ] Remove on the stops row
+- Verify: integration tests (a used stop cannot be removed; bookings keep
+  their totals); a browser journey removes a stop
 
 ### PR 7: `feat(trips)`: post again and post the return
 

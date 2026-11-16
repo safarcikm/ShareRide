@@ -29,10 +29,16 @@ export type QuickMessage =
 /**
  * What happened to the booking, as lines in its conversation (spec 7, 3.1,
  * item 3), shown in the reader's language: the conversation opened, the
- * departure or the car changed, and the booking cancelled, by whom and why
- * (spec 6).
+ * departure or the car changed, a stop added, and the booking cancelled, by
+ * whom and why (spec 6).
  */
-export const systemLineKeys = ["opened", "departure_changed", "car_changed", "cancelled"] as const;
+export const systemLineKeys = [
+  "opened",
+  "departure_changed",
+  "car_changed",
+  "stop_added",
+  "cancelled",
+] as const;
 export type SystemLineKey = (typeof systemLineKeys)[number];
 
 /** A system line as stored, with the canceller's reason (stored in `params`). */
@@ -50,6 +56,14 @@ export type SystemLine =
       readonly make: string;
       readonly model: string;
       readonly colour: CarColour;
+    }
+  | {
+      /** A stop added to the trip, with its time in ISO 8601 (spec 6, 3.2). */
+      readonly key: "stop_added";
+      /** The meeting point's name in Icelandic and in English. */
+      readonly nameIs: string;
+      readonly nameEn: string;
+      readonly plannedAt: string;
     }
   | {
       readonly key: "cancelled";

@@ -49,6 +49,12 @@ export function preferenceTexts(t: Translate, preferences: MyTrip["preferences"]
   ];
 }
 
+/** Every stop of the trip in order: "BSÍ → Borgarnes → Hof". */
+export function stopsText(t: Translate, locale: Locale, trip: Pick<MyTrip, "stops">): string {
+  const [first = "", ...rest] = trip.stops.map((stop) => stop.meetingPoint.name[locale]);
+  return rest.reduce((route, name) => t("trip.stretch", { from: route, to: name }), first);
+}
+
 /** "BSÍ bus terminal → Hof, Akureyri": a trip's first and last stop. */
 export function routeText(t: Translate, locale: Locale, trip: MyTrip): string {
   const first = trip.stops[0]?.meetingPoint.name[locale] ?? "";

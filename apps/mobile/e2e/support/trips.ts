@@ -103,9 +103,14 @@ export function tomorrow(locale: Locale) {
 /**
  * Posts Mjódd to N1 Selfoss tomorrow at `departure` as a new driver, in
  * English, keeping the suggested price and seats, with the car and licence
- * added on the way; returns the trip's ID.
+ * added on the way; returns the trip's ID. The stops on the way that the
+ * app suggests stay, except those named in `skip`.
  */
-export async function postTripToSelfoss(page: Page, departure: string) {
+export async function postTripToSelfoss(
+  page: Page,
+  departure: string,
+  skip: readonly string[] = [],
+) {
   const choose = async (end: "From" | "To", typed: string, card: RegExp) => {
     await page.getByRole("button", { name: new RegExp(`^${end}: `) }).click();
     await page.getByLabel(end, { exact: true }).fill(typed);
@@ -115,6 +120,7 @@ export async function postTripToSelfoss(page: Page, departure: string) {
   await expect(page.getByRole("heading", { name: "Where are you driving?" })).toBeVisible();
   await choose("From", "mjódd", /^Mjódd bus terminal,/);
   await choose("To", "selfo", /^N1 Selfoss,/);
+  for (const stop of skip) await page.getByRole("switch", { name: stop }).click();
   await page.getByRole("button", { name: "Choose date and time" }).click();
   const day = tomorrow("en");
   if (day.nextMonth) await page.getByRole("button", { name: "Next month" }).click();

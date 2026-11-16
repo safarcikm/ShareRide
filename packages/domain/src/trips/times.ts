@@ -46,6 +46,34 @@ export function plannedTimes(
   return times.map((time) => new Date(time));
 }
 
+/**
+ * The planned time of a stop added between two others on a published trip
+ * (spec 6, 3.2): the gap between them shared by the typical times of the
+ * stretches to it and on from it, on 5 minutes where that leaves 90% of
+ * each (R3.6), or else on the nearest whole minute that does. Undefined
+ * when no whole minute does: the stop does not fit between them, since
+ * the stops either side keep their times.
+ */
+export function stopTimeBetween(
+  before: Date,
+  after: Date,
+  thereS: number,
+  onwardsS: number,
+  settings: TimeRules,
+): Date | undefined {
+  const earliest = before.getTime() + Math.max(floorMs(thereS, settings), 1);
+  const latest = after.getTime() - Math.max(floorMs(onwardsS, settings), 1);
+  const totalS = thereS + onwardsS;
+  const share = totalS === 0 ? 0.5 : thereS / totalS;
+  const ideal = before.getTime() + (after.getTime() - before.getTime()) * share;
+  for (const stepMs of [settings.timeRoundingMinutes * minuteMs, minuteMs]) {
+    const low = roundUp(earliest, stepMs);
+    const high = Math.floor(latest / stepMs) * stepMs;
+    if (low <= high) return new Date(Math.min(Math.max(roundToNearest(ideal, stepMs), low), high));
+  }
+  return undefined;
+}
+
 export type TimeProblem =
   | { readonly code: "times_missing" }
   | { readonly code: "departure_too_soon" }

@@ -4,7 +4,8 @@ import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { driverApi, northMyTrip, northSegments } from "@/testing/bookings";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
-import { tripsApi, volvo, yaris } from "@/testing/trips";
+import { searchApi } from "@/testing/search";
+import { mosfellsbaer, tripsApi, volvo, yaris } from "@/testing/trips";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -42,6 +43,7 @@ async function openEdit(
     setUp: (client) => {
       tripsApi(client, [trip], answers);
       driverApi(client, []);
+      searchApi(client);
     },
   });
   await fireEvent.press(await screen.findByRole("button", { name: "Edit trip" }));
@@ -80,6 +82,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     await openEdit();
     for (const [title, line, link] of [
       ["Time", "Sunday 15 November", "Change the time"],
+      ["Stops", "BSÍ bus terminal → Borgarnes → Blönduós → Hof, Akureyri", "Add a stop"],
       ["Price", "100% · the whole route 4,500 ISK", "Change the price"],
       ["Seats", "3 seats", "Change the seats"],
       ["Car", "Toyota Yaris, white", "Change the car"],
@@ -294,4 +297,113 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
       expect(changes(client)).toEqual([]);
     },
   );
+});
+
+describe("Edit trip: adding a stop (spec 6, 3.2; milestone 6 plan, decision 2)", () => {
+  /** Opens Add a stop and chooses the point named `name` by typing `typed`. */
+  async function choose(typed: string, name: string, ...edit: Parameters<typeof openEdit>) {
+    const app = await openPart("Add a stop", ...edit);
+    expect(
+      screen.getByText(
+        "The stop goes where it's least out of your way, at a time between the stops either side. They keep their times.",
+      ),
+    ).toBeVisible();
+    await fireEvent.changeText(screen.getByLabelText("Town or meeting point"), typed);
+    await fireEvent.press(await screen.findByRole("button", { name: new RegExp(`^${name}`) }));
+    return app;
+  }
+
+  const addMosfellsbaer = { kind: "addStop", meetingPointId: mosfellsbaer.id };
+
+  it("checks where and when the stop goes and what it costs, then adds it, telling the passengers who booked", async () => {
+    const { client } = await choose("mos", "Mosfellsbær", north, {
+      told: { told: 2, requests: 1 },
+    });
+    expect(await screen.findByRole("header", { name: "Check the change" })).toBeVisible();
+    expect(screen.getByText("New stop: Mosfellsbær at 09:30")).toBeVisible();
+    expect(screen.getByText("09:30  Mosfellsbær")).toBeVisible();
+    expect(screen.getByText("10:00  Borgarnes")).toBeVisible();
+    expect(screen.getByText("BSÍ bus terminal → Mosfellsbær · 300 ISK per seat")).toBeVisible();
+    expect(screen.getByText("Mosfellsbær → Borgarnes · 1,200 ISK per seat")).toBeVisible();
+    expect(screen.getByText("2 passengers are told of the new stop now.")).toBeVisible();
+    expect(
+      screen.getByText("1 person who asked for a seat sees the new stop in the app."),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Passengers who booked keep their stops and the price they booked at."),
+    ).toBeVisible();
+    expect(changes(client)).toEqual([{ preview: { preview: true }, body: addMosfellsbaer }]);
+
+    const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    await fireEvent.press(screen.getByRole("button", { name: "Save the change" }));
+    expect(await screen.findByText("Trip changed. Your passengers have been told.")).toBeVisible();
+    expect(screen).toHavePathname(tripPage);
+    expect(focusMoves).toHaveBeenCalled();
+    focusMoves.mockRestore();
+    expect(changes(client).at(-1)).toEqual({ preview: saved, body: addMosfellsbaer });
+    await fireEvent.press(screen.getByRole("button", { name: "Edit trip" }));
+    expect(
+      await screen.findByText(
+        "BSÍ bus terminal → Mosfellsbær → Borgarnes → Blönduós → Hof, Akureyri",
+      ),
+    ).toBeVisible();
+  });
+
+  it("says nobody needs to be told without bookings", async () => {
+    await choose("mos", "Mosfellsbær");
+    expect(
+      await screen.findByText("Nobody has booked yet, so nobody needs to be told."),
+    ).toBeVisible();
+  });
+
+  it("says a stop already on the trip is there, without asking the server", async () => {
+    const { client } = await choose("bor", "Borgarnes");
+    expect(await screen.findByText("Borgarnes is already on your route.")).toBeVisible();
+    expect(changes(client)).toEqual([]);
+    await fireEvent.press(screen.getByRole("button", { name: "Choose another meeting point" }));
+    expect(await screen.findByLabelText("Town or meeting point")).toBeVisible();
+  });
+
+  it.each([
+    [
+      { path: "segments.0", issue: "stop_does_not_fit" },
+      "Mosfellsbær is too far out of your way to fit between BSÍ bus terminal and Borgarnes, which keep their times.",
+    ],
+    [
+      { path: "meetingPointId", issue: "route_too_long" },
+      "Through Mosfellsbær the route would be more than 1.5 times as long as the direct way.",
+    ],
+    [
+      { path: "meetingPointId", issue: "stop_out_of_season" },
+      "Mosfellsbær isn't open on that date.",
+    ],
+    [
+      { path: "meetingPointId", issue: "stop_unavailable" },
+      "This meeting point is paused right now. Choose another.",
+    ],
+  ])("says why the server refused the stop: %o", async (detail, text) => {
+    await choose("mos", "Mosfellsbær", north, {
+      change: () => failure(422, "change_not_allowed", { details: [detail] }),
+    });
+    expect(await screen.findByText(text)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Save the change" })).toBeNull();
+    await fireEvent.press(screen.getByRole("button", { name: "Choose another meeting point" }));
+    expect(await screen.findByLabelText("Town or meeting point")).toBeVisible();
+  });
+
+  it("waits for the distances to a new meeting point, and tries again", async () => {
+    let pending = true;
+    const { client } = await choose("mos", "Mosfellsbær", north, {
+      change: () => (pending ? failure(503, "distances_pending") : undefined),
+    });
+    expect(
+      await screen.findByText(
+        "We're still working out the distances for this route. Try again in a moment.",
+      ),
+    ).toBeVisible();
+    pending = false;
+    await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByText("New stop: Mosfellsbær at 09:30")).toBeVisible();
+    expect(changes(client)).toHaveLength(2);
+  });
 });

@@ -653,6 +653,22 @@ export const is = {
   "trip.moveTooFar": "Með bókunum getur brottförin verið frá kl. {earliest} til kl. {latest}.",
   "trip.changed": "Brottför breytt úr {old} í {new}",
   "trip.carChanged": "Nýr bíll: {car}",
+  "trip.stopAdded": "Nýr viðkomustaður: {stop} kl. {time}",
+  "trip.editStops": "Viðkomustaðir",
+  "trip.editAddStopAction": "Bæta við viðkomustað",
+  "trip.editAddStopHelp":
+    "Viðkomustaðurinn fer þar sem hann er minnst úr leið, á tíma milli staðanna sitt hvoru megin. Þeir halda sínum tímum.",
+  "trip.editNewStretches": "Verð fyrir nýjar bókanir",
+  "trip.editStopKeeps":
+    "Farþegar sem hafa bókað halda sínum viðkomustöðum og verðinu sem þeir bókuðu á.",
+  "trip.editToldStop":
+    "{count, plural, one {# farþegi fær} other {# farþegar fá}} að vita af nýja viðkomustaðnum strax.",
+  "trip.editRequestsStop":
+    "{count, plural, one {# sem bað um sæti sér} other {# sem báðu um sæti sjá}} nýja viðkomustaðinn í appinu.",
+  "trip.editOtherPoint": "Velja annan mótsstað",
+  "trip.problem.stop_does_not_fit":
+    "{name} er of langt úr leið til að komast fyrir milli {from} og {to}, sem halda sínum tímum.",
+  "trip.problem.stop_too_far": "Um {name} yrði leiðin meira en 1,5 sinnum lengri en beina leiðin.",
   "trip.keepBooking": "Halda bókuninni",
   "trip.cancelWithRefund": "Afbóka með fullri endurgreiðslu",
   "trip.own": "Þetta er ferðin þín.",
@@ -723,6 +739,8 @@ export const is = {
   "booking.overlapping":
     "Þú átt þegar bókun eða beiðni á sama tíma. Dragðu hana til baka eða afbókaðu fyrst.",
   "booking.notBookable": "Ekki er lengur hægt að bóka þessa ferð.",
+  "booking.stopsChanged":
+    "Ökumaðurinn hefur breytt viðkomustöðum ferðarinnar. Farðu aftur í ferðina til að velja aftur hvar þú ferð inn og út.",
   "booking.requestSent": "Beiðni send. {driver} hefur til {time} til að svara.",
   "booking.requestSentTomorrow": "Beiðni send. {driver} hefur til {time} á morgun til að svara.",
   "booking.payNow": "Greiddu {total} til að staðfesta sætið",

@@ -402,6 +402,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   XC40" on their booking and in the chat, and is told by push and email,
   never by SMS; a request is not told. Never with the number plate.
   `TripChanged` joins the outbox (migration 0016).
+- The driver adds a stop to a published trip (milestone 6, PR 6a, spec 6,
+  3.2) from Edit trip's stops row. The server places it where it is least
+  out of the way, at a time between the stops either side, which keep
+  theirs; the check shows where and when, the two new stretches' prices
+  for new bookings, and who is told, or why the stop does not fit.
+  Bookings over the split stretch keep their stops and totals. Each
+  passenger who booked reads "New stop: Mosfellsbær at 09:20" on their
+  booking and in the chat, and is told by push and email; search finds the
+  trip from the new stop. A booking sends the meeting points it shows, so
+  a part chosen before a stop was added is refused (`stops_changed`)
+  rather than booked on other stops. Migration 0017 adds `addStop` to the
+  trip change kinds.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

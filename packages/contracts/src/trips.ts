@@ -426,8 +426,9 @@ export const cancelTripRoute = defineRoute({
  * One change to a published trip, as the driver saves it from Edit trip
  * (spec 6, 3.2): a new departure, which every stop moves with (R6.2); the
  * seats offered; the price level, for new bookings; the booking mode; or
- * the preferences and note together; or another of the driver's cars,
- * which booked passengers are told of. Stops follow in milestone 6's PR 6.
+ * the preferences and note together; another of the driver's cars, or a
+ * stop, which booked passengers are told of. Removing a stop follows in
+ * milestone 6's PR 6b.
  */
 export const tripChangeSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("departure"), departsAt: timestampSchema }),
@@ -443,6 +444,12 @@ export const tripChangeSchema = z.discriminatedUnion("kind", [
     /** Characters are counted as code points by the rules (422 `note_too_long`). */
     note: z.string().max(noteMaxLength * 2),
   }),
+  /**
+   * An active meeting point, in season and not on the trip, which goes
+   * where it adds the least distance (spec 3, 3.4.3) at a time between its
+   * neighbours, which keep theirs; or 422 with why.
+   */
+  z.object({ kind: z.literal("addStop"), meetingPointId: z.uuid() }),
 ]);
 
 export type TripChangeBody = z.infer<typeof tripChangeSchema>;
@@ -452,6 +459,8 @@ export const tripChangeEffectSchema = z.object({
   /** The trip's departure and arrival as they will be. */
   departsAt: timestampSchema,
   arrivesAt: timestampSchema,
+  /** Each stop's meeting point as it will be, in route order. */
+  stops: z.array(z.uuid()),
   /** Each stop's planned time as it will be, in route order. */
   plannedTimes: z.array(timestampSchema),
   /** The passengers told: accepted and confirmed bookings (spec 7, 3.3). */
@@ -511,8 +520,9 @@ export const changeTripRoute = defineRoute({
     },
     422: {
       description:
-        "change_not_allowed: each rule the change breaks is a detail, its code as the issue and `departsAt`, `stops.N`, `segments.N`, `seats`, `priceLevel`, `vehicleId` or `note` as the path; with `move_too_far`, `departureWindow` gives the departures the bookings allow (R6.4)",
+        "change_not_allowed: each rule the change breaks is a detail, its code as the issue and `departsAt`, `stops.N`, `segments.N`, `seats`, `priceLevel`, `vehicleId`, `meetingPointId` or `note` as the path; with `move_too_far`, `departureWindow` gives the departures the bookings allow (R6.4). A new stop that does not fit names the stretch it would split (`segments.N`)",
       ...errors,
     },
+    503: distancesPending,
   },
 });

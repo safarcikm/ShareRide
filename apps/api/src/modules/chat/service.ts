@@ -105,6 +105,12 @@ function systemLineOf(row: MessageRow, viewer: TripRole): NonNullable<ChatMessag
           colour: row.params?.["colour"] as CarColour,
         },
       };
+    case "stop_added":
+      return {
+        key: "stop_added",
+        stop: { is: String(row.params?.["nameIs"]), en: String(row.params?.["nameEn"]) },
+        plannedAt: String(row.params?.["plannedAt"]),
+      };
     case "cancelled":
       return {
         key: "cancelled",

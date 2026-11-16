@@ -43,6 +43,12 @@ export const bookTripBodySchema = z.object({
   /** Stop positions on the trip, as trip details gives them. */
   fromStop: z.int().nonnegative(),
   toStop: z.int().positive(),
+  /**
+   * The meeting points shown at those positions. When sent, a trip whose
+   * stops changed since (a stop added, spec 6, 3.2) gives `stops_changed`.
+   */
+  fromPoint: z.uuid().optional(),
+  toPoint: z.uuid().optional(),
   seats: z.int().min(1).max(defaultTripSettings.maxSeats),
   /** The total the passenger was shown; another total gives `price_changed` (R5.3). */
   total: moneySchema,
@@ -117,7 +123,7 @@ export const bookingSchema = z.object({
   /**
    * The trip's changes since the booking was made, oldest first (spec 6,
    * 3.2): for a moved departure, the passenger's boarding time before and
-   * after; for a new car, the car.
+   * after; for a new car, the car; for a new stop, its name and time.
    */
   changes: z.array(
     z.discriminatedUnion("kind", [
@@ -128,6 +134,12 @@ export const bookingSchema = z.object({
         changedAt: timestampSchema,
       }),
       z.object({ kind: z.literal("vehicle"), car: carSummarySchema, changedAt: timestampSchema }),
+      z.object({
+        kind: z.literal("addStop"),
+        stop: localisedTextSchema,
+        plannedAt: timestampSchema,
+        changedAt: timestampSchema,
+      }),
     ]),
   ),
   /**
@@ -189,7 +201,7 @@ export const bookTripRoute = defineRoute({
     404: { description: "not_found: no such published trip", ...errors },
     409: {
       description:
-        "seats_taken (with `freeSeats`), price_changed (with the current `total`), overlapping_booking, booking_closed or trip_not_bookable",
+        "seats_taken (with `freeSeats`), price_changed (with the current `total`), stops_changed (`fromPoint` or `toPoint` is no longer at its position), overlapping_booking, booking_closed or trip_not_bookable",
       ...errors,
     },
   },

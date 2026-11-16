@@ -1,0 +1,2 @@
+ALTER TABLE "trip_changes" DROP CONSTRAINT "trip_changes_kind_check";--> statement-breakpoint
+ALTER TABLE "trip_changes" ADD CONSTRAINT "trip_changes_kind_check" CHECK ("trip_changes"."kind" in ('departure', 'seats', 'priceLevel', 'vehicle', 'bookingMode', 'details', 'addStop'));

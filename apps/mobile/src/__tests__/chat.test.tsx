@@ -1,6 +1,7 @@
 import type { ChatMessage, SendMessageBody } from "@shareride/contracts";
 import { act, fireEvent, screen } from "expo-router/testing-library";
 import { AccessibilityInfo, ScrollView } from "react-native";
+import { readPreference } from "@/lib/preferences";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import {
@@ -187,6 +188,47 @@ describe("A conversation (spec 7, 3.1)", () => {
     });
     await openConversation({ messages: [openedLine, newCar] });
     expect(await screen.findByText("New car: Red Volvo XC40")).toBeVisible();
+  });
+
+  it("says when a stop was added, by its name and time (spec 6, 3.2)", async () => {
+    const newStop = chatMessage({
+      id: messageId(5),
+      from: "system",
+      kind: "system",
+      text: null,
+      system: {
+        key: "stop_added",
+        stop: { is: "N1 Mosfellsbæ", en: "N1 Mosfellsbær" },
+        plannedAt: "2026-11-15T10:20:00.000Z",
+      },
+      sentAt: "2026-11-14T11:59:00.000Z",
+    });
+    await openConversation({ messages: [openedLine, newStop] });
+    expect(await screen.findByText("New stop: N1 Mosfellsbær at 10:20")).toBeVisible();
+  });
+
+  it("names a new stop in the app's language", async () => {
+    jest
+      .mocked(readPreference)
+      .mockImplementation((key) => Promise.resolve(key === "language" ? "is" : null));
+    try {
+      const newStop = chatMessage({
+        id: messageId(5),
+        from: "system",
+        kind: "system",
+        text: null,
+        system: {
+          key: "stop_added",
+          stop: { is: "N1 Mosfellsbæ", en: "N1 Mosfellsbær" },
+          plannedAt: "2026-11-15T10:20:00.000Z",
+        },
+        sentAt: "2026-11-14T11:59:00.000Z",
+      });
+      await openConversation({ messages: [openedLine, newStop] });
+      expect(await screen.findByText("Nýr viðkomustaður: N1 Mosfellsbæ kl. 10:20")).toBeVisible();
+    } finally {
+      jest.mocked(readPreference).mockImplementation(() => Promise.resolve(null));
+    }
   });
 
   it("shows the driver the passenger's name and their request message", async () => {

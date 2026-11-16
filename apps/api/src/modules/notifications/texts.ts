@@ -16,6 +16,7 @@ import {
   formatDay,
   formatMoney,
   quickMessageText,
+  stopAddedText,
   type Locale,
 } from "@shareride/i18n";
 
@@ -55,6 +56,8 @@ export interface NotificationFacts {
   readonly car: CarFacts | null;
   /** For a new car: the car that change made, as `car` (spec 6, 3.2). */
   readonly newCar: CarFacts | null;
+  /** For a new stop: its name in the recipient's language, and its time (spec 6, 3.2). */
+  readonly newStop: { readonly name: string; readonly plannedAt: Date } | null;
   /** For a moved departure: the passenger's boarding time before and after (spec 6, 3.2). */
   readonly moved: { readonly from: Date; readonly to: Date } | null;
   /** Confirmed and not free: what they paid would come back if they cancelled (R6.3). */
@@ -214,13 +217,19 @@ function bookingText(
             : t("notify.movedBody", where),
         ];
       }
-      case "trip_changed":
-        // The new car (spec 6, 3.2), never its number plate (R7.9).
+      case "trip_changed": {
+        // Their part and when they get in, as for a move.
+        const part = t("notify.movedBody", { from, to, when: when(facts.boardsAt) });
+        // The new car, never its number plate (R7.9), or the new stop (spec 6, 3.2).
+        if (facts.newCar !== null) {
+          return [t("trip.carChanged", { car: carText(t, facts.newCar) }), part];
+        }
+        const stop = required(facts.newStop, "the new car or stop");
         return [
-          t("trip.carChanged", { car: carText(t, required(facts.newCar, "the new car")) }),
-          // Their part and when they get in, as for a move.
-          t("notify.movedBody", { from, to, when: when(facts.boardsAt) }),
+          stopAddedText(t, { stop: stop.name, plannedAt: stop.plannedAt.toISOString() }),
+          part,
         ];
+      }
       case "refund_issued":
         return [
           t("notify.refunded", { total: formatMoney(facts.total, locale) }),

@@ -650,6 +650,22 @@ export const en = {
   "trip.moveTooFar": "With bookings, the departure can be between {earliest} and {latest}.",
   "trip.changed": "Departure changed from {old} to {new}",
   "trip.carChanged": "New car: {car}",
+  "trip.stopAdded": "New stop: {stop} at {time}",
+  "trip.editStops": "Stops",
+  "trip.editAddStopAction": "Add a stop",
+  "trip.editAddStopHelp":
+    "The stop goes where it's least out of your way, at a time between the stops either side. They keep their times.",
+  "trip.editNewStretches": "Prices for new bookings",
+  "trip.editStopKeeps": "Passengers who booked keep their stops and the price they booked at.",
+  "trip.editToldStop":
+    "{count, plural, one {# passenger is} other {# passengers are}} told of the new stop now.",
+  "trip.editRequestsStop":
+    "{count, plural, one {# person who asked for a seat sees} other {# people who asked for a seat see}} the new stop in the app.",
+  "trip.editOtherPoint": "Choose another meeting point",
+  "trip.problem.stop_does_not_fit":
+    "{name} is too far out of your way to fit between {from} and {to}, which keep their times.",
+  "trip.problem.stop_too_far":
+    "Through {name} the route would be more than 1.5 times as long as the direct way.",
   "trip.keepBooking": "Keep my booking",
   "trip.cancelWithRefund": "Cancel with full refund",
   "trip.own": "This is your trip.",
@@ -719,6 +735,8 @@ export const en = {
   "booking.overlapping":
     "You already have a booking or request at the same time. Withdraw or cancel it first.",
   "booking.notBookable": "This trip can no longer be booked.",
+  "booking.stopsChanged":
+    "The driver has changed the trip's stops. Go back to the trip to choose where you get in and out again.",
   "booking.requestSent": "Request sent. {driver} has until {time} to answer.",
   "booking.requestSentTomorrow": "Request sent. {driver} has until {time} tomorrow to answer.",
   "booking.payNow": "Pay {total} to confirm your seat",

@@ -1,5 +1,5 @@
 import type { Booking } from "@shareride/contracts";
-import { carText, departureChangeText } from "@shareride/i18n";
+import { carText, departureChangeText, stopAddedText } from "@shareride/i18n";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
@@ -19,7 +19,7 @@ const keptKey = (bookingId: string) => `kept-booking-${bookingId}`;
  * keep the booking, or cancel it with a full refund, without it counting
  * (R6.3; spec 6, screen 7). "Keep my booking" hides it on this device
  * until the trip moves again: it keeps when the last move was made. A new
- * car does not bring it back.
+ * car or stop does not bring it back.
  * An unpaid booking costs nothing to cancel, so it is not offered one.
  */
 export function useMoveChoice(booking: Booking, now: Date) {
@@ -59,7 +59,8 @@ export function useMoveChoice(booking: Booking, now: Date) {
 
 /**
  * "Changes since you booked": each move of the departure, at the
- * passenger's own stop, and each new car; then, when `offered`, the help and the choice to
+ * passenger's own stop, each new car and each new stop; then, when
+ * `offered`, the help and the choice to
  * keep the booking or cancel it with "The trip changed" chosen. Once kept
  * here, focus moves to the heading.
  */
@@ -76,7 +77,7 @@ export function TripChanges({
   readonly onKeep: () => void;
   readonly onCancel: () => void;
 }) {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   if (booking.changes.length === 0) return null;
   const free = booking.total.amount === 0;
   return (
@@ -88,7 +89,9 @@ export function TripChanges({
         <Body key={`${String(index)}-${change.changedAt}`} align="start">
           {change.kind === "vehicle"
             ? t("trip.carChanged", { car: carText(t, change.car) })
-            : departureChangeText(t, change)}
+            : change.kind === "addStop"
+              ? stopAddedText(t, { stop: change.stop[locale], plannedAt: change.plannedAt })
+              : departureChangeText(t, change)}
         </Body>
       ))}
       {offered ? (

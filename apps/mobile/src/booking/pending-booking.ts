@@ -13,6 +13,12 @@ export interface PendingBooking {
   readonly board: number;
   readonly alight: number;
   readonly seats: number;
+  /**
+   * The meeting points shown at those positions, so a stop added meanwhile
+   * cannot shift the part unseen (spec 6, 3.2).
+   */
+  readonly fromPoint?: string | undefined;
+  readonly toPoint?: string | undefined;
 }
 
 const key = "pending-booking";
@@ -49,12 +55,22 @@ function parse(stored: string, at: Date): PendingBooking | null {
     return null;
   }
   if (typeof value !== "object" || value === null) return null;
-  const { tripId, board, alight, seats, keptAt } = value as Record<string, unknown>;
+  const { tripId, board, alight, seats, fromPoint, toPoint, keptAt } = value as Record<
+    string,
+    unknown
+  >;
   const whole = (n: unknown): n is number => Number.isInteger(n) && (n as number) >= 0;
   if (typeof tripId !== "string" || !whole(board) || !whole(alight) || !whole(seats)) return null;
   const age = typeof keptAt === "string" ? at.getTime() - Date.parse(keptAt) : Number.NaN;
   if (!(age >= 0 && age <= pendingBookingLifetimeMs)) return null;
-  return { tripId, board, alight, seats };
+  return {
+    tripId,
+    board,
+    alight,
+    seats,
+    ...(typeof fromPoint === "string" ? { fromPoint } : {}),
+    ...(typeof toPoint === "string" ? { toPoint } : {}),
+  };
 }
 
 /** The booking screen for a choice. */
@@ -66,6 +82,8 @@ export function bookingHref(choice: PendingBooking): Href {
       from: String(choice.board),
       to: String(choice.alight),
       seats: String(choice.seats),
+      ...(choice.fromPoint === undefined ? {} : { fromPoint: choice.fromPoint }),
+      ...(choice.toPoint === undefined ? {} : { toPoint: choice.toPoint }),
     },
   };
 }

@@ -35,7 +35,7 @@ export interface Shown {
  * messages a page at a time.
  */
 export function useConversation(bookingId: string) {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   const session = useSession();
   const { refresh: refreshUnread } = useUnread();
   const [loaded, setLoaded] = useState<Shown | CallFailure>();
@@ -111,7 +111,7 @@ export function useConversation(bookingId: string) {
           const arrived = answer.data.messages
             .filter((message) => message.from === "them" && !known.has(message.id))
             .reverse()
-            .map((message) => spokenMessage(t, message, other, false));
+            .map((message) => spokenMessage(t, locale, message, other, false));
           if (arrived.length > 0) announce(arrived.join(" "));
           setLoaded((last) =>
             last === undefined || !("messages" in last)
@@ -133,7 +133,7 @@ export function useConversation(bookingId: string) {
         clearInterval(timer);
         hide();
       };
-    }, [page, t, announce, bookingId]),
+    }, [page, t, locale, announce, bookingId]),
   );
 
   // Reads the other person's messages as they show, and the badge follows;

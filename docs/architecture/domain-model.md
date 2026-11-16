@@ -122,7 +122,8 @@ Unique (`trip_id`, `position`) and (`trip_id`, `meeting_point_id`).
 
 ### Segment
 
-Made when the trip is published. `trip_id`, `position` (0 … stops − 2),
+Made when the trip is published, and split in two when a stop is added
+on it (milestone 6, PR 6a). `trip_id`, `position` (0 … stops − 2),
 `from_stop_id`, `to_stop_id`, `distance_m`, `duration_s`, the
 `suggested_price`, `cap` and `price` at publishing (integers, whole krónur),
 `currency`, `capacity` (the trip's seats, copied) and `occupancy`
@@ -138,15 +139,17 @@ One row per change to a published trip, so passengers can see what changed:
 
 As built (milestone 6, PR 5a): the table `trip_changes`, with `kind` one of
 `departure`, `seats`, `priceLevel`, `vehicle`, `bookingMode` and `details`
-(the domain's `tripChangeKinds`; the stops join in PR 6), and `before` and
+(the domain's `tripChangeKinds`), `addStop` (PR 6a), and `before` and
 `after` as small flat JSON objects, such as `{ "departsAt": "…" }`, or for
 the seats `{ "seats": 3, "priceLevel": 120 }` with the level they left (PR
 5b). For the preferences and note, `after` says only whether the note
 changed (`noteChanged`), never its text. A new car keeps the car's ID,
-make, model and colour before and after, never its number plate (PR 5c). It
-goes with the trip. A booking shows the moves and new cars made after it was
-booked, and a notification about a move or a new car points to its row
-(`notifications.trip_change_id`), so each is told with its own times or car.
+make, model and colour before and after, never its number plate (PR 5c). A
+new stop keeps, after, its meeting point's ID, names and planned time (PR
+6a). It goes with the trip. A booking shows the moves, new cars and new
+stops made after it was booked, and a notification about one points to its
+row (`notifications.trip_change_id`), so each is told with its own times,
+car or stop.
 
 ### Booking
 
@@ -169,7 +172,10 @@ booked, and a notification about a move or a new car points to its row
 ### BookingSegmentPrice
 
 The per-segment price snapshot of a booking: `booking_id`,
-`segment_position` (the segment's position when booked), `price`. Keeps receipts and disputes exact even if the trip changes later.
+`segment_position`, `price`. Keeps receipts and disputes exact even if the trip changes later.
+When a stop is added, positions after it move up with the segments, and the
+price for the split segment is shared between the two new ones by their
+distances, keeping the booking's total (PR 6a).
 
 ### Conversation and Message
 
@@ -288,7 +294,7 @@ Modules communicate changes through events written in the same transaction (an
 outbox table) and processed by the worker:
 
 `TripPublished`, `DepartureMoved` (one per booked passenger, with the
-recorded change), `TripChanged` (a new car, likewise), `TripCancelled`, `BookingRequested`,
+recorded change), `TripChanged` (a new car or stop, likewise), `TripCancelled`, `BookingRequested`,
 `BookingAccepted`, `BookingConfirmed`, `BookingDeclined`, `BookingExpired`
 (a request nobody answered, or an accepted booking nobody paid for),
 `BookingWithdrawn`, `BookingCancelled`,

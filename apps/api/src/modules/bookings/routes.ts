@@ -75,6 +75,13 @@ function bookError(c: Context, error: BookError) {
       return errorResponse(c, 409, "booking_closed", "Booking has closed for this stop.");
     case "trip_not_bookable":
       return errorResponse(c, 409, "trip_not_bookable", "This trip cannot be booked.");
+    case "stops_changed":
+      return errorResponse(
+        c,
+        409,
+        "stops_changed",
+        "The trip's stops have changed. Choose the part again.",
+      );
   }
 }
 

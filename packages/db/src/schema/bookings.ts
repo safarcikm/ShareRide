@@ -148,7 +148,10 @@ export const bookingSegmentPrices = pgTable(
     bookingId: uuid()
       .notNull()
       .references(() => bookings.id),
-    /** The segment's position on the trip when booked. */
+    /**
+     * The segment's position on the trip now: a stop added splits the
+     * price for one segment in two and moves the later ones up (spec 6, 3.2).
+     */
     segmentPosition: integer().notNull(),
     price: integer().notNull(),
   },

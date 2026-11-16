@@ -17,6 +17,7 @@ import {
   type SendMessageBody,
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
+import { sampleId } from "@shareride/db/seed";
 import { formatClock, formatMoney } from "@shareride/i18n";
 import { and, asc, desc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -1006,7 +1007,62 @@ describe("the worker (plan 4.4)", () => {
     expect(push.sent).toHaveLength(4);
   });
 
-  it("tells nobody of a TripChanged event whose change is not a new car (stops come with PR 6)", async () => {
+  it("tells each booked passenger of a new stop by push and email, with its time, never by SMS (spec 6, 3.2)", async () => {
+    const { jon, passenger: gunna, bookingId } = await confirmedBooking();
+    await withEmail(gunna, "gunna-stop@example.com");
+    const dora = await newMember("Dóra");
+    await speaks(dora, "is");
+    const unpaid = await booked(dora.accessToken, airport, { fromStop: 1, toStop: 3 });
+    for (const member of [jon, gunna, dora]) await withDevice(member);
+    await worker().runOnce();
+    push.sent.length = 0;
+    const smsBefore = sms.outbox.length;
+    // An English name of its own, so each passenger reads the stop in their language.
+    const smaralind = sampleId("point:smaralind");
+    const named = (nameEn: string | null) =>
+      api.connection.db
+        .update(schema.meetingPoints)
+        .set({ nameEn })
+        .where(eq(schema.meetingPoints.id, smaralind));
+    await named("Smáralind shopping centre");
+    try {
+      const added = await api.client.call(changeTripRoute, {
+        accessToken: jon.accessToken,
+        params: { id: airport },
+        query: {},
+        body: { kind: "addStop", meetingPointId: smaralind },
+      });
+      if (!added.ok) throw new Error(added.error.code);
+      await worker().runOnce();
+    } finally {
+      await named(null);
+    }
+    const to = (member: Member) => `ExponentPushToken[${member.userId}]`;
+    expect(push.sent).toEqual(
+      expect.arrayContaining([
+        {
+          to: to(gunna),
+          title: "New stop: Smáralind shopping centre at 05:45",
+          body: "Hlemmur – Fjörður shopping centre · Saturday 14 November at 05:30.",
+          data: { path: `/bookings/${bookingId}` },
+        },
+        expect.objectContaining({
+          to: to(dora),
+          title: "Nýr viðkomustaður: Smáralind kl. 05:45",
+          data: { path: `/bookings/${unpaid.id}` },
+        }),
+      ]),
+    );
+    expect(push.sent).toHaveLength(2);
+    expect(email.sent.at(-1)).toMatchObject({
+      to: "gunna-stop@example.com",
+      subject: "New stop: Smáralind shopping centre at 05:45",
+    });
+    expect(sms.outbox).toHaveLength(smsBefore);
+    expect((await logOf(jon)).filter((row) => row.kind === "trip_changed")).toEqual([]);
+  });
+
+  it("tells nobody of a TripChanged event whose change is not a new car or stop", async () => {
     const { jon, passenger, bookingId } = await confirmedBooking();
     await withDevice(passenger);
     await worker().runOnce();
