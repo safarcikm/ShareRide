@@ -157,6 +157,18 @@ proposed 2026-11-16)
 - [ ] Rate and review
 - [ ] Public profiles with rating, reviews and reliability
 
+Milestone 9: safety and moderation
+([plan](../plans/2026-11-16-milestone-9-safety-and-moderation.md), proposed
+2026-11-16; built alongside milestones 7 and 8)
+
+- [ ] Safety rules in the domain
+- [ ] Emergency 112, "Before you go" and sharing trip details
+- [ ] Block and unblock
+- [ ] Reports and the operator's alert
+- [ ] Moderation actions, suspension and appeals
+- [ ] Console: the reports queue, the report page and appeals
+- [ ] Console: users, trips and bookings
+
 MVP features (each one a spec, a plan and a PR series)
 
 - [ ] Profiles, vehicles, phone verification
