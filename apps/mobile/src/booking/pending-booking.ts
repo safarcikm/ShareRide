@@ -34,6 +34,13 @@ export async function takePendingBooking(at: Date): Promise<PendingBooking | nul
   return parse(stored, at);
 }
 
+/** The choice kept within the last hour, left where it is (the sign-up steps show it). */
+export async function peekPendingBooking(at: Date): Promise<PendingBooking | null> {
+  const stored = await readAppData(key);
+  if (stored === null || stored === "") return null;
+  return parse(stored, at);
+}
+
 function parse(stored: string, at: Date): PendingBooking | null {
   let value: unknown;
   try {

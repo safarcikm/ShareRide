@@ -331,6 +331,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   profile, "See it as others do", and rows for My cars, Driving licence,
   Meeting points, Settings, and Terms, rules and privacy (spec 16, 3.4). The
   phone number moves to Settings.
+- Signing up takes three steps, numbered "Step 1 of 3" and so on: the phone
+  number ("Sign in or create an account"), the code, and "Last step: about
+  you" (spec 16, 3.5). While a booking or an offer is kept through signing
+  up, each step shows it: "You're booking" with the day, times, route,
+  seats, price and driver, or "Next: offer a ride". Step 3 takes the first
+  name, the languages (the app's language ticked, five common ones, the rest
+  under "More languages"), a few words (folded) and the terms in one go, and
+  its button names what comes next, such as "Create account and book". The
+  terms show on their own only when they change later.
 - Times on the time step of posting a trip are chosen on a wheel of hours
   and minutes in 5-minute steps (24-hour clock) instead of being typed. A
   time saved earlier that is not on 5 minutes shows rounded up to the next

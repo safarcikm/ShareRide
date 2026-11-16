@@ -6,6 +6,9 @@ Amended by [spec 16](2026-11-15-one-home-and-simpler-flows.md): Find is the
 home for everyone and the menu is the same signed in or out (3.1, 3.2).
 Profile becomes rows (My cars, Driving licence, Meeting points, Settings,
 Terms, rules and privacy) and the phone number moves to Settings (3.4).
+Signing up takes three steps, the number, the code and "about you", with the
+ride kept in view; step 3 takes the profile and the terms together, and the
+terms show on their own only when they change later (3.5).
 
 Features: A1 Sign up and sign in, A2 Profile, A4 Settings, A6 Terms, privacy
 policy and community rules ([features](../product/features.md)).
@@ -211,8 +214,8 @@ Events: `UserRegistered`, `PhoneVerified`, `EmailVerified`, `LegalAccepted`,
 
 | Key | English | Icelandic (draft) |
 | --- | ------- | ----------------- |
-| `auth.phone.title` | What's your phone number? | Hvert er símanúmerið þitt? |
-| `auth.phone.help` | We'll text you a 6-digit code. | Við sendum þér 6 stafa kóða með SMS. |
+| `signIn.title` | Sign in or create an account (spec 16) | Skráðu þig inn eða stofnaðu aðgang |
+| `signIn.help` | We text you a 6-digit code. New to ShareRide? The same code creates your account. | Við sendum þér 6 stafa kóða með SMS. Í fyrsta sinn á ShareRide? Sami kóðinn stofnar aðganginn þinn. |
 | `auth.code.title` | Enter the code | Sláðu inn kóðann |
 | `auth.code.resend` | Send a new code | Senda nýjan kóða |
 | `auth.continueApple` | Continue with Apple | Halda áfram með Apple |

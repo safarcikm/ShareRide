@@ -5,7 +5,6 @@ import { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
@@ -13,9 +12,14 @@ import { TextField } from "@/components/text-field";
 import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useSignInFlow } from "@/sign-in/flow";
+import { KeptRideCard } from "@/sign-in/kept-ride-card";
+import { SignUpProgress } from "@/sign-in/sign-up-progress";
 import { spacing } from "@/theme/tokens";
 
-/** Phone number with country picker (spec 1, screen 2). */
+/**
+ * Step 1 of signing in or up: the phone number, with the country picker
+ * (spec 1, screen 2; spec 16, 3.5), under the ride kept on the way.
+ */
 export default function PhoneNumberScreen() {
   const { locale, t } = useLanguage();
   const session = useSession();
@@ -51,9 +55,10 @@ export default function PhoneNumberScreen() {
 
   return (
     <Screen>
-      <BackButton />
-      <Title>{t("auth.phone.title")}</Title>
-      <Body>{t("auth.phone.help", { length: codeRules.length })}</Body>
+      <SignUpProgress step={1} />
+      <KeptRideCard kept={flow.keptRide} />
+      <Title>{t("signIn.title")}</Title>
+      <Body>{t("signIn.help", { length: codeRules.length })}</Body>
       <View style={styles.form}>
         <Button
           variant="secondary"

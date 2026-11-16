@@ -97,7 +97,7 @@ describe("The menu (spec 16, 3.1)", () => {
     // A main screen has no Back button.
     expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
     await fireEvent.press(screen.getByRole("button", { name: "Sign in" }));
-    expect(await screen.findByText("What's your phone number?")).toBeVisible();
+    expect(await screen.findByText("Sign in or create an account")).toBeVisible();
     expect(mockedWrite).not.toHaveBeenCalledWith("pending-offer", expect.anything());
   });
 
@@ -108,7 +108,7 @@ describe("The menu (spec 16, 3.1)", () => {
       await screen.findByText("Driving somewhere? Share the empty seats in your car."),
     ).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Sign in to offer a ride" }));
-    expect(await screen.findByText("What's your phone number?")).toBeVisible();
+    expect(await screen.findByText("Sign in or create an account")).toBeVisible();
     const [key] = mockedWrite.mock.calls.at(-1) as [string, string];
     expect(key).toBe("pending-offer");
   });
@@ -196,8 +196,8 @@ describe("The menu (spec 16, 3.1)", () => {
 
   it("sends an account with sign-up steps left to its next step from any tab", async () => {
     await renderApp("/my-rides", { me: { ...testMe, missingSteps: ["legal", "profile"] } });
-    expect(await screen.findByRole("header", { name: "Before you start" })).toBeVisible();
-    expect(screen).toHavePathname("/onboarding/terms");
+    expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
+    expect(screen).toHavePathname("/onboarding/about-you");
   });
 
   it("keeps one menu after signing in and after signing out", async () => {

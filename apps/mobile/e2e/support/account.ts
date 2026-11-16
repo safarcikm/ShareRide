@@ -15,15 +15,15 @@ export interface Texts {
   readonly phoneLabel: string;
   readonly send: string;
   readonly codeLabel: string;
-  readonly termsTitle: string;
+  /** Step 3 of signing up, about you, with the terms (spec 16, 3.5). */
+  readonly aboutYouTitle: string;
+  readonly firstName: string;
+  readonly addAbout: string;
+  readonly about: string;
   readonly age: string;
   readonly accept: string;
-  readonly acceptButton: string;
-  readonly profileTitle: string;
-  readonly firstName: string;
-  readonly about: string;
-  readonly icelandic: string;
-  readonly save: string;
+  /** Step 3's button when nothing is kept through signing up. */
+  readonly createAccount: string;
   readonly myProfile: string;
 }
 
@@ -35,15 +35,13 @@ export const english: Texts = {
   phoneLabel: "Mobile number",
   send: "Send code",
   codeLabel: "6-digit code",
-  termsTitle: "Before you start",
+  aboutYouTitle: "Last step: about you",
+  firstName: "First name",
+  addAbout: "Add a few words about you (optional)",
+  about: "About you",
   age: "I am 18 or older",
   accept: "I accept the Terms of Service and the Community Rules",
-  acceptButton: "Accept and continue",
-  profileTitle: "Tell others about you",
-  firstName: "First name",
-  about: "About you",
-  icelandic: "Icelandic",
-  save: "Save profile",
+  createAccount: "Create account",
   myProfile: "My profile",
 };
 
@@ -55,15 +53,13 @@ export const icelandic: Texts = {
   phoneLabel: "Farsímanúmer",
   send: "Senda kóða",
   codeLabel: "6 stafa kóði",
-  termsTitle: "Áður en þú byrjar",
+  aboutYouTitle: "Síðasta skref: um þig",
+  firstName: "Fornafn",
+  addAbout: "Bættu við nokkrum orðum um þig (valfrjálst)",
+  about: "Um þig",
   age: "Ég er 18 ára eða eldri",
   accept: "Ég samþykki notendaskilmála og samfélagsreglur",
-  acceptButton: "Samþykkja og halda áfram",
-  profileTitle: "Segðu frá þér",
-  firstName: "Fornafn",
-  about: "Um þig",
-  icelandic: "Íslenska",
-  save: "Vista prófíl",
+  createAccount: "Stofna aðgang",
   myProfile: "Prófíllinn minn",
 };
 
@@ -85,8 +81,8 @@ export async function enterCode(page: Page, texts: Texts, phone: { local: string
 }
 
 /**
- * Signs up a new person through the terms and profile, which opens Find,
- * then checks the profile under Profile in the menu and goes back to Find.
+ * Signs up a new person through the three steps, which opens Find, then
+ * checks the profile under Profile in the menu and goes back to Find.
  */
 export async function signUp(page: Page, texts: Texts, firstName: string) {
   const phone = newPhoneNumber();
@@ -107,16 +103,22 @@ export function menuLink(page: Page, name: string) {
   return page.getByRole("navigation").getByRole("link", { name, exact: true });
 }
 
-/** After the code, a new person accepts the terms and saves a profile. */
-export async function finishSignUp(page: Page, texts: Texts, firstName: string) {
-  await expect(page.getByRole("heading", { name: texts.termsTitle })).toBeVisible();
+/**
+ * After the code, step 3: a new person gives a first name and a few words,
+ * keeps the app's language ticked, accepts the terms and presses the button,
+ * which names what comes next ("Create account" when nothing is kept).
+ */
+export async function finishSignUp(
+  page: Page,
+  texts: Texts,
+  firstName: string,
+  button = texts.createAccount,
+) {
+  await expect(page.getByRole("heading", { name: texts.aboutYouTitle })).toBeVisible();
+  await page.getByLabel(texts.firstName).fill(firstName);
+  await page.getByRole("button", { name: texts.addAbout }).click();
+  await page.getByLabel(texts.about).fill("Test account.");
   await page.getByRole("checkbox", { name: texts.age }).click();
   await page.getByRole("checkbox", { name: texts.accept }).click();
-  await page.getByRole("button", { name: texts.acceptButton }).click();
-
-  await expect(page.getByRole("heading", { name: texts.profileTitle })).toBeVisible();
-  await page.getByLabel(texts.firstName).fill(firstName);
-  await page.getByLabel(texts.about).fill("Test account.");
-  await page.getByRole("checkbox", { name: texts.icelandic }).click();
-  await page.getByRole("button", { name: texts.save }).click();
+  await page.getByRole("button", { name: button, exact: true }).click();
 }

@@ -36,11 +36,12 @@ export default function RootLayout() {
 }
 
 /**
- * Which screens can open depends on the session: signed-in people go
- * through the terms and then the profile before the rest (spec 1, 3.4 and
- * 3.5). When the session changes (signed in, a step done, signed out, or the
- * session ended elsewhere), screens that no longer fit close and the app
- * returns to the start, which leads on from there. Sign-in and Settings,
+ * Which screens can open depends on the session: a new account goes
+ * through step 3, about you, with the terms in it, before the rest; an
+ * account whose terms changed sees only the terms (spec 16, 3.5). When the
+ * session changes (signed in, a step done, signed out, or the session ended
+ * elsewhere), screens that no longer fit close and the app returns to the
+ * start, which leads on from there. Sign-in and Settings,
  * where the session changes, close themselves back to the menu instead: a
  * guard would open a second menu on top of the first. Fonts load at the same
  * time; if they fail, the app opens with the system fonts. Wide screens show
@@ -71,11 +72,11 @@ function Navigation() {
       {/* These two close themselves when the session changes (BackToMenu). */}
       <Stack.Screen name="sign-in" />
       <Stack.Screen name="settings" />
-      <Stack.Protected guard={needsLegal}>
-        <Stack.Screen name="onboarding/terms" />
+      <Stack.Protected guard={me !== null && needsProfile}>
+        <Stack.Screen name="onboarding/about-you" />
       </Stack.Protected>
-      <Stack.Protected guard={me !== null && !needsLegal && needsProfile}>
-        <Stack.Screen name="onboarding/profile" />
+      <Stack.Protected guard={needsLegal && !needsProfile}>
+        <Stack.Screen name="onboarding/terms" />
       </Stack.Protected>
       <Stack.Protected guard={me !== null && !needsLegal && !needsProfile}>
         <Stack.Screen name="profile/edit" />

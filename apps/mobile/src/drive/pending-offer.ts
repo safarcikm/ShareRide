@@ -22,6 +22,17 @@ export async function takePendingOffer(at: Date): Promise<boolean> {
   const stored = await readAppData(pendingOfferKey);
   if (stored === null || stored === "") return false;
   await writeAppData(pendingOfferKey, "");
+  return keptWithinLifetime(stored, at);
+}
+
+/** Whether an offer was kept within the last hour, left where it is (the sign-up steps show it). */
+export async function peekPendingOffer(at: Date): Promise<boolean> {
+  const stored = await readAppData(pendingOfferKey);
+  if (stored === null || stored === "") return false;
+  return keptWithinLifetime(stored, at);
+}
+
+function keptWithinLifetime(stored: string, at: Date): boolean {
   let keptAt: unknown;
   try {
     keptAt = (JSON.parse(stored) as { keptAt?: unknown } | null)?.keptAt;

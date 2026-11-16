@@ -11,15 +11,18 @@ import { TextField } from "@/components/text-field";
 import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useSignInFlow } from "@/sign-in/flow";
+import { KeptRideCard } from "@/sign-in/kept-ride-card";
+import { SignUpProgress } from "@/sign-in/sign-up-progress";
 import { useSecondsUntil } from "@/sign-in/use-seconds-until";
 import { spacing } from "@/theme/tokens";
 
 const codeLength = codeRules.length;
 
 /**
- * The code from the text message, with a resend timer (spec 1, screen 3).
- * The code is checked as soon as six digits are in. Signing in closes the
- * sign-in screens, and the app goes on to the next step.
+ * Step 2: the code from the text message, with a resend timer (spec 1,
+ * screen 3; spec 16, 3.5). The code is checked as soon as six digits are in.
+ * Signing in closes the sign-in screens, and the app goes on to step 3 for
+ * a new account, or back to the ride kept for one that is ready.
  */
 export default function CodeScreen() {
   const { locale, t } = useLanguage();
@@ -78,6 +81,8 @@ export default function CodeScreen() {
 
   return (
     <Screen>
+      <SignUpProgress step={2} />
+      <KeptRideCard kept={flow.keptRide} />
       <Title>{t("auth.code.title")}</Title>
       <Body>{t("auth.code.help", { phoneNumber: formatPhoneNumber(phoneNumber) })}</Body>
       <View style={styles.form}>

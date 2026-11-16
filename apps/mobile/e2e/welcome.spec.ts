@@ -72,12 +72,12 @@ test.describe("Find, the home, on the web", () => {
   test("leads from Offer a ride and from Sign in to signing in", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Offer a ride", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "What's your phone number?" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sign in or create an account" })).toBeVisible();
     await page.goBack();
     await menuLink(page, "Profile").click();
     await expect(page).toHaveURL(/\/profile$/);
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "What's your phone number?" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sign in or create an account" })).toBeVisible();
   });
 
   test("shows the menu on every main place, marking the one you are on", async ({ page }) => {

@@ -298,15 +298,15 @@ rides.
   booking" with the date, times, route, seats, price and driver (from the
   trip details for the kept part); "Next: offer a ride" for an offer.
 
-- [ ] **Step 1: Write the failing tests:** step 1 titled "Sign in or create
+- [x] **Step 1: Write the failing tests:** step 1 titled "Sign in or create
   an account" with "Step 1 of 3" and the code text; with a kept booking both
   steps show the card and "We bring you back here after signing in."; an
   existing account goes back to the ride after step 2.
-- [ ] **Step 2:** Run `pnpm --filter @shareride/mobile test sign-in`; expect failures.
-- [ ] **Step 3: Implement.** The card loads the trip once and hides itself
+- [x] **Step 2:** Run `pnpm --filter @shareride/mobile test sign-in`; expect failures.
+- [x] **Step 3: Implement.** The card loads the trip once and hides itself
   if it fails.
-- [ ] **Step 4:** Run the tests and `pnpm check`; expect pass.
-- [ ] **Step 5:** Commit `feat(mobile): sign-in keeps the ride in view`.
+- [x] **Step 4:** Run the tests and `pnpm check`; expect pass.
+- [x] **Step 5:** Commit `feat(mobile): sign-in keeps the ride in view`.
 
 ### Task 3.2: Step 3, about you
 
@@ -319,19 +319,19 @@ rides.
 - Remove: `app/onboarding/profile.tsx`
 - Test: `__tests__/onboarding.test.tsx`
 
-- [ ] **Step 1: Write the failing tests:** a new account sees "Step 3 of
+- [x] **Step 1: Write the failing tests:** a new account sees "Step 3 of
   3, Last step: about you" with the first name help, the app's language
   ticked, "Add a few words about you (optional)" folded, the two tick boxes
   and the Privacy Policy line; the button reads "Create account and book",
   "… send request", "… offer a ride" or "Create account"; it accepts the
   documents, then saves the profile; a failed save keeps the answers; a
   signed-in person with new terms sees only the terms.
-- [ ] **Step 2:** Run `pnpm --filter @shareride/mobile test onboarding`; expect failures.
-- [ ] **Step 3: Implement.** Accepting is skipped on a retry once it
+- [x] **Step 2:** Run `pnpm --filter @shareride/mobile test onboarding`; expect failures.
+- [x] **Step 3: Implement.** Accepting is skipped on a retry once it
   succeeded.
-- [ ] **Step 4:** Run the tests, `pnpm check`, update `e2e/sign-in.spec.ts`
+- [x] **Step 4:** Run the tests, `pnpm check`, update `e2e/sign-in.spec.ts`
   and `e2e/booking.spec.ts`; push and read the e2e job.
-- [ ] **Step 5:** Commit `feat(mobile): sign up in three steps`.
+- [x] **Step 5:** Commit `feat(mobile): sign up in three steps`.
 
 ## PR 4: Book in fewer steps
 
