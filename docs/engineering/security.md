@@ -94,6 +94,15 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   the web only the API can delete the cookie, and "sign out on all devices"
   must reach the API, so those show the failure and the person stays signed
   in to try again. The phone number never appears in a web address.
+- **Confirming a sensitive action:** downloading my data and deleting my
+  account need a fresh code sent to the account's own number
+  (`POST /v1/me/confirm-code`, spec 11). It is a code of its own purpose: it
+  never signs in, a sign-in code never confirms, and neither replaces the
+  other. It shares the sign-in rules (10 minutes, 5 attempts, single use)
+  and sending limits. `withConfirmCode` checks it and runs the action in one
+  transaction: a wrong code is counted even though the action does not run,
+  and the code is used up only when the action succeeds, so a route checks
+  whatever else can refuse before asking for the code.
 - **Suspended accounts:** their access tokens stop working at once, and a
   refresh ends the session.
 - **Sign-out** ends the session and deletes its tokens at once; there are no
