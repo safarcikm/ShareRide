@@ -32,7 +32,6 @@ const problemKeys: Partial<Record<Problem, MessageKey>> = {
   call: "safety.callFailed",
   link: "safety.linkFailed",
   copied: "share.copied",
-  failed: "share.failed",
 };
 
 /**
@@ -95,10 +94,15 @@ export function TripSafety({
           }}
         />
       )}
-      <Notice
-        kind={problem === "copied" ? "info" : "error"}
-        message={key === undefined ? null : t(key)}
-      />
+      {problem === "failed" && share !== null ? (
+        // No share sheet and no clipboard: the text itself, to copy by hand.
+        <Notice selectable message={t("share.failed", { details: share })} />
+      ) : (
+        <Notice
+          kind={problem === "copied" ? "info" : "error"}
+          message={key === undefined ? null : t(key)}
+        />
+      )}
     </Card>
   );
 }

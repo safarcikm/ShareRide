@@ -700,7 +700,7 @@ export const is = {
   "trip.shareText": "{route} á ShareRide",
   "safety.title": "Öryggi",
   "safety.call112": "Neyðarnúmer: 112",
-  "safety.call112Label": "Hringja í 112, neyðarnúmerið",
+  "safety.call112Label": "Neyðarnúmer: 112. Hringir í neyðarnúmerið",
   "safety.callFailed": "Þetta tæki getur ekki hringt. Hringdu í 112 úr síma.",
   "safety.beforeYouGo": "Áður en lagt er af stað: kannaðu veður, færð og SafeTravel.",
   "safety.weather": "Veður (vedur.is)",
@@ -717,7 +717,8 @@ export const is = {
   "share.booked": "Bókað á ShareRide",
   "share.offered": "Í boði á ShareRide",
   "share.copied": "Upplýsingar um ferðina afritaðar. Límdu þær inn í skilaboð til að deila þeim.",
-  "share.failed": "Ekki tókst að deila upplýsingum um ferðina á þessu tæki.",
+  "share.failed":
+    "Ekki tókst að deila upplýsingum um ferðina. Hér eru þær til að afrita: {details}",
   "trip.linkCopied": "Hlekkurinn var afritaður. Límdu hann þar sem þú vilt.",
   "trip.shareFailed": "Ekki tókst að deila hlekknum. Hér er hann til að afrita: {url}",
   "trip.notFound": "Þessi ferð finnst ekki. Hlekkurinn gæti verið rangur eða ferðinni eytt.",

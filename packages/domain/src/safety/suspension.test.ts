@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { defaultSafetySettings } from "./settings.ts";
 import {
   checkActive,
   checkSuspension,
@@ -63,6 +64,14 @@ describe("suspending someone (3.6.1)", () => {
     expect(checkSuspension({ ...input, until: null }, now)).toMatchObject({ ok: true });
   });
 
+  it("holds the reason to the settings' length", () => {
+    const settings = { ...defaultSafetySettings, textMaxLength: 10 };
+    expect(checkSuspension(input, now, settings)).toEqual({
+      ok: false,
+      error: { code: "too_long" },
+    });
+  });
+
   it("refuses an empty reason and an end that is not in the future", () => {
     expect(checkSuspension({ ...input, reason: "   " }, now)).toEqual({
       ok: false,
@@ -89,8 +98,8 @@ describe("what a suspension cancels (3.6.2, R9.10, milestone 9 decision 3)", () 
     id: string,
     status: SuspendedPassengerBooking["status"],
     tripStatus: SuspendedPassengerBooking["tripStatus"] = "published",
-    tripDepartsAt = later,
-  ): SuspendedPassengerBooking => ({ id, status, tripStatus, tripDepartsAt, total: kr(2900) });
+    boardsAt = later,
+  ): SuspendedPassengerBooking => ({ id, status, tripStatus, boardsAt, total: kr(2900) });
 
   it("cancels only the upcoming trips the person drives", () => {
     expect(suspensionEffects(trips, [], now).trips).toEqual(["upcoming"]);
@@ -108,6 +117,7 @@ describe("what a suspension cancels (3.6.2, R9.10, milestone 9 decision 3)", () 
           booking("gone", "cancelled"),
           booking("on-the-road", "confirmed", "departed", earlier),
           booking("left", "confirmed", "published", earlier),
+          booking("trip-cancelled", "confirmed", "cancelled", later),
         ],
         now,
       ).bookings,
@@ -116,5 +126,11 @@ describe("what a suspension cancels (3.6.2, R9.10, milestone 9 decision 3)", () 
       { id: "unpaid", event: "cancel", refund: kr(0) },
       { id: "asked", event: "withdraw", refund: kr(0) },
     ]);
+  });
+
+  it("cancels a booking that boards at a later stop of a trip under way", () => {
+    expect(
+      suspensionEffects([], [booking("later-stop", "confirmed", "departed", later)], now).bookings,
+    ).toEqual([{ id: "later-stop", event: "cancel", refund: kr(2900) }]);
   });
 });

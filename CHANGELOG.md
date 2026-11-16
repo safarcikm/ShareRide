@@ -458,7 +458,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   that leaves the capital area; "Share trip details" sends a confirmed
   booking's date, time, route, meeting point, driver and car with its
   plate, or the driver's date, time and route, through the share sheet, or
-  copies it in a browser without one. Nothing is stored (R9.8). On trip
+  copies it in a browser without one, or else shows it to copy. Nothing is stored (R9.8). On trip
   details, the booking page and the driver's trip page.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017

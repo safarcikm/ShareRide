@@ -27,8 +27,10 @@ jest.mock("@/lib/preferences", () => ({
   readPreference: jest.fn(() => Promise.resolve(null)),
   writePreference: jest.fn(() => Promise.resolve()),
 }));
-// Saturday 14 November 2026, noon in Iceland.
-jest.mock("@/lib/clock", () => ({ now: () => new Date("2026-11-14T12:00:00Z") }));
+// Saturday 14 November 2026, noon in Iceland, unless a test moves on.
+const saturdayNoon = new Date("2026-11-14T12:00:00Z");
+let mockNow = saturdayNoon;
+jest.mock("@/lib/clock", () => ({ now: () => mockNow }));
 jest.mock("@/lib/share", () => ({
   ...jest.requireActual<object>("@/lib/share"),
   shareText: jest.fn(() => Promise.resolve("shared")),
@@ -77,6 +79,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  mockNow = saturdayNoon;
   open.mockRestore();
   (getLocales as jest.Mock).mockReturnValue([{ languageTag: "en-GB" }]);
 });
@@ -85,7 +88,7 @@ describe("Emergency: 112 (spec 9, 3.3.1)", () => {
   it("calls 112 from the booking", async () => {
     await openBooking(paidBooking);
     await fireEvent.press(
-      await screen.findByRole("button", { name: "Call 112, the emergency number" }),
+      await screen.findByRole("button", { name: "Emergency: 112. Calls the emergency number" }),
     );
     expect(open).toHaveBeenCalledWith("tel:112");
   });
@@ -94,7 +97,7 @@ describe("Emergency: 112 (spec 9, 3.3.1)", () => {
     open.mockRejectedValueOnce(new Error("No phone"));
     await openBooking(paidBooking);
     await fireEvent.press(
-      await screen.findByRole("button", { name: "Call 112, the emergency number" }),
+      await screen.findByRole("button", { name: "Emergency: 112. Calls the emergency number" }),
     );
     expect(
       await screen.findByText("This device can't make calls. Call 112 from a phone."),
@@ -108,15 +111,34 @@ describe("Emergency: 112 (spec 9, 3.3.1)", () => {
       },
     });
     expect(
-      await screen.findByRole("button", { name: "Call 112, the emergency number" }),
+      await screen.findByRole("button", { name: "Emergency: 112. Calls the emergency number" }),
     ).toBeVisible();
   });
 
   it("shows on the driver's trip page", async () => {
     await openDriverTrip();
     expect(
-      await screen.findByRole("button", { name: "Call 112, the emergency number" }),
+      await screen.findByRole("button", { name: "Emergency: 112. Calls the emergency number" }),
     ).toBeVisible();
+  });
+
+  it("leaves the booking once the passenger has got out", async () => {
+    // Monday: the Sunday trip is over, though nothing marks it completed yet.
+    mockNow = new Date("2026-11-16T12:00:00Z");
+    await openBooking(paidBooking);
+    expect(await screen.findByText("Your seat is confirmed")).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Emergency: 112. Calls the emergency number" }),
+    ).toBeNull();
+  });
+
+  it("leaves the driver's trip page once the trip has arrived", async () => {
+    mockNow = new Date("2026-11-16T12:00:00Z");
+    await openDriverTrip();
+    expect(await screen.findByText("BSÍ bus terminal → Hof, Akureyri")).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Emergency: 112. Calls the emergency number" }),
+    ).toBeNull();
   });
 });
 
@@ -145,10 +167,22 @@ describe("Before you go (spec 9, 3.3.2)", () => {
     expect(open).toHaveBeenLastCalledWith("https://umferdin.is/");
   });
 
+  it("shows them on the driver's trip page, from all of its stops", async () => {
+    await openDriverTrip();
+    expect(await screen.findByRole("link", { name: "Weather (vedur.is)" })).toBeVisible();
+  });
+
+  it("says so when a page cannot be opened", async () => {
+    open.mockRejectedValueOnce(new Error("No browser"));
+    await openBooking(paidBooking);
+    await fireEvent.press(await screen.findByRole("link", { name: "Weather (vedur.is)" }));
+    expect(await screen.findByText("We couldn't open that page on this device.")).toBeVisible();
+  });
+
   it("leaves them out of a trip within the capital area", async () => {
     await openBooking(inTown);
     expect(
-      await screen.findByRole("button", { name: "Call 112, the emergency number" }),
+      await screen.findByRole("button", { name: "Emergency: 112. Calls the emergency number" }),
     ).toBeVisible();
     expect(screen.queryByRole("link", { name: "Weather (vedur.is)" })).toBeNull();
   });
@@ -174,10 +208,24 @@ describe("Share trip details (spec 9, 3.3.3, R9.8)", () => {
     ).toBeVisible();
   });
 
+  it("shows the details to copy when the device can neither share nor copy them", async () => {
+    mockedShare.mockResolvedValueOnce("failed");
+    await openBooking(paidBooking);
+    await fireEvent.press(await screen.findByRole("button", { name: "Share trip details" }));
+    expect(
+      await screen.findByText(
+        "The trip details could not be shared. Here they are to copy: My trip: " +
+          "Sunday 15 November at 10:00 · Borgarnes → Blönduós · " +
+          "Meeting point: Borgarnes (By the petrol pumps) · Driver: Anna · " +
+          "Car: White Toyota Yaris, AB 123 · Booked on ShareRide",
+      ),
+    ).toBeVisible();
+  });
+
   it("waits for the booking to be confirmed", async () => {
     await openBooking(northBooking());
     expect(
-      await screen.findByRole("button", { name: "Call 112, the emergency number" }),
+      await screen.findByRole("button", { name: "Emergency: 112. Calls the emergency number" }),
     ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Share trip details" })).toBeNull();
   });

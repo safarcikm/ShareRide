@@ -1,10 +1,11 @@
 // Suspension (spec 9, 3.6; rule R9.10): who is suspended, what they can no
 // longer do, and what a suspension cancels.
-import type { BookingEvent, BookingStatus } from "../bookings/lifecycle.ts";
+import { holdsSeats, type BookingEvent, type BookingStatus } from "../bookings/lifecycle.ts";
 import type { Money } from "../money.ts";
 import { err, ok, type Result } from "../result.ts";
 import type { TripStatus } from "../trips/trip.ts";
 import { checkStatement, type ModerationRule, type StatementProblem } from "./moderation.ts";
+import { defaultSafetySettings, type SafetySettings } from "./settings.ts";
 
 export interface AccountStanding {
   readonly status: "active" | "suspended";
@@ -61,8 +62,9 @@ export type SuspensionProblem = StatementProblem | { readonly code: "until_past"
 export function checkSuspension(
   input: SuspensionInput,
   now: Date,
+  settings: SafetySettings = defaultSafetySettings,
 ): Result<SuspensionInput, SuspensionProblem> {
-  const statement = checkStatement(input);
+  const statement = checkStatement(input, settings);
   if (!statement.ok) return statement;
   if (input.until && input.until.getTime() <= now.getTime()) return err({ code: "until_past" });
   return ok({ ...input, ...statement.value });
@@ -80,7 +82,8 @@ export interface SuspendedPassengerBooking {
   readonly id: string;
   readonly status: BookingStatus;
   readonly tripStatus: TripStatus;
-  readonly tripDepartsAt: Date;
+  /** When the person boards: a later stop of a trip under way is still ahead. */
+  readonly boardsAt: Date;
   readonly total: Money;
 }
 
@@ -98,10 +101,18 @@ export interface SuspensionEffects {
 const upcoming = (status: TripStatus, departsAt: Date, now: Date) =>
   status === "published" && departsAt.getTime() > now.getTime();
 
+/** A booking the person has not boarded yet, on a trip that still runs. */
+const notBoarded = (booking: SuspendedPassengerBooking, now: Date) =>
+  holdsSeats(booking.status) &&
+  (booking.tripStatus === "published" || booking.tripStatus === "departed") &&
+  booking.boardsAt.getTime() > now.getTime();
+
 /**
  * What a suspension cancels at once (R9.10): the upcoming trips the person
- * drives and the bookings they hold on upcoming trips. A trip under way and
- * its bookings carry on; what happens then is the trip day's (spec 8).
+ * drives, and every booking they have not boarded yet, even at a later stop
+ * of a trip under way, as a cancellation is open until boarding (spec 6).
+ * A trip under way that they drive carries on; what happens then is the
+ * trip day's (spec 8).
  */
 export function suspensionEffects(
   trips: readonly DrivenTrip[],
@@ -111,11 +122,7 @@ export function suspensionEffects(
   return {
     trips: trips.filter((trip) => upcoming(trip.status, trip.departsAt, now)).map(({ id }) => id),
     bookings: bookings
-      .filter(
-        (booking) =>
-          ["requested", "accepted", "confirmed"].includes(booking.status) &&
-          upcoming(booking.tripStatus, booking.tripDepartsAt, now),
-      )
+      .filter((booking) => notBoarded(booking, now))
       .map(({ id, status, total }) => ({
         id,
         event: status === "requested" ? "withdraw" : "cancel",

@@ -31,7 +31,7 @@ place (milestones 2, 4 and 5).
 When this milestone is done, on the web and on an Android test build:
 
 - Before a winter trip to Akureyri, Jón opens his booking. "Emergency: 112"
-  is at the top. "Before you go" links to the weather, road conditions and
+  is on it, below the booking's own actions. "Before you go" links to the weather, road conditions and
   SafeTravel. He taps "Share trip details" and sends his partner the date,
   the meeting point, Anna's first name and her car with its number plate.
 - After a trip, Sigga reports a driver who drove dangerously. The report
@@ -79,10 +79,11 @@ rules' own headings once the lawyer has reviewed them.
 ### 4.1 Rules (domain)
 
 In `packages/domain/src/safety/`, free of I/O like the rest, with spec 9's
-numbers in `safety/settings.ts`: `descriptionMaxLength` 1 000,
-`bookingReportWindow` 24 hours after completion, `responseTarget` 24 hours,
-`smsAlertHours` 07:00 to 23:00 Reykjavik time, `appealWindow` 14 days,
-`reportsPerDay` 10.
+numbers in `SafetySettings` (`safety/settings.ts`): `textMaxLength` 1 000
+(a description, a reason or an appeal, counted as chat counts characters),
+`bookingReportHours` 24 after completion, `responseHours` 24,
+`smsAlertFromHour` 7 and `smsAlertUntilHour` 23 Reykjavik time,
+`appealDays` 14 and `reportsPerDay` 10.
 
 - `blocks.ts`: `isBlockedBetween(blocks, a, b)` in either direction, and
   `hiddenFrom(blocks, me)`, the people I don't see and who don't see me
@@ -90,24 +91,28 @@ numbers in `safety/settings.ts`: `descriptionMaxLength` 1 000,
 - `reports.ts`: `reportSubjects` (`user`, `trip`, `message`, `review`,
   `booking`) and `reportCategories` (`safety`, `harassment`,
   `discrimination`, `scam`, `false_info`, `offensive`, `not_as_listed`,
-  `other`). `checkReport(report, context, now)` refuses `own` (yourself,
+  `other`). `checkReport(reporterId, context, draft, now, settings)`
+gives the person reported and whether it is urgent, and refuses `own` (yourself,
   your own trip, message or review), `not_involved` (a message only by a
   member of its conversation, a booking only by its passenger or driver),
   `too_long` and `window_closed` (a booking more than 24 hours after its
   trip completed) (R9.1). `isUrgent(category)`, `holdsPayout(report)`
   (R9.3), `responseDueAt(report)` (R9.9) and `queueOrder` (urgent first,
   then oldest).
-- `alerts.ts`: `alertChannels(now)` gives push, plus SMS from 07:00 to
+- `alerts.ts`: `alertChannels(urgent, now, settings)` gives push, plus SMS from 07:00 to
   23:00 Reykjavik time (R9.9, spec 9 decision 4).
 - `suspension.ts`: `isSuspended(user, now)` (until the end date, or for
   good without one); `checkSuspension(input, now)` refuses a missing
   reason or rule and an end in the past; `suspensionEffects(trips,
   bookings, now)` lists the upcoming trips the person drives and the
-  bookings they hold, each to cancel with a full refund (R9.10, decision
-  3); `refusedWhileSuspended(action)`: searching, booking, requesting,
-  posting or changing a trip, sending a message and reviewing. Reading
-  their own data, reporting, blocking and appealing stay open.
-- `operator.ts`: `operatorCancellation(countsOnReliability)`: a full
+  bookings they have not boarded yet, even at a later stop of a trip under
+  way, each to cancel with a full refund (R9.10, decision 3);
+  `checkActive(user, now)` refuses `restrictedActions`: searching,
+  booking, requesting, posting or changing a trip, sending a message and
+  reviewing. Reading their own data, reporting, blocking and appealing
+  stay open.
+- `moderation.ts`: the action kinds and rules, `checkStatement`, appeals
+  (`checkAppeal`, `appealDueAt`), and `operatorTripCancellation`: a full
   refund, and it counts on the driver only when the operator says so
   (3.4).
 - `before-you-go.ts`: `leavesCapitalArea(stops)`, true when any stop's
@@ -117,7 +122,8 @@ Tests: each refusal at its edge (1 000 and 1 001 characters; 24 hours
 after completion and a second later; SMS at 06:59, 07:00, 22:59 and
 23:00); blocks both ways; a suspension with and without an end date; which
 trips and bookings a suspension cancels (published and not departed;
-requested, awaiting payment and confirmed; never departed or completed).
+requested, awaiting payment and confirmed and not yet boarded; never
+completed).
 
 ### 4.2 Safety on the trip
 
@@ -135,8 +141,11 @@ requested, awaiting payment and confirmed; never departed or completed).
     browser without a share sheet, the text is copied and the button says
     so. Nothing is stored (R9.8).
 - Shown on trip details (without Share, which already shares its link),
-  the booking page while it holds seats, and the driver's trip page until
-  the last stop's time, below the trip's main actions.
+  the booking page while it holds seats until the passenger's last stop's
+  time, and the driver's trip page until the last stop's time, below the
+  trip's main actions. An earlier draft of this plan also put 112 in the
+  conversation's header; spec 9 asks for the trip page, the booking and
+  the trip day screen, so it stays out.
 
 ### 4.3 Blocks
 

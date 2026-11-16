@@ -235,7 +235,8 @@ function BookingDetails({
 
       <WhereToStand booking={booking} />
 
-      {holdsSeats(booking.status) ? (
+      {/* Until the passenger gets out: no trip to be safe on after that. */}
+      {holdsSeats(booking.status) && new Date(alight.plannedAt) > now() ? (
         <TripSafety
           regions={[board.meetingPoint.region, alight.meetingPoint.region]}
           share={bookingShareText(t, locale, booking)}

@@ -30,7 +30,11 @@ export const defaultSafetySettings: SafetySettings = {
   reportsPerDay: 10,
 };
 
-/** Characters as a person counts them: an accented letter or an emoji is one. */
+/**
+ * Characters as chat counts them (R7.2): Unicode code points after NFC, so
+ * an accented letter is one. An emoji with a skin tone, a flag or a family
+ * counts as two to seven; the counter on screen uses the same function.
+ */
 export function characterCount(text: string): number {
   return Array.from(text.normalize("NFC")).length;
 }
