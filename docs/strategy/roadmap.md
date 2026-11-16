@@ -136,6 +136,16 @@ Milestone 5: chat and notifications
 - [x] Reminders, the Trip reminders switch and the prompt to turn on
       notifications
 
+Milestone 6: changes and cancellations
+([plan](../plans/2026-11-16-milestone-6-changes-and-cancellations.md), proposed
+2026-11-16)
+
+- [ ] Change and cancellation rules in the domain
+- [ ] The passenger cancels a booking, with the refund shown first
+- [ ] The driver cancels a booking or the trip; SMS for last-minute news
+- [ ] Changing a published trip, and adding or removing a stop
+- [ ] Post again and post the return
+
 MVP features (each one a spec, a plan and a PR series)
 
 - [ ] Profiles, vehicles, phone verification
