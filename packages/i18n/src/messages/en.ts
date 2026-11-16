@@ -1037,6 +1037,7 @@ export const en = {
   "email.verifyFooter":
     "You get this email because this address was entered in ShareRide. If that was not you, ignore it: the address is not added.",
   "sms.signInCode": "{code} is your ShareRide code. It expires in 10 minutes.",
+  "sms.confirmCode": "{code} is your ShareRide code to confirm. Never share it.",
   "sms.bookingCancelled":
     "ShareRide: the driver cancelled your booking for {date} at {time}. Full refund. Details in the app.",
   "sms.bookingCancelledUnpaid":

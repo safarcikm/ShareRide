@@ -483,7 +483,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   tells nobody again. A booking that boards, and the driver's trip, now
   give the trip day: its phase, when "I'm here" opens and closes, who has
   said it, and for the driver whether each passenger is at their stop. The
-  driver's trip gives each stop's ID. Migration `0021_trip_day_check_ins`
+  driver's trip gives each stop's ID. Migration `0022_trip_day_check_ins`
   adds the `check_ins` table, one per booking and one per stop for the
   driver, and the new notification kinds.
 
@@ -509,6 +509,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   each kind of data, retention cutoffs, holds, one export a day, blocked
   numbers, due dates of privacy requests), and a catalogue of every
   table's personal data that a test keeps complete.
+- Confirming with a fresh code (spec 11): `POST /v1/me/confirm-code` sends
+  a code to the person's own number, which only confirms and never signs
+  in, under the sign-in limits, for downloading data and deleting an
+  account.
 
 ### Fixed
 

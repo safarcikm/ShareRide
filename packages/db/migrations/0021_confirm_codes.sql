@@ -1,0 +1,2 @@
+ALTER TABLE "verification_codes" ADD COLUMN "purpose" text DEFAULT 'sign_in' NOT NULL;--> statement-breakpoint
+ALTER TABLE "verification_codes" ADD CONSTRAINT "verification_codes_purpose_check" CHECK ("verification_codes"."purpose" in ('sign_in', 'confirm'));

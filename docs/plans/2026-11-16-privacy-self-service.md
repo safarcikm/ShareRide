@@ -111,9 +111,12 @@ threads meet it.
 - `POST /v1/me/confirm-code` sends a code to the account's own number
   under the sign-in limits, with its own text: "Your ShareRide code to
   confirm: {code}. Never share it."
-- Download and delete take `{ code }` and check it in the same
-  transaction as the action, with the sign-in rules for expiry and
-  attempts and the same errors.
+- Download and delete take `{ code }` and run through
+  `auth.withConfirmCode(userId, code, action)`: it checks the code and
+  runs the action in one transaction, with the sign-in rules for expiry
+  and attempts and the same errors. A wrong code is counted even though
+  the action does not run; the code is used up only when the action
+  succeeds, so each route checks its other refusals first.
 - In the app, `ConfirmWithCode` shows the number's last two digits, the
   code field and "Send a new code" after the wait.
 
@@ -248,19 +251,22 @@ journeys, and gets a code review before it opens.
 
 ### PR 2: `feat(privacy)`: rules in the domain and the personal data catalogue
 
-- [ ] `privacy/settings.ts`, `deletion.ts`, `effects.ts`, `retention.ts`
-      (today's cutoffs moved in), with the tests of 4.1
-- [ ] `packages/db/src/personal-data.ts` and its schema test (4.2)
+- [x] `privacy/settings.ts`, `deletion.ts`, `effects.ts`, `retention.ts`
+      (every rule listed; today's cutoffs stay with their modules), with
+      the tests of 4.1
+- [x] `packages/db/src/personal-data.ts` and its schema test (4.2)
 - Verify: `pnpm --filter @shareride/domain test`, `pnpm --filter
   @shareride/db test`
 
 ### PR 3: `feat(account)`: confirm with a fresh code
 
-- [ ] Migration (`purpose`); `POST /me/confirm-code`; `checkConfirmCode`;
-      the SMS text; `ConfirmWithCode` in the app
+- [x] Migration (`purpose`); `POST /me/confirm-code`; `withConfirmCode`;
+      the SMS text. `ConfirmWithCode` in the app moved to PR 5, where
+      its first screen uses it.
 - Verify: integration tests (a confirm code never signs in and a sign-in
   code never confirms; limits shared with sign-in; wrong, expired and too
-  many attempts); a screen test
+  many attempts; wrong codes sent at once all counted; an action that
+  refuses keeps the code)
 
 ### PR 4: `feat(privacy)`: download my data, the API
 
@@ -274,8 +280,8 @@ journeys, and gets a code review before it opens.
 
 ### PR 5: `feat(privacy)`: Privacy page and Download my data in the app
 
-- [ ] Settings, Privacy; the download screens (ask, code, preparing,
-      ready, expired)
+- [ ] `ConfirmWithCode` (from PR 3); Settings, Privacy; the download
+      screens (ask, code, preparing, ready, expired)
 - Verify: screen tests; a browser journey downloads the file and opens
   both files
 
