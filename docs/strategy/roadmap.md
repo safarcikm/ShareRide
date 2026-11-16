@@ -146,6 +146,17 @@ Milestone 6: changes and cancellations
 - [x] Changing a published trip, and adding or removing a stop
 - [x] Post again and post the return
 
+Milestone 7: trip day, reviews and reliability
+([plan](../plans/2026-11-16-milestone-7-trip-day-reviews-and-reliability.md),
+proposed 2026-11-16)
+
+- [ ] Trip day, dispute, review and reliability rules in the domain
+- [ ] Trips depart and complete on their own
+- [ ] The trip day and "I'm here"
+- [ ] No-shows, the driver didn't come, and the operator's decision
+- [ ] Rate and review
+- [ ] Public profiles with rating, reviews and reliability
+
 MVP features (each one a spec, a plan and a PR series)
 
 - [ ] Profiles, vehicles, phone verification
