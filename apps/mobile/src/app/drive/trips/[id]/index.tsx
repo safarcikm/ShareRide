@@ -25,15 +25,17 @@ import { routeText } from "@/trips/texts";
 
 /**
  * The driver's trip (spec 5, screens 5 and 9): requests first, each to
- * accept or decline; then passengers by where they get in and out; then the
- * seats held on each stretch. It loads again each time it comes into view.
- * Changing or cancelling the trip comes with spec 6.
+ * accept or decline; then passengers by where they get in and out, each
+ * booking to cancel (spec 6, 3.4); then the seats held on each stretch. It
+ * loads again each time it comes into view. `cancelled`, the booking just
+ * cancelled, says so with focus. Changing or cancelling the trip comes
+ * later in spec 6.
  */
 export default function DriverTripScreen() {
   const { locale, t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, cancelled } = useLocalSearchParams<{ id: string; cancelled?: string }>();
   const load = useCallback(
     () =>
       Promise.all([
@@ -47,8 +49,13 @@ export default function DriverTripScreen() {
   // gone), until a list loads that shows it answered.
   const [answered, setAnswered] = useState<Readonly<Record<string, Booking | null>>>({});
   // What the last answer did, above the lists, with focus. Each answer
-  // counts, so the same words twice still take focus.
-  const [outcome, setOutcome] = useState<{ text: string; count: number } | null>(null);
+  // counts, so the same words twice still take focus. A booking cancelled
+  // after it, which comes back here with `cancelled`, takes its place.
+  const [outcome, setOutcome] = useState<{
+    text: string;
+    count: number;
+    cancelled: string | undefined;
+  } | null>(null);
 
   if (loaded === undefined) {
     return (
@@ -92,10 +99,16 @@ export default function DriverTripScreen() {
   const riding = bookings.filter((booking) => booking.status !== "requested");
   const change = (bookingId: string, booking: Booking | null, said: string) => {
     setAnswered((last) => ({ ...last, [bookingId]: booking }));
-    setOutcome((last) => ({ text: said, count: (last?.count ?? 0) + 1 }));
+    setOutcome((last) => ({ text: said, count: (last?.count ?? 0) + 1, cancelled }));
     refresh();
   };
   const departure = trip.data.departsAt === null ? null : new Date(trip.data.departsAt);
+  const said =
+    outcome !== null && outcome.cancelled === cancelled
+      ? { text: outcome.text, key: String(outcome.count) }
+      : cancelled === undefined
+        ? null
+        : { text: t("driverTrip.cancelledBooking"), key: cancelled };
 
   return (
     <Screen>
@@ -114,9 +127,9 @@ export default function DriverTripScreen() {
         )}
         <Title align="start">{routeText(t, locale, trip.data)}</Title>
       </View>
-      {outcome === null ? null : (
-        <TakesFocus key={outcome.count}>
-          <Notice kind="info" message={outcome.text} />
+      {said === null ? null : (
+        <TakesFocus key={said.key}>
+          <Notice kind="info" message={said.text} />
         </TakesFocus>
       )}
       {requests.length === 0 ? null : (

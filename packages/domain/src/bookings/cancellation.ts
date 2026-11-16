@@ -112,6 +112,8 @@ export interface BoardingPassed {
  * The terms of cancelling an accepted or confirmed booking. A request is
  * withdrawn by the passenger or declined by the driver instead (spec 5).
  *
+ * - Neither can cancel once the planned time at the boarding stop has
+ *   come: what happens then is the trip day's (spec 8), such as a no-show.
  * - The driver: always a full refund; it counts unless for weather or a
  *   road closure.
  * - The passenger: a full refund 15 minutes or more before boarding, or
@@ -119,8 +121,7 @@ export interface BoardingPassed {
  *   R6.3's "before the new departure" is the passenger's own, at their
  *   boarding stop, as spec 6 says "departure" for it in "less than 15
  *   minutes before departure". It counts only less than 24 hours before
- *   boarding, and never for weather or after such a move. Once the planned
- *   time at the boarding stop has come, the passenger can no longer cancel.
+ *   boarding, and never for weather or after such a move.
  * - An accepted booking not yet paid has nothing to refund and never counts.
  */
 export function cancellationTerms(
@@ -131,7 +132,7 @@ export function cancellationTerms(
   const allowed = nextStatus(booking.status, "cancel");
   if (!allowed.ok) return err(allowed.error);
   const untilBoardingMs = booking.boardsAt.getTime() - now.getTime();
-  if (canceller.by === "passenger" && untilBoardingMs <= 0) return err({ code: "boarding_passed" });
+  if (untilBoardingMs <= 0) return err({ code: "boarding_passed" });
   const nothing: Money = { amount: 0, currency: booking.total.currency };
   if (booking.status !== "confirmed") return ok({ refund: nothing, countsOnReliability: false });
 

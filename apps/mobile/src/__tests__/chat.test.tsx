@@ -131,11 +131,31 @@ describe("A conversation (spec 7, 3.1)", () => {
       from: "system",
       kind: "system",
       text: null,
-      system: { key: "cancelled", by: "them", reason: "car_problem" },
+      system: { key: "cancelled", by: "them", reason: "car_problem", note: "" },
       sentAt: "2026-11-14T11:59:00.000Z",
     });
     await openConversation({ messages: [openedLine, cancelled] });
     expect(await screen.findByText("Anna cancelled the booking: Car problem")).toBeVisible();
+  });
+
+  it("quotes the driver's note after the reason, as written (spec 6, 3.4)", async () => {
+    const cancelled = chatMessage({
+      id: messageId(5),
+      from: "system",
+      kind: "system",
+      text: null,
+      system: {
+        key: "cancelled",
+        by: "them",
+        reason: "car_problem",
+        note: "Sorry, the clutch went.",
+      },
+      sentAt: "2026-11-14T11:59:00.000Z",
+    });
+    await openConversation({ messages: [openedLine, cancelled] });
+    expect(
+      await screen.findByText("Anna cancelled the booking: Car problem “Sorry, the clutch went.”"),
+    ).toBeVisible();
   });
 
   it("shows the driver the passenger's name and their request message", async () => {

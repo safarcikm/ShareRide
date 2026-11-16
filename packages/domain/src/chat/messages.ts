@@ -40,6 +40,8 @@ export type SystemLine =
       readonly key: "cancelled";
       readonly by: "passenger" | "driver";
       readonly reason: CancelReason;
+      /** The driver's note, as written; empty for none (spec 6, 3.4). */
+      readonly note: string;
     };
 
 /** A message as someone sends it, before it is checked. */

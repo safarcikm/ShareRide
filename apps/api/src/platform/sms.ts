@@ -21,6 +21,20 @@ export class SmsSendError extends Error {
   }
 }
 
+/**
+ * The provider may have taken the message before its answer was lost: a
+ * timeout or dropped connection after sending, a server error that can come
+ * after taking it, an answer out of shape, or a message taken only in part.
+ * The notification worker never sends it again (R7.6); a person waiting for
+ * a sign-in code simply asks for another.
+ */
+export class SmsMaybeSent extends SmsSendError {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = "SmsMaybeSent";
+  }
+}
+
 /** The kill switch (`SMS_PAUSED=true`): refuses every message. */
 export function createPausedSmsSender(): SmsSender {
   return {

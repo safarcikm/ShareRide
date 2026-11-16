@@ -1,4 +1,5 @@
-import { SmsSendError, type SmsSender } from "./sms.ts";
+import { neverLeft } from "./maybe-sent.ts";
+import { SmsMaybeSent, SmsSendError, type SmsSender } from "./sms.ts";
 
 export interface ElksSmsOptions {
   readonly username: string;
@@ -46,7 +47,9 @@ export function createElksSmsSender(options: ElksSmsOptions): SmsSender {
           signal: AbortSignal.timeout(timeoutMs),
         });
       } catch (error) {
-        throw new SmsSendError("46elks could not be reached in time", { cause: error });
+        if (neverLeft(error))
+          throw new SmsSendError("46elks could not be reached", { cause: error });
+        throw new SmsMaybeSent("46elks did not answer in time", { cause: error });
       }
       if (!response.ok) {
         throw new SmsSendError(`46elks refused the message (HTTP ${String(response.status)})`);

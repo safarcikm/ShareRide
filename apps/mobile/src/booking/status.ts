@@ -65,12 +65,12 @@ export const offersSearchAgain = (booking: Booking) =>
   cancelledForThem(booking);
 
 /**
- * An accepted or confirmed booking its passenger can cancel (spec 6, 3.5),
- * until the planned time at their boarding stop; then the trip day takes
- * over (spec 8). A request is withdrawn instead.
+ * An accepted or confirmed booking its passenger or driver can cancel
+ * (spec 6, 3.4 and 3.5), until the planned time at the boarding stop; then
+ * the trip day takes over (spec 8). A request is withdrawn or declined
+ * instead.
  */
 export const canCancel = (booking: Booking, at: Date) =>
-  booking.viewer === "passenger" &&
   (booking.status === "accepted" || booking.status === "confirmed") &&
   at.getTime() < new Date(booking.board.plannedAt).getTime();
 

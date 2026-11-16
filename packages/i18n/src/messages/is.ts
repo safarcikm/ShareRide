@@ -703,6 +703,18 @@ export const is = {
   "booking.cancelTold":
     "{driver} fær að vita það og {seats, plural, one {sætið losnar} other {sætin losna}} fyrir aðra.",
   "booking.keep": "Halda bókuninni",
+  "booking.cancelTitleDriver": "Afbóka: {name}",
+  "booking.driverRefund": "{name} fær fulla endurgreiðslu, {amount}",
+  "booking.driverNothingPaid": "{name} hefur ekki greitt enn svo það er ekkert að endurgreiða.",
+  "booking.cancelToldPassenger":
+    "{name} fær að vita það strax og {seats, plural, one {sætið losnar} other {sætin losna}} fyrir aðra.",
+  "booking.cancelNote": "Skilaboð til farþegans (valfrjálst)",
+  "booking.cancelNoteHelp":
+    "Allt að {max} stafir, án símanúmera eða tengla. {name} sér þau með ástæðunni.",
+  "booking.cancelNoteNoContact":
+    "Vinsamlegast ekki deila símanúmerum, netföngum eða tenglum í skilaboðunum.",
+  "booking.keepTheirs": "Halda bókuninni",
+  "booking.driverNote": "Skilaboð frá bílstjóranum: {note}",
   "booking.backToBooking": "Aftur í bókunina",
   "booking.termsChanged":
     "Eitthvað breyttist síðan þú opnaðir þetta. Athugaðu endurgreiðsluna aftur.",
@@ -748,6 +760,8 @@ export const is = {
     "{taken} af {capacity, plural, one {# sæti} other {# sætum}} {taken, plural, one {upptekið} other {upptekin}}",
   "driverTrip.none": "Engar beiðnir eða bókanir enn.",
   "driverTrip.failed": "Ekki tókst að sækja beiðnir og bókanir ferðarinnar.",
+  "driverTrip.cancelBooking": "Afbóka: {name}",
+  "driverTrip.cancelledBooking": "Bókunin var afbókuð. Farþeginn hefur fengið að vita það.",
   "request.accept": "Samþykkja",
   "request.decline": "Hafna",
   "request.timeLeft": "{time} eftir til að svara",
@@ -806,6 +820,7 @@ export const is = {
   "chat.sentTo": "{count, plural, one {Sent til # farþega.} other {Sent til # farþega.}}",
   "chat.noPassengers": "Enginn farþegi er staðfestur enn, svo enginn fær skilaboðin.",
   "chat.opened": "Bókunin er staðfest. Þið getið skrifast á hér.",
+  "chat.withNote": "{line} „{note}“",
   "chat.cancelledByMe": "Þú afbókaðir: {reason}",
   "chat.cancelledByThem": "{name} afbókaði: {reason}",
   "quick.late": "Mér seinkar um {minutes} mínútur",
@@ -832,6 +847,8 @@ export const is = {
   "notify.withdrawn": "Beiðni dregin til baka: {name}",
   "notify.unpaid": "Sætið var ekki greitt í tæka tíð",
   "notify.unpaidDriver": "Ekki greitt í tæka tíð: {name}",
+  "notify.cancelledByDriver": "Bílstjórinn afbókaði: {reason}",
+  "notify.cancelledRefundBody": "{from} – {to} · {when}. Full endurgreiðsla, {total}.",
   "notify.cancelledByPassenger": "Bókun afbókuð: {name}",
   "notify.refunded": "Endurgreiðsla, {total}",
   "notify.refundedBody": "{from} – {to} · {when}. Hún fer aftur á kortið sem þú greiddir með.",
@@ -861,4 +878,8 @@ export const is = {
   "email.verifyFooter":
     "Þú færð þennan póst því þetta netfang var slegið inn í ShareRide. Ef það varst ekki þú skaltu hunsa hann: netfanginu er ekki bætt við.",
   "sms.signInCode": "{code} er ShareRide kóðinn þinn. Hann gildir í 10 mínútur.",
+  "sms.bookingCancelled":
+    "ShareRide: Bílstjórinn aflýsti bókun þinni: {date} kl. {time}. Full endurgreiðsla. Nánar í appinu.",
+  "sms.bookingCancelledUnpaid":
+    "ShareRide: Bílstjórinn aflýsti bókun þinni: {date} kl. {time}. Nánar í appinu.",
 } as const satisfies Record<MessageKey, string>;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createVonageSmsSender } from "./sms-vonage.ts";
-import { SmsSendError } from "./sms.ts";
+import { SmsMaybeSent, SmsSendError } from "./sms.ts";
 
 const number = "+3546912345";
 const message = { to: number, text: "123456 er kóðinn þinn hjá ShareRide." };
@@ -145,6 +145,38 @@ describe("createVonageSmsSender", () => {
       Promise.reject(new DOMException("The operation timed out.", "TimeoutError")),
     );
     await expect(sender(fetch).send(message)).rejects.toThrow(SmsSendError);
+  });
+
+  it("may have sent it when the answer was lost or odd, or only part was taken, so it is never sent again", async () => {
+    for (const answered of [
+      () => Promise.reject(new DOMException("The operation timed out.", "TimeoutError")),
+      () => Promise.resolve(new Response("Bad gateway", { status: 502 })),
+      () => Promise.resolve(new Response("not JSON")),
+      () => Promise.resolve(Response.json({ "message-count": "0", messages: [] })),
+      () => Promise.resolve(Response.json({ "message-count": "1", messages: [{}] })),
+      answer("0", "1"),
+    ]) {
+      const { fetch } = fakeFetch(answered);
+      const error = await failure(sender(fetch).send(message));
+      expect(error).toBeInstanceOf(SmsMaybeSent);
+      expect(String(error)).not.toContain("354");
+    }
+  });
+
+  it("can be tried again when the request never left or every part was refused", async () => {
+    const neverConnected = new TypeError("fetch failed", {
+      cause: Object.assign(new Error("connect ECONNREFUSED"), { code: "ECONNREFUSED" }),
+    });
+    for (const answered of [
+      () => Promise.reject(neverConnected),
+      () => Promise.resolve(new Response("Unauthorized", { status: 401 })),
+      answer("1", "1"),
+    ]) {
+      const { fetch } = fakeFetch(answered);
+      const error = await failure(sender(fetch).send(message));
+      expect(error).toBeInstanceOf(SmsSendError);
+      expect(error).not.toBeInstanceOf(SmsMaybeSent);
+    }
   });
 
   it("gives up after the timeout", async () => {

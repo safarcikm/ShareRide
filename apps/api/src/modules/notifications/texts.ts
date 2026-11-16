@@ -1,4 +1,5 @@
 import type {
+  CancelReason,
   Money,
   NotificationKind,
   NotificationSettings,
@@ -6,6 +7,7 @@ import type {
   TripRole,
 } from "@shareride/domain";
 import {
+  cancelReasonText,
   capitalised,
   carText,
   createTranslator,
@@ -36,6 +38,9 @@ export interface NotificationFacts {
   readonly name: string;
   readonly seats: number;
   readonly total: Money;
+  /** A cancelled booking's reason and refund (spec 6); otherwise null and nothing. */
+  readonly cancelReason: CancelReason | null;
+  readonly refund: Money;
   /** Where the passenger gets in and out, named in the recipient's language. */
   readonly from: string;
   readonly to: string;
@@ -75,9 +80,27 @@ export interface NotificationText {
   readonly open?: string;
 }
 
-function required(moment: Date | null, what: string): Date {
-  if (moment === null) throw new Error(`The notification needs ${what}.`);
-  return moment;
+function required<T>(value: T | null, what: string): T {
+  if (value === null) throw new Error(`The notification needs ${what}.`);
+  return value;
+}
+
+/**
+ * The words of an SMS (spec 7, 3.4), for the kinds that go by SMS: short,
+ * with the day and time, and never a name, place or note (R7.9).
+ */
+export function smsText(facts: NotificationFacts, locale: Locale): string {
+  const t = createTranslator(locale);
+  const values = { date: formatDay(facts.boardsAt, locale), time: formatClock(facts.boardsAt) };
+  switch (facts.kind) {
+    case "booking_cancelled_by_driver":
+      return t(
+        facts.refund.amount > 0 ? "sms.bookingCancelled" : "sms.bookingCancelledUnpaid",
+        values,
+      );
+    default:
+      throw new Error(`No SMS for ${facts.kind} yet.`);
+  }
 }
 
 /**
@@ -147,6 +170,21 @@ function bookingText(
         return [t("notify.unpaidDriver", { name }), part()];
       case "booking_cancelled_by_passenger":
         return [t("notify.cancelledByPassenger", { name }), part()];
+      case "booking_cancelled_by_driver":
+        // Never the driver's note: it may hold a number (R7.9).
+        return [
+          t("notify.cancelledByDriver", {
+            reason: cancelReasonText(t, required(facts.cancelReason, "the reason")),
+          }),
+          facts.refund.amount > 0
+            ? t("notify.cancelledRefundBody", {
+                from,
+                to,
+                when: when(facts.boardsAt),
+                total: formatMoney(facts.refund, locale),
+              })
+            : searchAgain(),
+        ];
       case "refund_issued":
         return [
           t("notify.refunded", { total: formatMoney(facts.total, locale) }),

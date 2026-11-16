@@ -697,6 +697,17 @@ export const en = {
   "booking.cancelTold":
     "{driver} is told, and {seats, plural, one {the seat is} other {the seats are}} freed for others.",
   "booking.keep": "Keep my booking",
+  "booking.cancelTitleDriver": "Cancel booking: {name}",
+  "booking.driverRefund": "{name} gets a full refund of {amount}",
+  "booking.driverNothingPaid": "{name} hasn't paid yet, so there's nothing to refund.",
+  "booking.cancelToldPassenger":
+    "{name} is told at once, and {seats, plural, one {the seat is} other {the seats are}} freed for others.",
+  "booking.cancelNote": "Note to the passenger (optional)",
+  "booking.cancelNoteHelp":
+    "Up to {max} characters, without phone numbers or links. {name} sees it with your reason.",
+  "booking.cancelNoteNoContact": "Please don't share phone numbers, emails or links in the note.",
+  "booking.keepTheirs": "Keep the booking",
+  "booking.driverNote": "Note from the driver: {note}",
   "booking.backToBooking": "Back to the booking",
   "booking.termsChanged": "Something changed since you opened this. Check the refund again.",
   "booking.notCancellable": "This booking can no longer be cancelled.",
@@ -741,6 +752,8 @@ export const en = {
   "driverTrip.taken": "{taken} of {capacity, plural, one {# seat} other {# seats}} taken",
   "driverTrip.none": "No requests or bookings yet.",
   "driverTrip.failed": "The trip's requests and bookings could not be loaded.",
+  "driverTrip.cancelBooking": "Cancel booking: {name}",
+  "driverTrip.cancelledBooking": "Booking cancelled. The passenger has been told.",
   "request.accept": "Accept",
   "request.decline": "Decline",
   "request.timeLeft": "{time} left to answer",
@@ -798,6 +811,7 @@ export const en = {
   "chat.sentTo": "{count, plural, one {Sent to # passenger.} other {Sent to # passengers.}}",
   "chat.noPassengers": "No passenger is confirmed yet, so there's no one to message.",
   "chat.opened": "Booking confirmed. You can message each other here.",
+  "chat.withNote": "{line} “{note}”",
   "chat.cancelledByMe": "You cancelled the booking: {reason}",
   "chat.cancelledByThem": "{name} cancelled the booking: {reason}",
   "quick.late": "I'm running {minutes} minutes late",
@@ -824,6 +838,8 @@ export const en = {
   "notify.withdrawn": "Request withdrawn: {name}",
   "notify.unpaid": "Seat not paid for in time",
   "notify.unpaidDriver": "Not paid for in time: {name}",
+  "notify.cancelledByDriver": "The driver cancelled: {reason}",
+  "notify.cancelledRefundBody": "{from} – {to} · {when}. Full refund of {total}.",
   "notify.cancelledByPassenger": "Booking cancelled: {name}",
   "notify.refunded": "Refund of {total}",
   "notify.refundedBody": "{from} – {to} · {when}. It goes back to the card you paid with.",
@@ -857,6 +873,10 @@ export const en = {
   "email.verifyFooter":
     "You get this email because this address was entered in ShareRide. If that was not you, ignore it: the address is not added.",
   "sms.signInCode": "{code} is your ShareRide code. It expires in 10 minutes.",
+  "sms.bookingCancelled":
+    "ShareRide: the driver cancelled your booking for {date} at {time}. Full refund. Details in the app.",
+  "sms.bookingCancelledUnpaid":
+    "ShareRide: the driver cancelled your booking for {date} at {time}. Details in the app.",
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;

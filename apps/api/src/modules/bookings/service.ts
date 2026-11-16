@@ -2,12 +2,13 @@ import type { Booking, CancellationPreview, TripBookings } from "@shareride/cont
 import { schema, type Database } from "@shareride/db";
 import {
   cancellationTerms,
+  cancelReasonsFor,
   checkBooking,
+  checkNote,
   err,
   holdsSeats,
   nextStatus,
   ok,
-  passengerCancelReasons,
   paymentDeadline,
   peopleColourOf,
   statusAt,
@@ -19,11 +20,12 @@ import {
   type BookingStatus,
   type BookingToCancel,
   type CancellationTerms,
+  type Canceller,
   type CancelReason,
   type CarColour,
   type DeclineReason,
   type Money,
-  type PassengerCancelReason,
+  type NoteProblem,
   type Result,
   type TripStatus,
 } from "@shareride/domain";
@@ -66,18 +68,26 @@ export type BookError = NotFound | { readonly code: "account_incomplete" } | Boo
 /** The booking is no longer a request: answered, withdrawn or expired. */
 export type AnswerError = NotFound | { readonly code: "booking_not_requested" };
 
-/** Only an accepted or confirmed booking can be cancelled; a request is withdrawn instead. */
+/**
+ * Only an accepted or confirmed booking can be cancelled, until the time to
+ * get in; a request is withdrawn or declined instead.
+ */
 export type PreviewError = NotFound | { readonly code: "booking_not_cancellable" };
 
 export type CancelError =
   | PreviewError
   | { readonly code: "reason_not_offered" }
+  /** Only the driver writes a note (spec 6, 3.4), without contact details (R3.10). */
+  | { readonly code: "note_not_offered" }
+  | NoteProblem
   /** A time limit passed, or the trip moved, since the terms were shown. */
   | { readonly code: "terms_changed"; readonly terms: CancellationTerms };
 
 export interface CancelInput {
   readonly reason: CancelReason;
-  /** The terms the passenger was shown. */
+  /** The driver's note to the passenger, as written. */
+  readonly note?: string;
+  /** The terms the canceller was shown. */
   readonly terms: CancellationTerms;
 }
 
@@ -104,18 +114,21 @@ export interface BookingService {
   /** Those of the bookings that are the viewer's or on the viewer's trips, in no order. */
   bookingsOf(viewerId: string, bookingIds: readonly string[]): Promise<Booking[]>;
   withdraw(passengerId: string, bookingId: string): Promise<Result<Booking, AnswerError>>;
-  /** The reasons the passenger can give, each with what cancelling for it does now (spec 6, 3.5). */
+  /**
+   * The reasons the passenger or the trip's driver can give, each with what
+   * cancelling for it does now (spec 6, 3.4 and 3.5).
+   */
   cancellationPreview(
-    passengerId: string,
+    viewerId: string,
     bookingId: string,
   ): Promise<Result<CancellationPreview, PreviewError>>;
   /**
-   * The passenger cancels an accepted or confirmed booking (spec 6, 3.5):
-   * the seats are freed, a refund is owed and the driver is told. Asked
-   * again, it answers the cancellation already made.
+   * The passenger or the trip's driver cancels an accepted or confirmed
+   * booking (spec 6, 3.4 and 3.5): the seats are freed, a refund is owed and
+   * the other is told. Asked again, it answers the cancellation already made.
    */
   cancel(
-    passengerId: string,
+    viewerId: string,
     bookingId: string,
     input: CancelInput,
   ): Promise<Result<Booking, CancelError>>;
@@ -216,8 +229,22 @@ function toCancel(
   };
 }
 
-const isPassengerReason = (reason: CancelReason): reason is PassengerCancelReason =>
-  (passengerCancelReasons as readonly CancelReason[]).includes(reason);
+/** Who cancels and why, if the reason is one offered to them (spec 6, 3.4 and 3.5). */
+function cancellerOf(by: Canceller["by"], reason: CancelReason): Canceller | undefined {
+  const offered: readonly CancelReason[] = cancelReasonsFor(by);
+  return offered.includes(reason) ? ({ by, reason } as Canceller) : undefined;
+}
+
+/** The viewer's side of a booking, or undefined for someone else. */
+const sideOf = (
+  viewerId: string,
+  parties: { readonly passengerId: string; readonly driverId: string },
+): Canceller["by"] | undefined =>
+  parties.passengerId === viewerId
+    ? "passenger"
+    : parties.driverId === viewerId
+      ? "driver"
+      : undefined;
 
 // Refunds are in ISK, the only currency the contracts take.
 const sameTerms = (a: CancellationTerms, b: CancellationTerms) =>
@@ -272,6 +299,7 @@ function present(row: BookingRow, viewerId: string, now: Date): Booking {
         ? {
             by: booking.cancelledBy as "passenger" | "driver" | "operator",
             reason: booking.cancelReason as CancelReason | null,
+            note: booking.cancelNote,
             refund: isk(booking.refundAmount ?? 0),
             // Whether it counts is the canceller's own business (spec 8).
             countsOnReliability:
@@ -563,14 +591,23 @@ export function createBookingService(dependencies: {
       );
     },
 
-    async cancellationPreview(passengerId, bookingId) {
+    async cancellationPreview(viewerId, bookingId) {
       const [found] = await db
-        .select({ booking: bookings, departsAt: trips.departsAt, boardsAt: boardStops.plannedAt })
+        .select({
+          booking: bookings,
+          driverId: trips.driverId,
+          departsAt: trips.departsAt,
+          boardsAt: boardStops.plannedAt,
+        })
         .from(bookings)
         .innerJoin(trips, eq(trips.id, bookings.tripId))
         .innerJoin(boardStops, eq(boardStops.id, bookings.fromStopId))
-        .where(and(eq(bookings.id, bookingId), eq(bookings.passengerId, passengerId)));
-      if (found === undefined) return err({ code: "not_found" });
+        .where(eq(bookings.id, bookingId));
+      const by =
+        found === undefined
+          ? undefined
+          : sideOf(viewerId, { passengerId: found.booking.passengerId, driverId: found.driverId });
+      if (found === undefined || by === undefined) return err({ code: "not_found" });
       const now = clock();
       const booking = toCancel(
         found.booking,
@@ -579,23 +616,33 @@ export function createBookingService(dependencies: {
         plannedAt({ plannedAt: found.boardsAt }),
       );
       const reasons: CancellationPreview["reasons"] = [];
-      for (const reason of passengerCancelReasons) {
-        const terms = cancellationTerms(booking, { by: "passenger", reason }, now);
+      for (const reason of cancelReasonsFor(by)) {
+        const terms = cancellationTerms(booking, { by, reason } as Canceller, now);
         if (!terms.ok) return err({ code: "booking_not_cancellable" });
         reasons.push({ reason, ...terms.value });
       }
       return ok({ reasons });
     },
 
-    async cancel(passengerId, bookingId, input) {
+    async cancel(viewerId, bookingId, input) {
       const [found] = await db
-        .select({ tripId: bookings.tripId, passengerId: bookings.passengerId })
+        .select({
+          tripId: bookings.tripId,
+          passengerId: bookings.passengerId,
+          driverId: trips.driverId,
+        })
         .from(bookings)
+        .innerJoin(trips, eq(trips.id, bookings.tripId))
         .where(eq(bookings.id, bookingId));
-      if (found === undefined || found.passengerId !== passengerId)
-        return err({ code: "not_found" });
-      const { reason } = input;
-      if (!isPassengerReason(reason)) return err({ code: "reason_not_offered" });
+      const by = found === undefined ? undefined : sideOf(viewerId, found);
+      if (found === undefined || by === undefined) return err({ code: "not_found" });
+      const canceller = cancellerOf(by, input.reason);
+      if (canceller === undefined) return err({ code: "reason_not_offered" });
+      // As the booking's message: trimmed, and composed as the database counts it.
+      const note = (input.note ?? "").trim().normalize("NFC");
+      if (by === "passenger" && note !== "") return err({ code: "note_not_offered" });
+      const noteProblem = checkNote(note)[0];
+      if (noteProblem !== undefined) return err(noteProblem);
 
       return db.transaction(async (tx) => {
         const trip = await lockTrip(tx, found.tripId);
@@ -606,16 +653,14 @@ export function createBookingService(dependencies: {
         const [booking] = await tx.select().from(bookings).where(eq(bookings.id, bookingId));
         if (booking === undefined) return err({ code: "not_found" });
         const shown = async () => {
-          const read = await readOne(tx, bookingId, passengerId, now);
+          const read = await readOne(tx, bookingId, viewerId, now);
           if (read === undefined) throw new Error("The booking was not stored.");
           return ok(read);
         };
         // Asked again, as a retry is: the cancellation already made, refunded
-        // once. One the driver made meanwhile is not this one's answer.
+        // once. One the other side made meanwhile is not this one's answer.
         const again =
-          booking.status === "cancelled" &&
-          booking.cancelledBy === "passenger" &&
-          !isWithdrawal(booking);
+          booking.status === "cancelled" && booking.cancelledBy === by && !isWithdrawal(booking);
         if (again) return shown();
 
         const stops = await stopsOf(tx, found.tripId);
@@ -623,7 +668,7 @@ export function createBookingService(dependencies: {
         const boardsAt = plannedAt(stops[part.board] ?? { plannedAt: null });
         const terms = cancellationTerms(
           toCancel(booking, booking.status as BookingStatus, trip.departsAt, boardsAt),
-          { by: "passenger", reason },
+          canceller,
           now,
         );
         if (!terms.ok) return err({ code: "booking_not_cancellable" });
@@ -631,13 +676,15 @@ export function createBookingService(dependencies: {
           return err({ code: "terms_changed", terms: terms.value });
         }
         const { refund, countsOnReliability } = terms.value;
+        const { reason } = canceller;
         await tx
           .update(bookings)
           .set({
             status: "cancelled",
             cancelledAt: now,
-            cancelledBy: "passenger",
+            cancelledBy: by,
             cancelReason: reason,
+            cancelNote: note,
             refundAmount: refund.amount,
             countsOnReliability,
             updatedAt: now,
@@ -646,8 +693,8 @@ export function createBookingService(dependencies: {
         // An accepted or confirmed booking holds its seats until now (rule S1).
         await changeOccupancy(tx, found.tripId, part, -booking.seats);
         if (refund.amount > 0) await oweRefund(tx, bookingId, refund, now);
-        await addSystemLine(tx, bookingId, { key: "cancelled", by: "passenger", reason }, now);
-        await recordEvents(tx, [{ type: "BookingCancelled", bookingId, by: "passenger" }], now);
+        await addSystemLine(tx, bookingId, { key: "cancelled", by, reason, note }, now);
+        await recordEvents(tx, [{ type: "BookingCancelled", bookingId, by }], now);
         return shown();
       });
     },

@@ -243,7 +243,7 @@ the browser journeys, and gets a code review before it opens.
 
 ### PR 1: `docs(plans)`: this plan
 
-- [ ] This plan, the roadmap's milestone 6 and the plans index
+- [x] This plan, the roadmap's milestone 6 and the plans index
 
 ### PR 2: `feat(trips)`: change and cancellation rules in the domain
 
@@ -265,14 +265,29 @@ the browser journeys, and gets a code review before it opens.
 
 ### PR 4: `feat(trips)`: the driver cancels a booking or the trip
 
-- [ ] `POST /bookings/{id}/cancel` for the driver and
-      `POST /trips/{id}/cancel`; `TripCancelled`; requests declined and
+In two parts, so each stays reviewable.
+
+PR 4a, `feat(bookings)`: the driver cancels one booking.
+
+- [x] `POST /bookings/{id}/cancel` and its preview for the driver, with
+      the driver's reasons and an optional note; the note on the booking
+      and in the chat line, never in push, email or SMS
+- [x] SMS in the worker for the last-minute rows, with the daily limit
+- [x] "Cancel booking" under each passenger on the driver's trip page; the
+      cancel screen in the driver's words; the outcome on the trip page
+- Verify: integration tests (a full refund that counts on the driver; an
+  unpaid booking; the note; an SMS within 24 hours and none outside it; at
+  most 5 a day; a lost SMS answer never sent twice); screen tests; a
+  browser journey cancels a paid booking with a note
+
+PR 4b, `feat(trips)`: the driver cancels the trip.
+
+- [ ] `POST /trips/{id}/cancel`; `TripCancelled`; requests declined and
       unpaid bookings cancelled
-- [ ] SMS in the worker for the last-minute rows, with the daily limit
-- [ ] The driver's cancel screens
+- [ ] The Cancel trip screen
 - Verify: integration tests (three passengers each refunded once, a
-  request declined, an unpaid booking cancelled, an SMS within 24 hours and
-  none outside it); a browser journey cancels a trip with three passengers
+  request declined, an unpaid booking cancelled); a browser journey
+  cancels a trip with three passengers
 
 ### PR 5: `feat(trips)`: changing a published trip
 

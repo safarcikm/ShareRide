@@ -1,16 +1,17 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Browser, type Page, type TestInfo } from "@playwright/test";
 import { english, signUp } from "./support/account";
 import { focused, postTripToSelfoss } from "./support/trips";
 
-// Spec 6's passenger cancelling, on the web build: a driver posts Mjódd to
-// N1 Selfoss for tomorrow, less than 24 hours from now, a passenger
-// requests a seat, the driver accepts and the passenger pays. Then the
-// passenger cancels: a full refund, since boarding is more than 15 minutes
-// away, and a cancellation that shows on their profile, since it is less
-// than 24 hours away, unless for the weather (rule M2, R6.8). The last 15
+// Spec 6's cancelling of one booking, on the web build: a driver posts
+// Mjódd to N1 Selfoss for tomorrow, less than 24 hours from now, a
+// passenger requests a seat, the driver accepts and the passenger pays.
+// Then the passenger cancels: a full refund, since boarding is more than 15
+// minutes away, and a cancellation that shows on their profile, since it is
+// less than 24 hours away, unless for the weather (rule M2, R6.8). Or the
+// driver cancels, with a note the passenger reads (3.4). The last 15
 // minutes, with no refund, are left to the API and screen tests: the test
-// API's clock is the real one. Each project posts its own trip, so phone
-// and desktop runs never meet.
+// API's clock is the real one. Each test posts its own trip, so phone and
+// desktop runs never meet.
 
 test.use({ locale: "en-GB" });
 
@@ -27,15 +28,13 @@ function withinADay(): string {
   return `${pad(Math.floor(rounded / 60))}:${pad(rounded % 60)}`;
 }
 
-test("a passenger cancels a paid booking the day before, with a full refund", async ({
-  page: driver,
-  browser,
-}, testInfo) => {
-  // Two people sign up, the driver posts, accepts, and the passenger pays.
-  test.slow();
+const visible = { visible: true } as const;
+
+/** A second person's page, the same size as the test's own. */
+async function secondPage(browser: Browser, testInfo: TestInfo) {
   const { viewport, userAgent, deviceScaleFactor, isMobile, hasTouch, baseURL } =
     testInfo.project.use;
-  const passengerContext = await browser.newContext({
+  const context = await browser.newContext({
     viewport,
     userAgent,
     deviceScaleFactor,
@@ -44,10 +43,15 @@ test("a passenger cancels a paid booking the day before, with a full refund", as
     baseURL,
     locale: "en-GB",
   });
-  const passenger = await passengerContext.newPage();
-  const visible = { visible: true } as const;
+  return { page: await context.newPage(), close: () => context.close() };
+}
 
-  // A confirmed booking, as in the request journey.
+/**
+ * Bára posts a trip for tomorrow, Dóra requests a seat, Bára accepts and
+ * Dóra pays, as in the request journey. Gives the trip and the booking's
+ * address.
+ */
+async function confirmedBooking(driver: Page, passenger: Page) {
   await signUp(driver, english, "Bára");
   const tripId = await postTripToSelfoss(driver, withinADay());
   await signUp(passenger, english, "Dóra");
@@ -67,6 +71,17 @@ test("a passenger cancels a paid booking the day before, with a full refund", as
   await expect(
     passenger.getByText("Your seat is confirmed", { exact: true }).filter(visible),
   ).toBeVisible();
+  return { tripId, booking };
+}
+
+test("a passenger cancels a paid booking the day before, with a full refund", async ({
+  page: driver,
+  browser,
+}, testInfo) => {
+  // Two people sign up, the driver posts, accepts, and the passenger pays.
+  test.slow();
+  const { page: passenger, close } = await secondPage(browser, testInfo);
+  const { booking } = await confirmedBooking(driver, passenger);
 
   // Cancel booking opens its own screen, with the refund first.
   await passenger.getByRole("button", { name: "Cancel booking" }).click();
@@ -104,5 +119,55 @@ test("a passenger cancels a paid booking the day before, with a full refund", as
   await driver.reload();
   await expect(driver.getByRole("heading", { name: "Passengers" })).toBeHidden();
   await expect(driver.getByLabel(/^Dóra, /)).toBeHidden();
-  await passengerContext.close();
+  await close();
+});
+
+test("a driver cancels a paid booking with a note the passenger reads", async ({
+  page: driver,
+  browser,
+}, testInfo) => {
+  test.slow();
+  const { page: passenger, close } = await secondPage(browser, testInfo);
+  const { tripId, booking } = await confirmedBooking(driver, passenger);
+
+  // On the trip, under Dóra: Cancel booking opens its own screen.
+  await driver.reload();
+  await driver.getByRole("button", { name: "Cancel booking: Dóra" }).click();
+  await expect(driver).toHaveURL(/\/bookings\/[0-9a-f-]+\/cancel$/);
+  await expect(driver.getByRole("heading", { name: "Cancel booking: Dóra" })).toBeVisible();
+  await expect(
+    driver.getByText(/^Dóra gets a full refund of [\d,]+ ISK$/).filter(visible),
+  ).toBeVisible();
+  await driver.getByRole("radio", { name: "Car problem" }).click();
+  await expect(
+    driver.getByText("This cancellation shows on your profile").filter(visible),
+  ).toBeVisible();
+  await driver.getByLabel("Note to the passenger (optional)").fill("Sorry, the clutch went.");
+  await driver.getByRole("button", { name: "Cancel booking", exact: true }).click();
+
+  // Back on the trip, the outcome takes focus, and Dóra has gone.
+  await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}\\?cancelled=`));
+  const outcome = "Booking cancelled. The passenger has been told.";
+  await expect(driver.getByText(outcome, { exact: true }).filter(visible)).toBeVisible();
+  await expect.poll(() => focused(driver)).toContain(outcome);
+  await expect(driver.getByLabel(/^Dóra, /)).toBeHidden();
+
+  // Dóra reads why, with the note and the refund.
+  await passenger.goto(booking);
+  await expect(
+    passenger
+      .getByText("Bára cancelled this booking: Car problem", { exact: true })
+      .filter(visible),
+  ).toBeVisible();
+  await expect(
+    passenger
+      .getByText("Note from the driver: Sorry, the clutch went.", { exact: true })
+      .filter(visible),
+  ).toBeVisible();
+  await expect(
+    passenger
+      .getByText(/^Full refund of [\d,]+ ISK, back to the card you paid with\.$/)
+      .filter(visible),
+  ).toBeVisible();
+  await close();
 });

@@ -5,6 +5,7 @@ import {
   carColours,
   declineReasons,
   defaultTripSettings,
+  noteMaxLength,
   peopleColourCount,
 } from "@shareride/domain";
 import { z } from "zod";
@@ -92,6 +93,8 @@ export const bookingSchema = z.object({
       by: z.enum(["passenger", "driver", "operator"]),
       /** Null when the operator cancelled. */
       reason: z.enum(cancelReasons).nullable(),
+      /** The driver's note to the passenger, as written; empty for none (spec 6, 3.3 and 3.4). */
+      note: z.string(),
       /** What went back to the passenger (rule M2): all they paid, or nothing. */
       refund: moneySchema,
       /** Whether it shows on the viewer's profile, for their own cancellation; null for the other person's. */
@@ -244,6 +247,12 @@ export const cancellationPreviewRoute = defineRoute({
 
 export const cancelBookingBodySchema = z.object({
   reason: z.enum(cancelReasons),
+  /** The driver's note to the passenger (spec 6, 3.4); a passenger gives none. */
+  // Twice the limit, as the API counts characters as the database does (code points).
+  note: z
+    .string()
+    .max(noteMaxLength * 2)
+    .optional(),
   /** The terms the person was shown; others give `terms_changed`, with the terms now. */
   terms: cancellationTermsSchema,
 });
@@ -254,7 +263,7 @@ export const cancelBookingRoute = defineRoute({
   method: "post",
   path: "/v1/bookings/{id}/cancel",
   summary:
-    "The passenger cancels a booking: the seats are freed, the refund starts and the driver is told (spec 6, 3.5)",
+    "The passenger or the driver cancels a booking: the seats are freed, the refund starts and the other is told (spec 6, 3.4 and 3.5)",
   tags: ["bookings"],
   auth: true,
   request: { params: bookingParams, body: cancelBookingBodySchema },
@@ -264,7 +273,8 @@ export const cancelBookingRoute = defineRoute({
       schema: bookingSchema,
     },
     400: {
-      description: "validation_failed: a reason not offered to you (details name `reason`)",
+      description:
+        "validation_failed: a reason not offered to you (details name `reason`), or a note from the passenger, over 500 characters or with contact details (`note`)",
       ...errors,
     },
     401: unauthenticated,

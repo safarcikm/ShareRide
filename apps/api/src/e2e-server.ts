@@ -96,6 +96,8 @@ const worker = createNotificationWorker({
   clock,
   push,
   email: { sender: email, webAppUrl: webOrigin },
+  // News by SMS goes nowhere here, so the sign-in codes' file and clock stay as they were.
+  sms: { send: () => Promise.resolve() },
 });
 startRepeating({
   everyMs: 1000,
