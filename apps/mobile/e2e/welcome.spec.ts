@@ -39,7 +39,11 @@ test.describe("Find, the home, on the web", () => {
     await page.getByLabel("To", { exact: true }).fill("blondu");
     await page.getByRole("button", { name: /^Olís Blönduós,/ }).click();
     await page.getByRole("button", { name: "Find a ride", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "N1 Borgarnes → Olís Blönduós" })).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: "Change search: N1 Borgarnes → Olís Blönduós, Any day, 1 seat",
+      }),
+    ).toBeVisible();
   });
 
   test("opens the place search with the keyboard, and gives focus back when it closes", async ({

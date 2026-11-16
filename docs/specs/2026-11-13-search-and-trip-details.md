@@ -5,7 +5,10 @@
 Amended by [spec 16](2026-11-15-one-home-and-simpler-flows.md): the seats are
 in the search form on Find, and ride cards say "Book instantly" or "Driver
 approves" (3.2). Trip details puts your part first, with Change for Get in
-and Get out, then who you ride with, then the route (3.7).
+and Get out, then who you ride with, then the route (3.7). The results header
+is one button that opens the search in place, the order is one "Sort" chip
+apart from "Book instantly only", and the From and To list puts towns and
+areas before meeting points (3.8).
 
 Features: D1 Search trips, including partial routes, D2 Trip details, D6 Help
 when nothing matches ([features](../product/features.md)).
@@ -263,7 +266,7 @@ upcoming trips.
 | `results.request` | Request | Beiðni |
 | `results.sortEarliest` | Earliest | Fyrst |
 | `results.sortCheapest` | Cheapest | Ódýrast |
-| `results.instantOnly` | Instant booking only | Aðeins bókun strax |
+| `results.instantOnly` | Book instantly only (spec 16) | Aðeins bókun strax |
 | `results.none` | No trips on {date} | Engar ferðir {date} |
 | `results.otherDays` | Trips on other days | Ferðir aðra daga |
 | `results.nearbyPoints` | Trips from nearby meeting points | Ferðir frá nálægum mótsstöðum |

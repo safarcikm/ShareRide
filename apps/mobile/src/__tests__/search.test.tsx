@@ -1,4 +1,5 @@
 import { fireEvent, screen, within } from "expo-router/testing-library";
+import { AccessibilityInfo } from "react-native";
 import type * as Days from "@/lib/days";
 import { showsOtherTime } from "@/lib/days";
 import { readAppData, writeAppData } from "@/lib/app-data";
@@ -52,6 +53,16 @@ async function openResults(extra = "", answers: SearchAnswers = {}) {
   });
 }
 
+/** Chooses the order with the one Sort chip (spec 16, 3.8). */
+async function sortBy(name: "Earliest" | "Cheapest") {
+  await fireEvent.press(screen.getByRole("button", { name: /^Sort: / }));
+  await fireEvent.press(screen.getByRole("radio", { name }));
+}
+
+/** The results header, one button that opens the search form in place (spec 16, 3.8). */
+const changeSearch = (route: string, summary: string) =>
+  screen.findByRole("button", { name: `Change search: ${route}, ${summary}` });
+
 /** Chooses a place in the list that drops down under From or To. */
 async function choose(field: "From" | "To", typed: string, name: string) {
   await fireEvent.press(screen.getByRole("button", { name: new RegExp(`^${field}: `) }));
@@ -78,7 +89,7 @@ describe("Searching for a ride (spec 4)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "One seat more" }));
     await fireEvent.press(screen.getByRole("button", { name: "Search" }));
 
-    expect(await screen.findByRole("header", { name: "Borgarnes → Blönduós" })).toBeVisible();
+    expect(await changeSearch("Borgarnes → Blönduós", "Any day, 2 seats")).toBeVisible();
     expect(screen.getByText("Any day, 2 seats")).toBeVisible();
     expect(searchesOf(client)).toEqual([
       { from: borgarnes.id, to: blonduos.id, seats: 2, sort: "departure" },
@@ -217,12 +228,119 @@ describe("Searching for a ride (spec 4)", () => {
   });
 });
 
+describe("Results header and chips (spec 16, 3.8)", () => {
+  it("opens the search filled in from the header, and Find a ride shows the new results", async () => {
+    const { client } = await openResults();
+    await screen.findByTestId("trip-result");
+    await fireEvent.press(await changeSearch("Borgarnes → Blönduós", "Any day, 1 seat"));
+
+    expect(await screen.findByRole("header", { name: "Change search" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "From: Borgarnes" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "To: Blönduós" })).toBeVisible();
+    expect(screen.getByRole("radio", { name: "Any day" })).toBeChecked();
+    expect(screen.queryByTestId("trip-result")).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Sort: / })).toBeNull();
+
+    await fireEvent.press(screen.getByRole("button", { name: "Swap from and to" }));
+    await fireEvent.press(screen.getByRole("button", { name: "One seat more" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Find a ride" }));
+
+    expect(await changeSearch("Blönduós → Borgarnes", "Any day, 2 seats")).toBeVisible();
+    expect(screen.queryByRole("header", { name: "Change search" })).toBeNull();
+    expect(screen).toHavePathname("/search/results");
+    expect(searchesOf(client).at(-1)).toEqual({
+      from: blonduos.id,
+      to: borgarnes.id,
+      seats: 2,
+      sort: "departure",
+    });
+  });
+
+  it("keeps the header a heading, with the button inside it", async () => {
+    await openResults();
+    const heading = await screen.findByTestId("results-heading");
+    expect(heading).toHaveProp("accessibilityRole", "header");
+    expect(
+      within(heading).getByRole("button", {
+        name: "Change search: Borgarnes → Blönduós, Any day, 1 seat",
+      }),
+    ).toBeVisible();
+  });
+
+  it("does not show the last route's trips while a changed search loads", async () => {
+    let answerTwoSeats: (value: unknown) => void = () => undefined;
+    await renderApp(resultsUrl(), {
+      setUp: (client) => {
+        searchApi(client);
+        client.answer("/v1/trips/search", (input) => {
+          const query = input["query"] as Record<string, unknown>;
+          if (query["seats"] === 1) return ok(200, { results: [northResult] });
+          return new Promise((resolve) => {
+            answerTwoSeats = resolve;
+          });
+        });
+      },
+    });
+    await screen.findByTestId("trip-result");
+    await fireEvent.press(await changeSearch("Borgarnes → Blönduós", "Any day, 1 seat"));
+    await fireEvent.press(await screen.findByRole("button", { name: "One seat more" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Find a ride" }));
+
+    // Its totals were for one seat, so they wait for the answer for two.
+    expect(await changeSearch("Borgarnes → Blönduós", "Any day, 2 seats")).toBeVisible();
+    expect(screen.queryByTestId("trip-result")).toBeNull();
+    expect(screen.getByLabelText("Loading")).toBeVisible();
+    answerTwoSeats(ok(200, { results: [{ ...northResult, freeSeats: 2 }] }));
+    expect(await screen.findByTestId("trip-result")).toBeVisible();
+  });
+
+  it("keeps the day searched in the form, and Cancel leaves the search as it was", async () => {
+    const { client } = await openResults("&date=2026-11-15");
+    await fireEvent.press(await changeSearch("Borgarnes → Blönduós", "Sun 15 Nov, 1 seat"));
+    expect(await screen.findByRole("radio", { name: "Sun 15 Nov" })).toBeChecked();
+    const searches = searchesOf(client).length;
+
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel" }));
+    expect(await changeSearch("Borgarnes → Blönduós", "Sun 15 Nov, 1 seat")).toBeVisible();
+    expect(screen.queryByRole("header", { name: "Change search" })).toBeNull();
+    expect(searchesOf(client)).toHaveLength(searches);
+  });
+
+  it("sorts with one chip that opens the two orders, apart from the filters", async () => {
+    const { client } = await openResults();
+    await screen.findByTestId("trip-result");
+    const sort = screen.getByRole("button", { name: "Sort: Earliest" });
+    expect(sort).toBeCollapsed();
+    expect(screen.queryByRole("radio", { name: "Cheapest" })).toBeNull();
+
+    await fireEvent.press(sort);
+    expect(screen.getByRole("button", { name: "Sort: Earliest" })).toBeExpanded();
+    expect(screen.getByRole("radio", { name: "Earliest" })).toBeChecked();
+    // The radio pressed goes, so screen readers go back to the Sort chip.
+    const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    focus.mockClear();
+    try {
+      await fireEvent.press(screen.getByRole("radio", { name: "Cheapest" }));
+      expect(focus).toHaveBeenCalledTimes(1);
+      expect(focus).toHaveBeenLastCalledWith(expect.anything(), "focus");
+    } finally {
+      focus.mockRestore();
+    }
+
+    expect(await screen.findByRole("button", { name: "Sort: Cheapest" })).toBeVisible();
+    expect(screen.queryByRole("radio", { name: "Earliest" })).toBeNull();
+    expect(searchesOf(client).at(-1)).toMatchObject({ sort: "price" });
+    // Filtering is its own chip, on or off.
+    expect(screen.getByRole("checkbox", { name: "Book instantly only" })).not.toBeChecked();
+  });
+});
+
 describe("Search results (spec 4, 3.4)", () => {
   it("sorts by price and filters by instant booking and time of day", async () => {
     const { client } = await openResults();
     await screen.findByTestId("trip-result");
-    await fireEvent.press(screen.getByRole("radio", { name: "Cheapest" }));
-    await fireEvent.press(screen.getByRole("checkbox", { name: "Instant booking only" }));
+    await sortBy("Cheapest");
+    await fireEvent.press(screen.getByRole("checkbox", { name: "Book instantly only" }));
     await fireEvent.press(screen.getByRole("checkbox", { name: "Evening" }));
     await fireEvent.press(screen.getByRole("checkbox", { name: "Morning" }));
     await fireEvent.press(screen.getByRole("checkbox", { name: "Morning" }));
@@ -248,7 +366,7 @@ describe("Search results (spec 4, 3.4)", () => {
     expect(screen.getByRole("header", { name: "Monday 16 November" })).toBeVisible();
     expect(screen.getByText("1 trip")).toBeVisible();
     expect(screen.getByText("2 trips")).toBeVisible();
-    await fireEvent.press(screen.getByRole("radio", { name: "Cheapest" }));
+    await sortBy("Cheapest");
     expect(await screen.findByText("Sun 15 Nov")).toBeVisible();
     expect(screen.queryByRole("header", { name: "Sunday 15 November" })).toBeNull();
   });
@@ -295,8 +413,8 @@ describe("Search results (spec 4, 3.4)", () => {
       days: [{ date: "2026-11-16", count: 2 }],
     });
     expect(await screen.findByRole("button", { name: "Mon 16 Nov, 2 trips" })).toBeVisible();
-    await fireEvent.press(screen.getByRole("radio", { name: "Cheapest" }));
-    await fireEvent.press(screen.getByRole("radio", { name: "Earliest" }));
+    await sortBy("Cheapest");
+    await sortBy("Earliest");
     expect(await screen.findByRole("button", { name: "Mon 16 Nov, 2 trips" })).toBeVisible();
     expect(searchesOf(client, "/v1/trips/search/alternatives")).toHaveLength(1);
   });
@@ -380,13 +498,13 @@ describe("Nothing matches (spec 4, 3.5)", () => {
       results: (query) => (query["instant"] === true ? [] : [northResult]),
     });
     await screen.findByTestId("trip-result");
-    await fireEvent.press(screen.getByRole("checkbox", { name: "Instant booking only" }));
+    await fireEvent.press(screen.getByRole("checkbox", { name: "Book instantly only" }));
     expect(
       await screen.findByRole("header", { name: "No trips match these filters." }),
     ).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Show all trips" }));
     expect(await screen.findByTestId("trip-result")).toBeVisible();
-    expect(screen.getByRole("checkbox", { name: "Instant booking only" })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Book instantly only" })).not.toBeChecked();
     // Filters do not look for alternatives.
     expect(searchesOf(client, "/v1/trips/search/alternatives")).toEqual([]);
   });

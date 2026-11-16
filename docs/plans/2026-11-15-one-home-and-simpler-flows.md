@@ -447,12 +447,12 @@ rides.
 - Modify: `app/search/results.tsx`
 - Test: `__tests__/search.test.tsx`
 
-- [ ] **Step 1: Write the failing tests:** the header is one button named
+- [x] **Step 1: Write the failing tests:** the header is one button named
   with the route, "Any day · 1 seat" and Change; it opens the filled form in
   place and Find a ride shows new results; "Sort: Earliest" is one chip
   opening the two choices; "Book instantly only" is its own chip.
-- [ ] **Step 2–4:** Run `pnpm --filter @shareride/mobile test search`, implement, run again; expect pass.
-- [ ] **Step 5:** Commit `feat(mobile): change the search from the results`.
+- [x] **Step 2–4:** Run `pnpm --filter @shareride/mobile test search`, implement, run again; expect pass.
+- [x] **Step 5:** Commit `feat(mobile): change the search from the results`.
 
 ### Task 6.2: Place list, Settings and rows
 
@@ -467,11 +467,11 @@ rides.
 - Produces: `groupPlaces(results: PlaceSearchResult[]): { places: PlaceSearchResult[]; meetingPoints: PlaceSearchResult[] }`,
   keeping the API's order inside each group.
 
-- [ ] **Step 1: Write the failing tests:** "akur" lists Akureyri under
+- [x] **Step 1: Write the failing tests:** "akur" lists Akureyri under
   "Towns and areas" before Akureyri Airport under "Meeting points"; the
   sample tag shows once; Settings shows English and Íslenska side by side
   with the current one ticked, then Your account, Legal documents, Sign out
   and Sign out on all devices.
-- [ ] **Step 2–4:** Run `pnpm --filter @shareride/mobile test welcome profile-and-settings`, implement, run again; expect pass.
-- [ ] **Step 5:** Commit `feat(mobile): towns first, clearer settings`; mark spec
+- [x] **Step 2–4:** Run `pnpm --filter @shareride/mobile test welcome profile-and-settings`, implement, run again; expect pass.
+- [x] **Step 5:** Commit `feat(mobile): towns first, clearer settings`; mark spec
   16 and this plan done.

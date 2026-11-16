@@ -411,6 +411,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   "Two things before you publish" (your car and your licence), and Publish
   trip waits until both are done, saying why under it. The profile photo
   row goes until photos exist. Cars and the licence are in Profile.
+- Search results start with one button for the search, the route with the
+  day and seats and Change, which opens the search filled in on the same
+  screen (spec 16, 3.8). The order is one chip, "Sort: Earliest", that opens
+  Earliest and Cheapest, and "Book instantly only" is a filter of its own.
+  The From and To list shows towns and areas first, then meeting points,
+  each under a small heading, with the sample tag once under the list.
+  Settings shows the language as two choices side by side, English and
+  Íslenska, then Your account, Notifications, Legal documents (as rows) and
+  signing out, its rows starting at the left.
 - Times on the time step of posting a trip are chosen on a wheel of hours
   and minutes in 5-minute steps (24-hour clock) instead of being typed. A
   time saved earlier that is not on 5 minutes shows rounded up to the next

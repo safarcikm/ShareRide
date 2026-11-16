@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { focused } from "./support/trips";
 
 // Spec 4's search on the web build, without an account, against the sample
 // trips the e2e API seeds: Anna drives Reykjavík to Akureyri tomorrow at
@@ -16,7 +17,10 @@ interface Journey {
   readonly borgarnes: RegExp;
   readonly blonduos: RegExp;
   readonly submit: string;
+  /** The results header, one button that opens the search in place (spec 16, 3.8). */
   readonly header: string;
+  readonly changeSearch: string;
+  readonly findRide: string;
   readonly summary: string;
   readonly result: RegExp;
   readonly partOf: string;
@@ -35,7 +39,9 @@ const journeys: readonly Journey[] = [
     borgarnes: /^N1 Borgarnes,/,
     blonduos: /^Olís Blönduós,/,
     submit: "Search",
-    header: "N1 Borgarnes → Olís Blönduós",
+    header: "Change search: N1 Borgarnes → Olís Blönduós, Any day, 1 seat",
+    changeSearch: "Change search",
+    findRide: "Find a ride",
     summary: "Any day, 1 seat",
     result: /^Leaves N1 Borgarnes at \d\d:\d\d, .*Anna, New driver/,
     partOf: "Anna drives BSÍ bus terminal → Hof bus stop, Akureyri",
@@ -52,7 +58,9 @@ const journeys: readonly Journey[] = [
     borgarnes: /^N1 Borgarnesi,/,
     blonduos: /^Olís Blönduósi,/,
     submit: "Leita",
-    header: "N1 Borgarnesi → Olís Blönduósi",
+    header: "Breyta leit: N1 Borgarnesi → Olís Blönduósi, Hvaða dag sem er, 1 sæti",
+    changeSearch: "Breyta leit",
+    findRide: "Finna far",
     summary: "Hvaða dag sem er, 1 sæti",
     result: /^N1 Borgarnesi, brottför kl\. \d\d:\d\d, .*Anna, Nýr ökumaður/,
     partOf: "Anna ekur BSÍ → Hof, Akureyri",
@@ -79,7 +87,21 @@ for (const journey of journeys) {
       await choose(page, journey.to, journey.toLabel, "blondu", journey.blonduos);
       await page.getByRole("button", { name: journey.submit, exact: true }).click();
 
-      await expect(page.getByRole("heading", { name: journey.header })).toBeVisible();
+      const header = page.getByRole("button", { name: journey.header });
+      await expect(header).toBeVisible();
+      // The button is inside the screen's heading, so the screen keeps an h1.
+      await expect(
+        page.getByRole("heading", { level: 1, name: journey.header }).filter({ visible: true }),
+      ).toBeVisible();
+      // The header opens the search in place, filled in; Find a ride searches again.
+      await header.click();
+      await expect(page.getByRole("heading", { name: journey.changeSearch })).toBeVisible();
+      await page
+        .getByRole("button", { name: journey.findRide, exact: true })
+        .filter({ visible: true })
+        .click();
+      await expect(header).toBeVisible();
+      await expect.poll(() => focused(page)).toContain(journey.summary);
       // The form stays in the page under the results, its recent search too.
       await expect(page.getByText(journey.summary).filter({ visible: true })).toBeVisible();
       const result = page.getByLabel(journey.result).first();

@@ -1,10 +1,11 @@
 # Spec 16: One home and simpler flows
 
 **Owner:** Martin · **Date:** 2026-11-15 · **Status:** Approved
-(2026-11-15); proposals 1 to 5 built
+(2026-11-15); all six proposals built
 
 Amends: [spec 1](2026-11-13-sign-in-and-profile.md) (front page, sign-up,
-profile, settings), [spec 3](2026-11-13-post-a-trip.md) (driver setup and the
+profile, settings), [spec 2](2026-11-13-meeting-points.md) (the From and To
+list), [spec 3](2026-11-13-post-a-trip.md) (driver setup and the
 posting steps), [spec 4](2026-11-13-search-and-trip-details.md) (front page
 rides, results, trip details), [spec 5](2026-11-13-booking-and-requests.md)
 (booking screen, paying, My bookings) and [spec 15](2026-11-13-visual-design-system.md)
@@ -298,20 +299,36 @@ Find replaces both the front page and My profile as the place the app opens.
 
 ### 3.8 Small fixes (proposal 6)
 
-1. **Results header:** the route with the date and seats ("Any day · 1 seat")
-   is one button with "Change". It opens the search form in place, filled in,
-   and Find a ride shows the new results.
-2. **Sorting and filtering apart:** "Sort: Earliest ▾" is one chip, and "Book
-   instantly only" is a separate filter chip.
+1. **Results header:** the route with the date and seats ("Any day, 1 seat",
+   as in recent searches) is one button with "Change", named "Change search:
+   Borgarnes → Blönduós, Any day, 1 seat". It opens the search form in place,
+   filled in, under "Change search", and Find a ride shows the new results on
+   the same screen; Cancel keeps the ones before. Focus goes back to the
+   header. The button sits inside the screen's heading, an h1 on the web.
+   While a new route or seat count loads, the results before it give way to
+   the loading sign, as their totals were for another search. A search
+   changed here is not added to the recent searches, which keep the ones
+   made from Find.
+2. **Sorting and filtering apart:** "Sort: Earliest ▾" is one chip that opens
+   Earliest and Cheapest under the chips, and "Book instantly only" is a
+   separate filter chip, before the times of day. Choosing an order closes
+   them and gives focus back to the Sort chip.
 3. **From and To list:** towns and areas come first, then meeting points, each
-   under a small heading. The sample-data tag shows once under the list
-   instead of on every row.
+   under a small heading ("Towns and areas", "Meeting points"). The
+   sample-data tag ("Sample meeting points") shows once under the list
+   instead of on every row. Place search on a page of its own (meeting
+   points, adding a stop) keeps its cards as they are, and the meeting points
+   near a chosen town keep the tag on each row, as nothing is under them.
 4. **Settings:** the language is two choices side by side, English and
-   Íslenska, with the current one ticked. Rows are grouped: Language, Your
+   Íslenska, with the current one ticked. Each name is read out in its own
+   language. Rows are grouped: Language, Your
    account (Phone number, Email, Signed-in devices), Legal documents, then
    Sign out and Sign out on all devices. Your account with Phone number and
    Email came first, with adding an email (milestone 5, PR 7b), then
-   Notifications (the Trip reminders switch, spec 7) after it (PR 8a).
+   Notifications (the Trip reminders switch, spec 7) after it (PR 8a). As
+   built: Language, Your account, Notifications, Legal documents (rows for
+   the three documents), then signing out. Signed-in devices waits for its
+   screen (spec 1, 3.8), which no milestone has built yet.
 5. **Rows start at the left:** list rows, settings rows and their texts start
    at the left, so they are easy to scan. Titles and buttons stay centred
    (spec 15, 5.1).
@@ -398,6 +415,11 @@ The main new or changed ones ("Find a ride" keeps `welcome.findRide`):
 | `trip.continueDraft` | Continue your draft: {route} | Halda áfram með drögin: {route} |
 | `trip.time.stopsFolded` | Times at the 3 stops | Tímar á 3 viðkomustöðum |
 | `trip.review.missing` | Two things before you publish | Tvennt áður en þú birtir |
+| `results.changeSearchLabel` | Change search: {route}, {summary} | Breyta leit: {route}, {summary} |
+| `results.sort` | Sort: {order} | Röðun: {order} |
+| `results.instantOnly` | Book instantly only | Aðeins bókun strax |
+| `search.townsAndAreas` | Towns and areas | Bæir og svæði |
+| `search.meetingPoints` | Meeting points | Mótsstaðir |
 
 "Sætið er þitt!" ("The seat is yours!") avoids "bókuð" or "bókaður", which
 depend on gender; the Icelandic review can change it.
