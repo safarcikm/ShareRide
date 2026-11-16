@@ -117,6 +117,16 @@ jobs:
         run: pnpm --filter @shareride/mobile exec playwright install --with-deps chromium
       - name: Web tests against the API (phone and desktop sizes)
         run: pnpm --filter @shareride/mobile e2e:web
+      - name: Print the page each failed web test ended on
+        if: ${{ failure() }}
+        working-directory: apps/mobile
+        run: |
+          for file in test-results/*/error-context.md; do
+            [ -f "$file" ] || continue
+            echo "::group::$file"
+            sed -n '/^# Page snapshot/,/^# Test source/p' "$file"
+            echo "::endgroup::"
+          done
       - name: Keep the look screenshots for review (spec 15)
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
