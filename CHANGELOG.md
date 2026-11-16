@@ -527,6 +527,11 @@ releases follow [Semantic Versioning](https://semver.org/).
   leave.
 - Close, while choosing From or To, is a small X inside the field rather
   than a round button beside it.
+- From the closed beta on, a change that saves a new kind of data ships in
+  two deploys, the code that reads it first, so a rollback always lands on
+  a version that understands what is stored (engineering conventions,
+  Database). Stop removal (milestone 6) stays one deploy, as production
+  starts after it.
 - MVP feature list rewritten with feature IDs, priorities, questions for the
   owner and the order in which specs are written.
 

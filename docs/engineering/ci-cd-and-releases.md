@@ -61,7 +61,10 @@ the repository.
    Promotion stays a manual step that deploys a commit staging has run.
 4. Rollback: redeploy the previous build from Render's dashboard. Migrations
    are backward compatible (expand then contract), so rollback does not need
-   a database restore.
+   a database restore. From the closed beta on, code that reads a new kind
+   of data ships a deploy before the code that saves it
+   ([conventions](conventions.md#database)), so the previous build also
+   understands what the newer one stored.
 
 ## App releases (Expo and EAS)
 

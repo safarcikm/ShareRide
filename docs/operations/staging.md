@@ -139,7 +139,9 @@ Data a newer version wrote can still trip an older one. Once a driver has
 removed a stop from a trip (milestone 6, PR 6b), a version from before
 that shows the stop again, books on the wrong stops of that trip and
 cannot read its conversations' "Stop removed" line. Past that point, roll
-forward with a fix rather than back.
+forward with a fix rather than back. From the closed beta on, such changes
+ship in two deploys ([conventions](../engineering/conventions.md#database)),
+so a rollback stays safe.
 
 ## Read logs
 
