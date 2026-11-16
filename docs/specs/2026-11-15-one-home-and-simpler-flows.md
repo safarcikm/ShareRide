@@ -1,7 +1,7 @@
 # Spec 16: One home and simpler flows
 
 **Owner:** Martin · **Date:** 2026-11-15 · **Status:** Approved
-(2026-11-15); proposals 1 to 3 built
+(2026-11-15); proposals 1 to 4 built
 
 Amends: [spec 1](2026-11-13-sign-in-and-profile.md) (front page, sign-up,
 profile, settings), [spec 3](2026-11-13-post-a-trip.md) (driver setup and the
@@ -126,8 +126,8 @@ Find replaces both the front page and My profile as the place the app opens.
    since a request holds its seats until it is answered, rule S1) and the
    seats free: "Seats free on every stretch: 2" when every stretch is the
    same, otherwise one line a stretch ("Borgarnes → Blönduós: 2 free").
-   Answer requests opens the driver's trip page. Until Check and pay comes
-   (3.7), Pay opens the booking, where the payment starts.
+   Answer requests opens the driver's trip page. Pay opens the booking,
+   which pays as Check and pay does (3.7).
 4. Pressing a row opens the booking (spec 5) or the driver's trip page
    (spec 3), as today.
 5. **Past:** the same rows, latest first, without "Needs you".
@@ -216,45 +216,77 @@ Find replaces both the front page and My profile as the place the app opens.
 ### 3.7 Book in fewer steps (proposal 4)
 
 1. **Trip page:**
-   - The date and route, then **Your part** on top: the tag, Get in (time and
-     stop) and Get out (time and stop), each with Change, and the seats
-     ("2 free on your part", with minus and plus).
-   - Change lists the trip's stops to choose from. Get in lists the stops
-     before Get out, and Get out the stops after Get in.
-   - Then **Who you ride with**: the driver, the car and their preferences,
-     and the seat view.
-   - Then the route map and the stops, and the cancellation line.
+   - The date and route, then **Your part** on top: the tag ("Book
+     instantly" or "Driver approves", as on the ride cards), Get in (time
+     and stop) and Get out (time and stop), each with Change, and the seats
+     ("2 free on your part · 2,900 ISK per seat", with minus and plus).
+   - Change opens the trip's stops to choose from, as radio cards, and
+     closes on a choice or a second press. Get in lists the stops before
+     Get out, and Get out the stops after Get in. A stop on the route can
+     still be tapped as well.
+   - Then **Who you ride with**: the driver, the car with when its number
+     plate shows, their preferences and note, and the seat view.
+   - Then the route map and the stops, and the cancellation line: "Free
+     cancellation, with a full refund, up to 15 minutes before you get in."
+     A free trip has nothing to refund, so it leaves the line out.
    - The bottom bar keeps the price, the seats and **Book** (or Send
      request), as today.
-2. **Check and pay** replaces the booking screen of spec 5, 3.1:
-   - The date, the part with times, the driver and car, the seats times the
-     price and the total, or "Free".
-   - Ticks: "Your seat is confirmed as soon as you pay" (instant); "Free
-     cancellation, with a full refund, up to 15 minutes before you get in";
-     "{driver}'s number plate shows here once you're booked".
+2. **Check and pay** replaces the booking screen of spec 5, 3.1. Its title
+   is "Check and pay" for an instant ride with a price, "Request this ride"
+   for a request and "Book this ride" for a free ride.
+   - A card with the date, the part with times, "Driver: Jón · Blue Kia
+     Ceed", the seats times the price ("1 seat × 800 ISK") and the total, or
+     "Free". The seats were chosen on the trip page, so there is no seat
+     stepper here; Back changes them.
+   - Ticks: "Your seat is confirmed as soon as you pay." (instant), "You pay
+     when {driver} says yes." (request) or "This ride is free: there's
+     nothing to pay." (free); "Free cancellation, with a full refund, up to
+     15 minutes before you get in." (not for a free ride); "You'll see the
+     number plate once your seat is confirmed." The plate line leaves out
+     the driver's name, which would need its genitive in Icelandic.
    - The reliability note, as today.
    - **Instant booking:** the button is "Pay {total}". It books the seats
-     and opens the payment straight away. There is no second Book and no
-     waiting screen.
+     and opens the payment straight away: the test sheet opens at the
+     bottom, in place of the button. There is no second Book and no waiting
+     screen. After "price changed", the notice asks "The price has changed
+     to {total}. Pay this price?" and the button names the new total.
    - **Request:** the button is "Send request", with the optional message, as
-     today. The text says "You pay when {driver} says yes." Paying happens
-     from My rides, under Needs you.
+     today. Paying happens from My rides, under Needs you.
    - **Free trips:** the button is "Book", and the booking is confirmed
      without a payment, as today.
-3. **If the payment does not finish** (closed, failed or offline), the seats
-   stay held until the payment deadline (rule M1), as today. Check and pay
-   stays open with "Not paid yet. Your seat is held until {time}." and the
-   same Pay button. The booking also shows under Needs you in My rides.
-4. **You're booked**, after paying (or after booking a free trip): a shape
-   person in the seat view (spec 15), "You're booked!", the day and "Jón
-   picks you up at 05:30 at Hlemmur", then **What happens next**:
-   - "The number plate shows here before you leave" (or the plate);
-   - "Be at {stop} a few minutes before {time}";
-   - "Plans change? Cancel for free until {time}".
+3. **If the payment does not finish** (closed, failed, offline or not
+   started), the seats stay held until the payment deadline (rule M1), as
+   today. Check and pay stays open with "Not paid yet. Your seat is held
+   until {time}.", the reason, and the same Pay button, which pays for the
+   same booking: one booking only, even on a double tap. The held line
+   shows only once a payment did not go through, not while it starts. A
+   booking that can no longer be paid here, such as when the time to pay
+   ran out, opens its own page. The booking also shows under Needs you in
+   My rides.
+4. **You're booked**, after paying (or after booking a free trip): your
+   seat on its own with a moss shape person, as the seat view draws it
+   (spec 15), "You're booked!", then "Monday 16 November. Jón picks you up
+   at 05:30 at Hlemmur." (in Icelandic "… sækir þig kl. 05:30. Mótsstaður:
+   Hlemmur.", which needs no case ending), then **What happens next**:
+   - the number plate, or "The number plate shows in My rides before you
+     leave";
+   - "Be at the meeting point a few minutes before {time}" (the line above
+     names the stop);
+   - "Plans change? Cancelling is free up to 15 minutes before you get in."
+     The API gives no cancellation deadline yet (spec 6), so the line says
+     the rule rather than a time.
    Then **Where to stand**, with the meeting point's instructions and Open in
-   maps. Buttons: "See it in My rides" (main) and "Find another ride".
+   maps. Buttons: "See it in My rides" (main) and "Find another ride". The
+   screen (`/bookings/{id}/booked`) takes the place of Check and pay, so
+   Back opens the trip; opened on its own, Back opens the booking. A booking
+   that is neither confirmed nor a request opens its own page instead.
+   Spec 7's notifications prompt goes under the main message.
 5. **Request sent:** the same screen, with "Request sent", "{driver} has
-   until {time} to answer" and the next steps for a request.
+   until {time} to answer" and the next steps for a request: "The answer
+   shows in My rides."; "When {driver} says yes, pay in My rides, under
+   Needs you, to confirm your seat." (for a free ride, "your seat is
+   confirmed"); "No answer in time? The request ends, and you pay nothing."
+   Where to stand waits until the seat is confirmed.
 
 ### 3.8 Small fixes (proposal 6)
 

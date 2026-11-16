@@ -4,7 +4,8 @@
 
 Amended by [spec 16](2026-11-15-one-home-and-simpler-flows.md): the seats are
 in the search form on Find, and ride cards say "Book instantly" or "Driver
-approves" (3.2).
+approves" (3.2). Trip details puts your part first, with Change for Get in
+and Get out, then who you ride with, then the route (3.7).
 
 Features: D1 Search trips, including partial routes, D2 Trip details, D6 Help
 when nothing matches ([features](../product/features.md)).

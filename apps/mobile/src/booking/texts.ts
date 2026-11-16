@@ -21,10 +21,22 @@ export function requestSentText(t: Translate, driver: string, deadline: Date, at
   return t(tomorrow ? "booking.requestSentTomorrow" : "booking.requestSent", { driver, time });
 }
 
+/** "Anna has until 22:00 to answer.", under Request sent (spec 16, 3.7, item 5). */
+export function answerUntilText(t: Translate, driver: string, deadline: Date, at: Date): string {
+  const { time, tomorrow } = onDay(deadline, at);
+  return t(tomorrow ? "booking.answerByTomorrow" : "booking.answerBy", { driver, time });
+}
+
 /** "Pay by 12:30 to keep your seat." */
 export function payByText(t: Translate, deadline: Date, at: Date): string {
   const { time, tomorrow } = onDay(deadline, at);
   return t(tomorrow ? "booking.payByTomorrow" : "booking.payBy", { time });
+}
+
+/** "Not paid yet. Your seat is held until 12:30.", after a payment that did not finish (spec 16, 3.7). */
+export function heldUntilText(t: Translate, deadline: Date, at: Date): string {
+  const { time, tomorrow } = onDay(deadline, at);
+  return t(tomorrow ? "booking.heldUntilTomorrow" : "booking.heldUntil", { time });
 }
 
 /** "Answer by 08:10 tomorrow, or the requests close", for a driver (spec 16, 3.3). */

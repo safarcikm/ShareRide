@@ -49,6 +49,18 @@ const bookCalls = (client: FakeClient) =>
     .filter((call) => call.path === "/v1/trips/{id}/bookings")
     .map((call) => call.input["body"] as Record<string, unknown>);
 
+const paymentCalls = (client: FakeClient) =>
+  client.calls
+    .filter((call) => call.path === "/v1/bookings/{id}/payment")
+    .map((call) => (call.input["params"] as { id: string }).id);
+/** The test provider's payment for a booking, as the API starts it. */
+const paymentFor = (booking: ReturnType<typeof northBooking>) => ({
+  paymentId: "0190a1d6-0000-7000-8000-0000000000e1",
+  provider: "test",
+  amount: booking.total,
+  dueAt: booking.paymentDueAt,
+});
+
 beforeEach(() => {
   mockedRead.mockReset().mockResolvedValue(null);
   mockedWrite.mockReset().mockResolvedValue(undefined);
@@ -60,6 +72,8 @@ async function openBooking(
     trip?: Parameters<typeof tripDetailsApi>[1];
     book?: (body: Record<string, unknown>) => unknown;
     booking?: () => ReturnType<typeof northBooking>;
+    pay?: () => unknown;
+    settle?: (outcome: string) => unknown;
   } = {},
   path = `/trips/${id}/book?from=1&to=2&seats=1`,
 ) {
@@ -76,12 +90,37 @@ async function openBooking(
         "post",
       );
       bookingApi(client, answers.booking ?? (() => northBooking()));
+      client.answer(
+        "/v1/bookings/{id}/payment",
+        answers.pay ?? (() => ok(200, paymentFor(unpaidBooking))),
+        "post",
+      );
+      client.answer(
+        "/v1/test-payments/{id}",
+        (input) => {
+          const { outcome } = input["body"] as { outcome: string };
+          return (
+            answers.settle ??
+            ((given) => ok(200, given === "succeeded" ? paidBooking : unpaidBooking))
+          )(outcome);
+        },
+        "post",
+      );
     },
   });
 }
 
+/** Check and pay for an instant trip, booking unpaidBooking. */
+const openCheckAndPay = (answers: Parameters<typeof openBooking>[0] = {}) =>
+  openBooking({
+    trip: instantTrip,
+    book: () => ok(201, unpaidBooking),
+    booking: () => paidBooking,
+    ...answers,
+  });
+
 describe("Booking from trip details (spec 5, 3.1)", () => {
-  it("opens the booking screen for the part and seats on screen", async () => {
+  it("opens Check and pay for the part and seats on screen (spec 16, 3.7)", async () => {
     await renderApp(`/trips/${id}?from=1&to=2&seats=2`, {
       me: completeMe,
       setUp: (client) => {
@@ -91,20 +130,30 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
     const bar = await screen.findByTestId("bottom-bar");
     expect(within(bar).queryByText("You'll sign in or create an account first.")).toBeNull();
     await fireEvent.press(within(bar).getByRole("button", { name: "Book" }));
-    expect(await screen.findByRole("header", { name: "Book this ride" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Check and pay" })).toBeVisible();
     expect(screen).toHavePathname(`/trips/${id}/book`);
     expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "2" });
-    expect(screen.getByText("Borgarnes → Blönduós")).toBeVisible();
     expect(screen.getByText("Sunday 15 November")).toBeVisible();
+    expect(screen.getByText("10:00")).toBeVisible();
+    expect(screen.getByText("Borgarnes")).toBeVisible();
+    expect(screen.getByText("12:05")).toBeVisible();
+    expect(screen.getByText("Blönduós")).toBeVisible();
+    expect(screen.getByText("Driver: Anna · White Toyota Yaris")).toBeVisible();
+    expect(screen.getByText("2 seats × 2,900 ISK")).toBeVisible();
     expect(screen.getByText("5,800 ISK")).toBeVisible();
-    expect(
-      screen.getByText(
-        "You pay 5,800 ISK in the app once your booking is accepted. Free cancellation, with a full refund, up to 15 minutes before your departure.",
-      ),
-    ).toBeVisible();
+    for (const tick of [
+      "Your seat is confirmed as soon as you pay.",
+      "Free cancellation, with a full refund, up to 15 minutes before you get in.",
+      "You'll see the number plate once your seat is confirmed.",
+    ]) {
+      expect(screen.getByText(tick)).toBeVisible();
+    }
     expect(screen.getByText(/^If you can't make it, cancel as early as you can\./)).toBeVisible();
-    // Instant booking has no message; the chat opens once paid.
+    // The seats were chosen on the trip; instant booking has no message.
+    expect(screen.queryByRole("button", { name: "One seat more" })).toBeNull();
     expect(screen.queryByLabelText("Message to the driver (optional)")).toBeNull();
+    expect(screen.getByRole("button", { name: "Pay 5,800 ISK" })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: "Book" })).toBeNull();
   });
 
   it("keeps the choice of someone signed out while they sign up", async () => {
@@ -239,7 +288,8 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
     const bar = await screen.findByTestId("bottom-bar");
     await fireEvent.press(within(bar).getByRole("button", { name: "Send request" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
-    expect(await screen.findByText("Request sent. Anna has until 22:00 to answer.")).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Request sent" })).toBeVisible();
+    // Request sent took the place of Check and pay, so Back opens the trip.
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
     expect(await screen.findByText("You have a booking on this trip.")).toBeVisible();
     expect(screen).toHavePathname(`/trips/${id}`);
@@ -297,6 +347,8 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
   it("sends a request with a message, checking it for contact details as it is typed", async () => {
     const { client } = await openBooking();
     expect(await screen.findByRole("header", { name: "Request this ride" })).toBeVisible();
+    expect(screen.getByText("You pay when Anna says yes.")).toBeVisible();
+    expect(screen.queryByText("Your seat is confirmed as soon as you pay.")).toBeNull();
     const field = screen.getByLabelText("Message to the driver (optional)");
     await fireEvent.changeText(field, "Call me on 555 1234");
     expect(screen.getByText(/^Please don't share phone numbers, emails or links\./)).toBeVisible();
@@ -307,8 +359,8 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     expect(screen.queryByText(/^Please don't share phone numbers/)).toBeNull();
     expect(screen.getByText("24 of 300")).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Send request" }));
-    expect(await screen.findByText("Request sent. Anna has until 22:00 to answer.")).toBeVisible();
-    expect(screen).toHavePathname(`/bookings/${bookingId}`);
+    expect(await screen.findByRole("header", { name: "Request sent" })).toBeVisible();
+    expect(screen).toHavePathname(`/bookings/${bookingId}/booked`);
     expect(bookCalls(client)).toEqual([
       {
         fromStop: 1,
@@ -321,6 +373,145 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     ]);
   });
 
+  it("books and opens the payment with one press of Pay, with no second Book", async () => {
+    const { client } = await openCheckAndPay();
+    await fireEvent.press(await screen.findByRole("button", { name: "Pay 2,900 ISK" }));
+    expect(
+      await screen.findByRole("header", { name: "Test payment: no money moves" }),
+    ).toBeVisible();
+    expect(screen).toHavePathname(`/trips/${id}/book`);
+    expect(bookCalls(client)).toHaveLength(1);
+    expect(paymentCalls(client)).toEqual([unpaidBooking.id]);
+    // The sheet takes the place of the button pressed.
+    expect(screen.getAllByRole("button", { name: "Pay 2,900 ISK" })).toHaveLength(1);
+    await fireEvent.press(screen.getByRole("button", { name: "Pay 2,900 ISK" }));
+    expect(await screen.findByRole("header", { name: "You're booked!" })).toBeVisible();
+    expect(screen).toHavePathname(`/bookings/${bookingId}/booked`);
+  });
+
+  it("says nothing about an unpaid seat while the payment starts", async () => {
+    let release: () => void = () => undefined;
+    await openCheckAndPay({
+      pay: () =>
+        new Promise((resolve) => {
+          release = () => {
+            resolve(ok(200, paymentFor(unpaidBooking)));
+          };
+        }),
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Pay 2,900 ISK" }));
+    expect(await screen.findByRole("button", { name: "Pay 2,900 ISK", busy: true })).toBeVisible();
+    expect(screen.queryByText(/^Not paid yet/)).toBeNull();
+    await act(async () => {
+      release();
+      await Promise.resolve();
+    });
+    expect(
+      await screen.findByRole("header", { name: "Test payment: no money moves" }),
+    ).toBeVisible();
+    expect(screen.queryByText(/^Not paid yet/)).toBeNull();
+  });
+
+  it("settles once for a double tap on the sheet's Pay", async () => {
+    const { client } = await openCheckAndPay();
+    await fireEvent.press(await screen.findByRole("button", { name: "Pay 2,900 ISK" }));
+    const pay = await screen.findByRole("button", { name: "Pay 2,900 ISK" });
+    await act(async () => {
+      await Promise.all([fireEvent.press(pay), fireEvent.press(pay)]);
+    });
+    expect(await screen.findByRole("header", { name: "You're booked!" })).toBeVisible();
+    expect(client.calls.filter((call) => call.path === "/v1/test-payments/{id}")).toHaveLength(1);
+  });
+
+  it("makes one booking and one payment for a double tap on Pay", async () => {
+    const { client } = await openCheckAndPay();
+    const pay = await screen.findByRole("button", { name: "Pay 2,900 ISK" });
+    await act(async () => {
+      await Promise.all([fireEvent.press(pay), fireEvent.press(pay)]);
+    });
+    expect(
+      await screen.findByRole("header", { name: "Test payment: no money moves" }),
+    ).toBeVisible();
+    expect(bookCalls(client)).toHaveLength(1);
+    expect(paymentCalls(client)).toHaveLength(1);
+  });
+
+  it("holds the seat when the payment can't start, and Pay starts it again for the same booking", async () => {
+    let tries = 0;
+    const { client } = await openCheckAndPay({
+      pay: () => {
+        tries += 1;
+        return tries === 1 ? failure(0, "network_error") : ok(200, paymentFor(unpaidBooking));
+      },
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Pay 2,900 ISK" }));
+    expect(await screen.findByText("Not paid yet. Your seat is held until 12:30.")).toBeVisible();
+    expect(screen.getByText(/^We couldn't reach ShareRide/)).toBeVisible();
+    expect(screen.getByRole("header", { name: "Check and pay" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Pay 2,900 ISK" }));
+    expect(
+      await screen.findByRole("header", { name: "Test payment: no money moves" }),
+    ).toBeVisible();
+    expect(bookCalls(client)).toHaveLength(1);
+    expect(paymentCalls(client)).toEqual([unpaidBooking.id, unpaidBooking.id]);
+  });
+
+  it("holds the seat after a failed payment, and paying again confirms it", async () => {
+    const { client } = await openCheckAndPay();
+    await fireEvent.press(await screen.findByRole("button", { name: "Pay 2,900 ISK" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Make the payment fail" }));
+    expect(
+      await screen.findByText("The payment didn't go through. Try again or use another card."),
+    ).toBeVisible();
+    expect(screen.getByText("Not paid yet. Your seat is held until 12:30.")).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Pay 2,900 ISK" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Pay 2,900 ISK" }));
+    expect(await screen.findByRole("header", { name: "You're booked!" })).toBeVisible();
+    expect(bookCalls(client)).toHaveLength(1);
+    expect(
+      client.calls
+        .filter((call) => call.path === "/v1/test-payments/{id}")
+        .map((call) => call.input["body"]),
+    ).toEqual([{ outcome: "failed" }, { outcome: "succeeded" }]);
+  });
+
+  it("opens the booking when it can no longer be paid here", async () => {
+    await openCheckAndPay({
+      pay: () => failure(409, "booking_not_payable"),
+      booking: () => northBooking({ ...unpaidBooking, status: "expired" }),
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Pay 2,900 ISK" }));
+    expect(
+      await screen.findByText("The time to pay ran out, so the seat was freed."),
+    ).toBeVisible();
+    expect(screen).toHavePathname(`/bookings/${bookingId}`);
+  });
+
+  it("books a free ride with Book, confirmed without a payment", async () => {
+    const free = { amount: 0, currency: "ISK" } as const;
+    const confirmedFree = northBooking({ ...paidBooking, total: free });
+    const { client } = await openBooking({
+      trip: () =>
+        ok(
+          200,
+          northTrip(
+            { board: 1, alight: 2 },
+            { bookingMode: "instant", part: { pricePerSeat: free, total: free } },
+          ),
+        ),
+      book: () => ok(201, confirmedFree),
+      booking: () => confirmedFree,
+    });
+    expect(await screen.findByRole("header", { name: "Book this ride" })).toBeVisible();
+    expect(screen.getByText("This ride is free: there's nothing to pay.")).toBeVisible();
+    expect(screen.getByText("Free")).toBeVisible();
+    expect(screen.queryByText(/^Free cancellation/)).toBeNull();
+    await fireEvent.press(screen.getByRole("button", { name: "Book" }));
+    expect(await screen.findByRole("header", { name: "You're booked!" })).toBeVisible();
+    expect(bookCalls(client)).toHaveLength(1);
+    expect(paymentCalls(client)).toEqual([]);
+  });
+
   it("sends one request for a double tap", async () => {
     const { client } = await openBooking();
     const send = await screen.findByRole("button", { name: "Send request" });
@@ -328,7 +519,7 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     await act(async () => {
       await Promise.all([fireEvent.press(send), fireEvent.press(send)]);
     });
-    expect(await screen.findByText("Request sent. Anna has until 22:00 to answer.")).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Request sent" })).toBeVisible();
     expect(bookCalls(client)).toHaveLength(1);
   });
 
@@ -394,7 +585,7 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     await fireEvent.press(send);
     expect(await screen.findByText(/^We couldn't reach ShareRide/)).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Send request" }));
-    expect(await screen.findByText("Request sent. Anna has until 22:00 to answer.")).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Request sent" })).toBeVisible();
     expect(bookCalls(client).map((body) => body["attemptKey"])).toEqual(["attempt-1", "attempt-1"]);
     expect(mockedKey).toHaveBeenCalledTimes(1);
   });
@@ -465,7 +656,7 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     await fireEvent.press(within(bar).getByRole("button", { name: "Send request" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Back to the trip" }));
-    expect(await screen.findByText("1 of 3 seats free on your part")).toBeVisible();
+    expect(await screen.findByText("1 free on your part · 2,900 ISK per seat")).toBeVisible();
     expect(screen).toHavePathname(`/trips/${id}`);
     expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "1" });
     // The trip page was the one beneath, so Back leaves the trip.
@@ -494,17 +685,20 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
         return failure(409, "price_changed", { total: higher });
       },
       booking: () => atHigher,
+      pay: () => ok(200, paymentFor(atHigher)),
     });
-    expect(await screen.findByText("2,900 ISK per seat")).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Book" }));
+    expect(await screen.findByText("1 seat × 2,900 ISK")).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Pay 2,900 ISK" }));
     expect(
-      await screen.findByText("The price has changed to 3,100 ISK. Book at this price?"),
+      await screen.findByText("The price has changed to 3,100 ISK. Pay this price?"),
     ).toBeVisible();
     // The price per seat is asked for again, and the button names the new total.
-    expect(await screen.findByText("3,100 ISK per seat")).toBeVisible();
+    expect(await screen.findByText("1 seat × 3,100 ISK")).toBeVisible();
     expect(screen.getByText("3,100 ISK")).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Book at 3,100 ISK" }));
-    expect(await screen.findByText("Pay 3,100 ISK to confirm your seat")).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Pay 3,100 ISK" }));
+    expect(
+      await screen.findByRole("header", { name: "Test payment: no money moves" }),
+    ).toBeVisible();
     expect(bookCalls(client).map((body) => body["total"])).toEqual([
       { amount: 2900, currency: "ISK" },
       higher,
@@ -532,6 +726,141 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
         "You already have a booking or request at the same time. Withdraw or cancel it first.",
       ),
     ).toBeVisible();
+  });
+});
+
+describe("You're booked and Request sent (spec 16, 3.7, items 4 and 5)", () => {
+  it("says you're booked after paying, with what happens next and where to stand", async () => {
+    await openCheckAndPay();
+    await fireEvent.press(await screen.findByRole("button", { name: "Pay 2,900 ISK" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Pay 2,900 ISK" }));
+    expect(await screen.findByRole("header", { name: "You're booked!" })).toBeVisible();
+    expect(
+      screen.getByText("Sunday 15 November. Anna picks you up at 10:00 at Borgarnes."),
+    ).toBeVisible();
+    expect(screen.getByRole("header", { name: "What happens next" })).toBeVisible();
+    for (const step of [
+      "Number plate AB 123",
+      "Be at the meeting point a few minutes before 10:00.",
+      "Plans change? Cancelling is free up to 15 minutes before you get in.",
+    ]) {
+      expect(screen.getByText(step)).toBeVisible();
+    }
+    expect(screen.getByRole("header", { name: "Where to stand" })).toBeVisible();
+    expect(screen.getByText("By the petrol pumps")).toBeVisible();
+    const open = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
+    await fireEvent.press(screen.getByRole("button", { name: "Open in maps" }));
+    expect(open).toHaveBeenCalledWith(expect.stringMatching(/^https:\/\/maps\.apple\.com\/\?ll=/));
+    open.mockRestore();
+
+    expect(screen.getByRole("button", { name: "Find another ride" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "See it in My rides" }));
+    expect(await screen.findByRole("tab", { name: "My rides", selected: true })).toBeVisible();
+    expect(screen).toHavePathname("/my-rides");
+  });
+
+  it("goes back to the trip from You're booked, which now leads to the booking", async () => {
+    let booked = false;
+    await renderApp(`/trips/${id}?from=1&to=2`, {
+      me: completeMe,
+      setUp: (client) => {
+        tripDetailsApi(client, () =>
+          ok(
+            200,
+            northTrip(
+              { board: 1, alight: 2 },
+              {
+                bookingMode: "instant",
+                ...(booked ? { myBooking: { id: bookingId, status: "confirmed" as const } } : {}),
+              },
+            ),
+          ),
+        );
+        client.answer(
+          "/v1/trips/{id}/bookings",
+          () => {
+            booked = true;
+            return ok(201, unpaidBooking);
+          },
+          "post",
+        );
+        bookingApi(client, () => paidBooking);
+        client.answer(
+          "/v1/bookings/{id}/payment",
+          () => ok(200, paymentFor(unpaidBooking)),
+          "post",
+        );
+        client.answer("/v1/test-payments/{id}", () => ok(200, paidBooking), "post");
+      },
+    });
+    const bar = await screen.findByTestId("bottom-bar");
+    await fireEvent.press(within(bar).getByRole("button", { name: "Book" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Pay 2,900 ISK" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Pay 2,900 ISK" }));
+    expect(await screen.findByRole("header", { name: "You're booked!" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByText("You have a booking on this trip.")).toBeVisible();
+    expect(screen).toHavePathname(`/trips/${id}`);
+  });
+
+  it("says the plate shows later when the driver has not added it", async () => {
+    await renderApp(`/bookings/${bookingId}/booked`, {
+      me: completeMe,
+      setUp: (client) => {
+        bookingApi(client, () =>
+          northBooking({
+            ...paidBooking,
+            confirmed: { registration: null, whereToStand: null },
+          }),
+        );
+      },
+    });
+    expect(await screen.findByRole("header", { name: "You're booked!" })).toBeVisible();
+    expect(screen.getByText("The number plate shows in My rides before you leave.")).toBeVisible();
+    expect(screen.getByRole("header", { name: "Where to stand" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Find another ride" }));
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(screen).toHavePathname("/");
+  });
+
+  it("says a request was sent, until when the driver can answer, and what comes next", async () => {
+    await openBooking();
+    await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
+    expect(await screen.findByRole("header", { name: "Request sent" })).toBeVisible();
+    expect(screen.getByText("Anna has until 22:00 to answer.")).toBeVisible();
+    for (const step of [
+      "The answer shows in My rides.",
+      "When Anna says yes, pay in My rides, under Needs you, to confirm your seat.",
+      "No answer in time? The request ends, and you pay nothing.",
+    ]) {
+      expect(screen.getByText(step)).toBeVisible();
+    }
+    // Nothing is confirmed yet, so there is nowhere to stand.
+    expect(screen.queryByRole("header", { name: "Where to stand" })).toBeNull();
+    expect(screen.getByRole("button", { name: "See it in My rides" })).toBeVisible();
+  });
+
+  it("opens the booking itself for one that is neither booked nor requested", async () => {
+    await renderApp(`/bookings/${bookingId}/booked`, {
+      me: completeMe,
+      setUp: (client) => {
+        bookingApi(client, () => unpaidBooking);
+      },
+    });
+    expect(await screen.findByText("Pay 2,900 ISK to confirm your seat")).toBeVisible();
+    expect(screen).toHavePathname(`/bookings/${bookingId}`);
+  });
+
+  it("goes back to the booking when opened with nothing behind it", async () => {
+    await renderApp(`/bookings/${bookingId}/booked`, {
+      me: completeMe,
+      setUp: (client) => {
+        bookingApi(client, () => paidBooking);
+      },
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Back" }));
+    expect(await screen.findByText("Your seat is confirmed")).toBeVisible();
+    expect(screen).toHavePathname(`/bookings/${bookingId}`);
   });
 });
 

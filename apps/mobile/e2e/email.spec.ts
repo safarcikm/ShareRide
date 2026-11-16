@@ -63,8 +63,10 @@ test("a passenger adds an email and gets the Pay now email once accepted", async
   await passenger.getByRole("button", { name: "Send request", exact: true }).click();
   await passenger.getByLabel("Message to the driver (optional)").fill("One small bag.");
   await passenger.getByRole("button", { name: "Send request", exact: true }).click();
-  await expect(passenger).toHaveURL(/\/bookings\/[0-9a-f-]+$/);
-  const bookingPath = new URL(passenger.url()).pathname;
+  await expect(passenger).toHaveURL(/\/bookings\/[0-9a-f-]+\/booked$/);
+  await expect(passenger.getByRole("heading", { name: "Request sent" })).toBeVisible();
+  // The email opens the booking itself, not this finish screen.
+  const bookingPath = new URL(passenger.url()).pathname.replace(/\/booked$/, "");
   await driver.goto(`/drive/trips/${tripId}`);
   await driver.getByRole("button", { name: "Accept", exact: true }).click();
   await expect(driver.getByRole("heading", { name: "Passengers" })).toBeVisible();

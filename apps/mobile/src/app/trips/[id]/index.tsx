@@ -30,7 +30,8 @@ import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { RouteMap } from "@/maps/route-map";
 import { RouteList } from "@/trip-details/route-list";
 import { SeatView } from "@/trip-details/seat-view";
-import { DriverAndCar, PartStop } from "@/trip-details/trip-parts";
+import { StopChoice } from "@/trip-details/stop-choice";
+import { DriverAndCar } from "@/trip-details/trip-parts";
 import { positionParam, tripWebAddress, type Part } from "@/trip-details/trip-link";
 import { controlOutline, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -38,11 +39,12 @@ import { usePalette } from "@/theme/use-palette";
 type Answer = CallResult<typeof tripDetailsRoute>;
 
 /**
- * Trip details (spec 4, 3.6 and 3.7; spec 15's trip board): the passenger's
- * part with the seat view, the route, the driver and car, preferences and
- * what booking will be like. Open to everyone by link; the part and seats
- * live in the address, so a reload or a shared link shows the same part.
- * The bottom bar books the part on screen (spec 5).
+ * Trip details (spec 4, 3.6 and 3.7; spec 15's trip board; spec 16, 3.7):
+ * the passenger's part first, with how booking works, where they get in
+ * and out and the seats; then who they ride with and the seat view; then
+ * the route and what cancelling costs. Open to everyone by link; the part
+ * and seats live in the address, so a reload or a shared link shows the
+ * same part. The bottom bar books the part on screen (spec 5).
  */
 export default function TripScreen() {
   const { t } = useLanguage();
@@ -234,28 +236,40 @@ function Trip({
       {showsOtherTime(now()) ? <Notice kind="info" message={t("results.icelandTime")} /> : null}
 
       <Card>
-        <Heading>{t("trip.yourPart")}</Heading>
-        <PartStop stop={boardStop} getIn />
-        <PartStop stop={alightStop} getIn={false} />
-        <View style={[styles.divider, { backgroundColor: palette.border }]} />
-        <SeatView
-          offered={trip.seatsOffered}
-          free={trip.part.freeSeats}
-          yours={Math.min(seats, trip.part.freeSeats)}
-          driverColour={trip.driver.colour}
+        <View style={styles.cardHeader}>
+          <Heading>{t("trip.yourPart")}</Heading>
+          <Tag
+            kind={trip.bookingMode === "instant" ? "positive" : "info"}
+            label={trip.bookingMode === "instant" ? t("results.instant") : t("results.request")}
+          />
+        </View>
+        <StopChoice
+          getIn
+          stop={boardStop}
+          choices={trip.stops.filter((stop) => stop.position < part.alight)}
+          onChoose={(position) => {
+            changePart({ board: position, alight: part.alight });
+          }}
         />
-        <Text style={[typography.label, { color: palette.text }]}>
-          {t("trip.freeOnPart", { free: trip.part.freeSeats, offered: trip.seatsOffered })}
-        </Text>
+        <StopChoice
+          getIn={false}
+          stop={alightStop}
+          choices={trip.stops.filter((stop) => stop.position > part.board)}
+          onChoose={(position) => {
+            changePart({ board: part.board, alight: position });
+          }}
+        />
         <View style={[styles.divider, { backgroundColor: palette.border }]} />
         <Stepper
           beside
           label={t("trip.seats")}
-          hint={
-            trip.part.pricePerSeat.amount === 0
-              ? t("results.free")
-              : t("trip.pricePerSeat", { price: formatMoney(trip.part.pricePerSeat, locale) })
-          }
+          hint={t("trip.seatsHint", {
+            free: trip.part.freeSeats,
+            price:
+              trip.part.pricePerSeat.amount === 0
+                ? t("results.free")
+                : t("trip.pricePerSeat", { price: formatMoney(trip.part.pricePerSeat, locale) }),
+          })}
           value={seats}
           min={1}
           max={most}
@@ -265,6 +279,24 @@ function Trip({
           valueText={t("search.seatCount", { count: seats })}
           fewerLabel={t("search.fewerSeats")}
           moreLabel={t("search.moreSeats")}
+        />
+      </Card>
+
+      <Card>
+        <Heading>{t("trip.whoYouRideWith")}</Heading>
+        <DriverAndCar
+          driver={trip.driver}
+          car={trip.car}
+          carNote={t("trip.plateLater")}
+          preferences={trip.preferences}
+          note={trip.note}
+        />
+        <View style={[styles.divider, { backgroundColor: palette.border }]} />
+        <SeatView
+          offered={trip.seatsOffered}
+          free={trip.part.freeSeats}
+          yours={Math.min(seats, trip.part.freeSeats)}
+          driverColour={trip.driver.colour}
         />
       </Card>
 
@@ -279,30 +311,14 @@ function Trip({
       />
       <RouteList stops={trip.stops} part={part} onChange={changePart} />
       <Body>{t("trip.tapStop")}</Body>
-
-      <Card>
-        <DriverAndCar
-          driver={trip.driver}
-          car={trip.car}
-          carNote={t("trip.plateLater")}
-          preferences={trip.preferences}
-          note={trip.note}
-        />
-      </Card>
-      <View style={styles.row}>
-        <Tag
-          kind={trip.bookingMode === "instant" ? "positive" : "info"}
-          label={
-            trip.bookingMode === "instant" ? t("trip.instantBooking") : t("trip.approvalBooking")
-          }
-        />
-      </View>
-      <View style={styles.row}>
-        <Icon icon={ShieldCheck} color={palette.primary} />
-        <Text style={[typography.small, styles.grow, { color: palette.text }]}>
-          {t("trip.payInApp")}
-        </Text>
-      </View>
+      {trip.part.pricePerSeat.amount === 0 ? null : (
+        <View style={styles.row}>
+          <Icon icon={ShieldCheck} color={palette.primary} />
+          <Text style={[typography.small, styles.grow, { color: palette.text }]}>
+            {t("trip.freeCancellation")}
+          </Text>
+        </View>
+      )}
     </Screen>
   );
 }
@@ -415,6 +431,13 @@ function BookingBar({ trip, pending }: { readonly trip: TripDetails; readonly pe
 
 const styles = StyleSheet.create({
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: spacing.sm,
+    flexWrap: "wrap",
+  },
   divider: { height: controlOutline / 2 },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   grow: { flex: 1 },

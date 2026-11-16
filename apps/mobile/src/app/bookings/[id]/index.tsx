@@ -1,17 +1,9 @@
-import type { CallFailure } from "@shareride/api-client";
-import {
-  bookingRoute,
-  startPaymentRoute,
-  testPaymentRoute,
-  withdrawRequestRoute,
-  type Booking,
-  type Payment,
-} from "@shareride/contracts";
+import { bookingRoute, withdrawRequestRoute, type Booking } from "@shareride/contracts";
 import { capitalised, formatDay, formatMoney } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { CircleCheck } from "lucide-react-native";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Linking, Platform, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import {
@@ -21,7 +13,9 @@ import {
   statusKey,
   statusTag,
 } from "@/booking/status";
+import { PaymentSheet, usePayment } from "@/booking/payment";
 import { payByText, requestSentText } from "@/booking/texts";
+import { WhereToStand } from "@/booking/where-to-stand";
 import { BackButton } from "@/components/back-button";
 import { otherPerson } from "@/chat/texts";
 import { Button } from "@/components/button";
@@ -35,7 +29,6 @@ import { Body, Heading, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { useLoaded } from "@/lib/use-loaded";
-import { mapsUrl } from "@/meeting-points/maps-url";
 import { DriverAndCar, PartStop } from "@/trip-details/trip-parts";
 import { controlOutline, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -133,7 +126,6 @@ function BookingDetails({
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
-  const [mapsFailed, setMapsFailed] = useState(false);
   const { board, alight, confirmed } = booking;
   const name = (stop: Booking["board"]) => stop.meetingPoint.name[locale];
   const total = formatMoney(booking.total, locale);
@@ -208,28 +200,7 @@ function BookingDetails({
         />
       )}
 
-      {confirmed === null ? null : (
-        <Card>
-          <Heading>{t("meetingPoints.whereToStand")}</Heading>
-          <Text style={[typography.bodyStrong, { color: palette.text }]}>{name(board)}</Text>
-          {confirmed.whereToStand === null ? null : (
-            <Body align="start">{confirmed.whereToStand[locale]}</Body>
-          )}
-          <Button
-            variant="secondary"
-            label={t("meetingPoints.openInMaps")}
-            onPress={() => {
-              setMapsFailed(false);
-              Linking.openURL(mapsUrl(board.meetingPoint.position, name(board), Platform.OS)).catch(
-                () => {
-                  setMapsFailed(true);
-                },
-              );
-            }}
-          />
-          <Notice message={mapsFailed ? t("meetingPoints.mapsFailed") : null} />
-        </Card>
-      )}
+      <WhereToStand booking={booking} />
     </Screen>
   );
 }
@@ -415,12 +386,6 @@ function Requested({
   );
 }
 
-type Paying =
-  | { readonly stage: "idle" }
-  | { readonly stage: "starting" }
-  | { readonly stage: "sheet"; readonly payment: Payment }
-  | { readonly stage: "settling"; readonly payment: Payment };
-
 /**
  * Pay to confirm, with the deadline (rule M1). With the test provider the
  * app shows its own sheet, where the person picks what the payment does.
@@ -437,109 +402,31 @@ function Pay({
   readonly onStale: (why: string) => void;
 }) {
   const { locale, t } = useLanguage();
-  const palette = usePalette();
-  const session = useSession();
-  const [paying, setPaying] = useState<Paying>({ stage: "idle" });
-  const [notice, setNotice] = useState<string | null>(null);
+  const payment = usePayment({ onSettled: onPaid, onStale });
   const total = formatMoney(booking.total, locale);
-
-  const failed = (failure: CallFailure) => {
-    switch (failure.error.code) {
-      case "booking_not_payable":
-      case "payment_settled":
-      case "not_found":
-        onStale(t("booking.paymentClosed"));
-        return;
-      case "payments_unavailable":
-        setNotice(t("booking.paymentsUnavailable"));
-        return;
-      default:
-        setNotice(errorText(t, failure));
-    }
-  };
-
-  const start = async () => {
-    onStart();
-    setNotice(null);
-    setPaying({ stage: "starting" });
-    const answer = await session.call(startPaymentRoute, {
-      params: { id: booking.id },
-      body: {},
-    });
-    if (answer.ok) {
-      setPaying({ stage: "sheet", payment: answer.data });
-      return;
-    }
-    setPaying({ stage: "idle" });
-    failed(answer);
-  };
-
-  const settle = async (payment: Payment, outcome: "succeeded" | "failed") => {
-    setNotice(null);
-    setPaying({ stage: "settling", payment });
-    const answer = await session.call(testPaymentRoute, {
-      params: { id: payment.paymentId },
-      body: { outcome },
-    });
-    if (!answer.ok) {
-      // A failed call leaves the payment as it was: the sheet stays.
-      setPaying(
-        answer.error.code === "network_error" ? { stage: "sheet", payment } : { stage: "idle" },
-      );
-      failed(answer);
-      return;
-    }
-    setPaying({ stage: "idle" });
-    if (answer.data.status === "accepted") setNotice(t("booking.paymentFailed"));
-    onPaid(answer.data);
-  };
-
-  const sheet = paying.stage === "sheet" || paying.stage === "settling" ? paying.payment : null;
   return (
     <View style={styles.pay}>
       <Heading>{t("booking.payNow", { total })}</Heading>
       {booking.paymentDueAt === null ? null : (
         <Body align="start">{payByText(t, new Date(booking.paymentDueAt), now())}</Body>
       )}
-      {notice === null ? null : (
-        <TakesFocus key={notice}>
-          <Notice message={notice} />
+      {payment.notice === null ? null : (
+        <TakesFocus key={payment.notice}>
+          <Notice message={payment.notice} />
         </TakesFocus>
       )}
-      {sheet === null ? (
+      {payment.sheet === null ? (
         <Button
           main
-          busy={paying.stage === "starting"}
+          busy={payment.starting}
           label={t("booking.pay", { total })}
           onPress={() => {
-            void start();
+            onStart();
+            void payment.start(booking.id);
           }}
         />
       ) : (
-        <Card>
-          <TakesFocus>
-            <Text accessibilityRole="header" style={[typography.heading, { color: palette.text }]}>
-              {t("booking.testPayment.title")}
-            </Text>
-          </TakesFocus>
-          <Body align="start">{t("booking.testPayment.body")}</Body>
-          <Button
-            main
-            busy={paying.stage === "settling"}
-            label={t("booking.pay", { total: formatMoney(sheet.amount, locale) })}
-            onPress={() => {
-              void settle(sheet, "succeeded");
-            }}
-          />
-          <Button
-            variant="secondary"
-            disabled={paying.stage === "settling"}
-            label={t("booking.testPayment.fail")}
-            onPress={() => {
-              void settle(sheet, "failed");
-            }}
-          />
-        </Card>
+        <PaymentSheet payment={payment} />
       )}
     </View>
   );

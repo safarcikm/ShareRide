@@ -42,7 +42,7 @@ test("the driver and passenger of a confirmed booking message each other", async
   await passenger.getByRole("button", { name: "Send request", exact: true }).click();
   await passenger.getByLabel("Message to the driver (optional)").fill("A small rucksack.");
   await passenger.getByRole("button", { name: "Send request", exact: true }).click();
-  await expect(passenger).toHaveURL(/\/bookings\/[0-9a-f-]+$/);
+  await expect(passenger).toHaveURL(/\/bookings\/[0-9a-f-]+\/booked$/);
   await driver.goto(`/drive/trips/${tripId}`);
   await driver.getByRole("button", { name: "Accept", exact: true }).click();
   await expect(driver.getByLabel("Dóra, 1 seat, Waiting for payment")).toBeVisible();

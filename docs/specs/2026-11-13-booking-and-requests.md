@@ -4,6 +4,11 @@
 
 Amended by [spec 16](2026-11-15-one-home-and-simpler-flows.md): My bookings
 becomes My rides, with the trips you drive and "Needs you" on top (3.3).
+Check and pay replaces the booking screen: for instant booking, "Pay
+{total}" books the seats and opens the payment at once, with no second
+Book; a payment that does not finish keeps the seats held and Pay starts it
+again. "You're booked!" or "Request sent" follows, with what happens next
+(3.7). After a price change, instant booking asks "Pay this price?".
 
 Features: D3 Book seats on the whole trip or only part of it, D4 My bookings,
 C7 Accept or decline requests ([features](../product/features.md)).
@@ -241,7 +246,7 @@ Events: `BookingRequested`, `BookingAccepted`, `BookingConfirmed`,
 | `booking.book` | Book | Bóka |
 | `booking.sendRequest` | Send request | Senda beiðni |
 | `booking.seatsTaken` | Sorry, those seats were just taken | Því miður, þessi sæti voru rétt í þessu tekin |
-| `booking.priceChanged` | The price has changed to {total}. Book at this price? | Verðið hefur breyst í {total}. Bóka á þessu verði? |
+| `booking.priceChanged` | The price has changed to {total}. Pay this price? (spec 16) | Verðið hefur breyst í {total}. Greiða þetta verð? |
 | `booking.requestSent` | Request sent. {driver} has until {time} to answer. | Beiðni send. {driver} hefur til {time} til að svara. |
 | `booking.declined` | The driver couldn't take this request | Ökumaðurinn gat ekki tekið þessari beiðni |
 | `booking.expired` | The driver didn't answer in time | Ökumaðurinn svaraði ekki í tæka tíð |
