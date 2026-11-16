@@ -168,7 +168,9 @@ A booking for `n` seats on that range is possible only if `n ≤ available`.
 
 A booking request is valid only if all of these hold:
 
-- the trip is `published` and not departed or cancelled
+- the trip is `published`, or under way (`departed`): once it has left its
+  first stop, a later stop can still be booked until its own cut-off
+  (Martin, 2026-11-16, A45)
 - the boarding stop comes before the alighting stop on the trip
 - the request arrives before the booking cut-off (default: 15 minutes before
   the planned time at the boarding stop)

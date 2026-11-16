@@ -4,10 +4,13 @@ import {
   myBookingsRoute,
   myTripsRoute,
   tripBookingsRoute,
+  tripDetailsRoute,
+  tripSearchRoute,
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
+import { sampleId } from "@shareride/db/seed";
 import { defaultTripDaySettings as settings } from "@shareride/domain";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
@@ -167,6 +170,40 @@ describe("trips depart and complete on their own (spec 8, 3.6; R8.1, R8.2)", () 
     released.resolve(undefined);
     await changing;
     expect(await run()).toEqual({ departed: 1, completed: 0 });
+  });
+});
+
+describe("a trip under way (rule S4, Martin 2026-11-16)", () => {
+  it("can still be found and booked at a later stop, until that stop's cut-off", async () => {
+    const [fitjar] = await api.connection.db
+      .select({ plannedAt: schema.tripStops.plannedAt })
+      .from(schema.tripStops)
+      .where(and(eq(schema.tripStops.tripId, airport), eq(schema.tripStops.position, 2)));
+    if (fitjar === undefined || fitjar.plannedAt === null) throw new Error("No stop at Fitjar.");
+    const sigga = await newMember("Sigga");
+    await until(fitjar.plannedAt, -20 * 60, sigga);
+    await run();
+    expect((await trip(airport)).status).toBe("departed");
+
+    const search = await api.client.call(tripSearchRoute, {
+      query: { from: sampleId("point:fitjar"), to: sampleId("point:kef"), seats: 1 },
+    });
+    if (!search.ok) throw new Error(search.error.code);
+    expect(search.data.results.map(({ tripId }) => tripId)).toContain(airport);
+    const part = async (fromStop: number) => {
+      const found = await api.client.call(tripDetailsRoute, {
+        params: { id: airport },
+        query: { fromStop, toStop: 3 },
+      });
+      if (!found.ok) throw new Error(found.error.code);
+      return found.data.part.state;
+    };
+    expect(await part(0)).toBe("departed");
+    expect(await part(2)).toBe("open");
+    await booked(sigga.accessToken, airport, { fromStop: 2, toStop: 3 });
+
+    await until(fitjar.plannedAt, -15 * 60, sigga);
+    expect(await part(2)).toBe("closed");
   });
 });
 

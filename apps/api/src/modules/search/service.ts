@@ -187,7 +187,8 @@ export function createSearchService(dependencies: {
           sql`, `,
         )})
         and alighting.position > boarding.position
-      where ${trips.status} = 'published'
+      -- Under way, a later stop can still be booked (rule S4).
+      where ${trips.status} in ('published', 'departed')
         ${options.instant === true ? sql`and ${trips.bookingMode} = 'instant'` : sql``}
     `);
     return load(found.rows.map((row) => row.id));
