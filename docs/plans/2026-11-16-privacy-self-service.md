@@ -1,7 +1,7 @@
 # Privacy self-service plan
 
-**Owner:** Martin · **Date:** 2026-11-16 · **Status:** Proposed; the
-choices in section 3 wait for Martin
+**Owner:** Martin · **Date:** 2026-11-16 · **Status:** Approved; Martin
+accepted the three choices in section 3 on 2026-11-16
 
 Lets people download everything ShareRide holds about them, delete their
 account from the app, and ask about anything else, and makes every
@@ -53,6 +53,8 @@ When this is done, on the web and on an Android test build:
 
 ## 3. Decisions for Martin
 
+Martin accepted all three as recommended on 2026-11-16.
+
 | # | Choice | Recommendation | Why | Alternative |
 | - | ------ | -------------- | --- | ----------- |
 | 1 | Where the export file is kept for its 7 days | **In the database, encrypted by the API**, and downloaded through a one-time link the app opens. Deleted after 7 days by the clean-up | No new service or account is needed, and the file is small (well under a megabyte) until photos exist. The database is already in Frankfurt and backed up | Hetzner Object Storage now ([ADR 0022](../decisions/0022-photo-storage-on-hetzner.md)). It needs your Hetzner account and keys first, and sits almost empty until photos come |
@@ -80,10 +82,10 @@ retention runs 90 days.
   data has one effect on deletion: `erase` (the rows go), `empty` (the
   personal fields go, the row stays), `move` (to the former member) or
   `keep`.
-- `retention.ts`: the catalogue of retention rules (ID, period, erase or
-  anonymise) and `retentionCutoffs(now)`. The sign-in, chat and
-  notification rules that exist today move into it unchanged.
-  `isHeld(holds, subject, now)` (R11.6).
+- `retention.ts`: the names of every retention rule, as runs record them,
+  and `privacyCutoffs(now)` for the rules this plan adds. The sign-in,
+  chat, draft and notification periods stay in their modules.
+  `isHeld(holds, subjects, now)` and `validateHold` (R11.6).
 - `blockedNumberUntil(suspendedUntil, erasedAt)`: the suspension's end, at
   most 3 years after erasure; a permanent suspension gets the 3 years
   (R11.9).
