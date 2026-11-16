@@ -93,6 +93,13 @@ imports end in `.ts`.
 ## Database
 
 - Migrations are forward-only, reviewed, and follow expand then contract.
+- From the closed beta on, a change that saves a new kind of data ships in
+  two deploys: first the code that reads it, then the code that saves it.
+  A new kind of data is one that older code would misread, such as a new
+  status, a row marked instead of deleted, or a new message kind. Rolling
+  back then always lands on a version that understands what is stored.
+  Before the beta, staging holds only sample data, so one deploy is enough
+  and the runbook says when to roll forward instead (decided 2026-11-16).
 - Every table has `created_at` and `updated_at`.
 - Foreign keys and constraints are mandatory where the data model implies them.
 - Soft delete only where retention rules require it; otherwise delete.
