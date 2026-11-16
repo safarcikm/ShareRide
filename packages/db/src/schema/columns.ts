@@ -57,3 +57,8 @@ export const geographyPoint = customType<{ data: Position; driverData: string }>
     `SRID=4326;POINT(${String(longitude)} ${String(latitude)})`,
   fromDriver: positionFromEwkb,
 });
+
+/** Raw bytes (`bytea`), such as an encrypted file. */
+export const bytes = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType: () => "bytea",
+});

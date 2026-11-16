@@ -5,8 +5,8 @@ import type { Transaction } from "../bookings/seats.ts";
 const { outboxEvents } = schema;
 
 /**
- * What happened, as booking, payment and chat code records it for the
- * worker. IDs only: the worker reads the rest when it sends (R7.9).
+ * What happened, as booking, payment, chat and privacy code records it for
+ * the worker. IDs only: the worker reads the rest when it sends (R7.9).
  */
 export type OutboxEvent =
   | {
@@ -18,6 +18,7 @@ export type OutboxEvent =
         | "TripChanged"
         | "TripCancelled"
         | "MessageSent"
+        | "DataExportReady"
       >;
       readonly bookingId: string;
     }
@@ -48,7 +49,13 @@ export type OutboxEvent =
       readonly tripId: string;
       readonly bookingId: string;
     }
-  | { readonly type: "MessageSent"; readonly messageId: string };
+  | { readonly type: "MessageSent"; readonly messageId: string }
+  | {
+      /** The person's file of their data is ready to download (spec 11, 3.2). */
+      readonly type: "DataExportReady";
+      readonly userId: string;
+      readonly exportId: string;
+    };
 
 /**
  * Writes events to the outbox in the transaction that makes the change, so

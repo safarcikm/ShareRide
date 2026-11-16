@@ -15,7 +15,8 @@ import { freshTestDatabase } from "@shareride/db/testing";
 import { createApp } from "./app.ts";
 import { createLogger } from "./logger.ts";
 import { createNotificationWorker } from "./modules/notifications/index.ts";
-import { createKeyedHasher } from "./platform/crypto.ts";
+import { createExportBuilder, exportCipherPurpose } from "./modules/privacy/index.ts";
+import { createFileCipher, createKeyedHasher } from "./platform/crypto.ts";
 import type { EmailSender } from "./platform/email.ts";
 import { createTestPaymentProvider } from "./platform/payments.ts";
 import type { PushSender } from "./platform/push.ts";
@@ -70,6 +71,7 @@ const clock = () => new Date(Date.now() + clockOffsetMs);
 // stops a test run; the limits have their own integration tests.
 let requests = 0;
 
+const secret = randomBytes(32).toString("hex");
 const app = createApp({
   logger: createLogger({ level: "warn" }),
   checkDatabase: () => pingDatabase(connection.pool),
@@ -78,7 +80,8 @@ const app = createApp({
     db: connection.db,
     sms,
     email: { sender: email, webAppUrl: webOrigin },
-    hasher: createKeyedHasher(randomBytes(32).toString("hex")),
+    hasher: createKeyedHasher(secret),
+    exportCipher: createFileCipher(secret, exportCipherPurpose),
     clock,
     clientAddress: () => `e2e-${String((requests += 1))}`,
     secureCookies: false,
@@ -104,6 +107,20 @@ startRepeating({
   run: () => worker.runOnce(),
   onError: (error) => {
     process.stderr.write(`notification worker: ${String(error)}\n`);
+  },
+});
+
+const exportBuilder = createExportBuilder({
+  db: connection.db,
+  cipher: createFileCipher(secret, exportCipherPurpose),
+  clock,
+  logger: createLogger({ level: "warn" }),
+});
+startRepeating({
+  everyMs: 1000,
+  run: () => exportBuilder.buildDue(),
+  onError: (error) => {
+    process.stderr.write(`data exports: ${String(error)}\n`);
   },
 });
 

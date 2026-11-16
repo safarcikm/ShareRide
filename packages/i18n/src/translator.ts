@@ -11,6 +11,11 @@ export type Translate = (key: MessageKey, values?: MessageValues) => string;
 
 const catalogs: Readonly<Record<Locale, Readonly<Record<MessageKey, string>>>> = { en, is };
 
+/** Whether a key built at run time names a text; every catalog has the same keys. */
+export function isMessageKey(key: string): key is MessageKey {
+  return Object.hasOwn(en, key);
+}
+
 /** Returns `t(key, values)` for one language. Parsed messages are cached. */
 export function createTranslator(locale: Locale): Translate {
   const cache = new Map<MessageKey, IntlMessageFormat>();

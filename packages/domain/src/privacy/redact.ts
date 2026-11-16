@@ -48,7 +48,8 @@ const alone = (pattern: string) => new RegExp(`(?<![\\w-])${pattern}(?![\\w-])`,
 const patterns: readonly (readonly [RegExp, string])[] = [
   // A failed query's message lists every value it was given.
   [/\nparams: [\s\S]*$/, "\nparams: [redacted]"],
-  [/sr_(?:at|rt)_[A-Za-z0-9_-]+/g, "[token]"],
+  // Every kind of our tokens: sr_at, sr_rt, sr_ev, sr_dx and any to come.
+  [/sr_[a-z]{2}_[A-Za-z0-9_-]+/g, "[token]"],
   [/[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[A-Za-z]{2,}\b/g, "[email]"],
   // International numbers, also with + and spaces written into a URL.
   [/%2B\d(?:(?:%20|[ \u00A0-])?\d){6,14}/gi, "[number]"],
