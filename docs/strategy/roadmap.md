@@ -157,6 +157,16 @@ proposed 2026-11-16)
 - [ ] Rate and review
 - [ ] Public profiles with rating, reviews and reliability
 
+Milestone 8: the operator console and meeting points
+([plan](../plans/2026-11-16-milestone-8-operator-console-and-meeting-points.md),
+proposed 2026-11-16; built alongside milestone 7)
+
+- [ ] The operator role, passkey sign-in and the audit log
+- [ ] The console app, its home and the audit log page
+- [ ] Meeting points: create, edit, activate, pause, retire and move
+- [ ] Photos, import and problem reports
+- [ ] Distances for real meeting points
+
 MVP features (each one a spec, a plan and a PR series)
 
 - [ ] Profiles, vehicles, phone verification

@@ -58,3 +58,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0025](0025-own-date-and-number-formatting.md) | Our own date and number formatting instead of Intl's locale data | Accepted |
 | [0026](0026-push-through-expo.md) | Send push notifications through Expo's push service | Accepted |
 | [0027](0027-email-through-mailjet.md) | Send email through Mailjet | Accepted |
+| [0028](0028-operator-console-web-app-and-passkeys.md) | The operator console as its own web app, signed in with passkeys | Proposed |
