@@ -127,11 +127,13 @@ Milestone 5: chat and notifications
 ([plan](../plans/2026-11-15-milestone-5-chat-and-notifications.md), approved
 2026-11-15)
 
-- [ ] Chat and notification rules in the domain
-- [ ] Conversations and message all passengers, on the server and in the app
-- [ ] Outbox, worker and delivery log
-- [ ] Push on Android, then iPhone; email with a provider in the EU
-- [ ] Reminders, the Trip reminders switch and the prompt to turn on
+- [x] Chat and notification rules in the domain
+- [x] Conversations and message all passengers, on the server and in the app
+- [x] Outbox, worker and delivery log
+- [x] Push on Android, then iPhone; email with a provider in the EU (built;
+      a real push waits for the expo.dev project and Firebase, iPhone for
+      Apple, and email beyond the development outbox for a domain)
+- [x] Reminders, the Trip reminders switch and the prompt to turn on
       notifications
 
 MVP features (each one a spec, a plan and a PR series)
