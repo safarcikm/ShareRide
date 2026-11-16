@@ -87,6 +87,18 @@ describe("system lines in the reader's language (spec 7, 3.1, item 3)", () => {
     expect(systemLineText(is, car, "Anna")).toBe("Nýr bíll: Rauður Volvo XC40");
   });
 
+  it("says a stop was added, with its time on Iceland's clock (spec 6, 3.2)", () => {
+    const line = {
+      key: "stop_added",
+      stop: "N1 Mosfellsbær",
+      plannedAt: "2026-11-14T09:20:00.000Z",
+    } as const;
+    expect(systemLineText(en, line, "Anna")).toBe("New stop: N1 Mosfellsbær at 09:20");
+    expect(systemLineText(is, { ...line, stop: "N1 Mosfellsbæ" }, "Anna")).toBe(
+      "Nýr viðkomustaður: N1 Mosfellsbæ kl. 09:20",
+    );
+  });
+
   it("says when the driver cancelled the whole trip (spec 6, 3.3)", () => {
     const trip = {
       key: "cancelled",

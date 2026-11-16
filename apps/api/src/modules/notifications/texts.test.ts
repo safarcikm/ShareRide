@@ -28,6 +28,7 @@ const facts: NotificationFacts = {
   boardPointId: "point-bsi",
   car: { make: "Toyota", model: "Yaris", colour: "white" },
   newCar: null,
+  newStop: null,
   moved: { from: new Date("2026-11-14T08:15:00Z"), to: new Date("2026-11-14T09:00:00Z") },
   paid: true,
 };
@@ -257,6 +258,20 @@ describe("notification texts", () => {
     });
     expect(text(changed, "is")).toMatchObject({ title: "Nýr bíll: Rauður Volvo XC40" });
     expect(() => text({ ...changed, newCar: null })).toThrow(/needs the new car/);
+  });
+
+  it("tell a passenger a new stop with its time, in their language (spec 6, 3.2)", () => {
+    const added = {
+      kind: "trip_changed",
+      role: "passenger",
+      newStop: { name: "Smáralind", plannedAt: new Date("2026-11-14T05:45:00Z") },
+    } as const;
+    expect(text(added)).toEqual({
+      title: "New stop: Smáralind at 05:45",
+      body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00.",
+      path: "/bookings/booking-1",
+    });
+    expect(text(added, "is")).toMatchObject({ title: "Nýr viðkomustaður: Smáralind kl. 05:45" });
   });
 
   it("refuse a kind that has no text yet", () => {

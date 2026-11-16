@@ -7,7 +7,9 @@ import { renderApp, completeMe } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { bookingApi, northBooking, paidBooking, unpaidBooking } from "@/testing/bookings";
 import { failure, ok, testMe, tokens, type FakeClient } from "@/testing/fake-client";
-import { northResult, northTrip, soonestApi, tripDetailsApi } from "@/testing/search";
+import { northResult, northStops, northTrip, soonestApi, tripDetailsApi } from "@/testing/search";
+import { bsi } from "@/testing/meeting-points";
+import { blonduos, borgarnes, mosfellsbaer } from "@/testing/trips";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -132,7 +134,15 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
     await fireEvent.press(within(bar).getByRole("button", { name: "Book" }));
     expect(await screen.findByRole("header", { name: "Check and pay" })).toBeVisible();
     expect(screen).toHavePathname(`/trips/${id}/book`);
-    expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "2" });
+    // With the meeting points shown, so a stop added meanwhile is noticed (spec 6, 3.2).
+    expect(screen).toHaveSearchParams({
+      id,
+      from: "1",
+      to: "2",
+      seats: "2",
+      fromPoint: borgarnes.id,
+      toPoint: blonduos.id,
+    });
     expect(screen.getByText("Sunday 15 November")).toBeVisible();
     expect(screen.getByText("10:00")).toBeVisible();
     expect(screen.getByText("Borgarnes")).toBeVisible();
@@ -173,6 +183,8 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
       board: 1,
       alight: 2,
       seats: 2,
+      fromPoint: borgarnes.id,
+      toPoint: blonduos.id,
       keptAt: "2026-11-14T12:00:00.000Z",
     });
   });
@@ -202,7 +214,14 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
     await fireEvent.press(screen.getByRole("checkbox", { name: "Icelandic" }));
     await fireEvent.press(screen.getByRole("button", { name: "Create account and send request" }));
     expect(await screen.findByRole("header", { name: "Request this ride" })).toBeVisible();
-    expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "2" });
+    expect(screen).toHaveSearchParams({
+      id,
+      from: "1",
+      to: "2",
+      seats: "2",
+      fromPoint: borgarnes.id,
+      toPoint: blonduos.id,
+    });
   });
 
   it("comes back to the ride after signing up from a ride on the front page", async () => {
@@ -249,7 +268,14 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Create account and send request" }));
     expect(await screen.findByRole("header", { name: "Request this ride" })).toBeVisible();
     expect(screen).toHavePathname(`/trips/${id}/book`);
-    expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "1" });
+    expect(screen).toHaveSearchParams({
+      id,
+      from: "1",
+      to: "2",
+      seats: "1",
+      fromPoint: borgarnes.id,
+      toPoint: blonduos.id,
+    });
     // Only the front page on screen takes the choice, once. The one left
     // open under the ride must not: its way to the booking would never show.
     // The sign-up steps only look at it.
@@ -365,6 +391,9 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
       {
         fromStop: 1,
         toStop: 2,
+        // The meeting points shown, so a stop added meanwhile is noticed (spec 6, 3.2).
+        fromPoint: borgarnes.id,
+        toPoint: blonduos.id,
         seats: 1,
         total: { amount: 2900, currency: "ISK" },
         message: "I have one big suitcase.",
@@ -570,7 +599,14 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     expect(await screen.findByRole("header", { name: "Our terms have changed" })).toBeVisible();
     const [key, kept] = mockedWrite.mock.calls.at(-1) as [string, string];
     expect(key).toBe("pending-booking");
-    expect(JSON.parse(kept)).toMatchObject({ tripId: id, board: 1, alight: 2, seats: 1 });
+    expect(JSON.parse(kept)).toMatchObject({
+      tripId: id,
+      board: 1,
+      alight: 2,
+      seats: 1,
+      fromPoint: borgarnes.id,
+      toPoint: blonduos.id,
+    });
   });
 
   it("tries again with the same attempt key after a lost connection", async () => {
@@ -716,6 +752,62 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
       ),
     ).toBeVisible();
     expect(await screen.findByRole("button", { name: "Send request at 3,100 ISK" })).toBeVisible();
+  });
+
+  it.each([
+    ["where to get in", `fromPoint=${bsi.id}&toPoint=${blonduos.id}`],
+    ["where to get out", `fromPoint=${borgarnes.id}&toPoint=${borgarnes.id}`],
+  ])("books nothing when the trip page showed another place %s (spec 6, 3.2)", async (_, shown) => {
+    const { client } = await openBooking({}, `/trips/${id}/book?from=1&to=2&seats=1&${shown}`);
+    expect(
+      await screen.findByText(
+        "The driver has changed the trip's stops. Go back to the trip to choose where you get in and out again.",
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Send request" })).toBeNull();
+    expect(bookCalls(client)).toEqual([]);
+  });
+
+  it("keeps the part as first shown when the trip comes again with a stop added", async () => {
+    let answers = 0;
+    const withStop = northStops.flatMap((stop, position) =>
+      position === 1
+        ? [{ meetingPoint: mosfellsbaer, plannedAt: "2026-11-15T09:30:00.000Z" }, stop]
+        : [stop],
+    );
+    const { client } = await openBooking({
+      trip: () => {
+        answers += 1;
+        return answers === 1
+          ? ok(200, northTrip({ board: 1, alight: 2 }))
+          : ok(
+              200,
+              northTrip(
+                { board: 1, alight: 2 },
+                { stops: withStop.map((stop, position) => ({ ...stop, position })) },
+              ),
+            );
+      },
+      book: () => failure(409, "seats_taken", { freeSeats: 1 }),
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
+    expect(
+      await screen.findByText(
+        "The driver has changed the trip's stops. Go back to the trip to choose where you get in and out again.",
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Send request" })).toBeNull();
+    expect(bookCalls(client)).toHaveLength(1);
+  });
+
+  it("sends the passenger back to the trip when the driver changed its stops meanwhile", async () => {
+    await openBooking({ book: () => failure(409, "stops_changed") });
+    await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
+    expect(
+      await screen.findByText(
+        "The driver has changed the trip's stops. Go back to the trip to choose where you get in and out again.",
+      ),
+    ).toBeVisible();
   });
 
   it("says why a booking could not be made", async () => {

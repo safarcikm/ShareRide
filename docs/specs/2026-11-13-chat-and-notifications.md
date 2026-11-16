@@ -121,6 +121,12 @@ accepted or confirmed booking, never by SMS; a request is not told. The
 conversation gets the same line. Each notification names the car of its
 own change, and never the number plate (R7.9).
 
+As built for a new stop (milestone 6, PR 6a): "New stop: Mosfellsbær at
+09:20", in the passenger's language, with their part and boarding time,
+by push and email to each accepted or confirmed booking, never by SMS: a
+new stop moves no booked passenger's time. A request is not told. The
+conversation gets the same line.
+
 ### 3.4 SMS for last-minute news
 
 SMS is only for sign-in codes (spec 1) and for news that could leave someone

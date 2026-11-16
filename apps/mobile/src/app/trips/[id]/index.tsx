@@ -358,7 +358,14 @@ function BookingBar({ trip, pending }: { readonly trip: TripDetails; readonly pe
   })();
   const ready = me !== null && me.missingSteps.length === 0;
   const book = () => {
-    const choice = { tripId: trip.id, board: part.board, alight: part.alight, seats: part.seats };
+    const choice = {
+      tripId: trip.id,
+      board: part.board,
+      alight: part.alight,
+      seats: part.seats,
+      fromPoint: trip.stops[part.board]?.meetingPoint.id,
+      toPoint: trip.stops[part.alight]?.meetingPoint.id,
+    };
     if (ready) {
       router.push(bookingHref(choice));
       return;

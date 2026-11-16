@@ -39,13 +39,17 @@ export async function secondPage(browser: Browser, testInfo: TestInfo) {
 }
 
 /**
- * Bára posts a trip for tomorrow, Dóra requests a seat, Bára accepts and
- * Dóra pays, as in the request journey. Gives the trip and the booking's
- * address.
+ * Bára posts a trip for tomorrow, without the suggested stops named in
+ * `skip`, Dóra requests a seat, Bára accepts and Dóra pays, as in the
+ * request journey. Gives the trip and the booking's address.
  */
-export async function confirmedBooking(driver: Page, passenger: Page) {
+export async function confirmedBooking(
+  driver: Page,
+  passenger: Page,
+  skip: readonly string[] = [],
+) {
   await signUp(driver, english, "Bára");
-  const tripId = await postTripToSelfoss(driver, withinADay());
+  const tripId = await postTripToSelfoss(driver, withinADay(), skip);
   await requestSeat(passenger, "Dóra", tripId);
   await driver.goto(`/drive/trips/${tripId}`);
   await driver.getByRole("button", { name: "Accept", exact: true }).click();

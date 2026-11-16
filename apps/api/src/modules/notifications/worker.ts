@@ -160,6 +160,19 @@ async function newCarOf(q: Queryable, tripChangeId: string): Promise<CarFacts | 
   };
 }
 
+/** The new stop of a change, by its names and time (spec 6, 3.2). */
+async function newStopOf(q: Queryable, tripChangeId: string) {
+  const [row] = await q
+    .select({ kind: tripChanges.kind, after: tripChanges.after })
+    .from(tripChanges)
+    .where(eq(tripChanges.id, tripChangeId));
+  if (row?.kind !== "addStop") return undefined;
+  return {
+    name: { is: String(row.after["nameIs"]), en: String(row.after["nameEn"]) },
+    plannedAt: new Date(String(row.after["plannedAt"])),
+  };
+}
+
 /**
  * A moved departure as one passenger sees it (spec 6, 3.2): their boarding
  * time before and after this change, and how far the departure is now from
@@ -332,9 +345,11 @@ async function factsOf(q: Queryable, notificationId: string) {
     notification.tripChangeId === null
       ? undefined
       : await moveOf(q, notification.tripChangeId, booking.id);
-  // Each notification of a new car names its own, should it change again.
+  // Each notification of a new car or stop names its own, should another follow.
   const newCar =
     notification.tripChangeId === null ? undefined : await newCarOf(q, notification.tripChangeId);
+  const newStop =
+    notification.tripChangeId === null ? undefined : await newStopOf(q, notification.tripChangeId);
   const facts: NotificationFacts = {
     kind: notification.kind as NotificationFacts["kind"],
     role,
@@ -359,6 +374,10 @@ async function factsOf(q: Queryable, notificationId: string) {
     boardPointId: row.boardPointId,
     car: row.car === null ? null : { ...row.car, colour: row.car.colour as CarColour },
     newCar: newCar ?? null,
+    newStop:
+      newStop === undefined
+        ? null
+        : { name: named(locale, newStop.name), plannedAt: newStop.plannedAt },
     moved: moved === undefined ? null : { from: moved.from, to: moved.to },
     paid: booking.status === "confirmed" && booking.totalPrice > 0,
   };
@@ -820,9 +839,13 @@ export function createNotificationWorker(dependencies: {
       return;
     }
     if (type === "TripChanged") {
-      // Only a new car so far; anything else tells nobody until it has its words.
+      // A new car or a new stop; anything else tells nobody until it has its words.
       const tripChangeId = idIn(event.payload, "tripChangeId");
-      if (tripChangeId === undefined || (await newCarOf(tx, tripChangeId)) === undefined) return;
+      if (tripChangeId === undefined) return;
+      const told =
+        (await newCarOf(tx, tripChangeId)) !== undefined ||
+        (await newStopOf(tx, tripChangeId)) !== undefined;
+      if (!told) return;
       await notify(tx, { type }, booking, { key, tripChangeId }, now);
       return;
     }

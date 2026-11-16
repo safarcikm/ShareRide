@@ -21,7 +21,7 @@ import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { SummarySection } from "@/trips/summary-section";
-import { bookingModeKeys, levelText, preferenceTexts } from "@/trips/texts";
+import { bookingModeKeys, levelText, preferenceTexts, stopsText } from "@/trips/texts";
 
 /**
  * Edit trip (spec 6, 3.2; screen 3): what the published trip holds, one
@@ -57,7 +57,7 @@ export default function EditTripScreen() {
   const times = trip.data.stops.map((stop) => new Date(stop.plannedAt ?? departsAt));
   const { priceLevel, seats, vehicleId, bookingMode, preferences, note } = trip.data;
   const car = cars.data.vehicles.find((known) => known.id === vehicleId);
-  const part = (name: "time" | "price" | "seats" | "car" | "booking" | "details") => ({
+  const part = (name: "time" | "stop" | "price" | "seats" | "car" | "booking" | "details") => ({
     pathname: `/drive/trips/[id]/edit/${name}` as const,
     params: { id },
   });
@@ -71,6 +71,11 @@ export default function EditTripScreen() {
           title={t("trip.editTime")}
           lines={timeLines(t, locale, trip.data, times)}
           link={{ label: t("trip.editTimeAction"), href: part("time") }}
+        />
+        <SummarySection
+          title={t("trip.editStops")}
+          lines={[stopsText(t, locale, trip.data)]}
+          link={{ label: t("trip.editAddStopAction"), href: part("stop") }}
         />
         <SummarySection
           title={t("trip.review.price")}

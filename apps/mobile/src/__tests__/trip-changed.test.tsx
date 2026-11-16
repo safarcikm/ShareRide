@@ -2,6 +2,7 @@ import type { Booking } from "@shareride/contracts";
 import { AccessibilityInfo } from "react-native";
 import { fireEvent, screen } from "expo-router/testing-library";
 import { readAppData, writeAppData } from "@/lib/app-data";
+import { readPreference } from "@/lib/preferences";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import {
@@ -156,6 +157,38 @@ describe("A trip that changed, as its passenger sees it (spec 6, 3.2; screen 7)"
     expect(screen.getByText("Departure changed from 10:00 to 10:45")).toBeVisible();
     expect(screen.getByText("New car: Red Volvo XC40")).toBeVisible();
     expect(screen.queryByRole("button", { name: keep })).toBeNull();
+  });
+
+  it("shows a new stop by its name and time, which does not bring back the offer once kept", async () => {
+    mockedRead.mockImplementation(() => Promise.resolve(movedAt));
+    const newStop = {
+      kind: "addStop" as const,
+      stop: { is: "N1 Mosfellsbæ", en: "N1 Mosfellsbær" },
+      plannedAt: "2026-11-15T10:20:00.000Z",
+      changedAt: "2026-11-14T11:30:00.000Z",
+    };
+    await openBooking({ ...moved, changes: [...moved.changes, newStop] });
+    expect(await screen.findByRole("button", { name: "Cancel booking" })).toBeVisible();
+    expect(screen.getByText("New stop: N1 Mosfellsbær at 10:20")).toBeVisible();
+    expect(screen.queryByRole("button", { name: keep })).toBeNull();
+  });
+
+  it("names a new stop in the app's language", async () => {
+    jest
+      .mocked(readPreference)
+      .mockImplementation((key) => Promise.resolve(key === "language" ? "is" : null));
+    try {
+      const newStop = {
+        kind: "addStop" as const,
+        stop: { is: "N1 Mosfellsbæ", en: "N1 Mosfellsbær" },
+        plannedAt: "2026-11-15T10:20:00.000Z",
+        changedAt: "2026-11-14T11:30:00.000Z",
+      };
+      await openBooking({ ...moved, changes: [newStop] });
+      expect(await screen.findByText("Nýr viðkomustaður: N1 Mosfellsbæ kl. 10:20")).toBeVisible();
+    } finally {
+      jest.mocked(readPreference).mockImplementation(() => Promise.resolve(null));
+    }
   });
 
   it("only shows a move of 30 minutes or less", async () => {

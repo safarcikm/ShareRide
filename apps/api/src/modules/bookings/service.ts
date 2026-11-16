@@ -67,7 +67,12 @@ export interface NotFound {
   readonly code: "not_found";
 }
 
-export type BookError = NotFound | { readonly code: "account_incomplete" } | BookingProblem;
+export type BookError =
+  | NotFound
+  | { readonly code: "account_incomplete" }
+  /** The meeting points shown at the part's positions are no longer there (spec 6, 3.2). */
+  | { readonly code: "stops_changed" }
+  | BookingProblem;
 
 /** The booking is no longer a request: answered, withdrawn or expired. */
 export type AnswerError = NotFound | { readonly code: "booking_not_requested" };
@@ -118,6 +123,9 @@ export interface CancelInput {
 export interface BookInput {
   readonly fromStop: number;
   readonly toStop: number;
+  /** The meeting points the passenger was shown at those positions, when sent. */
+  readonly fromPoint?: string | undefined;
+  readonly toPoint?: string | undefined;
   readonly seats: number;
   readonly total: Money;
   readonly message: string;
@@ -198,12 +206,13 @@ const alightStops = alias(tripStops, "alight_stops");
 const boardPoints = alias(meetingPoints, "board_points");
 const alightPoints = alias(meetingPoints, "alight_points");
 
-/** The changes a passenger reads on their booking: the moves and the cars (spec 6, 3.2). */
-const toldKinds = ["departure", "vehicle"];
+/** The changes a passenger reads on their booking: moves, cars and stops (spec 6, 3.2). */
+const toldKinds = ["departure", "vehicle", "addStop"];
 
 /**
  * Bookings with everything their passenger or driver sees, oldest first,
- * each with its trip's moves and new cars since it was made (spec 6, 3.2).
+ * each with its trip's moves, new cars and new stops since it was made
+ * (spec 6, 3.2).
  */
 async function readBookings(q: Queryable, where: SQL | undefined) {
   const rows = await bookingRows(q, where);
@@ -399,9 +408,10 @@ function present(row: BookingRow, viewerId: string, now: Date): Booking {
                   : booking.countsOnReliability,
           }
         : null,
-    changes: row.changes.map(({ kind, before, after, changedAt }) =>
-      kind === "vehicle"
-        ? {
+    changes: row.changes.map(({ kind, before, after, changedAt }) => {
+      switch (kind) {
+        case "vehicle":
+          return {
             kind: "vehicle" as const,
             car: {
               make: String(after["make"]),
@@ -409,14 +419,23 @@ function present(row: BookingRow, viewerId: string, now: Date): Booking {
               colour: after["colour"] as CarColour,
             },
             changedAt: changedAt.toISOString(),
-          }
-        : {
+          };
+        case "addStop":
+          return {
+            kind: "addStop" as const,
+            stop: { is: String(after["nameIs"]), en: String(after["nameEn"]) },
+            plannedAt: String(after["plannedAt"]),
+            changedAt: changedAt.toISOString(),
+          };
+        default:
+          return {
             kind: "departure" as const,
             from: boardingAt(before["departsAt"]),
             to: boardingAt(after["departsAt"]),
             changedAt: changedAt.toISOString(),
-          },
-    ),
+          };
+      }
+    }),
     // Null only for a booking the previous version made during a deploy.
     movedFar: movedFar(booking.departsAtWhenBooked ?? departsAt, departsAt),
     driver: { firstName: row.driverName ?? "", colour: peopleColourOf(trip.driverId) },
@@ -577,6 +596,12 @@ export function createBookingService(dependencies: {
 
         // One query at a time: a transaction has one connection.
         const stops = await stopsOf(tx, tripId);
+        // A stop added since the passenger chose moves the positions on.
+        const shown = (position: number, pointId: string | undefined) =>
+          pointId === undefined || stops[position]?.meetingPointId === pointId;
+        if (!shown(input.fromStop, input.fromPoint) || !shown(input.toStop, input.toPoint)) {
+          return err({ code: "stops_changed" });
+        }
         const segmentRows = await tx
           .select({ price: segments.price, occupancy: segments.occupancy })
           .from(segments)

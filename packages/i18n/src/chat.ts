@@ -52,6 +52,13 @@ export type ShownSystemLine =
     }
   | { readonly key: "car_changed"; readonly car: CarFacts }
   | {
+      readonly key: "stop_added";
+      /** The new stop's name in the reader's language. */
+      readonly stop: string;
+      /** Its planned time, in ISO 8601. */
+      readonly plannedAt: string;
+    }
+  | {
       readonly key: "cancelled";
       readonly by: "me" | "them";
       readonly reason: CancelReason;
@@ -66,6 +73,7 @@ export function systemLineText(t: Translate, line: ShownSystemLine, other: strin
   if (line.key === "opened") return t("chat.opened");
   if (line.key === "departure_changed") return departureChangeText(t, line);
   if (line.key === "car_changed") return t("trip.carChanged", { car: carText(t, line.car) });
+  if (line.key === "stop_added") return stopAddedText(t, line);
   const reason = cancelReasonText(t, line.reason);
   const said = line.wholeTrip
     ? line.by === "me"
@@ -90,4 +98,12 @@ export function departureChangeText(
     old: formatClock(new Date(change.from)),
     new: formatClock(new Date(change.to)),
   });
+}
+
+/** "New stop: N1 Mosfellsbær at 09:20", on Iceland's clock (spec 6, 3.2). */
+export function stopAddedText(
+  t: Translate,
+  added: { readonly stop: string; readonly plannedAt: string },
+): string {
+  return t("trip.stopAdded", { stop: added.stop, time: formatClock(new Date(added.plannedAt)) });
 }

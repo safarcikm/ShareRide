@@ -48,7 +48,14 @@ export default function BookScreen() {
   const { t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
-  const params = useLocalSearchParams<{ id: string; from?: string; to?: string; seats?: string }>();
+  const params = useLocalSearchParams<{
+    id: string;
+    from?: string;
+    to?: string;
+    seats?: string;
+    fromPoint?: string;
+    toPoint?: string;
+  }>();
   const { id } = params;
   const board = positionParam(params.from);
   const alight = positionParam(params.to);
@@ -130,6 +137,7 @@ export default function BookScreen() {
   return (
     <BookForm
       trip={trip}
+      shownPoints={{ from: params.fromPoint, to: params.toPoint }}
       pending={pending}
       back={back}
       onReload={() => {
@@ -170,11 +178,14 @@ const finished = (booking: Booking) => {
  */
 function BookForm({
   trip,
+  shownPoints,
   pending,
   back,
   onReload,
 }: {
   readonly trip: TripDetails;
+  /** The meeting points the trip page showed for the part, when it said. */
+  readonly shownPoints: { readonly from?: string | undefined; readonly to?: string | undefined };
   /** The trip's answer is for other seats, or is loading again. */
   readonly pending: boolean;
   readonly back: ReactNode;
@@ -211,7 +222,15 @@ function BookForm({
 
   const boardStop = trip.stops[part.board];
   const alightStop = trip.stops[part.alight];
+  // The part as first shown, by its meeting points: a stop added since
+  // moves the positions on, and the part would change under the passenger.
+  const [shown] = useState(() => ({
+    from: shownPoints.from ?? boardStop?.meetingPoint.id,
+    to: shownPoints.to ?? alightStop?.meetingPoint.id,
+  }));
   if (boardStop === undefined || alightStop === undefined) return null;
+  const stopsChanged =
+    boardStop.meetingPoint.id !== shown.from || alightStop.meetingPoint.id !== shown.to;
   // After "price changed", the new total is the one shown, sent and named on
   // the button, so it is never booked without being seen.
   const priceChanged = problem?.kind === "price_changed";
@@ -230,22 +249,31 @@ function BookForm({
           ? problem.text
           : undefined;
   const status =
-    made !== null || part.state === "open"
-      ? null
-      : part.state === "full"
-        ? part.freeSeats === 0
-          ? t("trip.fullOnPart")
-          : t("trip.tooFewSeats", { count: part.freeSeats })
-        : part.state === "closed"
-          ? t("trip.closed")
-          : part.state === "own"
-            ? t("trip.own")
-            : t("booking.notBookable");
+    made === null && stopsChanged
+      ? t("booking.stopsChanged")
+      : made !== null || part.state === "open"
+        ? null
+        : part.state === "full"
+          ? part.freeSeats === 0
+            ? t("trip.fullOnPart")
+            : t("trip.tooFewSeats", { count: part.freeSeats })
+          : part.state === "closed"
+            ? t("trip.closed")
+            : part.state === "own"
+              ? t("trip.own")
+              : t("booking.notBookable");
 
   // The server found steps missing, such as new terms to accept (R1.6): keep
   // the choice, and the app leads through the steps and back here.
   const finishAccount = async (failure: CallFailure) => {
-    const choice = { tripId: trip.id, board: part.board, alight: part.alight, seats: part.seats };
+    const choice = {
+      tripId: trip.id,
+      board: part.board,
+      alight: part.alight,
+      seats: part.seats,
+      fromPoint: shown.from,
+      toPoint: shown.to,
+    };
     await keepPendingBooking(choice, now());
     const me = await session.me();
     if (me.ok && me.data.missingSteps.length > 0) {
@@ -294,6 +322,9 @@ function BookForm({
           body: {
             fromStop: part.board,
             toStop: part.alight,
+            // As first shown, so a stop added meanwhile cannot shift the part.
+            fromPoint: shown.from,
+            toPoint: shown.to,
             seats: part.seats,
             total,
             message: instant ? "" : trimmed,

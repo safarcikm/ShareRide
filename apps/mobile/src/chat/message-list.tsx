@@ -114,12 +114,12 @@ function Message({
   readonly other: string;
   readonly seen: boolean;
 }) {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   const palette = usePalette();
   if (message.from === "system") {
     return (
       <Text style={[typography.small, styles.centre, { color: palette.textMuted }]}>
-        {messageText(t, message, other)}
+        {messageText(t, locale, message, other)}
       </Text>
     );
   }
@@ -128,10 +128,10 @@ function Message({
   return (
     <View
       accessible
-      accessibilityLabel={spokenMessage(t, message, other, seen)}
+      accessibilityLabel={spokenMessage(t, locale, message, other, seen)}
       style={[styles.item, mine ? styles.mine : styles.theirs]}
     >
-      <Bubble mine={mine}>{messageText(t, message, other)}</Bubble>
+      <Bubble mine={mine}>{messageText(t, locale, message, other)}</Bubble>
       <Text style={[typography.caption, { color: palette.textMuted }]}>
         {seen ? `${time} · ${t("chat.seen")}` : time}
       </Text>

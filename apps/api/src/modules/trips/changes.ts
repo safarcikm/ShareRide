@@ -1,32 +1,48 @@
 import type { TripChangeBody, TripChangeEffect } from "@shareride/contracts";
 import { schema, type Database } from "@shareride/db";
 import {
+  addStopLegPairs,
   checkTripChange,
   err,
+  isOfferedForNewTrips,
   lookUpLegs,
   ok,
   paymentDeadline,
   requestDeadline,
   routeLegPairs,
+  splitPrice,
+  suggestedPrice,
   type BookingOnTrip,
   type BookingSettings,
   type CarColour,
   type ChangeEffect,
   type ChangeProblem,
+  type LegLookup,
+  type MeetingPointStatus,
   type NotificationSettings,
   type Result,
   type TripChange,
   type TripSettings,
 } from "@shareride/domain";
-import { and, asc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, ne, sql } from "drizzle-orm";
 import { expireDueBookings, lockTrip, type Transaction } from "../bookings/seats.ts";
 import { addSystemLine } from "../chat/conversations.ts";
 import { followDepartureMove } from "../notifications/schedule.ts";
 import { recordEvents } from "../notifications/outbox.ts";
 import { choicesOf, type NotFound } from "./drafts.ts";
 
-const { bookings, legs, meetingPoints, segments, tripChanges, trips, tripStops, users, vehicles } =
-  schema;
+const {
+  bookings,
+  bookingSegmentPrices,
+  legs,
+  meetingPoints,
+  segments,
+  tripChanges,
+  trips,
+  tripStops,
+  users,
+  vehicles,
+} = schema;
 
 type TripRow = typeof trips.$inferSelect;
 
@@ -43,8 +59,13 @@ export interface ChangeNotAllowed {
   readonly code: "change_not_allowed";
   readonly problems: readonly Exclude<
     ChangeProblem,
-    { readonly code: "trip_departed" | "trip_cancelled" }
+    { readonly code: "trip_departed" | "trip_cancelled" | "distances_missing" }
   >[];
+}
+
+/** A new stop's legs are still being worked out (spec 2, 3.7): try again soon. */
+export interface DistancesPending {
+  readonly code: "distances_missing";
 }
 
 export interface TripChangeService {
@@ -59,16 +80,75 @@ export interface TripChangeService {
     tripId: string,
     change: TripChangeBody,
     options: { readonly preview: boolean },
-  ): Promise<Result<TripChangeEffect, NotFound | NotChangeable | ChangeNotAllowed>>;
+  ): Promise<
+    Result<TripChangeEffect, NotFound | NotChangeable | ChangeNotAllowed | DistancesPending>
+  >;
 }
 
-/** The change as the rules read it: a note as the database counts it (NFC). */
-function asRead(change: TripChangeBody): TripChange {
+/** The legs between these ordered pairs of points, as a lookup. */
+async function legsFor(
+  tx: Transaction,
+  pairs: readonly (readonly [string, string])[],
+): Promise<LegLookup> {
+  const rows =
+    pairs.length === 0
+      ? []
+      : await tx
+          .select()
+          .from(legs)
+          .where(
+            sql`(${legs.fromMeetingPointId}, ${legs.toMeetingPointId}) in (${sql.join(
+              pairs.map(([from, to]) => sql`(${from}::uuid, ${to}::uuid)`),
+              sql`, `,
+            )})`,
+          );
+  return lookUpLegs(
+    rows.map((row) => ({
+      from: row.fromMeetingPointId,
+      to: row.toMeetingPointId,
+      distanceM: row.distanceM,
+      durationS: row.durationS,
+    })),
+  );
+}
+
+/**
+ * The change as the rules read it: a note as the database counts it (NFC);
+ * a stop with whether it is offered, its season and the legs that place it.
+ * A point that does not exist is not offered.
+ */
+async function readChange(
+  tx: Transaction,
+  change: TripChangeBody,
+  points: readonly string[],
+): Promise<TripChange> {
   switch (change.kind) {
     case "departure":
       return { kind: "departure", departsAt: new Date(change.departsAt) };
     case "details":
       return { ...change, note: change.note.normalize("NFC") };
+    case "addStop": {
+      const { meetingPointId } = change;
+      const [point] = await tx
+        .select({
+          status: meetingPoints.status,
+          seasonStartMonth: meetingPoints.seasonStartMonth,
+          seasonEndMonth: meetingPoints.seasonEndMonth,
+        })
+        .from(meetingPoints)
+        .where(eq(meetingPoints.id, meetingPointId));
+      const offered =
+        point !== undefined && isOfferedForNewTrips(point.status as MeetingPointStatus);
+      return {
+        kind: "addStop",
+        stop: {
+          meetingPointId,
+          season: point ?? { seasonStartMonth: null, seasonEndMonth: null },
+          offered,
+        },
+        legs: await legsFor(tx, offered ? addStopLegPairs(points, meetingPointId) : []),
+      };
+    }
     case "seats":
     case "priceLevel":
     case "bookingMode":
@@ -109,27 +189,7 @@ export function createTripChangeService(dependencies: {
     points: readonly string[],
     published: readonly number[],
   ): Promise<number[]> {
-    const pairs = routeLegPairs(points);
-    const rows =
-      pairs.length === 0
-        ? []
-        : await tx
-            .select()
-            .from(legs)
-            .where(
-              sql`(${legs.fromMeetingPointId}, ${legs.toMeetingPointId}) in (${sql.join(
-                pairs.map(([from, to]) => sql`(${from}::uuid, ${to}::uuid)`),
-                sql`, `,
-              )})`,
-            );
-    const lookup = lookUpLegs(
-      rows.map((row) => ({
-        from: row.fromMeetingPointId,
-        to: row.toMeetingPointId,
-        distanceM: row.distanceM,
-        durationS: row.durationS,
-      })),
-    );
+    const lookup = await legsFor(tx, routeLegPairs(points));
     return points
       .slice(1)
       .map(
@@ -164,9 +224,20 @@ export function createTripChangeService(dependencies: {
     const paid = new Set(
       held.filter((booking) => booking.totalPrice > 0).map((booking) => booking.id),
     );
+    // A new stop splits one stretch in two; the others keep their prices.
+    const { addedStop } = effect;
+    const stored =
+      addedStop === null
+        ? prices
+        : [
+            ...prices.slice(0, addedStop.position - 1),
+            ...addedStop.stretches.map(({ price }) => price.amount),
+            ...prices.slice(addedStop.position),
+          ];
     return {
       departsAt: times[0] ?? "",
       arrivesAt: times.at(-1) ?? "",
+      stops: effect.trip.stops.map((stop) => stop.meetingPointId),
       plannedTimes: times,
       told: effect.told.length,
       freeCancellations: effect.told.filter(
@@ -179,7 +250,7 @@ export function createTripChangeService(dependencies: {
       priceLevelLowered: effect.priceLevelLowered,
       prices:
         effect.pricing?.map(({ price }) => price) ??
-        prices.map((amount) => ({ amount, currency: "ISK" as const })),
+        stored.map((amount) => ({ amount, currency: "ISK" as const })),
     };
   }
 
@@ -231,7 +302,7 @@ export function createTripChangeService(dependencies: {
   async function saveChoice(
     tx: Transaction,
     trip: TripRow,
-    change: Exclude<TripChange, { readonly kind: "departure" | "vehicle" }>,
+    change: Exclude<TripChange, { readonly kind: "departure" | "vehicle" | "addStop" }>,
     effect: ChangeEffect,
     now: Date,
   ): Promise<void> {
@@ -342,6 +413,140 @@ export function createTripChangeService(dependencies: {
     );
     for (const { bookingId } of effect.told) {
       await addSystemLine(tx, bookingId, { key: "car_changed", ...car }, now);
+    }
+    await recordEvents(
+      tx,
+      effect.told.map(({ bookingId }) => ({
+        type: "TripChanged",
+        bookingId,
+        tripChangeId: recorded,
+      })),
+      now,
+    );
+  }
+
+  /**
+   * Saves a new stop (spec 6, 3.2): the stops and segments after it move up
+   * one, the segment it splits becomes two with the same seats taken, and
+   * each booking's price for it is shared between the two, keeping its
+   * total (rule P1). Each booked passenger is told, on the booking, in the
+   * chat, by push and by email (spec 7, 3.3).
+   */
+  async function addStop(
+    tx: Transaction,
+    tripId: string,
+    effect: ChangeEffect,
+    stops: readonly { readonly id: string; readonly position: number }[],
+    segmentRows: readonly (typeof segments.$inferSelect)[],
+    now: Date,
+  ): Promise<void> {
+    const { addedStop } = effect;
+    const stop = effect.trip.stops[addedStop?.position ?? -1];
+    const split = segmentRows[(addedStop?.position ?? 0) - 1];
+    if (addedStop === null || stop === undefined || split === undefined) {
+      throw new Error("The rules added a stop that is not there.");
+    }
+    const { position, stretches } = addedStop;
+    const segment = position - 1;
+    const stretch = (at: number) => ({
+      distanceM: effect.trip.distancesM[at] ?? 0,
+      durationS: effect.trip.typicalS[at] ?? 0,
+    });
+    const there = stretch(segment);
+    const onwards = stretch(position);
+
+    // One at a time from the last, as positions are unique.
+    for (const later of [...segmentRows].reverse()) {
+      if (later.position < position) break;
+      await tx
+        .update(segments)
+        .set({ position: later.position + 1 })
+        .where(and(eq(segments.tripId, tripId), eq(segments.position, later.position)));
+    }
+    for (const later of [...stops].reverse()) {
+      if (later.position < position) break;
+      await tx
+        .update(tripStops)
+        .set({ position: later.position + 1 })
+        .where(eq(tripStops.id, later.id));
+    }
+    const [inserted] = await tx
+      .insert(tripStops)
+      .values({ tripId, meetingPointId: stop.meetingPointId, position, plannedAt: stop.plannedAt })
+      .returning({ id: tripStops.id });
+    if (inserted === undefined) throw new Error("The stop was not added.");
+    const [toIt, onFromIt] = stretches;
+    await tx
+      .update(segments)
+      .set({
+        toStopId: inserted.id,
+        ...there,
+        suggestedPrice: suggestedPrice(there.distanceM, settings).amount,
+        cap: toIt.cap.amount,
+        price: toIt.price.amount,
+      })
+      .where(and(eq(segments.tripId, tripId), eq(segments.position, segment)));
+    await tx.insert(segments).values({
+      ...split,
+      position,
+      fromStopId: inserted.id,
+      ...onwards,
+      suggestedPrice: suggestedPrice(onwards.distanceM, settings).amount,
+      cap: onFromIt.cap.amount,
+      price: onFromIt.price.amount,
+    });
+
+    // Each booking's prices follow the segments, the last first.
+    const priced = await tx
+      .select({
+        bookingId: bookingSegmentPrices.bookingId,
+        position: bookingSegmentPrices.segmentPosition,
+        price: bookingSegmentPrices.price,
+      })
+      .from(bookingSegmentPrices)
+      .innerJoin(bookings, eq(bookings.id, bookingSegmentPrices.bookingId))
+      .where(and(eq(bookings.tripId, tripId), gte(bookingSegmentPrices.segmentPosition, segment)))
+      .orderBy(desc(bookingSegmentPrices.segmentPosition));
+    for (const row of priced) {
+      const at = and(
+        eq(bookingSegmentPrices.bookingId, row.bookingId),
+        eq(bookingSegmentPrices.segmentPosition, row.position),
+      );
+      if (row.position > segment) {
+        await tx
+          .update(bookingSegmentPrices)
+          .set({ segmentPosition: row.position + 1 })
+          .where(at);
+        continue;
+      }
+      const [first, second] = splitPrice(row.price, [there.distanceM, onwards.distanceM]);
+      await tx.update(bookingSegmentPrices).set({ price: first }).where(at);
+      await tx
+        .insert(bookingSegmentPrices)
+        .values({ bookingId: row.bookingId, segmentPosition: position, price: second });
+    }
+    await tx.update(trips).set({ updatedAt: now }).where(eq(trips.id, tripId));
+
+    const [point] = await tx
+      .select({ nameIs: meetingPoints.nameIs, nameEn: meetingPoints.nameEn })
+      .from(meetingPoints)
+      .where(eq(meetingPoints.id, stop.meetingPointId));
+    if (point === undefined) throw new Error("The rules added a point that is not there.");
+    const added = {
+      nameIs: point.nameIs,
+      nameEn: point.nameEn ?? point.nameIs,
+      plannedAt: iso(stop.plannedAt),
+    };
+    const recorded = await record(
+      tx,
+      tripId,
+      "addStop",
+      {},
+      { meetingPointId: stop.meetingPointId, ...added },
+      now,
+    );
+    for (const { bookingId } of effect.told) {
+      await addSystemLine(tx, bookingId, { key: "stop_added", ...added }, now);
     }
     await recordEvents(
       tx,
@@ -489,16 +694,19 @@ export function createTripChangeService(dependencies: {
           .from(vehicles)
           .where(and(eq(vehicles.ownerId, driverId), isNull(vehicles.removedAt)));
         const departsAt = trip.departsAt ?? now;
+        const points = stopRows.map(({ stop }) => stop.meetingPointId);
+        const read = await readChange(tx, change, points);
         const checked = checkTripChange(
           {
             status: trip.status as "published" | "departed" | "cancelled",
             stops: stopRows.map(({ stop, point }) => ({
+              meetingPointId: stop.meetingPointId,
               plannedAt: stop.plannedAt ?? departsAt,
               season: point,
             })),
             typicalS: await typicalTimes(
               tx,
-              stopRows.map(({ stop }) => stop.meetingPointId),
+              points,
               segmentRows.map((segment) => segment.durationS),
             ),
             distancesM: segmentRows.map((segment) => segment.distanceM),
@@ -519,7 +727,7 @@ export function createTripChangeService(dependencies: {
             // Null only for a booking the previous version made during a deploy.
             departsAtWhenBooked: booking.departsAtWhenBooked ?? departsAt,
           })),
-          asRead(change),
+          read,
           now,
           settings,
         );
@@ -528,6 +736,9 @@ export function createTripChangeService(dependencies: {
             (problem) => problem.code === "trip_departed" || problem.code === "trip_cancelled",
           );
           if (ended !== undefined) return err({ code: "trip_not_changeable" });
+          if (checked.error.some((problem) => problem.code === "distances_missing")) {
+            return err({ code: "distances_missing" });
+          }
           return err({
             code: "change_not_allowed",
             problems: checked.error as ChangeNotAllowed["problems"],
@@ -541,7 +752,6 @@ export function createTripChangeService(dependencies: {
           now,
         );
         if (preview) return ok(effect);
-        const read = asRead(change);
         if (read.kind === "departure") {
           // Nothing to save when the departure is the one it has.
           if (checked.value.trip.stops[0]?.plannedAt.getTime() !== departsAt.getTime()) {
@@ -555,6 +765,15 @@ export function createTripChangeService(dependencies: {
           }
         } else if (read.kind === "vehicle") {
           await changeCar(tx, trip, checked.value, now);
+        } else if (read.kind === "addStop") {
+          await addStop(
+            tx,
+            tripId,
+            checked.value,
+            stopRows.map(({ stop }) => stop),
+            segmentRows,
+            now,
+          );
         } else {
           await saveChoice(tx, trip, read, checked.value, now);
         }

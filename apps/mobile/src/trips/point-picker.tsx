@@ -90,10 +90,13 @@ export function PointDropdown({
  */
 export function PointPicker({
   title,
+  intro,
   onChoose,
   onCancel,
 }: {
   readonly title: string;
+  /** What choosing a point does, under the title. */
+  readonly intro?: string;
   readonly onChoose: (point: MeetingPointSummary) => void;
   readonly onCancel: () => void;
 }) {
@@ -111,6 +114,7 @@ export function PointPicker({
         <IconButton icon={X} label={t("common.cancel")} onPress={onCancel} />
       </View>
       <Title>{title}</Title>
+      {intro === undefined ? null : <Body>{intro}</Body>}
       <Notice message={paused ? t("trip.route.pointPaused") : null} />
       {place === null ? (
         <>

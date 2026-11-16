@@ -72,7 +72,8 @@ What can change follows
 - If a change would break a rule, the app says which and why, before saving.
 
 As built (milestone 6, PR 5a, the departure; PR 5b, the seats, price
-level, booking mode, preferences and note; PR 5c adds the car):
+level, booking mode, preferences and note; PR 5c, the car; PR 6a adds a
+stop):
 
 1. "Edit trip" sits just before "Cancel trip" on the driver's trip page,
    until the planned departure (R6.1). It opens Edit trip, a row for each
@@ -139,8 +140,8 @@ level, booking mode, preferences and note; PR 5c adds the car):
 13. Each of these is recorded with its time, as a move is, for the
     operator to answer questions about what the trip offered and when; for
     the note, only whether it changed, not its text. "Changes since you
-    booked" lists only the moves and new cars, as the rest shows on the
-    trip as it is now. The change's effect also gives the seats, the price
+    booked" lists only the moves, new cars and new stops, as the rest shows
+    on the trip as it is now. The change's effect also gives the seats, the price
     level, whether more seats lowered it, and each stretch's price for new
     bookings.
 14. The car: Edit trip shows it ("Toyota Yaris, white") with "Change the
@@ -156,6 +157,37 @@ level, booking mode, preferences and note; PR 5c adds the car):
     on the trip and under "Changes since you booked", as it sees a move.
     A new car does not bring back "Keep my booking" after a move. The
     number plate is never in the line, the push or the email (R7.9).
+15. A stop: Edit trip lists the stops ("BSÍ → Borgarnes → Akureyri") with
+    "Add a stop", which opens the meeting point search. The server places
+    the stop where it adds the least distance, never before the first stop
+    or after the last, at a time between its neighbours from the typical
+    times of the two new stretches, rounded to 5 minutes where that fits
+    and to the minute otherwise; every other stop keeps its time. The
+    check shows "New stop: Mosfellsbær at 09:20", the new times, the two
+    new stretches' prices for new bookings (from the trip's price level,
+    capped as when posting), and who is told. It refuses, naming the
+    stop: one already on the trip, one paused or out of season, one that
+    makes the route more than 1.5 times the direct way (R3.4), or one too
+    far out of the way to fit between its neighbours, which keep their
+    times (R3.6; moving the departure cannot help, as every stop moves
+    with it). A meeting point whose road distances are still being worked
+    out says so, with "Try again".
+16. Saving splits the stretch the stop lands on in two. Both keep its
+    seats taken and its seats, since every booking over it rides both;
+    each booking over it keeps its stops and total, its price for the old
+    stretch shared between the new ones by their distances, rounded so
+    the sum stays the same (P1). Stretches and booking prices after it
+    are renumbered in the same transaction. The change is recorded with
+    the stop's name and time; each accepted or confirmed booking reads
+    "New stop: Mosfellsbær at 09:20" under "Changes since you booked" and
+    in the chat, and is told by push and email, never by SMS. A request
+    is not told; it sees the stop in the app. Search finds the trip from
+    the new stop at once.
+17. A part chosen on the trip is kept with its meeting points as well as
+    its positions, through signing up and on to booking, which sends
+    both. When a stop was added since, they no longer match: the booking
+    screen says the driver changed the stops and to choose again from the
+    trip, and the server refuses such a booking with `stops_changed`.
 
 ### 3.3 Cancelling a trip (driver)
 
@@ -289,11 +321,12 @@ Entities (see [domain model](../architecture/domain-model.md)):
 - `TripChange`: trip, kind (time, stop added, stop removed, seats, price level,
   car, booking mode, details), before and after, changed at. As built
   (PR 5a): `trip_changes` with the kinds `departure`, `seats`, `priceLevel`,
-  `vehicle`, `bookingMode` and `details`; the stops join in PR 6. PR 5b
+  `vehicle`, `bookingMode` and `details`, and `addStop` (PR 6a). PR 5b
   records the seats with the price level they left, the price level, the
   booking mode, and the preferences, each before and after, with whether
   the note changed (not its text). PR 5c records the car by its ID, make,
-  model and colour, never its number plate.
+  model and colour, never its number plate. PR 6a records a new stop by
+  its meeting point's ID and names and its planned time.
 - `Booking` uses its cancellation fields (`cancelled_by`, `cancel_reason`,
   `cancel_note`, `cancelled_at`) plus `refund_amount`,
   `counts_on_reliability` and `departs_at_when_booked`.
@@ -315,8 +348,8 @@ and return its effect; the refund and reliability effect of a cancellation;
 reverse a trip's stops.
 
 Events: `DepartureMoved` (the booking and the recorded change, as built in
-PR 5a), `TripChanged` (a new car: the booking and the recorded change, as
-built in PR 5c), `TripCancelled`, `BookingCancelled` (the booking and
+PR 5a), `TripChanged` (a new car or a new stop: the booking and the
+recorded change, as built in PR 5c and PR 6a), `TripCancelled`, `BookingCancelled` (the booking and
 who cancelled; the reason and refund are read from the booking, as events hold
 IDs only). Notifications for each come in spec 7; refunds in spec 13.
 
@@ -390,6 +423,18 @@ IDs only). Notifications for each come in spec 7; refunds in spec 13.
 | `trip.editCarAction` | Change the car | Breyta bílnum |
 | `trip.editCarHelp` | Passengers who have booked are told about the new car when you save. | Farþegar sem hafa bókað fá að vita af nýja bílnum þegar þú vistar. |
 | `trip.carChanged` | New car: {car} | Nýr bíll: {car} |
+| `trip.editStops` | Stops | Viðkomustaðir |
+| `trip.editAddStopAction` | Add a stop | Bæta við viðkomustað |
+| `trip.editAddStopHelp` | The stop goes where it's least out of your way, at a time between the stops either side. They keep their times. | Viðkomustaðurinn fer þar sem hann er minnst úr leið, á tíma milli staðanna sitt hvoru megin. Þeir halda sínum tímum. |
+| `trip.editNewStretches` | Prices for new bookings | Verð fyrir nýjar bókanir |
+| `trip.editToldStop` | {count, plural, one {# passenger is} other {# passengers are}} told of the new stop now. | {count, plural, one {# farþegi fær} other {# farþegar fá}} að vita af nýja viðkomustaðnum strax. |
+| `trip.editRequestsStop` | {count, plural, one {# person who asked for a seat sees} other {# people who asked for a seat see}} the new stop in the app. | {count, plural, one {# sem bað um sæti sér} other {# sem báðu um sæti sjá}} nýja viðkomustaðinn í appinu. |
+| `trip.editStopKeeps` | Passengers who booked keep their stops and the price they booked at. | Farþegar sem hafa bókað halda sínum viðkomustöðum og verðinu sem þeir bókuðu á. |
+| `trip.editOtherPoint` | Choose another meeting point | Velja annan mótsstað |
+| `trip.stopAdded` | New stop: {stop} at {time} | Nýr viðkomustaður: {stop} kl. {time} |
+| `trip.problem.stop_does_not_fit` | {name} is too far out of your way to fit between {from} and {to}, which keep their times. | {name} er of langt úr leið til að komast fyrir milli {from} og {to}, sem halda sínum tímum. |
+| `trip.problem.stop_too_far` | Through {name} the route would be more than 1.5 times as long as the direct way. | Um {name} yrði leiðin meira en 1,5 sinnum lengri en beina leiðin. |
+| `booking.stopsChanged` | The driver has changed the trip's stops. Go back to the trip to choose where you get in and out again. | Ökumaðurinn hefur breytt viðkomustöðum ferðarinnar. Farðu aftur í ferðina til að velja aftur hvar þú ferð inn og út. |
 | `trip.editDetails` | Preferences and note | Óskir og skilaboð |
 | `trip.editDetailsAction` | Change the preferences and note | Breyta óskum og skilaboðum |
 | `trip.editDetailsHelp` | Passengers see the change on the trip. Nobody is notified. | Farþegar sjá breytinguna á ferðinni. Enginn fær tilkynningu. |

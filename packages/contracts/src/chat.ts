@@ -3,6 +3,7 @@ import { z } from "zod";
 import { bookingSchema, carSummarySchema } from "./bookings.ts";
 import { timestampSchema } from "./common.ts";
 import { errorResponseSchema } from "./errors.ts";
+import { localisedTextSchema } from "./meeting-points.ts";
 import { defineRoute } from "./route.ts";
 
 // The chat (spec 7, 3.1 and 3.2): one conversation per confirmed booking,
@@ -67,6 +68,12 @@ export const chatMessageSchema = z.object({
       }),
       /** The new car (spec 6, 3.2). */
       z.object({ key: z.literal("car_changed"), car: carSummarySchema }),
+      /** A stop added to the trip, with its planned time (spec 6, 3.2). */
+      z.object({
+        key: z.literal("stop_added"),
+        stop: localisedTextSchema,
+        plannedAt: timestampSchema,
+      }),
       z.object({
         key: z.literal("cancelled"),
         by: z.enum(["me", "them"]),

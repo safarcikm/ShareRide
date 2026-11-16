@@ -3,6 +3,9 @@ import { english, enterCode, finishSignUp, icelandic, signUp, type Texts } from 
 import { newPhoneNumber } from "./support/sms";
 import { focused, openTrip, type TripSearch } from "./support/trips";
 
+/** A meeting point's ID in an address. */
+const uuid = "[0-9a-f-]{36}";
+
 // Spec 5's booking, with spec 16's Check and pay and You're booked, on the
 // web build, against the sample trips the e2e API seeds: Jón drives N1
 // Selfoss → N1 Hella → N1 Hvolsvöllur → N1 Vík in two days, with instant
@@ -121,7 +124,12 @@ for (const journey of journeys) {
       await page.getByRole("button", { name: journey.book, exact: true }).click();
 
       // Check and pay: the ride as booked, and one button that pays (spec 16, 3.7).
-      await expect(page).toHaveURL(new RegExp(`/trips/${id}/book\\?from=\\d&to=\\d&seats=1$`));
+      // With the meeting points shown, so a stop added meanwhile is noticed (spec 6, 3.2).
+      await expect(page).toHaveURL(
+        new RegExp(
+          `/trips/${id}/book\\?from=\\d&to=\\d&seats=1&fromPoint=${uuid}&toPoint=${uuid}$`,
+        ),
+      );
       await expect(page.getByRole("heading", { name: journey.title })).toBeVisible();
       await expect(
         page.getByText(journey.getIn, { exact: true }).filter({ visible: true }),
@@ -204,7 +212,9 @@ test.describe("booking before having an account", () => {
     await enterCode(page, icelandic, newPhoneNumber());
     await finishSignUp(page, icelandic, "Bjössi", "Stofna aðgang og bóka");
 
-    await expect(page).toHaveURL(new RegExp(`/trips/${id}/book\\?from=1&to=2&seats=2$`));
+    await expect(page).toHaveURL(
+      new RegExp(`/trips/${id}/book\\?from=1&to=2&seats=2&fromPoint=${uuid}&toPoint=${uuid}$`),
+    );
     await expect(page.getByRole("heading", { name: journey.title })).toBeVisible();
     await expect(
       page.getByText("N1 Hellu", { exact: true }).filter({ visible: true }),

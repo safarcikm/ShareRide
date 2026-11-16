@@ -8,9 +8,11 @@ import {
   changeTripRoute,
   conversationMessagesRoute,
   myTripRoute,
+  tripSearchRoute,
   type TripChangeBody,
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
+import { sampleId } from "@shareride/db/seed";
 import { asc, eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
@@ -50,8 +52,18 @@ afterAll(async () => {
   await api.close();
 });
 
-const { newMember, later, rewind, driverOf, details, book, booked, paid, occupancy } =
-  bookingHelpers(() => api);
+const {
+  newMember,
+  later,
+  rewind,
+  driverOf,
+  details,
+  book,
+  booked,
+  paid,
+  occupancy,
+  heldByBookings,
+} = bookingHelpers(() => api);
 
 const iso = (moment: Date) => moment.toISOString();
 const moved = (moment: Date, minutes: number) => new Date(moment.getTime() + minutes * minuteMs);
@@ -878,5 +890,256 @@ describe("changing the car (spec 6, 3.2)", () => {
     });
     expect(await changesOf(north)).toEqual([]);
     expect(await eventsOf("TripChanged")).toEqual([]);
+  });
+});
+
+describe("adding a stop (spec 6, 3.2; milestone 6 plan, decision 2)", () => {
+  const point = (key: string) => sampleId(`point:${key}`);
+  const addStop = (key: string): TripChangeBody => ({
+    kind: "addStop",
+    meetingPointId: point(key),
+  });
+
+  async function stopsOf(id: string) {
+    return api.connection.db
+      .select({
+        meetingPointId: schema.tripStops.meetingPointId,
+        position: schema.tripStops.position,
+        plannedAt: schema.tripStops.plannedAt,
+      })
+      .from(schema.tripStops)
+      .where(eq(schema.tripStops.tripId, id))
+      .orderBy(asc(schema.tripStops.position));
+  }
+
+  async function segmentsOf(id: string) {
+    return api.connection.db
+      .select()
+      .from(schema.segments)
+      .where(eq(schema.segments.tripId, id))
+      .orderBy(asc(schema.segments.position));
+  }
+
+  async function pricesOf(bookingId: string) {
+    const rows = await api.connection.db
+      .select({
+        position: schema.bookingSegmentPrices.segmentPosition,
+        price: schema.bookingSegmentPrices.price,
+      })
+      .from(schema.bookingSegmentPrices)
+      .where(eq(schema.bookingSegmentPrices.bookingId, bookingId))
+      .orderBy(asc(schema.bookingSegmentPrices.segmentPosition));
+    return rows;
+  }
+
+  it("adds a stop between its neighbours, who keep their times; bookings keep their stops and totals, and each booked passenger is told", async () => {
+    const anna = await driverOf(north);
+    const gunna = await newMember("Gunna");
+    const dora = await newMember("Dóra");
+    const whole = await paidBooking(anna, gunna);
+    const borgarnes = await booked(dora.accessToken, north, { fromStop: 1, toStop: 2 });
+    await accepted(anna, borgarnes.id);
+    await booked((await newMember("Óli")).accessToken, north, { fromStop: 2, toStop: 3 });
+    const timesBefore = await timesOf(anna, north);
+    const pricesBefore = await pricesOf(whole.id);
+    const segmentsBefore = await segmentsOf(north);
+
+    const preview = await change(anna, north, addStop("mosfellsbaer"), true);
+    if (!preview.ok) throw new Error(preview.error.code);
+    expect(await stopsOf(north)).toHaveLength(4);
+    expect(preview.data).toMatchObject({ told: 2, requests: 1, freeCancellations: 0 });
+    expect(preview.data.stops).toEqual(
+      ["bsi", "mosfellsbaer", "borgarnes", "blonduos", "akureyri"].map(point),
+    );
+    // 22 of the 62 minutes to Borgarnes, on 5 minutes; the rest keep theirs.
+    const [bsi, ...rest] = timesBefore;
+    expect(preview.data.plannedTimes).toEqual(
+      [bsi, moved(timesBefore[0] ?? new Date(), 20), ...rest].map((time) =>
+        iso(time ?? new Date()),
+      ),
+    );
+    // The new stretches priced for new bookings; the others as they were.
+    expect(preview.data.prices).toHaveLength(4);
+    expect(preview.data.prices.slice(2).map(({ amount }) => amount)).toEqual(
+      segmentsBefore.slice(1).map((segment) => segment.price),
+    );
+
+    const saved = await change(anna, north, addStop("mosfellsbaer"));
+    expect(saved.ok && saved.data).toEqual(preview.data);
+    expect((await stopsOf(north)).map((stop) => stop.meetingPointId)).toEqual(preview.data.stops);
+    expect((await timesOf(anna, north)).map(iso)).toEqual(preview.data.plannedTimes);
+    const segments = await segmentsOf(north);
+    expect(segments.map((segment) => segment.position)).toEqual([0, 1, 2, 3]);
+    expect(segments.map((segment) => segment.price)).toEqual(
+      preview.data.prices.map(({ amount }) => amount),
+    );
+    // Gunna rides both halves of the split stretch; Dóra and Óli's request
+    // stay where they were (rule S1).
+    expect(await occupancy(north)).toEqual([1, 1, 2, 2]);
+    expect(await heldByBookings(north)).toEqual([1, 1, 2, 2]);
+    expect(segments.map((segment) => segment.capacity)).toEqual([3, 3, 3, 3]);
+    expect(segments[0]?.toStopId).toBe(segments[1]?.fromStopId);
+    expect(segments[1]?.toStopId).toBe(segments[2]?.fromStopId);
+
+    // Gunna keeps her total, her price for the old stretch shared by distance (rule P1).
+    const prices = await pricesOf(whole.id);
+    expect(prices.map((row) => row.position)).toEqual([0, 1, 2, 3]);
+    expect(prices.slice(2).map((row) => row.price)).toEqual(
+      pricesBefore.slice(1).map((row) => row.price),
+    );
+    expect((prices[0]?.price ?? 0) + (prices[1]?.price ?? 0)).toBe(pricesBefore[0]?.price);
+    // BSÍ to Mosfellsbær is 16 km of the 71 to Borgarnes, so the smaller share.
+    expect(prices[0]?.price).toBeLessThan((prices[1]?.price ?? 0) / 2);
+    expect((await pricesOf(borgarnes.id)).map((row) => row.position)).toEqual([2]);
+    const gunnaReads = await read(gunna, whole.id);
+    expect(gunnaReads).toMatchObject({
+      total: whole.total,
+      board: { position: 0, meetingPoint: { id: point("bsi") } },
+      alight: { position: 4, meetingPoint: { id: point("akureyri") } },
+    });
+    expect(gunnaReads.changes).toEqual([
+      {
+        kind: "addStop",
+        stop: { is: "N1 Mosfellsbæ", en: "N1 Mosfellsbær" },
+        plannedAt: preview.data.plannedTimes[1],
+        changedAt: expect.any(String) as unknown,
+      },
+    ]);
+    expect((await read(dora, borgarnes.id)).board.position).toBe(2);
+
+    // Recorded, and told on the booking, in the chat and by an event each (spec 7, 3.3).
+    const [recorded] = await changesOf(north);
+    expect(await changesOf(north)).toEqual([
+      {
+        id: expect.any(String) as unknown,
+        kind: "addStop",
+        before: {},
+        after: {
+          meetingPointId: point("mosfellsbaer"),
+          nameIs: "N1 Mosfellsbæ",
+          nameEn: "N1 Mosfellsbær",
+          plannedAt: preview.data.plannedTimes[1],
+        },
+      },
+    ]);
+    expect((await eventsOf("TripChanged")).map(({ payload }) => payload)).toEqual(
+      expect.arrayContaining([
+        { bookingId: whole.id, tripChangeId: recorded?.id },
+        { bookingId: borgarnes.id, tripChangeId: recorded?.id },
+      ]),
+    );
+    expect(await eventsOf("TripChanged")).toHaveLength(2);
+    const chat = await api.client.call(conversationMessagesRoute, {
+      accessToken: gunna.accessToken,
+      params: { id: whole.id },
+      query: {},
+    });
+    if (!chat.ok) throw new Error(chat.error.code);
+    expect(chat.data.messages.map((message) => message.system)).toContainEqual({
+      key: "stop_added",
+      stop: { is: "N1 Mosfellsbæ", en: "N1 Mosfellsbær" },
+      plannedAt: preview.data.plannedTimes[1],
+    });
+  });
+
+  it("takes bookings from the new stop at its own price, and search finds it; a part chosen before it was added is refused", async () => {
+    const anna = await driverOf(north);
+    const query = { from: point("mosfellsbaer"), to: point("borgarnes") };
+    const before = await api.client.call(tripSearchRoute, { query });
+    expect(before.ok && before.data.results).toEqual([]);
+    const saved = await change(anna, north, addStop("mosfellsbaer"));
+    if (!saved.ok) throw new Error(saved.error.code);
+    const found = await api.client.call(tripSearchRoute, { query });
+    expect(found.ok && found.data.results).toMatchObject([
+      { tripId: north, board: { position: 1, plannedAt: saved.data.plannedTimes[1] } },
+    ]);
+    const shown = await details(north, 1, 2);
+    expect(shown.part.total).toEqual(saved.data.prices[1]);
+    const sigga = await newMember("Sigga");
+    // Chosen before the stop was added: Borgarnes to Blönduós were 1 and 2.
+    const stale = await book(sigga.accessToken, north, {
+      fromStop: 1,
+      toStop: 2,
+      fromPoint: point("borgarnes"),
+      toPoint: point("blonduos"),
+    });
+    expect(!stale.ok && [stale.status, stale.error.code]).toEqual([409, "stops_changed"]);
+    const moved = await book(sigga.accessToken, north, {
+      fromStop: 1,
+      toStop: 2,
+      fromPoint: point("mosfellsbaer"),
+      toPoint: point("blonduos"),
+    });
+    expect(!moved.ok && moved.error.code).toBe("stops_changed");
+    const booking = await booked(sigga.accessToken, north, {
+      fromStop: 1,
+      toStop: 2,
+      fromPoint: point("mosfellsbaer"),
+      toPoint: point("borgarnes"),
+    });
+    expect(booking).toMatchObject({
+      board: { meetingPoint: { id: point("mosfellsbaer") } },
+      alight: { meetingPoint: { id: point("borgarnes") } },
+      total: saved.data.prices[1],
+    });
+    expect(await occupancy(north)).toEqual([0, 1, 0, 0]);
+  });
+
+  it("refuses a stop that does not fit between its neighbours, one on the trip, and one not in use", async () => {
+    const anna = await driverOf(north);
+    // Akranes is 80 minutes off the way to Borgarnes, an hour after BSÍ.
+    expect(await change(anna, north, addStop("akranes"), true)).toMatchObject({
+      status: 422,
+      error: {
+        code: "change_not_allowed",
+        details: [{ path: "segments.0", issue: "stop_does_not_fit" }],
+      },
+    });
+    expect(await change(anna, north, addStop("borgarnes"))).toMatchObject({
+      status: 422,
+      error: { details: [{ path: "stops.1", issue: "stop_on_trip" }] },
+    });
+    await api.connection.db
+      .update(schema.meetingPoints)
+      .set({ status: "paused" })
+      .where(eq(schema.meetingPoints.id, point("stadarskali")));
+    try {
+      expect(await change(anna, north, addStop("stadarskali"))).toMatchObject({
+        status: 422,
+        error: { details: [{ path: "meetingPointId", issue: "stop_unavailable" }] },
+      });
+    } finally {
+      await api.connection.db
+        .update(schema.meetingPoints)
+        .set({ status: "active" })
+        .where(eq(schema.meetingPoints.id, point("stadarskali")));
+    }
+    expect(
+      await change(anna, north, { kind: "addStop", meetingPointId: sampleId("not a point") }),
+    ).toMatchObject({
+      status: 422,
+      error: { details: [{ path: "meetingPointId", issue: "stop_unavailable" }] },
+    });
+    expect(await stopsOf(north)).toHaveLength(4);
+    expect(await changesOf(north)).toEqual([]);
+  });
+
+  it("waits for the distances to a new meeting point", async () => {
+    const [bsi] = await api.connection.db
+      .select()
+      .from(schema.meetingPoints)
+      .where(eq(schema.meetingPoints.id, point("bsi")));
+    if (bsi === undefined) throw new Error("The sample points are missing.");
+    const fresh = sampleId("test:new-stop");
+    await api.connection.db
+      .insert(schema.meetingPoints)
+      .values({ ...bsi, id: fresh, nameIs: "Nýr staður" })
+      .onConflictDoNothing();
+    const anna = await driverOf(north);
+    expect(await change(anna, north, { kind: "addStop", meetingPointId: fresh })).toMatchObject({
+      status: 503,
+      error: { code: "distances_pending", retryAfterSeconds: 60 },
+    });
+    await api.connection.db.delete(schema.meetingPoints).where(eq(schema.meetingPoints.id, fresh));
   });
 });

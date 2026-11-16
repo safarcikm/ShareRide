@@ -9,6 +9,7 @@ import {
   quoteRoute,
   stopsAlongRoute,
   updateTripRoute,
+  type TripChangeBody,
 } from "@shareride/contracts";
 import type { ChangeProblem, PublishProblem } from "@shareride/domain";
 import type { Context, MiddlewareHandler } from "hono";
@@ -211,7 +212,10 @@ export function registerDraftRoutes(
 }
 
 /** Where a change's problem points: the departure, a stop, a stretch or a field. */
-function changeProblemPath(problem: ChangeNotAllowed["problems"][number]): string {
+function changeProblemPath(
+  problem: ChangeNotAllowed["problems"][number],
+  kind: TripChangeBody["kind"],
+): string {
   switch (problem.code) {
     case "times_missing":
     case "departure_too_soon":
@@ -223,7 +227,15 @@ function changeProblemPath(problem: ChangeNotAllowed["problems"][number]): strin
     case "stretch_too_fast":
       return `segments.${String(problem.segment)}`;
     case "stop_out_of_season":
+      // A new stop is named by the point, as it is not on the trip yet.
+      return kind === "addStop" ? "meetingPointId" : `stops.${String(problem.stop)}`;
+    case "stop_on_trip":
       return `stops.${String(problem.stop)}`;
+    case "stop_does_not_fit":
+      return `segments.${String(problem.segment)}`;
+    case "stop_unavailable":
+    case "route_too_long":
+      return "meetingPointId";
     case "seats_invalid":
     case "seats_below_taken":
       return "seats";
@@ -275,11 +287,13 @@ export function registerTripChangeRoutes(
       case "change_not_allowed":
         return errorResponse(c, 422, "change_not_allowed", "The change breaks some rules.", {
           details: result.error.problems.map((problem) => ({
-            path: changeProblemPath(problem),
+            path: changeProblemPath(problem, body.kind),
             issue: problem.code,
           })),
           ...departureWindow(result.error.problems),
         });
+      case "distances_missing":
+        return pending(c);
     }
   });
 }
