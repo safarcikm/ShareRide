@@ -493,7 +493,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   the meeting point. The driver's trip page says "Use this only when
   parked." and lists the stops in order with their times, who gets in at
   each with seats and whether they are here, who gets out, and "I'm here"
-  at the next stop. Before "I'm here" opens it says when it will. The
+  at each stop where it is open, after the last one said and where someone
+  gets in (`driverCheckInStops` in the domain). Before "I'm here" opens it
+  says when it will. Both pages load again every 30 seconds while the trip
+  day shows, and when the app comes back to the front. The
   browser tests' API can move one trip's times closer
   (`POST /e2e/trips/{id}/move`), never in the real server, and a journey
   has both sides check in and see each other's.

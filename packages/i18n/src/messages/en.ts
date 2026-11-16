@@ -973,6 +973,8 @@ export const en = {
   "tripDay.opensAt": "You can say you're here from {time}.",
   "tripDay.closed": "It's too late to say you're here at this stop.",
   "tripDay.imHereFailed": "We couldn't tell them you're here. Try again.",
+  "tripDay.bookingChanged": "Something changed since you opened this. Here is your booking now.",
+  "tripDay.tripChanged": "Something changed since you opened this. Here is your trip now.",
   "tripDay.parkedOnly": "Use this only when parked.",
   "tripDay.gettingIn": "Getting in",
   "tripDay.gettingOut": "Getting out",

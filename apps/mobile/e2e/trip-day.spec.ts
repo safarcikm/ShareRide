@@ -6,7 +6,8 @@ import { confirmedBooking, secondPage, visible } from "./support/cancelling";
 // tomorrow and Dóra books and pays, as in the cancelling journeys. Then the
 // test API moves that one trip so it leaves Mjódd in 10 minutes (never the
 // clock the other journeys share), and both open it on the day: each says
-// "I'm here" with one tap and sees the other's. The window's edges and the
+// "I'm here" with one tap and sees the other's, the passenger without
+// reloading. The window's edges and the
 // no-show are left to the API and screen tests. Each test posts its own
 // trip, so phone and desktop runs never meet.
 
@@ -43,10 +44,9 @@ test("on the trip day, the passenger and the driver each say I'm here and see th
     driver.getByText("We've told your passengers you're here.", { exact: true }).filter(visible),
   ).toBeVisible();
 
-  // And Dóra sees that Bára is there.
-  await passenger.reload();
+  // And Dóra's page, left open, shows that Bára is there within half a minute.
   await expect(
     passenger.getByText("Bára is at the meeting point", { exact: true }).filter(visible),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 45_000 });
   await close();
 });

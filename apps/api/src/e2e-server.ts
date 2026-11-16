@@ -6,7 +6,8 @@
 // E2E_EMAIL_OUTBOX for the tests to read, runs the notification worker
 // every second with email only (no push from a browser), and runs on PORT
 // (default 3001). `POST /e2e/trips/{id}/move` with `{ "minutes": 10 }` puts a
-// trip's first stop that many minutes from now, for the trip day journeys.
+// trip's first stop that many minutes from the real time, for the trip day
+// journeys.
 // Never use it for anything else.
 import { randomBytes } from "node:crypto";
 import { appendFileSync, writeFileSync } from "node:fs";
@@ -93,13 +94,14 @@ const app = createApp({
 });
 
 // The trip day journeys move one trip's times, never the shared clock
-// (milestone 7 plan, 4.2).
+// (milestone 7 plan, 4.2). Minutes from the real time, which the browser
+// goes by, not from this API's clock, which runs ahead with each code sent.
 app.post("/e2e/trips/:id/move", async (c) => {
   const body: unknown = await c.req.json();
   const minutes =
     typeof body === "object" && body !== null && "minutes" in body ? body.minutes : undefined;
   if (typeof minutes !== "number") return c.json({ error: "Send { minutes }." }, 400);
-  await moveTripForTests(connection.db, c.req.param("id"), minutes, clock());
+  await moveTripForTests(connection.db, c.req.param("id"), minutes, new Date());
   return c.body(null, 204);
 });
 

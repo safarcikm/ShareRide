@@ -982,6 +982,10 @@ export const is = {
   "tripDay.opensAt": "Þú getur sagt að þú sért á staðnum frá kl. {time}.",
   "tripDay.closed": "Það er orðið of seint að segja að þú sért á þessum stað.",
   "tripDay.imHereFailed": "Ekki tókst að láta vita að þú sért á staðnum. Reyndu aftur.",
+  "tripDay.bookingChanged":
+    "Eitthvað breyttist síðan þú opnaðir þetta. Hér er bókunin eins og hún er núna.",
+  "tripDay.tripChanged":
+    "Eitthvað breyttist síðan þú opnaðir þetta. Hér er ferðin eins og hún er núna.",
   "tripDay.parkedOnly": "Notaðu þetta aðeins þegar bíllinn er kyrr.",
   "tripDay.gettingIn": "Koma inn",
   "tripDay.gettingOut": "Fara út",

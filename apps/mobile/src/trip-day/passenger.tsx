@@ -50,9 +50,12 @@ export function TripDayHeading({ booking }: { readonly booking: Booking }) {
 export function PassengerImHere({
   booking,
   onSaid,
+  onStale,
 }: {
   readonly booking: Booking;
   readonly onSaid: () => void;
+  /** The booking changed meanwhile, such as cancelled: say why and load it again. */
+  readonly onStale: (why: string) => void;
 }) {
   const { t } = useLanguage();
   const session = useSession();
@@ -76,6 +79,9 @@ export function PassengerImHere({
         told={t("tripDay.toldDriver")}
         send={() => session.call(passengerCheckInRoute, { params: { id: booking.id }, body: {} })}
         onSaid={onSaid}
+        onStale={() => {
+          onStale(t("tripDay.bookingChanged"));
+        }}
       />
     </>
   );

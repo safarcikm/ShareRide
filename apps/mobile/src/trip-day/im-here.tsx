@@ -7,6 +7,7 @@ import { errorText } from "@/auth/errors";
 import { Button } from "@/components/button";
 import { Icon } from "@/components/icon";
 import { Notice } from "@/components/notice";
+import { TakesFocus } from "@/components/takes-focus";
 import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
@@ -24,7 +25,9 @@ export interface CheckInState {
  * "I'm here" at a stop (spec 8, 3.2; R8.3): once said, what it told; while
  * it is open, one large button; before then, when it opens; after it
  * closes, nothing. One tap, no typing: it is used while parked. `send`
- * asks the API; `onSaid` loads the page again with what it stored.
+ * asks the API; `onSaid` loads the page again with what it stored. When the
+ * booking or trip changed meanwhile (cancelled, or no longer confirmed),
+ * trying again cannot work, so `onStale` says why and loads it again.
  */
 export function ImHere({
   state,
@@ -32,6 +35,7 @@ export function ImHere({
   accessibilityLabel,
   send,
   onSaid,
+  onStale,
 }: {
   readonly state: CheckInState;
   /** What saying it did: the driver, or the passengers getting in there, were told. */
@@ -41,6 +45,7 @@ export function ImHere({
     { readonly ok: true; readonly data: { checkedInAt: string } } | CallFailure
   >;
   readonly onSaid: () => void;
+  readonly onStale: () => void;
 }) {
   const { t } = useLanguage();
   const palette = usePalette();
@@ -50,11 +55,14 @@ export function ImHere({
   const [problem, setProblem] = useState<string | null>(null);
 
   if (state.at !== null || saidAt !== null) {
+    // Said on this screen, the button just pressed is gone: focus moves here.
     return (
-      <View style={styles.row} accessible accessibilityLiveRegion="polite">
-        <Icon icon={CircleCheck} color={palette.primary} />
-        <Text style={[typography.bodyStrong, styles.grow, { color: palette.text }]}>{told}</Text>
-      </View>
+      <TakesFocus when={saidAt !== null}>
+        <View style={styles.row} accessible accessibilityLiveRegion="polite">
+          <Icon icon={CircleCheck} color={palette.primary} />
+          <Text style={[typography.bodyStrong, styles.grow, { color: palette.text }]}>{told}</Text>
+        </View>
+      </TakesFocus>
     );
   }
   const time = now();
@@ -82,6 +90,10 @@ export function ImHere({
               return;
             }
             const { code, opensAt: opens } = answer.error;
+            if (code === "not_confirmed" || code === "trip_not_running" || code === "not_found") {
+              onStale();
+              return;
+            }
             setProblem(
               code === "check_in_not_open" && opens !== undefined
                 ? t("tripDay.opensAt", { time: formatClock(new Date(opens)) })

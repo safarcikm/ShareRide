@@ -37,6 +37,7 @@ import { bookingShareText } from "@/safety/share-details";
 import { TripSafety } from "@/safety/trip-safety";
 import { NotificationsPrompt } from "@/notifications/notifications-prompt";
 import { onTripDay, PassengerImHere, TripDayHeading } from "@/trip-day/passenger";
+import { useTripDayRefresh } from "@/trip-day/use-refresh";
 import { DriverAndCar, PartStop } from "@/trip-details/trip-parts";
 import { controlOutline, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -62,6 +63,7 @@ export default function BookingScreen() {
   const { id, cancelled } = useLocalSearchParams<{ id: string; cancelled?: string }>();
   const load = useCallback(() => session.call(bookingRoute, { params: { id } }), [session, id]);
   const { value: answer, reload, refresh } = useLoadedOnFocus(load);
+  useTripDayRefresh(answer?.ok === true && onTripDay(answer.data), refresh);
   // The booking as the last payment or withdrawal left it, until it loads
   // again: kept with the answer it changed, so a newer answer wins.
   const [changed, setChanged] = useState<{
@@ -242,7 +244,7 @@ function BookingDetails({
         />
       </Card>
 
-      {tripDay ? <PassengerImHere booking={booking} onSaid={onReload} /> : null}
+      {tripDay ? <PassengerImHere booking={booking} onSaid={onReload} onStale={onStale} /> : null}
 
       {confirmed === null ? null : (
         <Button

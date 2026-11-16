@@ -152,6 +152,38 @@ export function checkCheckIn(
   return ok(null);
 }
 
+/** The driver's "I'm here" at one stop: its window, and when it was said there. */
+export interface StopCheckIn {
+  readonly opensAt: Date;
+  readonly closesAt: Date;
+  readonly at: Date | null;
+}
+
+/**
+ * Where the driver can say "I'm here" now (3.1 and 3.2): every stop after
+ * the last one where they said it, where a confirmed passenger gets in, and
+ * whose window is open. The windows overlap, so a stop that was skipped
+ * never hides the next one, and the driver picks where they are. Saying it
+ * where nobody gets in would tell nobody. With none open, `next` is the
+ * first such stop still to open, to say when it will. `stops` are in trip
+ * order, null where the stop has no window; `boarding` holds the positions
+ * where a confirmed passenger gets in.
+ */
+export function driverCheckInStops(
+  stops: readonly (StopCheckIn | null)[],
+  boarding: ReadonlySet<number>,
+  now: Date,
+): { readonly open: readonly number[]; readonly next: number | null } {
+  const lastSaid = stops.findLastIndex((stop) => stop !== null && stop.at !== null);
+  const ahead = stops.flatMap((stop, position) =>
+    stop !== null && position > lastSaid && boarding.has(position) && now <= stop.closesAt
+      ? [{ position, opensAt: stop.opensAt }]
+      : [],
+  );
+  const open = ahead.filter((stop) => now >= stop.opensAt).map((stop) => stop.position);
+  return { open, next: open.length === 0 ? (ahead[0]?.position ?? null) : null };
+}
+
 /** Where a passenger stands at their boarding stop, as the driver sees it (3.1). */
 export const arrivals = ["not_here", "here", "no_show"] as const;
 export type Arrival = (typeof arrivals)[number];
