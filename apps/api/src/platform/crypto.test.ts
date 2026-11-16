@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createKeyedHasher, hashToken, newToken, sameHash } from "./crypto.ts";
+import { createFileCipher, createKeyedHasher, hashToken, newToken, sameHash } from "./crypto.ts";
 
 describe("newToken", () => {
   it("makes a 256-bit random token with a prefix that names its kind", () => {
@@ -40,5 +40,42 @@ describe("sameHash", () => {
     expect(sameHash(hashToken("a"), hashToken("a"))).toBe(true);
     expect(sameHash(hashToken("a"), hashToken("b"))).toBe(false);
     expect(sameHash(hashToken("a"), "abc")).toBe(false);
+  });
+});
+
+describe("files sealed at rest (spec 11, 7: exports stored encrypted)", () => {
+  const secret = "a-test-secret-of-at-least-32-characters";
+  const cipher = createFileCipher(secret, "shareride-data-export-v1");
+  const file = Buffer.from("Jón's data");
+
+  const owner = "export-1";
+
+  it("opens what it sealed, and the sealed bytes do not show the content", () => {
+    const sealed = cipher.seal(file, owner);
+    expect(sealed.includes(file)).toBe(false);
+    expect(cipher.open(sealed, owner)).toEqual(file);
+  });
+
+  it("seals the same file differently each time", () => {
+    expect(cipher.seal(file, owner).equals(cipher.seal(file, owner))).toBe(false);
+  });
+
+  it("refuses a changed file, another purpose and another secret", () => {
+    const sealed = cipher.seal(file, owner);
+    const changed = Buffer.from(sealed);
+    const at = changed.length - 20;
+    changed.writeUInt8(changed.readUInt8(at) ^ 1, at);
+    expect(() => cipher.open(changed, owner)).toThrow();
+    expect(() => createFileCipher(secret, "another-purpose").open(sealed, owner)).toThrow();
+    expect(() =>
+      createFileCipher("another-secret-of-at-least-32-characters", "shareride-data-export-v1").open(
+        sealed,
+        owner,
+      ),
+    ).toThrow();
+  });
+
+  it("refuses a file moved to another record", () => {
+    expect(() => cipher.open(cipher.seal(file, owner), "export-2")).toThrow();
   });
 });

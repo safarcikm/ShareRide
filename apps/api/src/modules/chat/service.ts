@@ -86,7 +86,10 @@ type MessageRow = typeof messages.$inferSelect;
 const minuteMs = 60_000;
 
 /** A stored system line, as the person reading it sees it: a cancellation is mine or theirs. */
-function systemLineOf(row: MessageRow, viewer: TripRole): NonNullable<ChatMessage["system"]> {
+export function systemLineOf(
+  row: MessageRow,
+  viewer: TripRole,
+): NonNullable<ChatMessage["system"]> {
   switch (row.key) {
     case "opened":
       return { key: "opened" };

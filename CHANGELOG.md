@@ -500,6 +500,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   a code to the person's own number, which only confirms and never signs
   in, under the sign-in limits, for downloading data and deleting an
   account.
+- Download my data, the API (spec 11, 3.2): asked for with a fresh code,
+  one a day; built within seconds as a ZIP of `shareride-data.json` and a
+  readable page in the person's language, with other people by first name
+  only; kept encrypted for 7 days and downloaded through a one-time link
+  that works for 2 minutes. A push and an email say when it is ready,
+  without a link.
 
 ### Fixed
 
