@@ -654,6 +654,7 @@ export const is = {
   "trip.changed": "Brottför breytt úr {old} í {new}",
   "trip.carChanged": "Nýr bíll: {car}",
   "trip.stopAdded": "Nýr viðkomustaður: {stop} kl. {time}",
+  "trip.stopRemoved": "Viðkomustaður felldur niður: {stop}",
   "trip.editStops": "Viðkomustaðir",
   "trip.editAddStopAction": "Bæta við viðkomustað",
   "trip.editAddStopHelp":
@@ -668,6 +669,24 @@ export const is = {
   "trip.editOtherPoint": "Velja annan mótsstað",
   "trip.problem.stop_does_not_fit":
     "{name} er of langt úr leið til að komast fyrir milli {from} og {to}, sem halda sínum tímum.",
+  "trip.editRemoveStopAction": "Fella niður viðkomustað",
+  "trip.editRemoveStopHelp":
+    "Veldu viðkomustaðinn sem á að sleppa. Staðirnir sitt hvoru megin halda sínum tímum. Þar sem farþegar fara inn eða út þurfa bókanir þeirra að falla niður fyrst.",
+  "trip.editRemoveStopChoose": "Veldu viðkomustaðinn sem á að fella niður.",
+  "trip.editNoStopToRemove": "Ferðin þín hefur enga viðkomustaði milli upphafs og enda.",
+  "trip.editToldStopRemoved":
+    "{count, plural, one {# farþegi fær} other {# farþegar fá}} að vita strax að viðkomustaðurinn fellur niður.",
+  "trip.editRequestsStopRemoved":
+    "{count, plural, one {# sem bað um sæti sér} other {# sem báðu um sæti sjá}} breytinguna í appinu.",
+  "trip.editOtherStop": "Velja annan viðkomustað",
+  "trip.problem.stop_in_use":
+    "{count, plural, one {# farþegi fer} other {# farþegar fara}} inn eða út á {name}. Afbókaðu eða hafnaðu bókunum þeirra í ferðinni fyrst, eða biddu þá að afbóka.",
+  "trip.problem.stop_in_use_some":
+    "Farþegar fara inn eða út á {name}. Afbókaðu eða hafnaðu bókunum þeirra í ferðinni fyrst, eða biddu þá að afbóka.",
+  "trip.problem.stop_at_end":
+    "Fyrsti og síðasti viðkomustaðurinn mynda ferðina. Til að breyta þeim skaltu aflýsa ferðinni og birta nýja.",
+  "trip.problem.stop_removal_too_fast":
+    "Ef {name} fellur niður þarf aksturinn frá {from} til {to} meiri tíma en ferðin gefur á milli þeirra.",
   "trip.problem.stop_too_far": "Um {name} yrði leiðin meira en 1,5 sinnum lengri en beina leiðin.",
   "trip.keepBooking": "Halda bókuninni",
   "trip.cancelWithRefund": "Afbóka með fullri endurgreiðslu",

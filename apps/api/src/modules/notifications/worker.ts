@@ -173,6 +173,16 @@ async function newStopOf(q: Queryable, tripChangeId: string) {
   };
 }
 
+/** The stop a change removed, by its names (spec 6, 3.2). */
+async function removedStopOf(q: Queryable, tripChangeId: string) {
+  const [row] = await q
+    .select({ kind: tripChanges.kind, before: tripChanges.before })
+    .from(tripChanges)
+    .where(eq(tripChanges.id, tripChangeId));
+  if (row?.kind !== "removeStop") return undefined;
+  return { name: { is: String(row.before["nameIs"]), en: String(row.before["nameEn"]) } };
+}
+
 /**
  * A moved departure as one passenger sees it (spec 6, 3.2): their boarding
  * time before and after this change, and how far the departure is now from
@@ -350,6 +360,10 @@ async function factsOf(q: Queryable, notificationId: string) {
     notification.tripChangeId === null ? undefined : await newCarOf(q, notification.tripChangeId);
   const newStop =
     notification.tripChangeId === null ? undefined : await newStopOf(q, notification.tripChangeId);
+  const removedStop =
+    notification.tripChangeId === null
+      ? undefined
+      : await removedStopOf(q, notification.tripChangeId);
   const facts: NotificationFacts = {
     kind: notification.kind as NotificationFacts["kind"],
     role,
@@ -378,6 +392,7 @@ async function factsOf(q: Queryable, notificationId: string) {
       newStop === undefined
         ? null
         : { name: named(locale, newStop.name), plannedAt: newStop.plannedAt },
+    removedStop: removedStop === undefined ? null : { name: named(locale, removedStop.name) },
     moved: moved === undefined ? null : { from: moved.from, to: moved.to },
     paid: booking.status === "confirmed" && booking.totalPrice > 0,
   };
@@ -839,12 +854,14 @@ export function createNotificationWorker(dependencies: {
       return;
     }
     if (type === "TripChanged") {
-      // A new car or a new stop; anything else tells nobody until it has its words.
+      // A new car, or a stop added or removed; anything else tells nobody
+      // until it has its words.
       const tripChangeId = idIn(event.payload, "tripChangeId");
       if (tripChangeId === undefined) return;
       const told =
         (await newCarOf(tx, tripChangeId)) !== undefined ||
-        (await newStopOf(tx, tripChangeId)) !== undefined;
+        (await newStopOf(tx, tripChangeId)) !== undefined ||
+        (await removedStopOf(tx, tripChangeId)) !== undefined;
       if (!told) return;
       await notify(tx, { type }, booking, { key, tripChangeId }, now);
       return;

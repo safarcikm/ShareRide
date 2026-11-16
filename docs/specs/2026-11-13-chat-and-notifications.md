@@ -127,6 +127,11 @@ by push and email to each accepted or confirmed booking, never by SMS: a
 new stop moves no booked passenger's time. A request is not told. The
 conversation gets the same line.
 
+As built for a stop removed (milestone 6, PR 6b): "Stop removed:
+Borgarnes", told the same way, to the same people: by push and email,
+never by SMS, as only a stop nobody gets in or out at can go, so no booked
+passenger's stop or time changes. The conversation gets the same line.
+
 ### 3.4 SMS for last-minute news
 
 SMS is only for sign-in codes (spec 1) and for news that could leave someone

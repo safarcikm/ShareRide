@@ -117,13 +117,19 @@ ordered pair of active meeting points connected by road.
 ### TripStop
 
 `id`, `trip_id`, `meeting_point_id`, `position` (0-based, contiguous),
-`planned_at` (timestamptz; empty in a draft until the departure is chosen).
-Unique (`trip_id`, `position`) and (`trip_id`, `meeting_point_id`).
+`planned_at` (timestamptz; empty in a draft until the departure is chosen),
+`removed_at` (when the driver removed the stop from a published trip,
+milestone 6, PR 6b). A removed stop stays for the bookings that once got
+in or out there and still name it; every list of a trip's stops, search
+included, leaves it out, and it keeps the position it had. Among the stops
+not removed, (`trip_id`, `position`) and (`trip_id`, `meeting_point_id`)
+are unique (partial unique indexes), so a removed stop can be added again.
 
 ### Segment
 
-Made when the trip is published, and split in two when a stop is added
-on it (milestone 6, PR 6a). `trip_id`, `position` (0 … stops − 2),
+Made when the trip is published, split in two when a stop is added on it
+(milestone 6, PR 6a), and two joined into one when the stop between them
+is removed (PR 6b), taking the higher occupancy of the two. `trip_id`, `position` (0 … stops − 2),
 `from_stop_id`, `to_stop_id`, `distance_m`, `duration_s`, the
 `suggested_price`, `cap` and `price` at publishing (integers, whole krónur),
 `currency`, `capacity` (the trip's seats, copied) and `occupancy`
@@ -139,15 +145,17 @@ One row per change to a published trip, so passengers can see what changed:
 
 As built (milestone 6, PR 5a): the table `trip_changes`, with `kind` one of
 `departure`, `seats`, `priceLevel`, `vehicle`, `bookingMode` and `details`
-(the domain's `tripChangeKinds`), `addStop` (PR 6a), and `before` and
+(the domain's `tripChangeKinds`), `addStop` (PR 6a), `removeStop` (PR
+6b), and `before` and
 `after` as small flat JSON objects, such as `{ "departsAt": "…" }`, or for
 the seats `{ "seats": 3, "priceLevel": 120 }` with the level they left (PR
 5b). For the preferences and note, `after` says only whether the note
 changed (`noteChanged`), never its text. A new car keeps the car's ID,
 make, model and colour before and after, never its number plate (PR 5c). A
 new stop keeps, after, its meeting point's ID, names and planned time (PR
-6a). It goes with the trip. A booking shows the moves, new cars and new
-stops made after it was booked, and a notification about one points to its
+6a); a stop removed keeps them before, with `after` empty (PR 6b). It goes
+with the trip. A booking shows the moves, new cars and stops added or
+removed after it was booked, and a notification about one points to its
 row (`notifications.trip_change_id`), so each is told with its own times,
 car or stop.
 

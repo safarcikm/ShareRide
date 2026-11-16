@@ -140,7 +140,7 @@ stop):
 13. Each of these is recorded with its time, as a move is, for the
     operator to answer questions about what the trip offered and when; for
     the note, only whether it changed, not its text. "Changes since you
-    booked" lists only the moves, new cars and new stops, as the rest shows
+    booked" lists only the moves, new cars and stops added or removed, as the rest shows
     on the trip as it is now. The change's effect also gives the seats, the price
     level, whether more seats lowered it, and each stretch's price for new
     bookings.
@@ -188,6 +188,30 @@ stop):
     both. When a stop was added since, they no longer match: the booking
     screen says the driver changed the stops and to choose again from the
     trip, and the server refuses such a booking with `stops_changed`.
+18. Removing a stop: with more than two stops, the Stops row also has
+    "Remove a stop", which lists the stops between the ends, each with its
+    time. Only those can go: the first and last make the trip, and
+    changing them is cancelling it and posting a new one (`stop_at_end`).
+    A stop where a booking or a request gets in or out cannot go
+    (`stop_in_use`, R6.5); the screen says how many and to cancel or
+    decline them from the trip first, or ask them to cancel. The joined
+    stretch takes the road distance and typical time past the stop, and
+    must leave at least 90% of that time between its neighbours, which
+    keep their times (`stretch_too_fast`, R3.6). The check shows "Stop
+    removed: Borgarnes", the new times, the joined stretch's price for
+    new bookings, and who is told.
+19. Saving joins the two stretches into one, with the higher of their
+    seats taken. Each booking over both keeps its stops and its total: its
+    two prices are added into one (P1). Stretches and booking prices after
+    it are renumbered in the same transaction. The stop stays on the trip,
+    marked removed, for bookings that once got in or out there and still
+    name it, and leaves every list of the trip's stops, search included;
+    it can be added again. The change is recorded with the stop's name
+    and planned time; each accepted or confirmed booking reads "Stop
+    removed: Borgarnes" under "Changes since you booked" and in the chat,
+    and is told by push and email, never by SMS. A request is not told;
+    it sees the change in the app. A part chosen on the trip before the
+    stop went no longer matches, as in item 17.
 
 ### 3.3 Cancelling a trip (driver)
 
@@ -321,12 +345,17 @@ Entities (see [domain model](../architecture/domain-model.md)):
 - `TripChange`: trip, kind (time, stop added, stop removed, seats, price level,
   car, booking mode, details), before and after, changed at. As built
   (PR 5a): `trip_changes` with the kinds `departure`, `seats`, `priceLevel`,
-  `vehicle`, `bookingMode` and `details`, and `addStop` (PR 6a). PR 5b
+  `vehicle`, `bookingMode` and `details`, `addStop` (PR 6a) and
+  `removeStop` (PR 6b). PR 5b
   records the seats with the price level they left, the price level, the
   booking mode, and the preferences, each before and after, with whether
   the note changed (not its text). PR 5c records the car by its ID, make,
   model and colour, never its number plate. PR 6a records a new stop by
-  its meeting point's ID and names and its planned time.
+  its meeting point's ID and names and its planned time; PR 6b records a
+  removed stop the same way, as it was.
+- `TripStop` gains `removed_at` (PR 6b): a removed stop stays for the
+  bookings that name it, and only the stops not removed hold the trip's
+  positions and meeting points uniquely.
 - `Booking` uses its cancellation fields (`cancelled_by`, `cancel_reason`,
   `cancel_note`, `cancelled_at`) plus `refund_amount`,
   `counts_on_reliability` and `departs_at_when_booked`.
@@ -348,8 +377,8 @@ and return its effect; the refund and reliability effect of a cancellation;
 reverse a trip's stops.
 
 Events: `DepartureMoved` (the booking and the recorded change, as built in
-PR 5a), `TripChanged` (a new car or a new stop: the booking and the
-recorded change, as built in PR 5c and PR 6a), `TripCancelled`, `BookingCancelled` (the booking and
+PR 5a), `TripChanged` (a new car, or a stop added or removed: the booking
+and the recorded change, as built in PR 5c, 6a and 6b), `TripCancelled`, `BookingCancelled` (the booking and
 who cancelled; the reason and refund are read from the booking, as events hold
 IDs only). Notifications for each come in spec 7; refunds in spec 13.
 
@@ -435,6 +464,17 @@ IDs only). Notifications for each come in spec 7; refunds in spec 13.
 | `trip.problem.stop_does_not_fit` | {name} is too far out of your way to fit between {from} and {to}, which keep their times. | {name} er of langt úr leið til að komast fyrir milli {from} og {to}, sem halda sínum tímum. |
 | `trip.problem.stop_too_far` | Through {name} the route would be more than 1.5 times as long as the direct way. | Um {name} yrði leiðin meira en 1,5 sinnum lengri en beina leiðin. |
 | `booking.stopsChanged` | The driver has changed the trip's stops. Go back to the trip to choose where you get in and out again. | Ökumaðurinn hefur breytt viðkomustöðum ferðarinnar. Farðu aftur í ferðina til að velja aftur hvar þú ferð inn og út. |
+| `trip.editRemoveStopAction` | Remove a stop | Fella niður viðkomustað |
+| `trip.editRemoveStopHelp` | Choose the stop to leave out. The stops either side keep their times. Where passengers get in or out, their bookings have to end first. | Veldu viðkomustaðinn sem á að sleppa. Staðirnir sitt hvoru megin halda sínum tímum. Þar sem farþegar fara inn eða út þurfa bókanir þeirra að falla niður fyrst. |
+| `trip.editRemoveStopChoose` | Choose the stop to remove. | Veldu viðkomustaðinn sem á að fella niður. |
+| `trip.editNoStopToRemove` | Your trip has no stops between where it starts and where it ends. | Ferðin þín hefur enga viðkomustaði milli upphafs og enda. |
+| `trip.editToldStopRemoved` | {count, plural, one {# passenger is} other {# passengers are}} told the stop is removed now. | {count, plural, one {# farþegi fær} other {# farþegar fá}} að vita strax að viðkomustaðurinn fellur niður. |
+| `trip.editRequestsStopRemoved` | {count, plural, one {# person who asked for a seat sees} other {# people who asked for a seat see}} the change in the app. | {count, plural, one {# sem bað um sæti sér} other {# sem báðu um sæti sjá}} breytinguna í appinu. |
+| `trip.editOtherStop` | Choose another stop | Velja annan viðkomustað |
+| `trip.stopRemoved` | Stop removed: {stop} | Viðkomustaður felldur niður: {stop} |
+| `trip.problem.stop_in_use` | {count, plural, one {# passenger gets} other {# passengers get}} in or out at {name}. Cancel or decline their bookings from the trip first, or ask them to cancel. | {count, plural, one {# farþegi fer} other {# farþegar fara}} inn eða út á {name}. Afbókaðu eða hafnaðu bókunum þeirra í ferðinni fyrst, eða biddu þá að afbóka. |
+| `trip.problem.stop_at_end` | The first and last stops make the trip. To change them, cancel the trip and post a new one. | Fyrsti og síðasti viðkomustaðurinn mynda ferðina. Til að breyta þeim skaltu aflýsa ferðinni og birta nýja. |
+| `trip.problem.stop_removal_too_fast` | Without {name}, the drive from {from} to {to} needs more time than the trip leaves between them. | Ef {name} fellur niður þarf aksturinn frá {from} til {to} meiri tíma en ferðin gefur á milli þeirra. |
 | `trip.editDetails` | Preferences and note | Óskir og skilaboð |
 | `trip.editDetailsAction` | Change the preferences and note | Breyta óskum og skilaboðum |
 | `trip.editDetailsHelp` | Passengers see the change on the trip. Nobody is notified. | Farþegar sjá breytinguna á ferðinni. Enginn fær tilkynningu. |

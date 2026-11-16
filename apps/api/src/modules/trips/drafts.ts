@@ -134,7 +134,8 @@ export function createTripService(dependencies: {
         .select({ stop: tripStops, point: meetingPoints })
         .from(tripStops)
         .innerJoin(meetingPoints, eq(meetingPoints.id, tripStops.meetingPointId))
-        .where(inArray(tripStops.tripId, ids))
+        // A stop removed from a published trip is not one (spec 6, 3.2).
+        .where(and(inArray(tripStops.tripId, ids), isNull(tripStops.removedAt)))
         .orderBy(asc(tripStops.position)),
       q
         .select()

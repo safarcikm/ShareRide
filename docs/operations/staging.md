@@ -135,6 +135,12 @@ Migrations are written expand then contract
 still works with the newer schema and a rollback needs no restore. The cron
 job has its own **Deploys** page; roll it back the same way if needed.
 
+Data a newer version wrote can still trip an older one. Once a driver has
+removed a stop from a trip (milestone 6, PR 6b), a version from before
+that shows the stop again, books on the wrong stops of that trip and
+cannot read its conversations' "Stop removed" line. Past that point, roll
+forward with a fix rather than back.
+
 ## Read logs
 
 Open a service and choose **Logs**. The API writes one JSON line per request

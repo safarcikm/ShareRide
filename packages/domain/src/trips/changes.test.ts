@@ -5,6 +5,7 @@ import {
   addStopLegPairs,
   checkTripChange,
   maxMoveMinutes,
+  removeStopLegPairs,
   splitPrice,
   tripChangeKinds,
   type BookingOnTrip,
@@ -48,11 +49,32 @@ const northTrip: ChangeableTrip = {
   otherTrips: [],
 };
 
-/** Gunna paid, Jón is still to pay, and Sigga's request waits. */
+/**
+ * Gunna paid for Reykjavík to Blönduós, Jón is still to pay for Borgarnes to
+ * Blönduós, and Sigga's request for Borgarnes to Akureyri waits.
+ */
 const bookings: readonly BookingOnTrip[] = [
-  { id: "booking-gunna", status: "confirmed", departsAtWhenBooked: departure },
-  { id: "booking-jon", status: "accepted", departsAtWhenBooked: departure },
-  { id: "booking-sigga", status: "requested", departsAtWhenBooked: departure },
+  {
+    id: "booking-gunna",
+    status: "confirmed",
+    departsAtWhenBooked: departure,
+    fromPoint: "reykjavik",
+    toPoint: "blonduos",
+  },
+  {
+    id: "booking-jon",
+    status: "accepted",
+    departsAtWhenBooked: departure,
+    fromPoint: "borgarnes",
+    toPoint: "blonduos",
+  },
+  {
+    id: "booking-sigga",
+    status: "requested",
+    departsAtWhenBooked: departure,
+    fromPoint: "borgarnes",
+    toPoint: "akureyri",
+  },
 ];
 const bookedTrip: ChangeableTrip = { ...northTrip, occupancy: [1, 3, 1] };
 
@@ -191,7 +213,13 @@ describe("moving the departure (spec 6, 3.2; R6.2 to R6.4)", () => {
     const trip = effect(checkTripChange(bookedTrip, bookings, move(60), now, settings)).trip;
     const afterAMove = [
       ...bookings,
-      { id: "booking-anna", status: "confirmed", departsAtWhenBooked: later(departure, 60) },
+      {
+        id: "booking-anna",
+        status: "confirmed",
+        departsAtWhenBooked: later(departure, 60),
+        fromPoint: "reykjavik",
+        toPoint: "akureyri",
+      },
     ] as const;
     const window = { earliest: at("2026-11-15T08:00:00Z"), latest: at("2026-11-15T11:00:00Z") };
     expect(checkTripChange(trip, afterAMove, move(121), now, settings)).toEqual({
@@ -543,6 +571,138 @@ describe("adding a stop (spec 6, 3.2; milestone 6 plan, decision 2)", () => {
   });
 });
 
+/**
+ * The way past a stop, as the legs have it: Reykjavík to Blönduós without
+ * Borgarnes, and Borgarnes to Akureyri without Blönduós.
+ */
+const pastStopLegs: Readonly<Record<string, { distanceM: number; durationS: number }>> = {
+  "reykjavik>blonduos": { distanceM: 255_000, durationS: 10_200 },
+  "borgarnes>akureyri": { distanceM: 345_000, durationS: 13_000 },
+};
+const pastStops: LegLookup = (from, to) => pastStopLegs[`${from}>${to}`];
+const removeStop = (meetingPointId: string, legs: LegLookup = pastStops): TripChange => ({
+  kind: "removeStop",
+  meetingPointId,
+  legs,
+});
+
+/** Gunna paid and Jón is still to pay for the whole way; Sigga's request waits. */
+const allTheWay: readonly BookingOnTrip[] = bookings.map((booking) => ({
+  ...booking,
+  fromPoint: "reykjavik",
+  toPoint: "akureyri",
+}));
+const fullTrip: ChangeableTrip = { ...northTrip, occupancy: [3, 3, 3] };
+
+describe("removing a stop (spec 6, 3.2; R6.5)", () => {
+  it("joins the stretches either side, keeping every other stop's time, and tells each passenger", () => {
+    const result = effect(
+      checkTripChange(fullTrip, allTheWay, removeStop("borgarnes"), now, settings),
+    );
+    expect(result.trip.stops.map((stop) => stop.meetingPointId)).toEqual([
+      "reykjavik",
+      "blonduos",
+      "akureyri",
+    ]);
+    expect(plannedAt(result.trip)).toEqual([
+      "2026-11-15T09:00:00.000Z",
+      "2026-11-15T12:10:00.000Z",
+      "2026-11-15T14:00:00.000Z",
+    ]);
+    // The stretch past it is the way the legs know, not the two added up.
+    expect(result.trip.distancesM).toEqual([255_000, 150_000]);
+    expect(result.trip.typicalS).toEqual([10_200, 6000]);
+    expect(result.trip.occupancy).toEqual([3, 3]);
+    expect(result.removedStop).toEqual({
+      position: 1,
+      stretch: {
+        price: segmentPrice(255_000, 100, 3, settings),
+        cap: priceCap(255_000, 3, settings),
+      },
+    });
+    expect(result.addedStop).toBeNull();
+    expect(result.pricing).toBeNull();
+    expect(result.told).toEqual([
+      { bookingId: "booking-gunna", event: { type: "TripChanged" }, freeCancellation: false },
+      { bookingId: "booking-jon", event: { type: "TripChanged" }, freeCancellation: false },
+    ]);
+    expect(
+      effect(checkTripChange(northTrip, [], removeStop("blonduos"), now, settings)).told,
+    ).toEqual([]);
+  });
+
+  it("is refused while a booking or request gets in or out there (R6.5)", () => {
+    // Jón and Sigga get in at Borgarnes; Gunna and Jón get out at Blönduós.
+    expect(checkTripChange(bookedTrip, bookings, removeStop("borgarnes"), now, settings)).toEqual({
+      ok: false,
+      error: [{ code: "stop_in_use", bookings: 2 }],
+    });
+    expect(checkTripChange(bookedTrip, bookings, removeStop("blonduos"), now, settings)).toEqual({
+      ok: false,
+      error: [{ code: "stop_in_use", bookings: 2 }],
+    });
+    const onlySigga = bookings.filter((booking) => booking.status === "requested");
+    expect(
+      problems(checkTripChange(bookedTrip, onlySigga, removeStop("borgarnes"), now, settings)),
+    ).toEqual(["stop_in_use"]);
+  });
+
+  it("keeps the first and last stops, and is a stop of the trip", () => {
+    expect(checkTripChange(northTrip, [], removeStop("reykjavik"), now, settings)).toEqual({
+      ok: false,
+      error: [{ code: "stop_at_end" }],
+    });
+    expect(problems(checkTripChange(northTrip, [], removeStop("akureyri"), now, settings))).toEqual(
+      ["stop_at_end"],
+    );
+    expect(
+      problems(checkTripChange(northTrip, [], removeStop("mosfellsbaer"), now, settings)),
+    ).toEqual(["stop_not_on_trip"]);
+  });
+
+  it("leaves 90% of the typical time on the stretch past it (R3.6), with every problem at once", () => {
+    const slow: LegLookup = (from, to) =>
+      from === "reykjavik" && to === "blonduos"
+        ? { distanceM: 255_000, durationS: 13_000 }
+        : pastStops(from, to);
+    // Reykjavík 09:00 to Blönduós 12:10 is 190 minutes, under 90% of 13 000 s.
+    expect(checkTripChange(northTrip, [], removeStop("borgarnes", slow), now, settings)).toEqual({
+      ok: false,
+      error: [{ code: "stretch_too_fast", segment: 0 }],
+    });
+    expect(
+      problems(checkTripChange(bookedTrip, bookings, removeStop("borgarnes", slow), now, settings)),
+    ).toEqual(["stop_in_use", "stretch_too_fast"]);
+  });
+
+  it("waits for the distance between its neighbours", () => {
+    const unknown: LegLookup = () => undefined;
+    expect(checkTripChange(northTrip, [], removeStop("borgarnes", unknown), now, settings)).toEqual(
+      { ok: false, error: [{ code: "distances_missing", pairs: [["reykjavik", "blonduos"]] }] },
+    );
+    // A stop in use says so first: the distance would not help.
+    expect(
+      problems(
+        checkTripChange(bookedTrip, bookings, removeStop("borgarnes", unknown), now, settings),
+      ),
+    ).toEqual(["stop_in_use"]);
+  });
+
+  it("looks up the leg between its neighbours", () => {
+    const stops = ["reykjavik", "borgarnes", "blonduos", "akureyri"];
+    expect(removeStopLegPairs(stops, "blonduos")).toEqual([["borgarnes", "akureyri"]]);
+    expect(removeStopLegPairs(stops, "reykjavik")).toEqual([]);
+    expect(removeStopLegPairs(stops, "akureyri")).toEqual([]);
+    expect(removeStopLegPairs(stops, "mosfellsbaer")).toEqual([]);
+  });
+
+  it("cannot be removed once the trip has left (R6.1)", () => {
+    expect(
+      problems(checkTripChange(northTrip, [], removeStop("borgarnes"), departure, settings)),
+    ).toEqual(["trip_departed"]);
+  });
+});
+
 describe("splitPrice (spec 6, 3.2: bookings keep their price, rule P1)", () => {
   it("shares a booking's price for the split stretch by distance, keeping its total", () => {
     expect(splitPrice(1_000, [15_500, 45_500])).toEqual([254, 746]);
@@ -583,9 +743,10 @@ describe("any sequence of changes the rules allow", () => {
    * a stop as a point some way along the route and some way off it.
    */
   type Drawn =
-    | Exclude<TripChange, { kind: "departure" | "addStop" }>
+    | Exclude<TripChange, { kind: "departure" | "addStop" | "removeStop" }>
     | { kind: "move"; minutes: number }
-    | { kind: "stop"; point: string; alongPermille: number; offM: number };
+    | { kind: "stop"; point: string; alongPermille: number; offM: number }
+    | { kind: "unstop"; point: string };
   const aChange: fc.Arbitrary<Drawn> = fc.oneof(
     fc.record({
       kind: fc.constant("stop" as const),
@@ -594,6 +755,11 @@ describe("any sequence of changes the rules allow", () => {
       alongPermille: fc.integer({ min: 0, max: 1000 }),
       // Mostly on the way; sometimes far off it.
       offM: fc.oneof(fc.integer({ min: 0, max: 3_000 }), fc.integer({ min: 0, max: 60_000 })),
+    }),
+    fc.record({
+      kind: fc.constant("unstop" as const),
+      // An end, a stop between, or a point added on the way.
+      point: fc.constantFrom("stop-0", "stop-1", "stop-2", "extra-a", "extra-b"),
     }),
     fc
       .integer({ min: -60, max: 60 })
@@ -654,6 +820,30 @@ describe("any sequence of changes the rules allow", () => {
   }
 
   /**
+   * Removing a stop said plainly: one between the ends that no booking gets
+   * in or out at (R6.5), with 90% of the typical time of the way past it left
+   * between its neighbours (R3.6).
+   */
+  function stopRemovable(
+    trip: ChangeableTrip,
+    onTrip: readonly BookingOnTrip[],
+    road: Road,
+    point: string,
+  ): boolean {
+    const ids = trip.stops.map((stop) => stop.meetingPointId);
+    const position = ids.indexOf(point);
+    if (position <= 0 || position >= ids.length - 1) return false;
+    if (onTrip.some((booking) => booking.fromPoint === point || booking.toPoint === point)) {
+      return false;
+    }
+    const [before, after] = [trip.stops[position - 1], trip.stops[position + 1]];
+    const past = before && after && roadLegs(road)(before.meetingPointId, after.meetingPointId);
+    if (!before || !after || !past) throw new Error("Off the road.");
+    const floorMs = Math.ceil(past.durationS * 10 * settings.timeFloorPercent);
+    return after.plannedAt.getTime() - before.plannedAt.getTime() >= floorMs;
+  }
+
+  /**
    * The change table (spec 6, 3.2) said again plainly, for trips whose
    * stretches always fit, in no season and with no other trips.
    */
@@ -666,6 +856,8 @@ describe("any sequence of changes the rules allow", () => {
     switch (change.kind) {
       case "addStop":
         return stopAllowed(trip, road, change.stop.meetingPointId);
+      case "removeStop":
+        return stopRemovable(trip, onTrip, road, change.meetingPointId);
       case "departure": {
         const to = change.departsAt.getTime();
         if (to === trip.stops[0]?.plannedAt.getTime()) return true;
@@ -727,6 +919,8 @@ describe("any sequence of changes the rules allow", () => {
               id: `booking-${String(index)}`,
               status: drawn.status,
               departsAtWhenBooked: later(departsAt, drawn.offsetMinutes),
+              fromPoint: `stop-${String(board)}`,
+              toPoint: `stop-${String(alight)}`,
             });
             parts.push({
               board: `stop-${String(board)}`,
@@ -766,7 +960,9 @@ describe("any sequence of changes the rules allow", () => {
                       stop: { meetingPointId: drawn.point, season: allYear, offered: true },
                       legs: roadLegs(road),
                     }
-                  : drawn;
+                  : drawn.kind === "unstop"
+                    ? { kind: "removeStop", meetingPointId: drawn.point, legs: roadLegs(road) }
+                    : drawn;
             const result = checkTripChange(trip, onTrip, change, now, settings);
             expect(result.ok).toBe(allowedByTheTable(trip, onTrip, change, road));
             if (!result.ok) continue;
@@ -794,11 +990,20 @@ describe("any sequence of changes the rules allow", () => {
             expect(isPriceLevel(trip.priceLevel, trip.seats, settings)).toBe(true);
             const times = trip.stops.map((stop) => stop.plannedAt);
             expect(checkTimes(times, trip.typicalS, now, settings).problems).toEqual([]);
-            // A new stop keeps every other stop's time (milestone 6 plan, decision 2).
+            // A new stop keeps every other stop's time (milestone 6 plan,
+            // decision 2), and so does removing one.
             if (change.kind === "addStop") {
               expect(before.stops.map((stop) => stop.plannedAt)).toEqual(
                 times.filter((_, index) => points[index] !== change.stop.meetingPointId),
               );
+            }
+            if (change.kind === "removeStop") {
+              expect(points).not.toContain(change.meetingPointId);
+              expect(
+                before.stops
+                  .filter((stop) => stop.meetingPointId !== change.meetingPointId)
+                  .map((stop) => stop.plannedAt),
+              ).toEqual(times);
             }
             const departure = times[0]?.getTime() ?? 0;
             for (const booking of onTrip) {
@@ -808,18 +1013,23 @@ describe("any sequence of changes the rules allow", () => {
 
             const repriced = change.kind === "seats" || change.kind === "priceLevel";
             expect(pricing === null).toBe(!repriced);
-            const { addedStop } = result.value;
+            const { addedStop, removedStop } = result.value;
             expect(addedStop === null).toBe(change.kind !== "addStop");
-            for (const segment of [...(pricing ?? []), ...(addedStop?.stretches ?? [])]) {
+            expect(removedStop === null).toBe(change.kind !== "removeStop");
+            for (const segment of [
+              ...(pricing ?? []),
+              ...(addedStop?.stretches ?? []),
+              ...(removedStop === null ? [] : [removedStop.stretch]),
+            ]) {
               expect(segment.price.amount).toBeLessThanOrEqual(segment.cap.amount);
             }
 
             const moved = departure !== before.stops[0]?.plannedAt.getTime();
             const newCar = trip.vehicleId !== before.vehicleId;
-            const newStop = trip.stops.length > before.stops.length;
+            const stopsChanged = trip.stops.length !== before.stops.length;
             const booked = onTrip.filter((booking) => booking.status !== "requested");
             expect(told.map((one) => one.bookingId)).toEqual(
-              moved || newCar || newStop ? booked.map((booking) => booking.id) : [],
+              moved || newCar || stopsChanged ? booked.map((booking) => booking.id) : [],
             );
             for (const one of told) {
               const booking = booked.find((candidate) => candidate.id === one.bookingId);
@@ -845,6 +1055,7 @@ describe("the kinds of change recorded (spec 6, section 6)", () => {
       bookingMode: true,
       details: true,
       addStop: true,
+      removeStop: true,
     } satisfies Record<TripChange["kind"], true>;
     expect([...tripChangeKinds].sort()).toEqual(Object.keys(kinds).sort());
   });

@@ -13,6 +13,7 @@ export interface ErrorExtras {
   readonly terms?: NonNullable<ErrorResponse["error"]["terms"]>;
   readonly countsOnReliability?: boolean;
   readonly departureWindow?: NonNullable<ErrorResponse["error"]["departureWindow"]>;
+  readonly bookingsAtStop?: number;
 }
 
 export function errorBody(code: string, message: string, details?: ErrorDetails): ErrorResponse {

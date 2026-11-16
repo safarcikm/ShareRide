@@ -14,9 +14,11 @@ export function otherPerson(booking: Booking) {
   return booking.viewer === "passenger" ? booking.driver : booking.passenger;
 }
 
-/** A system line with what it names in the reader's language, such as a new stop. */
+/** A system line with what it names in the reader's language, such as a stop added or removed. */
 function shownLine(line: NonNullable<ChatMessage["system"]>, locale: Locale): ShownSystemLine {
-  return line.key === "stop_added" ? { ...line, stop: line.stop[locale] } : line;
+  return line.key === "stop_added" || line.key === "stop_removed"
+    ? { ...line, stop: line.stop[locale] }
+    : line;
 }
 
 /**

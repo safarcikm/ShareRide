@@ -651,6 +651,7 @@ export const en = {
   "trip.changed": "Departure changed from {old} to {new}",
   "trip.carChanged": "New car: {car}",
   "trip.stopAdded": "New stop: {stop} at {time}",
+  "trip.stopRemoved": "Stop removed: {stop}",
   "trip.editStops": "Stops",
   "trip.editAddStopAction": "Add a stop",
   "trip.editAddStopHelp":
@@ -664,6 +665,24 @@ export const en = {
   "trip.editOtherPoint": "Choose another meeting point",
   "trip.problem.stop_does_not_fit":
     "{name} is too far out of your way to fit between {from} and {to}, which keep their times.",
+  "trip.editRemoveStopAction": "Remove a stop",
+  "trip.editRemoveStopHelp":
+    "Choose the stop to leave out. The stops either side keep their times. Where passengers get in or out, their bookings have to end first.",
+  "trip.editRemoveStopChoose": "Choose the stop to remove.",
+  "trip.editNoStopToRemove": "Your trip has no stops between where it starts and where it ends.",
+  "trip.editToldStopRemoved":
+    "{count, plural, one {# passenger is} other {# passengers are}} told the stop is removed now.",
+  "trip.editRequestsStopRemoved":
+    "{count, plural, one {# person who asked for a seat sees} other {# people who asked for a seat see}} the change in the app.",
+  "trip.editOtherStop": "Choose another stop",
+  "trip.problem.stop_in_use":
+    "{count, plural, one {# passenger gets} other {# passengers get}} in or out at {name}. Cancel or decline their bookings from the trip first, or ask them to cancel.",
+  "trip.problem.stop_in_use_some":
+    "Passengers get in or out at {name}. Cancel or decline their bookings from the trip first, or ask them to cancel.",
+  "trip.problem.stop_at_end":
+    "The first and last stops make the trip. To change them, cancel the trip and post a new one.",
+  "trip.problem.stop_removal_too_fast":
+    "Without {name}, the drive from {from} to {to} needs more time than the trip leaves between them.",
   "trip.problem.stop_too_far":
     "Through {name} the route would be more than 1.5 times as long as the direct way.",
   "trip.keepBooking": "Keep my booking",

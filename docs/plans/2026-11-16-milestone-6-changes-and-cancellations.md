@@ -209,7 +209,14 @@ still pass, and every booking is within 2 hours of its time.
   follow distance anyway and are all zero on a free trip.)
 - Removing a stop no booking uses joins two segments. Their occupancy is
   equal, since no booking gets in or out there, and a booking's prices for
-  the two are added.
+  the two are added. (As built in PR 6b: the joined segment takes the road
+  leg past the stop and must leave R3.6's 90% of its typical time between
+  the neighbours, or the change is refused with `stretch_too_fast`. A
+  request at the stop blocks it too, as R6.5 counts every booking that
+  holds a seat. The stop is not deleted: `trip_stops.removed_at` marks it,
+  so cancelled bookings that got in or out there still name it, and every
+  list of a trip's stops leaves it out. Only the first and last stops are
+  refused outright, with `stop_at_end`.)
 - Segment positions after the change move up or down in the same
   transaction, with `booking_segment_prices`.
 - The new stop's planned time lies between its neighbours, from the typical
@@ -357,14 +364,19 @@ PR 6a, `feat(trips)`: adding a stop.
 
 PR 6b, `feat(trips)`: removing a stop.
 
-- [ ] Joining segments with occupancy and booking prices; `stop_in_use`
-- [ ] Remove on the stops row
+- [x] Joining segments with occupancy and booking prices; `stop_in_use`,
+      `stop_at_end` and `stretch_too_fast`; a removed stop stays, marked,
+      for the bookings that name it (migration 0018)
+- [x] Remove a stop on the stops row; `TripChanged` for a stop removed,
+      with its push and email, and the change on each booking and in the
+      chat
 - Verify: integration tests (a used stop cannot be removed; bookings keep
   their totals); a browser journey removes a stop
 
 ### PR 7: `feat(trips)`: post again and post the return
 
-- [ ] `POST /trips/{id}/copy?reverse=`; "Post again" and "Post the return"
+- [ ] `POST /trips/{id}/copy?reverse=`; "Post again" and "Post the return",
+      leaving out stops the driver removed
 - Verify: a browser journey posts the return trip
 
 ## 6. Review focus

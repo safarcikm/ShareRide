@@ -332,6 +332,53 @@ export function tripsApi(
     } satisfies TripChangeEffect);
   }
 
+  /**
+   * A stop removed as the rules would remove it here: the stops either
+   * side keep their times, and the way past it costs a tenth less than the
+   * two stretches did (spec 6, 3.2). Only a stop between the ends can go.
+   */
+  function removeStop(trip: MyTrip, meetingPointId: string, preview: boolean) {
+    const position = trip.stops.findIndex((stop) => stop.meetingPoint.id === meetingPointId);
+    const there = trip.segments[position - 1];
+    const onwards = trip.segments[position];
+    if (there === undefined || onwards === undefined) {
+      return failure(422, "change_not_allowed", {
+        details: [{ path: "meetingPointId", issue: "stop_at_end" }],
+      });
+    }
+    const past = {
+      ...there,
+      distanceM: Math.round((there.distanceM + onwards.distanceM) * 0.9),
+      durationS: Math.round((there.durationS + onwards.durationS) * 0.9),
+      price: {
+        ...there.price,
+        amount: Math.round((there.price.amount + onwards.price.amount) * 0.9),
+      },
+    };
+    const stops = trip.stops.filter((_, index) => index !== position);
+    const segments = [
+      ...trip.segments.slice(0, position - 1),
+      past,
+      ...trip.segments.slice(position + 1),
+    ];
+    if (!preview) store({ ...trip, stops, segments, updatedAt: stamp() });
+    return ok(200, {
+      departsAt: trip.departsAt ?? "",
+      arrivesAt: trip.arrivesAt ?? "",
+      stops: stops.map((stop) => stop.meetingPoint.id),
+      plannedTimes: stops.map((stop) => stop.plannedAt ?? ""),
+      told: 0,
+      freeCancellations: 0,
+      requests: 0,
+      expiring: 0,
+      seats: trip.seats,
+      priceLevel: trip.priceLevel,
+      priceLevelLowered: false,
+      prices: segments.map((segment) => segment.price),
+      ...answers.told,
+    } satisfies TripChangeEffect);
+  }
+
   client.answer("/v1/trips/{id}/changes", (input) => {
     const { preview = false } = (input["query"] ?? {}) as { preview?: boolean };
     const answered = answers.change?.(preview);
@@ -341,6 +388,7 @@ export function tripsApi(
     if (trip.status !== "published") return failure(409, "trip_not_changeable");
     const body = input["body"] as TripChangeBody;
     if (body.kind === "addStop") return addStop(trip, body.meetingPointId, preview);
+    if (body.kind === "removeStop") return removeStop(trip, body.meetingPointId, preview);
     const departsAt = body.kind === "departure" ? body.departsAt : (trip.departsAt ?? "");
     // Every stop moves with the departure (R6.2).
     const byMs = new Date(departsAt).getTime() - new Date(trip.departsAt ?? departsAt).getTime();

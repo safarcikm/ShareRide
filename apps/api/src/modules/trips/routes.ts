@@ -235,6 +235,9 @@ function changeProblemPath(
       return `segments.${String(problem.segment)}`;
     case "stop_unavailable":
     case "route_too_long":
+    case "stop_not_on_trip":
+    case "stop_at_end":
+    case "stop_in_use":
       return "meetingPointId";
     case "seats_invalid":
     case "seats_below_taken":
@@ -260,6 +263,12 @@ function departureWindow(problems: readonly ChangeProblem[]) {
           latest: tooFar.latest.toISOString(),
         },
       };
+}
+
+/** How many bookings and requests get in or out at a stop to remove (R6.5). */
+function bookingsAtStop(problems: readonly ChangeProblem[]) {
+  const inUse = problems.find((problem) => problem.code === "stop_in_use");
+  return inUse === undefined ? {} : { bookingsAtStop: inUse.bookings };
 }
 
 /** Changing a published trip (spec 6, 3.2). */
@@ -291,6 +300,7 @@ export function registerTripChangeRoutes(
             issue: problem.code,
           })),
           ...departureWindow(result.error.problems),
+          ...bookingsAtStop(result.error.problems),
         });
       case "distances_missing":
         return pending(c);

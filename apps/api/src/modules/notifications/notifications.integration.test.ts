@@ -1062,6 +1062,49 @@ describe("the worker (plan 4.4)", () => {
     expect((await logOf(jon)).filter((row) => row.kind === "trip_changed")).toEqual([]);
   });
 
+  it("tells each booked passenger of a stop removed by push and email, never by SMS (spec 6, 3.2)", async () => {
+    const { jon, passenger: gunna, bookingId } = await confirmedBooking();
+    await withEmail(gunna, "gunna-unstop@example.com");
+    const dora = await newMember("Dóra");
+    await speaks(dora, "is");
+    const unpaid = await booked(dora.accessToken, airport, { fromStop: 0, toStop: 3 });
+    for (const member of [jon, gunna, dora]) await withDevice(member);
+    await worker().runOnce();
+    push.sent.length = 0;
+    const smsBefore = sms.outbox.length;
+    const removed = await api.client.call(changeTripRoute, {
+      accessToken: jon.accessToken,
+      params: { id: airport },
+      query: {},
+      body: { kind: "removeStop", meetingPointId: sampleId("point:fitjar") },
+    });
+    if (!removed.ok) throw new Error(removed.error.code);
+    await worker().runOnce();
+    const to = (member: Member) => `ExponentPushToken[${member.userId}]`;
+    expect(push.sent).toEqual(
+      expect.arrayContaining([
+        {
+          to: to(gunna),
+          title: "Stop removed: N1 Fitjar",
+          body: "Hlemmur – Fjörður shopping centre · Saturday 14 November at 05:30.",
+          data: { path: `/bookings/${bookingId}` },
+        },
+        expect.objectContaining({
+          to: to(dora),
+          title: "Viðkomustaður felldur niður: N1 Fitjum",
+          data: { path: `/bookings/${unpaid.id}` },
+        }),
+      ]),
+    );
+    expect(push.sent).toHaveLength(2);
+    expect(email.sent.at(-1)).toMatchObject({
+      to: "gunna-unstop@example.com",
+      subject: "Stop removed: N1 Fitjar",
+    });
+    expect(sms.outbox).toHaveLength(smsBefore);
+    expect((await logOf(jon)).filter((row) => row.kind === "trip_changed")).toEqual([]);
+  });
+
   it("tells nobody of a TripChanged event whose change is not a new car or stop", async () => {
     const { jon, passenger, bookingId } = await confirmedBooking();
     await withDevice(passenger);

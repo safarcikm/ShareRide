@@ -29,6 +29,7 @@ const facts: NotificationFacts = {
   car: { make: "Toyota", model: "Yaris", colour: "white" },
   newCar: null,
   newStop: null,
+  removedStop: null,
   moved: { from: new Date("2026-11-14T08:15:00Z"), to: new Date("2026-11-14T09:00:00Z") },
   paid: true,
 };
@@ -272,6 +273,22 @@ describe("notification texts", () => {
       path: "/bookings/booking-1",
     });
     expect(text(added, "is")).toMatchObject({ title: "Nýr viðkomustaður: Smáralind kl. 05:45" });
+  });
+
+  it("tell a passenger a stop removed, in their language (spec 6, 3.2)", () => {
+    const removed = {
+      kind: "trip_changed",
+      role: "passenger",
+      removedStop: { name: "N1 Fitjar" },
+    } as const;
+    expect(text(removed)).toEqual({
+      title: "Stop removed: N1 Fitjar",
+      body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00.",
+      path: "/bookings/booking-1",
+    });
+    expect(text({ ...removed, removedStop: { name: "N1 Fitjum" } }, "is")).toMatchObject({
+      title: "Viðkomustaður felldur niður: N1 Fitjum",
+    });
   });
 
   it("refuse a kind that has no text yet", () => {

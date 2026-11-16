@@ -414,6 +414,17 @@ releases follow [Semantic Versioning](https://semver.org/).
   a part chosen before a stop was added is refused (`stops_changed`)
   rather than booked on other stops. Migration 0017 adds `addStop` to the
   trip change kinds.
+- The driver removes a stop from a published trip (milestone 6, PR 6b,
+  spec 6, 3.2) from Edit trip's stops row, choosing among the stops
+  between the ends. A stop where a booking or request gets in or out
+  cannot go until they end (R6.5), nor one whose way past needs more time
+  than its neighbours leave (R3.6); the stops either side keep their
+  times. The two stretches join, and bookings over both keep their stops
+  and totals. Each passenger who booked reads "Stop removed: Borgarnes" on
+  their booking and in the chat, and is told by push and email; search no
+  longer finds the trip from that stop. Migration 0018 keeps a removed
+  stop, marked with `removed_at`, for the bookings that still name it, and
+  adds `removeStop` to the trip change kinds.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

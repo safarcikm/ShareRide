@@ -20,7 +20,7 @@ import {
   pgTable,
   primaryKey,
   text,
-  unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { at, id, oneOf, timestamps } from "./columns.ts";
@@ -112,13 +112,23 @@ export const tripStops = pgTable(
     meetingPointId: uuid()
       .notNull()
       .references(() => meetingPoints.id),
-    /** 0-based and contiguous. */
+    /** 0-based and contiguous among the stops not removed. */
     position: integer().notNull(),
     plannedAt: at(),
+    /**
+     * When the driver removed the stop (spec 6, 3.2). It stays for the
+     * bookings that once got in or out there, which still name it; every
+     * list of a trip's stops leaves it out.
+     */
+    removedAt: at(),
   },
   (table) => [
-    unique("trip_stops_position_unique").on(table.tripId, table.position),
-    unique("trip_stops_point_unique").on(table.tripId, table.meetingPointId),
+    uniqueIndex("trip_stops_live_position_unique")
+      .on(table.tripId, table.position)
+      .where(sql`${table.removedAt} is null`),
+    uniqueIndex("trip_stops_live_point_unique")
+      .on(table.tripId, table.meetingPointId)
+      .where(sql`${table.removedAt} is null`),
     check("trip_stops_position_check", sql`${table.position} >= 0`),
     // Search finds trips through their stops and times (spec 4).
     index("trip_stops_point_index").on(table.meetingPointId, table.plannedAt),

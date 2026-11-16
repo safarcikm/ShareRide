@@ -59,6 +59,11 @@ export type ShownSystemLine =
       readonly plannedAt: string;
     }
   | {
+      readonly key: "stop_removed";
+      /** The stop's name in the reader's language. */
+      readonly stop: string;
+    }
+  | {
       readonly key: "cancelled";
       readonly by: "me" | "them";
       readonly reason: CancelReason;
@@ -74,6 +79,7 @@ export function systemLineText(t: Translate, line: ShownSystemLine, other: strin
   if (line.key === "departure_changed") return departureChangeText(t, line);
   if (line.key === "car_changed") return t("trip.carChanged", { car: carText(t, line.car) });
   if (line.key === "stop_added") return stopAddedText(t, line);
+  if (line.key === "stop_removed") return t("trip.stopRemoved", { stop: line.stop });
   const reason = cancelReasonText(t, line.reason);
   const said = line.wholeTrip
     ? line.by === "me"

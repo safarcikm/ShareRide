@@ -427,8 +427,7 @@ export const cancelTripRoute = defineRoute({
  * (spec 6, 3.2): a new departure, which every stop moves with (R6.2); the
  * seats offered; the price level, for new bookings; the booking mode; or
  * the preferences and note together; another of the driver's cars, or a
- * stop, which booked passengers are told of. Removing a stop follows in
- * milestone 6's PR 6b.
+ * stop added or removed, which booked passengers are told of.
  */
 export const tripChangeSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("departure"), departsAt: timestampSchema }),
@@ -450,6 +449,11 @@ export const tripChangeSchema = z.discriminatedUnion("kind", [
    * neighbours, which keep theirs; or 422 with why.
    */
   z.object({ kind: z.literal("addStop"), meetingPointId: z.uuid() }),
+  /**
+   * A stop between the first and the last where no booking or request gets
+   * in or out (R6.5); the stops either side keep their times. Or 422 with why.
+   */
+  z.object({ kind: z.literal("removeStop"), meetingPointId: z.uuid() }),
 ]);
 
 export type TripChangeBody = z.infer<typeof tripChangeSchema>;
@@ -520,7 +524,7 @@ export const changeTripRoute = defineRoute({
     },
     422: {
       description:
-        "change_not_allowed: each rule the change breaks is a detail, its code as the issue and `departsAt`, `stops.N`, `segments.N`, `seats`, `priceLevel`, `vehicleId`, `meetingPointId` or `note` as the path; with `move_too_far`, `departureWindow` gives the departures the bookings allow (R6.4). A new stop that does not fit names the stretch it would split (`segments.N`)",
+        "change_not_allowed: each rule the change breaks is a detail, its code as the issue and `departsAt`, `stops.N`, `segments.N`, `seats`, `priceLevel`, `vehicleId`, `meetingPointId` or `note` as the path; with `move_too_far`, `departureWindow` gives the departures the bookings allow (R6.4). A new stop that does not fit names the stretch it would split (`segments.N`); a stop in use (`stop_in_use`) gives how many bookings and requests get in or out there as `bookingsAtStop` (R6.5)",
       ...errors,
     },
     503: distancesPending,

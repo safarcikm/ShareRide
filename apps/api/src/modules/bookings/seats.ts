@@ -3,7 +3,7 @@
 // same transaction, and first stores the expiry of bookings past their
 // deadlines. Reads that cannot wait for that correct the stored occupancy.
 import { schema, type Database } from "@shareride/db";
-import { and, asc, eq, gte, inArray, lt, lte, ne, or, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNull, lt, lte, ne, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { recordEvents } from "../notifications/outbox.ts";
 
@@ -19,7 +19,7 @@ export const pastDeadline = (now: Date) =>
     and(eq(bookings.status, "accepted"), lte(bookings.paymentDueAt, now)),
   );
 
-/** The trip's stops in order, with where each one is. */
+/** The trip's stops in order, with where each one is; a stop removed is not one (spec 6, 3.2). */
 export async function stopsOf(q: Queryable, tripId: string) {
   return q
     .select({
@@ -29,7 +29,7 @@ export async function stopsOf(q: Queryable, tripId: string) {
       plannedAt: tripStops.plannedAt,
     })
     .from(tripStops)
-    .where(eq(tripStops.tripId, tripId))
+    .where(and(eq(tripStops.tripId, tripId), isNull(tripStops.removedAt)))
     .orderBy(asc(tripStops.position));
 }
 

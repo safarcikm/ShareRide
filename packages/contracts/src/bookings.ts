@@ -123,7 +123,8 @@ export const bookingSchema = z.object({
   /**
    * The trip's changes since the booking was made, oldest first (spec 6,
    * 3.2): for a moved departure, the passenger's boarding time before and
-   * after; for a new car, the car; for a new stop, its name and time.
+   * after; for a new car, the car; for a new stop, its name and time; for
+   * a stop removed, its name.
    */
   changes: z.array(
     z.discriminatedUnion("kind", [
@@ -138,6 +139,11 @@ export const bookingSchema = z.object({
         kind: z.literal("addStop"),
         stop: localisedTextSchema,
         plannedAt: timestampSchema,
+        changedAt: timestampSchema,
+      }),
+      z.object({
+        kind: z.literal("removeStop"),
+        stop: localisedTextSchema,
         changedAt: timestampSchema,
       }),
     ]),
