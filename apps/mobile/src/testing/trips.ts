@@ -133,7 +133,7 @@ export function quoteFor(body: {
   };
 }
 
-interface TripsApi {
+export interface TripsApi {
   /** The trips as the fake API holds them now. */
   readonly trips: () => MyTrip[];
   /** Makes publishing answer 422 with these details. */
@@ -157,6 +157,12 @@ export function tripsApi(
     cancel?: () => unknown;
     change?: (preview: boolean) => unknown;
     told?: Partial<Pick<TripChangeEffect, "told" | "freeCancellations" | "requests" | "expiring">>;
+    /** Meeting points a copy of a trip leaves out, as no longer in use. */
+    dropped?: readonly MeetingPointSummary[];
+    /** Answers copying a trip instead, when it gives anything. */
+    copy?: () => unknown;
+    /** A copy is made only once this settles, for taps while it is being made. */
+    copyAfter?: Promise<unknown>;
   } = {},
 ): TripsApi {
   let trips = [...start];
@@ -253,6 +259,38 @@ export function tripsApi(
     }
     return ok(200, store(changed));
   });
+  // Post again, or the return: a draft with the trip's choices and no times.
+  client.answer("/v1/trips/{id}/copy", (input) => {
+    const trip = find(input);
+    if (trip === undefined) return failure(404, "not_found");
+    const answered = answers.copy?.();
+    if (answered !== undefined) return answered;
+    return answers.copyAfter === undefined
+      ? copyOf(trip, input)
+      : answers.copyAfter.then(() => copyOf(trip, input));
+  });
+  const copyOf = (trip: MyTrip, input: Record<string, unknown>) => {
+    const { reverse } = input["query"] as { reverse: boolean };
+    const dropped = answers.dropped ?? [];
+    const kept = (reverse ? [...trip.stops].reverse() : trip.stops).filter(
+      (stop) => !dropped.some((point) => point.id === stop.meetingPoint.id),
+    );
+    const copy: MyTrip = {
+      ...trip,
+      id: `0190a1d6-0000-7000-8000-00000000030${String(trips.length)}`,
+      status: "draft",
+      stops: kept.map((stop) => ({ meetingPoint: stop.meetingPoint, plannedAt: null })),
+      departsAt: null,
+      arrivesAt: null,
+      publishedAt: null,
+      updatedAt: stamp(),
+      segments: [],
+      openRequests: 0,
+      requestsCloseAt: null,
+      cancellation: null,
+    };
+    return ok(201, { trip: store(copy), dropped });
+  };
   client.answer("/v1/trips/{id}/publish", (input) => {
     const trip = find(input);
     if (trip === undefined) return failure(404, "not_found");

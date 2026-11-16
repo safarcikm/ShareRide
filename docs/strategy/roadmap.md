@@ -137,14 +137,14 @@ Milestone 5: chat and notifications
       notifications
 
 Milestone 6: changes and cancellations
-([plan](../plans/2026-11-16-milestone-6-changes-and-cancellations.md), proposed
+([plan](../plans/2026-11-16-milestone-6-changes-and-cancellations.md), accepted
 2026-11-16)
 
-- [ ] Change and cancellation rules in the domain
-- [ ] The passenger cancels a booking, with the refund shown first
-- [ ] The driver cancels a booking or the trip; SMS for last-minute news
-- [ ] Changing a published trip, and adding or removing a stop
-- [ ] Post again and post the return
+- [x] Change and cancellation rules in the domain
+- [x] The passenger cancels a booking, with the refund shown first
+- [x] The driver cancels a booking or the trip; SMS for last-minute news
+- [x] Changing a published trip, and adding or removing a stop
+- [x] Post again and post the return
 
 MVP features (each one a spec, a plan and a PR series)
 

@@ -425,6 +425,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   longer finds the trip from that stop. Migration 0018 keeps a removed
   stop, marked with `removed_at`, for the bookings that still name it, and
   adds `removeStop` to the trip change kinds.
+- Post again and post the return (milestone 6, PR 7, spec 6, 3.6) from the
+  driver's trip page, also once it has left or been cancelled. Each makes
+  a draft with the trip's stops, reversed for the return, car, seats,
+  price level, booking mode, preferences and note, and opens it at the
+  date and times. Stops the driver removed are left out, and so are
+  meeting points no longer in use, which the next step names.
+  `POST /v1/trips/{id}/copy?reverse=`.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

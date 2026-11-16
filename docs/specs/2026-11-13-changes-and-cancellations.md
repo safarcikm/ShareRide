@@ -309,6 +309,22 @@ As built (milestone 6, PR 4):
 3. All of spec 3's checks apply before publishing; stops that are no longer
    active are dropped with a notice.
 
+As built (milestone 6, PR 7):
+
+1. The driver's trip page shows "Post again" and "Post the return trip" below
+   everything else, on an upcoming, past or cancelled trip. Each makes a
+   new draft and opens it at the date and times (step 2 of posting); the
+   price and seats steps follow with the trip's choices already made.
+2. The draft has the trip's stops, reversed for the return, without the
+   stops the driver removed (3.2, item 19); its car, while the driver still
+   has it (otherwise the car a new draft would take); and its seats, price
+   level, booking mode, preferences and note. It has no times, and the trip
+   it came from does not change.
+3. A meeting point no longer in use is left out, and the date and times
+   step says so: "No longer in use, so left out: N1 Fitjar." With fewer
+   than two left, nothing is made, and the trip page says to post a new
+   trip instead (`too_few_stops`).
+
 ## 4. Rules
 
 The trip-change table and rules M2 and S5 in
@@ -370,7 +386,7 @@ Endpoints (`/v1`, shapes defined in `packages/contracts`):
 | `POST /trips/{id}/cancel` | Cancel a trip with a reason and note |
 | `POST /bookings/{id}/cancel` | Cancel a booking, by the passenger or the driver |
 | `GET /bookings/{id}/cancellation-preview` | The refund and reliability effect before confirming |
-| `POST /trips/{id}/copy?reverse=` | Start a new draft from a trip, or its return |
+| `POST /trips/{id}/copy?reverse=` | Start a new draft from a trip, or its return; returns the draft and the meeting points left out (as built, PR 7) |
 
 Domain functions in `packages/domain`: validate a change against the bookings
 and return its effect; the refund and reliability effect of a cancellation;
@@ -475,6 +491,8 @@ IDs only). Notifications for each come in spec 7; refunds in spec 13.
 | `trip.problem.stop_in_use` | {count, plural, one {# passenger gets} other {# passengers get}} in or out at {name}. Cancel or decline their bookings from the trip first, or ask them to cancel. | {count, plural, one {# farþegi fer} other {# farþegar fara}} inn eða út á {name}. Afbókaðu eða hafnaðu bókunum þeirra í ferðinni fyrst, eða biddu þá að afbóka. |
 | `trip.problem.stop_at_end` | The first and last stops make the trip. To change them, cancel the trip and post a new one. | Fyrsti og síðasti viðkomustaðurinn mynda ferðina. Til að breyta þeim skaltu aflýsa ferðinni og birta nýja. |
 | `trip.problem.stop_removal_too_fast` | Without {name}, the drive from {from} to {to} needs more time than the trip leaves between them. | Ef {name} fellur niður þarf aksturinn frá {from} til {to} meiri tíma en ferðin gefur á milli þeirra. |
+| `trip.copyDropped` | No longer in use, so left out: {stops}. | Ekki lengur í notkun og því sleppt: {stops}. |
+| `trip.copyTooFewStops` | Fewer than two of this trip's meeting points are still in use. Post a new trip instead. | Færri en tveir mótsstaðir ferðarinnar eru enn í notkun. Birtu nýja ferð í staðinn. |
 | `trip.editDetails` | Preferences and note | Óskir og skilaboð |
 | `trip.editDetailsAction` | Change the preferences and note | Breyta óskum og skilaboðum |
 | `trip.editDetailsHelp` | Passengers see the change on the trip. Nobody is notified. | Farþegar sjá breytinguna á ferðinni. Enginn fær tilkynningu. |
@@ -520,7 +538,7 @@ IDs only). Notifications for each come in spec 7; refunds in spec 13.
 | `driverTrip.cancelBooking` | Cancel booking: {name} (spoken) | Afbóka: {name} |
 | `driverTrip.cancelledBooking` | Booking cancelled. The passenger has been told. | Bókunin var afbókuð. Farþeginn hefur fengið að vita það. |
 | `trip.postAgain` | Post again | Birta aftur |
-| `trip.postReturn` | Post the return trip | Birta ferðina til baka |
+| `trip.postReturn` | Post the return trip | Birta bakaleiðina |
 | `cancelReason.weather` | Weather | Veður |
 | `cancelReason.roadClosed` | Road closed | Vegur lokaður |
 | `cancelReason.carProblem` | Car problem | Bilun í bíl |

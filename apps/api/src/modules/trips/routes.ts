@@ -1,6 +1,7 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import {
   changeTripRoute,
+  copyTripRoute,
   createTripRoute,
   deleteTripRoute,
   myTripRoute,
@@ -186,6 +187,22 @@ export function registerDraftRoutes(
     const result = await drafts.remove(authOf(c).userId, id);
     if (result.ok) return c.body(null, 204);
     return result.error.code === "not_found" ? tripNotFound(c) : notDraft(c);
+  });
+
+  app.openapi(toOpenApiRoute(copyTripRoute, requireAuth), async (c) => {
+    const { id } = validated(c, "param", copyTripRoute.request.params);
+    const { reverse } = validated(c, "query", copyTripRoute.request.query);
+    validated(c, "json", copyTripRoute.request.body);
+    const result = await drafts.copy(authOf(c).userId, id, { reverse });
+    if (result.ok) return c.json(result.value, 201);
+    return result.error.code === "not_found"
+      ? tripNotFound(c)
+      : errorResponse(
+          c,
+          422,
+          "too_few_stops",
+          "Fewer than two of the trip's meeting points are still in use.",
+        );
   });
 
   app.openapi(toOpenApiRoute(publishTripRoute, requireAuth), async (c) => {
