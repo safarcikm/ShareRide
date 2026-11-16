@@ -131,8 +131,15 @@ processing agreement; Martin signs each one when he opens the account.
 
 ## Privacy in engineering
 
-- Personal data columns are tagged in the schema and listed in the record of
-  processing activities.
+- Every table is listed in `packages/db/src/personal-data.ts` with the kind
+  of personal data it holds, the part of "Download my data" it feeds, the
+  columns that hold a person's ID, and what erasing an account does to its
+  rows, column by column for rows that are kept. A test fails for a table,
+  a person's ID column (a UUID column with a key to `users` or with none)
+  or a text column of a kept row that is not listed. IDs inside JSON values
+  are not checked, so tables keep a person's ID in a column of its own.
+  What deletion does to each kind of data is in the domain
+  (`deletionEffects`, spec 11, 3.5).
 - No personal data in logs, analytics events, error reports or URLs.
 - Production data never copied to staging or development.
 - Privacy impact is a checkbox in every PR template.
