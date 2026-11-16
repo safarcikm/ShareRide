@@ -14,8 +14,8 @@ import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
- * See it as others do (spec 16, 3.4 item 1): what drivers and passengers
- * see of me on trips and requests, never the phone number.
+ * See it as others do (spec 16, 3.4 item 1): my public profile (spec 1),
+ * never the phone number.
  */
 export default function ProfilePreviewScreen() {
   const { locale, t } = useLanguage();
@@ -44,7 +44,7 @@ export default function ProfilePreviewScreen() {
             </Text>
           </View>
         </View>
-        {me.about === null || me.about === "" ? null : <Body>{me.about}</Body>}
+        {me.about === null || me.about === "" ? null : <Body align="start">{me.about}</Body>}
       </Card>
     </Screen>
   );

@@ -693,7 +693,9 @@ describe("reading bookings (spec 5, 3.6 and 3.7)", () => {
     const anna = await driverOf(north);
     const jon = await newMember("Jón");
     const gunna = await newMember("Gunna");
-    await booked(jon.accessToken, north, { fromStop: 0, toStop: 1 });
+    const first = await booked(jon.accessToken, north, { fromStop: 0, toStop: 1 });
+    // Gunna asks an hour later, so her request closes an hour after Jón's.
+    await later(hours(1), anna, gunna);
     const second = await booked(gunna.accessToken, north, { fromStop: 1, toStop: 2 });
     const waiting = async () => {
       const result = await api.client.call(myTripsRoute, {
@@ -711,20 +713,25 @@ describe("reading bookings (spec 5, 3.6 and 3.7)", () => {
       if (!result.ok) throw new Error(result.error.code);
       return result.data.trips.find((trip) => trip.id === north)?.requestsCloseAt;
     };
+    const deadline = async (id: string) => {
+      const result = await api.client.call(bookingRoute, {
+        accessToken: anna.accessToken,
+        params: { id },
+      });
+      if (!result.ok) throw new Error(result.error.code);
+      return result.data.requestExpiresAt;
+    };
     expect(await waiting()).toEqual([[north, 2]]);
     // The first deadline among the open requests, for "Answer by" (spec 16, 3.3).
-    const first = await api.client.call(bookingRoute, {
-      accessToken: anna.accessToken,
-      params: { id: second.id },
-    });
-    if (!first.ok) throw new Error(first.error.code);
-    expect(await closing()).toBe(first.data.requestExpiresAt);
+    expect(await deadline(first.id)).not.toBe(await deadline(second.id));
+    expect(await closing()).toBe(await deadline(first.id));
     await api.client.call(acceptRequestRoute, {
       accessToken: anna.accessToken,
-      params: { id: second.id },
+      params: { id: first.id },
       body: {},
     });
     expect(await waiting()).toEqual([[north, 1]]);
+    expect(await closing()).toBe(await deadline(second.id));
     // A request whose deadline passed no longer waits, before any job runs.
     await later(hours(12), anna);
     expect(await waiting()).toEqual([[north, 0]]);

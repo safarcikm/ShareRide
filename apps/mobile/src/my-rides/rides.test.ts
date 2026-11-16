@@ -1,6 +1,6 @@
 import { northBooking, northMyTrip, unpaidBooking } from "@/testing/bookings";
 import { plannedDraft } from "@/testing/trips";
-import { mergeRides, needsYou, seatsBooked, seatsFree } from "./rides";
+import { mergeRides, needsYou, seatsFree, seatsTaken } from "./rides";
 
 const at = (time: string) => new Date(`2026-11-15T${time}:00.000Z`);
 
@@ -34,7 +34,7 @@ function booking(id: string, boards: string, alights: string) {
 }
 
 describe("mergeRides (spec 16, 3.3)", () => {
-  it("orders a booking at 09:00 before a trip at 10:00, and keeps a ride under way", () => {
+  it("orders a booking at 09:00 before a trip at 10:00, whatever the time now", () => {
     const early = booking("0190a1d6-0000-7000-8000-0000000000c1", "09:00", "11:00");
     const later = trip("10:00", "13:00");
     const rides = mergeRides([early], [later], "upcoming");
@@ -90,11 +90,11 @@ describe("needsYou (spec 16, 3.3 item 2)", () => {
   });
 });
 
-describe("seats on a trip (spec 16, 3.3 item 3)", () => {
-  it("counts the seats booked on the fullest stretch, and the seats free on each", () => {
-    const booked = trip("10:00", "13:00", [0, 1, 1]);
-    expect(seatsBooked(booked)).toBe(1);
-    expect(seatsFree(booked)).toEqual([3, 2, 2]);
-    expect(seatsBooked(trip("10:00", "13:00"))).toBe(0);
+describe("seats on a trip (spec 16, 3.3 item 3; rules S1 and S3)", () => {
+  it("counts the seats taken on the fullest stretch, and the seats free on each", () => {
+    const booked = trip("10:00", "13:00", [0, 2, 1]);
+    expect(seatsTaken(booked)).toBe(2);
+    expect(seatsFree(booked)).toEqual([3, 1, 2]);
+    expect(seatsTaken(trip("10:00", "13:00"))).toBe(0);
   });
 });

@@ -2,6 +2,9 @@
 
 **Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
+Amended by [spec 16](2026-11-15-one-home-and-simpler-flows.md): My bookings
+becomes My rides, with the trips you drive and "Needs you" on top (3.3).
+
 Features: D3 Book seats on the whole trip or only part of it, D4 My bookings,
 C7 Accept or decline requests ([features](../product/features.md)).
 Related: [pricing and seats](../product/pricing-and-seats.md) (rules P1, S1 to

@@ -1,4 +1,5 @@
 import type { Booking, MyTrip } from "@shareride/contracts";
+import { freeSeats } from "@shareride/domain";
 
 // My rides puts my bookings and the trips I drive in one list (spec 16, 3.3).
 
@@ -64,13 +65,18 @@ export function needsYou(ride: Ride, at: Date): NeedsYou {
   return ride.trip.openRequests > 0 && before(ride.trip.requestsCloseAt) ? "answer" : null;
 }
 
-/** The seats booked on the fullest stretch: "1 of 3 seats booked". */
-export const seatsBooked = (trip: MyTrip): number =>
-  Math.max(0, ...trip.segments.map((segment) => segment.seatsTaken));
+const taken = (trip: MyTrip) => trip.segments.map((segment) => segment.seatsTaken);
 
-/** The seats still free on each stretch, in the trip's order. */
+/**
+ * The seats taken on the fullest stretch, "1 of 3 seats taken": bookings
+ * and requests waiting for an answer hold seats (rule S1).
+ */
+export const seatsTaken = (trip: MyTrip): number =>
+  trip.seats - freeSeats(trip.seats, taken(trip), 0, trip.segments.length);
+
+/** The seats still free on each stretch, in the trip's order (rule S3). */
 export const seatsFree = (trip: MyTrip): number[] =>
-  trip.segments.map((segment) => Math.max(0, trip.seats - segment.seatsTaken));
+  trip.segments.map((_, position) => freeSeats(trip.seats, taken(trip), position, position + 1));
 
 /** A key for a ride in a list: a booking and a trip never share one. */
 export const rideKey = (ride: Ride): string =>

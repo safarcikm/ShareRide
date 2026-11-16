@@ -3,7 +3,7 @@
 **Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
 Amended by [spec 16](2026-11-15-one-home-and-simpler-flows.md): the menu's
-`TabBar` and `TopBar`, and the `Logo` beside the name.
+`TabBar` and `TopBar`, the `Logo` beside the name, and the `Row` part.
 
 Covers the brand direction (colours, type, tone of voice) and the first
 screen designs from the [roadmap](../strategy/roadmap.md), Phase 1. Related:

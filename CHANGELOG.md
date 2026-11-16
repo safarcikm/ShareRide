@@ -303,7 +303,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   past (spec 16, 3.3). Coming up puts what needs me first under "Needs
   you": a booking to pay, with Pay, and a trip with requests to answer
   before they close, with Answer requests. Each row says Passenger or
-  Driving; a trip says the seats booked and the seats free on each stretch.
+  Driving; a trip says the seats taken and the seats free on each stretch.
   Find shows Your next ride on top when signed in. `GET /v1/me/trips` takes
   `when` (upcoming or past), and says the seats taken on each stretch and
   when the first open request closes.

@@ -19,7 +19,7 @@ import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { carText } from "@/trip-details/texts";
 import { routeText } from "@/trips/texts";
-import { needsYou, seatsBooked, seatsFree, type Ride } from "./rides";
+import { needsYou, seatsFree, seatsTaken, type Ride } from "./rides";
 
 /** Opens a ride where it lives: the booking (spec 5) or the driver's trip page (spec 3). */
 export function openRide(ride: Ride): void {
@@ -110,7 +110,8 @@ function tripParts(t: Translate, locale: Locale, trip: MyTrip): Parts {
         : { label: t("trip.mine.requests", { count: trip.openRequests }), kind: "info" },
     lines: [
       {
-        text: t("myRides.seatsBooked", { booked: seatsBooked(trip), seats: trip.seats }),
+        // The same words as the driver's trip page: requests hold seats too (rule S1).
+        text: t("driverTrip.taken", { taken: seatsTaken(trip), capacity: trip.seats }),
         look: "strong",
       },
       ...freeLines(t, locale, trip).map((text) => ({ text, look: "muted" as const })),
@@ -137,7 +138,7 @@ function needsText(t: Translate, ride: Ride, at: Date): string | null {
 
 /**
  * Passenger or Driving with the status, the day, the route and the times;
- * a booking's driver, car, seats and price, or a trip's seats booked and
+ * a booking's driver, car, seats and price, or a trip's seats taken and
  * free; and what it needs from me (3.3 item 3). Pressing it opens the ride.
  */
 function RideCard({ ride, at }: { readonly ride: Ride; readonly at: Date }) {

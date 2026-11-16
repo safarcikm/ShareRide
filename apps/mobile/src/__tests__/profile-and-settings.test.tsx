@@ -161,6 +161,18 @@ describe("My profile (spec 16, 3.4)", () => {
     ).toMatchObject({ body: { languages: ["is"] } });
   });
 
+  it("keeps My cars and the preview to accounts that are set up", async () => {
+    await renderApp("/profile/preview");
+    expect(await screen.findByRole("header", { name: "Where are you going?" })).toBeVisible();
+    expect(screen).toHavePathname("/");
+  });
+
+  it("sends an account with sign-up steps left from My cars to its next step", async () => {
+    await renderApp("/drive/cars", { me: { ...completeMe, missingSteps: ["legal"] } });
+    expect(await screen.findByRole("header", { name: "Our terms have changed" })).toBeVisible();
+    expect(screen).toHavePathname("/onboarding/terms");
+  });
+
   it("asks a signed-out person to sign in", async () => {
     await renderApp("/profile");
     expect(await screen.findByRole("button", { name: "Sign in" })).toBeVisible();

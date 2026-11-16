@@ -410,7 +410,7 @@ describe("Your next ride (spec 16, 3.2 item 2)", () => {
     expect(await screen.findByText("Pay 2,900 ISK to confirm your seat")).toBeVisible();
   });
 
-  it("shows a trip I drive with the seats booked", async () => {
+  it("shows a trip I drive with the seats taken", async () => {
     deviceLanguage("en-GB");
     await renderApp("/", {
       me: completeMe,
@@ -431,9 +431,30 @@ describe("Your next ride (spec 16, 3.2 item 2)", () => {
     });
     expect(
       await screen.findByRole("button", {
-        name: "Driving, Sunday 15 November, BSÍ bus terminal → Hof, Akureyri, 09:00 to 14:00, 1 of 3 seats booked, Seats free on every stretch: 2",
+        name: "Driving, Sunday 15 November, BSÍ bus terminal → Hof, Akureyri, 09:00 to 14:00, 1 of 3 seats taken, Seats free on every stretch: 2",
       }),
     ).toBeVisible();
+  });
+
+  it("shows a ride already under way as the next ride", async () => {
+    deviceLanguage("en-GB");
+    // Gunna boarded at 11:00 today and is out at 13:00; it is noon.
+    const underWay = northBooking({
+      id: "0190a1d6-0000-7000-8000-0000000000c3",
+      status: "confirmed",
+      board: { ...northBooking().board, plannedAt: "2026-11-14T11:00:00.000Z" },
+      alight: { ...northBooking().alight, plannedAt: "2026-11-14T13:00:00.000Z" },
+    });
+    await renderApp("/", {
+      me: completeMe,
+      setUp: (client) => {
+        comingUp(client, [later, underWay]);
+      },
+    });
+    expect(
+      await screen.findByRole("button", { name: /^Passenger, Saturday 14 November, .*Confirmed/ }),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: /^Passenger, Monday/ })).toBeNull();
   });
 
   it("is left out signed out", async () => {

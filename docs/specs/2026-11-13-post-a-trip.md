@@ -2,6 +2,10 @@
 
 **Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
+Amended by [spec 16](2026-11-15-one-home-and-simpler-flows.md): `GET
+/me/trips` takes `when` (upcoming or past) and says the seats taken on each
+stretch and when the first open request closes (section 6).
+
 Features: A3 Driver setup, C1 Post a trip, C2 Segment prices, C3 Seats and
 booking mode, C4 Trip preferences and notes ([features](../product/features.md)).
 Related: [pricing and seats](../product/pricing-and-seats.md) (source of truth

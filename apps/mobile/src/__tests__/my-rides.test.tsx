@@ -114,7 +114,7 @@ describe("My rides (spec 16, 3.3)", () => {
     expect(screen.getByRole("button", { name: "Pay 2,900 ISK" })).toBeVisible();
     expect(screen.getByText("Answer by 08:10 tomorrow, or the requests close")).toBeVisible();
     expect(screen.getByRole("button", { name: "Answer requests" })).toBeVisible();
-    // A booking says its driver, car and price; a trip its seats booked and free.
+    // A booking says its driver, car and price; a trip its seats taken and free.
     expect(
       screen.getByRole("button", {
         name: "Passenger, Sunday 15 November, Borgarnes → Blönduós, 10:00 to 12:05, Request sent, Anna, White Toyota Yaris, 1 seat, 2,900 ISK",
@@ -122,11 +122,11 @@ describe("My rides (spec 16, 3.3)", () => {
     ).toBeVisible();
     expect(
       screen.getByRole("button", {
-        name: "Driving, Sunday 15 November, BSÍ bus terminal → Hof, Akureyri, 09:00 to 14:00, 1 request, 1 of 3 seats booked, BSÍ bus terminal → Borgarnes: 3 free, Borgarnes → Blönduós: 2 free, Blönduós → Hof, Akureyri: 3 free, Answer by 08:10 tomorrow, or the requests close",
+        name: "Driving, Sunday 15 November, BSÍ bus terminal → Hof, Akureyri, 09:00 to 14:00, 1 request, 1 of 3 seats taken, BSÍ bus terminal → Borgarnes: 3 free, Borgarnes → Blönduós: 2 free, Blönduós → Hof, Akureyri: 3 free, Answer by 08:10 tomorrow, or the requests close",
       }),
     ).toBeVisible();
     expect(screen.getByText("Borgarnes → Blönduós: 2 free")).toBeVisible();
-    expect(screen.getAllByText("1 of 3 seats booked")).toHaveLength(2);
+    expect(screen.getAllByText("1 of 3 seats taken")).toHaveLength(2);
     expect(screen.getByText("Seats free on every stretch: 2")).toBeVisible();
   });
 

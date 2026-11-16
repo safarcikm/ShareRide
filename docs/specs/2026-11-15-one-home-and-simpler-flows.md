@@ -1,13 +1,13 @@
 # Spec 16: One home and simpler flows
 
 **Owner:** Martin · **Date:** 2026-11-15 · **Status:** Approved
-(2026-11-15)
+(2026-11-15); proposals 1 and 2 built
 
 Amends: [spec 1](2026-11-13-sign-in-and-profile.md) (front page, sign-up,
 profile, settings), [spec 3](2026-11-13-post-a-trip.md) (driver setup and the
 posting steps), [spec 4](2026-11-13-search-and-trip-details.md) (front page
 rides, results, trip details), [spec 5](2026-11-13-booking-and-requests.md)
-(booking screen, paying) and [spec 15](2026-11-13-visual-design-system.md)
+(booking screen, paying, My bookings) and [spec 15](2026-11-13-visual-design-system.md)
 (navigation parts). Rules on prices, seats, payments and cancellations do not
 change.
 
@@ -90,7 +90,7 @@ Find replaces both the front page and My profile as the place the app opens.
    drive, a ride under way included. It is the same row as in My rides
    (3.3), so it reads the same in both places: Passenger or Driving, the
    status ("Confirmed", "Request sent", "Waiting for payment"), date, times
-   and route, the driver and car for a booking, or "1 of 3 seats booked" for
+   and route, the driver and car for a booking, or "1 of 3 seats taken" for
    a trip. A ride that needs you adds its line and button ("Pay by 20:46 to
    keep your seat", with Pay). Pressing it opens the booking or the trip. If
    it can't be loaded, one notice says so, with Try again.
@@ -117,11 +117,13 @@ Find replaces both the front page and My profile as the place the app opens.
 3. After that, under "Coming up", every other booking and published trip
    you drive, soonest first. Each row says **Passenger** or **Driving**, its
    status, the date, times and route. A booking adds the driver and car and
-   the price. A trip adds the requests waiting, the seats booked on its
-   fullest stretch ("1 of 3 seats booked") and the seats free: "Seats free
-   on every stretch: 2" when every stretch is the same, otherwise one line
-   a stretch ("Borgarnes → Blönduós: 2 free"). Pay and Answer requests open
-   the same place as the row.
+   the price. A trip adds the requests waiting, the seats taken on its
+   fullest stretch ("1 of 3 seats taken", as on the driver's trip page,
+   since a request holds its seats until it is answered, rule S1) and the
+   seats free: "Seats free on every stretch: 2" when every stretch is the
+   same, otherwise one line a stretch ("Borgarnes → Blönduós: 2 free").
+   Answer requests opens the driver's trip page. Until Check and pay comes
+   (3.7), Pay opens the booking, where the payment starts.
 4. Pressing a row opens the booking (spec 5) or the driver's trip page
    (spec 3), as today.
 5. **Past:** the same rows, latest first, without "Needs you".
@@ -137,8 +139,8 @@ Find replaces both the front page and My profile as the place the app opens.
    confirmed yet"), Meeting points, Settings, and Terms, rules and privacy.
    My cars lists the cars, each opening to edit it, with Add a car. Terms,
    rules and privacy lists the three documents. "See it as others do" shows
-   the avatar, first name, languages, "Member since" and About you, never
-   the phone number.
+   the public profile of spec 1: the avatar, first name, languages, "Member
+   since" and About you, never the phone number.
 3. My cars and Driving licence replace the car and licence parts of "Before
    you publish", which goes (3.6).
 4. Under the rows: "Phone number, language and signing out are in
@@ -287,8 +289,8 @@ No new tables. Changes to the API:
   `GET /v1/me/bookings` does, so My rides can list past trips. Drafts come
   only with `upcoming`.
 - Each stretch of a trip in `GET /v1/me/trips` says how many seats are taken
-  on it (`seatsTaken`, the seats bookings hold now, rule S1), for "1 of 3
-  seats booked" and the seats free on every stretch.
+  on it (`seatsTaken`, the seats bookings and open requests hold now, rule
+  S1), for "1 of 3 seats taken" and the seats free on every stretch.
 - Each trip in `GET /v1/me/trips` says when its first open request closes
   (`requestsCloseAt`, null when none waits), for "Answer by 08:10 tomorrow,
   or the requests close".
