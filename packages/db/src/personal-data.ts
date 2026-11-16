@@ -205,4 +205,21 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
       note: "reminders of the person's trips and bookings, all cancelled or over by then",
     },
   },
+  operator_sessions: {
+    category: "devices",
+    export: { leftOut: "the operator's own console sign-ins, deleted 30 days after they end" },
+    personColumns: ["userId"],
+    onDeletion: erase,
+  },
+  audit_log: {
+    category: "audit",
+    export: { leftOut: "operator actions, kept 3 years for accountability (spec 9, 3.8)" },
+    personColumns: ["operatorUserId"],
+    onDeletion: keep(
+      ["action", "subjectType", "subjectId", "before", "after", "ipAddress", "userAgent"],
+      [],
+      "kept as they are: the database refuses changes, and deletes before 3 years",
+    ),
+    otherIds: ["operatorSessionId"],
+  },
 };

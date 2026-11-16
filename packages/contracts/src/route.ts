@@ -21,8 +21,10 @@ export interface RouteDefinition {
   /**
    * `true`: needs `Authorization: Bearer <access token>`. `"optional"`: works
    * without one, and a signed-in person's token changes what comes back.
+   * `"operator"`: a console route under /admin/v1, which needs the operator's
+   * session cookie and never takes a bearer token (ADR 0028).
    */
-  readonly auth?: boolean | "optional";
+  readonly auth?: boolean | "optional" | "operator";
   readonly request?: {
     readonly params?: z.ZodObject;
     readonly query?: z.ZodObject;

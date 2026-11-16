@@ -1,6 +1,6 @@
 // Deletes sign-in records past their retention, ends idle sessions, and
 // deletes old drafts of trips, conversations 12 months after their trip and
-// the notification log after 90 days:
+// the notification log after 90 days, and old console sessions:
 // `pnpm --filter @shareride/api clean-up` locally, and every hour as a cron
 // job on staging and production (ADR 0018). Needs only DATABASE_URL, and
 // reports a failure to Sentry when SENTRY_DSN is set.
@@ -8,6 +8,7 @@ import * as Sentry from "@sentry/node";
 import { connectDatabase } from "@shareride/db";
 import { ConfigError, loadErrorReportingConfig } from "./config.ts";
 import { createLogger } from "./logger.ts";
+import { cleanUpOperatorSessions } from "./modules/admin/clean-up.ts";
 import { cleanUpSignInRecords } from "./modules/auth/clean-up.ts";
 import { cleanUpConversations } from "./modules/chat/clean-up.ts";
 import { cleanUpNotifications } from "./modules/notifications/clean-up.ts";
@@ -38,7 +39,11 @@ try {
   const drafts = await cleanUpDrafts(connection.db, now);
   const conversations = await cleanUpConversations(connection.db, now);
   const notifications = await cleanUpNotifications(connection.db, now);
-  logger.info({ counts: { ...counts, drafts, conversations, notifications } }, "clean-up done");
+  const operatorSessions = await cleanUpOperatorSessions(connection.db, now);
+  logger.info(
+    { counts: { ...counts, drafts, conversations, notifications, operatorSessions } },
+    "clean-up done",
+  );
 } catch (error) {
   logger.error({ err: error }, "clean-up failed");
   // Does nothing when error reporting is off.

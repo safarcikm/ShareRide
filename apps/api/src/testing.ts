@@ -3,11 +3,14 @@
 import { Writable } from "node:stream";
 import { createApiClient, type ApiClient } from "@shareride/api-client";
 import { startPhoneSignInRoute, verifyPhoneCodeRoute } from "@shareride/contracts";
-import { pingDatabase, type DatabaseConnection } from "@shareride/db";
+import { pingDatabase, schema, type DatabaseConnection } from "@shareride/db";
 import { seedDraftLegalDocuments } from "@shareride/db/seed";
 import { freshTestDatabase } from "@shareride/db/testing";
+import { operatorRole } from "@shareride/domain";
+import { eq } from "drizzle-orm";
 import { createApp, type FeatureDependencies } from "./app.ts";
 import { createLogger } from "./logger.ts";
+import { createOperatorSessionService, operatorCookie } from "./modules/admin/index.ts";
 import { createKeyedHasher } from "./platform/crypto.ts";
 import { createFakeEmailSender, type FakeEmailSender } from "./platform/email.ts";
 import { createTestPaymentProvider } from "./platform/payments.ts";
@@ -41,6 +44,12 @@ export interface TestApi {
     e164: string,
     platform?: "ios" | "android" | "web",
   ): Promise<{ accessToken: string; refreshToken: string; userId: string; isNewUser: boolean }>;
+  /**
+   * Signs in a new account, gives it the operator role and opens a console
+   * session for it without a passkey, for tests of console routes. Send
+   * `cookie` as the request's Cookie header.
+   */
+  signInOperator(): Promise<{ userId: string; sessionId: string; cookie: string }>;
   close(): Promise<void>;
 }
 
@@ -145,6 +154,22 @@ export async function startTestApi(): Promise<TestApi> {
       if (!verified.ok) throw new Error(`verify failed: ${verified.error.code}`);
       const { accessToken, refreshToken, user, isNewUser } = verified.data;
       return { accessToken, refreshToken: refreshToken ?? "", userId: user.id, isNewUser };
+    },
+    async signInOperator() {
+      const { userId } = await api.signIn(api.newPhoneNumber());
+      await connection.db
+        .update(schema.users)
+        .set({ roles: [operatorRole] })
+        .where(eq(schema.users.id, userId));
+      const session = await createOperatorSessionService(features).start({
+        userId,
+        device: "Test browser",
+      });
+      return {
+        userId,
+        sessionId: session.sessionId,
+        cookie: `${operatorCookie.name}=${session.token}`,
+      };
     },
     close: () => connection.close(),
   };
