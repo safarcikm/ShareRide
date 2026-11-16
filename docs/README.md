@@ -44,6 +44,7 @@ Everything needed to understand, build and run ShareRide. Start with the
 
 - [Legal and regulatory](compliance/legal-and-regulatory.md): taxi law, insurance, company, tax, payments, platform rules
 - [Privacy and GDPR](compliance/privacy-gdpr.md): data inventory, rights, retention, breaches
+- [Legal texts](compliance/legal-texts/README.md): drafts of the terms of service, community rules and privacy policy for the lawyer
 
 ## Working documents
 
