@@ -1194,6 +1194,8 @@ export const en = {
   "export.value.kind.reminder_hour": "Reminder an hour before",
   "export.value.kind.reminder_hour_driver": "Reminder an hour before, as the driver",
   "export.value.kind.payout_sent": "Payout sent",
+  "export.value.kind.checked_in": "At the meeting point",
+  "export.value.kind.checked_in_driver": "At the meeting point, as the driver",
   "export.value.kind.data_export_ready": "Your data ready to download",
   "export.value.kind.departure": "Departure time",
   "export.value.kind.seats": "Seats",

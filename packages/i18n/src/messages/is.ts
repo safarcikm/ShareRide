@@ -1197,6 +1197,8 @@ export const is = {
   "export.value.kind.reminder_hour": "Áminning klukkustund áður",
   "export.value.kind.reminder_hour_driver": "Áminning klukkustund áður, sem bílstjóri",
   "export.value.kind.payout_sent": "Útborgun send",
+  "export.value.kind.checked_in": "Á mótsstaðnum",
+  "export.value.kind.checked_in_driver": "Á mótsstaðnum, sem bílstjóri",
   "export.value.kind.data_export_ready": "Gögnin þín tilbúin til niðurhals",
   "export.value.kind.departure": "Brottfarartími",
   "export.value.kind.seats": "Sæti",
