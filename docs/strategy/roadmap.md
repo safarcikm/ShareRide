@@ -181,12 +181,16 @@ accepted 2026-11-16; built alongside milestones 7 and 8)
 - [ ] Console: users, trips and bookings
 
 Milestone 10: privacy self-service
-([spec 11](../specs/2026-11-13-privacy-self-service.md); built alongside
-milestones 7 to 9)
+([spec 11](../specs/2026-11-13-privacy-self-service.md),
+[plan](../plans/2026-11-16-privacy-self-service.md), accepted 2026-11-16;
+built alongside milestones 7 to 9)
 
-- [ ] Download my data
+- [x] Privacy rules in the domain and the personal data catalogue
+- [x] Confirm with a fresh code
+- [ ] Download my data (the API is built; the app is next)
 - [ ] Delete my account, with 7 days to undo
 - [ ] Retention periods run on their own and leave a record
+- [ ] Ask about my data
 
 Milestones 7 to 10 are built at the same time, each in its own thread, at
 Martin's request (2026-11-16). The rest of the way to the closed beta follows

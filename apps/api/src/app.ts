@@ -49,6 +49,7 @@ import {
 } from "./modules/meeting-points/index.ts";
 import { registerNotificationRoutes } from "./modules/notifications/index.ts";
 import { createPaymentService, registerPaymentRoutes } from "./modules/payments/index.ts";
+import { createExportService, registerPrivacyRoutes } from "./modules/privacy/index.ts";
 import {
   createBlockService,
   createReportService,
@@ -68,7 +69,7 @@ import {
   registerTripRoutes,
 } from "./modules/trips/index.ts";
 import { bearerAuth, operatorSession, toOpenApiRoute } from "./openapi.ts";
-import type { KeyedHasher } from "./platform/crypto.ts";
+import type { FileCipher, KeyedHasher } from "./platform/crypto.ts";
 import { addressBlock } from "./platform/client-address.ts";
 import { createMemoryRateLimiter } from "./platform/memory-rate-limiter.ts";
 import type { PaymentProvider } from "./platform/payments.ts";
@@ -88,6 +89,8 @@ export interface FeatureDependencies {
    */
   readonly email?: EmailChannel;
   readonly hasher: KeyedHasher;
+  /** Seals data exports while they are kept (spec 11, decision 1). */
+  readonly exportCipher: FileCipher;
   readonly clock: () => Date;
   /** The caller's IP address, for per-address limits. */
   readonly clientAddress: (c: Context) => string;
@@ -279,6 +282,11 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       testProvider: features.payments?.name === "test",
       requireAuth,
     });
+    registerPrivacyRoutes(
+      app,
+      createExportService({ ...features, auth, cipher: features.exportCipher, logger }),
+      requireAuth,
+    );
   }
 
   app.openAPIRegistry.registerComponent("securitySchemes", bearerAuth, {

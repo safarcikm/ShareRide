@@ -1,25 +1,32 @@
+import { codePurposes } from "@shareride/domain";
 import { sql } from "drizzle-orm";
 import { check, index, integer, pgTable, text, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
-import { at, id, timestamps } from "./columns.ts";
+import { at, id, oneOf, timestamps } from "./columns.ts";
 import { users } from "./users.ts";
 
 /**
  * Sign-in codes sent by SMS (rule R1.2). The number is kept only as a keyed
  * hash and the code only as an HMAC, so a copy of this table reveals neither.
- * A code is deleted when used or replaced.
+ * A code is deleted when used or replaced. A code to confirm a sensitive
+ * action (spec 11) lives here too, and never signs in.
  */
 export const verificationCodes = pgTable(
   "verification_codes",
   {
     id: id(),
     phoneHash: text().notNull(),
+    /** `sign_in`, or `confirm` for a signed-in person's sensitive action. */
+    purpose: text().notNull().default("sign_in"),
     codeHash: text().notNull(),
     expiresAt: at().notNull(),
     attempts: integer().notNull().default(0),
     usedAt: at(),
     ...timestamps,
   },
-  (table) => [index().on(table.phoneHash, table.createdAt)],
+  (table) => [
+    index().on(table.phoneHash, table.createdAt),
+    check("verification_codes_purpose_check", oneOf(table.purpose, codePurposes)),
+  ],
 );
 
 /** One signed-in device (spec 1, section 3.7). */

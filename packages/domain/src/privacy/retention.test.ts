@@ -11,6 +11,10 @@ describe("the retention rules this feature adds (spec 11, 3.7)", () => {
     expect(cutoffs.deletionsDueBy).toEqual(now);
   });
 
+  it("keeps an expired export's dates 30 days, to show it expired", () => {
+    expect(cutoffs.exportRecordsExpiredBefore.toISOString()).toBe("2029-10-17T03:17:00.000Z");
+  });
+
   it("keeps the list of erased accounts 30 days", () => {
     expect(cutoffs.erasedAccountsBefore.toISOString()).toBe("2029-10-17T03:17:00.000Z");
   });

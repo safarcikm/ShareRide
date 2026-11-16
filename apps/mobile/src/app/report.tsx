@@ -5,7 +5,7 @@ import {
   reportCategories,
   type ReportCategory,
 } from "@shareride/domain";
-import type { MessageKey } from "@shareride/i18n";
+import { reportCategoryText, type MessageKey } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Linking, StyleSheet, Text, View } from "react-native";
@@ -25,7 +25,6 @@ import { useLanguage } from "@/i18n/language";
 import { BackToMenu } from "@/navigation/back-to-menu";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
-import { categoryKeys } from "@/safety/report-texts";
 
 type Kind = ReportAbout["kind"];
 
@@ -155,11 +154,15 @@ function Report({
       <Title>{t(titles[about.kind], { name: name ?? "" })}</Title>
       <View style={styles.group}>
         <Text style={[typography.label, { color: palette.text }]}>{t("report.what")}</Text>
-        <View accessibilityRole="radiogroup" accessibilityLabel={t("report.what")} style={styles.group}>
+        <View
+          accessibilityRole="radiogroup"
+          accessibilityLabel={t("report.what")}
+          style={styles.group}
+        >
           {reportCategories.map((option) => (
             <RadioCard
               key={option}
-              title={t(categoryKeys[option])}
+              title={reportCategoryText(t, option)}
               selected={option === category}
               onSelect={() => {
                 setMissing(false);

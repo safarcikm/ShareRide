@@ -1,5 +1,11 @@
 import { myReportsRoute, type MyReport } from "@shareride/contracts";
-import { formatDate, type MessageKey } from "@shareride/i18n";
+import {
+  formatDate,
+  reportCategoryText,
+  reportOutcomeText,
+  type MessageKey,
+  type Translate,
+} from "@shareride/i18n";
 import { useCallback } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useMe, useSession } from "@/auth/session";
@@ -14,7 +20,6 @@ import { useLoaded } from "@/lib/use-loaded";
 import { BackToMenu } from "@/navigation/back-to-menu";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
-import { categoryKeys } from "@/safety/report-texts";
 
 const kindKeys = {
   trip: "reports.kind.trip",
@@ -25,16 +30,8 @@ const kindKeys = {
 } as const satisfies Record<MyReport["kind"], MessageKey>;
 
 /** What became of a report, in general terms (spec 9, 3.1.6). */
-const outcomeKey = (report: MyReport): MessageKey => {
-  switch (report.outcome) {
-    case "action_taken":
-      return "report.outcomeAction";
-    case "no_breach":
-      return "report.outcomeNone";
-    case null:
-      return "report.open";
-  }
-};
+const outcomeText = (t: Translate, report: MyReport): string =>
+  report.outcome === null ? t("report.open") : reportOutcomeText(t, report.outcome);
 
 /**
  * My reports (spec 9, 3.1.7), in Settings under Safety: what I reported,
@@ -93,13 +90,13 @@ function Reports() {
                 })}
               </Text>
               <Text style={[typography.small, { color: palette.textMuted }]}>
-                {`${t(categoryKeys[report.category])} · ${t("reports.sent", {
+                {`${reportCategoryText(t, report.category)} · ${t("reports.sent", {
                   // With the year: a report is kept for years (Iceland keeps UTC).
                   date: formatDate(report.filedAt.slice(0, 10), locale),
                 })}`}
               </Text>
               <Text style={[typography.body, { color: palette.text }]}>
-                {t(outcomeKey(report))}
+                {outcomeText(t, report)}
               </Text>
             </View>
           </Card>

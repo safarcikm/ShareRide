@@ -3,6 +3,7 @@ import {
   endSessionRoute,
   listSessionsRoute,
   refreshRoute,
+  sendConfirmCodeRoute,
   signOutRoute,
   startPhoneSignInRoute,
   verifyPhoneCodeRoute,
@@ -14,7 +15,7 @@ import { authOf, type AppEnv } from "../../context.ts";
 import { errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
 import type { AccountService } from "../account/index.ts";
-import type { IssuedTokens, Platform, StartError, VerifyError } from "./service.ts";
+import type { ConfirmError, IssuedTokens, Platform, StartError, VerifyError } from "./service.ts";
 import type { AuthService } from "./service.ts";
 
 /** The web's refresh token cookie, sent only to the sign-in endpoints (ADR 0016). */
@@ -57,6 +58,11 @@ function signInError(c: Context, error: StartError | VerifyError) {
     default:
       return errorResponse(c, 400, error.code, message);
   }
+}
+
+/** The answer to a wrong, expired or exhausted confirm code, for the routes that take one. */
+export function confirmCodeError(c: Context, error: ConfirmError) {
+  return signInError(c, error);
 }
 
 export function registerAuthRoutes(
@@ -131,6 +137,16 @@ export function registerAuthRoutes(
     await auth.signOut({ ...authOf(c), all: body.all === true });
     clearRefreshCookie(c);
     return c.body(null, 204);
+  });
+
+  app.openapi(toOpenApiRoute(sendConfirmCodeRoute, requireAuth), async (c) => {
+    validated(c, "json", sendConfirmCodeRoute.request.body);
+    const result = await auth.sendConfirmCode({
+      userId: authOf(c).userId,
+      ipAddress: clientAddress(c),
+    });
+    if (!result.ok) return signInError(c, result.error);
+    return c.json(result.value, 202);
   });
 
   app.openapi(toOpenApiRoute(listSessionsRoute, requireAuth), async (c) => {
