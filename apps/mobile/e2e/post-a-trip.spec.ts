@@ -57,6 +57,8 @@ interface Journey {
   readonly confirm: string;
   readonly publish: string;
   readonly published: string;
+  readonly addEmailPrompt: string;
+  readonly notNow: string;
   readonly seeTrips: string;
   readonly publishedTrips: string;
 }
@@ -102,6 +104,8 @@ const inEnglish: Journey = {
   confirm: "Confirm",
   publish: "Publish trip",
   published: "Your trip is published",
+  addEmailPrompt: "Add an email so we can reach you if your trip changes.",
+  notNow: "Not now",
   seeTrips: "See my trips",
   publishedTrips: "Published",
 };
@@ -148,6 +152,8 @@ const inIcelandic: Journey = {
   confirm: "Staðfesta",
   publish: "Birta ferð",
   published: "Ferðin þín er birt",
+  addEmailPrompt: "Bættu við netfangi svo við getum látið þig vita ef ferðin breytist.",
+  notNow: "Ekki núna",
   seeTrips: "Sjá ferðirnar mínar",
   publishedTrips: "Birtar",
 };
@@ -224,6 +230,10 @@ async function postTrip(page: Page, journey: Journey) {
 
   await page.getByRole("button", { name: journey.publish }).click();
   await expect(page.getByRole("heading", { name: journey.published })).toBeVisible();
+  // No push on the web, and no email yet: the prompt offers an email (spec 7, 3.6.2).
+  await expect(page.getByText(journey.addEmailPrompt)).toBeVisible();
+  await page.getByRole("button", { name: journey.notNow }).click();
+  await expect(page.getByText(journey.addEmailPrompt)).toBeHidden();
   await page.getByRole("button", { name: journey.seeTrips }).click();
   await expect(page.getByRole("heading", { name: journey.publishedTrips })).toBeVisible();
 }

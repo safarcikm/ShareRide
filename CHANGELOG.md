@@ -313,6 +313,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   saved to the account (`GET` and `PATCH /v1/me/notification-settings`);
   the rest of the news stays on, and Settings says so. Quick taps on the
   switch are saved one after the other, so the last one is kept.
+- The prompt to turn on notifications or add an email (milestone 5, PR 8b,
+  spec 7, 3.6.2): after posting a trip, someone with no verified email and
+  no signed-in phone that gets push is asked "Turn on notifications" (the
+  phone's own question, then the phone is registered) or "Add an email"; on
+  the web, or once the phone was told no, only "Add an email". "Not now"
+  closes it, and each occasion is asked until answered. `GET /v1/me` gains
+  `pushOn`.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

@@ -17,7 +17,7 @@ import { eq } from "drizzle-orm";
 import type { LegalService } from "../legal/index.ts";
 import { pendingEmailOf } from "./email.ts";
 
-const { legalAcceptances, legalDocuments, users } = schema;
+const { legalAcceptances, legalDocuments, pushTokens, users } = schema;
 
 export interface Acceptance {
   readonly ageConfirmed?: true | undefined;
@@ -50,6 +50,11 @@ export function createAccountService(dependencies: {
       .innerJoin(legalDocuments, eq(legalDocuments.id, legalAcceptances.documentId))
       .where(eq(legalAcceptances.userId, userId));
     const steps = missingSteps({ ...user, acceptances }, await legal.currentMaterialVersions());
+    const [device] = await db
+      .select({ id: pushTokens.id })
+      .from(pushTokens)
+      .where(eq(pushTokens.userId, userId))
+      .limit(1);
     return {
       id: user.id,
       phoneNumber: user.phoneE164,
@@ -59,6 +64,7 @@ export function createAccountService(dependencies: {
       locale: user.locale === "is" ? "is" : "en",
       email: user.emailVerifiedAt === null ? null : user.email,
       pendingEmail: await pendingEmailOf(db, userId, clock()),
+      pushOn: device !== undefined,
       ageConfirmed: user.ageConfirmedAt !== null,
       memberSince: user.createdAt.toISOString(),
       missingSteps: steps,

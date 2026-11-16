@@ -21,6 +21,7 @@ export const testMe: Me = {
   locale: "en",
   email: null,
   pendingEmail: null,
+  pushOn: false,
   ageConfirmed: false,
   memberSince: "2026-11-13T12:00:00.000Z",
   missingSteps: ["legal", "profile"],

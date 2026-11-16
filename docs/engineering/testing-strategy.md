@@ -83,7 +83,9 @@ five places on every main screen, marking the one you are on
 opens the link from the email, and gets the "Pay now" email once a request
 is accepted (`apps/mobile/e2e/email.spec.ts`). Trip reminders are turned off
 in Settings and stay off after a reload
-(`apps/mobile/e2e/notification-settings.spec.ts`).
+(`apps/mobile/e2e/notification-settings.spec.ts`). After posting a trip on
+the web, the driver is asked to add an email and closes it with "Not now"
+(`apps/mobile/e2e/post-a-trip.spec.ts`).
 
 ## Coverage
 

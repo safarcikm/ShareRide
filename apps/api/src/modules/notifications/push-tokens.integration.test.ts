@@ -1,5 +1,6 @@
 import {
   endSessionRoute,
+  getMeRoute,
   listSessionsRoute,
   setPushTokenRoute,
   signOutRoute,
@@ -54,6 +55,29 @@ async function currentSession(accessToken: string) {
   if (current === undefined) throw new Error("No current session.");
   return current.id;
 }
+
+async function pushOn(accessToken: string) {
+  const me = await api.client.call(getMeRoute, { accessToken });
+  if (!me.ok) throw new Error(me.error.code);
+  return me.data.pushOn;
+}
+
+describe("pushOn in GET /v1/me (spec 7, 3.6.2)", () => {
+  it("says whether any of my signed-in devices gets push", async () => {
+    const phone = api.newPhoneNumber();
+    const onPhone = await api.signIn(phone, "ios");
+    const onWeb = await api.signIn(phone, "web");
+    expect(await pushOn(onWeb.accessToken)).toBe(false);
+    await register(onPhone.accessToken, token("gunna-phone"));
+    expect(await pushOn(onWeb.accessToken)).toBe(true);
+    expect(await pushOn(onPhone.accessToken)).toBe(true);
+    // Someone else's push is not mine.
+    const other = await api.signIn(api.newPhoneNumber(), "android");
+    expect(await pushOn(other.accessToken)).toBe(false);
+    await register(onPhone.accessToken, null);
+    expect(await pushOn(onWeb.accessToken)).toBe(false);
+  });
+});
 
 describe("PUT /v1/me/sessions/current/push-token", () => {
   it("stores this device's token, replaces it, and removes it with null", async () => {

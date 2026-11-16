@@ -11,6 +11,7 @@ import { Body, Title } from "@/components/text";
 import { TextLink } from "@/components/text-link";
 import { useLanguage } from "@/i18n/language";
 import { shareLink, type Shared } from "@/lib/share";
+import { NotificationsPrompt } from "@/notifications/notifications-prompt";
 import { typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { tripHref, tripWebAddress } from "@/trip-details/trip-link";
@@ -19,8 +20,8 @@ import { Loading, useDraft } from "@/trips/use-draft";
 
 /**
  * Published (spec 3, screen 10): share the trip's page, or see it as
- * passengers do. Posting the return trip comes with changes to trips
- * (spec 6).
+ * passengers do, and the prompt to turn on notifications (spec 7, 3.6.2).
+ * Posting the return trip comes with changes to trips (spec 6).
  */
 export default function PublishedScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -74,6 +75,7 @@ function Published({ trip }: { readonly trip: MyTrip }) {
           </Text>
         )}
       </Card>
+      <NotificationsPrompt occasion={`posted:${trip.id}`} />
       <Button
         variant="secondary"
         label={t("trip.published.share")}

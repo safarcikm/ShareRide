@@ -7,6 +7,11 @@ import { useEffect, useState } from "react";
 
 export const DEFAULT_ACTION_IDENTIFIER = "expo.modules.notifications.actions.DEFAULT";
 export const AndroidImportance = { DEFAULT: 5, HIGH: 6 } as const;
+export const PermissionStatus = {
+  GRANTED: "granted",
+  UNDETERMINED: "undetermined",
+  DENIED: "denied",
+} as const;
 
 interface Content {
   readonly title: string;
@@ -50,6 +55,16 @@ function notificationTo(path: string): Notification {
 
 export const mockNotifications = {
   permission: "undetermined" as "granted" | "denied" | "undetermined",
+  /** What the person answers when the phone asks them. */
+  answer: "granted" as "granted" | "denied",
+  /** How many times the phone asked them. */
+  permissionRequests: 0,
+  /** Channels made when the phone first asked them. */
+  channelsWhenAsked: null as number | null,
+  /** As on Android, the phone may ask again after a first no. */
+  asksAgainAfterNo: false,
+  /** Why getting the phone's token fails, if it does. */
+  deviceFailure: null as Error | null,
   /** The phone's own token; Expo's token for it is `ExponentPushToken[<it>]`. */
   device: "test-device",
   /** How many times the phone was asked for its own token. */
@@ -63,6 +78,11 @@ export const mockNotifications = {
   lastResponse: null as Response | null,
   reset() {
     mockNotifications.permission = "undetermined";
+    mockNotifications.answer = "granted";
+    mockNotifications.permissionRequests = 0;
+    mockNotifications.channelsWhenAsked = null;
+    mockNotifications.asksAgainAfterNo = false;
+    mockNotifications.deviceFailure = null;
     mockNotifications.device = "test-device";
     mockNotifications.deviceRequests = 0;
     mockNotifications.tokenRequests = [];
@@ -91,7 +111,21 @@ export const mockNotifications = {
 
 export function getPermissionsAsync() {
   const { permission } = mockNotifications;
-  return Promise.resolve({ status: permission, granted: permission === "granted" });
+  return Promise.resolve({
+    status: permission,
+    granted: permission === "granted",
+    canAskAgain: permission !== "denied" || mockNotifications.asksAgainAfterNo,
+  });
+}
+
+/** The phone asks once; after that it answers as before, as the real one does. */
+export function requestPermissionsAsync() {
+  mockNotifications.permissionRequests += 1;
+  mockNotifications.channelsWhenAsked ??= mockNotifications.channels.length;
+  if (mockNotifications.permission === "undetermined") {
+    mockNotifications.permission = mockNotifications.answer;
+  }
+  return getPermissionsAsync();
 }
 
 function announce() {
@@ -101,6 +135,8 @@ function announce() {
 
 export function getDevicePushTokenAsync(): Promise<DeviceToken> {
   mockNotifications.deviceRequests += 1;
+  if (mockNotifications.deviceFailure !== null)
+    return Promise.reject(mockNotifications.deviceFailure);
   const token = { type: "android", data: mockNotifications.device };
   // Like the real module: the answer, then the same token to the listeners.
   void Promise.resolve().then(announce);

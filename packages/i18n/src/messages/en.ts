@@ -144,6 +144,11 @@ export const en = {
   "settings.remindersHelp": "The evening before and an hour before each trip.",
   "settings.alwaysOn":
     "Notifications about bookings, trips, payments and messages are always on, because others rely on them.",
+  "notifications.turnOn": "Turn on notifications so you hear at once if your trip changes.",
+  "notifications.addEmail": "Add an email so we can reach you if your trip changes.",
+  "notifications.turnOnAction": "Turn on notifications",
+  "notifications.addEmailAction": "Add an email",
+  "notifications.notNow": "Not now",
   "addEmail.title": "Your email",
   "addEmail.intro":
     "Booking news reaches you by email when a push notification can't. Nobody else sees your email.",

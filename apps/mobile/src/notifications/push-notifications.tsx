@@ -1,20 +1,17 @@
 import { setPushTokenRoute } from "@shareride/contracts";
 import {
-  AndroidImportance,
   DEFAULT_ACTION_IDENTIFIER,
   addPushTokenListener,
   clearLastNotificationResponse,
   getDevicePushTokenAsync,
   getExpoPushTokenAsync,
   getPermissionsAsync,
-  setNotificationChannelAsync,
   setNotificationHandler,
   useLastNotificationResponse,
   type DevicePushToken,
 } from "expo-notifications";
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
-import { Platform } from "react-native";
 import { useSession, useSessionState } from "@/auth/session";
 import { useUnread } from "@/chat/unread";
 import { useLanguage } from "@/i18n/language";
@@ -22,6 +19,7 @@ import { reportError } from "@/lib/error-reporting";
 import { fetchIfShowing } from "./open-conversation";
 import { notificationPath } from "./paths";
 import { projectId } from "./project-id";
+import { setUpChannel } from "./push-permission";
 
 /**
  * Push on a phone (plan 4.5). Once notifications are allowed (asked for
@@ -98,12 +96,7 @@ export function PushNotifications() {
     const start = async () => {
       const { granted } = await getPermissionsAsync();
       if (!granted || gone()) return;
-      if (Platform.OS === "android") {
-        await setNotificationChannelAsync("default", {
-          name: channelName,
-          importance: AndroidImportance.HIGH,
-        });
-      }
+      await setUpChannel(channelName);
       await register(await getDevicePushTokenAsync());
     };
     // Not getting a token is no reason to stop the app; the next start tries again.
