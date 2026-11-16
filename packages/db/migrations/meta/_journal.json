@@ -155,13 +155,6 @@
       "when": 1794871064036,
       "tag": "0021_confirm_codes",
       "breakpoints": true
-    },
-    {
-      "idx": 22,
-      "version": "7",
-      "when": 1794872086334,
-      "tag": "0022_trip_day_check_ins",
-      "breakpoints": true
     }
   ]
 }
