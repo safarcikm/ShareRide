@@ -1,4 +1,5 @@
 import { bookingRoute, withdrawRequestRoute, type Booking } from "@shareride/contracts";
+import { holdsSeats } from "@shareride/domain";
 import { capitalised, formatDay, formatMoney } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { CircleCheck } from "lucide-react-native";
@@ -32,6 +33,8 @@ import { Body, Heading, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
+import { bookingShareText } from "@/safety/share-details";
+import { TripSafety } from "@/safety/trip-safety";
 import { NotificationsPrompt } from "@/notifications/notifications-prompt";
 import { DriverAndCar, PartStop } from "@/trip-details/trip-parts";
 import { controlOutline, spacing, typography } from "@/theme/tokens";
@@ -231,6 +234,14 @@ function BookingDetails({
       )}
 
       <WhereToStand booking={booking} />
+
+      {/* Until the passenger gets out: no trip to be safe on after that. */}
+      {holdsSeats(booking.status) && new Date(alight.plannedAt) > now() ? (
+        <TripSafety
+          regions={[board.meetingPoint.region, alight.meetingPoint.region]}
+          share={bookingShareText(t, locale, booking)}
+        />
+      ) : null}
 
       {/* After a move, the choice above cancels, with its reason. */}
       {passenger && canCancel(booking, now()) && !moveChoice.offered && !moveChoice.pending ? (

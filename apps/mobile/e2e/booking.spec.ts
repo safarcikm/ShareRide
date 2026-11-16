@@ -37,6 +37,9 @@ interface Journey extends TripSearch {
   readonly openInMaps: string;
   readonly yours: string;
   readonly see: string;
+  readonly call112: string;
+  readonly weather: string;
+  readonly share: string;
   readonly addEmailPrompt: string;
   readonly notNow: string;
 }
@@ -72,6 +75,9 @@ const inEnglish: Journey = {
   openInMaps: "Open in maps",
   yours: "You have a booking on this trip.",
   see: "See your booking",
+  call112: "Emergency: 112. Calls the emergency number",
+  weather: "Weather (vedur.is)",
+  share: "Share trip details",
   addEmailPrompt: "Add an email so we can reach you if your trip changes.",
   notNow: "Not now",
 };
@@ -107,6 +113,9 @@ const inIcelandic: Journey = {
   openInMaps: "Opna í kortaforriti",
   yours: "Þú átt bókun í þessari ferð.",
   see: "Sjá bókunina",
+  call112: "Neyðarnúmer: 112. Hringir í neyðarnúmerið",
+  weather: "Veður (vedur.is)",
+  share: "Deila upplýsingum um ferðina",
   addEmailPrompt: "Bættu við netfangi svo við getum látið þig vita ef ferðin breytist.",
   notNow: "Ekki núna",
 };
@@ -179,6 +188,12 @@ for (const journey of journeys) {
       await expect(
         page.getByText(journey.confirmed, { exact: true }).filter({ visible: true }),
       ).toBeVisible();
+
+      // Safety on the confirmed booking (spec 9, 3.3): 112, the links for a
+      // trip out of the capital area, and sharing its details.
+      await expect(page.getByRole("button", { name: journey.call112 })).toBeVisible();
+      await expect(page.getByRole("link", { name: journey.weather })).toBeVisible();
+      await expect(page.getByRole("button", { name: journey.share })).toBeVisible();
     });
   });
 }

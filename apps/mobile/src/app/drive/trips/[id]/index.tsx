@@ -21,6 +21,8 @@ import { RequestCard } from "@/driver-trip/request-card";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
+import { tripShareText } from "@/safety/share-details";
+import { TripSafety } from "@/safety/trip-safety";
 import { typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { routeText } from "@/trips/texts";
@@ -161,6 +163,8 @@ export default function DriverTripScreen() {
   };
   // From the planned departure, the trip day takes over (R6.1; spec 8).
   const open = isChangeable(trip.data, now());
+  // Safety stays until the last stop's time, the trip day included (spec 9, 3.3).
+  const arrived = trip.data.arrivesAt !== null && new Date(trip.data.arrivesAt) <= now();
   const said =
     outcome !== null && outcome.cancelled === cancelled
       ? { text: outcome.text, key: String(outcome.count) }
@@ -252,6 +256,12 @@ export default function DriverTripScreen() {
           />
         </>
       ) : null}
+      {arrived ? null : (
+        <TripSafety
+          regions={trip.data.stops.map((stop) => stop.meetingPoint.region)}
+          share={tripShareText(t, locale, trip.data)}
+        />
+      )}
       <PostAgain tripId={id} />
     </Screen>
   );
