@@ -1,7 +1,7 @@
 # Milestone 8 plan: the operator console and meeting points
 
-**Owner:** Martin · **Date:** 2026-11-16 · **Status:** Proposed; the
-choices in section 3 wait for Martin
+**Owner:** Martin · **Date:** 2026-11-16 · **Status:** In progress; the
+choices in section 3 accepted by Martin on 2026-11-16 as recommended
 
 Gives Martin his own web console, open only to the operator, signed in
 with a passkey, where every action is written to an audit log. Its first
@@ -74,6 +74,8 @@ When this milestone is done, on a laptop and on a phone:
 | 3 | How a meeting point is placed, since our map does not zoom ([ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)) | **Paste the coordinates** or a link from Google Maps, Apple Maps or OpenStreetMap; the console reads the numbers, shows the dot on our map of Iceland, and opens the spot in maps to check it | No new service, key or cost, and the operator already uses a maps app to find the spot | A zoomable map in the console only, with MapTiler tiles ([ADR 0021](../decisions/0021-map-tiles-from-maptiler.md)): the free plan is for testing, the paid one $30 a month, plus a key, a new provider to list, and a map library in the console |
 | 4 | Photos of meeting points (needed to activate one, rule R2.3) | **In this milestone**, stored in Hetzner Object Storage as [ADR 0022](../decisions/0022-photo-storage-on-hetzner.md) decided, and on the server's disk in development and tests. The browser removes location and camera data before upload | The console is then complete for meeting points, and profile photos (milestone 13) reuse the same storage. Martin opens the Hetzner bucket (about €5 a month) before activating real points | Photos with profile photos in milestone 13. Nothing to set up now, but real points stay drafts until then |
 | 5 | How distances between real meeting points are computed ([ADR 0009](../decisions/0009-maps-and-routing.md) said a routing engine) | **Our own road file.** A script turns the OpenStreetMap extract of Iceland into a small file of the roads cars may use, without ferries and mountain (F) roads, kept in the repository. The API finds the shortest way on it when a point is activated or moved, in seconds. The script runs again when the map data is updated | No service to run or pay for, nothing leaves our servers, and tests use the same code. The roads come from OpenStreetMap, as with a routing engine | A routing engine (OSRM) in its own container on Render, as ADR 0009 imagined: more exact driving times, but from $7 a month for the smallest instance and one more service to keep running |
+
+Accepted by Martin on 2026-11-16: all five as recommended.
 
 Decisions 1 and 2 are recorded in
 [ADR 0028](../decisions/0028-operator-console-web-app-and-passkeys.md);
@@ -250,7 +252,7 @@ parallel.
 
 ### PR 1: `docs(plans)`: this plan
 
-- [ ] This plan, ADR 0028, the roadmap's milestone 8 and the plans index
+- [x] This plan, ADR 0028, the roadmap's milestone 8 and the plans index
 
 ### PR 2: `feat(admin)`: the operator role, sessions, guard and audit log
 

@@ -1,6 +1,6 @@
 # 0028. The operator console as its own web app, signed in with passkeys
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-16
 - **Deciders:** Martin
 - **Related:** [ADR 0003](0003-cross-platform-client-expo.md),
@@ -58,7 +58,7 @@ operator in with **passkeys only**:
 - An account holds the `operator` role. Only a command on the server gives
   or removes it; giving it prints a setup link that works once, for 30
   minutes, to save the first passkey. More passkeys are added from inside
-  the console.
+  the console, which needs a passkey used in the last 5 minutes.
 - Passkeys are verified with `@simplewebauthn/server`, a widely used
   library, as ADR 0016 requires for new sign-in methods.
 - Console sessions are separate from the app's: an HTTP-only,
