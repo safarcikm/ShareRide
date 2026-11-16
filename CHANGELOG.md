@@ -486,6 +486,17 @@ releases follow [Semantic Versioning](https://semver.org/).
   driver's trip gives each stop's ID. Migration `0022_trip_day_check_ins`
   adds the `check_ins` table, one per booking and one per stop for the
   driver, and the new notification kinds.
+- The trip day in the app (milestone 7, PR 4b, spec 8, 3.1 and 3.2): from
+  3 hours before boarding, a confirmed booking leads with the time and
+  meeting point, where to stand, the driver and car with its plate, then
+  one large "I'm here" button and the chat; it says when the driver is at
+  the meeting point. The driver's trip page says "Use this only when
+  parked." and lists the stops in order with their times, who gets in at
+  each with seats and whether they are here, who gets out, and "I'm here"
+  at the next stop. Before "I'm here" opens it says when it will. The
+  browser tests' API can move one trip's times closer
+  (`POST /e2e/trips/{id}/move`), never in the real server, and a journey
+  has both sides check in and see each other's.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
