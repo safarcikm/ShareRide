@@ -470,6 +470,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   stays on both sides after the ride, and "Message all" still reaches
   passengers whose bookings completed; "Where to stand" goes once the
   ride completed.
+- A trip under way can still be booked at a later stop until that stop's
+  cut-off (rule S4; Martin's answer A45 to Q21): search finds it, and the
+  trip page offers it, as before trips departed on their own.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

@@ -79,7 +79,8 @@ their part, the price, the driver and the car.
 
 A trip matches when all of these hold (rule R4.1):
 
-1. It is published, not departed and not cancelled.
+1. It is published or under way, not completed and not cancelled. Once the
+   trip has left its first stop, a later stop can still be booked (decision 7).
 2. It has a stop among the "from" points and a later stop among the "to"
    points. Direction matters: a trip Akureyri to Reykjavík does not match
    Borgarnes to Blönduós.
@@ -150,8 +151,8 @@ When there are no results (on a chosen date, or at all):
 8. **Actions:** "Book" or "Request to book" (spec 5), "Share" (a link to the
    trip page), "Report this trip" (spec 9).
 9. **Other states:** full on this part (with "Try another part of the trip"),
-   departed, cancelled, or past the booking cut-off; each shown plainly
-   instead of the booking button.
+   departed from the boarding stop, cancelled, or past the booking cut-off;
+   each shown plainly instead of the booking button.
 
 ### 3.7 Shared trip links
 
@@ -322,3 +323,4 @@ Accepted by Martin on 2026-11-13 as recommended.
 | 4 | How long does a finished trip's page stay open by link? | Until a week after the last stop's planned time, then "This trip can't be found". Opening trip pages counts towards the search limit (2026-11-15: Martin, open question Q17, answer A40) |
 | 5 | What do people see before they search? | The rides leaving soonest, on the front page under the route search, so the app shows what is on offer (3.8; Martin, 2026-11-15) |
 | 6 | Does choosing From or To open a screen of its own? | No: the place search drops down under the field, so the page stays in view (3.1; Martin, 2026-11-15; replaces a full-screen place search) |
+| 7 | Can a later stop be booked once the trip has left its first one? | Yes: a trip under way stays bookable at each stop until that stop's cut-off, as before trips departed on their own (spec 8). Long trips pick people up along the way, and an instant booking needs nothing from the driver at the wheel (Martin, 2026-11-16, open question Q21, answer A45) |

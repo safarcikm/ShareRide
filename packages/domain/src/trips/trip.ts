@@ -2,9 +2,18 @@
 // 3.7): seats, booking mode and preferences, with the first trip's defaults.
 import { suggestedPriceLevel } from "./prices.ts";
 
-/** A trip's life (domain model): only drafts and published trips so far. */
+/** A trip's life (domain model). */
 export const tripStatuses = ["draft", "published", "departed", "completed", "cancelled"] as const;
 export type TripStatus = (typeof tripStatuses)[number];
+
+/**
+ * Whether a trip takes bookings (rule S4): published, or under way, as a
+ * later stop can still be booked once the trip has left its first one
+ * (Martin, 2026-11-16). Each stop closes at its own cut-off.
+ */
+export function takesBookings(status: TripStatus): boolean {
+  return status === "published" || status === "departed";
+}
 
 export const bookingModes = ["approval", "instant"] as const;
 export type BookingMode = (typeof bookingModes)[number];

@@ -6,7 +6,7 @@ import type { Money } from "../money.ts";
 import { err, ok, type Result } from "../result.ts";
 import { contactDetailsIn, type ContactKind } from "../trips/note.ts";
 import { freeSeats, partPrice, type SearchableTrip } from "../trips/search.ts";
-import type { BookingMode } from "../trips/trip.ts";
+import { takesBookings, type BookingMode } from "../trips/trip.ts";
 import { paymentDeadline, requestDeadline } from "./deadlines.ts";
 import { statusOnAcceptance } from "./lifecycle.ts";
 import type { BookingSettings } from "./settings.ts";
@@ -71,7 +71,7 @@ export function checkBooking(
   settings: BookingSettings,
 ): Result<BookingPlan, BookingProblem> {
   const { trip, board, alight, seats, now } = attempt;
-  if (trip.status !== "published") return err({ code: "trip_not_bookable" });
+  if (!takesBookings(trip.status)) return err({ code: "trip_not_bookable" });
 
   const last = trip.stops.length - 1;
   if (!Number.isInteger(board) || board < 0 || board >= last) {

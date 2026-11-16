@@ -273,6 +273,9 @@ the browser journeys, and gets a code review before it opens.
   confirmed bookings, freeing their seats; an unpaid booking is stored
   as expired; a late run completes at the rule's time; a second run
   changes nothing; a locked trip waits for the next run)
+- After PR 3, a small follow-up keeps later stops bookable while the trip
+  is under way (rule S4; Martin's answer A45 to Q21): search, the trip
+  page and booking take a departed trip at each stop until its cut-off
 
 ### PR 4: `feat(trips)`: the trip day and "I'm here"
 

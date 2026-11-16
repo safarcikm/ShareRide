@@ -67,10 +67,16 @@ describe("matchTrip (spec 4, R4.1)", () => {
     expect(matchTrip(northTrip, back, now, settings)).toBeNull();
   });
 
-  it("matches only published trips", () => {
-    for (const status of ["draft", "departed", "completed", "cancelled"] as const) {
+  it("matches published trips and those under way, not drafts, completed or cancelled ones", () => {
+    for (const status of ["draft", "completed", "cancelled"] as const) {
       expect(matchTrip({ ...northTrip, status }, search(), now, settings)).toBeNull();
     }
+    // A later stop can still be booked once the trip has left (rule S4, Martin 2026-11-16):
+    // Anna left BSÍ at 09:00, and Borgarnes is at 10:00.
+    const underWay = { ...northTrip, status: "departed" as const };
+    expect(matchTrip(underWay, search(), at("2026-11-15T09:30:00Z"), settings)).toMatchObject({
+      board: 1,
+    });
   });
 
   it("takes the date from the boarding stop in Iceland, not from the trip's start", () => {

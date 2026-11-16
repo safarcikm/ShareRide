@@ -349,7 +349,38 @@ describe("Trip details (spec 4, 3.6)", () => {
     expect(within(bar).queryByRole("button", { name: "Send request" })).toBeNull();
     const tryAnother = within(bar).queryByText("Try another part of the trip.");
     if (part.state === "full") expect(tryAnother).toBeVisible();
-    else expect(tryAnother).toBeNull();
+    // The departed part here leaves a later stop ahead; see the next tests.
+    else if (part.state !== "departed") expect(tryAnother).toBeNull();
+  });
+
+  /** The north trip as if Anna left at `left` stops' times, before the clock's noon. */
+  const underWay = (left: number) =>
+    northStops.map((stop, index) =>
+      index < left ? { ...stop, plannedAt: `2026-11-14T0${String(index)}:00:00.000Z` } : stop,
+    );
+
+  it("points to a later stop of a trip under way, opened from its first stop (rule S4)", async () => {
+    await openTrip(`/trips/${id}`, () =>
+      ok(
+        200,
+        northTrip({ board: 0, alight: 3 }, { stops: underWay(1), part: { state: "departed" } }),
+      ),
+    );
+    const bar = await screen.findByTestId("bottom-bar");
+    expect(await within(bar).findByText("This trip has left.")).toBeVisible();
+    expect(within(bar).getByText("Try another part of the trip.")).toBeVisible();
+  });
+
+  it("points nowhere once the trip has passed every stop to get in at", async () => {
+    await openTrip(`/trips/${id}`, () =>
+      ok(
+        200,
+        northTrip({ board: 0, alight: 3 }, { stops: underWay(3), part: { state: "departed" } }),
+      ),
+    );
+    const bar = await screen.findByTestId("bottom-bar");
+    expect(await within(bar).findByText("This trip has left.")).toBeVisible();
+    expect(within(bar).queryByText("Try another part of the trip.")).toBeNull();
   });
 
   it("shares the trip's web address for the part", async () => {
