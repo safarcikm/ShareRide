@@ -251,11 +251,11 @@ merging, and generated again if another thread's lands first.
 
 ### PR 1: `docs(plans)`: this plan
 
-- [ ] This plan, the roadmap's milestone 9 and the plans index
+- [x] This plan, the roadmap's milestone 9 and the plans index
 
 ### PR 2: `feat(safety)`: safety rules in the domain
 
-- [ ] `safety/` with the settings and the tests of 4.1
+- [x] `safety/` with the settings and the tests of 4.1
 - Verify: `pnpm --filter @shareride/domain test`
 
 ### PR 3: `feat(safety)`: emergency, before you go and share trip

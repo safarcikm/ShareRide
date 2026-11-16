@@ -442,6 +442,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   once 5 count, with the cancellations the operator can overrule. The
   booking lifecycle gains a driver absence before completion and the
   operator's two outcomes for a contested no-show.
+- Safety rules in the domain (milestone 9, PR 2, spec 9): blocks in either
+  direction and the trips they close, also to a blocked passenger booked on
+  them (R9.4); `checkReport` with whom a report is about, the 24 hours to
+  report a booking problem and the 1 000-character description (R9.1);
+  urgent safety reports, the 24-hour response target, the queue's order and
+  the payout a booking problem holds (R9.3, R9.9); the operator's alert by
+  push, and SMS from 07:00 to 23:00; what a suspended person cannot do and
+  what a suspension cancels (R9.10); statements of reasons and appeals
+  within 14 days (R9.5); the operator's trip cancellation; and whether a
+  trip leaves the capital area.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
