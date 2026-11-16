@@ -1,4 +1,4 @@
-import { Check } from "lucide-react-native";
+import { Check, ChevronDown, ChevronUp } from "lucide-react-native";
 import { Pressable, StyleSheet, Text } from "react-native";
 import {
   controlOutline,
@@ -21,18 +21,22 @@ const hitSlop = { top: slop, bottom: slop, left: 0, right: 0 } as const;
  * A choice that can be turned on and off, such as a spoken language
  * (`checkbox`, the default), one choice of several, such as a car's colour
  * (`radio`), or a suggestion that fills a field (`button`). A selected chip
- * shows a tick as well as its colour.
+ * shows a tick as well as its colour. A `button` chip with `expanded` opens
+ * choices under it, such as the order of search results, and shows a chevron.
  */
 export function Chip({
   label,
   selected,
   onToggle,
   role = "checkbox",
+  expanded,
 }: {
   readonly label: string;
   readonly selected: boolean;
   readonly onToggle: () => void;
   readonly role?: "checkbox" | "radio" | "button";
+  /** Whether the choices it opens show; leave out for a chip that opens nothing. */
+  readonly expanded?: boolean;
 }) {
   const palette = usePalette();
   return (
@@ -41,6 +45,7 @@ export function Chip({
       accessibilityLabel={label}
       // aria-checked rather than accessibilityState, which the web build drops.
       aria-checked={role === "button" ? undefined : selected}
+      aria-expanded={expanded}
       onPress={onToggle}
       {...(role === "button" ? {} : spaceKeyPresses(onToggle))}
       hitSlop={hitSlop}
@@ -63,6 +68,13 @@ export function Chip({
       >
         {label}
       </Text>
+      {expanded === undefined ? null : (
+        <Icon
+          icon={expanded ? ChevronUp : ChevronDown}
+          color={selected ? palette.primary : palette.text}
+          size={iconSizes.tick}
+        />
+      )}
     </Pressable>
   );
 }

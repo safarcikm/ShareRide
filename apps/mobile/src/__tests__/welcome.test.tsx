@@ -184,7 +184,11 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
     expect(screen.getByRole("header", { name: "Where are you going?" })).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Find a ride" }));
 
-    expect(await screen.findByRole("header", { name: "Borgarnes → Blönduós" })).toBeVisible();
+    expect(
+      await screen.findByRole("button", {
+        name: "Change search: Borgarnes → Blönduós, Any day, 1 seat",
+      }),
+    ).toBeVisible();
     expect(searchesOf(client)).toEqual([
       { from: borgarnes.id, to: blonduos.id, seats: 1, sort: "departure" },
     ]);
@@ -319,7 +323,11 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
       text: "2 seats",
     });
     await fireEvent.press(screen.getByRole("button", { name: "Find a ride" }));
-    expect(await screen.findByRole("header", { name: "Borgarnes → Blönduós" })).toBeVisible();
+    expect(
+      await screen.findByRole("button", {
+        name: "Change search: Borgarnes → Blönduós, Any day, 2 seats",
+      }),
+    ).toBeVisible();
     expect(searchesOf(client)).toEqual([
       { from: borgarnes.id, to: blonduos.id, seats: 2, sort: "departure" },
     ]);
