@@ -138,17 +138,20 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
     });
     const bar = await screen.findByTestId("bottom-bar");
     expect(within(bar).getByText("You'll finish setting up your account first.")).toBeVisible();
+    // The choice is kept before step 3 opens, so the step shows it.
+    mockedWrite.mockImplementation((name: string, value: string) => {
+      if (name === "pending-booking") mockedRead.mockResolvedValue(value);
+      return Promise.resolve();
+    });
     await fireEvent.press(within(bar).getByRole("button", { name: "Send request" }));
-    expect(await screen.findByRole("header", { name: "Tell others about you" })).toBeVisible();
-    const [, kept] = mockedWrite.mock.calls.at(-1) as [string, string];
-    mockedRead.mockImplementation((name: string) =>
-      Promise.resolve(name === "pending-booking" ? kept : null),
-    );
+    expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
+    expect(
+      await screen.findByRole("button", { name: "Create account and send request" }),
+    ).toBeVisible();
     client.answer("/v1/me", () => ok(200, completeMe));
     await fireEvent.changeText(screen.getByLabelText("First name"), "Gunna");
-    await fireEvent.changeText(screen.getByLabelText("About you"), "Test account.");
     await fireEvent.press(screen.getByRole("checkbox", { name: "Icelandic" }));
-    await fireEvent.press(screen.getByRole("button", { name: "Save profile" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Create account and send request" }));
     expect(await screen.findByRole("header", { name: "Request this ride" })).toBeVisible();
     expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "2" });
   });
@@ -185,13 +188,16 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
     expect(await screen.findByText("Step 2 of 3")).toBeVisible();
     expect(screen.getByTestId("kept-ride")).toBeVisible();
     await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
-    expect(await screen.findByRole("header", { name: "Tell others about you" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
+    expect(screen.getByText("Step 3 of 3")).toBeVisible();
+    expect(await screen.findByTestId("kept-ride")).toHaveAccessibleName(
+      "You're booking, Sunday 15 November · 10:00 Borgarnes → 12:05 Blönduós",
+    );
 
     client.answer("/v1/me", () => ok(200, completeMe));
     client.answer("/v1/me", () => ok(200, completeMe), "patch");
     await fireEvent.changeText(screen.getByLabelText("First name"), "Gunna");
-    await fireEvent.press(screen.getByRole("checkbox", { name: "Icelandic" }));
-    await fireEvent.press(screen.getByRole("button", { name: "Save profile" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Create account and send request" }));
     expect(await screen.findByRole("header", { name: "Request this ride" })).toBeVisible();
     expect(screen).toHavePathname(`/trips/${id}/book`);
     expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "1" });

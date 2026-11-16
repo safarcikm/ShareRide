@@ -196,8 +196,8 @@ describe("The menu (spec 16, 3.1)", () => {
 
   it("sends an account with sign-up steps left to its next step from any tab", async () => {
     await renderApp("/my-rides", { me: { ...testMe, missingSteps: ["legal", "profile"] } });
-    expect(await screen.findByRole("header", { name: "Before you start" })).toBeVisible();
-    expect(screen).toHavePathname("/onboarding/terms");
+    expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
+    expect(screen).toHavePathname("/onboarding/about-you");
   });
 
   it("keeps one menu after signing in and after signing out", async () => {

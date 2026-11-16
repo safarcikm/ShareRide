@@ -6,7 +6,7 @@ import {
   type ProfileError,
 } from "@shareride/domain";
 import { languageNames, type MessageKey, type Translate } from "@shareride/i18n";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
@@ -32,16 +32,42 @@ function fieldError(t: Translate, field: ProfileError["field"]): string {
 const knownLanguages = new Set<string>(spokenLanguages);
 
 /**
+ * The languages that show before "More languages" (spec 16, 3.5 item 4):
+ * the ones most spoken in Iceland and by its visitors, as on the approved
+ * sketch. Languages already chosen show too.
+ */
+const commonLanguages = new Set<string>(["is", "en", "pl", "de", "es"]);
+
+/**
  * First name, about and spoken languages (spec 1, section 3.5), checked with
- * the same rules as the API before saving. Photo and email come later.
+ * the same rules as the API before saving. Photo and email come later. A
+ * new profile starts with the app's language ticked (spec 16, 3.5 item 4).
  */
 export function ProfileForm({
   me,
   onSaved,
+  submitLabel,
+  foldAbout = false,
+  beforeSave,
+  waiting = false,
+  children,
 }: {
   readonly me: Me;
   /** After saving; the account in the session is already updated. */
   readonly onSaved?: (me: Me) => void;
+  /** The main button; "Save profile" unless given. */
+  readonly submitLabel?: string;
+  /** Folds an empty About you behind "Add a few words about you (optional)". */
+  readonly foldAbout?: boolean;
+  /**
+   * Runs once the fields pass their checks, before saving, such as
+   * accepting the terms first. A text stops the save and shows as the error.
+   */
+  readonly beforeSave?: () => Promise<string | null>;
+  /** The main button shows busy, such as while the terms load. */
+  readonly waiting?: boolean;
+  /** Shown after the fields and before the main button. */
+  readonly children?: ReactNode;
 }) {
   const { locale, t } = useLanguage();
   const session = useSession();
@@ -49,13 +75,25 @@ export function ProfileForm({
   const [firstName, setFirstName] = useState(me.firstName ?? "");
   const [about, setAbout] = useState(me.about ?? "");
   // A language a newer version added is kept off the form rather than refused.
-  const [languages, setLanguages] = useState<readonly string[]>(() =>
-    me.languages.filter((language) => knownLanguages.has(language)),
-  );
+  const [languages, setLanguages] = useState<readonly string[]>(() => {
+    const known = me.languages.filter((language) => knownLanguages.has(language));
+    return known.length > 0 || !knownLanguages.has(locale) ? known : [locale];
+  });
+  // The chips that show: the common ones and those chosen when the form
+  // opened, so a chip never disappears when it is unticked.
+  const [shown] = useState(() => new Set([...commonLanguages, ...languages]));
+  const [allLanguages, setAllLanguages] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(!foldAbout || about !== "");
+  const [aboutAsked, setAboutAsked] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<ProfileError["field"], string>>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const saving = useRef(false);
+
+  function showError(field: ProfileError["field"]) {
+    setErrors({ [field]: fieldError(t, field) });
+    if (field === "about") setAboutOpen(true);
+  }
 
   function toggle(language: string) {
     setErrors(({ languages: _cleared, ...others }) => others);
@@ -69,11 +107,18 @@ export function ProfileForm({
     setError(null);
     const valid = validateProfileChanges({ firstName, about, languages });
     if (!valid.ok) {
-      setErrors({ [valid.error.field]: fieldError(t, valid.error.field) });
+      showError(valid.error.field);
       return;
     }
     saving.current = true;
     setBusy(true);
+    const stop = (await beforeSave?.()) ?? null;
+    if (stop !== null) {
+      saving.current = false;
+      setBusy(false);
+      setError(stop);
+      return;
+    }
     const result = await session.call(updateMeRoute, {
       body: {
         firstName: valid.value.firstName,
@@ -90,7 +135,7 @@ export function ProfileForm({
     }
     const field = (result.error.details as { field?: ProfileError["field"] } | undefined)?.field;
     if (result.error.code === "profile_invalid" && field !== undefined) {
-      setErrors({ [field]: fieldError(t, field) });
+      showError(field);
     } else {
       setError(errorText(t, result));
     }
@@ -112,40 +157,31 @@ export function ProfileForm({
         autoCapitalize="words"
         maxLength={60}
       />
-      <View style={styles.about}>
-        <TextField
-          label={t("profile.about")}
-          help={t("profile.aboutHelp", { max: profileRules.aboutMaxLength })}
-          error={errors.about}
-          value={about}
-          onChangeText={(value) => {
-            setAbout(value);
-            setErrors(({ about: _cleared, ...others }) => others);
-          }}
-          multiline
-          maxLength={600}
-        />
-        <Text style={[typography.small, styles.count, { color: palette.textMuted }]}>
-          {t("profile.aboutCount", {
-            count: Array.from(about).length,
-            max: profileRules.aboutMaxLength,
-          })}
-        </Text>
-      </View>
       <View style={styles.languages}>
         <Text style={[typography.label, { color: palette.text }]}>{t("profile.languages")}</Text>
         <View style={styles.chips}>
-          {spokenLanguages.map((language) => (
-            <Chip
-              key={language}
-              label={languageNames[locale][language]}
-              selected={languages.includes(language)}
-              onToggle={() => {
-                toggle(language);
-              }}
-            />
-          ))}
+          {spokenLanguages
+            .filter((language) => allLanguages || shown.has(language))
+            .map((language) => (
+              <Chip
+                key={language}
+                label={languageNames[locale][language]}
+                selected={languages.includes(language)}
+                onToggle={() => {
+                  toggle(language);
+                }}
+              />
+            ))}
         </View>
+        {allLanguages || spokenLanguages.every((language) => shown.has(language)) ? null : (
+          <Button
+            variant="text"
+            label={t("profile.moreLanguages")}
+            onPress={() => {
+              setAllLanguages(true);
+            }}
+          />
+        )}
         {errors.languages === undefined ? null : (
           <Text
             accessibilityLiveRegion="polite"
@@ -155,8 +191,45 @@ export function ProfileForm({
           </Text>
         )}
       </View>
+      {aboutOpen ? (
+        <View style={styles.about}>
+          <TextField
+            label={t("profile.about")}
+            help={t("profile.aboutHelp", { max: profileRules.aboutMaxLength })}
+            error={errors.about}
+            value={about}
+            onChangeText={(value) => {
+              setAbout(value);
+              setErrors(({ about: _cleared, ...others }) => others);
+            }}
+            multiline
+            maxLength={600}
+            autoFocus={aboutAsked}
+          />
+          <Text style={[typography.small, styles.count, { color: palette.textMuted }]}>
+            {t("profile.aboutCount", {
+              count: Array.from(about).length,
+              max: profileRules.aboutMaxLength,
+            })}
+          </Text>
+        </View>
+      ) : (
+        <Button
+          variant="text"
+          label={t("profile.addAbout")}
+          onPress={() => {
+            setAboutAsked(true);
+            setAboutOpen(true);
+          }}
+        />
+      )}
+      {children}
       <Notice message={error} />
-      <Button label={t("profile.save")} busy={busy} onPress={() => void save()} />
+      <Button
+        label={submitLabel ?? t("profile.save")}
+        busy={busy || waiting}
+        onPress={() => void save()}
+      />
     </View>
   );
 }

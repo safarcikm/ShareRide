@@ -1,8 +1,9 @@
 import { fireEvent, screen } from "expo-router/testing-library";
 import type { Me } from "@shareride/contracts";
-import { failure, ok, testMe } from "@/testing/fake-client";
-import { legalDocument, renderApp } from "@/testing/app";
+import { failure, ok, testMe, type FakeClient } from "@/testing/fake-client";
+import { completeMe, legalDocument, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
+import { northResult, northTrip, tripDetailsApi } from "@/testing/search";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -13,45 +14,145 @@ jest.mock("@/lib/preferences", () => ({
   readPreference: jest.fn(() => Promise.resolve(null)),
   writePreference: jest.fn(() => Promise.resolve()),
 }));
+// The app's own storage, in memory: a ride kept while signing up waits here.
+const mockStored = new Map<string, string>();
+jest.mock("@/lib/app-data", () => ({
+  readAppData: jest.fn((key: string) => Promise.resolve(mockStored.get(key) ?? null)),
+  writeAppData: jest.fn((key: string, value: string) => {
+    mockStored.set(key, value);
+    return Promise.resolve();
+  }),
+}));
 
+beforeEach(() => {
+  mockStored.clear();
+});
+
+/** Accepted the terms in an earlier version of the app, then left before the profile. */
 const afterLegal: Me = { ...testMe, ageConfirmed: true, missingSteps: ["profile"] };
+const accept = "I accept the Terms of Service and the Community Rules";
 
-/** Signs in a new account; the app opens the terms. */
-async function openTerms(versions: { terms: number; rules: number } = { terms: 1, rules: 1 }) {
-  const app = await renderApp("/", { me: testMe });
-  app.client.answer("/v1/legal/{type}/current", (input) => {
-    const { type } = input["params"] as { type: string };
-    return ok(200, legalDocument(type, type === "terms" ? versions.terms : versions.rules));
+/** A new account, signed in: the app opens step 3. */
+async function openAboutYou(
+  versions: { terms: number; rules: number } = { terms: 1, rules: 1 },
+  me: Me = testMe,
+  setUp: (client: FakeClient) => void = (client) => {
+    tripDetailsApi(client);
+  },
+) {
+  const app = await renderApp("/", {
+    me,
+    setUp: (client) => {
+      setUp(client);
+      client.answer("/v1/legal/{type}/current", (input) => {
+        const { type } = input["params"] as { type: string };
+        return ok(200, legalDocument(type, type === "terms" ? versions.terms : versions.rules));
+      });
+    },
   });
-  expect(await screen.findByRole("header", { name: "Before you start" })).toBeVisible();
+  expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
   return app;
 }
 
-describe("Terms and age", () => {
-  it("asks for both boxes before accepting", async () => {
-    const app = await openTerms();
-    await fireEvent.press(screen.getByRole("button", { name: "Accept and continue" }));
-    expect(await screen.findByText("Tick both boxes to continue.")).toBeVisible();
-    await fireEvent.press(screen.getByRole("checkbox", { name: "I am 18 or older" }));
-    await fireEvent.press(screen.getByRole("button", { name: "Accept and continue" }));
-    expect(await screen.findByText("Tick both boxes to continue.")).toBeVisible();
-    expect(app.client.calls.some((call) => call.path === "/v1/me/legal-acceptances")).toBe(false);
+async function tickBoth() {
+  await fireEvent.press(screen.getByRole("checkbox", { name: "I am 18 or older" }));
+  await fireEvent.press(screen.getByRole("checkbox", { name: accept }));
+}
+
+const callsTo = (app: Awaited<ReturnType<typeof renderApp>>, path: string, method?: "patch") =>
+  app.client.calls.filter(
+    (call) => call.path === path && (method === undefined || "body" in call.input),
+  );
+
+describe("Step 3 of signing up, about you (spec 16, 3.5)", () => {
+  it("asks for a first name, languages and the terms in one step", async () => {
+    await openAboutYou();
+    expect(screen).toHavePathname("/onboarding/about-you");
+    expect(screen.getByText("Step 3 of 3")).toBeVisible();
+    expect(screen.getByText("Everyone sees it. We never show your last name.")).toBeVisible();
+    // The app's language is ticked already, and a few common ones show.
+    expect(screen.getByRole("checkbox", { name: "English" })).toBeChecked();
+    for (const name of ["Icelandic", "Polish", "German", "Spanish"]) {
+      expect(screen.getByRole("checkbox", { name })).not.toBeChecked();
+    }
+    expect(screen.queryByRole("checkbox", { name: "Lithuanian" })).toBeNull();
+    await fireEvent.press(screen.getByRole("button", { name: "More languages" }));
+    expect(screen.getByRole("checkbox", { name: "Lithuanian" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "More languages" })).toBeNull();
+    // A few words about you, folded until asked for.
+    expect(screen.queryByLabelText("About you")).toBeNull();
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Add a few words about you (optional)" }),
+    );
+    expect(screen.getByLabelText("About you")).toBeVisible();
+    expect(screen.getByRole("checkbox", { name: "I am 18 or older" })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: accept })).not.toBeChecked();
+    expect(screen.getByText("The Privacy Policy explains what we collect and why.")).toBeVisible();
+    // Nothing kept: no ride card, and the button just creates the account.
+    expect(screen.queryByTestId("kept-ride")).toBeNull();
+    expect(screen.getByRole("button", { name: "Create account" })).toBeVisible();
   });
 
-  it("records the acceptance with the versions shown and goes on to the profile", async () => {
-    const app = await openTerms();
-    app.client.answer("/v1/me/legal-acceptances", () => ok(200, afterLegal));
+  it("asks for both boxes before sending anything", async () => {
+    const app = await openAboutYou();
+    await fireEvent.changeText(screen.getByLabelText("First name"), "Anna");
+    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+    expect(await screen.findByText("Tick both boxes to continue.")).toBeVisible();
     await fireEvent.press(screen.getByRole("checkbox", { name: "I am 18 or older" }));
-    await fireEvent.press(
-      screen.getByRole("checkbox", {
-        name: "I accept the Terms of Service and the Community Rules",
-      }),
-    );
-    await fireEvent.press(screen.getByRole("button", { name: "Accept and continue" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+    expect(await screen.findByText("Tick both boxes to continue.")).toBeVisible();
+    expect(callsTo(app, "/v1/me/legal-acceptances")).toHaveLength(0);
+    expect(callsTo(app, "/v1/me", "patch")).toHaveLength(0);
+  });
 
-    expect(await screen.findByRole("header", { name: "Tell others about you" })).toBeVisible();
-    expect(screen).toHavePathname("/onboarding/profile");
-    expect(app.client.calls.find((c) => c.path === "/v1/me/legal-acceptances")?.input).toEqual({
+  it("checks the first name before anything is sent", async () => {
+    const app = await openAboutYou();
+    await tickBoth();
+    await fireEvent.changeText(screen.getByLabelText("First name"), "Anna 2");
+    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+    expect(
+      await screen.findByText("Use 1 to 30 letters. Spaces, hyphens and apostrophes are fine."),
+    ).toBeVisible();
+    expect(callsTo(app, "/v1/me/legal-acceptances")).toHaveLength(0);
+    expect(callsTo(app, "/v1/me", "patch")).toHaveLength(0);
+  });
+
+  it("keeps the few words about you to 300 characters", async () => {
+    await openAboutYou();
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Add a few words about you (optional)" }),
+    );
+    await fireEvent.changeText(screen.getByLabelText("First name"), "Anna");
+    await fireEvent.changeText(screen.getByLabelText("About you"), "a".repeat(301));
+    expect(screen.getByText("301 of 300")).toBeVisible();
+    await tickBoth();
+    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+    expect(await screen.findByText("Keep it to 300 characters.")).toBeVisible();
+  });
+
+  it("accepts the documents shown, then saves the profile, then opens Find", async () => {
+    const app = await openAboutYou();
+    app.client.answer("/v1/me/legal-acceptances", () => ok(200, afterLegal));
+    app.client.answer("/v1/me", (input) => {
+      const body = input["body"] as Partial<Me> | undefined;
+      return ok(200, { ...afterLegal, ...body, missingSteps: [] });
+    });
+    await fireEvent.changeText(screen.getByLabelText("First name"), "  Anna ");
+    await fireEvent.press(screen.getByRole("checkbox", { name: "Icelandic" }));
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Add a few words about you (optional)" }),
+    );
+    await fireEvent.changeText(screen.getByLabelText("About you"), "Coffee and podcasts.");
+    await tickBoth();
+    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(screen).toHavePathname("/");
+    const legal = app.client.calls.findIndex((c) => c.path === "/v1/me/legal-acceptances");
+    const profile = app.client.calls.findIndex((c) => c.path === "/v1/me" && "body" in c.input);
+    expect(legal).toBeGreaterThan(-1);
+    expect(profile).toBeGreaterThan(legal);
+    expect(app.client.calls[legal]?.input).toEqual({
       body: {
         ageConfirmed: true,
         documents: [
@@ -62,44 +163,73 @@ describe("Terms and age", () => {
       },
       accessToken: "sr_at_access-1",
     });
+    expect(app.client.calls[profile]?.input).toEqual({
+      body: { firstName: "Anna", about: "Coffee and podcasts.", languages: ["en", "is"] },
+      accessToken: "sr_at_access-1",
+    });
+    await fireEvent.press(screen.getByRole("tab", { name: "Profile" }));
+    expect(await screen.findByRole("header", { name: "My profile" })).toBeVisible();
+    expect(
+      screen.getByText("Speaks English, Icelandic · Member since November 2026"),
+    ).toBeVisible();
+  });
+
+  it("keeps the answers when saving fails, and accepts the terms only once", async () => {
+    const app = await openAboutYou();
+    app.client.answer("/v1/me/legal-acceptances", () => ok(200, afterLegal));
+    let saves = 0;
+    app.client.answer("/v1/me", (input) => {
+      const body = input["body"] as Partial<Me> | undefined;
+      if (body === undefined) return ok(200, testMe);
+      saves += 1;
+      return saves === 1
+        ? failure(0, "network_error")
+        : ok(200, { ...afterLegal, ...body, missingSteps: [] });
+    });
+    await fireEvent.changeText(screen.getByLabelText("First name"), "Anna");
+    await tickBoth();
+    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+    expect(
+      await screen.findByText("We couldn't reach ShareRide. Check your connection and try again."),
+    ).toBeVisible();
+    expect(screen.getByLabelText("First name")).toHaveDisplayValue("Anna");
+    expect(screen.getByRole("checkbox", { name: "English" })).toBeChecked();
+
+    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(callsTo(app, "/v1/me/legal-acceptances")).toHaveLength(1);
+    expect(callsTo(app, "/v1/me", "patch")).toHaveLength(2);
   });
 
   it("shows the new version when the terms changed while reading", async () => {
     const versions = { terms: 1, rules: 1 };
-    const app = await openTerms(versions);
+    const app = await openAboutYou(versions);
     app.client.answer("/v1/me/legal-acceptances", (input) => {
       const body = input["body"] as { documents: { version: number }[] };
       return body.documents[0]?.version === 2
         ? ok(200, afterLegal)
         : failure(409, "legal_version_outdated");
     });
+    app.client.answer("/v1/me", (input) => {
+      const body = input["body"] as Partial<Me> | undefined;
+      return ok(200, { ...afterLegal, ...body, missingSteps: [] });
+    });
     versions.terms = 2;
-    await fireEvent.press(screen.getByRole("checkbox", { name: "I am 18 or older" }));
-    await fireEvent.press(
-      screen.getByRole("checkbox", {
-        name: "I accept the Terms of Service and the Community Rules",
-      }),
-    );
-    await fireEvent.press(screen.getByRole("button", { name: "Accept and continue" }));
+    await fireEvent.changeText(screen.getByLabelText("First name"), "Anna");
+    await tickBoth();
+    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
     expect(await screen.findByText("The terms have just changed. Read them again.")).toBeVisible();
     expect(await screen.findByText("Terms of Service, version 2")).toBeVisible();
+    expect(screen.getByRole("checkbox", { name: accept })).not.toBeChecked();
+    expect(callsTo(app, "/v1/me", "patch")).toHaveLength(0);
 
-    await fireEvent.press(
-      screen.getByRole("checkbox", {
-        name: "I accept the Terms of Service and the Community Rules",
-      }),
-    );
-    await fireEvent.press(screen.getByRole("button", { name: "Accept and continue" }));
-    expect(await screen.findByRole("header", { name: "Tell others about you" })).toBeVisible();
-  });
-
-  it("asks for the terms before the profile, even when the profile is opened directly", async () => {
-    await renderApp("/profile", { me: testMe });
-    expect(await screen.findByRole("header", { name: "Before you start" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("checkbox", { name: accept }));
+    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
   });
 
   it("opens a legal document to read", async () => {
-    await openTerms();
+    await openAboutYou();
     await fireEvent.press(screen.getByRole("link", { name: "Read the Terms of Service" }));
     expect(await screen.findByRole("header", { name: "Terms of Service" })).toBeVisible();
     expect(screen.getByText("Draft text.")).toBeVisible();
@@ -107,54 +237,92 @@ describe("Terms and age", () => {
   });
 });
 
-describe("Creating a profile", () => {
-  async function openProfileForm() {
-    const app = await renderApp("/", { me: afterLegal });
-    expect(await screen.findByRole("header", { name: "Tell others about you" })).toBeVisible();
-    return app;
+describe("The button names what comes after step 3 (3.5 item 4)", () => {
+  function keepBooking() {
+    mockStored.set(
+      "pending-booking",
+      JSON.stringify({
+        tripId: northResult.tripId,
+        board: 1,
+        alight: 2,
+        seats: 1,
+        keptAt: new Date().toISOString(),
+      }),
+    );
   }
 
-  it("needs a first name made of letters", async () => {
-    const app = await openProfileForm();
-    await fireEvent.changeText(screen.getByLabelText("First name"), "Anna 2");
-    await fireEvent.press(screen.getByRole("button", { name: "Save profile" }));
+  it("says send request for a trip the driver approves, under the ride", async () => {
+    keepBooking();
+    await openAboutYou();
     expect(
-      await screen.findByText("Use 1 to 30 letters. Spaces, hyphens and apostrophes are fine."),
+      await screen.findByRole("button", { name: "Create account and send request" }),
     ).toBeVisible();
-    expect(app.client.calls.some((call) => call.path === "/v1/me" && "body" in call.input)).toBe(
-      false,
+    expect(screen.getByTestId("kept-ride")).toHaveAccessibleName(
+      "You're booking, Sunday 15 November · 10:00 Borgarnes → 12:05 Blönduós",
     );
   });
 
-  it("keeps the about text to 300 characters", async () => {
-    await openProfileForm();
-    await fireEvent.changeText(screen.getByLabelText("First name"), "Anna");
-    await fireEvent.changeText(screen.getByLabelText("About you"), "a".repeat(301));
-    expect(screen.getByText("301 of 300")).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Save profile" }));
-    expect(await screen.findByText("Keep it to 300 characters.")).toBeVisible();
+  it("says book for a trip that books instantly", async () => {
+    keepBooking();
+    await openAboutYou(undefined, testMe, (client) => {
+      tripDetailsApi(client, (query) =>
+        ok(
+          200,
+          northTrip(
+            { board: Number(query["fromStop"]), alight: Number(query["toStop"]) },
+            { bookingMode: "instant" },
+          ),
+        ),
+      );
+    });
+    expect(await screen.findByRole("button", { name: "Create account and book" })).toBeVisible();
   });
 
-  it("saves the profile, then opens Find", async () => {
-    const app = await openProfileForm();
+  it("says offer a ride after Offer a ride", async () => {
+    mockStored.set("pending-offer", JSON.stringify({ keptAt: new Date().toISOString() }));
+    await openAboutYou();
+    expect(
+      await screen.findByRole("button", { name: "Create account and offer a ride" }),
+    ).toBeVisible();
+    expect(screen.getByText("Next: offer a ride")).toBeVisible();
+  });
+});
+
+describe("Only the part of step 3 that is left", () => {
+  it("asks only about you when the terms were accepted before", async () => {
+    const app = await openAboutYou(undefined, afterLegal);
+    expect(screen.queryByRole("checkbox", { name: accept })).toBeNull();
     app.client.answer("/v1/me", (input) => {
       const body = input["body"] as Partial<Me> | undefined;
       return ok(200, { ...afterLegal, ...body, missingSteps: [] });
     });
-    await fireEvent.changeText(screen.getByLabelText("First name"), "  Anna ");
-    await fireEvent.changeText(screen.getByLabelText("About you"), "Coffee and podcasts.");
-    await fireEvent.press(screen.getByRole("checkbox", { name: "Icelandic" }));
-    await fireEvent.press(screen.getByRole("button", { name: "Save profile" }));
-
+    await fireEvent.changeText(screen.getByLabelText("First name"), "Anna");
+    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
     expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
-    expect(screen).toHavePathname("/");
-    await fireEvent.press(screen.getByRole("tab", { name: "Profile" }));
-    expect(await screen.findByRole("header", { name: "My profile" })).toBeVisible();
-    expect(screen.getByText("Anna")).toBeVisible();
-    expect(screen.getByText("Speaks Icelandic · Member since November 2026")).toBeVisible();
-    expect(app.client.calls.find((c) => c.path === "/v1/me" && "body" in c.input)?.input).toEqual({
-      body: { firstName: "Anna", about: "Coffee and podcasts.", languages: ["is"] },
-      accessToken: "sr_at_access-1",
+    expect(callsTo(app, "/v1/me/legal-acceptances")).toHaveLength(0);
+  });
+
+  it("asks only for the terms when they change later (3.5 item 5)", async () => {
+    const app = await renderApp("/", { me: { ...completeMe, missingSteps: ["legal"] } });
+    expect(await screen.findByRole("header", { name: "Our terms have changed" })).toBeVisible();
+    expect(screen).toHavePathname("/onboarding/terms");
+    expect(screen.queryByLabelText("First name")).toBeNull();
+    expect(screen.queryByRole("checkbox", { name: "I am 18 or older" })).toBeNull();
+    app.client.answer("/v1/me/legal-acceptances", () => ok(200, completeMe));
+    await fireEvent.press(screen.getByRole("checkbox", { name: accept }));
+    await fireEvent.press(screen.getByRole("button", { name: "Accept and continue" }));
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(callsTo(app, "/v1/me/legal-acceptances")[0]?.input["body"]).toEqual({
+      documents: [
+        { type: "terms", version: 1 },
+        { type: "community-rules", version: 1 },
+      ],
+      locale: "en",
     });
+  });
+
+  it("asks for step 3 before anything else, even when Profile is opened directly", async () => {
+    await renderApp("/profile", { me: testMe });
+    expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
   });
 });

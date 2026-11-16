@@ -184,8 +184,13 @@ test.describe("booking before having an account", () => {
     ).toBeVisible();
     await page.getByRole("button", { name: journey.book, exact: true }).click();
 
+    // Each step shows the ride kept (spec 16, 3.5).
+    await expect(
+      page.getByText("Þú ert að bóka", { exact: true }).filter({ visible: true }),
+    ).toBeVisible();
+    await expect(page.getByText("Skref 1 af 3").filter({ visible: true })).toBeVisible();
     await enterCode(page, icelandic, newPhoneNumber());
-    await finishSignUp(page, icelandic, "Bjössi");
+    await finishSignUp(page, icelandic, "Bjössi", "Stofna aðgang og bóka");
 
     await expect(page).toHaveURL(new RegExp(`/trips/${id}/book\\?from=1&to=2&seats=2$`));
     await expect(page.getByRole("heading", { name: journey.title })).toBeVisible();

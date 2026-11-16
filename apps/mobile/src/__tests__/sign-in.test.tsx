@@ -76,8 +76,8 @@ describe("Signing in with a phone number", () => {
     });
 
     await enterCode("123456");
-    expect(await screen.findByRole("header", { name: "Before you start" })).toBeVisible();
-    expect(screen).toHavePathname("/onboarding/terms");
+    expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
+    expect(screen).toHavePathname("/onboarding/about-you");
     expect(app.store.value).toBe("sr_rt_refresh-1");
     expect(app.client.calls.find((call) => call.path === "/v1/auth/phone/verify")?.input).toEqual({
       body: {
