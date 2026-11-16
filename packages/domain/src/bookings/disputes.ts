@@ -21,7 +21,7 @@ export type DisputeAnswer = (typeof disputeAnswers)[number];
  * the operator says so. A contested report the operator finds wrong says
  * what happened instead: the passenger rode, either way; a no-show's
  * passenger was left behind (decision 4 of the milestone 7 plan); or a
- * driver absence's passenger didn't come (proposed, open question Q20).
+ * driver absence's passenger didn't come (spec 8, decision 5).
  */
 export const disputeOutcomes = ["stands", "rode", "left_behind", "passenger_absent"] as const;
 export type DisputeOutcome = (typeof disputeOutcomes)[number];
@@ -177,7 +177,7 @@ const asDriverCancelled = {
  * it was until it is decided. If the passenger rode, the booking goes on:
  * if its trip has completed meanwhile, the booking completes then, as it
  * would have with the trip (R8.2). If the passenger didn't come, it is
- * their no-show, as if the driver had marked it (Q20).
+ * their no-show, as if the driver had marked it (decision 5).
  */
 export function disputeEffect(
   kind: DisputeKind,

@@ -66,7 +66,7 @@ answers question Q19 (A43).
 | 4 | A contested no-show that the operator finds wrong (open question Q19) | **The operator picks one of two outcomes.** "They rode": the booking completes, the driver is paid, and nothing counts on either side. "They were left behind": as a driver absence, a full refund that counts on the driver | Spec 8 has one outcome, "reversed", which does not say which of these happened. They lead to different money and reliability | Always "they rode", the simpler rule. But a driver who left a waiting passenger behind and marked them a no-show would keep the money |
 
 A contested "The driver didn't come" that the operator finds wrong also
-says what happened instead (proposed, open question Q20). "They rode":
+says what happened instead (Q20, accepted by Martin on 2026-11-16, A44). "They rode":
 the booking goes on and completes, the driver is paid, and nothing counts
 against either side. "They didn't come": the passenger's no-show, with no
 refund, counted on them. Without the second, a passenger who didn't come

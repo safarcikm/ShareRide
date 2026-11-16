@@ -83,7 +83,7 @@ describe("the operator's decision (3.5, decision 4)", () => {
     });
   });
 
-  it("decides a contested driver absence as standing, ridden or the passenger's absence (Q20)", () => {
+  it("decides a contested driver absence as standing, ridden or the passenger's absence (decision 5)", () => {
     for (const outcome of ["stands", "rode", "passenger_absent"] as const) {
       expect(checkDecision(contested(absent), outcome)).toEqual({ ok: true, value: null });
     }
@@ -179,7 +179,7 @@ describe("what each outcome does (R8.7)", () => {
     expect(nextStatus("confirmed", "complete")).toEqual({ ok: true, value: "completed" });
   });
 
-  it("a driver absence found wrong, the passenger didn't come: a no-show with no refund that counts on the passenger (Q20)", () => {
+  it("a driver absence found wrong, the passenger didn't come: a no-show with no refund that counts on the passenger (decision 5)", () => {
     for (const status of ["confirmed", "completed"] as const) {
       expect(
         disputeEffect("driver_absent", "passenger_absent", { status, tripCompleted: true }),

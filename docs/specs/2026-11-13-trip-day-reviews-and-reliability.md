@@ -107,7 +107,7 @@ A contested no-show the operator finds wrong ends in one of two ways
 paid and nothing counts against either side; or the passenger was left
 behind, which is a driver absence: a full refund that counts on the
 driver. A contested driver absence found wrong ends in one of two ways
-too (proposed, open question Q20): the passenger rode, so the booking goes
+too (decision 5): the passenger rode, so the booking goes
 on and nothing counts against either side; or the passenger didn't come,
 which is their no-show: no refund, the driver is paid, and it counts on
 the passenger.
@@ -347,3 +347,4 @@ Accepted by Martin on 2026-11-13 as recommended.
 | 2 | How long must a driver wait before marking a passenger as a no-show? | 10 minutes after the planned time at that stop. The passenger can report that the driver didn't come after the same wait |
 | 3 | How is reliability counted and shown? | One figure per person, across both roles, over the last 12 months: kept trips and bookings out of those that count. Shown once there are 5 that count. Counted: completed bookings and trips with passengers (kept); no-shows, driver absences and cancellations that count under spec 6 (not kept). The operator watches anyone below 80% |
 | 4 | When a passenger contests a no-show and the operator finds the driver was wrong, what happens? (Q19, accepted by Martin on 2026-11-16) | The operator picks one of two outcomes. "They rode": the booking completes, the driver is paid, and nothing counts on either side. "They were left behind": as a driver absence, a full refund that counts on the driver |
+| 5 | When the driver contests a passenger's "The driver didn't come" and the operator finds the driver was there, what happens? (Q20, accepted by Martin on 2026-11-16) | The operator picks one of two outcomes, as for a no-show. "They rode": the booking goes on and completes, the driver is paid, and nothing counts against either side. "They didn't come": the passenger's no-show, with no refund, the driver paid, and it counts on the passenger |

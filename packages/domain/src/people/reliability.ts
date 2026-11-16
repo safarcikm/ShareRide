@@ -61,7 +61,7 @@ export function passengerRecord(booking: BookingForReliability): ReliabilityReco
   if (booking.status === "completed") return record(true);
   if (booking.status === "no_show") {
     // Marked by the driver and standing, or the passenger's own report that
-    // the driver didn't come, found to be their absence (Q20).
+    // the driver didn't come, found to be their absence (spec 8, decision 5).
     const decided =
       booking.reportOutcome === "stands" || booking.reportOutcome === "passenger_absent";
     return decided ? record(false) : null;
