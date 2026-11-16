@@ -5,7 +5,7 @@ import type * as TestApp from "@/testing/app";
 import { driverApi, northMyTrip, northSegments } from "@/testing/bookings";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { searchApi } from "@/testing/search";
-import { mosfellsbaer, tripsApi, volvo, yaris } from "@/testing/trips";
+import { blonduos, mosfellsbaer, tripsApi, volvo, yaris } from "@/testing/trips";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -83,6 +83,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     for (const [title, line, link] of [
       ["Time", "Sunday 15 November", "Change the time"],
       ["Stops", "BSÍ bus terminal → Borgarnes → Blönduós → Hof, Akureyri", "Add a stop"],
+      ["Stops", "BSÍ bus terminal → Borgarnes → Blönduós → Hof, Akureyri", "Remove a stop"],
       ["Price", "100% · the whole route 4,500 ISK", "Change the price"],
       ["Seats", "3 seats", "Change the seats"],
       ["Car", "Toyota Yaris, white", "Change the car"],
@@ -281,7 +282,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     ]);
   });
 
-  it.each(["price", "seats", "car", "booking", "details"])(
+  it.each(["price", "seats", "car", "booking", "details", "stop", "remove-stop"])(
     "changes nothing on a trip that has left, opened from a link (%s)",
     async (part) => {
       const left = { ...north, departsAt: "2026-11-14T12:00:00.000Z" };
@@ -405,5 +406,125 @@ describe("Edit trip: adding a stop (spec 6, 3.2; milestone 6 plan, decision 2)",
     await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByText("New stop: Mosfellsbær at 09:30")).toBeVisible();
     expect(changes(client)).toHaveLength(2);
+  });
+});
+
+describe("Edit trip: removing a stop (spec 6, 3.2; R6.5)", () => {
+  const removeBlonduos = { kind: "removeStop", meetingPointId: blonduos.id };
+
+  /** Opens Remove a stop and checks the stop named `name`. */
+  async function check(name: string, ...edit: Parameters<typeof openEdit>) {
+    const app = await openPart("Remove a stop", ...edit);
+    await fireEvent.press(screen.getByRole("radio", { name: new RegExp(`^${name}`) }));
+    await fireEvent.press(screen.getByRole("button", { name: "Check the change" }));
+    return app;
+  }
+
+  it("offers the stops between the ends, checks what changes, and removes one, telling the passengers who booked", async () => {
+    const { client } = await openPart("Remove a stop", north, { told: { told: 2, requests: 1 } });
+    expect(
+      screen.getByText(
+        "Choose the stop to leave out. The stops either side keep their times. Where passengers get in or out, their bookings have to end first.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getAllByRole("radio").map((radio) => String(radio.props.accessibilityLabel)),
+    ).toEqual([expect.stringMatching(/^Borgarnes/), expect.stringMatching(/^Blönduós/)]);
+    expect(screen.getByText("10:00")).toBeVisible();
+    await fireEvent.press(screen.getByRole("radio", { name: /^Blönduós/ }));
+    await fireEvent.press(screen.getByRole("button", { name: "Check the change" }));
+
+    expect(await screen.findByRole("header", { name: "Check the change" })).toBeVisible();
+    expect(screen.getByText("Stop removed: Blönduós")).toBeVisible();
+    expect(screen.getByText("10:00  Borgarnes")).toBeVisible();
+    expect(screen.getByText("14:00  Hof, Akureyri")).toBeVisible();
+    expect(screen.queryByText(/^\d\d:\d\d {2}Blönduós$/)).toBeNull();
+    expect(screen.getByText("Borgarnes → Hof, Akureyri · 2,700 ISK per seat")).toBeVisible();
+    expect(screen.getByText("2 passengers are told the stop is removed now.")).toBeVisible();
+    expect(
+      screen.getByText("1 person who asked for a seat sees the change in the app."),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Passengers who booked keep their stops and the price they booked at."),
+    ).toBeVisible();
+    expect(changes(client)).toEqual([{ preview: { preview: true }, body: removeBlonduos }]);
+
+    const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    await fireEvent.press(screen.getByRole("button", { name: "Save the change" }));
+    expect(await screen.findByText("Trip changed. Your passengers have been told.")).toBeVisible();
+    expect(screen).toHavePathname(tripPage);
+    expect(focusMoves).toHaveBeenCalled();
+    focusMoves.mockRestore();
+    expect(changes(client).at(-1)).toEqual({ preview: saved, body: removeBlonduos });
+    await fireEvent.press(screen.getByRole("button", { name: "Edit trip" }));
+    expect(await screen.findByText("BSÍ bus terminal → Borgarnes → Hof, Akureyri")).toBeVisible();
+  });
+
+  it("asks which stop before checking", async () => {
+    const { client } = await openPart("Remove a stop");
+    await fireEvent.press(screen.getByRole("button", { name: "Check the change" }));
+    expect(await screen.findByText("Choose the stop to remove.")).toBeVisible();
+    expect(changes(client)).toEqual([]);
+  });
+
+  it("says nobody needs to be told without bookings", async () => {
+    await check("Borgarnes");
+    expect(
+      await screen.findByText("Nobody has booked yet, so nobody needs to be told."),
+    ).toBeVisible();
+  });
+
+  it.each([
+    [
+      { bookingsAtStop: 2, details: [{ path: "meetingPointId", issue: "stop_in_use" }] },
+      "2 passengers get in or out at Blönduós. Cancel or decline their bookings from the trip first, or ask them to cancel.",
+    ],
+    [
+      { details: [{ path: "meetingPointId", issue: "stop_in_use" }] },
+      "Passengers get in or out at Blönduós. Cancel or decline their bookings from the trip first, or ask them to cancel.",
+    ],
+    [
+      { details: [{ path: "segments.1", issue: "stretch_too_fast" }] },
+      "Without Blönduós, the drive from Borgarnes to Hof, Akureyri needs more time than the trip leaves between them.",
+    ],
+    [
+      { details: [{ path: "meetingPointId", issue: "stop_at_end" }] },
+      "The first and last stops make the trip. To change them, cancel the trip and post a new one.",
+    ],
+  ])("says why the server refused: %o", async (extras, text) => {
+    await check("Blönduós", north, {
+      change: () => failure(422, "change_not_allowed", extras),
+    });
+    expect(await screen.findByText(text)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Save the change" })).toBeNull();
+    await fireEvent.press(screen.getByRole("button", { name: "Choose another stop" }));
+    expect(await screen.findByRole("radio", { name: /^Borgarnes/ })).toBeVisible();
+  });
+
+  it("waits for the distances past the stop, and tries again", async () => {
+    let pending = true;
+    const { client } = await check("Blönduós", north, {
+      change: () => (pending ? failure(503, "distances_pending") : undefined),
+    });
+    expect(
+      await screen.findByText(
+        "We're still working out the distances for this route. Try again in a moment.",
+      ),
+    ).toBeVisible();
+    pending = false;
+    await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByText("Stop removed: Blönduós")).toBeVisible();
+    expect(changes(client)).toHaveLength(2);
+  });
+
+  it("offers nothing to remove on a trip with only its two ends", async () => {
+    const direct = {
+      ...north,
+      stops: [north.stops[0], north.stops.at(-1)].filter((stop) => stop !== undefined),
+      segments: north.segments.slice(0, 1),
+    };
+    await openEdit(direct);
+    expect(screen.queryByRole("link", { name: "Remove a stop" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Add a stop" })).toBeVisible();
   });
 });

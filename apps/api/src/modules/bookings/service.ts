@@ -207,12 +207,12 @@ const boardPoints = alias(meetingPoints, "board_points");
 const alightPoints = alias(meetingPoints, "alight_points");
 
 /** The changes a passenger reads on their booking: moves, cars and stops (spec 6, 3.2). */
-const toldKinds = ["departure", "vehicle", "addStop"];
+const toldKinds = ["departure", "vehicle", "addStop", "removeStop"];
 
 /**
  * Bookings with everything their passenger or driver sees, oldest first,
- * each with its trip's moves, new cars and new stops since it was made
- * (spec 6, 3.2).
+ * each with its trip's moves, new cars and stops added or removed since it
+ * was made (spec 6, 3.2).
  */
 async function readBookings(q: Queryable, where: SQL | undefined) {
   const rows = await bookingRows(q, where);
@@ -425,6 +425,12 @@ function present(row: BookingRow, viewerId: string, now: Date): Booking {
             kind: "addStop" as const,
             stop: { is: String(after["nameIs"]), en: String(after["nameEn"]) },
             plannedAt: String(after["plannedAt"]),
+            changedAt: changedAt.toISOString(),
+          };
+        case "removeStop":
+          return {
+            kind: "removeStop" as const,
+            stop: { is: String(before["nameIs"]), en: String(before["nameEn"]) },
             changedAt: changedAt.toISOString(),
           };
         default:
@@ -801,9 +807,13 @@ export function createBookingService(dependencies: {
           booking.status === "cancelled" && booking.cancelledBy === by && !isWithdrawal(booking);
         if (again) return shown();
 
-        const stops = await stopsOf(tx, found.tripId);
-        const part = partOf(stops, booking);
-        const boardsAt = plannedAt(stops[part.board] ?? { plannedAt: null });
+        // From the booking's own stop, which may since have been removed
+        // from the trip if the booking no longer holds seats there (R6.5).
+        const [boarding] = await tx
+          .select({ plannedAt: tripStops.plannedAt })
+          .from(tripStops)
+          .where(eq(tripStops.id, booking.fromStopId));
+        const boardsAt = plannedAt(boarding ?? { plannedAt: null });
         const terms = cancellationTerms(
           toCancel(booking, booking.status as BookingStatus, trip.departsAt, boardsAt),
           canceller,
@@ -828,7 +838,9 @@ export function createBookingService(dependencies: {
             updatedAt: now,
           })
           .where(eq(bookings.id, bookingId));
-        // An accepted or confirmed booking holds its seats until now (rule S1).
+        // An accepted or confirmed booking holds its seats until now (rule S1),
+        // so its stops are still on the trip.
+        const part = partOf(await stopsOf(tx, found.tripId), booking);
         await changeOccupancy(tx, found.tripId, part, -booking.seats);
         if (refund.amount > 0) await oweRefund(tx, bookingId, refund, now);
         await addSystemLine(

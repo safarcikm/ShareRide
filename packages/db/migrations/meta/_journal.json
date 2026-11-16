@@ -127,6 +127,13 @@
       "when": 1794851420266,
       "tag": "0017_stop_changes",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794855135488,
+      "tag": "0018_removed_stops",
+      "breakpoints": true
     }
   ]
 }

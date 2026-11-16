@@ -27,9 +27,8 @@ import { bookingModeKeys, levelText, preferenceTexts, stopsText } from "@/trips/
  * Edit trip (spec 6, 3.2; screen 3): what the published trip holds, one
  * part at a time, each opening its own screen; before saving, that screen
  * shows what the change means for passengers. The time, the price, the
- * seats, the car, how people book, and the preferences and note; the
- * stops follow in milestone 6's PR 6. It loads again each time it comes
- * into view.
+ * seats, the car, how people book, the preferences and note, and the
+ * stops, added or removed. It loads again each time it comes into view.
  */
 export default function EditTripScreen() {
   const { locale, t } = useLanguage();
@@ -57,7 +56,9 @@ export default function EditTripScreen() {
   const times = trip.data.stops.map((stop) => new Date(stop.plannedAt ?? departsAt));
   const { priceLevel, seats, vehicleId, bookingMode, preferences, note } = trip.data;
   const car = cars.data.vehicles.find((known) => known.id === vehicleId);
-  const part = (name: "time" | "stop" | "price" | "seats" | "car" | "booking" | "details") => ({
+  const part = (
+    name: "time" | "stop" | "remove-stop" | "price" | "seats" | "car" | "booking" | "details",
+  ) => ({
     pathname: `/drive/trips/[id]/edit/${name}` as const,
     params: { id },
   });
@@ -76,6 +77,12 @@ export default function EditTripScreen() {
           title={t("trip.editStops")}
           lines={[stopsText(t, locale, trip.data)]}
           link={{ label: t("trip.editAddStopAction"), href: part("stop") }}
+          // Only a stop between the ends can go (R6.5).
+          more={
+            trip.data.stops.length > 2
+              ? { label: t("trip.editRemoveStopAction"), href: part("remove-stop") }
+              : undefined
+          }
         />
         <SummarySection
           title={t("trip.review.price")}

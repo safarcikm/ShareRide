@@ -1,13 +1,9 @@
 import type { CallFailure } from "@shareride/api-client";
-import {
-  changeTripRoute,
-  type MeetingPointSummary,
-  type TripChangeEffect,
-} from "@shareride/contracts";
+import { changeTripRoute, type MeetingPointSummary } from "@shareride/contracts";
 import { formatMoney, stopAddedText, type Locale, type Translate } from "@shareride/i18n";
 import { router } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Text } from "react-native";
 import { useSession } from "@/auth/session";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
@@ -15,12 +11,13 @@ import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { TakesFocus } from "@/components/takes-focus";
-import { Body, Heading } from "@/components/text";
+import { Heading } from "@/components/text";
 import { editHref, WithTripToChange, type TripToChange } from "@/driver-trip/change-screen";
 import { refusalText, timeLines, TripHeading, tripHref } from "@/driver-trip/changes";
+import { ForPassengers, Lines, Refused } from "@/driver-trip/stop-parts";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
-import { spacing, typography } from "@/theme/tokens";
+import { typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { PointPicker } from "@/trips/point-picker";
 
@@ -78,7 +75,7 @@ function CheckStop({
   const onTrip = trip.stops.some((stop) => stop.meetingPoint.id === point.id);
   if (onTrip) {
     return (
-      <Refused trip={trip} title={title} onOther={onOther}>
+      <Refused trip={trip} title={title} other={t("trip.editOtherPoint")} onOther={onOther}>
         {t("trip.route.alreadyOn", { name: point.name[locale] })}
       </Refused>
     );
@@ -127,6 +124,7 @@ function Preview({
       <Refused
         trip={trip}
         title={title}
+        other={t("trip.editOtherPoint")}
         onOther={onOther}
         onRetry={effect.error.code === "distances_pending" ? reload : undefined}
       >
@@ -221,77 +219,12 @@ function Preview({
           )}
         />
       </Card>
-      <ForPassengers told={told} requests={requests} />
+      <ForPassengers told={told} requests={requests} stop="added" />
       {notice === null ? null : (
         <TakesFocus key={notice}>
           <Notice message={notice} />
         </TakesFocus>
       )}
-    </Screen>
-  );
-}
-
-/** Who is told of the new stop, and that bookings keep their stops and prices (rule P1). */
-function ForPassengers({ told, requests }: Pick<TripChangeEffect, "told" | "requests">) {
-  const { t } = useLanguage();
-  return (
-    <Card>
-      <Heading>{t("trip.editForPassengers")}</Heading>
-      {told === 0 && requests === 0 ? (
-        <Body align="start">{t("trip.editNobody")}</Body>
-      ) : (
-        <>
-          {told === 0 ? null : <Body align="start">{t("trip.editToldStop", { count: told })}</Body>}
-          {/* Requests are not told (spec 7, 3.3). */}
-          {requests === 0 ? null : (
-            <Body align="start">{t("trip.editRequestsStop", { count: requests })}</Body>
-          )}
-          <Body align="start">{t("trip.editStopKeeps")}</Body>
-        </>
-      )}
-    </Card>
-  );
-}
-
-function Lines({ lines }: { readonly lines: readonly string[] }) {
-  const palette = usePalette();
-  return (
-    <View style={styles.lines}>
-      {lines.map((line) => (
-        <Text key={line} style={[typography.body, { color: palette.text }]}>
-          {line}
-        </Text>
-      ))}
-    </View>
-  );
-}
-
-/** Why the stop cannot be added, with the way to choose another, or to try again. */
-function Refused({
-  trip,
-  title,
-  onOther,
-  onRetry,
-  children,
-}: {
-  readonly trip: TripToChange;
-  readonly title: string;
-  readonly onOther: () => void;
-  readonly onRetry?: (() => void) | undefined;
-  readonly children: string;
-}) {
-  const { t } = useLanguage();
-  return (
-    <Screen>
-      <BackButton fallback={editHref(trip.id)} />
-      <TripHeading trip={trip} title={title} />
-      <TakesFocus key={children}>
-        <Notice message={children} />
-      </TakesFocus>
-      {onRetry === undefined ? null : (
-        <Button variant="secondary" label={t("common.retry")} onPress={onRetry} />
-      )}
-      <Button variant="secondary" label={t("trip.editOtherPoint")} onPress={onOther} />
     </Screen>
   );
 }
@@ -337,7 +270,3 @@ function addStopRefusal(
   });
   return [...new Set(texts)].join(" ") || refusalText(t, locale, trip, failure);
 }
-
-const styles = StyleSheet.create({
-  lines: { gap: spacing.xs },
-});

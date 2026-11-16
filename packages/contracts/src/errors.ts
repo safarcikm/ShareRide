@@ -26,6 +26,8 @@ export const errorResponseSchema = z.object({
     countsOnReliability: z.boolean().optional(),
     /** The departures a trip's bookings allow, when a move is too far (`move_too_far`, R6.4). */
     departureWindow: z.object({ earliest: timestampSchema, latest: timestampSchema }).optional(),
+    /** The bookings and requests that get in or out at a stop to remove (`stop_in_use`, R6.5). */
+    bookingsAtStop: z.int().positive().optional(),
   }),
 });
 

@@ -74,6 +74,8 @@ export const chatMessageSchema = z.object({
         stop: localisedTextSchema,
         plannedAt: timestampSchema,
       }),
+      /** A stop removed from the trip (spec 6, 3.2). */
+      z.object({ key: z.literal("stop_removed"), stop: localisedTextSchema }),
       z.object({
         key: z.literal("cancelled"),
         by: z.enum(["me", "them"]),

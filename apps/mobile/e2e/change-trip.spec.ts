@@ -259,3 +259,65 @@ test("a driver adds a stop on the way, and the passenger reads it on the booking
   await expect(dora.getByText(newStop).filter(visible)).toBeVisible();
   await close();
 });
+
+// Spec 6, 3.2 (R6.5): Dóra gets out at Olís Norðlingaholt, so it cannot be
+// removed; N1 Hveragerði, which nobody uses, can. The check says the way
+// past it costs new passengers and that Dóra is told; Dóra reads it on her
+// booking and in the chat.
+test("a driver removes a stop nobody uses, and the passenger reads it on the booking and in the chat", async ({
+  page: driver,
+  browser,
+}, testInfo) => {
+  test.slow();
+  const { page: dora, close } = await secondPage(browser, testInfo);
+  const { tripId, booking } = await confirmedBooking(driver, dora);
+
+  await driver.goto(`/drive/trips/${tripId}/edit`);
+  await expect(
+    driver
+      .getByText("Mjódd bus terminal → Olís Norðlingaholt → N1 Hveragerði → N1 Selfoss", {
+        exact: true,
+      })
+      .filter(visible),
+  ).toBeVisible();
+  await driver.getByRole("link", { name: "Remove a stop" }).click();
+  const check = driver.getByRole("button", { name: "Check the change", exact: true });
+  await driver.getByRole("radio", { name: /^Olís Norðlingaholt/ }).click();
+  await check.click();
+  await expect(
+    driver
+      .getByText(
+        "1 passenger gets in or out at Olís Norðlingaholt. Cancel or decline their bookings from the trip first, or ask them to cancel.",
+        { exact: true },
+      )
+      .filter(visible),
+  ).toBeVisible();
+  await driver.getByRole("button", { name: "Choose another stop", exact: true }).click();
+  await driver.getByRole("radio", { name: /^N1 Hveragerði/ }).click();
+  await check.click();
+
+  // The check, before anything is saved.
+  await expect(driver.getByRole("heading", { name: "Check the change" })).toBeVisible();
+  const removed = "Stop removed: N1 Hveragerði";
+  await expect(driver.getByText(removed, { exact: true }).filter(visible)).toBeVisible();
+  await expect(
+    driver.getByText(/^Olís Norðlingaholt → N1 Selfoss · [\d,]+ ISK per seat$/).filter(visible),
+  ).toBeVisible();
+  await expect(
+    driver
+      .getByText("1 passenger is told the stop is removed now.", { exact: true })
+      .filter(visible),
+  ).toBeVisible();
+  await driver.getByRole("button", { name: "Save the change", exact: true }).click();
+  await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}\\?changed=`));
+  const outcome = "Trip changed. Your passengers have been told.";
+  await expect(driver.getByText(outcome, { exact: true }).filter(visible)).toBeVisible();
+
+  await dora.goto(booking);
+  await expect(dora.getByRole("heading", { name: "Changes since you booked" })).toBeVisible();
+  await expect(dora.getByText(removed, { exact: true }).filter(visible)).toBeVisible();
+  const [, bookingId = ""] = /\/bookings\/([0-9a-f-]+)$/.exec(booking) ?? [];
+  await dora.goto(`/messages/${bookingId}`);
+  await expect(dora.getByText(removed, { exact: true }).filter(visible)).toBeVisible();
+  await close();
+});

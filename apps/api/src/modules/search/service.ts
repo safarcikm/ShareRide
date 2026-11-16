@@ -14,7 +14,7 @@ import {
   type TripMatch,
   type TripStatus,
 } from "@shareride/domain";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { occupancyNow } from "../bookings/seats.ts";
 import { searchableStatuses, toSummary } from "../meeting-points/service.ts";
 
@@ -173,6 +173,7 @@ export function createSearchService(dependencies: {
       select distinct ${trips.id} as id
       from ${trips}
       join ${tripStops} boarding on boarding.trip_id = ${trips.id}
+        and boarding.removed_at is null
         and boarding.meeting_point_id in (${sql.join(
           fromIds.map((id) => sql`${id}::uuid`),
           sql`, `,
@@ -180,6 +181,7 @@ export function createSearchService(dependencies: {
         and boarding.planned_at > ${earliest.toISOString()}
         ${between === undefined ? sql`` : sql`and boarding.planned_at >= ${between.start.toISOString()} and boarding.planned_at < ${between.end.toISOString()}`}
       join ${tripStops} alighting on alighting.trip_id = ${trips.id}
+        and alighting.removed_at is null
         and alighting.meeting_point_id in (${sql.join(
           toIds.map((id) => sql`${id}::uuid`),
           sql`, `,
@@ -204,7 +206,8 @@ export function createSearchService(dependencies: {
         .select({ stop: tripStops, point: meetingPoints })
         .from(tripStops)
         .innerJoin(meetingPoints, eq(meetingPoints.id, tripStops.meetingPointId))
-        .where(inArray(tripStops.tripId, [...ids]))
+        // A stop removed is no longer the trip's (spec 6, 3.2).
+        .where(and(inArray(tripStops.tripId, [...ids]), isNull(tripStops.removedAt)))
         .orderBy(asc(tripStops.position)),
       db
         .select()
@@ -371,9 +374,13 @@ export function createSearchService(dependencies: {
           select ${trips.id} as id, first.planned_at::text as planned_at
           from ${trips}
           join ${tripStops} first on first.trip_id = ${trips.id} and first.position = 0
+            and first.removed_at is null
           join ${meetingPoints} first_point on first_point.id = first.meeting_point_id
-          join ${tripStops} last on last.trip_id = ${trips.id}
-            and last.position = (select max(position) from ${tripStops} where trip_id = ${trips.id})
+          join ${tripStops} last on last.trip_id = ${trips.id} and last.removed_at is null
+            and last.position = (
+              select max(position) from ${tripStops}
+              where trip_id = ${trips.id} and removed_at is null
+            )
           join ${meetingPoints} last_point on last_point.id = last.meeting_point_id
           where ${trips.status} = 'published'
             and first.planned_at > ${earliest.toISOString()}

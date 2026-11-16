@@ -19,7 +19,7 @@ const keptKey = (bookingId: string) => `kept-booking-${bookingId}`;
  * keep the booking, or cancel it with a full refund, without it counting
  * (R6.3; spec 6, screen 7). "Keep my booking" hides it on this device
  * until the trip moves again: it keeps when the last move was made. A new
- * car or stop does not bring it back.
+ * car, or a stop added or removed, does not bring it back.
  * An unpaid booking costs nothing to cancel, so it is not offered one.
  */
 export function useMoveChoice(booking: Booking, now: Date) {
@@ -59,7 +59,7 @@ export function useMoveChoice(booking: Booking, now: Date) {
 
 /**
  * "Changes since you booked": each move of the departure, at the
- * passenger's own stop, each new car and each new stop; then, when
+ * passenger's own stop, each new car, and each stop added or removed; then, when
  * `offered`, the help and the choice to
  * keep the booking or cancel it with "The trip changed" chosen. Once kept
  * here, focus moves to the heading.
@@ -91,7 +91,9 @@ export function TripChanges({
             ? t("trip.carChanged", { car: carText(t, change.car) })
             : change.kind === "addStop"
               ? stopAddedText(t, { stop: change.stop[locale], plannedAt: change.plannedAt })
-              : departureChangeText(t, change)}
+              : change.kind === "removeStop"
+                ? t("trip.stopRemoved", { stop: change.stop[locale] })
+                : departureChangeText(t, change)}
         </Body>
       ))}
       {offered ? (

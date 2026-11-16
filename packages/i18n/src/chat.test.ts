@@ -99,6 +99,14 @@ describe("system lines in the reader's language (spec 7, 3.1, item 3)", () => {
     );
   });
 
+  it("says a stop was removed, by its name (spec 6, 3.2)", () => {
+    const line = { key: "stop_removed", stop: "N1 Borgarnes" } as const;
+    expect(systemLineText(en, line, "Anna")).toBe("Stop removed: N1 Borgarnes");
+    expect(systemLineText(is, { ...line, stop: "N1 Borgarnesi" }, "Anna")).toBe(
+      "Viðkomustaður felldur niður: N1 Borgarnesi",
+    );
+  });
+
   it("says when the driver cancelled the whole trip (spec 6, 3.3)", () => {
     const trip = {
       key: "cancelled",

@@ -16,7 +16,7 @@ import {
   type SearchSettings,
   type TripStatus,
 } from "@shareride/domain";
-import { and, asc, eq, inArray, ne } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, ne } from "drizzle-orm";
 import { occupancyNow } from "../bookings/seats.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import { choicesOf } from "../trips/drafts.ts";
@@ -72,7 +72,8 @@ export function createTripDetailsService(dependencies: {
           .select({ stop: tripStops, point: meetingPoints })
           .from(tripStops)
           .innerJoin(meetingPoints, eq(meetingPoints.id, tripStops.meetingPointId))
-          .where(eq(tripStops.tripId, id))
+          // A stop removed is no longer the trip's (spec 6, 3.2).
+          .where(and(eq(tripStops.tripId, id), isNull(tripStops.removedAt)))
           .orderBy(asc(tripStops.position)),
         db.select().from(segments).where(eq(segments.tripId, id)).orderBy(asc(segments.position)),
         viewerId === null

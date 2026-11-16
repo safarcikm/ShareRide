@@ -19,7 +19,7 @@ const roundToNearest = (moment: number, stepMs: number) =>
 const roundUp = (moment: number, stepMs: number) => Math.ceil(moment / stepMs) * stepMs;
 
 /** The shortest time a stretch may be planned to take (R3.6), in milliseconds. */
-const floorMs = (typicalS: number, settings: TimeRules) =>
+const floorMs = (typicalS: number, settings: Pick<TimeRules, "timeFloorPercent">) =>
   Math.ceil((typicalS * 1000 * settings.timeFloorPercent) / 100);
 
 /**
@@ -72,6 +72,20 @@ export function stopTimeBetween(
     if (low <= high) return new Date(Math.min(Math.max(roundToNearest(ideal, stepMs), low), high));
   }
   return undefined;
+}
+
+/**
+ * Whether a stretch planned from one time to the next leaves at least 90%
+ * of its typical time (R3.6), as when a stop between them is removed.
+ */
+export function leavesTypicalTime(
+  from: Date,
+  to: Date,
+  typicalS: number,
+  settings: Pick<TimeRules, "timeFloorPercent">,
+): boolean {
+  const plannedMs = to.getTime() - from.getTime();
+  return plannedMs > 0 && plannedMs >= floorMs(typicalS, settings);
 }
 
 export type TimeProblem =

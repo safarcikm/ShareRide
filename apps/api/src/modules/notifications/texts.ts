@@ -58,6 +58,8 @@ export interface NotificationFacts {
   readonly newCar: CarFacts | null;
   /** For a new stop: its name in the recipient's language, and its time (spec 6, 3.2). */
   readonly newStop: { readonly name: string; readonly plannedAt: Date } | null;
+  /** For a stop removed: its name in the recipient's language (spec 6, 3.2). */
+  readonly removedStop: { readonly name: string } | null;
   /** For a moved departure: the passenger's boarding time before and after (spec 6, 3.2). */
   readonly moved: { readonly from: Date; readonly to: Date } | null;
   /** Confirmed and not free: what they paid would come back if they cancelled (R6.3). */
@@ -220,9 +222,13 @@ function bookingText(
       case "trip_changed": {
         // Their part and when they get in, as for a move.
         const part = t("notify.movedBody", { from, to, when: when(facts.boardsAt) });
-        // The new car, never its number plate (R7.9), or the new stop (spec 6, 3.2).
+        // The new car, never its number plate (R7.9), or the stop added or
+        // removed (spec 6, 3.2).
         if (facts.newCar !== null) {
           return [t("trip.carChanged", { car: carText(t, facts.newCar) }), part];
+        }
+        if (facts.removedStop !== null) {
+          return [t("trip.stopRemoved", { stop: facts.removedStop.name }), part];
         }
         const stop = required(facts.newStop, "the new car or stop");
         return [

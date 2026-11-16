@@ -231,6 +231,32 @@ describe("A conversation (spec 7, 3.1)", () => {
     }
   });
 
+  const removedStop = chatMessage({
+    id: messageId(5),
+    from: "system",
+    kind: "system",
+    text: null,
+    system: { key: "stop_removed", stop: { is: "N1 Borgarnesi", en: "N1 Borgarnes" } },
+    sentAt: "2026-11-14T11:59:00.000Z",
+  });
+
+  it("says when a stop was removed, by its name (spec 6, 3.2)", async () => {
+    await openConversation({ messages: [openedLine, removedStop] });
+    expect(await screen.findByText("Stop removed: N1 Borgarnes")).toBeVisible();
+  });
+
+  it("names a stop removed in the app's language", async () => {
+    jest
+      .mocked(readPreference)
+      .mockImplementation((key) => Promise.resolve(key === "language" ? "is" : null));
+    try {
+      await openConversation({ messages: [openedLine, removedStop] });
+      expect(await screen.findByText("Viðkomustaður felldur niður: N1 Borgarnesi")).toBeVisible();
+    } finally {
+      jest.mocked(readPreference).mockImplementation(() => Promise.resolve(null));
+    }
+  });
+
   it("shows the driver the passenger's name and their request message", async () => {
     await openConversation({
       booking: { ...chatBooking, viewer: "driver" },

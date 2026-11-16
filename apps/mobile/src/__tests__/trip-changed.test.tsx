@@ -191,6 +191,32 @@ describe("A trip that changed, as its passenger sees it (spec 6, 3.2; screen 7)"
     }
   });
 
+  const removedStop = {
+    kind: "removeStop" as const,
+    stop: { is: "N1 Borgarnesi", en: "N1 Borgarnes" },
+    changedAt: "2026-11-14T11:30:00.000Z",
+  };
+
+  it("shows a stop removed by its name, which does not bring back the offer once kept", async () => {
+    mockedRead.mockImplementation(() => Promise.resolve(movedAt));
+    await openBooking({ ...moved, changes: [...moved.changes, removedStop] });
+    expect(await screen.findByRole("button", { name: "Cancel booking" })).toBeVisible();
+    expect(screen.getByText("Stop removed: N1 Borgarnes")).toBeVisible();
+    expect(screen.queryByRole("button", { name: keep })).toBeNull();
+  });
+
+  it("names a stop removed in the app's language", async () => {
+    jest
+      .mocked(readPreference)
+      .mockImplementation((key) => Promise.resolve(key === "language" ? "is" : null));
+    try {
+      await openBooking({ ...moved, changes: [removedStop] });
+      expect(await screen.findByText("Viðkomustaður felldur niður: N1 Borgarnesi")).toBeVisible();
+    } finally {
+      jest.mocked(readPreference).mockImplementation(() => Promise.resolve(null));
+    }
+  });
+
   it("only shows a move of 30 minutes or less", async () => {
     await openBooking({ ...moved, movedFar: false });
     expect(await screen.findByText("Departure changed from 10:00 to 10:45")).toBeVisible();
