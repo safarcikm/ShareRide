@@ -452,6 +452,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   what a suspension cancels (R9.10); statements of reasons and appeals
   within 14 days (R9.5); the operator's trip cancellation; and whether a
   trip leaves the capital area.
+- Safety on the trip (milestone 9, PR 3, spec 9, 3.3): "Emergency: 112"
+  opens the dialler; "Before you go" links to vedur.is, umferdin.is and
+  safetravel.is, in the reader's language where the site has it, on a trip
+  that leaves the capital area; "Share trip details" sends a confirmed
+  booking's date, time, route, meeting point, driver and car with its
+  plate, or the driver's date, time and route, through the share sheet, or
+  copies it in a browser without one. Nothing is stored (R9.8). On trip
+  details, the booking page and the driver's trip page.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

@@ -64,6 +64,12 @@ describe("a trip closed to me by a block (R9.4, milestone 9 decision 2)", () => 
   it("leaves every other trip open, including my own", () => {
     expect(tripClosedTo("jon", trip, blocks)).toBe(false);
     expect(tripClosedTo("anna", trip, blocks)).toBe(false);
-    expect(tripClosedTo("gunna", { driverId: "gunna", passengerIds: [] }, blocks)).toBe(false);
+    expect(tripClosedTo("gunna", { driverId: "gunna", passengerIds: ["jon"] }, blocks)).toBe(false);
+  });
+
+  it("leaves a trip I am booked on open, whoever else is on it", () => {
+    expect(
+      tripClosedTo("gunna", { driverId: "anna", passengerIds: ["gunna", "jon"] }, blocks),
+    ).toBe(false);
   });
 });

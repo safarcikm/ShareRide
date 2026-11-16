@@ -126,17 +126,17 @@ requested, awaiting payment and confirmed; never departed or completed).
   - **"Emergency: 112"** opens the phone's dialler (`tel:112`).
   - **"Before you go"**, only when the trip leaves the capital area:
     vedur.is, umferdin.is and safetravel.is, in the reader's language
-    where each site has it. The trip and booking answers gain
-    `leavesCapitalArea`.
+    where each site has it, from the regions of the stops the viewer
+    travels between.
   - **"Share trip details"** opens the share sheet with spec 9's text. The
     booking's version needs a confirmed booking, since the plate comes
-    only then (R5.12). The driver's version leaves out the passengers'
-    names: they are not the driver's to share. On a web browser without a
-    share sheet, the text is copied and the button says so. Nothing is
-    stored (R9.8).
-- Shown on trip details, the booking page and the driver's trip page,
-  below the trip's main actions; "Emergency: 112" also in the
-  conversation's header.
+    only then (R5.12). The driver's version has the date, time and route
+    only: the passengers' names are not the driver's to share. On a web
+    browser without a share sheet, the text is copied and the button says
+    so. Nothing is stored (R9.8).
+- Shown on trip details (without Share, which already shares its link),
+  the booking page while it holds seats, and the driver's trip page until
+  the last stop's time, below the trip's main actions.
 
 ### 4.3 Blocks
 
@@ -260,13 +260,14 @@ merging, and generated again if another thread's lands first.
 
 ### PR 3: `feat(safety)`: emergency, before you go and share trip
 
-- [ ] `leavesCapitalArea` in the trip and booking answers; `TripSafety`
-      on trip details, the booking page and the driver's trip page; the
-      texts in both languages
+- [x] `TripSafety` on trip details, the booking page and the driver's
+      trip page, with `leavesCapitalArea` from the stops' regions the
+      answers already carry; the texts in both languages
 - Verify: screen tests (112 opens `tel:112`; the links only for a trip
   leaving the capital area; the shared text for a confirmed booking and
   for a driver, without passengers' names; copy on the web without a share
-  sheet); a browser journey shares a confirmed booking
+  sheet); the booking journey finds 112, the links and Share on a
+  confirmed booking
 
 ### PR 4: `feat(safety)`: block and unblock
 

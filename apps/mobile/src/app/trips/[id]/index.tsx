@@ -26,6 +26,7 @@ import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { showsOtherTime } from "@/lib/days";
 import { shareLink, type Shared } from "@/lib/share";
+import { TripSafety } from "@/safety/trip-safety";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { RouteMap } from "@/maps/route-map";
 import { RouteList } from "@/trip-details/route-list";
@@ -318,6 +319,12 @@ function Trip({
             {t("trip.freeCancellation")}
           </Text>
         </View>
+      )}
+      {trip.part.state === "cancelled" ? null : (
+        <TripSafety
+          regions={[boardStop.meetingPoint.region, alightStop.meetingPoint.region]}
+          share={null}
+        />
       )}
     </Screen>
   );
