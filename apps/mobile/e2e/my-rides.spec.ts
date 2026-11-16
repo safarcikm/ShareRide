@@ -5,7 +5,7 @@ import { focused, openTrip, type TripSearch } from "./support/trips";
 // Spec 5's requests and My rides (spec 16, 3.3) on the web build, against the sample
 // trips the e2e API seeds: Sigga drives Mjódd → N1 Hveragerði → N1 Selfoss
 // tomorrow at 17:15, with 4 seats, and answers requests herself. Each run
-// requests one seat and withdraws it again. Screens left behind stay in the
+// requests one seat, finds it in My rides and withdraws it again. Screens left behind stay in the
 // page, hidden, so text checks look only at what shows.
 
 interface Journey extends TripSearch {
@@ -14,7 +14,9 @@ interface Journey extends TripSearch {
   readonly name: string;
   readonly sendRequest: string;
   readonly message: string;
-  readonly requestSent: RegExp;
+  readonly requestSent: string;
+  readonly answerBy: RegExp;
+  readonly seeInMyRides: string;
   readonly withdraw: string;
   readonly withdrawAsk: RegExp;
   readonly withdrawn: string;
@@ -43,7 +45,9 @@ const journeys: readonly Journey[] = [
     result: /^Leaves Mjódd bus terminal at \d\d:\d\d, .*Sigga, New driver/,
     sendRequest: "Send request",
     message: "Message to the driver (optional)",
-    requestSent: /^Request sent\. Sigga has until \d\d:\d\d( tomorrow)? to answer\.$/,
+    requestSent: "Request sent",
+    answerBy: /^Sigga has until \d\d:\d\d( tomorrow)? to answer\.$/,
+    seeInMyRides: "See it in My rides",
     withdraw: "Withdraw request",
     withdrawAsk: /^Withdraw your request\? Sigga won't see it any more/,
     withdrawn: "You withdrew this request. That never counts against you.",
@@ -70,7 +74,9 @@ const journeys: readonly Journey[] = [
     result: /^Mjódd, brottför kl\. \d\d:\d\d, .*Sigga, Nýr ökumaður/,
     sendRequest: "Senda beiðni",
     message: "Skilaboð til ökumanns (valfrjálst)",
-    requestSent: /^Beiðni send\. Sigga hefur til \d\d:\d\d( á morgun)? til að svara\.$/,
+    requestSent: "Beiðni send",
+    answerBy: /^Sigga hefur til \d\d:\d\d( á morgun)? til að svara\.$/,
+    seeInMyRides: "Sjá í Ferðunum mínum",
     withdraw: "Draga beiðni til baka",
     withdrawAsk: /^Draga beiðnina til baka\? Sigga sér hana ekki lengur/,
     withdrawn: "Þú dróst þessa beiðni til baka. Það hefur aldrei áhrif á áreiðanleika þinn.",
@@ -94,9 +100,21 @@ for (const journey of journeys) {
       await page.getByLabel(journey.message).fill("One small bag.");
       await page.getByRole("button", { name: journey.sendRequest, exact: true }).click();
 
+      // Request sent, with until when Sigga can answer (spec 16, 3.7, item 5).
+      await expect(page).toHaveURL(/\/bookings\/[0-9a-f-]+\/booked$/);
+      await expect(page.getByRole("heading", { name: journey.requestSent })).toBeVisible();
+      await expect(page.getByText(journey.answerBy).filter({ visible: true })).toBeVisible();
+
+      // My rides lists it; the row opens the booking.
+      await page.getByRole("button", { name: journey.seeInMyRides }).click();
+      await expect(page).toHaveURL(/\/my-rides$/);
+      await page
+        .getByRole("button", {
+          name: new RegExp(`^${journey.passenger}, .*, ${journey.requestSent}, Sigga, `),
+        })
+        .click();
       await expect(page).toHaveURL(/\/bookings\/[0-9a-f-]+$/);
       const booking = page.url();
-      await expect(page.getByText(journey.requestSent).filter({ visible: true })).toBeVisible();
 
       // Withdrawing asks once more, then frees the seat (R5.8).
       await page.getByRole("button", { name: journey.withdraw }).click();

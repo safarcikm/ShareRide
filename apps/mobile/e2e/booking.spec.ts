@@ -3,31 +3,33 @@ import { english, enterCode, finishSignUp, icelandic, signUp, type Texts } from 
 import { newPhoneNumber } from "./support/sms";
 import { focused, openTrip, type TripSearch } from "./support/trips";
 
-// Spec 5's booking on the web build, against the sample trips the e2e API
-// seeds: Jón drives N1 Selfoss → N1 Hella → N1 Hvolsvöllur → N1 Vík in two
-// days, with instant booking and 2 seats. Paying uses the test provider's
-// sheet, where no money moves. Each language books its own segment, once at
-// phone size and once at desktop size, so the 2 seats are enough; the
-// journey that signs up mid-booking takes the segment between and stops
-// before booking. Screens left behind stay in the page, hidden, so text
-// checks look only at what shows.
+// Spec 5's booking, with spec 16's Check and pay and You're booked, on the
+// web build, against the sample trips the e2e API seeds: Jón drives N1
+// Selfoss → N1 Hella → N1 Hvolsvöllur → N1 Vík in two days, with instant
+// booking and 2 seats. Paying uses the test provider's sheet, where no money
+// moves. Each language books its own segment, once at phone size and once
+// at desktop size, so the 2 seats are enough; the journey that signs up
+// mid-booking takes the segment between and stops before booking. Screens
+// left behind stay in the page, hidden, so text checks look only at what
+// shows.
 
 interface Journey extends TripSearch {
   readonly locale: string;
   readonly account: Texts;
   readonly name: string;
-  readonly part: string;
+  readonly getIn: string;
   readonly book: string;
   readonly title: string;
-  readonly payNow: RegExp;
-  readonly payBy: RegExp;
-  readonly waiting: string;
+  readonly driver: RegExp;
+  readonly confirmedOnPay: string;
   readonly pay: RegExp;
   readonly sheet: string;
   readonly fail: string;
   readonly failed: string;
+  readonly held: RegExp;
+  readonly booked: string;
+  readonly next: string;
   readonly confirmed: string;
-  readonly confirmedTag: string;
   readonly whereToStand: string;
   readonly openInMaps: string;
   readonly yours: string;
@@ -48,18 +50,19 @@ const inEnglish: Journey = {
   toLabel: "To",
   search: "Search",
   result: /^Leaves N1 Selfoss at \d\d:\d\d, .*Jón, New driver/,
-  part: "N1 Selfoss → N1 Hella",
+  getIn: "N1 Selfoss",
   book: "Book",
-  title: "Book this ride",
-  payNow: /^Pay [\d,]+ ISK to confirm your seat$/,
-  payBy: /^Pay by \d\d:\d\d( tomorrow)? to keep your seat$/,
-  waiting: "Waiting for payment",
+  title: "Check and pay",
+  driver: /^Driver: Jón · /,
+  confirmedOnPay: "Your seat is confirmed as soon as you pay.",
   pay: /^Pay [\d,]+ ISK$/,
   sheet: "Test payment: no money moves",
   fail: "Make the payment fail",
   failed: "The payment didn't go through. Try again or use another card.",
+  held: /^Not paid yet\. Your seat is held until \d\d:\d\d( tomorrow)?\.$/,
+  booked: "You're booked!",
+  next: "What happens next",
   confirmed: "Your seat is confirmed",
-  confirmedTag: "Confirmed",
   whereToStand: "Where to stand",
   openInMaps: "Open in maps",
   yours: "You have a booking on this trip.",
@@ -80,18 +83,19 @@ const inIcelandic: Journey = {
   toLabel: "Til",
   search: "Leita",
   result: /^N1 Hvolsvelli, brottför kl\. \d\d:\d\d, .*Jón, Nýr ökumaður/,
-  part: "N1 Hvolsvelli → N1 Vík",
+  getIn: "N1 Hvolsvelli",
   book: "Bóka",
-  title: "Bóka þessa ferð",
-  payNow: /^Greiddu [\d.]+ kr\. til að staðfesta sætið$/,
-  payBy: /^Greiddu fyrir kl\. \d\d:\d\d( á morgun)? til að halda sætinu$/,
-  waiting: "Bíður greiðslu",
+  title: "Yfirfara og greiða",
+  driver: /^Ökumaður: Jón · /,
+  confirmedOnPay: "Sætið þitt er staðfest um leið og þú greiðir.",
   pay: /^Greiða [\d.]+ kr\.$/,
   sheet: "Prufugreiðsla: engir peningar færast",
   fail: "Láta greiðsluna mistakast",
   failed: "Greiðslan gekk ekki í gegn. Reyndu aftur eða notaðu annað kort.",
+  held: /^Ekki greitt enn\. Sætið er frátekið fyrir þig til kl\. \d\d:\d\d( á morgun)?\.$/,
+  booked: "Sætið er þitt!",
+  next: "Hvað gerist næst",
   confirmed: "Sætið þitt er staðfest",
-  confirmedTag: "Staðfest",
   whereToStand: "Hvar á að bíða",
   openInMaps: "Opna í kortaforriti",
   yours: "Þú átt bókun í þessari ferð.",
@@ -110,55 +114,52 @@ for (const journey of journeys) {
       const trip = page.url();
       await page.getByRole("button", { name: journey.book, exact: true }).click();
 
+      // Check and pay: the ride as booked, and one button that pays (spec 16, 3.7).
       await expect(page).toHaveURL(new RegExp(`/trips/${id}/book\\?from=\\d&to=\\d&seats=1$`));
       await expect(page.getByRole("heading", { name: journey.title })).toBeVisible();
       await expect(
-        page.getByText(journey.part, { exact: true }).filter({ visible: true }),
+        page.getByText(journey.getIn, { exact: true }).filter({ visible: true }),
       ).toBeVisible();
-      await page.getByRole("button", { name: journey.book, exact: true }).click();
-
-      // The booking is accepted at once and waits for payment (rule M1).
-      await expect(page).toHaveURL(/\/bookings\/[0-9a-f-]+$/);
-      await expect(page.getByText(journey.payNow).filter({ visible: true })).toBeVisible();
-      await expect(page.getByText(journey.payBy).filter({ visible: true })).toBeVisible();
+      await expect(page.getByText(journey.driver).filter({ visible: true })).toBeVisible();
       await expect(
-        page.getByText(journey.waiting, { exact: true }).filter({ visible: true }),
+        page.getByText(journey.confirmedOnPay, { exact: true }).filter({ visible: true }),
       ).toBeVisible();
 
-      // A failed payment leaves the seat waiting, and paying can start again.
-      // Focus follows each step, since the button pressed goes away.
+      // Pay books the seat and opens the payment at once (rule M1). A failed
+      // payment leaves the seat held, and paying can start again. Focus
+      // follows each step, since the button pressed goes away.
       await page.getByRole("button", { name: journey.pay }).click();
       await expect(page.getByRole("heading", { name: journey.sheet })).toBeVisible();
       await expect.poll(() => focused(page)).toContain(journey.sheet);
       await page.getByRole("button", { name: journey.fail }).click();
       await expect(page.getByText(journey.failed).filter({ visible: true })).toBeVisible();
+      await expect(page.getByText(journey.held).filter({ visible: true })).toBeVisible();
       await expect(page.getByRole("heading", { name: journey.sheet })).toBeHidden();
       await expect.poll(() => focused(page)).toContain(journey.failed);
 
       await page.getByRole("button", { name: journey.pay }).click();
       await expect(page.getByRole("heading", { name: journey.sheet })).toBeVisible();
       await page.getByRole("button", { name: journey.pay }).click();
-      await expect(
-        page.getByText(journey.confirmed, { exact: true }).filter({ visible: true }),
-      ).toBeVisible();
-      await expect.poll(() => focused(page)).toContain(journey.confirmed);
-      await expect(
-        page.getByText(journey.confirmedTag, { exact: true }).filter({ visible: true }),
-      ).toBeVisible();
+
+      // You're booked, with what happens next and where to stand.
+      await expect(page).toHaveURL(/\/bookings\/[0-9a-f-]+\/booked$/);
+      await expect(page.getByRole("heading", { name: journey.booked })).toBeVisible();
+      await expect.poll(() => focused(page)).toContain(journey.booked);
+      await expect(page.getByRole("heading", { name: journey.next })).toBeVisible();
       await expect(page.getByRole("heading", { name: journey.whereToStand })).toBeVisible();
       await expect(page.getByRole("button", { name: journey.openInMaps })).toBeVisible();
-      await expect(page.getByText(journey.payNow).filter({ visible: true })).toBeHidden();
-      const booking = page.url();
+      const booking = page.url().replace(/\/booked$/, "");
 
       // The confirmed seat is kept, and the trip page now leads to it.
       await page.reload();
-      await expect(
-        page.getByText(journey.confirmed, { exact: true }).filter({ visible: true }),
-      ).toBeVisible();
+      await expect(page.getByRole("heading", { name: journey.booked })).toBeVisible();
       await page.goto(trip);
       await expect(page.getByText(journey.yours).filter({ visible: true })).toBeVisible();
       await page.getByRole("button", { name: journey.see }).click();
       await expect(page).toHaveURL(booking);
+      await expect(
+        page.getByText(journey.confirmed, { exact: true }).filter({ visible: true }),
+      ).toBeVisible();
     });
   });
 }
@@ -195,10 +196,8 @@ test.describe("booking before having an account", () => {
     await expect(page).toHaveURL(new RegExp(`/trips/${id}/book\\?from=1&to=2&seats=2$`));
     await expect(page.getByRole("heading", { name: journey.title })).toBeVisible();
     await expect(
-      page.getByText("N1 Hellu → N1 Hvolsvelli", { exact: true }).filter({ visible: true }),
+      page.getByText("N1 Hellu", { exact: true }).filter({ visible: true }),
     ).toBeVisible();
-    await expect(
-      page.getByLabel("2 sæti", { exact: true }).filter({ visible: true }),
-    ).toBeVisible();
+    await expect(page.getByText(/^2 sæti × [\d.]+ kr\.$/).filter({ visible: true })).toBeVisible();
   });
 });

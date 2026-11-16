@@ -37,11 +37,10 @@ test("a passenger requests a seat, the driver accepts, the passenger pays", asyn
   await passenger.getByRole("button", { name: "Send request", exact: true }).click();
   await passenger.getByLabel("Message to the driver (optional)").fill("A small rucksack.");
   await passenger.getByRole("button", { name: "Send request", exact: true }).click();
-  await expect(passenger).toHaveURL(/\/bookings\/[0-9a-f-]+$/);
+  await expect(passenger).toHaveURL(/\/bookings\/[0-9a-f-]+\/booked$/);
+  await expect(passenger.getByRole("heading", { name: "Request sent" })).toBeVisible();
   await expect(
-    passenger
-      .getByText(/^Request sent\. Bára has until \d\d:\d\d( tomorrow)? to answer\.$/)
-      .filter(visible),
+    passenger.getByText(/^Bára has until \d\d:\d\d( tomorrow)? to answer\.$/).filter(visible),
   ).toBeVisible();
 
   // My trips counts the request; the trip page shows who asks, and accepts.
@@ -61,8 +60,10 @@ test("a passenger requests a seat, the driver accepts, the passenger pays", asyn
   await expect(driver.getByRole("heading", { name: "Passengers" })).toBeVisible();
   await expect(driver.getByLabel("Dóra, 1 seat, Waiting for payment")).toBeVisible();
 
-  // The passenger sees the answer on coming back, and pays.
+  // The passenger sees the answer on coming back, and pays on the booking,
+  // which opens in place of Request sent once it is no longer a request.
   await passenger.reload();
+  await expect(passenger).toHaveURL(/\/bookings\/[0-9a-f-]+$/);
   await expect(
     passenger.getByText(/^Pay [\d,]+ ISK to confirm your seat$/).filter(visible),
   ).toBeVisible();
