@@ -1,7 +1,7 @@
 # Milestone 6 plan: changes and cancellations
 
-**Owner:** Martin · **Date:** 2026-11-16 · **Status:** Draft, waiting for
-Martin's choices in section 3
+**Owner:** Martin · **Date:** 2026-11-16 · **Status:** In progress; the
+choices in section 3 accepted by Martin on 2026-11-16 as recommended
 
 Lets drivers change or cancel a published trip and passengers cancel a
 booking, with refunds by fixed rules and everyone told at once. It
@@ -57,6 +57,8 @@ My trips with Upcoming and Past, and the seat view (3.1), are already built
 (milestone 4 and spec 16).
 
 ## 3. Decisions for Martin
+
+Accepted by Martin on 2026-11-16: all three as recommended.
 
 | # | Choice | Recommendation | Why | Alternative |
 | - | ------ | -------------- | --- | ----------- |
