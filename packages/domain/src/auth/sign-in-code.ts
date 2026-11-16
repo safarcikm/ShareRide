@@ -8,6 +8,14 @@ export const codeRules = {
 } as const;
 
 /**
+ * What a code is for: signing in, or confirming a sensitive action of a
+ * signed-in person, such as downloading their data or deleting their
+ * account (spec 11; security, re-verification). A code only does its own job.
+ */
+export const codePurposes = ["sign_in", "confirm"] as const;
+export type CodePurpose = (typeof codePurposes)[number];
+
+/**
  * How often a code may be sent (rule R1.3). Per IP address and per country
  * calling code are starting values, tuned with real traffic. The daily cap
  * per country is the SMS budget: it bounds what SMS pumping fraud can cost.

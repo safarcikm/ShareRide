@@ -1026,6 +1026,7 @@ export const is = {
   "email.verifyFooter":
     "Þú færð þennan póst því þetta netfang var slegið inn í ShareRide. Ef það varst ekki þú skaltu hunsa hann: netfanginu er ekki bætt við.",
   "sms.signInCode": "{code} er ShareRide kóðinn þinn. Hann gildir í 10 mínútur.",
+  "sms.confirmCode": "{code} er ShareRide kóðinn til að staðfesta. Ekki deila honum.",
   "sms.bookingCancelled":
     "ShareRide: Bílstjórinn aflýsti bókun þinni: {date} kl. {time}. Full endurgreiðsla. Nánar í appinu.",
   "sms.bookingCancelledUnpaid":

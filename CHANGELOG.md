@@ -509,6 +509,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   each kind of data, retention cutoffs, holds, one export a day, blocked
   numbers, due dates of privacy requests), and a catalogue of every
   table's personal data that a test keeps complete.
+- Confirming with a fresh code (spec 11): `POST /v1/me/confirm-code` sends
+  a code to the person's own number, which only confirms and never signs
+  in, under the sign-in limits, for downloading data and deleting an
+  account.
 
 ### Fixed
 

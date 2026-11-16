@@ -10,6 +10,7 @@ import {
   normalisePhoneNumber,
   ok,
   sessionRules,
+  type CodePurpose,
   type PhoneNumberError,
   type RateLimited,
   type RateLimitRule,
@@ -24,7 +25,7 @@ import type { Logger } from "../../logger.ts";
 
 const { pushTokens, rateLimitEvents, sessions, sessionTokens, users, verificationCodes } = schema;
 
-type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
+export type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 type Executor = Database | Transaction;
 
 export type Platform = "ios" | "android" | "web";
@@ -64,6 +65,11 @@ export type VerifyError =
   | { readonly code: "code_attempts_exceeded"; readonly retryAfterSeconds: number }
   | { readonly code: "account_unavailable" };
 
+export type ConfirmError =
+  | { readonly code: "code_invalid"; readonly attemptsLeft: number }
+  | { readonly code: "code_expired" }
+  | { readonly code: "code_attempts_exceeded"; readonly retryAfterSeconds: number };
+
 export type RefreshError =
   { readonly code: "refresh_invalid" } | { readonly code: "session_ended" };
 
@@ -102,6 +108,26 @@ export interface AuthService {
   listSessions(userId: string): Promise<SessionSummary[]>;
   /** Ends one of the user's own sessions; false if there is no such active session. */
   endSession(userId: string, sessionId: string): Promise<boolean>;
+  /**
+   * Sends a code to the person's own number to confirm a sensitive action
+   * (spec 11, R11.1), under the sign-in limits.
+   */
+  sendConfirmCode(input: {
+    readonly userId: string;
+    readonly ipAddress: string;
+  }): Promise<Result<{ readonly resendAfterSeconds: number }, StartError>>;
+  /**
+   * Checks a confirm code, then runs the action in the same transaction. A
+   * wrong code is counted and the action does not run. The code is used up
+   * only when the action succeeds: when it returns an error or throws, its
+   * changes are rolled back and the code still works. So check whatever
+   * else can refuse the action before asking for the code.
+   */
+  withConfirmCode<T, E>(
+    userId: string,
+    code: string,
+    action: (tx: Transaction) => Promise<Result<T, E>>,
+  ): Promise<Result<T, ConfirmError | E>>;
 }
 
 export interface AuthServiceDependencies {
@@ -210,73 +236,149 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
     await executor.delete(pushTokens).where(inArray(pushTokens.sessionId, [...sessionIds]));
   }
 
+  /**
+   * Sends a new code for its purpose under the limits of rule R1.3, which
+   * sign-in and confirming share. It replaces the number's earlier code for
+   * the same purpose only.
+   */
+  async function sendCode(input: {
+    readonly e164: string;
+    readonly callingCode: string;
+    readonly purpose: CodePurpose;
+    readonly locale: Locale;
+    readonly ipAddress: string;
+  }): Promise<Result<{ readonly resendAfterSeconds: number }, StartError>> {
+    const { e164, callingCode, purpose } = input;
+    const now = clock();
+    const phoneHash = hasher("phone", e164);
+    const limits = [
+      { scope: "phone", keyHash: phoneHash, rules: codeSendLimits.perNumber },
+      {
+        // An IPv6 address counts by its /64 network, as search does.
+        scope: "ip",
+        keyHash: hasher("ip", addressBlock(input.ipAddress)),
+        rules: codeSendLimits.perIpAddress,
+      },
+      {
+        scope: "calling_code",
+        keyHash: hasher("calling-code", callingCode),
+        rules: codeSendLimits.perCallingCode(callingCode),
+      },
+    ];
+    const code = generateCode(randomInt);
+
+    const refused = await db.transaction(async (tx) => {
+      // One request per number at a time, so two cannot both pass the limits.
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${phoneHash}, 0))`);
+      for (const limit of limits) {
+        const earlier = await sendTimes(tx, limit.scope, limit.keyHash, limit.rules, now);
+        const check = checkRateLimits(earlier, limit.rules, now);
+        if (!check.ok) return { scope: limit.scope, error: check.error };
+      }
+      // Only the newest code works: a new one replaces any earlier one.
+      await tx
+        .delete(verificationCodes)
+        .where(
+          and(eq(verificationCodes.phoneHash, phoneHash), eq(verificationCodes.purpose, purpose)),
+        );
+      await tx.insert(verificationCodes).values({
+        phoneHash,
+        purpose,
+        codeHash: hasher("code", `${phoneHash}:${code}`),
+        expiresAt: addSeconds(now, codeRules.validForSeconds),
+        createdAt: now,
+        updatedAt: now,
+      });
+      await tx.insert(rateLimitEvents).values(
+        limits.map((limit) => ({
+          scope: limit.scope,
+          keyHash: limit.keyHash,
+          createdAt: now,
+          updatedAt: now,
+        })),
+      );
+      return undefined;
+    });
+
+    if (refused !== undefined) {
+      if (refused.scope === "calling_code") {
+        // An unusual number of codes to one country can be SMS fraud (R1.3).
+        logger.warn({ callingCode }, "sign-in codes per calling code limit reached");
+      }
+      return err(refused.error);
+    }
+
+    const text =
+      purpose === "sign_in"
+        ? translators[input.locale]("sms.signInCode", { code })
+        : translators[input.locale]("sms.confirmCode", { code });
+    try {
+      await sms.send({ to: e164, text });
+    } catch (error) {
+      logger.error({ err: error, callingCode, purpose }, "sign-in code SMS not sent");
+      return err({ code: "sms_failed" });
+    }
+    logger.info({ callingCode, purpose }, "sign-in code sent");
+    return ok({ resendAfterSeconds: codeSendLimits.perNumber[0].windowSeconds });
+  }
+
+  /**
+   * Checks the newest code of a number for its purpose. A right code is
+   * deleted (single use, spec 1, section 7); a wrong one is counted.
+   */
+  async function checkCode(
+    tx: Transaction,
+    phoneHash: string,
+    purpose: CodePurpose,
+    code: string,
+    now: Date,
+  ): Promise<Result<void, ConfirmError>> {
+    const [stored] = await tx
+      .select()
+      .from(verificationCodes)
+      .where(
+        and(eq(verificationCodes.phoneHash, phoneHash), eq(verificationCodes.purpose, purpose)),
+      )
+      .orderBy(desc(verificationCodes.createdAt))
+      .limit(1)
+      .for("update");
+    if (stored === undefined) return err({ code: "code_expired" });
+
+    const attempt = checkCodeAttempt(stored, now);
+    if (!attempt.ok) {
+      return attempt.error.code === "code_attempts_exceeded"
+        ? err({ ...attempt.error, retryAfterSeconds: await resendWait(tx, phoneHash, now) })
+        : err(attempt.error);
+    }
+
+    if (!sameHash(hasher("code", `${phoneHash}:${code}`), stored.codeHash)) {
+      await tx
+        .update(verificationCodes)
+        .set({ attempts: sql`${verificationCodes.attempts} + 1`, updatedAt: now })
+        .where(eq(verificationCodes.id, stored.id));
+      const { attemptsLeft } = attempt.value;
+      return attemptsLeft === 0
+        ? err({
+            code: "code_attempts_exceeded",
+            retryAfterSeconds: await resendWait(tx, phoneHash, now),
+          })
+        : err({ code: "code_invalid", attemptsLeft });
+    }
+
+    await tx.delete(verificationCodes).where(eq(verificationCodes.id, stored.id));
+    return ok(undefined);
+  }
+
   return {
     async start(input) {
       const phone = normalisePhoneNumber(input.phoneNumber);
       if (!phone.ok) return err(phone.error);
-      const { e164, callingCode } = phone.value;
-      const now = clock();
-      const phoneHash = hasher("phone", e164);
-      const limits = [
-        { scope: "phone", keyHash: phoneHash, rules: codeSendLimits.perNumber },
-        {
-          // An IPv6 address counts by its /64 network, as search does.
-          scope: "ip",
-          keyHash: hasher("ip", addressBlock(input.ipAddress)),
-          rules: codeSendLimits.perIpAddress,
-        },
-        {
-          scope: "calling_code",
-          keyHash: hasher("calling-code", callingCode),
-          rules: codeSendLimits.perCallingCode(callingCode),
-        },
-      ];
-      const code = generateCode(randomInt);
-
-      const refused = await db.transaction(async (tx) => {
-        // One request per number at a time, so two cannot both pass the limits.
-        await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${phoneHash}, 0))`);
-        for (const limit of limits) {
-          const earlier = await sendTimes(tx, limit.scope, limit.keyHash, limit.rules, now);
-          const check = checkRateLimits(earlier, limit.rules, now);
-          if (!check.ok) return { scope: limit.scope, error: check.error };
-        }
-        // Only the newest code works: a new one replaces any earlier one.
-        await tx.delete(verificationCodes).where(eq(verificationCodes.phoneHash, phoneHash));
-        await tx.insert(verificationCodes).values({
-          phoneHash,
-          codeHash: hasher("code", `${phoneHash}:${code}`),
-          expiresAt: addSeconds(now, codeRules.validForSeconds),
-          createdAt: now,
-          updatedAt: now,
-        });
-        await tx.insert(rateLimitEvents).values(
-          limits.map((limit) => ({
-            scope: limit.scope,
-            keyHash: limit.keyHash,
-            createdAt: now,
-            updatedAt: now,
-          })),
-        );
-        return undefined;
+      return sendCode({
+        ...phone.value,
+        purpose: "sign_in",
+        locale: input.locale,
+        ipAddress: input.ipAddress,
       });
-
-      if (refused !== undefined) {
-        if (refused.scope === "calling_code") {
-          // An unusual number of codes to one country can be SMS fraud (R1.3).
-          logger.warn({ callingCode }, "sign-in codes per calling code limit reached");
-        }
-        return err(refused.error);
-      }
-
-      try {
-        await sms.send({ to: e164, text: translators[input.locale]("sms.signInCode", { code }) });
-      } catch (error) {
-        logger.error({ err: error, callingCode }, "sign-in code SMS not sent");
-        return err({ code: "sms_failed" });
-      }
-      logger.info({ callingCode }, "sign-in code sent");
-      return ok({ resendAfterSeconds: codeSendLimits.perNumber[0].windowSeconds });
     },
 
     async verify(input) {
@@ -287,38 +389,8 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
       const phoneHash = hasher("phone", e164);
 
       return db.transaction(async (tx): Promise<Result<SignedIn, VerifyError>> => {
-        const [stored] = await tx
-          .select()
-          .from(verificationCodes)
-          .where(eq(verificationCodes.phoneHash, phoneHash))
-          .orderBy(desc(verificationCodes.createdAt))
-          .limit(1)
-          .for("update");
-        if (stored === undefined) return err({ code: "code_expired" });
-
-        const attempt = checkCodeAttempt(stored, now);
-        if (!attempt.ok) {
-          return attempt.error.code === "code_attempts_exceeded"
-            ? err({ ...attempt.error, retryAfterSeconds: await resendWait(tx, phoneHash, now) })
-            : err(attempt.error);
-        }
-
-        if (!sameHash(hasher("code", `${phoneHash}:${input.code}`), stored.codeHash)) {
-          await tx
-            .update(verificationCodes)
-            .set({ attempts: stored.attempts + 1, updatedAt: now })
-            .where(eq(verificationCodes.id, stored.id));
-          const { attemptsLeft } = attempt.value;
-          return attemptsLeft === 0
-            ? err({
-                code: "code_attempts_exceeded",
-                retryAfterSeconds: await resendWait(tx, phoneHash, now),
-              })
-            : err({ code: "code_invalid", attemptsLeft });
-        }
-
-        // Single use: the code is deleted (spec 1, section 7).
-        await tx.delete(verificationCodes).where(eq(verificationCodes.id, stored.id));
+        const checked = await checkCode(tx, phoneHash, "sign_in", input.code, now);
+        if (!checked.ok) return checked;
 
         let [user] = await tx
           .select({ id: users.id, status: users.status })
@@ -530,6 +602,64 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
         await endSessions(tx, [session.id], "signed_out_from_other_device", now);
         return true;
       });
+    },
+
+    async sendConfirmCode(input) {
+      const [user] = await db
+        .select({ phoneE164: users.phoneE164, locale: users.locale })
+        .from(users)
+        .where(eq(users.id, input.userId));
+      if (user === undefined || user.phoneE164 === null) {
+        throw new Error("The signed-in user has no phone number.");
+      }
+      // The stored number as it is, so the code is kept under the same hash
+      // that withConfirmCode looks for, even if the number would no longer
+      // pass today's checks; its calling code only sets the limits and logs.
+      const phone = normalisePhoneNumber(user.phoneE164);
+      return sendCode({
+        e164: user.phoneE164,
+        callingCode: phone.ok ? phone.value.callingCode : "unknown",
+        purpose: "confirm",
+        locale: user.locale === "is" ? "is" : "en",
+        ipAddress: input.ipAddress,
+      });
+    },
+
+    async withConfirmCode<T, E>(
+      userId: string,
+      code: string,
+      action: (tx: Transaction) => Promise<Result<T, E>>,
+    ): Promise<Result<T, ConfirmError | E>> {
+      const now = clock();
+      let refused: { readonly error: E } | undefined;
+      try {
+        return await db.transaction(async (tx): Promise<Result<T, ConfirmError | E>> => {
+          const [user] = await tx
+            .select({ phoneE164: users.phoneE164 })
+            .from(users)
+            .where(eq(users.id, userId));
+          if (user === undefined || user.phoneE164 === null) return err({ code: "code_expired" });
+          // A wrong code returns, so the transaction commits its count.
+          const checked = await checkCode(
+            tx,
+            hasher("phone", user.phoneE164),
+            "confirm",
+            code,
+            now,
+          );
+          if (!checked.ok) return checked;
+          const done = await action(tx);
+          if (!done.ok) {
+            // Undo the action and keep the code for another try.
+            refused = { error: done.error };
+            tx.rollback();
+          }
+          return done;
+        });
+      } catch (error) {
+        if (refused !== undefined) return err(refused.error);
+        throw error;
+      }
     },
   };
 }

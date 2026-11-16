@@ -22,6 +22,12 @@ describe("SMS texts", () => {
     expect(text).not.toMatch(/https?:|www\./);
   });
 
+  it.each(locales)("give a code to confirm in one part in %s, with no link", (locale) => {
+    const text = createTranslator(locale)("sms.confirmCode", { code: "123456" });
+    expect(text.length).toBeLessThanOrEqual(onePart);
+    expect(text).not.toMatch(/https?:|www\./);
+  });
+
   it.each(locales)(
     "tell of a cancelled booking or trip, or a moved departure, in two parts at most in %s, with no link",
     (locale) => {
