@@ -173,6 +173,7 @@ function Trip({
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
+  const me = useMe();
   const [shared, setShared] = useState<Shared | null>(null);
   // The part asked for leads while its answer loads, so quick changes build
   // on each other and Share sends the part on screen. Prices and seats wait
@@ -324,6 +325,19 @@ function Trip({
         <TripSafety
           regions={[boardStop.meetingPoint.region, alightStop.meetingPoint.region]}
           share={null}
+        />
+      )}
+      {/* Reporting needs an account; my own trip is not mine to report (spec 9, 3.1). */}
+      {me === null || trip.part.state === "own" ? null : (
+        <Button
+          variant="text"
+          label={t("report.trip")}
+          onPress={() => {
+            router.push({
+              pathname: "/report",
+              params: { kind: "trip", id: trip.id, name: trip.driver.firstName },
+            });
+          }}
         />
       )}
     </Screen>

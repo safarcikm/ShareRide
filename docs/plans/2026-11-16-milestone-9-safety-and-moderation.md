@@ -312,9 +312,15 @@ merging, and generated again if another thread's lands first.
 
 ### PR 5: `feat(safety)`: reports and the operator's alert
 
-- [ ] `reports` and its routes; `report_filed` with its SMS hours;
-      chat clean-up keeps covered conversations
-- [ ] The report screen, its entry points, and My reports
+Built in two parts: 5a the reports themselves, 5b the operator's alert.
+
+- [x] 5a: `reports` and its routes; chat clean-up keeps covered
+      conversations; a booking says whether its problem can still be
+      reported (`problemReportable`)
+- [x] 5a: The report screen, its entry points (trip details, the
+      conversation and a message pressed and held, the booking page), and
+      My reports in Settings
+- [ ] 5b: `report_filed` to operators by push, and SMS from 07:00 to 23:00
 - Verify: integration tests (each subject and refusal, the daily limit,
   the alert's channels by time, never the reporter's name to anyone); a
   browser journey reports a trip and sees it in My reports

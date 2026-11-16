@@ -216,10 +216,14 @@ it counts and why not) and `UserStats` (rating and reliability totals).
 
 ### Report
 
-`reporter_id`, `subject_user_id` or `subject_trip_id`, `category`,
-`description`, `status`, `resolution`, `handled_by`, timestamps. Every action
-on a report is written to the audit log. A report can also be about a
-message, review or booking; safety reports are urgent. Related records, in
+`reporter_id`, `subject` (trip, message, booking, user, later review),
+`subject_user_id` (the person reported, or the driver of a trip), the
+records it links (`trip_id`, `booking_id`, `message_id`,
+`conversation_id`), `category`, `description` (up to 1 000 characters),
+`urgent` (safety reports), `status` (open or closed), `outcome`,
+`closed_at`, `closed_by_id`, timestamps. Every action on a report is
+written to the audit log. A conversation a report links is kept past chat
+retention until 3 years after the report closes. Related records, in
 [spec 9](../specs/2026-11-13-safety-and-moderation.md#6-data-and-api):
 `ModerationAction` (warning, hidden content, suspension, reinstatement,
 operator cancellation or refund, each with a statement of reasons and an

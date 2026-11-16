@@ -1,3 +1,4 @@
+import type { Booking } from "@shareride/contracts";
 import { capitalised, formatDay } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import {
@@ -109,16 +110,25 @@ export default function ConversationScreen() {
               {`${day} · ${route}`}
             </Text>
           </View>
-          {/* Blocking asks first, on its own screen (spec 9, 3.2). */}
-          {conversation.blockedByMe ? null : (
+          <View style={styles.actions}>
+            {/* Reporting and blocking ask first, on their own screens (spec 9, 3.1 and 3.2). */}
             <Button
               variant="text"
-              label={t("block.action", { name: otherPerson(booking).firstName })}
+              label={t("report.person", { name: otherPerson(booking).firstName })}
               onPress={() => {
-                router.push({ pathname: "/bookings/[id]/block", params: { id: booking.id } });
+                router.push({ pathname: "/report", params: reportPerson(booking) });
               }}
             />
-          )}
+            {conversation.blockedByMe ? null : (
+              <Button
+                variant="text"
+                label={t("block.action", { name: otherPerson(booking).firstName })}
+                onPress={() => {
+                  router.push({ pathname: "/bookings/[id]/block", params: { id: booking.id } });
+                }}
+              />
+            )}
+          </View>
         </View>
         {conversation.blockedByMe ? (
           <Body align="start">
@@ -126,6 +136,11 @@ export default function ConversationScreen() {
           </Body>
         ) : null}
         <Notice kind="info" urgent={false} message={t("chat.safetyTip")} />
+        {messages.some((message) => message.from === "them") ? (
+          <Text style={[typography.small, { color: palette.textMuted }]}>
+            {t("report.messageHint")}
+          </Text>
+        ) : null}
         {hasEarlier ? (
           <Button
             variant="text"
@@ -140,6 +155,17 @@ export default function ConversationScreen() {
           // A closed conversation takes no more messages.
           pending={conversation.canWrite ? chat.pending : []}
           onRetry={chat.retry}
+          onReport={(message) => {
+            router.push({
+              pathname: "/report",
+              params: {
+                kind: "message",
+                id: message.id,
+                name: otherPerson(booking).firstName,
+                booking: booking.id,
+              },
+            });
+          }}
         />
         <Announcer message={chat.announcement} />
       </Screen>
@@ -147,8 +173,17 @@ export default function ConversationScreen() {
   );
 }
 
+/** Reporting the other person of the booking: named through the booking, never by ID. */
+const reportPerson = (booking: Booking) => ({
+  kind: "user",
+  id: booking.id,
+  name: otherPerson(booking).firstName,
+  booking: booking.id,
+});
+
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   header: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
+  actions: { alignItems: "flex-end" },
   gap: { gap: spacing.sm },
 });

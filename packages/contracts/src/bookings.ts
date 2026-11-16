@@ -154,6 +154,11 @@ export const bookingSchema = z.object({
    * refund, without it counting against them (R6.3).
    */
   movedFar: z.boolean(),
+  /**
+   * A problem with this booking can still be reported: until 24 hours after
+   * its trip completed (R9.1).
+   */
+  problemReportable: z.boolean(),
   driver: z.object({ firstName: z.string(), colour: peopleColourSchema }),
   /** Ratings and reliability come with spec 8; until then every member is new. */
   passenger: z.object({

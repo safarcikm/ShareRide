@@ -2,8 +2,10 @@ import type { Booking, CancellationPreview, TripBookings } from "@shareride/cont
 import { schema, type Database } from "@shareride/db";
 import {
   bookingClosedTo,
+  bookingReportOpen,
   cancellationTerms,
   cancelReasonsFor,
+  defaultSafetySettings,
   checkBooking,
   checkNote,
   err,
@@ -256,6 +258,7 @@ async function bookingRows(q: Queryable, where: SQL | undefined) {
         status: trips.status,
         cancelledAt: trips.cancelledAt,
         countsOnReliability: trips.countsOnReliability,
+        completedAt: trips.completedAt,
       },
       driverName: drivers.firstName,
       passengerName: passengers.firstName,
@@ -446,6 +449,7 @@ function present(row: BookingRow, viewerId: string, now: Date): Booking {
     }),
     // Null only for a booking the previous version made during a deploy.
     movedFar: movedFar(booking.departsAtWhenBooked ?? departsAt, departsAt),
+    problemReportable: bookingReportOpen(trip.completedAt, now, defaultSafetySettings),
     driver: { firstName: row.driverName ?? "", colour: peopleColourOf(trip.driverId) },
     passenger: {
       firstName: row.passengerName ?? "",

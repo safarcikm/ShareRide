@@ -481,6 +481,22 @@ releases follow [Semantic Versioning](https://semver.org/).
   erased with either account, and gets its own export section (the blocks
   a person made). `POST /v1/bookings/{id}/block`, `GET /v1/me/blocks`,
   `DELETE /v1/me/blocks/{id}`.
+- Reports (milestone 9, PR 5a, spec 9, 3.1; R9.1, R9.2): "Report this
+  trip" on trip details, "Report {name}" in a conversation, a message
+  pressed and held (or a screen reader's action), and "Report a problem
+  with this trip" on a confirmed or past booking until 24 hours after the
+  trip (`problemReportable`). The report screen asks what happened, puts
+  "Emergency: 112" first for a safety report, takes an optional
+  description of up to 1 000 characters, sends nothing until "Send
+  report", thanks, and offers to block the person too. Settings, under
+  Safety, has My reports with each report's outcome in general terms.
+  Someone else's trip, message or booking that the person cannot see is
+  refused as not found; a person cannot report themselves; 10 reports a
+  day. The person reported is never told who reported them. Migration
+  `0022_reports`; `reports` is in the personal data catalogue with its
+  own export section (the reports a person filed), kept 3 years after
+  closing, and chat clean-up keeps a conversation a report links that
+  long. `POST /v1/reports`, `GET /v1/me/reports`.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its

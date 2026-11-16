@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import {
+  bookingRoute,
   conversationMessagesRoute,
   fileReportRoute,
   myReportsRoute,
@@ -248,12 +249,22 @@ describe("POST /v1/reports and GET /v1/me/reports (spec 9, 3.1)", () => {
         .where(eq(schema.trips.id, airport));
     const problem = { about: { kind: "booking", bookingId }, category: "not_as_listed" } as const;
 
+    const reportable = async () => {
+      const shown = await api.client.call(bookingRoute, {
+        accessToken: gunna.accessToken,
+        params: { id: bookingId },
+      });
+      return shown.ok && shown.data.problemReportable;
+    };
+    expect(await reportable()).toBe(true);
     await completed(25);
+    expect(await reportable()).toBe(false);
     expect(await report(gunna, problem)).toMatchObject({
       status: 409,
       error: { code: "report_window_closed" },
     });
     await completed(23);
+    expect(await reportable()).toBe(true);
     expect(await report(gunna, problem)).toMatchObject({
       status: 201,
       data: { kind: "booking", firstName: "Jón" },

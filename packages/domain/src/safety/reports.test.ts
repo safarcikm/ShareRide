@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  bookingReportOpen,
   checkReport,
   holdsPayout,
   isUrgent,
@@ -101,6 +102,12 @@ describe("the time to report a booking problem (R9.1)", () => {
       ok: false,
       error: { code: "window_closed" },
     });
+  });
+
+  it("says so for the booking page, whoever asks", () => {
+    expect(bookingReportOpen(null, now, settings)).toBe(true);
+    expect(bookingReportOpen(completedAt, now, settings)).toBe(true);
+    expect(bookingReportOpen(completedAt, new Date(now.getTime() + 1000), settings)).toBe(false);
   });
 });
 

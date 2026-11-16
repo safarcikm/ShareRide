@@ -110,13 +110,24 @@ function subjectOf(
             ? context.passengerId
             : null;
       if (other === null) return err({ code: "not_involved" });
-      const closesAt =
-        context.tripCompletedAt &&
-        context.tripCompletedAt.getTime() + settings.bookingReportHours * hourMs;
-      if (closesAt && now.getTime() > closesAt) return err({ code: "window_closed" });
+      if (!bookingReportOpen(context.tripCompletedAt, now, settings)) {
+        return err({ code: "window_closed" });
+      }
       return ok(other);
     }
   }
+}
+
+/** A problem with a booking can be reported until 24 hours after its trip completed (R9.1). */
+export function bookingReportOpen(
+  tripCompletedAt: Date | null,
+  now: Date,
+  settings: SafetySettings,
+): boolean {
+  return (
+    tripCompletedAt === null ||
+    now.getTime() <= tripCompletedAt.getTime() + settings.bookingReportHours * hourMs
+  );
 }
 
 /** Safety reports are urgent: the operator is alerted at once (3.4.1). */
