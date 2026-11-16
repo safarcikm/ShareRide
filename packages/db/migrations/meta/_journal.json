@@ -148,13 +148,6 @@
       "when": 1794869995363,
       "tag": "0020_operator_console",
       "breakpoints": true
-    },
-    {
-      "idx": 21,
-      "version": "7",
-      "when": 1794871055727,
-      "tag": "0021_trip_day_check_ins",
-      "breakpoints": true
     }
   ]
 }
