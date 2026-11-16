@@ -62,6 +62,7 @@ const app = createApp({
   checkDatabase: () => pingDatabase(database.pool),
   webOrigins: config.webOrigins,
   ...(config.webAppDir === undefined ? {} : { webAppDir: config.webAppDir }),
+  ...(config.adminAppDir === undefined ? {} : { adminAppDir: config.adminAppDir }),
   ...(reportError === undefined ? {} : { reportError }),
   features: {
     db: database.db,
@@ -185,6 +186,7 @@ const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
       worker: config.worker,
       trustedProxies: config.trustedProxies,
       webApp: config.webAppDir !== undefined,
+      console: config.adminAppDir !== undefined,
       errorReporting: reportError !== undefined,
       release: config.errorReporting.release,
     },

@@ -522,6 +522,11 @@ releases follow [Semantic Versioning](https://semver.org/).
 - `packages/ui`: the design tokens and the map of Iceland (data,
   projection, roads and views) moved out of the app, to be shared with the
   operator console; the app looks the same.
+- The operator console app (`apps/admin`, React and Vite), served by the
+  API at `/admin` with its own content security policy: sign-in and
+  first-passkey setup with passkeys (`@simplewebauthn/browser`), the home
+  page, the passkeys page, Icelandic and English, and the console in the
+  API image.
 
 - Privacy self-service, part 1 (spec 11): the rules in the domain (what
   is open before deleting an account, the 7-day wait, what deletion does to

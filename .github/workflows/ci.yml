@@ -117,11 +117,14 @@ jobs:
         run: pnpm --filter @shareride/mobile exec playwright install --with-deps chromium
       - name: Web tests against the API (phone and desktop sizes)
         run: pnpm --filter @shareride/mobile e2e:web
+      # The operator console's journeys sign in with passkeys saved in
+      # Chromium's virtual authenticator (apps/admin/e2e).
+      - name: Console journeys against the API
+        run: pnpm --filter @shareride/admin e2e
       - name: Print the page each failed web test ended on
         if: ${{ failure() }}
-        working-directory: apps/mobile
         run: |
-          for file in test-results/*/error-context.md; do
+          for file in apps/mobile/test-results/*/error-context.md apps/admin/test-results/*/error-context.md; do
             [ -f "$file" ] || continue
             echo "::group::$file"
             cat "$file"
@@ -143,5 +146,6 @@ jobs:
           path: |
             apps/mobile/test-results/
             !apps/mobile/test-results/look/
+            apps/admin/test-results/
           if-no-files-found: ignore
           retention-days: 14
