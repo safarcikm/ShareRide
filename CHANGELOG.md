@@ -448,7 +448,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   confirmed bookings, which then hold no seats. Migration
   `0019_trip_completion` adds `completed_at` to trips and bookings. The
   driver's trips keep a trip under way as upcoming until its last stop,
-  and "Message all" still reaches passengers whose bookings completed.
+  and a past trip still shows the seats its passengers took. The chat
+  stays on both sides after the ride, and "Message all" still reaches
+  passengers whose bookings completed; "Where to stand" goes once the
+  ride completed.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

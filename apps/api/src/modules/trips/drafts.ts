@@ -21,7 +21,7 @@ import {
 } from "@shareride/domain";
 import { and, asc, count, desc, eq, gt, inArray, isNull, lte, min, ne, or, sql } from "drizzle-orm";
 import type { DrivingService } from "../driving/index.ts";
-import { occupancyNow } from "../bookings/seats.ts";
+import { seatsTakenNow } from "../bookings/seats.ts";
 import { toSummary } from "../meeting-points/service.ts";
 
 const { bookings, legs, meetingPoints, segments, trips, tripStops, users, vehicles } = schema;
@@ -174,7 +174,7 @@ export function createTripService(dependencies: {
           ),
         )
         .groupBy(bookings.tripId),
-      occupancyNow(q, ids, now),
+      seatsTakenNow(q, ids, now),
     ]);
     return rows.map((row) => ({
       id: row.id,

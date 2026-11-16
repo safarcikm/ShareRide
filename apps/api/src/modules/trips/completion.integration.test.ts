@@ -1,4 +1,10 @@
-import { messageAllPassengersRoute, myBookingsRoute, myTripsRoute } from "@shareride/contracts";
+import {
+  bookingRoute,
+  messageAllPassengersRoute,
+  myBookingsRoute,
+  myTripsRoute,
+  tripBookingsRoute,
+} from "@shareride/contracts";
 import { schema } from "@shareride/db";
 import { defaultTripDaySettings as settings } from "@shareride/domain";
 import { eq } from "drizzle-orm";
@@ -203,6 +209,52 @@ describe("rides that left and ended (spec 16, section 6)", () => {
     expect(past.data.bookings.map(({ id, status }) => ({ id, status }))).toEqual([
       { id: ride.id, status: "completed" },
     ]);
+  });
+
+  it("keeps the ride's meeting details for both sides once it completed (R5.12)", async () => {
+    const jon = await driverOf(airport, "Jón");
+    const { gunna, ride } = await gunnasRide();
+    await until((await trip(airport)).arrivesAt, 2 * 3600, jon, gunna);
+    await run();
+    const seen = await api.client.call(bookingRoute, {
+      accessToken: gunna.accessToken,
+      params: { id: ride.id },
+    });
+    if (!seen.ok) throw new Error(seen.error.code);
+    expect(seen.data.status).toBe("completed");
+    expect(seen.data.confirmed).not.toBeNull();
+    const onTrip = await api.client.call(tripBookingsRoute, {
+      accessToken: jon.accessToken,
+      params: { id: airport },
+    });
+    if (!onTrip.ok) throw new Error(onTrip.error.code);
+    expect(onTrip.data.bookings.map(({ status, confirmed }) => ({ status, confirmed }))).toEqual([
+      { status: "completed", confirmed: seen.data.confirmed },
+    ]);
+  });
+
+  it("still shows the seats its passengers took once their bookings completed and freed them", async () => {
+    const jon = await driverOf(airport, "Jón");
+    await gunnasRide();
+    const sigga = await newMember("Sigga");
+    const short = await booked(sigga.accessToken, airport, { fromStop: 1, toStop: 2 });
+    await paid(sigga.accessToken, short.id);
+    await until((await trip(airport)).arrivesAt, 2 * 3600, jon);
+    await run();
+    expect(await occupancy(airport)).toEqual([0, 0, 0]);
+    const listed = await api.client.call(myTripsRoute, {
+      accessToken: jon.accessToken,
+      query: { when: "past" },
+    });
+    if (!listed.ok) throw new Error(listed.error.code);
+    const past = listed.data.trips.find((one) => one.id === airport);
+    expect(past?.segments.map(({ seatsTaken }) => seatsTaken)).toEqual([1, 2, 1]);
+    const onTrip = await api.client.call(tripBookingsRoute, {
+      accessToken: jon.accessToken,
+      params: { id: airport },
+    });
+    if (!onTrip.ok) throw new Error(onTrip.error.code);
+    expect(onTrip.data.segments.map(({ occupancy: taken }) => taken)).toEqual([1, 2, 1]);
   });
 
   it("still lets the driver write to all passengers once their bookings completed (R7.1, R7.4)", async () => {
