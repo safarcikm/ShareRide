@@ -323,9 +323,9 @@ and note.
 
 PR 5c, `feat(trips)`: the car.
 
-- [ ] A new car on the same endpoint; `TripChanged`, with its push and
+- [x] A new car on the same endpoint; `TripChanged`, with its push and
       email, and the change on each booking
-- [ ] The car row on Edit trip
+- [x] The car row on Edit trip
 - Verify: integration tests (a new car tells each passenger; the same car
   tells nobody)
 

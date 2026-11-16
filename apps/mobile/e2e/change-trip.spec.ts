@@ -161,3 +161,51 @@ test("a driver offers fewer seats and a higher price, each saved from Edit trip"
   ).toBeVisible();
   await close();
 });
+
+// Spec 6, 3.2: the driver adds a second car and changes the trip to it;
+// Dóra, who paid, is told, and reads the new car on her booking and in the
+// chat.
+test("a driver changes the car, and the passenger reads it on the booking and in the chat", async ({
+  page: driver,
+  browser,
+}, testInfo) => {
+  test.slow();
+  const { page: dora, close } = await secondPage(browser, testInfo);
+  const { tripId, booking } = await confirmedBooking(driver, dora);
+
+  await driver.goto(`/drive/trips/${tripId}/edit`);
+  await expect(
+    driver.getByText("Toyota Yaris, white", { exact: true }).filter(visible),
+  ).toBeVisible();
+  await driver.getByRole("link", { name: "Change the car" }).click();
+  await expect(driver.getByRole("heading", { name: "Change the car" })).toBeVisible();
+  await expect(
+    driver
+      .getByText("Passengers who have booked are told about the new car when you save.", {
+        exact: true,
+      })
+      .filter(visible),
+  ).toBeVisible();
+
+  // Add a car comes back here, with the new car to choose.
+  await driver.getByRole("link", { name: "Add a car" }).click();
+  await driver.getByLabel("Make").fill("Volvo");
+  await driver.getByLabel("Model").fill("XC40");
+  await driver.getByRole("radio", { name: "Red" }).click();
+  await driver.getByRole("button", { name: "Save car" }).click();
+  await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}/edit/car$`));
+  await driver.getByRole("radio", { name: /^Volvo XC40, red/ }).click();
+  await driver.getByRole("button", { name: "Save the change", exact: true }).click();
+  await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}\\?changed=`));
+  const outcome = "Trip changed. Your passengers have been told.";
+  await expect(driver.getByText(outcome, { exact: true }).filter(visible)).toBeVisible();
+
+  const newCar = "New car: Red Volvo XC40";
+  await dora.goto(booking);
+  await expect(dora.getByRole("heading", { name: "Changes since you booked" })).toBeVisible();
+  await expect(dora.getByText(newCar, { exact: true }).filter(visible)).toBeVisible();
+  const [, bookingId = ""] = /\/bookings\/([0-9a-f-]+)$/.exec(booking) ?? [];
+  await dora.goto(`/messages/${bookingId}`);
+  await expect(dora.getByText(newCar, { exact: true }).filter(visible)).toBeVisible();
+  await close();
+});

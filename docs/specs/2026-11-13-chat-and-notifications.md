@@ -115,6 +115,12 @@ right screen in the app (booking, trip, request or conversation).
 turned on. Changes to seats, price level, booking mode, preferences and the
 note send nothing (spec 6). Sign-in codes and account emails are spec 1.
 
+As built for a new car (milestone 6, PR 5c): "New car: Red Volvo XC40",
+with the passenger's part and boarding time, by push and email to each
+accepted or confirmed booking, never by SMS; a request is not told. The
+conversation gets the same line. Each notification names the car of its
+own change, and never the number plate (R7.9).
+
 ### 3.4 SMS for last-minute news
 
 SMS is only for sign-in codes (spec 1) and for news that could leave someone

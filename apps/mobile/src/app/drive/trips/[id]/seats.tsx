@@ -21,10 +21,10 @@ import { Notice } from "@/components/notice";
 import { RadioCard } from "@/components/radio-card";
 import { Stepper } from "@/components/stepper";
 import { Body, Heading } from "@/components/text";
-import { carSummary } from "@/driving/texts";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { spacing } from "@/theme/tokens";
+import { CarChoices } from "@/trips/car-choices";
 import { NoteField, PreferenceChoices } from "@/trips/preference-fields";
 import { StepScreen } from "@/trips/step-screen";
 import { goOn } from "@/trips/steps";
@@ -75,7 +75,7 @@ function SeatsStep({
   readonly cars: readonly Vehicle[];
   readonly fromReview: boolean;
 }) {
-  const { locale, t } = useLanguage();
+  const { t } = useLanguage();
   const session = useSession();
   const [seats, setSeats] = useState(trip.seats);
   const [bookingMode, setBookingMode] = useState<BookingMode>(trip.bookingMode);
@@ -170,19 +170,7 @@ function SeatsStep({
       {cars.length > 1 ? (
         <>
           <Heading>{t("trip.car.title")}</Heading>
-          <View accessibilityRole="radiogroup" style={styles.group}>
-            {cars.map((car) => (
-              <RadioCard
-                key={car.id}
-                title={carSummary(t, locale, car)}
-                help={car.registration ?? t("vehicle.noPlate")}
-                selected={vehicleId === car.id}
-                onSelect={() => {
-                  setVehicleId(car.id);
-                }}
-              />
-            ))}
-          </View>
+          <CarChoices cars={cars} vehicleId={vehicleId} onChange={setVehicleId} />
         </>
       ) : null}
 

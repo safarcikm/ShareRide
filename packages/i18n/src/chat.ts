@@ -1,4 +1,5 @@
 import type { CancelReason, QuickMessage } from "@shareride/domain";
+import { carText, type CarFacts } from "./car.ts";
 import { formatClock } from "./format.ts";
 import type { MessageKey, Translate } from "./translator.ts";
 
@@ -49,6 +50,7 @@ export type ShownSystemLine =
       readonly from: string;
       readonly to: string;
     }
+  | { readonly key: "car_changed"; readonly car: CarFacts }
   | {
       readonly key: "cancelled";
       readonly by: "me" | "them";
@@ -63,6 +65,7 @@ export type ShownSystemLine =
 export function systemLineText(t: Translate, line: ShownSystemLine, other: string): string {
   if (line.key === "opened") return t("chat.opened");
   if (line.key === "departure_changed") return departureChangeText(t, line);
+  if (line.key === "car_changed") return t("trip.carChanged", { car: carText(t, line.car) });
   const reason = cancelReasonText(t, line.reason);
   const said = line.wholeTrip
     ? line.by === "me"

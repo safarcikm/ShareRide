@@ -100,6 +100,7 @@ function Navigation() {
         <Stack.Screen name="drive/trips/[id]/edit/time" />
         <Stack.Screen name="drive/trips/[id]/edit/price" />
         <Stack.Screen name="drive/trips/[id]/edit/seats" />
+        <Stack.Screen name="drive/trips/[id]/edit/car" />
         <Stack.Screen name="drive/trips/[id]/edit/booking" />
         <Stack.Screen name="drive/trips/[id]/edit/details" />
         <Stack.Screen name="drive/trips/[id]/edit/check" />

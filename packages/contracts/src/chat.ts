@@ -1,6 +1,6 @@
 import { cancelReasons, lateMinutes, quickMessageKeys } from "@shareride/domain";
 import { z } from "zod";
-import { bookingSchema } from "./bookings.ts";
+import { bookingSchema, carSummarySchema } from "./bookings.ts";
 import { timestampSchema } from "./common.ts";
 import { errorResponseSchema } from "./errors.ts";
 import { defineRoute } from "./route.ts";
@@ -55,7 +55,7 @@ export const chatMessageSchema = z.object({
   /** A text message's text, as written. */
   text: z.string().nullable(),
   quick: quickMessageSchema.nullable(),
-  /** A line about the booking: opened, the departure changed, or it or its trip cancelled by me or them, with the reason (spec 6). */
+  /** A line about the booking: opened, the departure or the car changed, or it or its trip cancelled by me or them, with the reason (spec 6). */
   system: z
     .discriminatedUnion("key", [
       z.object({ key: z.literal("opened") }),
@@ -65,6 +65,8 @@ export const chatMessageSchema = z.object({
         from: timestampSchema,
         to: timestampSchema,
       }),
+      /** The new car (spec 6, 3.2). */
+      z.object({ key: z.literal("car_changed"), car: carSummarySchema }),
       z.object({
         key: z.literal("cancelled"),
         by: z.enum(["me", "them"]),

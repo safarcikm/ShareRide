@@ -1,4 +1,5 @@
 import type { CancelReason } from "../bookings/cancellation.ts";
+import type { CarColour } from "../driving/vehicles.ts";
 import { err, ok, type Result } from "../result.ts";
 import type { ChatSettings } from "./settings.ts";
 
@@ -28,9 +29,10 @@ export type QuickMessage =
 /**
  * What happened to the booking, as lines in its conversation (spec 7, 3.1,
  * item 3), shown in the reader's language: the conversation opened, the
- * departure changed, and the booking cancelled, by whom and why (spec 6).
+ * departure or the car changed, and the booking cancelled, by whom and why
+ * (spec 6).
  */
-export const systemLineKeys = ["opened", "departure_changed", "cancelled"] as const;
+export const systemLineKeys = ["opened", "departure_changed", "car_changed", "cancelled"] as const;
 export type SystemLineKey = (typeof systemLineKeys)[number];
 
 /** A system line as stored, with the canceller's reason (stored in `params`). */
@@ -41,6 +43,13 @@ export type SystemLine =
       /** The passenger's boarding time before and after the move, in ISO 8601 (spec 6, 3.2). */
       readonly from: string;
       readonly to: string;
+    }
+  | {
+      /** The new car, never its number plate (spec 6, 3.2; R7.9). */
+      readonly key: "car_changed";
+      readonly make: string;
+      readonly model: string;
+      readonly colour: CarColour;
     }
   | {
       readonly key: "cancelled";

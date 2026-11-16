@@ -426,8 +426,8 @@ export const cancelTripRoute = defineRoute({
  * One change to a published trip, as the driver saves it from Edit trip
  * (spec 6, 3.2): a new departure, which every stop moves with (R6.2); the
  * seats offered; the price level, for new bookings; the booking mode; or
- * the preferences and note together. The car follows in milestone 6's PR
- * 5c, and stops in PR 6.
+ * the preferences and note together; or another of the driver's cars,
+ * which booked passengers are told of. Stops follow in milestone 6's PR 6.
  */
 export const tripChangeSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("departure"), departsAt: timestampSchema }),
@@ -435,6 +435,8 @@ export const tripChangeSchema = z.discriminatedUnion("kind", [
   /** A level the seats allow (rule P4), or 422 `price_level_invalid`. */
   z.object({ kind: z.literal("priceLevel"), priceLevel: z.int().min(0) }),
   z.object({ kind: z.literal("bookingMode"), bookingMode: z.enum(bookingModes) }),
+  /** One of my cars, not removed, or 422 `car_missing`. */
+  z.object({ kind: z.literal("vehicle"), vehicleId: z.uuid() }),
   z.object({
     kind: z.literal("details"),
     preferences: tripPreferencesSchema,
@@ -456,8 +458,8 @@ export const tripChangeEffectSchema = z.object({
   told: z.int().nonnegative(),
   /**
    * Of those, the ones who paid and may now cancel with a full refund,
-   * without it counting against them: moved more than 30 minutes from when
-   * they booked (R6.3).
+   * without it counting against them: the departure is more than 30
+   * minutes from when they booked (R6.3), by this change or an earlier one.
    */
   freeCancellations: z.int().nonnegative(),
   /** Requests waiting for the driver, not told; they see the change on the trip (spec 7, 3.3). */
@@ -509,7 +511,7 @@ export const changeTripRoute = defineRoute({
     },
     422: {
       description:
-        "change_not_allowed: each rule the change breaks is a detail, its code as the issue and `departsAt`, `stops.N`, `segments.N`, `seats`, `priceLevel` or `note` as the path; with `move_too_far`, `departureWindow` gives the departures the bookings allow (R6.4)",
+        "change_not_allowed: each rule the change breaks is a detail, its code as the issue and `departsAt`, `stops.N`, `segments.N`, `seats`, `priceLevel`, `vehicleId` or `note` as the path; with `move_too_far`, `departureWindow` gives the departures the bookings allow (R6.4)",
       ...errors,
     },
   },

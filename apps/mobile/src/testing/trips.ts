@@ -48,6 +48,15 @@ export const yaris: Vehicle = {
   registration: null,
 };
 
+/** Another car of the driver's, to change to. */
+export const volvo: Vehicle = {
+  id: "0190a1d6-0000-7000-8000-0000000000a2",
+  make: "Volvo",
+  model: "XC40",
+  colour: "red",
+  registration: null,
+};
+
 export const readyDriver: DriverReadiness = {
   ready: true,
   items: [
@@ -128,12 +137,14 @@ interface TripsApi {
  * `answers.change` what changing one answers, with or without `preview`;
  * `undefined` does it. `answers.told` says whom a change tells (`told`, of
  * whom `freeCancellations` may cancel for free) and the requests it leaves
- * waiting or makes expire; nobody by default.
+ * waiting or makes expire; nobody by default. `answers.cars` are the
+ * driver's cars, the Yaris by default.
  */
 export function tripsApi(
   client: FakeClient,
   start: MyTrip[] = [],
   answers: {
+    cars?: readonly Vehicle[];
     cancel?: () => unknown;
     change?: (preview: boolean) => unknown;
     told?: Partial<Pick<TripChangeEffect, "told" | "freeCancellations" | "requests" | "expiring">>;
@@ -148,7 +159,7 @@ export function tripsApi(
     return new Date(Date.UTC(2026, 10, 14, 12, 0, changes)).toISOString();
   };
   client.answer("/v1/me/driver-readiness", () => ok(200, readyDriver));
-  client.answer("/v1/me/vehicles", () => ok(200, { vehicles: [yaris] }));
+  client.answer("/v1/me/vehicles", () => ok(200, { vehicles: answers.cars ?? [yaris] }));
   client.answer("/v1/places/search", (input) => {
     const { q } = input["query"] as { q: string };
     const found = tripPoints.filter((known) =>
@@ -322,6 +333,7 @@ export function tripsApi(
           price: prices[index] ?? segment.price,
         })),
         ...(body.kind === "bookingMode" ? { bookingMode: body.bookingMode } : {}),
+        ...(body.kind === "vehicle" ? { vehicleId: body.vehicleId } : {}),
         ...(body.kind === "details" ? { preferences: body.preferences, note: body.note } : {}),
         updatedAt: stamp(),
       });

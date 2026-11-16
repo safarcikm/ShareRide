@@ -142,9 +142,11 @@ As built (milestone 6, PR 5a): the table `trip_changes`, with `kind` one of
 `after` as small flat JSON objects, such as `{ "departsAt": "…" }`, or for
 the seats `{ "seats": 3, "priceLevel": 120 }` with the level they left (PR
 5b). For the preferences and note, `after` says only whether the note
-changed (`noteChanged`), never its text. It goes with the trip. A booking shows the moves made after it was booked, and a
-notification about a move points to its row (`notifications.trip_change_id`),
-so each move is told with its own times.
+changed (`noteChanged`), never its text. A new car keeps the car's ID,
+make, model and colour before and after, never its number plate (PR 5c). It
+goes with the trip. A booking shows the moves and new cars made after it was
+booked, and a notification about a move or a new car points to its row
+(`notifications.trip_change_id`), so each is told with its own times or car.
 
 ### Booking
 
@@ -286,7 +288,7 @@ Modules communicate changes through events written in the same transaction (an
 outbox table) and processed by the worker:
 
 `TripPublished`, `DepartureMoved` (one per booked passenger, with the
-recorded change), `TripChanged`, `TripCancelled`, `BookingRequested`,
+recorded change), `TripChanged` (a new car, likewise), `TripCancelled`, `BookingRequested`,
 `BookingAccepted`, `BookingConfirmed`, `BookingDeclined`, `BookingExpired`
 (a request nobody answered, or an accepted booking nobody paid for),
 `BookingWithdrawn`, `BookingCancelled`,

@@ -27,6 +27,7 @@ const facts: NotificationFacts = {
   message: null,
   boardPointId: "point-bsi",
   car: { make: "Toyota", model: "Yaris", colour: "white" },
+  newCar: null,
   moved: { from: new Date("2026-11-14T08:15:00Z"), to: new Date("2026-11-14T09:00:00Z") },
   paid: true,
 };
@@ -71,6 +72,7 @@ const kinds: readonly [NotificationFacts["kind"], "driver" | "passenger"][] = [
   ["trip_cancelled", "passenger"],
   ["departure_moved", "passenger"],
   ["departure_moved_far", "passenger"],
+  ["trip_changed", "passenger"],
 ];
 
 describe("notification texts", () => {
@@ -79,7 +81,13 @@ describe("notification texts", () => {
     (locale) => {
       for (const [kind, role] of kinds) {
         const { title, body } = text(
-          { kind, role, message: { text: "Halló" }, cancelReason: "car_problem" },
+          {
+            kind,
+            role,
+            message: { text: "Halló" },
+            cancelReason: "car_problem",
+            newCar: facts.car,
+          },
           locale,
         );
         for (const line of [title, body]) {
@@ -236,8 +244,25 @@ describe("notification texts", () => {
     expect(() => text({ ...moved, moved: null })).toThrow(/needs the move/);
   });
 
+  it("tell a passenger the new car by its colour, make and model, never its number plate (spec 6, 3.2)", () => {
+    const changed = {
+      kind: "trip_changed",
+      role: "passenger",
+      newCar: { make: "Volvo", model: "XC40", colour: "red" },
+    } as const;
+    expect(text(changed)).toEqual({
+      title: "New car: Red Volvo XC40",
+      body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00.",
+      path: "/bookings/booking-1",
+    });
+    expect(text(changed, "is")).toMatchObject({ title: "Nýr bíll: Rauður Volvo XC40" });
+    expect(() => text({ ...changed, newCar: null })).toThrow(/needs the new car/);
+  });
+
   it("refuse a kind that has no text yet", () => {
-    expect(() => text({ kind: "trip_changed" })).toThrow(/No text for trip_changed/);
+    expect(() => text({ kind: "meeting_point_changed" })).toThrow(
+      /No text for meeting_point_changed/,
+    );
   });
 
   it("tell of unread messages by the trip's day, never their text, and open the chat (3.6, item 3)", () => {

@@ -396,6 +396,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   saving; requests waiting for an answer stay open when the booking mode
   changes; the note never holds contact details. Nobody is notified: the
   trip shows the change. Each change is kept in `trip_changes`.
+- The driver changes a published trip's car (milestone 6, PR 5c, spec 6,
+  3.2) from Edit trip, choosing among their cars, with "Add a car" coming
+  back to the list. Each passenger who booked reads "New car: Red Volvo
+  XC40" on their booking and in the chat, and is told by push and email,
+  never by SMS; a request is not told. Never with the number plate.
+  `TripChanged` joins the outbox (migration 0016).
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

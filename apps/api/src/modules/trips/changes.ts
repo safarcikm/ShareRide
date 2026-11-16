@@ -10,6 +10,7 @@ import {
   routeLegPairs,
   type BookingOnTrip,
   type BookingSettings,
+  type CarColour,
   type ChangeEffect,
   type ChangeProblem,
   type NotificationSettings,
@@ -17,14 +18,15 @@ import {
   type TripChange,
   type TripSettings,
 } from "@shareride/domain";
-import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { expireDueBookings, lockTrip, type Transaction } from "../bookings/seats.ts";
 import { addSystemLine } from "../chat/conversations.ts";
 import { followDepartureMove } from "../notifications/schedule.ts";
 import { recordEvents } from "../notifications/outbox.ts";
 import { choicesOf, type NotFound } from "./drafts.ts";
 
-const { bookings, legs, meetingPoints, segments, tripChanges, trips, tripStops, users } = schema;
+const { bookings, legs, meetingPoints, segments, tripChanges, trips, tripStops, users, vehicles } =
+  schema;
 
 type TripRow = typeof trips.$inferSelect;
 
@@ -70,6 +72,7 @@ function asRead(change: TripChangeBody): TripChange {
     case "seats":
     case "priceLevel":
     case "bookingMode":
+    case "vehicle":
       return change;
   }
 }
@@ -302,6 +305,55 @@ export function createTripChangeService(dependencies: {
     }
   }
 
+  /** A car as the change records it and passengers read it: never its number plate (R7.9). */
+  async function carOf(tx: Transaction, vehicleId: string | null) {
+    const [car] =
+      vehicleId === null
+        ? []
+        : await tx
+            .select({ make: vehicles.make, model: vehicles.model, colour: vehicles.colour })
+            .from(vehicles)
+            .where(eq(vehicles.id, vehicleId));
+    return car === undefined ? null : { ...car, colour: car.colour as CarColour };
+  }
+
+  /**
+   * Saves another car, when it is another: each booked passenger is told,
+   * on the booking, in the chat, by push and by email (spec 6, 3.2; spec 7, 3.3).
+   */
+  async function changeCar(
+    tx: Transaction,
+    trip: TripRow,
+    effect: ChangeEffect,
+    now: Date,
+  ): Promise<void> {
+    const vehicleId = effect.trip.vehicleId;
+    if (vehicleId === trip.vehicleId) return;
+    const car = await carOf(tx, vehicleId);
+    if (car === null) throw new Error("The rules took a car that is not there.");
+    await tx.update(trips).set({ vehicleId, updatedAt: now }).where(eq(trips.id, trip.id));
+    const recorded = await record(
+      tx,
+      trip.id,
+      "vehicle",
+      { vehicleId: trip.vehicleId, ...(await carOf(tx, trip.vehicleId)) },
+      { vehicleId, ...car },
+      now,
+    );
+    for (const { bookingId } of effect.told) {
+      await addSystemLine(tx, bookingId, { key: "car_changed", ...car }, now);
+    }
+    await recordEvents(
+      tx,
+      effect.told.map(({ bookingId }) => ({
+        type: "TripChanged",
+        bookingId,
+        tripChangeId: recorded,
+      })),
+      now,
+    );
+  }
+
   /** Saves a new departure: every stop moves with it (R6.2), and what hangs on the times. */
   async function moveDeparture(
     tx: Transaction,
@@ -432,6 +484,10 @@ export function createTripChangeService(dependencies: {
               ne(trips.id, tripId),
             ),
           );
+        const cars = await tx
+          .select({ id: vehicles.id })
+          .from(vehicles)
+          .where(and(eq(vehicles.ownerId, driverId), isNull(vehicles.removedAt)));
         const departsAt = trip.departsAt ?? now;
         const checked = checkTripChange(
           {
@@ -449,6 +505,7 @@ export function createTripChangeService(dependencies: {
             occupancy: segmentRows.map((segment) => segment.occupancy),
             ...choicesOf(trip),
             vehicleId: trip.vehicleId ?? "",
+            cars: cars.map((car) => car.id),
             note: trip.note,
             otherTrips: others.flatMap((other) =>
               other.departsAt === null || other.arrivesAt === null
@@ -496,7 +553,9 @@ export function createTripChangeService(dependencies: {
               now,
             );
           }
-        } else if (read.kind !== "vehicle") {
+        } else if (read.kind === "vehicle") {
+          await changeCar(tx, trip, checked.value, now);
+        } else {
           await saveChoice(tx, trip, read, checked.value, now);
         }
         return ok(effect);

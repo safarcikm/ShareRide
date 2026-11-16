@@ -1,7 +1,8 @@
 // The screens that change one part of a published trip other than its
-// time (spec 6, 3.2): the price, the seats, how people book, and the
-// preferences and note. Nobody is told of these, so each saves straight
-// from its screen, which says before saving what the change means.
+// time (spec 6, 3.2): the price, the seats, the car, how people book, and
+// the preferences and note. Each saves straight from its screen, which
+// says before saving what the change means: nobody is told, or for the
+// car, that passengers who booked are told.
 import {
   changeTripRoute,
   myTripRoute,
