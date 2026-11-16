@@ -22,6 +22,13 @@ import type { AppEnv } from "./context.ts";
 import { errorBody } from "./errors.ts";
 import type { Logger } from "./logger.ts";
 import {
+  createOperatorSessionService,
+  createRequireOperator,
+  guardAdminPaths,
+  operatorCookie,
+  registerAdminRoutes,
+} from "./modules/admin/index.ts";
+import {
   createAccountService,
   createEmailService,
   registerAccountRoutes,
@@ -57,7 +64,7 @@ import {
   registerTripChangeRoutes,
   registerTripRoutes,
 } from "./modules/trips/index.ts";
-import { bearerAuth, toOpenApiRoute } from "./openapi.ts";
+import { bearerAuth, operatorSession, toOpenApiRoute } from "./openapi.ts";
 import type { KeyedHasher } from "./platform/crypto.ts";
 import { addressBlock } from "./platform/client-address.ts";
 import { createMemoryRateLimiter } from "./platform/memory-rate-limiter.ts";
@@ -133,14 +140,17 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
   app.use(requestId());
   const webOrigins = dependencies.webOrigins ?? [];
   if (webOrigins.length > 0) {
-    app.use(
-      cors({
-        origin: [...webOrigins],
-        credentials: true,
-        allowHeaders: ["Content-Type", "Authorization"],
-        exposeHeaders: ["X-Request-Id", "Retry-After"],
-        maxAge: 600,
-      }),
+    const allowWebOrigins = cors({
+      origin: [...webOrigins],
+      credentials: true,
+      allowHeaders: ["Content-Type", "Authorization"],
+      exposeHeaders: ["X-Request-Id", "Retry-After"],
+      maxAge: 600,
+    });
+    // The console is served from the API's own origin and is never called
+    // from another one, so its routes allow no other origin (ADR 0028).
+    app.use(async (c, next) =>
+      c.req.path.startsWith("/admin/") ? next() : allowWebOrigins(c, next),
     );
   }
   app.use(secureHeaders());
@@ -170,6 +180,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
         {
           requestId: c.get("requestId"),
           userId: c.get("auth")?.userId,
+          operatorId: c.get("operator")?.userId,
           method: c.req.method,
           route: routePath(c, -1),
           status: c.res.status,
@@ -194,6 +205,12 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
 
   if (dependencies.features !== undefined) {
     const { features } = dependencies;
+    // First: the guard covers only routes registered after it, and closes
+    // every console route even if one forgets its own guard.
+    const operatorSessions = createOperatorSessionService(features);
+    const requireOperator = createRequireOperator(operatorSessions, features.secureCookies);
+    app.use(guardAdminPaths(requireOperator));
+    registerAdminRoutes(app, { ...features, sessions: operatorSessions, requireOperator });
     const legal = createLegalService(features);
     const account = createAccountService({ ...features, legal });
     const auth = createAuthService({
@@ -268,6 +285,12 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     type: "http",
     scheme: "bearer",
     description: "An access token from /v1/auth/phone/verify or /v1/auth/refresh",
+  });
+  app.openAPIRegistry.registerComponent("securitySchemes", operatorSession, {
+    type: "apiKey",
+    in: "cookie",
+    name: operatorCookie.name,
+    description: "The operator console's session, set when the operator signs in with a passkey",
   });
   app.doc31("/v1/openapi.json", {
     openapi: "3.1.0",

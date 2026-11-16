@@ -162,3 +162,26 @@ describe("OpenAPI", () => {
     );
   });
 });
+
+describe("browsers on other origins", () => {
+  const app = createApp({
+    logger: createLogger({ level: "silent" }),
+    checkDatabase: () => Promise.resolve(),
+    webOrigins: ["https://shareride.test"],
+  });
+  const preflight = (path: string) =>
+    app.request(path, {
+      method: "OPTIONS",
+      headers: { origin: "https://shareride.test", "access-control-request-method": "POST" },
+    });
+
+  it("may call the app's API from the web app's origins", async () => {
+    const response = await preflight("/v1/health");
+    expect(response.headers.get("access-control-allow-origin")).toBe("https://shareride.test");
+  });
+
+  it("may never call the console's API (ADR 0028)", async () => {
+    const response = await preflight("/admin/v1/me");
+    expect(response.headers.get("access-control-allow-origin")).toBeNull();
+  });
+});

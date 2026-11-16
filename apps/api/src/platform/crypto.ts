@@ -1,10 +1,15 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
-const tokenPrefixes = { access: "sr_at", refresh: "sr_rt", emailLink: "sr_ev" } as const;
+const tokenPrefixes = {
+  access: "sr_at",
+  refresh: "sr_rt",
+  emailLink: "sr_ev",
+  operatorSession: "sr_os",
+} as const;
 
 /**
  * A new opaque token: 256 random bits (ADR 0016). The prefix tells access and
- * refresh tokens and email links apart and lets secret scanners recognise
+ * refresh tokens, email links and console sessions apart and lets secret scanners recognise
  * leaked tokens.
  */
 export function newToken(kind: keyof typeof tokenPrefixes): string {
