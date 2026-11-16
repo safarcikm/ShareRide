@@ -530,3 +530,41 @@ export const changeTripRoute = defineRoute({
     503: distancesPending,
   },
 });
+
+/** A new draft from one of my trips, and the meeting points left out of it (spec 6, 3.6). */
+export const tripCopySchema = z.object({
+  trip: myTripSchema,
+  /** The trip's meeting points no longer in use, in the new draft's order. */
+  dropped: z.array(meetingPointSummarySchema),
+});
+
+export type TripCopy = z.infer<typeof tripCopySchema>;
+
+/**
+ * Post again, or with `reverse` post the return: a draft with the trip's
+ * stops (reversed), car, seats, price level, booking mode, preferences and
+ * note, without a date. Stops the driver removed are left out, and so are
+ * meeting points no longer in use, which the answer names (spec 6, 3.6).
+ */
+export const copyTripRoute = defineRoute({
+  method: "post",
+  path: "/v1/trips/{id}/copy",
+  summary: "Start a draft from one of my trips, or its return (spec 6, 3.6)",
+  tags: ["trips"],
+  auth: true,
+  request: {
+    params: tripParams,
+    query: z.object({ reverse: flagSchema.default(false) }),
+    // An empty JSON body: every POST is JSON, which keeps other sites out.
+    body: z.object({}),
+  },
+  responses: {
+    201: { description: "The draft", schema: tripCopySchema },
+    401: unauthenticated,
+    404: notMine,
+    422: {
+      description: "too_few_stops: fewer than two of the trip's meeting points are still in use",
+      ...errors,
+    },
+  },
+});

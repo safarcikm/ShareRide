@@ -679,6 +679,11 @@ export const is = {
   "trip.editRequestsStopRemoved":
     "{count, plural, one {# sem bað um sæti sér} other {# sem báðu um sæti sjá}} breytinguna í appinu.",
   "trip.editOtherStop": "Velja annan viðkomustað",
+  "trip.postAgain": "Birta aftur",
+  "trip.postReturn": "Birta bakaleiðina",
+  "trip.copyDropped": "Ekki lengur í notkun og því sleppt: {stops}.",
+  "trip.copyTooFewStops":
+    "Færri en tveir mótsstaðir ferðarinnar eru enn í notkun. Birtu nýja ferð í staðinn.",
   "trip.problem.stop_in_use":
     "{count, plural, one {# farþegi fer} other {# farþegar fara}} inn eða út á {name}. Afbókaðu eða hafnaðu bókunum þeirra í ferðinni fyrst, eða biddu þá að afbóka.",
   "trip.problem.stop_in_use_some":

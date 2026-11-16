@@ -16,6 +16,7 @@ import { TakesFocus } from "@/components/takes-focus";
 import { Body, Heading, Title } from "@/components/text";
 import { isChangeable } from "@/driver-trip/changes";
 import { PassengersByPart, Stretches } from "@/driver-trip/parts";
+import { PostAgain } from "@/driver-trip/post-again";
 import { RequestCard } from "@/driver-trip/request-card";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
@@ -28,7 +29,8 @@ import { routeText } from "@/trips/texts";
  * The driver's trip (spec 5, screens 5 and 9): requests first, each to
  * accept or decline; then passengers by where they get in and out, each
  * booking to cancel (spec 6, 3.4); then the seats held on each stretch,
- * and "Edit trip" (3.2) and "Cancel trip" (3.3) until it leaves. It loads
+ * "Edit trip" (3.2) and "Cancel trip" (3.3) until it leaves, and "Post
+ * again" and "Post the return" (3.6), also once cancelled. It loads
  * again each time it comes into view. `cancelled`, the booking just
  * cancelled, says so with focus; so does `tripCancelled`, once the trip is,
  * and `changed`, which changes once each change is saved, with `told`, how
@@ -135,6 +137,7 @@ export default function DriverTripScreen() {
         {cancellation === null || cancellation.note === "" ? null : (
           <Body align="start">{t("driverTrip.yourNote", { note: cancellation.note })}</Body>
         )}
+        <PostAgain tripId={id} />
       </Screen>
     );
   }
@@ -249,6 +252,7 @@ export default function DriverTripScreen() {
           />
         </>
       ) : null}
+      <PostAgain tripId={id} />
     </Screen>
   );
 }

@@ -1,4 +1,4 @@
-import { updateTripRoute, type MyTrip } from "@shareride/contracts";
+import { updateTripRoute, type MeetingPointSummary, type MyTrip } from "@shareride/contracts";
 import {
   checkTimes,
   defaultTripSettings,
@@ -27,12 +27,17 @@ import { addDays, compareDays, dayOf, showsOtherTime, type Day } from "@/lib/day
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { at, clockOf, earliestDeparture, onOrAfter, type Clock } from "@/trips/clock-input";
+import { droppedFrom } from "@/trips/copied";
 import { StepScreen } from "@/trips/step-screen";
 import { goOn } from "@/trips/steps";
 import { Loading, useDraftOnFocus } from "@/trips/use-draft";
 import { useQuote } from "@/trips/use-quote";
 
-/** Step 2, date and times (spec 3, 3.5). */
+/**
+ * Step 2, date and times (spec 3, 3.5). A trip posted again or its return
+ * starts here, and until its times are saved this names the meeting points
+ * left out of it as no longer in use (spec 6, 3.6).
+ */
 export default function TimeStepScreen() {
   const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
   const { t } = useLanguage();
@@ -46,10 +51,25 @@ export default function TimeStepScreen() {
   }
   // A step left in the stack starts again from the draft when another step
   // changed it, so going back never saves an old copy over newer choices.
-  return <TimeStep key={result.data.updatedAt} trip={result.data} fromReview={from === "review"} />;
+  return (
+    <TimeStep
+      key={result.data.updatedAt}
+      trip={result.data}
+      fromReview={from === "review"}
+      dropped={result.data.departsAt === null ? droppedFrom(id) : []}
+    />
+  );
 }
 
-function TimeStep({ trip, fromReview }: { readonly trip: MyTrip; readonly fromReview: boolean }) {
+function TimeStep({
+  trip,
+  fromReview,
+  dropped,
+}: {
+  readonly trip: MyTrip;
+  readonly fromReview: boolean;
+  readonly dropped: readonly MeetingPointSummary[];
+}) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
@@ -241,6 +261,16 @@ function TimeStep({ trip, fromReview }: { readonly trip: MyTrip; readonly fromRe
         />
       }
     >
+      {dropped.length === 0 ? null : (
+        <TakesFocus>
+          <Notice
+            kind="info"
+            message={t("trip.copyDropped", {
+              stops: dropped.map((point) => point.name[locale]).join(", "),
+            })}
+          />
+        </TakesFocus>
+      )}
       <Heading>{t("trip.time.date")}</Heading>
       <Calendar
         value={date}

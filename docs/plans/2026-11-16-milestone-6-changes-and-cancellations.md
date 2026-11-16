@@ -375,7 +375,7 @@ PR 6b, `feat(trips)`: removing a stop.
 
 ### PR 7: `feat(trips)`: post again and post the return
 
-- [ ] `POST /trips/{id}/copy?reverse=`; "Post again" and "Post the return",
+- [x] `POST /trips/{id}/copy?reverse=`; "Post again" and "Post the return",
       leaving out stops the driver removed
 - Verify: a browser journey posts the return trip
 

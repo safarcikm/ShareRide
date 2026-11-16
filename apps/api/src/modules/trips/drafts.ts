@@ -1,4 +1,4 @@
-import type { MyTrip, TripDraftBody } from "@shareride/contracts";
+import type { MeetingPointSummary, MyTrip, TripCopy, TripDraftBody } from "@shareride/contracts";
 import { schema, type Database } from "@shareride/db";
 import {
   checkTripForPublishing,
@@ -10,6 +10,7 @@ import {
   ok,
   plannedTimes,
   routeLegPairs,
+  stopsToCopy,
   type DistancesMissing,
   type MeetingPointStatus,
   type PublishProblem,
@@ -45,6 +46,11 @@ export interface NotDraft {
   readonly code: "trip_not_draft";
 }
 
+/** Fewer than two of a trip's meeting points are still in use (spec 6, 3.6). */
+export interface TooFewStops {
+  readonly code: "too_few_stops";
+}
+
 export interface NotPublishable {
   readonly code: "trip_not_publishable";
   readonly problems: readonly PublishProblem[];
@@ -73,6 +79,18 @@ export interface TripService {
     userId: string,
     tripId: string,
   ): Promise<Result<MyTrip, NotFound | NotDraft | NotPublishable | DistancesMissing>>;
+  /**
+   * Post again, or the return (spec 6, 3.6): a new draft with the trip's
+   * stops, reversed for the return, and its car while the driver still has
+   * it, seats, price level, booking mode, preferences and note, without a
+   * date. Stops the driver removed are left out, and so are meeting points
+   * no longer offered for new trips, which the answer names.
+   */
+  copy(
+    userId: string,
+    tripId: string,
+    options: { readonly reverse: boolean },
+  ): Promise<Result<TripCopy, NotFound | TooFewStops>>;
 }
 
 /** Statuses of trips that hold the driver's time (R3.7). */
@@ -360,7 +378,7 @@ export function createTripService(dependencies: {
   const noteTooLong = (note: string | undefined) =>
     note !== undefined && Array.from(note).length > noteMaxLength;
 
-  return {
+  const service: TripService = {
     async myTrips(userId, when) {
       const now = clock();
       // A published trip is past once its last stop is, as a booking is past
@@ -602,7 +620,50 @@ export function createTripService(dependencies: {
         return ok(await presentOne(tx, published));
       });
     },
+
+    async copy(userId, tripId, { reverse }) {
+      const [row] = await db
+        .select()
+        .from(trips)
+        .where(and(eq(trips.id, tripId), eq(trips.driverId, userId)));
+      if (row === undefined) return err({ code: "not_found" });
+      const stops = await db
+        .select({ point: meetingPoints })
+        .from(tripStops)
+        .innerJoin(meetingPoints, eq(meetingPoints.id, tripStops.meetingPointId))
+        .where(and(eq(tripStops.tripId, tripId), isNull(tripStops.removedAt)))
+        .orderBy(asc(tripStops.position));
+      const copied = stopsToCopy(
+        stops.map(({ point }) => ({
+          meetingPointId: point.id,
+          offered: isOfferedForNewTrips(point.status as MeetingPointStatus),
+        })),
+        { reverse },
+      );
+      if (copied.stops.length < 2) return err({ code: "too_few_stops" });
+      const carStays = row.vehicleId !== null && (await myCar(db, userId, row.vehicleId));
+      const { seats, priceLevel, bookingMode, preferences } = choicesOf(row);
+      const created = await service.create(userId, {
+        stops: copied.stops,
+        seats,
+        priceLevel,
+        bookingMode,
+        preferences,
+        note: row.note,
+        // A car removed since: the driver's other car, as for a new draft.
+        ...(carStays ? { vehicleId: row.vehicleId } : {}),
+      });
+      // Every stop is offered, the car the driver's and the note as published.
+      if (!created.ok) throw new Error(`A trip's copy was refused: ${created.error.code}.`);
+      const dropped: MeetingPointSummary[] = copied.dropped.map((pointId) => {
+        const found = stops.find(({ point }) => point.id === pointId);
+        if (found === undefined) throw new Error("A dropped stop is not on the trip.");
+        return toSummary(found.point);
+      });
+      return ok({ trip: created.value, dropped });
+    },
   };
+  return service;
 }
 
 /** Points a trip may show: not drafts the operator is still preparing, nor retired ones. */

@@ -675,6 +675,11 @@ export const en = {
   "trip.editRequestsStopRemoved":
     "{count, plural, one {# person who asked for a seat sees} other {# people who asked for a seat see}} the change in the app.",
   "trip.editOtherStop": "Choose another stop",
+  "trip.postAgain": "Post again",
+  "trip.postReturn": "Post the return trip",
+  "trip.copyDropped": "No longer in use, so left out: {stops}.",
+  "trip.copyTooFewStops":
+    "Fewer than two of this trip's meeting points are still in use. Post a new trip instead.",
   "trip.problem.stop_in_use":
     "{count, plural, one {# passenger gets} other {# passengers get}} in or out at {name}. Cancel or decline their bookings from the trip first, or ask them to cancel.",
   "trip.problem.stop_in_use_some":
