@@ -18,17 +18,18 @@ export type DisputeAnswer = (typeof disputeAnswers)[number];
 
 /**
  * How a report ends. It stands when the other side agrees, stays silent or
- * the operator says so. A contested no-show the operator finds wrong ends
- * in one of two ways (decision 4 of the milestone 7 plan): the passenger
- * rode, or was left behind. A driver absence found wrong is reversed.
+ * the operator says so. A contested report the operator finds wrong says
+ * what happened instead: the passenger rode, either way; a no-show's
+ * passenger was left behind (decision 4 of the milestone 7 plan); or a
+ * driver absence's passenger didn't come (proposed, open question Q20).
  */
-export const disputeOutcomes = ["stands", "rode", "left_behind", "reversed"] as const;
+export const disputeOutcomes = ["stands", "rode", "left_behind", "passenger_absent"] as const;
 export type DisputeOutcome = (typeof disputeOutcomes)[number];
 
 /** The outcomes the operator can choose for each kind. */
 export const operatorOutcomes: Readonly<Record<DisputeKind, readonly DisputeOutcome[]>> = {
   no_show: ["stands", "rode", "left_behind"],
-  driver_absent: ["stands", "reversed"],
+  driver_absent: ["stands", "rode", "passenger_absent"],
 };
 
 export interface Dispute {
@@ -120,18 +121,23 @@ export function reportCountsOn(
   kind: DisputeKind,
   outcome: DisputeOutcome,
 ): "passenger" | "driver" | null {
-  if (kind === "no_show") {
-    if (outcome === "stands") return "passenger";
-    return outcome === "left_behind" ? "driver" : null;
+  switch (outcome) {
+    case "rode":
+      return null;
+    case "left_behind":
+      return "driver";
+    case "passenger_absent":
+      return "passenger";
+    case "stands":
+      return kind === "no_show" ? "passenger" : "driver";
   }
-  return outcome === "stands" ? "driver" : null;
 }
 
 export interface DisputeEffect {
   /** What happens to the booking: none when it stays as the report left it. */
   readonly bookingEvent: Extract<
     BookingEvent,
-    "driver_absent" | "rode" | "left_behind" | "complete"
+    "driver_absent" | "rode" | "left_behind" | "complete" | "no_show"
   > | null;
   /**
    * A booking cancelled because the driver didn't come is cancelled as if by
@@ -168,9 +174,10 @@ const asDriverCancelled = {
 /**
  * R8.7. A no-show already left the booking as `no_show` when it was marked,
  * so standing changes nothing more. A driver absence leaves the booking as
- * it was until it stands. One found wrong lets the booking go on: if its
- * trip has completed meanwhile, the booking completes then, as it would
- * have with the trip (R8.2).
+ * it was until it is decided. If the passenger rode, the booking goes on:
+ * if its trip has completed meanwhile, the booking completes then, as it
+ * would have with the trip (R8.2). If the passenger didn't come, it is
+ * their no-show, as if the driver had marked it (Q20).
  */
 export function disputeEffect(
   kind: DisputeKind,
@@ -199,19 +206,20 @@ export function disputeEffect(
         return { bookingEvent: "rode", ...driverPaid };
       case "left_behind":
         return { bookingEvent: "left_behind", ...driverAtFault, removesReviews: false };
-      case "reversed":
-        throw new Error("A no-show is not reversed: the passenger rode or was left behind.");
+      case "passenger_absent":
+        throw new Error("A no-show found wrong: the passenger rode or was left behind.");
     }
   }
   switch (outcome) {
     case "stands":
       return { bookingEvent: "driver_absent", ...driverAtFault, removesReviews: true };
-    case "reversed": {
+    case "rode": {
       const completes = booking.status === "confirmed" && booking.tripCompleted;
       return { bookingEvent: completes ? "complete" : null, ...driverPaid };
     }
-    case "rode":
+    case "passenger_absent":
+      return { bookingEvent: "no_show", ...driverPaid, removesReviews: true };
     case "left_behind":
-      throw new Error("A driver absence stands or is reversed.");
+      throw new Error("A driver absence found wrong: the passenger rode or didn't come.");
   }
 }

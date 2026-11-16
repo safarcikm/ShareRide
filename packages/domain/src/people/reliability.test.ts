@@ -42,6 +42,12 @@ describe("what counts on reliability (spec 8, 3.8)", () => {
     expect(passengerRecord({ ...booking, status: "no_show" })).toBeNull();
   });
 
+  it("counts a passenger's report that the driver didn't come, found to be their own no-show (Q20)", () => {
+    expect(
+      passengerRecord({ ...booking, status: "no_show", reportOutcome: "passenger_absent" }),
+    ).toEqual(broken("passenger", 0));
+  });
+
   it("counts a passenger's cancellation only when it counts (spec 6, R6.8)", () => {
     const cancelled = { ...booking, status: "cancelled", cancelledBy: "passenger" } as const;
     expect(passengerRecord(cancelled)).toBeNull();

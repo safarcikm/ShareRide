@@ -65,9 +65,13 @@ answers question Q19 (A43).
 | 3 | Public profiles | **In this milestone.** Spec 1's public profile (first name, about, languages, member since, rating, reliability and reviews) opens from the driver on trip details and from each passenger on the driver's trip page and requests | Reviews need somewhere to be read, and the driver checks a passenger before accepting (spec 8's user stories). Spec 4 already asks for the driver's profile | Only the figures, on trip details and the requests, with the reviews later. It is one PR smaller, but nobody can read a review |
 | 4 | A contested no-show that the operator finds wrong (open question Q19) | **The operator picks one of two outcomes.** "They rode": the booking completes, the driver is paid, and nothing counts on either side. "They were left behind": as a driver absence, a full refund that counts on the driver | Spec 8 has one outcome, "reversed", which does not say which of these happened. They lead to different money and reliability | Always "they rode", the simpler rule. But a driver who left a waiting passenger behind and marked them a no-show would keep the money |
 
-A contested "The driver didn't come" that the operator finds wrong has
-one outcome: the booking stays completed, the driver is paid, and nothing
-counts.
+A contested "The driver didn't come" that the operator finds wrong also
+says what happened instead (proposed, open question Q20). "They rode":
+the booking goes on and completes, the driver is paid, and nothing counts
+against either side. "They didn't come": the passenger's no-show, with no
+refund, counted on them. Without the second, a passenger who didn't come
+could report the driver first, since a booking is reported once, and
+escape the no-show.
 
 ## 4. Design notes
 
@@ -104,12 +108,14 @@ in `people/reliability.ts` (12 months, 5 to show, 80% watch level).
     (spec 6). A removed stop has no window.
 - `bookings/disputes.ts`: `answerDeadline` and `checkAnswer` (one answer,
   until the deadline), `settlesUnanswered` (after the deadline),
-  `checkDecision` (the operator's outcomes for each kind, decision 4) and
-  `disputeEffect(kind, outcome, booking)`: the booking's next event, a
-  cancellation as if by the driver with the reason `driver_absent`, the
-  refund, whether a payout may go, whose reliability it counts on, and
-  whether the booking's reviews go (R8.6, R8.7). A driver absence found
-  wrong completes a booking whose trip completed meanwhile.
+  `checkDecision` (the operator's outcomes for each kind, decision 4 and
+  Q20) and `disputeEffect(kind, outcome, booking)`: the booking's next
+  event, a cancellation as if by the driver with the reason
+  `driver_absent`, the refund, whether a payout may go, whose reliability
+  it counts on, and whether the booking's reviews go (R8.6, R8.7). A
+  driver absence found wrong, where the passenger rode, completes a
+  booking whose trip completed meanwhile; where the passenger didn't come,
+  it is their no-show.
 - `reviews/review.ts`:
   - `checkReview(review, now, settings)` refuses with `not_completed`,
     `review_window_closed`, `already_reviewed`, `report_open`,
@@ -184,7 +190,7 @@ the rating.
 
 - `disputes`: booking, kind (`no_show`, `driver_absent`), raised by, when,
   note, answer (`agreed`, `contested`), answer note, outcome (`stands`,
-  `rode`, `left_behind`, `reversed`), decided by (`system` or `operator`),
+  `rode`, `left_behind`, `passenger_absent`), decided by (`system` or `operator`),
   and when.
 - `POST /bookings/{id}/no-show` (driver) sets the booking to `no_show` and
   opens a dispute. `POST /bookings/{id}/driver-absent` (passenger) opens

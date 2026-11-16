@@ -232,6 +232,7 @@ stateDiagram-v2
   expired --> [*]
   cancelled --> [*]
   completed --> cancelled : driver absence stands (spec 8)
+  completed --> no_show : operator finds the passenger didn't come (spec 8, Q20)
   completed --> [*]
   no_show --> completed : operator finds the passenger rode (spec 8)
   no_show --> cancelled : operator finds the passenger was left behind (spec 8)
@@ -244,9 +245,11 @@ A contested no-show found wrong ends in one of two ways ([spec 8](../specs/2026-
 decision 4): the passenger rode, so the booking completes and the driver
 is paid; or the passenger was left behind, which is treated as a driver
 absence. A driver absence that stands cancels the booking as if by the
-driver, with a full refund that counts on the driver. One found wrong
-lets the booking go on: it completes with the trip, or at once if the trip
-completed while the report was open.
+driver, with a full refund that counts on the driver. One found wrong says
+what happened instead (proposed, open question Q20): the passenger rode,
+so the booking goes on and completes with the trip, or at once if the trip
+completed while the report was open; or the passenger didn't come, which
+is their no-show, from confirmed or completed.
 
 A cancellation records who cancelled, when, and the reason (including
 `weather` and `road_closed`).

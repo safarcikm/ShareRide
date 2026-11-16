@@ -77,17 +77,17 @@ describe("the operator's decision (3.5, decision 4)", () => {
     for (const outcome of ["stands", "rode", "left_behind"] as const) {
       expect(checkDecision(contested(noShow), outcome)).toEqual({ ok: true, value: null });
     }
-    expect(checkDecision(contested(noShow), "reversed")).toEqual({
+    expect(checkDecision(contested(noShow), "passenger_absent")).toEqual({
       ok: false,
       error: { code: "outcome_invalid" },
     });
   });
 
-  it("decides a contested driver absence as standing or reversed", () => {
-    for (const outcome of ["stands", "reversed"] as const) {
+  it("decides a contested driver absence as standing, ridden or the passenger's absence (Q20)", () => {
+    for (const outcome of ["stands", "rode", "passenger_absent"] as const) {
       expect(checkDecision(contested(absent), outcome)).toEqual({ ok: true, value: null });
     }
-    expect(checkDecision(contested(absent), "rode")).toEqual({
+    expect(checkDecision(contested(absent), "left_behind")).toEqual({
       ok: false,
       error: { code: "outcome_invalid" },
     });
@@ -160,8 +160,8 @@ describe("what each outcome does (R8.7)", () => {
     }
   });
 
-  it("a driver absence reversed: the booking goes on, the driver is paid, and nothing counts", () => {
-    expect(disputeEffect("driver_absent", "reversed", confirmed)).toEqual({
+  it("a driver absence found wrong, the passenger rode: the booking goes on, the driver is paid, and nothing counts", () => {
+    expect(disputeEffect("driver_absent", "rode", confirmed)).toEqual({
       bookingEvent: null,
       cancellation: null,
       refund: "none",
@@ -170,13 +170,29 @@ describe("what each outcome does (R8.7)", () => {
       removesReviews: false,
     });
     const completed = { status: "completed", tripCompleted: true } as const;
-    expect(disputeEffect("driver_absent", "reversed", completed).bookingEvent).toBeNull();
+    expect(disputeEffect("driver_absent", "rode", completed).bookingEvent).toBeNull();
   });
 
-  it("completes a reversed absence's booking whose trip completed while the report was open (R8.2)", () => {
+  it("completes the booking of a ride found to have happened, if its trip completed while the report was open (R8.2)", () => {
     const left = { status: "confirmed", tripCompleted: true } as const;
-    expect(disputeEffect("driver_absent", "reversed", left).bookingEvent).toBe("complete");
+    expect(disputeEffect("driver_absent", "rode", left).bookingEvent).toBe("complete");
     expect(nextStatus("confirmed", "complete")).toEqual({ ok: true, value: "completed" });
+  });
+
+  it("a driver absence found wrong, the passenger didn't come: a no-show with no refund that counts on the passenger (Q20)", () => {
+    for (const status of ["confirmed", "completed"] as const) {
+      expect(
+        disputeEffect("driver_absent", "passenger_absent", { status, tripCompleted: true }),
+      ).toEqual({
+        bookingEvent: "no_show",
+        cancellation: null,
+        refund: "none",
+        payout: "pay",
+        countsOn: "passenger",
+        removesReviews: true,
+      });
+      expect(nextStatus(status, "no_show")).toEqual({ ok: true, value: "no_show" });
+    }
   });
 
   it("counts each outcome on the same side as its effect", () => {
@@ -184,12 +200,12 @@ describe("what each outcome does (R8.7)", () => {
     expect(reportCountsOn("no_show", "rode")).toBeNull();
     expect(reportCountsOn("no_show", "left_behind")).toBe("driver");
     expect(reportCountsOn("driver_absent", "stands")).toBe("driver");
-    expect(reportCountsOn("driver_absent", "reversed")).toBeNull();
+    expect(reportCountsOn("driver_absent", "rode")).toBeNull();
+    expect(reportCountsOn("driver_absent", "passenger_absent")).toBe("passenger");
   });
 
   it("has no effect for an outcome the kind cannot have", () => {
-    expect(() => disputeEffect("no_show", "reversed", noShowBooking)).toThrow();
-    expect(() => disputeEffect("driver_absent", "rode", confirmed)).toThrow();
+    expect(() => disputeEffect("no_show", "passenger_absent", noShowBooking)).toThrow();
     expect(() => disputeEffect("driver_absent", "left_behind", confirmed)).toThrow();
   });
 

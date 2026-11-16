@@ -104,8 +104,13 @@ The operator decides which side is right; the decision sets the refund, the
 payout and the reliability effect as in 3.3 and 3.4, and both sides are told.
 A contested no-show the operator finds wrong ends in one of two ways
 (decision 4): the passenger rode, so the booking completes, the driver is
-paid and nothing counts; or the passenger was left behind, which is a
-driver absence: a full refund that counts on the driver.
+paid and nothing counts against either side; or the passenger was left
+behind, which is a driver absence: a full refund that counts on the
+driver. A contested driver absence found wrong ends in one of two ways
+too (proposed, open question Q20): the passenger rode, so the booking goes
+on and nothing counts against either side; or the passenger didn't come,
+which is their no-show: no refund, the driver is paid, and it counts on
+the passenger.
 The operator's decision is final in the app; the terms of use say how to
 complain further.
 
@@ -211,7 +216,7 @@ Entities (see [domain model](../architecture/domain-model.md)):
 - `CheckIn`: trip stop, user, at.
 - `Dispute`: booking, kind (`no_show`, `driver_absent`), raised by, raised at,
   note, answer (`agreed`, `contested`, none), answered at, answer note,
-  outcome (`stands`, `rode`, `left_behind`, `reversed`), decided by (system or operator), decided at.
+  outcome (`stands`, `rode`, `left_behind`, `passenger_absent`), decided by (system or operator), decided at.
 - `Review` (existing): adds `hidden_at` for moderation (spec 9).
 - `ReliabilityRecord`: user, role, booking or trip, outcome (`kept`,
   `cancelled`, `no_show`, `driver_absent`), counts or not, why not (for

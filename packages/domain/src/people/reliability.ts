@@ -59,8 +59,13 @@ export interface BookingForReliability {
 export function passengerRecord(booking: BookingForReliability): ReliabilityRecord | null {
   const record = (kept: boolean) => ({ role: "passenger", at: booking.at, kept }) as const;
   if (booking.status === "completed") return record(true);
-  if (booking.status === "no_show")
-    return booking.reportOutcome === "stands" ? record(false) : null;
+  if (booking.status === "no_show") {
+    // Marked by the driver and standing, or the passenger's own report that
+    // the driver didn't come, found to be their absence (Q20).
+    const decided =
+      booking.reportOutcome === "stands" || booking.reportOutcome === "passenger_absent";
+    return decided ? record(false) : null;
+  }
   if (
     booking.status === "cancelled" &&
     booking.cancelledBy === "passenger" &&

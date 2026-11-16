@@ -8,10 +8,12 @@ here, update or accept the linked ADR, and move the row to "Answered".
 
 ## Open
 
-A new question goes in a table here with the next free number (Q20
+A new question goes in a table here with the next free number (Q21
 onwards), a recommendation and the docs it affects.
 
-No questions are open.
+| #   | Question | Recommendation | Affects |
+| --- | -------- | -------------- | ------- |
+| Q20 | When the driver contests a passenger's "The driver didn't come" and the operator finds the driver was there, what happens? Spec 8 has one outcome, "reversed", which does not say whether the passenger rode or didn't come either. As a booking is reported once, a passenger who didn't come could report the driver first and escape the no-show. | The operator picks one of two outcomes, as for a no-show (A43). "They rode": the booking goes on and completes, the driver is paid, and nothing counts against either side. "They didn't come": the passenger's no-show, with no refund, the driver paid, and it counts on the passenger. | [Spec 8](../specs/2026-11-13-trip-day-reviews-and-reliability.md) 3.4 and 3.5, [milestone 7 plan](../plans/2026-11-16-milestone-7-trip-day-reviews-and-reliability.md) section 3 |
 
 ## Answered
 

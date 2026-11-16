@@ -20,8 +20,8 @@ export type BookingStatus = (typeof bookingStatuses)[number];
  * deadline passes; the passenger withdraws a request, pays or cancels; the
  * trip completes; the driver marks the passenger absent; the driver's own
  * absence stands, before or after the trip completes; or the operator finds
- * a contested no-show wrong: the passenger rode, or was left behind (spec 8,
- * 3.5).
+ * a contested report wrong: the passenger rode, was left behind, or didn't
+ * come after reporting the driver (spec 8, 3.5).
  */
 export const bookingEvents = [
   "accept",
@@ -53,7 +53,7 @@ const changes: Readonly<
   declined: {},
   expired: {},
   cancelled: {},
-  completed: { driver_absent: "cancelled" },
+  completed: { driver_absent: "cancelled", no_show: "no_show" },
   no_show: { rode: "completed", left_behind: "cancelled" },
 };
 
