@@ -1,6 +1,16 @@
 import { channels, deliveryStatuses, notificationKinds, outboxEventTypes } from "@shareride/domain";
 import { sql } from "drizzle-orm";
-import { check, index, integer, jsonb, pgTable, text, unique, uuid } from "drizzle-orm/pg-core";
+import {
+  check,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  unique,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { sessions } from "./auth.ts";
 import { bookings } from "./bookings.ts";
 import { messages } from "./chat.ts";
@@ -108,9 +118,11 @@ export const notificationDeliveries = pgTable(
 
 /**
  * A notification that waits for a moment (spec 7, 3.3): the halfway and
- * pay reminders for now. At `run_at` the worker checks it still applies,
- * then sends it or drops it, and sets `done_at`. The key makes scheduling
- * the same thing twice a no-op.
+ * pay reminders, and the email about unread messages. At `run_at` the
+ * worker checks it still applies, then sends it or drops it, and sets
+ * `done_at`. The key makes scheduling the same thing twice a no-op, and
+ * only one unread messages email waits per booking and reader, even when
+ * two workers schedule one at once.
  */
 export const scheduledNotifications = pgTable(
   "scheduled_notifications",
@@ -119,6 +131,11 @@ export const scheduledNotifications = pgTable(
     key: text().notNull(),
     kind: text().notNull(),
     bookingId: uuid().references(() => bookings.id, { onDelete: "cascade" }),
+    /**
+     * Whom it is for when that is not given by its kind: the driver or the
+     * passenger of the booking, for the unread messages email.
+     */
+    recipient: text(),
     runAt: at().notNull(),
     doneAt: at(),
     ...timestamps,
@@ -126,9 +143,16 @@ export const scheduledNotifications = pgTable(
   (table) => [
     unique("scheduled_notifications_key_unique").on(table.key),
     check("scheduled_notifications_kind_check", oneOf(table.kind, notificationKinds)),
+    check(
+      "scheduled_notifications_recipient_check",
+      oneOf(table.recipient, ["driver", "passenger"]),
+    ),
     index("scheduled_notifications_due_index")
       .on(table.runAt)
       .where(sql`${table.doneAt} is null`),
+    uniqueIndex("scheduled_notifications_unread_waiting_unique")
+      .on(table.bookingId, table.recipient)
+      .where(sql`${table.kind} = 'unread_messages' and ${table.doneAt} is null`),
   ],
 );
 

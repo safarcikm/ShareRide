@@ -38,6 +38,7 @@ const kinds: readonly [NotificationKind, "driver" | "passenger"][] = [
   ["payment_window_ended", "passenger"],
   ["payment_window_ended_driver", "driver"],
   ["new_message", "passenger"],
+  ["unread_messages", "passenger"],
 ];
 
 describe("notification texts", () => {
@@ -100,5 +101,19 @@ describe("notification texts", () => {
 
   it("refuse a kind that has no text yet", () => {
     expect(() => text({ kind: "trip_cancelled" })).toThrow(/No text for trip_cancelled/);
+  });
+
+  it("tell of unread messages by the trip's day, never their text, and open the chat (3.6, item 3)", () => {
+    const secret = { text: "My door code is 4512" };
+    expect(text({ kind: "unread_messages", role: "passenger", message: secret })).toEqual({
+      title: "You have unread messages about your trip on Saturday 14 November",
+      body: "Open the chat in ShareRide to read them.",
+      path: "/messages/booking-1",
+    });
+    expect(text({ kind: "unread_messages", role: "driver", message: secret }, "is")).toEqual({
+      title: "Þú átt ólesin skilaboð um ferðina: laugardagur 14. nóvember",
+      body: "Opnaðu spjallið í ShareRide til að lesa þau.",
+      path: "/messages/booking-1",
+    });
   });
 });

@@ -307,7 +307,7 @@ inside a sentence.
 | `settings.alwaysOn` | Notifications about bookings, trips, payments and messages are always on, because others rely on them. | Tilkynningar um bókanir, ferðir, greiðslur og skilaboð eru alltaf á, því aðrir treysta á þær. |
 | `notifications.turnOn` | Turn on notifications so you hear at once if your trip changes. | Kveiktu á tilkynningum svo þú fáir strax að vita ef ferðin breytist. |
 | `notifications.addEmail` | Add an email so we can reach you if your trip changes. | Bættu við netfangi svo við getum látið þig vita ef ferðin breytist. |
-| `email.unreadMessages` | You have unread messages about your trip on {date} | Þú átt ólesin skilaboð um ferðina {date} |
+| `email.unreadMessages` | You have unread messages about your trip on {date} | Þú átt ólesin skilaboð um ferðina: {date} |
 | `sms.tripCancelled` | ShareRide: your trip on {date} at {time} is cancelled. Full refund. Details in the app. | ShareRide: Ferðinni {date} kl. {time} hefur verið aflýst. Full endurgreiðsla. Nánar í appinu. |
 | `sms.bookingCancelled` | ShareRide: the driver cancelled your booking for {date} at {time}. Full refund. Details in the app. | ShareRide: Bílstjórinn aflýsti bókun þinni {date} kl. {time}. Full endurgreiðsla. Nánar í appinu. |
 | `sms.departureMoved` | ShareRide: your trip on {date} now leaves at {time}. Keep it or cancel with a full refund in the app. | ShareRide: Ferðin {date} fer nú kl. {time}. Haltu bókuninni eða afbókaðu með fullri endurgreiðslu í appinu. |

@@ -56,7 +56,10 @@ function required(moment: Date | null, what: string): Date {
   return moment;
 }
 
-/** The title, body and screen of a notification; the kinds of spec 5's events and new messages. */
+/**
+ * The title, body and screen of a notification: the kinds of spec 5's
+ * events, new messages, and the email about unread ones.
+ */
 export function notificationText(
   facts: NotificationFacts,
   locale: Locale,
@@ -116,13 +119,19 @@ export function notificationText(
           "text" in message ? message.text : quickMessageText(t, message.quick),
         ];
       }
+      case "unread_messages":
+        // Never the messages themselves (R7.9).
+        return [
+          t("email.unreadMessages", { date: formatDay(facts.boardsAt, locale) }),
+          t("email.unreadMessagesBody"),
+        ];
       default:
         throw new Error(`No text for ${facts.kind} yet.`);
     }
   })();
 
   const path =
-    facts.kind === "new_message"
+    facts.kind === "new_message" || facts.kind === "unread_messages"
       ? `/messages/${facts.bookingId}`
       : facts.role === "driver"
         ? `/drive/trips/${facts.tripId}`

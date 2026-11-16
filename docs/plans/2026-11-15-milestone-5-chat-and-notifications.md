@@ -298,10 +298,11 @@ Endpoints (`/v1`), shapes in `packages/contracts/src/chat.ts`:
   printed in the API terminal; refused in production) or `none` (deliveries
   `skipped` with `email_off`; staging until there is a domain). Every
   message is sent with tracking off.
-- Templates in `apps/api/src/modules/notifications/templates/`: subject,
-  plain text and simple HTML without images, in Icelandic and English, with
-  a footer that will carry the company's details (spec 13). Links go to the
-  web app (`WEB_APP_URL`) without tracking.
+- Each email is made from the notification's own words (`texts.ts`) by
+  `email-content.ts`: the title as the subject, plain text and simple HTML
+  without images, in Icelandic and English, with a footer that will carry
+  the company's details (spec 13). The link goes to the same screen as the
+  push, on the web app (`WEB_APP_URL`), without tracking.
 - **Adding an email** (spec 1): `PUT /me/email` sends a link valid for 24
   hours; `POST /email-verifications` with its token sets the address as
   verified, signed in or not. "Add an email" sits under "Your account" in
@@ -309,7 +310,9 @@ Endpoints (`/v1`), shapes in `packages/contracts/src/chat.ts`:
 - **Unread messages:** 15 minutes after a message, if it is still unread
   and its reader has no push token, one email "You have unread messages
   about your trip on {date}", at most once an hour per conversation, without
-  the text (R7.9).
+  the text (R7.9). One waits per conversation and reader, for the oldest
+  message not yet read and not told of by an earlier email; once those are
+  read, it waits for a newer one's 15 minutes, or is dropped.
 
 ### 4.7 Reminders and settings
 
@@ -411,13 +414,22 @@ merge.
 - Verify: unit and screen tests with Expo's module mocked; Martin's check
   on the Android test build (section 7)
 
-### PR 7: `feat(notifications)`: email
+### PR 7a: `feat(notifications)`: sending email
 
-- [ ] The ADR (decision 3); `EmailSender`, the Mailjet adapter over `fetch`
-      with tracking off, the development outbox, `EMAIL_PROVIDER` checks in
-      the config, a contract test that needs its keys (not in CI)
-- [ ] Templates in both languages; fallback only without a push token;
-      the unread messages email, at most once an hour per conversation
+PR 7 is split in two, so each is a reviewable size: 7a sends email, 7b
+lets people add an address to send it to.
+
+- [x] ADR 0027 (decision 3); `EmailSender`, the Mailjet adapter over
+      `fetch` with tracking off, the development outbox, `EMAIL_PROVIDER`
+      checks in the config, a contract test that needs its keys (not in CI)
+- [x] Emails in both languages with a link to the web app; fallback only
+      without a push token; the unread messages email, at most once an hour
+      per conversation; an email that may have gone out is never sent again
+- Verify: integration tests with the fake sender and a fake clock (the 15
+  minutes, the hour, read in time, push instead)
+
+### PR 7b: `feat(notifications)`: adding an email
+
 - [ ] Adding and verifying an email: API, Settings ("Your account") and the
       link's screen
 - Verify: a browser journey adds an email, opens the link from the

@@ -50,6 +50,7 @@ describe("loadConfig", () => {
       payments: { provider: "none" },
       worker: true,
       push: { accessToken: undefined },
+      email: { provider: "dev", webAppUrl: "http://localhost:8081" },
     });
   });
 
@@ -207,6 +208,67 @@ describe("loadConfig", () => {
     expect(() => loadConfig({ ...development, EXPO_ACCESS_TOKEN: "" })).toThrow(
       "EXPO_ACCESS_TOKEN",
     );
+  });
+
+  it("prints emails in the terminal locally, and sends none in production unless told (ADR 0027)", () => {
+    expect(loadConfig(development).email).toEqual({
+      provider: "dev",
+      webAppUrl: "http://localhost:8081",
+    });
+    expect(loadConfig({ ...development, WEB_APP_URL: "http://localhost:8082" }).email).toEqual({
+      provider: "dev",
+      webAppUrl: "http://localhost:8082",
+    });
+    expect(loadConfig({ ...development, EMAIL_PROVIDER: "none" }).email).toEqual({
+      provider: "none",
+    });
+    // Staging runs as production: no email until there is a domain.
+    expect(loadConfig({ ...valid, APP_ENV: "staging" }).email).toEqual({ provider: "none" });
+  });
+
+  it("refuses the development outbox in production, since it prints addresses", () => {
+    expect(() => loadConfig({ ...valid, EMAIL_PROVIDER: "dev" })).toThrow(
+      "EMAIL_PROVIDER: dev prints emails in the terminal and is not allowed in production",
+    );
+  });
+
+  it("sends through Mailjet with its keys, a sender on our domain and the web app's address", () => {
+    const mailjet = {
+      EMAIL_PROVIDER: "mailjet",
+      MAILJET_API_KEY: "mj-public",
+      MAILJET_SECRET_KEY: "mj-secret",
+      EMAIL_FROM: "hello@shareride.is",
+      WEB_APP_URL: "https://shareride.is",
+    };
+    expect(loadConfig({ ...valid, ...mailjet }).email).toEqual({
+      provider: "mailjet",
+      apiKey: "mj-public",
+      secretKey: "mj-secret",
+      from: { email: "hello@shareride.is", name: "ShareRide" },
+      webAppUrl: "https://shareride.is",
+    });
+    expect(
+      loadConfig({ ...valid, ...mailjet, EMAIL_FROM_NAME: "ShareRide beta" }).email,
+    ).toMatchObject({
+      from: { email: "hello@shareride.is", name: "ShareRide beta" },
+    });
+    expect(() => loadConfig({ ...valid, EMAIL_PROVIDER: "mailjet" })).toThrow(ConfigError);
+    try {
+      loadConfig({ ...valid, EMAIL_PROVIDER: "mailjet" });
+    } catch (error) {
+      expect((error as ConfigError).problems).toEqual([
+        "MAILJET_API_KEY: needed when EMAIL_PROVIDER is mailjet",
+        "MAILJET_SECRET_KEY: needed when EMAIL_PROVIDER is mailjet",
+        "EMAIL_FROM: needed when EMAIL_PROVIDER is mailjet",
+        "WEB_APP_URL: needed when EMAIL_PROVIDER is mailjet",
+      ]);
+    }
+    expect(() => loadConfig({ ...valid, ...mailjet, EMAIL_FROM: "ShareRide" })).toThrow(
+      "EMAIL_FROM: invalid",
+    );
+    expect(() =>
+      loadConfig({ ...valid, ...mailjet, WEB_APP_URL: "https://shareride.is/app" }),
+    ).toThrow("WEB_APP_URL");
   });
 
   it("names every missing or invalid variable", () => {

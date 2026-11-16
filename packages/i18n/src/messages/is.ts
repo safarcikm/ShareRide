@@ -711,5 +711,10 @@ export const is = {
   "notify.newMessage": "{name}",
   /** The name of the app's notifications in Android's settings. */
   "notify.channel": "Ferðir og skilaboð",
+  "email.unreadMessages": "Þú átt ólesin skilaboð um ferðina: {date}",
+  "email.unreadMessagesBody": "Opnaðu spjallið í ShareRide til að lesa þau.",
+  "email.open": "Opna í ShareRide",
+  "email.footer":
+    "Þú færð þennan póst því þú ert með aðgang að ShareRide. Fréttir af bókunum þínum eru alltaf sendar, því aðrir treysta á þær.",
   "sms.signInCode": "{code} er ShareRide kóðinn þinn. Hann gildir í 10 mínútur.",
 } as const satisfies Record<MessageKey, string>;

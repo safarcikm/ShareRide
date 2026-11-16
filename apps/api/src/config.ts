@@ -88,6 +88,19 @@ const environmentSchema = z
      * the project; push works without it until then (plan 4.5).
      */
     EXPO_ACCESS_TOKEN: z.string().min(1).optional(),
+    /**
+     * `mailjet` sends email (ADR 0027); `dev` prints it in the terminal;
+     * `none` sends none. By default `dev`, except under NODE_ENV=production
+     * (staging too), where it is `none` until set.
+     */
+    EMAIL_PROVIDER: z.enum(["none", "dev", "mailjet"]).optional(),
+    MAILJET_API_KEY: z.string().min(1).optional(),
+    MAILJET_SECRET_KEY: z.string().min(1).optional(),
+    /** The sender's address, on a domain validated in Mailjet. */
+    EMAIL_FROM: z.email().optional(),
+    EMAIL_FROM_NAME: z.string().min(1).max(60).default("ShareRide"),
+    /** Where links in emails lead: the web app's origin. */
+    WEB_APP_URL: originSchema.optional(),
   })
   .superRefine((env, context) => {
     if (env.NODE_ENV === "production" && env.AUTH_SECRET.startsWith("local-only-")) {
@@ -125,6 +138,29 @@ const environmentSchema = z
         });
       }
     }
+    if (env.NODE_ENV === "production" && env.EMAIL_PROVIDER === "dev") {
+      context.addIssue({
+        code: "custom",
+        path: ["EMAIL_PROVIDER"],
+        message: "dev prints emails in the terminal and is not allowed in production",
+      });
+    }
+    if (env.EMAIL_PROVIDER === "mailjet") {
+      for (const key of [
+        "MAILJET_API_KEY",
+        "MAILJET_SECRET_KEY",
+        "EMAIL_FROM",
+        "WEB_APP_URL",
+      ] as const) {
+        if (env[key] === undefined) {
+          context.addIssue({
+            code: "custom",
+            path: [key],
+            message: "needed when EMAIL_PROVIDER is mailjet",
+          });
+        }
+      }
+    }
   });
 
 export type SmsConfig =
@@ -152,6 +188,39 @@ function deploymentOf(env: {
   return env.APP_ENV ?? (env.NODE_ENV === "production" ? "production" : "local");
 }
 
+export type EmailConfig =
+  | { readonly provider: "none" }
+  | { readonly provider: "dev"; readonly webAppUrl: string }
+  | {
+      readonly provider: "mailjet";
+      readonly apiKey: string;
+      readonly secretKey: string;
+      readonly from: { readonly email: string; readonly name: string };
+      readonly webAppUrl: string;
+    };
+
+/** The Expo web app's address when it runs locally (`pnpm --filter @shareride/mobile dev`). */
+const localWebApp = "http://localhost:8081";
+
+/** The email settings for the provider chosen; the schema checked its keys are there. */
+function emailConfig(env: z.infer<typeof environmentSchema>): EmailConfig {
+  const provider = env.EMAIL_PROVIDER ?? (env.NODE_ENV === "production" ? "none" : "dev");
+  switch (provider) {
+    case "none":
+      return { provider };
+    case "dev":
+      return { provider, webAppUrl: env.WEB_APP_URL ?? localWebApp };
+    case "mailjet":
+      return {
+        provider,
+        apiKey: env.MAILJET_API_KEY ?? "",
+        secretKey: env.MAILJET_SECRET_KEY ?? "",
+        from: { email: env.EMAIL_FROM ?? "", name: env.EMAIL_FROM_NAME },
+        webAppUrl: env.WEB_APP_URL ?? "",
+      };
+  }
+}
+
 export interface PaymentsConfig {
   readonly provider: "none" | "test";
 }
@@ -172,6 +241,8 @@ export interface Config {
   /** Whether this process runs the notification worker. */
   readonly worker: boolean;
   readonly push: { readonly accessToken: string | undefined };
+  /** Who sends email, if anyone (ADR 0027). */
+  readonly email: EmailConfig;
 }
 
 export class ConfigError extends Error {
@@ -293,5 +364,6 @@ export function loadConfig(environment: Readonly<Record<string, string | undefin
     },
     worker: env.WORKER,
     push: { accessToken: env.EXPO_ACCESS_TOKEN },
+    email: emailConfig(env),
   };
 }

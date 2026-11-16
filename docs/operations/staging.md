@@ -16,7 +16,7 @@ edge ([privacy providers](../compliance/privacy-gdpr.md#providers)).
 | API and web app | `shareride-staging-api` | Web service built from `apps/api/Dockerfile`; serves `/v1` and the web app on one origin |
 | Clean-up | `shareride-staging-clean-up` | Cron job, every hour at minute 17 (UTC): deletes sign-in records past their retention (with the push tokens of sessions ended for being idle), old trip drafts, conversations 12 months after their trip, and the notification log after 90 days |
 | Database | `shareride-staging-db` | PostgreSQL 18 with PostGIS, private network only |
-| Settings | `shareride-staging` | Environment group: `NODE_ENV=production`, `APP_ENV=staging`, `LOG_LEVEL`. `PAYMENT_PROVIDER` is unset, so staging pays with the test provider: no card, no money moves. `WORKER` is unset, so the API runs the notification worker: it pushes through Expo to the phones that registered, with `EXPO_ACCESS_TOKEN` once it is set ([app builds](app-builds.md#android-build-with-push)); until email is connected it only records who would be emailed |
+| Settings | `shareride-staging` | Environment group: `NODE_ENV=production`, `APP_ENV=staging`, `LOG_LEVEL`. `PAYMENT_PROVIDER` is unset, so staging pays with the test provider: no card, no money moves. `WORKER` is unset, so the API runs the notification worker: it pushes through Expo to the phones that registered, with `EXPO_ACCESS_TOKEN` once it is set ([app builds](app-builds.md#android-build-with-push)); `EMAIL_PROVIDER` is unset, so it sends no email and records who would have been emailed, until email is turned on (below) |
 
 The address is the one Render shows for `shareride-staging-api`, usually
 `https://shareride-staging-api.onrender.com`. The web app and the API share
@@ -243,6 +243,30 @@ If someone abuses sign-in to send SMS (see SMS pumping in
 deploys the service again with it; sign-in then says the code could not be
 sent. Set it back to
 `false` (or delete it) when it is safe.
+
+## Turn on email
+
+Staging sends no email until ShareRide has a domain (ADR 0027). Then:
+
+1. In Mailjet, **Account settings**, **Domains and senders**: add the
+   domain and a sender on it, such as `hello@` the domain, and add the
+   SPF, DKIM and DMARC records it shows at the domain's DNS host. Wait
+   until Mailjet shows the domain as validated. Sign Mailjet's data
+   processing agreement.
+2. **Account settings**, **API key management**: copy the API key and the
+   secret key into Render, never anywhere else.
+3. Open `shareride-staging-api`, **Environment**, and add
+   `MAILJET_API_KEY` and `MAILJET_SECRET_KEY` (as secrets), `EMAIL_FROM`
+   (the sender), `WEB_APP_URL` (the staging address above, where the
+   emails' links lead) and `EMAIL_PROVIDER` set to `mailjet`, then save.
+   Render deploys the service again; a missing one stops the API from
+   starting, and the running version stays.
+4. Check, once people can add an email (milestone 5, PR 7b): someone
+   with a verified email and no push device who has a booking request
+   accepted gets the "Pay now" email. Mailjet's
+   **Statistics** list it, and show no opens or clicks, as tracking is off.
+
+To stop email again, set `EMAIL_PROVIDER` to `none`.
 
 ## Restore the database
 
