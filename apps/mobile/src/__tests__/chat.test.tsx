@@ -159,6 +159,23 @@ describe("A conversation (spec 7, 3.1)", () => {
     ).toBeVisible();
   });
 
+  it("says when the departure moved, at the reader's own stop (spec 6, 3.2)", async () => {
+    const moved = chatMessage({
+      id: messageId(5),
+      from: "system",
+      kind: "system",
+      text: null,
+      system: {
+        key: "departure_changed",
+        from: "2026-11-15T10:00:00.000Z",
+        to: "2026-11-15T10:45:00.000Z",
+      },
+      sentAt: "2026-11-14T11:59:00.000Z",
+    });
+    await openConversation({ messages: [openedLine, moved] });
+    expect(await screen.findByText("Departure changed from 10:00 to 10:45")).toBeVisible();
+  });
+
   it("shows the driver the passenger's name and their request message", async () => {
     await openConversation({
       booking: { ...chatBooking, viewer: "driver" },

@@ -602,6 +602,35 @@ export const en = {
   "trip.keep": "Keep the trip",
   "trip.notCancellable": "This trip can no longer be cancelled.",
   "trip.termsChanged": "Something changed since you opened this. Check who is affected again.",
+  "trip.edit": "Edit trip",
+  "trip.editIntro":
+    "Change one thing at a time. Before you save, you see what it means for your passengers.",
+  "trip.editTime": "Time",
+  "trip.editTimeAction": "Change the time",
+  "trip.editTimeTitle": "Change the departure",
+  "trip.editTimeIntro": "Every stop moves with the departure.",
+  "trip.editTimeBooked":
+    "With bookings, the departure can move by up to 2 hours from the time your passengers booked.",
+  "trip.editTimeSame": "This is the departure the trip has now. Choose another time.",
+  "trip.editCheck": "Check the change",
+  "trip.editReviewTitle": "Check the change",
+  "trip.editNewTimes": "New times",
+  "trip.editForPassengers": "What changes for passengers",
+  "trip.editTold":
+    "{count, plural, one {# passenger is} other {# passengers are}} told the new time now.",
+  "trip.editFreeCancel":
+    "It moves more than 30 minutes from when they booked, so {count, plural, one {# passenger} other {# passengers}} can cancel with a full refund, without it counting against them.",
+  "trip.editNobody": "Nobody has booked yet, so nobody needs to be told.",
+  "trip.editRequests":
+    "{count, plural, one {# person who asked for a seat sees} other {# people who asked for a seat see}} the new time in the app.",
+  "trip.editRequestsExpire":
+    "{count, plural, one {# request} other {# requests}} can no longer be answered in time, so {count, plural, one {it expires} other {they expire}}.",
+  "trip.editSave": "Save the change",
+  "trip.notChangeable": "This trip can no longer be changed.",
+  "trip.moveTooFar": "With bookings, the departure can be between {earliest} and {latest}.",
+  "trip.changed": "Departure changed from {old} to {new}",
+  "trip.keepBooking": "Keep my booking",
+  "trip.cancelWithRefund": "Cancel with full refund",
   "trip.own": "This is your trip.",
   "trip.share": "Share",
   "trip.shareText": "{route} on ShareRide",
@@ -725,6 +754,11 @@ export const en = {
   "booking.cancelNoteNoContact": "Please don't share phone numbers, emails or links in the note.",
   "booking.keepTheirs": "Keep the booking",
   "booking.driverNote": "Note from the driver: {note}",
+  "booking.changesTitle": "Changes since you booked",
+  "booking.movedFar":
+    "The departure moved more than 30 minutes, so you can cancel with a full refund, without it counting against you.",
+  "booking.movedFarFree":
+    "The departure moved more than 30 minutes, so you can cancel without it counting against you.",
   "booking.backToBooking": "Back to the booking",
   "booking.termsChanged": "Something changed since you opened this. Check the refund again.",
   "booking.notCancellable": "This booking can no longer be cancelled.",
@@ -773,6 +807,8 @@ export const en = {
   "driverTrip.cancelBooking": "Cancel booking: {name}",
   "driverTrip.cancelledBooking": "Booking cancelled. The passenger has been told.",
   "driverTrip.cancelledTrip": "You cancelled this trip: {reason}",
+  "driverTrip.changed": "Trip changed. Your passengers have been told.",
+  "driverTrip.changedNobody": "Trip changed.",
   "driverTrip.yourNote": "Your note: {note}",
   "request.accept": "Accept",
   "request.decline": "Decline",
@@ -862,6 +898,9 @@ export const en = {
   "notify.unpaidDriver": "Not paid for in time: {name}",
   "notify.cancelledByDriver": "The driver cancelled: {reason}",
   "notify.cancelledRefundBody": "{from} – {to} · {when}. Full refund of {total}.",
+  "notify.movedBody": "{from} – {to} · {when}.",
+  "notify.movedFarBody":
+    "{from} – {to} · {when}. You can keep your booking or cancel with a full refund.",
   "notify.cancelledByPassenger": "Booking cancelled: {name}",
   "notify.tripCancelled": "Trip cancelled: {reason}",
   "notify.refunded": "Refund of {total}",
@@ -904,6 +943,10 @@ export const en = {
     "ShareRide: your trip on {date} at {time} is cancelled. Full refund. Details in the app.",
   "sms.tripCancelledUnpaid":
     "ShareRide: your trip on {date} at {time} is cancelled. Details in the app.",
+  "sms.departureMoved":
+    "ShareRide: your trip on {date} now leaves at {time}. Keep it or cancel with a full refund in the app.",
+  "sms.departureMovedUnpaid":
+    "ShareRide: your trip on {date} now leaves at {time}. Details in the app.",
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;

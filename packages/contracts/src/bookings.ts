@@ -107,6 +107,25 @@ export const bookingSchema = z.object({
       countsOnReliability: z.boolean().nullable(),
     })
     .nullable(),
+  /**
+   * The trip's changes since the booking was made, oldest first (spec 6,
+   * 3.2): for a moved departure, the passenger's boarding time before and
+   * after.
+   */
+  changes: z.array(
+    z.object({
+      kind: z.literal("departure"),
+      from: timestampSchema,
+      to: timestampSchema,
+      changedAt: timestampSchema,
+    }),
+  ),
+  /**
+   * The departure is more than 30 minutes from where it was when the
+   * booking was made, so a confirmed passenger may cancel with a full
+   * refund, without it counting against them (R6.3).
+   */
+  movedFar: z.boolean(),
   driver: z.object({ firstName: z.string(), colour: peopleColourSchema }),
   /** Ratings and reliability come with spec 8; until then every member is new. */
   passenger: z.object({

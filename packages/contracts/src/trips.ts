@@ -421,3 +421,73 @@ export const cancelTripRoute = defineRoute({
     },
   },
 });
+
+/**
+ * One change to a published trip, as the driver saves it from Edit trip
+ * (spec 6, 3.2). For now a new departure: every stop moves with it (R6.2).
+ * Milestone 6's PR 5b adds the others.
+ */
+export const tripChangeSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("departure"), departsAt: timestampSchema }),
+]);
+
+export type TripChangeBody = z.infer<typeof tripChangeSchema>;
+
+/** What a change does, before it is saved (a preview) or once it is. */
+export const tripChangeEffectSchema = z.object({
+  /** The trip's departure and arrival as they will be. */
+  departsAt: timestampSchema,
+  arrivesAt: timestampSchema,
+  /** Each stop's planned time as it will be, in route order. */
+  plannedTimes: z.array(timestampSchema),
+  /** The passengers told: accepted and confirmed bookings (spec 7, 3.3). */
+  told: z.int().nonnegative(),
+  /**
+   * Of those, the ones who paid and may now cancel with a full refund,
+   * without it counting against them: moved more than 30 minutes from when
+   * they booked (R6.3).
+   */
+  freeCancellations: z.int().nonnegative(),
+  /** Requests waiting for the driver, not told; they see the change on the trip (spec 7, 3.3). */
+  requests: z.int().nonnegative(),
+  /**
+   * Requests whose deadline to answer, worked out again from the new boarding
+   * time (R5.5), has passed: they expire with the change.
+   */
+  expiring: z.int().nonnegative(),
+});
+
+export type TripChangeEffect = z.infer<typeof tripChangeEffectSchema>;
+
+const flagSchema = z.union([z.boolean(), z.stringbool()]);
+
+export const changeTripRoute = defineRoute({
+  method: "post",
+  path: "/v1/trips/{id}/changes",
+  summary:
+    "Change a published trip before it leaves, one change at a time; with `preview`, what the change would do, without saving it (spec 6, 3.2)",
+  tags: ["trips"],
+  auth: true,
+  request: {
+    params: tripParams,
+    query: z.object({ preview: flagSchema.default(false) }),
+    body: tripChangeSchema,
+  },
+  responses: {
+    200: { description: "What the change does", schema: tripChangeEffectSchema },
+    401: unauthenticated,
+    404: {
+      ...errors,
+      description: "not_found: no such trip of mine, or a draft (changed with PATCH instead)",
+    },
+    409: {
+      description: "trip_not_changeable: the planned departure has come, or the trip is cancelled",
+      ...errors,
+    },
+    422: {
+      description:
+        "change_not_allowed: each rule the change breaks is a detail, its code as the issue and `departsAt`, `stops.N` or `segments.N` as the path; with `move_too_far`, `departureWindow` gives the departures the bookings allow (R6.4)",
+      ...errors,
+    },
+  },
+});

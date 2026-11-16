@@ -96,6 +96,9 @@ function Navigation() {
         <Stack.Screen name="drive/trips/[id]/published" />
         <Stack.Screen name="drive/trips/[id]/message" />
         <Stack.Screen name="drive/trips/[id]/cancel" />
+        <Stack.Screen name="drive/trips/[id]/edit/index" />
+        <Stack.Screen name="drive/trips/[id]/edit/time" />
+        <Stack.Screen name="drive/trips/[id]/edit/check" />
         <Stack.Screen name="trips/[id]/book" />
         <Stack.Screen name="bookings/[id]/index" />
         <Stack.Screen name="bookings/[id]/booked" />

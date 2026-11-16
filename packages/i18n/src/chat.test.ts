@@ -68,6 +68,16 @@ describe("system lines in the reader's language (spec 7, 3.1, item 3)", () => {
     expect(systemLineText(is, noted, "Anna")).toBe("Anna afbókaði: Bilun í bíl „Því miður.“");
   });
 
+  it("says the departure changed, from and to the reader's boarding time in Iceland (spec 6, 3.2)", () => {
+    const moved = {
+      key: "departure_changed",
+      from: "2026-11-14T09:00:00.000Z",
+      to: "2026-11-14T09:45:00.000Z",
+    } as const;
+    expect(systemLineText(en, moved, "Anna")).toBe("Departure changed from 09:00 to 09:45");
+    expect(systemLineText(is, moved, "Anna")).toBe("Brottför breytt úr 09:00 í 09:45");
+  });
+
   it("says when the driver cancelled the whole trip (spec 6, 3.3)", () => {
     const trip = {
       key: "cancelled",

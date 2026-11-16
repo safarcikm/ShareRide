@@ -5,6 +5,7 @@ import {
   cancelBookingRoute,
   cancellationPreviewRoute,
   cancelTripRoute,
+  changeTripRoute,
   declineRequestRoute,
   messageAllPassengersRoute,
   readMessagesRoute,
@@ -15,7 +16,7 @@ import {
   type SendMessageBody,
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
-import { formatMoney } from "@shareride/i18n";
+import { formatClock, formatMoney } from "@shareride/i18n";
 import { and, asc, desc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
@@ -307,6 +308,17 @@ async function cancelTripAs(driver: Member, tripId: string, reason: CancelTripBo
       note: "Sorry, the snow came early.",
       countsOnReliability: reason !== "weather" && reason !== "road_closed",
     },
+  });
+  if (!result.ok) throw new Error(result.error.code);
+}
+
+/** The driver moves the trip's departure, and every stop with it (spec 6, 3.2). */
+async function moveTo(driver: Member, tripId: string, departsAt: string) {
+  const result = await api.client.call(changeTripRoute, {
+    accessToken: driver.accessToken,
+    params: { id: tripId },
+    query: {},
+    body: { kind: "departure", departsAt },
   });
   if (!result.ok) throw new Error(result.error.code);
 }
@@ -812,6 +824,106 @@ describe("the worker (plan 4.4)", () => {
     expect(sms.outbox).toHaveLength(2);
   });
 
+  it("tells each booked passenger of a moved departure at their own stop, by SMS too within 24 hours once it is over 30 minutes (spec 6, 3.2)", async () => {
+    const { jon, passenger: gunna, bookingId } = await confirmedBooking();
+    await withEmail(gunna, "gunna-moved@example.com");
+    const dora = await newMember("Dóra");
+    await speaks(dora, "is");
+    // Booked at once and not paid yet: told, with nothing to refund.
+    const unpaid = await booked(dora.accessToken, airport, { fromStop: 1, toStop: 3 });
+    const doraBoards = new Date(unpaid.board.plannedAt);
+    const doraAt = (minutes: number) =>
+      formatClock(new Date(doraBoards.getTime() + minutes * 60_000));
+    for (const member of [jon, gunna, dora]) await withDevice(member);
+    await worker().runOnce();
+    push.sent.length = 0;
+    const to = (member: Member) => `ExponentPushToken[${member.userId}]`;
+
+    // 20 minutes later than booked: told by push and email, no SMS.
+    await moveTo(jon, airport, "2026-11-14T05:50:00Z");
+    await worker().runOnce();
+    expect(push.sent).toHaveLength(2);
+    expect(push.sent).toEqual(
+      expect.arrayContaining([
+        {
+          to: to(gunna),
+          title: "Departure changed from 05:30 to 05:50",
+          body: "Hlemmur – Fjörður shopping centre · Saturday 14 November at 05:50.",
+          data: { path: `/bookings/${bookingId}` },
+        },
+        {
+          to: to(dora),
+          title: `Brottför breytt úr ${doraAt(0)} í ${doraAt(20)}`,
+          body: expect.stringMatching(new RegExp(`kl\\. ${doraAt(20)}\\.$`)) as unknown,
+          data: { path: `/bookings/${unpaid.id}` },
+        },
+      ]),
+    );
+    expect(sms.outbox).toEqual([]);
+
+    // 20 more: 40 minutes from when they booked, so Gunna, who paid, may
+    // cancel with a full refund (R6.3), and both get an SMS.
+    await moveTo(jon, airport, "2026-11-14T06:10:00Z");
+    await worker().runOnce();
+    expect(push.sent.slice(2)).toEqual(
+      expect.arrayContaining([
+        {
+          to: to(gunna),
+          title: "Departure changed from 05:50 to 06:10",
+          body: "Hlemmur – Fjörður shopping centre · Saturday 14 November at 06:10. You can keep your booking or cancel with a full refund.",
+          data: { path: `/bookings/${bookingId}` },
+        },
+        expect.objectContaining({
+          to: to(dora),
+          title: `Brottför breytt úr ${doraAt(20)} í ${doraAt(40)}`,
+          // Nothing paid, so no refund is offered.
+          body: expect.stringMatching(new RegExp(`kl\\. ${doraAt(40)}\\.$`)) as unknown,
+        }) as unknown,
+      ]),
+    );
+    expect(sms.outbox).toHaveLength(2);
+    expect(sms.outbox).toEqual(
+      expect.arrayContaining([
+        {
+          to: await phoneOf(gunna),
+          text: "ShareRide: your trip on Saturday 14 November now leaves at 06:10. Keep it or cancel with a full refund in the app.",
+        },
+        {
+          to: await phoneOf(dora),
+          text: `ShareRide: Ný brottför: laugardagur 14. nóvember kl. ${doraAt(40)}. Nánar í appinu.`,
+        },
+      ]),
+    );
+    expect(email.sent.at(-1)).toMatchObject({
+      to: "gunna-moved@example.com",
+      subject: "Departure changed from 05:50 to 06:10",
+    });
+    // The driver is told nothing: it was their own doing.
+    expect((await logOf(jon)).filter((row) => row.kind.startsWith("departure_moved"))).toEqual([]);
+
+    // Run again: nobody is told twice.
+    await worker().runOnce();
+    expect(push.sent).toHaveLength(4);
+    expect(sms.outbox).toHaveLength(2);
+  });
+
+  it("sends the SMS when the old boarding time was within 24 hours, though the new one is not (spec 7, 3.4)", async () => {
+    const jon = await driverOf(airport, "Jón");
+    // Nobody booked yet: Saturday 11:30, 23 and a half hours ahead.
+    await moveTo(jon, airport, "2026-11-14T11:30:00Z");
+    const { passenger } = await confirmedBooking("Gunna", jon);
+    await worker().runOnce();
+
+    await moveTo(jon, airport, "2026-11-14T12:30:00Z");
+    await worker().runOnce();
+    expect(sms.outbox).toEqual([
+      {
+        to: await phoneOf(passenger),
+        text: "ShareRide: your trip on Saturday 14 November now leaves at 12:30. Keep it or cancel with a full refund in the app.",
+      },
+    ]);
+  });
+
   it("pushes a chat message with its text, and a quick message in the reader's language", async () => {
     const { jon, passenger, bookingId } = await confirmedBooking();
     await speaks(passenger, "is");
@@ -1275,6 +1387,26 @@ describe("notifications that wait for a moment (spec 7, 3.3)", () => {
     );
   });
 
+  it("moves the halfway reminder with a request's deadline when the departure moves (spec 6, 3.2)", async () => {
+    const anna = await driverOf(north);
+    await withDevice(anna);
+    // Saturday 03:00, a request for 09:00: answer by 07:00, reminded at 05:00.
+    await later(15 * 3600, anna);
+    const jon = await newMember("Jón");
+    const request = await booked(jon.accessToken, north, { fromStop: 0, toStop: 1 });
+    expect(request.requestExpiresAt).toBe("2026-11-14T07:00:00.000Z");
+    await worker().runOnce();
+    // Moved to 08:00: answer by 06:00, so reminded at 04:30.
+    await moveTo(anna, north, "2026-11-14T08:00:00Z");
+    await later(90 * 60);
+    await worker().runOnce();
+    expect(push.sent.map((message) => message.title)).toEqual([
+      "New request: Jón",
+      "Request still waiting: Jón",
+    ]);
+    expect(push.sent[1]?.body).toBe("Answer by Saturday 14 November at 06:00, or it expires.");
+  });
+
   it("drops the halfway reminder once the request is answered", async () => {
     const anna = await driverOf(north);
     await withDevice(anna);
@@ -1320,6 +1452,27 @@ describe("notifications that wait for a moment (spec 7, 3.3)", () => {
       "Gunna: 10 minutes left to pay",
     ]);
     expect(unpaid.status).toBe("accepted");
+  });
+
+  it("moves the pay reminder with the payment deadline when the departure moves (spec 6, 3.2)", async () => {
+    const jon = await driverOf(airport, "Jón");
+    // Just after 04:40 on Saturday, booked for 05:30: pay within 30 minutes,
+    // by just after 05:10, and reminded 10 minutes before (rule M1).
+    await later((Date.parse("2026-11-14T04:40:00Z") - api.now().getTime()) / 1000, jon);
+    const gunna = await newMember("Gunna");
+    await withDevice(gunna);
+    const unpaid = await booked(gunna.accessToken, airport, { fromStop: 0, toStop: 1 });
+    expect((unpaid.paymentDueAt ?? "") > "2026-11-14T05:10:00.000Z").toBe(true);
+    await worker().runOnce();
+    // Moved to 05:20: pay by 05:05, 15 minutes before boarding, so reminded at 04:55.
+    await moveTo(jon, airport, "2026-11-14T05:20:00Z");
+    await later(15 * 60);
+    await worker().runOnce();
+    expect(push.sent.map((message) => message.title)).toEqual([
+      "Pay now: Hlemmur – Fjörður shopping centre",
+      "Departure changed from 05:30 to 05:20",
+      "10 minutes left to pay",
+    ]);
   });
 });
 
@@ -1676,6 +1829,49 @@ describe("trip reminders (spec 7, 3.5)", () => {
     await until(friday18);
     await worker().runOnce();
     expect(push.sent).toEqual([]);
+  });
+
+  it("moves the reminders with the departure, and never sends one twice (R7.11)", async () => {
+    const { jon, passenger } = await confirmedBooking();
+    await withDevice(passenger);
+    await withDevice(jon);
+    await worker().runOnce();
+    // Friday noon: 05:30 becomes 07:00.
+    await moveTo(jon, airport, "2026-11-14T07:00:00Z");
+    await worker().runOnce();
+    push.sent.length = 0;
+
+    const reminders = (member: Member) =>
+      push.sent
+        .filter((message) => message.to === `ExponentPushToken[${member.userId}]`)
+        .map((message) => message.title)
+        .filter((title) => /^(Tomorrow|In one hour)/.test(title));
+
+    await until(friday18);
+    await worker().runOnce();
+    expect(reminders(passenger)).toEqual(["Tomorrow at 07:00 · Meeting point: Hlemmur"]);
+    expect(reminders(jon)).toEqual(["Tomorrow at 07:00: 1 passenger"]);
+    // Friday 20:00, after the evening reminder: moved again, to 07:20.
+    await until("2026-11-13T20:00:00Z");
+    await later(0, jon);
+    await moveTo(jon, airport, "2026-11-14T07:20:00Z");
+    await worker().runOnce();
+    // Nothing at the old hour, nor at 06:00; the hour reminder comes at 06:20.
+    await until(saturday0430);
+    await worker().runOnce();
+    await until("2026-11-14T06:10:00Z");
+    await worker().runOnce();
+    expect(reminders(passenger)).toHaveLength(1);
+    await until("2026-11-14T06:20:00Z");
+    await worker().runOnce();
+    expect(reminders(passenger)).toEqual([
+      "Tomorrow at 07:00 · Meeting point: Hlemmur",
+      "In one hour, at 07:20 · Meeting point: Hlemmur",
+    ]);
+    expect(reminders(jon)).toEqual([
+      "Tomorrow at 07:00: 1 passenger",
+      "In one hour, at 07:20: 1 passenger",
+    ]);
   });
 
   it("sends no reminders to someone who turned them off, and the rest still", async () => {

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   checkTripChange,
   maxMoveMinutes,
+  tripChangeKinds,
   type BookingOnTrip,
   type ChangeableTrip,
   type TripChange,
@@ -545,5 +546,19 @@ describe("any sequence of changes the rules allow", () => {
         },
       ),
     );
+  });
+});
+
+describe("the kinds of change recorded (spec 6, section 6)", () => {
+  it("name every change the driver can make, each once", () => {
+    const kinds = {
+      departure: true,
+      seats: true,
+      priceLevel: true,
+      vehicle: true,
+      bookingMode: true,
+      details: true,
+    } satisfies Record<TripChange["kind"], true>;
+    expect([...tripChangeKinds].sort()).toEqual(Object.keys(kinds).sort());
   });
 });

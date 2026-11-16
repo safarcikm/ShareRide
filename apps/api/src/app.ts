@@ -5,6 +5,7 @@ import type { Database } from "@shareride/db";
 import {
   defaultBookingSettings,
   defaultChatSettings,
+  defaultNotificationSettings,
   defaultSearchSettings,
   defaultTripSettings,
   searchLimitsPerAddress,
@@ -48,8 +49,10 @@ import {
 } from "./modules/search/index.ts";
 import {
   createRouteService,
+  createTripChangeService,
   createTripService,
   registerDraftRoutes,
+  registerTripChangeRoutes,
   registerTripRoutes,
 } from "./modules/trips/index.ts";
 import { bearerAuth, toOpenApiRoute } from "./openapi.ts";
@@ -218,6 +221,16 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     registerTripRoutes(app, createRouteService({ ...features, settings }), requireAuth);
     const trips = createTripService({ ...features, settings, driving });
     registerDraftRoutes(app, trips, requireAuth);
+    registerTripChangeRoutes(
+      app,
+      createTripChangeService({
+        ...features,
+        settings,
+        bookingSettings: defaultBookingSettings,
+        notificationSettings: defaultNotificationSettings,
+      }),
+      requireAuth,
+    );
     const bookings = createBookingService({
       ...features,
       account,

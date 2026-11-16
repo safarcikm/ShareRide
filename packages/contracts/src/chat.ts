@@ -55,10 +55,16 @@ export const chatMessageSchema = z.object({
   /** A text message's text, as written. */
   text: z.string().nullable(),
   quick: quickMessageSchema.nullable(),
-  /** A line about the booking: opened, or it or its trip cancelled by me or them, with the reason (spec 6). */
+  /** A line about the booking: opened, the departure changed, or it or its trip cancelled by me or them, with the reason (spec 6). */
   system: z
     .discriminatedUnion("key", [
       z.object({ key: z.literal("opened") }),
+      z.object({
+        key: z.literal("departure_changed"),
+        /** The passenger's boarding time before and after the move (spec 6, 3.2). */
+        from: timestampSchema,
+        to: timestampSchema,
+      }),
       z.object({
         key: z.literal("cancelled"),
         by: z.enum(["me", "them"]),

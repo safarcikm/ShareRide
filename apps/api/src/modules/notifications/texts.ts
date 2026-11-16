@@ -53,6 +53,10 @@ export interface NotificationFacts {
   readonly boardPointId: string;
   /** The trip's car: make, model and colour, never its number plate. */
   readonly car: CarFacts | null;
+  /** For a moved departure: the passenger's boarding time before and after (spec 6, 3.2). */
+  readonly moved: { readonly from: Date; readonly to: Date } | null;
+  /** Confirmed and not free: what they paid would come back if they cancelled (R6.3). */
+  readonly paid: boolean;
 }
 
 /** A driver's trip reminder (3.5): about the trip and everyone booked on it. */
@@ -100,6 +104,14 @@ export function smsText(facts: NotificationFacts, locale: Locale): string {
       );
     case "trip_cancelled":
       return t(facts.refund.amount > 0 ? "sms.tripCancelled" : "sms.tripCancelledUnpaid", values);
+    case "departure_moved_far": {
+      // The new time, with the offer of a full refund to someone who paid (R6.3).
+      const { to } = required(facts.moved, "the move");
+      return t(facts.paid ? "sms.departureMoved" : "sms.departureMovedUnpaid", {
+        date: formatDay(to, locale),
+        time: formatClock(to),
+      });
+    }
     default:
       throw new Error(`No SMS for ${facts.kind} yet.`);
   }
@@ -188,6 +200,18 @@ function bookingText(
               })
             : searchAgain(),
         ];
+      case "departure_moved":
+      case "departure_moved_far": {
+        // The passenger's own boarding time, before and after (spec 6, 3.2).
+        const moved = required(facts.moved, "the move");
+        const where = { from, to, when: when(moved.to) };
+        return [
+          t("trip.changed", { old: formatClock(moved.from), new: formatClock(moved.to) }),
+          facts.kind === "departure_moved_far" && facts.paid
+            ? t("notify.movedFarBody", where)
+            : t("notify.movedBody", where),
+        ];
+      }
       case "refund_issued":
         return [
           t("notify.refunded", { total: formatMoney(facts.total, locale) }),

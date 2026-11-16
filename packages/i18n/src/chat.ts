@@ -1,4 +1,5 @@
 import type { CancelReason, QuickMessage } from "@shareride/domain";
+import { formatClock } from "./format.ts";
 import type { MessageKey, Translate } from "./translator.ts";
 
 // Quick messages and system lines are stored as keys and put into words in
@@ -43,6 +44,12 @@ export function cancelReasonText(t: Translate, reason: CancelReason): string {
 export type ShownSystemLine =
   | { readonly key: "opened" }
   | {
+      readonly key: "departure_changed";
+      /** The reader's boarding time before and after, in ISO 8601. */
+      readonly from: string;
+      readonly to: string;
+    }
+  | {
       readonly key: "cancelled";
       readonly by: "me" | "them";
       readonly reason: CancelReason;
@@ -55,6 +62,7 @@ export type ShownSystemLine =
 /** A line about what happened to the booking, in `t`'s language; `other` is the other person's first name. */
 export function systemLineText(t: Translate, line: ShownSystemLine, other: string): string {
   if (line.key === "opened") return t("chat.opened");
+  if (line.key === "departure_changed") return departureChangeText(t, line);
   const reason = cancelReasonText(t, line.reason);
   const said = line.wholeTrip
     ? line.by === "me"
@@ -64,4 +72,19 @@ export function systemLineText(t: Translate, line: ShownSystemLine, other: strin
       ? t("chat.cancelledByMe", { reason })
       : t("chat.cancelledByThem", { name: other, reason });
   return line.note === "" ? said : t("chat.withNote", { line: said, note: line.note });
+}
+
+/**
+ * "Departure changed from 08:00 to 08:45": the boarding time before and
+ * after a move, on Iceland's clock (spec 6, 3.2). A move is at most 2 hours
+ * (R6.4), so the time of day says it.
+ */
+export function departureChangeText(
+  t: Translate,
+  change: { readonly from: string; readonly to: string },
+): string {
+  return t("trip.changed", {
+    old: formatClock(new Date(change.from)),
+    new: formatClock(new Date(change.to)),
+  });
 }

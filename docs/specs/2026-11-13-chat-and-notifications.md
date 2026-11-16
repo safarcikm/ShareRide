@@ -130,6 +130,14 @@ An SMS goes only to the account's verified phone number, in the person's
 language, and says only what happened and to open the app. Nobody gets more
 than 5 such messages a day.
 
+As built for a moved departure (milestone 6, PR 5a): the SMS goes when the
+old or the new boarding time is less than 24 hours away, so a trip moved
+from tomorrow morning to the day after is still told. It gives the day and
+the new time at the passenger's own stop, and offers the full refund only
+to a passenger who paid; a booking not yet paid, or a free ride, gets
+"Details in the app" instead. The Icelandic text starts "Ný brottför" to
+fit two SMS parts.
+
 ### 3.5 Reminders (E1)
 
 | Who | When | What |
@@ -318,7 +326,8 @@ inside a sentence.
 | `email.unreadMessages` | You have unread messages about your trip on {date} | Þú átt ólesin skilaboð um ferðina: {date} |
 | `sms.tripCancelled` | ShareRide: your trip on {date} at {time} is cancelled. Full refund. Details in the app. | ShareRide: Ferðinni þinni var aflýst: {date} kl. {time}. Full endurgreiðsla. Nánar í appinu. |
 | `sms.bookingCancelled` | ShareRide: the driver cancelled your booking for {date} at {time}. Full refund. Details in the app. | ShareRide: Bílstjórinn aflýsti bókun þinni: {date} kl. {time}. Full endurgreiðsla. Nánar í appinu. |
-| `sms.departureMoved` | ShareRide: your trip on {date} now leaves at {time}. Keep it or cancel with a full refund in the app. | ShareRide: Ferðin {date} fer nú kl. {time}. Haltu bókuninni eða afbókaðu með fullri endurgreiðslu í appinu. |
+| `sms.departureMoved` | ShareRide: your trip on {date} now leaves at {time}. Keep it or cancel with a full refund in the app. | ShareRide: Ný brottför: {date} kl. {time}. Haltu bókuninni eða afbókaðu með fullri endurgreiðslu í appinu. |
+| `sms.departureMovedUnpaid` | ShareRide: your trip on {date} now leaves at {time}. Details in the app. | ShareRide: Ný brottför: {date} kl. {time}. Nánar í appinu. |
 | `sms.meetingPointChanged` | ShareRide: the meeting point for your trip on {date} has changed. Details in the app. | ShareRide: Mótsstaður ferðarinnar {date} hefur breyst. Nánar í appinu. |
 
 ## 9. Testing

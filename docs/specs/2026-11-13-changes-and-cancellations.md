@@ -71,6 +71,52 @@ What can change follows
   changed from 08:00 to 08:20".
 - If a change would break a rule, the app says which and why, before saving.
 
+As built (milestone 6, PR 5a, the departure; PR 5b adds the rest):
+
+1. "Edit trip" sits just before "Cancel trip" on the driver's trip page,
+   until the planned departure (R6.1). It opens Edit trip, a row for each
+   part of the trip with a link to change it; for now the time: the day and
+   every stop's time, and "Change the time".
+2. Change the departure gives the date and the departure; every stop moves
+   with it, and the screen shows their new times (R6.2). With a booking or
+   a request on the trip, it says the departure can move by up to 2 hours
+   from when the passengers booked. "Check the change" asks the server
+   without saving, and says under the time which rule the move breaks: the
+   departure it has now, too soon or too far ahead (R3.5), another trip of
+   the driver's (R3.7), a stop out of season, or more than 2 hours from when
+   a booking was made (R6.4), giving the departures the bookings allow.
+3. The check shows "Departure changed from {old} to {new}", the new times,
+   and what changes for passengers: how many are told (accepted and
+   confirmed bookings), how many of those who paid may now cancel with a
+   full refund, without it counting (moved more than 30 minutes from the
+   departure when they booked, R6.3), how many who asked for a seat see the
+   new time in the app, and any request the move makes expire (item 6).
+   "Save the change" saves it under the
+   same checks, as of that moment, and the trip page says "Trip changed.
+   Your passengers have been told." with focus.
+4. Each move is recorded with its time. A passenger reads "Departure changed
+   from 10:00 to 10:45" at their own boarding stop, on the booking under
+   "Changes since you booked" and in the chat. Push and email say the same,
+   with the part and the new time; for a paid booking moved more than 30
+   minutes they add that it can be kept or cancelled with a full refund,
+   and an SMS says so too when the old or the new boarding time is less
+   than 24 hours away (spec 7, 3.4). A request is not told (spec 7, 3.3).
+   A booking that ended shows only the moves made while it held seats.
+5. After a move of more than 30 minutes, a paid booking offers "Keep my
+   booking", which hides the offer on that device until the trip moves
+   again, and "Cancel with full refund" ("Cancel booking" for a free ride),
+   which opens the cancel screen with "The trip changed" chosen. A booking
+   not yet paid costs nothing to cancel, so it is not offered the choice.
+6. What hangs on the times follows the move: a request's deadline to answer
+   and an accepted booking's deadline to pay are worked out again from the
+   new boarding time (R5.5, rule M1), and a request whose new deadline has
+   passed expires. The driver's halfway reminder, the pay reminder and the
+   trip reminders move too; one already sent is not sent again (R7.11).
+7. A published trip changes through `POST /trips/{id}/changes`, one change
+   at a time, with `?preview=true` for the check; a draft keeps `PATCH`.
+   A change that breaks a rule is refused with each rule named; from the
+   planned departure on, or once cancelled, nothing changes.
+
 ### 3.3 Cancelling a trip (driver)
 
 1. "Cancel trip", then a reason: weather, road closed, car problem, illness,
@@ -201,7 +247,9 @@ The trip-change table and rules M2 and S5 in
 Entities (see [domain model](../architecture/domain-model.md)):
 
 - `TripChange`: trip, kind (time, stop added, stop removed, seats, price level,
-  car, booking mode, details), before and after, changed at.
+  car, booking mode, details), before and after, changed at. As built
+  (PR 5a): `trip_changes` with the kinds `departure`, `seats`, `priceLevel`,
+  `vehicle`, `bookingMode` and `details`; the stops join in PR 6.
 - `Booking` uses its cancellation fields (`cancelled_by`, `cancel_reason`,
   `cancel_note`, `cancelled_at`) plus `refund_amount`,
   `counts_on_reliability` and `departs_at_when_booked`.
@@ -212,7 +260,7 @@ Endpoints (`/v1`, shapes defined in `packages/contracts`):
 | --------------- | ------- |
 | `GET /me/trips?when=upcoming\|past` | My trips as a driver |
 | `GET /me/trips/{id}/seats` | Seat view |
-| `PATCH /trips/{id}` | Change a published trip; returns the effect on passengers, or the rule it would break |
+| `POST /trips/{id}/changes?preview=` | Change a published trip, one change at a time; returns the effect on passengers, or the rules it would break (as built; `PATCH /trips/{id}` stays for drafts) |
 | `POST /trips/{id}/cancel` | Cancel a trip with a reason and note |
 | `POST /bookings/{id}/cancel` | Cancel a booking, by the passenger or the driver |
 | `GET /bookings/{id}/cancellation-preview` | The refund and reliability effect before confirming |
@@ -222,7 +270,8 @@ Domain functions in `packages/domain`: validate a change against the bookings
 and return its effect; the refund and reliability effect of a cancellation;
 reverse a trip's stops.
 
-Events: `TripChanged`, `TripCancelled`, `BookingCancelled` (the booking and
+Events: `DepartureMoved` (the booking and the recorded change, as built in
+PR 5a), `TripChanged`, `TripCancelled`, `BookingCancelled` (the booking and
 who cancelled; the reason and refund are read from the booking, as events hold
 IDs only). Notifications for each come in spec 7; refunds in spec 13.
 
@@ -267,6 +316,34 @@ IDs only). Notifications for each come in spec 7; refunds in spec 13.
 | `trip.changed` | Departure changed from {old} to {new} | Brottför breytt úr {old} í {new} |
 | `trip.keepBooking` | Keep my booking | Halda bókuninni |
 | `trip.cancelWithRefund` | Cancel with full refund | Afbóka með fullri endurgreiðslu |
+| `trip.editIntro` | Change one thing at a time. Before you save, you see what it means for your passengers. | Breyttu einu í einu. Áður en þú vistar sérðu hvað það þýðir fyrir farþegana. |
+| `trip.editTime` | Time | Tími |
+| `trip.editTimeAction` | Change the time | Breyta tímanum |
+| `trip.editTimeTitle` | Change the departure | Breyta brottför |
+| `trip.editTimeIntro` | Every stop moves with the departure. | Allir viðkomustaðir færast með brottförinni. |
+| `trip.editTimeBooked` | With bookings, the departure can move by up to 2 hours from the time your passengers booked. | Þegar bókanir eru komnar má færa brottförina um allt að 2 klukkustundir frá þeim tíma sem farþegarnir bókuðu. |
+| `trip.editTimeSame` | This is the departure the trip has now. Choose another time. | Ferðin fer nú þegar á þessum tíma. Veldu annan tíma. |
+| `trip.editCheck` | Check the change | Skoða breytinguna |
+| `trip.editReviewTitle` | Check the change | Skoðaðu breytinguna |
+| `trip.editNewTimes` | New times | Nýir tímar |
+| `trip.editForPassengers` | What changes for passengers | Hvað breytist fyrir farþegana |
+| `trip.editTold` | {count, plural, one {# passenger is} other {# passengers are}} told the new time now. | {count, plural, one {# farþegi fær} other {# farþegar fá}} að vita af nýja tímanum strax. |
+| `trip.editFreeCancel` | It moves more than 30 minutes from when they booked, so {count, plural, one {# passenger} other {# passengers}} can cancel with a full refund, without it counting against them. | Brottförin færist um meira en 30 mínútur frá því þeir bókuðu svo {count, plural, one {# farþegi getur} other {# farþegar geta}} afbókað með fullri endurgreiðslu án þess að það telji gegn þeim. |
+| `trip.editNobody` | Nobody has booked yet, so nobody needs to be told. | Enginn hefur bókað enn svo enginn þarf að fá að vita það. |
+| `trip.editRequests` | {count, plural, one {# person who asked for a seat sees} other {# people who asked for a seat see}} the new time in the app. | {count, plural, one {# sem bað um sæti sér} other {# sem báðu um sæti sjá}} nýja tímann í appinu. |
+| `trip.editRequestsExpire` | {count, plural, one {# request} other {# requests}} can no longer be answered in time, so {count, plural, one {it expires} other {they expire}}. | Ekki er lengur hægt að svara {count, plural, one {# beiðni} other {# beiðnum}} í tæka tíð svo {count, plural, one {hún rennur} other {þær renna}} út. |
+| `trip.editSave` | Save the change | Vista breytinguna |
+| `trip.notChangeable` | This trip can no longer be changed. | Ekki er lengur hægt að breyta þessari ferð. |
+| `trip.moveTooFar` | With bookings, the departure can be between {earliest} and {latest}. | Með bókunum getur brottförin verið frá kl. {earliest} til kl. {latest}. |
+| `driverTrip.changed` | Trip changed. Your passengers have been told. | Ferðinni var breytt. Farþegarnir hafa fengið að vita það. |
+| `driverTrip.changedNobody` | Trip changed. | Ferðinni var breytt. |
+| `booking.changesTitle` | Changes since you booked | Breytingar frá því þú bókaðir |
+| `booking.movedFar` | The departure moved more than 30 minutes, so you can cancel with a full refund, without it counting against you. | Brottförin færðist um meira en 30 mínútur svo þú getur afbókað með fullri endurgreiðslu án þess að það telji gegn þér. |
+| `booking.movedFarFree` | The departure moved more than 30 minutes, so you can cancel without it counting against you. | Brottförin færðist um meira en 30 mínútur svo þú getur afbókað án þess að það telji gegn þér. |
+| `notify.movedBody` | {from} – {to} · {when}. | {from} – {to} · {when}. |
+| `notify.movedFarBody` | {from} – {to} · {when}. You can keep your booking or cancel with a full refund. | {from} – {to} · {when}. Þú getur haldið bókuninni eða afbókað með fullri endurgreiðslu. |
+| `sms.departureMoved` | ShareRide: your trip on {date} now leaves at {time}. Keep it or cancel with a full refund in the app. | ShareRide: Ný brottför: {date} kl. {time}. Haltu bókuninni eða afbókaðu með fullri endurgreiðslu í appinu. |
+| `sms.departureMovedUnpaid` | ShareRide: your trip on {date} now leaves at {time}. Details in the app. | ShareRide: Ný brottför: {date} kl. {time}. Nánar í appinu. |
 | `booking.cancel` | Cancel booking | Afbóka |
 | `booking.fullRefund` | Full refund of {amount} | Full endurgreiðsla, {amount} |
 | `booking.noRefund` | No refund: less than 15 minutes before departure | Engin endurgreiðsla: innan við 15 mínútur í brottför |

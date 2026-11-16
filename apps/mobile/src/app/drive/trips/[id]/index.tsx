@@ -14,6 +14,7 @@ import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { TakesFocus } from "@/components/takes-focus";
 import { Body, Heading, Title } from "@/components/text";
+import { isChangeable } from "@/driver-trip/changes";
 import { PassengersByPart, Stretches } from "@/driver-trip/parts";
 import { RequestCard } from "@/driver-trip/request-card";
 import { useLanguage } from "@/i18n/language";
@@ -27,19 +28,22 @@ import { routeText } from "@/trips/texts";
  * The driver's trip (spec 5, screens 5 and 9): requests first, each to
  * accept or decline; then passengers by where they get in and out, each
  * booking to cancel (spec 6, 3.4); then the seats held on each stretch,
- * and "Cancel trip" until it leaves (3.3). It loads again each time it
- * comes into view. `cancelled`, the booking just cancelled, says so with
- * focus; so does `tripCancelled`, once the trip is. A cancelled trip says
- * why, and nothing more. Changing the trip comes later in spec 6.
+ * and "Edit trip" (3.2) and "Cancel trip" (3.3) until it leaves. It loads
+ * again each time it comes into view. `cancelled`, the booking just
+ * cancelled, says so with focus; so does `tripCancelled`, once the trip is,
+ * and `changed`, the new departure once saved, with `told`, how many
+ * passengers were told. A cancelled trip says why, and nothing more.
  */
 export default function DriverTripScreen() {
   const { locale, t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
-  const { id, cancelled, tripCancelled } = useLocalSearchParams<{
+  const { id, cancelled, tripCancelled, changed, told } = useLocalSearchParams<{
     id: string;
     cancelled?: string;
     tripCancelled?: string;
+    changed?: string;
+    told?: string;
   }>();
   const load = useCallback(
     () =>
@@ -153,8 +157,7 @@ export default function DriverTripScreen() {
     refresh();
   };
   // From the planned departure, the trip day takes over (R6.1; spec 8).
-  const cancellable =
-    trip.data.status === "published" && departure !== null && departure.getTime() > now().getTime();
+  const open = isChangeable(trip.data, now());
   const said =
     outcome !== null && outcome.cancelled === cancelled
       ? { text: outcome.text, key: String(outcome.count) }
@@ -168,6 +171,14 @@ export default function DriverTripScreen() {
       {said === null ? null : (
         <TakesFocus key={said.key}>
           <Notice kind="info" message={said.text} />
+        </TakesFocus>
+      )}
+      {changed === undefined ? null : (
+        <TakesFocus key={changed}>
+          <Notice
+            kind="info"
+            message={t(told === "0" ? "driverTrip.changedNobody" : "driverTrip.changed")}
+          />
         </TakesFocus>
       )}
       {requests.length === 0 ? null : (
@@ -220,14 +231,23 @@ export default function DriverTripScreen() {
           capacity={onTrip.data.capacity}
         />
       </Card>
-      {cancellable ? (
-        <Button
-          variant="secondary"
-          label={t("trip.cancel")}
-          onPress={() => {
-            router.push({ pathname: "/drive/trips/[id]/cancel", params: { id } });
-          }}
-        />
+      {open ? (
+        <>
+          <Button
+            variant="secondary"
+            label={t("trip.edit")}
+            onPress={() => {
+              router.push({ pathname: "/drive/trips/[id]/edit", params: { id } });
+            }}
+          />
+          <Button
+            variant="secondary"
+            label={t("trip.cancel")}
+            onPress={() => {
+              router.push({ pathname: "/drive/trips/[id]/cancel", params: { id } });
+            }}
+          />
+        </>
       ) : null}
     </Screen>
   );

@@ -17,6 +17,7 @@ import {
 } from "@/booking/status";
 import { PaymentSheet, usePayment } from "@/booking/payment";
 import { cancellationTexts, payByText, requestSentText } from "@/booking/texts";
+import { TripChanges, useMoveChoice } from "@/booking/trip-changes";
 import { WhereToStand } from "@/booking/where-to-stand";
 import { BackButton } from "@/components/back-button";
 import { otherPerson } from "@/chat/texts";
@@ -46,7 +47,9 @@ import { usePalette } from "@/theme/use-palette";
  * notifications or add an email (spec 7, 3.6.2). An accepted or confirmed
  * booking ends with "Cancel booking", which opens its own screen (spec 6,
  * 3.5); coming back from it with `cancelled`, focus moves to the outcome.
- * It loads again each time it comes into view.
+ * Changes to the trip since booking show, with the choice to keep or
+ * cancel after a big move (spec 6, 3.2). It loads again each time it comes
+ * into view.
  */
 export default function BookingScreen() {
   const { t } = useLanguage();
@@ -147,6 +150,7 @@ function BookingDetails({
   const free = booking.total.amount === 0;
   const passenger = booking.viewer === "passenger";
   const occasion = promptOccasion(booking);
+  const moveChoice = useMoveChoice(booking, now());
 
   return (
     <Screen>
@@ -173,6 +177,15 @@ function BookingDetails({
           onAction={onAction}
           onChanged={onChanged}
           onStale={onStale}
+        />
+      ) : null}
+      {passenger ? (
+        <TripChanges
+          booking={booking}
+          offered={moveChoice.offered}
+          keptHere={moveChoice.keptHere}
+          onKeep={moveChoice.keep}
+          onCancel={onAction}
         />
       ) : null}
       {occasion === null ? null : <NotificationsPrompt occasion={occasion} />}
@@ -219,7 +232,8 @@ function BookingDetails({
 
       <WhereToStand booking={booking} />
 
-      {booking.viewer === "passenger" && canCancel(booking, now()) ? (
+      {/* After a move, the choice above cancels, with its reason. */}
+      {passenger && canCancel(booking, now()) && !moveChoice.offered && !moveChoice.pending ? (
         <Button
           variant="text"
           label={t("booking.cancel")}

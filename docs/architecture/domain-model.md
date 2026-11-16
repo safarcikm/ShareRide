@@ -136,6 +136,14 @@ One row per change to a published trip, so passengers can see what changed:
 `price_level`, `car`, `booking_mode`, `details`), `before`, `after`,
 `changed_at`. See [spec 6](../specs/2026-11-13-changes-and-cancellations.md#6-data-and-api).
 
+As built (milestone 6, PR 5a): the table `trip_changes`, with `kind` one of
+`departure`, `seats`, `priceLevel`, `vehicle`, `bookingMode` and `details`
+(the domain's `tripChangeKinds`; the stops join in PR 6), and `before` and
+`after` as small JSON objects, such as `{ "departsAt": "…" }`. It goes with
+the trip. A booking shows the moves made after it was booked, and a
+notification about a move points to its row (`notifications.trip_change_id`),
+so each move is told with its own times.
+
 ### Booking
 
 | Field | Notes |
@@ -275,7 +283,8 @@ The booking lifecycle is in
 Modules communicate changes through events written in the same transaction (an
 outbox table) and processed by the worker:
 
-`TripPublished`, `TripChanged`, `TripCancelled`, `BookingRequested`,
+`TripPublished`, `DepartureMoved` (one per booked passenger, with the
+recorded change), `TripChanged`, `TripCancelled`, `BookingRequested`,
 `BookingAccepted`, `BookingConfirmed`, `BookingDeclined`, `BookingExpired`
 (a request nobody answered, or an accepted booking nobody paid for),
 `BookingWithdrawn`, `BookingCancelled`,

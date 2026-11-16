@@ -16,7 +16,7 @@ import { sessions } from "./auth.ts";
 import { bookings } from "./bookings.ts";
 import { messages } from "./chat.ts";
 import { at, id, oneOf, timestamps } from "./columns.ts";
-import { trips } from "./trips.ts";
+import { tripChanges, trips } from "./trips.ts";
 import { users } from "./users.ts";
 
 /**
@@ -67,6 +67,8 @@ export const notifications = pgTable(
     tripId: uuid().references(() => trips.id, { onDelete: "cascade" }),
     /** For a new message: the message, whose text the push shows (R7.9). */
     messageId: uuid().references(() => messages.id, { onDelete: "cascade" }),
+    /** For a moved departure: the change, for the times before and after (spec 6, 3.2). */
+    tripChangeId: uuid().references(() => tripChanges.id, { onDelete: "cascade" }),
     uniqueKey: text().notNull(),
     ...timestamps,
   },
@@ -77,6 +79,7 @@ export const notifications = pgTable(
     index("notifications_booking_index").on(table.bookingId),
     index("notifications_trip_index").on(table.tripId),
     index("notifications_message_index").on(table.messageId),
+    index("notifications_trip_change_index").on(table.tripChangeId),
     // The clean-up finds old ones.
     index("notifications_created_index").on(table.createdAt),
   ],

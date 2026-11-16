@@ -1,5 +1,6 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import {
+  changeTripRoute,
   createTripRoute,
   deleteTripRoute,
   myTripRoute,
@@ -9,11 +10,12 @@ import {
   stopsAlongRoute,
   updateTripRoute,
 } from "@shareride/contracts";
-import type { PublishProblem } from "@shareride/domain";
+import type { ChangeProblem, PublishProblem } from "@shareride/domain";
 import type { Context, MiddlewareHandler } from "hono";
 import { authOf, type AppEnv } from "../../context.ts";
 import { errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
+import type { ChangeNotAllowed, TripChangeService } from "./changes.ts";
 import type { DraftInvalid, TripService } from "./drafts.ts";
 import type { RouteService, StopUnavailable } from "./service.ts";
 
@@ -203,6 +205,78 @@ export function registerDraftRoutes(
             path: problemPath(problem),
             issue: problem.code,
           })),
+        });
+    }
+  });
+}
+
+/** Where a change's problem points: the departure, a stop, a stretch or a field. */
+function changeProblemPath(problem: ChangeNotAllowed["problems"][number]): string {
+  switch (problem.code) {
+    case "times_missing":
+    case "departure_too_soon":
+    case "departure_too_far":
+    case "overlaps_trip":
+    case "move_too_far":
+      return "departsAt";
+    case "times_not_increasing":
+    case "stretch_too_fast":
+      return `segments.${String(problem.segment)}`;
+    case "stop_out_of_season":
+      return `stops.${String(problem.stop)}`;
+    case "seats_invalid":
+    case "seats_below_taken":
+      return "seats";
+    case "price_level_invalid":
+      return "priceLevel";
+    case "note_too_long":
+    case "note_has_contact_details":
+      return "note";
+  }
+}
+
+/** The departures the bookings allow, when a move went too far (R6.4). */
+function departureWindow(problems: readonly ChangeProblem[]) {
+  const tooFar = problems.find((problem) => problem.code === "move_too_far");
+  return tooFar === undefined
+    ? {}
+    : {
+        departureWindow: {
+          earliest: tooFar.earliest.toISOString(),
+          latest: tooFar.latest.toISOString(),
+        },
+      };
+}
+
+/** Changing a published trip (spec 6, 3.2). */
+export function registerTripChangeRoutes(
+  app: OpenAPIHono<AppEnv>,
+  changes: TripChangeService,
+  requireAuth: MiddlewareHandler,
+): void {
+  app.openapi(toOpenApiRoute(changeTripRoute, requireAuth), async (c) => {
+    const { id } = validated(c, "param", changeTripRoute.request.params);
+    const { preview } = validated(c, "query", changeTripRoute.request.query);
+    const body = validated(c, "json", changeTripRoute.request.body);
+    const result = await changes.change(authOf(c).userId, id, body, { preview });
+    if (result.ok) return c.json(result.value, 200);
+    switch (result.error.code) {
+      case "not_found":
+        return tripNotFound(c);
+      case "trip_not_changeable":
+        return errorResponse(
+          c,
+          409,
+          "trip_not_changeable",
+          "The trip has left or was cancelled; it no longer changes.",
+        );
+      case "change_not_allowed":
+        return errorResponse(c, 422, "change_not_allowed", "The change breaks some rules.", {
+          details: result.error.problems.map((problem) => ({
+            path: changeProblemPath(problem),
+            issue: problem.code,
+          })),
+          ...departureWindow(result.error.problems),
         });
     }
   });
