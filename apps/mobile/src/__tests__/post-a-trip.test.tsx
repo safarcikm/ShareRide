@@ -283,6 +283,11 @@ describe("Posting a trip (spec 3)", () => {
       await screen.findByRole("header", { name: "Meeting points near Þorlákshöfn" }),
     ).toBeVisible();
     expect(screen.getByRole("header", { name: "Where are you driving?" })).toBeVisible();
+    // This list has no tag under it, so each sample point says so itself.
+    expect(
+      screen.getByRole("button", { name: /^BSÍ bus terminal, .*, Sample meeting point$/ }),
+    ).toBeVisible();
+    expect(screen.getAllByText("Sample meeting point")).toHaveLength(2);
     await fireEvent.press(screen.getByRole("button", { name: /^Fitjar/ }));
     expect(
       await screen.findByText("This meeting point is paused right now. Choose another."),

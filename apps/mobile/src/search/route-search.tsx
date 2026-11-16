@@ -37,15 +37,20 @@ export interface RouteSearch {
 
 /**
  * From, to, an optional date and the seats (spec 4, 3.1; spec 16, 3.2), for
- * the search form and Find. `onSearch` gets the search once it can be made.
+ * the search form, Find and changing a search from its results (spec 16,
+ * 3.8), which starts it filled in with `initial`. `onSearch` gets the search
+ * once it can be made.
  */
-export function useRouteSearch(onSearch: (query: SearchQuery) => void): RouteSearch {
+export function useRouteSearch(
+  onSearch: (query: SearchQuery) => void,
+  initial?: SearchQuery,
+): RouteSearch {
   const { locale, t } = useLanguage();
   const today = dayOf(now());
-  const [from, setFrom] = useState<SearchEnd | null>(null);
-  const [to, setTo] = useState<SearchEnd | null>(null);
-  const [date, setDate] = useState<Day | null>(null);
-  const [seats, setSeats] = useState(1);
+  const [from, setFrom] = useState<SearchEnd | null>(initial?.from ?? null);
+  const [to, setTo] = useState<SearchEnd | null>(initial?.to ?? null);
+  const [date, setDate] = useState<Day | null>(() => dayFromIso(initial?.date ?? null));
+  const [seats, setSeats] = useState(initial?.seats ?? 1);
   const [choosingDay, setChoosingDay] = useState(false);
   const [picking, setPicking] = useState<RouteEnd | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -148,6 +153,13 @@ export function useRouteSearch(onSearch: (query: SearchQuery) => void): RouteSea
   );
 
   return { fields, submit };
+}
+
+/** "2026-11-15" as a day, or null. */
+function dayFromIso(date: string | null): Day | null {
+  const match = date === null ? null : /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (match === null) return null;
+  return { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) };
 }
 
 const styles = StyleSheet.create({

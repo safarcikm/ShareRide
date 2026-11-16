@@ -10,6 +10,9 @@ Signing up takes three steps, the number, the code and "about you", with the
 ride kept in view; step 3 takes the profile and the terms together, and the
 terms show on their own only when they change later (3.5). "Offer a ride"
 leads to Offer's form, "Where are you driving?", after signing up (3.6).
+Settings shows the language as two choices, English and Íslenska, then Your
+account, Notifications, Legal documents and signing out, its rows at the
+left (3.8).
 
 Features: A1 Sign up and sign in, A2 Profile, A4 Settings, A6 Terms, privacy
 policy and community rules ([features](../product/features.md)).
