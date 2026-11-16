@@ -5,9 +5,10 @@ import { focused, postTripToSelfoss } from "./support/trips";
 // Spec 5's request from both sides on the web build, in two browsers: a new
 // driver posts Mjódd to N1 Selfoss for tomorrow, a passenger requests a
 // seat with a message, the driver accepts it from My trips, the passenger
-// pays on the test sheet, and both see the seat confirmed. Each project
-// posts its own trip, so phone and desktop runs never meet. Screens left
-// behind stay in the page, hidden, so text checks look only at what shows.
+// is asked to add an email, pays on the test sheet, and both see the seat
+// confirmed. Each project posts its own trip, so phone and desktop runs never
+// meet. Screens left behind stay in the page, hidden, so text checks look
+// only at what shows.
 
 test.use({ locale: "en-GB" });
 
@@ -67,6 +68,10 @@ test("a passenger requests a seat, the driver accepts, the passenger pays", asyn
   await expect(
     passenger.getByText(/^Pay [\d,]+ ISK to confirm your seat$/).filter(visible),
   ).toBeVisible();
+  // Accepted, and nothing can reach the passenger on the web yet: an email
+  // is asked for (spec 7, 3.6.2) until answered.
+  const addEmail = passenger.getByText("Add an email so we can reach you if your trip changes.");
+  await expect(addEmail.filter(visible)).toBeVisible();
   await passenger.getByRole("button", { name: /^Pay [\d,]+ ISK$/ }).click();
   await expect(
     passenger.getByRole("heading", { name: "Test payment: no money moves" }),
@@ -75,6 +80,8 @@ test("a passenger requests a seat, the driver accepts, the passenger pays", asyn
   await expect(
     passenger.getByText("Your seat is confirmed", { exact: true }).filter(visible),
   ).toBeVisible();
+  await passenger.getByRole("button", { name: "Not now" }).filter(visible).click();
+  await expect(addEmail.filter(visible)).toBeHidden();
 
   // The driver's trip shows the seat confirmed.
   await driver.reload();

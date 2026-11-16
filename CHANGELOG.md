@@ -320,6 +320,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   the web, or once the phone was told no, only "Add an email". "Not now"
   closes it, and each occasion is asked until answered. `GET /v1/me` gains
   `pushOn`.
+- The same prompt after booking (milestone 5, PR 8c): on the booking finish
+  screen, under "You're booked!" or "Request sent"; on the booking once a
+  request is accepted, while it waits for payment and once confirmed; and on
+  an instant booking paid on its own page, as after leaving Check and pay.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
