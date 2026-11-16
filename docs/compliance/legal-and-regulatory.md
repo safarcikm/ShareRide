@@ -99,7 +99,8 @@ Actions:
 ## 6. Consumer protection and terms
 
 - Terms of service, privacy policy and community rules in Icelandic and
-  English, accepted at sign-up, versioned, with acceptance recorded.
+  English, accepted at sign-up, versioned, with acceptance recorded. First
+  English [drafts](legal-texts/README.md) for the lawyer: 2026-11-16.
 - Clear pre-booking information: price, cancellation rules, who the driver is,
   and that ShareRide is an intermediary.
 - Distance-selling and consumer rules for payments, refunds and any service

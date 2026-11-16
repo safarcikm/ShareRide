@@ -113,7 +113,8 @@ processing agreement; Martin signs each one when he opens the account.
 - [ ] Record of processing activities (from the inventory above)
 - [ ] Data protection impact assessment: likely required, because we
       systematically process travel patterns and connect strangers
-- [ ] Privacy policy (Icelandic and English)
+- [ ] Privacy policy (Icelandic and English); first English
+      [draft](legal-texts/privacy-policy.md) for the lawyer (2026-11-16)
 - [ ] Data processing agreements with every provider
 - [ ] Cookie and consent banner for the web, if any non-essential cookies are
       used
