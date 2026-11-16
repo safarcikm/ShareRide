@@ -5,7 +5,8 @@ import { addAuthenticator } from "./passkeys.ts";
 
 // The operator's first visit (ADR 0028): the setup link saves a passkey,
 // the operator signs out and back in with it, adds a second device's
-// passkey, removes the first, and signs in with the second.
+// passkey, removes the first, signs in with the second, and finds each step
+// in the audit log.
 test("the operator saves a passkey with the setup link, adds another and signs in with it", async ({
   page,
 }) => {
@@ -58,8 +59,29 @@ test("the operator saves a passkey with the setup link, adds another and signs i
   await expect(page.getByRole("heading", { name: "Passkeys" })).toBeVisible();
   await expect(page.getByText("Phone")).toBeVisible();
 
-  // On a phone the menu folds behind a button.
+  // Every step is in the audit log, newest first, and the filters stay in the address.
+  await menu.getByRole("link", { name: "Audit log" }).click();
+  const entries = page.getByRole("list", { name: "Entries" }).getByRole("listitem");
+  await expect(entries.first()).toContainText("operator.signed_in");
+  await expect(entries.filter({ hasText: "operator.role_given" })).toContainText(
+    "With the operator command",
+  );
+  await page.getByLabel("Action starts with").fill("operator.passkey.");
+  await page.getByRole("button", { name: "Show entries" }).click();
+  await expect(page).toHaveURL(/\/admin\/audit-log\?action=operator\.passkey\.$/);
+  await expect(entries).toHaveCount(3);
+  await expect(entries.first()).toContainText("operator.passkey.removed");
+  await page.reload();
+  await expect(page.getByLabel("Action starts with")).toHaveValue("operator.passkey.");
+  await expect(entries).toHaveCount(3);
+
+  // On a phone the log fits the width.
   await page.setViewportSize({ width: 390, height: 844 });
+  await entries.first().getByText("Details").click();
+  await expect(entries.first().getByRole("table", { name: "Changes" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+
+  // On a phone the menu folds behind a button.
   await expect(menu.getByRole("link", { name: "Home" })).toBeHidden();
   await page.getByRole("button", { name: "Menu" }).click();
   await menu.getByRole("link", { name: "Home" }).click();
