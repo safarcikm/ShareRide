@@ -70,48 +70,60 @@ My trips with Upcoming and Past, and the seat view (3.1), are already built
 
 In `packages/domain`, free of I/O like the rest:
 
-- `trips/changes.ts`, `checkTripChange(trip, bookings, change, now)`:
+- `trips/changes.ts`, `checkTripChange(trip, bookings, change, now, settings)`:
   `Result<ChangeEffect, ChangeProblem[]>`.
   - A change is one of: `departure` (new departure time), `seats`,
-    `priceLevel`, `vehicle`, `bookingMode`, `details` (preferences and
-    note), `addStop` (meeting point, after which stop) or `removeStop`.
-  - Problems: `trip_departed` (R6.1); `departure_too_soon` or
-    `departure_too_far` (R3.5, from now); `move_too_far` (R6.4: more than
-    2 hours from any booking's departure when it was booked); the time
-    problems of `checkTimes` (R6.2, R3.6); `seats_below_taken` (S5, with the
-    highest occupancy); `stop_in_use` (R6.5, with the bookings);
-    `stop_does_not_fit` (decision 2).
-  - The effect: who is told and with which notification
-    (`departure_moved`, `departure_moved_far` or `trip_changed`, or nobody,
-    as for the price level), the before and after, and, for each booking,
-    whether it may now cancel for free (R6.3).
-- `bookings/cancellation.ts`, `cancellationTerms(input)`:
-  `{ refund: Money; countsOnReliability: boolean }`, from who cancels, the
-  booking's status and total, its boarding time, how far the departure has
-  moved since it was booked, the reason and now.
+    `priceLevel`, `vehicle`, `bookingMode` or `details` (preferences and
+    note). `addStop` and `removeStop` join it with PR 6.
+  - Problems: `trip_departed` (R6.1) or `trip_cancelled`;
+    `departure_too_soon` or `departure_too_far` (R3.5, from now: running
+    late on the day is a chat message); `move_too_far` (R6.4: more than 2
+    hours from any booking's departure when it was booked, with the
+    earliest and latest allowed); the time problems of `checkTimes` (R6.2,
+    R3.6); `stop_out_of_season` and `overlaps_trip` (publishing's checks);
+    `seats_invalid` or `seats_below_taken` (S5, with the highest
+    occupancy); `price_level_invalid`; the note's problems. With PR 6:
+    `stop_in_use` (R6.5) and `stop_does_not_fit` (decision 2).
+  - The effect: the trip as it will be (more seats can lower the price
+    level, as when posting); after a change of seats or price level, each
+    segment's new price and cap for new bookings (P3, P4), from the
+    segments' distances; and for each booked passenger, accepted or
+    confirmed, the event they are told (`DepartureMoved` by minutes from
+    the departure when booked, or `TripChanged` for a new car; nobody for
+    the price level, seats, booking mode or details, or when nothing
+    changed) and whether a paid passenger may now cancel for free (R6.3).
+    A request's passenger is told only of a cancelled trip (spec 7, 3.3),
+    though the request still limits how far the departure moves.
+- `bookings/cancellation.ts`, `cancellationTerms(booking, canceller, now)`:
+  `Result<{ refund: Money; countsOnReliability: boolean }, ChangeNotAllowed>`,
+  from who cancels and why, the booking's status and total, its boarding
+  time and the trip's departure now and when booked.
   - The passenger: a full refund 15 minutes or more before boarding, or
-    after a move of more than 30 minutes; otherwise none (M2). It counts
-    only when confirmed, less than 24 hours before boarding, not for
-    weather or a road closure, and not after a move of more than 30 minutes
-    (R6.8).
+    before boarding after a move of more than 30 minutes; otherwise none
+    (M2, R6.3). It counts only when confirmed, less than 24 hours before
+    boarding, not for weather or a road closure, and not after a move of
+    more than 30 minutes (R6.8).
   - The driver: always a full refund; it counts unless the reason is
     weather or a road closure (R6.7).
   - An unpaid accepted booking: nothing to refund, never counts. A request
-    is withdrawn instead (spec 5).
-- `trips/reverse.ts`, `reverseStops(stops)`.
+    is withdrawn or declined instead (spec 5), and is refused here.
+- `trips/copy.ts`, `stopsToCopy(stops, { reverse })`: the stops in order or
+  reversed, and the points no longer offered, left out and named (3.6).
 - Reasons as constants: the trip's (`weather`, `road_closed`,
   `car_problem`, `illness`, `plans_changed`, `other`), the driver's for one
   booking (the trip's plus `passenger_asked` and `car_smaller`), and the
   passenger's (`plans_changed`, `found_another`, `trip_changed`,
   `weather`, `other`).
 
-Tests: every row of the change table with and without bookings; moves of
-30 minutes, 31, exactly 2 hours and 2 hours and a minute; two moves of 20
-minutes (40 from booking); seats down to the highest occupancy and no
-further; each cancellation case at exactly 15 minutes and exactly 24 hours
-before boarding. A property test (fast-check, already in the domain tests)
-applies random allowed changes and checks that bookings keep their stops,
-prices and the capacity invariant.
+Tests: every row of the change table with and without bookings (the stop
+rows with PR 6); moves of 30 minutes, 31, exactly 2 hours and 2 hours and a
+minute; two moves of 20 minutes (40 from booking); seats down to the
+highest occupancy and no further; each cancellation case at exactly 15
+minutes and exactly 24 hours before boarding. A property test (fast-check,
+already in the domain tests) applies random changes to random trips with
+bookings and checks, after each allowed one, that the seats taken are
+unchanged and within the seats offered, the price level and planned times
+still pass, and every booking is within 2 hours of its time.
 
 ### 4.2 Cancelling on the server
 
@@ -120,8 +132,11 @@ prices and the capacity invariant.
   The last is set when a booking is made and gives R6.3 and R6.4 their
   starting point; existing bookings take their trip's departure.
 - `GET /bookings/{id}/cancellation-preview`: the refund, whether it counts,
-  and the reasons the viewer can choose. The same `cancellationTerms` as
-  confirming, so the preview always matches.
+  and the reasons the viewer can choose, from the same `cancellationTerms`
+  as confirming. Confirming sends the refund and count it showed; if the
+  terms changed in between (a time edge passed, or the trip moved), it
+  answers 409 `terms_changed` with the new terms, as booking does for a
+  changed price (R5.3).
 - `POST /bookings/{id}/cancel` `{ reason, note? }`, by the passenger or the
   trip's driver. Under the trip's lock, as booking is:
   - the seats are freed on every segment of the part (S1);
@@ -136,7 +151,9 @@ prices and the capacity invariant.
 - `POST /trips/{id}/cancel` `{ reason, note? }`: the trip is `cancelled`;
   every confirmed booking is cancelled by the driver with a full refund,
   requests are declined (`trip_cancelled`), and accepted unpaid bookings are
-  cancelled with nothing to refund (R6.6). One transaction.
+  cancelled with nothing to refund (R6.6). One transaction. The
+  cancellation counts once, on the trip, and only with passengers (spec 8,
+  3.8), so its bookings do not count one by one.
 - Events in the outbox, in the same transaction: `BookingCancelled` (who,
   reason, refund), `TripCancelled`, and `RefundIssued` once the provider has
   refunded. The catalogue already maps them; the worker gains their texts.
@@ -158,8 +175,13 @@ prices and the capacity invariant.
   without saving. Refused changes answer 409 with the problems as details,
   so the app can say which rule and why (3.2).
 - A departure move shifts every stop's planned time, the trip's departure
-  and arrival, and every booking's reminders. The trip's search entry
-  follows.
+  and arrival, and every booking's reminders. Requests' and unpaid
+  bookings' deadlines are worked out again from the new boarding time
+  (`requestDeadline`, `paymentDeadline`), and one already passed expires.
+  The trip's search entry follows.
+- More seats or a new price level store the effect's prices and caps on
+  the segments, and the seats as each segment's capacity.
+- A new car must be one of the driver's, not removed, as when publishing.
 - `trip_changes`: one row per change (trip, kind, before, after, changed
   at). The booking answers its trip's changes since it was booked, so the
   passenger sees "Departure changed from 08:00 to 08:45".
@@ -222,7 +244,7 @@ the browser journeys, and gets a code review before it opens.
 
 ### PR 2: `feat(trips)`: change and cancellation rules in the domain
 
-- [ ] `checkTripChange`, `cancellationTerms`, `reverseStops` and the
+- [x] `checkTripChange`, `cancellationTerms`, `stopsToCopy` and the
       reasons, with the tests of 4.1 and the property test
 - Verify: `pnpm --filter @shareride/domain test`
 
@@ -261,7 +283,8 @@ the browser journeys, and gets a code review before it opens.
 ### PR 6: `feat(trips)`: adding and removing a stop
 
 - [ ] Splitting and joining segments with occupancy and booking prices;
-      the new stop's time; `stop_in_use` and `stop_does_not_fit`
+      the new stop's time; `stop_in_use` and `stop_does_not_fit`; the
+      property test gains stops (bookings keep their stops and prices)
 - [ ] The stops row of Edit trip
 - Verify: integration tests (a booking over the new stop keeps its total
   and stops; a used stop cannot be removed); a browser journey adds a stop

@@ -324,6 +324,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   screen, under "You're booked!" or "Request sent"; on the booking once a
   request is accepted, while it waits for payment and once confirmed; and on
   an instant booking paid on its own page, as after leaving Check and pay.
+- Change and cancellation rules in the domain (milestone 6, PR 2, spec 6):
+  `cancellationTerms` gives a cancellation's refund and whether it counts
+  on reliability (M2, R6.3, R6.7, R6.8), with the reasons for a trip, one
+  booking and a passenger; `checkTripChange` checks a change to a published
+  trip (departure, seats, price level, car, booking mode, details), with the
+  new prices and who is told and may now cancel for free (R6.1 to R6.4,
+  S5); and
+  `stopsToCopy` gives the stops for posting a trip again or its return.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

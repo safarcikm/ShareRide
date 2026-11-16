@@ -1,3 +1,4 @@
+import { freeCancellationMoveMinutes } from "../bookings/cancellation.ts";
 import type { BookingStatus } from "../bookings/lifecycle.ts";
 import type { NotificationSettings } from "./settings.ts";
 
@@ -89,9 +90,6 @@ export interface Addressed {
   readonly to: TripRole;
 }
 
-/** A departure moved by more than this many minutes may be cancelled for free, and goes by SMS (3.4). */
-const farMoveMinutes = 30;
-
 /** The notifications an event gives, in the order of 3.3. */
 export function notificationsFor(event: NotificationEvent): readonly Addressed[] {
   switch (event.type) {
@@ -126,7 +124,9 @@ export function notificationsFor(event: NotificationEvent): readonly Addressed[]
       return [
         {
           kind:
-            Math.abs(event.byMinutes) > farMoveMinutes ? "departure_moved_far" : "departure_moved",
+            Math.abs(event.byMinutes) > freeCancellationMoveMinutes
+              ? "departure_moved_far"
+              : "departure_moved",
           to: "passenger",
         },
       ];
