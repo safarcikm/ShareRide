@@ -208,7 +208,7 @@ export const messageAllPassengersRoute = defineRoute({
   method: "post",
   path: "/v1/trips/{id}/messages",
   summary:
-    "The driver sends the same message to every confirmed passenger, each in their own conversation (R7.4)",
+    "The driver sends the same message to every confirmed passenger, and each whose booking completed with the trip, in their own open conversation (R7.4)",
   tags: ["chat"],
   auth: true,
   request: { params: z.object({ id: z.uuid() }), body: sendMessageBodySchema },

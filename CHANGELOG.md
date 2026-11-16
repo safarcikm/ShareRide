@@ -460,6 +460,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   plate, or the driver's date, time and route, through the share sheet, or
   copies it in a browser without one, or else shows it to copy. Nothing is stored (R9.8). On trip
   details, the booking page and the driver's trip page.
+- Trips depart and complete on their own (milestone 7, PR 3, spec 8,
+  R8.1 and R8.2): every minute the API departs a trip at its first stop's
+  planned time and completes it 2 hours after its last, with its
+  confirmed bookings, which then hold no seats. Migration
+  `0019_trip_completion` adds `completed_at` to trips and bookings. The
+  driver's trips keep a trip under way as upcoming until its last stop,
+  and a past trip still shows the seats its passengers took. The chat
+  stays on both sides after the ride, and "Message all" still reaches
+  passengers whose bookings completed; "Where to stand" goes once the
+  ride completed.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

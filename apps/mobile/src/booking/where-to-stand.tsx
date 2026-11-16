@@ -12,14 +12,15 @@ import { usePalette } from "@/theme/use-palette";
 
 /**
  * Where to stand at the stop where a confirmed passenger gets in, with Open
- * in maps (spec 5, screen 6). Nothing before the seat is confirmed.
+ * in maps (spec 5, screen 6). Nothing before the seat is confirmed, or once
+ * the ride completed.
  */
 export function WhereToStand({ booking }: { readonly booking: Booking }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
   const [mapsFailed, setMapsFailed] = useState(false);
   const { board, confirmed } = booking;
-  if (confirmed === null) return null;
+  if (confirmed === null || booking.status !== "confirmed") return null;
   const name = board.meetingPoint.name[locale];
   return (
     <Card>

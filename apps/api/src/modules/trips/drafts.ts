@@ -21,7 +21,7 @@ import {
 } from "@shareride/domain";
 import { and, asc, count, desc, eq, gt, inArray, isNull, lte, min, ne, or, sql } from "drizzle-orm";
 import type { DrivingService } from "../driving/index.ts";
-import { occupancyNow } from "../bookings/seats.ts";
+import { seatsTakenNow } from "../bookings/seats.ts";
 import { toSummary } from "../meeting-points/service.ts";
 
 const { bookings, legs, meetingPoints, segments, trips, tripStops, users, vehicles } = schema;
@@ -95,6 +95,8 @@ export interface TripService {
 
 /** Statuses of trips that hold the driver's time (R3.7). */
 const ongoingStatuses = ["published", "departed"];
+/** A trip past its last stop: completed 2 hours later (R8.1), or not yet. */
+const endingStatuses = [...ongoingStatuses, "completed"];
 
 /** A trip row's seats, price level, booking mode and preferences. */
 export const choicesOf = (row: TripRow): TripChoices => ({
@@ -172,7 +174,7 @@ export function createTripService(dependencies: {
           ),
         )
         .groupBy(bookings.tripId),
-      occupancyNow(q, ids, now),
+      seatsTakenNow(q, ids, now),
     ]);
     return rows.map((row) => ({
       id: row.id,
@@ -382,8 +384,9 @@ export function createTripService(dependencies: {
     async myTrips(userId, when) {
       const now = clock();
       // A published trip is past once its last stop is, as a booking is past
-      // once its passenger is out (spec 16, section 6); a cancelled one at
-      // once (spec 6, 3.1).
+      // once its passenger is out (spec 16, section 6), whether it has
+      // departed or completed yet (spec 8, R8.1); a cancelled one at once
+      // (spec 6, 3.1).
       const rows =
         when === "upcoming"
           ? await db
@@ -394,7 +397,7 @@ export function createTripService(dependencies: {
                   eq(trips.driverId, userId),
                   or(
                     eq(trips.status, "draft"),
-                    and(eq(trips.status, "published"), gt(trips.arrivesAt, now)),
+                    and(inArray(trips.status, ongoingStatuses), gt(trips.arrivesAt, now)),
                   ),
                 ),
               )
@@ -411,7 +414,7 @@ export function createTripService(dependencies: {
                 and(
                   eq(trips.driverId, userId),
                   or(
-                    and(eq(trips.status, "published"), lte(trips.arrivesAt, now)),
+                    and(inArray(trips.status, endingStatuses), lte(trips.arrivesAt, now)),
                     eq(trips.status, "cancelled"),
                   ),
                 ),

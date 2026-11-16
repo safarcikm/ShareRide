@@ -138,8 +138,15 @@
     {
       "idx": 19,
       "version": "7",
-      "when": 1794866110859,
-      "tag": "0019_confirm_codes",
+      "when": 1794865044820,
+      "tag": "0019_trip_completion",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794870135581,
+      "tag": "0020_confirm_codes",
       "breakpoints": true
     }
   ]

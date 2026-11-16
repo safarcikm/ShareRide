@@ -1,5 +1,5 @@
 {
-  "id": "5f8ff84b-4c56-4f71-955d-4b2606887e07",
+  "id": "4241c1d5-4d02-4fb7-9d37-1f2569fa2371",
   "prevId": "2cf8ca6a-02dc-4907-8cfa-224f9c9eeff9",
   "version": "7",
   "dialect": "postgresql",
@@ -427,13 +427,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "purpose": {
-          "name": "purpose",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'sign_in'"
-        },
         "code_hash": {
           "name": "code_hash",
           "type": "text",
@@ -501,12 +494,7 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {
-        "verification_codes_purpose_check": {
-          "name": "verification_codes_purpose_check",
-          "value": "\"verification_codes\".\"purpose\" in ('sign_in', 'confirm')"
-        }
-      },
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.booking_segment_prices": {
@@ -677,6 +665,12 @@
         },
         "cancelled_at": {
           "name": "cancelled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_at": {
+          "name": "completed_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
@@ -3211,6 +3205,12 @@
         },
         "cancelled_at": {
           "name": "cancelled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_at": {
+          "name": "completed_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
