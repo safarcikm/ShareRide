@@ -249,3 +249,41 @@ export const updateNotificationSettingsRoute = defineRoute({
     401: unauthenticated,
   },
 });
+
+export const confirmCodeSentSchema = z.object({
+  /** Seconds until another code can be asked for. */
+  resendAfterSeconds: z.int().positive(),
+});
+
+/**
+ * A fresh code from `POST /v1/me/confirm-code`, sent with a sensitive action
+ * such as downloading my data or deleting my account (spec 11, R11.1).
+ */
+export const confirmCodeBodySchema = z.object({ code: z.string().regex(/^\d{6}$/) });
+
+/** The answers a route that takes a confirm code adds to its own. */
+export const confirmCodeErrors = {
+  400: {
+    description: "code_invalid (with attemptsLeft), code_expired, validation_failed",
+    schema: errorResponseSchema,
+  },
+  429: {
+    description: "code_attempts_exceeded, with retryAfterSeconds",
+    schema: errorResponseSchema,
+  },
+} as const;
+
+export const sendConfirmCodeRoute = defineRoute({
+  method: "post",
+  path: "/v1/me/confirm-code",
+  summary: "Send a code to my own number to confirm a sensitive action",
+  tags: ["me"],
+  auth: true,
+  request: { body: z.object({}) },
+  responses: {
+    202: { description: "A code was sent by SMS", schema: confirmCodeSentSchema },
+    401: unauthenticated,
+    429: { description: "rate_limited, with retryAfterSeconds", schema: errorResponseSchema },
+    502: { description: "sms_failed", schema: errorResponseSchema },
+  },
+});
