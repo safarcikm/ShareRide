@@ -1,6 +1,7 @@
 import { channels, deliveryStatuses, notificationKinds, outboxEventTypes } from "@shareride/domain";
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   check,
   index,
   integer,
@@ -15,6 +16,7 @@ import { sessions } from "./auth.ts";
 import { bookings } from "./bookings.ts";
 import { messages } from "./chat.ts";
 import { at, id, oneOf, timestamps } from "./columns.ts";
+import { trips } from "./trips.ts";
 import { users } from "./users.ts";
 
 /**
@@ -61,6 +63,8 @@ export const notifications = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     kind: text().notNull(),
     bookingId: uuid().references(() => bookings.id, { onDelete: "cascade" }),
+    /** For a driver's trip reminder, about the trip rather than one booking. */
+    tripId: uuid().references(() => trips.id, { onDelete: "cascade" }),
     /** For a new message: the message, whose text the push shows (R7.9). */
     messageId: uuid().references(() => messages.id, { onDelete: "cascade" }),
     uniqueKey: text().notNull(),
@@ -71,6 +75,7 @@ export const notifications = pgTable(
     check("notifications_kind_check", oneOf(table.kind, notificationKinds)),
     index("notifications_recipient_index").on(table.recipientId, table.createdAt),
     index("notifications_booking_index").on(table.bookingId),
+    index("notifications_trip_index").on(table.tripId),
     index("notifications_message_index").on(table.messageId),
     // The clean-up finds old ones.
     index("notifications_created_index").on(table.createdAt),
@@ -118,7 +123,8 @@ export const notificationDeliveries = pgTable(
 
 /**
  * A notification that waits for a moment (spec 7, 3.3): the halfway and
- * pay reminders, and the email about unread messages. At `run_at` the
+ * pay reminders, the email about unread messages, and the trip reminders
+ * (3.5), a passenger's by booking and a driver's by trip. At `run_at` the
  * worker checks it still applies, then sends it or drops it, and sets
  * `done_at`. The key makes scheduling the same thing twice a no-op, and
  * only one unread messages email waits per booking and reader, even when
@@ -131,6 +137,8 @@ export const scheduledNotifications = pgTable(
     key: text().notNull(),
     kind: text().notNull(),
     bookingId: uuid().references(() => bookings.id, { onDelete: "cascade" }),
+    /** For a driver's trip reminder: the trip. */
+    tripId: uuid().references(() => trips.id, { onDelete: "cascade" }),
     /**
      * Whom it is for when that is not given by its kind: the driver or the
      * passenger of the booking, for the unread messages email.
@@ -202,3 +210,16 @@ export const pushTickets = pgTable(
   },
   (table) => [index("push_tickets_check_index").on(table.checkAt)],
 );
+
+/**
+ * What a person turned off (spec 7, 3.6, item 1; R7.8): trip reminders, and
+ * later beta news (spec 10). No row means both on.
+ */
+export const notificationPreferences = pgTable("notification_preferences", {
+  userId: uuid()
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  reminders: boolean().notNull().default(true),
+  betaNews: boolean().notNull().default(true),
+  ...timestamps,
+});

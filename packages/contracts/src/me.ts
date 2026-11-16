@@ -70,6 +70,9 @@ export const pushTokenBodySchema = z.object({
 
 export type PushTokenBody = z.infer<typeof pushTokenBodySchema>;
 
+/** What a person can turn off (spec 7, 3.6, item 1): for now, trip reminders. */
+export const notificationSettingsSchema = z.object({ reminders: z.boolean() });
+
 export const legalAcceptancesBodySchema = z.object({
   /** "I am 18 or older" (rule R1.7). */
   ageConfirmed: z.literal(true).optional(),
@@ -212,5 +215,35 @@ export const verifyEmailRoute = defineRoute({
     200: { description: "The address is the account's, verified", schema: emailVerifiedSchema },
     400: { description: "link_invalid: unknown, used, older than 24 hours or replaced", ...errors },
     409: { description: "email_taken: another account has verified this address", ...errors },
+  },
+});
+
+export const getNotificationSettingsRoute = defineRoute({
+  method: "get",
+  path: "/v1/me/notification-settings",
+  summary: "Read what I turned off: trip reminders",
+  tags: ["me"],
+  auth: true,
+  responses: {
+    200: { description: "My notification settings", schema: notificationSettingsSchema },
+    401: unauthenticated,
+  },
+});
+
+/** News about bookings, trips, payments and messages stays on (R7.8). */
+export const updateNotificationSettingsRoute = defineRoute({
+  method: "patch",
+  path: "/v1/me/notification-settings",
+  summary: "Turn trip reminders on or off",
+  tags: ["me"],
+  auth: true,
+  request: { body: notificationSettingsSchema },
+  responses: {
+    200: {
+      description: "My notification settings after the change",
+      schema: notificationSettingsSchema,
+    },
+    400: { description: "validation_failed", ...errors },
+    401: unauthenticated,
   },
 });

@@ -5,6 +5,8 @@ import {
   eventAttempts,
   notificationsFor,
   payReminderAt,
+  reminderStillTimely,
+  reminderTimes,
   requestHalfwayAt,
   retryAt,
   sendLeaseSeconds,
@@ -12,8 +14,10 @@ import {
   stillApplies,
   unreadSummaryAt,
   type BookingStatus,
+  type CarColour,
   type ChannelDecision,
   type NotificationEvent,
+  type NotificationKind,
   type NotificationSettings,
   type OutboxEventType,
   type Recipient,
@@ -27,7 +31,8 @@ import { deviceNotRegistered, type PushReceipt, type PushSender } from "../../pl
 import type { Queryable, Transaction } from "../bookings/seats.ts";
 import { quickOf } from "../chat/service.ts";
 import { emailContent } from "./email-content.ts";
-import { notificationText, type NotificationFacts } from "./texts.ts";
+import { preferencesOf } from "./preferences.ts";
+import { notificationText, type NotificationFacts, type TripReminderFacts } from "./texts.ts";
 
 // The notification worker (spec 7, 3.7; plan 4.4), every few seconds inside
 // the API. Each step takes rows with FOR UPDATE SKIP LOCKED, so two API
@@ -48,6 +53,7 @@ const {
   trips,
   tripStops,
   users,
+  vehicles,
 } = schema;
 
 /** Rows each step takes per run; the rest wait for the next run. */
@@ -128,14 +134,99 @@ const recipients = alias(users, "recipient");
 const drivers = alias(users, "driver");
 const passengers = alias(users, "passenger");
 
+const passengerReminders = { reminder_evening: "evening", reminder_hour: "hour" } as const;
+const driverReminders = {
+  reminder_evening_driver: "evening",
+  reminder_hour_driver: "hour",
+} as const;
+
+const isDriverReminder = (kind: string): kind is keyof typeof driverReminders =>
+  kind in driverReminders;
+
+/** Which reminder a notification is, and the moment its words count to; null for the rest. */
+function reminderOf(facts: NotificationFacts | TripReminderFacts) {
+  if ("passengers" in facts) {
+    return { which: driverReminders[facts.kind], startsAt: facts.departsAt };
+  }
+  if (facts.kind === "reminder_evening" || facts.kind === "reminder_hour") {
+    return { which: passengerReminders[facts.kind], startsAt: facts.boardsAt };
+  }
+  return null;
+}
+
+const named = (locale: "is" | "en", point: { readonly is: string; readonly en: string | null }) =>
+  locale === "en" ? (point.en ?? point.is) : point.is;
+
+/**
+ * A driver's trip reminder as of now (3.5): the passengers whose bookings
+ * are still confirmed, in the order they get in, and whether the car still
+ * lacks its number plate (never the plate itself, R7.9).
+ */
+async function tripFactsOf(q: Queryable, notification: typeof notifications.$inferSelect) {
+  if (notification.tripId === null || !isDriverReminder(notification.kind)) return undefined;
+  const [trip] = await q
+    .select({
+      departsAt: trips.departsAt,
+      locale: recipients.locale,
+      email: recipients.email,
+      emailVerifiedAt: recipients.emailVerifiedAt,
+      vehicleId: trips.vehicleId,
+      registration: vehicles.registration,
+    })
+    .from(trips)
+    .innerJoin(recipients, eq(recipients.id, notification.recipientId))
+    .leftJoin(vehicles, eq(vehicles.id, trips.vehicleId))
+    .where(eq(trips.id, notification.tripId));
+  if (trip === undefined || trip.departsAt === null) return undefined;
+  const locale = trip.locale === "is" ? "is" : "en";
+  const booked = await q
+    .select({
+      name: passengers.firstName,
+      board: { is: boardPoint.nameIs, en: boardPoint.nameEn },
+      alight: { is: alightPoint.nameIs, en: alightPoint.nameEn },
+    })
+    .from(bookings)
+    .innerJoin(passengers, eq(passengers.id, bookings.passengerId))
+    .innerJoin(boards, eq(boards.id, bookings.fromStopId))
+    .innerJoin(alights, eq(alights.id, bookings.toStopId))
+    .innerJoin(boardPoint, eq(boardPoint.id, boards.meetingPointId))
+    .innerJoin(alightPoint, eq(alightPoint.id, alights.meetingPointId))
+    .where(and(eq(bookings.tripId, notification.tripId), eq(bookings.status, "confirmed")))
+    .orderBy(asc(boards.position), asc(bookings.createdAt));
+  const facts: TripReminderFacts = {
+    kind: notification.kind,
+    role: "driver",
+    tripId: notification.tripId,
+    departsAt: trip.departsAt,
+    passengers: booked.map((row) => ({
+      name: row.name ?? "",
+      from: named(locale, row.board),
+      to: named(locale, row.alight),
+    })),
+    plateMissing: trip.vehicleId !== null && trip.registration === null,
+  };
+  return {
+    facts,
+    locale,
+    recipientId: notification.recipientId,
+    email: trip.emailVerifiedAt === null ? null : trip.email,
+    booking: null,
+  } as const;
+}
+
 /** What a notification's text is made from, and where it goes, as of now. */
 async function factsOf(q: Queryable, notificationId: string) {
+  const [found] = await q.select().from(notifications).where(eq(notifications.id, notificationId));
+  if (found === undefined) return undefined;
+  if (found.bookingId === null) return tripFactsOf(q, found);
   const [row] = await q
     .select({
       notification: notifications,
       booking: bookings,
       driverId: trips.driverId,
       boardsAt: boards.plannedAt,
+      boardPointId: boards.meetingPointId,
+      car: { make: vehicles.make, model: vehicles.model, colour: vehicles.colour },
       board: { is: boardPoint.nameIs, en: boardPoint.nameEn },
       alight: { is: alightPoint.nameIs, en: alightPoint.nameEn },
       recipient: {
@@ -156,6 +247,7 @@ async function factsOf(q: Queryable, notificationId: string) {
     .innerJoin(recipients, eq(recipients.id, notifications.recipientId))
     .innerJoin(drivers, eq(drivers.id, trips.driverId))
     .innerJoin(passengers, eq(passengers.id, bookings.passengerId))
+    .leftJoin(vehicles, eq(vehicles.id, trips.vehicleId))
     .where(eq(notifications.id, notificationId));
   if (row === undefined) return undefined;
   const { notification, booking, recipient } = row;
@@ -165,8 +257,6 @@ async function factsOf(q: Queryable, notificationId: string) {
       ? []
       : await q.select().from(messages).where(eq(messages.id, notification.messageId));
   const locale = recipient.locale === "is" ? "is" : "en";
-  const named = (point: { readonly is: string; readonly en: string | null }) =>
-    locale === "en" ? (point.en ?? point.is) : point.is;
   const role: TripRole = notification.recipientId === row.driverId ? "driver" : "passenger";
   const facts: NotificationFacts = {
     kind: notification.kind as NotificationFacts["kind"],
@@ -176,8 +266,8 @@ async function factsOf(q: Queryable, notificationId: string) {
     name: (role === "driver" ? row.passengerName : row.driverName) ?? "",
     seats: booking.seats,
     total: { amount: booking.totalPrice, currency: "ISK" },
-    from: named(row.board),
-    to: named(row.alight),
+    from: named(locale, row.board),
+    to: named(locale, row.alight),
     boardsAt: row.boardsAt,
     requestExpiresAt: booking.expiresAt,
     paymentDueAt: booking.paymentDueAt,
@@ -187,6 +277,8 @@ async function factsOf(q: Queryable, notificationId: string) {
         : message.kind === "text"
           ? { text: message.body ?? "" }
           : { quick: quickOf(message) },
+    boardPointId: row.boardPointId,
+    car: row.car === null ? null : { ...row.car, colour: row.car.colour as CarColour },
   };
   return {
     facts,
@@ -281,26 +373,111 @@ export function createNotificationWorker(dependencies: {
   ): Promise<void> {
     for (const { kind, to } of notificationsFor(event)) {
       const recipientId = to === "driver" ? booking.driverId : booking.passengerId;
-      const [created] = await tx
-        .insert(notifications)
-        .values({
-          recipientId,
-          kind,
-          bookingId: booking.id,
-          messageId: source.messageId ?? null,
-          uniqueKey: `${source.key}:${kind}:${recipientId}`,
-          createdAt: now,
-          updatedAt: now,
-        })
-        .onConflictDoNothing()
-        .returning({ id: notifications.id });
-      if (created === undefined) continue;
-      const decisions = channelsFor(kind, await recipientOf(tx, recipientId, to), now, settings);
-      if (decisions.length === 0) continue;
-      await tx
-        .insert(notificationDeliveries)
-        .values(decisions.map((decision) => deliveryOf(created.id, decision, now)));
+      await add(
+        tx,
+        { kind, to, recipientId, bookingId: booking.id, messageId: source.messageId ?? null },
+        source.key,
+        now,
+      );
     }
+  }
+
+  /** One notification with its deliveries, unless an earlier run made it. */
+  async function add(
+    tx: Transaction,
+    notification: {
+      readonly kind: NotificationKind;
+      readonly to: TripRole;
+      readonly recipientId: string;
+      readonly bookingId?: string;
+      readonly tripId?: string;
+      readonly messageId?: string | null;
+    },
+    key: string,
+    now: Date,
+  ): Promise<void> {
+    const { kind, to, recipientId } = notification;
+    const [created] = await tx
+      .insert(notifications)
+      .values({
+        recipientId,
+        kind,
+        bookingId: notification.bookingId ?? null,
+        tripId: notification.tripId ?? null,
+        messageId: notification.messageId ?? null,
+        uniqueKey: `${key}:${kind}:${recipientId}`,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoNothing()
+      .returning({ id: notifications.id });
+    if (created === undefined) return;
+    const decisions = channelsFor(kind, await recipientOf(tx, recipientId, to), now, settings);
+    if (decisions.length === 0) return;
+    await tx
+      .insert(notificationDeliveries)
+      .values(decisions.map((decision) => deliveryOf(created.id, decision, now)));
+  }
+
+  /**
+   * The trip reminders a confirmed booking leads to (3.5): the passenger's,
+   * keyed by booking, from their boarding time; the driver's, keyed by trip,
+   * from the departure, made by the first booking confirmed. One whose
+   * moment had passed when the booking was confirmed is skipped.
+   */
+  async function scheduleReminders(
+    tx: Transaction,
+    booking: Parties,
+    confirmedAt: Date,
+    now: Date,
+  ): Promise<void> {
+    const times = await timesOf(tx, booking.id);
+    if (times === undefined) return;
+    const rows: (typeof scheduledNotifications.$inferInsert)[] = [];
+    if (times.boardsAt !== null) {
+      for (const { which, at } of reminderTimes(
+        { startsAt: times.boardsAt, since: confirmedAt },
+        settings,
+      )) {
+        const kind = which === "evening" ? "reminder_evening" : "reminder_hour";
+        rows.push({ key: `${kind}:${booking.id}`, kind, bookingId: booking.id, runAt: at });
+      }
+    }
+    if (times.departsAt !== null) {
+      for (const { which, at } of reminderTimes(
+        { startsAt: times.departsAt, since: confirmedAt },
+        settings,
+      )) {
+        const kind = which === "evening" ? "reminder_evening_driver" : "reminder_hour_driver";
+        rows.push({ key: `${kind}:${booking.tripId}`, kind, tripId: booking.tripId, runAt: at });
+      }
+    }
+    if (rows.length === 0) return;
+    await tx
+      .insert(scheduledNotifications)
+      .values(rows.map((row) => ({ ...row, createdAt: now, updatedAt: now })))
+      .onConflictDoNothing();
+  }
+
+  /** When the booking's passenger gets in, and when its trip leaves. */
+  async function timesOf(q: Queryable, bookingId: string) {
+    const [times] = await q
+      .select({ boardsAt: tripStops.plannedAt, departsAt: trips.departsAt })
+      .from(bookings)
+      .innerJoin(trips, eq(trips.id, bookings.tripId))
+      .innerJoin(tripStops, eq(tripStops.id, bookings.fromStopId))
+      .where(eq(bookings.id, bookingId));
+    return times;
+  }
+
+  /** Whether anyone's booking on the trip is still confirmed. */
+  async function anyoneBooked(q: Queryable, tripId: string): Promise<boolean> {
+    const [found] = await q
+      .select({ id: bookings.id })
+      .from(bookings)
+      .where(and(eq(bookings.tripId, tripId), eq(bookings.status, "confirmed")))
+      .limit(1);
+    return found !== undefined;
   }
 
   /** The halfway and pay reminders that follow a request and an acceptance. */
@@ -456,6 +633,7 @@ export function createNotificationWorker(dependencies: {
         : { type };
     await notify(tx, happened, booking, { key }, now);
     await scheduleAfter(tx, type, booking, now);
+    if (type === "BookingConfirmed") await scheduleReminders(tx, booking, event.createdAt, now);
   }
 
   /**
@@ -513,7 +691,43 @@ export function createNotificationWorker(dependencies: {
     );
     if (kind === "request_halfway" && stillApplies(kind, status)) return { type: "RequestHalfway" };
     if (kind === "pay_reminder" && stillApplies(kind, status)) return { type: "PaymentDueSoon" };
+    if ((kind === "reminder_evening" || kind === "reminder_hour") && stillApplies(kind, status)) {
+      return { type: "ReminderDue", which: passengerReminders[kind], to: "passenger" };
+    }
     return null;
+  }
+
+  /** Whether a passenger's reminder is not late and their reminders are on. */
+  async function reminderGoes(
+    q: Queryable,
+    event: Extract<NotificationEvent, { type: "ReminderDue" }>,
+    booking: Parties,
+    now: Date,
+  ): Promise<boolean> {
+    const times = await timesOf(q, booking.id);
+    if (times === undefined || times.boardsAt === null) return false;
+    if (!reminderStillTimely({ which: event.which, startsAt: times.boardsAt }, now)) return false;
+    return (await preferencesOf(q, booking.passengerId)).reminders;
+  }
+
+  /** A driver's trip reminder, if not late, someone is still booked and reminders are on. */
+  async function remindDriver(
+    tx: Transaction,
+    kind: keyof typeof driverReminders,
+    tripId: string,
+    key: string,
+    now: Date,
+  ): Promise<void> {
+    const [trip] = await tx
+      .select({ driverId: trips.driverId, departsAt: trips.departsAt })
+      .from(trips)
+      .where(eq(trips.id, tripId));
+    if (trip === undefined || trip.departsAt === null) return;
+    const which = driverReminders[kind];
+    if (!reminderStillTimely({ which, startsAt: trip.departsAt }, now)) return;
+    if (!(await anyoneBooked(tx, tripId))) return;
+    if (!(await preferencesOf(tx, trip.driverId)).reminders) return;
+    await add(tx, { kind, to: "driver", recipientId: trip.driverId, tripId }, key, now);
   }
 
   /**
@@ -551,7 +765,11 @@ export function createNotificationWorker(dependencies: {
           }
         } else if (booking !== undefined) {
           const event = stillDue(scheduled.kind, booking, now);
-          if (event !== null) await notify(tx, event, booking, source, now);
+          const skip =
+            event?.type === "ReminderDue" && !(await reminderGoes(tx, event, booking, now));
+          if (event !== null && !skip) await notify(tx, event, booking, source, now);
+        } else if (scheduled.tripId !== null && isDriverReminder(scheduled.kind)) {
+          await remindDriver(tx, scheduled.kind, scheduled.tripId, source.key, now);
         }
         done.push(scheduled.id);
       }
@@ -627,9 +845,20 @@ export function createNotificationWorker(dependencies: {
   async function sendOn(delivery: Delivery): Promise<SendResult | undefined> {
     const found = await factsOf(db, delivery.notificationId);
     if (found === undefined) return undefined;
-    // Looked at again on every try: a retry after the booking moved on, or
-    // after the messages were read, is dropped.
-    if (!stillApplies(found.facts.kind, statusAt(found.booking, clock()))) {
+    // Looked at again on every try: a retry after the booking moved on, after
+    // the messages were read, after everyone's booking ended, or after
+    // reminders were turned off, is dropped.
+    if (found.booking === null) {
+      if (found.facts.passengers.length === 0) return { skipped: "no_longer_applies" };
+    } else if (!stillApplies(found.facts.kind, statusAt(found.booking, clock()))) {
+      return { skipped: "no_longer_applies" };
+    }
+    const reminder = reminderOf(found.facts);
+    if (
+      reminder !== null &&
+      (!reminderStillTimely(reminder, clock()) ||
+        !(await preferencesOf(db, found.recipientId)).reminders)
+    ) {
       return { skipped: "no_longer_applies" };
     }
     if (

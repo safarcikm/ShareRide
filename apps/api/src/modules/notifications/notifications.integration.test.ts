@@ -11,7 +11,7 @@ import {
   type SendMessageBody,
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
-import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
   createFakeEmailSender,
@@ -34,6 +34,7 @@ import {
 } from "../bookings/testing.ts";
 import { expireAllDueBookings } from "../bookings/index.ts";
 import { cleanUpNotifications } from "./clean-up.ts";
+import { setPreferences } from "./preferences.ts";
 import { createNotificationWorker } from "./worker.ts";
 
 // The sample trips at the test clock (Friday 13 November 2026, noon): Jón
@@ -1177,6 +1178,267 @@ describe("email (plan 4.6)", () => {
         attempts: 0,
       },
     ]);
+  });
+});
+
+describe("trip reminders (spec 7, 3.5)", () => {
+  const forGunna = (passenger: Member) => (message: { to: string }) =>
+    message.to === `ExponentPushToken[${passenger.userId}]`;
+
+  async function remindersOff(member: Member) {
+    // As the settings route does; its access token may have run out by now.
+    await setPreferences(api.connection.db, member.userId, { reminders: false }, api.now());
+  }
+
+  /**
+   * Moves the clock on to `time` (Iceland keeps UTC all year). Each sign-in
+   * moves the clock on a little, so the tests name the times they mean.
+   */
+  async function until(time: string) {
+    const seconds = (new Date(time).getTime() - api.now().getTime()) / 1000;
+    if (seconds < 0) throw new Error(`The clock is already past ${time}.`);
+    await later(seconds);
+  }
+
+  const friday18 = "2026-11-13T18:00:00Z";
+  const saturday0430 = "2026-11-14T04:30:00Z";
+
+  async function ended(bookingId: string) {
+    // As a cancellation (spec 6) will.
+    await api.connection.db
+      .update(schema.bookings)
+      .set({ status: "cancelled" })
+      .where(eq(schema.bookings.id, bookingId));
+  }
+
+  it("reminds a passenger at 18:00 the evening before and an hour before boarding, once each", async () => {
+    const { jon, passenger } = await confirmedBooking();
+    await withDevice(passenger);
+    await withDevice(jon);
+    await worker().runOnce();
+    push.sent.length = 0;
+
+    // Friday 18:00, then Saturday 04:30: the trip leaves Hlemmur at 05:30.
+    await until(friday18);
+    await worker().runOnce();
+    await worker().runOnce();
+    await until(saturday0430);
+    await worker().runOnce();
+    const gunnas = push.sent.filter(forGunna(passenger));
+    expect(gunnas.map(({ title, body, data }) => ({ title, body, data }))).toEqual([
+      {
+        title: "Tomorrow at 05:30 · Meeting point: Hlemmur",
+        body: "Driver: Jón · Blue Kia Ceed",
+        data: { path: expect.stringMatching(/^\/meeting-points\/[0-9a-f-]+$/) as unknown },
+      },
+      {
+        title: "In one hour, at 05:30 · Meeting point: Hlemmur",
+        body: "Driver: Jón · Blue Kia Ceed",
+        data: { path: gunnas[0]?.data.path },
+      },
+    ]);
+  });
+
+  it("reminds the driver once of everyone booked, and of the missing number plate", async () => {
+    const { jon } = await confirmedBooking("Gunna");
+    const dora = await newMember("Dóra");
+    const second = await booked(dora.accessToken, airport, { fromStop: 1, toStop: 2 });
+    await paid(dora.accessToken, second.id);
+    await withDevice(jon);
+    await worker().runOnce();
+    push.sent.length = 0;
+
+    await until(friday18);
+    await worker().runOnce();
+    const driver = push.sent.filter((message) => message.to === `ExponentPushToken[${jon.userId}]`);
+    expect(driver).toMatchObject([
+      {
+        title: "Tomorrow at 05:30: 2 passengers",
+        body: expect.stringMatching(
+          /^Gunna: Hlemmur – .+\nDóra: Fjörður shopping centre – .+\nAdd your number plate so passengers can find your car\.$/,
+        ) as unknown,
+        data: { path: expect.stringMatching(/^\/drive\/trips\//) as unknown },
+      },
+    ]);
+
+    push.sent.length = 0;
+    await until(saturday0430);
+    await worker().runOnce();
+    expect(push.sent.map((message) => message.title)).toEqual([
+      "In one hour, at 05:30: 2 passengers",
+    ]);
+  });
+
+  it("reminds the driver only of who is still booked, even someone who booked after the first left", async () => {
+    const { jon, bookingId } = await confirmedBooking("Gunna");
+    await withDevice(jon);
+    await worker().runOnce();
+    await ended(bookingId);
+    await later(3600);
+    const dora = await newMember("Dóra");
+    const second = await booked(dora.accessToken, airport, { fromStop: 1, toStop: 2 });
+    await paid(dora.accessToken, second.id);
+    await worker().runOnce();
+    push.sent.length = 0;
+
+    await until(friday18);
+    await worker().runOnce();
+    expect(push.sent.map(({ title, body }) => ({ title, body }))).toEqual([
+      {
+        title: "Tomorrow at 05:30: 1 passenger",
+        body: expect.stringMatching(
+          /^Dóra: Fjörður shopping centre – [^\n]+\nAdd your number plate/,
+        ) as unknown,
+      },
+    ]);
+  });
+
+  it("drops a reminder once the booking has ended, and the driver's once nobody is booked", async () => {
+    const { jon, passenger, bookingId } = await confirmedBooking();
+    await withDevice(passenger);
+    await withDevice(jon);
+    await worker().runOnce();
+    push.sent.length = 0;
+    await ended(bookingId);
+    await until(friday18);
+    await worker().runOnce();
+    expect(push.sent).toEqual([]);
+    const due = await api.connection.db
+      .select({ kind: scheduledNotifications.kind, doneAt: scheduledNotifications.doneAt })
+      .from(scheduledNotifications)
+      .where(lte(scheduledNotifications.runAt, api.now()))
+      .orderBy(asc(scheduledNotifications.kind));
+    expect(due.filter((row) => row.kind.startsWith("reminder_"))).toEqual([
+      { kind: "reminder_evening", doneAt: expect.any(Date) as unknown },
+      { kind: "reminder_evening_driver", doneAt: expect.any(Date) as unknown },
+    ]);
+  });
+
+  it("sends no reminders to someone who turned them off, and the rest still", async () => {
+    const { jon, passenger } = await confirmedBooking();
+    await withDevice(passenger);
+    await withDevice(jon);
+    await remindersOff(passenger);
+    await worker().runOnce();
+    push.sent.length = 0;
+    await until(friday18);
+    await worker().runOnce();
+    expect(push.sent.map((message) => message.title)).toEqual(["Tomorrow at 05:30: 1 passenger"]);
+  });
+
+  it("sends the driver none once they turned them off, and the passenger still", async () => {
+    const { jon, passenger } = await confirmedBooking();
+    await withDevice(passenger);
+    await withDevice(jon);
+    await remindersOff(jon);
+    await worker().runOnce();
+    push.sent.length = 0;
+    await until(friday18);
+    await worker().runOnce();
+    expect(push.sent.map((message) => message.title)).toEqual([
+      "Tomorrow at 05:30 · Meeting point: Hlemmur",
+    ]);
+  });
+
+  it("drops a reminder that comes too late, as after the worker was down", async () => {
+    const { passenger } = await confirmedBooking();
+    await withDevice(passenger);
+    await worker().runOnce();
+    push.sent.length = 0;
+    // Down until 00:30 on Saturday: the evening one is too late.
+    await until("2026-11-14T00:30:00Z");
+    await worker().runOnce();
+    expect(push.sent).toEqual([]);
+    // And until 05:45: the hour one too, as the trip has left.
+    await until("2026-11-14T05:45:00Z");
+    await worker().runOnce();
+    expect(push.sent).toEqual([]);
+    expect((await logOf(passenger)).filter((row) => row.kind.startsWith("reminder_"))).toEqual([]);
+  });
+
+  it("skips a failed reminder tried again once the booking ended or reminders were turned off", async () => {
+    const { passenger: gunna, bookingId } = await confirmedBooking("Gunna");
+    const dora = await newMember("Dóra");
+    const second = await booked(dora.accessToken, airport, { fromStop: 1, toStop: 2 });
+    await paid(dora.accessToken, second.id);
+    await withDevice(gunna);
+    await withDevice(dora);
+    await worker().runOnce();
+    push.sent.length = 0;
+    await until(friday18);
+    push.failure = new Error("The push service is down.");
+    await worker().runOnce();
+    push.failure = null;
+    await ended(bookingId);
+    await remindersOff(dora);
+    await later(30);
+    await worker().runOnce();
+
+    expect(push.sent).toEqual([]);
+    for (const member of [gunna, dora]) {
+      expect(await logOf(member)).toContainEqual({
+        kind: "reminder_evening",
+        channel: "push",
+        status: "skipped",
+        reason: "no_longer_applies",
+        attempts: 2,
+      });
+    }
+  });
+
+  it("skips the hour reminder tried again after the trip has left", async () => {
+    const { passenger } = await confirmedBooking();
+    await withDevice(passenger);
+    await worker().runOnce();
+    await until(friday18);
+    await worker().runOnce();
+    push.sent.length = 0;
+    await until(saturday0430);
+    push.failure = new Error("The push service is down.");
+    await worker().runOnce();
+    push.failure = null;
+    // The worker comes back at 05:31, after the trip left Hlemmur.
+    await until("2026-11-14T05:31:00Z");
+    await worker().runOnce();
+    expect(push.sent).toEqual([]);
+    expect(await logOf(passenger)).toContainEqual({
+      kind: "reminder_hour",
+      channel: "push",
+      status: "skipped",
+      reason: "no_longer_applies",
+      attempts: 2,
+    });
+  });
+
+  it("skips a reminder whose time passed before the booking was confirmed", async () => {
+    // Confirmed at 19:00, after the evening reminder's 18:00.
+    await until("2026-11-13T19:00:00Z");
+    const { passenger } = await confirmedBooking();
+    await withDevice(passenger);
+    await worker().runOnce();
+    push.sent.length = 0;
+    await until(saturday0430);
+    await worker().runOnce();
+    expect(push.sent.filter(forGunna(passenger)).map((message) => message.title)).toEqual([
+      "In one hour, at 05:30 · Meeting point: Hlemmur",
+    ]);
+  });
+
+  it("emails the evening reminder, with Directions, to someone without push, but not the hour one", async () => {
+    const { passenger } = await confirmedBooking();
+    await withEmail(passenger, "gunna-reminder@example.com");
+    await worker().runOnce();
+    email.sent.length = 0;
+    await until(friday18);
+    await worker().runOnce();
+    await until(saturday0430);
+    await worker().runOnce();
+    expect(email.sent.map((sent) => sent.subject)).toEqual([
+      "Tomorrow at 05:30 · Meeting point: Hlemmur",
+    ]);
+    expect(email.sent[0]?.text).toMatch(
+      new RegExp(`Directions: ${webAppUrl}/meeting-points/[0-9a-f-]+`),
+    );
   });
 });
 

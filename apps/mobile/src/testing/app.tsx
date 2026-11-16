@@ -50,8 +50,12 @@ export async function renderApp(
     currentClient.answer("/v1/me", () => ok(200, me));
   }
   // Once signed in, unless a test says otherwise: nothing in My rides and
-  // Your next ride, a new driver for the licence row on Profile, and no
-  // chats for the Messages badge.
+  // Your next ride, a new driver for the licence row on Profile, no chats
+  // for the Messages badge, and trip reminders on in Settings.
+  // A change answers with what it was given.
+  currentClient.answer("/v1/me/notification-settings", (input) =>
+    ok(200, input["body"] ?? { reminders: true }),
+  );
   currentClient.answer("/v1/me/bookings", () => ok(200, { bookings: [] }));
   currentClient.answer("/v1/me/trips", () => ok(200, { trips: [] }));
   currentClient.answer("/v1/me/driver-readiness", () => ok(200, newDriver));

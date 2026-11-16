@@ -14,14 +14,16 @@ import { Body, Title } from "@/components/text";
 import { TextLink } from "@/components/text-link";
 import { useLanguage } from "@/i18n/language";
 import { BackToMenu } from "@/navigation/back-to-menu";
+import { TripReminders } from "@/notifications/trip-reminders";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
  * Settings (spec 1, section 3.8): Your account, with the private phone
- * number (spec 16, 3.4) and the email (plan 4.6), language, legal
- * documents, and signing out here or on every device. Signed out, it
- * closes back to the menu.
+ * number (spec 16, 3.4) and the email (plan 4.6), Notifications with the
+ * Trip reminders switch (spec 7, 3.6), language, legal documents, and
+ * signing out here or on every device. Signed out, it closes back to the
+ * menu.
  */
 export default function SettingsScreen() {
   const me = useMe();
@@ -95,6 +97,10 @@ function Settings({ me }: { readonly me: Me }) {
             align="start"
           />
         </View>
+      </View>
+      <View style={styles.section}>
+        {heading(t("settings.notifications"), "start")}
+        <TripReminders />
       </View>
       <View style={styles.section}>
         {heading(t("settings.language"))}

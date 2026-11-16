@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from "expo-router/testing-library";
+import { act, fireEvent, screen, waitFor, within } from "expo-router/testing-library";
 import type { DriverReadiness, Me } from "@shareride/contracts";
 import { failure, ok, tokens, type FakeClient } from "@/testing/fake-client";
 import { completeMe, legalDocument, renderApp } from "@/testing/app";
@@ -198,6 +198,8 @@ describe("My profile (spec 16, 3.4)", () => {
 });
 
 describe("Settings", () => {
+  const reminderSwitch = "Trip reminders. The evening before and an hour before each trip.";
+
   async function openSettings() {
     const app = await openProfile();
     await fireEvent.press(screen.getByRole("button", { name: "Settings" }));
@@ -209,6 +211,107 @@ describe("Settings", () => {
     await openSettings();
     expect(screen.getByText("+354 690 0000")).toBeVisible();
     expect(screen.getByText("Only you can see your phone number.")).toBeVisible();
+  });
+
+  it("has trip reminders on, says what stays on, and turns them off (spec 7, 3.6)", async () => {
+    const app = await openSettings();
+    expect(screen.getByRole("header", { name: "Notifications" })).toBeVisible();
+    const reminders = await screen.findByRole("switch", { name: reminderSwitch });
+    await waitFor(() => {
+      expect(reminders).toBeChecked();
+    });
+    expect(
+      screen.getByText(
+        "Notifications about bookings, trips, payments and messages are always on, because others rely on them.",
+      ),
+    ).toBeVisible();
+    await fireEvent.press(reminders);
+    expect(screen.getByRole("switch", { name: reminderSwitch })).not.toBeChecked();
+    const changes = app.client.calls.filter(
+      (call) => call.path === "/v1/me/notification-settings" && call.input["body"] !== undefined,
+    );
+    expect(changes.map((call) => call.input["body"])).toEqual([{ reminders: false }]);
+  });
+
+  it("turns the switch back and says so when the change fails", async () => {
+    await renderApp("/settings", {
+      me: completeMe,
+      setUp: (client) => {
+        client.answer("/v1/me/notification-settings", () => ok(200, { reminders: true }), "get");
+        client.answer("/v1/me/notification-settings", () => failure(0, "network_error"), "patch");
+      },
+    });
+    const reminders = await screen.findByRole("switch", { name: reminderSwitch });
+    await waitFor(() => {
+      expect(reminders).toBeChecked();
+    });
+    await fireEvent.press(reminders);
+    expect(
+      await screen.findByText("We couldn't reach ShareRide. Check your connection and try again."),
+    ).toBeVisible();
+    expect(screen.getByRole("switch", { name: reminderSwitch })).toBeChecked();
+  });
+
+  it("saves quick changes one after the other, and ends on the last", async () => {
+    const changes: unknown[] = [];
+    let answerFirst: (answer: unknown) => void = () => undefined;
+    await renderApp("/settings", {
+      me: completeMe,
+      setUp: (client) => {
+        client.answer("/v1/me/notification-settings", () => ok(200, { reminders: true }), "get");
+        client.answer(
+          "/v1/me/notification-settings",
+          (input) => {
+            changes.push(input["body"]);
+            if (changes.length > 1) return ok(200, input["body"]);
+            return new Promise((resolve) => {
+              answerFirst = resolve;
+            });
+          },
+          "patch",
+        );
+      },
+    });
+    const reminders = await screen.findByRole("switch", { name: reminderSwitch });
+    await waitFor(() => {
+      expect(reminders).toBeChecked();
+    });
+    await fireEvent.press(reminders);
+    await fireEvent.press(screen.getByRole("switch", { name: reminderSwitch }));
+    expect(screen.getByRole("switch", { name: reminderSwitch })).toBeChecked();
+    // The second waits for the first, so the last one is what is kept.
+    expect(changes).toEqual([{ reminders: false }]);
+    await act(async () => {
+      answerFirst(ok(200, { reminders: false }));
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(changes).toEqual([{ reminders: false }, { reminders: true }]);
+    });
+    expect(screen.getByRole("switch", { name: reminderSwitch })).toBeChecked();
+  });
+
+  it("offers to try again when the reminders setting does not load", async () => {
+    let loads = 0;
+    await renderApp("/settings", {
+      me: completeMe,
+      setUp: (client) => {
+        client.answer(
+          "/v1/me/notification-settings",
+          () => {
+            loads += 1;
+            return loads === 1 ? failure(0, "network_error") : ok(200, { reminders: false });
+          },
+          "get",
+        );
+      },
+    });
+    expect(
+      await screen.findByText("We couldn't reach ShareRide. Check your connection and try again."),
+    ).toBeVisible();
+    expect(screen.queryByRole("switch", { name: reminderSwitch })).toBeNull();
+    await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("switch", { name: reminderSwitch })).not.toBeChecked();
   });
 
   it("signs out on all devices and returns to Find", async () => {

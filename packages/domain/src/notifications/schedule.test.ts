@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { payReminderAt, reminderTimes, requestHalfwayAt, unreadSummaryAt } from "./schedule.ts";
+import {
+  payReminderAt,
+  reminderStillTimely,
+  reminderTimes,
+  requestHalfwayAt,
+  unreadSummaryAt,
+} from "./schedule.ts";
 import { defaultNotificationSettings } from "./settings.ts";
 
 const settings = defaultNotificationSettings;
@@ -122,5 +128,24 @@ describe("the unread messages email (spec 7, 3.6, item 3)", () => {
     expect(
       iso(unreadSummaryAt({ sentAt, lastSummaryAt: at("2026-11-15T09:50:00Z") }, settings)),
     ).toBe("2026-11-15T10:50:00.000Z");
+  });
+});
+
+describe("reminderStillTimely (spec 7, 3.5)", () => {
+  // Saturday 14 November 2026 at 05:30 in Iceland (UTC all year).
+  const startsAt = new Date("2026-11-14T05:30:00Z");
+
+  it("sends the evening reminder only while the trip is still tomorrow", () => {
+    const evening = { which: "evening", startsAt } as const;
+    expect(reminderStillTimely(evening, new Date("2026-11-13T18:00:00Z"))).toBe(true);
+    expect(reminderStillTimely(evening, new Date("2026-11-13T23:59:00Z"))).toBe(true);
+    expect(reminderStillTimely(evening, new Date("2026-11-14T00:00:00Z"))).toBe(false);
+  });
+
+  it("sends the hour reminder only before the boarding or departure", () => {
+    const hour = { which: "hour", startsAt } as const;
+    expect(reminderStillTimely(hour, new Date("2026-11-14T04:30:00Z"))).toBe(true);
+    expect(reminderStillTimely(hour, new Date("2026-11-14T05:29:00Z"))).toBe(true);
+    expect(reminderStillTimely(hour, startsAt)).toBe(false);
   });
 });
