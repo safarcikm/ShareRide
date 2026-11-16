@@ -14,6 +14,7 @@ import {
   type ChangeProblem,
   type NotificationSettings,
   type Result,
+  type TripChange,
   type TripSettings,
 } from "@shareride/domain";
 import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
@@ -24,6 +25,11 @@ import { recordEvents } from "../notifications/outbox.ts";
 import { choicesOf, type NotFound } from "./drafts.ts";
 
 const { bookings, legs, meetingPoints, segments, tripChanges, trips, tripStops, users } = schema;
+
+type TripRow = typeof trips.$inferSelect;
+
+/** What a change was and is, flat, as `trip_changes` keeps it. */
+type ChangeValues = (typeof tripChanges.$inferInsert)["before"];
 
 /** The trip has left or was cancelled: nothing changes any more (R6.1). */
 export interface NotChangeable {
@@ -52,6 +58,20 @@ export interface TripChangeService {
     change: TripChangeBody,
     options: { readonly preview: boolean },
   ): Promise<Result<TripChangeEffect, NotFound | NotChangeable | ChangeNotAllowed>>;
+}
+
+/** The change as the rules read it: a note as the database counts it (NFC). */
+function asRead(change: TripChangeBody): TripChange {
+  switch (change.kind) {
+    case "departure":
+      return { kind: "departure", departsAt: new Date(change.departsAt) };
+    case "details":
+      return { ...change, note: change.note.normalize("NFC") };
+    case "seats":
+    case "priceLevel":
+    case "bookingMode":
+      return change;
+  }
 }
 
 /** Statuses of trips that hold the driver's time (R3.7). */
@@ -124,6 +144,7 @@ export function createTripChangeService(dependencies: {
     effect: ChangeEffect,
     held: readonly HeldBooking[],
     departsAt: Date,
+    prices: readonly number[],
     now: Date,
   ): TripChangeEffect {
     const times = effect.trip.stops.map((stop) => iso(stop.plannedAt));
@@ -150,7 +171,135 @@ export function createTripChangeService(dependencies: {
       ).length,
       requests: requests.length - expiring,
       expiring,
+      seats: effect.trip.seats,
+      priceLevel: effect.trip.priceLevel,
+      priceLevelLowered: effect.priceLevelLowered,
+      prices:
+        effect.pricing?.map(({ price }) => price) ??
+        prices.map((amount) => ({ amount, currency: "ISK" as const })),
     };
+  }
+
+  /** Records a change with its time (spec 6, 3.2): what it was and what it is. */
+  async function record(
+    tx: Transaction,
+    tripId: string,
+    kind: TripChange["kind"],
+    before: ChangeValues,
+    after: ChangeValues,
+    now: Date,
+  ): Promise<string> {
+    const [recorded] = await tx
+      .insert(tripChanges)
+      .values({ tripId, kind, before, after, changedAt: now, createdAt: now, updatedAt: now })
+      .returning({ id: tripChanges.id });
+    if (recorded === undefined) throw new Error("The change was not recorded.");
+    return recorded.id;
+  }
+
+  /**
+   * Saves seats or a price level: the trip's, and each stretch's seats, cap
+   * and price for new bookings (rules P3, P4). Bookings keep their prices (P1).
+   */
+  async function reprice(
+    tx: Transaction,
+    tripId: string,
+    effect: ChangeEffect,
+    now: Date,
+  ): Promise<void> {
+    const { seats, priceLevel } = effect.trip;
+    await tx
+      .update(trips)
+      .set({ capacity: seats, priceLevel, updatedAt: now })
+      .where(eq(trips.id, tripId));
+    for (const [position, pricing] of (effect.pricing ?? []).entries()) {
+      await tx
+        .update(segments)
+        .set({ capacity: seats, cap: pricing.cap.amount, price: pricing.price.amount })
+        .where(and(eq(segments.tripId, tripId), eq(segments.position, position)));
+    }
+  }
+
+  /**
+   * Saves a change that is not a move, when it changes something: seats,
+   * price level, booking mode, or the preferences and note. Nobody is told
+   * (spec 7, 3.3); passengers see it on the trip.
+   */
+  async function saveChoice(
+    tx: Transaction,
+    trip: TripRow,
+    change: Exclude<TripChange, { readonly kind: "departure" | "vehicle" }>,
+    effect: ChangeEffect,
+    now: Date,
+  ): Promise<void> {
+    const before = choicesOf(trip);
+    const after = effect.trip;
+    switch (change.kind) {
+      case "seats":
+        if (after.seats === before.seats) return;
+        await reprice(tx, trip.id, effect, now);
+        await record(
+          tx,
+          trip.id,
+          "seats",
+          { seats: before.seats, priceLevel: before.priceLevel },
+          { seats: after.seats, priceLevel: after.priceLevel },
+          now,
+        );
+        return;
+      case "priceLevel":
+        if (after.priceLevel === before.priceLevel) return;
+        await reprice(tx, trip.id, effect, now);
+        await record(
+          tx,
+          trip.id,
+          "priceLevel",
+          { priceLevel: before.priceLevel },
+          { priceLevel: after.priceLevel },
+          now,
+        );
+        return;
+      case "bookingMode":
+        // Requests already waiting stay open (spec 6, 3.2).
+        if (after.bookingMode === before.bookingMode) return;
+        await tx
+          .update(trips)
+          .set({ bookingMode: after.bookingMode, updatedAt: now })
+          .where(eq(trips.id, trip.id));
+        await record(
+          tx,
+          trip.id,
+          "bookingMode",
+          { bookingMode: before.bookingMode },
+          { bookingMode: after.bookingMode },
+          now,
+        );
+        return;
+      case "details": {
+        const kept = { ...before.preferences, note: trip.note };
+        const made = { ...after.preferences, note: after.note };
+        if (
+          Object.entries(made).every(([key, value]) => kept[key as keyof typeof kept] === value)
+        ) {
+          return;
+        }
+        await tx
+          .update(trips)
+          .set({ ...after.preferences, note: after.note, updatedAt: now })
+          .where(eq(trips.id, trip.id));
+        // The note's text is not kept, only whether it changed: the trip
+        // shows the one it has now, and an old note has no use (minimisation).
+        await record(
+          tx,
+          trip.id,
+          "details",
+          { ...before.preferences },
+          { ...after.preferences, noteChanged: made.note !== kept.note },
+          now,
+        );
+        return;
+      }
+    }
   }
 
   /** Saves a new departure: every stop moves with it (R6.2), and what hangs on the times. */
@@ -200,19 +349,14 @@ export function createTripChangeService(dependencies: {
     }
     await expireDueBookings(tx, tripId, now);
 
-    const [recorded] = await tx
-      .insert(tripChanges)
-      .values({
-        tripId,
-        kind: "departure",
-        before: { departsAt: iso(before) },
-        after: { departsAt: iso(after) },
-        changedAt: now,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .returning({ id: tripChanges.id });
-    if (recorded === undefined) throw new Error("The change was not recorded.");
+    const recorded = await record(
+      tx,
+      tripId,
+      "departure",
+      { departsAt: iso(before) },
+      { departsAt: iso(after) },
+      now,
+    );
 
     // Only a request can expire here: a payment deadline is at the latest 15
     // minutes before boarding, and the new departure is 30 or more away (R3.5).
@@ -236,7 +380,7 @@ export function createTripChangeService(dependencies: {
       told.map(({ bookingId }) => ({
         type: "DepartureMoved",
         bookingId,
-        tripChangeId: recorded.id,
+        tripChangeId: recorded,
       })),
       now,
     );
@@ -318,7 +462,7 @@ export function createTripChangeService(dependencies: {
             // Null only for a booking the previous version made during a deploy.
             departsAtWhenBooked: booking.departsAtWhenBooked ?? departsAt,
           })),
-          { kind: change.kind, departsAt: new Date(change.departsAt) },
+          asRead(change),
           now,
           settings,
         );
@@ -332,17 +476,28 @@ export function createTripChangeService(dependencies: {
             problems: checked.error as ChangeNotAllowed["problems"],
           });
         }
-        const effect = effectOf(checked.value, held, departsAt, now);
+        const effect = effectOf(
+          checked.value,
+          held,
+          departsAt,
+          segmentRows.map((segment) => segment.price),
+          now,
+        );
         if (preview) return ok(effect);
-        // Nothing to save when the departure is the one it has.
-        if (checked.value.trip.stops[0]?.plannedAt.getTime() !== departsAt.getTime()) {
-          await moveDeparture(
-            tx,
-            tripId,
-            checked.value,
-            stopRows.map(({ stop }) => stop),
-            now,
-          );
+        const read = asRead(change);
+        if (read.kind === "departure") {
+          // Nothing to save when the departure is the one it has.
+          if (checked.value.trip.stops[0]?.plannedAt.getTime() !== departsAt.getTime()) {
+            await moveDeparture(
+              tx,
+              tripId,
+              checked.value,
+              stopRows.map(({ stop }) => stop),
+              now,
+            );
+          }
+        } else if (read.kind !== "vehicle") {
+          await saveChoice(tx, trip, read, checked.value, now);
         }
         return ok(effect);
       });

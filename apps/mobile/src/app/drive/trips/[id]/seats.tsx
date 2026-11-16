@@ -6,45 +6,29 @@ import {
 } from "@shareride/contracts";
 import {
   bookingModes,
-  chatOptions,
   checkNote,
   defaultTripSettings,
-  luggageOptions,
-  noteMaxLength,
-  petOptions,
-  smokingOptions,
   type BookingMode,
   type TripPreferences,
 } from "@shareride/domain";
-import type { MessageKey } from "@shareride/i18n";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import { Button } from "@/components/button";
-import { Chip } from "@/components/chip";
 import { Notice } from "@/components/notice";
 import { RadioCard } from "@/components/radio-card";
 import { Stepper } from "@/components/stepper";
 import { Body, Heading } from "@/components/text";
-import { TextField } from "@/components/text-field";
 import { carSummary } from "@/driving/texts";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
-import { spacing, typography } from "@/theme/tokens";
-import { usePalette } from "@/theme/use-palette";
+import { spacing } from "@/theme/tokens";
+import { NoteField, PreferenceChoices } from "@/trips/preference-fields";
 import { StepScreen } from "@/trips/step-screen";
 import { goOn } from "@/trips/steps";
-import {
-  bookingModeKeys,
-  chatKeys,
-  childSeatKey,
-  luggageKeys,
-  petKeys,
-  problemText,
-  smokingKeys,
-} from "@/trips/texts";
+import { bookingModeKeys } from "@/trips/texts";
 import { Loading, useDraftOnFocus } from "@/trips/use-draft";
 import { useQuote } from "@/trips/use-quote";
 
@@ -110,10 +94,6 @@ function SeatsStep({
   const quote = quoted.result?.ok === true ? quoted.result.data : null;
   const lowered = quote?.warnings.some((warning) => warning.code === "price_level_lowered");
   const noteProblem = checkNote(note)[0];
-
-  const prefer = <K extends keyof TripPreferences>(key: K, value: TripPreferences[K]) => {
-    setPreferences({ ...preferences, [key]: value });
-  };
 
   const save = async () => {
     if (noteProblem !== undefined || quote === null || quoted.stale) return;
@@ -207,104 +187,13 @@ function SeatsStep({
       ) : null}
 
       <Heading>{t("trip.prefs.title")}</Heading>
-      <Choices
-        label={t("trip.prefs.luggage")}
-        options={luggageOptions}
-        keys={luggageKeys}
-        value={preferences.luggage}
-        onChange={(value) => {
-          prefer("luggage", value);
-        }}
-      />
-      <Choices
-        label={t("trip.prefs.pets")}
-        options={petOptions}
-        keys={petKeys}
-        value={preferences.pets}
-        onChange={(value) => {
-          prefer("pets", value);
-        }}
-      />
-      <Choices
-        label={t("trip.prefs.smoking")}
-        options={smokingOptions}
-        keys={smokingKeys}
-        value={preferences.smoking}
-        onChange={(value) => {
-          prefer("smoking", value);
-        }}
-      />
-      <Choices
-        label={t("trip.prefs.childSeat")}
-        options={[false, true] as const}
-        keys={{ false: childSeatKey(false), true: childSeatKey(true) }}
-        value={preferences.childSeat}
-        onChange={(value) => {
-          prefer("childSeat", value);
-        }}
-      />
-      <Choices
-        label={t("trip.prefs.chat")}
-        options={chatOptions}
-        keys={chatKeys}
-        value={preferences.chat}
-        onChange={(value) => {
-          prefer("chat", value);
-        }}
-      />
-
-      <TextField
-        label={t("trip.note.label")}
-        value={note}
-        onChangeText={setNote}
-        multiline
-        maxLength={noteMaxLength * 2}
-        help={t("trip.note.help", { max: noteMaxLength })}
-        error={noteProblem === undefined ? undefined : problemText(t, noteProblem.code, "")}
-      />
+      <PreferenceChoices preferences={preferences} onChange={setPreferences} />
+      <NoteField note={note} onChange={setNote} />
       <Notice message={failure} />
     </StepScreen>
   );
 }
 
-/** One preference: its name and a chip for each choice, one of them selected. */
-function Choices<T extends string | boolean>({
-  label,
-  options,
-  keys,
-  value,
-  onChange,
-}: {
-  readonly label: string;
-  readonly options: readonly T[];
-  readonly keys: Readonly<Record<`${T}`, MessageKey>>;
-  readonly value: T;
-  readonly onChange: (value: T) => void;
-}) {
-  const { t } = useLanguage();
-  const palette = usePalette();
-  return (
-    <View style={styles.choices}>
-      <Text style={[typography.label, { color: palette.text }]}>{label}</Text>
-      <View accessibilityRole="radiogroup" accessibilityLabel={label} style={styles.chips}>
-        {options.map((option) => (
-          <Chip
-            key={String(option)}
-            role="radio"
-            label={t(keys[`${option}`])}
-            selected={option === value}
-            onToggle={() => {
-              onChange(option);
-            }}
-          />
-        ))}
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   group: { gap: spacing.sm },
-  choices: { gap: spacing.sm },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
 });

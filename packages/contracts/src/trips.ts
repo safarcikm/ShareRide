@@ -230,7 +230,7 @@ export const myTripSchema = z.object({
   arrivesAt: timestampSchema.nullable(),
   publishedAt: timestampSchema.nullable(),
   updatedAt: timestampSchema,
-  /** A published trip's stretches with the prices it was published at; empty for a draft. */
+  /** A published trip's stretches with their prices for new bookings; empty for a draft. */
   segments: z.array(
     z.object({
       distanceM: z.int().nonnegative(),
@@ -424,11 +424,23 @@ export const cancelTripRoute = defineRoute({
 
 /**
  * One change to a published trip, as the driver saves it from Edit trip
- * (spec 6, 3.2). For now a new departure: every stop moves with it (R6.2).
- * Milestone 6's PR 5b adds the others.
+ * (spec 6, 3.2): a new departure, which every stop moves with (R6.2); the
+ * seats offered; the price level, for new bookings; the booking mode; or
+ * the preferences and note together. The car follows in milestone 6's PR
+ * 5c, and stops in PR 6.
  */
 export const tripChangeSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("departure"), departsAt: timestampSchema }),
+  z.object({ kind: z.literal("seats"), seats: z.int().min(1).max(defaultTripSettings.maxSeats) }),
+  /** A level the seats allow (rule P4), or 422 `price_level_invalid`. */
+  z.object({ kind: z.literal("priceLevel"), priceLevel: z.int().min(0) }),
+  z.object({ kind: z.literal("bookingMode"), bookingMode: z.enum(bookingModes) }),
+  z.object({
+    kind: z.literal("details"),
+    preferences: tripPreferencesSchema,
+    /** Characters are counted as code points by the rules (422 `note_too_long`). */
+    note: z.string().max(noteMaxLength * 2),
+  }),
 ]);
 
 export type TripChangeBody = z.infer<typeof tripChangeSchema>;
@@ -455,6 +467,17 @@ export const tripChangeEffectSchema = z.object({
    * time (R5.5), has passed: they expire with the change.
    */
   expiring: z.int().nonnegative(),
+  /** The seats offered as they will be. */
+  seats: z.int().positive(),
+  /** The price level as it will be: more seats may lower it (rule P4). */
+  priceLevel: z.int().nonnegative(),
+  /** More seats lowered the price level to the highest they allow (spec 3, 3.6.4). */
+  priceLevelLowered: z.boolean(),
+  /**
+   * Each stretch's price per seat for new bookings, as it will be; bookings
+   * keep the prices they booked at (rule P1).
+   */
+  prices: z.array(moneySchema),
 });
 
 export type TripChangeEffect = z.infer<typeof tripChangeEffectSchema>;
@@ -486,7 +509,7 @@ export const changeTripRoute = defineRoute({
     },
     422: {
       description:
-        "change_not_allowed: each rule the change breaks is a detail, its code as the issue and `departsAt`, `stops.N` or `segments.N` as the path; with `move_too_far`, `departureWindow` gives the departures the bookings allow (R6.4)",
+        "change_not_allowed: each rule the change breaks is a detail, its code as the issue and `departsAt`, `stops.N`, `segments.N`, `seats`, `priceLevel` or `note` as the path; with `move_too_far`, `departureWindow` gives the departures the bookings allow (R6.4)",
       ...errors,
     },
   },
