@@ -72,6 +72,19 @@ export function completesWithTrip(booking: {
   return booking.status === "confirmed" && !booking.openReport;
 }
 
+/** A trip that runs or ran has a trip day: not a draft, and not a cancelled one (3.1). */
+export function runsOrRan(status: TripStatus): boolean {
+  return status === "published" || status === "departed" || status === "completed";
+}
+
+/**
+ * A booking that boards has a trip day at its stop: a confirmed one, and
+ * what a confirmed one becomes, completed or a no-show (3.1).
+ */
+export function hasTripDay(status: BookingStatus): boolean {
+  return status === "confirmed" || status === "completed" || status === "no_show";
+}
+
 export const dayPhases = ["upcoming", "trip_day", "completed"] as const;
 export type DayPhase = (typeof dayPhases)[number];
 
@@ -143,7 +156,11 @@ export function checkCheckIn(
 export const arrivals = ["not_here", "here", "no_show"] as const;
 export type Arrival = (typeof arrivals)[number];
 
-/** A marked no-show stays one; otherwise "I'm here" decides. */
+/**
+ * A marked no-show stays one; otherwise "I'm here" decides. It tells the
+ * driver who is at their stop on the trip day; after it, the booking's
+ * status says how the ride went.
+ */
 export function arrivalOf(booking: {
   readonly status: BookingStatus;
   readonly checkedIn: boolean;

@@ -209,6 +209,10 @@ export function stillApplies(kind: NotificationKind, status: BookingStatus): boo
     case "reminder_evening":
     case "reminder_hour":
       return status === "confirmed";
+    // "I'm here" matters only while the booking boards (spec 8, 3.2).
+    case "checked_in":
+    case "checked_in_driver":
+      return status === "confirmed";
     default:
       return true;
   }

@@ -8,6 +8,8 @@ import {
   completesAt,
   completesWithTrip,
   dayPhase,
+  hasTripDay,
+  runsOrRan,
   defaultTripDaySettings as settings,
   tripStatusAt,
 } from "./day.ts";
@@ -56,6 +58,31 @@ describe("the trip day (spec 8, 3.1)", () => {
   it("stays the trip day until the trip completes, then is over", () => {
     expect(dayPhase(boardsAt, lastStopAt, at(lastStopAt, 119), settings)).toBe("trip_day");
     expect(dayPhase(boardsAt, lastStopAt, at(lastStopAt, 120), settings)).toBe("completed");
+  });
+});
+
+describe("what has a trip day (spec 8, 3.1)", () => {
+  it.each([
+    ["confirmed", true],
+    ["completed", true],
+    ["no_show", true],
+    ["requested", false],
+    ["accepted", false],
+    ["declined", false],
+    ["expired", false],
+    ["cancelled", false],
+  ] as const)("a %s booking: %s", (status, has) => {
+    expect(hasTripDay(status)).toBe(has);
+  });
+
+  it.each([
+    ["published", true],
+    ["departed", true],
+    ["completed", true],
+    ["draft", false],
+    ["cancelled", false],
+  ] as const)("a %s trip: %s", (status, runs) => {
+    expect(runsOrRan(status)).toBe(runs);
   });
 });
 

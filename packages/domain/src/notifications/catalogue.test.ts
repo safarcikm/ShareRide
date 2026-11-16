@@ -264,6 +264,15 @@ describe("stillApplies", () => {
     }
   });
 
+  it("says someone is at the meeting point only while the booking is confirmed (spec 8, 3.2)", () => {
+    for (const kind of ["checked_in", "checked_in_driver"] as const) {
+      expect(stillApplies(kind, "confirmed")).toBe(true);
+      for (const status of ["cancelled", "no_show", "completed"] as const) {
+        expect(stillApplies(kind, status)).toBe(false);
+      }
+    }
+  });
+
   it("reminds a passenger only of a booking still confirmed (R7.11)", () => {
     for (const kind of ["reminder_evening", "reminder_hour"] as const) {
       expect(stillApplies(kind, "confirmed")).toBe(true);
