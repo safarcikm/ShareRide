@@ -136,11 +136,14 @@ function idIn(payload: Readonly<Record<string, string>>, name: string): string |
   return typeof value === "string" && uuidPattern.test(value) ? value : undefined;
 }
 
-/** Who cancelled, as a `BookingCancelled` event says; the other person is told. */
-function cancelledBy(payload: Readonly<Record<string, string>>): TripRole {
+/**
+ * Who did it, as a `BookingCancelled` or `CheckedIn` event says: who
+ * cancelled, or who said "I'm here". The other person is told.
+ */
+function doneBy(payload: Readonly<Record<string, string>>, type: OutboxEventType): TripRole {
   const by = payload["by"];
   if (by === "passenger" || by === "driver") return by;
-  throw new Error("A BookingCancelled event names who cancelled.");
+  throw new Error(`A ${type} event names who did it.`);
 }
 
 const boards = alias(tripStops, "boards");
@@ -869,8 +872,8 @@ export function createNotificationWorker(dependencies: {
     const happened: NotificationEvent =
       type === "BookingExpired"
         ? { type, reason: event.payload["reason"] === "unpaid" ? "unpaid" : "unanswered" }
-        : type === "BookingCancelled"
-          ? { type, by: cancelledBy(event.payload) }
+        : type === "BookingCancelled" || type === "CheckedIn"
+          ? { type, by: doneBy(event.payload, type) }
           : { type };
     await notify(tx, happened, booking, { key }, now);
     await scheduleAfter(tx, type, booking, now);

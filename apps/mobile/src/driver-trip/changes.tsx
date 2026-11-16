@@ -123,7 +123,7 @@ export function NotChangeable({ trip, title }: { readonly trip: MyTrip; readonly
 export function timeLines(
   t: Translate,
   locale: Locale,
-  trip: MyTrip,
+  trip: { readonly stops: readonly Pick<MyTrip["stops"][number], "meetingPoint">[] },
   times: readonly Date[],
 ): string[] {
   const first = times[0];

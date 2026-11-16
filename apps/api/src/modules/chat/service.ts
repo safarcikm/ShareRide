@@ -116,6 +116,8 @@ function systemLineOf(row: MessageRow, viewer: TripRole): NonNullable<ChatMessag
         key: "stop_removed",
         stop: { is: String(row.params?.["nameIs"]), en: String(row.params?.["nameEn"]) },
       };
+    case "checked_in":
+      return { key: "checked_in", by: row.params?.["by"] === viewer ? "me" : "them" };
     case "cancelled":
       return {
         key: "cancelled",

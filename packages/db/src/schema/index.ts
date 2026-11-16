@@ -7,6 +7,7 @@ export * from "./legal.ts";
 export * from "./meeting-points.ts";
 export * from "./notifications.ts";
 export * from "./payments.ts";
+export * from "./trip-day.ts";
 export * from "./trips.ts";
 export * from "./users.ts";
 export * from "./vehicles.ts";

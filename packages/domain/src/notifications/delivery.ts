@@ -25,6 +25,7 @@ export const outboxEventTypes = [
   "TripCancelled",
   "RefundIssued",
   "MessageSent",
+  "CheckedIn",
 ] as const;
 export type OutboxEventType = (typeof outboxEventTypes)[number];
 

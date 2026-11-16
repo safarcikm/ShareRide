@@ -14,6 +14,7 @@ export type OutboxEvent =
         OutboxEventType,
         | "BookingExpired"
         | "BookingCancelled"
+        | "CheckedIn"
         | "DepartureMoved"
         | "TripChanged"
         | "TripCancelled"
@@ -31,6 +32,12 @@ export type OutboxEvent =
       readonly type: "BookingCancelled";
       readonly bookingId: string;
       /** Who cancelled: the other person is told (spec 7, 3.3). */
+      readonly by: "passenger" | "driver";
+    }
+  | {
+      /** "I'm here" (spec 8, 3.2): one for each booking at the stop; the other side is told. */
+      readonly type: "CheckedIn";
+      readonly bookingId: string;
       readonly by: "passenger" | "driver";
     }
   | {

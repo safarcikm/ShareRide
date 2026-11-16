@@ -14,6 +14,7 @@ export interface ErrorExtras {
   readonly countsOnReliability?: boolean;
   readonly departureWindow?: NonNullable<ErrorResponse["error"]["departureWindow"]>;
   readonly bookingsAtStop?: number;
+  readonly opensAt?: string;
 }
 
 export function errorBody(code: string, message: string, details?: ErrorDetails): ErrorResponse {

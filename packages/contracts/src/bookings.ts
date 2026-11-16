@@ -1,8 +1,10 @@
 import {
+  arrivals,
   bookingModes,
   bookingStatuses,
   cancelReasons,
   carColours,
+  dayPhases,
   declineReasons,
   defaultTripSettings,
   noteMaxLength,
@@ -171,6 +173,26 @@ export const bookingSchema = z.object({
     .object({
       registration: z.string().nullable(),
       whereToStand: localisedTextSchema.nullable(),
+    })
+    .nullable(),
+  /**
+   * The trip day at the passenger's boarding stop (spec 8, 3.1 and 3.2), for
+   * a booking that is confirmed, or since completed or a no-show; null for
+   * any other.
+   */
+  tripDay: z
+    .object({
+      /** From 3 hours before boarding until the trip completes. */
+      phase: z.enum(dayPhases),
+      /** "I'm here" at the boarding stop opens and closes at these times (R8.3). */
+      checkInOpensAt: timestampSchema,
+      checkInClosesAt: timestampSchema,
+      /** When the passenger said "I'm here" there; null until then. */
+      passengerCheckedInAt: timestampSchema.nullable(),
+      /** When the driver said "I'm here" there; null until then. */
+      driverCheckedInAt: timestampSchema.nullable(),
+      /** Whether the passenger is at their stop, as the driver sees it. */
+      arrival: z.enum(arrivals),
     })
     .nullable(),
 });

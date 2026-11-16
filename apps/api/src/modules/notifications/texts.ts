@@ -191,6 +191,10 @@ function bookingText(
         return [t("notify.unpaidDriver", { name }), part()];
       case "booking_cancelled_by_passenger":
         return [t("notify.cancelledByPassenger", { name }), part()];
+      // "I'm here" (spec 8, 3.2): who, at the passenger's meeting point.
+      case "checked_in":
+      case "checked_in_driver":
+        return [t("notify.checkedIn", { name }), from];
       case "booking_cancelled_by_driver":
       case "trip_cancelled":
         // Never the driver's note: it may hold a number (R7.9).

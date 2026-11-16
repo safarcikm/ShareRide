@@ -473,6 +473,18 @@ releases follow [Semantic Versioning](https://semver.org/).
 - A trip under way can still be booked at a later stop until that stop's
   cut-off (rule S4; Martin's answer A45 to Q21): search finds it, and the
   trip page offers it, as before trips departed on their own.
+- "I'm here" in the API (milestone 7, PR 4a, spec 8, 3.2 and R8.3):
+  `POST /v1/bookings/{id}/check-in` for the passenger at their boarding
+  stop, and `POST /v1/trips/{id}/stops/{stopId}/check-in` for the driver at
+  a stop of their trip, from 30 minutes before the stop's planned time to
+  60 minutes after. It stores who said it and when, never where they are.
+  The other side at that stop gets a push ("At the meeting point: Anna")
+  and a line in the conversation; a repeat answers with the first and
+  tells nobody again. A booking that boards, and the driver's trip, now
+  give the trip day: its phase, when "I'm here" opens and closes, who has
+  said it, and for the driver whether each passenger is at their stop. The
+  driver's trip gives each stop's ID. Migration `0020_trip_day_check_ins`
+  adds the `check_ins` table and the new notification kinds.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

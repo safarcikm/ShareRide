@@ -141,6 +141,13 @@
       "when": 1794865044820,
       "tag": "0019_trip_completion",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794869670195,
+      "tag": "0020_trip_day_check_ins",
+      "breakpoints": true
     }
   ]
 }

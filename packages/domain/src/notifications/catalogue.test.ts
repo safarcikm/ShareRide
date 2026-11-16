@@ -86,6 +86,9 @@ describe("who is told about each event (spec 7, 3.3)", () => {
       [{ kind: "reminder_hour_driver", to: "driver" }],
     ],
     [{ type: "PayoutSent" }, [{ kind: "payout_sent", to: "driver" }]],
+    // "I'm here" (spec 8, 3.2): the other side at that stop.
+    [{ type: "CheckedIn", by: "driver" }, [{ kind: "checked_in", to: "passenger" }]],
+    [{ type: "CheckedIn", by: "passenger" }, [{ kind: "checked_in_driver", to: "driver" }]],
   ];
 
   it.each(cases)("%o", (event, expected) => {
@@ -128,6 +131,9 @@ describe("the channels of each kind (spec 7, 3.3 and 3.4)", () => {
     ["reminder_hour", true, "never", false],
     ["reminder_hour_driver", true, "never", false],
     ["payout_sent", false, "always", false],
+    // Push only (spec 8, 3.9): it matters at the stop, and nowhere later.
+    ["checked_in", true, "never", false],
+    ["checked_in_driver", true, "never", false],
   ] as const)("%s: push %s, email %s, SMS %s", (kind, push, email, sms) => {
     expect(notificationRules[kind]).toEqual({ push, email, sms });
   });
