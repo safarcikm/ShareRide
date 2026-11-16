@@ -8,11 +8,15 @@ const json = "application/json";
 /** The OpenAPI name of the bearer token scheme used by routes marked `auth`. */
 export const bearerAuth = "bearerAuth";
 
+/** The OpenAPI name of the console's session cookie, for routes marked `auth: "operator"`. */
+export const operatorSession = "operatorSession";
+
 /**
  * Turns a framework-free contract route into a documented Hono route. Routes
  * marked `auth` get `auth` (requireAuth) and are documented as needing a
  * token; routes marked `auth: "optional"` get `auth` (optionalAuth) and are
- * documented as taking one.
+ * documented as taking one; routes marked `auth: "operator"` get `auth`
+ * (requireOperator) and are documented as needing the console's cookie.
  */
 export function toOpenApiRoute(route: RouteDefinition, auth?: MiddlewareHandler): RouteConfig {
   const responses: RouteConfig["responses"] = {};
@@ -31,15 +35,23 @@ export function toOpenApiRoute(route: RouteDefinition, auth?: MiddlewareHandler)
   if (route.auth !== undefined && route.auth !== false && auth === undefined) {
     throw new Error(`${route.path} needs its auth middleware.`);
   }
+  // The console's cookie is sent only to /admin/v1, and only the console's
+  // guard may open it (ADR 0028).
+  if ((route.auth === "operator") !== route.path.startsWith("/admin/v1/")) {
+    throw new Error(`${route.path}: console routes, and only they, live under /admin/v1.`);
+  }
   const token: Record<string, string[]> = { [bearerAuth]: [] };
   // An empty requirement documents that the token may be left out.
   const none: Record<string, string[]> = {};
+  const cookie: Record<string, string[]> = { [operatorSession]: [] };
   const security =
     route.auth === true
       ? { security: [token], middleware: auth }
       : route.auth === "optional"
         ? { security: [token, none], middleware: auth }
-        : {};
+        : route.auth === "operator"
+          ? { security: [cookie], middleware: auth }
+          : {};
   return createRoute({
     method: route.method,
     path: route.path,

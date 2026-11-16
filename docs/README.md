@@ -33,6 +33,7 @@ Everything needed to understand, build and run ShareRide. Start with the
 - [Testing strategy](engineering/testing-strategy.md)
 - [CI/CD and releases](engineering/ci-cd-and-releases.md)
 - [Security](engineering/security.md)
+- [Operator console](engineering/operator-console.md): adding a console route or page
 - [Claude Code setup](engineering/claude-code-setup.md): plugins, skills and why
 
 ## Operations

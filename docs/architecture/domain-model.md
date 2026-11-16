@@ -237,7 +237,16 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
 
 ### Supporting records
 
-- `AuditLog`: who did what to which record, when, from where. Append-only.
+- `AuditLog`: who did what to which record, when, from where (the
+  operator, their console session, an action such as
+  `meeting_point.update`, the record's type and ID, the fields before and
+  after, IP address and browser). Append-only: a database trigger refuses
+  changes, and deleting entries younger than 3 years
+  ([milestone 8 plan](../plans/2026-11-16-milestone-8-operator-console-and-meeting-points.md)).
+- `OperatorSession`: a console session of an operator, separate from the
+  app's sessions; ends 30 minutes after last use, 12 hours after sign-in,
+  on sign-out, or when the role is removed or the account suspended
+  ([ADR 0028](../decisions/0028-operator-console-web-app-and-passkeys.md)).
 - `Setting`: operator configuration (rates, timeouts, switches) with a range,
   a `SettingChange` history and a `SettingsVersion` that trips and bookings
   record ([spec 10](../specs/2026-11-13-operator-settings-and-metrics.md#6-data-and-api)).

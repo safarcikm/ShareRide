@@ -4,10 +4,13 @@ import {
   myBookingsRoute,
   myTripsRoute,
   tripBookingsRoute,
+  tripDetailsRoute,
+  tripSearchRoute,
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
+import { sampleId } from "@shareride/db/seed";
 import { defaultTripDaySettings as settings } from "@shareride/domain";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
@@ -47,7 +50,7 @@ afterAll(async () => {
   await api.close();
 });
 
-const { newMember, later, rewind, driverOf, booked, paid, occupancy, heldByBookings } =
+const { newMember, later, rewind, driverOf, book, booked, paid, occupancy, heldByBookings } =
   bookingHelpers(() => api);
 
 const hourMs = 3_600_000;
@@ -167,6 +170,53 @@ describe("trips depart and complete on their own (spec 8, 3.6; R8.1, R8.2)", () 
     released.resolve(undefined);
     await changing;
     expect(await run()).toEqual({ departed: 1, completed: 0 });
+  });
+});
+
+describe("a trip under way (rule S4, Martin 2026-11-16)", () => {
+  it("can still be found and booked at a later stop, until that stop's cut-off", async () => {
+    const [fitjar] = await api.connection.db
+      .select({ plannedAt: schema.tripStops.plannedAt })
+      .from(schema.tripStops)
+      .where(and(eq(schema.tripStops.tripId, airport), eq(schema.tripStops.position, 2)));
+    if (fitjar === undefined || fitjar.plannedAt === null) throw new Error("No stop at Fitjar.");
+    const sigga = await newMember("Sigga");
+    const gunna = await newMember("Gunna");
+    await until(fitjar.plannedAt, -20 * 60, sigga, gunna);
+    await run();
+    expect((await trip(airport)).status).toBe("departed");
+
+    const found = async () => {
+      const search = await api.client.call(tripSearchRoute, {
+        query: { from: sampleId("point:fitjar"), to: sampleId("point:kef"), seats: 1 },
+      });
+      if (!search.ok) throw new Error(search.error.code);
+      return search.data.results.some(({ tripId }) => tripId === airport);
+    };
+    expect(await found()).toBe(true);
+    const part = async (fromStop: number) => {
+      const found = await api.client.call(tripDetailsRoute, {
+        params: { id: airport },
+        query: { fromStop, toStop: 3 },
+      });
+      if (!found.ok) throw new Error(found.error.code);
+      return found.data.part.state;
+    };
+    expect(await part(0)).toBe("departed");
+    expect(await part(2)).toBe("open");
+    await booked(sigga.accessToken, airport, { fromStop: 2, toStop: 3 });
+    expect(await book(gunna.accessToken, airport, { fromStop: 0, toStop: 3 })).toMatchObject({
+      ok: false,
+      error: { code: "trip_not_bookable" },
+    });
+
+    await until(fitjar.plannedAt, -15 * 60, gunna);
+    expect(await part(2)).toBe("closed");
+    expect(await found()).toBe(false);
+    expect(await book(gunna.accessToken, airport, { fromStop: 2, toStop: 3 })).toMatchObject({
+      ok: false,
+      error: { code: "booking_closed" },
+    });
   });
 });
 

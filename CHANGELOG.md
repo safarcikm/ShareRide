@@ -470,6 +470,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   stays on both sides after the ride, and "Message all" still reaches
   passengers whose bookings completed; "Where to stand" goes once the
   ride completed.
+- A trip under way can still be booked at a later stop until that stop's
+  cut-off (rule S4; Martin's answer A45 to Q21): search finds it, and the
+  trip page offers it, as before trips departed on their own.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
@@ -484,6 +487,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   with iOS dark and tinted versions, the Android adaptive and themed icons,
   the opening screen on frost or night, and the browser tab icon, exported
   from drawings in `apps/mobile/assets/logo`.
+- Operator console, milestone 8: the plan and ADR 0028; console sessions,
+  the guard on `/admin/v1` and the append-only audit log in the API
+  (`recordAudit`, a trigger that refuses changes).
 
 - Privacy self-service, part 1 (spec 11): the rules in the domain (what
   is open before deleting an account, the 7-day wait, what deletion does to

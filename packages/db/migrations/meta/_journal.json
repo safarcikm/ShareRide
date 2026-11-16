@@ -145,8 +145,15 @@
     {
       "idx": 20,
       "version": "7",
-      "when": 1794870135581,
-      "tag": "0020_confirm_codes",
+      "when": 1794869995363,
+      "tag": "0020_operator_console",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794871064036,
+      "tag": "0021_confirm_codes",
       "breakpoints": true
     }
   ]

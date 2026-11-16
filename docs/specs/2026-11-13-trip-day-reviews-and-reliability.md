@@ -117,7 +117,8 @@ complain further.
 ### 3.6 Trip completion (E4)
 
 1. A trip **departs** at the planned time of its first stop. From then on it
-   cannot be changed (spec 6, R6.1).
+   cannot be changed (spec 6, R6.1), but a later stop can still be booked
+   until its own cut-off (rule S4; Martin, 2026-11-16, A45).
 2. It **completes** on its own 2 hours after the planned time of its last
    stop. Every confirmed booking that is not a no-show and has no open "driver
    didn't come" report becomes **completed**.
