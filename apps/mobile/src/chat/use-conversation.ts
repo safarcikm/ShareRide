@@ -14,7 +14,7 @@ import { useLanguage } from "@/i18n/language";
 import { showConversation } from "@/notifications/open-conversation";
 import { newClientId } from "./client-id";
 import { merged, newestTheirs, type Outgoing, type Pending } from "./messages";
-import { messageText, otherPerson, spokenMessage } from "./texts";
+import { otherPerson, outgoingText, spokenMessage } from "./texts";
 import { useUnread } from "./unread";
 
 /** While a conversation is open, new messages are fetched this often (spec 7, 3.1, item 10). */
@@ -184,7 +184,7 @@ export function useConversation(bookingId: string) {
     setPending((last) =>
       last.map((item) => (item.clientId === clientId ? { ...item, state: "failed" } : item)),
     );
-    announce(`${t("chat.notSent")} ${messageText(t, outgoing)}`);
+    announce(`${t("chat.notSent")} ${outgoingText(t, outgoing)}`);
     if (answer.error.code === "too_many_messages") setTooFast(true);
     if (answer.error.code === "chat_closed") {
       // Shows it closed, read-only.

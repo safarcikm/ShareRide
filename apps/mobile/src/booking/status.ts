@@ -48,9 +48,31 @@ export function promptOccasion(booking: Booking): string | null {
   return booking.status === "confirmed" ? `booked:${booking.id}` : null;
 }
 
-/** Declined, expired and withdrawn bookings offer the same search again. */
+/** Someone other than the passenger cancelled it: the driver or ShareRide (spec 6). */
+const cancelledForThem = (booking: Booking) =>
+  booking.status === "cancelled" &&
+  booking.cancellation !== null &&
+  booking.cancellation.by !== "passenger";
+
+/**
+ * Declined, expired and withdrawn bookings, and those someone else
+ * cancelled, offer the same search again.
+ */
 export const offersSearchAgain = (booking: Booking) =>
-  booking.status === "declined" || booking.status === "expired" || isWithdrawn(booking);
+  booking.status === "declined" ||
+  booking.status === "expired" ||
+  isWithdrawn(booking) ||
+  cancelledForThem(booking);
+
+/**
+ * An accepted or confirmed booking its passenger can cancel (spec 6, 3.5),
+ * until the planned time at their boarding stop; then the trip day takes
+ * over (spec 8). A request is withdrawn instead.
+ */
+export const canCancel = (booking: Booking, at: Date) =>
+  booking.viewer === "passenger" &&
+  (booking.status === "accepted" || booking.status === "confirmed") &&
+  at.getTime() < new Date(booking.board.plannedAt).getTime();
 
 /**
  * Search results for the same part and seats, on the same day while that day

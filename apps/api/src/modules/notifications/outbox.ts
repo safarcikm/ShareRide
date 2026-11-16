@@ -10,7 +10,10 @@ const { outboxEvents } = schema;
  */
 export type OutboxEvent =
   | {
-      readonly type: Exclude<OutboxEventType, "BookingExpired" | "MessageSent">;
+      readonly type: Exclude<
+        OutboxEventType,
+        "BookingExpired" | "BookingCancelled" | "MessageSent"
+      >;
       readonly bookingId: string;
     }
   | {
@@ -18,6 +21,12 @@ export type OutboxEvent =
       readonly bookingId: string;
       /** A request nobody answered, or an accepted booking nobody paid for. */
       readonly reason: "unanswered" | "unpaid";
+    }
+  | {
+      readonly type: "BookingCancelled";
+      readonly bookingId: string;
+      /** Who cancelled: the other person is told (spec 7, 3.3). */
+      readonly by: "passenger" | "driver";
     }
   | { readonly type: "MessageSent"; readonly messageId: string };
 

@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import {
   acceptRequestRoute,
   bookTripRoute,
+  cancelBookingRoute,
+  cancellationPreviewRoute,
   declineRequestRoute,
   messageAllPassengersRoute,
   readMessagesRoute,
@@ -11,6 +13,7 @@ import {
   type SendMessageBody,
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
+import { formatMoney } from "@shareride/i18n";
 import { and, asc, desc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
@@ -33,6 +36,7 @@ import {
   type Member,
 } from "../bookings/testing.ts";
 import { expireAllDueBookings } from "../bookings/index.ts";
+import { createPaymentService } from "../payments/service.ts";
 import { cleanUpNotifications } from "./clean-up.ts";
 import { setPreferences } from "./preferences.ts";
 import { createNotificationWorker } from "./worker.ts";
@@ -193,6 +197,25 @@ async function send(member: Member, bookingId: string, body: Partial<SendMessage
     body: { clientId: randomUUID(), ...body } as SendMessageBody,
   });
   if (!result.ok) throw new Error(`${String(result.status)} ${result.error.code}`);
+  return result.data;
+}
+
+/** Cancels the passenger's booking with the terms the preview shows, as the app does. */
+async function cancelAsShown(passenger: Member, bookingId: string) {
+  const preview = await api.client.call(cancellationPreviewRoute, {
+    accessToken: passenger.accessToken,
+    params: { id: bookingId },
+  });
+  if (!preview.ok) throw new Error(preview.error.code);
+  const [{ reason, refund, countsOnReliability }] = preview.data.reasons as [
+    (typeof preview.data.reasons)[number],
+  ];
+  const result = await api.client.call(cancelBookingRoute, {
+    accessToken: passenger.accessToken,
+    params: { id: bookingId },
+    body: { reason, terms: { refund, countsOnReliability } },
+  });
+  if (!result.ok) throw new Error(result.error.code);
   return result.data;
 }
 
@@ -459,6 +482,48 @@ describe("the worker (plan 4.4)", () => {
       ["Booking confirmed", `/bookings/${bookingId}`],
       ["Booking confirmed: Gunna", `/drive/trips/${airport}`],
     ]);
+  });
+
+  it("tells the driver when the passenger cancels, and the passenger by email once the refund is made", async () => {
+    const { jon, passenger, bookingId } = await confirmedBooking();
+    await withDevice(jon);
+    await withDevice(passenger);
+    await withEmail(passenger, "gunna@example.com");
+    await worker().runOnce();
+    const pushedBefore = push.sent.length;
+
+    const { cancellation } = await cancelAsShown(passenger, bookingId);
+    if (cancellation === null) throw new Error("not cancelled");
+    expect(cancellation.refund.amount).toBeGreaterThan(0);
+    await worker().runOnce();
+    expect(push.sent.slice(pushedBefore)).toEqual([
+      {
+        to: `ExponentPushToken[${jon.userId}]`,
+        title: "Booking cancelled: Gunna",
+        body: "1 seat · Hlemmur – Fjörður shopping centre · Saturday 14 November at 05:30",
+        data: { path: `/drive/trips/${airport}` },
+      },
+    ]);
+    expect((await logOf(passenger)).map((row) => row.kind)).not.toContain("refund_issued");
+
+    const payments = createPaymentService({
+      db: api.connection.db,
+      clock: () => api.now(),
+      provider: api.features.payments,
+    });
+    await payments.refundOwed();
+    await worker().runOnce();
+    expect((await logOf(passenger)).filter((row) => row.kind === "refund_issued")).toEqual([
+      { kind: "refund_issued", channel: "email", status: "sent", reason: null, attempts: 1 },
+    ]);
+    expect(email.sent.at(-1)).toMatchObject({
+      to: "gunna@example.com",
+      subject: `Refund of ${formatMoney(cancellation.refund, "en")}`,
+      text: expect.stringMatching(
+        /^Hlemmur – Fjörður shopping centre · Saturday 14 November at 05:30\. It goes back to the card you paid with\./,
+      ) as unknown,
+    });
+    expect(push.sent.slice(pushedBefore)).toHaveLength(1);
   });
 
   it("pushes a chat message with its text, and a quick message in the reader's language", async () => {

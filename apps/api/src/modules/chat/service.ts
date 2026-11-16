@@ -10,8 +10,9 @@ import {
   type MessageBody,
   type MessageProblem,
   type QuickMessage,
+  type CancelReason,
   type Result,
-  type SystemLineKey,
+  type TripRole,
 } from "@shareride/domain";
 import { and, desc, eq, gt, inArray, isNotNull, isNull, ne, or, sql, type SQL } from "drizzle-orm";
 import type { BookingService } from "../bookings/index.ts";
@@ -83,7 +84,24 @@ type MessageRow = typeof messages.$inferSelect;
 
 const minuteMs = 60_000;
 
-function present(row: MessageRow, viewerId: string): ChatMessage {
+/** A stored system line, as the person reading it sees it: a cancellation is mine or theirs. */
+function systemLineOf(row: MessageRow, viewer: TripRole): NonNullable<ChatMessage["system"]> {
+  switch (row.key) {
+    case "opened":
+      return { key: "opened" };
+    case "cancelled":
+      return {
+        key: "cancelled",
+        by: row.params?.["by"] === viewer ? "me" : "them",
+        reason: row.params?.["reason"] as CancelReason,
+      };
+    default:
+      throw new Error(`No such system line: ${String(row.key)}.`);
+  }
+}
+
+/** A message as `viewerId`, the booking's passenger or driver, sees it. */
+function present(row: MessageRow, viewerId: string, viewer: TripRole): ChatMessage {
   const from = row.senderId === null ? "system" : row.senderId === viewerId ? "me" : "them";
   const mine = from === "me";
   return {
@@ -92,7 +110,7 @@ function present(row: MessageRow, viewerId: string): ChatMessage {
     kind: row.kind as ChatMessage["kind"],
     text: row.kind === "text" ? row.body : null,
     quick: row.kind === "quick" ? quickOf(row) : null,
-    system: row.kind === "system" ? { key: row.key as SystemLineKey } : null,
+    system: row.kind === "system" ? systemLineOf(row, viewer) : null,
     clientId: mine ? row.clientId : null,
     sentAt: row.sentAt.toISOString(),
     readAt: mine ? (row.readAt?.toISOString() ?? null) : null,
@@ -141,12 +159,14 @@ export function createChatService(dependencies: {
 }): ChatService {
   const { db, clock, settings } = dependencies;
 
-  /** The booking's conversation, for its passenger or driver. */
+  /** The booking's conversation, for its passenger or driver, and which of them is asking. */
   async function access(
     q: Queryable,
     userId: string,
     bookingId: string,
-  ): Promise<Result<ConversationRow, ChatError>> {
+  ): Promise<
+    Result<{ readonly conversation: ConversationRow; readonly viewer: TripRole }, ChatError>
+  > {
     const [row] = await q
       .select({
         passengerId: bookings.passengerId,
@@ -160,7 +180,11 @@ export function createChatService(dependencies: {
     if (row === undefined || (row.passengerId !== userId && row.driverId !== userId)) {
       return err({ code: "not_found" });
     }
-    return row.conversation === null ? err({ code: "not_confirmed" }) : ok(row.conversation);
+    if (row.conversation === null) return err({ code: "not_confirmed" });
+    return ok({
+      conversation: row.conversation,
+      viewer: row.passengerId === userId ? "passenger" : "driver",
+    });
   }
 
   async function messageIn(conversationId: string, messageId: string) {
@@ -202,7 +226,8 @@ export function createChatService(dependencies: {
           closesAt: row.closesAt.toISOString(),
           canWrite: canWrite({ opensAt: row.openedAt, closesAt: row.closesAt }, now),
           unread: unread.find((count) => count.conversationId === row.id)?.count ?? 0,
-          lastMessage: lastMessage === undefined ? null : present(lastMessage, userId),
+          lastMessage:
+            lastMessage === undefined ? null : present(lastMessage, userId, booking.viewer),
         },
       ];
     });
@@ -252,7 +277,7 @@ export function createChatService(dependencies: {
     async messages(userId, bookingId, beforeId) {
       const found = await access(db, userId, bookingId);
       if (!found.ok) return found;
-      const conversation = found.value;
+      const { conversation, viewer } = found.value;
       let older: SQL | undefined;
       if (beforeId !== undefined) {
         const from = await messageIn(conversation.id, beforeId);
@@ -271,7 +296,7 @@ export function createChatService(dependencies: {
       if (summary === undefined) return err({ code: "not_found" });
       return ok({
         conversation: summary,
-        messages: rows.slice(0, messagesPageSize).map((row) => present(row, userId)),
+        messages: rows.slice(0, messagesPageSize).map((row) => present(row, userId, viewer)),
         hasMore: rows.length > messagesPageSize,
       });
     },
@@ -279,7 +304,7 @@ export function createChatService(dependencies: {
     async send(userId, bookingId, body) {
       const found = await access(db, userId, bookingId);
       if (!found.ok) return found;
-      const conversation = found.value;
+      const { conversation, viewer } = found.value;
       // A retry gets what was sent, even once the conversation has closed.
       const earlier = async (q: Queryable): Promise<Result<MessageRow | null, ClientIdReused>> => {
         const rows = await q
@@ -293,7 +318,7 @@ export function createChatService(dependencies: {
       const retried = await earlier(db);
       if (!retried.ok) return retried;
       if (retried.value !== null) {
-        return ok({ message: present(retried.value, userId), created: false });
+        return ok({ message: present(retried.value, userId, viewer), created: false });
       }
       const checked = checkMessage(inputOf(body), settings);
       if (!checked.ok) return checked;
@@ -307,7 +332,7 @@ export function createChatService(dependencies: {
         const again = await earlier(tx);
         if (!again.ok) return again;
         if (again.value !== null) {
-          return ok({ message: present(again.value, userId), created: false });
+          return ok({ message: present(again.value, userId, viewer), created: false });
         }
         if ((await sentLastMinute(tx, userId, now)) >= settings.rateLimitPerMinute) {
           return err({ code: "too_many_messages" });
@@ -324,20 +349,21 @@ export function createChatService(dependencies: {
           .returning();
         if (created === undefined) throw new Error("The message was not stored.");
         await recordEvents(tx, [{ type: "MessageSent", messageId: created.id }], now);
-        return ok({ message: present(created, userId), created: true });
+        return ok({ message: present(created, userId, viewer), created: true });
       });
     },
 
     async read(userId, bookingId, upTo) {
       const found = await access(db, userId, bookingId);
       if (!found.ok) return found;
-      const message = await messageIn(found.value.id, upTo);
+      const { conversation } = found.value;
+      const message = await messageIn(conversation.id, upTo);
       if (message === undefined) return err({ code: "message_not_found" });
       await db
         .update(messages)
         .set({ readAt: clock() })
         .where(
-          and(eq(messages.conversationId, found.value.id), unreadBy(userId), upToAndWith(message)),
+          and(eq(messages.conversationId, conversation.id), unreadBy(userId), upToAndWith(message)),
         );
       return ok(null);
     },

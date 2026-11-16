@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { moneySchema } from "./common.ts";
+import { cancellationTermsSchema, moneySchema } from "./common.ts";
 
 /**
  * Every error response has this shape (engineering conventions, "API").
@@ -20,6 +20,8 @@ export const errorResponseSchema = z.object({
     freeSeats: z.int().nonnegative().optional(),
     /** The total now, when it is not the one shown (`price_changed`, R5.3). */
     total: moneySchema.optional(),
+    /** A cancellation's terms now, when they are not the ones shown (`terms_changed`). */
+    terms: cancellationTermsSchema.optional(),
   }),
 });
 

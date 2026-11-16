@@ -1,11 +1,14 @@
 import {
   bookingStatuses,
+  cancelReasons,
   declineReasons,
   defaultBookingSettings,
   defaultTripSettings,
+  noteMaxLength,
 } from "@shareride/domain";
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   check,
   index,
   integer,
@@ -65,8 +68,24 @@ export const bookings = pgTable(
     confirmedAt: at(),
     expiredAt: at(),
     cancelledAt: at(),
-    /** `passenger` for a withdrawn request; drivers and the operator cancel with spec 6. */
+    /** `passenger` for a withdrawn request or a cancelled booking, or `driver` (spec 6). */
     cancelledBy: text(),
+    /** Why it was cancelled (spec 6, 3.3 to 3.5); null for a withdrawn request. */
+    cancelReason: text(),
+    /** The driver's note to the passenger, as written (spec 6, 3.3); empty for none. */
+    cancelNote: text().notNull().default(""),
+    /** What went back to the passenger on cancelling, in whole krónur (rule M2). */
+    refundAmount: integer(),
+    /** Whether the cancellation shows on the canceller's reliability (R6.7, R6.8; spec 8). */
+    countsOnReliability: boolean().notNull().default(false),
+    /**
+     * The trip's departure when the booking was made: moves are counted from
+     * it (R6.3, R6.4). Older bookings took their trip's departure. Null only
+     * for one made by the previous version during a deploy, read as the
+     * trip's departure; required once no older version runs (expand, then
+     * contract).
+     */
+    departsAtWhenBooked: at(),
     ...timestamps,
   },
   (table) => [
@@ -83,6 +102,15 @@ export const bookings = pgTable(
       sql`char_length(${table.message}) <= ${sql.raw(String(defaultBookingSettings.messageMaxLength))}`,
     ),
     check("bookings_decline_reason_check", oneOf(table.declineReason, declineReasons)),
+    check("bookings_cancel_reason_check", oneOf(table.cancelReason, cancelReasons)),
+    check(
+      "bookings_cancel_note_check",
+      sql`char_length(${table.cancelNote}) <= ${sql.raw(String(noteMaxLength))}`,
+    ),
+    check(
+      "bookings_refund_check",
+      sql`${table.refundAmount} is null or ${table.refundAmount} between 0 and ${table.totalPrice}`,
+    ),
     check(
       "bookings_cancelled_by_check",
       oneOf(table.cancelledBy, ["passenger", "driver", "operator"]),

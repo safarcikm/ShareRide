@@ -107,6 +107,9 @@ themselves instead.
 4. A request not yet accepted is withdrawn instead (spec 5), and an accepted
    but unpaid booking can be cancelled with nothing to refund; neither counts
    on reliability.
+5. A booking can be cancelled until the planned time at the boarding stop.
+   After that, what happens belongs to the trip day (spec 8): a passenger who
+   did not come is a no-show, and a driver who did not come is reported.
 
 ### 3.6 Post again and post the return trip (C6)
 
@@ -155,7 +158,8 @@ Entities (see [domain model](../architecture/domain-model.md)):
 - `TripChange`: trip, kind (time, stop added, stop removed, seats, price level,
   car, booking mode, details), before and after, changed at.
 - `Booking` uses its cancellation fields (`cancelled_by`, `cancel_reason`,
-  `cancelled_at`) plus `refund_amount` and `counts_on_reliability`.
+  `cancel_note`, `cancelled_at`) plus `refund_amount`,
+  `counts_on_reliability` and `departs_at_when_booked`.
 
 Endpoints (`/v1`, shapes defined in `packages/contracts`):
 
@@ -173,8 +177,9 @@ Domain functions in `packages/domain`: validate a change against the bookings
 and return its effect; the refund and reliability effect of a cancellation;
 reverse a trip's stops.
 
-Events: `TripChanged`, `TripCancelled`, `BookingCancelled` (with who, reason
-and refund). Notifications for each come in spec 7; refunds in spec 13.
+Events: `TripChanged`, `TripCancelled`, `BookingCancelled` (the booking and
+who cancelled; the reason and refund are read from the booking, as events hold
+IDs only). Notifications for each come in spec 7; refunds in spec 13.
 
 ## 7. Privacy and safety
 
@@ -202,6 +207,20 @@ and refund). Notifications for each come in spec 7; refunds in spec 13.
 | `booking.fullRefund` | Full refund of {amount} | Full endurgreiðsla, {amount} |
 | `booking.noRefund` | No refund: less than 15 minutes before departure | Engin endurgreiðsla: innan við 15 mínútur í brottför |
 | `booking.countsOnReliability` | This cancellation shows on your profile | Þessi afbókun sést á prófílnum þínum |
+| `booking.cancelTitle` | Cancel your booking | Afbóka bókunina |
+| `booking.cancelWhy` | Why are you cancelling? | Af hverju afbókarðu? |
+| `booking.cancelChooseReason` | Choose a reason. | Veldu ástæðu. |
+| `booking.nothingPaid` | Nothing to refund: you haven't paid yet. | Ekkert að endurgreiða: þú hefur ekki greitt enn. |
+| `booking.nothingToRefund` | This ride is free, so there's nothing to refund. | Farið er ókeypis svo það er ekkert að endurgreiða. |
+| `booking.cancelTold` | {driver} is told, and {seats, plural, one {the seat is} other {the seats are}} freed for others. | {driver} fær að vita það og {seats, plural, one {sætið losnar} other {sætin losna}} fyrir aðra. |
+| `booking.keep` | Keep my booking | Halda bókuninni |
+| `booking.backToBooking` | Back to the booking | Aftur í bókunina |
+| `booking.termsChanged` | Something changed since you opened this. Check the refund again. | Eitthvað breyttist síðan þú opnaðir þetta. Athugaðu endurgreiðsluna aftur. |
+| `booking.notCancellable` | This booking can no longer be cancelled. | Ekki er lengur hægt að afbóka þessa bókun. |
+| `booking.cancelledByYou` | You cancelled this booking: {reason} | Þú afbókaðir þessa bókun: {reason} |
+| `booking.cancelledByOther` | {name} cancelled this booking: {reason} | {name} afbókaði þessa bókun: {reason} |
+| `booking.cancelledByOperator` | ShareRide cancelled this booking. | ShareRide afbókaði þessa bókun. |
+| `booking.refundOnItsWay` | Full refund of {amount}, back to the card you paid with. | Full endurgreiðsla, {amount}, aftur á kortið sem þú greiddir með. |
 | `trip.postAgain` | Post again | Birta aftur |
 | `trip.postReturn` | Post the return trip | Birta ferðina til baka |
 | `cancelReason.weather` | Weather | Veður |
@@ -210,6 +229,15 @@ and refund). Notifications for each come in spec 7; refunds in spec 13.
 | `cancelReason.illness` | Illness | Veikindi |
 | `cancelReason.plansChanged` | Plans changed | Breyttar áætlanir |
 | `cancelReason.other` | Other | Annað |
+| `cancelReason.passengerAsked` | The passenger asked | Farþeginn bað um það |
+| `cancelReason.carSmaller` | The car is smaller than planned | Bíllinn er minni en til stóð |
+| `cancelReason.foundAnother` | Found another ride | Fann annað far |
+| `cancelReason.tripChanged` | The trip changed | Ferðin breyttist |
+| `chat.cancelledByMe` | You cancelled the booking: {reason} | Þú afbókaðir: {reason} |
+| `chat.cancelledByThem` | {name} cancelled the booking: {reason} | {name} afbókaði: {reason} |
+| `notify.cancelledByPassenger` | Booking cancelled: {name} | Bókun afbókuð: {name} |
+| `notify.refunded` | Refund of {total} | Endurgreiðsla, {total} |
+| `notify.refundedBody` | {from} – {to} · {when}. It goes back to the card you paid with. | {from} – {to} · {when}. Hún fer aftur á kortið sem þú greiddir með. |
 
 ## 9. Testing
 
@@ -244,3 +272,4 @@ Accepted by Martin on 2026-11-13 as recommended.
 | - | -------- | -------- |
 | 1 | How far can a driver move the departure once people have booked? | Up to 2 hours, earlier or later. A bigger change is really a different trip: the driver cancels (everyone refunded) and posts a new one |
 | 2 | Which passenger cancellations count on their reliability? | Only those in the last 24 hours before boarding, and no-shows. Never weather or road-closure cancellations, or cancellations after the driver moved the trip by more than 30 minutes |
+| 3 | Until when can a passenger cancel? | Until the planned time at their boarding stop. After that it is the trip day's (spec 8), so a cancellation never stands in for a no-show, which always counts (recommended 2026-11-16 in milestone 6, PR 3; Martin to confirm) |

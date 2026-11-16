@@ -1,5 +1,11 @@
 import { schema } from "@shareride/db";
-import { conversationWindow, defaultChatSettings, type ChatSettings } from "@shareride/domain";
+import {
+  conversationWindow,
+  defaultChatSettings,
+  type ChatSettings,
+  type SystemLine,
+} from "@shareride/domain";
+import { eq } from "drizzle-orm";
 import { stopsOf, type Transaction } from "../bookings/seats.ts";
 
 const { conversations, messages } = schema;
@@ -30,4 +36,30 @@ export async function openConversation(
   await tx
     .insert(messages)
     .values({ conversationId: opened.id, kind: "system", key: "opened", sentAt: now });
+}
+
+/**
+ * Writes what happened to the booking into its conversation, if it has one
+ * (spec 7, 3.1, item 3). Each reader sees it in their own words; it tells
+ * nobody, as the worker skips system lines.
+ */
+export async function addSystemLine(
+  tx: Transaction,
+  bookingId: string,
+  line: SystemLine,
+  now: Date,
+): Promise<void> {
+  const [conversation] = await tx
+    .select({ id: conversations.id })
+    .from(conversations)
+    .where(eq(conversations.bookingId, bookingId));
+  if (conversation === undefined) return;
+  const { key, ...params } = line;
+  await tx.insert(messages).values({
+    conversationId: conversation.id,
+    kind: "system",
+    key,
+    params: Object.keys(params).length === 0 ? null : params,
+    sentAt: now,
+  });
 }

@@ -19,6 +19,8 @@ export const outboxEventTypes = [
   "BookingDeclined",
   "BookingExpired",
   "BookingWithdrawn",
+  "BookingCancelled",
+  "RefundIssued",
   "MessageSent",
 ] as const;
 export type OutboxEventType = (typeof outboxEventTypes)[number];

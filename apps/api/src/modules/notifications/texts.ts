@@ -145,6 +145,13 @@ function bookingText(
         return [t("notify.unpaid"), searchAgain()];
       case "payment_window_ended_driver":
         return [t("notify.unpaidDriver", { name }), part()];
+      case "booking_cancelled_by_passenger":
+        return [t("notify.cancelledByPassenger", { name }), part()];
+      case "refund_issued":
+        return [
+          t("notify.refunded", { total: formatMoney(facts.total, locale) }),
+          t("notify.refundedBody", { from, to, when: when(facts.boardsAt) }),
+        ];
       case "new_message": {
         const { message } = facts;
         if (message === null) throw new Error("The notification needs its message.");

@@ -1,4 +1,4 @@
-import type { QuickMessage, SystemLineKey } from "@shareride/domain";
+import type { CancelReason, QuickMessage } from "@shareride/domain";
 import type { MessageKey, Translate } from "./translator.ts";
 
 // Quick messages and system lines are stored as keys and put into words in
@@ -21,11 +21,34 @@ export function quickMessageText(t: Translate, quick: QuickMessage): string {
     : t(quickMessageKeys[quick.key]);
 }
 
-const systemLineKeys: Readonly<Record<SystemLineKey, MessageKey>> = {
-  opened: "chat.opened",
+const cancelReasonKeys: Readonly<Record<CancelReason, MessageKey>> = {
+  weather: "cancelReason.weather",
+  road_closed: "cancelReason.roadClosed",
+  car_problem: "cancelReason.carProblem",
+  illness: "cancelReason.illness",
+  plans_changed: "cancelReason.plansChanged",
+  other: "cancelReason.other",
+  passenger_asked: "cancelReason.passengerAsked",
+  car_smaller: "cancelReason.carSmaller",
+  found_another: "cancelReason.foundAnother",
+  trip_changed: "cancelReason.tripChanged",
 };
 
-/** A line about what happened to the booking, in `t`'s language. */
-export function systemLineText(t: Translate, key: SystemLineKey): string {
-  return t(systemLineKeys[key]);
+/** Why a booking or trip was cancelled, in `t`'s language (spec 6). */
+export function cancelReasonText(t: Translate, reason: CancelReason): string {
+  return t(cancelReasonKeys[reason]);
+}
+
+/** A system line as its reader sees it: a cancellation is theirs or the other person's. */
+export type ShownSystemLine =
+  | { readonly key: "opened" }
+  | { readonly key: "cancelled"; readonly by: "me" | "them"; readonly reason: CancelReason };
+
+/** A line about what happened to the booking, in `t`'s language; `other` is the other person's first name. */
+export function systemLineText(t: Translate, line: ShownSystemLine, other: string): string {
+  if (line.key === "opened") return t("chat.opened");
+  const reason = cancelReasonText(t, line.reason);
+  return line.by === "me"
+    ? t("chat.cancelledByMe", { reason })
+    : t("chat.cancelledByThem", { name: other, reason });
 }

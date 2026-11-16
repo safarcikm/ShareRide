@@ -3,21 +3,37 @@ import {
   acceptRequestRoute,
   bookingRoute,
   bookTripRoute,
+  cancelBookingRoute,
+  cancellationPreviewRoute,
+  conversationMessagesRoute,
   createTripRoute,
   declineRequestRoute,
   myBookingsRoute,
   myTripsRoute,
+  startPaymentRoute,
+  testPaymentRoute,
   tripBookingsRoute,
   tripSearchRoute,
   withdrawRequestRoute,
+  type Booking,
   type BookTripBody,
+  type CancelBookingBody,
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
 import { sampleId } from "@shareride/db/seed";
+import { passengerCancelReasons } from "@shareride/domain";
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
-import { bookingHelpers, freshSampleTrips, hours, sampleTrip, seedForBookings } from "./testing.ts";
+import { createPaymentService } from "../payments/service.ts";
+import {
+  bookingHelpers,
+  freshSampleTrips,
+  hours,
+  sampleTrip,
+  seedForBookings,
+  type Member,
+} from "./testing.ts";
 
 // The sample trips at the test clock (Friday 13 November 2026, noon): Anna
 // drives BSÍ to Hof, Akureyri on Saturday at 09:00 through N1 Borgarnes and
@@ -47,8 +63,18 @@ afterAll(async () => {
   await api.close();
 });
 
-const { newMember, later, rewind, driverOf, details, book, booked, occupancy, heldByBookings } =
-  bookingHelpers(() => api);
+const {
+  newMember,
+  later,
+  rewind,
+  driverOf,
+  details,
+  book,
+  booked,
+  paid,
+  occupancy,
+  heldByBookings,
+} = bookingHelpers(() => api);
 
 describe("POST /v1/trips/{id}/bookings (spec 5, 3.2)", () => {
   it("requests seats on an approval trip and holds them until the driver answers", async () => {
@@ -541,7 +567,8 @@ describe("answering and withdrawing requests (spec 5, 3.3 and 3.4)", () => {
       });
     expect(await withdraw()).toMatchObject({
       status: 200,
-      data: { status: "cancelled", withdrawn: true },
+      // A withdrawal is not a cancellation (spec 6, 3.5.4).
+      data: { status: "cancelled", withdrawn: true, cancellation: null },
     });
     expect(await withdraw()).toMatchObject({
       status: 409,
@@ -590,6 +617,423 @@ describe("answering and withdrawing requests (spec 5, 3.3 and 3.4)", () => {
       }),
     ).toMatchObject({ status: 409, error: { code: "booking_not_requested" } });
     expect(await occupancy(north)).toEqual([0, 0, 0]);
+  });
+});
+
+describe("cancelling a booking (spec 6, 3.5)", () => {
+  const none = { amount: 0, currency: "ISK" } as const;
+
+  const preview = (member: Member, id: string) =>
+    api.client.call(cancellationPreviewRoute, { accessToken: member.accessToken, params: { id } });
+
+  const cancel = (member: Member, id: string, body: CancelBookingBody) =>
+    api.client.call(cancelBookingRoute, {
+      accessToken: member.accessToken,
+      params: { id },
+      body,
+    });
+
+  /** What the preview says cancelling for the reason does now. */
+  async function shownTerms(
+    member: Member,
+    id: string,
+    reason: CancelBookingBody["reason"] = "plans_changed",
+  ) {
+    const shown = await preview(member, id);
+    if (!shown.ok) throw new Error(shown.error.code);
+    const option = shown.data.reasons.find((offered) => offered.reason === reason);
+    if (option === undefined) throw new Error(`${reason} is not offered.`);
+    return { refund: option.refund, countsOnReliability: option.countsOnReliability };
+  }
+
+  async function stored(id: string) {
+    const [row] = await api.connection.db
+      .select()
+      .from(schema.bookings)
+      .where(eq(schema.bookings.id, id));
+    return row;
+  }
+
+  async function paymentsOf(bookingId: string) {
+    return api.connection.db
+      .select({ status: schema.payments.status })
+      .from(schema.payments)
+      .where(eq(schema.payments.bookingId, bookingId));
+  }
+
+  async function eventsOf(bookingId: string, kind: string) {
+    return api.connection.db
+      .select({ payload: schema.outboxEvents.payload })
+      .from(schema.outboxEvents)
+      .where(
+        and(
+          eq(schema.outboxEvents.kind, kind),
+          sql`${schema.outboxEvents.payload}->>'bookingId' = ${bookingId}`,
+        ),
+      );
+  }
+
+  /** Seconds from now until the passenger gets in. */
+  const untilBoarding = (booking: Booking) =>
+    (new Date(booking.board.plannedAt).getTime() - api.now().getTime()) / 1000;
+
+  /** Moves the trip and all its times, as the driver will with PR 5. */
+  async function move(tripId: string, minutes: number) {
+    const by = sql.raw(`interval '${String(minutes)} minutes'`);
+    const { db } = api.connection;
+    await db
+      .update(schema.trips)
+      .set({ departsAt: sql`${schema.trips.departsAt} + ${by}` })
+      .where(eq(schema.trips.id, tripId));
+    await db
+      .update(schema.tripStops)
+      .set({ plannedAt: sql`${schema.tripStops.plannedAt} + ${by}` })
+      .where(eq(schema.tripStops.tripId, tripId));
+  }
+
+  async function paidBooking(tripId: string, passenger: Member) {
+    const booking = await booked(passenger.accessToken, tripId, { fromStop: 0, toStop: 3 });
+    await paid(passenger.accessToken, booking.id);
+    return booking;
+  }
+
+  it("shows the terms, then cancels a paid booking two days ahead with a full refund that does not count", async () => {
+    const jon = await driverOf(vik, "Jón");
+    const gunna = await newMember("Gunna");
+    const booking = await paidBooking(vik, gunna);
+    expect(await preview(gunna, booking.id)).toEqual({
+      ok: true,
+      status: 200,
+      data: {
+        reasons: passengerCancelReasons.map((reason) => ({
+          reason,
+          refund: booking.total,
+          countsOnReliability: false,
+        })),
+      },
+    });
+
+    const cancelled = await cancel(gunna, booking.id, {
+      reason: "plans_changed",
+      terms: { refund: booking.total, countsOnReliability: false },
+    });
+    expect(cancelled).toMatchObject({
+      status: 200,
+      data: {
+        status: "cancelled",
+        withdrawn: false,
+        cancellation: {
+          by: "passenger",
+          reason: "plans_changed",
+          refund: booking.total,
+          countsOnReliability: false,
+        },
+        confirmed: null,
+      },
+    });
+    // The seats are free for others (rule S1), and the refund is owed.
+    expect(await occupancy(vik)).toEqual([0, 0, 0]);
+    expect((await details(vik, 0, 3)).part.freeSeats).toBe(2);
+    expect(await stored(booking.id)).toMatchObject({
+      status: "cancelled",
+      cancelledBy: "passenger",
+      cancelledAt: api.now(),
+      cancelReason: "plans_changed",
+      refundAmount: booking.total.amount,
+      countsOnReliability: false,
+    });
+    expect(await paymentsOf(booking.id)).toEqual([{ status: "refund_due" }]);
+    expect(await eventsOf(booking.id, "BookingCancelled")).toEqual([
+      { payload: { bookingId: booking.id, by: "passenger" } },
+    ]);
+    // The driver sees the reason, and not whether it counts for the passenger.
+    expect(
+      await api.client.call(bookingRoute, {
+        accessToken: jon.accessToken,
+        params: { id: booking.id },
+      }),
+    ).toMatchObject({
+      data: {
+        viewer: "driver",
+        cancellation: { by: "passenger", reason: "plans_changed", countsOnReliability: null },
+      },
+    });
+
+    // The refund job pays it back once, and the passenger is told.
+    const payments = createPaymentService({
+      db: api.connection.db,
+      clock: () => api.now(),
+      provider: api.features.payments,
+    });
+    expect(await payments.refundOwed()).toBe(1);
+    expect(await payments.refundOwed()).toBe(0);
+    expect(await paymentsOf(booking.id)).toEqual([{ status: "refunded" }]);
+    expect(await eventsOf(booking.id, "RefundIssued")).toEqual([
+      { payload: { bookingId: booking.id } },
+    ]);
+  });
+
+  it("counts in the last 24 hours, and refunds in full until 15 minutes before boarding (rule M2, R6.8)", async () => {
+    const gunna = await newMember("Gunna");
+    const booking = await paidBooking(airport, gunna);
+    const full = { refund: booking.total, countsOnReliability: true };
+    expect(await shownTerms(gunna, booking.id)).toEqual(full);
+    // Weather never counts (R6.8).
+    expect(await shownTerms(gunna, booking.id, "weather")).toEqual({
+      ...full,
+      countsOnReliability: false,
+    });
+    await later(untilBoarding(booking) - 15 * 60, gunna);
+    expect(await shownTerms(gunna, booking.id)).toEqual(full);
+    await later(60, gunna);
+    const late = { refund: none, countsOnReliability: true };
+    expect(await shownTerms(gunna, booking.id)).toEqual(late);
+
+    expect(await cancel(gunna, booking.id, { reason: "found_another", terms: late })).toMatchObject(
+      { status: 200, data: { status: "cancelled", cancellation: { ...late, by: "passenger" } } },
+    );
+    expect(await stored(booking.id)).toMatchObject({ refundAmount: 0, countsOnReliability: true });
+    expect(await paymentsOf(booking.id)).toEqual([{ status: "succeeded" }]);
+    expect(await occupancy(airport)).toEqual([0, 0, 0]);
+  });
+
+  it("refuses once the planned time at the boarding stop has come: the trip day takes over (spec 8)", async () => {
+    const gunna = await newMember("Gunna");
+    const booking = await paidBooking(airport, gunna);
+    await later(untilBoarding(booking) - 60, gunna);
+    const terms = await shownTerms(gunna, booking.id);
+    await later(60, gunna);
+    const refused = { status: 409, error: { code: "booking_not_cancellable" } };
+    expect(await preview(gunna, booking.id)).toMatchObject(refused);
+    expect(await cancel(gunna, booking.id, { reason: "plans_changed", terms })).toMatchObject(
+      refused,
+    );
+    expect(await stored(booking.id)).toMatchObject({ status: "confirmed", cancelReason: null });
+    expect(await occupancy(airport)).toEqual([1, 1, 1]);
+  });
+
+  it("cancels a free ride with nothing to refund and no payment to touch", async () => {
+    await api.connection.db
+      .update(schema.segments)
+      .set({ price: 0 })
+      .where(eq(schema.segments.tripId, vik));
+    const gunna = await newMember("Gunna");
+    const booking = await booked(gunna.accessToken, vik, { fromStop: 0, toStop: 3 });
+    expect(booking.status).toBe("confirmed");
+    const terms = await shownTerms(gunna, booking.id);
+    expect(terms).toEqual({ refund: none, countsOnReliability: false });
+    expect(await cancel(gunna, booking.id, { reason: "plans_changed", terms })).toMatchObject({
+      status: 200,
+      data: { status: "cancelled", cancellation: { refund: none } },
+    });
+    expect(await paymentsOf(booking.id)).toEqual([]);
+    expect(await occupancy(vik)).toEqual([0, 0, 0]);
+  });
+
+  it("refuses an unpaid booking whose payment deadline passed since the preview (rule M1)", async () => {
+    const gunna = await newMember("Gunna");
+    const booking = await booked(gunna.accessToken, airport, { fromStop: 0, toStop: 2 });
+    const terms = await shownTerms(gunna, booking.id);
+    await later(31 * 60, gunna);
+    expect(await cancel(gunna, booking.id, { reason: "plans_changed", terms })).toMatchObject({
+      status: 409,
+      error: { code: "booking_not_cancellable" },
+    });
+    expect(await stored(booking.id)).toMatchObject({ status: "expired", cancelReason: null });
+  });
+
+  it("answers someone else's cancellation as not cancellable, not as the passenger's own", async () => {
+    const gunna = await newMember("Gunna");
+    const booking = await paidBooking(vik, gunna);
+    const terms = await shownTerms(gunna, booking.id);
+    // As the driver will with PR 4.
+    await api.connection.db
+      .update(schema.bookings)
+      .set({
+        status: "cancelled",
+        cancelledAt: api.now(),
+        cancelledBy: "driver",
+        cancelReason: "car_problem",
+      })
+      .where(eq(schema.bookings.id, booking.id));
+    expect(await cancel(gunna, booking.id, { reason: "plans_changed", terms })).toMatchObject({
+      status: 409,
+      error: { code: "booking_not_cancellable" },
+    });
+  });
+
+  it("answers terms_changed with the terms now when a time limit passed since the preview", async () => {
+    const gunna = await newMember("Gunna");
+    const booking = await paidBooking(airport, gunna);
+    await later(untilBoarding(booking) - 16 * 60, gunna);
+    const terms = await shownTerms(gunna, booking.id);
+    await later(2 * 60, gunna);
+    expect(await cancel(gunna, booking.id, { reason: "plans_changed", terms })).toMatchObject({
+      status: 409,
+      error: { code: "terms_changed", terms: { refund: none, countsOnReliability: true } },
+    });
+    expect(await stored(booking.id)).toMatchObject({ status: "confirmed", refundAmount: null });
+    expect(await occupancy(airport)).toEqual([1, 1, 1]);
+  });
+
+  it("cancels an unpaid booking with nothing to refund, and refunds a payment that settles after", async () => {
+    const gunna = await newMember("Gunna");
+    const booking = await booked(gunna.accessToken, airport, { fromStop: 0, toStop: 2 });
+    const payment = await api.client.call(startPaymentRoute, {
+      accessToken: gunna.accessToken,
+      params: { id: booking.id },
+      body: {},
+    });
+    if (!payment.ok) throw new Error(payment.error.code);
+    const nothing = { refund: none, countsOnReliability: false };
+    expect(await shownTerms(gunna, booking.id)).toEqual(nothing);
+    expect(
+      await cancel(gunna, booking.id, { reason: "plans_changed", terms: nothing }),
+    ).toMatchObject({ status: 200, data: { status: "cancelled", cancellation: nothing } });
+    expect(await occupancy(airport)).toEqual([0, 0, 0]);
+
+    // The payment went through just after: it is refunded at once.
+    expect(
+      await api.client.call(testPaymentRoute, {
+        accessToken: gunna.accessToken,
+        params: { id: payment.data.paymentId },
+        body: { outcome: "succeeded" },
+      }),
+    ).toMatchObject({ ok: true });
+    expect(await paymentsOf(booking.id)).toEqual([{ status: "refunded" }]);
+    // The booking says so too (R6.7).
+    expect(await stored(booking.id)).toMatchObject({
+      status: "cancelled",
+      refundAmount: booking.total.amount,
+    });
+    expect(
+      await api.client.call(bookingRoute, {
+        accessToken: gunna.accessToken,
+        params: { id: booking.id },
+      }),
+    ).toMatchObject({ data: { cancellation: { refund: booking.total } } });
+    expect(await eventsOf(booking.id, "RefundIssued")).toHaveLength(1);
+  });
+
+  it("answers the cancelled booking again when asked twice, even at once, and refunds once", async () => {
+    const gunna = await newMember("Gunna");
+    const booking = await paidBooking(vik, gunna);
+    const body = {
+      reason: "weather",
+      terms: { refund: booking.total, countsOnReliability: false },
+    } as const;
+    const [first, second] = await Promise.all([
+      cancel(gunna, booking.id, body),
+      cancel(gunna, booking.id, body),
+    ]);
+    if (!first.ok || !second.ok) throw new Error("not cancelled");
+    expect(first.data).toMatchObject({ status: "cancelled", cancellation: { reason: "weather" } });
+    expect(second.data).toEqual(first.data);
+    // Asked again later with other terms, as a retry may be: still the same.
+    expect(
+      await cancel(gunna, booking.id, {
+        reason: "other",
+        terms: { refund: none, countsOnReliability: true },
+      }),
+    ).toEqual(first);
+    expect(await paymentsOf(booking.id)).toEqual([{ status: "refund_due" }]);
+    expect(await eventsOf(booking.id, "BookingCancelled")).toHaveLength(1);
+    expect(await occupancy(vik)).toEqual([0, 0, 0]);
+    expect(await preview(gunna, booking.id)).toMatchObject({
+      status: 409,
+      error: { code: "booking_not_cancellable" },
+    });
+  });
+
+  it("counts a move from the departure when booked: over 30 minutes, a full refund until boarding that never counts (R6.3)", async () => {
+    const gunna = await newMember("Gunna");
+    const booking = await paidBooking(airport, gunna);
+    const [trip] = await api.connection.db
+      .select({ departsAt: schema.trips.departsAt })
+      .from(schema.trips)
+      .where(eq(schema.trips.id, airport));
+    expect((await stored(booking.id))?.departsAtWhenBooked).toEqual(trip?.departsAt);
+
+    await move(airport, 45);
+    await later(untilBoarding(booking) + 40 * 60, gunna);
+    // 5 minutes before the new boarding time.
+    expect(await shownTerms(gunna, booking.id)).toEqual({
+      refund: booking.total,
+      countsOnReliability: false,
+    });
+    // A booking from before this was recorded takes its trip's departure as it is now.
+    await api.connection.db
+      .update(schema.bookings)
+      .set({ departsAtWhenBooked: null })
+      .where(eq(schema.bookings.id, booking.id));
+    expect(await shownTerms(gunna, booking.id)).toEqual({
+      refund: none,
+      countsOnReliability: true,
+    });
+  });
+
+  it("refuses a request, a reason only drivers give, and anyone but the passenger", async () => {
+    const anna = await driverOf(north);
+    const jon = await newMember("Jón");
+    const stranger = await newMember("Óli");
+    const request = await booked(jon.accessToken, north, { fromStop: 0, toStop: 1 });
+    const nothing = { refund: none, countsOnReliability: false };
+    // A request is withdrawn instead (spec 5).
+    expect(await preview(jon, request.id)).toMatchObject({
+      status: 409,
+      error: { code: "booking_not_cancellable" },
+    });
+    expect(
+      await cancel(jon, request.id, { reason: "plans_changed", terms: nothing }),
+    ).toMatchObject({ status: 409, error: { code: "booking_not_cancellable" } });
+
+    const accepted = await api.client.call(acceptRequestRoute, {
+      accessToken: anna.accessToken,
+      params: { id: request.id },
+      body: {},
+    });
+    expect(accepted).toMatchObject({ data: { status: "accepted" } });
+    expect(await cancel(jon, request.id, { reason: "car_problem", terms: nothing })).toMatchObject({
+      status: 400,
+      error: { code: "validation_failed", details: [{ path: "reason", issue: "not_offered" }] },
+    });
+    // The driver cancels with milestone 6's next step (PR 4).
+    for (const who of [anna, stranger]) {
+      expect(await preview(who, request.id)).toMatchObject({ status: 404 });
+      expect(
+        await cancel(who, request.id, { reason: "plans_changed", terms: nothing }),
+      ).toMatchObject({ status: 404 });
+    }
+    expect(await stored(request.id)).toMatchObject({ status: "accepted" });
+    expect(await occupancy(north)).toEqual([1, 0, 0]);
+  });
+
+  it("tells both in the conversation, each in their own words (spec 7, 3.1)", async () => {
+    const jon = await driverOf(vik, "Jón");
+    const gunna = await newMember("Gunna");
+    const booking = await paidBooking(vik, gunna);
+    await cancel(gunna, booking.id, {
+      reason: "found_another",
+      terms: { refund: booking.total, countsOnReliability: false },
+    });
+    const lastLine = async (member: Member) => {
+      const page = await api.client.call(conversationMessagesRoute, {
+        accessToken: member.accessToken,
+        params: { id: booking.id },
+        query: {},
+      });
+      if (!page.ok) throw new Error(page.error.code);
+      return page.data.messages[0];
+    };
+    expect(await lastLine(gunna)).toMatchObject({
+      from: "system",
+      kind: "system",
+      system: { key: "cancelled", by: "me", reason: "found_another" },
+    });
+    expect(await lastLine(jon)).toMatchObject({
+      from: "system",
+      system: { key: "cancelled", by: "them", reason: "found_another" },
+    });
   });
 });
 

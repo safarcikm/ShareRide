@@ -125,6 +125,19 @@ describe("A conversation (spec 7, 3.1)", () => {
     expect(reads(client)).toEqual([hi.id]);
   });
 
+  it("says who cancelled the booking and why, in the reader's words (spec 6)", async () => {
+    const cancelled = chatMessage({
+      id: messageId(5),
+      from: "system",
+      kind: "system",
+      text: null,
+      system: { key: "cancelled", by: "them", reason: "car_problem" },
+      sentAt: "2026-11-14T11:59:00.000Z",
+    });
+    await openConversation({ messages: [openedLine, cancelled] });
+    expect(await screen.findByText("Anna cancelled the booking: Car problem")).toBeVisible();
+  });
+
   it("shows the driver the passenger's name and their request message", async () => {
     await openConversation({
       booking: { ...chatBooking, viewer: "driver" },
