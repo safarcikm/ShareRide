@@ -51,7 +51,7 @@ afterAll(async () => {
   await api.close();
 });
 
-const { newMember, rewind, driverOf, book, booked, paid } = bookingHelpers(() => api);
+const { newMember, later, rewind, driverOf, book, booked, paid } = bookingHelpers(() => api);
 
 /** Blocks the other person of the booking. */
 function block(member: Member, bookingId: string) {
@@ -187,6 +187,35 @@ describe("POST /v1/bookings/{id}/block and GET /v1/me/blocks (spec 9, 3.2)", () 
     ]);
   });
 
+  it("leaves out a booking whose boarding has passed", async () => {
+    const { gunna, bookingId } = await gunnaOnVik();
+    const airportBooking = await booked(gunna.accessToken, airport, { fromStop: 0, toStop: 1 });
+    await paid(gunna.accessToken, airportBooking.id);
+    await paid(gunna.accessToken, bookingId);
+    // Saturday 06:00: the airport trip left at 05:30; Vík is on Sunday.
+    await later(18 * 3600, gunna);
+    const result = await block(gunna, bookingId);
+    expect(result).toMatchObject({ status: 200 });
+    expect(result.ok && result.data.together.map((booking) => booking.id)).toEqual([bookingId]);
+  });
+
+  it("gives bookings each way when each of us drives the other", async () => {
+    const { jon, gunna, bookingId } = await gunnaOnVik();
+    // Gunna drives the airport trip, with Jón booked on it.
+    await api.connection.db
+      .update(schema.trips)
+      .set({ driverId: gunna.userId })
+      .where(eq(schema.trips.id, airport));
+    const jons = await booked(jon.accessToken, airport, { fromStop: 0, toStop: 1 });
+    const result = await block(gunna, bookingId);
+    expect(
+      result.ok && result.data.together.map((booking) => [booking.id, booking.viewer]),
+    ).toEqual([
+      [jons.id, "driver"],
+      [bookingId, "passenger"],
+    ]);
+  });
+
   it("leaves out bookings that no longer hold seats", async () => {
     const { gunna, bookingId } = await gunnaOnVik();
     const airportBooking = await booked(gunna.accessToken, airport, { fromStop: 0, toStop: 1 });
@@ -254,7 +283,7 @@ describe("DELETE /v1/me/blocks/{id}", () => {
     const [made] = await blocked(gunna);
     expect(await unblock(jon, made?.id ?? "")).toMatchObject({ status: 204 });
     expect(await blocked(gunna)).toHaveLength(1);
-    expect((await findsAirport(jon)).search).toBe(false);
+    expect((await findsAirport(gunna)).search).toBe(false);
   });
 });
 
@@ -282,7 +311,7 @@ describe("trips closed by a block (R9.4)", () => {
   it.each([
     ["the passenger booked on it blocked me", "booked"],
     ["I blocked the passenger booked on it", "searcher"],
-  ] as const)("hides a trip from me when %s (decision 2)", async (_, who) => {
+  ] as const)("leaves a trip open when %s: who is booked is private", async (_, who) => {
     await driverOf(airport, "Jón");
     const anna = await newMember("Anna");
     const gunna = await newMember("Gunna");
@@ -290,27 +319,23 @@ describe("trips closed by a block (R9.4)", () => {
     if (who === "booked") await blockDirectly(anna, gunna);
     else await blockDirectly(gunna, anna);
 
-    expect(await findsAirport(gunna)).toEqual({ search: false, soonest: false, days: 0 });
-    expect(await detailsFor(gunna)).toMatchObject({ status: 404 });
+    // Otherwise a blocker could find which rides the other person booked.
+    expect(await findsAirport(gunna)).toEqual({ search: true, soonest: true, days: 1 });
+    expect(await detailsFor(gunna)).toMatchObject({ status: 200 });
     expect(await book(gunna.accessToken, airport, { fromStop: 0, toStop: 1 })).toMatchObject({
+      status: 201,
+    });
+  });
+
+  it("refuses another part of a trip I already hold, once in a block with its driver", async () => {
+    const jon = await driverOf(airport, "Jón");
+    const gunna = await newMember("Gunna");
+    const first = await booked(gunna.accessToken, airport, { fromStop: 0, toStop: 1 });
+    await block(jon, first.id);
+    expect(await book(gunna.accessToken, airport, { fromStop: 1, toStop: 2 })).toMatchObject({
       status: 404,
       error: { code: "not_found" },
     });
-    // Anna is booked on it: the trip stays hers to see.
-    expect(await detailsFor(anna)).toMatchObject({ status: 200 });
-  });
-
-  it("opens the trip again once that passenger's booking is gone", async () => {
-    await driverOf(airport, "Jón");
-    const anna = await newMember("Anna");
-    const gunna = await newMember("Gunna");
-    const annas = await booked(anna.accessToken, airport, { fromStop: 0, toStop: 1 });
-    await blockDirectly(anna, gunna);
-    await api.connection.db
-      .update(schema.bookings)
-      .set({ status: "cancelled" })
-      .where(eq(schema.bookings.id, annas.id));
-    expect(await findsAirport(gunna)).toEqual({ search: true, soonest: true, days: 1 });
   });
 
   it("opens the trip again once unblocked", async () => {

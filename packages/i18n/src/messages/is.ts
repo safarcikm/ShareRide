@@ -980,7 +980,8 @@ export const is = {
   "chat.failed": "Ekki tókst að sækja skilaboðin.",
   "chat.notOpenYet": "Spjallið opnast þegar bókunin er staðfest.",
   "chat.sentTo": "{count, plural, one {Sent til # farþega.} other {Sent til # farþega.}}",
-  "chat.noPassengers": "Enginn farþegi er staðfestur enn, svo enginn fær skilaboðin.",
+  "chat.noPassengers":
+    "Enginn fær skilaboðin: enginn farþegi er staðfestur eða spjallið við hann er lokað.",
   "chat.opened": "Bókunin er staðfest. Þið getið skrifast á hér.",
   "chat.withNote": "{line} „{note}“",
   "chat.cancelledByMe": "Þú afbókaðir: {reason}",

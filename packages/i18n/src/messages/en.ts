@@ -971,7 +971,8 @@ export const en = {
   "chat.failed": "The messages could not be loaded.",
   "chat.notOpenYet": "The chat opens once the booking is confirmed.",
   "chat.sentTo": "{count, plural, one {Sent to # passenger.} other {Sent to # passengers.}}",
-  "chat.noPassengers": "No passenger is confirmed yet, so there's no one to message.",
+  "chat.noPassengers":
+    "There's no one to message: no passenger is confirmed, or their chat is closed.",
   "chat.opened": "Booking confirmed. You can message each other here.",
   "chat.withNote": "{line} “{note}”",
   "chat.cancelledByMe": "You cancelled the booking: {reason}",

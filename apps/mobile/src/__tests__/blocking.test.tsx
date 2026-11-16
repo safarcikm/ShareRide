@@ -1,8 +1,15 @@
 import { fireEvent, screen } from "expo-router/testing-library";
-import type { BlockedPerson, Booking } from "@shareride/contracts";
+import type { BlockedPerson, Booking, CancelBookingBody } from "@shareride/contracts";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
-import { bookingApi, cancellationPreview, paidBooking, requestToDrive } from "@/testing/bookings";
+import {
+  bookingApi,
+  cancellationPreview,
+  cancelledBooking,
+  northStop,
+  paidBooking,
+  requestToDrive,
+} from "@/testing/bookings";
 import { callsTo, chatServer } from "@/testing/chat";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 
@@ -98,6 +105,45 @@ describe("Blocking from a conversation (spec 9, 3.2)", () => {
 
     await fireEvent.press(screen.getByRole("button", { name: `Cancel booking, ${part}` }));
     expect(screen).toHavePathname(`/bookings/${paidBooking.id}/cancel`);
+  });
+
+  it("comes back to the list after cancelling one of two bookings, showing it cancelled", async () => {
+    const later: Booking = {
+      ...paidBooking,
+      id: "0190a1d6-0000-7000-8000-0000000000b8",
+      board: northStop(2),
+      alight: northStop(3),
+    };
+    const laterPart = "Sunday 15 November, Blönduós → Hof, Akureyri";
+    let first: Booking = paidBooking;
+    await openConversation(paidBooking, [paidBooking, later], (client) => {
+      client.answer(
+        "/v1/bookings/{id}",
+        (input) => {
+          const { id } = (input as { params: { id: string } }).params;
+          return ok(200, id === later.id ? later : first);
+        },
+        "get",
+      );
+      client.answer("/v1/bookings/{id}/cancel", (input) => {
+        const { reason, terms } = (input as { body: CancelBookingBody }).body;
+        first = {
+          ...cancelledBooking,
+          cancellation: { by: "passenger", reason, note: "", wholeTrip: false, ...terms },
+        };
+        return ok(200, first);
+      });
+    });
+    await blockFromChat("Anna");
+    await fireEvent.press(await screen.findByRole("button", { name: `Cancel booking, ${part}` }));
+    await fireEvent.press(await screen.findByRole("radio", { name: "Plans changed" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Cancel booking" }));
+    expect(screen).toHavePathname(`/bookings/${paidBooking.id}`);
+
+    await fireEvent.press(await screen.findByRole("button", { name: "Back" }));
+    expect(await screen.findByText("Cancelled")).toBeVisible();
+    expect(screen.queryByRole("button", { name: `Cancel booking, ${part}` })).toBeNull();
+    expect(screen.getByRole("button", { name: `Cancel booking, ${laterPart}` })).toBeVisible();
   });
 
   it("withdraws a request we share, there and then", async () => {

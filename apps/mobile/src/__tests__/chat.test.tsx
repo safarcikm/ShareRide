@@ -754,7 +754,9 @@ describe("Where a chat starts (spec 7, 3.1 and 3.2)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "I'm running late" }));
     await fireEvent.press(screen.getByRole("button", { name: "15 min" }));
     expect(
-      await screen.findByText("No passenger is confirmed yet, so there's no one to message."),
+      await screen.findByText(
+        "There's no one to message: no passenger is confirmed, or their chat is closed.",
+      ),
     ).toBeVisible();
     const last = app.client.calls.filter((call) => call.path === "/v1/trips/{id}/messages").at(-1);
     expect(last?.input["body"]).toMatchObject({ quick: { key: "late", minutes: 15 } });

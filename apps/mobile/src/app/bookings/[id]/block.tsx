@@ -7,8 +7,8 @@ import {
 } from "@shareride/contracts";
 import { holdsSeats } from "@shareride/domain";
 import { capitalised, formatDay } from "@shareride/i18n";
-import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useState, type ReactNode } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useRef, useState, type ReactNode } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
@@ -128,7 +128,7 @@ function BlockPerson({ booking, back }: { readonly booking: Booking; readonly ba
 /**
  * A booking or request the two still have together, with its way out: a
  * request is withdrawn or declined here; a booking is cancelled on its own
- * screen, with its reasons and refund.
+ * screen, with its reasons and refund, and is loaded again on coming back.
  */
 function Together({ booking }: { readonly booking: Booking }) {
   const { locale, t } = useLanguage();
@@ -137,6 +137,19 @@ function Together({ booking }: { readonly booking: Booking }) {
   const [current, setCurrent] = useState(booking);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
+  const seenBefore = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      // Back from cancelling it, or from anywhere else: as it is now.
+      if (!seenBefore.current) {
+        seenBefore.current = true;
+        return;
+      }
+      void session.call(bookingRoute, { params: { id: booking.id } }).then((result) => {
+        if (result.ok) setCurrent(result.data);
+      });
+    }, [session, booking.id]),
+  );
   const day = capitalised(formatDay(new Date(current.board.plannedAt), locale), locale);
   const route = t("search.route", {
     from: current.board.meetingPoint.name[locale],

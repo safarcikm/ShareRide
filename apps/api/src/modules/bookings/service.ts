@@ -1,6 +1,7 @@
 import type { Booking, CancellationPreview, TripBookings } from "@shareride/contracts";
 import { schema, type Database } from "@shareride/db";
 import {
+  bookingClosedTo,
   cancellationTerms,
   cancelReasonsFor,
   checkBooking,
@@ -40,7 +41,7 @@ import { oweRefund } from "../payments/refunds.ts";
 import { bookingConfirmed } from "./confirmed.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import { recordEvents } from "../notifications/outbox.ts";
-import { closedTrips } from "../safety/blocks.ts";
+import { blocksOf } from "../safety/blocks.ts";
 import {
   changeOccupancy,
   expireDueBookings,
@@ -600,8 +601,9 @@ export function createBookingService(dependencies: {
         if (trip === undefined) return err({ code: "not_found" });
         const now = clock();
         await expireDueBookings(tx, tripId, now);
-        // Closed by a block, silently: as if the trip did not exist (R9.4).
-        if ((await closedTrips(tx, passengerId, [tripId])).has(tripId)) {
+        // Closed by a block with the driver, silently: as if the trip did
+        // not exist (R9.4), even for another part of a trip already booked.
+        if (bookingClosedTo(passengerId, trip.driverId, await blocksOf(tx, passengerId))) {
           return err({ code: "not_found" });
         }
 

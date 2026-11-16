@@ -67,6 +67,13 @@ When this milestone is done, on the web and on an Android test build:
 | 2 | Whether a block keeps two passengers out of the same car | **Yes.** Someone who blocked you, or whom you blocked, being booked on a trip hides that trip from you and refuses your booking, silently | Spec 9 covers trips the other person drives. A passenger who blocks another passenger for harassment would otherwise still meet them in the car | Blocks apply only between a driver and a passenger, as spec 9 says. Simpler, but two passengers can still end up side by side |
 | 3 | What a suspension does to the suspended person's own bookings as a passenger | **A full refund to them**, as with every operator cancellation (spec 9, 3.4) | One rule for every cancellation the operator makes; the driver's seat is free to book again at once | The normal cancellation rules (spec 6), as if they had cancelled: the driver keeps a share when it is late, but the operator then decides what someone else pays |
 
+**Decision 2 revised on review (2026-11-16, Martin to confirm):** closing
+a trip because someone in a block is booked on it would show the blocker
+which rides the other person booked (compare a signed-in search with a
+signed-out one), and a block can be made through any booking ever shared.
+Blocks therefore close only the trips the other person drives, as spec 9
+says; two passengers in a block can still share a car.
+
 Spec 9 says "the rule it concerns" for each action, but the community
 rules are not written yet. Until they are, the operator picks from a
 fixed list that matches the report categories (safety, harassment,
@@ -159,8 +166,9 @@ completed).
   whom I blocked (the block's own ID, first name, colour and since), and
   `DELETE /v1/me/blocks/{id}` lifts one of mine. Both changes are safe to
   repeat.
-- In effect both ways (R9.4), and with decision 2 also for a person booked
-  on the trip:
+- In effect both ways (R9.4), for the trips the other person drives; a
+  trip someone else is booked on stays open, since who is booked is
+  private (decision 2, revised):
   - Search, rides leaving soon and trip details leave the trip out, as if
     it did not exist (`not_found`). Signed out, anyone sees public trips;
     a block cannot change that, but booking needs signing in.
@@ -295,7 +303,7 @@ merging, and generated again if another thread's lands first.
 ### PR 4: `feat(safety)`: block and unblock
 
 - [x] `blocks` and its routes; blocks in search, rides leaving soon, trip
-      details, booking, requesting and chat (decision 2)
+      details, booking, requesting and chat
 - [x] Block in the conversation with the bookings together; the Safety
       section in Settings and Blocked people
 - Verify: integration tests (each way, and for two passengers; repeat is
@@ -382,6 +390,10 @@ What the spec implies and a person would meet first, each with its test:
   milestone 6's queue, which already retries.
 - **Abuse of reports:** the daily limit, and the operator sees earlier
   reports by the reporter too.
+- **Blocks used to watch someone:** a block can be made through any
+  booking two people ever shared, so nothing a block changes may depend on
+  the other person's private bookings (decision 2, revised). Blocks close
+  only the trips the other person drives, which are public anyway.
 
 ## 9. Definition of done
 

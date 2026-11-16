@@ -34,22 +34,32 @@ export function checkBlock(me: string, other: string): Result<void, BlockProblem
   return me === other ? err({ code: "self" }) : ok(undefined);
 }
 
-/** A trip as blocks need it: its driver and the people booked on it. */
+/** A trip as blocks need it. */
 export interface TripPeople {
   readonly driverId: string;
-  /** Passengers whose booking holds seats (rule S1). */
-  readonly passengerIds: readonly string[];
+  /** Whether I hold seats on it (rule S1). */
+  readonly bookedByMe: boolean;
 }
 
 /**
- * Whether a trip is closed to me: its driver, or someone booked on it, is in
- * a block with me. It is then left out of my search and trip pages, and I
- * cannot book it (R9.4; milestone 9 decision 2 adds the passengers). A trip
- * I drive or am booked on stays open to me: what happens to a booking we
- * share is the blocker's choice (spec 9 decision 1).
+ * Whether a trip is closed to me: its driver is in a block with me (R9.4).
+ * It is then left out of my search and trip pages. Only the driver counts:
+ * who is booked on a trip is private, and closing a trip because of a
+ * passenger would show a blocker which rides the other person booked
+ * (milestone 9 decision 2, revised on review). A trip I drive or am booked
+ * on stays open for me to read: what happens to a booking we share is my
+ * choice (spec 9 decision 1).
  */
 export function tripClosedTo(me: string, trip: TripPeople, blocks: readonly Block[]): boolean {
-  if (trip.driverId === me || trip.passengerIds.includes(me)) return false;
-  const hidden = hiddenFrom(blocks, me);
-  return hidden.has(trip.driverId) || trip.passengerIds.some((id) => hidden.has(id));
+  if (trip.driverId === me || trip.bookedByMe) return false;
+  return hiddenFrom(blocks, me).has(trip.driverId);
+}
+
+/**
+ * Whether booking on a trip driven by `driverId` is closed to me: always
+ * when we are in a block, even if I already hold another part of it
+ * (R5.10), so neither books the other's trips (R9.4).
+ */
+export function bookingClosedTo(me: string, driverId: string, blocks: readonly Block[]): boolean {
+  return hiddenFrom(blocks, me).has(driverId);
 }

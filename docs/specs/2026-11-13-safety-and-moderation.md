@@ -212,8 +212,8 @@ Endpoints (`/v1`, shapes defined in `packages/contracts`):
 | --------------- | ------- |
 | `POST /reports` | Report a person, trip, message, review or booking problem |
 | `GET /me/reports` | My reports and their outcomes |
-| `POST /users/{id}/block`, `DELETE /users/{id}/block` | Block or unblock |
-| `GET /me/blocks` | People I blocked |
+| `POST /bookings/{id}/block` | Block the other person of a booking (later also from a profile's public reference): no user ID is shown ([security](../engineering/security.md)) |
+| `GET /me/blocks`, `DELETE /me/blocks/{id}` | People I blocked; unblock by the block's own ID |
 
 Console endpoints under `/admin/v1` (operator role, passkey sign-in,
 [security](../engineering/security.md)): reports (list, view, act), users,
