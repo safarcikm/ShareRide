@@ -1038,6 +1038,29 @@ export const is = {
   "sms.departureMoved":
     "ShareRide: Ný brottför: {date} kl. {time}. Haltu bókuninni eða afbókaðu með fullri endurgreiðslu í appinu.",
   "sms.departureMovedUnpaid": "ShareRide: Ný brottför: {date} kl. {time}. Nánar í appinu.",
+  // Privacy (spec 11, section 8; plan 4.9).
+  "settings.privacy": "Persónuvernd og gögnin þín",
+  "privacy.title": "Persónuvernd",
+  "privacy.intro": "Sjáðu hvað ShareRide geymir um þig og lestu hvernig það er notað.",
+  "privacy.download": "Sækja gögnin mín",
+  "privacy.download.intro":
+    "Þú færð ZIP-skrá með því sem ShareRide geymir um þig: aðganginum, ferðum, bókunum, greiðslum, skilaboðum og tilkynningum. Annað fólk birtist aðeins með fornafni. Þú getur beðið um eina skrá á dag.",
+  "privacy.download.make": "Útbúa skrána",
+  "privacy.download.makeNew": "Útbúa nýja skrá",
+  "privacy.download.replaces": "Ný skrá kemur í stað þessarar.",
+  "privacy.download.file": "Sækja skrána",
+  "privacy.download.nextAt": "Þú getur beðið um aðra skrá frá {date}.",
+  "privacy.download.expired": "Síðustu skránni var eytt {date}.",
+  "privacy.download.failed": "Okkur tókst ekki að útbúa skrána. Biddu um hana aftur.",
+  "privacy.preparing": "Við erum að útbúa skrána. Við látum þig vita þegar hún er tilbúin.",
+  "privacy.ready": "Skráin er tilbúin. Þú getur sótt hana til {date}.",
+  "privacy.when": "{date} kl. {time}",
+  "confirm.title": "Staðfestu að þetta sért þú",
+  "confirm.sending": "Sendi kóða í númerið þitt…",
+  "confirm.sent": "Við sendum kóða með SMS í númerið þitt sem endar á {digits}.",
+  "confirm.sentNoNumber": "Við sendum kóða með SMS í númerið þitt.",
+  "error.export_too_soon": "Þú getur beðið um eina skrá á dag. Reyndu aftur eftir {wait}.",
+  "error.export_not_ready": "Skráin er ekki tilbúin til niðurhals.",
   /** "Download my data": the readable page in the ZIP (spec 11, 3.2.3). */
   "export.title": "ShareRide gögnin þín",
   "export.intro":

@@ -506,6 +506,11 @@ releases follow [Semantic Versioning](https://semver.org/).
   only; kept encrypted for 7 days and downloaded through a one-time link
   that works for 2 minutes. A push and an email say when it is ready,
   without a link.
+- Download my data in the app (spec 11, 3.1 and 3.2): a Privacy page in
+  Settings, with Download my data and the Privacy Policy. The person
+  confirms with a code sent to their own number, sees the file being made
+  and when it is ready, and downloads it. The ready notice opens this
+  screen.
 
 ### Fixed
 
