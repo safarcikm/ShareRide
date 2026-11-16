@@ -127,7 +127,8 @@ describe("tripPart (spec 4, 3.6)", () => {
     expect(stateAt(before(15))).toBe("closed");
     expect(stateAt(before(14))).toBe("closed");
     expect(stateAt(before(0))).toBe("departed");
-    // A later boarding stop can still be booked after the trip has left Reykjavík.
+    // A later boarding stop can still be booked after the trip has left Reykjavík,
+    // with the trip under way or not (rule S4, Martin 2026-11-16).
     expect(stateAt(before(55))).toBe("open");
   });
 
@@ -135,8 +136,18 @@ describe("tripPart (spec 4, 3.6)", () => {
     expect(part({}, { ...northTrip, status: "cancelled" })).toMatchObject({
       value: { state: "cancelled" },
     });
-    expect(part({}, { ...northTrip, status: "departed" })).toMatchObject({
+    // Under way, the boarding stop decides (rule S4, Martin 2026-11-16).
+    const underWay = { ...northTrip, status: "departed" as const };
+    const halfPastNine = at("2026-11-15T09:30:00Z");
+    expect(
+      tripPart(underWay, { board: 0, alight: 3, seats: 1 }, null, halfPastNine, settings),
+    ).toMatchObject({
       value: { state: "departed" },
+    });
+    expect(
+      tripPart(underWay, { board: 1, alight: 3, seats: 1 }, null, halfPastNine, settings),
+    ).toMatchObject({
+      value: { state: "open" },
     });
     expect(part({}, { ...northTrip, status: "completed" })).toMatchObject({
       value: { state: "departed" },

@@ -2,7 +2,11 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import type { Context } from "hono";
 import type { AppEnv } from "./context.ts";
 
-const isApiPath = (path: string) => path === "/v1" || path.startsWith("/v1/");
+const isApiPath = (path: string) =>
+  path === "/v1" ||
+  path.startsWith("/v1/") ||
+  path === "/admin/v1" ||
+  path.startsWith("/admin/v1/");
 
 /** Expo puts content-hashed bundles here, so they never change. */
 const isHashed = (path: string) => path.startsWith("/_expo/static/");

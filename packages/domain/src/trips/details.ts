@@ -67,7 +67,8 @@ export function tripPart(
 
   const state = ((): PartState => {
     if (trip.status === "cancelled") return "cancelled";
-    if (trip.status === "departed" || trip.status === "completed") return "departed";
+    if (trip.status === "completed") return "departed";
+    // Under way, each stop departs at its own time (rule S4).
     if (boardsAt <= now.getTime()) return "departed";
     if (viewerId !== null && viewerId === trip.driverId) return "own";
     // As in search: the boarding stop must be more than the cut-off away,

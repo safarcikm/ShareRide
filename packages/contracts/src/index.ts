@@ -1,3 +1,4 @@
+export * from "./admin.ts";
 export * from "./auth.ts";
 export * from "./bookings.ts";
 export * from "./chat.ts";

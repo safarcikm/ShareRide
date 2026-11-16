@@ -152,17 +152,28 @@ the rating.
   2. Two hours after its last stop's time, it becomes `completed`, in one
      transaction with its bookings: a confirmed booking without a
      no-show and without an open "driver didn't come" report becomes
-     `completed`, with `completed_at`.
+     `completed`, with `completed_at`, and holds no seats (rule S1).
+     `completed_at` is the time the rule gives, however late the job
+     runs. Expired deadlines are stored first.
   3. Completion queues "How was your trip?" to the driver and to each
      completed passenger, and schedules one reminder 3 days later. The
      reminder is skipped once that person has reviewed. Both follow the
-     trip reminders switch (spec 7).
+     trip reminders switch (spec 7). This comes with PR 6, which adds the
+     rate screen it opens and the reviews it checks.
+- The driver's trips list a trip under way as upcoming until its last
+  stop, and a completed one as past. "Message all" still reaches
+  passengers whose bookings completed, while their conversations are open
+  (spec 7, R7.1).
 - Migration: `trips.completed_at`, `bookings.completed_at`. No other column
   changes meaning, so a rollback stays safe (ships in one deploy before
   the beta, [conventions](../engineering/conventions.md#database)).
-- The browser tests' API gains a clock it can move forward, for the trip
-  day journeys. It is a test-only route in `e2e-server.ts`, never in the
-  real server, and it runs the jobs once after each move.
+- The browser tests' API gains a test-only route in `e2e-server.ts`,
+  never in the real server, that moves one trip's times so that its
+  first stop is a given number of minutes from now, and runs the jobs
+  once. It moves one trip rather than the clock: the journeys run in
+  parallel against one API, and moving everyone's clock would expire
+  other journeys' requests. It comes with PR 4, the first journey that
+  needs it.
 
 ### 4.3 The trip day
 
@@ -255,20 +266,26 @@ the browser journeys, and gets a code review before it opens.
 
 ### PR 3: `feat(trips)`: trips depart and complete on their own
 
-- [ ] Migration; the minute job (4.2); "How was your trip?" and its
-      reminder in the catalogue; the moving clock for the browser tests
+- [x] Migration; the minute job (4.2); the driver's lists and "Message
+      all" after completion. "How was your trip?" moves to PR 6 and the
+      browser tests' trip times to PR 4
 - Verify: integration tests (a trip departs, then completes with its
-  confirmed bookings; an unpaid or cancelled booking stays as it was; a
-  second run changes nothing; the reminder is skipped after a review)
+  confirmed bookings, freeing their seats; an unpaid booking is stored
+  as expired; a late run completes at the rule's time; a second run
+  changes nothing; a locked trip waits for the next run)
+- After PR 3, a small follow-up keeps later stops bookable while the trip
+  is under way (rule S4; Martin's answer A45 to Q21): search, the trip
+  page and booking take a departed trip at each stop until its cut-off
 
 ### PR 4: `feat(trips)`: the trip day and "I'm here"
 
 - [ ] `check_ins` and both check-in routes; the push and the conversation
       line; the phase and statuses in the booking and trip answers
 - [ ] The trip day on the booking page and the driver's trip page
+- [ ] The browser tests' route that moves a trip's times (4.2)
 - Verify: integration tests (only the passenger or the driver; outside the
   window refused; a repeat tells nobody again); screen tests; a browser
-  journey with the moving clock: both check in and each sees the other
+  journey with a trip moved close: both check in and each sees the other
 
 ### PR 5: `feat(bookings)`: no-shows, the driver didn't come, and answers
 
@@ -284,9 +301,11 @@ the browser journeys, and gets a code review before it opens.
 
 - [ ] `reviews` and `POST /bookings/{id}/review`; the reveal; "A review
       about you is now visible"; the rate screen
+- [ ] "How was your trip?" on completion and its reminder after 3 days,
+      skipped once reviewed (4.2)
 - Verify: integration tests (only completed bookings, one each, 14 days,
-  hidden until both); a browser journey: both review and then see each
-  other's review
+  hidden until both; the reminder is skipped after a review); a browser
+  journey: both review and then see each other's review
 
 ### PR 7: `feat(people)`: public profiles with rating, reviews and reliability
 

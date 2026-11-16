@@ -4,7 +4,7 @@
 import type { RateLimitRule } from "../auth/rate-limit.ts";
 import type { Money } from "../money.ts";
 import { inIceland } from "../time.ts";
-import type { TripStatus } from "./trip.ts";
+import { takesBookings, type TripStatus } from "./trip.ts";
 
 /** The values the operator will set (spec 4, section 4; feature H4). */
 export interface SearchSettings {
@@ -122,7 +122,7 @@ export function matchTrip(
   now: Date,
   settings: Pick<SearchSettings, "bookingCutoffMinutes">,
 ): TripMatch | null {
-  if (trip.status !== "published") return null;
+  if (!takesBookings(trip.status)) return null;
   if (search.searcherId !== null && search.searcherId === trip.driverId) return null;
   const distances = (covered: readonly CoveredPoint[]) =>
     new Map(covered.map((point) => [point.meetingPointId, point.distanceM]));

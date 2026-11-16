@@ -126,6 +126,29 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   (conventions), which these endpoints skip because a repeat is harmless or
   limited: a lost reply to "verify" means asking for a new code.
 
+## Operator console
+
+How [ADR 0028](../decisions/0028-operator-console-web-app-and-passkeys.md)
+is built, in `apps/api/src/modules/admin` with the rules in
+`packages/domain/src/admin`.
+
+- **Guard:** every path under `/admin/v1` needs a live console session of an
+  active account with the `operator` role, checked by one middleware before
+  any route, so a route that forgets its own guard is still closed. Only
+  signing in (`/admin/v1/auth/…`) is open. The app's bearer tokens are never
+  accepted there, and the console's cookie is never sent to `/v1`.
+- **Sessions:** separate from the app's. The cookie `sr_operator` is
+  `HttpOnly`, `SameSite=Strict`, `Path=/admin/v1` and `Secure` outside
+  development, and holds 256 random bits (prefix `sr_os_`) kept only as a
+  SHA-256 hash. A session ends 30 minutes after its last use, 12 hours after
+  sign-in, when the account loses the role or is suspended, or on sign-out,
+  and never works again. Ended sessions are deleted after 30 days.
+- **Other origins:** the console's routes answer no CORS request, so only
+  pages on the API's own origin can call them.
+- **Audit log:** `recordAudit` writes each operator action in the same
+  transaction as the change. A database trigger refuses updates, truncation
+  and deletes of entries younger than 3 years.
+
 ## Safety features (product)
 
 - Meeting points only at public, lit places.

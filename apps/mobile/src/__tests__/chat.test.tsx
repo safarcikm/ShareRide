@@ -656,6 +656,18 @@ describe("Where a chat starts (spec 7, 3.1 and 3.2)", () => {
     expect(screen).toHavePathname(conversationPage);
   });
 
+  it("keeps the passenger's chat once the ride completed, with no more where to stand (spec 8)", async () => {
+    await renderApp(`/bookings/${bookingId}`, {
+      me: completeMe,
+      setUp: (client) => {
+        bookingApi(client, () => ({ ...paidBooking, status: "completed" }));
+        chatServer(client);
+      },
+    });
+    expect(await screen.findByRole("button", { name: "Message Anna" })).toBeVisible();
+    expect(screen.queryByText("Where to stand")).toBeNull();
+  });
+
   it("has no chat before the booking is confirmed", async () => {
     await renderApp(`/bookings/${bookingId}`, {
       me: completeMe,
@@ -700,6 +712,20 @@ describe("Where a chat starts (spec 7, 3.1 and 3.2)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Message Jón" }));
     expect(await screen.findByRole("header", { name: "Jón" })).toBeVisible();
     expect(screen).toHavePathname(`/messages/${jon.id}`);
+  });
+
+  it("still lets the driver message a passenger, or all of them, once the trip completed (spec 8)", async () => {
+    await renderApp(`/drive/trips/${northMyTrip.id}`, {
+      me: completeMe,
+      setUp: (client) => {
+        tripsApi(client, [{ ...northMyTrip, status: "completed" }]);
+        driverApi(client, [{ ...jon, status: "completed" }]);
+        chatServer(client, { booking: jon });
+      },
+    });
+    expect(await screen.findByLabelText("Jón, 1 seat, Completed")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Message Jón" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Message all passengers" })).toBeVisible();
   });
 
   it("offers no message to all before a passenger is confirmed", async () => {

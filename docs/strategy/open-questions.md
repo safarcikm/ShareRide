@@ -8,7 +8,7 @@ here, update or accept the linked ADR, and move the row to "Answered".
 
 ## Open
 
-A new question goes in a table here with the next free number (Q21
+A new question goes in a table here with the next free number (Q22
 onwards), a recommendation and the docs it affects.
 
 No questions are open.
@@ -61,3 +61,4 @@ No questions are open.
 | A42 | Q18: until when can a driver cancel one booking (spec 6, 3.4)? | Until the planned time at the passenger's boarding stop, as for the passenger (A41). After that a driver who does not come is the trip day's (spec 8), and the passenger's full refund comes from there, so a cancellation never stands in for a no-show. See [spec 6](../specs/2026-11-13-changes-and-cancellations.md#decisions), decision 3. | 2026-11-16 |
 | A43 | Q19: when a passenger contests a no-show and the operator finds the driver was wrong, what happens? Spec 8 had one outcome, "reversed", which did not say whether the passenger rode or was left behind. | The operator picks one of two outcomes. "They rode": the booking completes, the driver is paid, and nothing counts on either side. "They were left behind": as a driver absence, a full refund that counts on the driver. See [spec 8](../specs/2026-11-13-trip-day-reviews-and-reliability.md#decisions), decision 4. | 2026-11-16 |
 | A44 | Q20: when the driver contests a passenger's "The driver didn't come" and the operator finds the driver was there, what happens? Spec 8 had one outcome, "reversed", which did not say whether the passenger rode or didn't come either; as a booking is reported once, a passenger who didn't come could report the driver first and escape the no-show. | The operator picks one of two outcomes, as for a no-show (A43). "They rode": the booking goes on and completes, the driver is paid, and nothing counts against either side. "They didn't come": the passenger's no-show, with no refund, the driver paid, and it counts on the passenger. See [spec 8](../specs/2026-11-13-trip-day-reviews-and-reliability.md#decisions), decision 5. | 2026-11-16 |
+| A45 | Q21: once trips depart on their own at their first stop (spec 8), can a passenger still book a later stop? Rule S4 said "published and not departed", which until then left later stops bookable, as the milestone 3 plan noted. | Yes: a trip under way stays bookable at each stop until that stop's cut-off (15 minutes before it). Long trips such as Reykjavík to Akureyri pick people up along the way, and an instant booking needs nothing from the driver at the wheel. See [spec 4](../specs/2026-11-13-search-and-trip-details.md#decisions), decision 7, and rule S4 in [pricing and seats](../product/pricing-and-seats.md#rule-s4-who-can-book). | 2026-11-16 |

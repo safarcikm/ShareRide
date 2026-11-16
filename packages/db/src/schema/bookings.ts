@@ -68,6 +68,8 @@ export const bookings = pgTable(
     confirmedAt: at(),
     expiredAt: at(),
     cancelledAt: at(),
+    /** When its trip completed with it (spec 8, R8.2): the moment reviews count from. */
+    completedAt: at(),
     /**
      * `passenger` for a withdrawn request or a cancelled booking, or `driver`
      * (spec 6); `driver` also on a request declined because the trip was

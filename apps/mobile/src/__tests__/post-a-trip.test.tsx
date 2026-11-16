@@ -732,6 +732,17 @@ describe("My trips (spec 3, 3.8.4)", () => {
     expect(await screen.findByRole("header", { name: "When are you leaving?" })).toBeVisible();
   });
 
+  it("keeps a trip under way with the published ones until its last stop (spec 8, R8.1)", async () => {
+    const underWay = plannedDraft({
+      id: "0190a1d6-0000-7000-8000-000000000204",
+      status: "departed",
+      publishedAt: "2026-11-14T11:00:00.000Z",
+    });
+    await open("/drive/trips", [underWay]);
+    expect(await screen.findByRole("header", { name: "Published" })).toBeVisible();
+    expect(screen.getByText("Sunday 15 November at 09:00", { exact: false })).toBeVisible();
+  });
+
   it("starts a trip from Post a trip", async () => {
     await open("/drive/trips");
     await fireEvent.press(await screen.findByRole("button", { name: "Post a trip" }));

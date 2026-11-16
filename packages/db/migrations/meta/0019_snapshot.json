@@ -1,5 +1,5 @@
 {
-  "id": "a43d2d09-f9d1-4f9c-969e-44b72b22e9f5",
+  "id": "4241c1d5-4d02-4fb7-9d37-1f2569fa2371",
   "prevId": "2cf8ca6a-02dc-4907-8cfa-224f9c9eeff9",
   "version": "7",
   "dialect": "postgresql",
@@ -665,6 +665,12 @@
         },
         "cancelled_at": {
           "name": "cancelled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_at": {
+          "name": "completed_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
@@ -2716,98 +2722,6 @@
       },
       "isRLSEnabled": false
     },
-    "public.blocks": {
-      "name": "blocks",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "uuidv7()"
-        },
-        "blocker_id": {
-          "name": "blocker_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "blocked_id": {
-          "name": "blocked_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "blocks_blocked_index": {
-          "name": "blocks_blocked_index",
-          "columns": [
-            {
-              "expression": "blocked_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "blocks_blocker_id_users_id_fk": {
-          "name": "blocks_blocker_id_users_id_fk",
-          "tableFrom": "blocks",
-          "tableTo": "users",
-          "columnsFrom": ["blocker_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "blocks_blocked_id_users_id_fk": {
-          "name": "blocks_blocked_id_users_id_fk",
-          "tableFrom": "blocks",
-          "tableTo": "users",
-          "columnsFrom": ["blocked_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "blocks_pair_unique": {
-          "name": "blocks_pair_unique",
-          "nullsNotDistinct": false,
-          "columns": ["blocker_id", "blocked_id"]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {
-        "blocks_self_check": {
-          "name": "blocks_self_check",
-          "value": "\"blocks\".\"blocker_id\" <> \"blocks\".\"blocked_id\""
-        }
-      },
-      "isRLSEnabled": false
-    },
     "public.segments": {
       "name": "segments",
       "schema": "",
@@ -3291,6 +3205,12 @@
         },
         "cancelled_at": {
           "name": "cancelled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_at": {
+          "name": "completed_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false

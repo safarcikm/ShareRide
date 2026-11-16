@@ -148,11 +148,57 @@ export async function occupancyNow(
           .innerJoin(boards, eq(boards.id, bookings.fromStopId))
           .innerJoin(alights, eq(alights.id, bookings.toStopId))
           .where(and(inArray(bookings.tripId, [...tripIds]), pastDeadline(now)));
+  return (tripId, position, stored) => stored - seatsOn(due, tripId, position);
+}
+
+/** Bookings that went with their trip: completed, or a passenger who didn't come. */
+const wentStatuses = ["completed", "no_show"] as const;
+
+/**
+ * The seats taken on the trips' stretches as their driver sees them: the
+ * occupancy as of now, plus the seats of bookings that went with the trip.
+ * Those hold none any more (rule S1), but a past trip still shows the seats
+ * its passengers took.
+ */
+export async function seatsTakenNow(
+  q: Queryable,
+  tripIds: readonly string[],
+  now: Date,
+): Promise<(tripId: string, position: number, stored: number) => number> {
+  const [asOfNow, went] = await Promise.all([
+    occupancyNow(q, tripIds, now),
+    tripIds.length === 0
+      ? []
+      : q
+          .select({
+            tripId: bookings.tripId,
+            seats: bookings.seats,
+            board: boards.position,
+            alight: alights.position,
+          })
+          .from(bookings)
+          .innerJoin(boards, eq(boards.id, bookings.fromStopId))
+          .innerJoin(alights, eq(alights.id, bookings.toStopId))
+          .where(
+            and(
+              inArray(bookings.tripId, [...tripIds]),
+              inArray(bookings.status, [...wentStatuses]),
+            ),
+          ),
+  ]);
   return (tripId, position, stored) =>
-    stored -
-    due
-      .filter((row) => row.tripId === tripId && row.board <= position && position < row.alight)
-      .reduce((sum, row) => sum + row.seats, 0);
+    asOfNow(tripId, position, stored) + seatsOn(went, tripId, position);
+}
+
+/** The seats `rows` take on the trip's segment at `position`. */
+function seatsOn(
+  rows: readonly { tripId: string; seats: number; board: number; alight: number }[],
+  tripId: string,
+  position: number,
+): number {
+  return rows
+    .filter((row) => row.tripId === tripId && row.board <= position && position < row.alight)
+    .reduce((sum, row) => sum + row.seats, 0);
 }
 
 /**

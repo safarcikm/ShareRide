@@ -111,6 +111,7 @@ ordered pair of active meeting points connected by road.
 | `departs_at`, `arrives_at` | Copies of the first and last stops' planned times, for overlap checks and clean-up; empty in a draft until the departure is chosen |
 | `women_only` | Shown to everyone; only women who have opted in can book it; fixed once a request or booking exists (not built yet) |
 | `published_at` | |
+| `completed_at` | Two hours after its last stop's planned time, when it completed on its own ([spec 8, R8.1](../specs/2026-11-13-trip-day-reviews-and-reliability.md#36-trip-completion-e4)), however late the job ran |
 | `cancelled_at`, `cancel_reason`, `cancel_note`, `counts_on_reliability` | When the driver cancelled the trip, why (a fixed list), their note to everyone on it (up to 500 characters, without contact details), and whether it counts on their reliability, once for the trip ([spec 6, 3.3](../specs/2026-11-13-changes-and-cancellations.md#33-cancelling-a-trip-driver)) |
 | `sample` | Sample data made by the seed for local development and staging |
 
@@ -171,6 +172,7 @@ car or stop.
 | `total_price`, `currency` | Snapshot at booking time |
 | `requested_at`, `decided_at`, `expires_at`, `payment_due_at` | A request's deadline (R5.5) and an accepted booking's payment deadline (rule M1) |
 | `confirmed_at`, `expired_at` | When it was paid (or, when free, accepted) and when a deadline passed |
+| `completed_at` | When its trip completed with it ([spec 8, R8.2](../specs/2026-11-13-trip-day-reviews-and-reliability.md#36-trip-completion-e4)): reviews count from this moment |
 | `party_confirmed_at` | The passenger confirmed that everyone in a booking of more than one seat on a women-only trip can join |
 | `message`, `decline_reason`, `attempt_key` | Request note, reason seen only by the operator, idempotency key ([spec 5](../specs/2026-11-13-booking-and-requests.md#6-data-and-api)) |
 | `cancelled_by`, `cancel_reason`, `cancel_note`, `cancelled_at` | Reasons from a fixed list, including `weather`, `road_closed` and `plans_changed`; the note, up to 500 characters without contact details, only from a driver. A request declined because the driver cancelled the trip keeps `driver`, the trip's reason and its note |
@@ -235,7 +237,16 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
 
 ### Supporting records
 
-- `AuditLog`: who did what to which record, when, from where. Append-only.
+- `AuditLog`: who did what to which record, when, from where (the
+  operator, their console session, an action such as
+  `meeting_point.update`, the record's type and ID, the fields before and
+  after, IP address and browser). Append-only: a database trigger refuses
+  changes, and deleting entries younger than 3 years
+  ([milestone 8 plan](../plans/2026-11-16-milestone-8-operator-console-and-meeting-points.md)).
+- `OperatorSession`: a console session of an operator, separate from the
+  app's sessions; ends 30 minutes after last use, 12 hours after sign-in,
+  on sign-out, or when the role is removed or the account suspended
+  ([ADR 0028](../decisions/0028-operator-console-web-app-and-passkeys.md)).
 - `Setting`: operator configuration (rates, timeouts, switches) with a range,
   a `SettingChange` history and a `SettingsVersion` that trips and bookings
   record ([spec 10](../specs/2026-11-13-operator-settings-and-metrics.md#6-data-and-api)).

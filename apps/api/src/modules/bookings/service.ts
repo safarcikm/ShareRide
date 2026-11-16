@@ -46,8 +46,8 @@ import {
   changeOccupancy,
   expireDueBookings,
   lockTrip,
-  occupancyNow,
   partOf,
+  seatsTakenNow,
   stopsOf,
   type Queryable,
   type Transaction,
@@ -455,9 +455,10 @@ function present(row: BookingRow, viewerId: string, now: Date): Booking {
     },
     car:
       car === null ? null : { make: car.make, model: car.model, colour: car.colour as CarColour },
-    // The exact meeting details open once the booking is confirmed (R5.12).
+    // The exact meeting details open once the booking is confirmed (R5.12),
+    // and stay with the ride once it completed.
     confirmed:
-      status === "confirmed"
+      status === "confirmed" || status === "completed"
         ? {
             registration: car?.registration ?? null,
             whereToStand:
@@ -990,7 +991,7 @@ export function createBookingService(dependencies: {
         .where(and(eq(trips.id, tripId), eq(trips.driverId, driverId), ne(trips.status, "draft")));
       if (trip === undefined) return undefined;
       const now = clock();
-      const [rows, segmentRows, asOfNow] = await Promise.all([
+      const [rows, segmentRows, taken] = await Promise.all([
         readBookings(
           db,
           and(eq(bookings.tripId, tripId), inArray(bookings.status, onTripStatuses)),
@@ -1000,15 +1001,16 @@ export function createBookingService(dependencies: {
           .from(segments)
           .where(eq(segments.tripId, tripId))
           .orderBy(asc(segments.position)),
-        occupancyNow(db, [tripId], now),
+        seatsTakenNow(db, [tripId], now),
       ]);
       const shown = rows
         .map((row) => ({ row, status: shownStatus(row.booking, now) }))
         .filter(({ status }) => onTripStatuses.includes(status));
-      // As search and trip details count them.
+      // As search and trip details count them, while the trip runs; and the
+      // seats its passengers took, once they rode.
       const occupancy = segmentRows.map(({ position, occupancy: stored }) => ({
         position,
-        occupancy: asOfNow(tripId, position, stored),
+        occupancy: taken(tripId, position, stored),
       }));
       // Requests first, oldest first (rows come oldest first); then by where passengers get in and out.
       const requests = shown.filter(({ status }) => status === "requested");

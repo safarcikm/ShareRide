@@ -74,7 +74,7 @@ export interface ChatService {
   ): Promise<Result<{ readonly message: ChatMessage; readonly created: boolean }, SendError>>;
   /** Marks the other person's messages read, up to and with `upTo`. */
   read(userId: string, bookingId: string, upTo: string): Promise<Result<null, PageError>>;
-  /** The same message into every confirmed passenger's conversation (R7.4). */
+  /** The same message into every confirmed or completed passenger's open conversation (R7.4). */
   messageAll(
     driverId: string,
     tripId: string,
@@ -468,7 +468,13 @@ export function createChatService(dependencies: {
             .select({ conversation: conversations, passengerId: bookings.passengerId })
             .from(conversations)
             .innerJoin(bookings, eq(bookings.id, conversations.bookingId))
-            .where(and(eq(bookings.tripId, tripId), eq(bookings.status, "confirmed")))
+            // Passengers stay passengers once their booking completes (spec 8, R8.2).
+            .where(
+              and(
+                eq(bookings.tripId, tripId),
+                inArray(bookings.status, ["confirmed", "completed"]),
+              ),
+            )
         )
           // A passenger in a block with the driver is left out (R9.4).
           .filter((row) => !isBlockedBetween(blocks, driverId, row.passengerId))

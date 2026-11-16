@@ -59,6 +59,8 @@ export const trips = pgTable(
     arrivesAt: at(),
     publishedAt: at(),
     cancelledAt: at(),
+    /** Two hours after its last stop's planned time (spec 8, R8.1), as the job stored it. */
+    completedAt: at(),
     /** Why the driver cancelled the trip (spec 6, 3.3). */
     cancelReason: text(),
     /** The driver's note to the passengers, as written (spec 6, 3.3); empty for none. */

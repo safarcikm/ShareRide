@@ -80,9 +80,10 @@ keep its cost down.
 ### 3.2 Message all passengers (driver)
 
 From the trip or the seat view (spec 6), the driver can send one message to
-every confirmed passenger. It is posted as a separate message in each
-passenger's own conversation, so passengers never see each other or each
-other's replies. Quick messages work here too.
+every confirmed passenger, and to each whose booking has completed with
+the trip (spec 8) while their conversation is open. It is posted as a
+separate message in each passenger's own conversation, so passengers never
+see each other or each other's replies. Quick messages work here too.
 
 ### 3.3 Notifications (F2)
 

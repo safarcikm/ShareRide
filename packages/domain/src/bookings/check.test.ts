@@ -96,14 +96,20 @@ describe("checking a booking (rule S4, R5.3, R5.6, R5.10)", () => {
     expect(result.ok && result.value.paymentDueAt).toBeNull();
   });
 
-  it("refuses a trip that is not published, or has passed the boarding stop", () => {
-    expect(problem({ trip: { ...northTrip, status: "draft" } })).toEqual({
-      code: "trip_not_bookable",
-    });
-    expect(problem({ trip: { ...northTrip, status: "cancelled" } })).toEqual({
-      code: "trip_not_bookable",
-    });
+  it("refuses a trip that is not published or under way, or has passed the boarding stop", () => {
+    for (const status of ["draft", "completed", "cancelled"] as const) {
+      expect(problem({ trip: { ...northTrip, status } })).toEqual({ code: "trip_not_bookable" });
+    }
     expect(problem({ now: at("2026-11-15T10:00:00Z") })).toEqual({ code: "trip_not_bookable" });
+  });
+
+  it("books a later stop once the trip has left its first one (rule S4, Martin 2026-11-16)", () => {
+    // Anna left BSÍ at 09:00; Borgarnes, at 10:00, is more than the cut-off away.
+    const underWay = { ...northTrip, status: "departed" as const };
+    expect(problem({ trip: underWay, now: at("2026-11-15T09:30:00Z") })).toBeNull();
+    expect(problem({ trip: underWay, now: at("2026-11-15T09:45:00Z") })).toEqual({
+      code: "booking_closed",
+    });
   });
 
   it("refuses a part that does not fit the trip", () => {

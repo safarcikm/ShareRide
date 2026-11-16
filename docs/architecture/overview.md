@@ -60,7 +60,8 @@ flowchart LR
   expiry, reminders, trip completion, weather and road checks, data
   retention clean-up. For the beta the jobs run inside the API process
   ([milestone 5 plan](../plans/2026-11-15-milestone-5-chat-and-notifications.md),
-  decision 2): booking deadlines and owed refunds every minute, and the
+  decision 2): booking deadlines, owed refunds and trips departing and
+  completing (spec 8) every minute, and the
   notification worker every 5 seconds unless `WORKER=off`. The queue is our
   own outbox and job tables in PostgreSQL, taken with `FOR UPDATE SKIP
   LOCKED`, so more than one instance shares the work and there is no extra
@@ -141,9 +142,9 @@ sequenceDiagram
 
 1. Resolve the "from" and "to" inputs to candidate meeting points: a meeting
    point and the active points near it, or the points of a place.
-2. One SQL query finds published trips where a "from" candidate stop, late
-   enough to book and on the date when one is given, comes before a "to"
-   candidate stop.
+2. One SQL query finds published trips, and trips under way (rule S4),
+   where a "from" candidate stop, late enough to book and on the date when
+   one is given, comes before a "to" candidate stop.
 3. The domain (`matchTrip`) decides: the date at the boarding stop in
    Iceland, enough free seats on every stretch of the part, the price of the
    part, and which stops when several match.
