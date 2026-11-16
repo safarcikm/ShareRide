@@ -23,11 +23,17 @@ describe("SMS texts", () => {
   });
 
   it.each(locales)(
-    "tell of a cancelled booking in two parts at most in %s, with no link",
+    "tell of a cancelled booking or trip in two parts at most in %s, with no link",
     (locale) => {
       const t = createTranslator(locale);
       const when = { date: longestDay(locale), time: "23:45" };
-      for (const text of [t("sms.bookingCancelled", when), t("sms.bookingCancelledUnpaid", when)]) {
+      const texts = [
+        t("sms.bookingCancelled", when),
+        t("sms.bookingCancelledUnpaid", when),
+        t("sms.tripCancelled", when),
+        t("sms.tripCancelledUnpaid", when),
+      ];
+      for (const text of texts) {
         expect(text.length).toBeLessThanOrEqual(twoParts);
         expect(text).not.toMatch(/https?:|www\.|[{}]/);
       }

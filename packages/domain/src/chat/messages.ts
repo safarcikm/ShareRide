@@ -42,6 +42,8 @@ export type SystemLine =
       readonly reason: CancelReason;
       /** The driver's note, as written; empty for none (spec 6, 3.4). */
       readonly note: string;
+      /** The driver cancelled the whole trip (spec 6, 3.3), not this booking alone. */
+      readonly wholeTrip: boolean;
     };
 
 /** A message as someone sends it, before it is checked. */

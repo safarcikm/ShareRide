@@ -131,7 +131,7 @@ describe("A conversation (spec 7, 3.1)", () => {
       from: "system",
       kind: "system",
       text: null,
-      system: { key: "cancelled", by: "them", reason: "car_problem", note: "" },
+      system: { key: "cancelled", by: "them", reason: "car_problem", note: "", wholeTrip: false },
       sentAt: "2026-11-14T11:59:00.000Z",
     });
     await openConversation({ messages: [openedLine, cancelled] });
@@ -149,6 +149,7 @@ describe("A conversation (spec 7, 3.1)", () => {
         by: "them",
         reason: "car_problem",
         note: "Sorry, the clutch went.",
+        wholeTrip: false,
       },
       sentAt: "2026-11-14T11:59:00.000Z",
     });

@@ -13,6 +13,7 @@ import {
   peopleColourOf,
   statusAt,
   statusOnAcceptance,
+  tripCancellation,
   type BookingEvent,
   type BookingMode,
   type BookingProblem,
@@ -27,6 +28,7 @@ import {
   type Money,
   type NoteProblem,
   type Result,
+  type TripCancelReason,
   type TripStatus,
 } from "@shareride/domain";
 import { and, asc, eq, inArray, ne, type SQL } from "drizzle-orm";
@@ -83,6 +85,26 @@ export type CancelError =
   /** A time limit passed, or the trip moved, since the terms were shown. */
   | { readonly code: "terms_changed"; readonly terms: CancellationTerms };
 
+/**
+ * Not the driver's, or a draft (deleted, never cancelled): not found. The
+ * planned departure has come (R6.1): the trip day's then (spec 8). Or the
+ * driver was shown another answer to whether it counts on their
+ * reliability, as someone paid or left meanwhile.
+ */
+export type CancelTripError =
+  | NotFound
+  | { readonly code: "trip_not_cancellable" }
+  | { readonly code: "terms_changed"; readonly countsOnReliability: boolean }
+  | NoteProblem;
+
+export interface CancelTripInput {
+  readonly reason: TripCancelReason;
+  /** The driver's note to everyone on the trip, as written. */
+  readonly note?: string;
+  /** What the driver was shown: whether it shows on their profile (R6.7). */
+  readonly countsOnReliability: boolean;
+}
+
 export interface CancelInput {
   readonly reason: CancelReason;
   /** The driver's note to the passenger, as written. */
@@ -132,6 +154,17 @@ export interface BookingService {
     bookingId: string,
     input: CancelInput,
   ): Promise<Result<Booking, CancelError>>;
+  /**
+   * The driver cancels a published trip before it leaves (spec 6, 3.3):
+   * each booking is cancelled with a full refund of what was paid, each
+   * request declined, their seats freed, and everyone told. Asked again,
+   * as a retry is, it changes nothing.
+   */
+  cancelTrip(
+    driverId: string,
+    tripId: string,
+    input: CancelTripInput,
+  ): Promise<Result<void, CancelTripError>>;
   accept(driverId: string, bookingId: string): Promise<Result<Booking, AnswerError>>;
   decline(
     driverId: string,
@@ -168,7 +201,14 @@ async function readBookings(q: Queryable, where: SQL | undefined) {
   return q
     .select({
       booking: bookings,
-      trip: { id: trips.id, driverId: trips.driverId, bookingMode: trips.bookingMode },
+      trip: {
+        id: trips.id,
+        driverId: trips.driverId,
+        bookingMode: trips.bookingMode,
+        status: trips.status,
+        cancelledAt: trips.cancelledAt,
+        countsOnReliability: trips.countsOnReliability,
+      },
       driverName: drivers.firstName,
       passengerName: passengers.firstName,
       passengerSince: passengers.createdAt,
@@ -267,6 +307,9 @@ function present(row: BookingRow, viewerId: string, now: Date): Booking {
   const status = shownStatus(booking, now);
   const viewer = viewerId === booking.passengerId ? "passenger" : "driver";
   const withdrawn = isWithdrawal(booking);
+  // Ended with the whole trip, at the same moment (spec 6, 3.3), not cancelled alone before it.
+  const wholeTrip =
+    trip.cancelledAt !== null && booking.cancelledAt?.getTime() === trip.cancelledAt.getTime();
   const stopOf = (point: typeof row.boardPoint, stop: typeof row.boardStop): Booking["board"] => ({
     position: stop.position,
     meetingPoint: toSummary(point),
@@ -294,16 +337,23 @@ function present(row: BookingRow, viewerId: string, now: Date): Booking {
         : null,
     // A withdrawn request never counts against the passenger (R5.8).
     withdrawn,
+    // A request declined because the driver cancelled the trip says so too.
     cancellation:
-      status === "cancelled" && !withdrawn
+      (status === "cancelled" && !withdrawn) || (status === "declined" && wholeTrip)
         ? {
             by: booking.cancelledBy as "passenger" | "driver" | "operator",
             reason: booking.cancelReason as CancelReason | null,
             note: booking.cancelNote,
+            wholeTrip,
             refund: isk(booking.refundAmount ?? 0),
-            // Whether it counts is the canceller's own business (spec 8).
+            // Whether it counts is the canceller's own business (spec 8); a
+            // trip counts once, on the trip.
             countsOnReliability:
-              booking.cancelledBy === viewer ? booking.countsOnReliability : null,
+              booking.cancelledBy !== viewer
+                ? null
+                : wholeTrip
+                  ? trip.countsOnReliability
+                  : booking.countsOnReliability,
           }
         : null,
     driver: { firstName: row.driverName ?? "", colour: peopleColourOf(trip.driverId) },
@@ -693,9 +743,116 @@ export function createBookingService(dependencies: {
         // An accepted or confirmed booking holds its seats until now (rule S1).
         await changeOccupancy(tx, found.tripId, part, -booking.seats);
         if (refund.amount > 0) await oweRefund(tx, bookingId, refund, now);
-        await addSystemLine(tx, bookingId, { key: "cancelled", by, reason, note }, now);
+        await addSystemLine(
+          tx,
+          bookingId,
+          { key: "cancelled", by, reason, note, wholeTrip: false },
+          now,
+        );
         await recordEvents(tx, [{ type: "BookingCancelled", bookingId, by }], now);
         return shown();
+      });
+    },
+
+    async cancelTrip(driverId, tripId, input) {
+      // As a booking's note: trimmed, and composed as the database counts it.
+      const note = (input.note ?? "").trim().normalize("NFC");
+      const noteProblem = checkNote(note)[0];
+      if (noteProblem !== undefined) return err(noteProblem);
+      return db.transaction(async (tx) => {
+        const trip = await lockTrip(tx, tripId);
+        if (trip?.driverId !== driverId) return err({ code: "not_found" });
+        // Asked again, as a retry is: cancelled already, everyone told once.
+        if (trip.status === "cancelled") return ok(undefined);
+        // After the lock, which may have waited while a deadline passed.
+        const now = clock();
+        await expireDueBookings(tx, tripId, now);
+        const held = await tx
+          .select()
+          .from(bookings)
+          .where(and(eq(bookings.tripId, tripId), inArray(bookings.status, heldStatuses)))
+          .orderBy(asc(bookings.createdAt), asc(bookings.id));
+        const outcome = tripCancellation(
+          { status: trip.status as "published", departsAt: trip.departsAt ?? new Date(0) },
+          held.map((booking) => ({
+            id: booking.id,
+            status: booking.status as "requested" | "accepted" | "confirmed",
+            total: isk(booking.totalPrice),
+          })),
+          input.reason,
+          now,
+        );
+        if (!outcome.ok) return err({ code: "trip_not_cancellable" });
+        // Someone paid or left since the screen showed it: show it again.
+        const { countsOnReliability } = outcome.value;
+        if (countsOnReliability !== input.countsOnReliability) {
+          return err({ code: "terms_changed", countsOnReliability });
+        }
+        await tx
+          .update(trips)
+          .set({
+            status: "cancelled",
+            cancelledAt: now,
+            cancelReason: input.reason,
+            cancelNote: note,
+            countsOnReliability,
+            updatedAt: now,
+          })
+          .where(eq(trips.id, tripId));
+        const stops = await stopsOf(tx, tripId);
+        for (const { id, outcome: what, refund } of outcome.value.bookings) {
+          const booking = held.find((row) => row.id === id);
+          if (booking === undefined) continue;
+          await tx
+            .update(bookings)
+            .set(
+              what === "declined"
+                ? {
+                    status: "declined",
+                    decidedAt: now,
+                    expiresAt: null,
+                    // So the passenger reads why: the trip's reason and note.
+                    cancelledAt: now,
+                    cancelledBy: "driver",
+                    cancelReason: input.reason,
+                    cancelNote: note,
+                    updatedAt: now,
+                  }
+                : {
+                    status: "cancelled",
+                    cancelledAt: now,
+                    cancelledBy: "driver",
+                    cancelReason: input.reason,
+                    cancelNote: note,
+                    refundAmount: refund.amount,
+                    // The trip counts once, not each of its bookings (spec 8, 3.8).
+                    countsOnReliability: false,
+                    updatedAt: now,
+                  },
+            )
+            .where(eq(bookings.id, id));
+          // Requests hold their seats too (rule S1).
+          await changeOccupancy(tx, tripId, partOf(stops, booking), -booking.seats);
+          if (refund.amount > 0) await oweRefund(tx, id, refund, now);
+          if (what === "cancelled") {
+            await addSystemLine(
+              tx,
+              id,
+              { key: "cancelled", by: "driver", reason: input.reason, note, wholeTrip: true },
+              now,
+            );
+          }
+        }
+        await recordEvents(
+          tx,
+          outcome.value.bookings.map(({ id }) => ({
+            type: "TripCancelled",
+            tripId,
+            bookingId: id,
+          })),
+          now,
+        );
+        return ok(undefined);
       });
     },
 

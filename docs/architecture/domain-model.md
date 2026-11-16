@@ -110,7 +110,8 @@ ordered pair of active meeting points connected by road.
 | `note` | Free text from the driver, at most 500 characters, no contact details |
 | `departs_at`, `arrives_at` | Copies of the first and last stops' planned times, for overlap checks and clean-up; empty in a draft until the departure is chosen |
 | `women_only` | Shown to everyone; only women who have opted in can book it; fixed once a request or booking exists (not built yet) |
-| `published_at`, `cancelled_at`, `cancel_reason` | |
+| `published_at` | |
+| `cancelled_at`, `cancel_reason`, `cancel_note`, `counts_on_reliability` | When the driver cancelled the trip, why (a fixed list), their note to everyone on it (up to 500 characters, without contact details), and whether it counts on their reliability, once for the trip ([spec 6, 3.3](../specs/2026-11-13-changes-and-cancellations.md#33-cancelling-a-trip-driver)) |
 | `sample` | Sample data made by the seed for local development and staging |
 
 ### TripStop
@@ -149,7 +150,7 @@ One row per change to a published trip, so passengers can see what changed:
 | `confirmed_at`, `expired_at` | When it was paid (or, when free, accepted) and when a deadline passed |
 | `party_confirmed_at` | The passenger confirmed that everyone in a booking of more than one seat on a women-only trip can join |
 | `message`, `decline_reason`, `attempt_key` | Request note, reason seen only by the operator, idempotency key ([spec 5](../specs/2026-11-13-booking-and-requests.md#6-data-and-api)) |
-| `cancelled_by`, `cancel_reason`, `cancel_note`, `cancelled_at` | Reasons from a fixed list, including `weather`, `road_closed` and `plans_changed`; the note, up to 500 characters without contact details, only from a driver |
+| `cancelled_by`, `cancel_reason`, `cancel_note`, `cancelled_at` | Reasons from a fixed list, including `weather`, `road_closed` and `plans_changed`; the note, up to 500 characters without contact details, only from a driver. A request declined because the driver cancelled the trip keeps `driver`, the trip's reason and its note |
 | `refund_amount`, `counts_on_reliability` | Worked out by the domain when the booking is cancelled ([spec 6](../specs/2026-11-13-changes-and-cancellations.md#4-rules)); the refund is at most the total, and is the payment once one comes through after cancelling |
 | `departs_at_when_booked` | The trip's departure when the booking was made: moved more than 30 minutes from it, the passenger may cancel for free (R6.3) |
 

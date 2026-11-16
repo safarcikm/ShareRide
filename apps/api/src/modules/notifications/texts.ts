@@ -98,6 +98,8 @@ export function smsText(facts: NotificationFacts, locale: Locale): string {
         facts.refund.amount > 0 ? "sms.bookingCancelled" : "sms.bookingCancelledUnpaid",
         values,
       );
+    case "trip_cancelled":
+      return t(facts.refund.amount > 0 ? "sms.tripCancelled" : "sms.tripCancelledUnpaid", values);
     default:
       throw new Error(`No SMS for ${facts.kind} yet.`);
   }
@@ -171,9 +173,10 @@ function bookingText(
       case "booking_cancelled_by_passenger":
         return [t("notify.cancelledByPassenger", { name }), part()];
       case "booking_cancelled_by_driver":
+      case "trip_cancelled":
         // Never the driver's note: it may hold a number (R7.9).
         return [
-          t("notify.cancelledByDriver", {
+          t(facts.kind === "trip_cancelled" ? "notify.tripCancelled" : "notify.cancelledByDriver", {
             reason: cancelReasonText(t, required(facts.cancelReason, "the reason")),
           }),
           facts.refund.amount > 0

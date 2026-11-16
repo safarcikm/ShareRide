@@ -40,8 +40,14 @@ describe("system lines in the reader's language (spec 7, 3.1, item 3)", () => {
   });
 
   it("says who cancelled and why: you, or the other person by name", () => {
-    const mine = { key: "cancelled", by: "me", reason: "plans_changed", note: "" } as const;
-    const theirs = { key: "cancelled", by: "them", reason: "car_problem", note: "" } as const;
+    const mine = {
+      key: "cancelled",
+      by: "me",
+      reason: "plans_changed",
+      note: "",
+      wholeTrip: false,
+    } as const;
+    const theirs = { ...mine, by: "them", reason: "car_problem" } as const;
     expect(systemLineText(en, mine, "Anna")).toBe("You cancelled the booking: Plans changed");
     expect(systemLineText(en, theirs, "Anna")).toBe("Anna cancelled the booking: Car problem");
     expect(systemLineText(is, mine, "Anna")).toBe("Þú afbókaðir: Breyttar áætlanir");
@@ -54,11 +60,30 @@ describe("system lines in the reader's language (spec 7, 3.1, item 3)", () => {
       by: "them",
       reason: "car_problem",
       note: "Því miður.",
+      wholeTrip: false,
     } as const;
     expect(systemLineText(en, noted, "Anna")).toBe(
       "Anna cancelled the booking: Car problem “Því miður.”",
     );
     expect(systemLineText(is, noted, "Anna")).toBe("Anna afbókaði: Bilun í bíl „Því miður.“");
+  });
+
+  it("says when the driver cancelled the whole trip (spec 6, 3.3)", () => {
+    const trip = {
+      key: "cancelled",
+      by: "them",
+      reason: "weather",
+      note: "",
+      wholeTrip: true,
+    } as const;
+    expect(systemLineText(en, trip, "Anna")).toBe("Anna cancelled the trip: Weather");
+    expect(systemLineText(en, { ...trip, by: "me" }, "Gunna")).toBe(
+      "You cancelled the trip: Weather",
+    );
+    expect(systemLineText(is, trip, "Anna")).toBe("Anna hætti við ferðina: Veður");
+    expect(systemLineText(is, { ...trip, by: "me", note: "Því miður." }, "Gunna")).toBe(
+      "Þú hættir við ferðina: Veður „Því miður.“",
+    );
   });
 });
 

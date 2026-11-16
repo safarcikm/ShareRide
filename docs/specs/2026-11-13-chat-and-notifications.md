@@ -316,8 +316,8 @@ inside a sentence.
 | `notifications.addEmailAction` | Add an email | Bæta við netfangi |
 | `notifications.notNow` | Not now | Ekki núna |
 | `email.unreadMessages` | You have unread messages about your trip on {date} | Þú átt ólesin skilaboð um ferðina: {date} |
-| `sms.tripCancelled` | ShareRide: your trip on {date} at {time} is cancelled. Full refund. Details in the app. | ShareRide: Ferðinni {date} kl. {time} hefur verið aflýst. Full endurgreiðsla. Nánar í appinu. |
-| `sms.bookingCancelled` | ShareRide: the driver cancelled your booking for {date} at {time}. Full refund. Details in the app. | ShareRide: Bílstjórinn aflýsti bókun þinni {date} kl. {time}. Full endurgreiðsla. Nánar í appinu. |
+| `sms.tripCancelled` | ShareRide: your trip on {date} at {time} is cancelled. Full refund. Details in the app. | ShareRide: Ferðinni þinni var aflýst: {date} kl. {time}. Full endurgreiðsla. Nánar í appinu. |
+| `sms.bookingCancelled` | ShareRide: the driver cancelled your booking for {date} at {time}. Full refund. Details in the app. | ShareRide: Bílstjórinn aflýsti bókun þinni: {date} kl. {time}. Full endurgreiðsla. Nánar í appinu. |
 | `sms.departureMoved` | ShareRide: your trip on {date} now leaves at {time}. Keep it or cancel with a full refund in the app. | ShareRide: Ferðin {date} fer nú kl. {time}. Haltu bókuninni eða afbókaðu með fullri endurgreiðslu í appinu. |
 | `sms.meetingPointChanged` | ShareRide: the meeting point for your trip on {date} has changed. Details in the app. | ShareRide: Mótsstaður ferðarinnar {date} hefur breyst. Nánar í appinu. |
 

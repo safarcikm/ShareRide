@@ -74,7 +74,7 @@ async function openBooking(
         const { reason, terms } = input["body"] as CancelBookingBody;
         booking = {
           ...cancelledBooking,
-          cancellation: { by: "passenger", reason, note: "", ...terms },
+          cancellation: { by: "passenger", reason, note: "", wholeTrip: false, ...terms },
         };
         return ok(200, booking);
       });
@@ -295,6 +295,7 @@ describe("A cancelled booking (spec 6, 3.4 and 3.5)", () => {
         refund: full,
         countsOnReliability: null,
         note: "Sorry, the clutch went.",
+        wholeTrip: false,
       },
     });
     expect(await screen.findByText("Anna cancelled this booking: Car problem")).toBeVisible();
@@ -303,6 +304,49 @@ describe("A cancelled booking (spec 6, 3.4 and 3.5)", () => {
       screen.getByText("Full refund of 2,900 ISK, back to the card you paid with."),
     ).toBeVisible();
     expect(screen.queryByText("This cancellation shows on your profile")).toBeNull();
+    expect(screen.getByRole("button", { name: "Search again" })).toBeVisible();
+  });
+
+  it("says the driver cancelled the whole trip, with their note and the refund (spec 6, 3.3)", async () => {
+    await openBooking({
+      ...cancelledBooking,
+      cancellation: {
+        by: "driver",
+        reason: "weather",
+        refund: full,
+        countsOnReliability: null,
+        note: "The pass is closed.",
+        wholeTrip: true,
+      },
+    });
+    expect(await screen.findByText("Anna cancelled the trip: Weather")).toBeVisible();
+    expect(screen.getByText("Note from the driver: The pass is closed.")).toBeVisible();
+    expect(
+      screen.getByText("Full refund of 2,900 ISK, back to the card you paid with."),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Search again" })).toBeVisible();
+  });
+
+  it("tells a passenger whose request was declined that the trip was cancelled, and why", async () => {
+    await openBooking(
+      northBooking({
+        status: "declined",
+        requestExpiresAt: null,
+        cancellation: {
+          by: "driver",
+          reason: "car_problem",
+          refund: none,
+          countsOnReliability: null,
+          note: "",
+          wholeTrip: true,
+        },
+      }),
+    );
+    expect(await screen.findByText("Anna cancelled the trip: Car problem")).toBeVisible();
+    expect(screen.getByText("Cancelled")).toBeVisible();
+    expect(screen.queryByText("Declined")).toBeNull();
+    expect(screen.queryByText("The driver couldn't take this request")).toBeNull();
+    expect(screen.queryByText(/refund|Note from/i)).toBeNull();
     expect(screen.getByRole("button", { name: "Search again" })).toBeVisible();
   });
 
@@ -315,6 +359,7 @@ describe("A cancelled booking (spec 6, 3.4 and 3.5)", () => {
         refund: none,
         countsOnReliability: false,
         note: "",
+        wholeTrip: false,
       },
     });
     expect(await screen.findByText("You cancelled this booking: Found another ride")).toBeVisible();

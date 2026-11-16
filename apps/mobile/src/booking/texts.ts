@@ -106,8 +106,9 @@ export function refundText(
 }
 
 /**
- * A cancelled booking's outcome for its passenger: who cancelled and why,
- * the refund if there was one, and whether it shows on their profile.
+ * A cancelled booking's outcome for its passenger, or a request's declined
+ * because the driver cancelled the trip: who cancelled what and why, the
+ * refund if there was one, and whether it shows on their profile.
  */
 export function cancellationTexts(
   t: Translate,
@@ -131,7 +132,10 @@ export function cancellationTexts(
         ? null
         : cancellation.by === "passenger"
           ? t("booking.cancelledByYou", { reason })
-          : t("booking.cancelledByOther", { name: booking.driver.firstName, reason });
+          : t(cancellation.wholeTrip ? "booking.tripCancelledBy" : "booking.cancelledByOther", {
+              name: booking.driver.firstName,
+              reason,
+            });
   return {
     said,
     note: cancellation.note === "" ? null : t("booking.driverNote", { note: cancellation.note }),

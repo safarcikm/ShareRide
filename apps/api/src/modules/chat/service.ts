@@ -96,6 +96,7 @@ function systemLineOf(row: MessageRow, viewer: TripRole): NonNullable<ChatMessag
         reason: row.params?.["reason"] as CancelReason,
         // Lines from before notes were stored have none.
         note: typeof row.params?.["note"] === "string" ? row.params["note"] : "",
+        wholeTrip: row.params?.["wholeTrip"] === true,
       };
     default:
       throw new Error(`No such system line: ${String(row.key)}.`);

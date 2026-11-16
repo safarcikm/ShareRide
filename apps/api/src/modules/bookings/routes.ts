@@ -5,6 +5,7 @@ import {
   bookTripRoute,
   cancelBookingRoute,
   cancellationPreviewRoute,
+  cancelTripRoute,
   declineRequestRoute,
   myBookingsRoute,
   tripBookingsRoute,
@@ -14,11 +15,13 @@ import type { Context, MiddlewareHandler } from "hono";
 import { authOf, type AppEnv } from "../../context.ts";
 import { errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
+import type { TripService } from "../trips/drafts.ts";
 import type {
   AnswerError,
   BookError,
   BookingService,
   CancelError,
+  CancelTripError,
   PreviewError,
 } from "./service.ts";
 
@@ -110,11 +113,49 @@ function cancelError(c: Context, error: CancelError | PreviewError) {
   }
 }
 
+function cancelTripError(c: Context, error: CancelTripError) {
+  switch (error.code) {
+    case "not_found":
+      return errorResponse(c, 404, "not_found", "There is no such trip of yours.");
+    case "trip_not_cancellable":
+      return errorResponse(
+        c,
+        409,
+        "trip_not_cancellable",
+        "Only a published trip can be cancelled, until its planned departure.",
+      );
+    case "terms_changed":
+      return errorResponse(c, 409, "terms_changed", "What cancelling does has changed.", {
+        countsOnReliability: error.countsOnReliability,
+      });
+    case "note_too_long":
+      return invalid(c, "note", "too_long", "The note is too long.");
+    case "note_has_contact_details":
+      return invalid(c, "note", "contact_details", "Leave contact details out of the note.");
+  }
+}
+
+/**
+ * The booking routes, and cancelling a trip, which cancels its bookings;
+ * `trips` shows the cancelled trip as its driver sees it.
+ */
 export function registerBookingRoutes(
   app: OpenAPIHono<AppEnv>,
   service: BookingService,
   requireAuth: MiddlewareHandler,
+  trips: Pick<TripService, "myTrip">,
 ): void {
+  app.openapi(toOpenApiRoute(cancelTripRoute, requireAuth), async (c) => {
+    const { id } = validated(c, "param", cancelTripRoute.request.params);
+    const body = validated(c, "json", cancelTripRoute.request.body);
+    const { userId } = authOf(c);
+    const result = await service.cancelTrip(userId, id, body);
+    if (!result.ok) return cancelTripError(c, result.error);
+    const trip = await trips.myTrip(userId, id);
+    if (trip === undefined) throw new Error("The cancelled trip was not found.");
+    return c.json(trip, 200);
+  });
+
   app.openapi(toOpenApiRoute(bookTripRoute, requireAuth), async (c) => {
     const { id } = validated(c, "param", bookTripRoute.request.params);
     const body = validated(c, "json", bookTripRoute.request.body);

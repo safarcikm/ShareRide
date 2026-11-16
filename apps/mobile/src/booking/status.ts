@@ -12,8 +12,15 @@ import { resultsHref } from "@/search/results-href";
 export const isWithdrawn = (booking: Booking) =>
   booking.status === "cancelled" && booking.withdrawn;
 
+/** A request declined because the driver cancelled the trip (spec 6, 3.3), which reads as cancelled. */
+const declinedWithTrip = (booking: Booking) =>
+  booking.status === "declined" && booking.cancellation !== null;
+
 export function statusKey(booking: Booking): MessageKey {
-  return isWithdrawn(booking) ? "booking.status.withdrawn" : `booking.status.${booking.status}`;
+  if (isWithdrawn(booking)) return "booking.status.withdrawn";
+  return declinedWithTrip(booking)
+    ? "booking.status.cancelled"
+    : `booking.status.${booking.status}`;
 }
 
 const statusTags: Record<Booking["status"], TagKind> = {

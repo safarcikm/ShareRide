@@ -20,6 +20,7 @@ export const outboxEventTypes = [
   "BookingExpired",
   "BookingWithdrawn",
   "BookingCancelled",
+  "TripCancelled",
   "RefundIssued",
   "MessageSent",
 ] as const;

@@ -190,6 +190,25 @@ describe("My rides (spec 16, 3.3)", () => {
     ]);
   });
 
+  it("lists a trip the driver cancelled under Past, saying so and why (spec 6, 3.1)", async () => {
+    const cancelled: MyTrip = {
+      ...drivingLater,
+      status: "cancelled",
+      cancellation: { reason: "weather", note: "", countsOnReliability: false },
+    };
+    await renderApp("/my-rides?when=past", {
+      me: completeMe,
+      setUp: (client) => {
+        myRidesApi(client, { past: { trips: [cancelled] } });
+      },
+    });
+    const row = await screen.findByRole("button", { name: /^Driving, / });
+    expect(String(row.props.accessibilityLabel)).toMatch(
+      /Cancelled.*You cancelled this trip: Weather/,
+    );
+    expect(screen.queryByText(/seats? taken/)).toBeNull();
+  });
+
   it("offers Find a ride and Offer a ride when nothing is coming up", async () => {
     await renderApp("/my-rides", {
       me: completeMe,

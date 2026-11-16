@@ -66,6 +66,7 @@ export const cancelledBooking = northBooking({
     by: "passenger",
     reason: "plans_changed",
     note: "",
+    wholeTrip: false,
     refund: paidBooking.total,
     countsOnReliability: true,
   },
@@ -219,7 +220,7 @@ export function driverApi(
     const cancelled = change(idOf(input), {
       status: "cancelled",
       confirmed: null,
-      cancellation: { by: "driver", reason, note: note ?? "", ...terms },
+      cancellation: { by: "driver", reason, note: note ?? "", wholeTrip: false, ...terms },
     });
     return cancelled === undefined ? failure(404, "not_found") : ok(200, cancelled);
   });

@@ -216,13 +216,14 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     });
     const settings = defaultTripSettings;
     registerTripRoutes(app, createRouteService({ ...features, settings }), requireAuth);
-    registerDraftRoutes(app, createTripService({ ...features, settings, driving }), requireAuth);
+    const trips = createTripService({ ...features, settings, driving });
+    registerDraftRoutes(app, trips, requireAuth);
     const bookings = createBookingService({
       ...features,
       account,
       settings: defaultBookingSettings,
     });
-    registerBookingRoutes(app, bookings, requireAuth);
+    registerBookingRoutes(app, bookings, requireAuth, trips);
     registerChatRoutes(
       app,
       createChatService({ ...features, bookings, settings: defaultChatSettings }),

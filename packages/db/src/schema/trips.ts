@@ -6,6 +6,7 @@ import {
   noteMaxLength,
   petOptions,
   smokingOptions,
+  tripCancelReasons,
   tripStatuses,
 } from "@shareride/domain";
 import { sql } from "drizzle-orm";
@@ -55,6 +56,13 @@ export const trips = pgTable(
     departsAt: at(),
     arrivesAt: at(),
     publishedAt: at(),
+    cancelledAt: at(),
+    /** Why the driver cancelled the trip (spec 6, 3.3). */
+    cancelReason: text(),
+    /** The driver's note to the passengers, as written (spec 6, 3.3); empty for none. */
+    cancelNote: text().notNull().default(""),
+    /** Whether the cancellation shows on the driver's reliability, once for the trip (spec 8, 3.8). */
+    countsOnReliability: boolean().notNull().default(false),
     /** Made by the seed for local and staging (sample trips). */
     sample: boolean().notNull().default(false),
     ...timestamps,
@@ -72,6 +80,11 @@ export const trips = pgTable(
     check("trips_smoking_check", oneOf(table.smoking, smokingOptions)),
     check("trips_chat_check", oneOf(table.chat, chatOptions)),
     check("trips_note_check", sql`char_length(${table.note}) <= ${sql.raw(String(noteMaxLength))}`),
+    check("trips_cancel_reason_check", oneOf(table.cancelReason, tripCancelReasons)),
+    check(
+      "trips_cancel_note_check",
+      sql`char_length(${table.cancelNote}) <= ${sql.raw(String(noteMaxLength))}`,
+    ),
     check(
       "trips_times_check",
       // A draft keeps the times as the driver left them; publishing checks them (R3.6).

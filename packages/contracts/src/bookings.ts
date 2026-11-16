@@ -87,7 +87,11 @@ export const bookingSchema = z.object({
    * which never counts against them (R5.8); false for every other booking.
    */
   withdrawn: z.boolean(),
-  /** A cancelled booking's cancellation (spec 6); null for any other, and for a withdrawn request. */
+  /**
+   * A cancelled booking's cancellation (spec 6), and a request declined
+   * because the driver cancelled the trip (3.3); null for any other, and for
+   * a withdrawn request.
+   */
   cancellation: z
     .object({
       by: z.enum(["passenger", "driver", "operator"]),
@@ -95,6 +99,8 @@ export const bookingSchema = z.object({
       reason: z.enum(cancelReasons).nullable(),
       /** The driver's note to the passenger, as written; empty for none (spec 6, 3.3 and 3.4). */
       note: z.string(),
+      /** The driver cancelled the whole trip (spec 6, 3.3), not this booking alone. */
+      wholeTrip: z.boolean(),
       /** What went back to the passenger (rule M2): all they paid, or nothing. */
       refund: moneySchema,
       /** Whether it shows on the viewer's profile, for their own cancellation; null for the other person's. */

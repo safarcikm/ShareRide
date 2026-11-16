@@ -30,9 +30,12 @@ const asBooking = (booking: Booking): Ride => ({
   endsAt: new Date(booking.alight.plannedAt),
 });
 
-/** A published trip as a ride; a draft is not a ride yet (3.3 item 7). */
+/**
+ * A published or cancelled trip as a ride (spec 6, 3.1); a draft is not a
+ * ride yet (3.3 item 7).
+ */
 function asTrip(trip: MyTrip): Ride[] {
-  if (trip.status !== "published" || trip.departsAt === null || trip.arrivesAt === null) return [];
+  if (trip.status === "draft" || trip.departsAt === null || trip.arrivesAt === null) return [];
   return [
     { kind: "trip", trip, startsAt: new Date(trip.departsAt), endsAt: new Date(trip.arrivesAt) },
   ];

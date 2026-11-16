@@ -2,6 +2,7 @@
 // round numbers (100 km and an hour a stretch, 15 kr a km at 100%) and
 // publishes. Not used by the app itself.
 import type {
+  CancelTripBody,
   DriverReadiness,
   MeetingPointSummary,
   MyTrip,
@@ -114,8 +115,16 @@ interface TripsApi {
   refuse(details: { path: string; issue: string }[]): void;
 }
 
-/** A driver with a car, ready to drive, and the trips API around them. */
-export function tripsApi(client: FakeClient, start: MyTrip[] = []): TripsApi {
+/**
+ * A driver with a car, ready to drive, and the trips API around them.
+ * `answers.cancel` can replace what cancelling a trip answers; `undefined`
+ * cancels it.
+ */
+export function tripsApi(
+  client: FakeClient,
+  start: MyTrip[] = [],
+  answers: { cancel?: () => unknown } = {},
+): TripsApi {
   let trips = [...start];
   let refusal: { path: string; issue: string }[] | null = null;
   // Each change moves updatedAt on a second, as the server stamps its clock.
@@ -166,6 +175,7 @@ export function tripsApi(client: FakeClient, start: MyTrip[] = []): TripsApi {
       segments: [],
       openRequests: 0,
       requestsCloseAt: null,
+      cancellation: null,
     };
     return ok(201, store(trip));
   });
@@ -223,6 +233,25 @@ export function tripsApi(client: FakeClient, start: MyTrip[] = []): TripsApi {
       }),
     );
   });
+  client.answer("/v1/trips/{id}/cancel", (input) => {
+    const answered = answers.cancel?.();
+    if (answered !== undefined) return answered;
+    const trip = find(input);
+    if (trip === undefined) return failure(404, "not_found");
+    if (trip.status !== "published") return failure(409, "trip_not_cancellable");
+    const { reason, note } = input["body"] as CancelTripBody;
+    // As the server counts it, on a trip with someone who paid (R6.7).
+    const countsOnReliability = reason !== "weather" && reason !== "road_closed";
+    return ok(
+      200,
+      store({
+        ...trip,
+        status: "cancelled",
+        cancellation: { reason, note: note ?? "", countsOnReliability },
+        updatedAt: stamp(),
+      }),
+    );
+  });
   return {
     trips: () => trips,
     refuse(details) {
@@ -255,6 +284,7 @@ export function plannedDraft(changes: Partial<MyTrip> = {}): MyTrip {
     segments: [],
     openRequests: 0,
     requestsCloseAt: null,
+    cancellation: null,
     ...changes,
   };
 }

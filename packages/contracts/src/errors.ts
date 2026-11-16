@@ -22,6 +22,8 @@ export const errorResponseSchema = z.object({
     total: moneySchema.optional(),
     /** A cancellation's terms now, when they are not the ones shown (`terms_changed`). */
     terms: cancellationTermsSchema.optional(),
+    /** Whether cancelling a trip counts on the driver's reliability now (`terms_changed`, R6.7). */
+    countsOnReliability: z.boolean().optional(),
   }),
 });
 

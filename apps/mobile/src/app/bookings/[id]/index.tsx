@@ -292,7 +292,12 @@ function StatusText({ booking }: { readonly booking: Booking }) {
         </View>
       );
     case "declined":
-      return <Notice kind="info" message={t("booking.declined")} />;
+      // Declined because the driver cancelled the trip, it says so and why (spec 6, 3.3).
+      return booking.cancellation === null ? (
+        <Notice kind="info" message={t("booking.declined")} />
+      ) : (
+        <Cancelled booking={booking} />
+      );
     case "expired":
       // An expired booking keeps the deadline that passed: the driver's to
       // answer, or the passenger's to pay.
