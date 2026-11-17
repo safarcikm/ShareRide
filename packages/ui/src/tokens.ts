@@ -29,6 +29,8 @@ export const colors = {
     info: "#1F5F8B",
     womenOnly: "#6B3FA0",
     womenOnlySoft: "#F1EAFB",
+    // A rating's stars (spec 15, section 4.1), always next to the number.
+    rating: "#B97F0F",
   },
   dark: {
     background: "#121A1E",
@@ -52,6 +54,7 @@ export const colors = {
     info: "#8FCBE6",
     womenOnly: "#CDB6F2",
     womenOnlySoft: "#2E2340",
+    rating: "#E9B44C",
   },
 } as const;
 

@@ -7,6 +7,8 @@ interface IconProps {
   readonly icon: LucideIcon;
   readonly color: string;
   readonly size?: number;
+  /** A colour to fill the shape with, such as a chosen star; none by default. */
+  readonly fill?: string;
   readonly testID?: string;
 }
 
@@ -15,7 +17,7 @@ interface IconProps {
  * screen readers: it sits next to text that says the same thing. An icon on
  * its own needs an accessible name on the part around it.
  */
-export function Icon({ icon: Glyph, color, size = iconSizes.button, testID }: IconProps) {
+export function Icon({ icon: Glyph, color, size = iconSizes.button, fill, testID }: IconProps) {
   return (
     <View
       testID={testID}
@@ -23,7 +25,7 @@ export function Icon({ icon: Glyph, color, size = iconSizes.button, testID }: Ic
       importantForAccessibility="no-hide-descendants"
       aria-hidden
     >
-      <Glyph size={size} color={color} strokeWidth={iconStroke} />
+      <Glyph size={size} color={color} strokeWidth={iconStroke} fill={fill ?? "none"} />
     </View>
   );
 }
