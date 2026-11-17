@@ -10,6 +10,7 @@ export * from "./notifications.ts";
 export * from "./payments.ts";
 export * from "./trip-day.ts";
 export * from "./privacy.ts";
+export * from "./reviews.ts";
 export * from "./trips.ts";
 export * from "./users.ts";
 export * from "./vehicles.ts";

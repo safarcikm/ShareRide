@@ -224,9 +224,13 @@ Opened in the transaction that confirms the booking. Retained per the
 
 ### Review
 
-`booking_id`, `author_id`, `subject_id`, `role` (`as_driver` or
-`as_passenger`), `rating` (1–5), `comment`, `created_at`, `revealed_at`,
-`hidden_at` (moderation).
+`booking_id`, `author_id`, `subject_id`, `author_role` (`driver` or
+`passenger`), `rating` (1–5), `comment` (empty for none), `created_at` (when
+it was sent; never changed after), `revealed_at` (once both have reviewed,
+or 14 days after the booking completed), `hidden_at` (moderation, spec 9).
+One per author per completed booking; a driver absence that stands, or a
+passenger found absent, deletes the booking's reviews
+([spec 8, 3.7](../specs/2026-11-13-trip-day-reviews-and-reliability.md#37-ratings-and-reviews-g1)).
 
 ### Trip day and reliability records
 

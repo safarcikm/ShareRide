@@ -10,9 +10,11 @@ import { contactDetailsIn, type ContactKind } from "../trips/note.ts";
 export interface ReviewSettings {
   /** Reviews are written within this many days of completion (`review_window`). */
   readonly reviewWindowDays: number;
+  /** The one reminder to review comes this many days after completion (3.7.6). */
+  readonly reminderAfterDays: number;
 }
 
-export const defaultReviewSettings: ReviewSettings = { reviewWindowDays: 14 };
+export const defaultReviewSettings: ReviewSettings = { reviewWindowDays: 14, reminderAfterDays: 3 };
 
 /** A review's comment, in characters (R8.8). */
 export const reviewMaxLength = 500;
@@ -47,6 +49,34 @@ function windowEnd(completedAt: Date, settings: ReviewSettings): Date {
   return new Date(completedAt.getTime() + settings.reviewWindowDays * dayMs);
 }
 
+/** Reviews of a booking completed then can be written until this moment, and not at it (R8.8). */
+export function reviewClosesAt(completedAt: Date, settings: ReviewSettings): Date {
+  return windowEnd(completedAt, settings);
+}
+
+/**
+ * When to remind people to review a booking completed then (3.7.6), or null
+ * when that moment has already passed: a ride the operator found happened
+ * days later gets "How was your trip?" once, not twice in a row.
+ */
+export function reviewReminderAt(
+  completedAt: Date,
+  now: Date,
+  settings: ReviewSettings,
+): Date | null {
+  const at = new Date(completedAt.getTime() + settings.reminderAfterDays * dayMs);
+  return at > now ? at : null;
+}
+
+/**
+ * A comment as it is kept and counted: in characters as people see them,
+ * without space around it, as the trip note is (R3.10). A review sent again
+ * is the same one when its tidied comment is.
+ */
+export function tidyReviewComment(comment: string): string {
+  return comment.normalize("NFC").trim();
+}
+
 /**
  * R8.8: one review per author per completed booking, within 14 days, 1 to 5
  * whole stars and an optional comment of up to 500 characters without
@@ -69,8 +99,7 @@ export function checkReview(
   if (!Number.isInteger(review.rating) || review.rating < 1 || review.rating > 5) {
     return err({ code: "rating_invalid" });
   }
-  // Counted in characters as people see them, as the trip note is (R3.10).
-  const comment = review.comment.normalize("NFC").trim();
+  const comment = tidyReviewComment(review.comment);
   if (Array.from(comment).length > reviewMaxLength) return err({ code: "comment_too_long" });
   const kinds = contactDetailsIn(comment);
   if (kinds.length > 0) return err({ code: "comment_has_contact_details", kinds });

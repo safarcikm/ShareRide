@@ -536,6 +536,23 @@ releases follow [Semantic Versioning](https://semver.org/).
   tests' trip move also moves its "I'm here" and reports and lets a report
   nobody answered stand, and two journeys cover a no-show nobody contests
   and a driver absence that stands with a full refund.
+- Ratings and reviews in the API (milestone 7, PR 6a, spec 8, 3.7): once a
+  booking completes, the passenger rates the driver and the driver rates
+  the passenger, 1 to 5 stars and an optional comment of up to 500
+  characters without phone numbers, email addresses or links
+  (`POST /v1/bookings/{id}/review`), once each and within 14 days. Nothing
+  is written about someone who has left ShareRide or is leaving, and
+  nothing while the passenger's report that the driver didn't come is
+  open. A review shows once both have reviewed, or 14 days after
+  completion (the minute job), and the person it is about is told by push.
+  "How was your trip?" goes by push to each passenger and once to the
+  driver when the trip completes, and once more 3 days later to those who
+  have not reviewed, following the trip reminders switch. A driver
+  absence that stands, or a passenger found absent, removes the booking's
+  reviews. Bookings show their reviews: until when, your own, and the
+  other's once it shows (never one the operator hid). Migration
+  `0030_reviews` adds the `reviews` table, with `hidden_at` for
+  moderation (spec 9), and widens the notification kinds.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
@@ -632,7 +649,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   boarding. The API's minute job brings a paused point back on its end
   date and retires a retiring one after its last trip. A point in use is
   due for review a year after its last check (R2.9). Migration
-  `0030_meeting_point_pauses` adds the `MeetingPointChanged` event and the
+  `0031_meeting_point_pauses` adds the `MeetingPointChanged` event and the
   meeting point of a notification. A point retired while paused keeps its
   reason and its news still goes out. Publishing a trip and adding a stop
   wait for a pause under way. The sample seed keeps the status the console

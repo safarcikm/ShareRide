@@ -2,6 +2,7 @@ import { schema, type Database } from "@shareride/db";
 import {
   channelsFor,
   defaultNotificationSettings,
+  defaultReviewSettings,
   defaultTripDaySettings,
   eventAttempts,
   isAccountNotice,
@@ -12,6 +13,8 @@ import {
   reminderTimes,
   requestHalfwayAt,
   retryAt,
+  reviewClosesAt,
+  reviewReminderAt,
   sendLeaseSeconds,
   startOfIcelandDay,
   statusAt,
@@ -27,6 +30,7 @@ import {
   type NotificationSettings,
   type OutboxEventType,
   type Recipient,
+  type ReviewSettings,
   type TripRole,
 } from "@shareride/domain";
 import type { CarFacts } from "@shareride/i18n";
@@ -38,6 +42,7 @@ import { deviceNotRegistered, type PushReceipt, type PushSender } from "../../pl
 import { SmsMaybeSent, type SmsSender } from "../../platform/sms.ts";
 import type { Queryable, Transaction } from "../bookings/seats.ts";
 import { quickOf } from "../chat/service.ts";
+import { isHidden, shown } from "../privacy/hidden.ts";
 import { answerByOf, disputesOf } from "../trip-day/disputes.ts";
 import { emailContent } from "./email-content.ts";
 import { preferencesOf } from "./preferences.ts";
@@ -59,6 +64,7 @@ const {
   bookings,
   conversations,
   dataExports,
+  disputes,
   meetingPoints,
   messages,
   notificationDeliveries,
@@ -66,6 +72,7 @@ const {
   outboxEvents,
   pushTickets,
   pushTokens,
+  reviews,
   scheduledNotifications,
   sessions,
   tripChanges,
@@ -121,6 +128,7 @@ async function partiesOf(q: Queryable, bookingId: string) {
       expiresAt: bookings.expiresAt,
       decidedAt: bookings.decidedAt,
       paymentDueAt: bookings.paymentDueAt,
+      completedAt: bookings.completedAt,
     })
     .from(bookings)
     .innerJoin(trips, eq(trips.id, bookings.tripId))
@@ -619,6 +627,8 @@ export function createNotificationWorker(dependencies: {
    */
   readonly email?: EmailChannel;
   readonly settings?: NotificationSettings;
+  /** The time to review and its reminder (spec 8, 3.7). */
+  readonly reviewSettings?: ReviewSettings;
   /**
    * Text messages for last-minute news (spec 7, 3.4; ADR 0023). Without
    * it, SMS is skipped as `sms_off`.
@@ -637,6 +647,7 @@ export function createNotificationWorker(dependencies: {
 }): NotificationWorker {
   const { db, clock, push, email, sms, onSendError, onEventError } = dependencies;
   const settings = dependencies.settings ?? defaultNotificationSettings;
+  const reviewSettings = dependencies.reviewSettings ?? defaultReviewSettings;
 
   /**
    * When the passenger gets in, for the SMS window: for a moved departure,
@@ -1092,6 +1103,136 @@ export function createNotificationWorker(dependencies: {
     }
   }
 
+  /**
+   * "How was your trip?" once a booking completes (spec 8, 3.7.6): the
+   * passenger about their booking, and the driver once for the trip, each
+   * only with trip reminders on and never about a person who has left or is
+   * leaving, whom nobody can review. Then one reminder each, 3 days after
+   * completion, unless that moment has passed. A ride the operator finds
+   * happened after the 14 days asks nobody: it can no longer be reviewed.
+   */
+  async function askForReviews(
+    tx: Transaction,
+    booking: Parties,
+    key: string,
+    now: Date,
+  ): Promise<void> {
+    if (booking.status !== "completed" || booking.completedAt === null) return;
+    if (now >= reviewClosesAt(booking.completedAt, reviewSettings)) return;
+    const people = await tx
+      .select({ id: users.id, deleteAfter: users.deleteAfter })
+      .from(users)
+      .where(inArray(users.id, [booking.passengerId, booking.driverId]));
+    const stays = (id: string) => {
+      const person = people.find((row) => row.id === id);
+      return person !== undefined && !isHidden(person);
+    };
+    if (stays(booking.driverId) && (await preferencesOf(tx, booking.passengerId)).reminders) {
+      await notify(tx, { type: "RateTrip", to: "passenger" }, booking, { key }, now);
+    }
+    if (stays(booking.passengerId) && (await preferencesOf(tx, booking.driverId)).reminders) {
+      await add(
+        tx,
+        {
+          kind: "rate_trip_driver",
+          to: "driver",
+          recipientId: booking.driverId,
+          bookingId: booking.id,
+        },
+        `trip-completed:${booking.tripId}`,
+        now,
+      );
+    }
+    const runAt = reviewReminderAt(booking.completedAt, now, reviewSettings);
+    if (runAt === null) return;
+    const base = { runAt, createdAt: now, updatedAt: now };
+    await tx
+      .insert(scheduledNotifications)
+      .values([
+        {
+          ...base,
+          key: `rate_trip:${booking.id}`,
+          kind: "rate_trip",
+          bookingId: booking.id,
+          recipient: "passenger",
+        },
+        {
+          ...base,
+          key: `rate_trip_driver:${booking.tripId}`,
+          kind: "rate_trip_driver",
+          tripId: booking.tripId,
+          recipient: "driver",
+        },
+      ])
+      .onConflictDoNothing();
+  }
+
+  /**
+   * The one reminder to review (3.7.6): the passenger's while their booking
+   * is completed, not reviewed by them, with no open report, the 14 days
+   * not over and the driver still here; the driver's while one passenger of
+   * the trip is so, about the first of them. Only with trip reminders on.
+   */
+  async function remindToReview(
+    tx: Transaction,
+    scheduled: typeof scheduledNotifications.$inferSelect,
+    key: string,
+    now: Date,
+  ): Promise<void> {
+    const forDriver = scheduled.kind === "rate_trip_driver";
+    const which = forDriver
+      ? scheduled.tripId === null
+        ? undefined
+        : eq(bookings.tripId, scheduled.tripId)
+      : scheduled.bookingId === null
+        ? undefined
+        : eq(bookings.id, scheduled.bookingId);
+    if (which === undefined) return;
+    const subject = alias(users, "subject");
+    const waiting = await tx
+      .select({
+        id: bookings.id,
+        passengerId: bookings.passengerId,
+        driverId: trips.driverId,
+        completedAt: bookings.completedAt,
+      })
+      .from(bookings)
+      .innerJoin(trips, eq(trips.id, bookings.tripId))
+      .leftJoin(
+        reviews,
+        and(
+          eq(reviews.bookingId, bookings.id),
+          eq(reviews.authorId, forDriver ? trips.driverId : bookings.passengerId),
+        ),
+      )
+      .leftJoin(disputes, and(eq(disputes.bookingId, bookings.id), isNull(disputes.outcome)))
+      .innerJoin(subject, eq(subject.id, forDriver ? bookings.passengerId : trips.driverId))
+      .where(
+        and(
+          which,
+          eq(bookings.status, "completed"),
+          isNull(reviews.id),
+          isNull(disputes.id),
+          shown(subject),
+        ),
+      )
+      .orderBy(asc(bookings.completedAt), asc(bookings.id));
+    const open = waiting.find(
+      (row) => row.completedAt !== null && now < reviewClosesAt(row.completedAt, reviewSettings),
+    );
+    if (open === undefined) return;
+    const recipientId = forDriver ? open.driverId : open.passengerId;
+    if (!(await preferencesOf(tx, recipientId)).reminders) return;
+    await add(
+      tx,
+      forDriver
+        ? { kind: "rate_trip_driver", to: "driver", recipientId, bookingId: open.id }
+        : { kind: "rate_trip", to: "passenger", recipientId, bookingId: open.id },
+      key,
+      now,
+    );
+  }
+
   async function handleEvent(
     tx: Transaction,
     event: typeof outboxEvents.$inferSelect,
@@ -1153,6 +1294,23 @@ export function createNotificationWorker(dependencies: {
         (await removedStopOf(tx, tripChangeId)) !== undefined;
       if (!told) return;
       await notify(tx, { type }, booking, { key, tripChangeId }, now);
+      return;
+    }
+    if (type === "BookingCompleted") {
+      await askForReviews(tx, booking, key, now);
+      return;
+    }
+    if (type === "ReviewRevealed") {
+      const reviewId = idIn(event.payload, "reviewId");
+      if (reviewId === undefined) return;
+      const [shown] = await tx
+        .select({ authorRole: reviews.authorRole, hiddenAt: reviews.hiddenAt })
+        .from(reviews)
+        .where(eq(reviews.id, reviewId));
+      // Removed since with the booking's reviews, or hidden by the operator.
+      if (shown === undefined || shown.hiddenAt !== null) return;
+      const about = shown.authorRole === "passenger" ? "driver" : "passenger";
+      await notify(tx, { type, about }, booking, { key }, now);
       return;
     }
     const happened: NotificationEvent =
@@ -1281,7 +1439,9 @@ export function createNotificationWorker(dependencies: {
           scheduled.bookingId === null ? undefined : await partiesOf(tx, scheduled.bookingId);
         const source = { key: `schedule:${scheduled.key}` };
         const to = scheduled.recipient;
-        if (booking !== undefined && scheduled.kind === "unread_messages") {
+        if (scheduled.kind === "rate_trip" || scheduled.kind === "rate_trip_driver") {
+          await remindToReview(tx, scheduled, source.key, now);
+        } else if (booking !== undefined && scheduled.kind === "unread_messages") {
           if (to === "driver" || to === "passenger") {
             const at = await unreadEmailAt(tx, booking, to);
             if (at !== null && at > now) {
@@ -1393,6 +1553,13 @@ export function createNotificationWorker(dependencies: {
       reminder !== null &&
       (!reminderStillTimely(reminder, clock()) ||
         !(await preferencesOf(db, found.recipientId)).reminders)
+    ) {
+      return { skipped: "no_longer_applies" };
+    }
+    // "How was your trip?" follows the trip reminders switch (spec 8, 3.7.6).
+    if (
+      (found.facts.kind === "rate_trip" || found.facts.kind === "rate_trip_driver") &&
+      !(await preferencesOf(db, found.recipientId)).reminders
     ) {
       return { skipped: "no_longer_applies" };
     }

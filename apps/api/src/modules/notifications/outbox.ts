@@ -19,6 +19,7 @@ export type OutboxEvent =
         | "TripChanged"
         | "TripCancelled"
         | "MessageSent"
+        | "ReviewRevealed"
         | "MeetingPointChanged"
         | "DataExportReady"
         | "AccountDeletionScheduled"
@@ -59,6 +60,12 @@ export type OutboxEvent =
       readonly bookingId: string;
     }
   | { readonly type: "MessageSent"; readonly messageId: string }
+  | {
+      /** A review shows (spec 8, R8.9): the person it is about is told. */
+      readonly type: "ReviewRevealed";
+      readonly bookingId: string;
+      readonly reviewId: string;
+    }
   | {
       /**
        * A meeting point paused, one for each trip still to stop there: its

@@ -1,0 +1,4 @@
+ALTER TABLE "outbox_events" DROP CONSTRAINT "outbox_events_kind_check";--> statement-breakpoint
+ALTER TABLE "notifications" ADD COLUMN "meeting_point_id" uuid;--> statement-breakpoint
+ALTER TABLE "notifications" ADD CONSTRAINT "notifications_meeting_point_id_meeting_points_id_fk" FOREIGN KEY ("meeting_point_id") REFERENCES "public"."meeting_points"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "outbox_events" ADD CONSTRAINT "outbox_events_kind_check" CHECK ("outbox_events"."kind" in ('BookingRequested', 'BookingAccepted', 'BookingConfirmed', 'BookingDeclined', 'BookingExpired', 'BookingWithdrawn', 'BookingCancelled', 'DepartureMoved', 'TripChanged', 'TripCancelled', 'RefundIssued', 'MessageSent', 'CheckedIn', 'NoShowMarked', 'DriverAbsentReported', 'DisputeDecided', 'BookingCompleted', 'ReviewRevealed', 'MeetingPointChanged', 'DataExportReady', 'AccountDeletionScheduled'));

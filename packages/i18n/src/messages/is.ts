@@ -1052,6 +1052,7 @@ export const is = {
     "Þú sagðir að þetta væri ekki rétt. ShareRide skoðar málið og tekur ákvörðun.",
   "dispute.noShowStands": "Fjarvistin stendur.",
   "dispute.cancelledAsIfByYou": "Bókunin var afbókuð eins og þú hefðir afbókað hana.",
+  "review.title": "Hvernig var ferðin?",
   /** Spec 11, 3.2: never a link, which only the signed-in app gives. */
   "notify.dataExportReady": "Gögnin þín eru tilbúin til niðurhals",
   "notify.dataExportReadyBody": "Sæktu skrána í ShareRide fyrir {until}. Eftir það er henni eytt.",
@@ -1080,6 +1081,10 @@ export const is = {
   "notify.reportBody": "{from} – {to} · {when}. Er þetta rétt? Svarfrestur: {deadline}.",
   "notify.disputeDecided": "ShareRide hefur tekið ákvörðun um tilkynninguna",
   "notify.disputeDecidedBody": "{from} – {to} · {when}. Sjáðu niðurstöðuna í appinu.",
+  "notify.rateDriver": "Gefðu bílstjóranum einkunn: {name}. {from} – {to} · {when}.",
+  "notify.ratePassengers": "Gefðu farþegunum einkunn. Það hjálpar öðrum bílstjórum að velja.",
+  "notify.reviewVisible": "Umsögn um þig er nú sýnileg",
+  "notify.reviewVisibleBody": "{from} – {to} · {when}.",
   // A paused meeting point (spec 2, 3.6.4): the reason is the operator's.
   "notify.pointPaused": "Mótsstaður ekki í notkun í bili: {point}",
   "notify.pointRetired": "Mótsstaður ekki lengur í notkun: {point}",
@@ -1355,6 +1360,9 @@ export const is = {
   "export.value.kind.driver_absent_reported": "Tilkynnt að bílstjórinn hafi ekki komið",
   "export.value.kind.dispute_decided": "Ákvörðun um tilkynningu",
   "export.value.kind.dispute_decided_driver": "Ákvörðun um tilkynningu, sem bílstjóri",
+  "export.value.kind.rate_trip": "Beðið um einkunn fyrir ferðina",
+  "export.value.kind.rate_trip_driver": "Beðið um einkunn fyrir farþegana",
+  "export.value.kind.review_visible": "Umsögn um þig sýnd",
   "export.value.kind.data_export_ready": "Gögnin þín tilbúin til niðurhals",
   "export.value.kind.account_deletion_scheduled": "Aðganginum þínum verður eytt",
   "export.value.kind.departure": "Brottfarartími",

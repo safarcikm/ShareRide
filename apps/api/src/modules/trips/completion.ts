@@ -19,6 +19,7 @@ import {
   stopsOf,
   type Transaction,
 } from "../bookings/seats.ts";
+import { recordEvents } from "../notifications/outbox.ts";
 
 const { bookings, disputes, trips } = schema;
 
@@ -129,4 +130,10 @@ async function complete(tx: Transaction, tripId: string, completedAt: Date, now:
       .where(eq(bookings.id, booking.id));
     await changeOccupancy(tx, tripId, partOf(stops, booking), -booking.seats);
   }
+  // "How was your trip?" (spec 8, 3.7.6).
+  await recordEvents(
+    tx,
+    completing.map((booking) => ({ type: "BookingCompleted", bookingId: booking.id })),
+    now,
+  );
 }

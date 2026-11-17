@@ -38,6 +38,7 @@ export function northBooking(changes: Partial<Booking> = {}): Booking {
     movedFar: false,
     tripDay: null,
     dispute: null,
+    review: null,
     ...changes,
   };
 }

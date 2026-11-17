@@ -1038,6 +1038,7 @@ export const en = {
   "dispute.youContest": "You said it's not right. ShareRide will look into it and decide.",
   "dispute.noShowStands": "The no-show stands.",
   "dispute.cancelledAsIfByYou": "The booking was cancelled as if by you.",
+  "review.title": "How was your trip?",
   /** Spec 11, 3.2: never a link, which only the signed-in app gives. */
   "notify.dataExportReady": "Your data is ready to download",
   "notify.dataExportReadyBody":
@@ -1067,6 +1068,10 @@ export const en = {
   "notify.reportBody": "{from} – {to} · {when}. Is this right? Answer by {deadline}.",
   "notify.disputeDecided": "ShareRide has decided on the report",
   "notify.disputeDecidedBody": "{from} – {to} · {when}. See the outcome in the app.",
+  "notify.rateDriver": "Rate the driver: {name}. {from} – {to} · {when}.",
+  "notify.ratePassengers": "Rate your passengers. It helps other drivers choose.",
+  "notify.reviewVisible": "A review about you is now visible",
+  "notify.reviewVisibleBody": "{from} – {to} · {when}.",
   // A paused meeting point (spec 2, 3.6.4): the reason is the operator's.
   "notify.pointPaused": "Meeting point not in use for now: {point}",
   "notify.pointRetired": "Meeting point no longer in use: {point}",
@@ -1347,6 +1352,9 @@ export const en = {
   "export.value.kind.driver_absent_reported": "Reported that the driver didn't come",
   "export.value.kind.dispute_decided": "A report decided",
   "export.value.kind.dispute_decided_driver": "A report decided, as the driver",
+  "export.value.kind.rate_trip": "Asked to rate your trip",
+  "export.value.kind.rate_trip_driver": "Asked to rate your passengers",
+  "export.value.kind.review_visible": "A review about you shown",
   "export.value.kind.data_export_ready": "Your data ready to download",
   "export.value.kind.account_deletion_scheduled": "Your account to be deleted",
   "export.value.kind.departure": "Departure time",
