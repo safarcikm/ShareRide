@@ -5,6 +5,7 @@ import type { Database } from "@shareride/db";
 import {
   defaultBookingSettings,
   defaultChatSettings,
+  defaultMeetingPointIssueSettings,
   defaultNotificationSettings,
   defaultReviewSettings,
   defaultSearchSettings,
@@ -59,12 +60,15 @@ import { createDrivingService, registerDrivingRoutes } from "./modules/driving/i
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
   createMeetingPointAdminService,
+  createMeetingPointIssueService,
   createMeetingPointPhotoService,
   createMeetingPointService,
   registerMeetingPointPhotoAdminRoutes,
+  registerMeetingPointIssueAdminRoutes,
   registerMeetingPointRoutes,
   registerMeetingPointsAdminRoutes,
 } from "./modules/meeting-points/index.ts";
+import { createNoticeService, registerNoticeRoutes } from "./modules/moderation/index.ts";
 import { registerNotificationRoutes } from "./modules/notifications/index.ts";
 import { createPaymentService, registerPaymentRoutes } from "./modules/payments/index.ts";
 import {
@@ -291,14 +295,26 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     registerDrivingRoutes(app, driving, requireAuth);
     registerLegalRoutes(app, legal);
     const photos = createMeetingPointPhotoService({ ...features, logger });
-    registerMeetingPointRoutes(app, createMeetingPointService(features), photos);
+    const issues = createMeetingPointIssueService({
+      ...features,
+      settings: defaultMeetingPointIssueSettings,
+    });
+    registerMeetingPointRoutes(
+      app,
+      createMeetingPointService(features),
+      photos,
+      issues,
+      requireAuth,
+    );
     const meetingPointsAdmin = {
       ...features,
       meetingPoints: createMeetingPointAdminService(features),
       photos,
+      issues,
       requireOperator,
     };
     registerMeetingPointsAdminRoutes(app, meetingPointsAdmin);
+    registerMeetingPointIssueAdminRoutes(app, meetingPointsAdmin);
     registerMeetingPointPhotoAdminRoutes(app, meetingPointsAdmin);
     const { photoFiles } = features;
     if (photoFiles !== undefined) {
@@ -378,6 +394,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       },
       requireAuth,
     );
+    registerNoticeRoutes(app, createNoticeService(features), requireAuth);
     registerPaymentRoutes(app, {
       payments: createPaymentService({ ...features, provider: features.payments }),
       bookings,

@@ -28,6 +28,7 @@ const {
   emailVerifications,
   legalAcceptances,
   legalDocuments,
+  meetingPointIssues,
   meetingPoints,
   messages,
   notificationDeliveries,
@@ -540,8 +541,9 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
           kind: line.kind,
           text: said(line, viewer, other),
           // As stored, for other apps: what the text above was made from.
-          key: line.key,
-          params: line.params,
+          // Never what an erased person said, even where a report kept it.
+          key: line.erasedAt === null ? line.key : null,
+          params: line.erasedAt === null ? line.params : null,
           sentAt: when(line.sentAt),
           readAt: when(line.readAt),
         })),
@@ -564,6 +566,21 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     .leftJoin(reportedPeople, eq(reportedPeople.id, reports.subjectUserId))
     .where(eq(reports.reporterId, userId))
     .orderBy(asc(reports.createdAt), asc(reports.id));
+
+  // Problems the person reported with meeting points: only the open ones
+  // are still linked to them (spec 2, section 7).
+  const pointProblems = await q
+    .select({
+      nameIs: meetingPoints.nameIs,
+      nameEn: meetingPoints.nameEn,
+      problem: meetingPointIssues.reason,
+      note: meetingPointIssues.note,
+      sentAt: meetingPointIssues.createdAt,
+    })
+    .from(meetingPointIssues)
+    .innerJoin(meetingPoints, eq(meetingPoints.id, meetingPointIssues.meetingPointId))
+    .where(eq(meetingPointIssues.reporterId, userId))
+    .orderBy(asc(meetingPointIssues.createdAt), asc(meetingPointIssues.id));
 
   // The blocks the person made, never who blocked them (spec 9, 3.2).
   const blocked = await q
@@ -655,6 +672,12 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
         ...row,
         sentAt: when(row.sentAt),
         closedAt: when(row.closedAt),
+      })),
+      meeting_point_reports: pointProblems.map((row) => ({
+        place: name(row),
+        problem: row.problem,
+        note: row.note,
+        sentAt: when(row.sentAt),
       })),
       blocks: blocked.map((row) => ({ firstName: row.firstName ?? "", since: when(row.since) })),
       notices: noticed.map((row) => ({

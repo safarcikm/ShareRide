@@ -199,7 +199,8 @@ account, with the row locked and the date checked again inside it:
 3. **Empty:** the number plate of cars kept for published trips; free text
    they wrote on trips and bookings (notes, request messages, cancel
    notes); the text of messages they sent, which get `erased_at` and read
-   "Message deleted".
+   "Message deleted" (in a conversation a report covers, the text stays
+   for the operator: PR 12).
 4. **Move to the former member:** trips, bookings, kept cars, the sender of
    their messages, privacy requests, and in other threads' tables reviews
    they wrote, check-ins, disputes and reports (section 7).
@@ -401,6 +402,27 @@ Added once milestone 7 built reviews (spec 8, 3.7).
       (R8.9), with when the operator hid either
 - Verify: integration tests (both sides; one not yet shown left out of
   the other side's file; hidden ones marked)
+
+### PR 12: `feat(privacy)`: erasure keeps a reported conversation
+
+Added once milestone 9 built reports (#119). Martin chose this on
+2026-11-17 (open question Q24, answer A47).
+
+- [x] Erasure keeps what the person said in a conversation a report
+      covers (a message report, open or closed under 3 years ago; the same
+      test as the chat clean-up, `reportCovers`): the sender becomes the
+      former member with a new retry key, `erased_at` is set, so the other
+      person and Download my data show "Message deleted" (without the
+      quick message's key), and only the operator's reading shows the
+      text. `sent_as` keeps whether the driver or the passenger said it,
+      as both may be erased. The hourly clean-up deletes the conversation
+      once the report's time is over. Migration
+      `0039_messages_kept_for_reports` adds `sent_as` and lets an erased
+      message keep its text, key and params.
+- Verify: integration tests (open, closed a millisecond inside the 3
+  years, and closed 3 years ago, which empties as before; another
+  conversation of the person's nobody reported is emptied; Download my
+  data; both people erased, then read by the operator)
 
 ## 6. Review focus
 

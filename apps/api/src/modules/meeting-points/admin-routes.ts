@@ -3,17 +3,20 @@ import {
   adminAddMeetingPointPhotoRoute,
   adminCreateMeetingPointRoute,
   adminDescribeMeetingPointPhotoRoute,
+  adminImportMeetingPointsRoute,
+  adminMeetingPointIssuesRoute,
   adminMeetingPointPhotosRoute,
   adminMeetingPointRoute,
   adminMeetingPointsRoute,
   adminOrderMeetingPointPhotosRoute,
   adminPauseMeetingPointRoute,
   adminRemoveMeetingPointPhotoRoute,
+  adminResolveMeetingPointIssueRoute,
   adminResumeMeetingPointRoute,
   adminRetireMeetingPointRoute,
   adminUpdateMeetingPointRoute,
 } from "@shareride/contracts";
-import type { DraftProblem, PauseProblem } from "@shareride/domain";
+import type { DraftProblem, ImportFileProblem, PauseProblem } from "@shareride/domain";
 import type { Context, MiddlewareHandler } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { operatorOf, type AppEnv } from "../../context.ts";
@@ -21,14 +24,35 @@ import { errorBody, errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
 import { auditRequestOf } from "../admin/audit.ts";
 import type { ConsoleActor, MeetingPointAdminService, StatusProblem } from "./admin-service.ts";
+import type { MeetingPointIssueService } from "./issues.ts";
 import type { MeetingPointPhotoService, PhotoFieldProblem, PhotoProblem } from "./photos.ts";
 
 export interface MeetingPointsAdminRoutesDependencies {
   readonly meetingPoints: MeetingPointAdminService;
   readonly photos: MeetingPointPhotoService;
+  readonly issues: MeetingPointIssueService;
   readonly requireOperator: MiddlewareHandler<AppEnv>;
   readonly clientAddress: (c: Context) => string;
 }
+
+/**
+ * An import's JSON: a file of at most 1 MB (`importLimits`), with room for
+ * the quotes and line breaks JSON escapes.
+ */
+const importBodyLimit = 2 * 1024 * 1024;
+
+/** Why a file cannot be read, by the column or line it is about. */
+const fileProblemDetail = ({ issue, column, position, line }: ImportFileProblem) => ({
+  path:
+    column !== undefined
+      ? `columns.${column}`
+      : position !== undefined
+        ? `columns.${String(position)}`
+        : line !== undefined
+          ? `lines.${String(line)}`
+          : "file",
+  issue,
+});
 
 /** Each field and its problem, so the form can show them by the fields. */
 const invalid = (problems: readonly (DraftProblem | PauseProblem | PhotoFieldProblem)[]) =>
@@ -68,6 +92,31 @@ export function registerMeetingPointsAdminRoutes(
     const result = await meetingPoints.create(body, actorOf(c));
     if (!result.ok) return c.json(invalid(result.error), 400);
     return c.json(result.value, 201);
+  });
+
+  app.use(
+    adminImportMeetingPointsRoute.path,
+    bodyLimit({
+      maxSize: importBodyLimit,
+      onError: (c) =>
+        c.json(errorBody("payload_too_large", "An import file is at most 1 MB."), 413),
+    }),
+  );
+
+  app.openapi(toOpenApiRoute(adminImportMeetingPointsRoute, requireOperator), async (c) => {
+    const { file, save } = validated(c, "json", adminImportMeetingPointsRoute.request.body);
+    const result = await meetingPoints.importFile(file, save, actorOf(c));
+    if (!result.ok) {
+      return c.json(
+        errorBody(
+          "validation_failed",
+          "The file cannot be read.",
+          result.error.map(fileProblemDetail),
+        ),
+        400,
+      );
+    }
+    return c.json({ rows: [...result.value.rows], added: result.value.added }, 200);
   });
 
   app.openapi(toOpenApiRoute(adminUpdateMeetingPointRoute, requireOperator), async (c) => {
@@ -153,6 +202,40 @@ export function registerMeetingPointsAdminRoutes(
 
 /** A photo's JSON: its file in base64 is at most 2.8 MB (`photoLimits`), with room for the rest. */
 const photoBodyLimit = 3 * 1024 * 1024;
+
+/** The queue of problem reports about meeting points under /admin/v1 (spec 2, 3.5). */
+export function registerMeetingPointIssueAdminRoutes(
+  app: OpenAPIHono<AppEnv>,
+  dependencies: MeetingPointsAdminRoutesDependencies,
+): void {
+  const { issues, requireOperator, clientAddress } = dependencies;
+
+  app.openapi(toOpenApiRoute(adminMeetingPointIssuesRoute, requireOperator), async (c) =>
+    c.json({ issues: await issues.queue() }, 200),
+  );
+
+  app.openapi(toOpenApiRoute(adminResolveMeetingPointIssueRoute, requireOperator), async (c) => {
+    const { id } = validated(c, "param", adminResolveMeetingPointIssueRoute.request.params);
+    const body = validated(c, "json", adminResolveMeetingPointIssueRoute.request.body);
+    const { userId, sessionId } = operatorOf(c);
+    const result = await issues.resolve(id, body, {
+      operator: { userId, sessionId },
+      request: auditRequestOf(c, clientAddress),
+    });
+    if (result.ok) return c.body(null, 204);
+    switch (result.error.code) {
+      case "not_found":
+        return errorResponse(c, 404, "not_found", "There is no such report.");
+      case "issue_resolved":
+        return errorResponse(c, 409, "issue_resolved", "The report was resolved since.");
+      case "required":
+      case "too_long":
+        return errorResponse(c, 400, "validation_failed", "The report cannot be resolved.", {
+          details: [{ path: "note", issue: result.error.code }],
+        });
+    }
+  });
+}
 
 /** A meeting point's photos under /admin/v1 (spec 2, 3.6.3). */
 export function registerMeetingPointPhotoAdminRoutes(

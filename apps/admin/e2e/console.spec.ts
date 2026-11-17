@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { operatorLink } from "../playwright.config.ts";
 import { addAuthenticator } from "./passkeys.ts";
+import { reportProblem } from "./person.ts";
 import { gradientPng } from "./png.ts";
 
 // One operator, one browser tab and its passkeys, through the journeys in
@@ -323,4 +324,105 @@ test("the operator adds photos to a meeting point, orders and describes them, an
   await expect(entries.nth(1)).toContainText("meeting_point.photo_described");
   await expect(entries.nth(2)).toContainText("meeting_point.photos_ordered");
   await expect(entries.nth(3)).toContainText("meeting_point.photo_added");
+});
+
+// Drafts from a file (spec 2, 3.6.9): the browser reads the file, the API
+// shows each row before saving, and the rows without problems become drafts.
+test("the operator imports drafts from a CSV file, seeing each row first", async () => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/admin/meeting-points");
+  await page.getByRole("link", { name: "Import from a file" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Import meeting points", level: 1 }),
+  ).toBeVisible();
+
+  // As Icelandic Excel saves it: semicolons and decimal commas.
+  const file = [
+    "name_is;name_en;latitude;longitude;type;region;municipality;amenities",
+    "Söluskálinn við Hraunsá;Hraunsá service station;64,6911;-21,6312;fuel-station;west;Borgarbyggð;shop|toilets",
+    "BSÍ;;64,1376;-21,9365;bus-hub;capital;Reykjavíkurborg;",
+  ].join("\r\n");
+  await page.getByLabel("CSV file").setInputFiles({
+    name: "points.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(file, "utf8"),
+  });
+  await page.getByRole("button", { name: "Check the file" }).click();
+  await expect(page.getByRole("heading", { name: "The file's rows" })).toBeFocused();
+  await expect(page.getByText("Rows: 2. Ready to add: 1. Skipped for problems: 1.")).toBeVisible();
+  const rows = page.getByRole("list", { name: "The file's rows" }).getByRole("listitem");
+  await expect(rows.nth(0)).toContainText("Fuel station · Borgarbyggð, West");
+  await expect(rows.nth(1)).toContainText(
+    "A meeting point or an earlier row has this name already.",
+  );
+  // A phone fits the rows and the help without scrolling sideways.
+  await page.getByText("What the file holds").click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await page.setViewportSize({ width: 1280, height: 800 });
+
+  await page.getByRole("button", { name: "Add 1 draft" }).click();
+  await expect(page.getByRole("status")).toHaveText("Added as drafts: 1. Skipped: 1.");
+  await page.getByRole("link", { name: "Söluskálinn við Hraunsá" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Söluskálinn við Hraunsá", level: 1 }),
+  ).toBeVisible();
+
+  await page.goto("/admin/audit-log?action=meeting_point.imported");
+  await expect(
+    page.getByRole("list", { name: "Entries" }).getByRole("listitem").first(),
+  ).toContainText("meeting_point.imported");
+});
+
+// Problem reports (spec 2, 3.5): someone reports a problem with a point in
+// the app; the home page counts it and the list marks the point. The
+// operator resolves it with a note, never seeing who sent it, and marks the
+// point checked today. Resolving is in the audit log.
+test("the operator resolves a problem report about a meeting point", async () => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const listed = (await (await page.request.get("/v1/meeting-points")).json()) as {
+    meetingPoints: { id: string; name: { is: string } }[];
+  };
+  const akranes = listed.meetingPoints.find((point) => point.name.is === "N1 Akranesi");
+  if (akranes === undefined) throw new Error("No sample point at Akranes.");
+  await reportProblem(akranes.id, { reason: "unsafe", note: "No light after dark." });
+
+  await page.goto("/admin");
+  await page.getByRole("link", { name: "1 open problem report about meeting points" }).click();
+  await expect(page.getByRole("heading", { name: "Problem reports", level: 1 })).toBeVisible();
+  const report = page.getByRole("article", { name: "N1 Akranesi" });
+  await expect(report).toContainText("It's not safe to wait here");
+  await expect(report).toContainText("No light after dark.");
+
+  // The list marks the point, and filters to it.
+  await page.getByRole("link", { name: "All meeting points" }).click();
+  await page.getByLabel("Only points with an open problem report").check();
+  await page.getByRole("button", { name: "Show meeting points" }).click();
+  const points = page.getByRole("list", { name: "The meeting points" }).getByRole("listitem");
+  await expect(points).toHaveCount(1);
+  await expect(points.first()).toContainText("N1 Akranesi");
+  await expect(points.first()).toContainText("1 open problem report");
+
+  // A note is needed; then resolving takes the report off the queue.
+  await page.getByRole("link", { name: "Problem reports" }).click();
+  await report.getByRole("button", { name: "Resolve" }).click();
+  await expect(report.getByLabel("What did you do?")).toBeFocused();
+  await expect(report).toContainText("Say what you did.");
+  await report.getByLabel("What did you do?").fill("Asked the station to light the stop.");
+  await report.getByRole("checkbox", { name: /I checked the point today/ }).check();
+  await report.getByRole("button", { name: "Resolve" }).click();
+  await expect(page.getByRole("status")).toHaveText("Resolved: N1 Akranesi.");
+  await expect(page.getByRole("status")).toBeFocused();
+  await expect(page.getByText("There are no open reports.")).toBeVisible();
+
+  // Checked today: the point's Last confirmed on is today, in Iceland.
+  await page.goto(`/admin/meeting-points/${akranes.id}`);
+  await expect(page.getByLabel("Last confirmed on")).toHaveValue(
+    new Date().toISOString().slice(0, 10),
+  );
+
+  await page.goto("/admin/audit-log?action=meeting_point_issue.");
+  await expect(
+    page.getByRole("list", { name: "Entries" }).getByRole("listitem").first(),
+  ).toContainText("meeting_point_issue.resolved");
 });

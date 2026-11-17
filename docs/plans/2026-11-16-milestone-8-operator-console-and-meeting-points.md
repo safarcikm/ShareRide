@@ -324,14 +324,17 @@ PR 8 is in two parts.
 
 ### PR 9: `feat(meeting-points)`: import drafts from a CSV file
 
-- [ ] Parse and check rows, the preview, saving in one transaction
+- [x] Parse and check rows, the preview, saving in one transaction
 - Verify: domain tests for each column's problems; integration test
 
 ### PR 10: `feat(meeting-points)`: problem reports
 
-- [ ] `meeting_point_issues`; "Something wrong here?" in the app; the
-      queue, resolving and the home count; the 12-month deletion in the
-      clean-up job
+- [x] 10a: `meeting_point_issues`; "Something wrong here?" in the app;
+      the person's open reports in Download my data
+- [x] 10b: the queue, resolving and the home count; open reports in the
+      list of points (a filter and a tag), as the mark that a point needs
+      review; the 12-month deletion in the clean-up job; the browser
+      journey for both parts
 - Verify: integration tests (verified phone only, 5 a day, the link to
   the person removed on resolving); screen test; browser journey
 

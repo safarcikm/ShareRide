@@ -176,6 +176,11 @@ button:disabled {
   gap: var(--space-sm);
 }
 
+/* A card whose parts stack, such as a problem report: each takes the width, from the left. */
+.card.stack {
+  align-items: stretch;
+}
+
 .card-text {
   display: flex;
   flex-direction: column;
@@ -274,6 +279,11 @@ code {
   margin: 0;
   overflow-wrap: break-word;
   min-width: 0;
+}
+
+/* Text written on several lines, such as where to stand. */
+.line-breaks {
+  white-space: pre-line;
 }
 
 /* A link that does what a button does, such as opening a form. */

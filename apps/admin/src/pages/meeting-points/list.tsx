@@ -19,7 +19,15 @@ import { statusKeys } from "./texts.ts";
 export const meetingPointsPath = "/admin/meeting-points";
 
 /** The filters the list takes (`GET /admin/v1/meeting-points`), in the address's order. */
-const filterKeys = ["status", "region", "type", "season", "reviewOverdue", "q"] as const;
+const filterKeys = [
+  "status",
+  "region",
+  "type",
+  "season",
+  "reviewOverdue",
+  "openIssues",
+  "q",
+] as const;
 type FilterKey = (typeof filterKeys)[number];
 type Filters = Partial<Record<FilterKey, string>>;
 
@@ -53,12 +61,16 @@ function showInAddress(filters: Filters) {
 type Query = NonNullable<CallInput<typeof adminMeetingPointsRoute>["query"]>;
 
 /**
- * The filters as the API takes them, the overdue box as a flag. Values from
- * the address are sent as they are; the API refuses one it does not know.
+ * The filters as the API takes them, the boxes as flags. Values from the
+ * address are sent as they are; the API refuses one it does not know.
  */
 const queryOf = (filters: Filters): Query => {
-  const { reviewOverdue, ...rest } = filters;
-  return (reviewOverdue === "true" ? { ...rest, reviewOverdue: true } : rest) as Query;
+  const { reviewOverdue, openIssues, ...rest } = filters;
+  return {
+    ...rest,
+    ...(reviewOverdue === "true" ? { reviewOverdue: true } : {}),
+    ...(openIssues === "true" ? { openIssues: true } : {}),
+  } as Query;
 };
 
 type List =
@@ -84,6 +96,7 @@ export function MeetingPointList() {
     type: useId(),
     season: useId(),
     overdue: useId(),
+    openIssues: useId(),
     list: useId(),
   };
 
@@ -133,12 +146,26 @@ export function MeetingPointList() {
     <section className="stack">
       <h1 className="type-title">{t("admin.meetingPoints.title")}</h1>
       <p className="type-body muted">{t("admin.meetingPoints.intro")}</p>
-      <ConsoleLink
-        to={`${meetingPointsPath}/new`}
-        className="button-primary link-button type-button"
-      >
-        {t("admin.meetingPoints.add")}
-      </ConsoleLink>
+      <div className="actions">
+        <ConsoleLink
+          to={`${meetingPointsPath}/new`}
+          className="button-primary link-button type-button"
+        >
+          {t("admin.meetingPoints.add")}
+        </ConsoleLink>
+        <ConsoleLink
+          to={`${meetingPointsPath}/import`}
+          className="button-secondary link-button type-label"
+        >
+          {t("admin.meetingPoints.import")}
+        </ConsoleLink>
+        <ConsoleLink
+          to={`${meetingPointsPath}/problems`}
+          className="button-secondary link-button type-label"
+        >
+          {t("admin.meetingPoints.problems")}
+        </ConsoleLink>
+      </div>
       <form
         className="stack panel"
         role="search"
@@ -236,6 +263,17 @@ export function MeetingPointList() {
             }}
           />
           {t("admin.meetingPoints.reviewOverdueOnly")}
+        </label>
+        <label className="check type-body" htmlFor={ids.openIssues}>
+          <input
+            id={ids.openIssues}
+            type="checkbox"
+            checked={draft.openIssues === "true"}
+            onChange={(event) => {
+              setDraft({ ...draft, openIssues: event.target.checked ? "true" : undefined });
+            }}
+          />
+          {t("admin.meetingPoints.openIssuesOnly")}
         </label>
         <div className="actions">
           <button type="submit" className="button-primary type-button">
@@ -350,6 +388,11 @@ export function MeetingPointList() {
                     {isReviewOverdue(point.reviewDueOn, today) ? (
                       <span className="tag tag-warning type-small">
                         {t("admin.meetingPoints.reviewOverdue")}
+                      </span>
+                    ) : null}
+                    {point.openIssues > 0 ? (
+                      <span className="tag tag-warning type-small">
+                        {t("admin.meetingPoints.openIssues", { count: point.openIssues })}
                       </span>
                     ) : null}
                   </p>

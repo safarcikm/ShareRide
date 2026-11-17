@@ -92,8 +92,9 @@ meeting point routes (`registerMeetingPointsAdminRoutes`), with the work in
 - `GET /admin/v1/meeting-points` lists every point, drafts and retired
   ones too, by Icelandic name, with the domain's filters
   (`matchesConsoleFilters`): status, region, type, season this month,
-  review overdue and part of a name. There are a few hundred points at
-  most, so it filters them all in the API.
+  review overdue, open problem reports and part of a name. Each row has
+  its count of open reports (`openIssues`). There are a few hundred points
+  at most, so it filters them all in the API.
 - `POST /admin/v1/meeting-points` adds a draft; `PUT
   /admin/v1/meeting-points/{id}` saves its fields. Both check the fields
   with `validateMeetingPointDraft` and answer `validation_failed` with each
@@ -246,6 +247,94 @@ links that work. The console's and the web app's content security policies allow
 images from the bucket's origin. `pnpm --filter @shareride/api
 test:contract` checks the adapter against the real bucket with its keys
 (`photo-storage-hetzner.contract.test.ts`).
+
+### Importing drafts from a file
+
+"Import from a file" on the list (`apps/admin/src/pages/meeting-points/import.tsx`)
+adds meeting points as drafts in bulk, for the first corridors (spec 2,
+3.6.9). The operator chooses a CSV file and checks it; the console reads
+it as UTF-8 and sends its text to `POST /admin/v1/meeting-points/import`
+with `save: false`. The API reads it with the domain's
+`readMeetingPointImport` and answers with each row as it will be saved,
+or its problems by column. "Add N drafts" sends the same text with
+`save: true`.
+
+- The first row names the columns, in any order. `name_is`, `latitude`,
+  `longitude`, `type`, `region` and `municipality` are needed; `name_en`,
+  `aliases`, `where_to_stand_is`, `where_to_stand_en`, `amenities`,
+  `season_start` and `season_end` may be left out. Aliases and amenities
+  are separated by `|`. Types, regions and amenities are the catalogue's
+  names (`fuel-station`, `southern-peninsula`, `step-free`). Shelter hours
+  and "Last checked" are added later in each draft's form.
+- Cells may be separated by commas, semicolons or tabs, whichever the
+  first line with text uses most, as Excel in Icelandic saves with
+  semicolons and decimal commas; coordinates take a decimal comma too.
+  Excel's `sep=;` first line names the separator and is left out. Quoted
+  cells may hold the separator, line breaks and doubled quotes. A byte
+  order mark is dropped; a file in another encoding is refused
+  (`not_utf8`). Columns with no name and no text, which spreadsheets save
+  at the end, are left out; a column with text and no name is refused
+  (`unnamed_column`, by its place).
+- Names, aliases and the municipality are put on one line (line breaks,
+  tabs and control characters become single spaces); where to stand keeps
+  its line breaks and loses other control characters.
+- Each row is checked as the form checks a draft
+  (`validateMeetingPointDraft`). A row whose Icelandic name, compared as
+  search compares names, is the name of a point that is not retired, or
+  of an earlier row, is a `duplicate`, so importing the same file twice
+  adds nothing. A name with no letters or digits, such as `?`, is
+  compared as it is, in lower case.
+- Rows with problems are skipped; the rest become drafts, inserted one at
+  a time in the file's order so each row gets its own ID, in one
+  transaction with one audit entry, `meeting_point.imported` (how many
+  were added and skipped, and each new point's ID and name). Imports take
+  an advisory lock, so two at once cannot add the same name.
+- At most 500 rows and 1 MB (`importLimits`). The console refuses a file
+  over 1 MB before sending it. The API answers 413 to a body over 2 MB
+  before reading it, and `validation_failed` to a text over 1 000 000
+  characters. A file that cannot be read gets `validation_failed` with
+  each problem in `details`: `file`, `columns.<name>`, `columns.<place>`
+  or `lines.<number>`.
+
+```csv
+name_is,name_en,aliases,latitude,longitude,type,region,municipality,amenities,season_start,season_end
+N1 Borgarnesi,N1 Borgarnes,Hyrnan,64.5383,-21.9206,fuel-station,west,Borgarbyggð,toilets|shop,,
+Hof,,"Menningarhúsið Hof",65.6839,-18.0878,other,northeast,Akureyrarbær,,5,9
+```
+
+### Problem reports
+
+What people send with "Something wrong here?" in the app (spec 2, 3.5;
+`apps/api/src/modules/meeting-points/issues.ts`, rules in
+`packages/domain/src/meeting-points/issues.ts`):
+
+- `GET /admin/v1/meeting-point-issues` lists the open reports, the oldest
+  first, each with its point (ID, Icelandic name, status, last confirmed),
+  the reason, the note and when it was sent. Never who sent it. The
+  console's page is `/admin/meeting-points/problems`, linked from the list
+  of points; the home page counts the open reports.
+- An open report is what marks its point for review (R2.9): the list's
+  "Only points with an open problem report" filter and a tag on the row
+  show it. Resolving it, having checked the point, is the review.
+- `POST /admin/v1/meeting-point-issues/{id}/resolve` takes a note of what
+  was done (1 to 1 000 characters, `checkIssueResolution`, which the page
+  calls too) and `checkedToday`. It removes the link to the person who
+  sent it. Their 5 a day (R2.8) still counts it: each report is also a
+  rate limit event under a keyed hash of their number, kept 24 hours. With
+  `checkedToday`, the point's Last confirmed on becomes today in Iceland
+  and its yearly review moves with it, unless it is retired. A report
+  resolved already answers 409 `issue_resolved`, and the page takes it off
+  the list and says so. The report is locked while it is resolved, so two
+  operators at once resolve it once.
+- Audit entries, in the same transaction: `meeting_point_issue.resolved`
+  (before: open; after: resolved, the point, the reason and the note), and
+  with a new date `meeting_point.updated` on the point, with its Last
+  confirmed on and review date before and after, as an edit writes.
+- "Pause … now" on a report for a point in use opens the point's page with
+  `?pause`: its pause form opens at once (spec 2, 3.6.7), and the address
+  drops `?pause`.
+- The hourly clean-up deletes a resolved report 12 months after it was
+  resolved (rule `meeting_point_issues`).
 
 ## Disputes
 

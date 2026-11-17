@@ -546,6 +546,19 @@ releases follow [Semantic Versioning](https://semver.org/).
   used) and `notifications.moderation_action_id`; "Download my data" has
   Notices from ShareRide, the suspension's end, and who cancelled each
   trip.
+- Notices, appeals and closing reports (milestone 9, PR 6b, spec 9, 3.1.6
+  and 3.4.4; R9.5): `GET /v1/me/notices` lists what ShareRide did about
+  the person and why, the latest first, never which operator; `POST
+  /v1/me/notices/{id}/appeal` takes one appeal of up to 1 000 characters
+  within 14 days, also while suspended (409 `not_appealable` for a
+  reinstatement, `already_appealed`, `appeal_window_closed`). For the
+  console, the operator's `answerAppeal` answers once and finally;
+  reversing the suspension the person is under lifts it, while what it
+  cancelled stays cancelled. `closeReport` closes a report with its
+  outcome. The person hears "ShareRide answered your appeal" by push and
+  email (the email with the answer), and the reporter "Your report" with
+  the outcome in general terms, by push. Each writes one audit entry.
+  Migration `0038_appeals` widens the notification and event kinds.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its
@@ -793,6 +806,31 @@ releases follow [Semantic Versioning](https://semver.org/).
   is gone before upload (ADR 0029). The app's meeting point details show
   the photos above "Where to stand", described for screen readers, with a
   note in place of a photo that does not load.
+- Importing meeting points from a CSV file in the operator console
+  (milestone 8, PR 9; spec 2, 3.6.9): the console shows each row as it
+  will be saved, or its problems by column, then adds the rows without
+  problems as drafts in one transaction with one audit entry
+  (`meeting_point.imported`). Files saved by Excel in Icelandic
+  (semicolons, decimal commas) are read too, and a name already in use is
+  skipped, so the same file twice adds nothing. The domain's
+  `readMeetingPointImport` reads and checks the file.
+- "Something wrong here?" on a meeting point's details in the app
+  (milestone 8, PR 10a; spec 2, 3.5): signed in, a person chooses what is
+  wrong (closed or moved, unsafe, wrong location, wrong information,
+  other) and may add a note of up to 300 characters, at most 5 reports in
+  24 hours (R2.8, a setting). Signed out, the screen asks to sign in and
+  opens the form again afterwards. Reports go to `meeting_point_issues`
+  through `POST /v1/meeting-points/{id}/issues` for the operator's queue,
+  and the open ones are in Download my data.
+- The console's problem reports (milestone 8, PR 10b; spec 2, 3.5 and
+  3.6): the open reports, the oldest first, with the point, what is wrong
+  and the note, never who sent it; the home page counts them, and the
+  list of points marks and filters the points with one, as needing
+  review. Resolving needs a note of what was done, removes the link to
+  the person and can mark the point checked today, with audit entries for
+  the report and the point; "Pause … now" opens the point's pause at
+  once. The hourly clean-up deletes a resolved report after 12 months.
+  Browser journeys cover both sides.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.
@@ -824,6 +862,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   the trip a car of the same make, model and colour without a plate.
   Stops, prices and payments stay. A hold on the trip, a booking, the
   driver or a passenger keeps it until the hold ends.
+- Erasure keeps a conversation a report covers (spec 9, section 7;
+  Martin's answer A47): the erased person's messages read "Message deleted" to
+  the other person, but the operator can still read them until the
+  report's time is over and the clean-up deletes the conversation.
 - Ask about my data in the API (spec 11, 3.6): `POST /v1/me/privacy-requests`
   takes an objection, a restriction, a correction or a question from
   someone with a verified email, at most 5 a day, due a month later. The

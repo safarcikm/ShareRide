@@ -1,6 +1,10 @@
 import { schema, type Database } from "@shareride/db";
-import { privacyCutoffs, type RetentionRule } from "@shareride/domain";
-import { and, asc, desc, lt, lte, sql } from "drizzle-orm";
+import {
+  meetingPointIssuesResolvedBy,
+  privacyCutoffs,
+  type RetentionRule,
+} from "@shareride/domain";
+import { and, asc, desc, eq, lt, lte, sql } from "drizzle-orm";
 import type { Logger } from "../../logger.ts";
 import { cleanUpOperatorSessions, cleanUpOperatorSignIn } from "../admin/clean-up.ts";
 import { cleanUpSignInRecords } from "../auth/clean-up.ts";
@@ -12,7 +16,14 @@ import { cleanUpExports } from "./exports.ts";
 import { notHeld } from "./holds.ts";
 import { anonymiseOldTrips } from "./old-trips.ts";
 
-const { blockedNumbers, erasedAccounts, holds, privacyRequests, retentionRuns } = schema;
+const {
+  blockedNumbers,
+  erasedAccounts,
+  holds,
+  meetingPointIssues,
+  privacyRequests,
+  retentionRuns,
+} = schema;
 
 // The hourly clean-up's retention rules (spec 11, 3.7; R11.5; plan 4.7):
 // each step runs one or more rules, and each rule it ran is recorded with
@@ -215,6 +226,22 @@ export function retentionSteps({
           )
           .returning({ id: privacyRequests.id });
         return { counts: { privacy_requests: deleted(rows) } };
+      },
+    },
+    {
+      rules: ["meeting_point_issues"],
+      async run(now) {
+        // Resolved reports are no longer linked to anyone, so no hold applies.
+        const rows = await db
+          .delete(meetingPointIssues)
+          .where(
+            and(
+              eq(meetingPointIssues.status, "resolved"),
+              lte(meetingPointIssues.resolvedAt, meetingPointIssuesResolvedBy(now)),
+            ),
+          )
+          .returning({ id: meetingPointIssues.id });
+        return { counts: { meeting_point_issues: deleted(rows) } };
       },
     },
     {

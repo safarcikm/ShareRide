@@ -1,5 +1,7 @@
 import {
   amenities,
+  importLimits,
+  meetingPointIssueReasons,
   meetingPointStatuses,
   meetingPointTypes,
   photoLimits,
@@ -37,6 +39,8 @@ export const adminMeetingPointErrorCodes = [
   "photo_storage_off",
   /** Photo storage did not take the file; trying again later can work. */
   "photo_storage_unavailable",
+  /** Someone resolved the problem report since the queue loaded it. */
+  "issue_resolved",
 ] as const;
 
 const errors = { schema: errorResponseSchema } as const;
@@ -101,20 +105,25 @@ export const adminMeetingPointSchema = z.object({
 export type AdminMeetingPoint = z.infer<typeof adminMeetingPointSchema>;
 
 /** A row of the console's list and a dot on its map. */
-export const adminMeetingPointListItemSchema = adminMeetingPointSchema.pick({
-  id: true,
-  nameIs: true,
-  nameEn: true,
-  position: true,
-  region: true,
-  municipality: true,
-  type: true,
-  season: true,
-  status: true,
-  reviewDueOn: true,
-  sample: true,
-  updatedAt: true,
-});
+export const adminMeetingPointListItemSchema = adminMeetingPointSchema
+  .pick({
+    id: true,
+    nameIs: true,
+    nameEn: true,
+    position: true,
+    region: true,
+    municipality: true,
+    type: true,
+    season: true,
+    status: true,
+    reviewDueOn: true,
+    sample: true,
+    updatedAt: true,
+  })
+  .extend({
+    /** Problem reports about it still open: it needs review (spec 2, 3.5). */
+    openIssues: z.int().nonnegative(),
+  });
 
 export type AdminMeetingPointListItem = z.infer<typeof adminMeetingPointListItemSchema>;
 
@@ -159,6 +168,8 @@ export const adminMeetingPointsRoute = defineRoute({
       season: z.enum(seasonFilters).optional(),
       /** Only points whose yearly review is overdue (R2.9). */
       reviewOverdue: flagSchema.optional(),
+      /** Only points with an open problem report (spec 2, 3.5). */
+      openIssues: flagSchema.optional(),
       /** Part of a name or alias (R2.6). */
       q: z.string().max(100).optional(),
     }),
@@ -425,5 +436,123 @@ export const adminRemoveMeetingPointPhotoRoute = defineRoute({
     ...photoResponses,
     400: { description: "validation_failed", ...errors },
     409: { description: "meeting_point_retired", ...errors },
+  },
+});
+
+// Adding drafts from a CSV file (spec 2, 3.6.9; milestone 8 plan, 4.6). The
+// domain reads and checks the file (`readMeetingPointImport`).
+
+/** A row of the file as it will be saved, or why it will be skipped. */
+export const adminImportRowSchema = z.object({
+  /** The line of the file the row starts on; the header is line 1. */
+  line: z.int().positive(),
+  nameIs: z.string(),
+  /** The draft as it will be saved; null when the row has problems. */
+  point: adminMeetingPointInputSchema
+    .pick({
+      nameEn: true,
+      aliases: true,
+      position: true,
+      region: true,
+      municipality: true,
+      type: true,
+      amenities: true,
+      whereToStandIs: true,
+      whereToStandEn: true,
+      season: true,
+    })
+    .nullable(),
+  /** By the file's column, "position" for both coordinates, or "row". */
+  problems: z.array(z.object({ column: z.string(), issue: z.string() })),
+  /** The new draft's ID, once saved. */
+  id: z.uuid().nullable(),
+});
+
+export type AdminImportRow = z.infer<typeof adminImportRowSchema>;
+
+export const adminImportMeetingPointsRoute = defineRoute({
+  method: "post",
+  path: "/admin/v1/meeting-points/import",
+  summary: "Check a CSV file of meeting points, or add its rows without problems as drafts",
+  tags: ["admin", "meeting-points"],
+  auth: "operator",
+  request: {
+    body: z.object({
+      /** The file's text, read as UTF-8. */
+      file: z.string().max(importLimits.maxBytes),
+      /** False shows what would be saved; true saves it, in one transaction. */
+      save: z.boolean(),
+    }),
+  },
+  responses: {
+    200: {
+      description: "Each row with its problems, and the drafts added when saved",
+      schema: z.object({ rows: z.array(adminImportRowSchema), added: z.int().min(0) }),
+    },
+    400: {
+      description:
+        "validation_failed: the file cannot be read; `details` has each problem, with `path` " +
+        "`file`, `columns.<name>` or `lines.<number>`",
+      ...errors,
+    },
+    401: { description: "operator_unauthenticated", ...errors },
+    413: { description: "payload_too_large: the file is over 1 MB", ...errors },
+  },
+});
+
+// Problem reports about meeting points (spec 2, 3.5 and 3.6; milestone 8,
+// PR 10b): the queue of open reports, and resolving one. Never who sent it.
+
+export const adminMeetingPointIssueSchema = z.object({
+  id: z.uuid(),
+  meetingPoint: z.object({
+    id: z.uuid(),
+    nameIs: z.string(),
+    status: z.enum(meetingPointStatuses),
+    lastCheckedOn: dateSchema.nullable(),
+  }),
+  reason: z.enum(meetingPointIssueReasons),
+  note: z.string(),
+  sentAt: timestampSchema,
+});
+export type AdminMeetingPointIssue = z.infer<typeof adminMeetingPointIssueSchema>;
+
+export const adminMeetingPointIssuesRoute = defineRoute({
+  method: "get",
+  path: "/admin/v1/meeting-point-issues",
+  summary: "The open problem reports about meeting points, the oldest first",
+  tags: ["admin", "meeting-points"],
+  auth: "operator",
+  responses: {
+    200: {
+      description: "The queue",
+      schema: z.object({ issues: z.array(adminMeetingPointIssueSchema) }),
+    },
+    401: { description: "operator_unauthenticated", ...errors },
+  },
+});
+
+export const adminResolveMeetingPointIssueRoute = defineRoute({
+  method: "post",
+  path: "/admin/v1/meeting-point-issues/{id}/resolve",
+  summary:
+    "Resolve a problem report with a note on what was done, and mark the point checked today if so; removes the link to the person who sent it",
+  tags: ["admin", "meeting-points"],
+  auth: "operator",
+  request: {
+    params: z.object({ id: z.uuid() }),
+    // The domain counts the note in characters (`checkIssueResolution`); this bounds the body.
+    body: z.object({ note: z.string().max(4000), checkedToday: z.boolean() }),
+  },
+  responses: {
+    204: { description: "Resolved" },
+    400: {
+      description:
+        "validation_failed: the note is empty (`note`, `required`) or over 1 000 characters (`note`, `too_long`)",
+      ...errors,
+    },
+    401: { description: "operator_unauthenticated", ...errors },
+    404: { description: "not_found", ...errors },
+    409: { description: "issue_resolved: resolved by someone else since", ...errors },
   },
 });

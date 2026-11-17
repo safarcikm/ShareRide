@@ -125,6 +125,17 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
   meeting_point_photos: notAboutAPerson(
     "photos of public places, faces and number plates blurred by the operator",
   ),
+  meeting_point_issues: {
+    category: "moderation",
+    // While open, the problems the person reported; resolving removes the link (spec 2, section 7).
+    export: { section: "meeting_point_reports" },
+    personColumns: ["reporterId", "resolvedById"],
+    onDeletion: keep(
+      ["reason", "note", "status", "resolutionNote"],
+      [],
+      "a problem with a public place, kept for the operator's queue and deleted 12 months after it is resolved (spec 2, section 7)",
+    ),
+  },
   places: notAboutAPerson("public place names"),
   legs: notAboutAPerson("driving distances between meeting points"),
   trips: {
@@ -232,8 +243,11 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     category: "messages",
     export: { section: "conversations" },
     personColumns: ["senderId"],
-    // The other person sees "Message deleted".
-    onDeletion: keep(["kind"], ["body", "key", "params"]),
+    // The other person sees "Message deleted". In a conversation a report
+    // covers, the emptied columns stay for the operator until the report's
+    // time is over, with whether the driver or the passenger sent it
+    // (erasure.ts, spec 9 section 7).
+    onDeletion: keep(["kind", "sentAs"], ["body", "key", "params"]),
     otherIds: ["clientId"],
   },
   erased_accounts: notAboutAPerson(

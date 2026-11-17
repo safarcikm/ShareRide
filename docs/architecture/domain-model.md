@@ -107,8 +107,17 @@ point in those municipalities.
 
 ### MeetingPointIssue
 
-A user's report of a problem with a meeting point: `user_id` (removed when
-resolved), `meeting_point_id`, `reason`, `note`, `status`, `resolution`.
+A user's report of a problem with a meeting point (`meeting_point_issues`):
+`reporter_id` (removed when resolved), `meeting_point_id`, `reason`
+(closed or moved, unsafe, wrong location, wrong information, other), `note`
+(up to 300 characters), `status` (open or resolved), `resolution_note`,
+`resolved_by_id` and `resolved_at`. At most 5 per person in 24 hours
+(R2.8, a setting the operator will change with feature H4), counted as
+rate limit events so a resolved report still counts; deleted 12
+months after it is resolved. An open report is what marks its point for
+review (spec 2, 3.5; R2.9): the operator finds it in the console's queue
+and list, and resolving it, having checked the point, is the review. The
+rules are in `packages/domain/src/meeting-points/issues.ts`.
 
 ### Leg
 
@@ -219,7 +228,9 @@ quick message or system line, `client_id` (one message per client ID and
 sender, so a retry is stored once; only a message to all passengers puts
 one client ID in several conversations of a trip), `sent_at`, `read_at`, and `erased_at` (when the sender's account was erased:
 the text, key and params are emptied, the sender becomes the former member,
-and the message reads "Message deleted", [spec 11](../specs/2026-11-13-privacy-self-service.md#35-what-is-erased-and-what-is-kept)).
+and the message reads "Message deleted", [spec 11](../specs/2026-11-13-privacy-self-service.md#35-what-is-erased-and-what-is-kept);
+in a conversation a report covers, the text, key and params stay for the
+operator only, until the report's time is over).
 Opened in the transaction that confirms the booking. Retained per the
 [privacy](../compliance/privacy-gdpr.md#retention) schedule. See
 [spec 7](../specs/2026-11-13-chat-and-notifications.md#6-data-and-api).
@@ -275,6 +286,10 @@ cancelled or refunded), `until` (a suspension's end, empty for good),
 `status` to `suspended` with `suspended_until`; the minute job ends it when
 that passes. Each action writes one audit entry and sends the person their
 notice ([spec 9](../specs/2026-11-13-safety-and-moderation.md#36-suspension)).
+The person reads their actions as Notices and appeals one once, within 14
+days of `created_at`; a reinstatement is not appealed. The operator answers
+once, finally; reversing the suspension the person is under (their latest,
+while they are suspended) lifts it, and what it cancelled stays cancelled.
 
 ### Payment
 
@@ -373,8 +388,8 @@ recorded change), `TripChanged` (a new car or stop, likewise), `TripCancelled`, 
 (a request nobody answered, or an accepted booking nobody paid for),
 `BookingWithdrawn`, `BookingCancelled`,
 `TripDeparted`, `CheckedIn`, `PassengerNoShow`, `DriverAbsentReported`,
-`DisputeAnswered`, `DisputeDecided`, `TripCompleted`, `MessageSent`, `ReviewSubmitted`, `ReviewsRevealed`, `ReportFiled`, `ReportResolved`,
-`UserBlocked`, `ModerationActionTaken` (a warning, suspension, reinstatement or other operator action on a person), `SuspensionEnded`, `ContentHidden`,
+`DisputeAnswered`, `DisputeDecided`, `TripCompleted`, `MessageSent`, `ReviewSubmitted`, `ReviewsRevealed`, `ReportFiled`, `ReportClosed` (the reporter is told the outcome),
+`UserBlocked`, `ModerationActionTaken` (a warning, suspension, reinstatement or other operator action on a person), `SuspensionEnded`, `AppealAnswered`, `ContentHidden`,
 `WomenOnlyAccessWithdrawn`, `WomenOnlyAccessRestored`,
 `WeatherWarningMatched`, `RoadClosureMatched`.
 

@@ -4,3 +4,4 @@ export * from "./admin-routes.ts";
 export * from "./admin-service.ts";
 export * from "./status.ts";
 export * from "./photos.ts";
+export * from "./issues.ts";
