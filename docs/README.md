@@ -34,6 +34,7 @@ Everything needed to understand, build and run ShareRide. Start with the
 - [CI/CD and releases](engineering/ci-cd-and-releases.md)
 - [Security](engineering/security.md)
 - [Operator console](engineering/operator-console.md): adding a console route or page
+- [Road file](engineering/road-file.md): our roads for distances between meeting points, and updating the map data
 - [Claude Code setup](engineering/claude-code-setup.md): plugins, skills and why
 
 ## Operations
