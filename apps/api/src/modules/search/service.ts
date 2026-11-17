@@ -203,7 +203,8 @@ export function createSearchService(dependencies: {
         .select({ trip: trips, firstName: users.firstName })
         .from(trips)
         .innerJoin(users, eq(users.id, trips.driverId))
-        .where(inArray(trips.id, [...ids])),
+        // A driver deleting their account is hidden at once (spec 11, 3.4.3).
+        .where(and(inArray(trips.id, [...ids]), isNull(users.deleteAfter))),
       db
         .select({ stop: tripStops, point: meetingPoints })
         .from(tripStops)

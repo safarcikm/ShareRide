@@ -16,6 +16,7 @@ import {
   type TripRole,
 } from "@shareride/domain";
 import { and, desc, eq, gt, inArray, isNotNull, isNull, ne, or, sql, type SQL } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import type { BookingService } from "../bookings/index.ts";
 import type { Queryable } from "../bookings/seats.ts";
 import { recordEvents } from "../notifications/outbox.ts";
@@ -200,7 +201,15 @@ export function createChatService(dependencies: {
     userId: string,
     bookingId: string,
   ): Promise<
-    Result<{ readonly conversation: ConversationRow; readonly viewer: TripRole }, ChatError>
+    Result<
+      {
+        readonly conversation: ConversationRow;
+        readonly viewer: TripRole;
+        /** The other person in the conversation. */
+        readonly otherId: string;
+      },
+      ChatError
+    >
   > {
     const [row] = await q
       .select({
@@ -216,9 +225,11 @@ export function createChatService(dependencies: {
       return err({ code: "not_found" });
     }
     if (row.conversation === null) return err({ code: "not_confirmed" });
+    const viewer = row.passengerId === userId ? "passenger" : "driver";
     return ok({
       conversation: row.conversation,
-      viewer: row.passengerId === userId ? "passenger" : "driver",
+      viewer,
+      otherId: viewer === "passenger" ? row.driverId : row.passengerId,
     });
   }
 
@@ -230,11 +241,33 @@ export function createChatService(dependencies: {
     return row;
   }
 
+  /**
+   * The bookings whose passenger or driver is deleting their account: their
+   * conversations are closed both ways (spec 11, 3.4.3).
+   */
+  async function deleting(q: Queryable, bookingIds: readonly string[]) {
+    const passenger = alias(users, "passenger");
+    const driver = alias(users, "driver");
+    const rows = await q
+      .select({ bookingId: bookings.id })
+      .from(bookings)
+      .innerJoin(trips, eq(trips.id, bookings.tripId))
+      .innerJoin(passenger, eq(passenger.id, bookings.passengerId))
+      .innerJoin(driver, eq(driver.id, trips.driverId))
+      .where(
+        and(
+          inArray(bookings.id, [...bookingIds]),
+          or(isNotNull(passenger.deleteAfter), isNotNull(driver.deleteAfter)),
+        ),
+      );
+    return new Set(rows.map((row) => row.bookingId));
+  }
+
   /** The conversations as `userId` sees them, in the order given. */
   async function summaries(userId: string, rows: readonly ConversationRow[]) {
     if (rows.length === 0) return [];
     const ids = rows.map((row) => row.id);
-    const [booked, unread, last] = await Promise.all([
+    const [booked, unread, last, closed] = await Promise.all([
       dependencies.bookings.bookingsOf(
         userId,
         rows.map((row) => row.bookingId),
@@ -249,6 +282,10 @@ export function createChatService(dependencies: {
         .from(messages)
         .where(inArray(messages.conversationId, ids))
         .orderBy(messages.conversationId, desc(messages.sentAt), desc(messages.id)),
+      deleting(
+        db,
+        rows.map((row) => row.bookingId),
+      ),
     ]);
     const now = clock();
     return rows.flatMap((row): Conversation[] => {
@@ -259,7 +296,9 @@ export function createChatService(dependencies: {
         {
           booking,
           closesAt: row.closesAt.toISOString(),
-          canWrite: canWrite({ opensAt: row.openedAt, closesAt: row.closesAt }, now),
+          canWrite:
+            !closed.has(row.bookingId) &&
+            canWrite({ opensAt: row.openedAt, closesAt: row.closesAt }, now),
           unread: unread.find((count) => count.conversationId === row.id)?.count ?? 0,
           lastMessage:
             lastMessage === undefined ? null : present(lastMessage, userId, booking.viewer),
@@ -283,9 +322,17 @@ export function createChatService(dependencies: {
     return row?.count ?? 0;
   }
 
-  /** Waits for the person's other sends, so two at once cannot pass the limit together. */
+  /**
+   * Waits for the person's other sends, so two at once cannot pass the
+   * limit together; whether they are deleting their account.
+   */
   async function lockSender(q: Queryable, userId: string) {
-    await q.select({ id: users.id }).from(users).where(eq(users.id, userId)).for("update");
+    const [sender] = await q
+      .select({ deleteAfter: users.deleteAfter })
+      .from(users)
+      .where(eq(users.id, userId))
+      .for("update");
+    return { deleting: sender === undefined || sender.deleteAfter !== null };
   }
 
   return {
@@ -339,7 +386,7 @@ export function createChatService(dependencies: {
     async send(userId, bookingId, body) {
       const found = await access(db, userId, bookingId);
       if (!found.ok) return found;
-      const { conversation, viewer } = found.value;
+      const { conversation, viewer, otherId } = found.value;
       // A retry gets what was sent, even once the conversation has closed.
       const earlier = async (q: Queryable): Promise<Result<MessageRow | null, ClientIdReused>> => {
         const rows = await q
@@ -359,9 +406,18 @@ export function createChatService(dependencies: {
       if (!checked.ok) return checked;
 
       return db.transaction(async (tx) => {
-        await lockSender(tx, userId);
+        const sender = await lockSender(tx, userId);
         const now = clock();
         if (!canWrite({ opensAt: conversation.openedAt, closesAt: conversation.closesAt }, now)) {
+          return err({ code: "chat_closed" });
+        }
+        // Nobody messages a person deleting their account, nor do they
+        // write to people who cannot answer (spec 11, 3.4.3).
+        const [other] = await tx
+          .select({ deleteAfter: users.deleteAfter })
+          .from(users)
+          .where(eq(users.id, otherId));
+        if (sender.deleting || other === undefined || other.deleteAfter !== null) {
           return err({ code: "chat_closed" });
         }
         const again = await earlier(tx);
@@ -413,7 +469,7 @@ export function createChatService(dependencies: {
       if (!checked.ok) return checked;
 
       return db.transaction(async (tx) => {
-        await lockSender(tx, driverId);
+        const sender = await lockSender(tx, driverId);
         const now = clock();
         const earlier = await tx
           .select({ tripId: bookings.tripId })
@@ -424,16 +480,21 @@ export function createChatService(dependencies: {
         if (earlier.some((row) => row.tripId !== tripId)) return err({ code: "client_id_reused" });
         // A retry sends nothing more, not even to a passenger confirmed since.
         if (earlier.length > 0) return ok({ sent: earlier.length });
+        // A driver deleting their account writes to nobody (spec 11, 3.4.3).
+        if (sender.deleting) return ok({ sent: 0 });
         const open = (
           await tx
             .select({ conversation: conversations })
             .from(conversations)
             .innerJoin(bookings, eq(bookings.id, conversations.bookingId))
-            // Passengers stay passengers once their booking completes (spec 8, R8.2).
+            .innerJoin(users, eq(users.id, bookings.passengerId))
+            // Passengers stay passengers once their booking completes (spec 8,
+            // R8.2); one deleting their account gets nothing (spec 11, 3.4.3).
             .where(
               and(
                 eq(bookings.tripId, tripId),
                 inArray(bookings.status, ["confirmed", "completed"]),
+                isNull(users.deleteAfter),
               ),
             )
         )

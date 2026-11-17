@@ -548,6 +548,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   confirms with a code sent to their own number, sees the file being made
   and when it is ready, and downloads it. The ready notice opens this
   screen.
+- Delete my account, the API (spec 11, 3.4): what is still open, and with
+  a fresh code and nothing open, signed out everywhere and hidden at once
+  from search, trip details, booking and messages, with the data erased 7
+  days later. Signing in meanwhile shows when, and keeping the account
+  undoes it, leaving a suspension in place. Nothing new is booked or
+  published while it waits. An email says when the data will be erased.
+  The export now has the person's own check-in times.
 
 ### Fixed
 

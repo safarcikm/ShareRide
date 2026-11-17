@@ -176,6 +176,13 @@
       "when": 1794873915321,
       "tag": "0024_operator_passkeys",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794887624001,
+      "tag": "0025_account_deletion",
+      "breakpoints": true
     }
   ]
 }

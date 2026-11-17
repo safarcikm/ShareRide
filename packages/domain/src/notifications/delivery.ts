@@ -30,6 +30,7 @@ export const outboxEventTypes = [
   "MessageSent",
   "CheckedIn",
   "DataExportReady",
+  "AccountDeletionScheduled",
 ] as const;
 export type OutboxEventType = (typeof outboxEventTypes)[number];
 

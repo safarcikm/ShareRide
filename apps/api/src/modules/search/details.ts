@@ -55,7 +55,8 @@ export function createTripDetailsService(dependencies: {
         .from(trips)
         .innerJoin(users, eq(users.id, trips.driverId))
         .leftJoin(vehicles, eq(vehicles.id, trips.vehicleId))
-        .where(and(eq(trips.id, id), ne(trips.status, "draft")));
+        // A driver deleting their account is hidden at once (spec 11, 3.4.3).
+        .where(and(eq(trips.id, id), ne(trips.status, "draft"), isNull(users.deleteAfter)));
       const now = clock();
       if (found === undefined) return err({ code: "not_found" });
       const { trip } = found;
