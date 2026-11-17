@@ -71,6 +71,7 @@ const listItem = (point: AdminMeetingPoint): AdminMeetingPointListItem => ({
   reviewDueOn: point.reviewDueOn,
   sample: point.sample,
   updatedAt: point.updatedAt,
+  openIssues: 0,
 });
 
 const bsi: AdminMeetingPointListItem = {
@@ -85,6 +86,7 @@ const bsi: AdminMeetingPointListItem = {
   status: "active",
   reviewDueOn: "2026-11-01",
   sample: true,
+  openIssues: 2,
 };
 
 function start(path: string) {
@@ -128,7 +130,9 @@ describe("the meeting points list (spec 2, 3.6.1)", () => {
     expect(first.textContent).toContain("Sample");
     expect(first.textContent).toContain("Bus hub · Reykjavíkurborg, Capital area");
     expect(first.textContent).toContain("Review overdue");
+    expect(first.textContent).toContain("2 open problem reports");
     expect(second.textContent).toContain("Draft");
+    expect(second.textContent).not.toContain("open problem report");
     expect(second.textContent).toContain("In use all year");
     expect(screen.getByText("2 meeting points")).toBeTruthy();
     expect(
@@ -145,6 +149,7 @@ describe("the meeting points list (spec 2, 3.6.1)", () => {
     fireEvent.change(field("Region"), { target: { value: "west" } });
     type("Name", "borgar");
     fireEvent.click(screen.getByLabelText("Only points with their review overdue"));
+    fireEvent.click(screen.getByLabelText("Only points with an open problem report"));
     fireEvent.click(screen.getByRole("button", { name: "Show meeting points" }));
     await waitFor(() => {
       expect(api.called(adminMeetingPointsRoute).at(-1)?.input["query"]).toEqual({
@@ -152,9 +157,12 @@ describe("the meeting points list (spec 2, 3.6.1)", () => {
         region: "west",
         q: "borgar",
         reviewOverdue: true,
+        openIssues: true,
       });
     });
-    expect(window.location.search).toBe("?status=draft&region=west&reviewOverdue=true&q=borgar");
+    expect(window.location.search).toBe(
+      "?status=draft&region=west&reviewOverdue=true&openIssues=true&q=borgar",
+    );
   });
 
   it("starts from the filters in the address, and clears them", async () => {
@@ -587,6 +595,17 @@ describe("pausing, bringing back and retiring a point (spec 2, 3.6.4 and 3.6.5)"
   }
 
   const panel = () => screen.getByRole("region", { name: "In use" });
+
+  it("opens the pause at once when a problem report leads here", async () => {
+    const api = start(`/admin/meeting-points/${pointId}?pause`);
+    api.on(adminMeetingPointRoute, { status: 200, data: active });
+    await screen.findByRole("heading", { name: "N1 Borgarnesi", level: 1 });
+    await waitFor(() => {
+      expect(document.activeElement).toBe(field("Reason, in Icelandic"));
+    });
+    // Reloading the page later does not open it again.
+    expect(window.location.search).toBe("");
+  });
 
   it("pauses an active point with a reason in both languages and an end date", async () => {
     const api = open(active);
