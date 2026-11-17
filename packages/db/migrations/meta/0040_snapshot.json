@@ -1,5 +1,5 @@
 {
-  "id": "7b8fe167-e0f8-41df-b9c7-fdde1698c1a1",
+  "id": "e6ff565b-df46-4017-b301-b57a6ceb79f4",
   "prevId": "042d1664-6a45-45ae-bad3-8265ca9194f4",
   "version": "7",
   "dialect": "postgresql",
@@ -1328,26 +1328,6 @@
           "notNull": true,
           "default": false
         },
-        "excused_by_reason": {
-          "name": "excused_by_reason",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "overruled_at": {
-          "name": "overruled_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "overrule_note": {
-          "name": "overrule_note",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
         "departs_at_when_booked": {
           "name": "departs_at_when_booked",
           "type": "timestamp with time zone",
@@ -1525,10 +1505,6 @@
           "name": "bookings_cancel_note_check",
           "value": "char_length(\"bookings\".\"cancel_note\") <= 500"
         },
-        "bookings_overrule_note_check": {
-          "name": "bookings_overrule_note_check",
-          "value": "char_length(\"bookings\".\"overrule_note\") <= 500"
-        },
         "bookings_refund_check": {
           "name": "bookings_refund_check",
           "value": "\"bookings\".\"refund_amount\" is null or \"bookings\".\"refund_amount\" between 0 and \"bookings\".\"total_price\""
@@ -1692,6 +1668,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "sent_as": {
+          "name": "sent_as",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -1793,11 +1775,11 @@
         },
         "messages_body_check": {
           "name": "messages_body_check",
-          "value": "case when \"messages\".\"erased_at\" is null then (\"messages\".\"kind\" = 'text') = (\"messages\".\"body\" is not null) and char_length(\"messages\".\"body\") between 1 and 1000 else \"messages\".\"body\" is null end"
+          "value": "(\"messages\".\"kind\" = 'text') = (\"messages\".\"body\" is not null) and char_length(\"messages\".\"body\") between 1 and 1000 or (\"messages\".\"erased_at\" is not null and \"messages\".\"body\" is null)"
         },
         "messages_key_check": {
           "name": "messages_key_check",
-          "value": "case when \"messages\".\"erased_at\" is null then (\"messages\".\"kind\" = 'text') = (\"messages\".\"key\" is null) else \"messages\".\"key\" is null and \"messages\".\"params\" is null and \"messages\".\"kind\" <> 'system' end"
+          "value": "(\"messages\".\"erased_at\" is null or \"messages\".\"kind\" <> 'system') and ((\"messages\".\"kind\" = 'text') = (\"messages\".\"key\" is null) or (\"messages\".\"erased_at\" is not null and \"messages\".\"key\" is null and \"messages\".\"params\" is null))"
         },
         "messages_sender_check": {
           "name": "messages_sender_check",
@@ -1806,6 +1788,10 @@
         "messages_read_check": {
           "name": "messages_read_check",
           "value": "\"messages\".\"kind\" <> 'system' or \"messages\".\"read_at\" is null"
+        },
+        "messages_sent_as_check": {
+          "name": "messages_sent_as_check",
+          "value": "\"messages\".\"sent_as\" is null or (\"messages\".\"erased_at\" is not null and \"messages\".\"sent_as\" in ('driver', 'passenger'))"
         }
       },
       "isRLSEnabled": false
@@ -5989,26 +5975,6 @@
           "notNull": true,
           "default": false
         },
-        "excused_by_reason": {
-          "name": "excused_by_reason",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "overruled_at": {
-          "name": "overruled_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "overrule_note": {
-          "name": "overrule_note",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
         "sample": {
           "name": "sample",
           "type": "boolean",
@@ -6146,10 +6112,6 @@
         "trips_cancel_note_check": {
           "name": "trips_cancel_note_check",
           "value": "char_length(\"trips\".\"cancel_note\") <= 500"
-        },
-        "trips_overrule_note_check": {
-          "name": "trips_overrule_note_check",
-          "value": "char_length(\"trips\".\"overrule_note\") <= 500"
         },
         "trips_times_check": {
           "name": "trips_times_check",

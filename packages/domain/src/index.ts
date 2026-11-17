@@ -9,6 +9,7 @@ export * from "./money.ts";
 export * from "./notifications/index.ts";
 export * from "./people/index.ts";
 export * from "./result.ts";
+export * from "./roads/index.ts";
 export * from "./privacy/index.ts";
 export * from "./reviews/index.ts";
 export * from "./safety/index.ts";

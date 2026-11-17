@@ -739,7 +739,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   the operator's note and an audit entry, and the people below 80%. Trips
   and bookings save whether their cancellation was excused by its reason,
   and when and why the operator overruled it (migration
-  `0040_reliability_overrules`). "Download my data" tells whoever
+  `0041_reliability_overrules`). "Download my data" tells whoever
   cancelled whether it counts and when ShareRide made it count; a booking
   the driver cancelled no longer shows this in the passenger's file. The
   operator's note goes when the account of whoever cancelled is erased.
@@ -896,6 +896,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   the report and the point; "Pause … now" opens the point's pause at
   once. The hourly clean-up deletes a resolved report after 12 months.
   Browser journeys cover both sides.
+- Our own road file for distances between meeting points (milestone 8,
+  PR 11; ADR 0031): the "Road file" GitHub Actions job builds it
+  from the OpenStreetMap extract of Iceland with `osmium-tool` and our
+  builder, keeping the roads cars may use without F roads, closed roads
+  and ferries, with a typical speed for each. The domain reads it, joins a
+  meeting point to the nearest road within 1 km and finds the fastest way,
+  one-way roads included. The file in the repository is from map data of
+  16 November 2026 (19 474 km of road, 0.9 MB); a test checks known
+  distances and that every sample meeting point reaches every other. How
+  to update the map data: `docs/engineering/road-file.md`.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.
@@ -924,6 +934,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   the trip a car of the same make, model and colour without a plate.
   Stops, prices and payments stay. A hold on the trip, a booking, the
   driver or a passenger keeps it until the hold ends.
+- Erasure keeps a conversation a report covers (spec 9, section 7;
+  Martin's answer A47): the erased person's messages read "Message deleted" to
+  the other person, but the operator can still read them until the
+  report's time is over and the clean-up deletes the conversation.
 - Ask about my data in the API (spec 11, 3.6): `POST /v1/me/privacy-requests`
   takes an objection, a restriction, a correction or a question from
   someone with a verified email, at most 5 a day, due a month later. The
@@ -940,6 +954,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   each passenger on a trip the person drove, the review they wrote and
   the one about them once it shows, and when ShareRide hid either. A
   review that does not show yet stays out of the other person's file.
+- The trip limit, part 1 (spec 17, ADR 0030): a booking that would take a
+  trip past what a full car pays at the price caps, counting what the
+  trip's bookings already pay the driver, is refused with
+  `trip_limit_reached`, and the app says fewer seats or a shorter part may
+  fit and leads back to the trip; the domain gains `tripLimit`, `takingsOf`,
+  `limitRoom` and the highest price level within the limit.
 
 ### Fixed
 

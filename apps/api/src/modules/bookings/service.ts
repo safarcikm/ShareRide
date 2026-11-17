@@ -74,6 +74,7 @@ import { disputesOf, shownDispute } from "../trip-day/disputes.ts";
 import {
   changeOccupancy,
   expireDueBookings,
+  limitRoomOf,
   lockTrip,
   partOf,
   seatsTakenNow,
@@ -787,6 +788,7 @@ export function createBookingService(dependencies: {
           .where(eq(segments.tripId, tripId))
           .orderBy(asc(segments.position));
         const held = await heldBookings(tx, passengerId, now);
+        const limitRoom = await limitRoomOf(tx, tripId);
         const message = input.message.trim().normalize("NFC");
         const checked = checkBooking(
           {
@@ -809,6 +811,7 @@ export function createBookingService(dependencies: {
             shownTotal: input.total,
             message,
             heldBookings: held,
+            limitRoom,
             now,
           },
           settings,
