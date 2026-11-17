@@ -189,7 +189,7 @@ built alongside milestones 7 to 9)
 - [x] Download my data
 - [x] Delete my account, with 7 days to undo
 - [ ] Retention periods run on their own and leave a record
-- [ ] Ask about my data
+- [x] Ask about my data
 
 Milestones 7 to 10 are built at the same time, each in its own thread, at
 Martin's request (2026-11-16). The rest of the way to the closed beta follows

@@ -593,12 +593,16 @@ export function createTripService(dependencies: {
         if (row.status !== "draft") return err({ code: "trip_not_draft" });
         await dropUnlistedStops(tx, tripId);
 
+        // The points are read shared: a pause or a retirement under way
+        // waits for the publish and then counts this trip among those to
+        // tell, or the publish waits for it and sees the point not offered.
         const stopRows = await tx
           .select({ stop: tripStops, point: meetingPoints })
           .from(tripStops)
           .innerJoin(meetingPoints, eq(meetingPoints.id, tripStops.meetingPointId))
           .where(eq(tripStops.tripId, tripId))
-          .orderBy(asc(tripStops.position));
+          .orderBy(asc(tripStops.position))
+          .for("share", { of: meetingPoints });
         const ids = stopRows.map(({ stop }) => stop.meetingPointId);
         const times = stopRows.map(({ stop }) => stop.plannedAt);
         const others = await tx
