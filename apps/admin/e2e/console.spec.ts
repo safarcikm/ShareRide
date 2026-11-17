@@ -325,6 +325,54 @@ test("the operator adds photos to a meeting point, orders and describes them, an
   await expect(entries.nth(3)).toContainText("meeting_point.photo_added");
 });
 
+// Drafts from a file (spec 2, 3.6.9): the browser reads the file, the API
+// shows each row before saving, and the rows without problems become drafts.
+test("the operator imports drafts from a CSV file, seeing each row first", async () => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/admin/meeting-points");
+  await page.getByRole("link", { name: "Import from a file" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Import meeting points", level: 1 }),
+  ).toBeVisible();
+
+  // As Icelandic Excel saves it: semicolons and decimal commas.
+  const file = [
+    "name_is;name_en;latitude;longitude;type;region;municipality;amenities",
+    "Söluskálinn við Hraunsá;Hraunsá service station;64,6911;-21,6312;fuel-station;west;Borgarbyggð;shop|toilets",
+    "BSÍ;;64,1376;-21,9365;bus-hub;capital;Reykjavíkurborg;",
+  ].join("\r\n");
+  await page.getByLabel("CSV file").setInputFiles({
+    name: "points.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(file, "utf8"),
+  });
+  await page.getByRole("button", { name: "Check the file" }).click();
+  await expect(page.getByRole("heading", { name: "The file's rows" })).toBeFocused();
+  await expect(page.getByText("Rows: 2. Ready to add: 1. Skipped for problems: 1.")).toBeVisible();
+  const rows = page.getByRole("list", { name: "The file's rows" }).getByRole("listitem");
+  await expect(rows.nth(0)).toContainText("Fuel station · Borgarbyggð, West");
+  await expect(rows.nth(1)).toContainText(
+    "A meeting point or an earlier row has this name already.",
+  );
+  // A phone fits the rows and the help without scrolling sideways.
+  await page.getByText("What the file holds").click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await page.setViewportSize({ width: 1280, height: 800 });
+
+  await page.getByRole("button", { name: "Add 1 draft" }).click();
+  await expect(page.getByRole("status")).toHaveText("Added as drafts: 1. Skipped: 1.");
+  await page.getByRole("link", { name: "Söluskálinn við Hraunsá" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Söluskálinn við Hraunsá", level: 1 }),
+  ).toBeVisible();
+
+  await page.goto("/admin/audit-log?action=meeting_point.imported");
+  await expect(
+    page.getByRole("list", { name: "Entries" }).getByRole("listitem").first(),
+  ).toContainText("meeting_point.imported");
+});
+
 // Reports (spec 9, 3.4): two sample drivers' trips are reported. The
 // operator closes one without action, suspends the other driver from their
 // report after reading the notice as the driver will, and closes that one

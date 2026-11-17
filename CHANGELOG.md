@@ -874,6 +874,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   is gone before upload (ADR 0029). The app's meeting point details show
   the photos above "Where to stand", described for screen readers, with a
   note in place of a photo that does not load.
+- Importing meeting points from a CSV file in the operator console
+  (milestone 8, PR 9; spec 2, 3.6.9): the console shows each row as it
+  will be saved, or its problems by column, then adds the rows without
+  problems as drafts in one transaction with one audit entry
+  (`meeting_point.imported`). Files saved by Excel in Icelandic
+  (semicolons, decimal commas) are read too, and a name already in use is
+  skipped, so the same file twice adds nothing. The domain's
+  `readMeetingPointImport` reads and checks the file.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.
