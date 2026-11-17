@@ -36,7 +36,7 @@ test("a no-show nobody contests stands, with no refund", async ({
   await driver.goto(`/drive/trips/${tripId}`);
   await driver.getByRole("button", { name: "I'm here at Mjódd bus terminal" }).click();
   await expect(text(driver, "We've told your passengers you're here.")).toBeVisible();
-  await driver.getByRole("button", { name: "Mark Dóra as a no-show" }).click();
+  await driver.getByRole("button", { name: "Mark as no-show: Dóra" }).click();
   await expect(
     text(
       driver,

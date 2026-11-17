@@ -19,19 +19,22 @@ import { deadlineText, reportState, type ReportState } from "./reports";
  * each opening the answer screen; waiting for the other side or for
  * ShareRide; or decided. Nothing shows without a report, or when the
  * booking's own status already says how it ended. `announce` moves focus
- * to it, as after reporting or answering.
+ * to it when it appears or changes, as after reporting or answering, and
+ * then calls `onAnnounced`, so the page can stop announcing it.
  */
 export function ReportStatus({
   booking,
   announce = false,
+  onAnnounced,
 }: {
   readonly booking: Booking;
   readonly announce?: boolean;
+  readonly onAnnounced?: () => void;
 }) {
   const report = reportState(booking, now());
   if (report === null) return null;
   return (
-    <TakesFocus key={report.state} when={announce}>
+    <TakesFocus key={report.state} when={announce} onFocused={onAnnounced}>
       {report.state === "to_answer" ? (
         <ToAnswer booking={booking} report={report} />
       ) : (

@@ -986,7 +986,7 @@ export const en = {
   "tripDay.statusNoShow": "No-show",
   /** Reports on the trip day and their answers (spec 8, 3.3 to 3.5). */
   "tripDay.markNoShow": "Mark as no-show",
-  "tripDay.markNoShowOf": "Mark {name} as a no-show",
+  "tripDay.markNoShowOf": "Mark as no-show: {name}",
   "tripDay.noShowConfirm":
     "Mark this passenger as a no-show? They get no refund, and it shows on their profile.",
   "tripDay.noShowTold":
@@ -1020,8 +1020,10 @@ export const en = {
   "dispute.agreeNoShow": "The no-show stands: no refund, and it shows on your profile.",
   "dispute.agreeDriverAbsent":
     "The booking is cancelled as if by you: {name} gets a full refund, and it shows on your profile.",
+  "dispute.agreeDriverAbsentFree":
+    "The booking is cancelled as if by you, and it shows on your profile.",
   "dispute.contestThen":
-    "ShareRide looks at what you both said and when each of you said you were there, then decides.",
+    "ShareRide looks at what you both said, when each of you said you were there and your messages, then decides.",
   "dispute.answerNote": "What happened? (optional)",
   "dispute.send": "Send answer",
   "dispute.chooseAnswer": "Choose your answer.",

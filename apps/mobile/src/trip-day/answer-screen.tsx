@@ -196,7 +196,9 @@ function AnswerForm({
               ? t("dispute.contestThen")
               : noShow
                 ? t("dispute.agreeNoShow")
-                : t("dispute.agreeDriverAbsent", { name })}
+                : booking.total.amount === 0
+                  ? t("dispute.agreeDriverAbsentFree")
+                  : t("dispute.agreeDriverAbsent", { name })}
           </Body>
         </Card>
       )}

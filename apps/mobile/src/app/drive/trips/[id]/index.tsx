@@ -64,6 +64,9 @@ export default function DriverTripScreen() {
   );
   const { value: loaded, reload, refresh } = useLoadedOnFocus(load);
   useTripDayRefresh(loaded?.[0].ok === true && onTripDay(loaded[0].data), refresh);
+  // The report made or answered before coming back, once focus has moved
+  // to it: not again when it changes later.
+  const [reportAnnounced, setReportAnnounced] = useState<string | null>(null);
   // Each request answered here, as the answer left it (null for one that is
   // gone), until a list loads that shows it answered.
   const [answered, setAnswered] = useState<Readonly<Record<string, Booking | null>>>({});
@@ -194,7 +197,14 @@ export default function DriverTripScreen() {
           />
         </TakesFocus>
       )}
-      <Reports riding={riding} report={report} />
+      <Reports
+        riding={riding}
+        report={report}
+        announce={report === reportAnnounced ? undefined : report}
+        onAnnounced={() => {
+          setReportAnnounced(report ?? null);
+        }}
+      />
       {onTripDay(trip.data) ? (
         <DriverTripDay
           trip={trip.data}
@@ -292,16 +302,20 @@ export default function DriverTripScreen() {
 /**
  * The passengers' reports (spec 8, 3.3 to 3.5), first, as some ask the
  * driver to answer: each under the passenger's name. `report` names the
- * booking just reported or answered, which takes focus; when it is no
- * longer listed, the driver agreed they didn't come, which cancelled it
- * (3.4), and that shows instead.
+ * booking just reported or answered; when it is no longer listed, the
+ * driver agreed they didn't come, which cancelled it (3.4), and that shows
+ * instead. `announce` names it until focus has moved to it once.
  */
 function Reports({
   riding,
   report,
+  announce,
+  onAnnounced,
 }: {
   readonly riding: readonly Booking[];
   readonly report: string | undefined;
+  readonly announce: string | undefined;
+  readonly onAnnounced: () => void;
 }) {
   const { t } = useLanguage();
   const palette = usePalette();
@@ -321,7 +335,11 @@ function Reports({
           <Text style={[typography.label, { color: palette.text }]}>
             {booking.passenger.firstName}
           </Text>
-          <ReportStatus booking={booking} announce={report === booking.id} />
+          <ReportStatus
+            booking={booking}
+            announce={announce === booking.id}
+            onAnnounced={onAnnounced}
+          />
         </View>
       ))}
     </>

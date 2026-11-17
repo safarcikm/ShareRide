@@ -60,6 +60,7 @@ export async function moveTripForTests(
       .set({
         raisedAt: sql`${disputes.raisedAt} + ${by}`,
         answeredAt: sql`${disputes.answeredAt} + ${by}`,
+        decidedAt: sql`${disputes.decidedAt} + ${by}`,
       })
       .where(inArray(disputes.bookingId, booked));
   });

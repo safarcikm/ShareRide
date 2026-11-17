@@ -1,4 +1,5 @@
-import { fireEvent, screen } from "expo-router/testing-library";
+import { act, fireEvent, screen } from "expo-router/testing-library";
+import { AccessibilityInfo } from "react-native";
 import type { AnswerDisputeBody, Booking, MyTrip } from "@shareride/contracts";
 import { renderApp, completeMe } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -274,7 +275,7 @@ describe("Answering a no-show (spec 8, 3.3; R8.6)", () => {
     expect(screen.getByRole("radio", { name: "That's not right" })).toBeChecked();
     expect(
       screen.getByText(
-        "ShareRide looks at what you both said and when each of you said you were there, then decides.",
+        "ShareRide looks at what you both said, when each of you said you were there and your messages, then decides.",
       ),
     ).toBeVisible();
     await fireEvent.changeText(
@@ -292,6 +293,20 @@ describe("Answering a no-show (spec 8, 3.3; R8.6)", () => {
       params: { id: disputeId },
       body: { answer: "contested", note: "I was by the pumps from 09:55." },
     });
+  });
+
+  it("moves focus to the outcome once the no-show stands", async () => {
+    await openBooking(markedNoShow());
+    await fireEvent.press(await screen.findByRole("button", { name: "That's right" }));
+    await screen.findByRole("radio", { name: "That's right" });
+    const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    focusMoves.mockClear();
+    await fireEvent.press(screen.getByRole("button", { name: "Send answer" }));
+    expect(
+      await screen.findByText("Marked as a no-show: no refund, and it shows on your profile."),
+    ).toBeVisible();
+    expect(focusMoves).toHaveBeenCalledTimes(1);
+    focusMoves.mockRestore();
   });
 
   it("agrees, after seeing what it means, and the no-show stands", async () => {
@@ -375,13 +390,15 @@ async function openDriverTrip(
   answers: { mark?: () => unknown; answer?: () => unknown } = {},
 ) {
   let bookings = start;
-  return renderApp(`/drive/trips/${tripId}`, {
+  let change: (id: string, next: (booking: Booking) => Booking) => Booking | undefined = () =>
+    undefined;
+  const rendered = await renderApp(`/drive/trips/${tripId}`, {
     me: completeMe,
     setUp: (client: FakeClient) => {
       tripsApi(client, [trip]);
       client.answer("/v1/me/trips/{id}", () => ok(200, trip), "get");
       const api = driverApi(client, bookings);
-      const change = (id: string, next: (booking: Booking) => Booking) => {
+      change = (id, next) => {
         bookings = bookings.map((booking) => (booking.id === id ? next(booking) : booking));
         const changed = bookings.find((booking) => booking.id === id);
         if (changed === undefined) return undefined;
@@ -414,9 +431,14 @@ async function openDriverTrip(
       });
     },
   });
+  /** Changes what the server holds for a booking, as the other side would. */
+  return {
+    ...rendered,
+    change: (id: string, next: (booking: Booking) => Booking) => change(id, next),
+  };
 }
 
-const markGunna = { name: "Mark Gunna as a no-show" } as const;
+const markGunna = { name: "Mark as no-show: Gunna" } as const;
 
 describe("Marking a no-show (spec 8, 3.3; R8.4)", () => {
   it("is offered for a passenger getting in, once the wait has passed and the driver said I'm here", async () => {
@@ -469,6 +491,37 @@ describe("Marking a no-show (spec 8, 3.3; R8.4)", () => {
     expect(bodiesOf(client, "/v1/bookings/{id}/no-show")).toEqual([
       { note: "Waited until 10:15." },
     ]);
+  });
+
+  it("moves focus to the report once, not again when it changes later", async () => {
+    jest.useFakeTimers();
+    const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    try {
+      const { change } = await openDriverTrip(tripOnTheDay([0, 1]), riders());
+      await fireEvent.press(await screen.findByRole("button", markGunna));
+      focusMoves.mockClear();
+      await fireEvent.press(await screen.findByRole("button", { name: "Mark as no-show" }));
+      expect(await screen.findByText(/^You marked Gunna as a no-show\./)).toBeVisible();
+      expect(focusMoves).toHaveBeenCalledTimes(1);
+      // Gunna contests it; the page loads again on its own half a minute later.
+      change(gunnaId, (booking) => ({
+        ...booking,
+        dispute:
+          booking.dispute === null
+            ? null
+            : { ...booking.dispute, answer: "contested", answeredAt: "2026-11-15T10:16:00.000Z" },
+      }));
+      await act(() => jest.advanceTimersByTimeAsync(30_000));
+      expect(
+        await screen.findByText(
+          "Gunna says it's not right. ShareRide will look into it and decide.",
+        ),
+      ).toBeVisible();
+      expect(focusMoves).toHaveBeenCalledTimes(1);
+    } finally {
+      focusMoves.mockRestore();
+      jest.useRealTimers();
+    }
   });
 
   it.each([
@@ -546,6 +599,19 @@ describe("Answering the driver didn't come (spec 8, 3.4; R8.6)", () => {
     expect(await screen.findByText("The booking was cancelled as if by you.")).toBeVisible();
     expect(screen).toHavePathname(`/drive/trips/${tripId}`);
     expect(bodiesOf(client, "/v1/disputes/{id}/answer")).toEqual([{ answer: "agreed" }]);
+  });
+
+  it("says nothing of a refund on a free ride", async () => {
+    mockNow = new Date("2026-11-15T10:40:00Z");
+    const free = { amount: 0, currency: "ISK" } as const;
+    await openDriverTrip(tripOnTheDay([0, 1]), riders({ dispute: reported, total: free }));
+    await fireEvent.press(await screen.findByRole("button", { name: "That's right" }));
+    expect(
+      await screen.findByText(
+        "The booking is cancelled as if by you, and it shows on your profile.",
+      ),
+    ).toBeVisible();
+    expect(screen.queryByText(/full refund/)).toBeNull();
   });
 
   it("contests it, then waits for ShareRide", async () => {

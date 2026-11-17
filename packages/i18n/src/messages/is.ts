@@ -1001,7 +1001,7 @@ export const is = {
   "tripDay.noShowConfirm":
     "Skrá fjarvist farþegans? Engin endurgreiðsla, og þetta sést á prófíl farþegans.",
   "tripDay.noShowTold":
-    "{name} fær að vita af þessu strax og getur svarað til {deadline}. Ef {name} segir þetta ekki rétt ákveður ShareRide.",
+    "{name} fær að vita af þessu strax og getur svarað til {deadline}. Ef {name} segir að þetta sé ekki rétt ákveður ShareRide.",
   "tripDay.noShowNeedsImHere": "Ýttu fyrst á „Ég er á staðnum“ til að geta skráð fjarvist hér.",
   "tripDay.driverAbsent": "Bílstjórinn kom ekki",
   "tripDay.driverAbsentConfirm": "Láta ShareRide vita að {name} hafi ekki komið?",
@@ -1016,7 +1016,7 @@ export const is = {
   "report.driverAbsentTooLate":
     "Það er orðið of seint að tilkynna þetta: meira en sólarhringur er liðinn frá lokum ferðarinnar.",
   "report.changed": "Bókunin breyttist síðan þú opnaðir hana.",
-  "dispute.heading": "Tilkynningar",
+  "dispute.heading": "Tilkynnt atvik",
   "dispute.question": "Er þetta rétt?",
   "dispute.agree": "Það er rétt",
   "dispute.contest": "Það er ekki rétt",
@@ -1027,24 +1027,28 @@ export const is = {
   "dispute.ifNoAnswerNoShow":
     "Ef þú svarar ekki stendur þetta: engin endurgreiðsla, og þetta sést á prófílnum þínum.",
   "dispute.ifNoAnswerDriverAbsent":
-    "Ef þú svarar ekki stendur þetta: bókunin er afbókuð eins og þú hafir afbókað, og þetta sést á prófílnum þínum.",
+    "Ef þú svarar ekki stendur þetta: bókunin er afbókuð eins og þú hefðir afbókað hana, og þetta sést á prófílnum þínum.",
   "dispute.agreeNoShow":
     "Fjarvistin stendur: engin endurgreiðsla, og þetta sést á prófílnum þínum.",
   "dispute.agreeDriverAbsent":
-    "Bókunin er afbókuð eins og þú hafir afbókað: {name} fær fulla endurgreiðslu, og þetta sést á prófílnum þínum.",
+    "Bókunin er afbókuð eins og þú hefðir afbókað hana: {name} fær fulla endurgreiðslu, og þetta sést á prófílnum þínum.",
+  "dispute.agreeDriverAbsentFree":
+    "Bókunin er afbókuð eins og þú hefðir afbókað hana, og þetta sést á prófílnum þínum.",
   "dispute.contestThen":
-    "ShareRide skoðar það sem þið sögðuð bæði og hvenær hvort ykkar sagðist vera á staðnum, og tekur svo ákvörðun.",
+    "ShareRide skoðar það sem þið sögðuð bæði, hvenær hvort ykkar sagðist vera á staðnum og skilaboðin ykkar, og tekur svo ákvörðun.",
   "dispute.answerNote": "Hvað gerðist? (valfrjálst)",
   "dispute.send": "Senda svar",
   "dispute.chooseAnswer": "Veldu svar.",
   "dispute.windowClosed": "Svarfresturinn er liðinn.",
-  "dispute.youMarked": "Þú skráðir fjarvist ({name}). {name} getur svarað til {deadline}.",
+  "dispute.youMarked": "Fjarvist skráð: {name}. {name} getur svarað til {deadline}.",
   "dispute.youReported":
     "Þú lést ShareRide vita að {name} hafi ekki komið. {name} getur svarað til {deadline}.",
-  "dispute.theyContest": "{name} segir þetta ekki rétt. ShareRide skoðar málið og tekur ákvörðun.",
-  "dispute.youContest": "Þú sagðir þetta ekki rétt. ShareRide skoðar málið og tekur ákvörðun.",
+  "dispute.theyContest":
+    "{name} segir að þetta sé ekki rétt. ShareRide skoðar málið og tekur ákvörðun.",
+  "dispute.youContest":
+    "Þú sagðir að þetta væri ekki rétt. ShareRide skoðar málið og tekur ákvörðun.",
   "dispute.noShowStands": "Fjarvistin stendur.",
-  "dispute.cancelledAsIfByYou": "Bókunin var afbókuð eins og þú hafir afbókað.",
+  "dispute.cancelledAsIfByYou": "Bókunin var afbókuð eins og þú hefðir afbókað hana.",
   /** Spec 11, 3.2: never a link, which only the signed-in app gives. */
   "notify.dataExportReady": "Gögnin þín eru tilbúin til niðurhals",
   "notify.dataExportReadyBody": "Sæktu skrána í ShareRide fyrir {until}. Eftir það er henni eytt.",

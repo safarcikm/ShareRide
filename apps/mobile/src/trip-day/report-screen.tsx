@@ -180,7 +180,9 @@ export function ReportScreen({ kind }: { readonly kind: DisputeKind }) {
   const noShow = kind === "no_show";
   const title = (booking?: Booking) =>
     noShow
-      ? t("tripDay.markNoShowOf", { name: booking?.passenger.firstName ?? "" })
+      ? booking === undefined
+        ? t("tripDay.markNoShow")
+        : t("tripDay.markNoShowOf", { name: booking.passenger.firstName })
       : t("tripDay.driverAbsent");
   if (answer === undefined || !answer.ok) {
     return <NotLoaded id={id} title={title()} answer={answer} onRetry={reload} />;
