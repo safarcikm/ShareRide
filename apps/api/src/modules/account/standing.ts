@@ -1,6 +1,6 @@
 import { schema } from "@shareride/db";
 import { checkActive, ok, type AccountSuspended, type Result } from "@shareride/domain";
-import { eq } from "drizzle-orm";
+import { eq, sql, type SQL } from "drizzle-orm";
 import type { Context } from "hono";
 import { errorResponse } from "../../errors.ts";
 import type { Queryable, Transaction } from "../bookings/seats.ts";
@@ -49,6 +49,15 @@ export function checkStanding(
   now: Date,
 ): Promise<Result<void, AccountSuspended>> {
   return standing(q, userId, now, false);
+}
+
+/**
+ * For a query joined to the driver's row: they are not suspended at `now`.
+ * A suspended driver's trip under way takes nobody new (spec 9, 3.6.2): it
+ * is left out of search, and booking it is refused.
+ */
+export function notSuspended(now: Date): SQL {
+  return sql`not (${users.status} = 'suspended' and (${users.suspendedUntil} is null or ${users.suspendedUntil} > ${now.toISOString()}))`;
 }
 
 /** 403 `account_suspended`, with the suspension's end (none for good). */

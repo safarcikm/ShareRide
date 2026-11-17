@@ -528,18 +528,23 @@ releases follow [Semantic Versioning](https://semver.org/).
   refunds of what was paid and nothing on anyone's reliability. The
   others read only that ShareRide cancelled ("ShareRide cancelled the
   trip", "Cancelled by ShareRide: Jón", and a line in the chat), never
-  why. A trip under way carries on. While suspended, searching, booking,
-  requesting, publishing, changing a trip and sending messages answer 403
-  `account_suspended` with `suspendedUntil`; the person stays signed in
-  to read, download or delete their data. Every minute the API ends the
+  why. A trip under way carries on, but takes nobody new: it leaves search,
+  booking it is refused (`trip_not_bookable`), and its driver cannot
+  accept a request, only decline it. While suspended, searching, booking,
+  requesting, publishing, changing a trip, accepting a request and sending
+  messages answer 403 `account_suspended` with `suspendedUntil`; the
+  person stays signed in to read, download or delete their data. Every minute the API ends the
   suspensions whose end has passed. Each action writes one audit entry
   (IDs and the names of the fields changed only) and sends the person
   their notice: the push says what happened, the email adds the rule,
   the reason and until when it can be appealed in the app (14 days).
-  Migration `0027_moderation` adds `moderation_actions`,
+  Two suspensions at once lock their trips in the same order, so they
+  never deadlock. Migration `0027_moderation` adds `moderation_actions`,
   `users.suspended_until`, `trips.cancelled_by` (earlier cancellations
-  are the driver's) and `notifications.moderation_action_id`; "Download
-  my data" has Notices from ShareRide.
+  are the driver's; empty from the version before, which only drivers
+  used) and `notifications.moderation_action_id`; "Download my data" has
+  Notices from ShareRide, the suspension's end, and who cancelled each
+  trip.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its

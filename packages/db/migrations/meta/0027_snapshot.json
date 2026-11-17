@@ -1,5 +1,5 @@
 {
-  "id": "9def04f4-db34-4ef0-893e-becfa5f71b31",
+  "id": "e3e07d57-ece0-491c-affb-ab9775141092",
   "prevId": "d96253d7-6100-4886-a92a-a9bcb002e553",
   "version": "7",
   "dialect": "postgresql",
@@ -4935,7 +4935,7 @@
         },
         "trips_cancelled_by_check": {
           "name": "trips_cancelled_by_check",
-          "value": "(\"trips\".\"cancelled_by\" is null) = (\"trips\".\"cancelled_at\" is null) and (\"trips\".\"cancelled_by\" is null or \"trips\".\"cancelled_by\" in ('driver', 'operator'))"
+          "value": "\"trips\".\"cancelled_by\" is null or (\"trips\".\"cancelled_at\" is not null and \"trips\".\"cancelled_by\" in ('driver', 'operator'))"
         },
         "trips_cancel_note_check": {
           "name": "trips_cancel_note_check",

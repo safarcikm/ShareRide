@@ -139,17 +139,18 @@ export type OperatorCancelProblem = { readonly code: "not_found" | "trip_not_can
 /**
  * ShareRide cancels a published trip before it leaves (spec 9, 3.4.3 and
  * 3.6): full refunds, as any trip cancellation, and it counts on the driver
- * only when the operator says so. Done already, it changes nothing.
+ * only when the operator says so. True when it cancelled it now; false when
+ * it was cancelled already, which changes nothing.
  */
 export async function cancelTripAsOperator(
   tx: Transaction,
   tripId: string,
   countsOnReliability: boolean,
   clock: () => Date,
-): Promise<Result<void, OperatorCancelProblem>> {
+): Promise<Result<boolean, OperatorCancelProblem>> {
   const trip = await lockTrip(tx, tripId);
   if (trip === undefined) return err({ code: "not_found" });
-  if (trip.status === "cancelled") return ok(undefined);
+  if (trip.status === "cancelled") return ok(false);
   // After the lock, which may have waited while a deadline passed.
   const now = clock();
   await expireDueBookings(tx, tripId, now);
@@ -162,14 +163,15 @@ export async function cancelTripAsOperator(
   );
   if (!outcome.ok) return err({ code: "trip_not_cancellable" });
   await applyTripCancellation(tx, tripId, held, outcome.value, { by: "operator" }, now);
-  return ok(undefined);
+  return ok(true);
 }
 
 /**
  * ShareRide cancels a suspended passenger's request or booking before they
  * board (spec 9, 3.6; R9.10): its seats freed, a full refund of what was
  * paid (milestone 9 decision 3), and the driver told it was cancelled, never
- * why. One that no longer holds seats is left as it is: false.
+ * why. One that no longer holds seats, or whose passenger has boarded by the
+ * time the trip is locked, is left as it is: false.
  */
 export async function cancelBookingAsOperator(
   tx: Transaction,
@@ -181,11 +183,19 @@ export async function cancelBookingAsOperator(
     .from(bookings)
     .where(eq(bookings.id, bookingId));
   if (found === undefined) return false;
-  await lockTrip(tx, found.tripId);
+  const trip = await lockTrip(tx, found.tripId);
+  if (trip === undefined || (trip.status !== "published" && trip.status !== "departed")) {
+    return false;
+  }
   const now = clock();
   await expireDueBookings(tx, found.tripId, now);
   const [booking] = await tx.select().from(bookings).where(eq(bookings.id, bookingId));
   if (booking === undefined || !holdsSeats(booking.status as BookingStatus)) return false;
+  const stops = await stopsOf(tx, found.tripId);
+  const part = partOf(stops, booking);
+  // A cancellation is open until boarding (spec 6), also while the lock waited.
+  const boardsAt = stops[part.board]?.plannedAt ?? trip.departsAt;
+  if (boardsAt === null || boardsAt.getTime() <= now.getTime()) return false;
   const refund = operatorBookingRefund(booking.status as BookingStatus, isk(booking.totalPrice));
   await tx
     .update(bookings)
@@ -200,7 +210,6 @@ export async function cancelBookingAsOperator(
       updatedAt: now,
     })
     .where(eq(bookings.id, bookingId));
-  const part = partOf(await stopsOf(tx, found.tripId), booking);
   await changeOccupancy(tx, found.tripId, part, -booking.seats);
   if (refund.amount > 0) await oweRefund(tx, bookingId, refund, now);
   await addSystemLine(tx, bookingId, { key: "cancelled_by_shareride", wholeTrip: false }, now);

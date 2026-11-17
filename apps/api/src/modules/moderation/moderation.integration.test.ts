@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
 import {
+  acceptRequestRoute,
   bookingRoute,
   bookTripRoute,
   changeTripRoute,
   conversationMessagesRoute,
+  declineRequestRoute,
   getMeRoute,
   messageAllPassengersRoute,
   myBookingsRoute,
@@ -17,11 +19,13 @@ import {
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
 import { sampleId } from "@shareride/db/seed";
-import { asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createFakePushSender } from "../../platform/push.ts";
 import { startTestApi, type TestApi } from "../../testing.ts";
 import type { AuditRequest } from "../admin/audit.ts";
+import { cancelBookingAsOperator, cancelTripAsOperator } from "../bookings/cancel-trip.ts";
+import type { Transaction } from "../bookings/seats.ts";
 import {
   bookingHelpers,
   freshSampleTrips,
@@ -31,6 +35,7 @@ import {
   type Member,
 } from "../bookings/testing.ts";
 import { createNotificationWorker } from "../notifications/worker.ts";
+import { collectExport } from "../privacy/export-data.ts";
 import { createModerationService, endDueSuspensions, type Moderator } from "./actions.ts";
 
 // The sample trips at the test clock (Friday 13 November 2026, noon): Jón
@@ -321,6 +326,91 @@ describe("suspending someone (spec 9, 3.6; R9.10)", () => {
     expect(await auditOf(jon.userId)).toHaveLength(1);
   });
 
+  it("finishes two suspensions at once whose trips cross, without a deadlock", async () => {
+    const jon = await driverOf(airport, "Jón");
+    const anna = await driverOf(north, "Anna");
+    // Each rides on the other's trip, so each suspension locks both trips.
+    await booked(jon.accessToken, north, { fromStop: 0, toStop: 1 });
+    const annas = await booked(anna.accessToken, airport, { fromStop: 0, toStop: 1 });
+    await paid(anna.accessToken, annas.id);
+    const by = await moderator();
+    const suspend = (member: Member) =>
+      moderation().suspend(
+        by,
+        { userId: member.userId, rule: "safety", reason, until: null },
+        request,
+      );
+
+    const results = await Promise.all([suspend(jon), suspend(anna)]);
+    expect(results.map((result) => result.ok)).toEqual([true, true]);
+    const rows = await api.connection.db
+      .select({ status: schema.trips.status })
+      .from(schema.trips)
+      .where(inArray(schema.trips.id, [airport, north]));
+    expect(rows).toEqual([{ status: "cancelled" }, { status: "cancelled" }]);
+    expect(await occupancy(north)).toEqual([0, 0, 0]);
+  });
+
+  it("closes a suspended driver's trip under way to anyone new", async () => {
+    const jon = await driverOf(airport, "Jón");
+    const gunna = await newMember("Gunna");
+    const siggi = await newMember("Siggi");
+    const { db } = api.connection;
+    // Under way, with a request waiting for a later stop.
+    await db
+      .update(schema.trips)
+      .set({ status: "departed", bookingMode: "approval" })
+      .where(eq(schema.trips.id, airport));
+    const asked = await booked(gunna.accessToken, airport, { fromStop: 2, toStop: 3 });
+    await moderation().suspend(
+      await moderator(),
+      { userId: jon.userId, rule: "safety", reason, until: null },
+      request,
+    );
+
+    // Nobody finds it or books it, and Jón cannot take a passenger on.
+    const search = await api.client.call(tripSearchRoute, {
+      accessToken: siggi.accessToken,
+      query: { from: point("fitjar"), to: point("kef") },
+    });
+    if (!search.ok) throw new Error(search.error.code);
+    expect(search.data.results.map((result) => result.tripId)).not.toContain(airport);
+    const details = await api.client.call(tripDetailsRoute, {
+      params: { id: airport },
+      query: { fromStop: 1, toStop: 3, seats: 1 },
+    });
+    if (!details.ok) throw new Error(details.error.code);
+    expect(
+      await api.client.call(bookTripRoute, {
+        accessToken: siggi.accessToken,
+        params: { id: airport },
+        body: {
+          fromStop: 1,
+          toStop: 3,
+          seats: 1,
+          total: details.data.part.total,
+          message: "",
+          attemptKey: randomUUID(),
+        },
+      }),
+    ).toMatchObject({ status: 409, error: { code: "trip_not_bookable" } });
+    expect(
+      await api.client.call(acceptRequestRoute, {
+        accessToken: jon.accessToken,
+        params: { id: asked.id },
+        body: {},
+      }),
+    ).toMatchObject({ status: 403, error: { code: "account_suspended" } });
+    // Saying no stays open, so Gunna can look for another ride at once.
+    expect(
+      await api.client.call(declineRequestRoute, {
+        accessToken: jon.accessToken,
+        params: { id: asked.id },
+        body: {},
+      }),
+    ).toMatchObject({ status: 200, data: { status: "declined" } });
+  });
+
   it("refuses without a reason, with an end that has passed, or for nobody", async () => {
     const jon = await newMember("Jón");
     const by = await moderator();
@@ -599,5 +689,72 @@ describe("warning someone (spec 9, 3.4.3)", () => {
     expect(
       await moderation().warn(by, { userId: jon.userId, rule: "offensive", reason: "" }, request),
     ).toEqual({ ok: false, error: { code: "reason_missing" } });
+  });
+});
+
+describe("ShareRide's cancellations (spec 9, 3.4.3 and 3.6)", () => {
+  const inTransaction = <T>(run: (tx: Transaction) => Promise<T>) =>
+    api.connection.db.transaction(run);
+
+  it("cancels a trip once, and says when it was cancelled already", async () => {
+    const clock = () => api.now();
+    expect(await inTransaction((tx) => cancelTripAsOperator(tx, airport, false, clock))).toEqual({
+      ok: true,
+      value: true,
+    });
+    expect(await inTransaction((tx) => cancelTripAsOperator(tx, airport, false, clock))).toEqual({
+      ok: true,
+      value: false,
+    });
+  });
+
+  it("leaves a booking whose passenger has boarded by the time the trip is locked", async () => {
+    const gunna = await newMember("Gunna");
+    const ride = await booked(gunna.accessToken, airport, { fromStop: 0, toStop: 1 });
+    await paid(gunna.accessToken, ride.id);
+    const { db } = api.connection;
+    await db.update(schema.trips).set({ status: "departed" }).where(eq(schema.trips.id, airport));
+    await db
+      .update(schema.tripStops)
+      .set({ plannedAt: new Date(api.now().getTime() - 60_000) })
+      .where(and(eq(schema.tripStops.tripId, airport), eq(schema.tripStops.position, 0)));
+    expect(await inTransaction((tx) => cancelBookingAsOperator(tx, ride.id, () => api.now()))).toBe(
+      false,
+    );
+    expect(await stored(ride.id)).toMatchObject({ status: "confirmed" });
+  });
+});
+
+describe("Download my data, after ShareRide acted (spec 11; spec 9, R9.5)", () => {
+  it("has the suspension's end, who cancelled a trip, and the notices", async () => {
+    const jon = await driverOf(airport, "Jón");
+    const until = days(30);
+    await moderation().suspend(
+      await moderator(),
+      { userId: jon.userId, rule: "harassment", reason, until },
+      request,
+    );
+    const data = await collectExport(api.connection.db, jon.userId, api.now());
+    expect(data.sections.account).toMatchObject({
+      status: "suspended",
+      suspendedUntil: until.toISOString(),
+    });
+    expect(data.sections.trips_posted).toEqual(
+      expect.arrayContaining([expect.objectContaining({ cancelledBy: "operator" })]),
+    );
+    expect(data.sections.notices).toEqual([
+      {
+        kind: "suspension",
+        rule: "harassment",
+        reason,
+        until: until.toISOString(),
+        createdAt: expect.any(String) as unknown,
+        appeal: null,
+        appealedAt: null,
+        answer: null,
+        appealOutcome: null,
+        answeredAt: null,
+      },
+    ]);
   });
 });

@@ -96,6 +96,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     licenceDeclaredAt: when(user.licenceDeclaredAt),
     roles: user.roles,
     status: user.status,
+    suspendedUntil: when(user.suspendedUntil),
     memberSince: when(user.createdAt),
   };
 
@@ -263,6 +264,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
           changedAt: when(change.changedAt),
         })),
       cancelledAt: when(trip.cancelledAt),
+      cancelledBy: trip.cancelledBy,
       cancelReason: trip.cancelReason,
       cancelNote: trip.cancelNote,
       countsOnReliability: trip.countsOnReliability,

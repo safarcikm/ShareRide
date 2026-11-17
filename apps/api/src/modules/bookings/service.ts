@@ -43,7 +43,7 @@ import {
 import { and, asc, eq, inArray, ne, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { AccountService } from "../account/index.ts";
-import { lockActive } from "../account/standing.ts";
+import { checkStanding, lockActive } from "../account/standing.ts";
 import { addSystemLine } from "../chat/conversations.ts";
 import { oweRefund } from "../payments/refunds.ts";
 import {
@@ -100,6 +100,9 @@ export type BookError =
 
 /** The booking is no longer a request: answered, withdrawn or expired. */
 export type AnswerError = NotFound | { readonly code: "booking_not_requested" };
+
+/** A suspended driver takes nobody new (spec 9, 3.6.2); saying no stays open. */
+export type AcceptError = AnswerError | AccountSuspended;
 
 /**
  * Only an accepted or confirmed booking can be cancelled, until the time to
@@ -199,7 +202,7 @@ export interface BookingService {
     tripId: string,
     input: CancelTripInput,
   ): Promise<Result<void, CancelTripError>>;
-  accept(driverId: string, bookingId: string): Promise<Result<Booking, AnswerError>>;
+  accept(driverId: string, bookingId: string): Promise<Result<Booking, AcceptError>>;
   decline(
     driverId: string,
     bookingId: string,
@@ -570,9 +573,10 @@ export function createBookingService(dependencies: {
 
   /**
    * Answers or withdraws a request, with its trip locked. `who` says whose
-   * it is to change: the passenger's (withdraw) or the driver's (accept, decline).
+   * it is to change: the passenger's (withdraw) or the driver's (accept,
+   * decline). `first` runs in the transaction before the trip is locked.
    */
-  async function answer(
+  async function answer<Refused = never>(
     viewerId: string,
     bookingId: string,
     who: "passenger" | "driver",
@@ -582,7 +586,8 @@ export function createBookingService(dependencies: {
       boardsAt: Date,
       now: Date,
     ) => Partial<typeof bookings.$inferInsert>,
-  ): Promise<Result<Booking, AnswerError>> {
+    first?: (tx: Transaction) => Promise<Result<void, Refused>>,
+  ): Promise<Result<Booking, AnswerError | Refused>> {
     const [found] = await db
       .select({
         tripId: bookings.tripId,
@@ -596,6 +601,10 @@ export function createBookingService(dependencies: {
     if (found === undefined || owner !== viewerId) return err({ code: "not_found" });
 
     return db.transaction(async (tx) => {
+      if (first !== undefined) {
+        const allowed = await first(tx);
+        if (!allowed.ok) return allowed;
+      }
       if ((await lockTrip(tx, found.tripId)) === undefined) return err({ code: "not_found" });
       // After the lock, which may have waited while a deadline passed.
       const now = clock();
@@ -659,6 +668,11 @@ export function createBookingService(dependencies: {
         // not exist (R9.4), even for another part of a trip already booked.
         if (bookingClosedTo(passengerId, trip.driverId, await blocksOf(tx, passengerId))) {
           return err({ code: "not_found" });
+        }
+        // A suspended driver's trip under way takes nobody new (spec 9,
+        // 3.6.2). Read without a lock: the driver's row comes before trips.
+        if (!(await checkStanding(tx, trip.driverId, now)).ok) {
+          return err({ code: "trip_not_bookable" });
         }
 
         // One query at a time: a transaction has one connection.
@@ -954,16 +968,25 @@ export function createBookingService(dependencies: {
     },
 
     accept(driverId, bookingId) {
-      return answer(driverId, bookingId, "driver", "accept", (booking, boardsAt, now) => {
-        // A free ride needs no payment, so it is confirmed at once (R5.11).
-        const status = statusOnAcceptance(isk(booking.totalPrice));
-        return {
-          status,
-          decidedAt: now,
-          paymentDueAt: status === "accepted" ? paymentDeadline(now, boardsAt, settings) : null,
-          confirmedAt: status === "confirmed" ? now : null,
-        };
-      });
+      return answer(
+        driverId,
+        bookingId,
+        "driver",
+        "accept",
+        (booking, boardsAt, now) => {
+          // A free ride needs no payment, so it is confirmed at once (R5.11).
+          const status = statusOnAcceptance(isk(booking.totalPrice));
+          return {
+            status,
+            decidedAt: now,
+            paymentDueAt: status === "accepted" ? paymentDeadline(now, boardsAt, settings) : null,
+            confirmedAt: status === "confirmed" ? now : null,
+          };
+        },
+        // Accepting takes a passenger on, which a suspension stops; the
+        // driver's row first, as in booking, then the trip.
+        (tx) => lockActive(tx, driverId, clock()),
+      );
     },
 
     decline(driverId, bookingId, reason) {

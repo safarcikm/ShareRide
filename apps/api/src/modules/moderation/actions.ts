@@ -16,7 +16,7 @@ import {
   type SuspensionProblem,
   type TripStatus,
 } from "@shareride/domain";
-import { and, eq, inArray, lte } from "drizzle-orm";
+import { and, asc, eq, inArray, lte } from "drizzle-orm";
 import { recordAudit, type AuditRequest } from "../admin/audit.ts";
 import {
   cancelBookingAsOperator,
@@ -113,7 +113,10 @@ async function reportExists(tx: Transaction, reportId: string | undefined) {
   return row !== undefined;
 }
 
-/** What a suspension cancels (R9.10): their published trips and the bookings they hold. */
+/**
+ * What a suspension cancels (R9.10): their published trips and the bookings
+ * they hold; with every trip either touches, to lock first.
+ */
 async function cancellable(tx: Transaction, userId: string, now: Date) {
   const driven = await tx
     .select({ id: trips.id, status: trips.status, departsAt: trips.departsAt })
@@ -122,6 +125,7 @@ async function cancellable(tx: Transaction, userId: string, now: Date) {
   const booked = await tx
     .select({
       id: bookings.id,
+      tripId: bookings.tripId,
       status: bookings.status,
       tripStatus: trips.status,
       plannedAt: tripStops.plannedAt,
@@ -132,7 +136,7 @@ async function cancellable(tx: Transaction, userId: string, now: Date) {
     .innerJoin(trips, eq(trips.id, bookings.tripId))
     .leftJoin(tripStops, eq(tripStops.id, bookings.fromStopId))
     .where(and(eq(bookings.passengerId, userId), inArray(bookings.status, heldStatuses)));
-  return suspensionEffects(
+  const effects = suspensionEffects(
     driven.flatMap(({ id, status, departsAt }) =>
       departsAt === null ? [] : [{ id, status: status as TripStatus, departsAt }],
     ),
@@ -153,6 +157,27 @@ async function cancellable(tx: Transaction, userId: string, now: Date) {
     }),
     now,
   );
+  const tripIds = new Set(effects.trips);
+  for (const { id } of effects.bookings) {
+    const tripId = booked.find((row) => row.id === id)?.tripId;
+    if (tripId !== undefined) tripIds.add(tripId);
+  }
+  return { effects, tripIds: [...tripIds].sort() };
+}
+
+/**
+ * Locks the trips in the order of their IDs, as account deletion does, so
+ * two suspensions whose trips cross wait for each other instead of
+ * deadlocking. The person's own row is locked already.
+ */
+async function lockTrips(tx: Transaction, tripIds: readonly string[]) {
+  if (tripIds.length === 0) return;
+  await tx
+    .select({ id: trips.id })
+    .from(trips)
+    .where(inArray(trips.id, [...tripIds]))
+    .orderBy(asc(trips.id))
+    .for("update");
 }
 
 export function createModerationService(dependencies: {
@@ -185,7 +210,11 @@ export function createModerationService(dependencies: {
       const { rule, reason, until } = checked.value;
       return db.transaction(async (tx) => {
         const person = await lockPerson(tx, input.userId);
-        if (person === undefined || !(await reportExists(tx, input.reportId))) {
+        if (
+          person === undefined ||
+          person.status === "deleted" ||
+          !(await reportExists(tx, input.reportId))
+        ) {
           return err({ code: "not_found" });
         }
         // After the lock, which may have waited for the person's own action.
@@ -199,12 +228,13 @@ export function createModerationService(dependencies: {
           .update(users)
           .set({ status: "suspended", suspendedUntil: until, updatedAt: now })
           .where(eq(users.id, input.userId));
-        const effects = await cancellable(tx, input.userId, now);
+        const { effects, tripIds } = await cancellable(tx, input.userId, now);
+        await lockTrips(tx, tripIds);
         const cancelledTrips: string[] = [];
         for (const tripId of effects.trips) {
           // Not on their reliability: the suspension is the operator's (3.4.3).
           const cancelled = await cancelTripAsOperator(tx, tripId, false, clock);
-          if (cancelled.ok) cancelledTrips.push(tripId);
+          if (cancelled.ok && cancelled.value) cancelledTrips.push(tripId);
         }
         const cancelledBookings: string[] = [];
         for (const booking of effects.bookings) {
@@ -253,7 +283,11 @@ export function createModerationService(dependencies: {
       const { rule, reason } = checked.value;
       return db.transaction(async (tx) => {
         const person = await lockPerson(tx, input.userId);
-        if (person === undefined || !(await reportExists(tx, input.reportId))) {
+        if (
+          person === undefined ||
+          person.status === "deleted" ||
+          !(await reportExists(tx, input.reportId))
+        ) {
           return err({ code: "not_found" });
         }
         const now = clock();
@@ -287,7 +321,7 @@ export function createModerationService(dependencies: {
     async reinstate(by, input, request) {
       return db.transaction(async (tx) => {
         const person = await lockPerson(tx, input.userId);
-        if (person === undefined) return err({ code: "not_found" });
+        if (person === undefined || person.status === "deleted") return err({ code: "not_found" });
         if (person.status !== "suspended") return err({ code: "not_suspended" });
         const note = checkReinstatement(input.note, settings);
         if (!note.ok) return note;

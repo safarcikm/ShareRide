@@ -32,6 +32,9 @@ export const restrictedActions = [
   "request",
   "post_trip",
   "change_trip",
+  // A trip under way carries on, but takes nobody new: accepting is
+  // refused, and others cannot find or book it (milestone 9, PR 6a).
+  "accept_request",
   "send_message",
   "review",
 ] as const;

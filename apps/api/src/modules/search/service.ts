@@ -17,6 +17,7 @@ import {
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { occupancyNow } from "../bookings/seats.ts";
 import { searchableStatuses, toSummary } from "../meeting-points/service.ts";
+import { notSuspended } from "../account/standing.ts";
 import { closedTrips } from "../safety/blocks.ts";
 
 const { meetingPoints, places, segments, trips, tripStops, users } = schema;
@@ -213,7 +214,7 @@ export function createSearchService(dependencies: {
         .select({ trip: trips, firstName: users.firstName })
         .from(trips)
         .innerJoin(users, eq(users.id, trips.driverId))
-        .where(inArray(trips.id, [...ids])),
+        .where(and(inArray(trips.id, [...ids]), notSuspended(clock()))),
       db
         .select({ stop: tripStops, point: meetingPoints })
         .from(tripStops)

@@ -401,7 +401,7 @@ describe("notification texts", () => {
       ].join("\n"),
     });
     expect(notificationText({ ...notice, until: null }, "is", settings)).toMatchObject({
-      title: "Aðganginum þínum hefur verið lokað",
+      title: "Aðganginum þínum hefur verið lokað ótímabundið",
       body: "Lestu ástæðuna í ShareRide.",
     });
     expect(

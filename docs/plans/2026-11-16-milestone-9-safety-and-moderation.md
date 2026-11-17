@@ -248,6 +248,12 @@ completed).
 - Requests from a suspended person to search, book, request, post, change
   a trip, send a message or review get 403 `account_suspended`. The
   minute job ends suspensions whose end has passed and tells the person.
+- Found while building (PR 6a, safety first, easy to undo): a trip under
+  way that a suspended person drives carries on but takes nobody new. It
+  leaves search, booking it is refused as `trip_not_bookable`, and its
+  driver can decline a request but not accept one. A suspended person
+  stays signed in, as spec 9, 3.6.2 needs; security.md said before that
+  their sessions end.
 - `GET /v1/me/notices` and `POST /v1/me/notices/{id}/appeal` (once, within
   14 days).
 - **Suspended account screen:** the reason, until when, the notice with

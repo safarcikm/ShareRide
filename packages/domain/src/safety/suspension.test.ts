@@ -41,13 +41,14 @@ describe("whether someone is suspended (3.6.1)", () => {
     });
   });
 
-  it("restricts searching, booking, posting, chatting and reviewing, and nothing else", () => {
+  it("restricts searching, booking, posting, taking passengers on, chatting and reviewing, and nothing else", () => {
     expect(restrictedActions).toEqual([
       "search",
       "book",
       "request",
       "post_trip",
       "change_trip",
+      "accept_request",
       "send_message",
       "review",
     ]);

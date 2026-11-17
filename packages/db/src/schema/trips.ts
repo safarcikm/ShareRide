@@ -87,9 +87,12 @@ export const trips = pgTable(
     check("trips_chat_check", oneOf(table.chat, chatOptions)),
     check("trips_note_check", sql`char_length(${table.note}) <= ${sql.raw(String(noteMaxLength))}`),
     check("trips_cancel_reason_check", oneOf(table.cancelReason, tripCancelReasons)),
+    // Empty on a trip that the version before this one cancelled, which knew
+    // only drivers' cancellations: the migration fills in the earlier ones,
+    // and a later one can require it (conventions: expand, then contract).
     check(
       "trips_cancelled_by_check",
-      sql`(${table.cancelledBy} is null) = (${table.cancelledAt} is null) and (${table.cancelledBy} is null or ${oneOf(table.cancelledBy, ["driver", "operator"])})`,
+      sql`${table.cancelledBy} is null or (${table.cancelledAt} is not null and ${oneOf(table.cancelledBy, ["driver", "operator"])})`,
     ),
     check(
       "trips_cancel_note_check",
