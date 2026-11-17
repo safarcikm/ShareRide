@@ -502,7 +502,10 @@ describe("the meeting point form (spec 2, 3.6.2)", () => {
     const notice = await screen.findByText(
       "This is the newest copy. Make your change again, then save.",
     );
-    expect(document.activeElement).toBe(notice);
+    // The notice takes the focus in an effect after it is shown, which can come later.
+    await waitFor(() => {
+      expect(document.activeElement).toBe(notice);
+    });
     expect(field("Where to stand, in English").value).toBe("Theirs.");
     // The next save goes with the newest copy.
     api.on(adminUpdateMeetingPointRoute, { status: 200, data: draft });
