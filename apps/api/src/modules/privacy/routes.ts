@@ -1,5 +1,6 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import {
+  askAboutMyDataRoute,
   askDataExportRoute,
   cancelDeletionRoute,
   dataExportLinkRoute,
@@ -19,6 +20,7 @@ import type { AccountService } from "../account/service.ts";
 import { confirmCodeError } from "../auth/routes.ts";
 import type { DeletionCheckResult, DeletionService, OpenItem } from "./deletion.ts";
 import type { ExportService, ExportStatus } from "./exports.ts";
+import type { PrivacyRequests } from "./requests.ts";
 
 const iso = (moment: Date | null) => (moment === null ? null : moment.toISOString());
 
@@ -73,6 +75,7 @@ export interface PrivacyRoutesDependencies {
   readonly exports: ExportService;
   readonly deletion: DeletionService;
   readonly account: Pick<AccountService, "me">;
+  readonly requests: Pick<PrivacyRequests, "ask">;
   readonly requireAuth: MiddlewareHandler;
 }
 
@@ -80,7 +83,7 @@ export function registerPrivacyRoutes(
   app: OpenAPIHono<AppEnv>,
   dependencies: PrivacyRoutesDependencies,
 ): void {
-  const { exports, deletion, account, requireAuth } = dependencies;
+  const { exports, deletion, account, requests, requireAuth } = dependencies;
 
   app.openapi(toOpenApiRoute(askDataExportRoute, requireAuth), async (c) => {
     const { code } = validated(c, "json", askDataExportRoute.request.body);
@@ -155,6 +158,38 @@ export function registerPrivacyRoutes(
       return confirmCodeError(c, result.error);
     }
     return c.json({ deleteAfter: result.value.deleteAfter.toISOString() }, 202);
+  });
+
+  app.openapi(toOpenApiRoute(askAboutMyDataRoute, requireAuth), async (c) => {
+    const body = validated(c, "json", askAboutMyDataRoute.request.body);
+    const result = await requests.ask(authOf(c).userId, body);
+    if (!result.ok) {
+      switch (result.error.code) {
+        case "request_text_invalid":
+          return errorResponse(c, 400, result.error.code, "Write 1 to 2 000 characters.");
+        case "email_required":
+          return errorResponse(
+            c,
+            409,
+            result.error.code,
+            "The answer goes by email: add and verify one first.",
+          );
+        case "rate_limited":
+          return errorResponse(c, 429, result.error.code, "Five requests a day at most.", {
+            retryAfterSeconds: result.error.retryAfterSeconds,
+          });
+      }
+    }
+    const request = result.value;
+    return c.json(
+      {
+        id: request.id,
+        kind: request.kind,
+        receivedAt: request.receivedAt.toISOString(),
+        dueAt: request.dueAt.toISOString(),
+      },
+      201,
+    );
   });
 
   app.openapi(toOpenApiRoute(cancelDeletionRoute, requireAuth), async (c) => {

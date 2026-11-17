@@ -1,3 +1,4 @@
+import { privacyRequestKinds } from "@shareride/domain";
 import { z } from "zod";
 import { timestampSchema } from "./common.ts";
 import { errorResponseSchema } from "./errors.ts";
@@ -197,5 +198,47 @@ export const cancelDeletionRoute = defineRoute({
   responses: {
     200: { description: "Kept, as it was", schema: meSchema },
     401: unauthenticated,
+  },
+});
+
+// "Ask about my data" (spec 11, 3.6): anything the app cannot do itself,
+// answered by email within a month (R11.7).
+
+export const privacyRequestKindSchema = z.enum(privacyRequestKinds);
+
+export type PrivacyRequestKind = z.infer<typeof privacyRequestKindSchema>;
+
+export const privacyRequestBodySchema = z.object({
+  kind: privacyRequestKindSchema,
+  /** 1 to 2 000 characters once trimmed; longer is refused with `request_text_invalid`. */
+  text: z.string().max(4000),
+});
+
+export const privacyRequestSchema = z.object({
+  id: z.uuid(),
+  kind: privacyRequestKindSchema,
+  receivedAt: timestampSchema,
+  /** One month later: the answer comes by email before then. */
+  dueAt: timestampSchema,
+});
+
+export type PrivacyRequest = z.infer<typeof privacyRequestSchema>;
+
+export const askAboutMyDataRoute = defineRoute({
+  method: "post",
+  path: "/v1/me/privacy-requests",
+  summary: "Ask about my data: answered by email within a month (spec 11, 3.6)",
+  tags: ["privacy"],
+  auth: true,
+  request: { body: privacyRequestBodySchema },
+  responses: {
+    201: { description: "Received", schema: privacyRequestSchema },
+    400: { description: "request_text_invalid: empty or over 2 000 characters", ...errors },
+    401: unauthenticated,
+    409: {
+      description: "email_required: the answer goes by email, so a verified one is needed first",
+      ...errors,
+    },
+    429: { description: "rate_limited, with retryAfterSeconds: 5 requests a day", ...errors },
   },
 });

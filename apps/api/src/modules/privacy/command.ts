@@ -9,6 +9,7 @@ import {
 import { findAccount } from "../admin/operator-command.ts";
 import type { BeforeRestore, Erasure } from "./erasure.ts";
 import { createHolds, type EndHoldError, type SetHoldError } from "./holds.ts";
+import { createPrivacyRequests, type AnswerError } from "./requests.ts";
 import { lastRuns } from "./retention.ts";
 
 /** Reads the database in use before the restore. */
@@ -31,6 +32,9 @@ const usage = [
   "                               keep its records past their date, through that day (Iceland time)",
   "  privacy end-hold <hold ID> --by <operator>",
   "                               end a hold before its day",
+  "  privacy requests             the requests about people's data waiting for an answer, nearest due first",
+  '  privacy answer <request ID> --text "<answer>" --by <operator>',
+  "                               answer a request: the answer goes to the person by email",
   "  privacy reapply-erasures     after a restore, erase again every erased account that came back",
   "                               (PREVIOUS_DATABASE_URL: the old database, for what changed there since)",
   "<operator> is the operator's user ID or phone number, for the audit log.",
@@ -44,6 +48,24 @@ const icelandTime = new Intl.DateTimeFormat("en-GB", {
   dateStyle: "medium",
   timeStyle: "short",
 });
+
+const icelandDay = new Intl.DateTimeFormat("en-GB", {
+  timeZone: icelandTimeZone,
+  dateStyle: "medium",
+});
+
+// Control characters and direction marks, other than a tab: in a terminal
+// they could move the cursor, rewrite lines or turn text around.
+const steering =
+  // eslint-disable-next-line no-control-regex
+  /[\u0000-\u0008\u000b-\u001f\u007f-\u009f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/gu;
+
+/** A person's text as the terminal should show it: each such character as its code. */
+const shown = (line: string) =>
+  line.replace(
+    steering,
+    (char) => `\\u${(char.codePointAt(0) ?? 0).toString(16).padStart(4, "0")}`,
+  );
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -77,6 +99,13 @@ const endHoldMessages = {
   not_an_operator: "That account is not an operator.",
 } satisfies Record<EndHoldError["code"], string>;
 
+const answerMessages = {
+  request_answer_invalid: "An answer needs some text.",
+  request_not_found: "No request has that ID.",
+  request_already_answered: "That request has already been answered.",
+  not_an_operator: "That account is not an operator.",
+} satisfies Record<AnswerError["code"], string>;
+
 /**
  * The `privacy` command (plan, decision 3), for the operator until the
  * console has privacy pages. Answers the exit code: 0 done, 1 refused or
@@ -89,6 +118,7 @@ export async function runPrivacyCommand(
   const { db, clock, write } = dependencies;
   const [action, ...rest] = args;
   const holds = createHolds({ db, clock });
+  const requests = createPrivacyRequests({ db, clock });
 
   /** The operator named by `--by`, or null once it has said why not. */
   const operatorOf = async (who: string) => {
@@ -164,6 +194,48 @@ export async function runPrivacyCommand(
       const hold = result.value;
       write(
         `Hold ${hold.id} keeps the records of ${hold.subject.kind} ${hold.subject.id} until ${icelandTime.format(hold.endsAt)} (Iceland time).`,
+      );
+      return 0;
+    }
+
+    case "requests": {
+      if (rest.length > 0) break;
+      const waiting = await requests.waiting();
+      if (waiting.length === 0) write("No request is waiting for an answer.");
+      const now = clock();
+      for (const request of waiting) {
+        const overdue = request.dueAt <= now ? "  overdue" : "";
+        write(
+          `${request.id}  ${request.kind}  received ${icelandDay.format(request.receivedAt)}  due ${icelandDay.format(request.dueAt)}  user ${request.userId}${overdue}`,
+        );
+        for (const line of request.text.split("\n")) write(`    ${shown(line)}`);
+      }
+      return 0;
+    }
+
+    case "answer": {
+      const [requestId, ...flags] = rest;
+      const given = options(flags, ["text", "by"]);
+      if (requestId === undefined || given === null) break;
+      const operatorUserId = await operatorOf(given.by);
+      if (operatorUserId === null) return 1;
+      if (!uuidPattern.test(requestId)) {
+        write(answerMessages.request_not_found);
+        return 1;
+      }
+      const result = await requests.answer({
+        requestId: requestId.toLowerCase(),
+        answer: given.text,
+        operatorUserId,
+      });
+      if (!result.ok) {
+        write(answerMessages[result.error.code]);
+        return 1;
+      }
+      write(
+        result.value.emailed
+          ? `Answered request ${result.value.request.id}. The email goes out within a minute.`
+          : `Answered request ${result.value.request.id}. No email: the account has been deleted.`,
       );
       return 0;
     }

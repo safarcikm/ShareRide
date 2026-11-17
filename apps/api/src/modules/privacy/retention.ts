@@ -1,6 +1,6 @@
 import { schema, type Database } from "@shareride/db";
 import { privacyCutoffs, type RetentionRule } from "@shareride/domain";
-import { asc, desc, lt, lte, sql } from "drizzle-orm";
+import { and, asc, desc, lt, lte, sql } from "drizzle-orm";
 import type { Logger } from "../../logger.ts";
 import { cleanUpOperatorSessions, cleanUpOperatorSignIn } from "../admin/clean-up.ts";
 import { cleanUpSignInRecords } from "../auth/clean-up.ts";
@@ -9,8 +9,9 @@ import { cleanUpNotifications } from "../notifications/clean-up.ts";
 import { cleanUpDrafts } from "../trips/clean-up.ts";
 import type { Erasure } from "./erasure.ts";
 import { cleanUpExports } from "./exports.ts";
+import { notHeld } from "./holds.ts";
 
-const { blockedNumbers, erasedAccounts, holds, retentionRuns } = schema;
+const { blockedNumbers, erasedAccounts, holds, privacyRequests, retentionRuns } = schema;
 
 // The hourly clean-up's retention rules (spec 11, 3.7; R11.5; plan 4.7):
 // each step runs one or more rules, and each rule it ran is recorded with
@@ -180,6 +181,22 @@ export function retentionSteps({
           .where(lt(erasedAccounts.erasedAt, privacyCutoffs(now).erasedAccountsBefore))
           .returning({ userId: erasedAccounts.userId });
         return { counts: { erased_accounts: deleted(rows) } };
+      },
+    },
+    {
+      rules: ["privacy_requests"],
+      async run(now) {
+        // An unanswered request stays until it is answered.
+        const rows = await db
+          .delete(privacyRequests)
+          .where(
+            and(
+              lte(privacyRequests.answeredAt, privacyCutoffs(now).requestsAnsweredBy),
+              notHeld(db, now, [["user", privacyRequests.userId]]),
+            ),
+          )
+          .returning({ id: privacyRequests.id });
+        return { counts: { privacy_requests: deleted(rows) } };
       },
     },
     {
