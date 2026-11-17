@@ -380,7 +380,7 @@ journeys, and gets a code review before it opens.
 
 ### PR 10b: `feat(privacy)`: ask about my data, the form
 
-- [ ] Ask about my data under Settings, Privacy: the kind, the text, the
+- [x] Ask about my data under Settings, Privacy: the kind, the text, the
       thanks, and adding an email first when there is none
 - Verify: screen tests; a browser journey sends a request
 

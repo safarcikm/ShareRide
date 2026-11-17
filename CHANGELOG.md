@@ -480,7 +480,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   or their chat is closed. `blocks` is in the personal data catalogue,
   erased with either account, and gets its own export section, People you
   blocked: each by first name, and since when, never who blocked them.
-  Migration `0032_blocks`. `POST /v1/bookings/{id}/block`,
+  Migration `0033_blocks`. `POST /v1/bookings/{id}/block`,
   `GET /v1/me/blocks`, `DELETE /v1/me/blocks/{id}`.
 - Reports (milestone 9, PR 5a, spec 9, 3.1; R9.1, R9.2): "Report this
   trip" on trip details (not to its driver, whatever the trip's state:
@@ -500,7 +500,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   trip, message or booking that the person cannot see is refused as not
   found; a person cannot report themselves; 10 reports a day, also when
   sent at once. The person reported is never told who reported them.
-  Migration `0033_reports`; `reports` is in the personal data catalogue,
+  Migration `0034_reports`; `reports` is in the personal data catalogue,
   kept 3 years after closing, and chat clean-up keeps a conversation a
   report covers that long. "Download my data" has Reports you sent, never
   a report about the person. The category and outcome texts moved to
@@ -518,7 +518,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   "New report" or "New safety report", never who or what, and one not yet
   sent is dropped once its report is closed or the operator loses the
   role. A new outbox event `ReportFiled`; notifications gain `report_id`,
-  in migration `0033_reports`.
+  in migration `0034_reports`.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its
@@ -720,6 +720,20 @@ releases follow [Semantic Versioning](https://semver.org/).
   it is decided. After a database restore, `privacy reapply-erasures`
   erases the accounts again and takes the deletions asked for or undone
   since from the old database.
+- Pausing, bringing back and retiring a meeting point, the API (spec 2,
+  3.6.4 and 3.6.5): `POST /admin/v1/meeting-points/{id}/pause`, `/resume`
+  and `/retire`, with their rules in the domain (`nextPointStatus`,
+  `validatePause`) and an audit entry each. A pause asks the driver of
+  each future trip that stops there to choose another stop and tells the
+  passengers who get in or out there, by SMS too within 24 hours of
+  boarding. The API's minute job brings a paused point back on its end
+  date and retires a retiring one after its last trip. A point in use is
+  due for review a year after its last check (R2.9). Migration
+  `0032_meeting_point_pauses` adds the `MeetingPointChanged` event and the
+  meeting point of a notification. A point retired while paused keeps its
+  reason and its news still goes out. Publishing a trip and adding a stop
+  wait for a pause under way. The sample seed keeps the status the console
+  gave a sample point.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.
@@ -750,6 +764,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   language. Requests and answers are in Download my data, kept under the
   former member when the account is erased, and deleted 3 years after the
   answer.
+- Ask about my data in the app (spec 11, 3.6): under Settings, Privacy,
+  choose what it is about (an objection, a limit, a correction or a
+  question) and write it; the app says the answer comes by email within a
+  month. Without an email, it asks to add one first.
 
 ### Fixed
 

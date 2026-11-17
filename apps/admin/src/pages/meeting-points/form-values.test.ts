@@ -37,6 +37,7 @@ const point: AdminMeetingPoint = {
   amenitiesReviewedOn: "2026-11-12",
   seasonReviewedOn: null,
   sample: false,
+  futureTrips: 0,
   createdAt: "2026-11-16T10:00:00.000Z",
   updatedAt: "2026-11-16T10:00:00.000Z",
 };
