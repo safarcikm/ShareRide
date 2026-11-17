@@ -17,8 +17,13 @@ import {
 } from "@shareride/contracts";
 import { personalData, schema } from "@shareride/db";
 import { sampleId } from "@shareride/db/seed";
-import { blockedNumberUntil, defaultTripDaySettings } from "@shareride/domain";
-import { asc, eq, getTableColumns, getTableName, inArray, is, sql } from "drizzle-orm";
+import {
+  blockedNumberUntil,
+  defaultSafetySettings,
+  defaultTripDaySettings,
+  reportsClosedBy,
+} from "@shareride/domain";
+import { and, asc, eq, getTableColumns, getTableName, inArray, is, ne, sql } from "drizzle-orm";
 import { PgTable, type PgColumn } from "drizzle-orm/pg-core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createLogger } from "../../logger.ts";
@@ -32,8 +37,10 @@ import {
   seedForBookings,
   type Member,
 } from "../bookings/testing.ts";
+import { readConversationAsOperator } from "../chat/operator.ts";
 import { runPrivacyCommand, type ReadBeforeRestore } from "./command.ts";
 import { createErasure } from "./erasure.ts";
+import { collectExport } from "./export-data.ts";
 
 // Erasure after the 7 days (spec 11, 3.5; plan 4.6). The sample trips at the
 // test clock (Friday 13 November 2026, noon): Anna drives BSÍ to Akureyri on
@@ -161,11 +168,16 @@ async function confirmedOnNorth(anna: Member, member: Member) {
   return request.id;
 }
 
-/** Anna with everything a driver has: a trip done with Gunna, a car, a draft, a trip to come. */
-async function busyDriver() {
+/**
+ * Anna with everything a driver has: a trip done with Gunna, a car, a draft,
+ * a trip to come. With `siggi`, Siggi rode too, and Anna wrote to him.
+ */
+async function busyDriver({ siggi: withSiggi = false } = {}) {
   const anna = await driverOf(sampleTrip.north, "Anna");
   const gunna = await newMember("Gunna");
   const bookingId = await confirmedOnNorth(anna, gunna);
+  const siggi = withSiggi ? await newMember("Siggi") : null;
+  const siggisBookingId = siggi === null ? null : await confirmedOnNorth(anna, siggi);
   const { db } = api.connection;
   await db
     .update(schema.trips)
@@ -226,23 +238,27 @@ async function busyDriver() {
     body: {},
   });
   if (!driverIn.ok) throw new Error(driverIn.error.code);
-  for (const [member, text] of [
-    [gunna, "I'll wait by the door"],
-    [anna, "See you in a minute"],
+  for (const [member, text, booking] of [
+    [gunna, "I'll wait by the door", bookingId],
+    [anna, "See you in a minute", bookingId],
+    ...(siggisBookingId === null
+      ? []
+      : [[anna, "Siggi, I'm by the bus", siggisBookingId] as const]),
   ] as const) {
     const sent = await api.client.call(sendMessageRoute, {
       accessToken: member.accessToken,
-      params: { id: bookingId },
+      params: { id: booking },
       body: { clientId: randomUUID(), text },
     });
     if (!sent.ok) throw new Error(sent.error.code);
   }
   // Saturday evening: the trip has completed.
-  await later(hours(12), anna, gunna);
+  await later(hours(12), anna, gunna, ...(siggi === null ? [] : [siggi]));
   return {
     anna,
     gunna,
     bookingId,
+    siggisBookingId,
     usedCar: north.vehicleId,
     spareCar: spare.id,
     draftId: draft.data.id,
@@ -646,6 +662,241 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
       note: "",
       answerNote: "",
       decisionNote: "",
+    });
+  });
+
+  describe("a conversation a report covers (spec 9, section 7)", () => {
+    /**
+     * Gunna reports Anna's message; Anna also said she was running late, and
+     * wrote to Siggi, whom nobody reported. The report closed `closedAt` ms
+     * after the 3 years' start, if it is closed.
+     */
+    async function reported(status: "open" | "closed", closedAt = 0) {
+      const ride = await busyDriver({ siggi: true });
+      const cutoff = reportsClosedBy(api.now(), defaultSafetySettings).getTime();
+      const { db } = api.connection;
+      const conversationId = await conversationOf(ride.bookingId);
+      const [said] = await db
+        .select({ id: schema.messages.id })
+        .from(schema.messages)
+        .where(
+          and(
+            eq(schema.messages.conversationId, conversationId),
+            eq(schema.messages.senderId, ride.anna.userId),
+          ),
+        );
+      if (said === undefined) throw new Error("Anna wrote nothing.");
+      await db.insert(schema.messages).values({
+        conversationId,
+        senderId: ride.anna.userId,
+        kind: "quick",
+        key: "late",
+        params: { minutes: 10 },
+        clientId: randomUUID(),
+        sentAt: api.now(),
+      });
+      await db.insert(schema.reports).values({
+        reporterId: ride.gunna.userId,
+        subjectUserId: ride.anna.userId,
+        subject: "message",
+        tripId: sampleTrip.north,
+        bookingId: ride.bookingId,
+        messageId: said.id,
+        conversationId,
+        category: "harassment",
+        description: "She was rude",
+        urgent: false,
+        status,
+        outcome: status === "closed" ? "action_taken" : null,
+        closedAt: status === "closed" ? new Date(cutoff + closedAt) : null,
+      });
+      if (ride.siggisBookingId === null) throw new Error("Siggi did not ride.");
+      return {
+        ...ride,
+        siggisBookingId: ride.siggisBookingId,
+        conversationId,
+        siggisConversationId: await conversationOf(ride.siggisBookingId),
+      };
+    }
+
+    async function conversationOf(bookingId: string) {
+      const [row] = await api.connection.db
+        .select({ id: schema.conversations.id })
+        .from(schema.conversations)
+        .where(eq(schema.conversations.bookingId, bookingId));
+      if (row === undefined) throw new Error("No conversation.");
+      return row.id;
+    }
+
+    /** What a conversation holds apart from ShareRide's lines, oldest first. */
+    const written = (conversationId: string) =>
+      api.connection.db
+        .select({
+          senderId: schema.messages.senderId,
+          kind: schema.messages.kind,
+          body: schema.messages.body,
+          key: schema.messages.key,
+          params: schema.messages.params,
+          clientId: schema.messages.clientId,
+          erasedAt: schema.messages.erasedAt,
+          sentAs: schema.messages.sentAs,
+        })
+        .from(schema.messages)
+        .where(
+          and(
+            eq(schema.messages.conversationId, conversationId),
+            ne(schema.messages.kind, "system"),
+          ),
+        )
+        .orderBy(asc(schema.messages.sentAt), asc(schema.messages.id));
+
+    async function gunnaReads(gunna: Member, bookingId: string) {
+      const chat = await api.client.call(conversationMessagesRoute, {
+        accessToken: gunna.accessToken,
+        params: { id: bookingId },
+        query: {},
+      });
+      if (!chat.ok) throw new Error(chat.error.code);
+      return chat.data.messages
+        .filter((message) => message.from !== "system")
+        .map((message) => [message.from, message.kind, message.text]);
+    }
+
+    it.each([
+      ["open", "open" as const],
+      ["closed under 3 years ago", "closed" as const],
+    ])(
+      "keeps what it said for the operator while the report is %s; the others see it deleted",
+      async (_label, status) => {
+        // A millisecond inside the 3 years, if closed.
+        const ride = await reported(status, 1);
+        const { anna, gunna, bookingId, conversationId } = ride;
+        const before = await written(conversationId);
+        await waitEnded(anna);
+
+        expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+
+        expect(await rowsNaming(anna.userId)).toEqual([]);
+        const after = await written(conversationId);
+        expect(after).toEqual(
+          before.map((message) =>
+            message.senderId === gunna.userId
+              ? message
+              : {
+                  ...message,
+                  senderId: formerMemberId,
+                  clientId: expect.any(String) as unknown,
+                  erasedAt: api.now(),
+                  sentAs: "driver",
+                },
+          ),
+        );
+        // New retry keys, as for every row moved to the former member.
+        const keys = after.map((message) => message.clientId);
+        for (const message of before) {
+          if (message.senderId === anna.userId) expect(keys).not.toContain(message.clientId);
+        }
+        // Gunna sees it deleted, in the app and in Download my data.
+        // Newest first: Anna's "running late", her text, then Gunna's own.
+        expect(await gunnaReads(gunna, bookingId)).toEqual([
+          ["them", "erased", null],
+          ["them", "erased", null],
+          ["me", "text", "I'll wait by the door"],
+        ]);
+        const data = await collectExport(api.connection.db, gunna.userId, api.now());
+        const talks = data.sections.conversations as readonly {
+          readonly bookingId: string;
+          readonly messages: readonly Readonly<
+            Record<"from" | "text" | "key" | "params", unknown>
+          >[];
+        }[];
+        const exported = talks.find((talk) => talk.bookingId === bookingId);
+        expect(
+          exported?.messages
+            .filter((message) => message.from !== "ShareRide")
+            .map(({ text, key, params }) => ({ text, key, params })),
+        ).toEqual([
+          { text: "I'll wait by the door", key: null, params: null },
+          { text: "Message deleted", key: null, params: null },
+          { text: "Message deleted", key: null, params: null },
+        ]);
+        // What she wrote to Siggi, whom nobody reported, is emptied as usual.
+        expect(await written(ride.siggisConversationId)).toEqual([
+          {
+            senderId: formerMemberId,
+            kind: "text",
+            body: null,
+            key: null,
+            params: null,
+            clientId: expect.any(String) as unknown,
+            erasedAt: api.now(),
+            sentAs: null,
+          },
+        ]);
+      },
+    );
+
+    it("empties it as usual once the report closed 3 years ago", async () => {
+      const { anna, conversationId } = await reported("closed", 0);
+      await waitEnded(anna);
+
+      expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+
+      expect(
+        (await written(conversationId))
+          .filter((message) => message.senderId === formerMemberId)
+          .map(({ body, key, params, erasedAt, sentAs }) => ({
+            body,
+            key,
+            params,
+            erasedAt,
+            sentAs,
+          })),
+      ).toEqual([
+        { body: null, key: null, params: null, erasedAt: api.now(), sentAs: null },
+        { body: null, key: null, params: null, erasedAt: api.now(), sentAs: null },
+      ]);
+    });
+
+    it("shows the operator who said what once both people are erased", async () => {
+      const { anna, gunna, bookingId } = await reported("open");
+      const { db } = api.connection;
+      // A contested report about the ride, decided, also lets the operator read it.
+      const [dispute] = await db
+        .insert(schema.disputes)
+        .values({
+          bookingId,
+          kind: "no_show",
+          raisedAt: api.now(),
+          answer: "contested",
+          answeredAt: api.now(),
+          outcome: "rode",
+          decidedBy: "operator",
+          decidedAt: api.now(),
+        })
+        .returning({ id: schema.disputes.id });
+      if (dispute === undefined) throw new Error("No dispute.");
+      await waitEnded(gunna);
+      expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+      await waitEnded(anna);
+      expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+
+      const operator = await api.signInOperator();
+      const read = await readConversationAsOperator(db, {
+        subject: { type: "dispute", id: dispute.id },
+        operator: { userId: operator.userId, sessionId: operator.sessionId },
+        request: null,
+      });
+      if (!read.ok) throw new Error(read.error.code);
+      expect(
+        read.value
+          .filter((message) => message.from !== "system")
+          .map(({ from, kind, text, quick }) => ({ from, kind, text, quick })),
+      ).toEqual([
+        { from: "passenger", kind: "text", text: "I'll wait by the door", quick: null },
+        { from: "driver", kind: "text", text: "See you in a minute", quick: null },
+        { from: "driver", kind: "quick", text: null, quick: { key: "late", minutes: 10 } },
+      ]);
     });
   });
 

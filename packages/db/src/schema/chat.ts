@@ -58,29 +58,42 @@ export const messages = pgTable(
     /** When the other person read it ("Seen"); never set on a system line. */
     readAt: at(),
     /**
-     * When its sender's data was erased (spec 11, 3.5): what it said is gone,
-     * and the other person sees "Message deleted".
+     * When its sender's data was erased (spec 11, 3.5): the other person sees
+     * "Message deleted", and what it said is gone, unless a report covers the
+     * conversation; then only the operator reads it, until the report's own
+     * time is over (spec 9, section 7).
      */
     erasedAt: at(),
+    /**
+     * Whether the driver or the passenger sent it, kept when erasure keeps
+     * what it said for a report: its sender is then the former member, and
+     * so may the other side be, later. Empty otherwise.
+     */
+    sentAs: text(),
     ...timestamps,
   },
   (table) => [
     // Also finds a person's messages by client ID, in any conversation.
     unique("messages_client_unique").on(table.senderId, table.clientId, table.conversationId),
     check("messages_kind_check", oneOf(table.kind, messageKinds)),
+    // As sent, or, once erased, either as sent or emptied; ShareRide's lines are never erased.
     check(
       "messages_body_check",
-      sql`case when ${table.erasedAt} is null then (${table.kind} = 'text') = (${table.body} is not null) and char_length(${table.body}) between 1 and ${sql.raw(String(defaultChatSettings.messageMaxLength))} else ${table.body} is null end`,
+      sql`(${table.kind} = 'text') = (${table.body} is not null) and char_length(${table.body}) between 1 and ${sql.raw(String(defaultChatSettings.messageMaxLength))} or (${table.erasedAt} is not null and ${table.body} is null)`,
     ),
     check(
       "messages_key_check",
-      sql`case when ${table.erasedAt} is null then (${table.kind} = 'text') = (${table.key} is null) else ${table.key} is null and ${table.params} is null and ${table.kind} <> 'system' end`,
+      sql`(${table.erasedAt} is null or ${table.kind} <> 'system') and ((${table.kind} = 'text') = (${table.key} is null) or (${table.erasedAt} is not null and ${table.key} is null and ${table.params} is null))`,
     ),
     check(
       "messages_sender_check",
       sql`(${table.kind} = 'system') = (${table.senderId} is null) and (${table.kind} = 'system') = (${table.clientId} is null)`,
     ),
     check("messages_read_check", sql`${table.kind} <> 'system' or ${table.readAt} is null`),
+    check(
+      "messages_sent_as_check",
+      sql`${table.sentAs} is null or (${table.erasedAt} is not null and ${table.sentAs} in ('driver', 'passenger'))`,
+    ),
     // A conversation's messages, newest first, and its unread count.
     index("messages_conversation_index").on(table.conversationId, table.sentAt, table.id),
     // The rate limit counts a person's messages in the last minute (R7.5).

@@ -1,9 +1,49 @@
 import { schema, type Database } from "@shareride/db";
 import { defaultSafetySettings, deleteArrivedBy, reportsClosedBy } from "@shareride/domain";
-import { and, eq, gt, inArray, lte, notExists, or, sql } from "drizzle-orm";
+import {
+  and,
+  eq,
+  exists,
+  gt,
+  inArray,
+  lte,
+  not,
+  or,
+  sql,
+  type AnyColumn,
+  type SQL,
+} from "drizzle-orm";
+import type { Transaction } from "../bookings/seats.ts";
 import { notHeld } from "../privacy/holds.ts";
 
 const { bookings, conversations, reports, trips } = schema;
+
+/**
+ * Whether a report covers the conversation `conversationId` names: a report
+ * about one of its messages (R9.6), open or closed under 3 years ago (spec 9,
+ * section 7). It keeps the conversation from the clean-up, and what its
+ * messages said from an erasure.
+ */
+export function reportCovers(
+  db: Database | Transaction,
+  now: Date,
+  conversationId: AnyColumn,
+): SQL {
+  return exists(
+    db
+      .select({ one: sql`1` })
+      .from(reports)
+      .where(
+        and(
+          eq(reports.conversationId, conversationId),
+          or(
+            eq(reports.status, "open"),
+            gt(reports.closedAt, reportsClosedBy(now, defaultSafetySettings)),
+          ),
+        ),
+      ),
+  );
+}
 
 /**
  * Deletes conversations, with their messages, 12 months after their trip's
@@ -28,21 +68,9 @@ export async function cleanUpConversations(db: Database, now: Date): Promise<num
         ]),
       ),
     );
-  const reported = db
-    .select({ one: sql`1` })
-    .from(reports)
-    .where(
-      and(
-        eq(reports.conversationId, conversations.id),
-        or(
-          eq(reports.status, "open"),
-          gt(reports.closedAt, reportsClosedBy(now, defaultSafetySettings)),
-        ),
-      ),
-    );
   const deleted = await db
     .delete(conversations)
-    .where(and(inArray(conversations.bookingId, old), notExists(reported)))
+    .where(and(inArray(conversations.bookingId, old), not(reportCovers(db, now, conversations.id))))
     .returning({ id: conversations.id });
   return deleted.length;
 }
