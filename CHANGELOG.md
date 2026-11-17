@@ -904,6 +904,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   each passenger on a trip the person drove, the review they wrote and
   the one about them once it shows, and when ShareRide hid either. A
   review that does not show yet stays out of the other person's file.
+- The trip limit, part 1 (spec 17, ADR 0030): a booking that would take a
+  trip past what a full car pays at the price caps, counting what the
+  trip's bookings already pay the driver, is refused with
+  `trip_limit_reached`, and the app says fewer seats or a shorter part may
+  fit and leads back to the trip; the domain gains `tripLimit`, `takingsOf`,
+  `limitRoom` and the highest price level within the limit.
 
 ### Fixed
 
