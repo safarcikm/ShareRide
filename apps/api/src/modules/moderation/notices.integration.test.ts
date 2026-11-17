@@ -273,7 +273,7 @@ describe("the operator's answer to an appeal (spec 9, 3.4.4)", () => {
         subjectType: "moderation_action",
         after: {
           fields: ["appealAnswer", "appealOutcome", "appealAnsweredAt"],
-          suspensionLifted: true,
+          suspensionLifted: { userId: jon.userId, fields: ["status", "suspendedUntil"] },
         },
       },
     ]);
@@ -319,6 +319,48 @@ describe("the operator's answer to an appeal (spec 9, 3.4.4)", () => {
     expect(await auditOf(suspension)).toMatchObject([
       { after: { fields: ["appealAnswer", "appealOutcome", "appealAnsweredAt"] } },
     ]);
+  });
+
+  it("lifts only the suspension the person is under now", async () => {
+    const jon = await newMember("Jón");
+    const gunna = await newMember("Gunna");
+    const by = await moderator();
+    const service = moderation();
+    const reinstate = async (member: Member) => {
+      const done = await service.reinstate(
+        by,
+        { userId: member.userId, note: "A mix-up." },
+        request,
+      );
+      if (!done.ok) throw new Error(done.error.code);
+    };
+    const reverse = (actionId: string) =>
+      service.answerAppeal(
+        by,
+        { actionId, outcome: "reversed", answer: "You were right." },
+        request,
+      );
+
+    // Reinstated already: reversing it later has nothing to lift.
+    const ended = await suspended(jon, by);
+    await appeal(jon, ended, "I was not there that day.");
+    await reinstate(jon);
+    expect(await reverse(ended)).toEqual({ ok: true, value: undefined });
+    expect(await standing(jon.userId)).toEqual({ status: "active", suspendedUntil: null });
+    expect(await auditOf(ended)).toEqual([
+      expect.objectContaining({
+        after: { fields: ["appealAnswer", "appealOutcome", "appealAnsweredAt"] },
+      }) as unknown,
+    ]);
+
+    // Suspended again since: reversing the first leaves the second.
+    const first = await suspended(gunna, by);
+    await appeal(gunna, first, "I was not there that day.");
+    await reinstate(gunna);
+    await later(60, gunna, jon);
+    await suspended(gunna, by);
+    expect(await reverse(first)).toEqual({ ok: true, value: undefined });
+    expect(await standing(gunna.userId)).toEqual({ status: "suspended", suspendedUntil: null });
   });
 });
 
@@ -376,5 +418,34 @@ describe("closing a report (spec 9, 3.4.3 and 3.1.6)", () => {
     expect(
       await service.closeReport(by, { reportId: randomUUID(), outcome: "no_breach" }, request),
     ).toEqual({ ok: false, error: { code: "not_found" } });
+  });
+
+  it("tells nobody once the reporter's account is gone", async () => {
+    await driverOf(sampleTrip.airport, "Jón");
+    const gunna = await newMember("Gunna");
+    const filed = await api.client.call(fileReportRoute, {
+      accessToken: gunna.accessToken,
+      body: {
+        about: { kind: "trip", tripId: sampleTrip.airport },
+        category: "not_as_listed",
+        description: "",
+      },
+    });
+    if (!filed.ok) throw new Error(filed.error.code);
+    // As deleting the account leaves it (spec 9, section 7).
+    await api.connection.db
+      .update(schema.reports)
+      .set({ reporterId: null })
+      .where(eq(schema.reports.id, filed.data.id));
+    await api.connection.db.execute(sql`delete from outbox_events`);
+
+    expect(
+      await moderation().closeReport(
+        await moderator(),
+        { reportId: filed.data.id, outcome: "action_taken" },
+        request,
+      ),
+    ).toEqual({ ok: true, value: undefined });
+    expect(await events("ReportClosed")).toEqual([]);
   });
 });

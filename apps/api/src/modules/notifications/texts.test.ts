@@ -444,7 +444,7 @@ describe("notification texts", () => {
       ].join("\n"),
     });
     expect(notificationText({ ...answer, outcome: "reversed" }, "is", settings)).toMatchObject({
-      title: "ShareRide svaraði áfrýjuninni þinni",
+      title: "ShareRide svaraði andmælum þínum",
       body: "Við skoðuðum málið aftur og breyttum ákvörðuninni.",
     });
   });
@@ -461,7 +461,7 @@ describe("notification texts", () => {
     expect(
       notificationText({ kind: "report_closed", outcome: "no_breach" }, "is", settings),
     ).toEqual({
-      title: "Tilkynningin þín",
+      title: "Niðurstaða tilkynningar þinnar",
       body: "Við höfum skoðað tilkynninguna og fundum ekki brot á reglunum.",
       path: "/settings/reports",
     });

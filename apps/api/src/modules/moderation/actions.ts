@@ -430,7 +430,10 @@ export function createModerationService(dependencies: {
           subjectId: action.id,
           after: {
             fields: ["appealAnswer", "appealOutcome", "appealAnsweredAt"],
-            ...(lifted ? { suspensionLifted: true } : {}),
+            // The person's own row changed too: named, as reinstate names it.
+            ...(lifted
+              ? { suspensionLifted: { userId, fields: ["status", "suspendedUntil"] } }
+              : {}),
           },
           request,
         });
@@ -444,7 +447,7 @@ export function createModerationService(dependencies: {
           .select({ status: reports.status, reporterId: reports.reporterId })
           .from(reports)
           .where(eq(reports.id, input.reportId))
-          .for("update");
+          .for("no key update");
         if (report === undefined) return err({ code: "not_found" });
         if (report.status === "closed") return err({ code: "already_closed" });
         const now = clock();
