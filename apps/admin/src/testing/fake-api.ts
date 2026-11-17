@@ -2,7 +2,11 @@ import type { ApiClient, CallResult } from "@shareride/api-client";
 import type { RouteDefinition } from "@shareride/contracts";
 import type { Assertion, PasskeyBrowser, Registration, WebAuthnOptions } from "../webauthn.ts";
 
-type Reply = { status: number; data?: unknown; error?: { code: string } };
+type Reply = {
+  status: number;
+  data?: unknown;
+  error?: { code: string; details?: { path: string; issue: string }[] };
+};
 type Handler = (input: Record<string, unknown>) => Reply;
 
 /**
@@ -24,7 +28,11 @@ export function createFakeApi() {
           : {
               ok: false,
               status: reply.status,
-              error: { code: reply.error?.code ?? "error", message: "" },
+              error: {
+                code: reply.error?.code ?? "error",
+                message: "",
+                ...(reply.error?.details === undefined ? {} : { details: reply.error.details }),
+              },
             };
       return Promise.resolve(result as CallResult<R>);
     },

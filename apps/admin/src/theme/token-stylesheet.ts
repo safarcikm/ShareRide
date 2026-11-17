@@ -3,7 +3,9 @@ import {
   controlOutline,
   edges,
   focusRing,
+  mapDrawing,
   maxContentWidth,
+  asideMaxWidth,
   minTouchTarget,
   radii,
   sidePanelWidth,
@@ -23,12 +25,14 @@ export function faceParts(face: string): { family: string; weight: number } {
   return { family: match[1], weight: Number(match[2]) };
 }
 
-const palette = (scheme: Palette) =>
-  Object.entries(scheme).map(([name, value]) => `  --color-${kebab(name)}: ${value};`);
+const palette = (scheme: Palette, map: (typeof mapDrawing)["light" | "dark"]) => [
+  ...Object.entries(scheme).map(([name, value]) => `  --color-${kebab(name)}: ${value};`),
+  ...Object.entries(map).map(([name, value]) => `  --map-${kebab(name)}: ${value};`),
+];
 
 /**
- * The shared design tokens (spec 15) as CSS variables, light and dark, and
- * one class per type style. The console's own CSS uses only these.
+ * The shared design tokens (spec 15) as CSS variables, light and dark, with
+ * the map's colours (ADR 0024), and one class per type style. The console's own CSS uses only these.
  */
 export function tokenStylesheet(): string {
   const sizes = [
@@ -39,6 +43,7 @@ export function tokenStylesheet(): string {
     `  --narrow-width: ${maxContentWidth}px;`,
     `  --control-outline: ${controlOutline}px;`,
     `  --menu-width: ${sidePanelWidth}px;`,
+    `  --aside-width: ${asideMaxWidth}px;`,
     `  --focus-width: ${focusRing.width}px;`,
     `  --focus-offset: ${focusRing.offset}px;`,
   ];
@@ -56,12 +61,12 @@ export function tokenStylesheet(): string {
   return [
     ":root {",
     "  color-scheme: light dark;",
-    ...palette(colors.light),
+    ...palette(colors.light, mapDrawing.light),
     ...sizes,
     "}",
     "@media (prefers-color-scheme: dark) {",
     "  :root {",
-    ...palette(colors.dark).map((line) => `  ${line}`),
+    ...palette(colors.dark, mapDrawing.dark).map((line) => `  ${line}`),
     "  }",
     "}",
     ...types,

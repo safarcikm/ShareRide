@@ -110,6 +110,18 @@ meeting point routes (`registerMeetingPointsAdminRoutes`), with the work in
   `meeting_point.updated` with only the fields that changed. Saving
   without a change writes nothing.
 
+The console's pages are in `apps/admin/src/pages/meeting-points/`:
+`list.tsx` (the map and the list, the filters kept in the address),
+`form.tsx` (add or edit one) and `form-values.ts`, which turns what was
+typed into the API's input and checks it with the same
+`validateMeetingPointDraft` before sending. A field's error goes as soon as
+the field is changed; the form checks everything again on saving. A browser's time
+field cannot hold 24:00, so the form shows a shelter closing at midnight as
+00:00 and sends a closing time of 00:00 as 24:00; 00:00 to 00:00 is open
+all day. The date
+the operator confirmed the point (R2.3) is its `lastCheckedOn`, the "Last
+checked" date the app shows.
+
 ## A console page
 
 The console is `apps/admin`: React for the web, built with Vite, served by
@@ -129,7 +141,10 @@ tokens from `packages/ui` as CSS variables and the app's fonts and texts.
    `admin.<area>.*`, in both languages.
 4. Style it with the classes in `apps/admin/src/styles.css` and the
    `var(--…)` tokens, never raw colours or sizes. Lay it out for a laptop
-   first, and check it on a phone.
+   first, and check it on a phone. Link to another console page with
+   `ConsoleLink` (`apps/admin/src/components/console-link.tsx`), and show
+   places with `IcelandMap` (`components/iceland-map.tsx`), our own map
+   (ADR 0024).
 5. Test it in `apps/admin/src/app.test.tsx` style: render `ConsoleApp`
    against the fake API in `apps/admin/src/testing/fake-api.ts`, signed in,
    and drive it as the operator would.
