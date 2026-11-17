@@ -5,7 +5,13 @@ import {
   type AdminConversationMessage,
   type AdminDispute,
 } from "@shareride/contracts";
-import { answererOf, checkDisputeNote, reporterOf, type DisputeOutcome } from "@shareride/domain";
+import {
+  answererOf,
+  checkDisputeNote,
+  operatorMayRead,
+  reporterOf,
+  type DisputeOutcome,
+} from "@shareride/domain";
 import { formatClock } from "@shareride/i18n";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ConsoleLink } from "../../components/console-link.tsx";
@@ -31,9 +37,11 @@ type Said =
   | { readonly kind: "none" }
   | { readonly kind: "choose" }
   | { readonly kind: "tooLong" }
-  | { readonly kind: "decided"; readonly outcome: string }
+  | { readonly kind: "decided"; readonly outcome: DisputeOutcome }
   | { readonly kind: "alreadyDecided" }
   | { readonly kind: "notWaiting" }
+  /** The report could not be loaded again after one of the two above. */
+  | { readonly kind: "reloadFailed" }
   | { readonly kind: "failed" };
 
 /**
@@ -50,6 +58,7 @@ export function DisputeDetail({ id }: { readonly id: string }) {
   const [reasons, setReasons] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [reloading, setReloading] = useState(false);
   const [said, setSaid] = useState<Said>({ kind: "none" });
   const message = useRef<HTMLDivElement>(null);
   const decideButton = useRef<HTMLButtonElement>(null);
@@ -68,6 +77,7 @@ export function DisputeDetail({ id }: { readonly id: string }) {
     reasons: useId(),
     reasonsHint: useId(),
     reasonsError: useId(),
+    chooseError: useId(),
     effect: useId(),
   };
 
@@ -158,7 +168,7 @@ export function DisputeDetail({ id }: { readonly id: string }) {
     setConfirming(false);
     if (result.ok) {
       setLoaded({ state: "ready", report: result.data });
-      setSaid({ kind: "decided", outcome: labelOf(outcome) });
+      setSaid({ kind: "decided", outcome });
       return;
     }
     const { code, details } = result.error;
@@ -173,21 +183,38 @@ export function DisputeDetail({ id }: { readonly id: string }) {
     }
   }
 
+  /** The report as it is now, after someone else decided or changed it. */
   async function reload() {
+    setReloading(true);
+    const result = await call(adminDisputeRoute, { params: { id: report.id } });
+    setReloading(false);
+    if (!result.ok) {
+      setSaid({ kind: "reloadFailed" });
+      return;
+    }
     focusNext.current = "decision";
+    setChosen(null);
     setSaid({ kind: "none" });
-    await load();
+    setLoaded({ state: "ready", report: result.data });
   }
 
   const reloadButton = (
-    <button type="button" className="button-secondary type-label" onClick={() => void reload()}>
+    <button
+      type="button"
+      className="button-secondary type-label"
+      disabled={reloading}
+      onClick={() => void reload()}
+    >
       {t("admin.disputes.reload")}
     </button>
   );
 
   return (
     <section className="stack">
-      <ConsoleLink to={disputesPath} className="type-label">
+      <ConsoleLink
+        to={report.decidedBy === "operator" ? `${disputesPath}?state=decided` : disputesPath}
+        className="type-label"
+      >
         {t("admin.disputes.back")}
       </ConsoleLink>
       <h1 className="type-title">{t(kindKeys[report.kind])}</h1>
@@ -207,13 +234,11 @@ export function DisputeDetail({ id }: { readonly id: string }) {
           <dd>{`${report.from.name[locale]} – ${report.to.name[locale]}`}</dd>
           <dt>{t("admin.disputes.state")}</dt>
           <dd>
-            {t(
-              report.outcome !== null
-                ? "admin.disputes.state.decided"
-                : report.answer === "contested"
-                  ? "admin.disputes.state.waiting"
-                  : "admin.disputes.state.open",
-            )}
+            {report.outcome !== null
+              ? t("admin.disputes.state.decided")
+              : report.answer === "contested"
+                ? t("admin.disputes.state.waiting")
+                : t("admin.disputes.state.open", { when: at(report.answerBy) })}
           </dd>
         </dl>
       </section>
@@ -239,7 +264,12 @@ export function DisputeDetail({ id }: { readonly id: string }) {
           </h3>
           {report.answer === null ? (
             <p className="type-body">
-              {t("admin.disputes.noAnswer", { when: at(report.answerBy) })}
+              {t(
+                Date.now() < Date.parse(report.answerBy)
+                  ? "admin.disputes.noAnswerYet"
+                  : "admin.disputes.noAnswer",
+                { when: at(report.answerBy) },
+              )}
             </p>
           ) : (
             <dl className="facts type-body">
@@ -307,23 +337,27 @@ export function DisputeDetail({ id }: { readonly id: string }) {
         <div ref={message} className="message">
           {said.kind === "decided" ? (
             <p className="notice type-body" role="status" tabIndex={-1}>
-              {t("admin.disputes.decidedNow", { outcome: said.outcome })}
+              {t("admin.disputes.decidedNow", { outcome: labelOf(said.outcome) })}
             </p>
           ) : said.kind === "choose" ? (
-            <p className="problem type-body" role="alert" tabIndex={-1}>
+            <p id={ids.chooseError} className="problem type-body" role="alert" tabIndex={-1}>
               {t("admin.disputes.chooseOutcome")}
             </p>
           ) : said.kind === "tooLong" ? (
             <p className="problem type-body" role="alert" tabIndex={-1}>
               {t("admin.disputes.reasonsTooLong")}
             </p>
-          ) : said.kind === "alreadyDecided" || said.kind === "notWaiting" ? (
+          ) : said.kind === "alreadyDecided" ||
+            said.kind === "notWaiting" ||
+            said.kind === "reloadFailed" ? (
             <div className="problem stack" role="alert" tabIndex={-1}>
               <p className="type-body">
                 {t(
                   said.kind === "alreadyDecided"
                     ? "admin.disputes.alreadyDecided"
-                    : "admin.disputes.notWaiting",
+                    : said.kind === "notWaiting"
+                      ? "admin.disputes.notWaiting"
+                      : "admin.disputes.loadOneFailed",
                 )}
               </p>
               {reloadButton}
@@ -374,7 +408,13 @@ export function DisputeDetail({ id }: { readonly id: string }) {
             <p id={ids.outcome} className="type-label">
               {t("admin.disputes.outcome")}
             </p>
-            <div className="outcomes" role="radiogroup" aria-labelledby={ids.outcome}>
+            <div
+              className="outcomes"
+              role="radiogroup"
+              aria-labelledby={ids.outcome}
+              aria-invalid={said.kind === "choose"}
+              aria-describedby={said.kind === "choose" ? ids.chooseError : undefined}
+            >
               {report.outcomes.map((outcome) => (
                 <div key={outcome}>
                   <label className="check type-body">
@@ -477,8 +517,8 @@ type Reading =
 
 /**
  * The booking's conversation, opened only when the operator asks, as each
- * opening goes in the audit log (R9.6). The API lets it open only for a
- * contested report (R7.3).
+ * opening goes in the audit log (R9.6), and only for a contested report
+ * (R7.3, `operatorMayRead`).
  */
 function Conversation({ report }: { readonly report: AdminDispute }) {
   const { t, locale, call } = useConsole();
@@ -503,6 +543,18 @@ function Conversation({ report }: { readonly report: AdminDispute }) {
     if (answer.ok) setReading({ state: "shown", messages: answer.data.messages });
     else if (answer.status === 409) setReading({ state: "notCovered" });
     else setReading({ state: "failed" });
+  }
+
+  // As the API rules it, so a reading it would refuse is not asked for.
+  if (!operatorMayRead(report)) {
+    return (
+      <section className="panel stack" aria-labelledby={heading}>
+        <h2 id={heading} className="type-heading">
+          {t("admin.disputes.conversation")}
+        </h2>
+        <p className="type-body">{t("admin.disputes.conversationClosed")}</p>
+      </section>
+    );
   }
 
   return (

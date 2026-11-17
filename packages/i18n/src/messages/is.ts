@@ -1641,7 +1641,7 @@ export const is = {
   "admin.disputes.title": "Ágreiningsmál",
   "admin.disputes.intro":
     "Tilkynningar frá ferðadegi sem hinn aðilinn sagði ekki réttar. Lestu það sem kerfið veit og taktu svo ákvörðun. Báðum aðilum er sagt frá henni og hún er endanleg í appinu.",
-  "admin.disputes.views": "Tilkynningar sem sýna á",
+  "admin.disputes.views": "Hvaða tilkynningar á að sýna",
   "admin.disputes.waiting": "Bíða",
   "admin.disputes.decided": "Ákveðnar",
   "admin.disputes.waitingHeading": "Bíða ákvörðunar",
@@ -1660,7 +1660,6 @@ export const is = {
   "admin.disputes.plannedAt": "Áætlað {when}",
   "admin.disputes.raised": "Tilkynnt {when}",
   "admin.disputes.decidedOn": "Ákveðið {when}",
-  "admin.disputes.formerMember": "Fyrrverandi notandi",
   "admin.disputes.at": "{date} kl. {time}",
   "admin.disputes.back": "Öll ágreiningsmál",
   "admin.disputes.notFound": "Þessi tilkynning fannst ekki.",
@@ -1672,7 +1671,7 @@ export const is = {
   "admin.disputes.ride": "Leið",
   "admin.disputes.state": "Staða",
   "admin.disputes.state.waiting": "Bíður ákvörðunar",
-  "admin.disputes.state.open": "Ekki mótmælt, svo hún leysist sjálfkrafa",
+  "admin.disputes.state.open": "Ekki svarað. Hún stendur ef enginn svarar fyrir {when}.",
   "admin.disputes.state.decided": "Ákveðin",
   "admin.disputes.said": "Það sem hvor aðili sagði",
   "admin.disputes.reportBy.driver": "Tilkynning bílstjórans",
@@ -1686,6 +1685,7 @@ export const is = {
   "admin.disputes.answer.agreed": "Það er rétt",
   "admin.disputes.answer.contested": "Það er ekki rétt",
   "admin.disputes.noAnswer": "Ekkert svar. Hægt var að svara til {when}.",
+  "admin.disputes.noAnswerYet": "Ekkert svar enn. Hægt er að svara til {when}.",
   "admin.disputes.stops": "Stopp og tímar",
   "admin.disputes.stop": "Stopp",
   "admin.disputes.planned": "Áætlað",
@@ -1694,8 +1694,8 @@ export const is = {
   "admin.disputes.alights": "Farþeginn fer út",
   "admin.disputes.notSaid": "Ekki sagt",
   "admin.disputes.noTime": "Enginn tími",
-  "admin.disputes.passengerHere": "Farþeginn sagðist vera á staðnum kl. {time}.",
-  "admin.disputes.passengerNotHere": "Farþeginn sagðist aldrei vera á staðnum.",
+  "admin.disputes.passengerHere": "Farþeginn ýtti á „Ég er á staðnum“ kl. {time}.",
+  "admin.disputes.passengerNotHere": "Farþeginn ýtti aldrei á „Ég er á staðnum“.",
   "admin.disputes.decision": "Ákvörðun",
   "admin.disputes.decisionHint":
     "Veldu hvað gerðist. Báðum aðilum er sagt frá ákvörðuninni og hún er endanleg í appinu.",
@@ -1709,13 +1709,13 @@ export const is = {
   "admin.disputes.effect.no_show.stands":
     "Engin endurgreiðsla, bílstjórinn fær greitt og það telst á farþegann.",
   "admin.disputes.effect.no_show.rode":
-    "Bókunin klárast, bílstjórinn fær greitt og ekkert telst á hvorugan aðila.",
+    "Bókuninni lýkur, bílstjórinn fær greitt og það telst á hvorugan aðila.",
   "admin.disputes.effect.no_show.left_behind":
     "Bókunin er afbókuð með fullri endurgreiðslu, bílstjórinn fær ekki greitt og það telst á bílstjórann.",
   "admin.disputes.effect.driver_absent.stands":
     "Bókunin er afbókuð með fullri endurgreiðslu, bílstjórinn fær ekki greitt og það telst á bílstjórann.",
   "admin.disputes.effect.driver_absent.rode":
-    "Bókunin heldur áfram, bílstjórinn fær greitt og ekkert telst á hvorugan aðila.",
+    "Bókunin heldur áfram, bílstjórinn fær greitt og það telst á hvorugan aðila.",
   "admin.disputes.effect.driver_absent.passenger_absent":
     "Það er fjarvist farþegans: engin endurgreiðsla, bílstjórinn fær greitt og það telst á farþegann.",
   "admin.disputes.reasons": "Rökstuðningur þinn (valfrjálst)",

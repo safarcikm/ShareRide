@@ -10,9 +10,11 @@ import {
   type AdminMe,
 } from "@shareride/contracts";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { operatorOutcomes, disputeKinds } from "@shareride/domain";
+import { describe, expect, it, vi } from "vitest";
 import { ConsoleApp } from "../../app.tsx";
 import { createFakeApi, createFakePasskeys } from "../../testing/fake-api.ts";
+import { outcomeTexts } from "./texts.ts";
 
 const anna: AdminMe = {
   userId: "0196f000-0000-7000-8000-000000000001",
@@ -279,6 +281,60 @@ describe("a report (spec 8, 3.5)", () => {
       screen.getByText("Nobody contested this report, so it isn't for an operator to decide."),
     ).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Decide" })).toBeNull();
+    expect(screen.getByRole("region", { name: "The booking" }).textContent).toContain(
+      "StatusNot answered. It stands if nobody answers by 16 November at 15:30.",
+    );
+    // Its conversation stays closed without asking, so nothing is logged.
+    const conversation = screen.getByRole("region", { name: "The conversation" });
+    expect(conversation.textContent).toContain(
+      "Nobody contested this report, so its conversation stays closed.",
+    );
+    expect(within(conversation).queryByRole("button")).toBeNull();
+  });
+
+  it("says the other side can still answer while they can", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-11-16T12:00:00.000Z"));
+    start(detailPath, { ...report, answer: null, answeredAt: null, answerNote: "", outcomes: [] });
+    const said = await screen.findByRole("region", { name: "What each side said" });
+    expect(said.textContent).toContain(
+      "No answer yet. They can answer until 16 November at 15:30.",
+    );
+  });
+
+  it("shows a report that the driver didn't come from the passenger's side", async () => {
+    start(detailPath, {
+      ...report,
+      kind: "driver_absent",
+      note: "Nobody came to Borgarnes.",
+      answerNote: "I waited by the shop.",
+      outcomes: ["stands", "rode", "passenger_absent"],
+    });
+    expect(
+      await screen.findByRole("heading", { name: "The driver didn't come", level: 1 }),
+    ).toBeTruthy();
+    const said = screen.getByRole("region", { name: "What each side said" });
+    expect(
+      within(said).getByRole("group", { name: "The passenger's report" }).textContent,
+    ).toContain("NoteNobody came to Borgarnes.");
+    expect(within(said).getByRole("group", { name: "The driver's answer" }).textContent).toContain(
+      "NoteI waited by the shop.",
+    );
+    const group = screen.getByRole("radiogroup", { name: "What happened" });
+    expect(
+      within(group)
+        .getAllByRole("radio")
+        .map((radio) => radio.parentElement?.textContent),
+    ).toEqual([
+      "The driver didn't come: the report stands",
+      "The passenger rode",
+      "The passenger didn't come",
+    ]);
+    const absent = screen.getByRole("radio", { name: "The passenger didn't come" });
+    expect(
+      document.getElementById(absent.getAttribute("aria-describedby") ?? "")?.textContent,
+    ).toBe(
+      "It is the passenger's no-show: no refund, the driver is paid, and it counts on the passenger.",
+    );
   });
 
   it("shows the decision once made: the outcome, by whom, when and why", async () => {
@@ -289,6 +345,34 @@ describe("a report (spec 8, 3.5)", () => {
     expect(decision.textContent).toContain("When16 November at 09:12");
     expect(decision.textContent).toContain("ReasonsHer “I'm here” came before his.");
     expect(screen.queryByRole("button", { name: "Decide" })).toBeNull();
+    expect(screen.getByRole("link", { name: "All disputes" }).getAttribute("href")).toBe(
+      "/admin/disputes?state=decided",
+    );
+  });
+
+  it("shows a report the system decided, without reasons", async () => {
+    start(detailPath, {
+      ...report,
+      answer: "agreed",
+      outcome: "stands",
+      decidedBy: "system",
+      decidedAt: "2026-11-15T11:05:00.000Z",
+      outcomes: [],
+    });
+    const decision = await screen.findByRole("region", { name: "Decision" });
+    expect(decision.textContent).toContain("OutcomeThe passenger didn't come: the no-show stands");
+    expect(decision.textContent).toContain(
+      "Decided byShareRide on its own, as the other side agreed or didn't answer",
+    );
+    expect(decision.textContent).not.toContain("Reasons");
+  });
+
+  it("has words for every outcome an operator can choose", () => {
+    for (const kind of disputeKinds) {
+      for (const outcome of operatorOutcomes[kind]) {
+        expect(() => outcomeTexts(kind, outcome)).not.toThrow();
+      }
+    }
   });
 
   it("says when the report is not there", async () => {
@@ -373,6 +457,9 @@ describe("deciding a report (spec 8, 3.5; decisions 4 and 5)", () => {
     await waitFor(() => {
       expect(document.activeElement).toBe(problem);
     });
+    const group = screen.getByRole("radiogroup", { name: "What happened" });
+    expect(group.getAttribute("aria-invalid")).toBe("true");
+    expect(document.getElementById(group.getAttribute("aria-describedby") ?? "")).toBe(problem);
     expect(screen.queryByRole("button", { name: "Yes, decide" })).toBeNull();
     expect(api.called(adminDecideDisputeRoute)).toHaveLength(0);
   });
@@ -427,12 +514,22 @@ describe("deciding a report (spec 8, 3.5; decisions 4 and 5)", () => {
     expect((await screen.findByRole("alert")).textContent).toContain(
       "This report was decided meanwhile, perhaps by another operator.",
     );
+    api.on(adminDisputeRoute, { status: 500, error: { code: "internal_error" } });
+    fireEvent.click(screen.getByRole("button", { name: "Reload the report" }));
+    await waitFor(() => {
+      expect(screen.getByRole("alert").textContent).toContain("The report could not be loaded.");
+    });
     api.on(adminDisputeRoute, { status: 200, data: leftBehind });
     fireEvent.click(screen.getByRole("button", { name: "Reload the report" }));
-    expect((await screen.findByRole("region", { name: "Decision" })).textContent).toContain(
-      "OutcomeThe driver left without the passenger",
+    const decision = await screen.findByRole("region", { name: "Decision" });
+    await waitFor(() => {
+      expect(decision.textContent).toContain("OutcomeThe driver left without the passenger");
+    });
+    expect(document.activeElement).toBe(
+      within(decision).getByRole("heading", { name: "Decision" }),
     );
-    expect(api.called(adminDisputeRoute)).toHaveLength(2);
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(api.called(adminDisputeRoute)).toHaveLength(3);
   });
 
   it("says when it no longer waits, or the decision failed", async () => {
@@ -502,5 +599,20 @@ describe("the booking's conversation (R7.3, R9.6)", () => {
     expect((await within(again).findByRole("alert")).textContent).toBe(
       "Nobody contested this report, so its conversation stays closed.",
     );
+  });
+
+  it("says when it could not be loaded, and tries again", async () => {
+    const api = start(detailPath);
+    api.on(adminDisputeConversationRoute, { status: 500, error: { code: "internal_error" } });
+    const section = await screen.findByRole("region", { name: "The conversation" });
+    fireEvent.click(within(section).getByRole("button", { name: "Show the conversation" }));
+    const problem = await within(section).findByRole("alert");
+    expect(problem.textContent).toBe("The conversation could not be loaded.");
+    await waitFor(() => {
+      expect(document.activeElement).toBe(problem);
+    });
+    api.on(adminDisputeConversationRoute, { status: 200, data: { messages: conversation } });
+    fireEvent.click(within(section).getByRole("button", { name: "Show the conversation" }));
+    expect(await within(section).findByText("5 messages, oldest first")).toBeTruthy();
   });
 });

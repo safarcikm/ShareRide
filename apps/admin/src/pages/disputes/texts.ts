@@ -67,7 +67,7 @@ export function outcomeTexts(kind: DisputeKind, outcome: DisputeOutcome): Outcom
 
 /** A side's first name, or that they have left ShareRide (spec 11, 3.5). */
 export const nameOf = (t: Translate, person: { readonly firstName: string | null }) =>
-  person.firstName ?? t("admin.disputes.formerMember");
+  person.firstName ?? t("people.formerMember");
 
 /** "15 November at 10:15", on Iceland's clock. */
 export function atText(t: Translate, locale: Locale, at: string): string {
