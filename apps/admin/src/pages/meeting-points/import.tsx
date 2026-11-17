@@ -25,6 +25,8 @@ import { issueKey } from "./texts.ts";
 
 export const importPath = `${meetingPointsPath}/import`;
 
+type FocusTarget = "file" | "rows" | "message" | "problems" | null;
+
 type FileFieldProblem = "required" | "tooLarge" | "unreadable";
 
 const fileFieldKeys: Record<FileFieldProblem, MessageKey> = {
@@ -161,27 +163,31 @@ export function MeetingPointImport() {
   const rowsHeading = useRef<HTMLHeadingElement>(null);
   const messageRef = useRef<HTMLParagraphElement>(null);
   const problemsRef = useRef<HTMLDivElement>(null);
-  // What takes the focus once the page is drawn again.
-  const focusNext = useRef<"file" | "rows" | "message" | "problems" | null>(null);
+  // What takes the focus once the page is drawn again. It is state, drawn
+  // with what it points at, so a step still waiting from an earlier drawing
+  // cannot use it up before the new field or heading is there.
+  const [focusNext, setFocusNext] = useState<{ readonly target: FocusTarget; readonly n: number }>({
+    target: null,
+    n: 0,
+  });
+  const focusOn = (target: FocusTarget) => {
+    setFocusNext((last) => ({ target, n: last.n + 1 }));
+  };
 
   useEffect(() => {
-    const target = focusNext.current;
-    if (target === null) return;
-    focusNext.current = null;
+    if (focusNext.target === null) return;
     const element = {
       file: fileInput.current,
       rows: rowsHeading.current,
       message: messageRef.current,
       problems: problemsRef.current,
-    }[target];
+    }[focusNext.target];
     element?.focus();
-  });
+  }, [focusNext]);
 
   function refuseFile(problem: FileFieldProblem) {
     setFieldProblem(problem);
-    focusNext.current = "file";
-    // The field may be drawn already, so ask for the focus now too.
-    fileInput.current?.focus();
+    focusOn("file");
   }
 
   async function check() {
@@ -208,7 +214,7 @@ export function MeetingPointImport() {
     setBusy(false);
     if (result.ok) {
       setChecked({ file: text, rows: result.data.rows, added: null });
-      focusNext.current = "rows";
+      focusOn("rows");
       return;
     }
     if (result.status === 413) {
@@ -218,11 +224,11 @@ export function MeetingPointImport() {
     const details = result.error.details ?? [];
     if (result.error.code === "validation_failed" && details.length > 0) {
       setFileProblems(details);
-      focusNext.current = "problems";
+      focusOn("problems");
       return;
     }
     setMessage({ kind: "alert", text: t("admin.meetingPointImport.checkFailed") });
-    focusNext.current = "message";
+    focusOn("message");
   }
 
   async function add(from: Checked) {
@@ -232,7 +238,7 @@ export function MeetingPointImport() {
       body: { file: from.file, save: true },
     });
     setBusy(false);
-    focusNext.current = "message";
+    focusOn("message");
     if (!result.ok) {
       setMessage({ kind: "alert", text: t("admin.meetingPointImport.addFailed") });
       return;
@@ -251,7 +257,7 @@ export function MeetingPointImport() {
     setFileProblems(null);
     setFile(null);
     setFileField((key) => key + 1);
-    focusNext.current = "file";
+    focusOn("file");
   }
 
   const ready = checked?.rows.filter((row) => row.point !== null).length ?? 0;
