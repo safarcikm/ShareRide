@@ -43,7 +43,7 @@ jobs:
       - name: Keep the roads cars may use
         run: |
           osmium tags-filter iceland.osm.pbf \
-            w/highway=motorway,motorway_link,trunk,trunk_link,primary,primary_link,secondary,secondary_link,tertiary,tertiary_link,unclassified,residential,living_street \
+            w/highway=motorway,motorway_link,trunk,trunk_link,primary,primary_link,secondary,secondary_link,tertiary,tertiary_link,unclassified,residential,living_street,service \
             -o roads.osm.pbf
           osmium cat roads.osm.pbf -f opl,add_metadata=false -o roads.opl
       - name: Build the road file

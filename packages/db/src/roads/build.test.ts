@@ -26,7 +26,8 @@ describe("the road file builder", () => {
       "highway=primary,ref=1",
       "highway=primary,ref=F35", // a mountain road
       "highway=secondary,name=Gamli%20%vegur", // a name with an escaped space
-      "highway=service",
+      "highway=service,service=parking_aisle",
+      "highway=service,service=driveway",
       "highway=track",
       "highway=residential,access=private",
       "highway=unclassified,motor_vehicle=no",
@@ -34,6 +35,7 @@ describe("the road file builder", () => {
       "highway=pedestrian,area=yes",
       "highway=tertiary,area=yes",
       "route=ferry",
+      "highway=service", // a road to an airport or a fuel station
     ];
     const lines = kinds.flatMap((tags, index) => {
       const first = index * 10 + 1;
@@ -44,9 +46,9 @@ describe("the road file builder", () => {
       ];
     });
     const file = build(lines);
-    // The primary road, the secondary road with the escaped name, and the
-    // road open to cars by `motorcar=yes`.
-    expect(file.edges).toHaveLength(3);
+    // The primary road, the secondary road with the escaped name, the road
+    // open to cars by `motorcar=yes`, and the service road.
+    expect(file.edges).toHaveLength(4);
     expect(file.format).toBe(1);
     expect(file.mapDate).toBe(mapDate);
     expect(file.source).toMatch(/OpenStreetMap contributors/);
@@ -100,6 +102,7 @@ describe("the road file builder", () => {
     expect(speeds("highway=residential,maxspeed=50")).toBe(30);
     expect(speeds("highway=living_street")).toBe(10);
     expect(speeds("highway=trunk_link")).toBe(50);
+    expect(speeds("highway=service")).toBe(20);
     expect(speeds("highway=primary,maxspeed=signals")).toBe(90);
   });
 

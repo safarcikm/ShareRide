@@ -49,13 +49,14 @@ in the milestone 8 plan (decision 5).
   `osmium-tool`, and runs our script, which writes the road file as an
   artifact. The file is committed with the map data's date. The job only
   reads the repository.
-- **What the file holds:** public roads by class (motorway to residential
-  and living streets), with their length, one-way direction and an
-  estimated speed. It leaves out ferries, mountain (F) roads, service
-  ways, tracks, and roads closed to cars or private.
-- **Driving time:** each road's speed limit when it has one, otherwise a
-  speed for its class and surface (90 km/h on paved main roads, 80 on
-  gravel, 50 in towns); the time is the length at that speed.
+- **What the file holds:** roads by class (motorway to residential and
+  living streets, and service roads to places such as airports and fuel
+  stations), with their length, one-way direction and a typical speed. It
+  leaves out ferries, mountain (F) roads, parking aisles, driveways,
+  tracks, and roads closed to cars or private.
+- **Driving time:** the lowest of the road's speed limit, a typical speed
+  for its class (from 90 km/h on main roads down to 30 on residential
+  streets) and 60 km/h on gravel; the time is the length at that speed.
 - **Routing:** a meeting point joins the nearest road within 1 km. The API
   finds the fastest way and stores its distance and time. A pair with no
   connection, or a point with no road near it, is listed in the console.

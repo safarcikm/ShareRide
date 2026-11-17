@@ -17,6 +17,9 @@ const classSpeeds: Readonly<Record<string, number>> = {
   unclassified: 60,
   residential: 30,
   living_street: 10,
+  // Roads to airports, fuel stations and car parks; not parking aisles or
+  // driveways (below).
+  service: 20,
   motorway_link: 50,
   trunk_link: 50,
   primary_link: 50,
@@ -45,6 +48,14 @@ const namedLimits: Readonly<Record<string, number>> = {
   "IS:urban": 50,
   "IS:rural": 90,
 };
+/** Service ways that lead nowhere a meeting point is: aisles, driveways. */
+const minorService = new Set([
+  "parking_aisle",
+  "driveway",
+  "drive-through",
+  "emergency_access",
+  "alley",
+]);
 /** Access values that close a road to cars. */
 const closed = new Set(["no", "private", "agricultural", "forestry", "emergency", "military"]);
 
@@ -132,6 +143,7 @@ function carRoad(tags: ReadonlyMap<string, string>): Omit<Road, "refs"> | null {
   const classSpeed = classSpeeds[highway];
   if (classSpeed === undefined) return null;
   if (tags.get("area") === "yes") return null;
+  if (highway === "service" && minorService.has(tags.get("service") ?? "")) return null;
   const refs = (tags.get("ref") ?? "").split(";").map((ref) => ref.trim());
   if (refs.some((ref) => /^F\s*\d/i.test(ref))) return null;
   // The most specific access tag decides.

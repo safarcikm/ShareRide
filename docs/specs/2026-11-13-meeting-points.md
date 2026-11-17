@@ -151,9 +151,9 @@ the point for review, and the user sees a thank-you message.
 1. A leg is computed for every ordered pair of active meeting points that are
    connected by road: road distance and typical driving time. A→B and B→A are
    separate legs.
-2. Legs are computed by a background job with an open-source routing engine on
-   the Iceland OpenStreetMap extract (ADR 0009). The car profile avoids ferries
-   and mountain (F) roads.
+2. Legs are computed on our own road file, built from the Iceland
+   OpenStreetMap extract (ADR 0030, which refines ADR 0009). It leaves out
+   ferries, mountain (F) roads and roads closed to cars.
 3. The job runs when a point is activated or moved, and for all points when the
    map data is updated (at least every three months) or when the operator
    chooses "Recompute all".
@@ -288,8 +288,8 @@ fixed distance table and only the adapter talks to the engine.
   queries; nearest points to a place; catalogue changes since a time; rate
   limits on problem reports; pause and retire with and without future trips; legs
   job with a fixed distance table.
-- **Adapter:** the `Router` adapter against the routing engine on a small
-  extract, run nightly rather than on every PR.
+- **Road file:** the road file's builder on small OpenStreetMap samples, and
+  known distances on the real file, within 3% of published figures.
 - **End to end:** browse the map and list in both languages, open details,
   search without Icelandic letters, use "Near me" with a mocked position,
   report a problem; operator creates, activates, pauses and retires a point.
