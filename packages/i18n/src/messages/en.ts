@@ -1167,6 +1167,12 @@ export const en = {
   "notify.noticeBody": "Read why in ShareRide.",
   "notify.reinstatedBody": "You can use ShareRide as before.",
   "notify.suspensionEnded": "Your suspension has ended. You can use ShareRide as before.",
+  /** The operator's answer to an appeal, final in the app (spec 9, 3.4.4). */
+  "notify.appealAnswered": "ShareRide answered your appeal",
+  "notify.appealUpheld": "We looked again and the decision stands.",
+  "notify.appealReversed": "We looked again and changed our decision.",
+  /** The reporter's outcome; the body is report.outcomeAction or report.outcomeNone. */
+  "notify.reportClosed": "Your report",
   /** An operator's action, as the person is told (spec 9, 3.4.4; R9.5). */
   "notice.title.warning": "A warning from ShareRide",
   "notice.title.content_hidden": "We removed something you posted",
@@ -1178,6 +1184,7 @@ export const en = {
   "notice.rule": "Rule: {rule}",
   "notice.reason": "Reason: {reason}",
   "notice.note": "Note: {note}",
+  "notice.answer": "Our answer: {answer}",
   "notice.appealUntil":
     "If you disagree, you can appeal in ShareRide, under Notices, until {until}.",
   "notice.open": "Open your notices in ShareRide",
@@ -1575,6 +1582,8 @@ export const en = {
   "export.value.kind.report_filed_urgent": "New safety report",
   "export.value.kind.moderation_action": "Notice from ShareRide",
   "export.value.kind.suspension_ended": "Suspension ended",
+  "export.value.kind.appeal_answered": "Answer to your appeal",
+  "export.value.kind.report_closed": "Outcome of your report",
   "export.value.kind.warning": "Warning",
   "export.value.kind.content_hidden": "Content removed",
   "export.value.kind.suspension": "Suspension",
@@ -1662,6 +1671,8 @@ export const en = {
   "admin.home.welcome": "Welcome, {name}",
   "admin.home.welcomeNoName": "Welcome",
   "admin.home.body": "Choose a section from the menu.",
+  "admin.home.meetingPointProblems":
+    "{count, plural, =0 {No open problem reports about meeting points} one {# open problem report about meeting points} other {# open problem reports about meeting points}}",
   "admin.passkeys.title": "Passkeys",
   "admin.passkeys.intro":
     "The passkeys you sign in with. Keep at least two, on different devices, so losing one does not lock you out.",
@@ -1728,6 +1739,25 @@ export const en = {
     "Every meeting point, drafts and retired ones too. Only the operator adds and changes them.",
   "admin.meetingPoints.add": "Add a meeting point",
   "admin.meetingPoints.import": "Import from a file",
+  "admin.meetingPoints.problems": "Problem reports",
+  "admin.meetingPointIssues.title": "Problem reports",
+  "admin.meetingPointIssues.intro":
+    "What people reported about meeting points in the app, the oldest first. Resolving a report removes the link to the person who sent it, and the report is deleted 12 months later.",
+  "admin.meetingPointIssues.empty": "There are no open reports.",
+  "admin.meetingPointIssues.loadFailed": "The reports could not be loaded.",
+  "admin.meetingPointIssues.sentAt": "Sent {date} at {time}",
+  "admin.meetingPointIssues.noNote": "No note.",
+  "admin.meetingPointIssues.resolution": "What did you do?",
+  "admin.meetingPointIssues.resolutionHint":
+    "Up to {max} characters, for the record. The person who sent the report isn't told.",
+  "admin.meetingPointIssues.resolutionRequired": "Say what you did.",
+  "admin.meetingPointIssues.resolutionTooLong": "Shorten it to {max} characters or fewer.",
+  "admin.meetingPointIssues.checkedToday": "I checked the point today (sets Last confirmed on)",
+  "admin.meetingPointIssues.pause": "Pause {name} now",
+  "admin.meetingPointIssues.resolve": "Resolve",
+  "admin.meetingPointIssues.resolved": "Resolved: {name}.",
+  "admin.meetingPointIssues.alreadyResolved": "Someone resolved this report already.",
+  "admin.meetingPointIssues.resolveFailed": "The report could not be resolved. Try again.",
   "admin.meetingPoints.filters": "Filters",
   "admin.meetingPoints.name": "Name",
   "admin.meetingPoints.status": "Status",
@@ -1739,6 +1769,7 @@ export const en = {
   "admin.meetingPoints.inSeason": "In use this month",
   "admin.meetingPoints.outOfSeason": "Not in use this month",
   "admin.meetingPoints.reviewOverdueOnly": "Only points with their review overdue",
+  "admin.meetingPoints.openIssuesOnly": "Only points with an open problem report",
   "admin.meetingPoints.apply": "Show meeting points",
   "admin.meetingPoints.clear": "Clear the filters",
   "admin.meetingPoints.list": "The meeting points",
@@ -1749,6 +1780,8 @@ export const en = {
   "admin.meetingPoints.badFilters": "These filters cannot be used. Clear them and try again.",
   "admin.meetingPoints.reviewDue": "Review due {date}",
   "admin.meetingPoints.reviewOverdue": "Review overdue",
+  "admin.meetingPoints.openIssues":
+    "{count, plural, one {# open problem report} other {# open problem reports}}",
   "admin.meetingPoints.sampleTag": "Sample",
   "admin.meetingPoints.statusDraft": "Draft",
   "admin.meetingPoints.statusActive": "Active",
