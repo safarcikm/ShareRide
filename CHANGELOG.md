@@ -889,7 +889,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   activating or moving a point will compute its own (PR 12). The
   console's Distances page, under meeting points, shows how many legs
   there are, when they were computed and on which map data, the points
-  with no road within 1 km and the legs missing.
+  with no road within 1 km and the legs missing; a browser journey
+  recomputes them on the real road file. Joining a point to a road is
+  about eight times faster, and the sample seed keeps road file legs.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.
