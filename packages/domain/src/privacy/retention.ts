@@ -9,8 +9,7 @@ import { privacySettings } from "./settings.ts";
  * stay with their modules (`retentionCutoffs` for sign-in records,
  * `deleteArrivedBy` for conversations, `notificationRetention`,
  * `draftRetentionDays`, `operatorSessionRules`); `privacyCutoffs` has the
- * ones this feature adds. Trips and bookings after 3 years join with
- * their PR (plan, PR 9b).
+ * ones this feature adds.
  */
 export const retentionRules = [
   "sign_in_codes",
@@ -21,6 +20,7 @@ export const retentionRules = [
   "email_links",
   "trip_drafts",
   "conversations",
+  "trips_and_bookings",
   "notification_log",
   "scheduled_notifications",
   "outbox_events",

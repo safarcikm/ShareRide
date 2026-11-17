@@ -5,23 +5,11 @@ import {
   holdsSeats,
   type TripDaySettings,
 } from "@shareride/domain";
-import {
-  and,
-  asc,
-  eq,
-  getTableColumns,
-  getTableName,
-  inArray,
-  is,
-  lte,
-  notExists,
-  or,
-  sql,
-} from "drizzle-orm";
-import { PgTable, type PgColumn } from "drizzle-orm/pg-core";
+import { and, asc, eq, inArray, lte, notExists, or, sql } from "drizzle-orm";
 import type { Logger } from "../../logger.ts";
 import type { KeyedHasher } from "../../platform/crypto.ts";
 import type { Transaction } from "../bookings/seats.ts";
+import { catalogued, emptiedOf, freshIdsOf, tableOf } from "./catalogue.ts";
 import { lockDrivenTrips, openFor } from "./deletion.ts";
 import { accountHeld } from "./holds.ts";
 
@@ -46,49 +34,6 @@ const {
 // they are. A few steps come first: what was the person's alone (drafts, a
 // trip nobody booked, cars no trip used, their reminders) goes, and their
 // free text kept where only a booking points at them is emptied.
-
-const tables = new Map(
-  (Object.values(schema) as unknown[])
-    .filter((value): value is PgTable => is(value, PgTable))
-    .map((table) => [getTableName(table), table]),
-);
-
-function tableOf(name: string): PgTable {
-  const table = tables.get(name);
-  if (table === undefined) throw new Error(`The catalogue names ${name}, which does not exist.`);
-  return table;
-}
-
-/** The catalogue's tables that erasure changes, with a way to their columns. */
-function catalogued() {
-  return Object.entries(personalData).flatMap(([name, entry]) => {
-    const deletion = entry.onDeletion;
-    if (deletion === null || deletion.rows === "leave") return [];
-    const columns = getTableColumns(tableOf(name)) as Record<string, PgColumn>;
-    const column = (key: string) => {
-      const found = columns[key];
-      if (found === undefined) throw new Error(`Erasure needs ${name}.${key}.`);
-      return found;
-    };
-    return [{ name, entry, deletion, column }];
-  });
-}
-
-/** What emptied columns hold: nothing, or an empty text or list where they must hold one. */
-function emptiedOf(
-  keys: readonly string[],
-  column: (key: string) => PgColumn,
-): Record<string, unknown> {
-  return Object.fromEntries(
-    keys.map((key): [string, unknown] => {
-      const found = column(key);
-      if (!found.notNull) return [key, null];
-      if (found.columnType === "PgText") return [key, ""];
-      if (found.columnType === "PgArray") return [key, []];
-      throw new Error(`No empty value for ${found.name}.`);
-    }),
-  );
-}
 
 /** Bookings someone rode on or still holds seats with: a trip with one is not cancelled. */
 const rodeOrHolding = bookingStatuses.filter(
@@ -215,7 +160,12 @@ async function eraseAccount(
       const marked = table === messages ? { erasedAt: now } : {};
       await tx
         .update(table)
-        .set({ ...emptiedOf(deletion.emptied, column), ...marked, [person]: formerMemberId })
+        .set({
+          ...emptiedOf(deletion.emptied, column),
+          ...freshIdsOf(entry.otherIds),
+          ...marked,
+          [person]: formerMemberId,
+        })
         .where(eq(column(person), userId));
     }
   }

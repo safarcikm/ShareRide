@@ -124,10 +124,12 @@ describe("the operator's decision (3.5, decision 4)", () => {
   });
 
   it("lets the operator read the booking's conversation only for a contested report (R9.6)", () => {
+    const decided: Dispute = { ...contested(absent), outcome: "rode" };
+    const agreed: Dispute = { ...absent, answer: "agreed", outcome: "stands" };
     expect(operatorMayRead(contested(noShow))).toBe(true);
-    expect(operatorMayRead({ ...contested(absent), outcome: "rode" })).toBe(true);
+    expect(operatorMayRead(decided)).toBe(true);
     expect(operatorMayRead(noShow)).toBe(false);
-    expect(operatorMayRead({ ...absent, answer: "agreed", outcome: "stands" })).toBe(false);
+    expect(operatorMayRead(agreed)).toBe(false);
   });
 
   it("decides a contested no-show as standing, ridden or left behind", () => {

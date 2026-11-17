@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { consoleContentSecurityPolicy } from "./admin-app.ts";
 import { createApp } from "./app.ts";
 import { createLogger } from "./logger.ts";
 
@@ -56,6 +57,12 @@ describe("the operator console at /admin (ADR 0028)", () => {
       ]),
     );
     expect(policy).not.toContain("unsafe-inline");
+  });
+
+  it("shows images from photo storage too, and from nowhere else (ADR 0022)", () => {
+    const origin = "https://shareride-photos.hel1.your-objectstorage.com";
+    expect(consoleContentSecurityPolicy(origin).split("; ")).toContain(`img-src 'self' ${origin}`);
+    expect(consoleContentSecurityPolicy().split("; ")).toContain("img-src 'self'");
   });
 
   it("serves its hashed files for a year, and 404 for a missing one", async () => {
