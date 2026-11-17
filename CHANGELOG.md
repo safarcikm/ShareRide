@@ -500,7 +500,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   trip, message or booking that the person cannot see is refused as not
   found; a person cannot report themselves; 10 reports a day, also when
   sent at once. The person reported is never told who reported them.
-  Migration `0034_reports`; `reports` is in the personal data catalogue,
+  Migration `0035_reports`; `reports` is in the personal data catalogue,
   kept 3 years after closing, and chat clean-up keeps a conversation a
   report covers that long. "Download my data" has Reports you sent, never
   a report about the person. The category and outcome texts moved to
@@ -518,7 +518,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   "New report" or "New safety report", never who or what, and one not yet
   sent is dropped once its report is closed or the operator loses the
   role. A new outbox event `ReportFiled`; notifications gain `report_id`,
-  in migration `0034_reports`.
+  in migration `0035_reports`.
 - Suspension, warnings and reinstating (milestone 9, PR 6a, spec 9, 3.4.3
   and 3.6; R9.5, R9.7, R9.10): the operator's `suspend`, `warn` and
   `reinstate` in `apps/api/src/modules/moderation/`, for the console to
@@ -540,7 +540,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   their notice: the push says what happened, the email adds the rule,
   the reason and until when it can be appealed in the app (14 days).
   Two suspensions at once lock their trips in the same order, so they
-  never deadlock. Migration `0035_moderation` adds `moderation_actions`,
+  never deadlock. Migration `0036_moderation` adds `moderation_actions`,
   `users.suspended_until`, `trips.cancelled_by` (earlier cancellations
   are the driver's; empty from the version before, which only drivers
   used) and `notifications.moderation_action_id`; "Download my data" has
@@ -558,7 +558,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   outcome. The person hears "ShareRide answered your appeal" by push and
   email (the email with the answer), and the reporter "Your report" with
   the outcome in general terms, by push. Each writes one audit entry.
-  Migration `0036_appeals` widens the notification and event kinds.
+  Migration `0037_appeals` widens the notification and event kinds.
 - Notices and the suspended account in the app (milestone 9, PR 6c, spec
   9, 3.4.4 and 3.6.2): Profile has Notices, where a notice's push and
   email lead: what ShareRide did and why, the rule, what it concerned,
@@ -589,7 +589,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   "Download my data"; the passengers of a cancelled trip only that
   ShareRide cancelled it. Reversing a hiding on appeal shows the
   content again. Each writes one audit entry. Migration
-  `0037_hidden_content` adds `messages.hidden_at`,
+  `0038_hidden_content` adds `messages.hidden_at`,
   `trips.note_hidden_at` and `users.about_hidden_at`, which "Download my
   data" includes.
 - The console's reports API (milestone 9, PR 7a, spec 9, 3.4 to 3.6):
@@ -833,6 +833,24 @@ releases follow [Semantic Versioning](https://semver.org/).
   pause's reason, pauses it with a reason in both languages and an
   optional end date, brings it back, and retires it after saying whether
   that is at once or after its last trip.
+- Meeting point photos, the API (spec 2, 3.6.3; ADR 0022 and ADR 0029): the console
+  routes under `/admin/v1/meeting-points/{id}/photos` add, describe in both
+  languages, order and remove up to five photos a point, each with an audit
+  entry; the app's meeting point details list them with their
+  descriptions. The domain's `checkPhotoFile` takes only a JPEG made of the
+  segments a picture needs, without metadata, at most 2 MB and 1 600
+  pixels. Photos are kept in the Hetzner
+  bucket (`PHOTO_STORAGE=hetzner`, signed links that last at least an
+  hour), a folder in development, or not at all. Migration
+  `0034_meeting_point_photos` adds the `meeting_point_photos` table.
+- Meeting point photos in the console and the app (milestone 8, PR 8b):
+  a point's page has a Photos panel to add, describe in both languages,
+  order and remove up to five photos. The browser makes each photo at most
+  1 600 pixels and writes a new JPEG, and `stripPhotoMetadata` in the
+  domain keeps only the picture's own segments, so Safari's Exif segment
+  is gone before upload (ADR 0029). The app's meeting point details show
+  the photos above "Where to stand", described for screen readers, with a
+  note in place of a photo that does not load.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.
@@ -855,6 +873,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   notification log and drafts, and the account itself) until its end. The
   `privacy` command shows the last run of each rule (`runs`) and lists,
   sets and ends holds (`holds`, `hold`, `end-hold`), each in the audit log.
+- Trips and bookings are made anonymous 3 years after the trip (spec 11,
+  3.7): the hourly clean-up moves the trip, its bookings, "I'm here" and
+  reports to the former member with their free text emptied, and gives
+  the trip a car of the same make, model and colour without a plate.
+  Stops, prices and payments stay. A hold on the trip, a booking, the
+  driver or a passenger keeps it until the hold ends.
 - Ask about my data in the API (spec 11, 3.6): `POST /v1/me/privacy-requests`
   takes an objection, a restriction, a correction or a question from
   someone with a verified email, at most 5 a day, due a month later. The

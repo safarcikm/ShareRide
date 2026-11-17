@@ -75,7 +75,8 @@ const namesOf = (row: { nameIs: string; nameEn: string | null }) =>
 export interface MeetingPointService {
   /** Every point the map and list show (spec 2, 3.1). */
   list(): Promise<MeetingPointSummary[]>;
-  details(id: string): Promise<MeetingPointDetails | undefined>;
+  /** A point's details, without its photos, which come from the photo service. */
+  details(id: string): Promise<Omit<MeetingPointDetails, "photos"> | undefined>;
   /** Meeting points and places matching a query, best first (spec 2, 3.4). */
   searchPlaces(query: string): Promise<PlaceSearchResult[]>;
   /** The active points a place covers, or the nearest ones when it covers none. */

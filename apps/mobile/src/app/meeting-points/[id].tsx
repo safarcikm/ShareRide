@@ -18,6 +18,7 @@ import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { IcelandMap } from "@/maps/iceland-map";
 import { mapsUrl } from "@/meeting-points/maps-url";
+import { MeetingPointPhotos } from "@/meeting-points/meeting-point-photos";
 import { iconSizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
@@ -85,6 +86,7 @@ function Details({ point }: { readonly point: MeetingPointDetails }) {
         </View>
       ) : null}
       {point.status === "paused" ? <Notice kind="info" message={pausedText} /> : null}
+      <MeetingPointPhotos photos={point.photos} />
       {point.whereToStand === null ? null : (
         <Card>
           <Heading>{t("meetingPoints.whereToStand")}</Heading>

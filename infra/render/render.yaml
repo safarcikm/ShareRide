@@ -51,8 +51,9 @@ services:
       # come from the client and are ignored.
       - key: TRUST_PROXY
         value: "2"
-      # ADMIN_ORIGIN (the operator console, ADR 0028) and the email settings
-      # are added in the dashboard when they are turned on; see the runbook.
+      # ADMIN_ORIGIN (the operator console, ADR 0028), the email settings and
+      # the photo storage settings (ADR 0022) are added in the dashboard when
+      # they are turned on; see the runbook.
 
   # Deletes records past their retention and erases deleted accounts, every hour (UTC).
   - type: cron
