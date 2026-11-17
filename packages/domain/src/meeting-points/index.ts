@@ -7,3 +7,4 @@ export * from "./console-list.ts";
 export * from "./status.ts";
 export * from "./photos.ts";
 export * from "./import.ts";
+export * from "./issues.ts";

@@ -347,7 +347,7 @@ In four parts, each its own pull request:
 - [x] 6b: `GET /v1/me/notices` and the appeal; `closeReport` (with
       `report_closed` to the reporter) and `answerAppeal` (with
       `appeal_answered` to the person; reversing the suspension they are
-      under lifts it); migration `0037_appeals`
+      under lifts it); migration `0038_appeals`
 - [ ] 6c: `operator_notes` and the `hidden_at` columns; `hideContent`
       (reversing it on appeal shows the content again),
       `cancelTripAsOperator` and `refundBooking`
