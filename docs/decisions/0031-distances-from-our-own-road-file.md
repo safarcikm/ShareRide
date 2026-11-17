@@ -1,6 +1,7 @@
 # 0031. Distances between meeting points from our own road file
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-17, by Martin on a decision card in the
+  project thread)
 - **Date:** 2026-11-17
 - **Deciders:** Martin
 - **Supersedes:** in [ADR 0009](0009-maps-and-routing.md) the routing engine
