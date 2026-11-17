@@ -4,6 +4,7 @@ import {
   meetingPointTypes,
   placeKinds,
   regions,
+  type ShelterHours,
 } from "@shareride/domain";
 import { sql } from "drizzle-orm";
 import {
@@ -12,6 +13,7 @@ import {
   date,
   index,
   integer,
+  jsonb,
   pgTable,
   primaryKey,
   smallint,
@@ -46,6 +48,11 @@ export const meetingPoints = pgTable(
       .default(sql`'{}'`),
     whereToStandIs: text(),
     whereToStandEn: text(),
+    /** A week of the shelter's opening hours from Monday, each day null when closed (spec 2, 3.2). */
+    shelterHours: jsonb().$type<ShelterHours>(),
+    /** Such as holiday hours, per language. */
+    shelterNoteIs: text(),
+    shelterNoteEn: text(),
     /** Whole months, 1 to 12, possibly across the new year; null for all year (R2.5). */
     seasonStartMonth: smallint(),
     seasonEndMonth: smallint(),
@@ -53,8 +60,12 @@ export const meetingPoints = pgTable(
     pauseReasonIs: text(),
     pauseReasonEn: text(),
     pausedUntil: date({ mode: "string" }),
+    /** The day the operator last confirmed the point, from a visit or local knowledge (spec 2, decision 2). */
     lastCheckedOn: date({ mode: "string" }),
     reviewDueOn: date({ mode: "string" }),
+    /** When the operator reviewed the amenities and the season, for activation (R2.3). */
+    amenitiesReviewedOn: date({ mode: "string" }),
+    seasonReviewedOn: date({ mode: "string" }),
     /** Sample data for local development and staging (milestone 3, decision 1). */
     sample: boolean().notNull().default(false),
     /** The names and aliases normalised by rule R2.6, for place search. */
@@ -75,6 +86,11 @@ export const meetingPoints = pgTable(
     check(
       "meeting_points_season_check",
       sql`(${table.seasonStartMonth} is null and ${table.seasonEndMonth} is null) or (${table.seasonStartMonth} between 1 and 12 and ${table.seasonEndMonth} between 1 and 12)`,
+    ),
+    // Seven days, Monday first; the domain checks each day's times.
+    check(
+      "meeting_points_shelter_hours_check",
+      sql`case when ${table.shelterHours} is null then true when jsonb_typeof(${table.shelterHours}) = 'array' then jsonb_array_length(${table.shelterHours}) = 7 else false end`,
     ),
     index("meeting_points_location_index").using("gist", table.location),
     index("meeting_points_search_text_index").using("gin", sql`${table.searchText} gin_trgm_ops`),

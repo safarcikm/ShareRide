@@ -70,7 +70,15 @@ See [meeting points](../product/meeting-points.md#data-kept-for-each-meeting-poi
 and [spec 2](../specs/2026-11-13-meeting-points.md#6-data-and-api).
 Location stored as PostGIS `geography(Point, 4326)`. `status` is `draft`,
 `active`, `paused`, `retiring` or `retired`. `search_text` holds the
-normalised names and aliases with a trigram index. Photos are
+normalised names and aliases with a trigram index. `shelter_hours` is a
+week from Monday (`jsonb`, seven entries, each `{ opens, closes }` such as
+`07:00` to `23:30`, or null when closed; a close before the open is after
+midnight), with `shelter_note_is` and `_en`, and only on a point with a
+shelter. `last_checked_on` is the day the operator last confirmed the
+point (spec 2, decision 2); `amenities_reviewed_on` and
+`season_reviewed_on` record the activation checklist's reviews (R2.3).
+The console's rules for each field are `validateMeetingPointDraft` in
+`packages/domain/src/meeting-points/draft.ts`. Photos are
 `MeetingPointPhoto` records. `sample` marks the sample points that local
 and staging databases get until the real list exists (milestone 3); the app
 tags them.

@@ -183,6 +183,13 @@
       "when": 1794887624001,
       "tag": "0025_account_deletion",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794890091562,
+      "tag": "0026_meeting_point_console_fields",
+      "breakpoints": true
     }
   ]
 }

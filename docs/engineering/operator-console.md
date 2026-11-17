@@ -83,6 +83,33 @@ actions with the record's kind first. "Only this record" filters by
 `subjectType` and `subjectId`, so give every action on a record the same
 pair. The page shows `before` and `after` field by field.
 
+## Meeting points
+
+`apps/api/src/modules/meeting-points/admin-routes.ts` holds the console's
+meeting point routes (`registerMeetingPointsAdminRoutes`), with the work in
+`admin-service.ts`:
+
+- `GET /admin/v1/meeting-points` lists every point, drafts and retired
+  ones too, by Icelandic name, with the domain's filters
+  (`matchesConsoleFilters`): status, region, type, season this month,
+  review overdue and part of a name. There are a few hundred points at
+  most, so it filters them all in the API.
+- `POST /admin/v1/meeting-points` adds a draft; `PUT
+  /admin/v1/meeting-points/{id}` saves its fields. Both check the fields
+  with `validateMeetingPointDraft` and answer `validation_failed` with each
+  field and its problem in `details`, which the form shows by its field.
+- An edit sends back the `updatedAt` it loaded. If the point was saved
+  since, the edit is refused with `meeting_point_changed`, so one copy
+  never overwrites a newer one. The comparison is in SQL, to the
+  millisecond, as JavaScript dates hold no more.
+- Only a draft's spot is edited there (`move_needed` otherwise): moving a
+  point in use recomputes its distances and tells the trips that use it
+  (R2.10), its own step. A retired point is not edited
+  (`meeting_point_retired`).
+- Audit entries are `meeting_point.created` with the fields, and
+  `meeting_point.updated` with only the fields that changed. Saving
+  without a change writes nothing.
+
 ## A console page
 
 The console is `apps/admin`: React for the web, built with Vite, served by

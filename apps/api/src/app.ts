@@ -49,8 +49,10 @@ import { createTripDayService, registerTripDayRoutes } from "./modules/trip-day/
 import { createDrivingService, registerDrivingRoutes } from "./modules/driving/index.ts";
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
+  createMeetingPointAdminService,
   createMeetingPointService,
   registerMeetingPointRoutes,
+  registerMeetingPointsAdminRoutes,
 } from "./modules/meeting-points/index.ts";
 import { registerNotificationRoutes } from "./modules/notifications/index.ts";
 import { createPaymentService, registerPaymentRoutes } from "./modules/payments/index.ts";
@@ -262,6 +264,11 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     registerDrivingRoutes(app, driving, requireAuth);
     registerLegalRoutes(app, legal);
     registerMeetingPointRoutes(app, createMeetingPointService(features));
+    registerMeetingPointsAdminRoutes(app, {
+      ...features,
+      meetingPoints: createMeetingPointAdminService(features),
+      requireOperator,
+    });
     // Before the trip routes, so /v1/trips/search is never taken for a trip's ID.
     registerSearchRoutes(app, {
       // Operator settings (feature H4) replace the defaults later.
