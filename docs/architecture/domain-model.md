@@ -285,6 +285,10 @@ cancelled or refunded), `until` (a suspension's end, empty for good),
 `status` to `suspended` with `suspended_until`; the minute job ends it when
 that passes. Each action writes one audit entry and sends the person their
 notice ([spec 9](../specs/2026-11-13-safety-and-moderation.md#36-suspension)).
+The person reads their actions as Notices and appeals one once, within 14
+days of `created_at`; a reinstatement is not appealed. The operator answers
+once, finally; reversing the suspension the person is under (their latest,
+while they are suspended) lifts it, and what it cancelled stays cancelled.
 
 ### Payment
 
@@ -383,8 +387,8 @@ recorded change), `TripChanged` (a new car or stop, likewise), `TripCancelled`, 
 (a request nobody answered, or an accepted booking nobody paid for),
 `BookingWithdrawn`, `BookingCancelled`,
 `TripDeparted`, `CheckedIn`, `PassengerNoShow`, `DriverAbsentReported`,
-`DisputeAnswered`, `DisputeDecided`, `TripCompleted`, `MessageSent`, `ReviewSubmitted`, `ReviewsRevealed`, `ReportFiled`, `ReportResolved`,
-`UserBlocked`, `ModerationActionTaken` (a warning, suspension, reinstatement or other operator action on a person), `SuspensionEnded`, `ContentHidden`,
+`DisputeAnswered`, `DisputeDecided`, `TripCompleted`, `MessageSent`, `ReviewSubmitted`, `ReviewsRevealed`, `ReportFiled`, `ReportClosed` (the reporter is told the outcome),
+`UserBlocked`, `ModerationActionTaken` (a warning, suspension, reinstatement or other operator action on a person), `SuspensionEnded`, `AppealAnswered`, `ContentHidden`,
 `WomenOnlyAccessWithdrawn`, `WomenOnlyAccessRestored`,
 `WeatherWarningMatched`, `RoadClosureMatched`.
 

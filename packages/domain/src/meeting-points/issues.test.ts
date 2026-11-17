@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  checkIssueResolution,
   checkMeetingPointIssue,
   defaultMeetingPointIssueSettings,
   meetingPointIssueLimits,
   meetingPointIssueReasons,
   meetingPointIssueRetryAfter,
+  meetingPointIssuesResolvedBy,
 } from "./issues.ts";
 
 describe("checkMeetingPointIssue", () => {
@@ -73,5 +75,26 @@ describe("meetingPointIssueRetryAfter", () => {
     const sent = [hoursAgo(1), hoursAgo(2)];
     expect(meetingPointIssueRetryAfter(sent, now, { perDay: 3 })).toBeNull();
     expect(meetingPointIssueRetryAfter(sent, now, { perDay: 2 })).toBe(22 * 3_600);
+  });
+});
+
+describe("checkIssueResolution", () => {
+  it("needs a note on what was done, tidied", () => {
+    expect(checkIssueResolution("  Skiltið fært.\n")).toEqual({ ok: true, value: "Skiltið fært." });
+    expect(checkIssueResolution(" \n ")).toEqual({ ok: false, error: { code: "required" } });
+  });
+
+  it("refuses a note over 1 000 characters", () => {
+    const longest = "x".repeat(meetingPointIssueLimits.resolutionMax);
+    expect(checkIssueResolution(longest).ok).toBe(true);
+    expect(checkIssueResolution(`${longest}x`)).toEqual({ ok: false, error: { code: "too_long" } });
+  });
+});
+
+describe("meetingPointIssuesResolvedBy", () => {
+  it("is 12 months back on Iceland's calendar (spec 2, section 7)", () => {
+    expect(meetingPointIssuesResolvedBy(new Date("2026-11-17T12:00:00.000Z"))).toEqual(
+      new Date("2025-11-17T12:00:00.000Z"),
+    );
   });
 });

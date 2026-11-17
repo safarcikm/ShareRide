@@ -14,6 +14,8 @@
 // served at /admin, and E2E_OPERATOR_LINK a file: the API makes a new operator
 // account and writes its passkey setup link there, with passkeys bound to
 // E2E_ADMIN_ORIGIN. Meeting point photos go to a new folder each run.
+// `POST /e2e/suspend` with `{ "phone": "+354…", "reason": "…" }` suspends
+// that person with no end, as the console will, for the safety journey.
 // Never use it for anything else.
 import { randomBytes } from "node:crypto";
 import { appendFileSync, mkdtempSync, writeFileSync } from "node:fs";
@@ -23,7 +25,8 @@ import { serve } from "@hono/node-server";
 import { pingDatabase, schema } from "@shareride/db";
 import { seedDevelopmentData } from "@shareride/db/seed";
 import { freshTestDatabase } from "@shareride/db/testing";
-import { sql } from "drizzle-orm";
+import { operatorRole } from "@shareride/domain";
+import { eq, sql } from "drizzle-orm";
 import { createApp } from "./app.ts";
 import { createLogger } from "./logger.ts";
 import { selectPhotoStorage } from "./platform/select-photo-storage.ts";
@@ -32,6 +35,7 @@ import {
   createPasskeyService,
   runOperatorCommand,
 } from "./modules/admin/index.ts";
+import { createModerationService } from "./modules/moderation/index.ts";
 import { createNotificationWorker } from "./modules/notifications/index.ts";
 import { createExportBuilder, exportCipherPurpose } from "./modules/privacy/index.ts";
 import { moveTripForTests } from "./modules/trip-day/testing.ts";
@@ -156,6 +160,43 @@ app.post("/e2e/trips/:id/move", async (c) => {
   if (typeof minutes !== "number") return c.json({ error: "Send { minutes }." }, 400);
   await moveTripForTests(connection.db, c.req.param("id"), minutes, new Date());
   return c.body(null, 204);
+});
+
+// A suspension, as the console will make it (spec 9, 3.6), by an operator
+// made for these tests.
+const moderation = createModerationService({ db: connection.db, clock });
+let operatorId: string | undefined;
+app.post("/e2e/suspend", async (c) => {
+  const body: unknown = await c.req.json();
+  const field = (name: string) =>
+    typeof body === "object" && body !== null && name in body
+      ? (body as Record<string, unknown>)[name]
+      : undefined;
+  const phone = field("phone");
+  const reason = field("reason");
+  if (typeof phone !== "string" || typeof reason !== "string") {
+    return c.json({ error: "Send { phone, reason }." }, 400);
+  }
+  const { users } = schema;
+  const [person] = await connection.db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.phoneE164, phone));
+  if (person === undefined) return c.json({ error: "No such person." }, 404);
+  if (operatorId === undefined) {
+    const [operator] = await connection.db
+      .insert(users)
+      .values({ locale: "en", firstName: "Operator", roles: [operatorRole] })
+      .returning({ id: users.id });
+    operatorId = operator?.id;
+  }
+  if (operatorId === undefined) return c.json({ error: "No operator." }, 500);
+  const result = await moderation.suspend(
+    { userId: operatorId, sessionId: null },
+    { userId: person.id, rule: "harassment", reason, until: null },
+    null,
+  );
+  return result.ok ? c.json(result.value, 200) : c.json({ error: result.error.code }, 409);
 });
 
 // A browser registers no push token, so nothing is pushed.

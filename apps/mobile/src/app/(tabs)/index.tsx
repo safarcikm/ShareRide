@@ -15,6 +15,7 @@ import { useSaveLanguage } from "@/i18n/use-save-language";
 import { now } from "@/lib/clock";
 import { useLoaded } from "@/lib/use-loaded";
 import { RideItem } from "@/my-rides/ride-row";
+import { SuspendedAccount, suspensionNow } from "@/safety/suspended-account";
 import { useRides } from "@/my-rides/use-rides";
 import { ResultCard } from "@/search/result-card";
 import { openSearch, useRouteSearch } from "@/search/route-search";
@@ -31,6 +32,9 @@ const shownRides = 5;
  * ride". Signing in is in the menu.
  */
 export default function FindScreen() {
+  const suspension = suspensionNow(useMe());
+  // Searching is closed to a suspended person (spec 9, 3.6.2).
+  if (suspension !== null) return <SuspendedAccount suspension={suspension} />;
   return <FrontPage />;
 }
 
