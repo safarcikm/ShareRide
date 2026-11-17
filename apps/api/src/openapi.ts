@@ -2,6 +2,7 @@ import { createRoute, type RouteConfig } from "@hono/zod-openapi";
 import type { RouteDefinition } from "@shareride/contracts";
 import type { Context, MiddlewareHandler } from "hono";
 import type { z } from "zod";
+import { adminPrefix, openAdminRoutes } from "./modules/admin/require-operator.ts";
 
 const json = "application/json";
 
@@ -36,8 +37,11 @@ export function toOpenApiRoute(route: RouteDefinition, auth?: MiddlewareHandler)
     throw new Error(`${route.path} needs its auth middleware.`);
   }
   // The console's cookie is sent only to /admin/v1, and only the console's
-  // guard may open it (ADR 0028).
-  if ((route.auth === "operator") !== route.path.startsWith("/admin/v1/")) {
+  // guard may open it (ADR 0028): a route there needs an operator unless it
+  // is one of the sign-in steps in openAdminRoutes.
+  const underAdmin = route.path.startsWith(`${adminPrefix}/`);
+  const open = openAdminRoutes.has(`${route.method.toUpperCase()} ${route.path}`);
+  if (route.auth === "operator" ? !underAdmin : underAdmin && !open) {
     throw new Error(`${route.path}: console routes, and only they, live under /admin/v1.`);
   }
   const token: Record<string, string[]> = { [bearerAuth]: [] };

@@ -284,8 +284,8 @@ In two parts: 4a the API, 4b the screens and the browser journey.
 
 - [x] `check_ins` and both check-in routes; the push and the conversation
       line; the phase and statuses in the booking and trip answers (4a)
-- [ ] The trip day on the booking page and the driver's trip page (4b)
-- [ ] The browser tests' route that moves a trip's times (4.2) (4b)
+- [x] The trip day on the booking page and the driver's trip page (4b)
+- [x] The browser tests' route that moves a trip's times (4.2) (4b)
 - Verify: integration tests (only the passenger or the driver; outside the
   window refused; a repeat tells nobody again); screen tests; a browser
   journey with a trip moved close: both check in and each sees the other

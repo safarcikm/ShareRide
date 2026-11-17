@@ -32,7 +32,10 @@ export interface AuthenticatedOperator {
 
 export interface OperatorSessionService {
   /** Signs an operator in to the console (after a passkey, ADR 0028). */
-  start(input: { userId: string; device: string | null }): Promise<StartedOperatorSession>;
+  start(
+    input: { userId: string; device: string | null },
+    tx?: Executor,
+  ): Promise<StartedOperatorSession>;
   /**
    * The operator behind a session token, or null. A session that has gone
    * idle, passed 12 hours, or whose account lost the role or was suspended
@@ -42,7 +45,7 @@ export interface OperatorSessionService {
   /** Ends one session; pass the transaction that records why, if there is one. */
   end(sessionId: string, reason: OperatorSessionEndReason, tx?: Executor): Promise<void>;
   /** Ends every console session of an account, for example when its role is removed. */
-  endAllOf(userId: string, reason: OperatorSessionEndReason): Promise<number>;
+  endAllOf(userId: string, reason: OperatorSessionEndReason, tx?: Executor): Promise<number>;
 }
 
 export interface OperatorSessionDependencies {
@@ -73,16 +76,17 @@ export function createOperatorSessionService(
   }
 
   return {
-    async start({ userId, device }) {
+    async start({ userId, device }, tx = db) {
       const token = newToken("operatorSession");
       const now = clock();
-      const [row] = await db
+      const [row] = await tx
         .insert(operatorSessions)
         .values({
           userId,
           tokenHash: hashToken(token),
-          device,
+          device: device === null ? null : device.slice(0, 120),
           lastUsedAt: now,
+          confirmedAt: now,
           createdAt: now,
           updatedAt: now,
         })
@@ -134,8 +138,8 @@ export function createOperatorSessionService(
 
     end,
 
-    async endAllOf(userId, reason) {
-      const ended = await db
+    async endAllOf(userId, reason, tx = db) {
+      const ended = await tx
         .update(operatorSessions)
         .set({ endedAt: clock(), endReason: reason })
         .where(and(eq(operatorSessions.userId, userId), isNull(operatorSessions.endedAt)))

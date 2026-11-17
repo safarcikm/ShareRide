@@ -101,6 +101,12 @@ const environmentSchema = z
     EMAIL_FROM_NAME: z.string().min(1).max(60).default("ShareRide"),
     /** Where links in emails lead: the web app's origin. */
     WEB_APP_URL: originSchema.optional(),
+    /**
+     * The operator console's origin, which its passkeys are bound to (ADR
+     * 0028). In development it is the API's own http://localhost:PORT; on a
+     * server, the console's sign-in is off until it is set.
+     */
+    ADMIN_ORIGIN: originSchema.optional(),
   })
   .superRefine((env, context) => {
     if (env.NODE_ENV === "production" && env.AUTH_SECRET.startsWith("local-only-")) {
@@ -243,6 +249,8 @@ export interface Config {
   readonly push: { readonly accessToken: string | undefined };
   /** Who sends email, if anyone (ADR 0027). */
   readonly email: EmailConfig;
+  /** The console's origin for passkeys; undefined turns its sign-in off (ADR 0028). */
+  readonly adminOrigin: string | undefined;
 }
 
 export class ConfigError extends Error {
@@ -283,6 +291,29 @@ const errorReportingSchema = z.object({
   /** Set by Render to the commit it built. */
   RENDER_GIT_COMMIT: z.string().min(1).optional(),
 });
+
+const adminOriginSchema = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]),
+  PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
+  ADMIN_ORIGIN: originSchema.optional(),
+});
+
+function adminOriginOf(env: z.infer<typeof adminOriginSchema>): string | undefined {
+  return (
+    env.ADMIN_ORIGIN ??
+    (env.NODE_ENV === "production" ? undefined : `http://localhost:${String(env.PORT)}`)
+  );
+}
+
+/**
+ * The console's origin alone, for the `operator` command: ADMIN_ORIGIN, or
+ * the API's own address in development; undefined on a server without it.
+ */
+export function loadAdminOrigin(
+  environment: Readonly<Record<string, string | undefined>>,
+): string | undefined {
+  return adminOriginOf(parseOrThrow(adminOriginSchema, environment));
+}
 
 /**
  * The error tracking settings alone, for commands such as the clean-up that
@@ -365,5 +396,6 @@ export function loadConfig(environment: Readonly<Record<string, string | undefin
     worker: env.WORKER,
     push: { accessToken: env.EXPO_ACCESS_TOKEN },
     email: emailConfig(env),
+    adminOrigin: adminOriginOf(env),
   };
 }
