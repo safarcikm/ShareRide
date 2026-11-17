@@ -52,6 +52,13 @@ export const notificationRules = {
   payout_sent: { push: false, email: "always", sms: false },
   checked_in: { push: true, email: "never", sms: false },
   checked_in_driver: { push: true, email: "never", sms: false },
+  // Reports on the trip day (spec 8, 3.3 to 3.5, 3.9): the other side is
+  // asked to answer within 24 hours, and both are told the operator's
+  // decision. Push and email, so nobody misses the deadline.
+  no_show_marked: { push: true, email: "always", sms: false },
+  driver_absent_reported: { push: true, email: "always", sms: false },
+  dispute_decided: { push: true, email: "always", sms: false },
+  dispute_decided_driver: { push: true, email: "always", sms: false },
   // News about the account rather than a trip (spec 11): the texts say what
   // is ready and until when, never a link (spec 11, 7).
   data_export_ready: { push: true, email: "always", sms: false },
@@ -97,7 +104,13 @@ export type NotificationEvent =
   | { readonly type: "ReminderDue"; readonly which: "evening" | "hour"; readonly to: TripRole }
   | { readonly type: "PayoutSent" }
   /** "I'm here" (spec 8, 3.2): `by` said it, and the other side at that stop is told. */
-  | { readonly type: "CheckedIn"; readonly by: TripRole };
+  | { readonly type: "CheckedIn"; readonly by: TripRole }
+  /** The driver marked the passenger a no-show (spec 8, 3.3): the passenger may answer. */
+  | { readonly type: "NoShowMarked" }
+  /** The passenger said the driver didn't come (3.4): the driver may answer. */
+  | { readonly type: "DriverAbsentReported" }
+  /** The operator decided a contested report (3.5): both are told. */
+  | { readonly type: "DisputeDecided" };
 
 export interface Addressed {
   readonly kind: NotificationKind;
@@ -172,6 +185,15 @@ export function notificationsFor(event: NotificationEvent): readonly Addressed[]
       return event.by === "driver"
         ? [{ kind: "checked_in", to: "passenger" }]
         : [{ kind: "checked_in_driver", to: "driver" }];
+    case "NoShowMarked":
+      return [{ kind: "no_show_marked", to: "passenger" }];
+    case "DriverAbsentReported":
+      return [{ kind: "driver_absent_reported", to: "driver" }];
+    case "DisputeDecided":
+      return [
+        { kind: "dispute_decided", to: "passenger" },
+        { kind: "dispute_decided_driver", to: "driver" },
+      ];
   }
 }
 

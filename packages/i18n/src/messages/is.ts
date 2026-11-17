@@ -868,6 +868,7 @@ export const is = {
   "cancelReason.carSmaller": "Bíllinn er minni en til stóð",
   "cancelReason.foundAnother": "Fann annað far",
   "cancelReason.tripChanged": "Ferðin breyttist",
+  "cancelReason.driverAbsent": "Bílstjórinn kom ekki",
   "booking.searchAgain": "Leita aftur",
   "booking.notFound": "Þessi bókun finnst ekki.",
   "booking.failed": "Ekki tókst að hlaða bókuninni.",

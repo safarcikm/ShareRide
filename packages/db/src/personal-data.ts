@@ -164,6 +164,15 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     // "I'm here" times, a time only, matter to the other side if they disagree (spec 8, 3.5).
     onDeletion: keep([]),
   },
+  disputes: {
+    category: "trips_and_bookings",
+    export: { section: "bookings" },
+    personColumns: [],
+    // What was reported and how it ended decide a refund and reliability
+    // for the other side too (spec 8, 3.5). The notes were for the
+    // operator, and go.
+    onDeletion: keep(["kind", "answer", "outcome", "decidedBy"], ["note", "answerNote"]),
+  },
   booking_segment_prices: {
     category: "trips_and_bookings",
     export: { section: "bookings" },

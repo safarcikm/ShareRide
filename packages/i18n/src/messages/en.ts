@@ -860,6 +860,7 @@ export const en = {
   "cancelReason.carSmaller": "The car is smaller than planned",
   "cancelReason.foundAnother": "Found another ride",
   "cancelReason.tripChanged": "The trip changed",
+  "cancelReason.driverAbsent": "The driver didn't come",
   "booking.searchAgain": "Search again",
   "booking.notFound": "This booking can't be found.",
   "booking.failed": "The booking could not be loaded.",
