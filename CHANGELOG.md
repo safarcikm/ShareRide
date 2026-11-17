@@ -547,6 +547,11 @@ releases follow [Semantic Versioning](https://semver.org/).
   first-passkey setup with passkeys (`@simplewebauthn/browser`), the home
   page, the passkeys page, Icelandic and English, and the console in the
   API image.
+- The audit log page in the console (spec 9, 3.8) and
+  `GET /admin/v1/audit-log`: entries newest first, 50 at a time, filtered
+  by the start of the action, the record, the operator and days in Iceland,
+  each with its changes, network address and device. The filters stay in
+  the address, so a filtered log can be reloaded or shared.
 
 - Privacy self-service, part 1 (spec 11): the rules in the domain (what
   is open before deleting an account, the 7-day wait, what deletion does to
