@@ -12,7 +12,7 @@ import {
 } from "@shareride/domain";
 import { z } from "zod";
 import { cancellationTermsSchema, moneySchema, timestampSchema } from "./common.ts";
-import { errorResponseSchema } from "./errors.ts";
+import { accountSuspendedResponse, errorResponseSchema } from "./errors.ts";
 import { localisedTextSchema, meetingPointSummarySchema } from "./meeting-points.ts";
 import { bookingReviewSchema } from "./reviews.ts";
 import { defineRoute } from "./route.ts";
@@ -256,13 +256,13 @@ export const bookTripRoute = defineRoute({
     401: unauthenticated,
     403: {
       description:
-        "account_incomplete: verify the phone number and accept the current terms first (R5.1); own_trip; account_deletion_pending: the passenger is deleting their account (spec 11, 3.4)",
+        "account_incomplete: verify the phone number and accept the current terms first (R5.1); own_trip; account_suspended, with `suspendedUntil` (spec 9, 3.6.2); account_deletion_pending: the passenger is deleting their account (spec 11, 3.4)",
       ...errors,
     },
     404: { description: "not_found: no such published trip", ...errors },
     409: {
       description:
-        "seats_taken (with `freeSeats`), price_changed (with the current `total`), stops_changed (`fromPoint` or `toPoint` is no longer at its position), overlapping_booking, booking_closed or trip_not_bookable",
+        "seats_taken (with `freeSeats`), price_changed (with the current `total`), stops_changed (`fromPoint` or `toPoint` is no longer at its position), overlapping_booking, booking_closed or trip_not_bookable (also while its driver is suspended)",
       ...errors,
     },
   },
@@ -405,6 +405,7 @@ export const acceptRequestRoute = defineRoute({
   responses: {
     200: { description: "The accepted booking", schema: bookingSchema },
     401: unauthenticated,
+    403: accountSuspendedResponse,
     404: notFound,
     409: notRequested,
   },

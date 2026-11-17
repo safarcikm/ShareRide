@@ -176,7 +176,8 @@ accepted 2026-11-16; built alongside milestones 7 and 8)
 - [x] Block and unblock
 - [x] Reports and My reports
 - [x] The operator's alert for new reports
-- [ ] Moderation actions, suspension and appeals
+- [x] Suspension, warnings and reinstating (the API)
+- [ ] Hidden content, notices and appeals
 - [ ] Console: the reports queue, the report page and appeals
 - [ ] Console: users, trips and bookings
 

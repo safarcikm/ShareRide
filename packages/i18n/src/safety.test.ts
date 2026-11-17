@@ -1,6 +1,6 @@
-import { reportCategories, reportOutcomes } from "@shareride/domain";
+import { moderationRules, reportCategories, reportOutcomes } from "@shareride/domain";
 import { describe, expect, it } from "vitest";
-import { reportCategoryText, reportOutcomeText } from "./safety.ts";
+import { moderationRuleText, reportCategoryText, reportOutcomeText } from "./safety.ts";
 import { createTranslator } from "./translator.ts";
 
 const en = createTranslator("en");
@@ -24,5 +24,16 @@ describe("reports in the reader's language (spec 9, 3.1)", () => {
     expect(reportOutcomeText(en, "no_breach")).toBe(
       "We've looked into your report and found no breach of our rules.",
     );
+  });
+});
+
+describe("the rules an operator's action concerns (spec 9, R9.5)", () => {
+  it("name every rule, each differently, in both languages", () => {
+    for (const t of [en, is]) {
+      const texts = moderationRules.map((rule) => moderationRuleText(t, rule));
+      expect(new Set(texts).size).toBe(moderationRules.length);
+    }
+    expect(moderationRuleText(en, "scam")).toBe("Scams and payments outside the app");
+    expect(moderationRuleText(is, "reliability")).toBe("Áreiðanleiki");
   });
 });

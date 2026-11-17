@@ -44,6 +44,8 @@ export const exportSections = [
   "reports",
   /** Blocks the person made, never who blocked them (spec 9). */
   "blocks",
+  /** What ShareRide did about the person and why, with their appeals; never which operator (spec 9, R9.5). */
+  "notices",
   "notifications",
   "privacy_requests",
 ] as const;

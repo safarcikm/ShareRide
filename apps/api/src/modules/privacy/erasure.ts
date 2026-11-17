@@ -67,6 +67,8 @@ async function eraseAccount(
     .set({
       status: "cancelled",
       cancelledAt: now,
+      // Theirs to end: they deleted their account.
+      cancelledBy: "driver",
       cancelReason: "other",
       countsOnReliability: false,
       updatedAt: now,

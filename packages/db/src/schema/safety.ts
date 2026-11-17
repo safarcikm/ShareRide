@@ -1,4 +1,8 @@
 import {
+  appealOutcomes,
+  moderatedContent,
+  moderationActionKinds,
+  moderationRules,
   reportCategories,
   reportOutcomes,
   reportStatuses,
@@ -96,5 +100,68 @@ export const reports = pgTable(
     index("reports_trip_index").on(table.tripId),
     index("reports_booking_index").on(table.bookingId),
     index("reports_message_index").on(table.messageId),
+  ],
+);
+
+/**
+ * An operator's action that affects a person (spec 9, 3.4.3 and 3.6; R9.5):
+ * what was done, which rule it concerns, the reason as the person reads it
+ * in their notice, the content affected, the end of a suspension, and the
+ * appeal with its answer. Seen by the operator and, as their notice, by the
+ * person; kept 3 years after it closes (spec 9, section 7).
+ */
+export const moderationActions = pgTable(
+  "moderation_actions",
+  {
+    id: id(),
+    /** The person affected; empty once their account is deleted. */
+    userId: uuid().references(() => users.id, { onDelete: "set null" }),
+    kind: text().notNull(),
+    /** The report that led to it, if any. */
+    reportId: uuid().references(() => reports.id, { onDelete: "set null" }),
+    /** The community rule it concerns; none for a reinstatement. */
+    rule: text(),
+    /** Written for the person: their statement of reasons, or the reinstatement's note. */
+    reason: text().notNull(),
+    /** The content affected: a message, review, trip note, bio, trip or booking. */
+    contentKind: text(),
+    contentId: uuid(),
+    /** The end of a suspension; empty for one for good, and for every other kind. */
+    until: at(),
+    operatorId: uuid().references(() => users.id, { onDelete: "set null" }),
+    /** The appeal, once, within 14 days (R9.5), and the operator's final answer. */
+    appealText: text(),
+    appealedAt: at(),
+    appealAnswer: text(),
+    appealOutcome: text(),
+    appealAnsweredAt: at(),
+    appealAnsweredById: uuid().references(() => users.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (table) => [
+    check("moderation_actions_kind_check", oneOf(table.kind, moderationActionKinds)),
+    check(
+      "moderation_actions_rule_check",
+      sql`(${table.kind} = 'reinstatement') = (${table.rule} is null) and (${table.rule} is null or ${oneOf(table.rule, moderationRules)})`,
+    ),
+    check(
+      "moderation_actions_content_check",
+      sql`(${table.contentKind} is null) = (${table.contentId} is null) and (${table.contentKind} is null or ${oneOf(table.contentKind, moderatedContent)})`,
+    ),
+    check(
+      "moderation_actions_until_check",
+      sql`${table.until} is null or ${table.kind} = 'suspension'`,
+    ),
+    check(
+      "moderation_actions_appeal_check",
+      sql`(${table.appealText} is null) = (${table.appealedAt} is null) and (${table.appealAnsweredAt} is null or ${table.appealedAt} is not null) and (${table.appealAnsweredAt} is null) = (${table.appealOutcome} is null) and (${table.appealAnsweredAt} is null) = (${table.appealAnswer} is null)`,
+    ),
+    check(
+      "moderation_actions_outcome_check",
+      sql`${table.appealOutcome} is null or ${oneOf(table.appealOutcome, appealOutcomes)}`,
+    ),
+    // A person's notices, the latest first.
+    index("moderation_actions_user_index").on(table.userId, table.createdAt),
+    index("moderation_actions_report_index").on(table.reportId),
   ],
 );
