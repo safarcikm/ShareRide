@@ -824,8 +824,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   builder, keeping the roads cars may use without F roads, closed roads
   and ferries, with a typical speed for each. The domain reads it, joins a
   meeting point to the nearest road within 1 km and finds the fastest way,
-  one-way roads included. How to update the map data:
-  `docs/engineering/road-file.md`.
+  one-way roads included. The file in the repository is from map data of
+  16 November 2026 (19 474 km of road, 0.9 MB); a test checks known
+  distances and that every sample meeting point reaches every other. How
+  to update the map data: `docs/engineering/road-file.md`.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.
