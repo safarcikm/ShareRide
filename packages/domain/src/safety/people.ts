@@ -9,7 +9,7 @@ export type OperatorNoteProblem = { readonly code: "note_missing" } | { readonly
 
 /**
  * A note an operator writes about a person: trimmed, not empty, as long as a
- * statement's reason at most. The person gets it in Download my data (Q25).
+ * statement's reason at most. The person gets it in Download my data (A48).
  */
 export function checkOperatorNote(
   text: string,

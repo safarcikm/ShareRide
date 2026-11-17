@@ -429,7 +429,7 @@ Split in two, as PR 7 was: 8a the API, 8b the pages.
   action audited); a console browser journey: find a user and reinstate
   them
 - Found while building (8a): a person's notes are in their Download my
-  data, without who wrote them, until Martin answers open question Q25.
+  data, without who wrote them: Martin agreed (A48, open question Q25).
   Decline rates count the requests made in the last 90 days that the
   driver accepted or declined; a request declined because its trip was
   cancelled is no answer. Searching by phone reads a number without +354
