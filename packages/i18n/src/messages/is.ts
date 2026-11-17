@@ -1184,6 +1184,10 @@ export const is = {
   "notify.noticeBody": "Lestu ástæðuna í ShareRide.",
   "notify.reinstatedBody": "Þú getur notað ShareRide eins og áður.",
   "notify.suspensionEnded": "Lokuninni er lokið. Þú getur notað ShareRide eins og áður.",
+  "notify.appealAnswered": "ShareRide svaraði andmælum þínum",
+  "notify.appealUpheld": "Við skoðuðum málið aftur og ákvörðunin stendur.",
+  "notify.appealReversed": "Við skoðuðum málið aftur og breyttum ákvörðuninni.",
+  "notify.reportClosed": "Niðurstaða tilkynningar þinnar",
   /** An operator's action, as the person is told (spec 9, 3.4.4; R9.5). */
   "notice.title.warning": "Viðvörun frá ShareRide",
   "notice.title.content_hidden": "Við fjarlægðum efni frá þér",
@@ -1195,6 +1199,7 @@ export const is = {
   "notice.rule": "Regla: {rule}",
   "notice.reason": "Ástæða: {reason}",
   "notice.note": "Athugasemd: {note}",
+  "notice.answer": "Svar okkar: {answer}",
   "notice.appealUntil":
     "Ef þú ert ósammála geturðu andmælt í ShareRide, undir Skilaboð frá ShareRide, til {until}.",
   "notice.open": "Opna skilaboðin þín í ShareRide",
@@ -1587,6 +1592,8 @@ export const is = {
   "export.value.kind.report_filed_urgent": "Ný öryggistilkynning",
   "export.value.kind.moderation_action": "Skilaboð frá ShareRide",
   "export.value.kind.suspension_ended": "Lokun lokið",
+  "export.value.kind.appeal_answered": "Svar við andmælum",
+  "export.value.kind.report_closed": "Niðurstaða tilkynningar",
   "export.value.kind.warning": "Viðvörun",
   "export.value.kind.content_hidden": "Efni fjarlægt",
   "export.value.kind.suspension": "Lokun aðgangs",

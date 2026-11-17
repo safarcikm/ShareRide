@@ -337,18 +337,21 @@ Built in two parts: 5a the reports themselves, 5b the operator's alert.
 
 ### PR 6: `feat(moderation)`: actions, suspension and appeals
 
-In three parts, each its own pull request:
+In four parts, each its own pull request:
 
 - [x] 6a: `moderation_actions` and `suspended_until` (migration
       `0036_moderation`); `suspend`, `warn` and `reinstate` with their
       audit entries and notices; ShareRide's cancellation of a trip and of
       a booking (`trips.cancelled_by`); refusals while suspended, and a
       suspended person stays signed in; ends in the minute job
-- [ ] 6b: `operator_notes` and the `hidden_at` columns; `hideContent`,
-      `cancelTripAsOperator`, `refundBooking`, `closeReport` (with
-      `report_closed` to the reporter) and `answerAppeal`;
-      `GET /v1/me/notices` and the appeal
-- [ ] 6c: Notices with Appeal, and the suspended account screen
+- [x] 6b: `GET /v1/me/notices` and the appeal; `closeReport` (with
+      `report_closed` to the reporter) and `answerAppeal` (with
+      `appeal_answered` to the person; reversing the suspension they are
+      under lifts it); migration `0038_appeals`
+- [ ] 6c: `operator_notes` and the `hidden_at` columns; `hideContent`
+      (reversing it on appeal shows the content again),
+      `cancelTripAsOperator` and `refundBooking`
+- [ ] 6d: Notices with Appeal, and the suspended account screen
 - Verify: integration tests (a suspension cancels upcoming trips and
   bookings with full refunds and tells the others without the reason; a
   suspended person can read but not act; an appeal once, within 14 days;

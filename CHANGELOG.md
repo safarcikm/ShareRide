@@ -546,6 +546,19 @@ releases follow [Semantic Versioning](https://semver.org/).
   used) and `notifications.moderation_action_id`; "Download my data" has
   Notices from ShareRide, the suspension's end, and who cancelled each
   trip.
+- Notices, appeals and closing reports (milestone 9, PR 6b, spec 9, 3.1.6
+  and 3.4.4; R9.5): `GET /v1/me/notices` lists what ShareRide did about
+  the person and why, the latest first, never which operator; `POST
+  /v1/me/notices/{id}/appeal` takes one appeal of up to 1 000 characters
+  within 14 days, also while suspended (409 `not_appealable` for a
+  reinstatement, `already_appealed`, `appeal_window_closed`). For the
+  console, the operator's `answerAppeal` answers once and finally;
+  reversing the suspension the person is under lifts it, while what it
+  cancelled stays cancelled. `closeReport` closes a report with its
+  outcome. The person hears "ShareRide answered your appeal" by push and
+  email (the email with the answer), and the reporter "Your report" with
+  the outcome in general terms, by push. Each writes one audit entry.
+  Migration `0038_appeals` widens the notification and event kinds.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its
