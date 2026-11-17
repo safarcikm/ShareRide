@@ -145,7 +145,12 @@ describe("trips depart and complete on their own (spec 8, 3.6; R8.1, R8.2)", () 
     const { db } = api.connection;
     await db
       .update(schema.trips)
-      .set({ status: "cancelled", cancelledAt: api.now(), cancelReason: "illness" })
+      .set({
+        status: "cancelled",
+        cancelledAt: api.now(),
+        cancelledBy: "driver",
+        cancelReason: "illness",
+      })
       .where(eq(schema.trips.id, airport));
     await db.update(schema.trips).set({ status: "draft" }).where(eq(schema.trips.id, north));
     await until((await trip(north)).arrivesAt, 3 * 3600);

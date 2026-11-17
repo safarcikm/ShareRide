@@ -13,6 +13,7 @@ import {
   routeLegPairs,
   runsOrRan,
   stopsToCopy,
+  type AccountSuspended,
   type DistancesMissing,
   type MeetingPointStatus,
   type PublishProblem,
@@ -23,6 +24,7 @@ import {
   type TripSettings,
 } from "@shareride/domain";
 import { and, asc, count, desc, eq, gt, inArray, isNull, lte, min, ne, or, sql } from "drizzle-orm";
+import { lockActive } from "../account/standing.ts";
 import type { DrivingService } from "../driving/index.ts";
 import { seatsTakenNow } from "../bookings/seats.ts";
 import { toSummary } from "../meeting-points/service.ts";
@@ -88,7 +90,10 @@ export interface TripService {
     userId: string,
     tripId: string,
   ): Promise<
-    Result<MyTrip, NotFound | NotDraft | NotPublishable | DistancesMissing | DeletionPending>
+    Result<
+      MyTrip,
+      NotFound | NotDraft | NotPublishable | DistancesMissing | AccountSuspended | DeletionPending
+    >
   >;
   /**
    * Post again, or the return (spec 6, 3.6): a new draft with the trip's
@@ -578,13 +583,15 @@ export function createTripService(dependencies: {
     async publish(userId, tripId) {
       const readiness = await driving.readiness(userId);
       return db.transaction(async (tx) => {
-        // One publish at a time per driver, so two cannot overlap (R3.7).
-        // Deleting an account takes the same lock before it checks.
+        // One publish at a time per driver, so two cannot overlap (R3.7);
+        // none while suspended (spec 9, 3.6.2). Deleting an account takes
+        // the same lock before it checks.
+        const active = await lockActive(tx, userId, clock());
+        if (!active.ok) return active;
         const [driver] = await tx
           .select({ deleteAfter: users.deleteAfter })
           .from(users)
-          .where(eq(users.id, userId))
-          .for("update");
+          .where(eq(users.id, userId));
         if (driver === undefined || driver.deleteAfter !== null) {
           return err({ code: "account_deletion_pending" });
         }

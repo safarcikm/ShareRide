@@ -38,6 +38,7 @@ import {
   registerAccountRoutes,
   registerEmailRoutes,
 } from "./modules/account/index.ts";
+import { checkStanding } from "./modules/account/standing.ts";
 import {
   createAuthService,
   createOptionalAuth,
@@ -319,6 +320,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       limiter: createMemoryRateLimiter({ rules: searchLimitsPerAddress, clock: features.clock }),
       // A keyed hash, as for sign-in limits: no plain address is kept, even in memory.
       clientKey: (c) => features.hasher("search-address", addressBlock(features.clientAddress(c))),
+      standing: (userId) => checkStanding(features.db, userId, features.clock()),
     });
     const settings = defaultTripSettings;
     registerTripRoutes(app, createRouteService({ ...features, settings }), requireAuth);
