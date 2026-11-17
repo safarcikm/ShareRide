@@ -172,7 +172,8 @@ export function createTripDetailsService(dependencies: {
             ? null
             : { make: car.make, model: car.model, colour: car.colour as CarColour },
         preferences: choices.preferences,
-        note: trip.note,
+        // A note ShareRide hid is not shown, until the driver writes a new one (spec 9, 3.4.3).
+        note: trip.noteHiddenAt === null ? trip.note : "",
         bookingMode: choices.bookingMode,
         myBooking: myBooking ?? null,
         drivenByMe: viewerId !== null && viewerId === trip.driverId,

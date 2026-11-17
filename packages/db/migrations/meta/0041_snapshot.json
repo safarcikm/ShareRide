@@ -1,5 +1,5 @@
 {
-  "id": "507a3ce1-a89d-46e0-9f6b-07c62f4251ec",
+  "id": "144bd486-dca4-4bb2-b4cc-8cd200280969",
   "prevId": "e6ff565b-df46-4017-b301-b57a6ceb79f4",
   "version": "7",
   "dialect": "postgresql",
@@ -1328,26 +1328,6 @@
           "notNull": true,
           "default": false
         },
-        "excused_by_reason": {
-          "name": "excused_by_reason",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "overruled_at": {
-          "name": "overruled_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "overrule_note": {
-          "name": "overrule_note",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
         "departs_at_when_booked": {
           "name": "departs_at_when_booked",
           "type": "timestamp with time zone",
@@ -1525,10 +1505,6 @@
           "name": "bookings_cancel_note_check",
           "value": "char_length(\"bookings\".\"cancel_note\") <= 500"
         },
-        "bookings_overrule_note_check": {
-          "name": "bookings_overrule_note_check",
-          "value": "char_length(\"bookings\".\"overrule_note\") <= 500"
-        },
         "bookings_refund_check": {
           "name": "bookings_refund_check",
           "value": "\"bookings\".\"refund_amount\" is null or \"bookings\".\"refund_amount\" between 0 and \"bookings\".\"total_price\""
@@ -1688,6 +1664,12 @@
         },
         "erased_at": {
           "name": "erased_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hidden_at": {
+          "name": "hidden_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
@@ -5943,6 +5925,12 @@
           "notNull": true,
           "default": "''"
         },
+        "note_hidden_at": {
+          "name": "note_hidden_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "departs_at": {
           "name": "departs_at",
           "type": "timestamp with time zone",
@@ -5998,26 +5986,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
-        },
-        "excused_by_reason": {
-          "name": "excused_by_reason",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "overruled_at": {
-          "name": "overruled_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "overrule_note": {
-          "name": "overrule_note",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
         },
         "sample": {
           "name": "sample",
@@ -6157,10 +6125,6 @@
           "name": "trips_cancel_note_check",
           "value": "char_length(\"trips\".\"cancel_note\") <= 500"
         },
-        "trips_overrule_note_check": {
-          "name": "trips_overrule_note_check",
-          "value": "char_length(\"trips\".\"overrule_note\") <= 500"
-        },
         "trips_times_check": {
           "name": "trips_times_check",
           "value": "(\"trips\".\"departs_at\" is null) = (\"trips\".\"arrives_at\" is null) and (\"trips\".\"status\" = 'draft' or \"trips\".\"departs_at\" is null or \"trips\".\"departs_at\" < \"trips\".\"arrives_at\")"
@@ -6204,6 +6168,12 @@
         "about": {
           "name": "about",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "about_hidden_at": {
+          "name": "about_hidden_at",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },

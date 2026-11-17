@@ -232,8 +232,9 @@ Domain functions in `packages/domain`: whether two users can see each other
 trips and bookings, and the reliability effect of an operator cancellation.
 
 Events: `ReportFiled` (existing), `ReportClosed`, `UserBlocked`,
-`ModerationActionTaken` (a warning, suspension, reinstatement or other
-action on a person), `SuspensionEnded`, `AppealAnswered`, `ContentHidden`. Notifications through
+`ModerationActionTaken` (a warning, content hidden, a suspension,
+reinstatement, trip cancelled or other action on a person),
+`SuspensionEnded`, `AppealAnswered`. Notifications through
 spec 7: the reporter on the outcome (push), the affected user on an action
 (email, and push where they have it), the operator on new reports
 (push, and SMS for safety reports from 07:00 to 23:00).

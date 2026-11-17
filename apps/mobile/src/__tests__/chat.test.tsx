@@ -127,6 +127,40 @@ describe("A conversation (spec 7, 3.1)", () => {
     expect(reads(client)).toEqual([hi.id]);
   });
 
+  it("says Removed by ShareRide for a message ShareRide removed, mine or theirs, with nothing to report (spec 9, 3.4.3)", async () => {
+    const theirs = chatMessage({
+      id: messageId(5),
+      text: null,
+      removed: true,
+      sentAt: "2026-11-14T11:59:00.000Z",
+    });
+    const mine = chatMessage({
+      id: messageId(6),
+      from: "me",
+      text: null,
+      removed: true,
+      clientId: "0190a1d6-0000-7000-8000-a00000000006",
+      sentAt: "2026-11-14T12:00:00.000Z",
+    });
+    await openConversation({ messages: [openedLine, theirs, mine] });
+    expect(await screen.findAllByText("Removed by ShareRide")).toHaveLength(2);
+    expect(
+      screen
+        .getAllByLabelText(/^(You|Anna), /)
+        .map((item) => (item.props as { accessibilityLabel: string }).accessibilityLabel),
+    ).toEqual([
+      "You, Sent with the request: One small bag.",
+      "Anna, 11:59: Removed by ShareRide",
+      "You, 12:00: Removed by ShareRide",
+    ]);
+    // Nothing left to report, so no hint about how.
+    expect(screen.queryByText(/Press and hold/)).toBeNull();
+    const [removed] = screen.getAllByText("Removed by ShareRide");
+    if (removed === undefined) throw new Error("No removed message.");
+    await fireEvent(removed, "longPress");
+    expect(screen.queryByRole("header", { name: "Report message" })).toBeNull();
+  });
+
   it("says who cancelled the booking and why, in the reader's words (spec 6)", async () => {
     const cancelled = chatMessage({
       id: messageId(5),
