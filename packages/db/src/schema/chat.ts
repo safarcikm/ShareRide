@@ -64,6 +64,8 @@ export const messages = pgTable(
      * time is over (spec 9, section 7).
      */
     erasedAt: at(),
+    /** When ShareRide removed it (spec 9, 3.4.3): both read "Removed by ShareRide". */
+    hiddenAt: at(),
     /**
      * Whether the driver or the passenger sent it, kept when erasure keeps
      * what it said for a report: its sender is then the former member, and

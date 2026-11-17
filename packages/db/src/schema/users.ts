@@ -20,6 +20,8 @@ export const users = pgTable(
     phoneVerifiedAt: at(),
     firstName: text(),
     about: text(),
+    /** When ShareRide hid About you from others (spec 9, 3.4.3); a new text is shown again. */
+    aboutHiddenAt: at(),
     /** ISO 639-1 codes of languages the person speaks. */
     languages: text()
       .array()

@@ -4,9 +4,9 @@ import {
   formatClock,
   formatDate,
   formatDay,
+  moderatedContentText,
   moderationRuleText,
   type Locale,
-  type MessageKey,
   type Translate,
 } from "@shareride/i18n";
 import { useState } from "react";
@@ -22,15 +22,6 @@ import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 const maxLength = defaultSafetySettings.textMaxLength;
-
-const contentKeys = {
-  message: "notices.content.message",
-  review: "notices.content.review",
-  trip_note: "notices.content.tripNote",
-  about: "notices.content.about",
-  trip: "notices.content.trip",
-  booking: "notices.content.booking",
-} as const satisfies Record<NonNullable<NoticeData["content"]>["kind"], MessageKey>;
 
 /** "Sunday 13 December at 12:00", in Iceland's time. */
 export function momentText(t: Translate, locale: Locale, iso: string): string {
@@ -88,9 +79,7 @@ export function NoticeCard({
             : t("notice.reason", { reason: notice.reason })}
         </Text>
         {notice.content === null ? null : (
-          <Text style={body}>
-            {t("notices.concerns", { content: t(contentKeys[notice.content.kind]) })}
-          </Text>
+          <Text style={body}>{moderatedContentText(t, notice.content.kind)}</Text>
         )}
         <Appeal notice={notice} onChange={onChange} onStale={onStale} onAnnounce={onAnnounce} />
       </View>
