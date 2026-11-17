@@ -115,11 +115,13 @@ decision, with every operator action logged.
    held payout (spec 13); cancel an upcoming trip as the operator (full
    refunds; it does not count on the driver's reliability unless the operator
    says so); withdraw access to women-only trips (spec 14).
-4. **Statement of reasons:** every action that affects a user sends them an
-   email in their language with what was done, which community rule it
-   concerns, the content affected, and how to appeal: by replying to that
-   email within 14 days. The operator looks at the appeal and answers; that
-   answer is final in the app.
+4. **Statement of reasons:** every action that affects a user appears in
+   the app under Notices, in their language, with what was done, which
+   community rule it concerns, the content affected, and how to appeal: once,
+   in the app, within 14 days. A copy goes by email to a verified address
+   (milestone 9 plan, decision 1, which replaced appealing by replying to
+   the email). The operator looks at the appeal and answers; that answer is
+   final in the app.
 5. **Other checks:** the console lists each driver's request decline rate,
    so a pattern that could be discrimination can be looked at (spec 5).
 
@@ -214,6 +216,8 @@ Endpoints (`/v1`, shapes defined in `packages/contracts`):
 | `GET /me/reports` | My reports and their outcomes |
 | `POST /bookings/{id}/block` | Block the other person of a booking (later also from a profile's public reference): no user ID is shown ([security](../engineering/security.md)) |
 | `GET /me/blocks`, `DELETE /me/blocks/{id}` | People I blocked; unblock by the block's own ID |
+| `GET /me/notices` | What ShareRide did about me and why, with my appeals |
+| `POST /me/notices/{id}/appeal` | Appeal a notice once, within 14 days, also while suspended |
 
 A booking (`GET /bookings/{id}`) says whether its problem can still be
 reported (`problemReportable`, until 24 hours after the trip completes).
@@ -227,8 +231,9 @@ Domain functions in `packages/domain`: whether two users can see each other
 (blocks), whether a report holds a payout, the effect of a suspension on
 trips and bookings, and the reliability effect of an operator cancellation.
 
-Events: `ReportFiled` (existing), `ReportResolved`, `UserBlocked`,
-`UserSuspended`, `UserReinstated`, `ContentHidden`. Notifications through
+Events: `ReportFiled` (existing), `ReportClosed`, `UserBlocked`,
+`ModerationActionTaken` (a warning, suspension, reinstatement or other
+action on a person), `SuspensionEnded`, `AppealAnswered`, `ContentHidden`. Notifications through
 spec 7: the reporter on the outcome (push), the affected user on an action
 (email, and push where they have it), the operator on new reports
 (push, and SMS for safety reports from 07:00 to 23:00).
@@ -278,8 +283,8 @@ spec 7: the reporter on the outcome (push), the affected user on an action
 | `safety.beforeYouGo` | Before you go: check the weather, road conditions and SafeTravel. | Áður en lagt er af stað: kannaðu veður, færð og SafeTravel. |
 | `share.title` | Share trip details | Deila upplýsingum um ferðina |
 | `share.text` | My trip: {date} at {time} · {from} – {to} · Meeting point: {point} · Driver: {driver} · Car: {car}, {plate} · Booked on ShareRide | Ferðin mín: {date} kl. {time} · {from} – {to} · Mótsstaður: {point} · Bílstjóri: {driver} · Bíll: {car}, {plate} · Bókað á ShareRide |
-| `suspension.notice` | Your account is suspended until {date}. Reason: {reason}. To appeal, reply to the email we sent you. | Aðganginum þínum hefur verið lokað til {date}. Ástæða: {reason}. Svaraðu tölvupóstinum frá okkur til að andmæla. |
-| `suspension.permanent` | Your account is closed. Reason: {reason}. To appeal, reply to the email we sent you. | Aðganginum þínum hefur verið lokað. Ástæða: {reason}. Svaraðu tölvupóstinum frá okkur til að andmæla. |
+| `suspension.notice` | Your account is suspended until {date}. Reason: {reason}. To appeal, open Notices. | Aðganginum þínum hefur verið lokað til: {date}. Ástæða: {reason}. Opnaðu Orðsendingar frá ShareRide til að andmæla. |
+| `suspension.permanent` | Your account is suspended with no end date. Reason: {reason}. To appeal, open Notices. | Aðganginum þínum hefur verið lokað ótímabundið. Ástæða: {reason}. Opnaðu Orðsendingar frá ShareRide til að andmæla. |
 
 ## 9. Testing
 

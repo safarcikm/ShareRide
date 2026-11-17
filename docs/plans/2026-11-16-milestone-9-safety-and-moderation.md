@@ -256,9 +256,11 @@ completed).
   their sessions end.
 - `GET /v1/me/notices` and `POST /v1/me/notices/{id}/appeal` (once, within
   14 days).
-- **Suspended account screen:** the reason, until when, the notice with
-  "Appeal", and the ways out that stay open: My rides to read, Profile,
-  privacy (milestone 10) and Sign out.
+- **Suspended account screen**, in place of Find and Offer: until when,
+  the reason, what is closed and what stays open, "Read why and appeal"
+  to Notices, and My rides. Messages and Profile (with privacy, milestone
+  10, and Sign out) stay as they are; an action refused meanwhile says
+  where to read why.
 
 ### 4.6 The console
 
@@ -337,18 +339,24 @@ Built in two parts: 5a the reports themselves, 5b the operator's alert.
 
 ### PR 6: `feat(moderation)`: actions, suspension and appeals
 
-In three parts, each its own pull request:
+In four parts, each its own pull request:
 
 - [x] 6a: `moderation_actions` and `suspended_until` (migration
       `0036_moderation`); `suspend`, `warn` and `reinstate` with their
       audit entries and notices; ShareRide's cancellation of a trip and of
       a booking (`trips.cancelled_by`); refusals while suspended, and a
       suspended person stays signed in; ends in the minute job
-- [ ] 6b: `operator_notes` and the `hidden_at` columns; `hideContent`,
-      `cancelTripAsOperator`, `refundBooking`, `closeReport` (with
-      `report_closed` to the reporter) and `answerAppeal`;
-      `GET /v1/me/notices` and the appeal
-- [ ] 6c: Notices with Appeal, and the suspended account screen
+- [x] 6b: `GET /v1/me/notices` and the appeal; `closeReport` (with
+      `report_closed` to the reporter) and `answerAppeal` (with
+      `appeal_answered` to the person; reversing the suspension they are
+      under lifts it); migration `0038_appeals`
+- [x] 6c: Notices with Appeal (Profile, and where a notice's push
+      opens), and the suspended account screen in place of Find and
+      Offer; `suspension` in `GET /v1/me`; a browser journey with a
+      suspension made by the test API (`POST /e2e/suspend`)
+- [ ] 6d: `operator_notes` and the `hidden_at` columns; `hideContent`
+      (reversing it on appeal shows the content again),
+      `cancelTripAsOperator` and `refundBooking`
 - Verify: integration tests (a suspension cancels upcoming trips and
   bookings with full refunds and tells the others without the reason; a
   suspended person can read but not act; an appeal once, within 14 days;
