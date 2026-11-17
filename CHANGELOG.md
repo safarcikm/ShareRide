@@ -546,6 +546,19 @@ releases follow [Semantic Versioning](https://semver.org/).
   used) and `notifications.moderation_action_id`; "Download my data" has
   Notices from ShareRide, the suspension's end, and who cancelled each
   trip.
+- Notices, appeals and closing reports (milestone 9, PR 6b, spec 9, 3.1.6
+  and 3.4.4; R9.5): `GET /v1/me/notices` lists what ShareRide did about
+  the person and why, the latest first, never which operator; `POST
+  /v1/me/notices/{id}/appeal` takes one appeal of up to 1 000 characters
+  within 14 days, also while suspended (409 `not_appealable` for a
+  reinstatement, `already_appealed`, `appeal_window_closed`). For the
+  console, the operator's `answerAppeal` answers once and finally;
+  reversing the suspension the person is under lifts it, while what it
+  cancelled stays cancelled. `closeReport` closes a report with its
+  outcome. The person hears "ShareRide answered your appeal" by push and
+  email (the email with the answer), and the reporter "Your report" with
+  the outcome in general terms, by push. Each writes one audit entry.
+  Migration `0038_appeals` widens the notification and event kinds.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its
@@ -809,6 +822,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   opens the form again afterwards. Reports go to `meeting_point_issues`
   through `POST /v1/meeting-points/{id}/issues` for the operator's queue,
   and the open ones are in Download my data.
+- The console's problem reports (milestone 8, PR 10b; spec 2, 3.5 and
+  3.6): the open reports, the oldest first, with the point, what is wrong
+  and the note, never who sent it; the home page counts them, and the
+  list of points marks and filters the points with one, as needing
+  review. Resolving needs a note of what was done, removes the link to
+  the person and can mark the point checked today, with audit entries for
+  the report and the point; "Pause … now" opens the point's pause at
+  once. The hourly clean-up deletes a resolved report after 12 months.
+  Browser journeys cover both sides.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.

@@ -93,6 +93,12 @@ export function MeetingPointForm({ id }: { readonly id: string | undefined }) {
   const message = useRef<HTMLDivElement>(null);
   const base = useId();
   const idOf = (field: string) => `${base}-${field.replace(".", "-")}`;
+  // "Pause … now" on a problem report leads here with ?pause: the pause opens
+  // once, and the address drops it, so a reload does not open it again.
+  const [startPausing] = useState(() => new URLSearchParams(window.location.search).has("pause"));
+  useEffect(() => {
+    if (startPausing) window.history.replaceState(null, "", window.location.pathname);
+  }, [startPausing]);
 
   /** Loads the point; after a conflict the form stays in place while it does. */
   const load = useCallback(
@@ -491,7 +497,9 @@ export function MeetingPointForm({ id }: { readonly id: string | undefined }) {
         ) : null}
       </div>
 
-      {point === null ? null : <StatusPanel point={point} onResult={statusChanged} />}
+      {point === null ? null : (
+        <StatusPanel point={point} onResult={statusChanged} startPausing={startPausing} />
+      )}
 
       <form
         className="stack"

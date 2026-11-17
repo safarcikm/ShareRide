@@ -5,6 +5,7 @@ import {
   isOperatorNotice,
   defaultSafetySettings,
   type AccountNoticeKind,
+  type AppealOutcome,
   type CancelReason,
   type ModerationActionKind,
   type ModerationRule,
@@ -13,6 +14,7 @@ import {
   type NotificationSettings,
   type OperatorNoticeKind,
   type QuickMessage,
+  type ReportOutcome,
   type TripRole,
 } from "@shareride/domain";
 import {
@@ -28,6 +30,7 @@ import {
   formatMoney,
   moderationRuleText,
   quickMessageText,
+  reportOutcomeText,
   stopAddedText,
   type Locale,
 } from "@shareride/i18n";
@@ -142,15 +145,23 @@ interface AccountNoticeFactsByKind {
     readonly at: Date;
   };
   readonly suspension_ended: object;
+  readonly appeal_answered: {
+    readonly outcome: AppealOutcome;
+    /** As the operator wrote it for the person. */
+    readonly answer: string;
+  };
+  /** In general terms only, never what was done to whom (spec 9, 3.1.6). */
+  readonly report_closed: { readonly outcome: ReportOutcome };
   readonly privacy_request_answered: { readonly receivedAt: Date; readonly answer: string };
 }
 
 /**
  * News about the person's account: their data ready to download, or their
  * deletion and when the data is erased (spec 11); an operator's action that
- * affects them, with its statement of reasons (spec 9, R9.5), or the end of
- * their suspension (3.6); the answer to a request about their data, with the
- * day it came (spec 11, 3.6).
+ * affects them, with its statement of reasons (spec 9, R9.5), the end of
+ * their suspension (3.6), the answer to their appeal (3.4.4), or the outcome
+ * of their report (3.1.6); the answer to a request about their data, with
+ * the day it came (spec 11, 3.6).
  */
 export type AccountNoticeFacts = {
   readonly [Kind in AccountNoticeKind]: { readonly kind: Kind } & AccountNoticeFactsByKind[Kind];
@@ -261,6 +272,9 @@ function operatorText(kind: OperatorNoticeKind, locale: Locale): NotificationTex
     : { title: t("notify.reportFiled"), body: t("notify.reportFiledBody"), path: "/" };
 }
 
+/** The app's screen of the person's notices, where they read and appeal them (spec 9, R9.5). */
+export const noticesPath = "/notices";
+
 /**
  * What is ready, or what will be deleted, and when; never a link to the file
  * (spec 11, 7). No weekday: Icelandic would have to decline it after "fyrir".
@@ -298,11 +312,26 @@ function accountText(facts: AccountNoticeFacts, locale: Locale): NotificationTex
       };
     case "moderation_action":
       return noticeText(facts, locale);
+    case "appeal_answered": {
+      const body =
+        facts.outcome === "reversed" ? t("notify.appealReversed") : t("notify.appealUpheld");
+      const title = t("notify.appealAnswered");
+      return {
+        title,
+        body,
+        path: noticesPath,
+        emailBody: [title, "", body, "", t("notice.answer", { answer: facts.answer })].join("\n"),
+        open: t("notice.open"),
+      };
+    }
+    case "report_closed":
+      return {
+        title: t("notify.reportClosed"),
+        body: reportOutcomeText(t, facts.outcome),
+        path: "/settings/reports",
+      };
   }
 }
-
-/** The app's screen of the person's notices, where they read and appeal them (spec 9, R9.5). */
-export const noticesPath = "/notices";
 
 /**
  * An operator's action, as the person is told (spec 9, 3.4.4; R9.5). The

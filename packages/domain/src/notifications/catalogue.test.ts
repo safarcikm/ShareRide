@@ -177,6 +177,10 @@ describe("the channels of each kind (spec 7, 3.3 and 3.4)", () => {
     // the app, with a copy by email.
     ["moderation_action", true, "always", false],
     ["suspension_ended", true, "always", false],
+    // The answer to an appeal, final in the app (spec 9, 3.4.4).
+    ["appeal_answered", true, "always", false],
+    // The reporter's outcome, by push (spec 9, section 6).
+    ["report_closed", true, "never", false],
     ["report_filed", true, "never", false],
     ["report_filed_urgent", true, "never", true],
     // The answer to a question about one's data goes by email (spec 11, 3.6).
@@ -400,6 +404,8 @@ describe("the operator's alert of a new report (spec 9, 3.4.1; R9.9)", () => {
   it("are notices to the operator, not about a trip or the account", () => {
     expect(isAccountNotice("moderation_action")).toBe(true);
     expect(isAccountNotice("suspension_ended")).toBe(true);
+    expect(isAccountNotice("appeal_answered")).toBe(true);
+    expect(isAccountNotice("report_closed")).toBe(true);
     expect(operatorNoticeKinds.every(isOperatorNotice)).toBe(true);
     expect(isOperatorNotice("data_export_ready")).toBe(false);
     expect(operatorNoticeKinds.some(isAccountNotice)).toBe(false);

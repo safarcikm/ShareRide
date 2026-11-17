@@ -78,6 +78,10 @@ export const notificationRules = {
   // the email is the copy of the statement of reasons (decision 1).
   moderation_action: { push: true, email: "always", sms: false },
   suspension_ended: { push: true, email: "always", sms: false },
+  // The operator's answer to an appeal, final in the app (spec 9, 3.4.4).
+  appeal_answered: { push: true, email: "always", sms: false },
+  // The reporter's outcome, in general terms (spec 9, 3.1.6 and section 6).
+  report_closed: { push: true, email: "never", sms: false },
   // To every operator when a report comes in (spec 9, 3.4.1; R9.9): only
   // "New report" or "New safety report", never who or what.
   report_filed: { push: true, email: "never", sms: false },
@@ -100,6 +104,8 @@ export const accountNoticeKinds = [
   "privacy_request_answered",
   "moderation_action",
   "suspension_ended",
+  "appeal_answered",
+  "report_closed",
 ] as const;
 export type AccountNoticeKind = (typeof accountNoticeKinds)[number];
 
