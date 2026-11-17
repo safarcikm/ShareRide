@@ -369,12 +369,12 @@ In four parts, each its own pull request:
 - [x] 6b: `GET /v1/me/notices` and the appeal; `closeReport` (with
       `report_closed` to the reporter) and `answerAppeal` (with
       `appeal_answered` to the person; reversing the suspension they are
-      under lifts it); migration `0037_appeals`
+      under lifts it); migration `0038_appeals`
 - [x] 6c: Notices with Appeal (Profile, and where a notice's push
       opens), and the suspended account screen in place of Find and
       Offer; `suspension` in `GET /v1/me`; a browser journey with a
       suspension made by the test API (`POST /e2e/suspend`)
-- [x] 6d: the `hidden_at` columns (migration `0038_hidden_content`);
+- [x] 6d: the `hidden_at` columns (migration `0039_hidden_content`);
       `hideContent` for a message, a trip's note and About you
       (reversing it on appeal shows the content again), and `cancelTrip`
       with the driver's notice; "Removed by ShareRide" in the chat.

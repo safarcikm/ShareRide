@@ -66,6 +66,8 @@ reminders stay under Notifications (spec 7).
    - reviews written and received, with authors by first name;
    - check-ins, disputes they raised or answered, and reliability records;
    - reports they filed and their outcomes;
+   - problem reports about meeting points they sent, while still open (once
+     resolved, a report is no longer linked to them);
    - warnings, suspensions and their statements of reasons, and operator
      notes about them;
    - blocks they made;
