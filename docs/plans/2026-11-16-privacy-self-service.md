@@ -384,6 +384,16 @@ journeys, and gets a code review before it opens.
       thanks, and adding an email first when there is none
 - Verify: screen tests; a browser journey sends a request
 
+### PR 11: `feat(privacy)`: reviews in Download my data
+
+Added once milestone 7 built reviews (spec 8, 3.7).
+
+- [x] Each booking, and each passenger on a trip the person drove, has
+      the review the person wrote and the one about them once it shows
+      (R8.9), with when the operator hid either
+- Verify: integration tests (both sides; one not yet shown left out of
+  the other side's file; hidden ones marked)
+
 ## 6. Review focus
 
 What the spec implies and a person would meet first, each with its test:
