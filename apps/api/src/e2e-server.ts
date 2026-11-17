@@ -6,8 +6,9 @@
 // E2E_EMAIL_OUTBOX for the tests to read, runs the notification worker
 // every second with email only (no push from a browser), and runs on PORT
 // (default 3001). `POST /e2e/trips/{id}/move` with `{ "minutes": 10 }` puts a
-// trip's first stop that many minutes from the real time, for the trip day
-// journeys. For the console's browser tests (apps/admin/e2e),
+// trip's first stop that many minutes from the real time, with its "I'm here"
+// and reports, for the trip day journeys; moved far enough back, a report
+// nobody answered stands. For the console's browser tests (apps/admin/e2e),
 // E2E_ADMIN_APP_DIR is the console's build, served at /admin, and
 // E2E_OPERATOR_LINK a file: the API makes a new operator account and writes
 // its passkey setup link there, with passkeys bound to E2E_ADMIN_ORIGIN.

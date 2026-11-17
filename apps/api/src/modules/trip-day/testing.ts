@@ -5,18 +5,20 @@
 // real server.
 import { schema, type Database } from "@shareride/db";
 import { defaultTripDaySettings } from "@shareride/domain";
-import { eq, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { expireAllDueBookings, lockTrip } from "../bookings/seats.ts";
 import { moveTripsOn } from "../trips/completion.ts";
+import { settleUnansweredReports } from "./settle.ts";
 
-const { bookings, trips, tripStops } = schema;
+const { bookings, checkIns, disputes, trips, tripStops } = schema;
 
 /**
  * Moves every time of the trip so that its first stop is `minutes` from
  * `now`, as if it had always been planned then: its stops, its departure
- * and arrival, and the departure its bookings were made for. Then runs the
- * booking deadlines and the trip day job once, as the server does every
- * minute.
+ * and arrival, the departure its bookings were made for, and the "I'm
+ * here" and reports already made on it. Then runs the booking deadlines and
+ * the trip day job once, as the server does every minute, so a trip moved
+ * far enough into the past completes and a report nobody answered stands.
  */
 export async function moveTripForTests(
   db: Database,
@@ -44,7 +46,24 @@ export async function moveTripForTests(
       .update(bookings)
       .set({ departsAtWhenBooked: sql`${bookings.departsAtWhenBooked} + ${by}` })
       .where(eq(bookings.tripId, tripId));
+    const stops = tx
+      .select({ id: tripStops.id })
+      .from(tripStops)
+      .where(eq(tripStops.tripId, tripId));
+    await tx
+      .update(checkIns)
+      .set({ checkedInAt: sql`${checkIns.checkedInAt} + ${by}` })
+      .where(inArray(checkIns.tripStopId, stops));
+    const booked = tx.select({ id: bookings.id }).from(bookings).where(eq(bookings.tripId, tripId));
+    await tx
+      .update(disputes)
+      .set({
+        raisedAt: sql`${disputes.raisedAt} + ${by}`,
+        answeredAt: sql`${disputes.answeredAt} + ${by}`,
+      })
+      .where(inArray(disputes.bookingId, booked));
   });
   await expireAllDueBookings(db, now);
   await moveTripsOn(db, now, defaultTripDaySettings);
+  await settleUnansweredReports(db, now, defaultTripDaySettings);
 }

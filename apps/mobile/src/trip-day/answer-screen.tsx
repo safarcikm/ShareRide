@@ -45,14 +45,7 @@ export function AnswerScreen() {
   const { answer: given } = useLocalSearchParams<{ answer?: string }>();
   const { id, value: answer, reload } = useReportBooking();
   if (answer === undefined || !answer.ok) {
-    return (
-      <NotLoaded
-        id={id}
-        title={t("dispute.question")}
-        answer={answer}
-        onRetry={reload}
-      />
-    );
+    return <NotLoaded id={id} title={t("dispute.question")} answer={answer} onRetry={reload} />;
   }
   const booking = answer.data;
   const report = reportState(booking, now());

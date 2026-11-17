@@ -183,14 +183,7 @@ export function ReportScreen({ kind }: { readonly kind: DisputeKind }) {
       ? t("tripDay.markNoShowOf", { name: booking?.passenger.firstName ?? "" })
       : t("tripDay.driverAbsent");
   if (answer === undefined || !answer.ok) {
-    return (
-      <NotLoaded
-        id={id}
-        title={title()}
-        answer={answer}
-        onRetry={reload}
-      />
-    );
+    return <NotLoaded id={id} title={title()} answer={answer} onRetry={reload} />;
   }
   return <ReportForm kind={kind} booking={answer.data} title={title(answer.data)} />;
 }
