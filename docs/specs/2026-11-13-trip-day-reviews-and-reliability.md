@@ -214,7 +214,8 @@ Sent through spec 7, in the recipient's language:
 
 Entities (see [domain model](../architecture/domain-model.md)):
 
-- `CheckIn`: trip stop, user, at.
+- `CheckIn`: trip stop, user, booking (the passenger's; none for the
+  driver's), at. One per booking, and one per stop for the driver.
 - `Dispute`: booking, kind (`no_show`, `driver_absent`), raised by, raised at,
   note, answer (`agreed`, `contested`, none), answered at, answer note,
   outcome (`stands`, `rode`, `left_behind`, `passenger_absent`), decided by (system or operator), decided at.

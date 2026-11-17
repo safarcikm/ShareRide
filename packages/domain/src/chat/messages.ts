@@ -29,8 +29,8 @@ export type QuickMessage =
 /**
  * What happened to the booking, as lines in its conversation (spec 7, 3.1,
  * item 3), shown in the reader's language: the conversation opened, the
- * departure or the car changed, a stop added or removed, and the booking
- * cancelled, by whom and why (spec 6).
+ * departure or the car changed, a stop added or removed, the booking
+ * cancelled, by whom and why (spec 6), and who said "I'm here" (spec 8).
  */
 export const systemLineKeys = [
   "opened",
@@ -39,6 +39,7 @@ export const systemLineKeys = [
   "stop_added",
   "stop_removed",
   "cancelled",
+  "checked_in",
 ] as const;
 export type SystemLineKey = (typeof systemLineKeys)[number];
 
@@ -81,7 +82,9 @@ export type SystemLine =
       readonly note: string;
       /** The driver cancelled the whole trip (spec 6, 3.3), not this booking alone. */
       readonly wholeTrip: boolean;
-    };
+    }
+  /** "I'm here" at the passenger's meeting point (spec 8, 3.2). */
+  | { readonly key: "checked_in"; readonly by: "passenger" | "driver" };
 
 /** A message as someone sends it, before it is checked. */
 export type MessageInput =

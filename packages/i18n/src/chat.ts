@@ -63,6 +63,8 @@ export type ShownSystemLine =
       /** The stop's name in the reader's language. */
       readonly stop: string;
     }
+  /** "I'm here" (spec 8, 3.2): mine, or the other person's. */
+  | { readonly key: "checked_in"; readonly by: "me" | "them" }
   | {
       readonly key: "cancelled";
       readonly by: "me" | "them";
@@ -80,6 +82,9 @@ export function systemLineText(t: Translate, line: ShownSystemLine, other: strin
   if (line.key === "car_changed") return t("trip.carChanged", { car: carText(t, line.car) });
   if (line.key === "stop_added") return stopAddedText(t, line);
   if (line.key === "stop_removed") return t("trip.stopRemoved", { stop: line.stop });
+  if (line.key === "checked_in") {
+    return line.by === "me" ? t("chat.checkedInMe") : t("chat.checkedInThem", { name: other });
+  }
   const reason = cancelReasonText(t, line.reason);
   const said = line.wholeTrip
     ? line.by === "me"

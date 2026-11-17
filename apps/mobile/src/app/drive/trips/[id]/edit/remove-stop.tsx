@@ -230,7 +230,7 @@ function Preview({
           lines={timeLines(
             t,
             locale,
-            { ...trip, ...after },
+            after,
             plannedTimes.map((time) => new Date(time)),
           )}
         />

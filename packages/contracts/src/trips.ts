@@ -1,6 +1,7 @@
 import {
   bookingModes,
   chatOptions,
+  dayPhases,
   defaultTripSettings,
   luggageOptions,
   noteMaxLength,
@@ -220,11 +221,29 @@ export const myTripSchema = z.object({
   status: z.enum(tripStatuses),
   stops: z.array(
     z.object({
+      id: z.uuid(),
       meetingPoint: meetingPointSummarySchema,
       /** Null in a draft until the departure is chosen. */
       plannedAt: timestampSchema.nullable(),
+      /**
+       * The driver's "I'm here" at this stop (spec 8, 3.2; R8.3): when it
+       * opens and closes, and when they said it, null until then. Null for
+       * a draft or a cancelled trip.
+       */
+      checkIn: z
+        .object({
+          opensAt: timestampSchema,
+          closesAt: timestampSchema,
+          at: timestampSchema.nullable(),
+        })
+        .nullable(),
     }),
   ),
+  /**
+   * The trip day (spec 8, 3.1): from 3 hours before the first stop until the
+   * trip completes. Null for a draft or a cancelled trip.
+   */
+  phase: z.enum(dayPhases).nullable(),
   seats: z.int().min(1),
   priceLevel: z.int().nonnegative(),
   bookingMode: z.enum(bookingModes),

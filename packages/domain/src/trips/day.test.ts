@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  arrivalOf,
   checkCheckIn,
   checkDriverAbsent,
+  checkInWindow,
   checkNoShow,
   completesAt,
   completesWithTrip,
   dayPhase,
+  hasTripDay,
+  runsOrRan,
   defaultTripDaySettings as settings,
   tripStatusAt,
 } from "./day.ts";
@@ -57,24 +61,103 @@ describe("the trip day (spec 8, 3.1)", () => {
   });
 });
 
+describe("what has a trip day (spec 8, 3.1)", () => {
+  it.each([
+    ["confirmed", true],
+    ["completed", true],
+    ["no_show", true],
+    ["requested", false],
+    ["accepted", false],
+    ["declined", false],
+    ["expired", false],
+    ["cancelled", false],
+  ] as const)("a %s booking: %s", (status, has) => {
+    expect(hasTripDay(status)).toBe(has);
+  });
+
+  it.each([
+    ["published", true],
+    ["departed", true],
+    ["completed", true],
+    ["draft", false],
+    ["cancelled", false],
+  ] as const)("a %s trip: %s", (status, runs) => {
+    expect(runsOrRan(status)).toBe(runs);
+  });
+});
+
 describe("I'm here (R8.3)", () => {
+  const passenger = {
+    stopAt: boardsAt,
+    tripStatus: "departed",
+    bookingStatus: "confirmed",
+  } as const;
+  const driver = { stopAt: boardsAt, tripStatus: "published", bookingStatus: null } as const;
+
+  it("opens 30 minutes before the stop's planned time and closes 60 minutes after", () => {
+    expect(checkInWindow(boardsAt, settings)).toEqual({
+      opensAt: at(boardsAt, -30),
+      closesAt: at(boardsAt, 60),
+    });
+  });
+
   it("works from 30 minutes before to 60 minutes after the stop's planned time", () => {
-    expect(checkCheckIn(boardsAt, at(boardsAt, -30), settings)).toEqual({ ok: true, value: null });
-    expect(checkCheckIn(boardsAt, at(boardsAt, 60), settings)).toEqual({ ok: true, value: null });
+    for (const who of [passenger, driver]) {
+      expect(checkCheckIn(who, at(boardsAt, -30), settings)).toEqual({ ok: true, value: null });
+      expect(checkCheckIn(who, at(boardsAt, 60), settings)).toEqual({ ok: true, value: null });
+    }
   });
 
   it("is not open earlier, and says when it opens", () => {
-    expect(checkCheckIn(boardsAt, at(boardsAt, -31), settings)).toEqual({
+    expect(checkCheckIn(passenger, at(boardsAt, -31), settings)).toEqual({
       ok: false,
       error: { code: "check_in_not_open", opensAt: at(boardsAt, -30) },
     });
   });
 
   it("is closed later", () => {
-    expect(checkCheckIn(boardsAt, at(boardsAt, 61), settings)).toEqual({
+    expect(checkCheckIn(passenger, at(boardsAt, 61), settings)).toEqual({
       ok: false,
       error: { code: "check_in_closed" },
     });
+  });
+
+  it.each([
+    "requested",
+    "accepted",
+    "declined",
+    "expired",
+    "cancelled",
+    "completed",
+    "no_show",
+  ] as const)("is only for a confirmed passenger, not a %s booking", (bookingStatus) => {
+    expect(checkCheckIn({ ...passenger, bookingStatus }, boardsAt, settings)).toEqual({
+      ok: false,
+      error: { code: "not_confirmed" },
+    });
+  });
+
+  it.each(["draft", "completed", "cancelled"] as const)(
+    "is only on a trip that runs, not a %s one",
+    (tripStatus) => {
+      for (const who of [passenger, driver]) {
+        expect(checkCheckIn({ ...who, tripStatus }, boardsAt, settings)).toEqual({
+          ok: false,
+          error: { code: "trip_not_running" },
+        });
+      }
+    },
+  );
+});
+
+describe("who is at their stop (spec 8, 3.1)", () => {
+  it("is here once checked in, a no-show once marked, and otherwise not here yet", () => {
+    expect(arrivalOf({ status: "confirmed", checkedIn: false })).toBe("not_here");
+    expect(arrivalOf({ status: "confirmed", checkedIn: true })).toBe("here");
+    expect(arrivalOf({ status: "completed", checkedIn: true })).toBe("here");
+    expect(arrivalOf({ status: "no_show", checkedIn: false })).toBe("no_show");
+    // A no-show contested as "they rode" completes; marked, it stays a no-show.
+    expect(arrivalOf({ status: "no_show", checkedIn: true })).toBe("no_show");
   });
 });
 
