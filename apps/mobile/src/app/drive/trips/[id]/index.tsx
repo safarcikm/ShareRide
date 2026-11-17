@@ -22,6 +22,8 @@ import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { tripShareText } from "@/safety/share-details";
+import { DriverTripDay, onTripDay } from "@/trip-day/driver";
+import { useTripDayRefresh } from "@/trip-day/use-refresh";
 import { TripSafety } from "@/safety/trip-safety";
 import { typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -58,6 +60,7 @@ export default function DriverTripScreen() {
     [session, id],
   );
   const { value: loaded, reload, refresh } = useLoadedOnFocus(load);
+  useTripDayRefresh(loaded?.[0].ok === true && onTripDay(loaded[0].data), refresh);
   // Each request answered here, as the answer left it (null for one that is
   // gone), until a list loads that shows it answered.
   const [answered, setAnswered] = useState<Readonly<Record<string, Booking | null>>>({});
@@ -188,6 +191,21 @@ export default function DriverTripScreen() {
           />
         </TakesFocus>
       )}
+      {onTripDay(trip.data) ? (
+        <DriverTripDay
+          trip={trip.data}
+          bookings={riding}
+          onSaid={refresh}
+          onStale={() => {
+            setOutcome((last) => ({
+              text: t("tripDay.tripChanged"),
+              count: (last?.count ?? 0) + 1,
+              cancelled,
+            }));
+            refresh();
+          }}
+        />
+      ) : null}
       {requests.length === 0 ? null : (
         <>
           <Heading>{t("driverTrip.requests")}</Heading>

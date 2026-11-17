@@ -157,6 +157,13 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     ),
     otherIds: ["attemptKey"],
   },
+  check_ins: {
+    category: "trips_and_bookings",
+    export: { section: "bookings" },
+    personColumns: ["userId"],
+    // "I'm here" times, a time only, matter to the other side if they disagree (spec 8, 3.5).
+    onDeletion: keep([]),
+  },
   booking_segment_prices: {
     category: "trips_and_bookings",
     export: { section: "bookings" },
@@ -214,6 +221,24 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
   operator_sessions: {
     category: "devices",
     export: { leftOut: "the operator's own console sign-ins, deleted 30 days after they end" },
+    personColumns: ["userId"],
+    onDeletion: erase,
+  },
+  operator_passkeys: {
+    category: "devices",
+    export: { leftOut: "the operator's own passkeys: public keys and names, no secret" },
+    personColumns: ["userId"],
+    onDeletion: erase,
+  },
+  operator_setup_links: {
+    category: "devices",
+    export: { leftOut: "a hash of a link that worked once, for 30 minutes" },
+    personColumns: ["userId"],
+    onDeletion: erase,
+  },
+  operator_challenges: {
+    category: "devices",
+    export: { leftOut: "random challenges for a passkey to sign, good for 5 minutes" },
     personColumns: ["userId"],
     onDeletion: erase,
   },

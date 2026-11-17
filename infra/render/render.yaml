@@ -51,6 +51,8 @@ services:
       # come from the client and are ignored.
       - key: TRUST_PROXY
         value: "2"
+      # ADMIN_ORIGIN (the operator console, ADR 0028) and the email settings
+      # are added in the dashboard when they are turned on; see the runbook.
 
   # Deletes sign-in records and trip drafts past their retention, every hour (UTC).
   - type: cron

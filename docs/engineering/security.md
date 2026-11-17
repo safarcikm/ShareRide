@@ -154,8 +154,32 @@ is built, in `apps/api/src/modules/admin` with the rules in
 - **Guard:** every path under `/admin/v1` needs a live console session of an
   active account with the `operator` role, checked by one middleware before
   any route, so a route that forgets its own guard is still closed. Only
-  signing in (`/admin/v1/auth/…`) is open. The app's bearer tokens are never
+  the four sign-in and setup steps under `/admin/v1/auth/`, listed exactly
+  in `openAdminRoutes`, are open. The app's bearer tokens are never
   accepted there, and the console's cookie is never sent to `/v1`.
+- **Role:** only the `operator` command on the server gives or removes it
+  (`pnpm --filter @shareride/api operator`). Removing it ends the account's
+  console sessions and deletes its passkeys and setup links.
+- **Setup link:** the command prints `/admin/setup#sr_ol_…`, 256 random
+  bits kept only as a SHA-256 hash, after `#` so it never reaches a server
+  log. It works once, for 30 minutes, and a new link replaces the old one.
+  Using it claims it atomically before the passkey is saved.
+- **Passkeys:** WebAuthn through `@simplewebauthn/server` (ADR 0016), bound
+  to `ADMIN_ORIGIN` and its host name. Discoverable credentials, user
+  verification required, attestation `none`, ES256 or RS256. Each challenge
+  is stored server-side, works once and for 5 minutes, and is tied to its
+  purpose (setup with its link, adding with its account, or signing in). A
+  counter that goes back is refused, as a sign of a copied key. The last
+  passkey cannot be removed from the console.
+- **Changing passkeys:** adding or removing one needs a passkey used in the
+  last 5 minutes, at sign-in or again through `/admin/v1/confirm`, so a
+  stolen session alone (for example a script injected while the console
+  shares the web app's origin) cannot swap in its own key and lock the
+  operator out. The `operator` command locks the account while it removes
+  the role, so a setup or sign-in running at that moment finishes first or
+  sees the role gone. Signing in and setup links
+  are limited per address (10 a minute, 60 an hour, keyed by a hash of the
+  address, of its /64 network for IPv6).
 - **Sessions:** separate from the app's. The cookie `sr_operator` is
   `HttpOnly`, `SameSite=Strict`, `Path=/admin/v1` and `Secure` outside
   development, and holds 256 random bits (prefix `sr_os_`) kept only as a

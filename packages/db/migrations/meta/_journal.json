@@ -166,8 +166,22 @@
     {
       "idx": 23,
       "version": "7",
-      "when": 1794872872721,
-      "tag": "0023_blocks",
+      "when": 1794872883902,
+      "tag": "0023_trip_day_check_ins",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794873915321,
+      "tag": "0024_operator_passkeys",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794887437107,
+      "tag": "0025_blocks",
       "breakpoints": true
     }
   ]

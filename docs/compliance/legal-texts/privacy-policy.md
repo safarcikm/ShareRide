@@ -37,7 +37,7 @@
 | **Driving licence declaration:** the date you declared you hold a valid licence; no licence number or copy | To let you publish trips | Contract | While you have an account |
 | **Trips and bookings:** meeting points, times, seats, prices, requests and their messages, changes and cancellations with their reasons | To provide the service and apply the refund rules | Contract | 3 years after the trip, then anonymised (to confirm) |
 | **Messages** between a driver and a passenger | To arrange the trip | Contract | 12 months after the trip, unless a report needs them |
-| **Trip day records:** "I'm here" times (no location), reports that someone didn't come, and what each side said | To settle disagreements and payouts | Contract; legitimate interest | With the booking |
+| **Trip day records:** "I'm here" times (no location), reports that someone didn't come, and what each side said | To tell the other side you are at the meeting point, and to settle disagreements and payouts | Contract; legitimate interest | With the booking or, for a driver's "I'm here", with the trip |
 | **Reviews and reliability** | Trust between users | Contract; legitimate interest | Reviews while the person reviewed has an account; reliability covers 12 months |
 | **Reports, blocks and moderation:** what was reported, our actions, statements of reasons and appeals | Safety | Legitimate interest; legal obligation where it applies | 3 years after the report is closed (to confirm); blocks until you unblock |
 | **Women-only trips:** only the date you turned it on; no gender | To let you offer and book women-only trips | Your consent, withdrawn by turning it off | Until you turn it off or delete your account |
