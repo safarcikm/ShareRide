@@ -142,6 +142,20 @@ export function checkDecision(
   return ok(null);
 }
 
+/** What the operator can decide a report as: a contested, open report's outcomes, else none. */
+export function decidableOutcomes(dispute: Dispute): readonly DisputeOutcome[] {
+  return operatorOutcomes[dispute.kind].filter((outcome) => checkDecision(dispute, outcome).ok);
+}
+
+/**
+ * Whether the operator may read the booking's conversation for this report
+ * (spec 8, 3.5; R7.3, R9.6): only when it was contested, which is what
+ * brings it to the operator, before or after the decision.
+ */
+export function operatorMayRead(dispute: Dispute): boolean {
+  return dispute.answer === "contested";
+}
+
 /** Whose reliability a decided report counts on, if anyone's (spec 8, 3.8). */
 export function reportCountsOn(
   kind: DisputeKind,
