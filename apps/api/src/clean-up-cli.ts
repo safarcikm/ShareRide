@@ -9,7 +9,7 @@ import * as Sentry from "@sentry/node";
 import { connectDatabase } from "@shareride/db";
 import { ConfigError, loadErrorReportingConfig } from "./config.ts";
 import { createLogger } from "./logger.ts";
-import { cleanUpOperatorSessions } from "./modules/admin/clean-up.ts";
+import { cleanUpOperatorSessions, cleanUpOperatorSignIn } from "./modules/admin/clean-up.ts";
 import { cleanUpSignInRecords } from "./modules/auth/clean-up.ts";
 import { cleanUpConversations } from "./modules/chat/clean-up.ts";
 import { cleanUpNotifications } from "./modules/notifications/clean-up.ts";
@@ -42,9 +42,20 @@ try {
   const conversations = await cleanUpConversations(connection.db, now);
   const notifications = await cleanUpNotifications(connection.db, now);
   const operatorSessions = await cleanUpOperatorSessions(connection.db, now);
+  const operatorSignIn = await cleanUpOperatorSignIn(connection.db, now);
   const exports = await cleanUpExports(connection.db, now);
   logger.info(
-    { counts: { ...counts, drafts, conversations, notifications, operatorSessions, ...exports } },
+    {
+      counts: {
+        ...counts,
+        drafts,
+        conversations,
+        notifications,
+        operatorSessions,
+        operatorSignIn,
+        ...exports,
+      },
+    },
     "clean-up done",
   );
 } catch (error) {

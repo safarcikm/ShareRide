@@ -20,6 +20,42 @@ import {
 import { failure, ok, type FakeClient } from "./fake-client";
 import { bsi, hof, kef } from "./meeting-points";
 
+const minuteMs = 60_000;
+const shifted = (time: string, minutes: number) =>
+  new Date(new Date(time).getTime() + minutes * minuteMs).toISOString();
+
+/** A stop of a driver's trip; its ID comes from its meeting point's, which is once on a trip. */
+export function myStop(
+  meetingPoint: MeetingPointSummary,
+  plannedAt: string | null,
+): MyTrip["stops"][number] {
+  return { id: `5${meetingPoint.id.slice(1)}`, meetingPoint, plannedAt, checkIn: null };
+}
+
+/**
+ * The trip day as the API gives it (spec 8, 3.1): on a trip that runs, the
+ * phase (upcoming unless the test set another) and when the driver's "I'm
+ * here" opens and closes at each stop, 30 minutes before and 60 after.
+ */
+export function withTripDay(trip: MyTrip): MyTrip {
+  const runs = trip.status !== "draft" && trip.status !== "cancelled";
+  return {
+    ...trip,
+    phase: runs ? (trip.phase ?? "upcoming") : null,
+    stops: trip.stops.map((stop) => ({
+      ...stop,
+      checkIn:
+        runs && stop.plannedAt !== null
+          ? {
+              opensAt: shifted(stop.plannedAt, -30),
+              closesAt: shifted(stop.plannedAt, 60),
+              at: stop.checkIn?.at ?? null,
+            }
+          : null,
+    })),
+  };
+}
+
 export const borgarnes: MeetingPointSummary = {
   ...bsi,
   id: "0190a1d6-0000-7000-8000-0000000000b5",
@@ -191,7 +227,8 @@ export function tripsApi(
   });
   client.answer("/v1/routes/quote", (input) => ok(200, quoteFor(input["body"] as never)));
 
-  const store = (trip: MyTrip) => {
+  const store = (stored: MyTrip) => {
+    const trip = withTripDay(stored);
     trips = [...trips.filter((known) => known.id !== trip.id), trip];
     return trip;
   };
@@ -203,7 +240,7 @@ export function tripsApi(
     const trip: MyTrip = {
       id: `0190a1d6-0000-7000-8000-00000000010${String(trips.length)}`,
       status: "draft",
-      stops: body.stops.map((id) => ({ meetingPoint: point(id), plannedAt: null })),
+      stops: body.stops.map((id) => myStop(point(id), null)),
       ...firstTripChoices,
       seats: firstTripChoices.seats,
       vehicleId: yaris.id,
@@ -216,6 +253,7 @@ export function tripsApi(
       openRequests: 0,
       requestsCloseAt: null,
       cancellation: null,
+      phase: null,
     };
     return ok(201, store(trip));
   });
@@ -242,9 +280,7 @@ export function tripsApi(
       ...trip,
       ...rest,
       updatedAt: stamp(),
-      ...(stops === undefined
-        ? {}
-        : { stops: stops.map((id) => ({ meetingPoint: point(id), plannedAt: null })) }),
+      ...(stops === undefined ? {} : { stops: stops.map((id) => myStop(point(id), null)) }),
     };
     if (plannedTimes !== undefined) {
       changed = {
@@ -279,7 +315,7 @@ export function tripsApi(
       ...trip,
       id: `0190a1d6-0000-7000-8000-00000000030${String(trips.length)}`,
       status: "draft",
-      stops: kept.map((stop) => ({ meetingPoint: stop.meetingPoint, plannedAt: null })),
+      stops: kept.map((stop) => myStop(stop.meetingPoint, null)),
       departsAt: null,
       arrivesAt: null,
       publishedAt: null,
@@ -340,7 +376,7 @@ export function tripsApi(
     const between =
       (new Date(first.plannedAt ?? 0).getTime() + new Date(second.plannedAt ?? 0).getTime()) / 2;
     const plannedAt = new Date(Math.round(between / fiveMinutes) * fiveMinutes).toISOString();
-    const stops = [first, { meetingPoint, plannedAt }, second, ...rest];
+    const stops = [first, myStop(meetingPoint, plannedAt), second, ...rest];
     // A fifth of the stretch to the new stop, the rest on from it.
     const halves =
       split === undefined
@@ -501,10 +537,9 @@ export function plannedDraft(changes: Partial<MyTrip> = {}): MyTrip {
   return {
     id: "0190a1d6-0000-7000-8000-000000000201",
     status: "draft",
-    stops: [bsi, borgarnes, hof].map((meetingPoint, index) => ({
-      meetingPoint,
-      plannedAt: times[index] ?? null,
-    })),
+    stops: [bsi, borgarnes, hof].map((meetingPoint, index) =>
+      myStop(meetingPoint, times[index] ?? null),
+    ),
     ...firstTripChoices,
     vehicleId: yaris.id,
     note: "",
@@ -516,6 +551,7 @@ export function plannedDraft(changes: Partial<MyTrip> = {}): MyTrip {
     openRequests: 0,
     requestsCloseAt: null,
     cancellation: null,
+    phase: null,
     ...changes,
   };
 }

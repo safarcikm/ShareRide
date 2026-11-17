@@ -7,7 +7,9 @@ import {
   defaultChatSettings,
   defaultNotificationSettings,
   defaultSearchSettings,
+  defaultTripDaySettings,
   defaultTripSettings,
+  operatorSignInLimitsPerAddress,
   searchLimitsPerAddress,
 } from "@shareride/domain";
 import type { Context } from "hono";
@@ -22,9 +24,11 @@ import { errorBody } from "./errors.ts";
 import type { Logger } from "./logger.ts";
 import {
   createOperatorSessionService,
+  createPasskeyService,
   createRequireOperator,
   guardAdminPaths,
   operatorCookie,
+  registerAdminAuthRoutes,
   registerAdminRoutes,
 } from "./modules/admin/index.ts";
 import {
@@ -41,6 +45,7 @@ import {
 } from "./modules/auth/index.ts";
 import { createBookingService, registerBookingRoutes } from "./modules/bookings/index.ts";
 import { createChatService, registerChatRoutes } from "./modules/chat/index.ts";
+import { createTripDayService, registerTripDayRoutes } from "./modules/trip-day/index.ts";
 import { createDrivingService, registerDrivingRoutes } from "./modules/driving/index.ts";
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
@@ -99,6 +104,11 @@ export interface FeatureDependencies {
   readonly randomInt?: (max: number) => number;
   /** Left out where paying is unavailable (PAYMENT_PROVIDER=none). */
   readonly payments?: PaymentProvider;
+  /**
+   * The operator console's origin, which passkeys are bound to (ADR 0028).
+   * Left out, the console's sign-in is off.
+   */
+  readonly adminOrigin?: string;
 }
 
 /** Where the request was when an unexpected error happened. No personal data. */
@@ -217,6 +227,24 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     const requireOperator = createRequireOperator(operatorSessions, features.secureCookies);
     app.use(guardAdminPaths(requireOperator));
     registerAdminRoutes(app, { ...features, sessions: operatorSessions, requireOperator });
+    if (features.adminOrigin !== undefined) {
+      registerAdminAuthRoutes(app, {
+        ...features,
+        logger,
+        passkeys: createPasskeyService({
+          ...features,
+          sessions: operatorSessions,
+          adminOrigin: features.adminOrigin,
+        }),
+        requireOperator,
+        limiter: createMemoryRateLimiter({
+          rules: operatorSignInLimitsPerAddress,
+          clock: features.clock,
+        }),
+        clientKey: (c) =>
+          features.hasher("operator-sign-in", addressBlock(features.clientAddress(c))),
+      });
+    }
     const legal = createLegalService(features);
     const account = createAccountService({ ...features, legal });
     const auth = createAuthService({
@@ -244,7 +272,12 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     });
     const settings = defaultTripSettings;
     registerTripRoutes(app, createRouteService({ ...features, settings }), requireAuth);
-    const trips = createTripService({ ...features, settings, driving });
+    const trips = createTripService({
+      ...features,
+      settings,
+      tripDaySettings: defaultTripDaySettings,
+      driving,
+    });
     registerDraftRoutes(app, trips, requireAuth);
     registerTripChangeRoutes(
       app,
@@ -260,11 +293,17 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       ...features,
       account,
       settings: defaultBookingSettings,
+      tripDaySettings: defaultTripDaySettings,
     });
     registerBookingRoutes(app, bookings, requireAuth, trips);
     registerChatRoutes(
       app,
       createChatService({ ...features, bookings, settings: defaultChatSettings }),
+      requireAuth,
+    );
+    registerTripDayRoutes(
+      app,
+      createTripDayService({ ...features, settings: defaultTripDaySettings }),
       requireAuth,
     );
     registerNotificationRoutes(app, { ...features, requireAuth });

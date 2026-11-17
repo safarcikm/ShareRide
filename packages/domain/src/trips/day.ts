@@ -72,7 +72,21 @@ export function completesWithTrip(booking: {
   return booking.status === "confirmed" && !booking.openReport;
 }
 
-export type DayPhase = "upcoming" | "trip_day" | "completed";
+/** A trip that runs or ran has a trip day: not a draft, and not a cancelled one (3.1). */
+export function runsOrRan(status: TripStatus): boolean {
+  return status === "published" || status === "departed" || status === "completed";
+}
+
+/**
+ * A booking that boards has a trip day at its stop: a confirmed one, and
+ * what a confirmed one becomes, completed or a no-show (3.1).
+ */
+export function hasTripDay(status: BookingStatus): boolean {
+  return status === "confirmed" || status === "completed" || status === "no_show";
+}
+
+export const dayPhases = ["upcoming", "trip_day", "completed"] as const;
+export type DayPhase = (typeof dayPhases)[number];
 
 /**
  * Whether a booking or trip page shows the trip day (3.1): from 3 hours
@@ -89,23 +103,102 @@ export function dayPhase(
   return now >= later(from, -settings.tripDayHours * 60) ? "trip_day" : "upcoming";
 }
 
+export interface CheckInCheck {
+  /** The stop's planned time: the passenger's boarding stop, or the driver's stop. */
+  readonly stopAt: Date;
+  readonly tripStatus: TripStatus;
+  /** The passenger's booking, or null for the driver. */
+  readonly bookingStatus: BookingStatus | null;
+}
+
 export type CheckInProblem =
+  | { readonly code: "trip_not_running" }
+  | { readonly code: "not_confirmed" }
   | { readonly code: "check_in_not_open"; readonly opensAt: Date }
   | { readonly code: "check_in_closed" };
 
+/** R8.3: "I'm here" at a stop opens 30 minutes before its planned time and closes 60 minutes after. */
+export function checkInWindow(
+  stopAt: Date,
+  settings: TripDaySettings,
+): { readonly opensAt: Date; readonly closesAt: Date } {
+  return {
+    opensAt: later(stopAt, -settings.checkInBeforeMinutes),
+    closesAt: later(stopAt, settings.checkInAfterMinutes),
+  };
+}
+
 /**
  * R8.3: "I'm here" at a stop, from 30 minutes before to 60 minutes after its
- * planned time. It records only the time; nothing checks where anyone is.
+ * planned time, on a trip that is published or under way, and for a
+ * passenger only with a confirmed booking. It records only the time;
+ * nothing checks where anyone is. That the stop is the passenger's boarding
+ * stop, or on the driver's own trip, is the caller's to check.
  */
 export function checkCheckIn(
-  stopAt: Date,
+  check: CheckInCheck,
   now: Date,
   settings: TripDaySettings,
 ): Result<null, CheckInProblem> {
-  const opensAt = later(stopAt, -settings.checkInBeforeMinutes);
+  if (check.tripStatus !== "published" && check.tripStatus !== "departed") {
+    return err({ code: "trip_not_running" });
+  }
+  if (check.bookingStatus !== null && check.bookingStatus !== "confirmed") {
+    return err({ code: "not_confirmed" });
+  }
+  const { opensAt, closesAt } = checkInWindow(check.stopAt, settings);
   if (now < opensAt) return err({ code: "check_in_not_open", opensAt });
-  if (now > later(stopAt, settings.checkInAfterMinutes)) return err({ code: "check_in_closed" });
+  if (now > closesAt) return err({ code: "check_in_closed" });
   return ok(null);
+}
+
+/** The driver's "I'm here" at one stop: its window, and when it was said there. */
+export interface StopCheckIn {
+  readonly opensAt: Date;
+  readonly closesAt: Date;
+  readonly at: Date | null;
+}
+
+/**
+ * Where the driver can say "I'm here" now (3.1 and 3.2): every stop after
+ * the last one where they said it, where a confirmed passenger gets in, and
+ * whose window is open. The windows overlap, so a stop that was skipped
+ * never hides the next one, and the driver picks where they are. Saying it
+ * where nobody gets in would tell nobody. With none open, `next` is the
+ * first such stop still to open, to say when it will. `stops` are in trip
+ * order, null where the stop has no window; `boarding` holds the positions
+ * where a confirmed passenger gets in.
+ */
+export function driverCheckInStops(
+  stops: readonly (StopCheckIn | null)[],
+  boarding: ReadonlySet<number>,
+  now: Date,
+): { readonly open: readonly number[]; readonly next: number | null } {
+  const lastSaid = stops.findLastIndex((stop) => stop !== null && stop.at !== null);
+  const ahead = stops.flatMap((stop, position) =>
+    stop !== null && position > lastSaid && boarding.has(position) && now <= stop.closesAt
+      ? [{ position, opensAt: stop.opensAt }]
+      : [],
+  );
+  const open = ahead.filter((stop) => now >= stop.opensAt).map((stop) => stop.position);
+  return { open, next: open.length === 0 ? (ahead[0]?.position ?? null) : null };
+}
+
+/** Where a passenger stands at their boarding stop, as the driver sees it (3.1). */
+export const arrivals = ["not_here", "here", "no_show"] as const;
+export type Arrival = (typeof arrivals)[number];
+
+/**
+ * A marked no-show stays one; otherwise "I'm here" decides. It tells the
+ * driver who is at their stop on the trip day; after it, the booking's
+ * status says how the ride went.
+ */
+export function arrivalOf(booking: {
+  readonly status: BookingStatus;
+  readonly checkedIn: boolean;
+}): Arrival {
+  if (booking.status === "no_show") return "no_show";
+  return booking.checkedIn ? "here" : "not_here";
 }
 
 export interface NoShowCheck {

@@ -177,8 +177,9 @@ the rating.
 
 ### 4.3 The trip day
 
-- `check_ins`: trip stop, user and time, one per person per stop. No
-  location is collected (spec 8, section 7).
+- `check_ins`: trip stop, user, the passenger's booking and time: one per
+  booking, so a new booking at the same stop starts afresh, and one per
+  stop for the driver. No location is collected (spec 8, section 7).
 - `POST /trips/{id}/stops/{stopId}/check-in` (driver) and
   `POST /bookings/{id}/check-in` (passenger). A repeat answers with the
   first check-in and tells nobody again.
@@ -279,10 +280,12 @@ the browser journeys, and gets a code review before it opens.
 
 ### PR 4: `feat(trips)`: the trip day and "I'm here"
 
-- [ ] `check_ins` and both check-in routes; the push and the conversation
-      line; the phase and statuses in the booking and trip answers
-- [ ] The trip day on the booking page and the driver's trip page
-- [ ] The browser tests' route that moves a trip's times (4.2)
+In two parts: 4a the API, 4b the screens and the browser journey.
+
+- [x] `check_ins` and both check-in routes; the push and the conversation
+      line; the phase and statuses in the booking and trip answers (4a)
+- [x] The trip day on the booking page and the driver's trip page (4b)
+- [x] The browser tests' route that moves a trip's times (4.2) (4b)
 - Verify: integration tests (only the passenger or the driver; outside the
   window refused; a repeat tells nobody again); screen tests; a browser
   journey with a trip moved close: both check in and each sees the other

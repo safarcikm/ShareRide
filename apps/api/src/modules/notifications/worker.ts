@@ -1,12 +1,15 @@
 import { schema, type Database } from "@shareride/db";
 import {
+  alertChannels,
   canUseConsole,
   channelsFor,
   defaultNotificationSettings,
+  defaultSafetySettings,
   eventAttempts,
   isAccountNotice,
   isOperatorNotice,
   notificationsFor,
+  operatorNoticeKinds,
   operatorRole,
   payReminderAt,
   reminderStillTimely,
@@ -30,7 +33,7 @@ import {
   type TripRole,
 } from "@shareride/domain";
 import type { CarFacts } from "@shareride/i18n";
-import { and, asc, desc, eq, gt, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lte, ne, notInArray, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { EmailChannel } from "../../platform/email.ts";
 import { MaybeSent } from "../../platform/maybe-sent.ts";
@@ -145,11 +148,14 @@ function idIn(payload: Readonly<Record<string, string>>, name: string): string |
   return typeof value === "string" && uuidPattern.test(value) ? value : undefined;
 }
 
-/** Who cancelled, as a `BookingCancelled` event says; the other person is told. */
-function cancelledBy(payload: Readonly<Record<string, string>>): TripRole {
+/**
+ * Who did it, as a `BookingCancelled` or `CheckedIn` event says: who
+ * cancelled, or who said "I'm here". The other person is told.
+ */
+function doneBy(payload: Readonly<Record<string, string>>, type: OutboxEventType): TripRole {
   const by = payload["by"];
   if (by === "passenger" || by === "driver") return by;
-  throw new Error("A BookingCancelled event names who cancelled.");
+  throw new Error(`A ${type} event names who did it.`);
 }
 
 const boards = alias(tripStops, "boards");
@@ -602,6 +608,8 @@ export function createNotificationWorker(dependencies: {
         and(
           eq(notifications.recipientId, userId),
           eq(notificationDeliveries.channel, "sms"),
+          // An operator's alerts have no limit, and take nothing from it (R9.9).
+          notInArray(notifications.kind, [...operatorNoticeKinds]),
           or(
             inArray(notificationDeliveries.status, ["queued", "sending", "sent"]),
             and(
@@ -993,8 +1001,8 @@ export function createNotificationWorker(dependencies: {
     const happened: NotificationEvent =
       type === "BookingExpired"
         ? { type, reason: event.payload["reason"] === "unpaid" ? "unpaid" : "unanswered" }
-        : type === "BookingCancelled"
-          ? { type, by: cancelledBy(event.payload) }
+        : type === "BookingCancelled" || type === "CheckedIn"
+          ? { type, by: doneBy(event.payload, type) }
           : { type };
     await notify(tx, happened, booking, { key }, now);
     await scheduleAfter(tx, type, booking, now);
@@ -1287,6 +1295,13 @@ export function createNotificationWorker(dependencies: {
           throw new Error("An SMS is about a booking or a safety report.");
         }
         if (found.phone === null) return { skipped: "no_phone" };
+        // Never at night, even when a send from before 23:00 is tried again (R9.9).
+        if (
+          isOperatorFacts(found.facts) &&
+          !alertChannels(true, clock(), defaultSafetySettings).includes("sms")
+        ) {
+          return { skipped: "outside_sms_window" };
+        }
         try {
           await sms.send({ to: found.phone, text: smsText(found.facts, found.locale) });
         } catch (error) {

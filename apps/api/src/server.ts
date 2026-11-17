@@ -79,6 +79,7 @@ const app = createApp({
       return found.address;
     },
     secureCookies: config.nodeEnv === "production",
+    ...(config.adminOrigin === undefined ? {} : { adminOrigin: config.adminOrigin }),
     ...(payments === undefined ? {} : { payments }),
     ...(email === undefined ? {} : { email }),
   },

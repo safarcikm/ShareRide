@@ -1,6 +1,7 @@
 import type { Booking, CancellationPreview, TripBookings } from "@shareride/contracts";
 import { schema, type Database } from "@shareride/db";
 import {
+  arrivalOf,
   bookingClosedTo,
   bookingProblemReportable,
   cancellationTerms,
@@ -8,7 +9,9 @@ import {
   defaultSafetySettings,
   checkBooking,
   checkNote,
+  dayPhase,
   err,
+  hasTripDay,
   holdsSeats,
   movedFar,
   nextStatus,
@@ -33,6 +36,7 @@ import {
   type NoteProblem,
   type Result,
   type TripCancelReason,
+  type TripDaySettings,
   type TripStatus,
 } from "@shareride/domain";
 import { and, asc, eq, inArray, ne, type SQL } from "drizzle-orm";
@@ -44,6 +48,12 @@ import { bookingConfirmed } from "./confirmed.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import { recordEvents } from "../notifications/outbox.ts";
 import { blocksOf } from "../safety/blocks.ts";
+import {
+  checkInsAt,
+  driverCheckedInAt,
+  passengerCheckedInAt,
+  shownWindow,
+} from "../trip-day/check-ins.ts";
 import {
   changeOccupancy,
   expireDueBookings,
@@ -216,25 +226,32 @@ const toldKinds = ["departure", "vehicle", "addStop", "removeStop"];
 /**
  * Bookings with everything their passenger or driver sees, oldest first,
  * each with its trip's moves, new cars and stops added or removed since it
- * was made (spec 6, 3.2).
+ * was made (spec 6, 3.2), and "I'm here" at its boarding stop (spec 8, 3.2).
  */
 async function readBookings(q: Queryable, where: SQL | undefined) {
   const rows = await bookingRows(q, where);
   const tripIds = [...new Set(rows.map((row) => row.trip.id))];
-  const changes =
+  const [changes, checkIns] = await Promise.all([
     tripIds.length === 0
       ? []
-      : await q
+      : q
           .select()
           .from(tripChanges)
           .where(and(inArray(tripChanges.tripId, tripIds), inArray(tripChanges.kind, toldKinds)))
-          .orderBy(asc(tripChanges.changedAt), asc(tripChanges.id));
+          .orderBy(asc(tripChanges.changedAt), asc(tripChanges.id)),
+    checkInsAt(
+      q,
+      rows.map((row) => row.boardStop.id),
+    ),
+  ]);
   return rows.map((row) => {
     const { createdAt, status, cancelledAt, expiredAt, decidedAt } = row.booking;
     // A booking that ended shows only the changes made while it held seats.
     const endedAt = cancelledAt ?? expiredAt ?? (status === "declined" ? decidedAt : null);
     return {
       ...row,
+      passengerCheckedInAt: passengerCheckedInAt(checkIns, row.booking.id),
+      driverCheckedInAt: driverCheckedInAt(checkIns, row.boardStop.id),
       // Made under the trip's lock, so one at the same moment came before the booking.
       changes: changes.filter(
         (change) =>
@@ -254,6 +271,7 @@ async function bookingRows(q: Queryable, where: SQL | undefined) {
         id: trips.id,
         driverId: trips.driverId,
         departsAt: trips.departsAt,
+        arrivesAt: trips.arrivesAt,
         bookingMode: trips.bookingMode,
         status: trips.status,
         cancelledAt: trips.cancelledAt,
@@ -353,7 +371,27 @@ function shownStatus(booking: BookingRow["booking"], now: Date): BookingStatus {
   );
 }
 
-function present(row: BookingRow, viewerId: string, now: Date): Booking {
+/** The trip day at the boarding stop (spec 8, 3.1 and 3.2), for a booking that boards. */
+function tripDayOf(
+  row: BookingRow,
+  status: BookingStatus,
+  now: Date,
+  settings: TripDaySettings,
+): Booking["tripDay"] {
+  if (!hasTripDay(status)) return null;
+  const boardsAt = plannedAt(row.boardStop);
+  const window = shownWindow(boardsAt, settings);
+  return {
+    phase: dayPhase(boardsAt, row.trip.arrivesAt ?? plannedAt(row.alightStop), now, settings),
+    checkInOpensAt: window.opensAt,
+    checkInClosesAt: window.closesAt,
+    passengerCheckedInAt: row.passengerCheckedInAt?.toISOString() ?? null,
+    driverCheckedInAt: row.driverCheckedInAt?.toISOString() ?? null,
+    arrival: arrivalOf({ status, checkedIn: row.passengerCheckedInAt !== null }),
+  };
+}
+
+function present(row: BookingRow, viewerId: string, now: Date, settings: TripDaySettings): Booking {
   const { booking, trip, car } = row;
   const status = shownStatus(booking, now);
   const viewer = viewerId === booking.passengerId ? "passenger" : "driver";
@@ -475,6 +513,7 @@ function present(row: BookingRow, viewerId: string, now: Date): Booking {
                 : localised(row.boardPoint.whereToStandIs, row.boardPoint.whereToStandEn),
           }
         : null,
+    tripDay: tripDayOf(row, status, now, settings),
   };
 }
 
@@ -483,14 +522,15 @@ export function createBookingService(dependencies: {
   readonly clock: () => Date;
   readonly account: Pick<AccountService, "me">;
   readonly settings: BookingSettings;
+  readonly tripDaySettings: TripDaySettings;
 }): BookingService {
-  const { db, clock, account, settings } = dependencies;
+  const { db, clock, account, settings, tripDaySettings } = dependencies;
 
   async function readOne(q: Queryable, bookingId: string, viewerId: string, now: Date) {
     const [row] = await readBookings(q, eq(bookings.id, bookingId));
     if (row === undefined) return undefined;
     if (row.booking.passengerId !== viewerId && row.trip.driverId !== viewerId) return undefined;
-    return present(row, viewerId, now);
+    return present(row, viewerId, now, tripDaySettings);
   }
 
   async function byAttemptKey(q: Queryable, passengerId: string, attemptKey: string) {
@@ -722,7 +762,7 @@ export function createBookingService(dependencies: {
         when === "upcoming"
           ? rows.filter(upcoming).sort((a, b) => boardsAt(a) - boardsAt(b))
           : rows.filter((row) => !upcoming(row)).sort((a, b) => boardsAt(b) - boardsAt(a));
-      return chosen.map((row) => present(row, passengerId, now));
+      return chosen.map((row) => present(row, passengerId, now, tripDaySettings));
     },
 
     async booking(viewerId, bookingId) {
@@ -735,7 +775,7 @@ export function createBookingService(dependencies: {
       const rows = await readBookings(db, inArray(bookings.id, [...bookingIds]));
       return rows
         .filter((row) => row.booking.passengerId === viewerId || row.trip.driverId === viewerId)
-        .map((row) => present(row, viewerId, now));
+        .map((row) => present(row, viewerId, now, tripDaySettings));
     },
 
     withdraw(passengerId, bookingId) {
@@ -1030,7 +1070,9 @@ export function createBookingService(dependencies: {
             a.row.alightStop.position - b.row.alightStop.position,
         );
       return {
-        bookings: [...requests, ...others].map(({ row }) => present(row, driverId, now)),
+        bookings: [...requests, ...others].map(({ row }) =>
+          present(row, driverId, now, tripDaySettings),
+        ),
         segments: occupancy,
         capacity: trip.capacity,
       };

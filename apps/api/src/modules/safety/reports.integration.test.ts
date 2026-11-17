@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import {
   bookingRoute,
+  cancelBookingRoute,
+  cancellationPreviewRoute,
   conversationMessagesRoute,
   fileReportRoute,
   myReportsRoute,
@@ -12,7 +14,12 @@ import { operatorRole } from "@shareride/domain";
 import { asc, eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createFakePushSender, type FakePushSender } from "../../platform/push.ts";
-import { createDevSmsSender, type DevSmsSender } from "../../platform/sms.ts";
+import {
+  createDevSmsSender,
+  SmsSendError,
+  type DevSmsSender,
+  type SmsSender,
+} from "../../platform/sms.ts";
 import { startTestApi, type TestApi } from "../../testing.ts";
 import {
   bookingHelpers,
@@ -458,18 +465,21 @@ describe("the operator's alert of a new report (spec 9, R9.9)", () => {
     sms = createDevSmsSender({ print: () => undefined });
   });
 
-  function runWorker() {
+  function runWorker(sender: SmsSender = sms) {
     return createNotificationWorker({
       db: api.connection.db,
       clock: () => api.now(),
       push,
-      sms,
+      sms: sender,
     }).runOnce();
   }
 
   /** An operator with the app on their phone, so push reaches them. */
   async function operator(firstName = "Ósk") {
-    const member = await newMember(firstName);
+    return asOperator(await newMember(firstName));
+  }
+
+  async function asOperator(member: Member) {
     const { db } = api.connection;
     await db
       .update(schema.users)
@@ -553,7 +563,7 @@ describe("the operator's alert of a new report (spec 9, R9.9)", () => {
     await driverOf(airport, "Jón");
     const gunna = await newMember("Gunna");
     const osk = await operator();
-    await later(11 * 3600, gunna);
+    await later((Date.parse("2026-11-13T23:30:00Z") - api.now().getTime()) / 1000, gunna);
     await report(gunna, { about: { kind: "trip", tripId: airport }, category: "safety" });
     await runWorker();
     expect(await logOf(osk)).toEqual([
@@ -620,5 +630,80 @@ describe("the operator's alert of a new report (spec 9, R9.9)", () => {
     expect(await logOf(osk)).toEqual([
       { kind: "report_filed", channel: "push", status: "skipped", reason: "no_longer_applies" },
     ]);
+  });
+
+  it("drops an alert not yet sent once the operator no longer holds the role", async () => {
+    await driverOf(airport, "Jón");
+    const gunna = await newMember("Gunna");
+    const osk = await operator();
+    await report(gunna, { about: { kind: "trip", tripId: airport }, category: "other" });
+    push.failure = new Error("The push service is down.");
+    await runWorker();
+    push.failure = null;
+    await api.connection.db
+      .update(schema.users)
+      .set({ roles: [] })
+      .where(eq(schema.users.id, osk.userId));
+    await later(3600);
+    await runWorker();
+    expect(await logOf(osk)).toEqual([
+      { kind: "report_filed", channel: "push", status: "skipped", reason: "no_longer_applies" },
+    ]);
+  });
+
+  it("never sends the SMS after 23:00, even when a send at 22:59 is tried again", async () => {
+    await driverOf(airport, "Jón");
+    const gunna = await newMember("Gunna");
+    const osk = await operator();
+    // 22:59 in Iceland, whatever earlier tests left on the clock.
+    await later((Date.parse("2026-11-13T22:59:00Z") - api.now().getTime()) / 1000, gunna);
+    await report(gunna, { about: { kind: "trip", tripId: airport }, category: "safety" });
+    const refusing: SmsSender = {
+      send: () => Promise.reject(new SmsSendError("The SMS provider is down.")),
+    };
+    await runWorker(refusing);
+    await later(120);
+    await runWorker();
+    expect(await logOf(osk)).toEqual([
+      { kind: "report_filed_urgent", channel: "push", status: "sent", reason: null },
+      {
+        kind: "report_filed_urgent",
+        channel: "sms",
+        status: "skipped",
+        reason: "outside_sms_window",
+      },
+    ]);
+    expect(sms.outbox).toEqual([]);
+  });
+
+  it("keeps an operator's own SMS news when alerts came in that day (R7.10)", async () => {
+    const { jon, gunna, bookingId } = await confirmed();
+    await asOperator(gunna);
+    const siggi = await newMember("Siggi");
+    for (let index = 0; index < 5; index += 1) {
+      await report(siggi, { about: { kind: "trip", tripId: airport }, category: "safety" });
+    }
+    await runWorker();
+    expect(sms.outbox).toHaveLength(5);
+
+    const preview = await api.client.call(cancellationPreviewRoute, {
+      accessToken: jon.accessToken,
+      params: { id: bookingId },
+    });
+    if (!preview.ok) throw new Error(preview.error.code);
+    const shown = preview.data.reasons.find((option) => option.reason === "car_problem");
+    if (shown === undefined) throw new Error("car_problem is not offered");
+    const cancelled = await api.client.call(cancelBookingRoute, {
+      accessToken: jon.accessToken,
+      params: { id: bookingId },
+      body: {
+        reason: shown.reason,
+        terms: { refund: shown.refund, countsOnReliability: shown.countsOnReliability },
+      },
+    });
+    expect(cancelled.ok).toBe(true);
+    await runWorker();
+    expect(sms.outbox).toHaveLength(6);
+    expect(sms.outbox.at(-1)?.text).toMatch(/^ShareRide: the driver cancelled your booking/);
   });
 });

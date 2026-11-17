@@ -52,6 +52,8 @@ export const notificationRules = {
   reminder_hour: { push: true, email: "never", sms: false },
   reminder_hour_driver: { push: true, email: "never", sms: false },
   payout_sent: { push: false, email: "always", sms: false },
+  checked_in: { push: true, email: "never", sms: false },
+  checked_in_driver: { push: true, email: "never", sms: false },
   // News about the account rather than a trip (spec 11): the texts say what
   // is ready and until when, never a link (spec 11, 7).
   data_export_ready: { push: true, email: "always", sms: false },
@@ -84,7 +86,7 @@ export function isOperatorNotice(kind: NotificationKind): kind is OperatorNotice
 
 /**
  * What can happen, as the catalogue sees it: the domain events of spec 5, 6,
- * 13 and 2, and the moments the worker schedules (the halfway and pay
+ * 8, 13 and 2, and the moments the worker schedules (the halfway and pay
  * reminders, the unread messages email and the trip reminders).
  * `BookingAccepted` means accepted and waiting for payment: a free booking
  * is confirmed at once and gives `BookingConfirmed` instead (R5.11).
@@ -107,7 +109,9 @@ export type NotificationEvent =
   | { readonly type: "MessageSent"; readonly to: TripRole }
   | { readonly type: "UnreadMessages"; readonly to: TripRole }
   | { readonly type: "ReminderDue"; readonly which: "evening" | "hour"; readonly to: TripRole }
-  | { readonly type: "PayoutSent" };
+  | { readonly type: "PayoutSent" }
+  /** "I'm here" (spec 8, 3.2): `by` said it, and the other side at that stop is told. */
+  | { readonly type: "CheckedIn"; readonly by: TripRole };
 
 export interface Addressed {
   readonly kind: NotificationKind;
@@ -178,6 +182,10 @@ export function notificationsFor(event: NotificationEvent): readonly Addressed[]
       return [{ kind: reminderKinds[event.which][event.to], to: event.to }];
     case "PayoutSent":
       return [{ kind: "payout_sent", to: "driver" }];
+    case "CheckedIn":
+      return event.by === "driver"
+        ? [{ kind: "checked_in", to: "passenger" }]
+        : [{ kind: "checked_in_driver", to: "driver" }];
   }
 }
 
@@ -226,6 +234,10 @@ export function stillApplies(kind: NotificationKind, status: BookingStatus): boo
     // still booked.
     case "reminder_evening":
     case "reminder_hour":
+      return status === "confirmed";
+    // "I'm here" matters only while the booking boards (spec 8, 3.2).
+    case "checked_in":
+    case "checked_in_driver":
       return status === "confirmed";
     default:
       return true;

@@ -28,6 +28,7 @@ export const outboxEventTypes = [
   "TripCancelled",
   "RefundIssued",
   "MessageSent",
+  "CheckedIn",
   "DataExportReady",
   "ReportFiled",
 ] as const;

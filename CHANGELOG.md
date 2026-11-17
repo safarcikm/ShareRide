@@ -480,7 +480,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   or their chat is closed. `blocks` is in the personal data catalogue,
   erased with either account, and gets its own export section, People you
   blocked: each by first name, and since when, never who blocked them.
-  Migration `0023_blocks`. `POST /v1/bookings/{id}/block`,
+  Migration `0025_blocks`. `POST /v1/bookings/{id}/block`,
   `GET /v1/me/blocks`, `DELETE /v1/me/blocks/{id}`.
 - Reports (milestone 9, PR 5a, spec 9, 3.1; R9.1, R9.2): "Report this
   trip" on trip details (not to its driver, whatever the trip's state:
@@ -500,7 +500,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   trip, message or booking that the person cannot see is refused as not
   found; a person cannot report themselves; 10 reports a day, also when
   sent at once. The person reported is never told who reported them.
-  Migration `0024_reports`; `reports` is in the personal data catalogue,
+  Migration `0026_reports`; `reports` is in the personal data catalogue,
   kept 3 years after closing, and chat clean-up keeps a conversation a
   report covers that long. "Download my data" has Reports you sent, never
   a report about the person. The category and outcome texts moved to
@@ -512,11 +512,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   R9.9): every active operator gets `report_filed` by push, or
   `report_filed_urgent` for a safety report, by push and also by SMS from
   07:00 to 23:00 Reykjavik time, push only at night (the domain's
-  `alertChannels`; no daily SMS limit, unlike a passenger's). The alert
-  says only "New report" or "New safety report", never who or what, and
-  one not yet sent is dropped once its report is closed. A new outbox
-  event `ReportFiled`; notifications gain `report_id`, in migration
-  `0024_reports`.
+  `alertChannels`, checked again on each try, so a retry never sends one
+  after 23:00). Alerts have no daily SMS limit and don't count towards an
+  operator's own one as a passenger (spec 7, R7.10). The alert says only
+  "New report" or "New safety report", never who or what, and one not yet
+  sent is dropped once its report is closed or the operator loses the
+  role. A new outbox event `ReportFiled`; notifications gain `report_id`,
+  in migration `0026_reports`.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its
@@ -530,6 +532,33 @@ releases follow [Semantic Versioning](https://semver.org/).
 - A trip under way can still be booked at a later stop until that stop's
   cut-off (rule S4; Martin's answer A45 to Q21): search finds it, and the
   trip page offers it, as before trips departed on their own.
+- "I'm here" in the API (milestone 7, PR 4a, spec 8, 3.2 and R8.3):
+  `POST /v1/bookings/{id}/check-in` for the passenger at their boarding
+  stop, and `POST /v1/trips/{id}/stops/{stopId}/check-in` for the driver at
+  a stop of their trip, from 30 minutes before the stop's planned time to
+  60 minutes after. It stores who said it and when, never where they are.
+  The other side at that stop gets a push ("At the meeting point: Anna")
+  and a line in the conversation; a repeat answers with the first and
+  tells nobody again. A booking that boards, and the driver's trip, now
+  give the trip day: its phase, when "I'm here" opens and closes, who has
+  said it, and for the driver whether each passenger is at their stop. The
+  driver's trip gives each stop's ID. Migration `0023_trip_day_check_ins`
+  adds the `check_ins` table, one per booking and one per stop for the
+  driver, and the new notification kinds.
+- The trip day in the app (milestone 7, PR 4b, spec 8, 3.1 and 3.2): from
+  3 hours before boarding, a confirmed booking leads with the time and
+  meeting point, where to stand, the driver and car with its plate, then
+  one large "I'm here" button and the chat; it says when the driver is at
+  the meeting point. The driver's trip page says "Use this only when
+  parked." and lists the stops in order with their times, who gets in at
+  each with seats and whether they are here, who gets out, and "I'm here"
+  at each stop where it is open, after the last one said and where someone
+  gets in (`driverCheckInStops` in the domain). Before "I'm here" opens it
+  says when it will. Both pages load again every 30 seconds while the trip
+  day shows, and when the app comes back to the front. The
+  browser tests' API can move one trip's times closer
+  (`POST /e2e/trips/{id}/move`), never in the real server, and a journey
+  has both sides check in and see each other's.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
@@ -546,7 +575,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   from drawings in `apps/mobile/assets/logo`.
 - Operator console, milestone 8: the plan and ADR 0028; console sessions,
   the guard on `/admin/v1` and the append-only audit log in the API
-  (`recordAudit`, a trigger that refuses changes).
+  (`recordAudit`, a trigger that refuses changes); passkey sign-in with
+  `@simplewebauthn/server` (setup link, sign-in, adding and removing
+  passkeys) and the `operator` command that gives or removes the role.
 
 - Privacy self-service, part 1 (spec 11): the rules in the domain (what
   is open before deleting an account, the 7-day wait, what deletion does to

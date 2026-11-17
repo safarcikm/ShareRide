@@ -90,6 +90,9 @@ describe("who is told about each event (spec 7, 3.3)", () => {
       [{ kind: "reminder_hour_driver", to: "driver" }],
     ],
     [{ type: "PayoutSent" }, [{ kind: "payout_sent", to: "driver" }]],
+    // "I'm here" (spec 8, 3.2): the other side at that stop.
+    [{ type: "CheckedIn", by: "driver" }, [{ kind: "checked_in", to: "passenger" }]],
+    [{ type: "CheckedIn", by: "passenger" }, [{ kind: "checked_in_driver", to: "driver" }]],
   ];
 
   it.each(cases)("%o", (event, expected) => {
@@ -134,6 +137,9 @@ describe("the channels of each kind (spec 7, 3.3 and 3.4)", () => {
     ["reminder_hour", true, "never", false],
     ["reminder_hour_driver", true, "never", false],
     ["payout_sent", false, "always", false],
+    // Push only (spec 8, 3.9): it matters at the stop, and nowhere later.
+    ["checked_in", true, "never", false],
+    ["checked_in_driver", true, "never", false],
     ["data_export_ready", true, "always", false],
     ["report_filed", true, "never", false],
     ["report_filed_urgent", true, "never", true],
@@ -272,6 +278,15 @@ describe("stillApplies", () => {
     for (const kind of ["pay_now", "pay_reminder"] as const) {
       expect(stillApplies(kind, "accepted")).toBe(true);
       for (const status of ["confirmed", "expired", "requested"] as const) {
+        expect(stillApplies(kind, status)).toBe(false);
+      }
+    }
+  });
+
+  it("says someone is at the meeting point only while the booking is confirmed (spec 8, 3.2)", () => {
+    for (const kind of ["checked_in", "checked_in_driver"] as const) {
+      expect(stillApplies(kind, "confirmed")).toBe(true);
+      for (const status of ["cancelled", "no_show", "completed"] as const) {
         expect(stillApplies(kind, status)).toBe(false);
       }
     }

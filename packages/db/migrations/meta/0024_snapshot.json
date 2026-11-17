@@ -1,6 +1,6 @@
 {
-  "id": "2c73279a-0709-488c-be58-69f846132f16",
-  "prevId": "0c99b072-cdf6-49ee-913f-5265426947cf",
+  "id": "b154fc45-7fa2-4c78-be97-c1b7016eadb9",
+  "prevId": "fe36e06b-1d65-4831-8e4c-74f05823d5ee",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -182,6 +182,232 @@
       },
       "isRLSEnabled": false
     },
+    "public.operator_challenges": {
+      "name": "operator_challenges",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "challenge": {
+          "name": "challenge",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "purpose": {
+          "name": "purpose",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "setup_link_id": {
+          "name": "setup_link_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "operator_challenges_expires_index": {
+          "name": "operator_challenges_expires_index",
+          "columns": [
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "operator_challenges_user_id_users_id_fk": {
+          "name": "operator_challenges_user_id_users_id_fk",
+          "tableFrom": "operator_challenges",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "operator_challenges_setup_link_id_operator_setup_links_id_fk": {
+          "name": "operator_challenges_setup_link_id_operator_setup_links_id_fk",
+          "tableFrom": "operator_challenges",
+          "tableTo": "operator_setup_links",
+          "columnsFrom": ["setup_link_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "operator_challenges_challenge_unique": {
+          "name": "operator_challenges_challenge_unique",
+          "nullsNotDistinct": false,
+          "columns": ["challenge"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "operator_challenges_purpose_check": {
+          "name": "operator_challenges_purpose_check",
+          "value": "\"operator_challenges\".\"purpose\" in ('setup', 'add', 'sign_in', 'confirm')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.operator_passkeys": {
+      "name": "operator_passkeys",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "credential_id": {
+          "name": "credential_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "public_key": {
+          "name": "public_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "counter": {
+          "name": "counter",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "transports": {
+          "name": "transports",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "backed_up": {
+          "name": "backed_up",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_used_at": {
+          "name": "last_used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "operator_passkeys_user_index": {
+          "name": "operator_passkeys_user_index",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "operator_passkeys_user_id_users_id_fk": {
+          "name": "operator_passkeys_user_id_users_id_fk",
+          "tableFrom": "operator_passkeys",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "operator_passkeys_credential_unique": {
+          "name": "operator_passkeys_credential_unique",
+          "nullsNotDistinct": false,
+          "columns": ["credential_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.operator_sessions": {
       "name": "operator_sessions",
       "schema": "",
@@ -213,6 +439,13 @@
         },
         "last_used_at": {
           "name": "last_used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "confirmed_at": {
+          "name": "confirmed_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
@@ -288,6 +521,96 @@
           "value": "\"operator_sessions\".\"end_reason\" is null or \"operator_sessions\".\"end_reason\" in ('signed_out', 'idle', 'expired', 'role_removed', 'suspended')"
         }
       },
+      "isRLSEnabled": false
+    },
+    "public.operator_setup_links": {
+      "name": "operator_setup_links",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "used_at": {
+          "name": "used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "operator_setup_links_user_index": {
+          "name": "operator_setup_links_user_index",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "operator_setup_links_user_id_users_id_fk": {
+          "name": "operator_setup_links_user_id_users_id_fk",
+          "tableFrom": "operator_setup_links",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "operator_setup_links_token_unique": {
+          "name": "operator_setup_links_token_unique",
+          "nullsNotDistinct": false,
+          "columns": ["token_hash"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.email_verifications": {
@@ -2288,12 +2611,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "report_id": {
-          "name": "report_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
         "unique_key": {
           "name": "unique_key",
           "type": "text",
@@ -2397,21 +2714,6 @@
           "method": "btree",
           "with": {}
         },
-        "notifications_report_index": {
-          "name": "notifications_report_index",
-          "columns": [
-            {
-              "expression": "report_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "notifications_created_index": {
           "name": "notifications_created_index",
           "columns": [
@@ -2473,15 +2775,6 @@
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
-        },
-        "notifications_report_id_reports_id_fk": {
-          "name": "notifications_report_id_reports_id_fk",
-          "tableFrom": "notifications",
-          "tableTo": "reports",
-          "columnsFrom": ["report_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2496,7 +2789,7 @@
       "checkConstraints": {
         "notifications_kind_check": {
           "name": "notifications_kind_check",
-          "value": "\"notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'data_export_ready', 'report_filed', 'report_filed_urgent')"
+          "value": "\"notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'data_export_ready')"
         }
       },
       "isRLSEnabled": false
@@ -2583,7 +2876,7 @@
       "checkConstraints": {
         "outbox_events_kind_check": {
           "name": "outbox_events_kind_check",
-          "value": "\"outbox_events\".\"kind\" in ('BookingRequested', 'BookingAccepted', 'BookingConfirmed', 'BookingDeclined', 'BookingExpired', 'BookingWithdrawn', 'BookingCancelled', 'DepartureMoved', 'TripChanged', 'TripCancelled', 'RefundIssued', 'MessageSent', 'DataExportReady', 'ReportFiled')"
+          "value": "\"outbox_events\".\"kind\" in ('BookingRequested', 'BookingAccepted', 'BookingConfirmed', 'BookingDeclined', 'BookingExpired', 'BookingWithdrawn', 'BookingCancelled', 'DepartureMoved', 'TripChanged', 'TripCancelled', 'RefundIssued', 'MessageSent', 'CheckedIn', 'DataExportReady')"
         }
       },
       "isRLSEnabled": false
@@ -2908,7 +3201,7 @@
       "checkConstraints": {
         "scheduled_notifications_kind_check": {
           "name": "scheduled_notifications_kind_check",
-          "value": "\"scheduled_notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'data_export_ready', 'report_filed', 'report_filed_urgent')"
+          "value": "\"scheduled_notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'data_export_ready')"
         },
         "scheduled_notifications_recipient_check": {
           "name": "scheduled_notifications_recipient_check",
@@ -3050,6 +3343,110 @@
       },
       "isRLSEnabled": false
     },
+    "public.check_ins": {
+      "name": "check_ins",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "trip_stop_id": {
+          "name": "trip_stop_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "booking_id": {
+          "name": "booking_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "checked_in_at": {
+          "name": "checked_in_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "check_ins_booking_unique": {
+          "name": "check_ins_booking_unique",
+          "columns": [
+            {
+              "expression": "booking_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "check_ins_driver_stop_unique": {
+          "name": "check_ins_driver_stop_unique",
+          "columns": [
+            {
+              "expression": "trip_stop_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"check_ins\".\"booking_id\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "check_ins_trip_stop_id_trip_stops_id_fk": {
+          "name": "check_ins_trip_stop_id_trip_stops_id_fk",
+          "tableFrom": "check_ins",
+          "tableTo": "trip_stops",
+          "columnsFrom": ["trip_stop_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "check_ins_user_id_users_id_fk": {
+          "name": "check_ins_user_id_users_id_fk",
+          "tableFrom": "check_ins",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "check_ins_booking_id_bookings_id_fk": {
+          "name": "check_ins_booking_id_bookings_id_fk",
+          "tableFrom": "check_ins",
+          "tableTo": "bookings",
+          "columnsFrom": ["booking_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.data_exports": {
       "name": "data_exports",
       "schema": "",
@@ -3184,422 +3581,6 @@
         "data_exports_ready_check": {
           "name": "data_exports_ready_check",
           "value": "(\"data_exports\".\"ready_at\" is null) = (\"data_exports\".\"expires_at\" is null) and (\"data_exports\".\"file\" is null or \"data_exports\".\"ready_at\" is not null)"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.blocks": {
-      "name": "blocks",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "uuidv7()"
-        },
-        "blocker_id": {
-          "name": "blocker_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "blocked_id": {
-          "name": "blocked_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "blocks_blocked_index": {
-          "name": "blocks_blocked_index",
-          "columns": [
-            {
-              "expression": "blocked_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "blocks_blocker_id_users_id_fk": {
-          "name": "blocks_blocker_id_users_id_fk",
-          "tableFrom": "blocks",
-          "tableTo": "users",
-          "columnsFrom": ["blocker_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "blocks_blocked_id_users_id_fk": {
-          "name": "blocks_blocked_id_users_id_fk",
-          "tableFrom": "blocks",
-          "tableTo": "users",
-          "columnsFrom": ["blocked_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "blocks_pair_unique": {
-          "name": "blocks_pair_unique",
-          "nullsNotDistinct": false,
-          "columns": ["blocker_id", "blocked_id"]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {
-        "blocks_self_check": {
-          "name": "blocks_self_check",
-          "value": "\"blocks\".\"blocker_id\" <> \"blocks\".\"blocked_id\""
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.reports": {
-      "name": "reports",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "uuidv7()"
-        },
-        "reporter_id": {
-          "name": "reporter_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "subject_user_id": {
-          "name": "subject_user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "subject": {
-          "name": "subject",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "trip_id": {
-          "name": "trip_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "booking_id": {
-          "name": "booking_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "message_id": {
-          "name": "message_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "conversation_id": {
-          "name": "conversation_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "category": {
-          "name": "category",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
-        "urgent": {
-          "name": "urgent",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'open'"
-        },
-        "outcome": {
-          "name": "outcome",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "closed_by_id": {
-          "name": "closed_by_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "closed_at": {
-          "name": "closed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "reports_reporter_index": {
-          "name": "reports_reporter_index",
-          "columns": [
-            {
-              "expression": "reporter_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "reports_subject_user_index": {
-          "name": "reports_subject_user_index",
-          "columns": [
-            {
-              "expression": "subject_user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "reports_open_index": {
-          "name": "reports_open_index",
-          "columns": [
-            {
-              "expression": "urgent",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "\"reports\".\"status\" = 'open'",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "reports_conversation_index": {
-          "name": "reports_conversation_index",
-          "columns": [
-            {
-              "expression": "conversation_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "reports_trip_index": {
-          "name": "reports_trip_index",
-          "columns": [
-            {
-              "expression": "trip_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "reports_booking_index": {
-          "name": "reports_booking_index",
-          "columns": [
-            {
-              "expression": "booking_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "reports_message_index": {
-          "name": "reports_message_index",
-          "columns": [
-            {
-              "expression": "message_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "reports_reporter_id_users_id_fk": {
-          "name": "reports_reporter_id_users_id_fk",
-          "tableFrom": "reports",
-          "tableTo": "users",
-          "columnsFrom": ["reporter_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "reports_subject_user_id_users_id_fk": {
-          "name": "reports_subject_user_id_users_id_fk",
-          "tableFrom": "reports",
-          "tableTo": "users",
-          "columnsFrom": ["subject_user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "reports_trip_id_trips_id_fk": {
-          "name": "reports_trip_id_trips_id_fk",
-          "tableFrom": "reports",
-          "tableTo": "trips",
-          "columnsFrom": ["trip_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "reports_booking_id_bookings_id_fk": {
-          "name": "reports_booking_id_bookings_id_fk",
-          "tableFrom": "reports",
-          "tableTo": "bookings",
-          "columnsFrom": ["booking_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "reports_message_id_messages_id_fk": {
-          "name": "reports_message_id_messages_id_fk",
-          "tableFrom": "reports",
-          "tableTo": "messages",
-          "columnsFrom": ["message_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "reports_conversation_id_conversations_id_fk": {
-          "name": "reports_conversation_id_conversations_id_fk",
-          "tableFrom": "reports",
-          "tableTo": "conversations",
-          "columnsFrom": ["conversation_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "reports_closed_by_id_users_id_fk": {
-          "name": "reports_closed_by_id_users_id_fk",
-          "tableFrom": "reports",
-          "tableTo": "users",
-          "columnsFrom": ["closed_by_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "reports_subject_check": {
-          "name": "reports_subject_check",
-          "value": "\"reports\".\"subject\" in ('user', 'trip', 'message', 'review', 'booking')"
-        },
-        "reports_category_check": {
-          "name": "reports_category_check",
-          "value": "\"reports\".\"category\" in ('safety', 'harassment', 'discrimination', 'scam', 'false_info', 'offensive', 'not_as_listed', 'other')"
-        },
-        "reports_status_check": {
-          "name": "reports_status_check",
-          "value": "\"reports\".\"status\" in ('open', 'closed')"
-        },
-        "reports_outcome_check": {
-          "name": "reports_outcome_check",
-          "value": "\"reports\".\"outcome\" is null or \"reports\".\"outcome\" in ('action_taken', 'no_breach')"
-        },
-        "reports_closed_check": {
-          "name": "reports_closed_check",
-          "value": "(\"reports\".\"status\" = 'closed') = (\"reports\".\"closed_at\" is not null) and (\"reports\".\"status\" = 'closed') = (\"reports\".\"outcome\" is not null)"
         }
       },
       "isRLSEnabled": false

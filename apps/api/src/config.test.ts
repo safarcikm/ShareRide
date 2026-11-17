@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ConfigError, loadConfig, loadErrorReportingConfig } from "./config.ts";
+import { ConfigError, loadAdminOrigin, loadConfig, loadErrorReportingConfig } from "./config.ts";
 
 const valid = {
   NODE_ENV: "production",
@@ -51,7 +51,31 @@ describe("loadConfig", () => {
       worker: true,
       push: { accessToken: undefined },
       email: { provider: "dev", webAppUrl: "http://localhost:8081" },
+      adminOrigin: "http://localhost:8080",
     });
+  });
+
+  it("binds the console's passkeys to ADMIN_ORIGIN, or the API itself locally (ADR 0028)", () => {
+    expect(loadConfig(development).adminOrigin).toBe("http://localhost:3000");
+    expect(loadConfig(valid).adminOrigin).toBeUndefined();
+    expect(
+      loadConfig({ ...valid, ADMIN_ORIGIN: "https://shareride-staging-api.onrender.com" })
+        .adminOrigin,
+    ).toBe("https://shareride-staging-api.onrender.com");
+    expect(() => loadConfig({ ...valid, ADMIN_ORIGIN: "https://shareride.is/admin" })).toThrow(
+      ConfigError,
+    );
+  });
+
+  it("gives the operator command the same console origin as the API", () => {
+    expect(loadAdminOrigin({ NODE_ENV: "development" })).toBe("http://localhost:3000");
+    expect(loadAdminOrigin({ NODE_ENV: "production" })).toBeUndefined();
+    expect(
+      loadAdminOrigin({ NODE_ENV: "production", ADMIN_ORIGIN: "https://admin.shareride.is" }),
+    ).toBe("https://admin.shareride.is");
+    expect(() =>
+      loadAdminOrigin({ NODE_ENV: "production", ADMIN_ORIGIN: "https://shareride.is/admin" }),
+    ).toThrow(ConfigError);
   });
 
   it("has defaults for local development", () => {

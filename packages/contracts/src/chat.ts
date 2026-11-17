@@ -56,7 +56,7 @@ export const chatMessageSchema = z.object({
   /** A text message's text, as written. */
   text: z.string().nullable(),
   quick: quickMessageSchema.nullable(),
-  /** A line about the booking: opened, the departure or the car changed, or it or its trip cancelled by me or them, with the reason (spec 6). */
+  /** A line about the booking: opened, the departure or the car changed, it or its trip cancelled by me or them with the reason (spec 6), or "I'm here" (spec 8). */
   system: z
     .discriminatedUnion("key", [
       z.object({ key: z.literal("opened") }),
@@ -76,6 +76,8 @@ export const chatMessageSchema = z.object({
       }),
       /** A stop removed from the trip (spec 6, 3.2). */
       z.object({ key: z.literal("stop_removed"), stop: localisedTextSchema }),
+      /** "I'm here" at the passenger's meeting point, mine or theirs (spec 8, 3.2). */
+      z.object({ key: z.literal("checked_in"), by: z.enum(["me", "them"]) }),
       z.object({
         key: z.literal("cancelled"),
         by: z.enum(["me", "them"]),

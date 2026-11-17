@@ -209,7 +209,8 @@ Opened in the transaction that confirms the booking. Retained per the
 ### Trip day and reliability records
 
 Detailed in [spec 8](../specs/2026-11-13-trip-day-reviews-and-reliability.md#6-data-and-api):
-`CheckIn` ("I'm here": trip stop, user, time; never a location), `Dispute`
+`CheckIn` ("I'm here": trip stop, user, the passenger's booking, time;
+never a location), `Dispute`
 (a no-show or a missing driver, the other side's answer and the outcome),
 `ReliabilityRecord` (one per kept or not-kept trip or booking, with whether
 it counts and why not) and `UserStats` (rating and reliability totals).
@@ -251,6 +252,10 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
   app's sessions; ends 30 minutes after last use, 12 hours after sign-in,
   on sign-out, or when the role is removed or the account suspended
   ([ADR 0028](../decisions/0028-operator-console-web-app-and-passkeys.md)).
+- `OperatorPasskey`: a passkey an operator signs in with (public key,
+  counter, name, last used), with `OperatorSetupLink` (one-time link from
+  the `operator` command) and `OperatorChallenge` (one WebAuthn challenge,
+  5 minutes).
 - `Setting`: operator configuration (rates, timeouts, switches) with a range,
   a `SettingChange` history and a `SettingsVersion` that trips and bookings
   record ([spec 10](../specs/2026-11-13-operator-settings-and-metrics.md#6-data-and-api)).
