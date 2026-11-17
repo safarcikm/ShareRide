@@ -53,6 +53,7 @@ export function createPeopleService(dependencies: {
         id: users.id,
         firstName: users.firstName,
         about: users.about,
+        aboutHiddenAt: users.aboutHiddenAt,
         languages: users.languages,
         phoneVerifiedAt: users.phoneVerifiedAt,
         emailVerifiedAt: users.emailVerifiedAt,
@@ -76,7 +77,12 @@ export function createPeopleService(dependencies: {
       return ok({
         profileId,
         firstName: person.firstName,
-        about: person.about === null || person.about === "" ? null : person.about,
+        // About you that ShareRide hid is not shown until they write a new one
+        // (spec 9, 3.4.3).
+        about:
+          person.about === null || person.about === "" || person.aboutHiddenAt !== null
+            ? null
+            : person.about,
         languages: [...person.languages],
         phoneVerified: person.phoneVerifiedAt !== null,
         emailVerified: person.emailVerifiedAt !== null,
