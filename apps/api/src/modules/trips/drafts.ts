@@ -2,6 +2,7 @@ import type { MeetingPointSummary, MyTrip, TripCopy, TripDraftBody } from "@shar
 import { schema, type Database } from "@shareride/db";
 import {
   checkTripForPublishing,
+  dayPhase,
   err,
   firstTripChoices,
   isOfferedForNewTrips,
@@ -10,6 +11,7 @@ import {
   ok,
   plannedTimes,
   routeLegPairs,
+  runsOrRan,
   stopsToCopy,
   type DistancesMissing,
   type MeetingPointStatus,
@@ -17,12 +19,14 @@ import {
   type Result,
   type TripChoices,
   type TripCancelReason,
+  type TripDaySettings,
   type TripSettings,
 } from "@shareride/domain";
 import { and, asc, count, desc, eq, gt, inArray, isNull, lte, min, ne, or, sql } from "drizzle-orm";
 import type { DrivingService } from "../driving/index.ts";
 import { seatsTakenNow } from "../bookings/seats.ts";
 import { toSummary } from "../meeting-points/service.ts";
+import { checkInsAt, driverCheckedInAt, shownWindow } from "../trip-day/check-ins.ts";
 
 const { bookings, legs, meetingPoints, segments, trips, tripStops, users, vehicles } = schema;
 
@@ -116,9 +120,10 @@ export function createTripService(dependencies: {
   readonly db: Database;
   readonly clock: () => Date;
   readonly settings: TripSettings;
+  readonly tripDaySettings: TripDaySettings;
   readonly driving: DrivingService;
 }): TripService {
-  const { db, clock, settings, driving } = dependencies;
+  const { db, clock, settings, tripDaySettings, driving } = dependencies;
 
   /** The legs for these ordered pairs, as a lookup. */
   async function legsFor(q: Queryable, pairs: readonly (readonly [string, string])[]) {
@@ -176,46 +181,67 @@ export function createTripService(dependencies: {
         .groupBy(bookings.tripId),
       seatsTakenNow(q, ids, now),
     ]);
-    return rows.map((row) => ({
-      id: row.id,
-      status: row.status as MyTrip["status"],
-      stops: stopRows
-        .filter(({ stop }) => stop.tripId === row.id)
-        // A point retired meanwhile leaves a draft (spec 3, 3.9).
-        .filter(({ point }) => row.status !== "draft" || isListed(point.status))
-        .map(({ stop, point }) => ({
-          meetingPoint: toSummary(point),
-          plannedAt: stop.plannedAt?.toISOString() ?? null,
-        })),
-      ...choicesOf(row),
-      vehicleId: row.vehicleId,
-      note: row.note,
-      departsAt: row.departsAt?.toISOString() ?? null,
-      arrivesAt: row.arrivesAt?.toISOString() ?? null,
-      publishedAt: row.publishedAt?.toISOString() ?? null,
-      updatedAt: row.updatedAt.toISOString(),
-      segments: segmentRows
-        .filter((segment) => segment.tripId === row.id)
-        .map((segment) => ({
-          distanceM: segment.distanceM,
-          durationS: segment.durationS,
-          suggestedPrice: { amount: segment.suggestedPrice, currency: "ISK" as const },
-          cap: { amount: segment.cap, currency: "ISK" as const },
-          price: { amount: segment.price, currency: "ISK" as const },
-          seatsTaken: occupancy(row.id, segment.position, segment.occupancy),
-        })),
-      openRequests: requestRows.find((requests) => requests.tripId === row.id)?.count ?? 0,
-      requestsCloseAt:
-        requestRows.find((requests) => requests.tripId === row.id)?.closesAt?.toISOString() ?? null,
-      cancellation:
-        row.status === "cancelled" && row.cancelReason !== null
-          ? {
-              reason: row.cancelReason as TripCancelReason,
-              note: row.cancelNote,
-              countsOnReliability: row.countsOnReliability,
-            }
-          : null,
-    }));
+    const checkIns = await checkInsAt(
+      q,
+      stopRows.map(({ stop }) => stop.id),
+    );
+    return rows.map((row) => {
+      // The trip day is for a trip that runs, or ran (spec 8, 3.1).
+      const runs = runsOrRan(row.status as MyTrip["status"]);
+      return {
+        id: row.id,
+        status: row.status as MyTrip["status"],
+        stops: stopRows
+          .filter(({ stop }) => stop.tripId === row.id)
+          // A point retired meanwhile leaves a draft (spec 3, 3.9).
+          .filter(({ point }) => row.status !== "draft" || isListed(point.status))
+          .map(({ stop, point }) => ({
+            id: stop.id,
+            meetingPoint: toSummary(point),
+            plannedAt: stop.plannedAt?.toISOString() ?? null,
+            checkIn:
+              runs && stop.plannedAt !== null
+                ? {
+                    ...shownWindow(stop.plannedAt, tripDaySettings),
+                    at: driverCheckedInAt(checkIns, stop.id)?.toISOString() ?? null,
+                  }
+                : null,
+          })),
+        phase:
+          runs && row.departsAt !== null && row.arrivesAt !== null
+            ? dayPhase(row.departsAt, row.arrivesAt, now, tripDaySettings)
+            : null,
+        ...choicesOf(row),
+        vehicleId: row.vehicleId,
+        note: row.note,
+        departsAt: row.departsAt?.toISOString() ?? null,
+        arrivesAt: row.arrivesAt?.toISOString() ?? null,
+        publishedAt: row.publishedAt?.toISOString() ?? null,
+        updatedAt: row.updatedAt.toISOString(),
+        segments: segmentRows
+          .filter((segment) => segment.tripId === row.id)
+          .map((segment) => ({
+            distanceM: segment.distanceM,
+            durationS: segment.durationS,
+            suggestedPrice: { amount: segment.suggestedPrice, currency: "ISK" as const },
+            cap: { amount: segment.cap, currency: "ISK" as const },
+            price: { amount: segment.price, currency: "ISK" as const },
+            seatsTaken: occupancy(row.id, segment.position, segment.occupancy),
+          })),
+        openRequests: requestRows.find((requests) => requests.tripId === row.id)?.count ?? 0,
+        requestsCloseAt:
+          requestRows.find((requests) => requests.tripId === row.id)?.closesAt?.toISOString() ??
+          null,
+        cancellation:
+          row.status === "cancelled" && row.cancelReason !== null
+            ? {
+                reason: row.cancelReason as TripCancelReason,
+                note: row.cancelNote,
+                countsOnReliability: row.countsOnReliability,
+              }
+            : null,
+      };
+    });
   }
 
   async function presentOne(q: Queryable, row: TripRow): Promise<MyTrip> {

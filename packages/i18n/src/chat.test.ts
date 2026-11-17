@@ -39,6 +39,21 @@ describe("system lines in the reader's language (spec 7, 3.1, item 3)", () => {
     );
   });
 
+  it('says who said "I\'m here": you, or the other person by name (spec 8, 3.2)', () => {
+    expect(systemLineText(en, { key: "checked_in", by: "them" }, "Anna")).toBe(
+      "Anna is at the meeting point",
+    );
+    expect(systemLineText(is, { key: "checked_in", by: "them" }, "Anna")).toBe(
+      "Anna er á mótsstaðnum",
+    );
+    expect(systemLineText(en, { key: "checked_in", by: "me" }, "Anna")).toBe(
+      "You said you're at the meeting point",
+    );
+    expect(systemLineText(is, { key: "checked_in", by: "me" }, "Anna")).toBe(
+      "Þú sagðist vera á mótsstaðnum",
+    );
+  });
+
   it("says who cancelled and why: you, or the other person by name", () => {
     const mine = {
       key: "cancelled",

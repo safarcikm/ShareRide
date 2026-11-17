@@ -7,6 +7,7 @@ import {
   defaultChatSettings,
   defaultNotificationSettings,
   defaultSearchSettings,
+  defaultTripDaySettings,
   defaultTripSettings,
   searchLimitsPerAddress,
 } from "@shareride/domain";
@@ -41,6 +42,7 @@ import {
 } from "./modules/auth/index.ts";
 import { createBookingService, registerBookingRoutes } from "./modules/bookings/index.ts";
 import { createChatService, registerChatRoutes } from "./modules/chat/index.ts";
+import { createTripDayService, registerTripDayRoutes } from "./modules/trip-day/index.ts";
 import { createDrivingService, registerDrivingRoutes } from "./modules/driving/index.ts";
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
@@ -239,7 +241,12 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     });
     const settings = defaultTripSettings;
     registerTripRoutes(app, createRouteService({ ...features, settings }), requireAuth);
-    const trips = createTripService({ ...features, settings, driving });
+    const trips = createTripService({
+      ...features,
+      settings,
+      tripDaySettings: defaultTripDaySettings,
+      driving,
+    });
     registerDraftRoutes(app, trips, requireAuth);
     registerTripChangeRoutes(
       app,
@@ -255,11 +262,17 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       ...features,
       account,
       settings: defaultBookingSettings,
+      tripDaySettings: defaultTripDaySettings,
     });
     registerBookingRoutes(app, bookings, requireAuth, trips);
     registerChatRoutes(
       app,
       createChatService({ ...features, bookings, settings: defaultChatSettings }),
+      requireAuth,
+    );
+    registerTripDayRoutes(
+      app,
+      createTripDayService({ ...features, settings: defaultTripDaySettings }),
       requireAuth,
     );
     registerNotificationRoutes(app, { ...features, requireAuth });
