@@ -541,8 +541,9 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
           kind: line.kind,
           text: said(line, viewer, other),
           // As stored, for other apps: what the text above was made from.
-          key: line.key,
-          params: line.params,
+          // Never what an erased person said, even where a report kept it.
+          key: line.erasedAt === null ? line.key : null,
+          params: line.erasedAt === null ? line.params : null,
           sentAt: when(line.sentAt),
           readAt: when(line.readAt),
         })),
