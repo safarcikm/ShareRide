@@ -233,6 +233,24 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     personColumns: ["userId"],
     onDeletion: erase,
   },
+  operator_passkeys: {
+    category: "devices",
+    export: { leftOut: "the operator's own passkeys: public keys and names, no secret" },
+    personColumns: ["userId"],
+    onDeletion: erase,
+  },
+  operator_setup_links: {
+    category: "devices",
+    export: { leftOut: "a hash of a link that worked once, for 30 minutes" },
+    personColumns: ["userId"],
+    onDeletion: erase,
+  },
+  operator_challenges: {
+    category: "devices",
+    export: { leftOut: "random challenges for a passkey to sign, good for 5 minutes" },
+    personColumns: ["userId"],
+    onDeletion: erase,
+  },
   audit_log: {
     category: "audit",
     export: { leftOut: "operator actions, kept 3 years for accountability (spec 9, 3.8)" },

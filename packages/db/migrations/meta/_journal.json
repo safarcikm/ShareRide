@@ -169,6 +169,13 @@
       "when": 1794872883902,
       "tag": "0023_trip_day_check_ins",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794873915321,
+      "tag": "0024_operator_passkeys",
+      "breakpoints": true
     }
   ]
 }

@@ -23,7 +23,9 @@ section works the same way. Security details are in
 4. Every action that changes something calls `recordAudit(tx, entry)` from
    `apps/api/src/modules/admin/audit.ts` inside the transaction that makes
    the change:
-   - `operator`: `operatorOf(c)` (a command passes `sessionId: null`);
+   - `operator`: `operatorOf(c)`. The `operator` command, which runs on
+     the server, writes `sessionId: null`, `request: null` and the account
+     it changes as the operator;
    - `action`: a dotted name, the record's kind first and what happened
      last, such as `meeting_point.activated` or `report.dismissed`;
    - `subjectType` and `subjectId`: the record acted on;
@@ -36,6 +38,15 @@ section works the same way. Security details are in
 5. Integration tests sign in with `api.signInOperator()` from
    `apps/api/src/testing.ts` and send its `cookie`. Test that the route
    refuses a request without it and that each action writes its entry.
+
+## Becoming an operator
+
+`pnpm --filter @shareride/api operator add <phone number or user ID>`
+gives the role and prints a setup link for the first passkey; the link
+opens the console's setup page, which comes with the console app
+(milestone 8, PR 4). `remove` takes the role away and `list` lists
+operators. Locally, passkeys
+are bound to `http://localhost:3000` unless `ADMIN_ORIGIN` says otherwise.
 
 ## The guard
 
