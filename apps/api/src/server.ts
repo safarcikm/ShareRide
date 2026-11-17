@@ -8,6 +8,7 @@ import { createApp } from "./app.ts";
 import { ConfigError, loadConfig, type Config } from "./config.ts";
 import { createLogger } from "./logger.ts";
 import { expireAllDueBookings } from "./modules/bookings/index.ts";
+import { moveMeetingPointsOn } from "./modules/meeting-points/index.ts";
 import { createNotificationWorker } from "./modules/notifications/index.ts";
 import { createPaymentService } from "./modules/payments/index.ts";
 import { settleUnansweredReports } from "./modules/trip-day/index.ts";
@@ -115,6 +116,12 @@ const jobs = [
     if (moved.departed + moved.completed > 0) logger.info(moved, "trips moved on");
     const settled = await settleUnansweredReports(database.db, new Date(), defaultTripDaySettings);
     if (settled > 0) logger.info({ settled }, "reports settled");
+  }),
+  // Paused meeting points come back into use on their end date, and
+  // retiring ones retire after their last trip (spec 2, 3.6.4 and 3.6.5).
+  every(60_000, "meeting-points", async () => {
+    const moved = await moveMeetingPointsOn(database.db, new Date());
+    if (moved.resumed + moved.retired > 0) logger.info(moved, "meeting points moved on");
   }),
 ];
 // "Download my data" files (spec 11, 3.2), built within seconds of asking.

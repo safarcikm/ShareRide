@@ -607,6 +607,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   it is decided. After a database restore, `privacy reapply-erasures`
   erases the accounts again and takes the deletions asked for or undone
   since from the old database.
+- Pausing, bringing back and retiring a meeting point, the API (spec 2,
+  3.6.4 and 3.6.5): `POST /admin/v1/meeting-points/{id}/pause`, `/resume`
+  and `/retire`, with their rules in the domain (`nextPointStatus`,
+  `validatePause`) and an audit entry each. A pause asks the driver of
+  each future trip that stops there to choose another stop and tells the
+  passengers who get in or out there, by SMS too within 24 hours of
+  boarding. The API's minute job brings a paused point back on its end
+  date and retires a retiring one after its last trip. A point in use is
+  due for review a year after its last check (R2.9). Migration
+  `0029_meeting_point_pauses` adds the `MeetingPointChanged` event and the
+  meeting point of a notification. The sample seed keeps the status the
+  console gave a sample point.
 
 ### Fixed
 

@@ -14,6 +14,7 @@ import {
   createTranslator,
   type CarFacts,
   formatClock,
+  formatDate,
   formatDay,
   formatDayAndMonth,
   formatMoney,
@@ -32,7 +33,10 @@ import {
  * or payment details (R7.9).
  */
 export interface NotificationFacts {
-  readonly kind: Exclude<NotificationKind, TripReminderFacts["kind"] | AccountNoticeKind>;
+  readonly kind: Exclude<
+    NotificationKind,
+    TripReminderFacts["kind"] | PointPausedFacts["kind"] | AccountNoticeKind
+  >;
   /** The recipient's place on the trip. */
   readonly role: TripRole;
   readonly bookingId: string;
@@ -68,6 +72,30 @@ export interface NotificationFacts {
   readonly paid: boolean;
   /** For a report to answer: until when the other side can (spec 8, R8.6); otherwise null. */
   readonly answerBy: Date | null;
+  /** For a paused meeting point: the point, while it is still paused; otherwise null. */
+  readonly pausedPoint: PausedPoint | null;
+}
+
+/** A paused meeting point as a notification tells of it (spec 2, 3.6.4). */
+export interface PausedPoint {
+  /** In the recipient's language, as is the operator's reason. */
+  readonly name: string;
+  readonly reason: string;
+  /** The day it is back in use, such as "2026-11-30", or null until the operator says. */
+  readonly until: string | null;
+}
+
+/**
+ * A paused meeting point, told to the driver of a trip still to stop there
+ * (spec 2, 3.6.4): about the trip, as passengers may not be booked yet.
+ */
+export interface PointPausedFacts {
+  readonly kind: "meeting_point_changed_driver";
+  readonly role: "driver";
+  readonly tripId: string;
+  /** The trip's planned time at the point. */
+  readonly stopsAt: Date;
+  readonly point: PausedPoint;
 }
 
 /** A driver's trip reminder (3.5): about the trip and everyone booked on it. */
@@ -130,6 +158,9 @@ export function smsText(facts: NotificationFacts, locale: Locale): string {
       );
     case "trip_cancelled":
       return t(facts.refund.amount > 0 ? "sms.tripCancelled" : "sms.tripCancelledUnpaid", values);
+    // Moved or paused: what happened is in the app (spec 7, 3.4).
+    case "meeting_point_changed":
+      return t("sms.meetingPointChanged", { date: values.date });
     case "departure_moved_far": {
       // The new time, with the offer of a full refund to someone who paid (R6.3).
       const { to } = required(facts.moved, "the move");
@@ -148,11 +179,12 @@ export function smsText(facts: NotificationFacts, locale: Locale): string {
  * events, new messages, the email about unread ones, and trip reminders.
  */
 export function notificationText(
-  facts: NotificationFacts | TripReminderFacts | AccountNoticeFacts,
+  facts: NotificationFacts | TripReminderFacts | PointPausedFacts | AccountNoticeFacts,
   locale: Locale,
   settings: NotificationSettings,
 ): NotificationText {
   if ("until" in facts) return accountText(facts, locale);
+  if ("point" in facts) return pointPausedText(facts, locale);
   return "passengers" in facts
     ? tripReminderText(facts, locale)
     : bookingText(facts, locale, settings);
@@ -309,6 +341,21 @@ function bookingText(
           part,
         ];
       }
+      // A paused meeting point where the passenger gets in or out (spec 2,
+      // 3.6.4): the operator's reason, and when it is back if they said.
+      case "meeting_point_changed": {
+        const point = required(facts.pausedPoint, "the paused point");
+        return [
+          t("notify.pointPaused", { point: point.name }),
+          [
+            point.reason,
+            ...(point.until === null
+              ? []
+              : [t("notify.pointBack", { date: formatDate(point.until, locale) })]),
+            t("notify.pointPausedBody", { from, to, when: when(facts.boardsAt) }),
+          ].join("\n"),
+        ];
+      }
       case "refund_issued":
         return [
           t("notify.refunded", { total: formatMoney(facts.total, locale) }),
@@ -378,6 +425,27 @@ function tripReminderText(facts: TripReminderFacts, locale: Locale): Notificatio
       locale,
     ),
     body: lines.join("\n"),
+    path: `/drive/trips/${facts.tripId}`,
+  };
+}
+
+/** The driver is asked to choose another stop (spec 2, 3.6.4), on the trip's page. */
+function pointPausedText(facts: PointPausedFacts, locale: Locale): NotificationText {
+  const t = createTranslator(locale);
+  const { point } = facts;
+  const when = t("notify.when", {
+    date: formatDay(facts.stopsAt, locale),
+    time: formatClock(facts.stopsAt),
+  });
+  return {
+    title: capitalised(t("notify.pointPaused", { point: point.name }), locale),
+    body: [
+      point.reason,
+      ...(point.until === null
+        ? []
+        : [t("notify.pointBack", { date: formatDate(point.until, locale) })]),
+      t("notify.pointPausedDriverBody", { when }),
+    ].join("\n"),
     path: `/drive/trips/${facts.tripId}`,
   };
 }

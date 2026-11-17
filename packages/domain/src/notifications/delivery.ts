@@ -12,8 +12,8 @@ export const deliveryStatuses = ["queued", "sending", "sent", "failed", "skipped
 export type DeliveryStatus = (typeof deliveryStatuses)[number];
 
 /**
- * The events booking, payment, chat and privacy code writes to the outbox,
- * in the same transaction.
+ * The events booking, payment, chat, privacy and console code writes to the
+ * outbox, in the same transaction.
  */
 export const outboxEventTypes = [
   "BookingRequested",
@@ -32,6 +32,7 @@ export const outboxEventTypes = [
   "NoShowMarked",
   "DriverAbsentReported",
   "DisputeDecided",
+  "MeetingPointChanged",
   "DataExportReady",
   "AccountDeletionScheduled",
 ] as const;

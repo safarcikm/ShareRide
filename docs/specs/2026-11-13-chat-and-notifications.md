@@ -133,6 +133,15 @@ Borgarnes", told the same way, to the same people: by push and email,
 never by SMS, as only a stop nobody gets in or out at can go, so no booked
 passenger's stop or time changes. The conversation gets the same line.
 
+As built for a paused meeting point (milestone 8, PR 7): "Meeting point
+not in use for now: N1 Fitjar", with the operator's reason and, when
+given, the day it is back in use. The driver of each trip still to stop
+there is asked to choose another stop, once per trip. Each passenger
+whose accepted or confirmed booking gets in or out there is told once,
+with their part and boarding time, and by SMS within 24 hours of boarding;
+a request is not told, and a passenger only passing through is not either.
+Nothing goes once the point is back in use.
+
 ### 3.4 SMS for last-minute news
 
 SMS is only for sign-in codes (spec 1) and for news that could leave someone

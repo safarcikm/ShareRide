@@ -79,7 +79,15 @@ shelter. `last_checked_on` is the day the operator last confirmed the
 point (spec 2, decision 2); `amenities_reviewed_on` and
 `season_reviewed_on` record the activation checklist's reviews (R2.3).
 The console's rules for each field are `validateMeetingPointDraft` in
-`packages/domain/src/meeting-points/draft.ts`. Photos are
+`packages/domain/src/meeting-points/draft.ts`. Its status changes are
+`nextPointStatus` in `status.ts`: an active point is paused with a reason
+in both languages and an optional end date (`pause_reason_is`, `_en`,
+`paused_until`), and is active again by hand or from that date in
+Iceland; retiring an active point that trips still stop at makes it
+`retiring` until the last of them has passed it, then `retired`; a draft,
+or a paused point, retires at once. Retired is final. `review_due_on` is a
+year after `last_checked_on` while the point is in use (R2.9), and empty
+for a draft or a retired point. Photos are
 `MeetingPointPhoto` records. `sample` marks the sample points that local
 and staging databases get until the real list exists (milestone 3); the app
 tags them.
