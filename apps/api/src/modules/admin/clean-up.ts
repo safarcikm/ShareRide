@@ -2,7 +2,7 @@ import { schema, type Database } from "@shareride/db";
 import { operatorSessionRules } from "@shareride/domain";
 import { lt, or } from "drizzle-orm";
 
-const { operatorSessions } = schema;
+const { operatorChallenges, operatorSessions, operatorSetupLinks } = schema;
 
 /**
  * Deletes console sessions 30 days after they ended, or after they could
@@ -20,4 +20,20 @@ export async function cleanUpOperatorSessions(db: Database, now: Date): Promise<
     )
     .returning({ id: operatorSessions.id });
   return deleted.length;
+}
+
+/**
+ * Deletes passkey challenges and setup links that can no longer be used:
+ * a challenge 5 minutes after it was made, a link 30 minutes after.
+ */
+export async function cleanUpOperatorSignIn(db: Database, now: Date): Promise<number> {
+  const challenges = await db
+    .delete(operatorChallenges)
+    .where(lt(operatorChallenges.expiresAt, now))
+    .returning({ id: operatorChallenges.id });
+  const links = await db
+    .delete(operatorSetupLinks)
+    .where(lt(operatorSetupLinks.expiresAt, now))
+    .returning({ id: operatorSetupLinks.id });
+  return challenges.length + links.length;
 }

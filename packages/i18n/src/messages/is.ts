@@ -972,6 +972,26 @@ export const is = {
   "quick.whereAreYou": "Hvar ertu?",
   "quick.seeYou": "Sjáumst bráðum",
   "quick.thanks": "Takk fyrir!",
+  /** The trip day (spec 8, 3.1 and 3.2): used while parked, no typing. */
+  "tripDay.title": "Ferðadagur",
+  "tripDay.imHere": "Ég er á staðnum",
+  "tripDay.imHereAt": "Ég er á staðnum: {stop}",
+  "tripDay.toldDriver": "Við létum bílstjórann vita að þú sért á staðnum.",
+  "tripDay.toldPassengers": "Við létum farþegana vita að þú sért á staðnum.",
+  "tripDay.otherHere": "{name} er á mótsstaðnum",
+  "tripDay.opensAt": "Þú getur sagt að þú sért á staðnum frá kl. {time}.",
+  "tripDay.closed": "Það er orðið of seint að segja að þú sért á þessum stað.",
+  "tripDay.imHereFailed": "Ekki tókst að láta vita að þú sért á staðnum. Reyndu aftur.",
+  "tripDay.bookingChanged":
+    "Eitthvað breyttist síðan þú opnaðir þetta. Hér er bókunin eins og hún er núna.",
+  "tripDay.tripChanged":
+    "Eitthvað breyttist síðan þú opnaðir þetta. Hér er ferðin eins og hún er núna.",
+  "tripDay.parkedOnly": "Notaðu þetta aðeins þegar bíllinn er kyrr.",
+  "tripDay.gettingIn": "Koma inn",
+  "tripDay.gettingOut": "Fara út",
+  "tripDay.statusNotHere": "Ekki á staðnum enn",
+  "tripDay.statusHere": "Á staðnum",
+  "tripDay.statusNoShow": "Mætti ekki",
   /** Spec 11, 3.2: never a link, which only the signed-in app gives. */
   "notify.dataExportReady": "Gögnin þín eru tilbúin til niðurhals",
   "notify.dataExportReadyBody": "Sæktu skrána í ShareRide fyrir {until}. Eftir það er henni eytt.",

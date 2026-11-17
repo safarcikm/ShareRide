@@ -486,6 +486,20 @@ releases follow [Semantic Versioning](https://semver.org/).
   driver's trip gives each stop's ID. Migration `0023_trip_day_check_ins`
   adds the `check_ins` table, one per booking and one per stop for the
   driver, and the new notification kinds.
+- The trip day in the app (milestone 7, PR 4b, spec 8, 3.1 and 3.2): from
+  3 hours before boarding, a confirmed booking leads with the time and
+  meeting point, where to stand, the driver and car with its plate, then
+  one large "I'm here" button and the chat; it says when the driver is at
+  the meeting point. The driver's trip page says "Use this only when
+  parked." and lists the stops in order with their times, who gets in at
+  each with seats and whether they are here, who gets out, and "I'm here"
+  at each stop where it is open, after the last one said and where someone
+  gets in (`driverCheckInStops` in the domain). Before "I'm here" opens it
+  says when it will. Both pages load again every 30 seconds while the trip
+  day shows, and when the app comes back to the front. The
+  browser tests' API can move one trip's times closer
+  (`POST /e2e/trips/{id}/move`), never in the real server, and a journey
+  has both sides check in and see each other's.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
@@ -502,7 +516,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   from drawings in `apps/mobile/assets/logo`.
 - Operator console, milestone 8: the plan and ADR 0028; console sessions,
   the guard on `/admin/v1` and the append-only audit log in the API
-  (`recordAudit`, a trigger that refuses changes).
+  (`recordAudit`, a trigger that refuses changes); passkey sign-in with
+  `@simplewebauthn/server` (setup link, sign-in, adding and removing
+  passkeys) and the `operator` command that gives or removes the role.
 
 - Privacy self-service, part 1 (spec 11): the rules in the domain (what
   is open before deleting an account, the 7-day wait, what deletion does to
