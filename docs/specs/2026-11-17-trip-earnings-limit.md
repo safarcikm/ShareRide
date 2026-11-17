@@ -268,12 +268,12 @@ L_max   = highest step L, at or below today's L_max for the capacity, with
 
 ## Decisions
 
-Awaiting Martin. The recommendations are the working assumption until he
-answers.
+Decision 2 was decided by Martin on 2026-11-17. The others await him; their
+recommendations are the working assumption until he answers.
 
-| # | Question | Recommendation |
-| - | -------- | -------------- |
+| # | Question | Recommendation or decision |
+| - | -------- | -------------------------- |
 | 1 | Close gaps 1 and 2 with a trip limit that counts money already booked (option C)? | Yes |
-| 2 | Keep counting the driver as one of the sharers, so a full car with 3 seats pays at most three quarters of 150 kr per km? | Yes. Letting passengers cover the whole 150 kr per km (option F) gives drivers a third more per seat, but the payment then covers the driver's whole car, which reads as earning, and France asks drivers to keep a share |
+| 2 | Keep counting the driver as one of the sharers, so a full car with 3 seats pays at most three quarters of 150 kr per km? | **Decided (Martin, 2026-11-17): yes, as recommended.** The driver keeps their own share. Letting passengers cover the whole 150 kr per km (option F) would give drivers a third more per seat, but the payment would then cover the driver's whole car, which reads as earning, and France asks drivers to keep a share |
 | 3 | Does money kept after a no-show or a late cancellation count towards the limit? | Yes |
 | 4 | Does the passenger service fee count towards the limit? | No, unless the lawyer says it must |
