@@ -14,6 +14,7 @@ import { z } from "zod";
 import { cancellationTermsSchema, moneySchema, timestampSchema } from "./common.ts";
 import { accountSuspendedResponse, errorResponseSchema } from "./errors.ts";
 import { localisedTextSchema, meetingPointSummarySchema } from "./meeting-points.ts";
+import { bookingReviewSchema } from "./reviews.ts";
 import { defineRoute } from "./route.ts";
 import { disputeSchema } from "./trip-day.ts";
 
@@ -222,6 +223,11 @@ export const bookingSchema = z.object({
    * marked or "The driver didn't come", once one is made; null with none.
    */
   dispute: disputeSchema.nullable(),
+  /**
+   * Its reviews (spec 8, 3.7), for a completed booking; null for any other,
+   * as only completed bookings are reviewed (R8.8).
+   */
+  review: bookingReviewSchema.nullable(),
 });
 
 export type Booking = z.infer<typeof bookingSchema>;

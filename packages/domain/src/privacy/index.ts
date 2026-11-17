@@ -35,6 +35,7 @@ export {
   type PrivacyRequestKind,
 } from "./requests.ts";
 export {
+  holdEndsAt,
   holdSubjectKinds,
   isHeld,
   privacyCutoffs,

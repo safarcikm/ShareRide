@@ -11,6 +11,7 @@ import {
   myBookingsRoute,
   myTripsRoute,
   publishTripRoute,
+  reviewBookingRoute,
   sendMessageRoute,
   soonestTripsRoute,
   tripDetailsRoute,
@@ -464,7 +465,7 @@ describe("what a suspended person can still do (spec 9, 3.6.2)", () => {
 
   const suspended = { status: 403, error: { code: "account_suspended" } };
 
-  it("refuses searching, booking, publishing, changing a trip and sending messages, saying until when", async () => {
+  it("refuses searching, booking, publishing, changing a trip, sending messages and reviewing, saying until when", async () => {
     const { jon, ride } = await suspendedDriverWithPassenger();
     const accessToken = jon.accessToken;
     const until = (await standing(jon.userId))?.suspendedUntil?.toISOString();
@@ -530,6 +531,13 @@ describe("what a suspended person can still do (spec 9, 3.6.2)", () => {
         accessToken,
         params: { id: airport },
         body: { clientId: randomUUID(), text: "Halló" },
+      }),
+    ).toMatchObject(suspended);
+    expect(
+      await api.client.call(reviewBookingRoute, {
+        accessToken,
+        params: { id: ride.id },
+        body: { rating: 5 },
       }),
     ).toMatchObject(suspended);
   });

@@ -245,6 +245,14 @@ person's rides. An open report holds a deletion.
   not erased; a held trip keeps its bookings, conversations and payments;
   a held booking keeps its conversation. Every rule checks holds.
   Setting and ending one goes to the audit log (section 7).
+- As built (PR 9): every rule that deletes records about a person, trip
+  or booking checks holds; codes, tokens, links and hashes are keys, and an
+  export a copy, so they go on time. An account waits while a hold covers
+  it, a trip it drove or rode on, or a booking of its own or on its trip;
+  a hold on another person on those rides does not stop it.
+  Ended holds are deleted 3 years after their end, like the audit entries
+  that record them (**verify**), and the console's sign-in records are
+  rules of their own (`operator_sessions`, `operator_sign_in`).
 
 ### 4.8 Ask about my data
 
@@ -345,11 +353,21 @@ journeys, and gets a code review before it opens.
 
 ### PR 9: `feat(privacy)`: retention runs and holds
 
-- [ ] `retention_runs`, `holds`; the rules of 4.7; holds in every rule;
-      the `privacy` command's `runs`, `hold` and `holds`
+- [x] `retention_runs`, `holds`; the rules of 4.7; holds in every rule;
+      the `privacy` command's `runs`, `hold` and `holds` (and `end-hold`).
+      Trips and bookings after 3 years moved to PR 9b, and privacy
+      requests' rule to PR 10, with their table
 - Verify: integration tests (each rule at the edge of its period; a hold
   keeps records past their date and lets go after its end; counts without
   content; twice safe)
+
+### PR 9b: `feat(privacy)`: trips and bookings after 3 years
+
+- [ ] The `trips_and_bookings` rule of 4.7: trips 3 years after they
+      arrive, with their bookings, check-ins and reports, moved to the
+      former member with free text emptied; held ones wait
+- Verify: integration tests (at the edge of the period; the drivers' and
+  passengers' other trips unchanged; a hold keeps them; twice safe)
 
 ### PR 10: `feat(privacy)`: ask about my data
 

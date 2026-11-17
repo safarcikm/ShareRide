@@ -930,6 +930,8 @@ export const is = {
   "booking.cancelledByOther": "{name} afbókaði þessa bókun: {reason}",
   "booking.tripCancelledBy": "{name} hætti við ferðina: {reason}",
   "booking.cancelledByOperator": "ShareRide afbókaði þessa bókun.",
+  "booking.cancelledDriverAbsent": "{name} kom ekki, svo ShareRide afbókaði þessa bókun.",
+  "booking.noShow": "Skráð sem fjarvist: engin endurgreiðsla, og þetta sést á prófílnum þínum.",
   "booking.refundOnItsWay": "Full endurgreiðsla, {amount}, aftur á kortið sem þú greiddir með.",
   "cancelReason.weather": "Veður",
   "cancelReason.roadClosed": "Vegur lokaður",
@@ -1071,6 +1073,61 @@ export const is = {
   "tripDay.statusNotHere": "Ekki á staðnum enn",
   "tripDay.statusHere": "Á staðnum",
   "tripDay.statusNoShow": "Mætti ekki",
+  /** Reports on the trip day and their answers (spec 8, 3.3 to 3.5). */
+  "tripDay.markNoShow": "Skrá fjarvist",
+  "tripDay.markNoShowOf": "Skrá fjarvist: {name}",
+  "tripDay.noShowConfirm":
+    "Skrá fjarvist farþegans? Engin endurgreiðsla, og þetta sést á prófíl farþegans.",
+  "tripDay.noShowTold":
+    "{name} fær að vita af þessu strax og getur svarað til {deadline}. Ef {name} segir að þetta sé ekki rétt ákveður ShareRide.",
+  "tripDay.noShowNeedsImHere": "Ýttu fyrst á „Ég er á staðnum“ til að geta skráð fjarvist hér.",
+  "tripDay.driverAbsent": "Bílstjórinn kom ekki",
+  "tripDay.driverAbsentConfirm": "Láta ShareRide vita að {name} hafi ekki komið?",
+  "tripDay.driverAbsentTold":
+    "{name} fær að vita af þessu strax og hefur sólarhring til að svara. Ef {name} samþykkir eða svarar ekki er bókunin afbókuð.",
+  "tripDay.driverAbsentRefund": "Þá færðu fulla endurgreiðslu, {amount}.",
+  "tripDay.tellShareRide": "Láta ShareRide vita",
+  "report.note": "Athugasemd til ShareRide (valfrjálst)",
+  "report.noteHelp": "Aðeins ShareRide les þetta. Allt að {max} stafir.",
+  "report.tooEarly": "Þú getur gert þetta frá kl. {time}.",
+  "report.noShowTooLate": "Ferðinni er lokið, svo ekki er lengur hægt að skrá fjarvist.",
+  "report.driverAbsentTooLate":
+    "Það er orðið of seint að tilkynna þetta: meira en sólarhringur er liðinn frá lokum ferðarinnar.",
+  "report.changed": "Bókunin breyttist síðan þú opnaðir hana.",
+  "dispute.heading": "Tilkynnt atvik",
+  "dispute.question": "Er þetta rétt?",
+  "dispute.agree": "Það er rétt",
+  "dispute.contest": "Það er ekki rétt",
+  "dispute.decided": "ShareRide hefur skoðað málið og tekið ákvörðun.",
+  "dispute.saidNoShow": "{name} segir að þú hafir ekki mætt.",
+  "dispute.saidDriverAbsent": "{name} segir að þú hafir ekki komið.",
+  "dispute.answerBy": "Svarfrestur: {deadline}.",
+  "dispute.ifNoAnswerNoShow":
+    "Ef þú svarar ekki stendur þetta: engin endurgreiðsla, og þetta sést á prófílnum þínum.",
+  "dispute.ifNoAnswerDriverAbsent":
+    "Ef þú svarar ekki stendur þetta: bókunin er afbókuð eins og þú hefðir afbókað hana, og þetta sést á prófílnum þínum.",
+  "dispute.agreeNoShow":
+    "Fjarvistin stendur: engin endurgreiðsla, og þetta sést á prófílnum þínum.",
+  "dispute.agreeDriverAbsent":
+    "Bókunin er afbókuð eins og þú hefðir afbókað hana: {name} fær fulla endurgreiðslu, og þetta sést á prófílnum þínum.",
+  "dispute.agreeDriverAbsentFree":
+    "Bókunin er afbókuð eins og þú hefðir afbókað hana, og þetta sést á prófílnum þínum.",
+  "dispute.contestThen":
+    "ShareRide skoðar það sem þið sögðuð bæði, hvenær hvort ykkar sagðist vera á staðnum og skilaboðin ykkar, og tekur svo ákvörðun.",
+  "dispute.answerNote": "Hvað gerðist? (valfrjálst)",
+  "dispute.send": "Senda svar",
+  "dispute.chooseAnswer": "Veldu svar.",
+  "dispute.windowClosed": "Svarfresturinn er liðinn.",
+  "dispute.youMarked": "Fjarvist skráð: {name}. {name} getur svarað til {deadline}.",
+  "dispute.youReported":
+    "Þú lést ShareRide vita að {name} hafi ekki komið. {name} getur svarað til {deadline}.",
+  "dispute.theyContest":
+    "{name} segir að þetta sé ekki rétt. ShareRide skoðar málið og tekur ákvörðun.",
+  "dispute.youContest":
+    "Þú sagðir að þetta væri ekki rétt. ShareRide skoðar málið og tekur ákvörðun.",
+  "dispute.noShowStands": "Fjarvistin stendur.",
+  "dispute.cancelledAsIfByYou": "Bókunin var afbókuð eins og þú hefðir afbókað hana.",
+  "review.title": "Hvernig var ferðin?",
   /** Spec 11, 3.2: never a link, which only the signed-in app gives. */
   "notify.dataExportReady": "Gögnin þín eru tilbúin til niðurhals",
   "notify.dataExportReadyBody": "Sæktu skrána í ShareRide fyrir {until}. Eftir það er henni eytt.",
@@ -1131,6 +1188,10 @@ export const is = {
   "notify.reportBody": "{from} – {to} · {when}. Er þetta rétt? Svarfrestur: {deadline}.",
   "notify.disputeDecided": "ShareRide hefur tekið ákvörðun um tilkynninguna",
   "notify.disputeDecidedBody": "{from} – {to} · {when}. Sjáðu niðurstöðuna í appinu.",
+  "notify.rateDriver": "Gefðu bílstjóranum einkunn: {name}. {from} – {to} · {when}.",
+  "notify.ratePassengers": "Gefðu farþegunum einkunn. Það hjálpar öðrum bílstjórum að velja.",
+  "notify.reviewVisible": "Umsögn um þig er nú sýnileg",
+  "notify.reviewVisibleBody": "{from} – {to} · {when}.",
   "notify.unpaid": "Sætið var ekki greitt í tæka tíð",
   "notify.unpaidDriver": "Ekki greitt í tæka tíð: {name}",
   "notify.cancelledByDriver": "Bílstjórinn afbókaði: {reason}",
@@ -1422,6 +1483,9 @@ export const is = {
   "export.value.kind.driver_absent_reported": "Tilkynnt að bílstjórinn hafi ekki komið",
   "export.value.kind.dispute_decided": "Ákvörðun um tilkynningu",
   "export.value.kind.dispute_decided_driver": "Ákvörðun um tilkynningu, sem bílstjóri",
+  "export.value.kind.rate_trip": "Beðið um einkunn fyrir ferðina",
+  "export.value.kind.rate_trip_driver": "Beðið um einkunn fyrir farþegana",
+  "export.value.kind.review_visible": "Umsögn um þig sýnd",
   "export.value.kind.data_export_ready": "Gögnin þín tilbúin til niðurhals",
   "export.value.kind.report_filed": "Ný tilkynning",
   "export.value.kind.report_filed_urgent": "Ný öryggistilkynning",

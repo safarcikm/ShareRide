@@ -920,6 +920,8 @@ export const en = {
   "booking.cancelledByOther": "{name} cancelled this booking: {reason}",
   "booking.tripCancelledBy": "{name} cancelled the trip: {reason}",
   "booking.cancelledByOperator": "ShareRide cancelled this booking.",
+  "booking.cancelledDriverAbsent": "{name} didn't come, so ShareRide cancelled this booking.",
+  "booking.noShow": "Marked as a no-show: no refund, and it shows on your profile.",
   "booking.refundOnItsWay": "Full refund of {amount}, back to the card you paid with.",
   "cancelReason.weather": "Weather",
   "cancelReason.roadClosed": "Road closed",
@@ -1058,6 +1060,58 @@ export const en = {
   "tripDay.statusNotHere": "Not here yet",
   "tripDay.statusHere": "Here",
   "tripDay.statusNoShow": "No-show",
+  /** Reports on the trip day and their answers (spec 8, 3.3 to 3.5). */
+  "tripDay.markNoShow": "Mark as no-show",
+  "tripDay.markNoShowOf": "Mark as no-show: {name}",
+  "tripDay.noShowConfirm":
+    "Mark this passenger as a no-show? They get no refund, and it shows on their profile.",
+  "tripDay.noShowTold":
+    "{name} is told at once and can answer until {deadline}. If {name} says it's not right, ShareRide decides.",
+  "tripDay.noShowNeedsImHere": "To mark a no-show here, press “I'm here” first.",
+  "tripDay.driverAbsent": "The driver didn't come",
+  "tripDay.driverAbsentConfirm": "Tell ShareRide that {name} didn't come?",
+  "tripDay.driverAbsentTold":
+    "{name} is told at once and has 24 hours to answer. If {name} agrees or doesn't answer, the booking is cancelled.",
+  "tripDay.driverAbsentRefund": "You then get a full refund of {amount}.",
+  "tripDay.tellShareRide": "Tell ShareRide",
+  "report.note": "Note for ShareRide (optional)",
+  "report.noteHelp": "Only ShareRide reads this. Up to {max} characters.",
+  "report.tooEarly": "You can do this from {time}.",
+  "report.noShowTooLate": "The trip has completed, so a no-show can no longer be marked.",
+  "report.driverAbsentTooLate":
+    "It's too late to report this: more than 24 hours have passed since the trip completed.",
+  "report.changed": "This booking changed since you opened it.",
+  "dispute.heading": "Reports",
+  "dispute.question": "Is this right?",
+  "dispute.agree": "That's right",
+  "dispute.contest": "That's not right",
+  "dispute.decided": "ShareRide has looked into it and decided.",
+  "dispute.saidNoShow": "{name} says you didn't come.",
+  "dispute.saidDriverAbsent": "{name} says you didn't come.",
+  "dispute.answerBy": "Answer by {deadline}.",
+  "dispute.ifNoAnswerNoShow":
+    "If you don't answer, it stands: no refund, and it shows on your profile.",
+  "dispute.ifNoAnswerDriverAbsent":
+    "If you don't answer, it stands: the booking is cancelled as if by you, and it shows on your profile.",
+  "dispute.agreeNoShow": "The no-show stands: no refund, and it shows on your profile.",
+  "dispute.agreeDriverAbsent":
+    "The booking is cancelled as if by you: {name} gets a full refund, and it shows on your profile.",
+  "dispute.agreeDriverAbsentFree":
+    "The booking is cancelled as if by you, and it shows on your profile.",
+  "dispute.contestThen":
+    "ShareRide looks at what you both said, when each of you said you were there and your messages, then decides.",
+  "dispute.answerNote": "What happened? (optional)",
+  "dispute.send": "Send answer",
+  "dispute.chooseAnswer": "Choose your answer.",
+  "dispute.windowClosed": "The time to answer has passed.",
+  "dispute.youMarked": "You marked {name} as a no-show. {name} can answer until {deadline}.",
+  "dispute.youReported":
+    "You told ShareRide {name} didn't come. {name} can answer until {deadline}.",
+  "dispute.theyContest": "{name} says it's not right. ShareRide will look into it and decide.",
+  "dispute.youContest": "You said it's not right. ShareRide will look into it and decide.",
+  "dispute.noShowStands": "The no-show stands.",
+  "dispute.cancelledAsIfByYou": "The booking was cancelled as if by you.",
+  "review.title": "How was your trip?",
   /** Spec 11, 3.2: never a link, which only the signed-in app gives. */
   "notify.dataExportReady": "Your data is ready to download",
   "notify.dataExportReadyBody":
@@ -1119,6 +1173,10 @@ export const en = {
   "notify.reportBody": "{from} – {to} · {when}. Is this right? Answer by {deadline}.",
   "notify.disputeDecided": "ShareRide has decided on the report",
   "notify.disputeDecidedBody": "{from} – {to} · {when}. See the outcome in the app.",
+  "notify.rateDriver": "Rate the driver: {name}. {from} – {to} · {when}.",
+  "notify.ratePassengers": "Rate your passengers. It helps other drivers choose.",
+  "notify.reviewVisible": "A review about you is now visible",
+  "notify.reviewVisibleBody": "{from} – {to} · {when}.",
   "notify.unpaid": "Seat not paid for in time",
   "notify.unpaidDriver": "Not paid for in time: {name}",
   "notify.cancelledByDriver": "The driver cancelled: {reason}",
@@ -1416,6 +1474,9 @@ export const en = {
   "export.value.kind.driver_absent_reported": "Reported that the driver didn't come",
   "export.value.kind.dispute_decided": "A report decided",
   "export.value.kind.dispute_decided_driver": "A report decided, as the driver",
+  "export.value.kind.rate_trip": "Asked to rate your trip",
+  "export.value.kind.rate_trip_driver": "Asked to rate your passengers",
+  "export.value.kind.review_visible": "A review about you shown",
   "export.value.kind.data_export_ready": "Your data ready to download",
   "export.value.kind.report_filed": "New report",
   "export.value.kind.report_filed_urgent": "New safety report",

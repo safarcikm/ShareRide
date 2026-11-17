@@ -12,6 +12,7 @@ export * from "./me.ts";
 export * from "./meeting-points.ts";
 export * from "./payments.ts";
 export * from "./privacy.ts";
+export * from "./reviews.ts";
 export * from "./route.ts";
 export * from "./safety.ts";
 export * from "./search.ts";

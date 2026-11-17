@@ -1,16 +1,19 @@
 // The API for the app's browser tests (apps/mobile/e2e), started by
 // Playwright. It empties, migrates and seeds the *_test database (draft legal
 // documents, the sample meeting points and the sample trips), pays with the
-// test provider, writes
-// each text message as a JSON line to E2E_SMS_OUTBOX and each email to
-// E2E_EMAIL_OUTBOX for the tests to read, runs the notification worker
-// every second with email only (no push from a browser), and runs on PORT
-// (default 3001). `POST /e2e/trips/{id}/move` with `{ "minutes": 10 }` puts a
-// trip's first stop that many minutes from the real time, for the trip day
-// journeys. For the console's browser tests (apps/admin/e2e),
-// E2E_ADMIN_APP_DIR is the console's build, served at /admin, and
-// E2E_OPERATOR_LINK a file: the API makes a new operator account and writes
-// its passkey setup link there, with passkeys bound to E2E_ADMIN_ORIGIN.
+// test provider, writes each text message as a JSON line to E2E_SMS_OUTBOX
+// and each email to E2E_EMAIL_OUTBOX for the tests to read, runs the
+// notification worker every second with email only (no push from a browser),
+// and runs on PORT (default 3001). `POST /e2e/trips/{id}/move` with
+// `{ "minutes": 10 }` puts a trip's first stop that many minutes from the real
+// time, with its "I'm here" and reports, for the trip day journeys; moved far
+// enough back, a report nobody answered stands. The API runs on the real
+// time, as the browser does; each code sent makes the earlier sends look 31
+// seconds older, so the resend limits never hold a test up. For the console's
+// browser tests (apps/admin/e2e), E2E_ADMIN_APP_DIR is the console's build,
+// served at /admin, and E2E_OPERATOR_LINK a file: the API makes a new operator
+// account and writes its passkey setup link there, with passkeys bound to
+// E2E_ADMIN_ORIGIN.
 // Never use it for anything else.
 import { randomBytes } from "node:crypto";
 import { appendFileSync, writeFileSync } from "node:fs";
@@ -18,6 +21,7 @@ import { serve } from "@hono/node-server";
 import { pingDatabase, schema } from "@shareride/db";
 import { seedDevelopmentData } from "@shareride/db/seed";
 import { freshTestDatabase } from "@shareride/db/testing";
+import { sql } from "drizzle-orm";
 import { createApp } from "./app.ts";
 import { createLogger } from "./logger.ts";
 import {
@@ -62,14 +66,21 @@ await seedDevelopmentData(connection.db, new Date());
 writeFileSync(outbox, "");
 writeFileSync(emailOutbox, "");
 
-// Each code sent moves the clock 31 seconds on, so a test can sign in to the
-// same account again at once without waiting out the resend limit (R1.3).
-let clockOffsetMs = 0;
+// Each code sent makes every earlier send look 31 seconds older to the
+// limits (R1.3), so a test can sign in to the same account again at once
+// without waiting out the resend limit. The clock itself stays the real
+// time, which the browser goes by too: moving it on with each code, as
+// before, put the API minutes ahead of the browser by the end of a full run,
+// and a trip moved to 15 minutes ago was already past its "I'm here" window
+// on the API. The sends look older before the message is written, so a test
+// that waits for the message can send again at once.
+const { rateLimitEvents } = schema;
 const sms: SmsSender = {
-  send(message) {
+  async send(message) {
+    await connection.db
+      .update(rateLimitEvents)
+      .set({ createdAt: sql`${rateLimitEvents.createdAt} - interval '31 seconds'` });
     appendFileSync(outbox, `${JSON.stringify(message)}\n`);
-    clockOffsetMs += 31_000;
-    return Promise.resolve();
   },
 };
 
@@ -80,7 +91,7 @@ const email: EmailSender = {
     return Promise.resolve({ id: `e2e-${message.idempotencyKey}` });
   },
 };
-const clock = () => new Date(Date.now() + clockOffsetMs);
+const clock = () => new Date();
 
 if (operatorLink !== undefined && operatorLink !== "") {
   const [operator] = await connection.db
@@ -129,8 +140,8 @@ const app = createApp({
 });
 
 // The trip day journeys move one trip's times, never the shared clock
-// (milestone 7 plan, 4.2). Minutes from the real time, which the browser
-// goes by, not from this API's clock, which runs ahead with each code sent.
+// (milestone 7 plan, 4.2). Minutes from the real time, which the browser and
+// this API both go by.
 app.post("/e2e/trips/:id/move", async (c) => {
   const body: unknown = await c.req.json();
   const minutes =

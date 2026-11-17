@@ -32,6 +32,8 @@ export const outboxEventTypes = [
   "NoShowMarked",
   "DriverAbsentReported",
   "DisputeDecided",
+  "BookingCompleted",
+  "ReviewRevealed",
   "DataExportReady",
   "ReportFiled",
   "AccountDeletionScheduled",

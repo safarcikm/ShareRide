@@ -190,6 +190,19 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
       ["note", "answerNote", "decisionNote"],
     ),
   },
+  reviews: {
+    category: "reviews_written",
+    export: { section: "bookings" },
+    personColumns: ["authorId", "subjectId"],
+    // The reviews a person wrote stay for the people they are about, by "A
+    // former member" (spec 8, 3.7.5). Those about them go (reviews_received):
+    // the erasure deletes them by subject before it moves the rest.
+    onDeletion: keep(
+      ["authorRole", "comment"],
+      [],
+      "reviews about the person are erased first; those they wrote move to the former member",
+    ),
+  },
   booking_segment_prices: {
     category: "trips_and_bookings",
     export: { section: "bookings" },
@@ -222,6 +235,19 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
   blocked_numbers: notAboutAPerson(
     "keyed hashes of the numbers of erased suspended accounts, linked to no account",
   ),
+  retention_runs: notAboutAPerson("how many records each clean-up rule erased, never which"),
+  holds: {
+    category: "audit",
+    export: {
+      leftOut:
+        "the operator's records of what is kept for a dispute or claim; asked about through Ask about my data",
+    },
+    personColumns: ["subjectId", "setBy"],
+    onDeletion: {
+      rows: "leave",
+      note: "an account is not erased while a hold covers it; an ended hold keeps the IDs, and goes 3 years after its end",
+    },
+  },
   data_exports: {
     category: "exports",
     export: { leftOut: "the exports themselves, kept 7 days" },

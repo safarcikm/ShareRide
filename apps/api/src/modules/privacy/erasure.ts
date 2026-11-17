@@ -23,6 +23,7 @@ import type { Logger } from "../../logger.ts";
 import type { KeyedHasher } from "../../platform/crypto.ts";
 import type { Transaction } from "../bookings/seats.ts";
 import { lockDrivenTrips, openFor } from "./deletion.ts";
+import { accountHeld } from "./holds.ts";
 
 const {
   blockedNumbers,
@@ -31,6 +32,7 @@ const {
   erasedAccounts,
   formerMemberId,
   messages,
+  reviews,
   scheduledNotifications,
   trips,
   users,
@@ -185,6 +187,11 @@ async function eraseAccount(
       ),
     );
 
+  // The reviews about the person go with them (spec 11, 3.5); those they
+  // wrote move to the former member below. Done first, a review between two
+  // people who both leave never ends up by and about the former member.
+  await tx.delete(reviews).where(eq(reviews.subjectId, userId));
+
   // Then every table as the catalogue says. First the rows only a booking
   // links to the person, such as a report about a ride, while their
   // bookings and trips still name them: kept, with their free text emptied.
@@ -241,8 +248,8 @@ export interface ErasureDependencies {
 export interface Erasure {
   /**
    * Erases every account whose wait has ended (the hourly `accounts` rule):
-   * how many, and how many failed. A failure is logged and does not stop
-   * the others.
+   * how many, and how many failed. An account with something open, or held,
+   * waits. A failure is logged and does not stop the others.
    */
   eraseDue(): Promise<{ readonly erased: number; readonly failed: number }>;
   /** Erases one account if its wait has ended and nothing is open; whether it did. */
@@ -251,7 +258,8 @@ export interface Erasure {
    * After a restore (runbook, "Restore the database"). With what the old
    * database says: takes each deletion date changed there after this
    * database's last change to the account, and records its erasures here.
-   * Then erases again each erased account that came back. A failure is
+   * Then erases again each erased account that came back, whatever is open
+   * or held in the restored copy: it was erased once already. A failure is
    * logged and does not stop the others.
    */
   reapply(before?: BeforeRestore): Promise<ReapplyCounts>;
@@ -307,6 +315,11 @@ export function createErasure(dependencies: ErasureDependencies): Erasure {
         await lockDrivenTrips(tx, userId);
         if (!(await openFor(tx, userId, now, tripDaySettings)).allowed) {
           logger.warn({ userId }, "account erasure waits: something is open");
+          return false;
+        }
+        // Kept for a dispute or claim until the hold ends (spec 11, 3.7.3).
+        if (await accountHeld(tx, userId, now)) {
+          logger.info({ userId }, "account erasure waits: held");
           return false;
         }
       }
