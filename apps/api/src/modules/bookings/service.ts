@@ -7,11 +7,13 @@ import {
   checkBooking,
   checkNote,
   dayPhase,
+  driverAbsentWindow,
   err,
   hasTripDay,
   holdsSeats,
   movedFar,
   nextStatus,
+  noShowWindow,
   ok,
   paymentDeadline,
   peopleColourOf,
@@ -50,6 +52,7 @@ import {
   passengerCheckedInAt,
   shownWindow,
 } from "../trip-day/check-ins.ts";
+import { disputesOf, shownDispute } from "../trip-day/disputes.ts";
 import {
   changeOccupancy,
   expireDueBookings,
@@ -224,12 +227,13 @@ const toldKinds = ["departure", "vehicle", "addStop", "removeStop"];
 /**
  * Bookings with everything their passenger or driver sees, oldest first,
  * each with its trip's moves, new cars and stops added or removed since it
- * was made (spec 6, 3.2), and "I'm here" at its boarding stop (spec 8, 3.2).
+ * was made (spec 6, 3.2), "I'm here" at its boarding stop (spec 8, 3.2) and
+ * its report, if any (3.3 to 3.5).
  */
 async function readBookings(q: Queryable, where: SQL | undefined) {
   const rows = await bookingRows(q, where);
   const tripIds = [...new Set(rows.map((row) => row.trip.id))];
-  const [changes, checkIns] = await Promise.all([
+  const [changes, checkIns, reports] = await Promise.all([
     tripIds.length === 0
       ? []
       : q
@@ -241,6 +245,10 @@ async function readBookings(q: Queryable, where: SQL | undefined) {
       q,
       rows.map((row) => row.boardStop.id),
     ),
+    disputesOf(
+      q,
+      rows.map((row) => row.booking.id),
+    ),
   ]);
   return rows.map((row) => {
     const { createdAt, status, cancelledAt, expiredAt, decidedAt } = row.booking;
@@ -250,6 +258,7 @@ async function readBookings(q: Queryable, where: SQL | undefined) {
       ...row,
       passengerCheckedInAt: passengerCheckedInAt(checkIns, row.booking.id),
       driverCheckedInAt: driverCheckedInAt(checkIns, row.boardStop.id),
+      dispute: reports.find((report) => report.bookingId === row.booking.id) ?? null,
       // Made under the trip's lock, so one at the same moment came before the booking.
       changes: changes.filter(
         (change) =>
@@ -368,6 +377,9 @@ function shownStatus(booking: BookingRow["booking"], now: Date): BookingStatus {
   );
 }
 
+/** The planned time of the trip's last stop, as the trip day's windows count from it. */
+const lastStopOf = (row: BookingRow) => row.trip.arrivesAt ?? plannedAt(row.alightStop);
+
 /** The trip day at the boarding stop (spec 8, 3.1 and 3.2), for a booking that boards. */
 function tripDayOf(
   row: BookingRow,
@@ -377,13 +389,18 @@ function tripDayOf(
 ): Booking["tripDay"] {
   if (!hasTripDay(status)) return null;
   const boardsAt = plannedAt(row.boardStop);
+  const lastStopAt = lastStopOf(row);
   const window = shownWindow(boardsAt, settings);
+  const noShow = noShowWindow(boardsAt, lastStopAt, settings);
   return {
-    phase: dayPhase(boardsAt, row.trip.arrivesAt ?? plannedAt(row.alightStop), now, settings),
+    phase: dayPhase(boardsAt, lastStopAt, now, settings),
     checkInOpensAt: window.opensAt,
     checkInClosesAt: window.closesAt,
     passengerCheckedInAt: row.passengerCheckedInAt?.toISOString() ?? null,
     driverCheckedInAt: row.driverCheckedInAt?.toISOString() ?? null,
+    reportOpensAt: noShow.opensAt.toISOString(),
+    noShowClosesAt: noShow.closesAt.toISOString(),
+    driverAbsentClosesAt: driverAbsentWindow(boardsAt, lastStopAt, settings).closesAt.toISOString(),
     arrival: arrivalOf({ status, checkedIn: row.passengerCheckedInAt !== null }),
   };
 }
@@ -506,6 +523,7 @@ function present(row: BookingRow, viewerId: string, now: Date, settings: TripDay
           }
         : null,
     tripDay: tripDayOf(row, status, now, settings),
+    dispute: row.dispute === null ? null : shownDispute(row.dispute, lastStopOf(row), settings),
   };
 }
 

@@ -1,3 +1,7 @@
 export * from "./check-ins.ts";
+export * from "./decide.ts";
+export * from "./disputes.ts";
+export * from "./reports.ts";
 export * from "./routes.ts";
 export * from "./service.ts";
+export * from "./settle.ts";

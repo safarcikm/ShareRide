@@ -165,6 +165,18 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     // (spec 8, 3.5). A driver's own are exported with their trip's stops.
     onDeletion: keep([]),
   },
+  disputes: {
+    category: "trips_and_bookings",
+    export: { section: "bookings" },
+    personColumns: [],
+    // What was reported and how it ended decide a refund and reliability
+    // for the other side too (spec 8, 3.5). The notes were for the
+    // operator, and go.
+    onDeletion: keep(
+      ["kind", "answer", "outcome", "decidedBy"],
+      ["note", "answerNote", "decisionNote"],
+    ),
+  },
   booking_segment_prices: {
     category: "trips_and_bookings",
     export: { section: "bookings" },
