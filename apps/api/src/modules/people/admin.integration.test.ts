@@ -203,8 +203,8 @@ describe("cancellations excused by their reason (R8.11)", () => {
         operatorUserId: signedIn.userId,
         operatorSessionId: signedIn.sessionId,
         subjectType: "trip",
-        before: { countsOnReliability: false },
-        after: { countsOnReliability: true },
+        before: null,
+        after: { changed: ["countsOnReliability", "overruledAt"] },
       },
     ]);
 

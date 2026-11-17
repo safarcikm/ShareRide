@@ -640,6 +640,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   Someone leaving ShareRide, or a former member, shows neither. Search
   results, trip details and bookings give `rating` (and `reliabilityPercent`
   and, on bookings, `profileId`) for these people.
+- The console's reliability routes (milestone 7, PR 7d, spec 8, 3.8; R8.10
+  and R8.11): the cancellations that do not count only because of a
+  weather or road-closure reason, overruling one so that it counts (with
+  an audit entry), and the people below 80%. Trips and bookings save
+  whether their cancellation was excused by its reason, and when the
+  operator overruled it (migration `0036_reliability_overrules`).
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

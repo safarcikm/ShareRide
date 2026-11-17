@@ -250,8 +250,9 @@ the rating.
   the last 12 months and their `counts_on_reliability`. At the beta's size
   this is a small query per profile, so spec 8's `ReliabilityRecord` and
   `UserStats` tables are not needed yet. They come back if profiles get
-  slow. The operator's overrule is a column on the booking or trip, with
-  who changed it, when and why. Whether a cancellation could be overruled
+  slow. The operator's overrule is a column on the booking or trip: when
+  (`overruled_at`), with who in the audit log. A reason overruled is one
+  clearly wrong, so it takes no note. Whether a cancellation could be overruled
   (`excusedByReason`) is saved when it is made, as it depends on the time
   and the bookings then.
 - Profiles show the rating ("4.8 (12 ratings)"), "Reliability: 96%" or
@@ -337,8 +338,9 @@ In two parts, as PR 5: the API (6a), then the screens and the journey (6b).
 
 ### PR 7: `feat(people)`: public profiles with rating, reviews and reliability
 
-In four parts: 7a the API, 7b the profile screen and the journey, 7c the
-rating and figure where people appear, 7d the console pages.
+In five parts: 7a the API, 7b the profile screen and the journey, 7c the
+rating and figure where people appear, 7d the console's routes and 7e its
+Reliability page.
 
 A profile is reached by its own random reference, `users.profile_id`, never
 the person's user ID, so that the ID other routes and records use is never
@@ -353,8 +355,10 @@ handed to everyone signed in (spec 1, 3.5; the safety thread's suggestion).
 - [x] The rating in search results; the rating and figure on trip details,
       requests and the booking's driver; each person's profile from there
       and from the passengers on the driver's trip (7c)
-- [ ] In the console (decision 1, as changed): overrule a weather or
-      road-closure reason so it counts, and the people below 80% (7d)
+- [x] The console's routes (decision 1, as changed): the cancellations
+      excused by a weather or road-closure reason, overruling one so it
+      counts, and the people below 80% (7d)
+- [ ] The console's Reliability page (7e)
 - Verify: integration tests (never the phone number or email; hidden
   reviews never shown or counted); screen tests; a browser journey opens
   the driver's profile from trip details

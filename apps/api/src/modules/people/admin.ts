@@ -198,14 +198,13 @@ export function createReliabilityAdminService(dependencies: {
         .update(table)
         .set({ countsOnReliability: true, overruledAt: now, updatedAt: now })
         .where(eq(table.id, id));
-      // A person's record: the field changed, which is not about who they are.
+      // A person's record: the names of the fields changed, never their values (spec 9, 3.8).
       await recordAudit(tx, {
         operator: actor.operator,
         action: `${kind}.reason_overruled`,
         subjectType: kind,
         subjectId: id,
-        before: { countsOnReliability: false },
-        after: { countsOnReliability: true },
+        after: { changed: ["countsOnReliability", "overruledAt"] },
         request: actor.request,
       });
       return ok(undefined);
