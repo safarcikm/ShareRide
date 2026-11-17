@@ -1,13 +1,15 @@
 import { schema, type Database } from "@shareride/db";
 import { operatorSessionRules } from "@shareride/domain";
-import { lt, or } from "drizzle-orm";
+import { and, lt, or } from "drizzle-orm";
+import { notHeld } from "../privacy/holds.ts";
 
 const { operatorChallenges, operatorSessions, operatorSetupLinks } = schema;
 
 /**
  * Deletes console sessions 30 days after they ended, or after they could
- * last have worked (12 hours after sign-in), like the app's sessions.
- * Safe to run at any time; the hourly clean-up runs it.
+ * last have worked (12 hours after sign-in), like the app's sessions,
+ * unless a hold covers the operator (spec 11, 3.7.3). Safe to run at any
+ * time; the hourly clean-up runs it.
  */
 export async function cleanUpOperatorSessions(db: Database, now: Date): Promise<number> {
   const keepMs = operatorSessionRules.endedSessionRetentionDays * 24 * 3600 * 1000;
@@ -16,7 +18,13 @@ export async function cleanUpOperatorSessions(db: Database, now: Date): Promise<
   const deleted = await db
     .delete(operatorSessions)
     .where(
-      or(lt(operatorSessions.endedAt, endedBefore), lt(operatorSessions.createdAt, startedBefore)),
+      and(
+        or(
+          lt(operatorSessions.endedAt, endedBefore),
+          lt(operatorSessions.createdAt, startedBefore),
+        ),
+        notHeld(db, now, [["user", operatorSessions.userId]]),
+      ),
     )
     .returning({ id: operatorSessions.id });
   return deleted.length;

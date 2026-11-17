@@ -520,6 +520,22 @@ releases follow [Semantic Versioning](https://semver.org/).
   (never the notes) and when each report opens and closes. Migration
   `0026_trip_day_disputes` adds the `disputes` table and widens the
   cancellation reasons and notification kinds.
+- Reports on the trip day in the app (milestone 7, PR 5b, spec 8, screens
+  3 to 5): "The driver didn't come" on the passenger's booking, from the
+  wait after their time until 24 hours after the trip completes, and "Mark
+  as no-show" for each passenger getting in on the driver's trip day, once
+  the wait has passed and the driver said "I'm here" there; before that,
+  the stop says to say it first. Each opens a screen that says what it does
+  and who is told, with a note only ShareRide reads. The other side is asked
+  "Is this right?" with the deadline and what not answering does, and
+  answers "That's right" or "That's not right" on its own screen, with a
+  note. Both sides see where a report stands: waiting for the other side,
+  contested and waiting for ShareRide, or decided; the driver's trip page
+  lists its reports first. A driver absence that stood says "{name} didn't
+  come, so ShareRide cancelled this booking." with the refund. The browser
+  tests' trip move also moves its "I'm here" and reports and lets a report
+  nobody answered stand, and two journeys cover a no-show nobody contests
+  and a driver absence that stands with a full refund.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
@@ -616,7 +632,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   boarding. The API's minute job brings a paused point back on its end
   date and retires a retiring one after its last trip. A point in use is
   due for review a year after its last check (R2.9). Migration
-  `0029_meeting_point_pauses` adds the `MeetingPointChanged` event and the
+  `0030_meeting_point_pauses` adds the `MeetingPointChanged` event and the
   meeting point of a notification. A point retired while paused keeps its
   reason and its news still goes out. Publishing a trip and adding a stop
   wait for a pause under way. The sample seed keeps the status the console
@@ -633,6 +649,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   answered (spec 8, 3.3 and 3.4): what was reported and by whom, the
   answer, the outcome and when, with the person's own note only. The other
   side's note and the operator's stay with the operator.
+- Retention runs and holds (spec 11, 3.7): the hourly clean-up records, for
+  each retention rule, when it ran and how many records it erased, never
+  which; a rule that fails is reported and the others still run. It now
+  also deletes blocked numbers once their date comes, the list of erased
+  accounts after 30 days, ended holds after 3 years and its own records
+  after 90 days. A hold keeps what the clean-up would delete about a
+  person, a trip or a booking (their conversations, ended sessions,
+  notification log and drafts, and the account itself) until its end. The
+  `privacy` command shows the last run of each rule (`runs`) and lists,
+  sets and ends holds (`holds`, `hold`, `end-hold`), each in the audit log.
 
 ### Fixed
 

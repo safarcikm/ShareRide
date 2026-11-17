@@ -49,6 +49,8 @@
 | Legal acceptances | Document, version, time and language of each acceptance | Show what each person agreed to | Contract; legal obligation | The user; operator | While the account exists (**verify** how long after deletion) |
 | Blocked phone numbers | Keyed hash of a suspended person's phone number (HMAC with the server secret), with the date it is blocked until | Stop suspended people signing up again with the same number (spec 11, decision 2) | Legitimate interest | System | Until the suspension ends, at most 3 years |
 | Erased accounts | The ID of each erased account and when it was erased; nothing else | Erase them again if the database is restored from a backup (spec 11, 3.7) | Legal obligation | System | 30 days, longer than any backup is kept |
+| Holds | The record held (a person's, trip's or booking's ID), the operator's reason, its end, who set it and when it was ended early ([spec 11, 3.7](../specs/2026-11-13-privacy-self-service.md#37-retention-jobs)). Setting and ending one is in the audit log, with IDs and dates only | Keep records past their date while a dispute, chargeback or legal claim needs them | Legitimate interest; legal obligation where a claim requires it | Operator | 3 years after it ends, like the audit entries that record it (**verify**) |
+| Retention runs | For each retention rule, when the clean-up ran it and how many records it erased or made anonymous; never which records or what they held | Show that every period here is enforced (R11.5) | Legal obligation (accountability) | Operator | 90 days |
 | Data exports | The user's own export file (a ZIP of a JSON file and a readable page, other people by first name only), encrypted in the database with a key from the server secret; when it was asked for and made; a hash of the current one-time link | Access and portability | Legal obligation | The user | The file 7 days after it is made, or when a newer one is asked for (deleted by the hourly clean-up); the dates 30 days after that, so the app can say it expired |
 | Privacy requests | Request text and answer | Answer rights requests | Legal obligation | Operator | 3 years after the answer (**verify**) |
 | Public profile | First name, photo, bio, languages, badges | Trust between users | Contract | All users | While the account exists |
@@ -154,6 +156,23 @@ processing agreement; Martin signs each one when he opens the account.
 
 Retention periods in the inventory are proposals. Final values are set with the
 lawyer, then implemented as scheduled jobs and listed in the privacy policy.
+
+The hourly clean-up runs every rule (`retentionRules` in the domain) and
+records each run in `retention_runs` with its counts; `privacy runs` shows
+the last run of each. A rule that fails is reported to Sentry and tried
+again the next hour, while the others still run.
+
+A hold (`privacy hold`) keeps what the clean-up would delete or make
+anonymous about a person, a trip or a booking until its end: conversations,
+ended sessions, the notification log, drafts, and the account itself, which
+is erased only once no hold covers the person, a trip they drove or rode
+on, or a booking of theirs or on their trip. A hold on one person keeps
+their conversations and the notifications about their bookings, but does
+not stop the other people on those rides from being erased: hold the trip
+or the booking to keep both sides. Codes, tokens, links and hashes are keys
+rather than records, and an export is a copy of what is kept anyway: those
+go on time. An account erased before a restore is erased again whatever
+the restored copy holds.
 
 ## Age
 

@@ -3,7 +3,7 @@ import { myTripRoute, tripBookingsRoute, type Booking } from "@shareride/contrac
 import { cancelReasonText, capitalised, formatClock, formatDay } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import { acceptedText } from "@/booking/texts";
@@ -23,11 +23,14 @@ import { now } from "@/lib/clock";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { tripShareText } from "@/safety/share-details";
 import { DriverTripDay, onTripDay } from "@/trip-day/driver";
+import { ReportStatus } from "@/trip-day/report-status";
+import { reportState } from "@/trip-day/reports";
 import { useTripDayRefresh } from "@/trip-day/use-refresh";
 import { TripSafety } from "@/safety/trip-safety";
-import { typography } from "@/theme/tokens";
+import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { routeText } from "@/trips/texts";
+import { firstNameOf } from "@/people/texts";
 
 /**
  * The driver's trip (spec 5, screens 5 and 9): requests first, each to
@@ -44,12 +47,13 @@ export default function DriverTripScreen() {
   const { locale, t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
-  const { id, cancelled, tripCancelled, changed, told } = useLocalSearchParams<{
+  const { id, cancelled, tripCancelled, changed, told, report } = useLocalSearchParams<{
     id: string;
     cancelled?: string;
     tripCancelled?: string;
     changed?: string;
     told?: string;
+    report?: string;
   }>();
   const load = useCallback(
     () =>
@@ -61,6 +65,9 @@ export default function DriverTripScreen() {
   );
   const { value: loaded, reload, refresh } = useLoadedOnFocus(load);
   useTripDayRefresh(loaded?.[0].ok === true && onTripDay(loaded[0].data), refresh);
+  // The report made or answered before coming back, once focus has moved
+  // to it: not again when it changes later.
+  const [reportAnnounced, setReportAnnounced] = useState<string | null>(null);
   // Each request answered here, as the answer left it (null for one that is
   // gone), until a list loads that shows it answered.
   const [answered, setAnswered] = useState<Readonly<Record<string, Booking | null>>>({});
@@ -191,6 +198,14 @@ export default function DriverTripScreen() {
           />
         </TakesFocus>
       )}
+      <Reports
+        riding={riding}
+        report={report}
+        announce={report === reportAnnounced ? undefined : report}
+        onAnnounced={() => {
+          setReportAnnounced(report ?? null);
+        }}
+      />
       {onTripDay(trip.data) ? (
         <DriverTripDay
           trip={trip.data}
@@ -284,3 +299,54 @@ export default function DriverTripScreen() {
     </Screen>
   );
 }
+
+/**
+ * The passengers' reports (spec 8, 3.3 to 3.5), first, as some ask the
+ * driver to answer: each under the passenger's name. `report` names the
+ * booking just reported or answered; when it is no longer listed, the
+ * driver agreed they didn't come, which cancelled it (3.4), and that shows
+ * instead. `announce` names it until focus has moved to it once.
+ */
+function Reports({
+  riding,
+  report,
+  announce,
+  onAnnounced,
+}: {
+  readonly riding: readonly Booking[];
+  readonly report: string | undefined;
+  readonly announce: string | undefined;
+  readonly onAnnounced: () => void;
+}) {
+  const { t } = useLanguage();
+  const palette = usePalette();
+  const reported = riding.filter((booking) => reportState(booking, now()) !== null);
+  const ended = report !== undefined && !riding.some((booking) => booking.id === report);
+  if (reported.length === 0 && !ended) return null;
+  return (
+    <>
+      <Heading>{t("dispute.heading")}</Heading>
+      {ended ? (
+        <TakesFocus key={report}>
+          <Notice kind="info" urgent={false} message={t("dispute.cancelledAsIfByYou")} />
+        </TakesFocus>
+      ) : null}
+      {reported.map((booking) => (
+        <View key={booking.id} style={styles.report}>
+          <Text style={[typography.label, { color: palette.text }]}>
+            {firstNameOf(t, booking.passenger)}
+          </Text>
+          <ReportStatus
+            booking={booking}
+            announce={announce === booking.id}
+            onAnnounced={onAnnounced}
+          />
+        </View>
+      ))}
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  report: { gap: spacing.xs },
+});

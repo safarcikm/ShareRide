@@ -27,4 +27,6 @@ export const privacySettings = {
   requestsKeptYears: 3,
   /** How long the record of each clean-up run is kept. */
   retentionRunsKeptDays: 90,
+  /** An ended hold is kept this long, like the audit entries that record it (spec 9, 3.8). */
+  holdsKeptYears: 3,
 } as const;
