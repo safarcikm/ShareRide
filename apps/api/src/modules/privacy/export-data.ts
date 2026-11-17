@@ -7,7 +7,7 @@ import {
   type Locale,
   type ShownSystemLine,
 } from "@shareride/i18n";
-import { and, asc, eq, gte, inArray, isNull, or } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNotNull, isNull, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { Queryable } from "../bookings/seats.ts";
 import { quickOf, systemLineOf } from "../chat/service.ts";
@@ -35,6 +35,7 @@ const {
   payments,
   privacyRequests,
   pushTokens,
+  reviews,
   segments,
   sessions,
   tripChanges,
@@ -212,6 +213,44 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     };
   };
 
+  // Reviews (spec 8, 3.7): each the person wrote, and each about them once
+  // it shows (R8.9), so the file never shows one before the app does. One
+  // the operator hid is there, marked hidden.
+  const reviewed = await q
+    .select({
+      bookingId: reviews.bookingId,
+      authorId: reviews.authorId,
+      rating: reviews.rating,
+      comment: reviews.comment,
+      sentAt: reviews.createdAt,
+      shownAt: reviews.revealedAt,
+      hiddenAt: reviews.hiddenAt,
+    })
+    .from(reviews)
+    .where(
+      or(
+        eq(reviews.authorId, userId),
+        and(eq(reviews.subjectId, userId), isNotNull(reviews.revealedAt)),
+      ),
+    );
+  const reviewsOn = (bookingId: string) => {
+    const shown = (mine: boolean) => {
+      const found = reviewed.find(
+        (row) => row.bookingId === bookingId && (row.authorId === userId) === mine,
+      );
+      return found === undefined
+        ? null
+        : {
+            rating: found.rating,
+            comment: found.comment,
+            sentAt: when(found.sentAt),
+            shownAt: when(found.shownAt),
+            hiddenAt: when(found.hiddenAt),
+          };
+    };
+    return { yourReview: shown(true), theirReview: shown(false) };
+  };
+
   // Trips the person posted, with what passengers booked on them.
   const posted = await q
     .select()
@@ -337,6 +376,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
           cancelReason: booking.cancelReason,
           cancelNote: booking.cancelNote,
           dispute: reportOn(booking.id, "driver"),
+          ...reviewsOn(booking.id),
         })),
     };
   });
@@ -412,6 +452,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     confirmedAt: when(booking.confirmedAt),
     checkedInAt: checkedInAt((checkIn) => checkIn.bookingId === booking.id),
     dispute: reportOn(booking.id, "passenger"),
+    ...reviewsOn(booking.id),
     expiredAt: when(booking.expiredAt),
     cancelledAt: when(booking.cancelledAt),
     cancelledBy: booking.cancelledBy,
