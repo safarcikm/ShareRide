@@ -5,6 +5,16 @@ packages:
 # Fail the install when Node.js or pnpm does not match "engines".
 engineStrict: true
 
+# Advisories `pnpm audit` passes over, each with why and when it comes out.
+# Martin decides each one (docs/engineering/security.md).
+auditConfig:
+  ignoreGhsas:
+    # picomatch ReDoS on crafted glob patterns, up to 4.0.7, no fixed version
+    # yet (2026-11-17). Only build and test tools use it (metro, jest,
+    # @expo/cli, tinyglobby), with our own patterns; it is in no production
+    # dependency of the API or the console. Remove once a fix ships.
+    - GHSA-fc5q-39xc-vjpf
+
 # One version of each shared tool for the whole repository. Packages refer to
 # these with "catalog:". Dependabot proposes updates.
 catalog:
