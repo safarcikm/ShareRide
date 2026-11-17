@@ -107,8 +107,17 @@ point in those municipalities.
 
 ### MeetingPointIssue
 
-A user's report of a problem with a meeting point: `user_id` (removed when
-resolved), `meeting_point_id`, `reason`, `note`, `status`, `resolution`.
+A user's report of a problem with a meeting point (`meeting_point_issues`):
+`reporter_id` (removed when resolved), `meeting_point_id`, `reason`
+(closed or moved, unsafe, wrong location, wrong information, other), `note`
+(up to 300 characters), `status` (open or resolved), `resolution_note`,
+`resolved_by_id` and `resolved_at`. At most 5 per person in 24 hours
+(R2.8, a setting the operator will change with feature H4), counted as
+rate limit events so a resolved report still counts; deleted 12
+months after it is resolved. An open report is what marks its point for
+review (spec 2, 3.5; R2.9): the operator finds it in the console's queue
+and list, and resolving it, having checked the point, is the review. The
+rules are in `packages/domain/src/meeting-points/issues.ts`.
 
 ### Leg
 

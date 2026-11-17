@@ -1,11 +1,13 @@
 import {
   cancelReasons,
   exportSections,
+  meetingPointIssueReasons,
   moderatedContent,
   moderationRules,
   reportCategories,
   reportOutcomes,
   type CancelReason,
+  type MeetingPointIssueReason,
   type ModeratedContent,
   type ModerationRule,
   type ReportCategory,
@@ -17,6 +19,7 @@ import {
   formatClock,
   formatDate,
   isMessageKey,
+  issueReasonKeys,
   languageNames,
   moderatedContentName,
   moderationRuleText,
@@ -54,6 +57,8 @@ const isReportCategory = (code: string): code is ReportCategory =>
   (reportCategories as readonly string[]).includes(code);
 const isReportOutcome = (code: string): code is ReportOutcome =>
   (reportOutcomes as readonly string[]).includes(code);
+const isIssueReason = (code: string): code is MeetingPointIssueReason =>
+  (meetingPointIssueReasons as readonly string[]).includes(code);
 const isModerationRule = (code: string): code is ModerationRule =>
   (moderationRules as readonly string[]).includes(code);
 const isModeratedContent = (code: string): code is ModeratedContent =>
@@ -98,6 +103,7 @@ function codeWords(t: Translate, locale: Locale): Readonly<Record<string, Say>> 
     outcome: (code) =>
       keyed("export.value.outcome")(code) ??
       (isReportOutcome(code) ? reportOutcomeText(t, code) : undefined),
+    problem: (code) => (isIssueReason(code) ? t(issueReasonKeys[code]) : undefined),
     rule: (code) => (isModerationRule(code) ? moderationRuleText(t, code) : undefined),
     content: (code) => (isModeratedContent(code) ? moderatedContentName(t, code) : undefined),
     appealOutcome: keyed("export.value.appealOutcome"),
