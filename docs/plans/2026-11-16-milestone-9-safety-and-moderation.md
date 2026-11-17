@@ -67,7 +67,7 @@ When this milestone is done, on the web and on an Android test build:
 | 2 | Whether a block keeps two passengers out of the same car | **Yes.** Someone who blocked you, or whom you blocked, being booked on a trip hides that trip from you and refuses your booking, silently | Spec 9 covers trips the other person drives. A passenger who blocks another passenger for harassment would otherwise still meet them in the car | Blocks apply only between a driver and a passenger, as spec 9 says. Simpler, but two passengers can still end up side by side |
 | 3 | What a suspension does to the suspended person's own bookings as a passenger | **A full refund to them**, as with every operator cancellation (spec 9, 3.4) | One rule for every cancellation the operator makes; the driver's seat is free to book again at once | The normal cancellation rules (spec 6), as if they had cancelled: the driver keeps a share when it is late, but the operator then decides what someone else pays |
 
-**Decision 2 revised on review (2026-11-16, Martin to confirm):** closing
+**Decision 2 revised on review (2026-11-16, Martin confirmed 2026-11-17):** closing
 a trip because someone in a block is booked on it would show the blocker
 which rides the other person booked (compare a signed-in search with a
 signed-out one), and a block can be made through any booking ever shared.

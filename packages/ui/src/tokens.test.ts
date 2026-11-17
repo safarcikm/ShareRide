@@ -28,6 +28,8 @@ const edgePairs = [
   ["control", "surface"],
   ["focus", "background"],
   ["focus", "surface"],
+  ["rating", "background"],
+  ["rating", "surface"],
 ] as const;
 
 describe.each(["light", "dark"] as const)("%s colours", (scheme) => {

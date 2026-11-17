@@ -222,8 +222,15 @@
     {
       "idx": 31,
       "version": "7",
-      "when": 1794911242389,
-      "tag": "0031_blocks",
+      "when": 1794911244743,
+      "tag": "0031_privacy_requests",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1794921699155,
+      "tag": "0032_blocks",
       "breakpoints": true
     }
   ]

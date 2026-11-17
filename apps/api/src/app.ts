@@ -65,6 +65,7 @@ import { createPaymentService, registerPaymentRoutes } from "./modules/payments/
 import {
   createDeletionService,
   createExportService,
+  createPrivacyRequests,
   registerPrivacyRoutes,
 } from "./modules/privacy/index.ts";
 import { createBlockService, registerSafetyRoutes } from "./modules/safety/index.ts";
@@ -345,6 +346,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
         logger,
       }),
       account,
+      requests: createPrivacyRequests(features),
       requireAuth,
     });
   }
