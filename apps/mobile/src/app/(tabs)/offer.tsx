@@ -11,6 +11,7 @@ import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { SignInFirst } from "@/navigation/sign-in-first";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { SuspendedAccount } from "@/safety/suspended-account";
 import { RouteStep } from "@/trips/route-step";
 import { resumeStep, stepHref } from "@/trips/steps";
 import { routeText } from "@/trips/texts";
@@ -36,6 +37,8 @@ export default function OfferScreen() {
       />
     );
   }
+  // Offering rides is closed to a suspended person (spec 9, 3.6.2).
+  if (me.suspension !== null) return <SuspendedAccount suspension={me.suspension} />;
   return <OfferForm />;
 }
 

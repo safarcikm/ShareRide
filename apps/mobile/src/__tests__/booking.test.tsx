@@ -819,6 +819,16 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
       ),
     ).toBeVisible();
   });
+
+  it("says where to read why, when the account was suspended meanwhile (spec 9, 3.6.2)", async () => {
+    await openBooking({
+      book: () => failure(403, "account_suspended", { suspendedUntil: null }),
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
+    expect(
+      await screen.findByText("Your account is suspended. Read why under Profile, Notices."),
+    ).toBeVisible();
+  });
 });
 
 describe("You're booked and Request sent (spec 16, 3.7, items 4 and 5)", () => {

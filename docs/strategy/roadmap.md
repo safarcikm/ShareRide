@@ -178,8 +178,8 @@ accepted 2026-11-16; built alongside milestones 7 and 8)
 - [x] The operator's alert for new reports
 - [x] Suspension, warnings and reinstating (the API)
 - [x] Notices, appeals and closing reports (the API)
+- [x] Notices, Appeal and the suspended account screen in the app
 - [ ] Hidden content, and the operator's trip cancel and refund
-- [ ] Notices, Appeal and the suspended account screen in the app
 - [ ] Console: the reports queue, the report page and appeals
 - [ ] Console: users, trips and bookings
 

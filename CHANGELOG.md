@@ -558,6 +558,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   email (the email with the answer), and the reporter "Your report" with
   the outcome in general terms, by push. Each writes one audit entry.
   Migration `0028_appeals` widens the notification and event kinds.
+- Notices and the suspended account in the app (milestone 9, PR 6c, spec
+  9, 3.4.4 and 3.6.2): Profile has Notices, where a notice's push and
+  email lead: what ShareRide did and why, the rule, what it concerned,
+  and one appeal of up to 1 000 characters within 14 days, then
+  ShareRide's answer. A suspended person sees, in place of Find and
+  Offer, until when and why, what is closed and what stays open, with
+  "Read why and appeal" and My rides; an action refused meanwhile says
+  where to read why. `GET /v1/me` gains `suspension` (its end, or null
+  when not suspended). The browser tests' API can suspend a person
+  (`POST /e2e/suspend`), as the console will.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its

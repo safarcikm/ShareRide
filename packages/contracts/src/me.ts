@@ -24,6 +24,11 @@ export const meSchema = z.object({
   memberSince: timestampSchema,
   /** What is still needed, in order; empty when the account is complete. */
   missingSteps: z.array(onboardingStepSchema),
+  /**
+   * My suspension now, with its end (null for none), or null when I am not
+   * suspended (spec 9, 3.6.2): what I can still do, and Notices to appeal.
+   */
+  suspension: z.object({ until: timestampSchema.nullable() }).nullable(),
 });
 
 export type Me = z.infer<typeof meSchema>;
