@@ -311,6 +311,7 @@ describe("the console's meeting points (spec 2, 3.6)", () => {
         reviewDueOn: null,
         sample: false,
         updatedAt: draft.updatedAt,
+        openIssues: 0,
       });
     });
 

@@ -16,6 +16,8 @@ export interface ListedMeetingPoint {
   readonly seasonStartMonth: number | null;
   readonly seasonEndMonth: number | null;
   readonly reviewDueOn: string | null;
+  /** Problem reports about it still open, each a mark that it needs review (spec 2, 3.5). */
+  readonly openIssues: number;
   /** The names and aliases, normalised (`searchTextFor`). */
   readonly searchText: string;
 }
@@ -30,6 +32,8 @@ export interface ConsoleFilters {
   readonly type?: MeetingPointType;
   readonly season?: SeasonFilter;
   readonly reviewOverdue?: boolean;
+  /** Only points with an open problem report. */
+  readonly openIssues?: boolean;
   /** Part of a name or alias, as typed (R2.6). */
   readonly q?: string;
 }
@@ -60,6 +64,7 @@ export function matchesConsoleFilters(
     (filters.type === undefined || point.type === filters.type) &&
     (filters.season === undefined || matchesSeason(point, filters.season, now.month)) &&
     (filters.reviewOverdue !== true || isReviewOverdue(point.reviewDueOn, now.today)) &&
+    (filters.openIssues !== true || point.openIssues > 0) &&
     (query === "" || point.searchText.includes(query))
   );
 }

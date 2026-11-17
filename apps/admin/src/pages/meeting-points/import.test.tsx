@@ -273,4 +273,31 @@ describe("importing meeting points from a file (spec 2, 3.6.9)", () => {
       expect(document.activeElement).toBe(screen.getByLabelText("CSV file"));
     });
   });
+
+  it("gives the new file field the focus even when starting again at once", async () => {
+    start();
+    await page();
+    choose();
+    fireEvent.click(checkButton());
+    // Click as soon as the rows are drawn, before React's effects for that
+    // drawing have run, as on a busy computer.
+    await drawn(() => screen.queryByRole("button", { name: "Check another file" }));
+    fireEvent.click(screen.getByRole("button", { name: "Check another file" }));
+    await waitFor(() => {
+      expect(document.activeElement).toBe(screen.getByLabelText("CSV file"));
+    });
+  });
 });
+
+/** Resolves as soon as `find` finds something in the page, with no wait after. */
+async function drawn(find: () => HTMLElement | null): Promise<void> {
+  if (find() !== null) return;
+  await new Promise<void>((resolve) => {
+    const observer = new MutationObserver(() => {
+      if (find() === null) return;
+      observer.disconnect();
+      resolve();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  });
+}

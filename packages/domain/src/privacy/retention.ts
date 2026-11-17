@@ -31,6 +31,8 @@ export const retentionRules = [
   "blocked_numbers",
   "erased_accounts",
   "privacy_requests",
+  /** Problem reports about meeting points, 12 months after they were resolved (spec 2, section 7). */
+  "meeting_point_issues",
   "holds",
   "retention_runs",
 ] as const;

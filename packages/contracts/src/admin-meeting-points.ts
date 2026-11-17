@@ -1,6 +1,7 @@
 import {
   amenities,
   importLimits,
+  meetingPointIssueReasons,
   meetingPointStatuses,
   meetingPointTypes,
   photoLimits,
@@ -38,6 +39,8 @@ export const adminMeetingPointErrorCodes = [
   "photo_storage_off",
   /** Photo storage did not take the file; trying again later can work. */
   "photo_storage_unavailable",
+  /** Someone resolved the problem report since the queue loaded it. */
+  "issue_resolved",
 ] as const;
 
 const errors = { schema: errorResponseSchema } as const;
@@ -102,20 +105,25 @@ export const adminMeetingPointSchema = z.object({
 export type AdminMeetingPoint = z.infer<typeof adminMeetingPointSchema>;
 
 /** A row of the console's list and a dot on its map. */
-export const adminMeetingPointListItemSchema = adminMeetingPointSchema.pick({
-  id: true,
-  nameIs: true,
-  nameEn: true,
-  position: true,
-  region: true,
-  municipality: true,
-  type: true,
-  season: true,
-  status: true,
-  reviewDueOn: true,
-  sample: true,
-  updatedAt: true,
-});
+export const adminMeetingPointListItemSchema = adminMeetingPointSchema
+  .pick({
+    id: true,
+    nameIs: true,
+    nameEn: true,
+    position: true,
+    region: true,
+    municipality: true,
+    type: true,
+    season: true,
+    status: true,
+    reviewDueOn: true,
+    sample: true,
+    updatedAt: true,
+  })
+  .extend({
+    /** Problem reports about it still open: it needs review (spec 2, 3.5). */
+    openIssues: z.int().nonnegative(),
+  });
 
 export type AdminMeetingPointListItem = z.infer<typeof adminMeetingPointListItemSchema>;
 
@@ -160,6 +168,8 @@ export const adminMeetingPointsRoute = defineRoute({
       season: z.enum(seasonFilters).optional(),
       /** Only points whose yearly review is overdue (R2.9). */
       reviewOverdue: flagSchema.optional(),
+      /** Only points with an open problem report (spec 2, 3.5). */
+      openIssues: flagSchema.optional(),
       /** Part of a name or alias (R2.6). */
       q: z.string().max(100).optional(),
     }),
@@ -487,5 +497,62 @@ export const adminImportMeetingPointsRoute = defineRoute({
     },
     401: { description: "operator_unauthenticated", ...errors },
     413: { description: "payload_too_large: the file is over 1 MB", ...errors },
+  },
+});
+
+// Problem reports about meeting points (spec 2, 3.5 and 3.6; milestone 8,
+// PR 10b): the queue of open reports, and resolving one. Never who sent it.
+
+export const adminMeetingPointIssueSchema = z.object({
+  id: z.uuid(),
+  meetingPoint: z.object({
+    id: z.uuid(),
+    nameIs: z.string(),
+    status: z.enum(meetingPointStatuses),
+    lastCheckedOn: dateSchema.nullable(),
+  }),
+  reason: z.enum(meetingPointIssueReasons),
+  note: z.string(),
+  sentAt: timestampSchema,
+});
+export type AdminMeetingPointIssue = z.infer<typeof adminMeetingPointIssueSchema>;
+
+export const adminMeetingPointIssuesRoute = defineRoute({
+  method: "get",
+  path: "/admin/v1/meeting-point-issues",
+  summary: "The open problem reports about meeting points, the oldest first",
+  tags: ["admin", "meeting-points"],
+  auth: "operator",
+  responses: {
+    200: {
+      description: "The queue",
+      schema: z.object({ issues: z.array(adminMeetingPointIssueSchema) }),
+    },
+    401: { description: "operator_unauthenticated", ...errors },
+  },
+});
+
+export const adminResolveMeetingPointIssueRoute = defineRoute({
+  method: "post",
+  path: "/admin/v1/meeting-point-issues/{id}/resolve",
+  summary:
+    "Resolve a problem report with a note on what was done, and mark the point checked today if so; removes the link to the person who sent it",
+  tags: ["admin", "meeting-points"],
+  auth: "operator",
+  request: {
+    params: z.object({ id: z.uuid() }),
+    // The domain counts the note in characters (`checkIssueResolution`); this bounds the body.
+    body: z.object({ note: z.string().max(4000), checkedToday: z.boolean() }),
+  },
+  responses: {
+    204: { description: "Resolved" },
+    400: {
+      description:
+        "validation_failed: the note is empty (`note`, `required`) or over 1 000 characters (`note`, `too_long`)",
+      ...errors,
+    },
+    401: { description: "operator_unauthenticated", ...errors },
+    404: { description: "not_found", ...errors },
+    409: { description: "issue_resolved: resolved by someone else since", ...errors },
   },
 });
