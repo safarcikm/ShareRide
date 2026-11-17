@@ -93,4 +93,50 @@ describe("moving one trip's times for the browser tests", () => {
     await moveTripForTests(api.connection.db, airport, -5, api.now());
     expect((await timesOf(airport)).status).toBe("departed");
   });
+
+  it("moves the trip's check-ins and reports with it, and lets a report nobody answered in time stand", async () => {
+    const gunna = await newMember("Gunna");
+    const booking = await booked(gunna.accessToken, airport, { fromStop: 0, toStop: 1 });
+    await paid(gunna.accessToken, booking.id);
+    await moveTripForTests(api.connection.db, airport, -15, api.now());
+    const { db } = api.connection;
+    const [first] = await db
+      .select({ id: schema.tripStops.id })
+      .from(schema.tripStops)
+      .where(eq(schema.tripStops.tripId, airport))
+      .orderBy(asc(schema.tripStops.position));
+    if (first === undefined) throw new Error("No stops.");
+    const now = api.now();
+    await db.insert(schema.checkIns).values({
+      tripStopId: first.id,
+      userId: gunna.userId,
+      bookingId: booking.id,
+      checkedInAt: now,
+    });
+    await db
+      .insert(schema.disputes)
+      .values({ bookingId: booking.id, kind: "driver_absent", raisedAt: now });
+    const before = await timesOf(airport);
+
+    // A day and a half back: the driver's 24 hours to answer have passed.
+    await moveTripForTests(db, airport, -36 * 60, now);
+
+    const by = (await timesOf(airport)).departsAt.getTime() - before.departsAt.getTime();
+    const [checkIn] = await db
+      .select({ at: schema.checkIns.checkedInAt })
+      .from(schema.checkIns)
+      .where(eq(schema.checkIns.bookingId, booking.id));
+    expect(checkIn?.at.getTime()).toBe(now.getTime() + by);
+    const [dispute] = await db
+      .select()
+      .from(schema.disputes)
+      .where(eq(schema.disputes.bookingId, booking.id));
+    expect(dispute).toMatchObject({ outcome: "stands", decidedBy: "system" });
+    expect(dispute?.raisedAt.getTime()).toBe(now.getTime() + by);
+    const [row] = await db
+      .select({ status: schema.bookings.status, reason: schema.bookings.cancelReason })
+      .from(schema.bookings)
+      .where(eq(schema.bookings.id, booking.id));
+    expect(row).toEqual({ status: "cancelled", reason: "driver_absent" });
+  });
 });
