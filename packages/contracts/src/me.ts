@@ -28,7 +28,8 @@ export const meSchema = z.object({
    * My suspension now, with its end (null for none), or null when I am not
    * suspended (spec 9, 3.6.2): what I can still do, and Notices to appeal.
    */
-  suspension: z.object({ until: timestampSchema.nullable() }).nullable(),
+  // Null when missing, as from an API before it: the app then shows nothing suspended.
+  suspension: z.object({ until: timestampSchema.nullable() }).nullable().default(null),
 });
 
 export type Me = z.infer<typeof meSchema>;

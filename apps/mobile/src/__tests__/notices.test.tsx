@@ -219,6 +219,45 @@ describe("A suspended account (spec 9, 3.6.2)", () => {
     expect(await screen.findByText("Rule: Harassment")).toBeVisible();
   });
 
+  it("follows a suspension that started while the app was open", async () => {
+    let suspended = false;
+    await renderApp("/", {
+      me: completeMe,
+      setUp: (client) => {
+        client.answer("/v1/me", () => ok(200, suspended ? suspendedMe : completeMe), "get");
+        client.answer("/v1/me/notices", () => ok(200, { notices: [suspension()] }), "get");
+        client.answer("/v1/trips/soonest", () => {
+          suspended = true;
+          return failure(403, "account_suspended", {
+            suspendedUntil: suspendedMe.suspension.until,
+          });
+        });
+      },
+    });
+    expect(await screen.findByRole("header", { name: "Your account is suspended" })).toBeVisible();
+  });
+
+  it("is over once its end has passed, before the app reads the account again", async () => {
+    await renderApp("/", {
+      me: { ...completeMe, suspension: { until: "2026-11-14T11:00:00.000Z" } },
+      setUp: (client) => {
+        client.answer("/v1/trips/soonest", () => ok(200, { results: [] }));
+      },
+    });
+    expect(await screen.findByRole("header", { name: "Where are you going?" })).toBeVisible();
+    expect(screen.queryByRole("header", { name: "Your account is suspended" })).toBeNull();
+  });
+
+  it("closes booking a seat, even from a link", async () => {
+    await renderApp("/trips/0190a1d6-0000-7000-8000-0000000000f1/book?from=0&to=1", {
+      me: suspendedMe,
+      setUp: (client) => {
+        client.answer("/v1/me/notices", () => ok(200, { notices: [suspension()] }), "get");
+      },
+    });
+    expect(await screen.findByRole("header", { name: "Your account is suspended" })).toBeVisible();
+  });
+
   it("shows Offer as the suspension too, with no end date when there is none", async () => {
     await renderApp("/offer", {
       me: { ...suspendedMe, suspension: { until: null } },

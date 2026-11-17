@@ -17,7 +17,7 @@ import { CircleCheck } from "lucide-react-native";
 import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText, formatWait } from "@/auth/errors";
-import { useSession } from "@/auth/session";
+import { useMe, useSession } from "@/auth/session";
 import { newAttemptKey } from "@/booking/attempt-key";
 import { keepPendingBooking } from "@/booking/pending-booking";
 import { PaymentSheet, usePayment } from "@/booking/payment";
@@ -34,6 +34,7 @@ import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { useLoaded } from "@/lib/use-loaded";
+import { SuspendedAccount, suspensionNow } from "@/safety/suspended-account";
 import { positionParam } from "@/trip-details/trip-link";
 import { carText } from "@/trip-details/texts";
 import { PartStop } from "@/trip-details/trip-parts";
@@ -42,9 +43,16 @@ import { usePalette } from "@/theme/use-palette";
 
 /**
  * The booking screen (spec 5, 3.1 and 3.2), opened from trip details with
- * the part and seats in the address. Only for a finished account (R5.1).
+ * the part and seats in the address. Only for a finished account (R5.1),
+ * and closed to a suspended one (spec 9, 3.6.2).
  */
 export default function BookScreen() {
+  const suspension = suspensionNow(useMe());
+  if (suspension !== null) return <SuspendedAccount suspension={suspension} />;
+  return <Book />;
+}
+
+function Book() {
   const { t } = useLanguage();
   const palette = usePalette();
   const session = useSession();

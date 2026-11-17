@@ -72,12 +72,14 @@ function Notices() {
             key={notice.id}
             notice={notice}
             onChange={(now) => {
-              if (now === null) {
-                setChanged({});
-                refresh();
-                return;
-              }
               setChanged((all) => ({ ...all, [now.id]: now }));
+            }}
+            onStale={() => {
+              // Only this notice's own change gives way to the list loaded again.
+              setChanged((all) =>
+                Object.fromEntries(Object.entries(all).filter(([id]) => id !== notice.id)),
+              );
+              refresh();
             }}
             onAnnounce={(text) => {
               setAnnouncement((last) => ({ text, count: (last?.count ?? 0) + 1 }));

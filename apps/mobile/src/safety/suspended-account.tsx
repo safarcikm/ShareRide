@@ -6,19 +6,28 @@ import { Button } from "@/components/button";
 import { Screen } from "@/components/screen";
 import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
+import { now } from "@/lib/clock";
 import { useLoaded } from "@/lib/use-loaded";
 import { momentText } from "./notices";
+
+type Suspension = NonNullable<Me["suspension"]>;
+
+/**
+ * My suspension while it lasts, or null: one whose end has passed is over,
+ * even before the app reads the account again (spec 9, 3.6.3).
+ */
+export function suspensionNow(me: Me | null): Suspension | null {
+  const suspension = me?.suspension ?? null;
+  if (suspension === null || suspension.until === null) return suspension;
+  return new Date(suspension.until).getTime() > now().getTime() ? suspension : null;
+}
 
 /**
  * Find and Offer for a suspended person (spec 9, 3.6.2): until when, the
  * reason, what they can no longer do and what stays open, and the way to
  * Notices, where they appeal. My rides, Messages and Profile stay as they are.
  */
-export function SuspendedAccount({
-  suspension,
-}: {
-  readonly suspension: NonNullable<Me["suspension"]>;
-}) {
+export function SuspendedAccount({ suspension }: { readonly suspension: Suspension }) {
   const { locale, t } = useLanguage();
   const session = useSession();
   const load = useCallback(() => session.call(myNoticesRoute, {}), [session]);

@@ -564,10 +564,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   and one appeal of up to 1 000 characters within 14 days, then
   ShareRide's answer. A suspended person sees, in place of Find and
   Offer, until when and why, what is closed and what stays open, with
-  "Read why and appeal" and My rides; an action refused meanwhile says
-  where to read why. `GET /v1/me` gains `suspension` (its end, or null
-  when not suspended). The browser tests' API can suspend a person
-  (`POST /e2e/suspend`), as the console will.
+  "Read why and appeal" and My rides; booking a seat and a new trip are
+  closed too, and a conversation stays readable with a line saying why
+  nothing can be sent. The app reads the account again when it comes back
+  into view and when an action is refused as suspended, and a suspension
+  whose end has passed is over at once. Tapping the push of a notice opens
+  Notices, and that of a report's outcome My reports. `GET /v1/me` gains
+  `suspension` (its end, or null when not suspended). The browser tests'
+  API can suspend a person (`POST /e2e/suspend`), as the console will. In
+  Icelandic, Notices are "Orðsendingar frá ShareRide", apart from
+  Messages ("Skilaboð").
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its

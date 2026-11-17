@@ -54,11 +54,14 @@ export function noticeTitle(t: Translate, locale: Locale, notice: NoticeData): s
 export function NoticeCard({
   notice,
   onChange,
+  onStale,
   onAnnounce,
 }: {
   readonly notice: NoticeData;
-  /** The notice as the API now has it, after an appeal; null to load them all again. */
-  readonly onChange: (notice: NoticeData | null) => void;
+  /** The notice as the API now has it, after an appeal. */
+  readonly onChange: (notice: NoticeData) => void;
+  /** The appeal was refused as the notice changed meanwhile: load it again. */
+  readonly onStale: () => void;
   readonly onAnnounce: (text: string) => void;
 }) {
   const { locale, t } = useLanguage();
@@ -69,7 +72,9 @@ export function NoticeCard({
   return (
     <Card>
       <View style={styles.notice}>
-        <Text style={strong}>{noticeTitle(t, locale, notice)}</Text>
+        <Text accessibilityRole="header" style={strong}>
+          {noticeTitle(t, locale, notice)}
+        </Text>
         <Text style={muted}>
           {/* With the year: a notice is kept for years (Iceland keeps UTC). */}
           {t("reports.sent", { date: formatDate(notice.at.slice(0, 10), locale) })}
@@ -87,7 +92,7 @@ export function NoticeCard({
             {t("notices.concerns", { content: t(contentKeys[notice.content.kind]) })}
           </Text>
         )}
-        <Appeal notice={notice} onChange={onChange} onAnnounce={onAnnounce} />
+        <Appeal notice={notice} onChange={onChange} onStale={onStale} onAnnounce={onAnnounce} />
       </View>
     </Card>
   );
@@ -96,10 +101,12 @@ export function NoticeCard({
 function Appeal({
   notice,
   onChange,
+  onStale,
   onAnnounce,
 }: {
   readonly notice: NoticeData;
-  readonly onChange: (notice: NoticeData | null) => void;
+  readonly onChange: (notice: NoticeData) => void;
+  readonly onStale: () => void;
   readonly onAnnounce: (text: string) => void;
 }) {
   const { locale, t } = useLanguage();
@@ -171,7 +178,7 @@ function Appeal({
       case "not_appealable":
       case "not_found":
         setFailed(t("notices.appealGone"));
-        onChange(null);
+        onStale();
         return;
       default:
         setFailed(errorText(t, result));
@@ -193,6 +200,7 @@ function Appeal({
               setText(value);
             }}
             multiline
+            autoFocus
             maxLength={maxLength * 4}
             help={t("notices.appealHelp", { max: maxLength })}
             error={tooLong ? t("report.tooLong", { max: maxLength }) : (problem ?? undefined)}

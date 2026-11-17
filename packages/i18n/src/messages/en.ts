@@ -806,7 +806,7 @@ export const en = {
   "suspended.until": "Until {until}.",
   "suspended.noEnd": "With no end date.",
   "suspended.help":
-    "While it is, you can't search, book, offer rides, answer requests or send messages. You can still read your rides and messages, and download or delete your data.",
+    "While it is, you can't search, book, offer or change rides, answer requests or send messages. You can still read your rides, messages and notices.",
   "suspended.readWhy": "Read why and appeal",
   "share.title": "Share trip details",
   "share.when": "My trip: {date} at {time}",

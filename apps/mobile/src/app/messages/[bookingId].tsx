@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { errorText } from "@/auth/errors";
+import { useMe } from "@/auth/session";
 import { Announcer } from "@/components/announcer";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
@@ -20,6 +21,7 @@ import { MessageList } from "@/chat/message-list";
 import { otherPerson } from "@/chat/texts";
 import { useConversation } from "@/chat/use-conversation";
 import { useLanguage } from "@/i18n/language";
+import { suspensionNow } from "@/safety/suspended-account";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
@@ -34,6 +36,7 @@ export default function ConversationScreen() {
   const palette = usePalette();
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
   const chat = useConversation(bookingId);
+  const suspended = suspensionNow(useMe()) !== null;
   const { loaded } = chat;
 
   if (loaded === undefined) {
@@ -86,7 +89,10 @@ export default function ConversationScreen() {
         stickToEnd
         endKey={mine}
         footer={
-          conversation.canWrite ? (
+          // Reading stays open to a suspended person; sending does not (spec 9, 3.6.2).
+          conversation.canWrite && suspended ? (
+            <Notice kind="info" urgent={false} message={t("error.account_suspended")} />
+          ) : conversation.canWrite ? (
             <>
               {chat.tooFast ? <Notice message={t("chat.tooFast")} /> : null}
               <Composer
