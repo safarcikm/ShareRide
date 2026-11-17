@@ -3,13 +3,14 @@
 import { serve } from "@hono/node-server";
 import { getConnInfo } from "@hono/node-server/conninfo";
 import { connectDatabase, pingDatabase } from "@shareride/db";
-import { defaultTripDaySettings } from "@shareride/domain";
+import { defaultReviewSettings, defaultTripDaySettings } from "@shareride/domain";
 import { createApp } from "./app.ts";
 import { ConfigError, loadConfig, type Config } from "./config.ts";
 import { createLogger } from "./logger.ts";
 import { expireAllDueBookings } from "./modules/bookings/index.ts";
 import { createNotificationWorker } from "./modules/notifications/index.ts";
 import { createPaymentService } from "./modules/payments/index.ts";
+import { revealDueReviews } from "./modules/reviews/index.ts";
 import { settleUnansweredReports } from "./modules/trip-day/index.ts";
 import { moveTripsOn } from "./modules/trips/index.ts";
 import { clientAddress } from "./platform/client-address.ts";
@@ -109,12 +110,15 @@ const jobs = [
   }),
   // Trips depart at their first stop and complete 2 hours after their last,
   // with their confirmed bookings (spec 8, R8.1 and R8.2). Reports nobody
-  // answered within 24 hours stand (R8.6).
+  // answered within 24 hours stand (R8.6), and reviews nobody answered show
+  // 14 days after completion (R8.9).
   every(60_000, "trip-day", async () => {
     const moved = await moveTripsOn(database.db, new Date(), defaultTripDaySettings);
     if (moved.departed + moved.completed > 0) logger.info(moved, "trips moved on");
     const settled = await settleUnansweredReports(database.db, new Date(), defaultTripDaySettings);
     if (settled > 0) logger.info({ settled }, "reports settled");
+    const revealed = await revealDueReviews(database.db, new Date(), defaultReviewSettings);
+    if (revealed > 0) logger.info({ revealed }, "reviews revealed");
   }),
 ];
 // "Download my data" files (spec 11, 3.2), built within seconds of asking.
