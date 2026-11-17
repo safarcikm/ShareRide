@@ -70,37 +70,43 @@ describe("the road file of Iceland", () => {
     }
   });
 
-  it("joins every sample meeting point to a road and connects every pair", () => {
-    const joins = samplePoints.map((point) => ({
-      key: point.key,
-      position: joinRoad(graph, point.position),
-    }));
-    expect(joins.filter((join) => join.position === null).map((join) => join.key)).toEqual([]);
-    const onRoad = joins.flatMap(({ key, position }) =>
-      position === null ? [] : [{ key, position }],
-    );
-    const missing: string[] = [];
-    for (const start of onRoad) {
-      const ends = onRoad.filter((end) => end !== start);
-      legsFrom(
-        graph,
-        start.position,
-        ends.map((end) => end.position),
-      ).forEach((leg, index) => {
-        if (leg === null) missing.push(`${start.key} to ${ends[index]?.key ?? "?"}`);
-      });
-    }
-    expect(missing).toEqual([]);
-  });
-
-  it("finds the legs to a point as it finds them from each point", () => {
-    const positions = samplePoints.flatMap((point) => joinRoad(graph, point.position) ?? []);
-    for (const end of [positions[0], positions[positions.length - 1]]) {
-      if (end === undefined) throw new Error("No sample points.");
-      const starts = positions.filter((start) => start !== end);
-      expect(legsTo(graph, end, starts)).toEqual(
-        starts.map((start) => legsFrom(graph, start, [end])[0]),
+  it(
+    "joins every sample meeting point to a road and connects every pair",
+    { timeout: 30_000 },
+    () => {
+      const joins = samplePoints.map((point) => ({
+        key: point.key,
+        position: joinRoad(graph, point.position),
+      }));
+      expect(joins.filter((join) => join.position === null).map((join) => join.key)).toEqual([]);
+      const onRoad = joins.flatMap(({ key, position }) =>
+        position === null ? [] : [{ key, position }],
       );
-    }
+      const missing: string[] = [];
+      for (const start of onRoad) {
+        const ends = onRoad.filter((end) => end !== start);
+        legsFrom(
+          graph,
+          start.position,
+          ends.map((end) => end.position),
+        ).forEach((leg, index) => {
+          if (leg === null) missing.push(`${start.key} to ${ends[index]?.key ?? "?"}`);
+        });
+      }
+      expect(missing).toEqual([]);
+    },
+  );
+
+  // Each search covers the whole island, a few hundredths of a second; on a
+  // busy machine these take longer than a test's usual 5 seconds.
+  it("finds the legs to a point as it finds them from each point", { timeout: 30_000 }, () => {
+    const positions = samplePoints.flatMap((point) => joinRoad(graph, point.position) ?? []);
+    const ends = [positions[0], positions[positions.length - 1]].flatMap((end) => end ?? []);
+    expect(ends).toHaveLength(2);
+    // One search from each point finds its legs to both ends.
+    const from = positions.map((start) => legsFrom(graph, start, ends));
+    ends.forEach((end, which) => {
+      expect(legsTo(graph, end, positions)).toEqual(from.map((legs) => legs[which]));
+    });
   });
 });

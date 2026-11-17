@@ -176,8 +176,8 @@ export function createLegService(dependencies: {
           others.map((other) => other.location),
         );
         others.forEach((other, index) => {
-          const leg = found[index];
-          if (leg != null) rows.push(row(point.id, other.id, leg, source, at));
+          const leg = found[index] ?? null;
+          if (leg !== null) rows.push(row(point.id, other.id, leg, source, at));
         });
         // Each point's search takes a few hundredths of a second: let other
         // requests in between them.
@@ -246,11 +246,11 @@ export function createLegService(dependencies: {
         ]);
         const at = clock();
         const rows = others.flatMap((other, index) => {
-          const out = outward[index];
-          const back = inward[index];
+          const out = outward[index] ?? null;
+          const back = inward[index] ?? null;
           return [
-            ...(out == null ? [] : [row(pointId, other.id, out, source, at)]),
-            ...(back == null ? [] : [row(other.id, pointId, back, source, at)]),
+            ...(out === null ? [] : [row(pointId, other.id, out, source, at)]),
+            ...(back === null ? [] : [row(other.id, pointId, back, source, at)]),
           ];
         });
         const written = await db.transaction(async (tx) => {

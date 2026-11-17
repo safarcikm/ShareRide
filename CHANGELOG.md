@@ -870,6 +870,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   16 November 2026 (19 474 km of road, 0.9 MB); a test checks known
   distances and that every sample meeting point reaches every other. How
   to update the map data: `docs/engineering/road-file.md`.
+- Distances for real meeting points (milestone 8, PR 11b): the API finds
+  legs on the road file through the `Router` port, which reads it on
+  first use (straight lines in API tests). "Recompute all" computes every
+  leg between points in service again, with an audit entry, and
+  activating or moving a point will compute its own (PR 12). The
+  console's Distances page, under meeting points, shows how many legs
+  there are, when they were computed and on which map data, the points
+  with no road within 1 km and the legs missing.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.
