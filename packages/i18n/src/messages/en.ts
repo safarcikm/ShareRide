@@ -1752,6 +1752,7 @@ export const en = {
   "admin.meetingPoints.intro":
     "Every meeting point, drafts and retired ones too. Only the operator adds and changes them.",
   "admin.meetingPoints.add": "Add a meeting point",
+  "admin.meetingPoints.import": "Import from a file",
   "admin.meetingPoints.filters": "Filters",
   "admin.meetingPoints.name": "Name",
   "admin.meetingPoints.status": "Status",
@@ -2042,6 +2043,54 @@ export const en = {
     "A photo was added or removed elsewhere. This is the newest list; try again.",
   "admin.meetingPoint.photosRetired":
     "This meeting point was retired, so its photos can no longer change.",
+  "admin.meetingPointImport.title": "Import meeting points",
+  "admin.meetingPointImport.intro":
+    "Add meeting points as drafts from a CSV file, one point per row. You see each row before anything is saved, and rows with problems are skipped.",
+  "admin.meetingPointImport.helpTitle": "What the file holds",
+  "admin.meetingPointImport.helpColumns":
+    "The first row names the columns, in any order. Every file needs {required}. These can be left out or left empty: {optional}. Separate aliases and amenities with {separator}. Cells may be separated by commas, semicolons or tabs, and coordinates may have a decimal comma.",
+  "admin.meetingPointImport.helpValues":
+    "Write coordinates in decimal degrees, such as 64.1376 and -21.9365. A season is two months from 1 to 12, such as 5 and 9 for May to September; leave both empty for all year. A name that a meeting point has already is skipped.",
+  "admin.meetingPointImport.file": "CSV file",
+  "admin.meetingPointImport.fileHint":
+    "At most {max} rows and 1 MB, saved as UTF-8 (in Excel: CSV UTF-8).",
+  "admin.meetingPointImport.fileRequired": "Choose a file.",
+  "admin.meetingPointImport.tooLarge": "The file is over 1 MB. Split it into smaller files.",
+  "admin.meetingPointImport.unreadable": "This browser cannot read the file. Choose it again.",
+  "admin.meetingPointImport.check": "Check the file",
+  "admin.meetingPointImport.cannotRead": "This file cannot be read:",
+  "admin.meetingPointImport.unknownColumn": "There is no column called {column}.",
+  "admin.meetingPointImport.repeatedColumn": "The column {column} is there twice.",
+  "admin.meetingPointImport.unnamedColumn": "Column {position} has no name in the first row.",
+  "admin.meetingPointImport.missingColumn": "The column {column} is missing.",
+  "admin.meetingPointImport.unclosedQuote": "A quote that starts on line {line} is never closed.",
+  "admin.meetingPointImport.empty": "It has no rows under the column names.",
+  "admin.meetingPointImport.notUtf8": "It is not saved as UTF-8. In Excel, save it as CSV UTF-8.",
+  "admin.meetingPointImport.tooManyRows":
+    "It has more than {max} rows. Split it into smaller files.",
+  "admin.meetingPointImport.checkFailed": "The file could not be checked. Try again.",
+  "admin.meetingPointImport.addFailed": "The drafts could not be added. Try again.",
+  "admin.meetingPointImport.rows": "The file's rows",
+  "admin.meetingPointImport.summary":
+    "Rows: {rows}. Ready to add: {ready}. Skipped for problems: {skipped}.",
+  "admin.meetingPointImport.add": "Add {count, plural, one {# draft} other {# drafts}}",
+  "admin.meetingPointImport.added": "Added as drafts: {added}. Skipped: {skipped}.",
+  "admin.meetingPointImport.seeDrafts": "See the drafts",
+  "admin.meetingPointImport.again": "Check another file",
+  "admin.meetingPointImport.nothingToAdd":
+    "No row can be added. Fix the problems in the file and check it again.",
+  "admin.meetingPointImport.noName": "No name",
+  "admin.meetingPointImport.line": "Line {line}",
+  "admin.meetingPointImport.ready": "Ready to add",
+  "admin.meetingPointImport.skipped": "Skipped",
+  "admin.meetingPointImport.addedTag": "Added",
+  "admin.meetingPointImport.problem": "{column}: {problem}",
+  "admin.meetingPointImport.cells":
+    "This row has more or fewer cells than the first row has column names.",
+  "admin.meetingPointImport.duplicate": "A meeting point or an earlier row has this name already.",
+  "admin.meetingPointImport.degrees": "Write it in decimal degrees, such as 64.1376.",
+  "admin.meetingPointImport.unknownValue": "Use one of the names under What the file holds.",
+  "admin.meetingPointImport.month": "Give a month from 1 to 12.",
   "admin.meetingPoint.photoStorageOff":
     "No photo storage is set up here, so photos cannot be added.",
   "admin.meetingPoint.photoStorageUnavailable":
