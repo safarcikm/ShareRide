@@ -1639,14 +1639,17 @@ export const is = {
   "admin.meetingPoint.issue.moveNeeded":
     "Hér er aðeins staðsetningu draga breytt. Að færa mótsstað í notkun er sérstakt skref.",
   "admin.disputes.title": "Ágreiningsmál",
-  "admin.disputes.intro": "Tilkynningar frá ferðadegi sem hinn aðilinn sagði ekki réttar. Lestu það sem kerfið veit og taktu svo ákvörðun. Báðum aðilum er sagt frá henni og hún er endanleg í appinu.",
+  "admin.disputes.intro":
+    "Tilkynningar frá ferðadegi sem hinn aðilinn sagði ekki réttar. Lestu það sem kerfið veit og taktu svo ákvörðun. Báðum aðilum er sagt frá henni og hún er endanleg í appinu.",
   "admin.disputes.views": "Tilkynningar sem sýna á",
   "admin.disputes.waiting": "Bíða",
   "admin.disputes.decided": "Ákveðnar",
   "admin.disputes.waitingHeading": "Bíða ákvörðunar",
   "admin.disputes.decidedHeading": "Ákveðnar af stjórnanda",
-  "admin.disputes.waitingCount": "{count, plural, one {# tilkynning bíður, elsta fyrst} other {# tilkynningar bíða, elsta fyrst}}",
-  "admin.disputes.decidedCount": "{count, plural, one {# tilkynning, nýjasta fyrst} other {Síðustu # tilkynningar, nýjasta fyrst}}",
+  "admin.disputes.waitingCount":
+    "{count, plural, one {# tilkynning bíður, elsta fyrst} other {# tilkynningar bíða, elsta fyrst}}",
+  "admin.disputes.decidedCount":
+    "{count, plural, one {# tilkynning, nýjasta fyrst} other {Síðustu # tilkynningar, nýjasta fyrst}}",
   "admin.disputes.noneWaiting": "Engin tilkynning bíður ákvörðunar.",
   "admin.disputes.noneDecided": "Stjórnandi hefur enn ekki ákveðið neina tilkynningu.",
   "admin.disputes.loadFailed": "Ekki tókst að sækja tilkynningarnar.",
@@ -1694,7 +1697,8 @@ export const is = {
   "admin.disputes.passengerHere": "Farþeginn sagðist vera á staðnum kl. {time}.",
   "admin.disputes.passengerNotHere": "Farþeginn sagðist aldrei vera á staðnum.",
   "admin.disputes.decision": "Ákvörðun",
-  "admin.disputes.decisionHint": "Veldu hvað gerðist. Báðum aðilum er sagt frá ákvörðuninni og hún er endanleg í appinu.",
+  "admin.disputes.decisionHint":
+    "Veldu hvað gerðist. Báðum aðilum er sagt frá ákvörðuninni og hún er endanleg í appinu.",
   "admin.disputes.outcome": "Hvað gerðist",
   "admin.disputes.outcome.no_show.stands": "Farþeginn mætti ekki: fjarvistin stendur",
   "admin.disputes.outcome.no_show.rode": "Farþeginn fór með",
@@ -1702,37 +1706,53 @@ export const is = {
   "admin.disputes.outcome.driver_absent.stands": "Bílstjórinn kom ekki: tilkynningin stendur",
   "admin.disputes.outcome.driver_absent.rode": "Farþeginn fór með",
   "admin.disputes.outcome.driver_absent.passenger_absent": "Farþeginn mætti ekki",
-  "admin.disputes.effect.no_show.stands": "Engin endurgreiðsla, bílstjórinn fær greitt og það telst á farþegann.",
-  "admin.disputes.effect.no_show.rode": "Bókunin klárast, bílstjórinn fær greitt og ekkert telst á hvorugan aðila.",
-  "admin.disputes.effect.no_show.left_behind": "Bókunin er afbókuð með fullri endurgreiðslu, bílstjórinn fær ekki greitt og það telst á bílstjórann.",
-  "admin.disputes.effect.driver_absent.stands": "Bókunin er afbókuð með fullri endurgreiðslu, bílstjórinn fær ekki greitt og það telst á bílstjórann.",
-  "admin.disputes.effect.driver_absent.rode": "Bókunin heldur áfram, bílstjórinn fær greitt og ekkert telst á hvorugan aðila.",
-  "admin.disputes.effect.driver_absent.passenger_absent": "Það er fjarvist farþegans: engin endurgreiðsla, bílstjórinn fær greitt og það telst á farþegann.",
+  "admin.disputes.effect.no_show.stands":
+    "Engin endurgreiðsla, bílstjórinn fær greitt og það telst á farþegann.",
+  "admin.disputes.effect.no_show.rode":
+    "Bókunin klárast, bílstjórinn fær greitt og ekkert telst á hvorugan aðila.",
+  "admin.disputes.effect.no_show.left_behind":
+    "Bókunin er afbókuð með fullri endurgreiðslu, bílstjórinn fær ekki greitt og það telst á bílstjórann.",
+  "admin.disputes.effect.driver_absent.stands":
+    "Bókunin er afbókuð með fullri endurgreiðslu, bílstjórinn fær ekki greitt og það telst á bílstjórann.",
+  "admin.disputes.effect.driver_absent.rode":
+    "Bókunin heldur áfram, bílstjórinn fær greitt og ekkert telst á hvorugan aðila.",
+  "admin.disputes.effect.driver_absent.passenger_absent":
+    "Það er fjarvist farþegans: engin endurgreiðsla, bílstjórinn fær greitt og það telst á farþegann.",
   "admin.disputes.reasons": "Rökstuðningur þinn (valfrjálst)",
-  "admin.disputes.reasonsHint": "Aðeins stjórnendur sjá hann, ef kvartað er síðar. Mest 500 stafir.",
+  "admin.disputes.reasonsHint":
+    "Aðeins stjórnendur sjá hann, ef kvartað er síðar. Mest 500 stafir.",
   "admin.disputes.reasonsTooLong": "Hafðu rökstuðninginn 500 stafi eða styttri.",
   "admin.disputes.chooseOutcome": "Veldu hvað gerðist.",
   "admin.disputes.decide": "Ákveða",
-  "admin.disputes.confirmQuestion": "Ákveða „{outcome}“? Báðum aðilum er sagt frá því og því verður ekki breytt í appinu.",
+  "admin.disputes.confirmQuestion":
+    "Ákveða „{outcome}“? Báðum aðilum er sagt frá því og því verður ekki breytt í appinu.",
   "admin.disputes.confirm": "Já, ákveða",
   "admin.disputes.goBack": "Til baka",
   "admin.disputes.decidedNow": "Ákveðið: {outcome}. Báðum aðilum er sagt frá því.",
-  "admin.disputes.alreadyDecided": "Þessi tilkynning var ákveðin á meðan, kannski af öðrum stjórnanda. Sæktu hana aftur til að sjá ákvörðunina.",
-  "admin.disputes.notWaiting": "Þessi tilkynning bíður ekki lengur ákvörðunar. Sæktu hana aftur til að sjá stöðuna.",
+  "admin.disputes.alreadyDecided":
+    "Þessi tilkynning var ákveðin á meðan, kannski af öðrum stjórnanda. Sæktu hana aftur til að sjá ákvörðunina.",
+  "admin.disputes.notWaiting":
+    "Þessi tilkynning bíður ekki lengur ákvörðunar. Sæktu hana aftur til að sjá stöðuna.",
   "admin.disputes.reload": "Sækja tilkynninguna aftur",
   "admin.disputes.decideFailed": "Ekki tókst að vista ákvörðunina. Reyndu aftur.",
-  "admin.disputes.notDecidable": "Enginn mótmælti þessari tilkynningu, svo það er ekki stjórnanda að ákveða hana.",
+  "admin.disputes.notDecidable":
+    "Enginn mótmælti þessari tilkynningu, svo það er ekki stjórnanda að ákveða hana.",
   "admin.disputes.outcomeLabel": "Niðurstaða",
   "admin.disputes.decidedBy": "Ákveðið af",
   "admin.disputes.decidedBy.operator": "Stjórnanda",
-  "admin.disputes.decidedBy.system": "ShareRide sjálfkrafa, þar sem hinn aðilinn samþykkti eða svaraði ekki",
+  "admin.disputes.decidedBy.system":
+    "ShareRide sjálfkrafa, þar sem hinn aðilinn samþykkti eða svaraði ekki",
   "admin.disputes.reasonsLabel": "Rökstuðningur",
   "admin.disputes.conversation": "Samtalið",
-  "admin.disputes.conversationHint": "Lestu það aðeins ef þú þarft þess til að ákveða. Hver opnun er skráð í aðgerðaskrána.",
+  "admin.disputes.conversationHint":
+    "Lestu það aðeins ef þú þarft þess til að ákveða. Hver opnun er skráð í aðgerðaskrána.",
   "admin.disputes.showConversation": "Sýna samtalið",
-  "admin.disputes.messageCount": "{count, plural, one {# skilaboð, elstu fyrst} other {# skilaboð, elstu fyrst}}",
-  "admin.disputes.noMessages": "Engin skilaboð. Annaðhvort skrifuðu þau ekkert eða samtalinu var eytt 12 mánuðum eftir ferðina.",
-  "admin.disputes.conversationClosed": "Enginn mótmælti þessari tilkynningu, svo samtalið er áfram lokað.",
+  "admin.disputes.messageCount":
+    "{count, plural, one {# skilaboð, elstu fyrst} other {# skilaboð, elstu fyrst}}",
+  "admin.disputes.noMessages":
+    "Engin skilaboð. Annaðhvort skrifuðu þau ekkert eða samtalinu var eytt 12 mánuðum eftir ferðina.",
+  "admin.disputes.conversationClosed":
+    "Enginn mótmælti þessari tilkynningu, svo samtalið er áfram lokað.",
   "admin.disputes.conversationFailed": "Ekki tókst að sækja samtalið.",
   "admin.disputes.from.driver": "{name}, bílstjórinn",
   "admin.disputes.from.passenger": "{name}, farþeginn",
