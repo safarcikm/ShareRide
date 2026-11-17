@@ -76,6 +76,8 @@ export const disputes = pgTable(
     /** `system` for an agreed or unanswered report, `operator` for a contested one. */
     decidedBy: text(),
     decidedAt: at(),
+    /** Why the operator decided as they did, for complaints later; empty for the system's. */
+    decisionNote: text().notNull().default(""),
     ...timestamps,
   },
   (table) => [
@@ -86,6 +88,7 @@ export const disputes = pgTable(
     check("disputes_decided_by_check", oneOf(table.decidedBy, ["system", "operator"])),
     check("disputes_note_check", noteFits(table.note)),
     check("disputes_answer_note_check", noteFits(table.answerNote)),
+    check("disputes_decision_note_check", noteFits(table.decisionNote)),
     check(
       "disputes_answered_check",
       sql`(${table.answer} is null) = (${table.answeredAt} is null)`,

@@ -171,7 +171,10 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     // What was reported and how it ended decide a refund and reliability
     // for the other side too (spec 8, 3.5). The notes were for the
     // operator, and go.
-    onDeletion: keep(["kind", "answer", "outcome", "decidedBy"], ["note", "answerNote"]),
+    onDeletion: keep(
+      ["kind", "answer", "outcome", "decidedBy"],
+      ["note", "answerNote", "decisionNote"],
+    ),
   },
   booking_segment_prices: {
     category: "trips_and_bookings",
