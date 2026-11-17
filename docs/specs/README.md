@@ -41,3 +41,4 @@ Specs follow the order in [features](../product/features.md#spec-order).
 | 14 | [Women-only trips](2026-11-13-women-only-trips.md) | G5 | Approved (2026-11-13) |
 | 15 | [Visual design system](2026-11-13-visual-design-system.md) | All screens | Approved (2026-11-13) |
 | 16 | [One home and simpler flows](2026-11-15-one-home-and-simpler-flows.md) | All screens | Approved (2026-11-15) |
+| 17 | [A limit on what one trip brings the driver](2026-11-17-trip-earnings-limit.md) | C2, C3 | Proposed (2026-11-17) |

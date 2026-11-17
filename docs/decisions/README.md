@@ -60,3 +60,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0027](0027-email-through-mailjet.md) | Send email through Mailjet | Accepted |
 | [0028](0028-operator-console-web-app-and-passkeys.md) | The operator console as its own web app, signed in with passkeys | Accepted |
 | [0029](0029-photos-cleaned-in-the-browser-and-checked-by-the-api.md) | Photos made in the browser and checked by the API; links signed per hour | Accepted |
+| [0030](0030-limit-what-a-whole-trip-brings-the-driver.md) | Limit what a whole trip brings the driver, counting money already booked | Proposed |

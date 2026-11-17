@@ -79,6 +79,11 @@ for government employees (akstursgjald): 150 kr per km to start, the rate for
 the first 10 000 km from 1 June 2026 (decided 2026-11-13). **The formula and its inputs are to be confirmed by the legal
 opinion before the beta.**
 
+A trip-wide limit that also counts money already booked is proposed in
+[ADR 0030](../decisions/0030-limit-what-a-whole-trip-brings-the-driver.md)
+and [spec 17](../specs/2026-11-17-trip-earnings-limit.md) (open question
+Q25). Until it is accepted, this rule stands as written.
+
 ### Rule P4: the driver's price level
 
 The driver does not edit segment prices one by one

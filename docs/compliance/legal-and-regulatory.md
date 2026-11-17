@@ -138,7 +138,10 @@ Actions:
    100 kr, so on a stretch of a few kilometres a full car can earn slightly
    more than its cost, such as 8 seats × 100 kr on 4 km costing 600 kr
    (open questions, A39). Is that acceptable, or must the cap hold for
-   every stretch?
+   every stretch? Should the cap hold for the whole trip, counting money a
+   driver keeps after a no-show or late cancellation
+   ([spec 17](../specs/2026-11-17-trip-earnings-limit.md), proposed)? Does
+   the passenger service fee count towards the cost of the ride?
 3. Is ShareRide at risk of being a taxi dispatch station under the Taxi Act?
 4. What must the terms of service say about liability, insurance and the
    intermediary role?
