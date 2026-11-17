@@ -1850,6 +1850,58 @@ export const is = {
   "admin.disputes.from.driver": "{name}, bílstjórinn",
   "admin.disputes.from.passenger": "{name}, farþeginn",
   "admin.disputes.from.system": "ShareRide",
+  "admin.reliability.title": "Áreiðanleiki",
+  "admin.reliability.intro":
+    "Afbókanir vegna veðurs eða lokaðs vegar teljast ekki með í áreiðanleika. Ef ástæðan er augljóslega röng geturðu hnekkt henni og þá telst afbókunin með. Hér er enginn settur í bann: þú ákveður sjálf(ur) hvort fólk fær viðvörun eða bann.",
+  "admin.reliability.excused": "Afbókað vegna veðurs eða lokaðs vegar",
+  "admin.reliability.excusedHint":
+    "Ástæða sem þú hnekkir telst með í áreiðanleika viðkomandi og þú getur dregið það til baka. Athugasemdir þínar sjá aðeins stjórnendur.",
+  "admin.reliability.excusedCount":
+    "{count, plural, one {# afbókun síðustu 12 mánuði, nýjasta fyrst} other {# afbókanir síðustu 12 mánuði, nýjustu fyrst}}",
+  "admin.reliability.noneExcused":
+    "Enginn afbókaði vegna veðurs eða lokaðs vegar síðustu 12 mánuði.",
+  "admin.reliability.excusedFailed": "Ekki tókst að sækja afbókanirnar.",
+  "admin.reliability.loadExcusedAgain": "Sækja afbókanirnar aftur",
+  "admin.reliability.route": "{from} – {to}",
+  "admin.reliability.who.trip": "{name}, ökumaðurinn, afbókaði alla ferðina",
+  "admin.reliability.who.driverBooking": "{name}, ökumaðurinn, afbókaði bókun eins farþega",
+  "admin.reliability.who.passenger": "{name}, farþeginn, afbókaði bókunina sína",
+  "admin.reliability.reason": "Ástæða: {reason}",
+  "admin.reliability.note": "Athugasemd: „{note}“",
+  "admin.reliability.leaving": "Brottför {when}",
+  "admin.reliability.cancelledOn": "Afbókað {when}",
+  "admin.reliability.overruledOn": "Hnekkt {when}: telst með",
+  "admin.reliability.operatorNote": "Athugasemd stjórnanda: {note}",
+  "admin.reliability.overrule": "Hnekkja",
+  "admin.reliability.overruleOf": "Hnekkja: {name}, {route}",
+  "admin.reliability.undo": "Draga til baka",
+  "admin.reliability.undoOf": "Draga til baka: {name}, {route}",
+  "admin.reliability.whyCounts": "Hvers vegna þetta telst með",
+  "admin.reliability.whyNot": "Hvers vegna þetta telst ekki lengur með",
+  "admin.reliability.noteHint":
+    "Aðeins stjórnendur sjá hana, ef til viðvörunar eða kvörtunar kemur síðar. Mest 500 stafir.",
+  "admin.reliability.noteMissing": "Segðu hvers vegna í athugasemd.",
+  "admin.reliability.noteTooLong": "Hafðu athugasemdina 500 stafi eða styttri.",
+  "admin.reliability.makeCount": "Láta teljast með",
+  "admin.reliability.stopCounting": "Hætta að telja með",
+  "admin.reliability.goBack": "Til baka",
+  "admin.reliability.countsNow": "{name}: afbókunin telst nú með í áreiðanleika.",
+  "admin.reliability.notCountingNow": "{name}: afbókunin telst ekki lengur með í áreiðanleika.",
+  "admin.reliability.changedMeanwhile":
+    "Annar stjórnandi breytti þessu á meðan. Listinn sýnir stöðuna eins og hún er núna.",
+  "admin.reliability.gone":
+    "Ekki er lengur hægt að breyta þessari afbókun. Listinn sýnir stöðuna eins og hún er núna.",
+  "admin.reliability.saveFailed": "Ekki tókst að vista. Reyndu aftur.",
+  "admin.reliability.watch": "Undir viðmiðunarmörkum",
+  "admin.reliability.watchHint":
+    "Fólk með áreiðanleika undir {percent}% síðustu 12 mánuði, lægst fyrst. Skoðaðu hvað gerðist og ákveddu sjálf(ur) hvort það fær viðvörun eða bann: hér er enginn settur í bann.",
+  "admin.reliability.noneWatched": "Enginn er undir {percent}%.",
+  "admin.reliability.watchFailed": "Ekki tókst að sækja fólk undir viðmiðunarmörkum.",
+  "admin.reliability.loadWatchAgain": "Sækja fólkið aftur",
+  "admin.reliability.figure": "{name}: {percent}%",
+  "admin.reliability.kept": "Stóð við {kept} af {counted} ferðum og bókunum",
+  "admin.reliability.byRole":
+    "Sem ökumaður: {driverKept} af {driverCounted} · Sem farþegi: {passengerKept} af {passengerCounted}",
   "admin.meetingPoint.inUse": "Í notkun",
   "admin.meetingPoint.draftNotOffered": "Drög eru ekki í boði fyrir bílstjóra.",
   "admin.meetingPoint.upcomingTrips":

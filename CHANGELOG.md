@@ -648,6 +648,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   and when and why the operator overruled it (migration
   `0036_reliability_overrules`). "Download my data" says when ShareRide
   made a cancellation count.
+- The console's Reliability page (milestone 7, PR 7e, spec 8, 3.8): the
+  cancellations excused by a weather or road-closure reason, each made to
+  count or undone with a note on its card, and the people below 80% with
+  their counts by role. Texts in Icelandic and English.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

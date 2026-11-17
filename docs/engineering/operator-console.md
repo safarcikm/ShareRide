@@ -295,6 +295,14 @@ reliability routes (`registerReliabilityAdminRoutes`), with the work in
   decides on a warning or a suspension as a person (3.8.4); nothing here
   suspends anyone.
 
+The page is `apps/admin/src/pages/reliability/` at `/admin/reliability`:
+the cancellations first, each with who cancelled, in which role, the
+reason, their note, the times and the operator's note. "Overrule" or "Undo
+the overrule" opens a note on that card, needed before anything is sent,
+and the result takes the focus. A change someone else made meanwhile, or a
+cancellation that left the list, reloads the list and says so. The people
+below the watch level follow, with their figure and counts by role.
+
 ## A console page
 
 The console is `apps/admin`: React for the web, built with Vite, served by

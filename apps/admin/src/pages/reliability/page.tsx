@@ -1,11 +1,12 @@
 import {
+  adminChangeCountingRoute,
   adminExcusedCancellationsRoute,
-  adminOverruleRoute,
   adminReliabilityWatchRoute,
   type AdminExcusedCancellation,
   type AdminWatchedPerson,
 } from "@shareride/contracts";
-import { cancelReasonText, type MessageKey, type Translate } from "@shareride/i18n";
+import { checkOverruleNote } from "@shareride/domain";
+import { cancelReasonText, type Locale, type MessageKey, type Translate } from "@shareride/i18n";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useConsole } from "../../console.tsx";
 import { atText, nameOf } from "../disputes/texts.ts";
@@ -18,9 +19,9 @@ type Loaded<T> =
 /**
  * The Reliability section (spec 8, 3.8; R8.10, R8.11): the cancellations
  * that do not count only because of a weather or road-closure reason, which
- * the operator can overrule so that they count, and the people below the
- * watch level. The operator decides on a warning or a suspension as a
- * person (3.8.4); nothing here suspends anyone.
+ * the operator can make count, or undo that, with a note (section 6); and
+ * the people below the watch level. The operator decides on a warning or a
+ * suspension as a person (3.8.4); nothing here suspends anyone.
  */
 export function ReliabilityPage() {
   const { t } = useConsole();
@@ -44,37 +45,33 @@ const whoKey = (cancellation: AdminExcusedCancellation): MessageKey =>
 
 const keyOf = (cancellation: AdminExcusedCancellation) => `${cancellation.kind}/${cancellation.id}`;
 
-const routeOf = (t: Translate, cancellation: AdminExcusedCancellation, locale: "is" | "en") =>
+const routeOf = (t: Translate, locale: Locale, cancellation: AdminExcusedCancellation) =>
   t("admin.reliability.route", { from: cancellation.from[locale], to: cancellation.to[locale] });
 
+/** What the last change said, above the list. */
 type Said =
   | { readonly kind: "none" }
-  | { readonly kind: "overruled"; readonly name: string }
-  | { readonly kind: "alreadyOverruled" }
-  | { readonly kind: "gone" }
-  | { readonly kind: "failed" };
+  | { readonly kind: "changed"; readonly name: string; readonly counts: boolean }
+  | { readonly kind: "changedMeanwhile" }
+  | { readonly kind: "gone" };
 
 function ExcusedCancellations() {
   const { t, locale, call } = useConsole();
   const [list, setList] = useState<Loaded<readonly AdminExcusedCancellation[]>>({
     state: "loading",
   });
-  // The cancellation whose overruling waits for a yes, by `keyOf`.
-  const [asking, setAsking] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  // The cancellation whose note is being written, by `keyOf`.
+  const [open, setOpen] = useState<string | null>(null);
   const [said, setSaid] = useState<Said>({ kind: "none" });
   const message = useRef<HTMLDivElement>(null);
-  const yesButton = useRef<HTMLButtonElement>(null);
-  const overruleButtons = useRef(new Map<string, HTMLButtonElement>());
-  // The Overrule button to go back to once the question closes.
+  const buttons = useRef(new Map<string, HTMLButtonElement>());
+  // The card's button to go back to once its form closes without a change.
   const backTo = useRef<string | null>(null);
-  const ids = { heading: useId(), hint: useId() };
+  const heading = useId();
 
   const load = useCallback(async () => {
     const result = await call(adminExcusedCancellationsRoute, {});
-    setList(
-      result.ok ? { state: "ready", value: result.data.cancellations } : { state: "failed" },
-    );
+    setList(result.ok ? { state: "ready", value: result.data.cancellations } : { state: "failed" });
   }, [call]);
 
   useEffect(() => {
@@ -88,66 +85,57 @@ function ExcusedCancellations() {
   }, [said]);
 
   useEffect(() => {
-    if (asking !== null) {
-      yesButton.current?.focus();
-    } else if (backTo.current !== null) {
-      overruleButtons.current.get(backTo.current)?.focus();
+    if (open === null && backTo.current !== null) {
+      buttons.current.get(backTo.current)?.focus();
       backTo.current = null;
     }
-  }, [asking]);
+  }, [open]);
 
-  async function overrule(cancellation: AdminExcusedCancellation) {
-    setSaving(true);
-    const result = await call(adminOverruleRoute, {
-      params: { kind: cancellation.kind, id: cancellation.id },
-      body: {},
+  function changed(cancellation: AdminExcusedCancellation) {
+    setList((shown) =>
+      shown.state === "ready"
+        ? {
+            state: "ready",
+            value: shown.value.map((one) =>
+              keyOf(one) === keyOf(cancellation) ? cancellation : one,
+            ),
+          }
+        : shown,
+    );
+    setOpen(null);
+    setSaid({
+      kind: "changed",
+      name: nameOf(t, cancellation.person),
+      counts: cancellation.overruledAt !== null,
     });
-    setSaving(false);
-    setAsking(null);
-    if (result.ok) {
-      setList((shown) =>
-        shown.state === "ready"
-          ? {
-              state: "ready",
-              value: shown.value.map((one) =>
-                keyOf(one) === keyOf(cancellation) ? result.data : one,
-              ),
-            }
-          : shown,
-      );
-      setSaid({ kind: "overruled", name: nameOf(t, cancellation.person) });
-      return;
-    }
-    const { code } = result.error;
-    if (code === "already_overruled" || code === "not_found") {
-      setSaid({ kind: code === "already_overruled" ? "alreadyOverruled" : "gone" });
-      await load();
-      return;
-    }
-    setSaid({ kind: "failed" });
+  }
+
+  /** Someone else changed it, or it left the list: show the list as it is now. */
+  async function stale(kind: "changedMeanwhile" | "gone") {
+    setOpen(null);
+    setSaid({ kind });
+    await load();
   }
 
   return (
-    <section className="stack" aria-labelledby={ids.heading}>
-      <h2 id={ids.heading} className="type-heading">
+    <section className="stack" aria-labelledby={heading}>
+      <h2 id={heading} className="type-heading">
         {t("admin.reliability.excused")}
       </h2>
-      <p id={ids.hint} className="type-body muted">
-        {t("admin.reliability.excusedHint")}
-      </p>
+      <p className="type-body muted">{t("admin.reliability.excusedHint")}</p>
       <div ref={message} className="message">
-        {said.kind === "overruled" ? (
+        {said.kind === "changed" ? (
           <p className="notice type-body" role="status" tabIndex={-1}>
-            {t("admin.reliability.overruledNow", { name: said.name })}
+            {t(said.counts ? "admin.reliability.countsNow" : "admin.reliability.notCountingNow", {
+              name: said.name,
+            })}
           </p>
         ) : said.kind === "none" ? null : (
           <p className="problem type-body" role="alert" tabIndex={-1}>
             {t(
-              said.kind === "alreadyOverruled"
-                ? "admin.reliability.alreadyOverruled"
-                : said.kind === "gone"
-                  ? "admin.reliability.gone"
-                  : "admin.reliability.overruleFailed",
+              said.kind === "changedMeanwhile"
+                ? "admin.reliability.changedMeanwhile"
+                : "admin.reliability.gone",
             )}
           </p>
         )}
@@ -179,11 +167,12 @@ function ExcusedCancellations() {
           <p className="type-body" role="status">
             {t("admin.reliability.excusedCount", { count: list.value.length })}
           </p>
-          <ul className="cards" aria-labelledby={ids.heading}>
+          <ul className="cards" aria-labelledby={heading}>
             {list.value.map((cancellation) => {
               const key = keyOf(cancellation);
               const name = nameOf(t, cancellation.person);
-              const route = routeOf(t, cancellation, locale);
+              const route = routeOf(t, locale, cancellation);
+              const counts = cancellation.overruledAt !== null;
               return (
                 <li key={key} className="card">
                   <div className="card-text">
@@ -209,8 +198,13 @@ function ExcusedCancellations() {
                         when: atText(t, locale, cancellation.cancelledAt),
                       })}
                     </p>
+                    {cancellation.overruleNote === "" ? null : (
+                      <p className="type-small">
+                        {t("admin.reliability.operatorNote", { note: cancellation.overruleNote })}
+                      </p>
+                    )}
                   </div>
-                  {cancellation.overruledAt !== null ? (
+                  {cancellation.overruledAt === null ? null : (
                     <p className="tags">
                       <span className="tag type-small">
                         {t("admin.reliability.overruledOn", {
@@ -218,52 +212,36 @@ function ExcusedCancellations() {
                         })}
                       </span>
                     </p>
-                  ) : asking === key ? (
-                    <div
-                      className="confirm-row"
-                      role="group"
-                      aria-label={t("admin.reliability.confirmQuestion", { name })}
-                    >
-                      <p className="type-body">
-                        {t("admin.reliability.confirmQuestion", { name })}
-                      </p>
-                      <button
-                        ref={yesButton}
-                        type="button"
-                        className="button-primary type-button"
-                        disabled={saving}
-                        onClick={() => void overrule(cancellation)}
-                      >
-                        {t("admin.reliability.confirm")}
-                      </button>
-                      <button
-                        type="button"
-                        className="button-quiet type-label"
-                        disabled={saving}
-                        onClick={() => {
-                          backTo.current = key;
-                          setAsking(null);
-                        }}
-                      >
-                        {t("admin.reliability.goBack")}
-                      </button>
-                    </div>
+                  )}
+                  {open === key ? (
+                    <CountingForm
+                      cancellation={cancellation}
+                      counts={!counts}
+                      onChanged={changed}
+                      onStale={(kind) => void stale(kind)}
+                      onCancel={() => {
+                        backTo.current = key;
+                        setOpen(null);
+                      }}
+                    />
                   ) : (
                     <button
                       ref={(button) => {
-                        if (button === null) overruleButtons.current.delete(key);
-                        else overruleButtons.current.set(key, button);
+                        if (button === null) buttons.current.delete(key);
+                        else buttons.current.set(key, button);
                       }}
                       type="button"
                       className="button-secondary type-label"
-                      aria-label={t("admin.reliability.overruleOf", { name, route })}
-                      disabled={saving}
+                      aria-label={t(
+                        counts ? "admin.reliability.undoOf" : "admin.reliability.overruleOf",
+                        { name, route },
+                      )}
                       onClick={() => {
                         setSaid({ kind: "none" });
-                        setAsking(key);
+                        setOpen(key);
                       }}
                     >
-                      {t("admin.reliability.overrule")}
+                      {t(counts ? "admin.reliability.undo" : "admin.reliability.overrule")}
                     </button>
                   )}
                 </li>
@@ -273,6 +251,132 @@ function ExcusedCancellations() {
         </>
       )}
     </section>
+  );
+}
+
+type NoteProblem = "missing" | "tooLong" | null;
+
+/**
+ * The note that makes a cancellation count (`counts`), or no longer count,
+ * and the button that sends it. The note is the operator's only.
+ */
+function CountingForm({
+  cancellation,
+  counts,
+  onChanged,
+  onStale,
+  onCancel,
+}: {
+  readonly cancellation: AdminExcusedCancellation;
+  readonly counts: boolean;
+  readonly onChanged: (cancellation: AdminExcusedCancellation) => void;
+  readonly onStale: (kind: "changedMeanwhile" | "gone") => void;
+  readonly onCancel: () => void;
+}) {
+  const { t, call } = useConsole();
+  const [note, setNote] = useState("");
+  const [problem, setProblem] = useState<NoteProblem>(null);
+  const [failed, setFailed] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const field = useRef<HTMLTextAreaElement>(null);
+  const ids = { note: useId(), hint: useId(), error: useId() };
+
+  useEffect(() => {
+    field.current?.focus();
+  }, []);
+
+  async function send() {
+    // As the API checks it, so the problem shows before anything is sent.
+    const checked = checkOverruleNote(note);
+    if (!checked.ok) {
+      setProblem(checked.error.code === "note_missing" ? "missing" : "tooLong");
+      field.current?.focus();
+      return;
+    }
+    setSaving(true);
+    setFailed(false);
+    const result = await call(adminChangeCountingRoute, {
+      params: { kind: cancellation.kind, id: cancellation.id },
+      body: { counts, note: checked.value },
+    });
+    setSaving(false);
+    if (result.ok) {
+      onChanged(result.data);
+      return;
+    }
+    const { code, details } = result.error;
+    const onNote = details?.find((detail) => detail.path === "note");
+    if (code === "validation_failed" && onNote !== undefined) {
+      setProblem(onNote.issue === "missing" ? "missing" : "tooLong");
+      field.current?.focus();
+    } else if (code === "unchanged") {
+      onStale("changedMeanwhile");
+    } else if (code === "not_found") {
+      onStale("gone");
+    } else {
+      setFailed(true);
+    }
+  }
+
+  return (
+    <form
+      className="stack wide"
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault();
+        void send();
+      }}
+    >
+      <div className="field">
+        <label htmlFor={ids.note} className="type-label">
+          {t(counts ? "admin.reliability.whyCounts" : "admin.reliability.whyNot")}
+        </label>
+        <textarea
+          ref={field}
+          id={ids.note}
+          className="input textarea type-body"
+          rows={3}
+          value={note}
+          required
+          aria-invalid={problem !== null}
+          aria-describedby={problem === null ? ids.hint : `${ids.hint} ${ids.error}`}
+          onChange={(event) => {
+            setNote(event.target.value);
+            if (problem !== null) setProblem(null);
+          }}
+        />
+        <p id={ids.hint} className="hint type-small">
+          {t("admin.reliability.noteHint")}
+        </p>
+        {problem === null ? null : (
+          <p id={ids.error} className="field-error type-small">
+            {t(
+              problem === "missing"
+                ? "admin.reliability.noteMissing"
+                : "admin.reliability.noteTooLong",
+            )}
+          </p>
+        )}
+      </div>
+      {failed ? (
+        <p className="problem type-body" role="alert">
+          {t("admin.reliability.saveFailed")}
+        </p>
+      ) : null}
+      <div className="actions">
+        <button type="submit" className="button-primary type-button" disabled={saving}>
+          {t(counts ? "admin.reliability.makeCount" : "admin.reliability.stopCounting")}
+        </button>
+        <button
+          type="button"
+          className="button-quiet type-label"
+          disabled={saving}
+          onClick={onCancel}
+        >
+          {t("admin.reliability.goBack")}
+        </button>
+      </div>
+    </form>
   );
 }
 
