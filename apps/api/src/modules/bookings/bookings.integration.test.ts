@@ -502,6 +502,89 @@ describe("POST /v1/trips/{id}/bookings (spec 5, 3.2)", () => {
   });
 });
 
+describe("the trip limit (rule P3, spec 17)", () => {
+  /**
+   * Every stretch of the north trip at 1 000 kr a seat, its cap: a 9 000 kr
+   * limit for 3 seats, in place of the rounding of real distances.
+   */
+  async function priced() {
+    await api.connection.db
+      .update(schema.segments)
+      .set({ capacity: 3, cap: 1000, price: 1000 })
+      .where(eq(schema.segments.tripId, north));
+  }
+
+  /**
+   * Jón's request for the whole route, as if made at a higher price before
+   * seats were added (spec 17, gap 1): `paid` of the limit is taken.
+   */
+  async function bookedEarlier(paid: number) {
+    await priced();
+    const jon = await newMember("Jón");
+    const request = await booked(jon.accessToken, north, { fromStop: 0, toStop: 3 });
+    await api.connection.db
+      .update(schema.bookings)
+      .set({ totalPrice: paid })
+      .where(eq(schema.bookings.id, request.id));
+    return { jon, request };
+  }
+
+  it("refuses a booking that would take the trip past its limit, and takes one that fits", async () => {
+    await bookedEarlier(7000);
+    const kari = await newMember("Kári");
+    expect(await book(kari.accessToken, north, { fromStop: 0, toStop: 3 })).toMatchObject({
+      status: 409,
+      error: { code: "trip_limit_reached" },
+    });
+    expect(await occupancy(north)).toEqual([1, 1, 1]);
+    expect(await book(kari.accessToken, north, { fromStop: 0, toStop: 2 })).toMatchObject({
+      status: 201,
+    });
+  });
+
+  it("lets only one of two bookings at once take the last room", async () => {
+    await bookedEarlier(7500);
+    const [kari, lara] = await Promise.all([newMember("Kári"), newMember("Lára")]);
+    const results = await Promise.all(
+      [kari, lara].map((member) => book(member.accessToken, north, { fromStop: 1, toStop: 2 })),
+    );
+    expect(results.map((result) => result.status).sort()).toEqual([201, 409]);
+    expect(results.find((result) => !result.ok)).toMatchObject({
+      error: { code: "trip_limit_reached" },
+    });
+  });
+
+  it("gives back the room of a request that expires (R5.5)", async () => {
+    await bookedEarlier(7000);
+    const kari = await newMember("Kári");
+    expect(await book(kari.accessToken, north, { fromStop: 0, toStop: 3 })).toMatchObject({
+      error: { code: "trip_limit_reached" },
+    });
+    // Requests expire 12 hours after they are made, unanswered.
+    await later(hours(12) + 1, kari);
+    expect(await book(kari.accessToken, north, { fromStop: 0, toStop: 3 })).toMatchObject({
+      status: 201,
+    });
+  });
+
+  it("does not count a request withdrawn before it was paid", async () => {
+    const { jon, request } = await bookedEarlier(7000);
+    const kari = await newMember("Kári");
+    expect(await book(kari.accessToken, north, { fromStop: 0, toStop: 3 })).toMatchObject({
+      error: { code: "trip_limit_reached" },
+    });
+    const withdrawn = await api.client.call(withdrawRequestRoute, {
+      accessToken: jon.accessToken,
+      params: { id: request.id },
+      body: {},
+    });
+    expect(withdrawn.ok).toBe(true);
+    expect(await book(kari.accessToken, north, { fromStop: 0, toStop: 3 })).toMatchObject({
+      status: 201,
+    });
+  });
+});
+
 describe("answering and withdrawing requests (spec 5, 3.3 and 3.4)", () => {
   it("lets the driver accept a request, which then waits for payment", async () => {
     const anna = await driverOf(north);

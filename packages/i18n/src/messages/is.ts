@@ -915,6 +915,8 @@ export const is = {
   "booking.overlapping":
     "Þú átt þegar bókun eða beiðni á sama tíma. Dragðu hana til baka eða afbókaðu fyrst.",
   "booking.notBookable": "Ekki er lengur hægt að bóka þessa ferð.",
+  "booking.tripLimitReached":
+    "Verð þessarar ferðar breyttist rétt í þessu. Farðu aftur í ferðina til að skoða það aftur.",
   "booking.stopsChanged":
     "Ökumaðurinn hefur breytt viðkomustöðum ferðarinnar. Farðu aftur í ferðina til að velja aftur hvar þú ferð inn og út.",
   "booking.requestSent": "Beiðni send. {driver} hefur til {time} til að svara.",

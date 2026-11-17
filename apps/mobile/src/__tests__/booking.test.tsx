@@ -754,6 +754,16 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     expect(await screen.findByRole("button", { name: "Send request at 3,100 ISK" })).toBeVisible();
   });
 
+  it("says the price changed when the trip limit refuses the booking (spec 17)", async () => {
+    await openBooking({ book: () => failure(409, "trip_limit_reached") });
+    await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
+    expect(
+      await screen.findByText(
+        "This ride's price has just changed. Go back to the trip to see it again.",
+      ),
+    ).toBeVisible();
+  });
+
   it.each([
     ["where to get in", `fromPoint=${bsi.id}&toPoint=${blonduos.id}`],
     ["where to get out", `fromPoint=${borgarnes.id}&toPoint=${borgarnes.id}`],

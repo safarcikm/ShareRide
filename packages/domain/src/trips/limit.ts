@@ -23,14 +23,17 @@ export type LevelLimit = "seats" | "trip_limit";
 
 const isk = (amount: number): Money => ({ amount, currency: "ISK" });
 
-/** Bookings whose money goes, or went, to the driver; refunds are taken off. */
-const paying: readonly BookingStatus[] = [
+/**
+ * Bookings whose money goes, or went, to the driver (rule P3): those holding
+ * seats, and those the driver is paid for after the trip. A cancelled one
+ * counts only if it was confirmed first, less its refund.
+ */
+export const payingStatuses: readonly BookingStatus[] = [
   "requested",
   "accepted",
   "confirmed",
   "completed",
   "no_show",
-  "cancelled",
 ];
 
 /** Rule P3: what a full car pays at the caps, with the seats the trip has now. */
@@ -50,18 +53,24 @@ export function tripLimit(
 /**
  * Rule P3: everything the bookings pay the driver at the prices they were
  * made at, less refunds. Money kept after a no-show or a late cancellation
- * counts; the passenger service fee is never part of it.
+ * counts; a request withdrawn or a booking cancelled before it was paid
+ * does not; the passenger service fee is never part of it.
  */
 export function takingsOf(
   bookings: readonly {
     readonly status: BookingStatus;
     readonly totalPrice: number;
     readonly refundAmount: number | null;
+    readonly confirmedAt: Date | null;
   }[],
 ): Money {
   return isk(
     bookings
-      .filter((booking) => paying.includes(booking.status))
+      .filter(
+        (booking) =>
+          payingStatuses.includes(booking.status) ||
+          (booking.status === "cancelled" && booking.confirmedAt !== null),
+      )
       .reduce((total, booking) => total + booking.totalPrice - (booking.refundAmount ?? 0), 0),
   );
 }

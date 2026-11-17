@@ -75,6 +75,13 @@ function bookError(c: Context, error: BookError) {
       return errorResponse(c, 409, "price_changed", "The price has changed.", {
         total: error.total,
       });
+    case "trip_limit_reached":
+      return errorResponse(
+        c,
+        409,
+        "trip_limit_reached",
+        "This ride's price has just changed. Look at it again before booking.",
+      );
     case "overlapping_booking":
       return errorResponse(
         c,

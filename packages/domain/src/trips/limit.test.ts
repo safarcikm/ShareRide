@@ -32,8 +32,14 @@ describe("tripLimit (rule P3)", () => {
 });
 
 describe("takingsOf (rule P3)", () => {
-  const booking = (status: string, totalPrice: number, refundAmount: number | null = null) =>
-    ({ status, totalPrice, refundAmount }) as Parameters<typeof takingsOf>[0][number];
+  const paidAt = new Date("2026-11-14T12:00:00Z");
+  const booking = (
+    status: string,
+    totalPrice: number,
+    refundAmount: number | null = null,
+    confirmedAt: Date | null = paidAt,
+  ) =>
+    ({ status, totalPrice, refundAmount, confirmedAt }) as Parameters<typeof takingsOf>[0][number];
 
   it("counts what each booking pays the driver, less refunds", () => {
     expect(takingsOf([booking("confirmed", 14_600)])).toEqual(kr(14_600));
@@ -47,6 +53,10 @@ describe("takingsOf (rule P3)", () => {
     expect(takingsOf([booking("requested", 5_800), booking("accepted", 5_800)])).toEqual(
       kr(11_600),
     );
+  });
+
+  it("does not count a request withdrawn, or a booking cancelled, before it was paid", () => {
+    expect(takingsOf([booking("cancelled", 5_800, null, null)])).toEqual(kr(0));
   });
 
   it("does not count declined or expired bookings", () => {

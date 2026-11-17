@@ -164,10 +164,12 @@ takings     = Σ price of every booking of the trip whose money goes, or went, t
 ```
 
 - `takings` counts bookings that are `requested`, `accepted`, `confirmed`,
-  `completed` or `no_show`, and `cancelled` bookings the driver is paid for
-  (a passenger's cancellation less than 15 minutes before boarding, rule
-  M2). A refunded booking counts nothing. Each booking counts the price it
-  was made at (its snapshot), not today's prices.
+  `completed` or `no_show`, and `cancelled` bookings that were confirmed
+  first, each less its refund: what a late cancellation leaves the driver
+  (rule M2) counts, a fully refunded booking counts nothing, and a request
+  withdrawn or a booking cancelled before it was paid counts nothing. Each
+  booking counts the price it was made at (its snapshot), not today's
+  prices.
 - `trip_limit` uses the trip's capacity now. It is built from the rounded
   caps, so rounding stays as A39 decided and goes with that question.
 - The passenger service fee (rule P5) is not part of `takings`

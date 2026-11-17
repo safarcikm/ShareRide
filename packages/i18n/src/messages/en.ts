@@ -906,6 +906,8 @@ export const en = {
   "booking.overlapping":
     "You already have a booking or request at the same time. Withdraw or cancel it first.",
   "booking.notBookable": "This trip can no longer be booked.",
+  "booking.tripLimitReached":
+    "This ride's price has just changed. Go back to the trip to see it again.",
   "booking.stopsChanged":
     "The driver has changed the trip's stops. Go back to the trip to choose where you get in and out again.",
   "booking.requestSent": "Request sent. {driver} has until {time} to answer.",
