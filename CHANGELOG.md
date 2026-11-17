@@ -801,6 +801,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   (semicolons, decimal commas) are read too, and a name already in use is
   skipped, so the same file twice adds nothing. The domain's
   `readMeetingPointImport` reads and checks the file.
+- "Something wrong here?" on a meeting point's details in the app
+  (milestone 8, PR 10a; spec 2, 3.5): signed in, a person chooses what is
+  wrong (closed or moved, unsafe, wrong location, wrong information,
+  other) and may add a note of up to 300 characters, at most 5 reports in
+  24 hours (R2.8, a setting). Signed out, the screen asks to sign in and
+  opens the form again afterwards. Reports go to `meeting_point_issues`
+  through `POST /v1/meeting-points/{id}/issues` for the operator's queue,
+  and the open ones are in Download my data.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.
