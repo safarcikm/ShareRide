@@ -56,6 +56,12 @@ export function formatDistance(metres: number, locale: Locale): string {
   return t("format.distanceKilometres", { distance: formatWhole(metres / 1000, locale) });
 }
 
+/** An average rating to one decimal, always shown: "4.3" or "5.0", "4,3" in Icelandic. */
+export function formatRating(average: number, locale: Locale): string {
+  const tenths = Math.round(average * 10);
+  return `${String(Math.floor(tenths / 10))}${marks[locale].decimal}${String(tenths % 10)}`;
+}
+
 /** A month (1 to 12) as it reads inside a sentence: "May", "maí". */
 export function formatMonth(month: number, locale: Locale): string {
   const name = monthNames[locale][month - 1];

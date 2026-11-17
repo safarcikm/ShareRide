@@ -4,6 +4,7 @@ import { failure, ok, tokens, type FakeClient } from "@/testing/fake-client";
 import { completeMe, legalDocument, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { meetingPoints } from "@/testing/meeting-points";
+import { annaProfile, profileApi } from "@/testing/people";
 import { readyDriver, yaris } from "@/testing/trips";
 import { colors } from "@/theme/tokens";
 
@@ -114,11 +115,14 @@ describe("My profile (spec 16, 3.4)", () => {
   });
 
   it("shows the profile as others see it, without the phone number", async () => {
-    await openProfile();
+    const app = await openProfile();
+    profileApi(app.client, [
+      { ...annaProfile, profileId: completeMe.profileId, memberSince: "2026-11" },
+    ]);
     await fireEvent.press(screen.getByRole("link", { name: "See it as others do" }));
     expect(await screen.findByRole("header", { name: "As others see you" })).toBeVisible();
     expect(screen).toHavePathname("/profile/preview");
-    expect(screen.getByText("Anna")).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Anna" })).toBeVisible();
     expect(screen.getByText("Speaks Icelandic, English")).toBeVisible();
     expect(screen.getByText("Member since November 2026")).toBeVisible();
     expect(screen.getByText(completeMe.about ?? "")).toBeVisible();
