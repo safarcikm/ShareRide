@@ -1,7 +1,7 @@
 // Checks the road file in the repository (ADR 0031), or the one ROAD_FILE
 // names (the "Road file" job sets it to the file it built): real distances,
 // and that every sample meeting point still gets its legs.
-import { joinRoad, legsFrom, type RoadGraph, type RoadPosition } from "@shareride/domain";
+import { joinRoad, legsFrom, legsTo, type RoadGraph, type RoadPosition } from "@shareride/domain";
 import { beforeAll, describe, expect, it } from "vitest";
 import { samplePoints } from "../sample/meeting-points.ts";
 import { loadRoadGraph } from "./load.ts";
@@ -91,5 +91,16 @@ describe("the road file of Iceland", () => {
       });
     }
     expect(missing).toEqual([]);
+  });
+
+  it("finds the legs to a point as it finds them from each point", () => {
+    const positions = samplePoints.flatMap((point) => joinRoad(graph, point.position) ?? []);
+    for (const end of [positions[0], positions[positions.length - 1]]) {
+      if (end === undefined) throw new Error("No sample points.");
+      const starts = positions.filter((start) => start !== end);
+      expect(legsTo(graph, end, starts)).toEqual(
+        starts.map((start) => legsFrom(graph, start, [end])[0]),
+      );
+    }
   });
 });
