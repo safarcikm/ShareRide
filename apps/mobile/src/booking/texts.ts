@@ -76,6 +76,8 @@ export function bookErrorText(t: Translate, failure: CallFailure): string {
       return t("booking.notBookable");
     case "stops_changed":
       return t("booking.stopsChanged");
+    case "trip_limit_reached":
+      return t("booking.tripLimitReached");
     case "own_trip":
       return t("trip.own");
     case "not_found":

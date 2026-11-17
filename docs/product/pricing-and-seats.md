@@ -83,13 +83,15 @@ opinion before the beta.**
 **The trip limit.** The cap per seat keeps a full car within the cost only
 while nothing changes after people book. A whole trip is limited too
 ([ADR 0030](../decisions/0030-limit-what-a-whole-trip-brings-the-driver.md),
-[spec 17](../specs/2026-11-17-trip-earnings-limit.md); accepted 2026-11-17,
-not built yet):
+[spec 17](../specs/2026-11-17-trip-earnings-limit.md); accepted 2026-11-17;
+the booking check is built, lowering the level after a change is being
+built):
 
 ```text
 trip_limit = Σ_k capacity × cap[k]
 takings    = Σ (total price − refund) of the trip's bookings that are
-             requested, accepted, confirmed, completed, no_show or cancelled
+             requested, accepted, confirmed, completed or no_show, or
+             cancelled after they were confirmed
 ```
 
 - `trip_limit` is what a full car pays at the caps, with the capacity the
@@ -97,7 +99,8 @@ takings    = Σ (total price − refund) of the trip's bookings that are
 - `takings` is everything the trip's bookings pay, or will pay, the driver,
   at the prices they were made at. Money the driver keeps after a no-show or
   a late cancellation counts (rule M2); a refund does not. Declined and
-  expired bookings count nothing.
+  expired bookings, and requests withdrawn or bookings cancelled before
+  they were paid, count nothing.
 - The passenger service fee (rule P5) is not part of `takings`.
 - A booking is valid only if `takings` stays at or below `trip_limit` after
   it (checked with the seats, rule S2). Rule P4 sets the level so that this

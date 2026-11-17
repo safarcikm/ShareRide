@@ -232,7 +232,9 @@ one client ID in several conversations of a trip), `sent_at`, `read_at`,
 spec 9, 3.4.3; a message to all passengers is removed in every
 conversation it went to), and `erased_at` (when the sender's account was
 erased: the text, key and params are emptied, the sender becomes the former
-member, and the message reads "Message deleted", [spec 11](../specs/2026-11-13-privacy-self-service.md#35-what-is-erased-and-what-is-kept)).
+member, and the message reads "Message deleted", [spec 11](../specs/2026-11-13-privacy-self-service.md#35-what-is-erased-and-what-is-kept);
+in a conversation a report covers, the text, key and params stay for the
+operator only, until the report's time is over).
 Opened in the transaction that confirms the booking. Retained per the
 [privacy](../compliance/privacy-gdpr.md#retention) schedule. See
 [spec 7](../specs/2026-11-13-chat-and-notifications.md#6-data-and-api).
@@ -364,6 +366,10 @@ Enforced in the domain package and, where possible, in the database too.
 9. A trip with active bookings cannot be deleted, only cancelled.
 10. Only users who have opted in, and whose access is not withdrawn, can
     publish, request or book a women-only trip.
+11. A booking never takes a trip past its limit: what its bookings pay or
+    paid the driver, less refunds, stays within the sum over its segments
+    of capacity times cap (rule P3, spec 17). The limit and the takings are
+    computed from segments and bookings, not stored.
 
 ## Trip lifecycle
 

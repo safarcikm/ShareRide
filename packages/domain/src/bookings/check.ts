@@ -1,6 +1,6 @@
 // Whether a passenger can book or request seats on a part of a trip, and
-// what the booking starts as (spec 5, 3.1 and 3.2; rules S4, P1, R5.3, R5.6,
-// R5.10, R5.11). The API calls it inside the transaction that locks the trip,
+// what the booking starts as (spec 5, 3.1 and 3.2; rules S4, P1, P3, R5.3,
+// R5.6, R5.10, R5.11). The API calls it inside the transaction that locks the trip,
 // so the trip it gets is the one the booking changes.
 import type { Money } from "../money.ts";
 import { err, ok, type Result } from "../result.ts";
@@ -35,6 +35,8 @@ export interface BookingAttempt {
   readonly message: string;
   /** The passenger's bookings that hold seats, on any trip (R5.10). */
   readonly heldBookings: readonly HeldBooking[];
+  /** The trip limit less the trip's takings, never below 0 (rule P3, spec 17). */
+  readonly limitRoom: Money;
   readonly now: Date;
 }
 
@@ -49,6 +51,12 @@ export type BookingProblem =
   | { readonly code: "message_has_contact_details"; readonly kinds: readonly ContactKind[] }
   | { readonly code: "seats_taken"; readonly freeSeats: number }
   | { readonly code: "price_changed"; readonly total: Money }
+  /**
+   * The booking would take the trip past its limit (rule P3, spec 17). Once
+   * the level follows the limit (plan PR 2) this is only a race; until then
+   * it is the only defence.
+   */
+  | { readonly code: "trip_limit_reached" }
   | { readonly code: "overlapping_booking" };
 
 /** What to store: the starting status, the price snapshot (P1) and the deadlines. */
@@ -109,6 +117,7 @@ export function checkBooking(
   const prices = trip.segments.map((segment) => segment.price);
   const total = isk(partPrice(prices, board, alight) * seats);
   if (attempt.shownTotal.amount !== total.amount) return err({ code: "price_changed", total });
+  if (total.amount > attempt.limitRoom.amount) return err({ code: "trip_limit_reached" });
 
   const overlaps = attempt.heldBookings.some(
     (held) =>
