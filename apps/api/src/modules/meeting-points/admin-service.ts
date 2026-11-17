@@ -1,4 +1,5 @@
 import type {
+  AdminImportRow,
   AdminMeetingPoint,
   AdminMeetingPointInput,
   AdminMeetingPointListItem,
@@ -12,6 +13,7 @@ import {
   monthInIceland,
   nextPointStatus,
   ok,
+  readMeetingPointImport,
   reviewDueOn,
   reviewedOn,
   searchTextFor,
@@ -19,6 +21,8 @@ import {
   validatePause,
   type ConsoleFilters,
   type DraftProblem,
+  type ImportFileProblem,
+  type ImportRow,
   type MeetingPointStatus,
   type PauseProblem,
   type PauseRequest,
@@ -26,7 +30,7 @@ import {
   type StatusChange,
   type ValidMeetingPointDraft,
 } from "@shareride/domain";
-import { eq, sql } from "drizzle-orm";
+import { eq, ne, sql } from "drizzle-orm";
 import { recordAudit, type AuditRequest } from "../admin/audit.ts";
 import type { Transaction } from "../bookings/seats.ts";
 import { recordEvents } from "../notifications/outbox.ts";
@@ -50,6 +54,12 @@ export type UpdateProblem =
 export type StatusProblem =
   | { readonly code: "validation_failed"; readonly problems: readonly PauseProblem[] }
   | { readonly code: "not_found" | "meeting_point_changed" | "status_change_not_allowed" };
+
+/** A file's rows as the console shows them, and how many became drafts. */
+export interface ImportResult {
+  readonly rows: readonly AdminImportRow[];
+  readonly added: number;
+}
 
 /** The point's `updatedAt` when the console loaded it. */
 interface Loaded {
@@ -90,6 +100,42 @@ export interface MeetingPointAdminService {
     input: Loaded,
     actor: ConsoleActor,
   ): Promise<Result<AdminMeetingPoint, StatusProblem>>;
+  /**
+   * Reads a CSV file of points (spec 2, 3.6.9) and says what each row
+   * would be; with `save`, adds the rows without problems as drafts, in one
+   * transaction with one audit entry.
+   */
+  importFile(
+    file: string,
+    save: boolean,
+    actor: ConsoleActor,
+  ): Promise<Result<ImportResult, readonly ImportFileProblem[]>>;
+}
+
+/** A row of an import as the console shows it, with its new ID once saved. */
+function importRowOf(row: ImportRow, id: string | null): AdminImportRow {
+  if (!row.ok) {
+    return { line: row.line, nameIs: row.nameIs, point: null, problems: [...row.problems], id };
+  }
+  const { draft } = row;
+  return {
+    line: row.line,
+    nameIs: row.nameIs,
+    point: {
+      nameEn: draft.nameEn,
+      aliases: [...draft.aliases],
+      position: draft.position,
+      region: draft.region,
+      municipality: draft.municipality,
+      type: draft.type,
+      amenities: [...draft.amenities],
+      whereToStandIs: draft.whereToStandIs,
+      whereToStandEn: draft.whereToStandEn,
+      season: draft.season,
+    },
+    problems: [],
+    id,
+  };
 }
 
 const sixDecimals = (degrees: number) => Math.round(degrees * 1e6) / 1e6;
@@ -262,6 +308,67 @@ export function createMeetingPointAdminService(dependencies: {
           request: actor.request,
         });
         return ok(point);
+      });
+    },
+
+    async importFile(file, save, actor) {
+      const today = icelandDate(clock());
+      // A retired point's name may be used again.
+      const read = async (executor: Database | Transaction) => {
+        const names = await executor
+          .select({ nameIs: meetingPoints.nameIs, nameEn: meetingPoints.nameEn })
+          .from(meetingPoints)
+          .where(ne(meetingPoints.status, "retired"));
+        return readMeetingPointImport(file, {
+          today,
+          existingNames: names.flatMap(({ nameIs, nameEn }) =>
+            nameEn === null ? [nameIs] : [nameIs, nameEn],
+          ),
+        });
+      };
+      const unsaved = (rows: readonly ImportRow[]) => ({
+        rows: rows.map((row) => importRowOf(row, null)),
+        added: 0,
+      });
+
+      if (!save) {
+        const checked = await read(db);
+        return checked.ok ? ok(unsaved(checked.value)) : checked;
+      }
+      return db.transaction(async (tx) => {
+        // One import at a time, so two cannot both add the same name.
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('meeting_point.import'))`);
+        const found = await read(tx);
+        if (!found.ok) return found;
+        const rows = found.value;
+        if (!rows.some((row) => row.ok)) return ok(unsaved(rows));
+        const unreviewed = { amenitiesReviewedOn: null, seasonReviewedOn: null };
+        // One at a time, in the file's order, so each row gets its own ID.
+        const idOf = new Map<ImportRow, string>();
+        for (const row of rows) {
+          if (!row.ok) continue;
+          const [point] = await tx
+            .insert(meetingPoints)
+            .values({ ...columnsOf(row.draft, unreviewed), status: "draft" })
+            .returning({ id: meetingPoints.id });
+          if (point === undefined) throw new Error("The draft was not saved.");
+          idOf.set(row, point.id);
+        }
+        const added = rows.flatMap((row) => {
+          const id = idOf.get(row);
+          return id === undefined ? [] : [{ id, nameIs: row.nameIs }];
+        });
+        await recordAudit(tx, {
+          operator: actor.operator,
+          action: "meeting_point.imported",
+          subjectType: "meeting_point",
+          after: { added: added.length, skipped: rows.length - added.length, points: added },
+          request: actor.request,
+        });
+        return ok({
+          rows: rows.map((row) => importRowOf(row, idOf.get(row) ?? null)),
+          added: added.length,
+        });
       });
     },
 
