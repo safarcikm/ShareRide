@@ -2,7 +2,8 @@
 
 - **Status:** Accepted (2026-11-13, by Martin once the MVP specs were approved); the
   map display choices (MapLibre, hosted tiles) are superseded by
-  [ADR 0024](0024-own-simple-map-of-iceland.md)
+  [ADR 0024](0024-own-simple-map-of-iceland.md), and the routing engine by
+  [ADR 0031](0031-distances-from-our-own-road-file.md)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [integrations](../architecture/integrations.md),
