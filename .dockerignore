@@ -10,6 +10,8 @@
 apps/mobile/e2e
 apps/mobile/test-results
 apps/mobile/playwright-report
+apps/admin/e2e
+apps/admin/test-results
 .git
 .github
 .claude

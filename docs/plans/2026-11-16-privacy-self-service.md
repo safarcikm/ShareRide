@@ -178,6 +178,11 @@ threads meet it.
 - Signing in while it waits works: `me.deletionScheduledFor` is set, and
   the app shows only "Your account will be deleted on {date}" with "Keep
   my account" and "Sign out". `POST /v1/me/delete/cancel` clears it.
+  Deleting again meanwhile keeps the first date.
+- While it waits, the person takes on nothing new: booking and publishing
+  refuse with `account_deletion_pending` (403). Both take the person's row
+  lock, as deleting does before its second check, so nothing opens between
+  the check and the date being set.
 
 ### 4.6 Erasure
 
@@ -210,8 +215,21 @@ person with no first name.
 
 After a restore, `privacy reapply-erasures` erases again every ID in
 `erased_accounts` that came back, before the services point at the
-restored database (runbook, "Restore the database"). Accounts whose wait
-ended before the backup are erased by the next run anyway.
+restored database (runbook, "Restore the database"). With
+`PREVIOUS_DATABASE_URL` it first takes from the old database each
+deletion date changed there after the restored row's last change (so an
+account kept after the restore's point is never erased) and copies its
+list of erasures. Accounts whose wait ended before the backup are erased
+by the next run anyway. One account that fails to erase is logged and
+reported, and does not stop the others.
+
+The former member is hidden wherever a deleting person is: no booking on
+a trip left with it, and its conversations are closed both ways. An
+erasure cancels every trip of the person's that nobody rode or holds a
+seat on, also one that has left its first stop. A driver's cancel note,
+copied to the passengers' bookings and chat lines, is emptied with the
+trip's own, and so are the notes of milestone 7's reports about the
+person's rides. An open report holds a deletion.
 
 ### 4.7 Retention runs and holds
 
@@ -227,6 +245,14 @@ ended before the backup are erased by the next run anyway.
   not erased; a held trip keeps its bookings, conversations and payments;
   a held booking keeps its conversation. Every rule checks holds.
   Setting and ending one goes to the audit log (section 7).
+- As built (PR 9): every rule that deletes records about a person, trip
+  or booking checks holds; codes, tokens, links and hashes are keys, and an
+  export a copy, so they go on time. An account waits while a hold covers
+  it, a trip it drove or rode on, or a booking of its own or on its trip;
+  a hold on another person on those rides does not stop it.
+  Ended holds are deleted 3 years after their end, like the audit entries
+  that record them (**verify**), and the console's sign-in records are
+  rules of their own (`operator_sessions`, `operator_sign_in`).
 
 ### 4.8 Ask about my data
 
@@ -289,7 +315,7 @@ journeys, and gets a code review before it opens.
 
 ### PR 5: `feat(privacy)`: Privacy page and Download my data in the app
 
-- [ ] `ConfirmWithCode` (from PR 3); Settings, Privacy; the download
+- [x] `ConfirmWithCode` (from PR 3); Settings, Privacy; the download
       screens (ask, code, preparing, ready, expired) at
       `/settings/privacy/download`, which the ready notice opens: add it
       to the paths a notification may open (`notifications/paths.ts`)
@@ -298,19 +324,20 @@ journeys, and gets a code review before it opens.
 
 ### PR 6: `feat(privacy)`: delete my account, the API
 
-- [ ] Migration (`delete_after`, the former member, `restrict`); the
+- [x] Migration (`delete_after`, the former member, `restrict`); the
       check, delete and cancel routes; hiding (4.5); sign-in while waiting;
-      `account_deletion_scheduled`
+      `account_deletion_scheduled`; no booking or publishing while waiting;
+      check-ins (milestone 7) in the export
 - Verify: integration tests (refused without a code or while anything is
   open; signed out everywhere; gone from search, trip details, booking and
   messages at once; undo brings it back as it was, and a suspension stays)
 
 ### PR 7: `feat(privacy)`: erasure after 7 days
 
-- [ ] The `accounts` rule (4.6); `erased_accounts`; `blocked_numbers` and
+- [x] The `accounts` rule (4.6); `erased_accounts`; `blocked_numbers` and
       the sign-up refusal; `messages.erased_at`; "Message deleted" and "A
-      former member" in the answers; `privacy reapply-erasures` and the
-      runbook step
+      former member" in the answers and the app's existing screens;
+      `privacy reapply-erasures` and the runbook step
 - Verify: integration tests (every category of 3.5; the other people's
   trips, bookings, payments and reliability unchanged; a second run
   changes nothing; an undo just before the run wins; a blocked number
@@ -318,19 +345,29 @@ journeys, and gets a code review before it opens.
 
 ### PR 8: `feat(privacy)`: Delete my account in the app
 
-- [ ] What is open with Cancel; what happens; confirm with a code; the
+- [x] What is open with Cancel; what happens; confirm with a code; the
       waiting screen with "Keep my account"; "Message deleted" and "A
-      former member"
+      former member" (those two came with PR 7)
 - Verify: screen tests; a browser journey deletes an account with an
   upcoming booking, cancelling it from the deletion screen
 
 ### PR 9: `feat(privacy)`: retention runs and holds
 
-- [ ] `retention_runs`, `holds`; the rules of 4.7; holds in every rule;
-      the `privacy` command's `runs`, `hold` and `holds`
+- [x] `retention_runs`, `holds`; the rules of 4.7; holds in every rule;
+      the `privacy` command's `runs`, `hold` and `holds` (and `end-hold`).
+      Trips and bookings after 3 years moved to PR 9b, and privacy
+      requests' rule to PR 10, with their table
 - Verify: integration tests (each rule at the edge of its period; a hold
   keeps records past their date and lets go after its end; counts without
   content; twice safe)
+
+### PR 9b: `feat(privacy)`: trips and bookings after 3 years
+
+- [ ] The `trips_and_bookings` rule of 4.7: trips 3 years after they
+      arrive, with their bookings, check-ins and reports, moved to the
+      former member with free text emptied; held ones wait
+- Verify: integration tests (at the edge of the period; the drivers' and
+  passengers' other trips unchanged; a hold keeps them; twice safe)
 
 ### PR 10: `feat(privacy)`: ask about my data
 
@@ -366,6 +403,8 @@ What the spec implies and a person would meet first, each with its test:
 - **Milestone 7** adds check-ins, disputes and reviews: check-ins and
   disputes move to the former member, reviews about the person are erased
   and reviews they wrote move, and open disputes feed `mustSettle`.
+  Download my data has the disputes they raised or answered, with their
+  own note only (spec 8, section 7).
 - **Safety and moderation** adds reports, moderation actions, blocks and
   `users.suspended_until`: reports and actions are kept 3 years after
   closure and move, blocks are erased, and a suspended person must still

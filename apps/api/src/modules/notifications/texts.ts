@@ -25,6 +25,7 @@ import {
   type CarFacts,
   formatClock,
   formatDay,
+  formatDayAndMonth,
   formatMoney,
   moderationRuleText,
   quickMessageText,
@@ -80,6 +81,8 @@ export interface NotificationFacts {
   readonly moved: { readonly from: Date; readonly to: Date } | null;
   /** Confirmed and not free: what they paid would come back if they cancelled (R6.3). */
   readonly paid: boolean;
+  /** For a report to answer: until when the other side can (spec 8, R8.6); otherwise null. */
+  readonly answerBy: Date | null;
 }
 
 /** A driver's trip reminder (3.5): about the trip and everyone booked on it. */
@@ -98,15 +101,12 @@ export interface TripReminderFacts {
   readonly plateMissing: boolean;
 }
 
-/**
- * News about the person's account: their data ready to download (spec 11),
- * an operator's action that affects them, with its statement of reasons
- * (spec 9, R9.5), the end of their suspension (3.6), the answer to their
- * appeal (3.4.4), or the outcome of their report (3.1.6). What each says;
- * a kind added without its facts does not compile.
- */
+/** What each account notice says; a kind added without its facts does not compile. */
 interface AccountNoticeFactsByKind {
-  readonly data_export_ready: { readonly expiresAt: Date };
+  /** Until when the file can be downloaded. */
+  readonly data_export_ready: { readonly until: Date };
+  /** When the data is erased. */
+  readonly account_deletion_scheduled: { readonly until: Date };
   readonly moderation_action: {
     readonly action: ModerationActionKind;
     /** None for a reinstatement. */
@@ -127,6 +127,13 @@ interface AccountNoticeFactsByKind {
   readonly report_closed: { readonly outcome: ReportOutcome };
 }
 
+/**
+ * News about the person's account: their data ready to download, or their
+ * deletion and when the data is erased (spec 11); an operator's action that
+ * affects them, with its statement of reasons (spec 9, R9.5), the end of
+ * their suspension (3.6), the answer to their appeal (3.4.4), or the outcome
+ * of their report (3.1.6).
+ */
 export type AccountNoticeFacts = {
   readonly [Kind in AccountNoticeKind]: { readonly kind: Kind } & AccountNoticeFactsByKind[Kind];
 }[AccountNoticeKind];
@@ -150,6 +157,9 @@ export function isOperatorFacts(facts: {
 
 /** The app's screen for downloading one's data (spec 11, 3.2). */
 export const downloadDataPath = "/settings/privacy/download";
+
+/** Where signing in while a deletion waits shows "Keep my account" (spec 11, 3.4.4). */
+export const deletionWaitPath = "/";
 
 export interface NotificationText {
   readonly title: string;
@@ -224,17 +234,26 @@ function operatorText(kind: OperatorNoticeKind, locale: Locale): NotificationTex
 /** The app's screen of the person's notices, where they read and appeal them (spec 9, R9.5). */
 export const noticesPath = "/notices";
 
-/** What is ready and until when, never a link (spec 11, 7). */
+/**
+ * What is ready, or what will be deleted, and when; never a link to the file
+ * (spec 11, 7). No weekday: Icelandic would have to decline it after "fyrir".
+ */
 function accountText(facts: AccountNoticeFacts, locale: Locale): NotificationText {
   const t = createTranslator(locale);
   const when = (moment: Date) =>
-    t("notify.when", { date: formatDay(moment, locale), time: formatClock(moment) });
+    t("notify.when", { date: formatDayAndMonth(moment, locale), time: formatClock(moment) });
   switch (facts.kind) {
     case "data_export_ready":
       return {
         title: t("notify.dataExportReady"),
-        body: t("notify.dataExportReadyBody", { until: when(facts.expiresAt) }),
+        body: t("notify.dataExportReadyBody", { until: when(facts.until) }),
         path: downloadDataPath,
+      };
+    case "account_deletion_scheduled":
+      return {
+        title: t("notify.accountDeletionScheduled"),
+        body: t("notify.accountDeletionScheduledBody", { date: when(facts.until) }),
+        path: deletionWaitPath,
       };
     case "suspension_ended":
       return {
@@ -277,8 +296,9 @@ function noticeText(
   locale: Locale,
 ): NotificationText {
   const t = createTranslator(locale);
+  // No weekday, as for the account's other news: "til" would decline it.
   const when = (moment: Date) =>
-    t("notify.when", { date: formatDay(moment, locale), time: formatClock(moment) });
+    t("notify.when", { date: formatDayAndMonth(moment, locale), time: formatClock(moment) });
   const title =
     facts.action === "suspension"
       ? facts.until === null
@@ -371,6 +391,42 @@ function bookingText(
       case "checked_in":
       case "checked_in_driver":
         return [t("notify.checkedIn", { name }), from];
+      // A report on the trip day (spec 8, 3.3 and 3.4): the other side is
+      // asked whether it is right, and until when they can say. Never the
+      // note, which is for the operator.
+      case "no_show_marked":
+      case "driver_absent_reported":
+        return [
+          facts.kind === "no_show_marked"
+            ? t("notify.noShowMarked")
+            : t("notify.driverAbsentReported", { name }),
+          t("notify.reportBody", {
+            from,
+            to,
+            when: when(facts.boardsAt),
+            deadline: when(required(facts.answerBy, "the time to answer")),
+          }),
+        ];
+      // The outcome is on the booking and trip pages (3.5).
+      case "dispute_decided":
+      case "dispute_decided_driver":
+        return [
+          t("notify.disputeDecided"),
+          t("notify.disputeDecidedBody", { from, to, when: when(facts.boardsAt) }),
+        ];
+      // Reviews (spec 8, 3.7): "How was your trip?", and one about you that shows.
+      case "rate_trip":
+        return [
+          t("review.title"),
+          t("notify.rateDriver", { name, from, to, when: when(facts.boardsAt) }),
+        ];
+      case "rate_trip_driver":
+        return [t("review.title"), t("notify.ratePassengers")];
+      case "review_visible":
+        return [
+          t("notify.reviewVisible"),
+          t("notify.reviewVisibleBody", { from, to, when: when(facts.boardsAt) }),
+        ];
       case "booking_cancelled_by_driver":
       case "trip_cancelled":
         // Never the driver's note: it may hold a number (R7.9). ShareRide

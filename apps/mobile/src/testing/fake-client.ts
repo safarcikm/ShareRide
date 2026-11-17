@@ -25,6 +25,7 @@ export const testMe: Me = {
   ageConfirmed: false,
   memberSince: "2026-11-13T12:00:00.000Z",
   missingSteps: ["legal", "profile"],
+  deletionScheduledFor: null,
 };
 
 export const ok = (status: number, data?: unknown) => ({ ok: true, status, data });

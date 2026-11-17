@@ -219,7 +219,7 @@ export function createPasskeyService(dependencies: PasskeyServiceDependencies): 
    */
   async function mayUseConsole(tx: Transaction, userId: string): Promise<boolean> {
     const [account] = await tx
-      .select({ roles: users.roles, status: users.status })
+      .select({ roles: users.roles, status: users.status, deleteAfter: users.deleteAfter })
       .from(users)
       .where(eq(users.id, userId))
       .for("share");

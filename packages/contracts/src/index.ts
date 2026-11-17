@@ -1,4 +1,5 @@
 export * from "./admin.ts";
+export * from "./admin-meeting-points.ts";
 export * from "./auth.ts";
 export * from "./bookings.ts";
 export * from "./chat.ts";
@@ -11,6 +12,7 @@ export * from "./me.ts";
 export * from "./meeting-points.ts";
 export * from "./payments.ts";
 export * from "./privacy.ts";
+export * from "./reviews.ts";
 export * from "./route.ts";
 export * from "./safety.ts";
 export * from "./search.ts";

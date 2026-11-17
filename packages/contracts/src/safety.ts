@@ -95,14 +95,14 @@ export const reportAboutSchema = z.discriminatedUnion("kind", [
 
 export type ReportAbout = z.infer<typeof reportAboutSchema>;
 
-export const reportBodySchema = z.object({
+export const fileReportBodySchema = z.object({
   about: reportAboutSchema,
   category: z.enum(reportCategories),
   /** Up to 1 000 characters as chat counts them (3.1.4); may be empty. */
   description: z.string().max(4000).default(""),
 });
 
-export type ReportBody = z.input<typeof reportBodySchema>;
+export type FileReportBody = z.input<typeof fileReportBodySchema>;
 
 /** A report as its reporter sees it (3.1.7): never anything of the operator's notes. */
 export const myReportSchema = z.object({
@@ -127,7 +127,7 @@ export const fileReportRoute = defineRoute({
     "Report a trip, a message, a problem with a booking or a person; the person reported is never told who (R9.1, R9.2)",
   tags: ["safety"],
   auth: true,
-  request: { body: reportBodySchema },
+  request: { body: fileReportBodySchema },
   responses: {
     201: { description: "The report, as I see it", schema: myReportSchema },
     400: {

@@ -3,15 +3,9 @@ import { AccessibilityInfo } from "react-native";
 import type { Booking, MyTrip } from "@shareride/contracts";
 import { renderApp, completeMe } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
-import {
-  bookingApi,
-  driverApi,
-  northBooking,
-  northMyTrip,
-  northStop,
-  paidBooking,
-} from "@/testing/bookings";
+import { bookingApi, driverApi, northBooking, northMyTrip, paidBooking } from "@/testing/bookings";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
+import { onTheDay, rider, tripOnTheDay } from "@/testing/trip-day";
 import { tripsApi } from "@/testing/trips";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
@@ -34,25 +28,6 @@ jest.mock("@/lib/clock", () => ({ now: () => mockNow }));
 afterEach(() => {
   mockNow = inBorgarnes;
 });
-
-type TripDay = NonNullable<Booking["tripDay"]>;
-
-/** Gunna's paid booking on the trip day, "I'm here" open in Borgarnes from 09:30 to 11:00. */
-function onTheDay(changes: Partial<TripDay> = {}, booking: Partial<Booking> = {}): Booking {
-  return northBooking({
-    ...paidBooking,
-    tripDay: {
-      phase: "trip_day",
-      checkInOpensAt: "2026-11-15T09:30:00.000Z",
-      checkInClosesAt: "2026-11-15T11:00:00.000Z",
-      passengerCheckedInAt: null,
-      driverCheckedInAt: null,
-      arrival: "not_here",
-      ...changes,
-    },
-    ...booking,
-  });
-}
 
 /**
  * The booking page for `start`. Saying "I'm here" answers with `answer`, or
@@ -255,47 +230,6 @@ describe("the passenger's I'm here (spec 8, 3.2; R8.3)", () => {
 
 const tripId = northMyTrip.id;
 const stopId = (position: number) => northMyTrip.stops[position]?.id ?? "";
-
-/** The north trip on its day, "I'm here" said at the stops given. */
-function tripOnTheDay(saidAt: readonly number[] = []): MyTrip {
-  return {
-    ...northMyTrip,
-    phase: "trip_day",
-    stops: northMyTrip.stops.map((stop, position) => ({
-      ...stop,
-      checkIn:
-        stop.checkIn === null
-          ? null
-          : { ...stop.checkIn, at: saidAt.includes(position) ? "2026-11-15T08:50:00.000Z" : null },
-    })),
-  };
-}
-
-function rider(
-  id: string,
-  firstName: string,
-  part: { board: number; alight: number; seats?: number },
-  arrival: TripDay["arrival"],
-  status: Booking["status"] = "confirmed",
-): Booking {
-  return northBooking({
-    id,
-    viewer: "driver",
-    status,
-    board: northStop(part.board),
-    alight: northStop(part.alight),
-    seats: part.seats ?? 1,
-    passenger: { firstName, colour: 2, memberSince: "2026-11" },
-    tripDay: {
-      phase: "trip_day",
-      checkInOpensAt: "2026-11-15T08:30:00.000Z",
-      checkInClosesAt: "2026-11-15T10:00:00.000Z",
-      passengerCheckedInAt: arrival === "here" ? "2026-11-15T08:40:00.000Z" : null,
-      driverCheckedInAt: null,
-      arrival,
-    },
-  });
-}
 
 /** Óli from BSÍ to Hof with two seats; Gunna from Borgarnes to Blönduós; Siggi did not come. */
 const riders = [

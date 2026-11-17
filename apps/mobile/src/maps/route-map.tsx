@@ -1,5 +1,5 @@
 import { IcelandMap, type MapDot, type MapLine } from "./iceland-map";
-import type { Position } from "./projection";
+import type { Position } from "@shareride/ui/map";
 
 /**
  * A trip's stops on our map, in the part of Iceland the trip needs (ADR

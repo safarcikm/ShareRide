@@ -6,6 +6,7 @@ import {
   defaultBookingSettings,
   defaultChatSettings,
   defaultNotificationSettings,
+  defaultReviewSettings,
   defaultSearchSettings,
   defaultTripDaySettings,
   defaultTripSettings,
@@ -46,20 +47,31 @@ import {
 } from "./modules/auth/index.ts";
 import { createBookingService, registerBookingRoutes } from "./modules/bookings/index.ts";
 import { createChatService, registerChatRoutes } from "./modules/chat/index.ts";
-import { createTripDayService, registerTripDayRoutes } from "./modules/trip-day/index.ts";
+import {
+  createReportService,
+  createTripDayService,
+  registerTripDayRoutes,
+} from "./modules/trip-day/index.ts";
+import { createReviewService, registerReviewRoutes } from "./modules/reviews/index.ts";
 import { createDrivingService, registerDrivingRoutes } from "./modules/driving/index.ts";
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
+  createMeetingPointAdminService,
   createMeetingPointService,
   registerMeetingPointRoutes,
+  registerMeetingPointsAdminRoutes,
 } from "./modules/meeting-points/index.ts";
 import { createNoticeService, registerNoticeRoutes } from "./modules/moderation/index.ts";
 import { registerNotificationRoutes } from "./modules/notifications/index.ts";
 import { createPaymentService, registerPaymentRoutes } from "./modules/payments/index.ts";
-import { createExportService, registerPrivacyRoutes } from "./modules/privacy/index.ts";
+import {
+  createDeletionService,
+  createExportService,
+  registerPrivacyRoutes,
+} from "./modules/privacy/index.ts";
 import {
   createBlockService,
-  createReportService,
+  createReportService as createSafetyReportService,
   registerSafetyRoutes,
 } from "./modules/safety/index.ts";
 import {
@@ -82,6 +94,7 @@ import { createMemoryRateLimiter } from "./platform/memory-rate-limiter.ts";
 import type { PaymentProvider } from "./platform/payments.ts";
 import type { EmailChannel } from "./platform/email.ts";
 import type { SmsSender } from "./platform/sms.ts";
+import { createAdminApp } from "./admin-app.ts";
 import { createWebApp } from "./web-app.ts";
 
 export type { AppEnv };
@@ -134,6 +147,8 @@ export interface AppDependencies {
   readonly webOrigins?: readonly string[];
   /** The exported web app to serve on this origin, outside /v1. */
   readonly webAppDir?: string;
+  /** The operator console's build, served at /admin (ADR 0028). */
+  readonly adminAppDir?: string;
   /** Reports unexpected errors; left out where there is no error tracking. */
   readonly reportError?: ErrorReporter;
 }
@@ -262,6 +277,11 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     registerDrivingRoutes(app, driving, requireAuth);
     registerLegalRoutes(app, legal);
     registerMeetingPointRoutes(app, createMeetingPointService(features));
+    registerMeetingPointsAdminRoutes(app, {
+      ...features,
+      meetingPoints: createMeetingPointAdminService(features),
+      requireOperator,
+    });
     // Before the trip routes, so /v1/trips/search is never taken for a trip's ID.
     registerSearchRoutes(app, {
       // Operator settings (feature H4) replace the defaults later.
@@ -307,6 +327,12 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     registerTripDayRoutes(
       app,
       createTripDayService({ ...features, settings: defaultTripDaySettings }),
+      createReportService({ ...features, settings: defaultTripDaySettings }),
+      requireAuth,
+    );
+    registerReviewRoutes(
+      app,
+      createReviewService({ ...features, settings: defaultReviewSettings }),
       requireAuth,
     );
     registerNotificationRoutes(app, { ...features, requireAuth });
@@ -314,7 +340,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       app,
       {
         blocks: createBlockService({ ...features, bookings }),
-        reports: createReportService(features),
+        reports: createSafetyReportService(features),
       },
       requireAuth,
     );
@@ -325,11 +351,17 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       testProvider: features.payments?.name === "test",
       requireAuth,
     });
-    registerPrivacyRoutes(
-      app,
-      createExportService({ ...features, auth, cipher: features.exportCipher, logger }),
+    registerPrivacyRoutes(app, {
+      exports: createExportService({ ...features, auth, cipher: features.exportCipher, logger }),
+      deletion: createDeletionService({
+        ...features,
+        auth,
+        tripDaySettings: defaultTripDaySettings,
+        logger,
+      }),
+      account,
       requireAuth,
-    );
+    });
   }
 
   app.openAPIRegistry.registerComponent("securitySchemes", bearerAuth, {
@@ -350,9 +382,13 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
 
   const webApp =
     dependencies.webAppDir === undefined ? undefined : createWebApp(dependencies.webAppDir);
+  const adminApp =
+    dependencies.adminAppDir === undefined ? undefined : createAdminApp(dependencies.adminAppDir);
   app.notFound(
     async (c: Context<AppEnv, string>) =>
-      (await webApp?.(c)) ?? c.json(errorBody("not_found", "There is no such endpoint."), 404),
+      (await adminApp?.(c)) ??
+      (await webApp?.(c)) ??
+      c.json(errorBody("not_found", "There is no such endpoint."), 404),
   );
 
   app.onError((error, c) => {

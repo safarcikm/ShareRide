@@ -14,7 +14,7 @@ edge ([privacy providers](../compliance/privacy-gdpr.md#providers)).
 | Part | Render name | What it is |
 | ---- | ----------- | ---------- |
 | API and web app | `shareride-staging-api` | Web service built from `apps/api/Dockerfile`; serves `/v1` and the web app on one origin |
-| Clean-up | `shareride-staging-clean-up` | Cron job, every hour at minute 17 (UTC): deletes sign-in records past their retention (with the push tokens of sessions ended for being idle), old trip drafts, conversations 12 months after their trip (unless a report covers them: then until 3 years after it closes), the notification log after 90 days, operator console sessions 30 days after they end, passkey challenges and setup links once they expire, and data export files once expired (their dates 30 days later) |
+| Clean-up | `shareride-staging-clean-up` | Cron job, every hour at minute 17 (UTC): deletes sign-in records past their retention (with the push tokens of sessions ended for being idle), old trip drafts, conversations 12 months after their trip (unless a report covers them: then until 3 years after it closes), the notification log after 90 days, operator console sessions 30 days after they end, passkey challenges and setup links once they expire, and data export files once expired (their dates 30 days later); then erases the accounts whose 7 days after "Delete my account" have ended (spec 11). It takes `AUTH_SECRET` from the API |
 | Database | `shareride-staging-db` | PostgreSQL 18 with PostGIS, private network only |
 | Settings | `shareride-staging` | Environment group: `NODE_ENV=production`, `APP_ENV=staging`, `LOG_LEVEL`. `PAYMENT_PROVIDER` is unset, so staging pays with the test provider: no card, no money moves. `WORKER` is unset, so the API runs the notification worker: it pushes through Expo to the phones that registered, with `EXPO_ACCESS_TOKEN` once it is set ([app builds](app-builds.md#android-build-with-push)); `EMAIL_PROVIDER` is unset, so it sends no email and records who would have been emailed, until email is turned on (below) |
 
@@ -84,6 +84,33 @@ Render changes its network:
    many tries. "Too many" means every client shares one address.
 4. Set `SMS_PAUSED` back to `false`. The computer from step 2 can ask for
    codes again after an hour.
+
+## Sign in to the console
+
+The operator console signs in with passkeys only, bound to one address
+([ADR 0028](../decisions/0028-operator-console-web-app-and-passkeys.md)).
+Its sign-in is off until that address is set. Once:
+
+1. Open `shareride-staging-api`, **Environment**, and add `ADMIN_ORIGIN`
+   set to the staging address above, such as
+   `https://shareride-staging-api.onrender.com` (no path, no slash at the
+   end), then save. Render deploys the service again.
+2. Sign up in the app with your own phone, if you have not yet.
+3. Open the API's **Shell** in Render and run
+   `node apps/api/src/operator-cli.ts add <your phone number>`. It gives
+   your account the operator role and prints a link that works once, for
+   30 minutes.
+4. Open the link on the laptop or phone you will use, and save a passkey
+   there (Touch ID, Face ID, Windows Hello or a security key). Add your
+   other devices from inside the console.
+5. From then on, sign in at the staging address with `/admin` after it,
+   such as `https://shareride-staging-api.onrender.com/admin`.
+
+Lost every passkey: run step 3 again for a new link. To take the role
+away: `node apps/api/src/operator-cli.ts remove <phone number or user
+ID>`, which also ends that account's console sessions and deletes its
+passkeys; `list` shows the operators. Changing `ADMIN_ORIGIN` (for example
+to a domain, milestone 12) means saving passkeys again with a new link.
 
 ## Deploy
 
@@ -286,18 +313,71 @@ Hobby workspace (7 on Pro).
    Database**. Pick a time at least ten minutes ago and a new name.
 2. Render creates a new database. Check it with the PSQL command on its
    **Info** page.
-3. Point the services at it: in the blueprint, change the name under
+3. Bring over the deletions since the restore's point, so the restored
+   database never serves an erased account and never erases one kept
+   (spec 11, 3.7). Copy the new database's **Internal Database URL** from
+   its **Info** page, open the API's **Shell** (it still uses the old
+   database) and run:
+
+   ```sh
+   PREVIOUS_DATABASE_URL="$DATABASE_URL" DATABASE_URL="<new database URL>" \
+     node apps/api/src/privacy-cli.ts reapply-erasures
+   ```
+
+   It takes each "Delete my account" or "Keep my account" pressed in the
+   old database since, then erases again every erased account that came
+   back, and says how many of each. If it ends with `Failed:`, do not go
+   on: the log names each account, and the step can be run again once
+   fixed. If the old database is lost, leave out `PREVIOUS_DATABASE_URL`:
+   deletions asked for, undone or finished after the restore's point are
+   then missed, a gap point-in-time recovery keeps to minutes.
+4. Point the services at it: in the blueprint, change the name under
    `databases` and the `fromDatabase` name of both services to the new
    database's name, merge, and let the blueprint sync. Changing only the
    services would leave the old name under `databases`, and deleting the old
    database would then make the next sync create an empty one.
-4. Once the services work, suspend or delete the old database.
+5. Run step 3 again from the API's Shell, now with
+   `PREVIOUS_DATABASE_URL="<old database URL>"` and the shell's own
+   `DATABASE_URL`, for what happened in the old database in the meantime.
+   A change made in the new database since is newer, so it stays.
+6. Once the services work, suspend or delete the old database.
+
+## Retention runs and holds
+
+The hourly clean-up records each retention rule's run (spec 11, 3.7). To
+see the last run of each, open the API's **Shell** and run:
+
+```sh
+node apps/api/src/privacy-cli.ts runs
+```
+
+A rule whose last run is over an hour old, or `never run`, has failed:
+Sentry has the error, tagged with the rule.
+
+To keep a person's, trip's or booking's records past their date for a
+dispute, chargeback or legal claim, give the ID, the last day to keep them
+(Iceland time), a reason that names the case rather than the person, and
+your own user ID or phone number for the audit log:
+
+```sh
+node apps/api/src/privacy-cli.ts hold booking <booking ID> \
+  --until 2027-03-31 --reason "Chargeback 4411" --by <your user ID>
+node apps/api/src/privacy-cli.ts holds
+node apps/api/src/privacy-cli.ts end-hold <hold ID> --by <your user ID>
+```
+
+`holds` lists those in force, nearest end first. Once a hold ends, its
+records go at the next clean-up if their own dates have passed.
 
 ## Rotate a secret
 
 - `AUTH_SECRET`: set a new value in the service's **Environment** (for
   example from `openssl rand -base64 32`). Codes waiting to be used stop
-  working and sending limits reset; sessions are not affected.
+  working and sending limits reset; sessions are not affected. Data
+  exports waiting to be downloaded can no longer be read (people ask for
+  a new one), and the numbers of erased suspended accounts are no longer
+  recognised, so they could sign up again. The clean-up job takes the
+  new value from the API at its next deploy.
 - Vonage secret: an account holds two secrets at most, so first revoke the
   one not in use if there are two. Create a new secret in the Vonage
   dashboard (**Settings**, **API

@@ -27,6 +27,7 @@ import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { firstNameOf } from "@/people/texts";
 
 /**
  * Cancelling a booking (spec 6, 3.4 and 3.5; screen 6), by its passenger
@@ -113,7 +114,7 @@ function leave(href: ReturnType<typeof backTo>) {
 /** "Cancel your booking", or for the driver "Cancel booking: Gunna". */
 const titleOf = (t: ReturnType<typeof useLanguage>["t"], booking: Booking) =>
   booking.viewer === "driver"
-    ? t("booking.cancelTitleDriver", { name: booking.passenger.firstName })
+    ? t("booking.cancelTitleDriver", { name: firstNameOf(t, booking.passenger) })
     : t("booking.cancelTitle");
 
 /**
@@ -195,7 +196,7 @@ function CancelForm({
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const driver = booking.viewer === "driver";
-  const passengerName = booking.passenger.firstName;
+  const passengerName = firstNameOf(t, booking.passenger);
   // Checked as typed, as the server checks it: no contact details (R3.10).
   const noteProblem = checkNote(note.trim())[0];
   const noteError =
@@ -318,7 +319,10 @@ function CancelForm({
           <Body align="start">
             {driver
               ? t("booking.cancelToldPassenger", { name: passengerName, seats: booking.seats })
-              : t("booking.cancelTold", { driver: booking.driver.firstName, seats: booking.seats })}
+              : t("booking.cancelTold", {
+                  driver: firstNameOf(t, booking.driver),
+                  seats: booking.seats,
+                })}
           </Body>
         </Card>
       )}

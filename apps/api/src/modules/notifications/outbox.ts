@@ -19,10 +19,12 @@ export type OutboxEvent =
         | "TripChanged"
         | "TripCancelled"
         | "MessageSent"
+        | "ReviewRevealed"
         | "DataExportReady"
         | "ReportFiled"
         | "ModerationActionTaken"
         | "SuspensionEnded"
+        | "AccountDeletionScheduled"
         | "AppealAnswered"
         | "ReportClosed"
       >;
@@ -66,6 +68,12 @@ export type OutboxEvent =
     }
   | { readonly type: "MessageSent"; readonly messageId: string }
   | {
+      /** A review shows (spec 8, R8.9): the person it is about is told. */
+      readonly type: "ReviewRevealed";
+      readonly bookingId: string;
+      readonly reviewId: string;
+    }
+  | {
       /** The person's file of their data is ready to download (spec 11, 3.2). */
       readonly type: "DataExportReady";
       readonly userId: string;
@@ -84,6 +92,11 @@ export type OutboxEvent =
   | {
       /** The person's suspension reached its end: they are told (spec 9, 3.6). */
       readonly type: "SuspensionEnded";
+      readonly userId: string;
+    }
+  | {
+      /** The person asked to delete their account; the email says when (spec 11, 3.4.5). */
+      readonly type: "AccountDeletionScheduled";
       readonly userId: string;
     }
   | {

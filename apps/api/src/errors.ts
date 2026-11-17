@@ -16,6 +16,7 @@ export interface ErrorExtras {
   readonly bookingsAtStop?: number;
   readonly opensAt?: string;
   readonly suspendedUntil?: string | null;
+  readonly allowedAt?: string;
 }
 
 export function errorBody(code: string, message: string, details?: ErrorDetails): ErrorResponse {

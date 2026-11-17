@@ -30,6 +30,7 @@ import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { BackToMenu } from "@/navigation/back-to-menu";
+import { firstNameOf } from "@/people/texts";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
@@ -132,7 +133,7 @@ function Report({
   const [sent, setSent] = useState(false);
   const [callFailed, setCallFailed] = useState(false);
   const tooLong = characterCount(description.trim()) > maxLength;
-  const name = booking === null ? null : otherPerson(booking).firstName;
+  const name = booking === null ? null : firstNameOf(t, otherPerson(booking));
 
   async function send() {
     setFailed(null);
@@ -172,7 +173,7 @@ function Report({
         {booking === null ? null : (
           <Button
             variant="secondary"
-            label={t("report.blockToo", { name: otherPerson(booking).firstName })}
+            label={t("report.blockToo", { name: firstNameOf(t, otherPerson(booking)) })}
             onPress={() => {
               router.replace({ pathname: "/bookings/[id]/block", params: { id: booking.id } });
             }}

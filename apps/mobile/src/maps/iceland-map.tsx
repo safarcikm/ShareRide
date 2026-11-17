@@ -10,10 +10,18 @@ import {
 import Svg, { Circle, G, Polygon, Polyline } from "react-native-svg";
 import { controlOutline, edges, mapDrawing, radii } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
-import { glaciers, land, roads } from "./iceland-data";
-import { project, type MapXY, type Position } from "./projection";
-import { alongRoads } from "./roads";
-import { dotsNear, viewFor, wholeMap } from "./view";
+import {
+  alongRoads,
+  dotsNear,
+  glaciers,
+  land,
+  project,
+  roads,
+  viewFor,
+  wholeMap,
+  type MapXY,
+  type Position,
+} from "@shareride/ui/map";
 
 /** On the web a label counts only on an element with a role. */
 const imageRole: object = Platform.OS === "web" ? { role: "img" } : {};

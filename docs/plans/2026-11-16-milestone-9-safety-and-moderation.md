@@ -339,14 +339,14 @@ Built in two parts: 5a the reports themselves, 5b the operator's alert.
 In four parts, each its own pull request:
 
 - [x] 6a: `moderation_actions` and `suspended_until` (migration
-      `0027_moderation`); `suspend`, `warn` and `reinstate` with their
+      `0033_moderation`); `suspend`, `warn` and `reinstate` with their
       audit entries and notices; ShareRide's cancellation of a trip and of
       a booking (`trips.cancelled_by`); refusals while suspended, and a
       suspended person stays signed in; ends in the minute job
 - [x] 6b: `GET /v1/me/notices` and the appeal; `closeReport` (with
       `report_closed` to the reporter) and `answerAppeal` (with
       `appeal_answered` to the person; reversing the suspension they are
-      under lifts it); migration `0028_appeals`
+      under lifts it); migration `0034_appeals`
 - [ ] 6c: `operator_notes` and the `hidden_at` columns; `hideContent`
       (reversing it on appeal shows the content again),
       `cancelTripAsOperator` and `refundBooking`

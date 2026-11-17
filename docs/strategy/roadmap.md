@@ -190,8 +190,8 @@ built alongside milestones 7 to 9)
 
 - [x] Privacy rules in the domain and the personal data catalogue
 - [x] Confirm with a fresh code
-- [ ] Download my data (the API is built; the app is next)
-- [ ] Delete my account, with 7 days to undo
+- [x] Download my data
+- [x] Delete my account, with 7 days to undo
 - [ ] Retention periods run on their own and leave a record
 - [ ] Ask about my data
 

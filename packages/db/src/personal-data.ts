@@ -21,7 +21,9 @@ export interface TablePrivacy {
    * What erasing an account does to the person's rows: `erase` deletes them;
    * `keep` keeps them for the other people, linked to the shared former
    * member, with the `emptied` columns cleared and the `kept` ones as they
-   * are. Null when the table holds nothing linked to a person.
+   * are; `leave` leaves them exactly as they are, the erased ID pointing at
+   * nothing. Null when the table holds nothing linked to a person. The
+   * erasure (apps/api/src/modules/privacy/erasure.ts) follows this.
    */
   readonly onDeletion: Deletion | null;
   /** UUID columns that are not a person and point nowhere, such as a retry key. */
@@ -30,6 +32,7 @@ export interface TablePrivacy {
 
 export type Deletion =
   | { readonly rows: "erase"; readonly note?: string }
+  | { readonly rows: "leave"; readonly note: string }
   | {
       readonly rows: "keep";
       readonly emptied: readonly string[];
@@ -170,8 +173,35 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     category: "trips_and_bookings",
     export: { section: "bookings" },
     personColumns: ["userId"],
-    // "I'm here" times, a time only, matter to the other side if they disagree (spec 8, 3.5).
+    // "I'm here" times, a time only, matter to the other side if they disagree
+    // (spec 8, 3.5). A driver's own are exported with their trip's stops.
     onDeletion: keep([]),
+  },
+  disputes: {
+    category: "trips_and_bookings",
+    export: { section: "bookings" },
+    personColumns: [],
+    // What was reported and how it ended decide a refund and reliability
+    // for the other side too (spec 8, 3.5). The notes were for the
+    // operator, and go. Each side's export has its own note only: a
+    // passenger's with their booking, a driver's with the trip's passengers.
+    onDeletion: keep(
+      ["kind", "answer", "outcome", "decidedBy"],
+      ["note", "answerNote", "decisionNote"],
+    ),
+  },
+  reviews: {
+    category: "reviews_written",
+    export: { section: "bookings" },
+    personColumns: ["authorId", "subjectId"],
+    // The reviews a person wrote stay for the people they are about, by "A
+    // former member" (spec 8, 3.7.5). Those about them go (reviews_received):
+    // the erasure deletes them by subject before it moves the rest.
+    onDeletion: keep(
+      ["authorRole", "comment"],
+      [],
+      "reviews about the person are erased first; those they wrote move to the former member",
+    ),
   },
   booking_segment_prices: {
     category: "trips_and_bookings",
@@ -198,6 +228,25 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     // The other person sees "Message deleted".
     onDeletion: keep(["kind"], ["body", "key", "params"]),
     otherIds: ["clientId"],
+  },
+  erased_accounts: notAboutAPerson(
+    "the former IDs of erased accounts, kept 30 days to erase them again after a restore",
+  ),
+  blocked_numbers: notAboutAPerson(
+    "keyed hashes of the numbers of erased suspended accounts, linked to no account",
+  ),
+  retention_runs: notAboutAPerson("how many records each clean-up rule erased, never which"),
+  holds: {
+    category: "audit",
+    export: {
+      leftOut:
+        "the operator's records of what is kept for a dispute or claim; asked about through Ask about my data",
+    },
+    personColumns: ["subjectId", "setBy"],
+    onDeletion: {
+      rows: "leave",
+      note: "an account is not erased while a hold covers it; an ended hold keeps the IDs, and goes 3 years after its end",
+    },
   },
   data_exports: {
     category: "exports",
@@ -255,11 +304,10 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     category: "audit",
     export: { leftOut: "operator actions, kept 3 years for accountability (spec 9, 3.8)" },
     personColumns: ["operatorUserId"],
-    onDeletion: keep(
-      ["action", "subjectType", "subjectId", "before", "after", "ipAddress", "userAgent"],
-      [],
-      "kept as they are: the database refuses changes, and deletes before 3 years",
-    ),
+    onDeletion: {
+      rows: "leave",
+      note: "kept as they are: the database refuses changes, and deletes before 3 years",
+    },
     otherIds: ["operatorSessionId"],
   },
   reports: {

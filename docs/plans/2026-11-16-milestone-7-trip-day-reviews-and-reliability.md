@@ -292,20 +292,28 @@ In two parts: 4a the API, 4b the screens and the browser journey.
 
 ### PR 5: `feat(bookings)`: no-shows, the driver didn't come, and answers
 
-- [ ] `disputes`; the no-show, driver-absent and answer routes; settling
-      after 24 hours; refunds and reliability; notifications
-- [ ] Mark as no-show, The driver didn't come, and the answer screen
-- [ ] The operator's command (decision 1)
+In three parts: 5a the API, 5b the screens and the browser journey, 5c
+the operator's path (decision 1).
+
+- [x] `disputes`; the no-show, driver-absent and answer routes; settling
+      after 24 hours; refunds and reliability; notifications; the
+      operator's decision as one function for the command and the console
+      (5a)
+- [x] Mark as no-show, The driver didn't come, and the answer screen (5b)
+- [ ] The operator's command (decision 1) (5c)
 - Verify: integration tests for every path of 4.4 and decision 4, and
   twice gives one effect; a browser journey: a no-show nobody contests,
   and a driver absence that stands with a full refund
 
 ### PR 6: `feat(reviews)`: rate and review
 
-- [ ] `reviews` and `POST /bookings/{id}/review`; the reveal; "A review
-      about you is now visible"; the rate screen
-- [ ] "How was your trip?" on completion and its reminder after 3 days,
-      skipped once reviewed (4.2)
+In two parts, as PR 5: the API (6a), then the screens and the journey (6b).
+
+- [x] `reviews` and `POST /bookings/{id}/review`; the reveal; "A review
+      about you is now visible" (6a)
+- [x] "How was your trip?" on completion and its reminder after 3 days,
+      skipped once reviewed (4.2) (6a)
+- [ ] The rate screen, from the booking page and the driver's trip page (6b)
 - Verify: integration tests (only completed bookings, one each, 14 days,
   hidden until both; the reminder is skipped after a review); a browser
   journey: both review and then see each other's review

@@ -180,29 +180,71 @@
     {
       "idx": 25,
       "version": "7",
-      "when": 1794887437107,
-      "tag": "0025_blocks",
+      "when": 1794887624001,
+      "tag": "0025_account_deletion",
       "breakpoints": true
     },
     {
       "idx": 26,
       "version": "7",
-      "when": 1794887742596,
-      "tag": "0026_reports",
+      "when": 1794890016083,
+      "tag": "0026_trip_day_disputes",
       "breakpoints": true
     },
     {
       "idx": 27,
       "version": "7",
-      "when": 1794891762179,
-      "tag": "0027_moderation",
+      "when": 1794891378853,
+      "tag": "0027_meeting_point_console_fields",
       "breakpoints": true
     },
     {
       "idx": 28,
       "version": "7",
-      "when": 1794892548594,
-      "tag": "0028_appeals",
+      "when": 1794903981005,
+      "tag": "0028_account_erasure",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1794907439078,
+      "tag": "0029_retention_runs_and_holds",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1794909942024,
+      "tag": "0030_reviews",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1794911242389,
+      "tag": "0031_blocks",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1794911600616,
+      "tag": "0032_reports",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1794911976150,
+      "tag": "0033_moderation",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1794912326099,
+      "tag": "0034_appeals",
       "breakpoints": true
     }
   ]

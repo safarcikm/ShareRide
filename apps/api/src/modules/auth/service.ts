@@ -23,7 +23,15 @@ import { hashToken, newToken, sameHash, type KeyedHasher } from "../../platform/
 import type { SmsSender } from "../../platform/sms.ts";
 import type { Logger } from "../../logger.ts";
 
-const { pushTokens, rateLimitEvents, sessions, sessionTokens, users, verificationCodes } = schema;
+const {
+  blockedNumbers,
+  pushTokens,
+  rateLimitEvents,
+  sessions,
+  sessionTokens,
+  users,
+  verificationCodes,
+} = schema;
 
 export type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 type Executor = Database | Transaction;
@@ -156,6 +164,44 @@ const lastActiveWriteSeconds = 5 * 60;
 const longestWindowSeconds = (rules: readonly RateLimitRule[]) =>
   Math.max(...rules.map((rule) => rule.windowSeconds));
 
+/**
+ * Ends sessions and deletes their tokens, so none of them works again, and
+ * their push tokens, so the devices get no more news.
+ */
+async function endSessions(
+  executor: Executor,
+  sessionIds: readonly string[],
+  reason: string,
+  now: Date,
+): Promise<void> {
+  if (sessionIds.length === 0) return;
+  await executor
+    .update(sessions)
+    .set({ endedAt: now, endReason: reason, updatedAt: now })
+    .where(and(inArray(sessions.id, [...sessionIds]), isNull(sessions.endedAt)));
+  await executor.delete(sessionTokens).where(inArray(sessionTokens.sessionId, [...sessionIds]));
+  await executor.delete(pushTokens).where(inArray(pushTokens.sessionId, [...sessionIds]));
+}
+
+/** Signs the person out of every device, as part of a larger change such as deleting the account. */
+export async function endAllSessions(
+  executor: Executor,
+  userId: string,
+  reason: string,
+  now: Date,
+): Promise<void> {
+  const open = await executor
+    .select({ id: sessions.id })
+    .from(sessions)
+    .where(and(eq(sessions.userId, userId), isNull(sessions.endedAt)));
+  await endSessions(
+    executor,
+    open.map((row) => row.id),
+    reason,
+    now,
+  );
+}
+
 export function createAuthService(dependencies: AuthServiceDependencies): AuthService {
   const { db, sms, hasher, clock, logger, randomInt } = dependencies;
   const translators = { is: createTranslator("is"), en: createTranslator("en") };
@@ -223,25 +269,6 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
       refreshTokenId: refreshRow.id,
       tokens: { accessToken, accessTokenExpiresAt, refreshToken, refreshTokenExpiresAt },
     };
-  }
-
-  /**
-   * Ends sessions and deletes their tokens, so none of them works again, and
-   * their push tokens, so the devices get no more news.
-   */
-  async function endSessions(
-    executor: Executor,
-    sessionIds: readonly string[],
-    reason: string,
-    now: Date,
-  ): Promise<void> {
-    if (sessionIds.length === 0) return;
-    await executor
-      .update(sessions)
-      .set({ endedAt: now, endReason: reason, updatedAt: now })
-      .where(and(inArray(sessions.id, [...sessionIds]), isNull(sessions.endedAt)));
-    await executor.delete(sessionTokens).where(inArray(sessionTokens.sessionId, [...sessionIds]));
-    await executor.delete(pushTokens).where(inArray(pushTokens.sessionId, [...sessionIds]));
   }
 
   /**
@@ -407,6 +434,13 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
           .for("update");
         const isNewUser = user === undefined;
         if (user === undefined) {
+          // The number of a suspended person whose data was erased cannot
+          // sign up again until the suspension would have ended (R11.9).
+          const [blocked] = await tx
+            .select({ until: blockedNumbers.until })
+            .from(blockedNumbers)
+            .where(and(eq(blockedNumbers.phoneHash, phoneHash), gt(blockedNumbers.until, now)));
+          if (blocked !== undefined) return err({ code: "account_unavailable" });
           [user] = await tx
             .insert(users)
             .values({
@@ -450,7 +484,9 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
     async refresh(refreshToken) {
       const now = clock();
       return db.transaction(async (tx): Promise<Result<Refreshed, RefreshError>> => {
-        // Locks the token and its session, so two refreshes of one session run in turn.
+        // Locks the token and its session, so two refreshes of one session run
+        // in turn; not the account, which deleting one locks before it ends
+        // the sessions.
         const [row] = await tx
           .select({ token: sessionTokens, session: sessions, userStatus: users.status })
           .from(sessionTokens)
@@ -462,7 +498,7 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
               eq(sessionTokens.kind, "refresh"),
             ),
           )
-          .for("update");
+          .for("update", { of: [sessionTokens, sessions] });
         if (row === undefined) return err({ code: "refresh_invalid" });
         const { token, session } = row;
         if (!canSignIn(row.userStatus)) {
@@ -568,15 +604,8 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
     async signOut({ userId, sessionId, all }) {
       const now = clock();
       await db.transaction(async (tx) => {
-        const ids = all
-          ? (
-              await tx
-                .select({ id: sessions.id })
-                .from(sessions)
-                .where(and(eq(sessions.userId, userId), isNull(sessions.endedAt)))
-            ).map((row) => row.id)
-          : [sessionId];
-        await endSessions(tx, ids, all ? "sign_out_all" : "sign_out", now);
+        if (all) await endAllSessions(tx, userId, "sign_out_all", now);
+        else await endSessions(tx, [sessionId], "sign_out", now);
       });
       logger.info({ userId, sessionId, all }, "signed out");
     },

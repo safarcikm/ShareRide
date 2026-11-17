@@ -2,6 +2,14 @@ import { sql } from "drizzle-orm";
 import { check, pgTable, text } from "drizzle-orm/pg-core";
 import { at, id, timestamps } from "./columns.ts";
 
+/**
+ * The one anonymous "former member" (privacy plan, decision 2): what is kept
+ * of an erased person's trips, bookings and payments moves to this row, so
+ * nobody can link them to each other again. Made by the migration
+ * `account_deletion`; it has no number, so it can never sign in.
+ */
+export const formerMemberId = "00000000-0000-4000-8000-000000000001";
+
 /** People with an account (spec 1). Personal data: see the record of processing. */
 export const users = pgTable(
   "users",
@@ -29,6 +37,11 @@ export const users = pgTable(
       .array()
       .notNull()
       .default(sql`'{}'`),
+    /**
+     * Set while a deletion waits: the data is erased after it (spec 11,
+     * 3.4.4). The status stays as it was, so undoing never lifts a suspension.
+     */
+    deleteAfter: at(),
     status: text().notNull().default("active"),
     /** The end of a suspension (spec 9, 3.6); empty while suspended means for good. */
     suspendedUntil: at(),
@@ -36,7 +49,8 @@ export const users = pgTable(
   },
   (table) => [
     check("users_locale_check", sql`${table.locale} in ('is', 'en')`),
-    check("users_status_check", sql`${table.status} in ('active', 'suspended')`),
+    // "deleted" is the former member's alone (formerMemberId).
+    check("users_status_check", sql`${table.status} in ('active', 'suspended', 'deleted')`),
     check(
       "users_suspended_until_check",
       sql`${table.suspendedUntil} is null or ${table.status} = 'suspended'`,

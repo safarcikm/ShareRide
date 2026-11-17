@@ -32,6 +32,8 @@ export const errorResponseSchema = z.object({
     opensAt: timestampSchema.optional(),
     /** When the suspension ends, or null for one for good (`account_suspended`, spec 9, 3.6). */
     suspendedUntil: timestampSchema.nullable().optional(),
+    /** When the wait after the stop's time ends (`no_show_too_early`, `report_too_early`; R8.4, R8.5). */
+    allowedAt: timestampSchema.optional(),
   }),
 });
 
