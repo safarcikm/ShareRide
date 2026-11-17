@@ -8,6 +8,7 @@ import {
 } from "@shareride/contracts";
 import { declineReasons, type DeclineReason } from "@shareride/domain";
 import { formatDuration, formatMoney, type Locale, type Translate } from "@shareride/i18n";
+import { router } from "expo-router";
 import { useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
@@ -222,6 +223,15 @@ export function RequestCard({
               }}
             />
           </TakesFocus>
+          {/* An unkind request can be reported, through the booking (spec 9, 3.1.1). */}
+          <Button
+            variant="text"
+            label={t("report.person", { name })}
+            disabled={busy !== null}
+            onPress={() => {
+              router.push({ pathname: "/report", params: { kind: "user", id: booking.id } });
+            }}
+          />
         </View>
       )}
     </Card>

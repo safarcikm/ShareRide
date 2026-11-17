@@ -328,14 +328,14 @@ function Trip({
         />
       )}
       {/* Reporting needs an account; my own trip is not mine to report (spec 9, 3.1). */}
-      {me === null || trip.part.state === "own" ? null : (
+      {me === null || trip.drivenByMe ? null : (
         <Button
           variant="text"
           label={t("report.trip")}
           onPress={() => {
             router.push({
               pathname: "/report",
-              params: { kind: "trip", id: trip.id, name: trip.driver.firstName },
+              params: { kind: "trip", id: trip.id },
             });
           }}
         />

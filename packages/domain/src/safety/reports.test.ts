@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { bookingStatuses } from "../bookings/lifecycle.ts";
 import {
-  bookingReportOpen,
+  bookingProblemReportable,
   checkReport,
   holdsPayout,
   isUrgent,
@@ -45,6 +46,7 @@ describe("what can be reported, and by whom (3.1.1, R9.1)", () => {
       kind: "booking",
       passengerId: "jon",
       driverId: "anna",
+      bookingStatus: "confirmed",
       tripCompletedAt: null,
     } as const;
     expect(check("jon", booking)).toMatchObject({ ok: true, value: { subjectUserId: "anna" } });
@@ -77,6 +79,7 @@ describe("what can be reported, and by whom (3.1.1, R9.1)", () => {
         kind: "booking",
         passengerId: "jon",
         driverId: "anna",
+        bookingStatus: "confirmed",
         tripCompletedAt: null,
       }),
     ).toEqual({ ok: false, error: { code: "not_involved" } });
@@ -89,6 +92,7 @@ describe("the time to report a booking problem (R9.1)", () => {
     kind: "booking",
     passengerId: "jon",
     driverId: "anna",
+    bookingStatus: "completed",
     tripCompletedAt: completedAt,
   } as const;
 
@@ -104,10 +108,28 @@ describe("the time to report a booking problem (R9.1)", () => {
     });
   });
 
+  it("has nothing to report for a request, or a booking that ended before its trip", () => {
+    const ran = bookingStatuses.filter(
+      (bookingStatus) => check("jon", { ...booking, bookingStatus }).ok,
+    );
+    expect(ran).toEqual(["confirmed", "completed", "no_show"]);
+    expect(check("jon", { ...booking, bookingStatus: "cancelled" })).toEqual({
+      ok: false,
+      error: { code: "not_reportable" },
+    });
+  });
+
   it("says so for the booking page, whoever asks", () => {
-    expect(bookingReportOpen(null, now, settings)).toBe(true);
-    expect(bookingReportOpen(completedAt, now, settings)).toBe(true);
-    expect(bookingReportOpen(completedAt, new Date(now.getTime() + 1000), settings)).toBe(false);
+    const later = new Date(now.getTime() + 1000);
+    const reportable = (status: (typeof bookingStatuses)[number], at = now) =>
+      bookingProblemReportable({ status, tripCompletedAt: completedAt }, at, settings);
+    expect(
+      bookingProblemReportable({ status: "confirmed", tripCompletedAt: null }, now, settings),
+    ).toBe(true);
+    expect(reportable("completed")).toBe(true);
+    expect(reportable("completed", later)).toBe(false);
+    expect(reportable("requested")).toBe(false);
+    expect(reportable("cancelled")).toBe(false);
   });
 });
 

@@ -4,9 +4,9 @@ import { postTripToSelfoss } from "./support/trips";
 
 // Spec 9's reporting on the web build, in two browsers: a driver posts a
 // trip, another person reports it as not as listed, is thanked, and finds
-// the report in Settings, under My reports, still open. The driver is told
-// nothing. Each project posts its own trips, so phone and desktop runs never
-// meet.
+// the report in Settings, under My reports, still open. The driver is not
+// offered to report their own trip. Each project posts its own trips, so
+// phone and desktop runs never meet.
 
 test.use({ locale: "en-GB" });
 

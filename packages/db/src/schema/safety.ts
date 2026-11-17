@@ -79,9 +79,10 @@ export const reports = pgTable(
       "reports_outcome_check",
       sql`${table.outcome} is null or ${oneOf(table.outcome, reportOutcomes)}`,
     ),
+    // Closed exactly when it has a closing time, and exactly when it has an outcome.
     check(
       "reports_closed_check",
-      sql`(${table.status} = 'closed') = (${table.closedAt} is not null and ${table.outcome} is not null)`,
+      sql`(${table.status} = 'closed') = (${table.closedAt} is not null) and (${table.status} = 'closed') = (${table.outcome} is not null)`,
     ),
     // My reports, the latest first; and the reports a person filed in 24 hours.
     index("reports_reporter_index").on(table.reporterId, table.createdAt),
@@ -91,5 +92,9 @@ export const reports = pgTable(
       .on(table.urgent, table.createdAt)
       .where(sql`${table.status} = 'open'`),
     index("reports_conversation_index").on(table.conversationId),
+    // Deleting a trip, booking or message sets these to null: found by index.
+    index("reports_trip_index").on(table.tripId),
+    index("reports_booking_index").on(table.bookingId),
+    index("reports_message_index").on(table.messageId),
   ],
 );

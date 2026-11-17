@@ -2,6 +2,7 @@ import type { MyReport, ReportAbout } from "@shareride/contracts";
 import { schema, type Database } from "@shareride/db";
 import {
   checkReport,
+  type BookingStatus,
   defaultSafetySettings,
   err,
   ok,
@@ -113,6 +114,7 @@ export function createReportService(dependencies: {
           .select({
             tripId: bookings.tripId,
             passengerId: bookings.passengerId,
+            status: bookings.status,
             driverId: trips.driverId,
             completedAt: trips.completedAt,
           })
@@ -132,6 +134,7 @@ export function createReportService(dependencies: {
             kind: "booking",
             passengerId: booking.passengerId,
             driverId: booking.driverId,
+            bookingStatus: booking.status as BookingStatus,
             tripCompletedAt: booking.completedAt,
           },
           links,
@@ -183,8 +186,11 @@ export function createReportService(dependencies: {
       }
 
       const filed = await db.transaction(async (tx) => {
-        // One report at a time per person, so the daily limit holds.
-        await tx.select({ id: users.id }).from(users).where(eq(users.id, me)).for("update");
+        // One report at a time per person, so the daily limit holds. Not a
+        // full update lock: the insert's key check on the person reported
+        // must not wait on theirs, or two people reporting each other at
+        // once would deadlock.
+        await tx.select({ id: users.id }).from(users).where(eq(users.id, me)).for("no key update");
         const today = await tx
           .select({ at: reports.createdAt })
           .from(reports)

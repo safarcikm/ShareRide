@@ -1,4 +1,9 @@
-import { fileReportRoute, type ReportAbout } from "@shareride/contracts";
+import {
+  bookingRoute,
+  fileReportRoute,
+  type Booking,
+  type ReportAbout,
+} from "@shareride/contracts";
 import {
   characterCount,
   defaultSafetySettings,
@@ -7,10 +12,11 @@ import {
 } from "@shareride/domain";
 import { reportCategoryText, type MessageKey } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { Linking, StyleSheet, Text, View } from "react-native";
+import { useCallback, useState } from "react";
+import { ActivityIndicator, Linking, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
+import { otherPerson } from "@/chat/texts";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
@@ -22,6 +28,7 @@ import { TextField } from "@/components/text-field";
 import { TextLink } from "@/components/text-link";
 import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
+import { useLoaded } from "@/lib/use-loaded";
 import { BackToMenu } from "@/navigation/back-to-menu";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -40,20 +47,20 @@ const maxLength = defaultSafetySettings.textMaxLength;
 /**
  * Reporting (spec 9, 3.1): what is reported comes from where the report
  * started, then what happened; for safety, 112 first. Nothing is sent
- * until "Send report". Thanks, and for a person, Block them too.
+ * until "Send report". Thanks, and for a person, Block them too. The
+ * address names only what is reported, never a person: their first name
+ * comes from the booking the two share.
  */
 export default function ReportScreen() {
   const me = useMe();
-  const params = useLocalSearchParams<{
-    kind: string;
-    id: string;
-    name?: string;
-    booking?: string;
-  }>();
+  const params = useLocalSearchParams<{ kind: string; id: string; booking?: string }>();
   if (me === null) return <BackToMenu />;
   const about = aboutOf(params.kind, params.id);
   if (about === null) return <BackToMenu />;
-  return <Report about={about} name={params.name ?? null} bookingId={params.booking ?? null} />;
+  if (about.kind === "trip") return <Report about={about} booking={null} />;
+  const bookingId = about.kind === "message" ? params.booking : about.bookingId;
+  if (bookingId === undefined) return <BackToMenu />;
+  return <ThroughBooking about={about} bookingId={bookingId} />;
 }
 
 function aboutOf(kind: string, id: string): ReportAbout | null {
@@ -70,14 +77,49 @@ function aboutOf(kind: string, id: string): ReportAbout | null {
   }
 }
 
-function Report({
+/** A person, their message or a booking problem: named through the booking. */
+function ThroughBooking({
   about,
-  name,
   bookingId,
 }: {
   readonly about: ReportAbout;
-  readonly name: string | null;
-  readonly bookingId: string | null;
+  readonly bookingId: string;
+}) {
+  const { t } = useLanguage();
+  const palette = usePalette();
+  const session = useSession();
+  const load = useCallback(
+    () => session.call(bookingRoute, { params: { id: bookingId } }),
+    [session, bookingId],
+  );
+  const { value: answer, reload } = useLoaded(load);
+  if (answer === undefined) {
+    return (
+      <Screen>
+        <BackButton fallback="/" />
+        <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
+      </Screen>
+    );
+  }
+  if (!answer.ok) {
+    return (
+      <Screen>
+        <BackButton fallback="/" />
+        <Notice message={answer.status === 404 ? t("report.gone") : errorText(t, answer)} />
+        <Button variant="secondary" label={t("common.retry")} onPress={reload} />
+      </Screen>
+    );
+  }
+  return <Report about={about} booking={answer.data} />;
+}
+
+function Report({
+  about,
+  booking,
+}: {
+  readonly about: ReportAbout;
+  /** The booking the two share; none for a trip. */
+  readonly booking: Booking | null;
 }) {
   const { t } = useLanguage();
   const palette = usePalette();
@@ -90,6 +132,7 @@ function Report({
   const [sent, setSent] = useState(false);
   const [callFailed, setCallFailed] = useState(false);
   const tooLong = characterCount(description.trim()) > maxLength;
+  const name = booking === null ? null : otherPerson(booking).firstName;
 
   async function send() {
     setFailed(null);
@@ -120,24 +163,23 @@ function Report({
 
   if (sent) {
     // Blocking needs a booking the two share (a person, a message, a booking).
-    const blockable = bookingId !== null && name !== null && about.kind !== "trip";
     return (
       <Screen>
         <TakesFocus>
           <Title>{t("report.thanks")}</Title>
         </TakesFocus>
         <Body>{t("report.thanksHelp")}</Body>
-        {blockable ? (
+        {booking === null ? null : (
           <Button
             variant="secondary"
-            label={t("report.blockToo", { name })}
+            label={t("report.blockToo", { name: otherPerson(booking).firstName })}
             onPress={() => {
-              router.replace({ pathname: "/bookings/[id]/block", params: { id: bookingId } });
+              router.replace({ pathname: "/bookings/[id]/block", params: { id: booking.id } });
             }}
           />
-        ) : null}
+        )}
         <Button
-          variant={blockable ? "text" : "secondary"}
+          variant={booking === null ? "secondary" : "text"}
           label={t("common.back")}
           onPress={() => {
             if (router.canGoBack()) router.back();
@@ -152,6 +194,24 @@ function Report({
     <Screen>
       <BackButton fallback="/" />
       <Title>{t(titles[about.kind], { name: name ?? "" })}</Title>
+      {category === "safety" ? (
+        // In danger, 112 comes before anything else (3.1.3), read out at once.
+        <Card>
+          <Notice message={t("report.emergency")} />
+          <Button
+            label={t("safety.call112")}
+            accessibilityLabel={t("safety.call112Label")}
+            onPress={() => {
+              setCallFailed(false);
+              Linking.openURL("tel:112").catch(() => {
+                setCallFailed(true);
+              });
+            }}
+          />
+          <Notice message={callFailed ? t("safety.callFailed") : null} />
+        </Card>
+      ) : null}
+      {about.kind === "user" ? <Body align="start">{t("report.personHint")}</Body> : null}
       <View style={styles.group}>
         <Text style={[typography.label, { color: palette.text }]}>{t("report.what")}</Text>
         <View
@@ -173,23 +233,6 @@ function Report({
         </View>
         <Notice message={missing ? t("report.choose") : null} />
       </View>
-      {category === "safety" ? (
-        // In danger, 112 comes before anything else (3.1.3).
-        <Card>
-          <Body align="start">{t("report.emergency")}</Body>
-          <Button
-            label={t("safety.call112")}
-            accessibilityLabel={t("safety.call112Label")}
-            onPress={() => {
-              setCallFailed(false);
-              Linking.openURL("tel:112").catch(() => {
-                setCallFailed(true);
-              });
-            }}
-          />
-          <Notice message={callFailed ? t("safety.callFailed") : null} />
-        </Card>
-      ) : null}
       <TextField
         label={t("report.description")}
         value={description}

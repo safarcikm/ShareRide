@@ -232,6 +232,8 @@ export const tripDetailsSchema = z.object({
   bookingMode: z.enum(bookingModes),
   /** The signed-in viewer's booking on this trip that holds seats, if any (spec 5). */
   myBooking: z.object({ id: z.uuid(), status: z.enum(bookingStatuses) }).nullable(),
+  /** Whether the signed-in viewer drives this trip, whatever its state (spec 9: not theirs to report). */
+  drivenByMe: z.boolean(),
 });
 
 export type TripDetails = z.infer<typeof tripDetailsSchema>;

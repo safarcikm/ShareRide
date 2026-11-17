@@ -155,8 +155,9 @@ export const bookingSchema = z.object({
    */
   movedFar: z.boolean(),
   /**
-   * A problem with this booking can still be reported: until 24 hours after
-   * its trip completed (R9.1).
+   * A problem with this booking can still be reported: it ran or is to run
+   * (confirmed, completed or no-show), until 24 hours after its trip
+   * completed (R9.1).
    */
   problemReportable: z.boolean(),
   driver: z.object({ firstName: z.string(), colour: peopleColourSchema }),

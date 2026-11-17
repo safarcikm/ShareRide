@@ -318,8 +318,10 @@ Built in two parts: 5a the reports themselves, 5b the operator's alert.
       conversations; a booking says whether its problem can still be
       reported (`problemReportable`)
 - [x] 5a: The report screen, its entry points (trip details, the
-      conversation and a message pressed and held, the booking page), and
-      My reports in Settings
+      conversation and a message pressed and held or right-clicked, the
+      booking page, a request and each passenger on the driver's trip
+      page), and My reports in Settings; no name in any address; a person
+      report from the chat raises Q22
 - [ ] 5b: `report_filed` to operators by push, and SMS from 07:00 to 23:00
 - Verify: integration tests (each subject and refusal, the daily limit,
   the alert's channels by time, never the reporter's name to anyone); a

@@ -255,20 +255,15 @@ function BookingDetails({
         />
       ) : null}
 
-      {/* Until 24 hours after the trip completed (R9.1). */}
-      {booking.problemReportable && problemStatuses.has(booking.status) ? (
+      {/* A booking that ran or is to run, until 24 hours after the trip completed (R9.1). */}
+      {booking.problemReportable ? (
         <Button
           variant="text"
           label={t("report.problem")}
           onPress={() => {
             router.push({
               pathname: "/report",
-              params: {
-                kind: "booking",
-                id: booking.id,
-                name: otherPerson(booking).firstName,
-                booking: booking.id,
-              },
+              params: { kind: "booking", id: booking.id },
             });
           }}
         />
@@ -534,6 +529,3 @@ const styles = StyleSheet.create({
   pay: { gap: spacing.sm },
   status: { gap: spacing.sm },
 });
-
-/** A booking that went ahead, or is about to: its trip can have a problem to report. */
-const problemStatuses = new Set<Booking["status"]>(["confirmed", "completed", "no_show"]);

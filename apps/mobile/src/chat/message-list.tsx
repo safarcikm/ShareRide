@@ -3,7 +3,7 @@ import { inIceland } from "@shareride/domain";
 import { capitalised, formatClock, formatDay } from "@shareride/i18n";
 import { CircleAlert } from "lucide-react-native";
 import { Fragment, type ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Icon } from "@/components/icon";
 import { useLanguage } from "@/i18n/language";
 import { controlOutline, iconSizes, radii, spacing, typography } from "@/theme/tokens";
@@ -157,9 +157,22 @@ function Message({
   const report = () => {
     onReport(message);
   };
+  // On the web, a right click or the keyboard's menu key (Shift+F10) reports
+  // it too. A touch's press and hold already did, and stopped the menu.
+  const contextMenu: object =
+    Platform.OS === "web"
+      ? {
+          onContextMenu: (event: { defaultPrevented: boolean; preventDefault: () => void }) => {
+            if (event.defaultPrevented) return;
+            event.preventDefault();
+            report();
+          },
+        }
+      : {};
   // Press and hold to report it; a screen reader offers it as an action.
   return (
     <Pressable
+      {...contextMenu}
       accessible
       accessibilityLabel={spokenMessage(t, locale, message, other, seen)}
       accessibilityActions={[{ name: "report", label: t("report.message") }]}

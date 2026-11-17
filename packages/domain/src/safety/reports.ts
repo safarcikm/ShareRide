@@ -1,5 +1,6 @@
 // Reporting (spec 9, 3.1 and 3.4; rules R9.1, R9.3 and R9.9): what can be
 // reported and by whom, which reports are urgent, and the operator's queue.
+import type { BookingStatus } from "../bookings/lifecycle.ts";
 import { addIcelandMonths } from "../privacy/calendar.ts";
 import { err, ok, type Result } from "../result.ts";
 import { characterCount, type SafetySettings } from "./settings.ts";
@@ -45,6 +46,7 @@ export type ReportContext =
       readonly kind: "booking";
       readonly passengerId: string;
       readonly driverId: string;
+      readonly bookingStatus: BookingStatus;
       readonly tripCompletedAt: Date | null;
     };
 
@@ -110,7 +112,8 @@ function subjectOf(
             ? context.passengerId
             : null;
       if (other === null) return err({ code: "not_involved" });
-      if (!bookingReportOpen(context.tripCompletedAt, now, settings)) {
+      if (!problemStatuses.has(context.bookingStatus)) return err({ code: "not_reportable" });
+      if (!reportWindowOpen(context.tripCompletedAt, now, settings)) {
         return err({ code: "window_closed" });
       }
       return ok(other);
@@ -118,15 +121,29 @@ function subjectOf(
   }
 }
 
-/** A problem with a booking can be reported until 24 hours after its trip completed (R9.1). */
-export function bookingReportOpen(
-  tripCompletedAt: Date | null,
+/**
+ * Bookings that ran or are to run. A request, or a booking that ended
+ * before its trip (declined, expired, cancelled), has no problem to report:
+ * a person can still be reported (R9.1).
+ */
+const problemStatuses: ReadonlySet<BookingStatus> = new Set(["confirmed", "completed", "no_show"]);
+
+/** Until 24 hours after the trip completed; a trip not completed yet is open (R9.1). */
+function reportWindowOpen(tripCompletedAt: Date | null, now: Date, settings: SafetySettings) {
+  return (
+    tripCompletedAt === null ||
+    now.getTime() <= tripCompletedAt.getTime() + settings.bookingReportHours * hourMs
+  );
+}
+
+/** Whether a problem with this booking can be reported now, by either side (R9.1). */
+export function bookingProblemReportable(
+  booking: { readonly status: BookingStatus; readonly tripCompletedAt: Date | null },
   now: Date,
   settings: SafetySettings,
 ): boolean {
   return (
-    tripCompletedAt === null ||
-    now.getTime() <= tripCompletedAt.getTime() + settings.bookingReportHours * hourMs
+    problemStatuses.has(booking.status) && reportWindowOpen(booking.tripCompletedAt, now, settings)
   );
 }
 

@@ -1,5 +1,5 @@
 {
-  "id": "89b063e6-3bf2-4bed-b94a-2d8aace69ccc",
+  "id": "3f0d48bd-bbbc-4af0-afd9-e7732a7b7242",
   "prevId": "0c99b072-cdf6-49ee-913f-5265426947cf",
   "version": "7",
   "dialect": "postgresql",
@@ -3435,6 +3435,51 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "reports_trip_index": {
+          "name": "reports_trip_index",
+          "columns": [
+            {
+              "expression": "trip_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "reports_booking_index": {
+          "name": "reports_booking_index",
+          "columns": [
+            {
+              "expression": "booking_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "reports_message_index": {
+          "name": "reports_message_index",
+          "columns": [
+            {
+              "expression": "message_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -3524,7 +3569,7 @@
         },
         "reports_closed_check": {
           "name": "reports_closed_check",
-          "value": "(\"reports\".\"status\" = 'closed') = (\"reports\".\"closed_at\" is not null and \"reports\".\"outcome\" is not null)"
+          "value": "(\"reports\".\"status\" = 'closed') = (\"reports\".\"closed_at\" is not null) and (\"reports\".\"status\" = 'closed') = (\"reports\".\"outcome\" is not null)"
         }
       },
       "isRLSEnabled": false

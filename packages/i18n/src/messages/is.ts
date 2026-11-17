@@ -734,7 +734,12 @@ export const is = {
   "report.trip": "Tilkynna þessa ferð",
   "report.message": "Tilkynna skilaboð",
   "report.problem": "Tilkynna vandamál með ferðina",
+  "report.short": "Tilkynna",
   "report.messageHint": "Haltu fingri á skilaboðum til að tilkynna þau.",
+  "report.messageHintWeb":
+    "Haltu fingri á skilaboðum, eða hægrismelltu á þau, til að tilkynna þau.",
+  "report.personHint":
+    "Með þessari tilkynningu lesum við ekki spjallið ykkar. Til að sýna okkur eitthvað sem viðkomandi skrifaði skaltu frekar tilkynna þau skilaboð í spjallinu.",
   "report.what": "Hvað gerðist?",
   "report.emergency": "Ef þú ert í hættu, hringdu strax í 112.",
   "report.category.safety": "Öryggi: hættulegur akstur, hótanir eða ofbeldi",
@@ -755,8 +760,6 @@ export const is = {
   "report.thanksHelp":
     "Við segjum þér almennt frá niðurstöðunni í Stillingum, undir Öryggi. Sá sem þú tilkynntir fær ekki að vita hver tilkynnti.",
   "report.blockToo": "Loka líka á: {name}",
-  "report.backToChat": "Aftur í spjallið",
-  "report.failed": "Ekki tókst að senda tilkynninguna. Reyndu aftur.",
   "report.gone": "Ekki er lengur hægt að tilkynna þetta.",
   "report.windowClosed":
     "Hægt er að tilkynna vandamál með bókun í allt að sólarhring eftir ferðina.",

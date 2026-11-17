@@ -1,12 +1,22 @@
-import { fireEvent, screen } from "expo-router/testing-library";
+import { fireEvent, screen, within } from "expo-router/testing-library";
 import type { Booking, MyReport, ReportBody } from "@shareride/contracts";
 import { Linking } from "react-native";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
-import { bookingApi, cancellationPreview, paidBooking } from "@/testing/bookings";
+import {
+  bookingApi,
+  cancellationPreview,
+  driverApi,
+  northBooking,
+  northMyTrip,
+  northStop,
+  paidBooking,
+  requestToDrive,
+} from "@/testing/bookings";
 import { callsTo, chatMessage, chatServer, messageId, openedLine } from "@/testing/chat";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { northResult, northTrip, tripDetailsApi } from "@/testing/search";
+import { tripsApi } from "@/testing/trips";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -19,6 +29,10 @@ jest.mock("@/lib/preferences", () => ({
 }));
 // Saturday 14 November 2026, noon in Iceland: the trip is on Sunday.
 jest.mock("@/lib/clock", () => ({ now: () => new Date("2026-11-14T12:00:00Z") }));
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
 
 const filed = (changes: Partial<MyReport> = {}): MyReport => ({
   id: "0190a1d6-0000-7000-8000-0000000000d1",
@@ -61,6 +75,7 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
     const { client } = await openTrip();
     await fireEvent.press(screen.getByRole("button", { name: "Report this trip" }));
     expect(await screen.findByRole("header", { name: "Report this trip" })).toBeVisible();
+    expect(screen).toHaveSearchParams({ kind: "trip", id: northResult.tripId });
 
     // Nothing is sent before choosing what happened.
     await fireEvent.press(screen.getByRole("button", { name: "Send report" }));
@@ -91,7 +106,12 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
   });
 
   it("is not offered for my own trip", async () => {
-    await openTrip({ part: { state: "own" } });
+    await openTrip({ part: { state: "own" }, drivenByMe: true });
+    expect(screen.queryByRole("button", { name: "Report this trip" })).toBeNull();
+  });
+
+  it("is not offered to its driver once it has left, or been cancelled", async () => {
+    await openTrip({ part: { state: "departed" }, drivenByMe: true });
     expect(screen.queryByRole("button", { name: "Report this trip" })).toBeNull();
   });
 
@@ -109,7 +129,10 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
     await fireEvent.press(
       await screen.findByRole("radio", { name: "Safety: dangerous driving, threats or violence" }),
     );
-    expect(screen.getByText("If you are in danger, call 112 now.")).toBeVisible();
+    // Read out at once, as an alert, above what happened (3.1.3).
+    expect(
+      within(screen.getByRole("alert")).getByText("If you are in danger, call 112 now."),
+    ).toBeVisible();
     await fireEvent.press(
       screen.getByRole("button", { name: "Emergency: 112. Calls the emergency number" }),
     );
@@ -179,6 +202,13 @@ describe("Reporting from a conversation (spec 9, 3.1.1)", () => {
     expect(screen.getByText("Press and hold a message to report it.")).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Report Anna" }));
     expect(await screen.findByRole("header", { name: "Report Anna" })).toBeVisible();
+    // Anna is named from the booking, not from the address.
+    expect(screen).toHaveSearchParams({ kind: "user", id: paidBooking.id });
+    expect(
+      screen.getByText(
+        "This report doesn't let us read your conversation. To show us something they wrote, report that message in the chat instead.",
+      ),
+    ).toBeVisible();
     await fireEvent.press(screen.getByRole("radio", { name: "Harassment or unwanted contact" }));
     await fireEvent.press(screen.getByRole("button", { name: "Send report" }));
 
@@ -245,9 +275,61 @@ describe("Reporting a problem with a booking (spec 9, 3.1.1; R9.1)", () => {
   });
 
   it("is not offered for a request", async () => {
-    await openBooking({ ...paidBooking, status: "requested", confirmed: null });
+    // As the server answers for a request.
+    await openBooking({
+      ...paidBooking,
+      status: "requested",
+      confirmed: null,
+      problemReportable: false,
+    });
     expect(await screen.findByRole("button", { name: "Withdraw request" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Report a problem with this trip" })).toBeNull();
+  });
+});
+
+describe("Reporting from the driver's trip (spec 9, 3.1.1)", () => {
+  const jon = northBooking({
+    id: "0190a1d6-0000-7000-8000-0000000000b5",
+    viewer: "driver",
+    status: "confirmed",
+    board: northStop(0),
+    alight: northStop(2),
+    requestExpiresAt: null,
+    passenger: { firstName: "Jón", colour: 3, memberSince: "2026-10" },
+    confirmed: { registration: "AB 123", whereToStand: null },
+  });
+
+  async function openDriverTrip() {
+    const app = await renderApp(`/drive/trips/${northMyTrip.id}`, {
+      me: completeMe,
+      setUp: (client) => {
+        tripsApi(client, [northMyTrip]);
+        driverApi(client, [requestToDrive, jon]);
+        reportsApi(client);
+      },
+    });
+    expect(await screen.findByLabelText("Jón, 1 seat, Confirmed")).toBeVisible();
+    return app;
+  }
+
+  it("reports a passenger, named from the booking", async () => {
+    const { client } = await openDriverTrip();
+    await fireEvent.press(screen.getByRole("button", { name: "Report Jón" }));
+    expect(await screen.findByRole("header", { name: "Report Jón" })).toBeVisible();
+    expect(screen).toHaveSearchParams({ kind: "user", id: jon.id });
+    await fireEvent.press(screen.getByRole("radio", { name: "Something else" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Send report" }));
+    await screen.findByRole("header", { name: "Thank you. We look at every report." });
+    expect(reportsSent(client)).toEqual([
+      { about: { kind: "user", bookingId: jon.id }, category: "other", description: "" },
+    ]);
+  });
+
+  it("reports the person behind an unkind request", async () => {
+    await openDriverTrip();
+    await fireEvent.press(screen.getByRole("button", { name: "Report Gunna" }));
+    expect(await screen.findByRole("header", { name: "Report Gunna" })).toBeVisible();
+    expect(screen).toHaveSearchParams({ kind: "user", id: requestToDrive.id });
   });
 });
 

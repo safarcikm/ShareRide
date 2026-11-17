@@ -1,4 +1,3 @@
-import type { Booking } from "@shareride/contracts";
 import { capitalised, formatDay } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import {
@@ -116,7 +115,8 @@ export default function ConversationScreen() {
               variant="text"
               label={t("report.person", { name: otherPerson(booking).firstName })}
               onPress={() => {
-                router.push({ pathname: "/report", params: reportPerson(booking) });
+                // No name in the address: the report screen reads it from the booking.
+                router.push({ pathname: "/report", params: { kind: "user", id: booking.id } });
               }}
             />
             {conversation.blockedByMe ? null : (
@@ -138,7 +138,7 @@ export default function ConversationScreen() {
         <Notice kind="info" urgent={false} message={t("chat.safetyTip")} />
         {messages.some((message) => message.from === "them") ? (
           <Text style={[typography.small, { color: palette.textMuted }]}>
-            {t("report.messageHint")}
+            {t(Platform.OS === "web" ? "report.messageHintWeb" : "report.messageHint")}
           </Text>
         ) : null}
         {hasEarlier ? (
@@ -158,12 +158,7 @@ export default function ConversationScreen() {
           onReport={(message) => {
             router.push({
               pathname: "/report",
-              params: {
-                kind: "message",
-                id: message.id,
-                name: otherPerson(booking).firstName,
-                booking: booking.id,
-              },
+              params: { kind: "message", id: message.id, booking: booking.id },
             });
           }}
         />
@@ -172,14 +167,6 @@ export default function ConversationScreen() {
     </KeyboardAvoidingView>
   );
 }
-
-/** Reporting the other person of the booking: named through the booking, never by ID. */
-const reportPerson = (booking: Booking) => ({
-  kind: "user",
-  id: booking.id,
-  name: otherPerson(booking).firstName,
-  booking: booking.id,
-});
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },

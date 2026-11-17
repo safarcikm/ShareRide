@@ -20,7 +20,7 @@ CREATE TABLE "reports" (
 	CONSTRAINT "reports_category_check" CHECK ("reports"."category" in ('safety', 'harassment', 'discrimination', 'scam', 'false_info', 'offensive', 'not_as_listed', 'other')),
 	CONSTRAINT "reports_status_check" CHECK ("reports"."status" in ('open', 'closed')),
 	CONSTRAINT "reports_outcome_check" CHECK ("reports"."outcome" is null or "reports"."outcome" in ('action_taken', 'no_breach')),
-	CONSTRAINT "reports_closed_check" CHECK (("reports"."status" = 'closed') = ("reports"."closed_at" is not null and "reports"."outcome" is not null))
+	CONSTRAINT "reports_closed_check" CHECK (("reports"."status" = 'closed') = ("reports"."closed_at" is not null) and ("reports"."status" = 'closed') = ("reports"."outcome" is not null))
 );
 --> statement-breakpoint
 ALTER TABLE "reports" ADD CONSTRAINT "reports_reporter_id_users_id_fk" FOREIGN KEY ("reporter_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
@@ -33,4 +33,7 @@ ALTER TABLE "reports" ADD CONSTRAINT "reports_closed_by_id_users_id_fk" FOREIGN 
 CREATE INDEX "reports_reporter_index" ON "reports" USING btree ("reporter_id","created_at");--> statement-breakpoint
 CREATE INDEX "reports_subject_user_index" ON "reports" USING btree ("subject_user_id");--> statement-breakpoint
 CREATE INDEX "reports_open_index" ON "reports" USING btree ("urgent","created_at") WHERE "reports"."status" = 'open';--> statement-breakpoint
-CREATE INDEX "reports_conversation_index" ON "reports" USING btree ("conversation_id");
+CREATE INDEX "reports_conversation_index" ON "reports" USING btree ("conversation_id");--> statement-breakpoint
+CREATE INDEX "reports_trip_index" ON "reports" USING btree ("trip_id");--> statement-breakpoint
+CREATE INDEX "reports_booking_index" ON "reports" USING btree ("booking_id");--> statement-breakpoint
+CREATE INDEX "reports_message_index" ON "reports" USING btree ("message_id");

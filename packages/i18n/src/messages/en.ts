@@ -731,7 +731,11 @@ export const en = {
   "report.trip": "Report this trip",
   "report.message": "Report message",
   "report.problem": "Report a problem with this trip",
+  "report.short": "Report",
   "report.messageHint": "Press and hold a message to report it.",
+  "report.messageHintWeb": "Press and hold a message, or right-click it, to report it.",
+  "report.personHint":
+    "This report doesn't let us read your conversation. To show us something they wrote, report that message in the chat instead.",
   "report.what": "What happened?",
   "report.emergency": "If you are in danger, call 112 now.",
   "report.category.safety": "Safety: dangerous driving, threats or violence",
@@ -752,8 +756,6 @@ export const en = {
   "report.thanksHelp":
     "We'll tell you what we found, in general terms, in Settings under Safety. The person you reported won't be told who reported them.",
   "report.blockToo": "Block {name} too",
-  "report.backToChat": "Back to the conversation",
-  "report.failed": "We couldn't send the report. Try again.",
   "report.gone": "This can no longer be reported.",
   "report.windowClosed": "A problem with a booking can be reported until 24 hours after the trip.",
   "report.tooMany":

@@ -1,4 +1,9 @@
-import { reportCategories, reportOutcomes, reportStatuses } from "@shareride/domain";
+import {
+  reportCategories,
+  reportOutcomes,
+  reportStatuses,
+  reportSubjects,
+} from "@shareride/domain";
 import { z } from "zod";
 import { bookingSchema, peopleColourSchema } from "./bookings.ts";
 import { timestampSchema } from "./common.ts";
@@ -97,7 +102,7 @@ export type ReportBody = z.input<typeof reportBodySchema>;
 /** A report as its reporter sees it (3.1.7): never anything of the operator's notes. */
 export const myReportSchema = z.object({
   id: z.uuid(),
-  kind: z.enum(["user", "trip", "message", "review", "booking"]),
+  kind: z.enum(reportSubjects),
   category: z.enum(reportCategories),
   /** The person reported, by first name; empty once their account is deleted. */
   firstName: z.string().nullable(),
