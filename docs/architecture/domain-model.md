@@ -39,6 +39,7 @@ erDiagram
 | Field | Notes |
 | ----- | ----- |
 | `id` | UUID v7 |
+| `profile_id` | Random UUID; the only reference to the person on their public profile (`/people/{profile_id}`), so the `id` is never handed to everyone |
 | `phone` | E.164, verified; unique |
 | `email` | Optional, verified if present |
 | `first_name`, `photo`, `bio` | Public profile; last name is never shown publicly |
