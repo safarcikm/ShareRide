@@ -266,7 +266,8 @@ completed).
   marked removed, and the other person reads "Removed by ShareRide".
   A review is hidden the same way (`reviews.hidden_at`, from milestone
   7): it no longer shows to the person it is about, nor counts in their
-  rating. Reversing an appeal on a cancelled trip leaves
+  rating. A review whose author's account was erased stays under the
+  former member and can still be hidden, with no notice. Reversing an appeal on a cancelled trip leaves
   the cancellation, and whether it counts on reliability is changed on
   the trip (3.5.3, PR 8). Left for later: a notice names the kind of
   content, not which trip or message, so the operator's reason says
