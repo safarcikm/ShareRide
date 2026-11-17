@@ -9,6 +9,8 @@ export const onboardingStepSchema = z.enum(["phone", "legal", "profile"]);
 /** The signed-in person's own account. Only they see the phone number and email. */
 export const meSchema = z.object({
   id: z.uuid(),
+  /** My public profile's own reference (`/people/{profileId}`), never my ID. */
+  profileId: z.uuid(),
   phoneNumber: z.string().nullable(),
   firstName: z.string().nullable(),
   about: z.string().nullable(),

@@ -741,6 +741,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   last 12 months, from 5 that count, with the counts by role. Nobody leaving
   ShareRide has a profile, and what they wrote shows nowhere until they are
   erased.
+- Public profiles in the app (milestone 7, PR 7b, spec 8, screen 7): a
+  member signed in opens the driver's profile from trip details ("See
+  profile"). It shows the first name, about, languages, the month they
+  joined and the verified badges; the rating to one decimal ("4.3 (3
+  ratings)", or "No ratings yet"); the reliability figure, or "not enough
+  trips yet" before 5 count, which opens the counts by role when tapped;
+  and the reviews, newest first, each with the stars, the author's first
+  name, how they travelled and the month, for both roles or one, with
+  "Show more reviews". "See it as others do" now shows the same, from the
+  API. `GET /v1/me` gives `profileId`, and trip details gives the driver's
+  to members signed in only. The reviews journey ends on the driver's
+  profile.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
@@ -922,6 +934,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   notification log and drafts, and the account itself) until its end. The
   `privacy` command shows the last run of each rule (`runs`) and lists,
   sets and ends holds (`holds`, `hold`, `end-hold`), each in the audit log.
+- Erasure blocks a suspended person's number only until their suspension
+  ends, at most 3 years, now that suspensions have an end (R11.9); a
+  suspension for good still gets the 3 years.
 - Trips and bookings are made anonymous 3 years after the trip (spec 11,
   3.7): the hourly clean-up moves the trip, its bookings, "I'm here" and
   reports to the former member with their free text emptied, and gives

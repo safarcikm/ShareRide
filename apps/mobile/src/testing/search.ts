@@ -113,7 +113,8 @@ export function northTrip(
       ...partChanges,
     },
     seatsOffered: 3,
-    driver: { firstName: "Anna", colour: 1 },
+    // As a visitor not signed in sees it: no profile reference.
+    driver: { firstName: "Anna", colour: 1, profileId: null },
     car: { make: "Toyota", model: "Yaris", colour: "white" },
     preferences: {
       luggage: "suitcase",
