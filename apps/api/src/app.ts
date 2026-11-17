@@ -21,7 +21,7 @@ import { requestId } from "hono/request-id";
 import { routePath } from "hono/route";
 import { secureHeaders } from "hono/secure-headers";
 import type { AppEnv } from "./context.ts";
-import { errorBody } from "./errors.ts";
+import { errorBody, errorResponse } from "./errors.ts";
 import type { Logger } from "./logger.ts";
 import {
   createOperatorSessionService,
@@ -59,7 +59,9 @@ import { createDrivingService, registerDrivingRoutes } from "./modules/driving/i
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
   createMeetingPointAdminService,
+  createMeetingPointPhotoService,
   createMeetingPointService,
+  registerMeetingPointPhotoAdminRoutes,
   registerMeetingPointRoutes,
   registerMeetingPointsAdminRoutes,
 } from "./modules/meeting-points/index.ts";
@@ -97,6 +99,12 @@ import { createMemoryRateLimiter } from "./platform/memory-rate-limiter.ts";
 import type { PaymentProvider } from "./platform/payments.ts";
 import type { EmailChannel } from "./platform/email.ts";
 import type { SmsSender } from "./platform/sms.ts";
+import {
+  photoFilesPath,
+  photoKeyPattern,
+  type FolderPhotoStorage,
+  type PhotoStorage,
+} from "./platform/photo-storage.ts";
 import { createAdminApp } from "./admin-app.ts";
 import { createWebApp } from "./web-app.ts";
 
@@ -127,6 +135,10 @@ export interface FeatureDependencies {
    * Left out, the console's sign-in is off.
    */
   readonly adminOrigin?: string;
+  /** Where meeting point photos are kept (ADR 0022); none when `PHOTO_STORAGE=none`. */
+  readonly photos?: PhotoStorage;
+  /** The same storage when it is a folder, whose files the API serves itself. */
+  readonly photoFiles?: FolderPhotoStorage;
 }
 
 /** Where the request was when an unexpected error happened. No personal data. */
@@ -279,12 +291,27 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     const driving = createDrivingService({ ...features, account });
     registerDrivingRoutes(app, driving, requireAuth);
     registerLegalRoutes(app, legal);
-    registerMeetingPointRoutes(app, createMeetingPointService(features));
-    registerMeetingPointsAdminRoutes(app, {
+    const photos = createMeetingPointPhotoService({ ...features, logger });
+    registerMeetingPointRoutes(app, createMeetingPointService(features), photos);
+    const meetingPointsAdmin = {
       ...features,
       meetingPoints: createMeetingPointAdminService(features),
+      photos,
       requireOperator,
-    });
+    };
+    registerMeetingPointsAdminRoutes(app, meetingPointsAdmin);
+    registerMeetingPointPhotoAdminRoutes(app, meetingPointsAdmin);
+    const { photoFiles } = features;
+    if (photoFiles !== undefined) {
+      // Development and tests only: the configuration refuses a folder in production.
+      app.get(`${photoFilesPath}/*`, async (c) => {
+        const key = c.req.path.slice(photoFilesPath.length + 1);
+        const file = photoKeyPattern.test(key) ? await photoFiles.read(key) : undefined;
+        if (file === undefined)
+          return errorResponse(c, 404, "not_found", "There is no such photo.");
+        return c.body(file, 200, { "Content-Type": "image/jpeg", "Cache-Control": "no-cache" });
+      });
+    }
     // Before the trip routes, so /v1/trips/search is never taken for a trip's ID.
     registerSearchRoutes(app, {
       // Operator settings (feature H4) replace the defaults later.
@@ -389,10 +416,15 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     info: { title: "ShareRide API", version: "1" },
   });
 
+  const photoOrigin = dependencies.features?.photos?.origin ?? null;
   const webApp =
-    dependencies.webAppDir === undefined ? undefined : createWebApp(dependencies.webAppDir);
+    dependencies.webAppDir === undefined
+      ? undefined
+      : createWebApp(dependencies.webAppDir, photoOrigin);
   const adminApp =
-    dependencies.adminAppDir === undefined ? undefined : createAdminApp(dependencies.adminAppDir);
+    dependencies.adminAppDir === undefined
+      ? undefined
+      : createAdminApp(dependencies.adminAppDir, photoOrigin);
   app.notFound(
     async (c: Context<AppEnv, string>) =>
       (await adminApp?.(c)) ??

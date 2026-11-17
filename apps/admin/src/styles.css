@@ -283,6 +283,48 @@ code {
   text-decoration: none;
 }
 
+/* Where a form's result shows; it takes no room until there is one. */
+.message:empty {
+  display: none;
+}
+
+/* Which reports a list shows; the one on show is marked as in the menu. */
+.views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.views a[aria-current="page"] {
+  background: var(--color-primary-soft);
+}
+
+/* A trip's stops: times stay whole on a phone, and a stop's tags go under its name. */
+.stops th,
+.stops td {
+  overflow-wrap: normal;
+}
+
+.stops td {
+  white-space: nowrap;
+}
+
+.stops .tags {
+  margin-top: var(--space-xs);
+}
+
+/* An outcome to choose, with what it does under its label. */
+.outcomes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.outcomes .hint {
+  margin: 0;
+  padding-left: calc(var(--space-lg) + var(--space-sm));
+}
+
 /* The map above the list on a phone; beside it from 900 wide (below). */
 .split {
   display: grid;

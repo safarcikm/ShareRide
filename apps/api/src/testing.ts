@@ -15,6 +15,7 @@ import { exportCipherPurpose } from "./modules/privacy/index.ts";
 import { createFileCipher, createKeyedHasher } from "./platform/crypto.ts";
 import { createFakeEmailSender, type FakeEmailSender } from "./platform/email.ts";
 import { createTestPaymentProvider } from "./platform/payments.ts";
+import { createFakePhotoStorage, type FakePhotoStorage } from "./platform/photo-storage.ts";
 import { createDevSmsSender, type DevSmsSender, type SmsSender } from "./platform/sms.ts";
 
 export interface TestApi {
@@ -27,6 +28,8 @@ export interface TestApi {
   readonly sms: DevSmsSender;
   /** The emails sent from requests, such as links to verify an address. */
   readonly email: FakeEmailSender;
+  /** Meeting point photos' files, kept in memory. */
+  readonly photos: FakePhotoStorage;
   /** While set, sending fails with this error after the message reaches `sms.outbox`. */
   smsFailure: Error | null;
   /** Every log line written so far. */
@@ -86,6 +89,7 @@ export async function startTestApi(): Promise<TestApi> {
   });
 
   const email = createFakeEmailSender();
+  const photos = createFakePhotoStorage();
   const features: FeatureDependencies = {
     db: connection.db,
     sms: sender,
@@ -97,6 +101,7 @@ export async function startTestApi(): Promise<TestApi> {
     secureCookies: false,
     payments: createTestPaymentProvider(),
     adminOrigin: testAdminOrigin,
+    photos,
   };
   const app = createApp({
     logger,
@@ -109,6 +114,7 @@ export async function startTestApi(): Promise<TestApi> {
     features,
     sms,
     email,
+    photos,
     get smsFailure() {
       return failing.error;
     },
