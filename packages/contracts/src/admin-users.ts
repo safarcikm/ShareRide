@@ -22,7 +22,7 @@ import { defineRoute } from "./route.ts";
 // operator needs, a trip's page with its bookings, notes operators write
 // about a person, and each driver's request decline rate (3.4.5). Suspending
 // and reinstating use the moderation routes. Only operators reach these
-// routes; the person gets the notes about them in Download my data (Q24).
+// routes; the person gets the notes about them in Download my data (Q25).
 
 /** The most people or trips one search lists; `more` says when there were more. */
 export const adminSearchShown = 50;
@@ -44,7 +44,7 @@ export type AdminUserListItem = z.infer<typeof adminUserListItemSchema>;
 /**
  * A note an operator wrote about a person (3.5.3). Only operators see it in
  * the console; the person gets its text and date in Download my data, never
- * who wrote it (Q24).
+ * who wrote it (Q25).
  */
 export const adminOperatorNoteSchema = z.object({
   id: z.uuid(),

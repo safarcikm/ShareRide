@@ -352,7 +352,7 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
   },
   operator_notes: {
     category: "moderation",
-    // The notes about the person, never who wrote them (spec 9, 3.5.3; Q24).
+    // The notes about the person, never who wrote them (spec 9, 3.5.3; Q25).
     export: { section: "notes" },
     personColumns: ["userId", "byId"],
     // Notes about the person go with them: the erasure deletes them by
