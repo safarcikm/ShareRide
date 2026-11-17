@@ -87,7 +87,7 @@ export interface DeletionServiceDependencies {
 const point = (nameIs: string, nameEn: string | null) => ({ is: nameIs, en: nameEn ?? nameIs });
 
 /** Everything open for `userId` now, as the domain rule and the app need it. */
-async function openFor(q: Queryable, userId: string, now: Date, settings: TripDaySettings) {
+export async function openFor(q: Queryable, userId: string, now: Date, settings: TripDaySettings) {
   const driving = await q
     .select({
       id: trips.id,
@@ -260,6 +260,16 @@ async function openFor(q: Queryable, userId: string, now: Date, settings: TripDa
   };
 }
 
+/** Locks the trips `userId` drives that can still be booked, in the order every path takes them. */
+export async function lockDrivenTrips(q: Queryable, userId: string): Promise<void> {
+  await q
+    .select({ id: trips.id })
+    .from(trips)
+    .where(and(eq(trips.driverId, userId), inArray(trips.status, ["published", "departed"])))
+    .orderBy(asc(trips.id))
+    .for("update");
+}
+
 export function createDeletionService(dependencies: DeletionServiceDependencies): DeletionService {
   const { db, clock, auth, tripDaySettings, logger } = dependencies;
 
@@ -280,12 +290,7 @@ export function createDeletionService(dependencies: DeletionServiceDependencies)
         // so they book or publish nothing meanwhile, then the trips they
         // drive, so nobody books on them.
         await tx.select({ id: users.id }).from(users).where(eq(users.id, userId)).for("update");
-        await tx
-          .select({ id: trips.id })
-          .from(trips)
-          .where(and(eq(trips.driverId, userId), inArray(trips.status, ["published", "departed"])))
-          .orderBy(asc(trips.id))
-          .for("update");
+        await lockDrivenTrips(tx, userId);
         if (!(await openFor(tx, userId, now, tripDaySettings)).allowed) {
           return err({ code: "deletion_blocked" as const });
         }

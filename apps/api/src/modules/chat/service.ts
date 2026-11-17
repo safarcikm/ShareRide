@@ -140,6 +140,19 @@ export function systemLineOf(
 function present(row: MessageRow, viewerId: string, viewer: TripRole): ChatMessage {
   const from = row.senderId === null ? "system" : row.senderId === viewerId ? "me" : "them";
   const mine = from === "me";
+  if (row.erasedAt !== null) {
+    return {
+      id: row.id,
+      from,
+      kind: "erased",
+      text: null,
+      quick: null,
+      system: null,
+      clientId: null,
+      sentAt: row.sentAt.toISOString(),
+      readAt: null,
+    };
+  }
   return {
     id: row.id,
     from,

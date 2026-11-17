@@ -20,6 +20,7 @@ import { MessageList } from "@/chat/message-list";
 import { otherPerson } from "@/chat/texts";
 import { useConversation } from "@/chat/use-conversation";
 import { useLanguage } from "@/i18n/language";
+import { firstNameOf } from "@/people/texts";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
@@ -102,7 +103,7 @@ export default function ConversationScreen() {
       >
         <BackButton fallback="/messages" />
         <View>
-          <Title align="start">{otherPerson(booking).firstName}</Title>
+          <Title align="start">{firstNameOf(t, otherPerson(booking))}</Title>
           <Text style={[typography.small, { color: palette.textMuted }]}>
             {`${day} · ${route}`}
           </Text>

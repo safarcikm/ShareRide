@@ -156,10 +156,12 @@ export const bookingSchema = z.object({
    * refund, without it counting against them (R6.3).
    */
   movedFar: z.boolean(),
-  driver: z.object({ firstName: z.string(), colour: peopleColourSchema }),
+  /** `firstName` is null for a former member, whose data was erased (spec 11, 3.5). */
+  driver: z.object({ firstName: z.string().nullable(), colour: peopleColourSchema }),
   /** Ratings and reliability come with spec 8; until then every member is new. */
   passenger: z.object({
-    firstName: z.string(),
+    /** Null for a former member, whose data was erased (spec 11, 3.5). */
+    firstName: z.string().nullable(),
     colour: peopleColourSchema,
     /** The year and month they joined, such as 2026-11. */
     memberSince: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),

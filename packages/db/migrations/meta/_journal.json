@@ -183,6 +183,13 @@
       "when": 1794887624001,
       "tag": "0025_account_deletion",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794889422148,
+      "tag": "0026_account_erasure",
+      "breakpoints": true
     }
   ]
 }

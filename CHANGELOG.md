@@ -555,6 +555,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   undoes it, leaving a suspension in place. Nothing new is booked or
   published while it waits. An email says when the data will be erased.
   The export now has the person's own check-in times.
+- Erasure 7 days after "Delete my account" (spec 11, 3.5), in the hourly
+  clean-up: what was the person's alone is deleted, and their trips,
+  bookings and the cars those used move to one shared former member
+  without free text or number plates, so the people they rode with keep
+  their bookings, payments and history. Their messages read "Message
+  deleted", and the app shows "A former member" for them. A suspended
+  person's number cannot sign up again until the suspension would have
+  ended. After a database restore, `privacy reapply-erasures` erases the
+  accounts again.
 
 ### Fixed
 

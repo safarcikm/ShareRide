@@ -60,7 +60,8 @@ in capitals without spaces or hyphens, 2 to 8 letters and digits; shown only
 to booked passengers), `removed_at` (a removed car leaves the driver's list
 and their drafts, and stays on the published trips that used it; a car no
 published trip used is deleted; a car on a trip that has not ended cannot
-be removed). Who owns the car in real life does not
+be removed; when the driver's account is erased, a car trips used stays with
+them for the former member, without its plate). Who owns the car in real life does not
 matter; the user is responsible for being allowed to use it
 ([spec 3](../specs/2026-11-13-post-a-trip.md#32-cars)).
 
@@ -196,7 +197,9 @@ planned arrival). Messages have `sender_id` (empty for a system line), `kind`
 (`text`, `quick`, `system`), `body` for a text, or `key` and `params` for a
 quick message or system line, `client_id` (one message per client ID and
 sender, so a retry is stored once; only a message to all passengers puts
-one client ID in several conversations of a trip), `sent_at`, `read_at`.
+one client ID in several conversations of a trip), `sent_at`, `read_at`, and `erased_at` (when the sender's account was erased:
+the text, key and params are emptied, the sender becomes the former member,
+and the message reads "Message deleted", [spec 11](../specs/2026-11-13-privacy-self-service.md#35-what-is-erased-and-what-is-kept)).
 Opened in the transaction that confirms the booking. Retained per the
 [privacy](../compliance/privacy-gdpr.md#retention) schedule. See
 [spec 7](../specs/2026-11-13-chat-and-notifications.md#6-data-and-api).

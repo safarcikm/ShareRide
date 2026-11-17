@@ -1,0 +1,59 @@
+// The `privacy` command (spec 11; plan, decision 3), until the console has
+// privacy pages: `pnpm --filter @shareride/api privacy reapply-erasures`
+// after a restore erases again every erased account that came back
+// (runbook, "Restore the database"). On a server, run it in the API's
+// shell. Needs DATABASE_URL (the restored database) and AUTH_SECRET, the
+// API's own; PREVIOUS_DATABASE_URL, the old database, when it can be
+// reached, for the erasures made after the restore's point.
+import { connectDatabase, schema } from "@shareride/db";
+import { defaultTripDaySettings } from "@shareride/domain";
+import { createLogger } from "./logger.ts";
+import { runPrivacyCommand } from "./modules/privacy/command.ts";
+import { createErasure } from "./modules/privacy/erasure.ts";
+import { createKeyedHasher } from "./platform/crypto.ts";
+
+const url = process.env["DATABASE_URL"];
+if (url === undefined || url === "") {
+  process.stderr.write("DATABASE_URL is not set. Copy .env.example to .env first.\n");
+  process.exit(1);
+}
+const authSecret = process.env["AUTH_SECRET"];
+if (authSecret === undefined || authSecret === "") {
+  process.stderr.write("AUTH_SECRET is not set: the API's own secret, the same value.\n");
+  process.exit(1);
+}
+
+const previousUrl = process.env["PREVIOUS_DATABASE_URL"];
+
+const connection = connectDatabase(url, {
+  maxConnections: 1,
+  applicationName: "shareride-privacy",
+});
+try {
+  process.exitCode = await runPrivacyCommand(process.argv.slice(2), {
+    erasure: createErasure({
+      db: connection.db,
+      clock: () => new Date(),
+      hasher: createKeyedHasher(authSecret),
+      tripDaySettings: defaultTripDaySettings,
+      logger: createLogger({ level: "info" }),
+    }),
+    previous:
+      previousUrl === undefined || previousUrl === ""
+        ? undefined
+        : async () => {
+            const old = connectDatabase(previousUrl, {
+              maxConnections: 1,
+              applicationName: "shareride-privacy",
+            });
+            try {
+              return await old.db.select().from(schema.erasedAccounts);
+            } finally {
+              await old.close();
+            }
+          },
+    write: (line) => process.stdout.write(`${line}\n`),
+  });
+} finally {
+  await connection.close();
+}

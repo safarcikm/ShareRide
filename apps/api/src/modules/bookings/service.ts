@@ -484,9 +484,9 @@ function present(row: BookingRow, viewerId: string, now: Date, settings: TripDay
     }),
     // Null only for a booking the previous version made during a deploy.
     movedFar: movedFar(booking.departsAtWhenBooked ?? departsAt, departsAt),
-    driver: { firstName: row.driverName ?? "", colour: peopleColourOf(trip.driverId) },
+    driver: { firstName: row.driverName, colour: peopleColourOf(trip.driverId) },
     passenger: {
-      firstName: row.passengerName ?? "",
+      firstName: row.passengerName,
       colour: peopleColourOf(booking.passengerId),
       // The month only, as profiles show it (Iceland keeps UTC all year).
       memberSince: row.passengerSince.toISOString().slice(0, 7),

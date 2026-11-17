@@ -87,7 +87,8 @@ pnpm --filter @shareride/mobile export # bundles for iOS, Android and web (dist/
 pnpm --filter @shareride/mobile e2e:web  # build the web app; Playwright journeys against a test API
 pnpm --filter @shareride/admin dev     # the operator console at localhost:5173/admin/ (run the API with ADMIN_ORIGIN=http://localhost:5173)
 pnpm --filter @shareride/admin build   # the console's build (dist/); the API serves it at /admin when ADMIN_APP_DIR points at it
-pnpm --filter @shareride/api clean-up  # delete sign-in records, drafts, chats, notification logs, console sign-in records and data exports past retention (hourly on servers)
+pnpm --filter @shareride/api clean-up  # delete sign-in records, drafts, chats, notification logs, console sign-in records and data exports past retention, and erase deleted accounts (hourly on servers)
+pnpm --filter @shareride/api privacy reapply-erasures  # after a database restore: erase again the accounts erased since (runbook)
 pnpm --filter @shareride/api expire-bookings  # store booking deadlines that passed, once (the API does it every minute)
 pnpm --filter @shareride/api operator add <phone or user ID>  # give the console role, print a passkey setup link (also remove, list)
 pnpm --filter @shareride/api test:contract  # 46elks, Vonage and Mailjet checks, need their keys; not in CI

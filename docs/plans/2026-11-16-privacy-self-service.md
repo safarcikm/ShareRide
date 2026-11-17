@@ -214,8 +214,12 @@ person with no first name.
 
 After a restore, `privacy reapply-erasures` erases again every ID in
 `erased_accounts` that came back, before the services point at the
-restored database (runbook, "Restore the database"). Accounts whose wait
-ended before the backup are erased by the next run anyway.
+restored database (runbook, "Restore the database"). With
+`PREVIOUS_DATABASE_URL` it first copies the old database's list, which
+holds the erasures made after the restore's point. Accounts whose wait
+ended before the backup are erased by the next run anyway. One account
+that fails to erase is logged and reported, and does not stop the
+others.
 
 ### 4.7 Retention runs and holds
 
@@ -312,10 +316,10 @@ journeys, and gets a code review before it opens.
 
 ### PR 7: `feat(privacy)`: erasure after 7 days
 
-- [ ] The `accounts` rule (4.6); `erased_accounts`; `blocked_numbers` and
+- [x] The `accounts` rule (4.6); `erased_accounts`; `blocked_numbers` and
       the sign-up refusal; `messages.erased_at`; "Message deleted" and "A
-      former member" in the answers; `privacy reapply-erasures` and the
-      runbook step
+      former member" in the answers and the app's existing screens;
+      `privacy reapply-erasures` and the runbook step
 - Verify: integration tests (every category of 3.5; the other people's
   trips, bookings, payments and reliability unchanged; a second run
   changes nothing; an undo just before the run wins; a blocked number

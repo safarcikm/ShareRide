@@ -1,5 +1,6 @@
 import type { Booking, MyTrip } from "@shareride/contracts";
 import { carText, formatClock, formatDay, type Locale, type Translate } from "@shareride/i18n";
+import { firstNameOf } from "@/people/texts";
 
 // The text "Share trip details" sends (spec 9, 3.3.3): date and time, from
 // and to, the meeting point, the driver's first name and the car with its
@@ -25,7 +26,7 @@ export function bookingShareText(t: Translate, locale: Locale, booking: Booking)
     t("share.when", { date: formatDay(at, locale), time: formatClock(at) }),
     t("search.route", { from: point, to: alight.meetingPoint.name[locale] }),
     where === null ? t("share.point", { point }) : t("share.pointWhere", { point, where }),
-    t("share.driver", { driver: booking.driver.firstName }),
+    t("share.driver", { driver: firstNameOf(t, booking.driver) }),
     carName === null
       ? null
       : confirmed.registration === null
