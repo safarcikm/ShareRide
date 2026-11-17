@@ -674,7 +674,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   person's first name, about, languages, badges, the month they joined,
   colour, rating and reliability figure, never their phone number, email, last name or
   user ID. A profile is reached by its own random reference: migration
-  `0037_profile_ids` adds `users.profile_id`. The rating is the average of
+  `0038_profile_ids` adds `users.profile_id`. The rating is the average of
   the reviews that show, to one decimal; `GET /v1/people/{profileId}/reviews`
   lists them newest first, 20 at a time, for one role or both, with the
   author's first name ("A former member" once erased) and the month. The
@@ -710,7 +710,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   the operator's note and an audit entry, and the people below 80%. Trips
   and bookings save whether their cancellation was excused by its reason,
   and when and why the operator overruled it (migration
-  `0038_reliability_overrules`). "Download my data" tells whoever
+  `0039_reliability_overrules`). "Download my data" tells whoever
   cancelled whether it counts and when ShareRide made it count; a booking
   the driver cancelled no longer shows this in the passenger's file. The
   operator's note goes when the account of whoever cancelled is erased.
@@ -850,6 +850,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   (semicolons, decimal commas) are read too, and a name already in use is
   skipped, so the same file twice adds nothing. The domain's
   `readMeetingPointImport` reads and checks the file.
+- "Something wrong here?" on a meeting point's details in the app
+  (milestone 8, PR 10a; spec 2, 3.5): signed in, a person chooses what is
+  wrong (closed or moved, unsafe, wrong location, wrong information,
+  other) and may add a note of up to 300 characters, at most 5 reports in
+  24 hours (R2.8, a setting). Signed out, the screen asks to sign in and
+  opens the form again afterwards. Reports go to `meeting_point_issues`
+  through `POST /v1/meeting-points/{id}/issues` for the operator's queue,
+  and the open ones are in Download my data.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.

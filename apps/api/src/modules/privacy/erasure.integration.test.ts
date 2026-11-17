@@ -262,6 +262,13 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
       .select()
       .from(schema.payments)
       .where(eq(schema.payments.bookingId, bookingId));
+    // A problem report of hers about a meeting point, still open (spec 2, 3.5).
+    await db.insert(schema.meetingPointIssues).values({
+      meetingPointId: sampleId("point:borgarnes"),
+      reporterId: anna.userId,
+      reason: "unsafe",
+      note: "No light after dark.",
+    });
     await waitEnded(anna);
 
     expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
@@ -341,6 +348,17 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
       .from(schema.checkIns)
       .orderBy(asc(schema.checkIns.checkedInAt));
     expect(checkIns.map((row) => row.userId)).toEqual([gunna.userId, formerMemberId]);
+
+    // Her report stays in the operator's queue, from the former member.
+    expect(
+      await db
+        .select({
+          reporterId: schema.meetingPointIssues.reporterId,
+          note: schema.meetingPointIssues.note,
+          status: schema.meetingPointIssues.status,
+        })
+        .from(schema.meetingPointIssues),
+    ).toEqual([{ reporterId: formerMemberId, note: "No light after dark.", status: "open" }]);
 
     // Nobody opens a trip page of hers any more.
     expect(

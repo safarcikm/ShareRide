@@ -1,6 +1,6 @@
 {
-  "id": "af779436-2808-4407-b6d5-928970786de1",
-  "prevId": "9f676da0-7784-4575-8532-656392b574e7",
+  "id": "ce6dbe30-626a-4702-af64-a86f95ce2693",
+  "prevId": "d725f66b-1235-406a-8924-8ab18379ab80",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1328,26 +1328,6 @@
           "notNull": true,
           "default": false
         },
-        "excused_by_reason": {
-          "name": "excused_by_reason",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "overruled_at": {
-          "name": "overruled_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "overrule_note": {
-          "name": "overrule_note",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
         "departs_at_when_booked": {
           "name": "departs_at_when_booked",
           "type": "timestamp with time zone",
@@ -1524,10 +1504,6 @@
         "bookings_cancel_note_check": {
           "name": "bookings_cancel_note_check",
           "value": "char_length(\"bookings\".\"cancel_note\") <= 500"
-        },
-        "bookings_overrule_note_check": {
-          "name": "bookings_overrule_note_check",
-          "value": "char_length(\"bookings\".\"overrule_note\") <= 500"
         },
         "bookings_refund_check": {
           "name": "bookings_refund_check",
@@ -2068,6 +2044,199 @@
         "legs_positive_check": {
           "name": "legs_positive_check",
           "value": "\"legs\".\"distance_m\" > 0 and \"legs\".\"duration_s\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.meeting_point_issues": {
+      "name": "meeting_point_issues",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "meeting_point_id": {
+          "name": "meeting_point_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reporter_id": {
+          "name": "reporter_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'open'"
+        },
+        "resolution_note": {
+          "name": "resolution_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resolved_by_id": {
+          "name": "resolved_by_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resolved_at": {
+          "name": "resolved_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "meeting_point_issues_reporter_index": {
+          "name": "meeting_point_issues_reporter_index",
+          "columns": [
+            {
+              "expression": "reporter_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "meeting_point_issues_point_index": {
+          "name": "meeting_point_issues_point_index",
+          "columns": [
+            {
+              "expression": "meeting_point_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "meeting_point_issues_open_index": {
+          "name": "meeting_point_issues_open_index",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"meeting_point_issues\".\"status\" = 'open'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "meeting_point_issues_resolved_index": {
+          "name": "meeting_point_issues_resolved_index",
+          "columns": [
+            {
+              "expression": "resolved_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "meeting_point_issues_meeting_point_id_meeting_points_id_fk": {
+          "name": "meeting_point_issues_meeting_point_id_meeting_points_id_fk",
+          "tableFrom": "meeting_point_issues",
+          "tableTo": "meeting_points",
+          "columnsFrom": ["meeting_point_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "meeting_point_issues_reporter_id_users_id_fk": {
+          "name": "meeting_point_issues_reporter_id_users_id_fk",
+          "tableFrom": "meeting_point_issues",
+          "tableTo": "users",
+          "columnsFrom": ["reporter_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "meeting_point_issues_resolved_by_id_users_id_fk": {
+          "name": "meeting_point_issues_resolved_by_id_users_id_fk",
+          "tableFrom": "meeting_point_issues",
+          "tableTo": "users",
+          "columnsFrom": ["resolved_by_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "meeting_point_issues_reason_check": {
+          "name": "meeting_point_issues_reason_check",
+          "value": "\"meeting_point_issues\".\"reason\" in ('closed_or_moved', 'unsafe', 'wrong_location', 'wrong_information', 'other')"
+        },
+        "meeting_point_issues_status_check": {
+          "name": "meeting_point_issues_status_check",
+          "value": "\"meeting_point_issues\".\"status\" in ('open', 'resolved')"
+        },
+        "meeting_point_issues_resolved_check": {
+          "name": "meeting_point_issues_resolved_check",
+          "value": "(\"meeting_point_issues\".\"status\" = 'resolved') = (\"meeting_point_issues\".\"resolved_at\" is not null) and (\"meeting_point_issues\".\"status\" = 'resolved') = (\"meeting_point_issues\".\"resolution_note\" is not null) and (\"meeting_point_issues\".\"status\" = 'open' or \"meeting_point_issues\".\"reporter_id\" is null)"
         }
       },
       "isRLSEnabled": false
@@ -5796,26 +5965,6 @@
           "notNull": true,
           "default": false
         },
-        "excused_by_reason": {
-          "name": "excused_by_reason",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "overruled_at": {
-          "name": "overruled_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "overrule_note": {
-          "name": "overrule_note",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
         "sample": {
           "name": "sample",
           "type": "boolean",
@@ -5953,10 +6102,6 @@
         "trips_cancel_note_check": {
           "name": "trips_cancel_note_check",
           "value": "char_length(\"trips\".\"cancel_note\") <= 500"
-        },
-        "trips_overrule_note_check": {
-          "name": "trips_overrule_note_check",
-          "value": "char_length(\"trips\".\"overrule_note\") <= 500"
         },
         "trips_times_check": {
           "name": "trips_times_check",
