@@ -570,7 +570,8 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
   // are still linked to them (spec 2, section 7).
   const pointProblems = await q
     .select({
-      place: meetingPoints.nameIs,
+      nameIs: meetingPoints.nameIs,
+      nameEn: meetingPoints.nameEn,
       problem: meetingPointIssues.reason,
       note: meetingPointIssues.note,
       sentAt: meetingPointIssues.createdAt,
@@ -671,7 +672,12 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
         sentAt: when(row.sentAt),
         closedAt: when(row.closedAt),
       })),
-      meeting_point_reports: pointProblems.map((row) => ({ ...row, sentAt: when(row.sentAt) })),
+      meeting_point_reports: pointProblems.map((row) => ({
+        place: name(row),
+        problem: row.problem,
+        note: row.note,
+        sentAt: when(row.sentAt),
+      })),
       blocks: blocked.map((row) => ({ firstName: row.firstName ?? "", since: when(row.since) })),
       notices: noticed.map((row) => ({
         ...row,

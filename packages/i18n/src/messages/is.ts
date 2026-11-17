@@ -227,7 +227,7 @@ export const is = {
   "meetingPoints.issue.thanksHelp":
     "Við förum yfir allar tilkynningar og lögum það sem er að. Ef ekki er öruggt að bíða þar skaltu velja annan mótsstað í bili.",
   "meetingPoints.issue.tooMany":
-    "Þú hefur sent {max} tilkynningar síðasta sólarhring. Reyndu aftur síðar.",
+    "Þú hefur sent margar tilkynningar síðasta sólarhring. Reyndu aftur síðar.",
   "meetingPoints.issue.gone": "Þessi mótsstaður er ekki lengur í notkun.",
   "meetingPoints.issue.signIn": "Skráðu þig inn til að segja okkur hvað er að",
   "meetingPoints.issue.signInHelp":
@@ -1389,7 +1389,7 @@ export const is = {
   "export.section.payments": "Greiðslur",
   "export.section.conversations": "Samtöl",
   "export.section.reports": "Tilkynningar sem þú sendir",
-  "export.section.meeting_point_reports": "Vandamál sem þú tilkynntir á mótsstöðum",
+  "export.section.meeting_point_reports": "Vandamál með mótsstaði sem þú tilkynntir",
   "export.section.blocks": "Fólk sem þú lokaðir á",
   "export.section.notifications": "Tilkynningar síðustu 90 daga",
   "export.section.notices": "Skilaboð frá ShareRide",

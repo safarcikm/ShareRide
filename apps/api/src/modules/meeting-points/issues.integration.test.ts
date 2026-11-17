@@ -116,13 +116,23 @@ describe("POST /v1/meeting-points/{id}/issues", () => {
     expect((await report((await api.signIn(phone)).accessToken, borgarnes)).ok).toBe(true);
   });
 
-  it("is in the person's Download my data while it is open", async () => {
+  it("holds the limit for reports sent at the same moment", async () => {
+    const { accessToken, userId } = await api.signIn(api.newPhoneNumber());
+    const results = await Promise.all(
+      Array.from({ length: 7 }, () => report(accessToken, borgarnes)),
+    );
+    const statuses = results.map((result) => result.status).sort();
+    expect(statuses).toEqual([204, 204, 204, 204, 204, 429, 429]);
+    expect(await issuesOf(userId)).toHaveLength(5);
+  });
+
+  it("is in the person's Download my data while it is open, named in their language", async () => {
     const { accessToken, userId } = await api.signIn(api.newPhoneNumber());
     await report(accessToken, borgarnes, { reason: "closed_or_moved", note: "Lokað í vetur." });
     const data = await collectExport(api.connection.db, userId, api.now());
     expect(data.sections.meeting_point_reports).toEqual([
       {
-        place: "N1 Borgarnesi",
+        place: "N1 Borgarnes",
         problem: "closed_or_moved",
         note: "Lokað í vetur.",
         sentAt: api.now().toISOString(),

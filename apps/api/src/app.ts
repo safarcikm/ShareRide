@@ -5,6 +5,7 @@ import type { Database } from "@shareride/db";
 import {
   defaultBookingSettings,
   defaultChatSettings,
+  defaultMeetingPointIssueSettings,
   defaultNotificationSettings,
   defaultReviewSettings,
   defaultSearchSettings,
@@ -296,7 +297,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       app,
       createMeetingPointService(features),
       photos,
-      createMeetingPointIssueService(features),
+      createMeetingPointIssueService({ ...features, settings: defaultMeetingPointIssueSettings }),
       requireAuth,
     );
     const meetingPointsAdmin = {

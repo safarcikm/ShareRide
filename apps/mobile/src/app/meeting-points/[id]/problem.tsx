@@ -10,7 +10,7 @@ import {
   type MeetingPointIssueReason,
 } from "@shareride/domain";
 import { issueReasonKeys, type MessageKey } from "@shareride/i18n";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, type Href } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
@@ -24,18 +24,23 @@ import { TakesFocus } from "@/components/takes-focus";
 import { TextField } from "@/components/text-field";
 import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
+import { now } from "@/lib/clock";
 import { useLoaded } from "@/lib/use-loaded";
+import { keepPendingProblem } from "@/meeting-points/pending-problem";
 import { SignInFirst } from "@/navigation/sign-in-first";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 const maxLength = meetingPointIssueLimits.noteMax;
 
+/** The point's details, where Back leads when nothing is behind this screen. */
+const detailsOf = (id: string): Href => ({ pathname: "/meeting-points/[id]", params: { id } });
+
 /**
  * "Something wrong here?" (spec 2, 3.5): what is wrong and a note, for the
  * operator's queue. It needs an account, which has a verified phone number
- * (R2.8); signed out, it asks to sign in first. Nothing is sent until
- * "Send".
+ * (R2.8); signed out, it asks to sign in first and keeps the point, so
+ * the form opens after signing in. Nothing is sent until "Send".
  */
 export default function MeetingPointProblemScreen() {
   const { t } = useLanguage();
@@ -46,6 +51,12 @@ export default function MeetingPointProblemScreen() {
       <SignInFirst
         title={t("meetingPoints.issue.signIn")}
         body={t("meetingPoints.issue.signInHelp")}
+        back={detailsOf(id)}
+        onSignIn={() => {
+          void keepPendingProblem(id, now()).then(() => {
+            router.push("/sign-in");
+          });
+        }}
       />
     );
   }
@@ -64,23 +75,19 @@ function Problem({ id }: { readonly id: string }) {
   if (result === undefined) {
     return (
       <Screen>
-        <BackButton fallback="/meeting-points" />
+        <BackButton fallback={detailsOf(id)} />
         <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
       </Screen>
     );
   }
   if (!result.ok) {
+    // Trying again cannot bring back a point that is gone.
+    const gone = result.status === 404 || result.status === 400;
     return (
       <Screen>
-        <BackButton fallback="/meeting-points" />
-        <Notice
-          message={
-            result.status === 404 || result.status === 400
-              ? t("meetingPoints.issue.gone")
-              : errorText(t, result)
-          }
-        />
-        <Button variant="secondary" label={t("common.retry")} onPress={reload} />
+        <BackButton fallback={detailsOf(id)} />
+        <Notice message={gone ? t("meetingPoints.issue.gone") : errorText(t, result)} />
+        {gone ? null : <Button variant="secondary" label={t("common.retry")} onPress={reload} />}
       </Screen>
     );
   }
@@ -121,9 +128,7 @@ function ProblemForm({ point }: { readonly point: MeetingPointDetails }) {
       too_many_reports: "meetingPoints.issue.tooMany",
     };
     const key = failures[answer.error.code];
-    setFailed(
-      key === undefined ? errorText(t, answer) : t(key, { max: meetingPointIssueLimits.perDay }),
-    );
+    setFailed(key === undefined ? errorText(t, answer) : t(key));
   }
 
   if (sent) {
@@ -138,7 +143,7 @@ function ProblemForm({ point }: { readonly point: MeetingPointDetails }) {
           label={t("common.back")}
           onPress={() => {
             if (router.canGoBack()) router.back();
-            else router.replace({ pathname: "/meeting-points/[id]", params: { id: point.id } });
+            else router.replace(detailsOf(point.id));
           }}
         />
       </Screen>
@@ -147,7 +152,7 @@ function ProblemForm({ point }: { readonly point: MeetingPointDetails }) {
 
   return (
     <Screen>
-      <BackButton fallback="/meeting-points" />
+      <BackButton fallback={detailsOf(point.id)} />
       <Title>{t("meetingPoints.issue.title")}</Title>
       <Body>{point.name[locale]}</Body>
       <View style={styles.group}>

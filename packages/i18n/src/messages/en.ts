@@ -222,7 +222,7 @@ export const en = {
   "meetingPoints.issue.thanks": "Thank you. We'll check this meeting point.",
   "meetingPoints.issue.thanksHelp":
     "We look at every report and fix what is wrong. If it isn't safe to wait there, choose another meeting point for now.",
-  "meetingPoints.issue.tooMany": "You've sent {max} reports in the last 24 hours. Try again later.",
+  "meetingPoints.issue.tooMany": "You've sent many reports in the last 24 hours. Try again later.",
   "meetingPoints.issue.gone": "This meeting point is no longer in use.",
   "meetingPoints.issue.signIn": "Sign in to tell us what's wrong",
   "meetingPoints.issue.signInHelp":

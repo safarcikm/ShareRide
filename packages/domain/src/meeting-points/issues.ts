@@ -20,11 +20,17 @@ export type MeetingPointIssueStatus = (typeof meetingPointIssueStatuses)[number]
 export const meetingPointIssueLimits = {
   /** The note, in characters as people see them. */
   noteMax: 300,
-  /** Reports one person may send in 24 hours (R2.8). */
-  perDay: 5,
   /** Months a resolved report is kept before it is deleted (spec 2, section 7). */
   keptMonths: 12,
 } as const;
+
+/** The operator's settings for problem reports (feature H4 reads them later). */
+export interface MeetingPointIssueSettings {
+  /** Reports one person may send in 24 hours (R2.8). */
+  readonly perDay: number;
+}
+
+export const defaultMeetingPointIssueSettings: MeetingPointIssueSettings = { perDay: 5 };
 
 export interface MeetingPointIssueDraft {
   readonly reason: MeetingPointIssueReason;
@@ -54,12 +60,16 @@ const dayMs = 24 * 3_600_000;
  * Null while a person may send another report; otherwise the seconds until
  * they may, a day after the oldest of the last 24 hours' reports (R2.8).
  */
-export function meetingPointIssueRetryAfter(sentAt: readonly Date[], now: Date): number | null {
+export function meetingPointIssueRetryAfter(
+  sentAt: readonly Date[],
+  now: Date,
+  settings: MeetingPointIssueSettings = defaultMeetingPointIssueSettings,
+): number | null {
   const today = sentAt
     .map((at) => at.getTime())
     .filter((at) => at > now.getTime() - dayMs)
     .sort((a, b) => a - b);
-  if (today.length < meetingPointIssueLimits.perDay) return null;
-  const oldest = today[today.length - meetingPointIssueLimits.perDay] ?? now.getTime();
+  if (today.length < settings.perDay) return null;
+  const oldest = today[today.length - settings.perDay] ?? now.getTime();
   return Math.ceil((oldest + dayMs - now.getTime()) / 1000);
 }

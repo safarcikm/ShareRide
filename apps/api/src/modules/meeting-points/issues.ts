@@ -1,11 +1,13 @@
 import { schema, type Database } from "@shareride/db";
 import {
   checkMeetingPointIssue,
+  defaultMeetingPointIssueSettings,
   err,
   meetingPointIssueRetryAfter,
   ok,
   type MeetingPointIssueDraft,
   type MeetingPointIssueProblem,
+  type MeetingPointIssueSettings,
   type MeetingPointStatus,
   type Result,
 } from "@shareride/domain";
@@ -32,8 +34,10 @@ const dayMs = 24 * 3_600_000;
 export function createMeetingPointIssueService(dependencies: {
   readonly db: Database;
   readonly clock: () => Date;
+  readonly settings?: MeetingPointIssueSettings;
 }): MeetingPointIssueService {
   const { db, clock } = dependencies;
+  const settings = dependencies.settings ?? defaultMeetingPointIssueSettings;
   return {
     async report(me, meetingPointId, draft) {
       const now = clock();
@@ -60,6 +64,7 @@ export function createMeetingPointIssueService(dependencies: {
         const retryAfterSeconds = meetingPointIssueRetryAfter(
           today.map((row) => row.at),
           now,
+          settings,
         );
         if (retryAfterSeconds !== null) return err({ code: "too_many_reports", retryAfterSeconds });
         await tx.insert(meetingPointIssues).values({

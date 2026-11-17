@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   checkMeetingPointIssue,
+  defaultMeetingPointIssueSettings,
   meetingPointIssueLimits,
   meetingPointIssueReasons,
   meetingPointIssueRetryAfter,
@@ -57,7 +58,7 @@ describe("meetingPointIssueRetryAfter", () => {
   const hoursAgo = (hours: number) => new Date(now.getTime() - hours * 3_600_000);
 
   it("lets a person send 5 in 24 hours (R2.8)", () => {
-    expect(meetingPointIssueLimits.perDay).toBe(5);
+    expect(defaultMeetingPointIssueSettings.perDay).toBe(5);
     expect(
       meetingPointIssueRetryAfter([hoursAgo(1), hoursAgo(2), hoursAgo(3), hoursAgo(4)], now),
     ).toBeNull();
@@ -66,5 +67,11 @@ describe("meetingPointIssueRetryAfter", () => {
   it("says when the next one can be sent: a day after the oldest of the last 24 hours", () => {
     const sent = [hoursAgo(1), hoursAgo(23), hoursAgo(5), hoursAgo(2), hoursAgo(3), hoursAgo(30)];
     expect(meetingPointIssueRetryAfter(sent, now)).toBe(3_600);
+  });
+
+  it("goes by the operator's setting", () => {
+    const sent = [hoursAgo(1), hoursAgo(2)];
+    expect(meetingPointIssueRetryAfter(sent, now, { perDay: 3 })).toBeNull();
+    expect(meetingPointIssueRetryAfter(sent, now, { perDay: 2 })).toBe(22 * 3_600);
   });
 });
