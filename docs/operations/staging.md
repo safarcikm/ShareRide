@@ -342,6 +342,33 @@ Hobby workspace (7 on Pro).
    A change made in the new database since is newer, so it stays.
 6. Once the services work, suspend or delete the old database.
 
+## Retention runs and holds
+
+The hourly clean-up records each retention rule's run (spec 11, 3.7). To
+see the last run of each, open the API's **Shell** and run:
+
+```sh
+node apps/api/src/privacy-cli.ts runs
+```
+
+A rule whose last run is over an hour old, or `never run`, has failed:
+Sentry has the error, tagged with the rule.
+
+To keep a person's, trip's or booking's records past their date for a
+dispute, chargeback or legal claim, give the ID, the last day to keep them
+(Iceland time), a reason that names the case rather than the person, and
+your own user ID or phone number for the audit log:
+
+```sh
+node apps/api/src/privacy-cli.ts hold booking <booking ID> \
+  --until 2027-03-31 --reason "Chargeback 4411" --by <your user ID>
+node apps/api/src/privacy-cli.ts holds
+node apps/api/src/privacy-cli.ts end-hold <hold ID> --by <your user ID>
+```
+
+`holds` lists those in force, nearest end first. Once a hold ends, its
+records go at the next clean-up if their own dates have passed.
+
 ## Rotate a secret
 
 - `AUTH_SECRET`: set a new value in the service's **Environment** (for

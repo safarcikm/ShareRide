@@ -1,11 +1,12 @@
 // The `privacy` command (spec 11; plan, decision 3), until the console has
-// privacy pages: `pnpm --filter @shareride/api privacy reapply-erasures`
-// after a restore erases again every erased account that came back
-// (runbook, "Restore the database"). On a server, run it in the API's
-// shell. Needs DATABASE_URL (the restored database) and AUTH_SECRET, the
-// API's own; PREVIOUS_DATABASE_URL, the old database, when it can be
-// reached, for the deletions asked for, undone and finished after the
-// restore's point.
+// privacy pages: `pnpm --filter @shareride/api privacy runs` shows the last
+// run of each retention rule; `holds`, `hold` and `end-hold` list, set and
+// end holds, each in the audit log; `reapply-erasures` after a restore
+// erases again every erased account that came back (runbook, "Restore the
+// database"). On a server, run it in the API's shell. Needs DATABASE_URL
+// and AUTH_SECRET, the API's own; for `reapply-erasures`,
+// PREVIOUS_DATABASE_URL, the old database, when it can be reached, for the
+// deletions asked for, undone and finished after the restore's point.
 import { connectDatabase, schema } from "@shareride/db";
 import { defaultTripDaySettings } from "@shareride/domain";
 import { createLogger } from "./logger.ts";
@@ -32,6 +33,8 @@ const connection = connectDatabase(url, {
 });
 try {
   process.exitCode = await runPrivacyCommand(process.argv.slice(2), {
+    db: connection.db,
+    clock: () => new Date(),
     erasure: createErasure({
       db: connection.db,
       clock: () => new Date(),
