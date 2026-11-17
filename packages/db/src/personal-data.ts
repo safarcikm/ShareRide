@@ -27,8 +27,9 @@ export interface TablePrivacy {
    */
   readonly onDeletion: Deletion | null;
   /**
-   * UUID columns that are not a person and point nowhere, such as a retry
-   * key. A row moved to the former member gets new ones, so keys unique per
+   * UUID columns that point nowhere: not a foreign key to a person, such as
+   * a retry key, or the person's own public reference stored on their row.
+   * A row moved to the former member gets new ones, so keys unique per
    * person never collide there.
    */
   readonly otherIds?: readonly string[];
@@ -61,6 +62,9 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     export: { section: "account" },
     personColumns: [],
     onDeletion: { rows: "erase", note: "the row itself; what is kept moves to the former member" },
+    // The person's public reference for their profile (`/people/{profileId}`):
+    // random, never their ID, and erased with the row.
+    otherIds: ["profileId"],
   },
   verification_codes: notAboutAPerson(
     "keyed hashes of a number and a code, not linked to an account and gone within minutes",
@@ -363,7 +367,7 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
   },
   operator_notes: {
     category: "moderation",
-    // The notes about the person, never who wrote them (spec 9, 3.5.3; A48).
+    // The notes about the person, never who wrote them (spec 9, 3.5.3; A49).
     export: { section: "notes" },
     personColumns: ["userId", "byId"],
     // Notes about the person go with them: the erasure deletes them by

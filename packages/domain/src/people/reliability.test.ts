@@ -6,7 +6,9 @@ import {
   driverBookingRecord,
   driverTripRecord,
   passengerRecord,
+  passengerWasDue,
   reliabilityOf,
+  reliabilitySince,
   type ReliabilityRecord,
 } from "./reliability.ts";
 
@@ -84,6 +86,15 @@ describe("what counts on reliability (spec 8, 3.8)", () => {
     expect(driverTripRecord({ ...trip, status: "published" })).toBeNull();
   });
 
+  it("has the driver due for a completed booking or a no-show that stands, nothing else", () => {
+    expect(passengerWasDue({ status: "completed", reportOutcome: null })).toBe(true);
+    expect(passengerWasDue({ status: "no_show", reportOutcome: "stands" })).toBe(true);
+    expect(passengerWasDue({ status: "no_show", reportOutcome: "passenger_absent" })).toBe(true);
+    // Still open to an answer, or the operator's decision.
+    expect(passengerWasDue({ status: "no_show", reportOutcome: null })).toBe(false);
+    expect(passengerWasDue({ status: "cancelled", reportOutcome: "left_behind" })).toBe(false);
+  });
+
   it("lets the operator overrule a cancellation that doesn't count only for its reason (R8.11)", () => {
     expect(canOverrule({ countsOnReliability: false, excusedByReason: true })).toBe(true);
     // Too early to count whatever the reason, or already counting.
@@ -137,6 +148,12 @@ describe("the reliability figure (R8.10)", () => {
       { role: "passenger", at: edge, kept: false },
     ] as const;
     expect(reliabilityOf(records, now, settings)).toMatchObject({ kept: 0, counted: 1 });
+  });
+
+  it("starts the period 12 months back, on that month's last day when it is shorter", () => {
+    expect(reliabilitySince(now, settings)).toEqual(new Date("2025-11-20T12:00:00Z"));
+    const leapDay = new Date("2028-02-29T08:00:00Z");
+    expect(reliabilitySince(leapDay, settings)).toEqual(new Date("2027-02-28T08:00:00Z"));
   });
 
   it("puts people below 80% on the operator's watch list, never anyone without a figure", () => {

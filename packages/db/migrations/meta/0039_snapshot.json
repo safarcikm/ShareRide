@@ -1,5 +1,5 @@
 {
-  "id": "620488f0-aaef-4e73-9836-6fe7177c819a",
+  "id": "042d1664-6a45-45ae-bad3-8265ca9194f4",
   "prevId": "26c69cdd-b488-4253-9bbd-c1e007709b0b",
   "version": "7",
   "dialect": "postgresql",
@@ -1664,12 +1664,6 @@
         },
         "erased_at": {
           "name": "erased_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "hidden_at": {
-          "name": "hidden_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
@@ -5915,12 +5909,6 @@
           "notNull": true,
           "default": "''"
         },
-        "note_hidden_at": {
-          "name": "note_hidden_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
         "departs_at": {
           "name": "departs_at",
           "type": "timestamp with time zone",
@@ -6161,12 +6149,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "about_hidden_at": {
-          "name": "about_hidden_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
         "languages": {
           "name": "languages",
           "type": "text[]",
@@ -6224,6 +6206,13 @@
           "notNull": true,
           "default": "'active'"
         },
+        "profile_id": {
+          "name": "profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
         "suspended_until": {
           "name": "suspended_until",
           "type": "timestamp with time zone",
@@ -6258,6 +6247,11 @@
           "name": "users_email_unique",
           "nullsNotDistinct": false,
           "columns": ["email"]
+        },
+        "users_profile_id_unique": {
+          "name": "users_profile_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["profile_id"]
         }
       },
       "policies": {},

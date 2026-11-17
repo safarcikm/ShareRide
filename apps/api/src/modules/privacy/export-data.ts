@@ -599,7 +599,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     .orderBy(asc(blocks.createdAt), asc(blocks.id));
 
   // What operators wrote down about the person, never who wrote it (spec 9,
-  // 3.5.3; A48).
+  // 3.5.3; A49).
   const noted = await q
     .select({ text: operatorNotes.text, addedAt: operatorNotes.createdAt })
     .from(operatorNotes)
