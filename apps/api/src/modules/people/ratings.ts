@@ -2,7 +2,7 @@
 import type { Rating } from "@shareride/contracts";
 import { schema } from "@shareride/db";
 import { ratingOf, type RatedReview } from "@shareride/domain";
-import { and, eq, inArray, isNull, type SQL } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { Queryable } from "../bookings/seats.ts";
 
@@ -37,7 +37,9 @@ export async function ratingsOf(
       })
       .from(reviews)
       .innerJoin(authors, eq(authors.id, reviews.authorId))
-      .where(aboutThem(ids));
+      // Only those that may count, so that a page of results reads few
+      // rows; `ratingOf` still decides.
+      .where(and(aboutThem(ids), isNotNull(reviews.revealedAt), isNull(reviews.hiddenAt)));
     for (const row of rows) {
       rated.get(row.subjectId)?.push({
         rating: row.rating,

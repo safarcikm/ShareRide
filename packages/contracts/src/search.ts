@@ -215,7 +215,7 @@ export const tripDetailsSchema = z.object({
   seatsOffered: z.int().positive(),
   /**
    * With their rating, and for members signed in their reliability figure
-   * (spec 4, 3.5.3), null for visitors; photos come with spec 1. `colour`
+   * (spec 4, 3.6.3), null for visitors; photos come with spec 1. `colour`
    * picks one of spec 15's five people colours, the same on every trip of
    * this driver.
    */

@@ -276,6 +276,8 @@ async function readBookings(q: Queryable, where: SQL | undefined, now: Date) {
       q,
       rows.map((row) => row.booking.id),
     ),
+    // Inside a booking's change, these are a few plain reads more while
+    // the trip is locked; they lock nothing themselves.
     standingsOf(
       q,
       people.filter((person) => !isHidden(person)).map((person) => person.id),
