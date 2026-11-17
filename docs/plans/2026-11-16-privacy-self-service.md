@@ -402,6 +402,23 @@ Added once milestone 7 built reviews (spec 8, 3.7).
 - Verify: integration tests (both sides; one not yet shown left out of
   the other side's file; hidden ones marked)
 
+### PR 12: `feat(privacy)`: erasure keeps a reported conversation
+
+Added once milestone 9 built reports (#119). Open question Q24.
+
+- [x] Erasure keeps what the person said in a conversation a report
+      covers (a message report, open or closed under 3 years ago; the same
+      test as the chat clean-up, `reportCovers`): the sender becomes the
+      former member with a new retry key, `erased_at` is set, so the other
+      person and Download my data show "Message deleted", and only the
+      operator's reading shows the text. The hourly clean-up deletes the
+      conversation once the report's time is over. Migration
+      `0036_messages_kept_for_reports` lets an erased message keep its
+      text, key and params.
+- Verify: integration tests (open, closed a millisecond inside the 3
+  years, and closed 3 years ago, which empties as before; the reporter
+  erased; the operator reads the kept text)
+
 ## 6. Review focus
 
 What the spec implies and a person would meet first, each with its test:

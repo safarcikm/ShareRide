@@ -219,7 +219,9 @@ quick message or system line, `client_id` (one message per client ID and
 sender, so a retry is stored once; only a message to all passengers puts
 one client ID in several conversations of a trip), `sent_at`, `read_at`, and `erased_at` (when the sender's account was erased:
 the text, key and params are emptied, the sender becomes the former member,
-and the message reads "Message deleted", [spec 11](../specs/2026-11-13-privacy-self-service.md#35-what-is-erased-and-what-is-kept)).
+and the message reads "Message deleted", [spec 11](../specs/2026-11-13-privacy-self-service.md#35-what-is-erased-and-what-is-kept);
+in a conversation a report covers, the text, key and params stay for the
+operator only, until the report's time is over).
 Opened in the transaction that confirms the booking. Retained per the
 [privacy](../compliance/privacy-gdpr.md#retention) schedule. See
 [spec 7](../specs/2026-11-13-chat-and-notifications.md#6-data-and-api).

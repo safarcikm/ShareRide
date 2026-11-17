@@ -8,12 +8,13 @@ here, update or accept the linked ADR, and move the row to "Answered".
 
 ## Open
 
-A new question goes in a table here with the next free number (Q24
+A new question goes in a table here with the next free number (Q25
 onwards), a recommendation and the docs it affects.
 
 | #   | Question | Recommendation | Affects |
 | --- | -------- | -------------- | ------- |
 | Q23 | 3 years after a trip, its trip and bookings are made anonymous (spec 11, 3.7), but its reviews stay while the person they are about has an account, still naming who wrote them, whom they are about and the booking. Through them the two people stay linked to that ride's route and date. Should an old review lose those links? | Yes: when its trip is made anonymous, a review keeps its stars, comment and date for the person it is about, but no longer names its author or its ride. Needs the booking to be optional on a review. Until decided, reviews keep their links (raised 2026-11-17, privacy PR 9b). | [Privacy register](../compliance/privacy-gdpr.md) (Reviews and ratings), [spec 8](../specs/2026-11-13-trip-day-reviews-and-reliability.md) 3.7, [privacy plan](../plans/2026-11-16-privacy-self-service.md) 4.7 |
+| Q24 | When a person's account is erased, the text of their messages is emptied (spec 11, 3.5). But a report about a message is kept 3 years after it closes, and lets the operator read that conversation (spec 9, section 7; R9.6): erasing it would lose what was reported, for instance when the person reported deletes their account before the operator looks. Should erasure keep a conversation a report covers? | Yes, for the operator only: the other person still sees "Message deleted", and the operator can read what was said until the report's time is over, when the hourly clean-up deletes the conversation. The cancel note on ShareRide's own lines is still emptied. Built in privacy PR 12, which waits for this answer (raised 2026-11-17 on a decision card). | [Privacy register](../compliance/privacy-gdpr.md) (Messages), [spec 11](../specs/2026-11-13-privacy-self-service.md) 3.5, [spec 9](../specs/2026-11-13-safety-and-moderation.md) section 7, [privacy plan](../plans/2026-11-16-privacy-self-service.md) PR 12 |
 
 ## Answered
 

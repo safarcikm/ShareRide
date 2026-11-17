@@ -17,8 +17,13 @@ import {
 } from "@shareride/contracts";
 import { personalData, schema } from "@shareride/db";
 import { sampleId } from "@shareride/db/seed";
-import { blockedNumberUntil, defaultTripDaySettings } from "@shareride/domain";
-import { asc, eq, getTableColumns, getTableName, inArray, is, sql } from "drizzle-orm";
+import {
+  blockedNumberUntil,
+  defaultSafetySettings,
+  defaultTripDaySettings,
+  reportsClosedBy,
+} from "@shareride/domain";
+import { and, asc, eq, getTableColumns, getTableName, inArray, is, ne, sql } from "drizzle-orm";
 import { PgTable, type PgColumn } from "drizzle-orm/pg-core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createLogger } from "../../logger.ts";
@@ -621,6 +626,155 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
       note: "",
       answerNote: "",
       decisionNote: "",
+    });
+  });
+
+  describe("a conversation a report covers (spec 9, section 7)", () => {
+    /**
+     * Gunna reports Anna's message; Anna also said she was running late. The
+     * report closed `closedAt` before the 3 years end, if it is closed.
+     */
+    async function reported(status: "open" | "closed", closedAt = 0) {
+      const ride = await busyDriver();
+      const cutoff = reportsClosedBy(api.now(), defaultSafetySettings).getTime();
+      const { db } = api.connection;
+      const [said] = await db
+        .select({ id: schema.messages.id, conversationId: schema.messages.conversationId })
+        .from(schema.messages)
+        .where(eq(schema.messages.senderId, ride.anna.userId));
+      if (said === undefined) throw new Error("Anna wrote nothing.");
+      await db.insert(schema.messages).values({
+        conversationId: said.conversationId,
+        senderId: ride.anna.userId,
+        kind: "quick",
+        key: "late",
+        params: { minutes: 10 },
+        clientId: randomUUID(),
+        sentAt: api.now(),
+      });
+      await db.insert(schema.reports).values({
+        reporterId: ride.gunna.userId,
+        subjectUserId: ride.anna.userId,
+        subject: "message",
+        tripId: sampleTrip.north,
+        bookingId: ride.bookingId,
+        messageId: said.id,
+        conversationId: said.conversationId,
+        category: "harassment",
+        description: "She was rude",
+        urgent: false,
+        status,
+        outcome: status === "closed" ? "action_taken" : null,
+        closedAt: status === "closed" ? new Date(cutoff + closedAt) : null,
+      });
+      return { ...ride, conversationId: said.conversationId };
+    }
+
+    /** What Anna sent there, before and after her erasure: all but Gunna's and ShareRide's lines. */
+    const annasMessages = (conversationId: string, gunna: Member) =>
+      api.connection.db
+        .select({
+          senderId: schema.messages.senderId,
+          kind: schema.messages.kind,
+          body: schema.messages.body,
+          key: schema.messages.key,
+          params: schema.messages.params,
+          clientId: schema.messages.clientId,
+          erasedAt: schema.messages.erasedAt,
+        })
+        .from(schema.messages)
+        .where(
+          and(
+            eq(schema.messages.conversationId, conversationId),
+            ne(schema.messages.senderId, gunna.userId),
+          ),
+        )
+        .orderBy(asc(schema.messages.sentAt), asc(schema.messages.id));
+
+    async function gunnaReads(gunna: Member, bookingId: string) {
+      const chat = await api.client.call(conversationMessagesRoute, {
+        accessToken: gunna.accessToken,
+        params: { id: bookingId },
+        query: {},
+      });
+      if (!chat.ok) throw new Error(chat.error.code);
+      return chat.data.messages
+        .filter((message) => message.from !== "system")
+        .map((message) => [message.from, message.kind, message.text]);
+    }
+
+    it.each([
+      ["open", "open" as const],
+      ["closed under 3 years ago", "closed" as const],
+    ])(
+      "keeps what it said for the operator while the report is %s; the other person sees it deleted",
+      async (_label, status) => {
+        // A millisecond inside the 3 years, if closed.
+        const { anna, gunna, bookingId, conversationId } = await reported(status, 1);
+        const before = await annasMessages(conversationId, gunna);
+        await waitEnded(anna);
+
+        expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+
+        expect(await rowsNaming(anna.userId)).toEqual([]);
+        const after = await annasMessages(conversationId, gunna);
+        expect(after).toEqual(
+          before.map((message) => ({
+            ...message,
+            senderId: formerMemberId,
+            clientId: expect.any(String) as unknown,
+            erasedAt: api.now(),
+          })),
+        );
+        // New retry keys, as for every row moved to the former member.
+        expect(after.map((message) => message.clientId)).not.toContain(before[0]?.clientId);
+        // Newest first: her "running late", her text, then Gunna's own.
+        expect(await gunnaReads(gunna, bookingId)).toEqual([
+          ["them", "erased", null],
+          ["them", "erased", null],
+          ["me", "text", "I'll wait by the door"],
+        ]);
+      },
+    );
+
+    it("empties it as usual once the report closed over 3 years ago", async () => {
+      const { anna, gunna, conversationId } = await reported("closed", 0);
+      await waitEnded(anna);
+
+      expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+
+      expect(
+        (await annasMessages(conversationId, gunna)).map(
+          ({ senderId, body, key, params, erasedAt }) => ({
+            senderId,
+            body,
+            key,
+            params,
+            erasedAt,
+          }),
+        ),
+      ).toEqual([
+        { senderId: formerMemberId, body: null, key: null, params: null, erasedAt: api.now() },
+        { senderId: formerMemberId, body: null, key: null, params: null, erasedAt: api.now() },
+      ]);
+    });
+
+    it("keeps the reporter's own messages there too when the reporter is erased", async () => {
+      const { gunna, conversationId } = await reported("open");
+      await waitEnded(gunna);
+
+      expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+
+      const [hers] = await api.connection.db
+        .select({ body: schema.messages.body, erasedAt: schema.messages.erasedAt })
+        .from(schema.messages)
+        .where(
+          and(
+            eq(schema.messages.conversationId, conversationId),
+            eq(schema.messages.senderId, formerMemberId),
+          ),
+        );
+      expect(hers).toEqual({ body: "I'll wait by the door", erasedAt: api.now() });
     });
   });
 

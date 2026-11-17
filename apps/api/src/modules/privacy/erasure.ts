@@ -9,6 +9,7 @@ import { and, asc, eq, inArray, lte, notExists, or, sql } from "drizzle-orm";
 import type { Logger } from "../../logger.ts";
 import type { KeyedHasher } from "../../platform/crypto.ts";
 import type { Transaction } from "../bookings/seats.ts";
+import { reportCovers } from "../chat/clean-up.ts";
 import { catalogued, emptiedOf, freshIdsOf, tableOf } from "./catalogue.ts";
 import { lockDrivenTrips, openFor } from "./deletion.ts";
 import { accountHeld } from "./holds.ts";
@@ -154,8 +155,18 @@ async function eraseAccount(
         await tx.delete(table).where(eq(column(person), userId));
         continue;
       }
-      // A message keeps when it was sent, and reads "Message deleted".
-      const marked = table === messages ? { erasedAt: now } : {};
+      // A message keeps when it was sent, and reads "Message deleted". Where
+      // a report covers its conversation, what it said stays for the
+      // operator until the report's own time is over (spec 9, section 7),
+      // then goes with the conversation.
+      const message = table === messages;
+      if (message) {
+        await tx
+          .update(messages)
+          .set({ ...freshIdsOf(entry.otherIds), erasedAt: now, [person]: formerMemberId })
+          .where(and(eq(column(person), userId), reportCovers(tx, now, messages.conversationId)));
+      }
+      const marked = message ? { erasedAt: now } : {};
       await tx
         .update(table)
         .set({

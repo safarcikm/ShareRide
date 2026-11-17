@@ -223,7 +223,9 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     category: "messages",
     export: { section: "conversations" },
     personColumns: ["senderId"],
-    // The other person sees "Message deleted".
+    // The other person sees "Message deleted". In a conversation a report
+    // covers, the emptied columns stay for the operator until the report's
+    // time is over (erasure.ts, spec 9 section 7).
     onDeletion: keep(["kind"], ["body", "key", "params"]),
     otherIds: ["clientId"],
   },
