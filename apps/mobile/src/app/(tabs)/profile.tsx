@@ -115,6 +115,12 @@ function MyProfile({ me }: { readonly me: Me }) {
             router.push("/legal");
           }}
         />
+        <Row
+          title={t("notices.title")}
+          onPress={() => {
+            router.push("/notices");
+          }}
+        />
       </Card>
       <Small>{t("profile.inSettings")}</Small>
     </Screen>

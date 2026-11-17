@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, within } from "expo-router/testing-library";
+import { act, fireEvent, screen, waitFor, within } from "expo-router/testing-library";
 import { Linking } from "react-native";
 import { newAttemptKey } from "@/booking/attempt-key";
 import { readAppData, writeAppData } from "@/lib/app-data";
@@ -754,6 +754,23 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     expect(await screen.findByRole("button", { name: "Send request at 3,100 ISK" })).toBeVisible();
   });
 
+  it("says what may fit when the trip limit refuses the booking, and leads back (spec 17)", async () => {
+    const { client } = await openBooking({ book: () => failure(409, "trip_limit_reached") });
+    await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
+    expect(
+      await screen.findByText(
+        "This trip can't take this booking right now. Go back and try fewer seats or a shorter part of the trip.",
+      ),
+    ).toBeVisible();
+    // The price per seat is asked for again, in case it has fallen.
+    await waitFor(() => {
+      expect(client.calls.filter((call) => call.path === "/v1/trips/{id}")).toHaveLength(2);
+    });
+    await fireEvent.press(screen.getByRole("button", { name: "Back to the trip" }));
+    expect(screen).toHavePathname(`/trips/${id}`);
+    expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "1" });
+  });
+
   it.each([
     ["where to get in", `fromPoint=${bsi.id}&toPoint=${blonduos.id}`],
     ["where to get out", `fromPoint=${borgarnes.id}&toPoint=${borgarnes.id}`],
@@ -817,6 +834,16 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
       await screen.findByText(
         "You already have a booking or request at the same time. Withdraw or cancel it first.",
       ),
+    ).toBeVisible();
+  });
+
+  it("says where to read why, when the account was suspended meanwhile (spec 9, 3.6.2)", async () => {
+    await openBooking({
+      book: () => failure(403, "account_suspended", { suspendedUntil: null }),
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
+    expect(
+      await screen.findByText("Your account is suspended. Read why under Profile, Notices."),
     ).toBeVisible();
   });
 });

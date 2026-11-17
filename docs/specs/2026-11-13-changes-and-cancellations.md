@@ -127,11 +127,14 @@ stop):
 9. The price: the level control with each stretch's new price, worked out
    on the phone by the rules publishing uses (P3, P4) from the stretches'
    distances. It is for new bookings: bookings keep the price they booked
-   at (P1).
+   at (P1). Its highest level also keeps the trip within its trip limit,
+   counting what is already booked ([spec 17](2026-11-17-trip-earnings-limit.md)).
 10. The seats: no fewer than are taken on any stretch, requests counting
     (S5), up to 8, and the screen says how many are taken. More seats can
     lower the price level to the highest they allow, which the screen says
     before saving; each stretch's cap and price for new bookings follow.
+    Once people have booked, the trip limit can lower it further: those
+    passengers paid a share of fewer seats ([spec 17](2026-11-17-trip-earnings-limit.md)).
 11. How people book: requests already waiting for an answer stay open,
     and the screen says how many.
 12. The preferences and note change together. Passengers see them on the

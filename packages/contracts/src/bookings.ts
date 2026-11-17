@@ -8,13 +8,13 @@ import {
   declineReasons,
   defaultTripSettings,
   noteMaxLength,
-  peopleColourCount,
 } from "@shareride/domain";
 import { z } from "zod";
 import { cancellationTermsSchema, moneySchema, timestampSchema } from "./common.ts";
 import { accountSuspendedResponse, errorResponseSchema } from "./errors.ts";
 import { localisedTextSchema, meetingPointSummarySchema } from "./meeting-points.ts";
 import { bookingReviewSchema } from "./reviews.ts";
+import { peopleColourSchema, yearMonthSchema } from "./people.ts";
 import { defineRoute } from "./route.ts";
 import { disputeSchema } from "./trip-day.ts";
 
@@ -35,10 +35,6 @@ const notFound = {
   description: "not_found: no such booking of yours, or on your trip",
   ...errors,
 } as const;
-export const peopleColourSchema = z
-  .int()
-  .min(0)
-  .max(peopleColourCount - 1);
 
 /** A request's message is checked by the domain (300 characters, R5.6); this only bounds the body. */
 const maxMessageInRequest = 2000;
@@ -171,8 +167,8 @@ export const bookingSchema = z.object({
     /** Null for a former member, whose data was erased (spec 11, 3.5). */
     firstName: z.string().nullable(),
     colour: peopleColourSchema,
-    /** The year and month they joined, such as 2026-11. */
-    memberSince: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+    /** The year and month they joined. */
+    memberSince: yearMonthSchema,
   }),
   car: carSummarySchema.nullable(),
   /**
@@ -262,7 +258,7 @@ export const bookTripRoute = defineRoute({
     404: { description: "not_found: no such published trip", ...errors },
     409: {
       description:
-        "seats_taken (with `freeSeats`), price_changed (with the current `total`), stops_changed (`fromPoint` or `toPoint` is no longer at its position), overlapping_booking, booking_closed or trip_not_bookable (also while its driver is suspended)",
+        "seats_taken (with `freeSeats`), price_changed (with the current `total`), trip_limit_reached (the booking would take the trip past its limit, rule P3; fewer seats or a shorter part may fit), stops_changed (`fromPoint` or `toPoint` is no longer at its position), overlapping_booking, booking_closed or trip_not_bookable (also while its driver is suspended)",
       ...errors,
     },
   },

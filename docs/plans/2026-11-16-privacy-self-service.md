@@ -417,7 +417,7 @@ Added once milestone 9 built reports (#119). Martin chose this on
       text. `sent_as` keeps whether the driver or the passenger said it,
       as both may be erased. The hourly clean-up deletes the conversation
       once the report's time is over. Migration
-      `0039_messages_kept_for_reports` adds `sent_as` and lets an erased
+      `0040_messages_kept_for_reports` adds `sent_as` and lets an erased
       message keep its text, key and params.
 - Verify: integration tests (open, closed a millisecond inside the 3
   years, and closed 3 years ago, which empties as before; another

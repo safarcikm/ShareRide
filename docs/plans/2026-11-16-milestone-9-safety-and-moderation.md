@@ -256,9 +256,11 @@ completed).
   their sessions end.
 - `GET /v1/me/notices` and `POST /v1/me/notices/{id}/appeal` (once, within
   14 days).
-- **Suspended account screen:** the reason, until when, the notice with
-  "Appeal", and the ways out that stay open: My rides to read, Profile,
-  privacy (milestone 10) and Sign out.
+- **Suspended account screen**, in place of Find and Offer: until when,
+  the reason, what is closed and what stays open, "Read why and appeal"
+  to Notices, and My rides. Messages and Profile (with privacy, milestone
+  10, and Sign out) stay as they are; an action refused meanwhile says
+  where to read why.
 
 ### 4.6 The console
 
@@ -348,10 +350,13 @@ In four parts, each its own pull request:
       `report_closed` to the reporter) and `answerAppeal` (with
       `appeal_answered` to the person; reversing the suspension they are
       under lifts it); migration `0038_appeals`
-- [ ] 6c: `operator_notes` and the `hidden_at` columns; `hideContent`
+- [x] 6c: Notices with Appeal (Profile, and where a notice's push
+      opens), and the suspended account screen in place of Find and
+      Offer; `suspension` in `GET /v1/me`; a browser journey with a
+      suspension made by the test API (`POST /e2e/suspend`)
+- [ ] 6d: `operator_notes` and the `hidden_at` columns; `hideContent`
       (reversing it on appeal shows the content again),
       `cancelTripAsOperator` and `refundBooking`
-- [ ] 6d: Notices with Appeal, and the suspended account screen
 - Verify: integration tests (a suspension cancels upcoming trips and
   bookings with full refunds and tells the others without the reason; a
   suspended person can read but not act; an appeal once, within 14 days;
