@@ -9,7 +9,7 @@ import { and, asc, eq, inArray, lte, notExists, or, sql } from "drizzle-orm";
 import type { Logger } from "../../logger.ts";
 import type { KeyedHasher } from "../../platform/crypto.ts";
 import type { Transaction } from "../bookings/seats.ts";
-import { catalogued, emptiedOf, tableOf } from "./catalogue.ts";
+import { catalogued, emptiedOf, freshIdsOf, tableOf } from "./catalogue.ts";
 import { lockDrivenTrips, openFor } from "./deletion.ts";
 import { accountHeld } from "./holds.ts";
 
@@ -158,7 +158,12 @@ async function eraseAccount(
       const marked = table === messages ? { erasedAt: now } : {};
       await tx
         .update(table)
-        .set({ ...emptiedOf(deletion.emptied, column), ...marked, [person]: formerMemberId })
+        .set({
+          ...emptiedOf(deletion.emptied, column),
+          ...freshIdsOf(entry.otherIds),
+          ...marked,
+          [person]: formerMemberId,
+        })
         .where(eq(column(person), userId));
     }
   }

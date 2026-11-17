@@ -17,8 +17,9 @@ import {
   type SQL,
 } from "drizzle-orm";
 import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
+import type { Logger } from "../../logger.ts";
 import type { Transaction } from "../bookings/seats.ts";
-import { catalogued, emptiedOf, tableOf } from "./catalogue.ts";
+import { catalogued, emptiedOf, freshIdsOf, tableOf } from "./catalogue.ts";
 import { tripNotHeld } from "./holds.ts";
 
 const {
@@ -65,6 +66,7 @@ interface TripRecords {
   readonly table: PgTable;
   readonly people: readonly string[];
   readonly emptied: readonly string[];
+  readonly otherIds: readonly string[];
   readonly column: (key: string) => PgColumn;
   readonly reach: (tripId: string, db: Executor) => SQL;
 }
@@ -81,7 +83,16 @@ function tripRecords(): readonly TripRecords[] {
     if (entry.personColumns.length === 0 && emptied.length === 0) return [];
     const reach = reaches[name];
     if (reach === undefined) throw new Error(`The trips rule does not reach ${name}.`);
-    return [{ table: tableOf(name), people: entry.personColumns, emptied, column, reach }];
+    return [
+      {
+        table: tableOf(name),
+        people: entry.personColumns,
+        emptied,
+        otherIds: entry.otherIds ?? [],
+        column,
+        reach,
+      },
+    ];
   });
 }
 
@@ -162,6 +173,8 @@ export interface OldTripCounts {
   readonly bookings: number;
   /** Removed cars deleted, kept until now only for these trips. */
   readonly cars: number;
+  /** Trips that failed, each logged; tried again next hour. */
+  readonly failed: number;
 }
 
 /** One trip, with the people on it locked; null if held or done meanwhile. */
@@ -197,12 +210,12 @@ async function anonymiseTrip(
       .select({ count: count() })
       .from(bookings)
       .where(and(eq(bookings.tripId, tripId), ne(bookings.passengerId, formerMemberId)));
-    for (const { table, people: persons, emptied, column, reach } of tripRecords()) {
+    for (const { table, people: persons, emptied, otherIds, column, reach } of tripRecords()) {
       const moved = Object.fromEntries(persons.map((person) => [person, formerMemberId]));
       const changed = "updatedAt" in table ? { updatedAt: now } : {};
       await tx
         .update(table)
-        .set({ ...emptiedOf(emptied, column), ...moved, ...changed })
+        .set({ ...emptiedOf(emptied, column), ...freshIdsOf(otherIds), ...moved, ...changed })
         .where(reach(tripId, tx));
     }
 
@@ -243,9 +256,14 @@ async function anonymiseTrip(
 
 /**
  * The `trips_and_bookings` rule: makes every trip anonymous whose last stop
- * was 3 years ago or more, oldest first, each in its own transaction.
+ * was 3 years ago or more, oldest first, each in its own transaction. A
+ * trip that fails is logged and does not stop the others.
  */
-export async function anonymiseOldTrips(db: Database, now: Date): Promise<OldTripCounts> {
+export async function anonymiseOldTrips(
+  db: Database,
+  now: Date,
+  logger: Logger,
+): Promise<OldTripCounts> {
   const due = await db
     .select({ id: trips.id })
     .from(trips)
@@ -258,13 +276,19 @@ export async function anonymiseOldTrips(db: Database, now: Date): Promise<OldTri
       ),
     )
     .orderBy(asc(trips.arrivesAt), asc(trips.id));
-  const counts = { trips: 0, bookings: 0, cars: 0 };
+  const counts = { trips: 0, bookings: 0, cars: 0, failed: 0 };
   for (const { id } of due) {
-    const done = await anonymiseTrip(db, id, now);
-    if (done === null) continue;
-    counts.trips += 1;
-    counts.bookings += done.bookings;
-    counts.cars += done.cars;
+    try {
+      const done = await anonymiseTrip(db, id, now);
+      if (done === null) continue;
+      counts.trips += 1;
+      counts.bookings += done.bookings;
+      counts.cars += done.cars;
+    } catch (error) {
+      // Rolled back; tried again next hour.
+      logger.error({ tripId: id, err: error }, "trip anonymisation failed");
+      counts.failed += 1;
+    }
   }
   return counts;
 }

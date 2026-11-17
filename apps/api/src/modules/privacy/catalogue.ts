@@ -1,5 +1,5 @@
 import { personalData, schema } from "@shareride/db";
-import { getTableColumns, getTableName, is } from "drizzle-orm";
+import { getTableColumns, getTableName, is, sql, type SQL } from "drizzle-orm";
 import { PgTable, type PgColumn } from "drizzle-orm/pg-core";
 
 // The personal data catalogue (packages/db/src/personal-data.ts) as the
@@ -31,6 +31,15 @@ export function catalogued() {
     };
     return [{ name, entry, deletion, column }];
   });
+}
+
+/**
+ * New values for a table's other IDs, such as a retry key, for rows moved
+ * to the former member: two people's keys, unique per person, never collide
+ * once both rows are the former member's.
+ */
+export function freshIdsOf(otherIds: readonly string[] | undefined): Record<string, SQL> {
+  return Object.fromEntries((otherIds ?? []).map((key) => [key, sql`gen_random_uuid()`]));
 }
 
 /** What emptied columns hold: nothing, or an empty text or list where they must hold one. */

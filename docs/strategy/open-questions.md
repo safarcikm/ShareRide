@@ -8,10 +8,12 @@ here, update or accept the linked ADR, and move the row to "Answered".
 
 ## Open
 
-A new question goes in a table here with the next free number (Q22
+A new question goes in a table here with the next free number (Q23
 onwards), a recommendation and the docs it affects.
 
-No questions are open.
+| #   | Question | Recommendation | Affects |
+| --- | -------- | -------------- | ------- |
+| Q22 | 3 years after a trip, its trip and bookings are made anonymous (spec 11, 3.7), but its reviews stay while the person they are about has an account, still naming who wrote them, whom they are about and the booking. Through them the two people stay linked to that ride's route and date. Should an old review lose those links? | Yes: when its trip is made anonymous, a review keeps its stars, comment and date for the person it is about, but no longer names its author or its ride. Needs the booking to be optional on a review. Until decided, reviews keep their links (raised 2026-11-17, privacy PR 9b). | [Privacy register](../compliance/privacy-gdpr.md) (Reviews and ratings), [spec 8](../specs/2026-11-13-trip-day-reviews-and-reliability.md) 3.7, [privacy plan](../plans/2026-11-16-privacy-self-service.md) 4.7 |
 
 ## Answered
 

@@ -12,6 +12,7 @@ import {
   seedForBookings,
 } from "../bookings/testing.ts";
 import { createErasure } from "./erasure.ts";
+import { anonymiseOldTrips } from "./old-trips.ts";
 import { retentionSteps, runRetention } from "./retention.ts";
 
 // Trips and bookings 3 years after the trip (spec 11, 3.7; plan 4.7, PR 9b):
@@ -63,15 +64,18 @@ const { airport, north } = sampleTrip;
 const day = 24 * 3600 * 1000;
 const { formerMemberId } = schema;
 
-const quiet = () =>
-  createLogger({
+/** A logger that keeps its lines in `lines`. */
+function logger(lines: string[] = []) {
+  return createLogger({
     level: "info",
     destination: new Writable({
-      write(_chunk, _encoding, callback) {
+      write(chunk: Buffer, _encoding, callback) {
+        lines.push(chunk.toString());
         callback();
       },
     }),
   });
+}
 
 /** The clean-up once, at `now`; none of its rules may fail. */
 async function run(now: Date) {
@@ -81,15 +85,16 @@ async function run(now: Date) {
     clock: () => now,
     hasher: api.features.hasher,
     tripDaySettings: defaultTripDaySettings,
-    logger: quiet(),
+    logger: logger(),
   });
   const result = await runRetention({
     db,
     now,
-    steps: retentionSteps({ db, erasure }),
-    logger: quiet(),
+    steps: retentionSteps({ db, erasure, logger: logger() }),
+    logger: logger(),
   });
   expect(result.failedRules).toEqual([]);
+  expect(result.failures).toBe(0);
   return result.counts.trips_and_bookings;
 }
 
@@ -180,6 +185,14 @@ async function rideWithEverything() {
     changedAt: at,
   });
   return { jon, gunna, bookingId: booking.id, carId: trip.vehicleId };
+}
+
+/** Whether a query of this database waits for a row lock. */
+async function waitingOnALock() {
+  const { rows } = await api.connection.pool.query<{ waiting: number }>(
+    "select count(*)::int as waiting from pg_stat_activity where datname = current_database() and wait_event_type = 'Lock'",
+  );
+  return (rows[0]?.waiting ?? 0) > 0;
 }
 
 async function tripOf(tripId: string) {
@@ -286,6 +299,8 @@ describe("trips and bookings 3 years after the trip (spec 11, 3.7; plan 4.7)", (
       passengerId: formerMemberId,
       message: "",
       cancelNote: "",
+      // A new retry key, so it never collides with another of the former member's.
+      attemptKey: expect.any(String) as unknown,
       updatedAt: expect.any(Date) as unknown,
     });
     const checkIns = await db
@@ -388,15 +403,84 @@ describe("trips and bookings 3 years after the trip (spec 11, 3.7; plan 4.7)", (
         "insert into holds (subject_type, subject_id, reason, ends_at, set_by) values ('user', $1, 'Claim', $2, $3)",
         [gunna.userId, new Date(due.getTime() + day), operator.userId],
       );
-      const running = run(due);
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      // The rule finds the trip due, then waits for Gunna's row.
+      const state = { settled: false };
+      const running = anonymiseOldTrips(api.connection.db, due, logger()).finally(() => {
+        state.settled = true;
+      });
+      while (!state.settled && !(await waitingOnALock())) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
       await client.query("commit");
 
-      expect(await running).toEqual({ erased: 0, anonymised: 0 });
+      expect(await running).toEqual({ trips: 0, bookings: 0, cars: 0, failed: 0 });
     } finally {
       client.release();
     }
     expect((await bookingOf(bookingId)).passengerId).toBe(gunna.userId);
+  });
+
+  it("keeps the whole trip while one of its passengers is held", async () => {
+    const { bookingId } = await rideWithEverything();
+    const sigga = await newMember("Sigga");
+    const theirs = await booked(sigga.accessToken, airport, { fromStop: 0, toStop: 1 });
+    const due = await threeYearsAfter(airport);
+    await hold("user", sigga.userId, new Date(due.getTime() + day));
+
+    expect(await run(due)).toEqual({ erased: 0, anonymised: 0 });
+
+    expect((await bookingOf(bookingId)).message).toBe("I'll wait by the door");
+    expect((await bookingOf(theirs.id)).passengerId).toBe(sigga.userId);
+  });
+
+  it("moves two passengers' bookings that share a retry key", async () => {
+    const { bookingId } = await rideWithEverything();
+    const sigga = await newMember("Sigga");
+    const theirs = await booked(sigga.accessToken, airport, { fromStop: 0, toStop: 1 });
+    const { db } = api.connection;
+    // Each passenger's keys are their own, so two people can send the same.
+    const [mine] = await db
+      .select({ attemptKey: schema.bookings.attemptKey })
+      .from(schema.bookings)
+      .where(eq(schema.bookings.id, bookingId));
+    await db
+      .update(schema.bookings)
+      .set({ attemptKey: mine?.attemptKey ?? "" })
+      .where(eq(schema.bookings.id, theirs.id));
+
+    expect(await run(await threeYearsAfter(airport))).toEqual({ erased: 0, anonymised: 3 });
+
+    expect((await bookingOf(theirs.id)).passengerId).toBe(formerMemberId);
+  });
+
+  it("goes on with the other trips when one fails, and logs which", async () => {
+    await rideWithEverything();
+    const { pool } = api.connection;
+    // Something the rule does not expect refuses to change the airport trip.
+    await pool.query(`
+      CREATE FUNCTION old_trips_test_refuse() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN RAISE EXCEPTION 'refused'; END $$`);
+    await pool.query(`
+      CREATE TRIGGER old_trips_test_refuse BEFORE UPDATE ON trips FOR EACH ROW
+      WHEN (old.id = '${airport}') EXECUTE FUNCTION old_trips_test_refuse()`);
+    try {
+      const lines: string[] = [];
+
+      const counts = await anonymiseOldTrips(
+        api.connection.db,
+        await threeYearsAfter(north),
+        logger(lines),
+      );
+
+      expect(counts).toMatchObject({ trips: 1, failed: 1 });
+      expect((await tripOf(north)).driverId).toBe(formerMemberId);
+      expect((await tripOf(airport)).driverId).not.toBe(formerMemberId);
+      const failure = lines.find((line) => line.includes("trip anonymisation failed"));
+      expect(failure).toContain(airport);
+    } finally {
+      await pool.query(`DROP TRIGGER old_trips_test_refuse ON trips`);
+      await pool.query(`DROP FUNCTION old_trips_test_refuse`);
+    }
   });
 
   it("is safe to run twice: the second run changes nothing", async () => {
@@ -444,6 +528,21 @@ describe("trips and bookings 3 years after the trip (spec 11, 3.7; plan 4.7)", (
     expect(await run(await threeYearsAfter(airport))).toEqual({ erased: 1, anonymised: 2 });
 
     expect(await carOf(removed)).toBeUndefined();
+  });
+
+  it("keeps a removed car while a later trip still uses it", async () => {
+    await rideWithEverything();
+    const { db } = api.connection;
+    const removed = await newCar((await tripOf(airport)).driverId, { removed: true });
+    await db
+      .update(schema.trips)
+      .set({ vehicleId: removed })
+      .where(inArray(schema.trips.id, [airport, north]));
+
+    expect(await run(await threeYearsAfter(airport))).toEqual({ erased: 0, anonymised: 2 });
+
+    expect((await tripOf(north)).vehicleId).toBe(removed);
+    expect(await carOf(removed)).toMatchObject({ registration: "AB123" });
   });
 
   it("finishes a trip whose driver was erased: the passengers still named move too", async () => {

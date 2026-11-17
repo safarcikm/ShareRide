@@ -61,7 +61,9 @@ to booked passengers), `removed_at` (a removed car leaves the driver's list
 and their drafts, and stays on the published trips that used it; a car no
 published trip used is deleted; a car on a trip that has not ended cannot
 be removed; when the driver's account is erased, a car trips used stays with
-them for the former member, without its plate). Who owns the car in real life does not
+them for the former member, without its plate; 3 years after a trip, the
+trip takes a former member's car of the same make, model and colour without
+a plate, and a removed car no trip uses any more is deleted). Who owns the car in real life does not
 matter; the user is responsible for being allowed to use it
 ([spec 3](../specs/2026-11-13-post-a-trip.md#32-cars)).
 

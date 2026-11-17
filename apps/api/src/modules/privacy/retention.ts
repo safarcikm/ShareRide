@@ -96,9 +96,11 @@ const deleted = (rows: readonly unknown[]) => rows.length;
 export function retentionSteps({
   db,
   erasure,
+  logger,
 }: {
   readonly db: Database;
   readonly erasure: Pick<Erasure, "eraseDue">;
+  readonly logger: Logger;
 }): RetentionStep[] {
   return [
     {
@@ -136,7 +138,7 @@ export function retentionSteps({
     {
       rules: ["trips_and_bookings"],
       async run(now) {
-        const counts = await anonymiseOldTrips(db, now);
+        const counts = await anonymiseOldTrips(db, now, logger);
         return {
           counts: {
             trips_and_bookings: {
@@ -144,6 +146,7 @@ export function retentionSteps({
               anonymised: counts.trips + counts.bookings,
             },
           },
+          failures: counts.failed,
         };
       },
     },

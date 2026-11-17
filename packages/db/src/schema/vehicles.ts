@@ -7,7 +7,8 @@ import { users } from "./users.ts";
 /**
  * Drivers' cars (spec 3, 3.2). Any car the driver may use; who owns it does
  * not matter. A removed car is deleted, unless a published trip used it:
- * then it is kept for that trip with `removed_at`. Personal data: see the
+ * then it is kept for that trip with `removed_at`, until the trip is made
+ * anonymous 3 years later (privacy register). Personal data: see the
  * record of processing (the number plate).
  */
 const nameLength = (column: AnyPgColumn) =>

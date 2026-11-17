@@ -369,8 +369,10 @@ journeys, and gets a code review before it opens.
       car becomes a former member's of the same make, model and colour
       with no plate, a change of car drops which car, and a removed car
       no trip uses any more is deleted. Each trip is its own transaction,
-      with the people on it locked as a new hold locks them. Reviews keep
-      to their own rule
+      with the people on it locked as a new hold locks them, and one that
+      fails is logged without stopping the others. Rows moved to the former
+      member get new retry keys, here and in erasure, so two people's never
+      collide. Reviews keep to their own rule (open question Q22)
 - Verify: integration tests (at the edge of the period; the drivers' and
   passengers' other trips unchanged; a hold keeps them, also one being set
   as the rule runs; twice safe)

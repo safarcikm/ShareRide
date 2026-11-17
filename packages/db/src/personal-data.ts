@@ -26,7 +26,11 @@ export interface TablePrivacy {
    * erasure (apps/api/src/modules/privacy/erasure.ts) follows this.
    */
   readonly onDeletion: Deletion | null;
-  /** UUID columns that are not a person and point nowhere, such as a retry key. */
+  /**
+   * UUID columns that are not a person and point nowhere, such as a retry
+   * key. A row moved to the former member gets new ones, so keys unique per
+   * person never collide there.
+   */
   readonly otherIds?: readonly string[];
 }
 
