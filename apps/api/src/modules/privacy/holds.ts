@@ -134,8 +134,8 @@ const recordOf = (row: typeof holds.$inferSelect): HoldRecord => ({
   endedAt: row.endedAt,
 });
 
-/** An active account with the operator role. */
-async function isOperator(db: Executor, userId: string): Promise<boolean> {
+/** An active account with the operator role, not waiting to be deleted. */
+export async function isOperator(db: Executor, userId: string): Promise<boolean> {
   const [user] = await db
     .select({ roles: users.roles, status: users.status, deleteAfter: users.deleteAfter })
     .from(users)

@@ -60,6 +60,7 @@ const {
   notificationDeliveries,
   notifications,
   outboxEvents,
+  privacyRequests,
   pushTickets,
   pushTokens,
   scheduledNotifications,
@@ -328,6 +329,7 @@ async function accountFactsOf(
 ) {
   const kind = notification.kind as NotificationKind;
   if (!isAccountNotice(kind)) return undefined;
+  if (kind === "privacy_request_answered") return answerFactsOf(q, notification);
   const [row] = await q
     .select({
       locale: recipients.locale,
@@ -359,6 +361,45 @@ async function accountFactsOf(
   return {
     facts,
     current,
+    locale: row.locale === "is" ? "is" : "en",
+    recipientId: notification.recipientId,
+    email: row.emailVerifiedAt === null ? null : row.email,
+    phone: null,
+    booking: null,
+  } as const;
+}
+
+/**
+ * The answer to a request about the person's data (spec 11, 3.6), with the
+ * day it came: nothing once the request is no longer theirs (erased since).
+ */
+async function answerFactsOf(q: Queryable, notification: typeof notifications.$inferSelect) {
+  if (notification.privacyRequestId === null) return undefined;
+  const [row] = await q
+    .select({
+      locale: recipients.locale,
+      email: recipients.email,
+      emailVerifiedAt: recipients.emailVerifiedAt,
+      receivedAt: privacyRequests.receivedAt,
+      answer: privacyRequests.answer,
+    })
+    .from(privacyRequests)
+    .innerJoin(recipients, eq(recipients.id, privacyRequests.userId))
+    .where(
+      and(
+        eq(privacyRequests.id, notification.privacyRequestId),
+        eq(privacyRequests.userId, notification.recipientId),
+      ),
+    );
+  if (row === undefined || row.answer === null) return undefined;
+  const facts: AccountNoticeFacts = {
+    kind: "privacy_request_answered",
+    receivedAt: row.receivedAt,
+    answer: row.answer,
+  };
+  return {
+    facts,
+    current: true,
     locale: row.locale === "is" ? "is" : "en",
     recipientId: notification.recipientId,
     email: row.emailVerifiedAt === null ? null : row.email,
@@ -654,6 +695,7 @@ export function createNotificationWorker(dependencies: {
       readonly tripId?: string;
       readonly messageId?: string | null;
       readonly tripChangeId?: string | null;
+      readonly privacyRequestId?: string;
     },
     key: string,
     now: Date,
@@ -668,6 +710,7 @@ export function createNotificationWorker(dependencies: {
         tripId: notification.tripId ?? null,
         messageId: notification.messageId ?? null,
         tripChangeId: notification.tripChangeId ?? null,
+        privacyRequestId: notification.privacyRequestId ?? null,
         uniqueKey: `${key}:${kind}:${recipientId}`,
         createdAt: now,
         updatedAt: now,
@@ -909,6 +952,29 @@ export function createNotificationWorker(dependencies: {
       if (user === undefined) return;
       const kind = type === "DataExportReady" ? "data_export_ready" : "account_deletion_scheduled";
       await add(tx, { kind, to: null, recipientId: userId }, key, now);
+      return;
+    }
+    if (type === "PrivacyRequestAnswered") {
+      const userId = idIn(event.payload, "userId");
+      const requestId = idIn(event.payload, "requestId");
+      if (userId === undefined || requestId === undefined) return;
+      // Still the person's: an erasure in the meantime moved it to the former member.
+      const [request] = await tx
+        .select({ id: privacyRequests.id })
+        .from(privacyRequests)
+        .where(and(eq(privacyRequests.id, requestId), eq(privacyRequests.userId, userId)));
+      if (request === undefined) return;
+      await add(
+        tx,
+        {
+          kind: "privacy_request_answered",
+          to: null,
+          recipientId: userId,
+          privacyRequestId: requestId,
+        },
+        key,
+        now,
+      );
       return;
     }
     if (type === "MessageSent") {

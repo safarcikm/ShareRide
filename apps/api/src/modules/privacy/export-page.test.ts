@@ -17,6 +17,7 @@ import {
   notificationKinds,
   paymentStatuses,
   petOptions,
+  privacyRequestKinds,
   smokingOptions,
   spokenLanguages,
   tripChangeKinds,
@@ -133,7 +134,13 @@ describe("codeText", () => {
       "active",
       "suspended",
     ],
-    kind: [...notificationKinds, ...tripChangeKinds, ...schema.messageKinds, ...disputeKinds],
+    kind: [
+      ...notificationKinds,
+      ...tripChangeKinds,
+      ...schema.messageKinds,
+      ...disputeKinds,
+      ...privacyRequestKinds,
+    ],
     channel: channels,
     platform: ["ios", "android", "web"],
     endReason: [

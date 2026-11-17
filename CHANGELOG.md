@@ -629,6 +629,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   notification log and drafts, and the account itself) until its end. The
   `privacy` command shows the last run of each rule (`runs`) and lists,
   sets and ends holds (`holds`, `hold`, `end-hold`), each in the audit log.
+- Ask about my data in the API (spec 11, 3.6): `POST /v1/me/privacy-requests`
+  takes an objection, a restriction, a correction or a question from
+  someone with a verified email, at most 5 a day, due a month later. The
+  `privacy` command lists those waiting (`requests`) and answers one
+  (`answer`), in the audit log; the answer goes by email in the person's
+  language. Requests and answers are in Download my data, kept under the
+  former member when the account is erased, and deleted 3 years after the
+  answer.
 
 ### Fixed
 

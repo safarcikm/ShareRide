@@ -52,7 +52,7 @@
 | Holds | The record held (a person's, trip's or booking's ID), the operator's reason, its end, who set it and when it was ended early ([spec 11, 3.7](../specs/2026-11-13-privacy-self-service.md#37-retention-jobs)). Setting and ending one is in the audit log, with IDs and dates only | Keep records past their date while a dispute, chargeback or legal claim needs them | Legitimate interest; legal obligation where a claim requires it | Operator | 3 years after it ends, like the audit entries that record it (**verify**) |
 | Retention runs | For each retention rule, when the clean-up ran it and how many records it erased or made anonymous; never which records or what they held | Show that every period here is enforced (R11.5) | Legal obligation (accountability) | Operator | 90 days |
 | Data exports | The user's own export file (a ZIP of a JSON file and a readable page, other people by first name only), encrypted in the database with a key from the server secret; when it was asked for and made; a hash of the current one-time link | Access and portability | Legal obligation | The user | The file 7 days after it is made, or when a newer one is asked for (deleted by the hourly clean-up); the dates 30 days after that, so the app can say it expired |
-| Privacy requests | Request text and answer | Answer rights requests | Legal obligation | Operator | 3 years after the answer (**verify**) |
+| Privacy requests | What the person asked through "Ask about my data" (an objection, a restriction, a correction or a question) and its text, when it came and is due (a month later), and the answer with when it was given ([spec 11, 3.6](../specs/2026-11-13-privacy-self-service.md#36-ask-about-my-data)). Only from someone with a verified email, since the answer goes by email; 5 a day at most. Answering is in the audit log, with the date only | Answer rights requests within a month (R11.7) | Legal obligation | The user (in Download my data); operator | 3 years after the answer (**verify**); an unanswered one stays until answered. On erasure, kept under the former member to show it was answered |
 | Public profile | First name, photo, bio, languages, badges | Trust between users | Contract | All users | While the account exists |
 | Women-only trips | Date of opting in, date access was withdrawn; no gender field ([spec 14](../specs/2026-11-13-women-only-trips.md#7-privacy-and-safety)) | Let women offer and book women-only trips | Consent (given with the switch, withdrawn by turning it off) | The user; operator. Everyone sees a trip's "Women only" label | Until turned off or the account is deleted; a withdrawal stays with its report |
 | Vehicle | Make, model, colour, number plate | Identify the car at pickup | Contract | Make, model and colour: all users; number plate: booked passengers | Until the driver removes the car or the account is deleted; a removed car that published trips used is kept with them; on account deletion, without its number plate |
@@ -164,7 +164,8 @@ again the next hour, while the others still run.
 
 A hold (`privacy hold`) keeps what the clean-up would delete or make
 anonymous about a person, a trip or a booking until its end: conversations,
-ended sessions, the notification log, drafts, and the account itself, which
+ended sessions, the notification log, drafts, privacy requests, and the
+account itself, which
 is erased only once no hold covers the person, a trip they drove or rode
 on, or a booking of theirs or on their trip. A hold on one person keeps
 their conversations and the notifications about their bookings, but does

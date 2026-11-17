@@ -369,12 +369,20 @@ journeys, and gets a code review before it opens.
 - Verify: integration tests (at the edge of the period; the drivers' and
   passengers' other trips unchanged; a hold keeps them; twice safe)
 
-### PR 10: `feat(privacy)`: ask about my data
+### PR 10: `feat(privacy)`: ask about my data, the API
 
-- [ ] `privacy_requests`, the route, the form, the command's `requests`
-      and `answer`, `privacy_request_answered`
-- Verify: integration tests (due one month later; needs a verified email);
-  a screen test
+- [x] `privacy_requests`, the route, the command's `requests` and
+      `answer`, `privacy_request_answered` by email, the request in
+      Download my data, and its retention rule. The form moved to PR 10b
+- Verify: integration tests (due one month later; needs a verified email;
+  at most 5 a day; the answer by email once, in the audit log; erasure
+  keeps it under the former member)
+
+### PR 10b: `feat(privacy)`: ask about my data, the form
+
+- [ ] Ask about my data under Settings, Privacy: the kind, the text, the
+      thanks, and adding an email first when there is none
+- Verify: screen tests; a browser journey sends a request
 
 ## 6. Review focus
 

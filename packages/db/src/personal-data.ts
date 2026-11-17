@@ -213,6 +213,16 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
   blocked_numbers: notAboutAPerson(
     "keyed hashes of the numbers of erased suspended accounts, linked to no account",
   ),
+  privacy_requests: {
+    category: "privacy_requests",
+    export: { section: "privacy_requests" },
+    personColumns: ["userId"],
+    onDeletion: keep(
+      ["kind", "text", "answer"],
+      [],
+      "kept 3 years after the answer, to show it was answered (legal obligation)",
+    ),
+  },
   retention_runs: notAboutAPerson("how many records each clean-up rule erased, never which"),
   holds: {
     category: "audit",

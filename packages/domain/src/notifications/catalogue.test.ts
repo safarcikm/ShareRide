@@ -153,6 +153,8 @@ describe("the channels of each kind (spec 7, 3.3 and 3.4)", () => {
     ["dispute_decided", true, "always", false],
     ["dispute_decided_driver", true, "always", false],
     ["data_export_ready", true, "always", false],
+    // The answer to a question about one's data goes by email (spec 11, 3.6).
+    ["privacy_request_answered", false, "always", false],
   ] as const)("%s: push %s, email %s, SMS %s", (kind, push, email, sms) => {
     expect(notificationRules[kind]).toEqual({ push, email, sms });
   });
@@ -201,6 +203,7 @@ describe("how one person is reached (spec 7, 3.3, 3.4 and 3.7)", () => {
       { channel: "email", send: true },
     ]);
     expect(isAccountNotice("data_export_ready")).toBe(true);
+    expect(isAccountNotice("privacy_request_answered")).toBe(true);
     expect(isAccountNotice("booking_confirmed")).toBe(false);
   });
 
