@@ -103,10 +103,19 @@ export type AdminDecideDisputeBody = z.infer<typeof adminDecideDisputeBodySchema
 /**
  * A message of the booking's conversation as the operator reads it: who
  * sent it, the driver or the passenger, and what it says. System lines are
- * worded as for the driver, so `by: "me"` is the driver.
+ * worded as for the driver, so `by: "me"` is the driver. A message
+ * ShareRide removed keeps its words here, marked `removed` (spec 9, 3.4.3).
  */
 export const adminConversationMessageSchema = chatMessageSchema
-  .pick({ id: true, kind: true, text: true, quick: true, system: true, sentAt: true })
+  .pick({
+    id: true,
+    kind: true,
+    text: true,
+    quick: true,
+    system: true,
+    sentAt: true,
+    removed: true,
+  })
   .extend({ from: z.enum(["driver", "passenger", "system"]) });
 
 export type AdminConversationMessage = z.infer<typeof adminConversationMessageSchema>;

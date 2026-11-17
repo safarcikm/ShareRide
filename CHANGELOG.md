@@ -592,6 +592,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   `0037_hidden_content` adds `messages.hidden_at`,
   `trips.note_hidden_at` and `users.about_hidden_at`, which "Download my
   data" includes.
+- The console's reports API (milestone 9, PR 7a, spec 9, 3.4 to 3.6):
+  `/admin/v1/reports` lists open reports, safety first, then the oldest,
+  each due 24 hours after it was filed, or the last 50 closed; a report's
+  page has its records, both people's other reports, recent trips and
+  actions, and the actions taken under it. It names the reported message
+  without its words: `/admin/v1/reports/{id}/conversation` opens the
+  conversation only for a message report, each opening logged (R9.6), with
+  a message ShareRide removed marked `removed` (for disputes too). The
+  operator closes a report, warns, suspends or reinstates a person, hides
+  content and cancels a trip as ShareRide, each with the rule and the
+  reason the person reads; `/admin/v1/appeals` lists open and answered
+  appeals, and the answer is final. Only operators reach any of it.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its
