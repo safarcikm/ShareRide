@@ -9,8 +9,15 @@ import {
   regions,
   requiredImportColumns,
 } from "@shareride/domain";
-import { regionKeys, seasonText, typeKeys, type MessageKey, type Translate } from "@shareride/i18n";
-import { useEffect, useId, useRef, useState } from "react";
+import {
+  amenityKeys,
+  regionKeys,
+  seasonText,
+  typeKeys,
+  type MessageKey,
+  type Translate,
+} from "@shareride/i18n";
+import { Fragment, useEffect, useId, useRef, useState } from "react";
 import { ConsoleLink } from "../../components/console-link.tsx";
 import { useConsole } from "../../console.tsx";
 import { meetingPointsPath } from "./list.tsx";
@@ -62,6 +69,8 @@ function fileProblemText(t: Translate, { path, issue }: Detail): string {
       return t("admin.meetingPointImport.unknownColumn", { column: rest });
     case "repeated_column":
       return t("admin.meetingPointImport.repeatedColumn", { column: rest });
+    case "unnamed_column":
+      return t("admin.meetingPointImport.unnamedColumn", { position: rest });
     case "missing_column":
       return t("admin.meetingPointImport.missingColumn", { column: rest });
     case "unclosed_quote":
@@ -98,6 +107,32 @@ function rowProblemText(t: Translate, { column, issue }: AdminImportRow["problem
   })();
   const named = column === "position" ? "latitude, longitude" : column;
   return t("admin.meetingPointImport.problem", { column: named, problem });
+}
+
+/** What else a ready row holds, under the form's labels; empty fields are left out. */
+function RowFacts({ t, point }: { t: Translate; point: NonNullable<AdminImportRow["point"]> }) {
+  const facts: readonly (readonly [MessageKey, string | null])[] = [
+    ["admin.meetingPoint.nameEn", point.nameEn],
+    ["admin.meetingPoint.aliases", point.aliases.join(", ") || null],
+    [
+      "meetingPoints.amenities",
+      point.amenities.map((amenity) => t(amenityKeys[amenity])).join(", ") || null,
+    ],
+    ["admin.meetingPoint.whereToStandIs", point.whereToStandIs],
+    ["admin.meetingPoint.whereToStandEn", point.whereToStandEn],
+  ];
+  const shown = facts.filter(([, value]) => value !== null);
+  if (shown.length === 0) return null;
+  return (
+    <dl className="facts type-body">
+      {shown.map(([label, value]) => (
+        <Fragment key={label}>
+          <dt>{t(label)}</dt>
+          <dd className="line-breaks">{value}</dd>
+        </Fragment>
+      ))}
+    </dl>
+  );
 }
 
 /**
@@ -152,6 +187,7 @@ export function MeetingPointImport() {
   async function check() {
     setMessage(null);
     setFileProblems(null);
+    setChecked(null);
     if (file === null) {
       refuseFile("required");
       return;
@@ -278,6 +314,10 @@ export function MeetingPointImport() {
             onChange={(event) => {
               setFile(event.target.files?.[0] ?? null);
               setFieldProblem(null);
+              // The rows shown were read from the file before.
+              setChecked(null);
+              setFileProblems(null);
+              setMessage(null);
             }}
           />
           <p id={hintId} className="hint type-small">
@@ -300,8 +340,10 @@ export function MeetingPointImport() {
         <div ref={problemsRef} className="problem stack" role="alert" tabIndex={-1}>
           <p className="type-body-strong">{t("admin.meetingPointImport.cannotRead")}</p>
           <ul className="problem-list type-body">
-            {fileProblems.map((detail) => (
-              <li key={`${detail.path} ${detail.issue}`}>{fileProblemText(t, detail)}</li>
+            {fileProblems.map((detail, index) => (
+              <li key={`${String(index)} ${detail.path} ${detail.issue}`}>
+                {fileProblemText(t, detail)}
+              </li>
             ))}
           </ul>
         </div>
@@ -380,8 +422,8 @@ export function MeetingPointImport() {
                 </p>
                 {row.point === null ? (
                   <ul className="problem-list type-body">
-                    {row.problems.map((problem) => (
-                      <li key={`${problem.column} ${problem.issue}`}>
+                    {row.problems.map((problem, index) => (
+                      <li key={`${String(index)} ${problem.column} ${problem.issue}`}>
                         {rowProblemText(t, problem)}
                       </li>
                     ))}
@@ -399,6 +441,7 @@ export function MeetingPointImport() {
                     <p className="type-body muted">
                       {`${String(row.point.position.latitude)}, ${String(row.point.position.longitude)}`}
                     </p>
+                    <RowFacts t={t} point={row.point} />
                   </>
                 )}
                 <p className="tags">

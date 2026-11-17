@@ -28,15 +28,15 @@ const ready: AdminImportRow = {
   line: 2,
   nameIs: "Söluskálinn við Hraunsá",
   point: {
-    nameEn: null,
-    aliases: [],
+    nameEn: "Hraunsá service station",
+    aliases: ["Hyrnan", "Hraunsá"],
     position: { latitude: 64.5383, longitude: -21.9206 },
     region: "west",
     municipality: "Borgarbyggð",
     type: "fuel-station",
-    amenities: [],
-    whereToStandIs: null,
-    whereToStandEn: null,
+    amenities: ["toilets", "shop"],
+    whereToStandIs: "Við inngang verslunarinnar.",
+    whereToStandEn: "By the shop's entrance.",
     season: { startMonth: 5, endMonth: 9 },
   },
   problems: [],
@@ -102,6 +102,7 @@ describe("importing meeting points from a file (spec 2, 3.6.9)", () => {
     expect(help.textContent).toContain("fuel-station");
     expect(help.textContent).toContain("southern-peninsula");
     expect(help.textContent).toContain("step-free");
+    expect(help.textContent).toContain("commas, semicolons or tabs");
   });
 
   it("shows each row as it will be saved, or why it is skipped, before saving", async () => {
@@ -129,6 +130,12 @@ describe("importing meeting points from a file (spec 2, 3.6.9)", () => {
     expect(first.textContent).toContain("In use from May to September");
     expect(first.textContent).toContain("64.5383, -21.9206");
     expect(first.textContent).toContain("Ready to add");
+    const fact = (label: string) => within(first).getByText(label).nextElementSibling?.textContent;
+    expect(fact("English name, if different")).toBe("Hraunsá service station");
+    expect(fact("Other names people search for")).toBe("Hyrnan, Hraunsá");
+    expect(fact("Amenities")).toBe("Toilets, Shop");
+    expect(fact("Where to stand, in Icelandic")).toBe("Við inngang verslunarinnar.");
+    expect(fact("Where to stand, in English")).toBe("By the shop's entrance.");
     const second = rows[1] as HTMLElement;
     expect(second.textContent).toContain("Line 3");
     expect(second.textContent).toContain("No name");
@@ -198,6 +205,7 @@ describe("importing meeting points from a file (spec 2, 3.6.9)", () => {
           { path: "columns.region", issue: "missing_column" },
           { path: "lines.4", issue: "unclosed_quote" },
           { path: "file", issue: "not_utf8" },
+          { path: "columns.7", issue: "unnamed_column" },
         ],
       },
     });
@@ -218,6 +226,7 @@ describe("importing meeting points from a file (spec 2, 3.6.9)", () => {
       "The column region is missing.",
       "A quote that starts on line 4 is never closed.",
       "It is not saved as UTF-8. In Excel, save it as CSV UTF-8.",
+      "Column 7 has no name in the first row.",
     ]);
     expect(screen.queryByRole("list", { name: "The file's rows" })).toBeNull();
   });
@@ -238,6 +247,18 @@ describe("importing meeting points from a file (spec 2, 3.6.9)", () => {
       await screen.findByText("The file is over 1 MB. Split it into smaller files."),
     ).toBeTruthy();
     expect(api.called(adminImportMeetingPointsRoute)).toEqual([]);
+  });
+
+  it("forgets the rows checked when another file is chosen", async () => {
+    const api = start();
+    await page();
+    choose();
+    fireEvent.click(checkButton());
+    await screen.findByRole("button", { name: "Add 1 draft" });
+    choose("name_is\n", "other.csv");
+    expect(screen.queryByRole("heading", { name: "The file's rows" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Add/ })).toBeNull();
+    expect(api.called(adminImportMeetingPointsRoute)).toHaveLength(1);
   });
 
   it("starts again with another file", async () => {

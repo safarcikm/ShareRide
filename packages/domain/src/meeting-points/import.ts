@@ -56,12 +56,17 @@ export type ImportFileIssue =
   | "too_many_rows"
   | "unknown_column"
   | "repeated_column"
+  | "unnamed_column"
   | "missing_column";
 
-/** Why a whole file cannot be read: with the column, or the line a quote opened on. */
+/**
+ * Why a whole file cannot be read: with the column, the place of a column
+ * with no name (from 1), or the line a quote opened on.
+ */
 export interface ImportFileProblem {
   readonly issue: ImportFileIssue;
   readonly column?: string;
+  readonly position?: number;
   readonly line?: number;
 }
 
@@ -138,39 +143,59 @@ export function readMeetingPointImport(
   text: string,
   context: { readonly today: string; readonly existingNames: readonly string[] },
 ): Result<readonly ImportRow[], readonly ImportFileProblem[]> {
-  const content = text.startsWith("﻿") ? text.slice(1) : text;
+  const content = text.startsWith("\uFEFF") ? text.slice(1) : text;
   // A file in another encoding, read as UTF-8, has replacement characters.
-  if (content.includes("�")) return err([{ issue: "not_utf8" }]);
+  if (content.includes("\uFFFD")) return err([{ issue: "not_utf8" }]);
 
-  const parsed = parseCsv(content, delimiterOf(content));
+  const { delimiter, sepLine } = delimiterOf(content);
+  const parsed = parseCsv(content, delimiter);
   if (!parsed.ok) return err([{ issue: "unclosed_quote", line: parsed.error }]);
-  const lines = parsed.value.filter((line) => line.cells.some((cell) => cell.trim() !== ""));
-  const [head, ...body] = lines;
-  if (head === undefined || body.length === 0) return err([{ issue: "empty" }]);
+  const lines = parsed.value.filter(
+    (line) => line.line !== sepLine && line.cells.some((cell) => cell.trim() !== ""),
+  );
+  const [first, ...body] = lines;
+  if (first === undefined || body.length === 0) return err([{ issue: "empty" }]);
 
-  const names = head.cells.map((cell) => cell.trim().toLowerCase());
+  // Spreadsheets save empty columns at the end, with separators and no name.
+  const kept = Array.from(first.cells.keys()).filter(
+    (index) =>
+      (first.cells[index] ?? "").trim() !== "" ||
+      body.some((line) => (line.cells[index] ?? "").trim() !== ""),
+  );
+  const names = kept.map((index) => (first.cells[index] ?? "").trim().toLowerCase());
   const problems: ImportFileProblem[] = [];
-  names.forEach((name, index) => {
-    if (names.indexOf(name) !== index) problems.push({ issue: "repeated_column", column: name });
-  });
-  for (const name of names) {
+  const once = [...new Set(names)].filter((name) => name !== "");
+  for (const name of once) {
+    if (isColumn(name) && names.indexOf(name) !== names.lastIndexOf(name)) {
+      problems.push({ issue: "repeated_column", column: name });
+    }
+  }
+  for (const name of once) {
     if (!isColumn(name)) problems.push({ issue: "unknown_column", column: name });
   }
+  names.forEach((name, index) => {
+    if (name === "") problems.push({ issue: "unnamed_column", position: (kept[index] ?? 0) + 1 });
+  });
   for (const column of requiredImportColumns) {
     if (!names.includes(column)) problems.push({ issue: "missing_column", column });
   }
   if (problems.length > 0) return err(problems);
   if (body.length > importLimits.maxRows) return err([{ issue: "too_many_rows" }]);
 
-  const seen = new Set(context.existingNames.map(normaliseSearchText));
+  // The cells up to the last column with a name.
+  const width = (kept.at(-1) ?? -1) + 1;
+  const seen = new Set(context.existingNames.map(nameKey));
   return ok(
     body.map(({ line, cells }) => {
       const cell = (column: ImportColumn) => {
-        const index = names.indexOf(column);
-        return index === -1 ? "" : (cells[index] ?? "");
+        const index = kept[names.indexOf(column)];
+        return index === undefined ? "" : (cells[index] ?? "");
       };
-      const row = readRow(cell, cells.length === names.length, context.today);
-      const name = normaliseSearchText(row.nameIs);
+      // A row may end with empty cells after the last column, as above.
+      const whole =
+        cells.length >= width && cells.slice(width).every((extra) => extra.trim() === "");
+      const row = readRow(cell, whole, context.today);
+      const name = nameKey(row.nameIs);
       const duplicate = name !== "" && seen.has(name);
       seen.add(name);
       const found = duplicate
@@ -184,6 +209,25 @@ export function readMeetingPointImport(
   );
 }
 
+/**
+ * A name as search finds it, so "Olís" repeats "Olis"; a name with no
+ * letters or digits, such as "?", by itself in lower case.
+ */
+const nameKey = (name: string): string => {
+  const tidied = oneLine(name.normalize("NFC")).toLowerCase();
+  return normaliseSearchText(tidied) || tidied;
+};
+
+/** A cell's text on one line: line breaks, tabs and control characters as single spaces. */
+const oneLine = (value: string): string => value.replace(/[\p{Cc}\s]+/gu, " ").trim();
+
+/** Where to stand keeps its line breaks; tabs are spaces and other control characters go. */
+const withLineBreaks = (value: string): string =>
+  value
+    .replace(/\r\n?/gu, "\n")
+    .replace(/\t/gu, " ")
+    .replace(/(?!\n)\p{Cc}/gu, "");
+
 function readRow(
   cell: (column: ImportColumn) => string,
   whole: boolean,
@@ -193,7 +237,7 @@ function readRow(
   readonly draft: ValidMeetingPointDraft | null;
   readonly problems: readonly ImportProblem[];
 } {
-  const nameIs = cell("name_is").normalize("NFC").trim();
+  const nameIs = oneLine(cell("name_is").normalize("NFC"));
   if (!whole) return { nameIs, draft: null, problems: [{ column: "row", issue: "cells" }] };
 
   const problems: ImportProblem[] = [];
@@ -202,15 +246,15 @@ function readRow(
   const season = seasonOf(cell("season_start"), cell("season_end"), problems);
   const draft: MeetingPointDraft = {
     nameIs,
-    nameEn: cell("name_en"),
-    aliases: listOf(cell("aliases")),
+    nameEn: oneLine(cell("name_en")),
+    aliases: listOf(cell("aliases")).map(oneLine),
     position: { latitude: latitude ?? 0, longitude: longitude ?? 0 },
     region: cell("region").trim().toLowerCase(),
-    municipality: cell("municipality"),
+    municipality: oneLine(cell("municipality")),
     type: cell("type").trim().toLowerCase(),
     amenities: listOf(cell("amenities")).map((amenity) => amenity.toLowerCase()),
-    whereToStandIs: cell("where_to_stand_is"),
-    whereToStandEn: cell("where_to_stand_en"),
+    whereToStandIs: withLineBreaks(cell("where_to_stand_is")),
+    whereToStandEn: withLineBreaks(cell("where_to_stand_en")),
     shelterHours: null,
     shelterNoteIs: null,
     shelterNoteEn: null,
@@ -294,15 +338,22 @@ const listOf = (value: string): string[] =>
 const inColumnOrder = (problems: readonly ImportProblem[]): readonly ImportProblem[] =>
   [...problems].sort((a, b) => columnOrder.indexOf(a.column) - columnOrder.indexOf(b.column));
 
-/** The separator the header row uses most: a comma, a semicolon or a tab. */
-function delimiterOf(text: string): string {
-  const header = text.split(/\r\n|\n|\r/u, 1)[0] ?? "";
+/**
+ * The separator: the one Excel names on a first line such as "sep=;", which
+ * is then left out; otherwise the one the first line with text uses most, a
+ * comma, a semicolon or a tab.
+ */
+function delimiterOf(text: string): { readonly delimiter: string; readonly sepLine?: number } {
+  const lines = text.split(/\r\n|\n|\r/u);
+  const named = /^sep=([,;\t])$/iu.exec(lines[0] ?? "");
+  if (named?.[1] !== undefined) return { delimiter: named[1], sepLine: 1 };
+  const header = lines.find((line) => line.trim() !== "") ?? "";
   const counts = [",", ";", "\t"].map((delimiter) => ({
     delimiter,
     count: header.split(delimiter).length - 1,
   }));
   const [most] = counts.sort((a, b) => b.count - a.count);
-  return most !== undefined && most.count > 0 ? most.delimiter : ",";
+  return { delimiter: most !== undefined && most.count > 0 ? most.delimiter : "," };
 }
 
 interface CsvLine {

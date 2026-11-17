@@ -97,6 +97,50 @@ describe("readMeetingPointImport", () => {
     });
   });
 
+  it("reads Excel's sep= line, blank lines first and empty columns at the end", () => {
+    const rows = rowsOf(
+      [
+        "sep=;",
+        "",
+        "name_is;latitude;longitude;type;region;municipality;;",
+        "Olís Blönduósi;65,6603;-20,2797;fuel-station;northwest;Húnabyggð;;",
+        "N1 Borgarnesi;64,5383;-21,9206;fuel-station;west;Borgarbyggð;;;",
+      ].join("\r\n"),
+    );
+    expect(rows.map((row) => [row.line, row.ok])).toEqual([
+      [4, true],
+      [5, true],
+    ]);
+
+    const blankFirst = rowsOf(
+      [
+        "",
+        "name_is;latitude;longitude;type;region;municipality",
+        "Hof;65,68;-18,09;other;northeast;Akureyrarbær",
+      ].join("\n"),
+    );
+    expect(blankFirst[0]).toMatchObject({ line: 3, ok: true });
+  });
+
+  it("puts one-line cells on one line, and keeps the line breaks of where to stand", () => {
+    const rows = rowsOf(
+      [
+        "name_is,aliases,latitude,longitude,type,region,municipality,where_to_stand_en",
+        '"Hof\nAkureyri","Menningarhúsið\tHof",65.6839,-18.0878,other,northeast,"Akureyrar\u0007bær","By the sign,\r\nat the front.\u0000"',
+      ].join("\n"),
+    );
+    expect(rows[0]).toMatchObject({
+      nameIs: "Hof Akureyri",
+      ok: true,
+      draft: {
+        nameIs: "Hof Akureyri",
+        aliases: ["Menningarhúsið Hof"],
+        municipality: "Akureyrar bær",
+        whereToStandEn: "By the sign,\nat the front.",
+      },
+    });
+  });
+
   it("reads quoted cells with the separator, quotes and line breaks in them", () => {
     const rows = rowsOf(
       [
@@ -184,6 +228,19 @@ describe("readMeetingPointImport", () => {
     expect(problemsOf(rows[2])).toEqual([{ column: "name_is", issue: "duplicate" }]);
   });
 
+  it("marks a repeat of a name with no letters or digits", () => {
+    const row = (name: string) => `${name},64.5,-21.9,other,west,Borgarbyggð`;
+    const rows = rowsOf(
+      ["name_is,latitude,longitude,type,region,municipality", row("?"), row("?"), row("!")].join(
+        "\n",
+      ),
+      ["!"],
+    );
+    expect(rows.map((found) => found.ok)).toEqual([true, false, false]);
+    expect(problemsOf(rows[1])).toEqual([{ column: "name_is", issue: "duplicate" }]);
+    expect(problemsOf(rows[2])).toEqual([{ column: "name_is", issue: "duplicate" }]);
+  });
+
   it("says when a row has more or fewer cells than the header", () => {
     const rows = rowsOf(
       [
@@ -221,6 +278,24 @@ describe("readMeetingPointImport", () => {
           { issue: "missing_column", column: "longitude" },
           { issue: "missing_column", column: "region" },
           { issue: "missing_column", column: "municipality" },
+        ],
+      });
+    });
+
+    it("saying each column once, and a column with no name by its place", () => {
+      expect(
+        read(
+          [
+            "name_is,colour,colour,latitude,latitude,latitude,,longitude,type,region,municipality",
+            "A,red,blue,64,64,64,x,-21,other,west,Borgarbyggð",
+          ].join("\n"),
+        ),
+      ).toEqual({
+        ok: false,
+        error: [
+          { issue: "repeated_column", column: "latitude" },
+          { issue: "unknown_column", column: "colour" },
+          { issue: "unnamed_column", position: 7 },
         ],
       });
     });

@@ -38,13 +38,15 @@ export interface MeetingPointsAdminRoutesDependencies {
 const importBodyLimit = 2 * 1024 * 1024;
 
 /** Why a file cannot be read, by the column or line it is about. */
-const fileProblemDetail = ({ issue, column, line }: ImportFileProblem) => ({
+const fileProblemDetail = ({ issue, column, position, line }: ImportFileProblem) => ({
   path:
     column !== undefined
       ? `columns.${column}`
-      : line !== undefined
-        ? `lines.${String(line)}`
-        : "file",
+      : position !== undefined
+        ? `columns.${String(position)}`
+        : line !== undefined
+          ? `lines.${String(line)}`
+          : "file",
   issue,
 });
 

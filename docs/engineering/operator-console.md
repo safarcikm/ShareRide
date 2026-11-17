@@ -266,23 +266,34 @@ or its problems by column. "Add N drafts" sends the same text with
   names (`fuel-station`, `southern-peninsula`, `step-free`). Shelter hours
   and "Last checked" are added later in each draft's form.
 - Cells may be separated by commas, semicolons or tabs, whichever the
-  first row uses most, as Excel in Icelandic saves with semicolons and
-  decimal commas; coordinates take a decimal comma too. Quoted cells may
-  hold the separator, line breaks and doubled quotes. A byte order mark
-  is dropped; a file in another encoding is refused (`not_utf8`).
+  first line with text uses most, as Excel in Icelandic saves with
+  semicolons and decimal commas; coordinates take a decimal comma too.
+  Excel's `sep=;` first line names the separator and is left out. Quoted
+  cells may hold the separator, line breaks and doubled quotes. A byte
+  order mark is dropped; a file in another encoding is refused
+  (`not_utf8`). Columns with no name and no text, which spreadsheets save
+  at the end, are left out; a column with text and no name is refused
+  (`unnamed_column`, by its place).
+- Names, aliases and the municipality are put on one line (line breaks,
+  tabs and control characters become single spaces); where to stand keeps
+  its line breaks and loses other control characters.
 - Each row is checked as the form checks a draft
   (`validateMeetingPointDraft`). A row whose Icelandic name, compared as
   search compares names, is the name of a point that is not retired, or
   of an earlier row, is a `duplicate`, so importing the same file twice
-  adds nothing.
-- Rows with problems are skipped; the rest become drafts in one
+  adds nothing. A name with no letters or digits, such as `?`, is
+  compared as it is, in lower case.
+- Rows with problems are skipped; the rest become drafts, inserted one at
+  a time in the file's order so each row gets its own ID, in one
   transaction with one audit entry, `meeting_point.imported` (how many
   were added and skipped, and each new point's ID and name). Imports take
   an advisory lock, so two at once cannot add the same name.
-- At most 500 rows and 1 MB (`importLimits`); a larger body gets 413
-  before it is read. A file that cannot be read gets `validation_failed`
-  with each problem in `details`: `file`, `columns.<name>` or
-  `lines.<number>`.
+- At most 500 rows and 1 MB (`importLimits`). The console refuses a file
+  over 1 MB before sending it. The API answers 413 to a body over 2 MB
+  before reading it, and `validation_failed` to a text over 1 000 000
+  characters. A file that cannot be read gets `validation_failed` with
+  each problem in `details`: `file`, `columns.<name>`, `columns.<place>`
+  or `lines.<number>`.
 
 ```csv
 name_is,name_en,aliases,latitude,longitude,type,region,municipality,amenities,season_start,season_end

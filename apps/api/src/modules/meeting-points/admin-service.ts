@@ -341,19 +341,23 @@ export function createMeetingPointAdminService(dependencies: {
         const found = await read(tx);
         if (!found.ok) return found;
         const rows = found.value;
-        const drafts = rows.flatMap((row) => (row.ok ? [row.draft] : []));
-        if (drafts.length === 0) return ok(unsaved(rows));
+        if (!rows.some((row) => row.ok)) return ok(unsaved(rows));
         const unreviewed = { amenitiesReviewedOn: null, seasonReviewedOn: null };
-        const inserted = await tx
-          .insert(meetingPoints)
-          .values(drafts.map((draft) => ({ ...columnsOf(draft, unreviewed), status: "draft" })))
-          .returning({ id: meetingPoints.id, nameIs: meetingPoints.nameIs });
-        // Names are unique within an import, as a repeat is a duplicate.
-        const idOf = new Map(inserted.map((point) => [point.nameIs, point.id]));
-        const added = drafts.map((draft) => ({
-          id: idOf.get(draft.nameIs) ?? "",
-          nameIs: draft.nameIs,
-        }));
+        // One at a time, in the file's order, so each row gets its own ID.
+        const idOf = new Map<ImportRow, string>();
+        for (const row of rows) {
+          if (!row.ok) continue;
+          const [point] = await tx
+            .insert(meetingPoints)
+            .values({ ...columnsOf(row.draft, unreviewed), status: "draft" })
+            .returning({ id: meetingPoints.id });
+          if (point === undefined) throw new Error("The draft was not saved.");
+          idOf.set(row, point.id);
+        }
+        const added = rows.flatMap((row) => {
+          const id = idOf.get(row);
+          return id === undefined ? [] : [{ id, nameIs: row.nameIs }];
+        });
         await recordAudit(tx, {
           operator: actor.operator,
           action: "meeting_point.imported",
@@ -362,9 +366,7 @@ export function createMeetingPointAdminService(dependencies: {
           request: actor.request,
         });
         return ok({
-          rows: rows.map((row) =>
-            importRowOf(row, row.ok ? (idOf.get(row.draft.nameIs) ?? null) : null),
-          ),
+          rows: rows.map((row) => importRowOf(row, idOf.get(row) ?? null)),
           added: added.length,
         });
       });

@@ -1885,7 +1885,7 @@ export const en = {
     "Add meeting points as drafts from a CSV file, one point per row. You see each row before anything is saved, and rows with problems are skipped.",
   "admin.meetingPointImport.helpTitle": "What the file holds",
   "admin.meetingPointImport.helpColumns":
-    "The first row names the columns, in any order. Every file needs {required}. These can be left out or left empty: {optional}. Separate aliases and amenities with {separator}. Cells may be separated by commas or semicolons, and coordinates may have a decimal comma.",
+    "The first row names the columns, in any order. Every file needs {required}. These can be left out or left empty: {optional}. Separate aliases and amenities with {separator}. Cells may be separated by commas, semicolons or tabs, and coordinates may have a decimal comma.",
   "admin.meetingPointImport.helpValues":
     "Write coordinates in decimal degrees, such as 64.1376 and -21.9365. A season is two months from 1 to 12, such as 5 and 9 for May to September; leave both empty for all year. A name that a meeting point has already is skipped.",
   "admin.meetingPointImport.file": "CSV file",
@@ -1898,6 +1898,7 @@ export const en = {
   "admin.meetingPointImport.cannotRead": "This file cannot be read:",
   "admin.meetingPointImport.unknownColumn": "There is no column called {column}.",
   "admin.meetingPointImport.repeatedColumn": "The column {column} is there twice.",
+  "admin.meetingPointImport.unnamedColumn": "Column {position} has no name in the first row.",
   "admin.meetingPointImport.missingColumn": "The column {column} is missing.",
   "admin.meetingPointImport.unclosedQuote": "A quote that starts on line {line} is never closed.",
   "admin.meetingPointImport.empty": "It has no rows under the column names.",
