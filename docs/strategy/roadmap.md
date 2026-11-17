@@ -190,7 +190,7 @@ built alongside milestones 7 to 9)
 - [x] Confirm with a fresh code
 - [x] Download my data
 - [x] Delete my account, with 7 days to undo
-- [ ] Retention periods run on their own and leave a record
+- [x] Retention periods run on their own and leave a record
 - [x] Ask about my data
 
 Milestones 7 to 10 are built at the same time, each in its own thread, at

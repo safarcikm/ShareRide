@@ -1,6 +1,8 @@
 # 0022. Store photos in Hetzner Object Storage in Helsinki
 
-- **Status:** Accepted (2026-11-13, by Martin, with the milestone 2 plan)
+- **Status:** Accepted (2026-11-13, by Martin, with the milestone 2 plan); who
+  re-encodes a photo and how long its links last are superseded by
+  [ADR 0029](0029-photos-cleaned-in-the-browser-and-checked-by-the-api.md)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [ADR 0007](0007-eea-hosting-and-data-residency.md),

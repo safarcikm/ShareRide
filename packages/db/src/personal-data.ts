@@ -26,7 +26,11 @@ export interface TablePrivacy {
    * erasure (apps/api/src/modules/privacy/erasure.ts) follows this.
    */
   readonly onDeletion: Deletion | null;
-  /** UUID columns that are not a person and point nowhere, such as a retry key. */
+  /**
+   * UUID columns that are not a person and point nowhere, such as a retry
+   * key. A row moved to the former member gets new ones, so keys unique per
+   * person never collide there.
+   */
   readonly otherIds?: readonly string[];
 }
 
@@ -118,6 +122,9 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     ),
   },
   meeting_points: notAboutAPerson("public places chosen by the operator"),
+  meeting_point_photos: notAboutAPerson(
+    "photos of public places, faces and number plates blurred by the operator",
+  ),
   places: notAboutAPerson("public place names"),
   legs: notAboutAPerson("driving distances between meeting points"),
   trips: {

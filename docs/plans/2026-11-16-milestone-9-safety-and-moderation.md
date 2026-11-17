@@ -327,7 +327,8 @@ Built in two parts: 5a the reports themselves, 5b the operator's alert.
       conversation and a message pressed and held or right-clicked, the
       booking page, a request and each passenger on the driver's trip
       page), and My reports in Settings; no name in any address; a person
-      report from the chat raises Q22
+      report from the chat raised Q22, which Martin answered on 2026-11-17
+      (A46): it opens no conversation
 - [x] 5b: `report_filed` to operators by push, and SMS from 07:00 to 23:00
       for a safety report (`report_filed_urgent`)
 - Verify: integration tests (each subject and refusal, the daily limit,
@@ -339,7 +340,7 @@ Built in two parts: 5a the reports themselves, 5b the operator's alert.
 In three parts, each its own pull request:
 
 - [x] 6a: `moderation_actions` and `suspended_until` (migration
-      `0035_moderation`); `suspend`, `warn` and `reinstate` with their
+      `0036_moderation`); `suspend`, `warn` and `reinstate` with their
       audit entries and notices; ShareRide's cancellation of a trip and of
       a booking (`trips.cancelled_by`); refusals while suspended, and a
       suspended person stays signed in; ends in the minute job

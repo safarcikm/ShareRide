@@ -14,7 +14,7 @@ edge ([privacy providers](../compliance/privacy-gdpr.md#providers)).
 | Part | Render name | What it is |
 | ---- | ----------- | ---------- |
 | API and web app | `shareride-staging-api` | Web service built from `apps/api/Dockerfile`; serves `/v1` and the web app on one origin |
-| Clean-up | `shareride-staging-clean-up` | Cron job, every hour at minute 17 (UTC): deletes sign-in records past their retention (with the push tokens of sessions ended for being idle), old trip drafts, conversations 12 months after their trip (unless a report covers them: then until 3 years after it closes), the notification log after 90 days, operator console sessions 30 days after they end, passkey challenges and setup links once they expire, and data export files once expired (their dates 30 days later); then erases the accounts whose 7 days after "Delete my account" have ended (spec 11). It takes `AUTH_SECRET` from the API |
+| Clean-up | `shareride-staging-clean-up` | Cron job, every hour at minute 17 (UTC): deletes sign-in records past their retention (with the push tokens of sessions ended for being idle), old trip drafts, conversations 12 months after their trip (unless a report covers them: then until 3 years after it closes), makes trips and bookings anonymous 3 years after the trip, the notification log after 90 days, operator console sessions 30 days after they end, passkey challenges and setup links once they expire, and data export files once expired (their dates 30 days later); then erases the accounts whose 7 days after "Delete my account" have ended (spec 11). It takes `AUTH_SECRET` from the API |
 | Database | `shareride-staging-db` | PostgreSQL 18 with PostGIS, private network only |
 | Settings | `shareride-staging` | Environment group: `NODE_ENV=production`, `APP_ENV=staging`, `LOG_LEVEL`. `PAYMENT_PROVIDER` is unset, so staging pays with the test provider: no card, no money moves. `WORKER` is unset, so the API runs the notification worker: it pushes through Expo to the phones that registered, with `EXPO_ACCESS_TOKEN` once it is set ([app builds](app-builds.md#android-build-with-push)); `EMAIL_PROVIDER` is unset, so it sends no email and records who would have been emailed, until email is turned on (below) |
 
@@ -303,6 +303,32 @@ Staging sends no email until ShareRide has a domain (ADR 0027). Then:
 
 To stop email again, set `EMAIL_PROVIDER` to `none`.
 
+## Turn on photos
+
+Staging takes no meeting point photos until the bucket is open (ADR 0022,
+about €5 a month). Real meeting points need one to go into use. Martin's
+steps:
+
+1. In the Hetzner Console, open (or create) a project, then **Object
+   Storage**, **Create Bucket**: location Helsinki (`hel1`), a name such
+   as `shareride-staging-photos`, and visibility **Private**. Sign
+   Hetzner's data processing agreement in the account's settings.
+2. In the project's **Security**, **S3 credentials**, generate
+   credentials. The secret key is shown once: copy it straight into
+   Render, never anywhere else.
+3. Open `shareride-staging-api`, **Environment**, and add
+   `PHOTO_STORAGE` set to `hetzner`, `PHOTO_BUCKET_ENDPOINT` set to
+   `https://hel1.your-objectstorage.com`, `PHOTO_BUCKET` (the bucket's
+   name), and `PHOTO_BUCKET_ACCESS_KEY` and `PHOTO_BUCKET_SECRET_KEY` (as
+   secrets), then save. Render deploys the service again; a missing one
+   stops the API from starting, and the running version stays.
+4. Check: add a photo to a point in the console. It shows there and in
+   the app's meeting point details, and its link stops working about two
+   hours later.
+
+To stop taking photos, set `PHOTO_STORAGE` to `none`: the app and the
+console then show none, and the bucket keeps the files.
+
 ## Restore the database
 
 Staging data is generated, so a restore is rarely needed; we rehearse it
@@ -408,3 +434,7 @@ but no email goes.
   **Environment**, wait for the deploy, then revoke the old secret there.
 - 46elks keys: create new ones in the 46elks dashboard, paste them in the
   service's **Environment**, then delete the old ones there.
+- Photo bucket keys: generate new S3 credentials in the Hetzner project,
+  paste them as `PHOTO_BUCKET_ACCESS_KEY` and `PHOTO_BUCKET_SECRET_KEY` in
+  the service's **Environment**, wait for the deploy, then delete the old
+  ones there.
