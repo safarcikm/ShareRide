@@ -1,5 +1,5 @@
 import { schema } from "@shareride/db";
-import type { ExportSection, TripRole } from "@shareride/domain";
+import { reporterOf, type DisputeKind, type ExportSection, type TripRole } from "@shareride/domain";
 import {
   createTranslator,
   quickMessageText,
@@ -22,6 +22,7 @@ const {
   bookings,
   checkIns,
   conversations,
+  disputes,
   emailVerifications,
   legalAcceptances,
   legalDocuments,
@@ -171,6 +172,43 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
   const checkedInAt = (match: (checkIn: (typeof ownCheckIns)[number]) => boolean) =>
     when(ownCheckIns.find(match)?.at ?? null);
 
+  // Reports about a ride they raised or answered (spec 8, 3.3 and 3.4), each
+  // with the person's own note only: the other side's note and the
+  // operator's are for the operator (spec 8, 7), so they are not read here.
+  const reports = await q
+    .select({
+      bookingId: disputes.bookingId,
+      kind: disputes.kind,
+      raisedAt: disputes.raisedAt,
+      note: disputes.note,
+      answer: disputes.answer,
+      answeredAt: disputes.answeredAt,
+      answerNote: disputes.answerNote,
+      outcome: disputes.outcome,
+      decidedBy: disputes.decidedBy,
+      decidedAt: disputes.decidedAt,
+    })
+    .from(disputes)
+    .innerJoin(bookings, eq(bookings.id, disputes.bookingId))
+    .innerJoin(trips, eq(trips.id, bookings.tripId))
+    .where(or(eq(bookings.passengerId, userId), eq(trips.driverId, userId)));
+  const reportOn = (bookingId: string, role: TripRole) => {
+    const report = reports.find((row) => row.bookingId === bookingId);
+    if (report === undefined) return null;
+    const reportedBy = reporterOf(report.kind as DisputeKind);
+    return {
+      kind: report.kind,
+      reportedBy,
+      reportedAt: when(report.raisedAt),
+      yourNote: reportedBy === role ? report.note : report.answerNote,
+      answer: report.answer,
+      answeredAt: when(report.answeredAt),
+      outcome: report.outcome,
+      decidedBy: report.decidedBy,
+      closedAt: when(report.decidedAt),
+    };
+  };
+
   // Trips the person posted, with what passengers booked on them.
   const posted = await q
     .select()
@@ -295,6 +333,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
           cancelledBy: booking.cancelledBy,
           cancelReason: booking.cancelReason,
           cancelNote: booking.cancelNote,
+          dispute: reportOn(booking.id, "driver"),
         })),
     };
   });
@@ -369,6 +408,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     paymentDueAt: when(booking.paymentDueAt),
     confirmedAt: when(booking.confirmedAt),
     checkedInAt: checkedInAt((checkIn) => checkIn.bookingId === booking.id),
+    dispute: reportOn(booking.id, "passenger"),
     expiredAt: when(booking.expiredAt),
     cancelledAt: when(booking.cancelledAt),
     cancelledBy: booking.cancelledBy,
