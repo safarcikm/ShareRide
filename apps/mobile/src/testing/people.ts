@@ -51,9 +51,31 @@ export const annaReviews: readonly ProfileReview[] = [
 ];
 
 /**
+ * The API's answer for a page of `reviews`, newest first, `pageSize` at a
+ * time, filtered by role as the API does (reviews given as a driver were
+ * written by passengers). A `before` that is none of them is refused.
+ */
+export function reviewsAnswer(reviews: readonly ProfileReview[], pageSize = 20) {
+  return (input: Record<string, unknown>) => {
+    const { role, before } = input["query"] as { role?: string; before?: string };
+    const shown = reviews.filter(
+      (review) =>
+        role === undefined || review.authorRole === (role === "driver" ? "passenger" : "driver"),
+    );
+    let start = 0;
+    if (before !== undefined) {
+      const last = reviews.find((review) => review.id === before);
+      if (last === undefined) return failure(400, "validation_failed");
+      start = shown.filter((review) => reviews.indexOf(review) <= reviews.indexOf(last)).length;
+    }
+    const page = shown.slice(start, start + pageSize);
+    return ok(200, { reviews: page, more: start + pageSize < shown.length });
+  };
+}
+
+/**
  * Answers for profiles: `profiles` by their reference, anything else not
- * found; their reviews newest first, `pageSize` at a time, filtered by role
- * as the API does (reviews given as a driver were written by passengers).
+ * found, and a reference that is not a UUID refused; and their reviews.
  */
 export function profileApi(
   client: FakeClient,
@@ -63,21 +85,18 @@ export function profileApi(
 ) {
   const found = (input: Record<string, unknown>) => {
     const { profileId } = input["params"] as { profileId: string };
+    if (!/^[0-9a-f-]{36}$/.test(profileId)) return "invalid" as const;
     return profiles.find((profile) => profile.profileId === profileId);
   };
+  const page = reviewsAnswer(reviews, pageSize);
   client.answer("/v1/people/{profileId}", (input) => {
     const profile = found(input);
+    if (profile === "invalid") return failure(400, "validation_failed");
     return profile === undefined ? failure(404, "not_found") : ok(200, profile);
   });
   client.answer("/v1/people/{profileId}/reviews", (input) => {
-    if (found(input) === undefined) return failure(404, "not_found");
-    const { role, before } = input["query"] as { role?: string; before?: string };
-    const shown = reviews.filter(
-      (review) =>
-        role === undefined || review.authorRole === (role === "driver" ? "passenger" : "driver"),
-    );
-    const start = before === undefined ? 0 : shown.findIndex((review) => review.id === before) + 1;
-    const page = shown.slice(start, start + pageSize);
-    return ok(200, { reviews: page, more: start + pageSize < shown.length });
+    const profile = found(input);
+    if (profile === "invalid") return failure(400, "validation_failed");
+    return profile === undefined ? failure(404, "not_found") : page(input);
   });
 }

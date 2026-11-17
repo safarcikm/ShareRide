@@ -947,6 +947,8 @@ export const en = {
   "people.reviewBy.driver": "{name}, driver · {month} {year}",
   "people.reviewBy.passenger": "{name}, passenger · {month} {year}",
   "people.noReviews": "No reviews yet.",
+  "people.noReviewsAsDriver": "No reviews as a driver yet.",
+  "people.noReviewsAsPassenger": "No reviews as a passenger yet.",
   "people.moreReviews": "Show more reviews",
   "people.reviewsFailed": "The reviews could not be loaded.",
   "request.noReviews": "No reviews yet",

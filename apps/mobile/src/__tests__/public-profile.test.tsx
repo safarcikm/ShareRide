@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "expo-router/testing-library";
+import { act, fireEvent, screen } from "expo-router/testing-library";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
@@ -8,6 +8,7 @@ import {
   annaProfileId,
   annaReviews,
   profileApi,
+  reviewsAnswer,
 } from "@/testing/people";
 import { northResult, northTrip, tripDetailsApi } from "@/testing/search";
 
@@ -120,6 +121,19 @@ describe("a public profile (spec 1, 3.5)", () => {
     expect(await screen.findByText("The profile could not be loaded.")).toBeVisible();
   });
 
+  it("is not there for an address that is no profile's, with nothing to try again", async () => {
+    await renderApp("/people/not-a-profile", {
+      me: completeMe,
+      setUp: (client) => {
+        profileApi(client);
+      },
+    });
+    expect(
+      await screen.findByText("This profile isn't available. The person may have left ShareRide."),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+  });
+
   it("loads again after a failure", async () => {
     let attempts = 0;
     await renderApp(`/people/${annaProfileId}`, {
@@ -141,7 +155,7 @@ describe("the reliability figure (spec 8, 3.8)", () => {
   it("shows the share kept, and the counts by role once tapped", async () => {
     await openProfile();
     const figure = screen.getByRole("button", { name: "Reliability: 91%" });
-    expect(figure).toHaveProp("accessibilityState", expect.objectContaining({ expanded: false }));
+    expect(figure).not.toBeExpanded();
     expect(screen.queryByText("As a driver: kept 10 of 10")).toBeNull();
 
     await fireEvent.press(figure);
@@ -150,7 +164,7 @@ describe("the reliability figure (spec 8, 3.8)", () => {
     ).toBeVisible();
     expect(screen.getByText("As a driver: kept 10 of 10")).toBeVisible();
     expect(screen.getByText("As a passenger: kept 1 of 2")).toBeVisible();
-    expect(figure).toHaveProp("accessibilityState", expect.objectContaining({ expanded: true }));
+    expect(figure).toBeExpanded();
   });
 
   it("says there are not enough trips yet before 5 count, with the counts behind it", async () => {
@@ -206,6 +220,53 @@ describe("the reviews on a profile (spec 8, 3.7.5)", () => {
     await fireEvent.press(screen.getByRole("radio", { name: "All" }));
     expect(await screen.findByText("Easy company.")).toBeVisible();
     expect(reviewCalls(client).at(-1)).toEqual({});
+  });
+
+  it("says when there are none for the role chosen", async () => {
+    await openProfile((client) => {
+      profileApi(client, [annaProfile], [aProfileReview(1, { comment: "Smooth ride." })]);
+    });
+    await screen.findByText("Smooth ride.");
+    await fireEvent.press(screen.getByRole("radio", { name: "As a passenger" }));
+    expect(await screen.findByText("No reviews as a passenger yet.")).toBeVisible();
+    expect(screen.queryByText("Smooth ride.")).toBeNull();
+  });
+
+  it("drops a page asked for before the filter changed", async () => {
+    let release: () => void = () => undefined;
+    await openProfile((client) => {
+      profileApi(client, [annaProfile], annaReviews, 2);
+      const page = reviewsAnswer(annaReviews, 2);
+      client.answer("/v1/people/{profileId}/reviews", (input) => {
+        const { before } = input["query"] as { before?: string };
+        if (before === undefined) return page(input);
+        return new Promise((resolve) => {
+          release = () => {
+            resolve(page(input));
+          };
+        });
+      });
+    });
+    await screen.findByText("Easy company.");
+    await fireEvent.press(screen.getByRole("button", { name: "Show more reviews" }));
+    await fireEvent.press(screen.getByRole("radio", { name: "As a passenger" }));
+    expect(await screen.findByText("A former member, driver · October 2026")).toBeVisible();
+    await act(() => {
+      release();
+    });
+    expect(bylines()).toEqual(["A former member, driver · October 2026"]);
+    expect(screen.queryByRole("button", { name: "Show more reviews" })).toBeNull();
+  });
+
+  it("says when the person left after the profile loaded", async () => {
+    await openProfile((client) => {
+      profileApi(client);
+      client.answer("/v1/people/{profileId}/reviews", () => failure(404, "not_found"));
+    });
+    expect(
+      await screen.findByText("This profile isn't available. The person may have left ShareRide."),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
   });
 
   it("shows more on asking, from where the last ones ended", async () => {

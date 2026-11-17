@@ -7,7 +7,7 @@ import {
 } from "@shareride/contracts";
 import { formatMonth, formatRating } from "@shareride/i18n";
 import { ShieldCheck, Star } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSession } from "@/auth/session";
 import { Avatar } from "@/components/avatar";
@@ -16,8 +16,9 @@ import { Card } from "@/components/card";
 import { Chip } from "@/components/chip";
 import { Icon } from "@/components/icon";
 import { Notice } from "@/components/notice";
+import { TakesFocus } from "@/components/takes-focus";
 import { Tag } from "@/components/tag";
-import { Body, Heading } from "@/components/text";
+import { Body, Heading, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { languagesText } from "@/people/languages";
@@ -31,9 +32,16 @@ type Role = "driver" | "passenger";
 /**
  * A person's public profile (spec 1, 3.5; spec 8, screen 7), as anyone
  * signed in sees it: who they are, their rating and reliability figure,
- * and the reviews they were given. "See it as others do" shows the same.
+ * and the reviews they were given. "See it as others do" shows the same,
+ * under its own title, so the name is a heading there (`nameAs`).
  */
-export function ProfileView({ profileId }: { readonly profileId: string }) {
+export function ProfileView({
+  profileId,
+  nameAs = "title",
+}: {
+  readonly profileId: string;
+  readonly nameAs?: "title" | "heading";
+}) {
   const { t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
@@ -46,8 +54,9 @@ export function ProfileView({ profileId }: { readonly profileId: string }) {
     return <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />;
   }
   if (!answer.ok) {
-    // Someone who left, or is leaving, is not found (spec 11, 3.4.3).
-    return answer.status === 404 ? (
+    // Someone who left, or is leaving, is not found (spec 11, 3.4.3), and
+    // an address that is no profile's is refused: neither comes back.
+    return gone(answer.status) ? (
       <Notice message={t("people.notFound")} />
     ) : (
       <>
@@ -59,17 +68,26 @@ export function ProfileView({ profileId }: { readonly profileId: string }) {
   const profile = answer.data;
   return (
     <>
-      <Person profile={profile} />
+      <Person profile={profile} nameAs={nameAs} />
       <Card>
         <RatingLine rating={profile.rating} />
         <ReliabilityFigure reliability={profile.reliability} />
       </Card>
-      <ProfileReviews profileId={profileId} />
+      <ProfileReviews key={profileId} profileId={profileId} />
     </>
   );
 }
 
-function Person({ profile }: { readonly profile: PublicProfile }) {
+/** The API's answer for a profile no longer there, or never there. */
+const gone = (status: number) => status === 404 || status === 400;
+
+function Person({
+  profile,
+  nameAs,
+}: {
+  readonly profile: PublicProfile;
+  readonly nameAs: "title" | "heading";
+}) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
   const languages = languagesText(profile, locale);
@@ -78,7 +96,11 @@ function Person({ profile }: { readonly profile: PublicProfile }) {
       <View style={styles.person}>
         <Avatar firstName={profile.firstName} colour={profile.colour} />
         <View style={styles.grow}>
-          <Heading>{profile.firstName}</Heading>
+          {nameAs === "title" ? (
+            <Title align="start">{profile.firstName}</Title>
+          ) : (
+            <Heading>{profile.firstName}</Heading>
+          )}
           {languages === "" ? null : (
             <Text style={[typography.small, { color: palette.textMuted }]}>
               {t("profile.speaks", { languages })}
@@ -148,7 +170,7 @@ function ReliabilityFigure({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
-        accessibilityState={{ expanded: open }}
+        aria-expanded={open}
         onPress={() => {
           setOpen((shown) => !shown);
         }}
@@ -185,6 +207,12 @@ function ReliabilityFigure({
 type Page = CallResult<typeof profileReviewsRoute>;
 
 /**
+ * What takes focus once a page arrives after a button was pressed, as the
+ * button is gone by then: the first review it brought, or the failure.
+ */
+type Focus = { readonly review: string } | "failure" | null;
+
+/**
  * The reviews the person was given, newest first, for both roles or one,
  * a page at a time (3.7.5).
  */
@@ -195,57 +223,68 @@ function ProfileReviews({ profileId }: { readonly profileId: string }) {
   const [role, setRole] = useState<Role | null>(null);
   const [reviews, setReviews] = useState<readonly ProfileReview[]>([]);
   const [more, setMore] = useState(false);
-  const [state, setState] = useState<"loading" | "shown" | "failed">("loading");
-  // Counts the attempts at the first page, so a retry loads it again.
-  const [attempt, setAttempt] = useState(0);
+  const [state, setState] = useState<"loading" | "shown" | "failed" | "gone">("loading");
+  const [focus, setFocus] = useState<Focus>(null);
+  // Each page asked for takes the next number, and only the answer to the
+  // latest is shown: a page asked for before the filter changed is dropped.
+  const latest = useRef(0);
 
-  const page = useCallback(
-    (before?: string): Promise<Page> =>
-      session.call(profileReviewsRoute, {
+  /**
+   * The first page for `shown` or, after `before`, the next; null once a
+   * later page has been asked for.
+   */
+  const ask = useCallback(
+    async (shown: Role | null, before: string | undefined): Promise<Page | null> => {
+      latest.current += 1;
+      const asked = latest.current;
+      const answer = await session.call(profileReviewsRoute, {
         params: { profileId },
         query: {
-          ...(role === null ? {} : { role }),
+          ...(shown === null ? {} : { role: shown }),
           ...(before === undefined ? {} : { before }),
         },
-      }),
-    [session, profileId, role],
+      });
+      return asked === latest.current ? answer : null;
+    },
+    [session, profileId],
   );
 
-  useEffect(() => {
-    let current = true;
-    void page().then((answer) => {
-      if (!current) return;
-      if (answer.ok) {
-        setReviews(answer.data.reviews);
-        setMore(answer.data.more);
-        setState("shown");
-      } else {
-        setState("failed");
-      }
+  /** Shows a page, after the earlier ones unless it is the first. */
+  const show = useCallback((answer: Page, first: boolean, pressed: boolean) => {
+    if (!answer.ok) {
+      setState(gone(answer.status) ? "gone" : "failed");
+      setFocus(pressed ? "failure" : null);
+      return;
+    }
+    const { reviews: page, more: further } = answer.data;
+    setReviews((earlier) => {
+      if (first) return page;
+      const known = new Set(earlier.map((review) => review.id));
+      return [...earlier, ...page.filter((review) => !known.has(review.id))];
     });
-    return () => {
-      current = false;
-    };
-  }, [page, attempt]);
+    setMore(further);
+    setState("shown");
+    const top = page[0];
+    setFocus(pressed && top !== undefined ? { review: top.id } : null);
+  }, []);
 
-  const showMore = async () => {
-    setState("loading");
-    const answer = await page(reviews.at(-1)?.id);
-    if (answer.ok) {
-      setReviews((shown) => [...shown, ...answer.data.reviews]);
-      setMore(answer.data.more);
-      setState("shown");
-    } else {
-      setState("failed");
-    }
+  useEffect(() => {
+    void ask(null, undefined).then((answer) => {
+      if (answer !== null) show(answer, true, false);
+    });
+  }, [ask, show]);
+
+  /** Loads a page for `shown`, unless a later one was asked for meanwhile. */
+  const load = (shown: Role | null, before: string | undefined, pressed: boolean) => {
+    void ask(shown, before).then((answer) => {
+      if (answer !== null) show(answer, before === undefined, pressed);
+    });
   };
-  const retry = () => {
-    if (reviews.length === 0) {
-      setState("loading");
-      setAttempt((count) => count + 1);
-    } else {
-      void showMore();
-    }
+
+  /** Show more, or try the page that failed again. */
+  const next = () => {
+    setState("loading");
+    load(role, reviews.at(-1)?.id, true);
   };
 
   const roles = [
@@ -253,6 +292,12 @@ function ProfileReviews({ profileId }: { readonly profileId: string }) {
     { value: "driver", label: t("people.reviewsAsDriver") },
     { value: "passenger", label: t("people.reviewsAsPassenger") },
   ] as const;
+  const none =
+    role === null
+      ? t("people.noReviews")
+      : role === "driver"
+        ? t("people.noReviewsAsDriver")
+        : t("people.noReviewsAsPassenger");
   return (
     <View style={styles.section}>
       <Heading>{t("people.reviews")}</Heading>
@@ -269,47 +314,58 @@ function ProfileReviews({ profileId }: { readonly profileId: string }) {
             selected={option.value === role}
             onToggle={() => {
               if (option.value === role) return;
+              setRole(option.value);
               setReviews([]);
               setMore(false);
               setState("loading");
-              setRole(option.value);
+              setFocus(null);
+              load(option.value, undefined, false);
             }}
           />
         ))}
       </View>
-      {reviews.length === 0 && state === "shown" ? (
-        <Body align="start">{t("people.noReviews")}</Body>
-      ) : null}
+      {reviews.length === 0 && state === "shown" ? <Body align="start">{none}</Body> : null}
       {reviews.length === 0 ? null : (
         <View role="list" accessibilityLabel={t("people.reviews")} style={styles.section}>
           {reviews.map((review) => (
-            <ReviewItem key={review.id} review={review} />
+            <ReviewItem
+              key={review.id}
+              review={review}
+              takesFocus={focus !== null && focus !== "failure" && focus.review === review.id}
+            />
           ))}
         </View>
       )}
       {state === "loading" ? (
         <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
       ) : null}
+      {state === "gone" ? (
+        <TakesFocus when={focus === "failure"}>
+          <Notice message={t("people.notFound")} />
+        </TakesFocus>
+      ) : null}
       {state === "failed" ? (
         <>
-          <Notice message={t("people.reviewsFailed")} />
-          <Button variant="secondary" label={t("common.retry")} onPress={retry} />
+          <TakesFocus when={focus === "failure"}>
+            <Notice message={t("people.reviewsFailed")} />
+          </TakesFocus>
+          <Button variant="secondary" label={t("common.retry")} onPress={next} />
         </>
       ) : null}
       {state === "shown" && more ? (
-        <Button
-          variant="secondary"
-          label={t("people.moreReviews")}
-          onPress={() => {
-            void showMore();
-          }}
-        />
+        <Button variant="secondary" label={t("people.moreReviews")} onPress={next} />
       ) : null}
     </View>
   );
 }
 
-function ReviewItem({ review }: { readonly review: ProfileReview }) {
+function ReviewItem({
+  review,
+  takesFocus,
+}: {
+  readonly review: ProfileReview;
+  readonly takesFocus: boolean;
+}) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
   const written = monthOf(review.writtenIn);
@@ -320,15 +376,18 @@ function ReviewItem({ review }: { readonly review: ProfileReview }) {
   };
   return (
     <View role="listitem">
-      <Card>
-        <Stars rating={review.rating} />
-        <Text style={[typography.small, { color: palette.textMuted }]}>
-          {review.authorRole === "driver"
-            ? t("people.reviewBy.driver", by)
-            : t("people.reviewBy.passenger", by)}
-        </Text>
-        {review.comment === "" ? null : <Body align="start">{review.comment}</Body>}
-      </Card>
+      {/* Mounted with the page that brought it, so it takes focus then. */}
+      <TakesFocus when={takesFocus}>
+        <Card>
+          <Stars rating={review.rating} />
+          <Text style={[typography.small, { color: palette.textMuted }]}>
+            {review.authorRole === "driver"
+              ? t("people.reviewBy.driver", by)
+              : t("people.reviewBy.passenger", by)}
+          </Text>
+          {review.comment === "" ? null : <Body align="start">{review.comment}</Body>}
+        </Card>
+      </TakesFocus>
     </View>
   );
 }

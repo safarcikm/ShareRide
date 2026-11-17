@@ -19,7 +19,7 @@ export default function ProfilePreviewScreen() {
       <BackButton fallback="/profile" />
       <Title>{t("preview.title")}</Title>
       <Body>{t("preview.intro")}</Body>
-      <ProfileView profileId={me.profileId} />
+      <ProfileView profileId={me.profileId} nameAs="heading" />
     </Screen>
   );
 }

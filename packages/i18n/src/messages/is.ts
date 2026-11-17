@@ -936,7 +936,8 @@ export const is = {
   "request.memberSince": "Meðlimur frá {month} {year}",
   "people.formerMember": "Fyrrverandi notandi",
   "people.open": "Skoða prófíl",
-  "people.notFound": "Þessi prófíll er ekki tiltækur. Viðkomandi gæti hafa hætt á ShareRide.",
+  "people.notFound":
+    "Þessi prófíll er ekki tiltækur. Viðkomandi er hugsanlega ekki lengur á ShareRide.",
   "people.failed": "Ekki tókst að sækja prófílinn.",
   "people.phoneVerified": "Símanúmer staðfest",
   "people.emailVerified": "Netfang staðfest",
@@ -955,6 +956,8 @@ export const is = {
   "people.reviewBy.driver": "{name}, bílstjóri · {month} {year}",
   "people.reviewBy.passenger": "{name}, farþegi · {month} {year}",
   "people.noReviews": "Engar umsagnir enn.",
+  "people.noReviewsAsDriver": "Engar umsagnir sem bílstjóri enn.",
+  "people.noReviewsAsPassenger": "Engar umsagnir sem farþegi enn.",
   "people.moreReviews": "Sýna fleiri umsagnir",
   "people.reviewsFailed": "Ekki tókst að sækja umsagnirnar.",
   "request.noReviews": "Engar umsagnir enn",
