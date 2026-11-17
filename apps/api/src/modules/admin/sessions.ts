@@ -39,7 +39,8 @@ export interface OperatorSessionService {
   /**
    * The operator behind a session token, or null. A session that has gone
    * idle, passed 12 hours, or whose account lost the role or was suspended
-   * is ended here and never works again.
+   * is ended here and never works again. One whose account waits to be
+   * deleted is refused, not ended.
    */
   authenticate(token: string): Promise<AuthenticatedOperator | null>;
   /** Ends one session; pass the transaction that records why, if there is one. */
@@ -109,6 +110,7 @@ export function createOperatorSessionService(
           endedAt: operatorSessions.endedAt,
           roles: users.roles,
           status: users.status,
+          deleteAfter: users.deleteAfter,
         })
         .from(operatorSessions)
         .innerJoin(users, eq(users.id, operatorSessions.userId))
@@ -122,7 +124,11 @@ export function createOperatorSessionService(
         return null;
       }
       if (!canUseConsole(row)) {
-        await end(row.sessionId, row.status === "active" ? "role_removed" : "suspended");
+        // While the account waits to be deleted the session is only refused:
+        // the deletion can still be called off, and erasure deletes it.
+        if (row.deleteAfter === null) {
+          await end(row.sessionId, row.status === "active" ? "role_removed" : "suspended");
+        }
         return null;
       }
       await db

@@ -565,6 +565,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   shelter's weekly hours and note, and when the amenities and season were
   reviewed. The texts for regions, types and amenities move from the app
   to `@shareride/i18n`, so the console uses them too.
+- The console is closed to an operator whose own account waits to be
+  deleted (spec 11): their sessions, passkey sign-in and setup links are
+  refused, and the `operator` command does not give them the role.
 
 - Privacy self-service, part 1 (spec 11): the rules in the domain (what
   is open before deleting an account, the 7-day wait, what deletion does to
