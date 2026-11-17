@@ -7,6 +7,7 @@ import {
   defaultChatSettings,
   defaultMeetingPointIssueSettings,
   defaultNotificationSettings,
+  defaultReliabilitySettings,
   defaultReviewSettings,
   defaultSearchSettings,
   defaultTripDaySettings,
@@ -56,6 +57,7 @@ import {
   registerTripDayRoutes,
 } from "./modules/trip-day/index.ts";
 import { createReviewService, registerReviewRoutes } from "./modules/reviews/index.ts";
+import { createPeopleService, registerPeopleRoutes } from "./modules/people/index.ts";
 import { createDrivingService, registerDrivingRoutes } from "./modules/driving/index.ts";
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
@@ -70,6 +72,7 @@ import {
   registerMeetingPointRoutes,
   registerMeetingPointsAdminRoutes,
 } from "./modules/meeting-points/index.ts";
+import { createNoticeService, registerNoticeRoutes } from "./modules/moderation/index.ts";
 import { registerNotificationRoutes } from "./modules/notifications/index.ts";
 import { createPaymentService, registerPaymentRoutes } from "./modules/payments/index.ts";
 import {
@@ -391,6 +394,11 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       createReviewService({ ...features, settings: defaultReviewSettings }),
       requireAuth,
     );
+    registerPeopleRoutes(
+      app,
+      createPeopleService({ ...features, settings: defaultReliabilitySettings }),
+      requireAuth,
+    );
     registerNotificationRoutes(app, { ...features, requireAuth });
     registerSafetyRoutes(
       app,
@@ -400,6 +408,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       },
       requireAuth,
     );
+    registerNoticeRoutes(app, createNoticeService(features), requireAuth);
     registerPaymentRoutes(app, {
       payments: createPaymentService({ ...features, provider: features.payments }),
       bookings,
