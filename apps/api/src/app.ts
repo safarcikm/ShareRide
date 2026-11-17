@@ -79,6 +79,7 @@ import { createMemoryRateLimiter } from "./platform/memory-rate-limiter.ts";
 import type { PaymentProvider } from "./platform/payments.ts";
 import type { EmailChannel } from "./platform/email.ts";
 import type { SmsSender } from "./platform/sms.ts";
+import { createAdminApp } from "./admin-app.ts";
 import { createWebApp } from "./web-app.ts";
 
 export type { AppEnv };
@@ -131,6 +132,8 @@ export interface AppDependencies {
   readonly webOrigins?: readonly string[];
   /** The exported web app to serve on this origin, outside /v1. */
   readonly webAppDir?: string;
+  /** The operator console's build, served at /admin (ADR 0028). */
+  readonly adminAppDir?: string;
   /** Reports unexpected errors; left out where there is no error tracking. */
   readonly reportError?: ErrorReporter;
 }
@@ -338,9 +341,13 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
 
   const webApp =
     dependencies.webAppDir === undefined ? undefined : createWebApp(dependencies.webAppDir);
+  const adminApp =
+    dependencies.adminAppDir === undefined ? undefined : createAdminApp(dependencies.adminAppDir);
   app.notFound(
     async (c: Context<AppEnv, string>) =>
-      (await webApp?.(c)) ?? c.json(errorBody("not_found", "There is no such endpoint."), 404),
+      (await adminApp?.(c)) ??
+      (await webApp?.(c)) ??
+      c.json(errorBody("not_found", "There is no such endpoint."), 404),
   );
 
   app.onError((error, c) => {

@@ -2,7 +2,7 @@ import { act, fireEvent, screen, within } from "expo-router/testing-library";
 import { getLocales } from "expo-localization";
 import { AccessibilityInfo, Dimensions, Linking } from "react-native";
 import type { MeetingPointSummary } from "@shareride/contracts";
-import { mapSize, project } from "@/maps/projection";
+import { mapSize, project } from "@shareride/ui/map";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";

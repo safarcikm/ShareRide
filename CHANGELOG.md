@@ -539,6 +539,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   (`recordAudit`, a trigger that refuses changes); passkey sign-in with
   `@simplewebauthn/server` (setup link, sign-in, adding and removing
   passkeys) and the `operator` command that gives or removes the role.
+- `packages/ui`: the design tokens and the map of Iceland (data,
+  projection, roads and views) moved out of the app, to be shared with the
+  operator console; the app looks the same.
+- The operator console app (`apps/admin`, React and Vite), served by the
+  API at `/admin` with its own content security policy: sign-in and
+  first-passkey setup with passkeys (`@simplewebauthn/browser`), the home
+  page, the passkeys page, Icelandic and English, and the console in the
+  API image.
 
 - Privacy self-service, part 1 (spec 11): the rules in the domain (what
   is open before deleting an account, the 7-day wait, what deletion does to
@@ -555,6 +563,11 @@ releases follow [Semantic Versioning](https://semver.org/).
   only; kept encrypted for 7 days and downloaded through a one-time link
   that works for 2 minutes. A push and an email say when it is ready,
   without a link.
+- Download my data in the app (spec 11, 3.1 and 3.2): a Privacy page in
+  Settings, with Download my data and the Privacy Policy. The person
+  confirms with a code sent to their own number, sees the file being made
+  and when it is ready, and downloads it. The ready notice opens this
+  screen.
 
 ### Fixed
 

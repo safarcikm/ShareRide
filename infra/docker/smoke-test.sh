@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Starts the API image the way staging runs it and checks that it answers:
-# migrations and the seed run, the API is ready, the web app is served on
-# the same origin, and /v1 keeps the API's 404. CI runs it on every build,
+# migrations and the seed run, the API is ready, the web app and the
+# operator console are served on the same origin, and /v1 keeps the API's
+# 404. CI runs it on every build,
 # so Render deploys only an image that starts.
 #
 #   DATABASE_URL=postgres://... infra/docker/smoke-test.sh shareride-api:local
@@ -67,6 +68,13 @@ bundle="$(curl -fsS "$base/" | grep -o '/_expo/static/js/web/entry-[^"]*\.js' | 
 check "the page names the app's bundle" test -n "$bundle"
 check "the app's bundle is served" test "$(status_of "$bundle")" = 200
 check "its source map is not" test "$(status_of "$bundle.map")" = 404
+check "console at /admin" sh -c "curl -fsS '$base/admin/' | grep -q '<title>ShareRide console</title>'"
+check "console at a console route (reload)" sh -c "curl -fsS '$base/admin/sign-in' | grep -q '<title>ShareRide console</title>'"
+check "the console's own security policy" sh -c "curl -fsSI '$base/admin/' | grep -qi \"^content-security-policy: default-src 'none'\""
+console_bundle="$(curl -fsS "$base/admin/" | grep -o '/admin/assets/[^"]*\.js' | head -n 1 || true)"
+check "the console page names its bundle" test -n "$console_bundle"
+check "the console's bundle is served" test "$(status_of "$console_bundle")" = 200
+check "the console's API needs a session" test "$(status_of /admin/v1/me)" = 401
 check "legal documents seeded" test "$(status_of /v1/legal/terms/current)" = 200
 check "sample meeting points seeded" sh -c "curl -fsS '$base/v1/meeting-points' | grep -q '\"sample\":true'"
 # Render copies secret files into the build context (see .dockerignore).

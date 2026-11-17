@@ -1,0 +1,294 @@
+/* The console's look, from the shared tokens only (spec 15; virtual:tokens.css). */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: Nunito, system-ui, sans-serif;
+}
+
+h1,
+h2,
+p,
+ul {
+  margin: 0;
+}
+
+ul {
+  padding: 0;
+  list-style: none;
+}
+
+:focus-visible {
+  outline: var(--focus-width) solid var(--color-focus);
+  outline-offset: var(--focus-offset);
+}
+
+.muted,
+.hint {
+  color: var(--color-text-muted);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.narrow {
+  max-width: var(--narrow-width);
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-md);
+}
+
+.loading {
+  padding: var(--space-xl) var(--space-md);
+  text-align: center;
+}
+
+.console-name {
+  color: var(--color-primary);
+}
+
+/* Buttons (spec 15, 5.1): verb-first labels, at least a touch target high,
+   with the chunky bottom edge. */
+.button-primary,
+.button-secondary,
+.button-quiet,
+.button-danger {
+  min-height: var(--touch-target);
+  padding: 0 var(--space-md);
+  border-radius: var(--radius-control);
+  border: none;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.button-primary {
+  background: var(--color-primary);
+  border-bottom: var(--edge-button-primary) solid var(--color-primary-edge);
+  color: var(--color-on-primary);
+}
+
+.button-secondary {
+  background: var(--color-surface);
+  border: var(--control-outline) solid var(--color-control);
+  border-bottom: var(--edge-button-secondary) solid var(--color-edge);
+  color: var(--color-text);
+}
+
+.button-quiet {
+  background: transparent;
+  color: var(--color-primary);
+}
+
+.button-danger {
+  background: var(--color-error);
+  color: var(--color-on-error);
+}
+
+/* Disabled: the border fill and a muted label, no edge; never opacity alone. */
+button:disabled {
+  cursor: progress;
+  background: var(--color-border);
+  border-color: var(--color-border);
+  border-bottom-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+/* Fields: a visible label, the hint below, the error under it. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.input {
+  min-height: var(--touch-target);
+  padding: 0 var(--space-ms);
+  border: var(--control-outline) solid var(--color-control);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  max-width: var(--narrow-width);
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--color-error);
+}
+
+.field-error {
+  color: var(--color-error);
+}
+
+.notice,
+.problem {
+  padding: var(--space-ms) var(--space-md);
+  border-radius: var(--radius-control);
+}
+
+.notice {
+  background: var(--color-info-soft);
+}
+
+.problem {
+  background: var(--color-error-soft);
+}
+
+/* Lists of records as cards. */
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.card,
+.panel {
+  background: var(--color-surface);
+  border-bottom: var(--edge-card) solid var(--color-edge);
+  border-radius: var(--radius-card);
+  padding: var(--space-md);
+}
+
+.card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.card-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.confirm-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.tag {
+  margin-left: var(--space-sm);
+  padding: 0 var(--space-sm);
+  border-radius: var(--radius-tag);
+  background: var(--color-primary-soft);
+  color: var(--color-text);
+}
+
+/* The frame: menu beside the page on a laptop, behind a button on a phone. */
+/* Out of sight above the top until the keyboard reaches it. */
+.skip-link {
+  position: absolute;
+  left: var(--space-md);
+  top: var(--space-sm);
+  z-index: 1;
+  background: var(--color-surface);
+  padding: var(--space-sm);
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+.top-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface);
+  border-bottom: var(--control-outline) solid var(--color-border);
+}
+
+.top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-left: auto;
+}
+
+.menu {
+  display: none;
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border-bottom: var(--control-outline) solid var(--color-border);
+}
+
+.menu-open {
+  display: block;
+}
+
+.menu ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.menu-link {
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  padding: 0 var(--space-md);
+  border-radius: var(--radius-control);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.menu-link[aria-current="page"] {
+  background: var(--color-primary-soft);
+  color: var(--color-text);
+}
+
+.page {
+  padding: var(--space-lg) var(--space-md);
+}
+
+.page:focus {
+  outline: none;
+}
+
+/* sidePanelFrom in the tokens; a test keeps the two the same. */
+@media (min-width: 900px) {
+  .frame {
+    display: grid;
+    grid-template-columns: var(--menu-width) 1fr;
+    grid-template-rows: auto 1fr;
+    min-height: 100%;
+  }
+
+  .top-bar {
+    grid-column: 1 / -1;
+  }
+
+  .menu-button {
+    display: none;
+  }
+
+  .menu {
+    display: block;
+    border-bottom: none;
+    border-right: var(--control-outline) solid var(--color-border);
+  }
+
+  .page {
+    padding: var(--space-xl);
+  }
+}

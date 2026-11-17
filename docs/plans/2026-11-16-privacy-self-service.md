@@ -289,7 +289,7 @@ journeys, and gets a code review before it opens.
 
 ### PR 5: `feat(privacy)`: Privacy page and Download my data in the app
 
-- [ ] `ConfirmWithCode` (from PR 3); Settings, Privacy; the download
+- [x] `ConfirmWithCode` (from PR 3); Settings, Privacy; the download
       screens (ask, code, preparing, ready, expired) at
       `/settings/privacy/download`, which the ready notice opens: add it
       to the paths a notification may open (`notifications/paths.ts`)
