@@ -65,6 +65,11 @@ export interface SessionManager {
    * stay signed in on failure and the person can try again.
    */
   signOut(options: { readonly all: boolean }): Promise<CallResult<typeof signOutRoute>>;
+  /**
+   * After the API ended this session itself, as deleting the account ends
+   * every session (spec 11, 3.4.3): forgets the tokens without a call.
+   */
+  ended(): Promise<void>;
 }
 
 /**
@@ -233,5 +238,7 @@ export function createSessionManager(options: {
       if (result.ok || (!all && !web)) await forget();
       return result;
     },
+
+    ended: forget,
   };
 }

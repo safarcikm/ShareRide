@@ -166,10 +166,12 @@ decision 5 gets its own ADR with its PR, refining ADR 0009.
     where to stand in both languages; at least one photo with
     descriptions in both languages; amenities and season reviewed; the
     date the operator confirmed it; computed legs.
-  - `nextStatus(point, action, futureTrips)`: draft to active (checklist
-    passes), active to paused and back, active or paused to retiring
-    (with future trips) or retired (without), retiring to retired after
-    the last future trip. Retired is final (R2.2).
+  - `nextPointStatus(status, change, futureTrips)`: active to paused and
+    back, active to retiring (with future trips) or retired (without),
+    retiring to retired after the last future trip; a draft or a paused
+    point retires at once, so a paused point never comes back into use
+    for its trips. Retired is final (R2.2). Draft to active (checklist
+    passes) comes with activation in PR 12.
   - `parseCoordinates(text)`: decimal degrees, degrees and minutes, and
     links from Google Maps, Apple Maps and OpenStreetMap; refuses a spot
     outside Iceland's bounds.
@@ -293,13 +295,17 @@ parallel.
 - Verify: domain tests for each coordinate form; integration tests; a
   browser journey creates a draft and edits it
 
-### PR 7: `feat(meeting-points)`: activate, pause, retire and move
+### PR 7: `feat(meeting-points)`: pause, back in use and retire
 
-- [ ] `activationChecklist`, `nextStatus`, `movedFar`, `reviewDue`; the
+Activating needs photos (PR 8) and computed distances (PR 11), and moving
+recomputes distances, so both come in PR 12. PR 7 is in two parts.
+
+- [x] 7a, the API: `nextPointStatus`, `validatePause`, `reviewDueOn`; the
       routes, the minute job's resume and retire steps, the notifications
+- [x] 7b, the console: pause, back in use and retire on a point's page
 - Verify: domain tests per status change; integration tests (pause with
   future trips notifies each driver and passenger once; retire with and
-  without future trips; a move under and over 50 m); a browser journey
+  without future trips; the minute job); a browser journey (7b)
 
 ### PR 8: `feat(meeting-points)`: photos
 
@@ -328,6 +334,13 @@ parallel.
       activation and move; "Recompute all"; the legs status page
 - Verify: known distances within 3% of the road authority's figures;
   every sample point still gets its legs
+
+### PR 12: `feat(meeting-points)`: activate and move
+
+- [ ] `activationChecklist`, `movedFar`; activate and move with their
+      legs, and the notifications of a move
+- Verify: domain tests; integration tests (a move under and over 50 m);
+  a browser journey
 
 ## 6. Review focus
 

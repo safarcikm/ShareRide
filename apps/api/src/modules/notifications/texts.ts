@@ -25,7 +25,9 @@ import {
   createTranslator,
   type CarFacts,
   formatClock,
+  formatDate,
   formatDay,
+  formatDayAndMonth,
   formatMoney,
   moderatedContentText,
   moderationRuleText,
@@ -47,7 +49,7 @@ import {
 export interface NotificationFacts {
   readonly kind: Exclude<
     NotificationKind,
-    TripReminderFacts["kind"] | AccountNoticeKind | OperatorNoticeKind
+    TripReminderFacts["kind"] | PointPausedFacts["kind"] | AccountNoticeKind | OperatorNoticeKind
   >;
   /** The recipient's place on the trip. */
   readonly role: TripRole;
@@ -82,6 +84,34 @@ export interface NotificationFacts {
   readonly moved: { readonly from: Date; readonly to: Date } | null;
   /** Confirmed and not free: what they paid would come back if they cancelled (R6.3). */
   readonly paid: boolean;
+  /** For a report to answer: until when the other side can (spec 8, R8.6); otherwise null. */
+  readonly answerBy: Date | null;
+  /** For a paused meeting point: the point, while the pause still applies; otherwise null. */
+  readonly pausedPoint: PausedPoint | null;
+}
+
+/** A paused meeting point as a notification tells of it (spec 2, 3.6.4). */
+export interface PausedPoint {
+  /** In the recipient's language, as is the operator's reason. */
+  readonly name: string;
+  readonly reason: string;
+  /** The day it is back in use, such as "2026-11-30", or null until the operator says. */
+  readonly until: string | null;
+  /** Retired while paused: it never comes back, and the trips still need another stop. */
+  readonly retired: boolean;
+}
+
+/**
+ * A paused meeting point, told to the driver of a trip still to stop there
+ * (spec 2, 3.6.4): about the trip, as passengers may not be booked yet.
+ */
+export interface PointPausedFacts {
+  readonly kind: "meeting_point_changed_driver";
+  readonly role: "driver";
+  readonly tripId: string;
+  /** The trip's planned time at the point. */
+  readonly stopsAt: Date;
+  readonly point: PausedPoint;
 }
 
 /** A driver's trip reminder (3.5): about the trip and everyone booked on it. */
@@ -100,15 +130,12 @@ export interface TripReminderFacts {
   readonly plateMissing: boolean;
 }
 
-/**
- * News about the person's account: their data ready to download (spec 11),
- * an operator's action that affects them, with its statement of reasons
- * (spec 9, R9.5), the end of their suspension (3.6), the answer to their
- * appeal (3.4.4), or the outcome of their report (3.1.6). What each says;
- * a kind added without its facts does not compile.
- */
+/** What each account notice says; a kind added without its facts does not compile. */
 interface AccountNoticeFactsByKind {
-  readonly data_export_ready: { readonly expiresAt: Date };
+  /** Until when the file can be downloaded. */
+  readonly data_export_ready: { readonly until: Date };
+  /** When the data is erased. */
+  readonly account_deletion_scheduled: { readonly until: Date };
   readonly moderation_action: {
     readonly action: ModerationActionKind;
     /** None for a reinstatement. */
@@ -129,8 +156,17 @@ interface AccountNoticeFactsByKind {
   };
   /** In general terms only, never what was done to whom (spec 9, 3.1.6). */
   readonly report_closed: { readonly outcome: ReportOutcome };
+  readonly privacy_request_answered: { readonly receivedAt: Date; readonly answer: string };
 }
 
+/**
+ * News about the person's account: their data ready to download, or their
+ * deletion and when the data is erased (spec 11); an operator's action that
+ * affects them, with its statement of reasons (spec 9, R9.5), the end of
+ * their suspension (3.6), the answer to their appeal (3.4.4), or the outcome
+ * of their report (3.1.6); the answer to a request about their data, with
+ * the day it came (spec 11, 3.6).
+ */
 export type AccountNoticeFacts = {
   readonly [Kind in AccountNoticeKind]: { readonly kind: Kind } & AccountNoticeFactsByKind[Kind];
 }[AccountNoticeKind];
@@ -154,6 +190,12 @@ export function isOperatorFacts(facts: {
 
 /** The app's screen for downloading one's data (spec 11, 3.2). */
 export const downloadDataPath = "/settings/privacy/download";
+
+/** Where signing in while a deletion waits shows "Keep my account" (spec 11, 3.4.4). */
+export const deletionWaitPath = "/";
+
+/** Where a person asks about their data (spec 11, 3.6). */
+export const privacyPath = "/settings/privacy";
 
 export interface NotificationText {
   readonly title: string;
@@ -188,6 +230,9 @@ export function smsText(facts: NotificationFacts | OperatorNoticeFacts, locale: 
       );
     case "trip_cancelled":
       return t(facts.refund.amount > 0 ? "sms.tripCancelled" : "sms.tripCancelledUnpaid", values);
+    // Moved or paused: what happened is in the app (spec 7, 3.4).
+    case "meeting_point_changed":
+      return t("sms.meetingPointChanged", { date: values.date });
     case "departure_moved_far": {
       // The new time, with the offer of a full refund to someone who paid (R6.3).
       const { to } = required(facts.moved, "the move");
@@ -206,12 +251,18 @@ export function smsText(facts: NotificationFacts | OperatorNoticeFacts, locale: 
  * events, new messages, the email about unread ones, and trip reminders.
  */
 export function notificationText(
-  facts: NotificationFacts | TripReminderFacts | AccountNoticeFacts | OperatorNoticeFacts,
+  facts:
+    | NotificationFacts
+    | TripReminderFacts
+    | PointPausedFacts
+    | AccountNoticeFacts
+    | OperatorNoticeFacts,
   locale: Locale,
   settings: NotificationSettings,
 ): NotificationText {
   if (isAccountFacts(facts)) return accountText(facts, locale);
   if (isOperatorFacts(facts)) return operatorText(facts.kind, locale);
+  if ("point" in facts) return pointPausedText(facts, locale);
   return "passengers" in facts
     ? tripReminderText(facts, locale)
     : bookingText(facts, locale, settings);
@@ -228,17 +279,34 @@ function operatorText(kind: OperatorNoticeKind, locale: Locale): NotificationTex
 /** The app's screen of the person's notices, where they read and appeal them (spec 9, R9.5). */
 export const noticesPath = "/notices";
 
-/** What is ready and until when, never a link (spec 11, 7). */
+/**
+ * What is ready, or what will be deleted, and when; never a link to the file
+ * (spec 11, 7). No weekday: Icelandic would have to decline it after "fyrir".
+ */
 function accountText(facts: AccountNoticeFacts, locale: Locale): NotificationText {
   const t = createTranslator(locale);
   const when = (moment: Date) =>
-    t("notify.when", { date: formatDay(moment, locale), time: formatClock(moment) });
+    t("notify.when", { date: formatDayAndMonth(moment, locale), time: formatClock(moment) });
   switch (facts.kind) {
     case "data_export_ready":
       return {
         title: t("notify.dataExportReady"),
-        body: t("notify.dataExportReadyBody", { until: when(facts.expiresAt) }),
+        body: t("notify.dataExportReadyBody", { until: when(facts.until) }),
         path: downloadDataPath,
+      };
+    case "account_deletion_scheduled":
+      return {
+        title: t("notify.accountDeletionScheduled"),
+        body: t("notify.accountDeletionScheduledBody", { date: when(facts.until) }),
+        path: deletionWaitPath,
+      };
+    case "privacy_request_answered":
+      // The answer itself, as the operator wrote it, after a line that says
+      // which request it answers.
+      return {
+        title: t("notify.privacyRequestAnswered"),
+        body: `${t("notify.privacyRequestAnsweredBody", { date: formatDayAndMonth(facts.receivedAt, locale) })}\n\n${facts.answer}`,
+        path: privacyPath,
       };
     case "suspension_ended":
       return {
@@ -281,8 +349,9 @@ function noticeText(
   locale: Locale,
 ): NotificationText {
   const t = createTranslator(locale);
+  // No weekday, as for the account's other news: "til" would decline it.
   const when = (moment: Date) =>
-    t("notify.when", { date: formatDay(moment, locale), time: formatClock(moment) });
+    t("notify.when", { date: formatDayAndMonth(moment, locale), time: formatClock(moment) });
   const title =
     facts.action === "suspension"
       ? facts.until === null
@@ -376,6 +445,42 @@ function bookingText(
       case "checked_in":
       case "checked_in_driver":
         return [t("notify.checkedIn", { name }), from];
+      // A report on the trip day (spec 8, 3.3 and 3.4): the other side is
+      // asked whether it is right, and until when they can say. Never the
+      // note, which is for the operator.
+      case "no_show_marked":
+      case "driver_absent_reported":
+        return [
+          facts.kind === "no_show_marked"
+            ? t("notify.noShowMarked")
+            : t("notify.driverAbsentReported", { name }),
+          t("notify.reportBody", {
+            from,
+            to,
+            when: when(facts.boardsAt),
+            deadline: when(required(facts.answerBy, "the time to answer")),
+          }),
+        ];
+      // The outcome is on the booking and trip pages (3.5).
+      case "dispute_decided":
+      case "dispute_decided_driver":
+        return [
+          t("notify.disputeDecided"),
+          t("notify.disputeDecidedBody", { from, to, when: when(facts.boardsAt) }),
+        ];
+      // Reviews (spec 8, 3.7): "How was your trip?", and one about you that shows.
+      case "rate_trip":
+        return [
+          t("review.title"),
+          t("notify.rateDriver", { name, from, to, when: when(facts.boardsAt) }),
+        ];
+      case "rate_trip_driver":
+        return [t("review.title"), t("notify.ratePassengers")];
+      case "review_visible":
+        return [
+          t("notify.reviewVisible"),
+          t("notify.reviewVisibleBody", { from, to, when: when(facts.boardsAt) }),
+        ];
       case "booking_cancelled_by_driver":
       case "trip_cancelled":
         // Never the driver's note: it may hold a number (R7.9). ShareRide
@@ -425,6 +530,21 @@ function bookingText(
         return [
           stopAddedText(t, { stop: stop.name, plannedAt: stop.plannedAt.toISOString() }),
           part,
+        ];
+      }
+      // A paused meeting point where the passenger gets in or out (spec 2,
+      // 3.6.4): the operator's reason, and when it is back if they said.
+      case "meeting_point_changed": {
+        const point = required(facts.pausedPoint, "the paused point");
+        return [
+          t(point.retired ? "notify.pointRetired" : "notify.pointPaused", { point: point.name }),
+          [
+            point.reason,
+            ...(point.until === null
+              ? []
+              : [t("notify.pointBack", { date: formatDate(point.until, locale) })]),
+            t("notify.pointPausedBody", { from, to, when: when(facts.boardsAt) }),
+          ].join("\n"),
         ];
       }
       case "refund_issued":
@@ -496,6 +616,30 @@ function tripReminderText(facts: TripReminderFacts, locale: Locale): Notificatio
       locale,
     ),
     body: lines.join("\n"),
+    path: `/drive/trips/${facts.tripId}`,
+  };
+}
+
+/** The driver is asked to choose another stop (spec 2, 3.6.4), on the trip's page. */
+function pointPausedText(facts: PointPausedFacts, locale: Locale): NotificationText {
+  const t = createTranslator(locale);
+  const { point } = facts;
+  const when = t("notify.when", {
+    date: formatDay(facts.stopsAt, locale),
+    time: formatClock(facts.stopsAt),
+  });
+  return {
+    title: capitalised(
+      t(point.retired ? "notify.pointRetired" : "notify.pointPaused", { point: point.name }),
+      locale,
+    ),
+    body: [
+      point.reason,
+      ...(point.until === null
+        ? []
+        : [t("notify.pointBack", { date: formatDate(point.until, locale) })]),
+      t("notify.pointPausedDriverBody", { when }),
+    ].join("\n"),
     path: `/drive/trips/${facts.tripId}`,
   };
 }

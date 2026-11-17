@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { changedFields, isAuditAction } from "./audit.ts";
+import { auditLogPeriod, changedFields, isAuditAction } from "./audit.ts";
 
 describe("isAuditAction", () => {
   it("takes a dotted name of lower-case words", () => {
@@ -46,5 +46,24 @@ describe("changedFields", () => {
       before: {},
       after: {},
     });
+  });
+});
+
+describe("auditLogPeriod", () => {
+  it("covers whole days in Iceland, the last one to its end", () => {
+    expect(auditLogPeriod({ from: "2026-11-01", to: "2026-11-16" })).toEqual({
+      from: new Date("2026-11-01T00:00:00Z"),
+      until: new Date("2026-11-17T00:00:00Z"),
+    });
+  });
+
+  it("leaves out a side that is not given", () => {
+    expect(auditLogPeriod({ from: "2026-12-31" })).toEqual({
+      from: new Date("2026-12-31T00:00:00Z"),
+    });
+    expect(auditLogPeriod({ to: "2026-12-31" })).toEqual({
+      until: new Date("2027-01-01T00:00:00Z"),
+    });
+    expect(auditLogPeriod({})).toEqual({});
   });
 });

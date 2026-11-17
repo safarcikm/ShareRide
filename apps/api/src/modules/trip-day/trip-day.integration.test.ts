@@ -151,15 +151,24 @@ describe("the passenger's \"I'm here\" (spec 8, 3.2; R8.3)", () => {
   it("opens 30 minutes before their stop; the driver is told once, and both conversations show it", async () => {
     const jon = await driverOf(airport, "Jón");
     const { member: gunna, booking } = await rider("Gunna", 0);
-    const [hlemmur] = await stopsOf(airport);
-    if (hlemmur === undefined) throw new Error("No stop at Hlemmur.");
+    const stops = await stopsOf(airport);
+    const [hlemmur] = stops;
+    const airportStop = stops.at(-1);
+    if (hlemmur === undefined || airportStop === undefined) throw new Error("No stops.");
+    const minutesFrom = (time: Date, minutes: number) =>
+      new Date(time.getTime() + minutes * 60_000).toISOString();
 
     expect((await bookingAs(gunna, booking.id)).tripDay).toEqual({
       phase: "upcoming",
-      checkInOpensAt: new Date(hlemmur.plannedAt.getTime() - 30 * 60_000).toISOString(),
-      checkInClosesAt: new Date(hlemmur.plannedAt.getTime() + 60 * 60_000).toISOString(),
+      checkInOpensAt: minutesFrom(hlemmur.plannedAt, -30),
+      checkInClosesAt: minutesFrom(hlemmur.plannedAt, 60),
       passengerCheckedInAt: null,
       driverCheckedInAt: null,
+      // The reports open after the 10-minute wait (R8.4, R8.5), and close
+      // when the trip completes, 2 hours after its last stop, or 24 hours later.
+      reportOpensAt: minutesFrom(hlemmur.plannedAt, 10),
+      noShowClosesAt: minutesFrom(airportStop.plannedAt, 120),
+      driverAbsentClosesAt: minutesFrom(airportStop.plannedAt, 120 + 24 * 60),
       arrival: "not_here",
     });
 

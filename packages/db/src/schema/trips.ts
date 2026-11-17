@@ -36,9 +36,11 @@ export const trips = pgTable(
   "trips",
   {
     id: id(),
+    // Restrict: erasure moves trips to the former member first, so a missed
+    // step fails instead of deleting other people's bookings (privacy plan 4.6).
     driverId: uuid()
       .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+      .references(() => users.id, { onDelete: "restrict" }),
     /** A car a published trip used stays (`removed_at`) instead of being deleted. */
     vehicleId: uuid().references(() => vehicles.id),
     status: text().notNull().default("draft"),

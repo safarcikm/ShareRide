@@ -30,6 +30,12 @@ export const meSchema = z.object({
    */
   // Null when missing, as from an API before it: the app then shows nothing suspended.
   suspension: z.object({ until: timestampSchema.nullable() }).nullable().default(null),
+  /**
+   * When the account's data is erased, while its deletion waits (spec 11,
+   * 3.4.4): the app then shows only that date, "Keep my account" and
+   * "Sign out". Null otherwise.
+   */
+  deletionScheduledFor: timestampSchema.nullable(),
 });
 
 export type Me = z.infer<typeof meSchema>;

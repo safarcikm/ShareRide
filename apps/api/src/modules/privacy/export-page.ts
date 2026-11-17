@@ -79,6 +79,9 @@ function codeWords(t: Translate, locale: Locale): Readonly<Record<string, Say>> 
     endReason: keyed("export.value.endReason"),
     roles: keyed("export.value.role"),
     cancelledBy: keyed("export.value.role"),
+    reportedBy: keyed("export.value.role"),
+    answer: keyed("export.value.answer"),
+    decidedBy: keyed("export.value.decidedBy"),
     from: keyed("export.value.from"),
     bookingMode: keyed("trip.bookingMode"),
     luggage: keyed("trip.prefs.luggage"),
@@ -90,7 +93,11 @@ function codeWords(t: Translate, locale: Locale): Readonly<Record<string, Say>> 
     cancelReason: (code) => (isCancelReason(code) ? cancelReasonText(t, code) : undefined),
     subject: keyed("export.value.subject"),
     category: (code) => (isReportCategory(code) ? reportCategoryText(t, code) : undefined),
-    outcome: (code) => (isReportOutcome(code) ? reportOutcomeText(t, code) : undefined),
+    // A ride report's outcome and a safety report's outcome share the field;
+    // their codes differ.
+    outcome: (code) =>
+      keyed("export.value.outcome")(code) ??
+      (isReportOutcome(code) ? reportOutcomeText(t, code) : undefined),
     rule: (code) => (isModerationRule(code) ? moderationRuleText(t, code) : undefined),
     content: (code) => (isModeratedContent(code) ? moderatedContentName(t, code) : undefined),
     appealOutcome: keyed("export.value.appealOutcome"),

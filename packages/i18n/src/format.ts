@@ -84,6 +84,16 @@ export function formatDay(moment: Date, locale: Locale): string {
   return `${weekdayNames[locale][weekday] ?? ""} ${dayAndMonth(day, month, locale)}`;
 }
 
+/**
+ * The day and month of a moment in Iceland: "23 November", "23. nóvember".
+ * Without a weekday, so it reads right after any Icelandic preposition
+ * ("til", "frá"), where a weekday would have to be declined.
+ */
+export function formatDayAndMonth(moment: Date, locale: Locale): string {
+  const { month, day } = inIceland(moment);
+  return dayAndMonth(day, month, locale);
+}
+
 /** A calendar date such as 2026-11-20, briefly: "Fri 20 Nov", "fös. 20. nóv.". */
 export function formatShortDay(date: string, locale: Locale): string {
   const [year, month, day] = date.split("-").map(Number);

@@ -67,7 +67,7 @@ When this milestone is done, on the web and on an Android test build:
 | 2 | Whether a block keeps two passengers out of the same car | **Yes.** Someone who blocked you, or whom you blocked, being booked on a trip hides that trip from you and refuses your booking, silently | Spec 9 covers trips the other person drives. A passenger who blocks another passenger for harassment would otherwise still meet them in the car | Blocks apply only between a driver and a passenger, as spec 9 says. Simpler, but two passengers can still end up side by side |
 | 3 | What a suspension does to the suspended person's own bookings as a passenger | **A full refund to them**, as with every operator cancellation (spec 9, 3.4) | One rule for every cancellation the operator makes; the driver's seat is free to book again at once | The normal cancellation rules (spec 6), as if they had cancelled: the driver keeps a share when it is late, but the operator then decides what someone else pays |
 
-**Decision 2 revised on review (2026-11-16, Martin to confirm):** closing
+**Decision 2 revised on review (2026-11-16, Martin confirmed 2026-11-17):** closing
 a trip because someone in a block is booked on it would show the blocker
 which rides the other person booked (compare a signed-in search with a
 signed-out one), and a block can be made through any booking ever shared.
@@ -359,19 +359,19 @@ Built in two parts: 5a the reports themselves, 5b the operator's alert.
 In four parts, each its own pull request:
 
 - [x] 6a: `moderation_actions` and `suspended_until` (migration
-      `0027_moderation`); `suspend`, `warn` and `reinstate` with their
+      `0035_moderation`); `suspend`, `warn` and `reinstate` with their
       audit entries and notices; ShareRide's cancellation of a trip and of
       a booking (`trips.cancelled_by`); refusals while suspended, and a
       suspended person stays signed in; ends in the minute job
 - [x] 6b: `GET /v1/me/notices` and the appeal; `closeReport` (with
       `report_closed` to the reporter) and `answerAppeal` (with
       `appeal_answered` to the person; reversing the suspension they are
-      under lifts it); migration `0028_appeals`
+      under lifts it); migration `0036_appeals`
 - [x] 6c: Notices with Appeal (Profile, and where a notice's push
       opens), and the suspended account screen in place of Find and
       Offer; `suspension` in `GET /v1/me`; a browser journey with a
       suspension made by the test API (`POST /e2e/suspend`)
-- [x] 6d: the `hidden_at` columns (migration `0029_hidden_content`);
+- [x] 6d: the `hidden_at` columns (migration `0037_hidden_content`);
       `hideContent` for a message, a trip's note and About you
       (reversing it on appeal shows the content again), and `cancelTrip`
       with the driver's notice; "Removed by ShareRide" in the chat.

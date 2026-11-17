@@ -48,7 +48,8 @@ erDiagram
 | `licence_declared_at` | When the user declared they hold a valid driving licence (needed to publish trips) |
 | `women_only_since`, `women_only_withdrawn_at` | When the user opted in to women-only trips, and when the operator withdrew that access; no gender is stored ([spec 14](../specs/2026-11-13-women-only-trips.md)) |
 | `roles` | `member`, `operator`; admin access needs `operator` |
-| `status` | `active`, `suspended` (with `suspended_until`, empty when permanent), `deletion_scheduled` (with `delete_after`, 7 days), `deleted` (an anonymous placeholder) |
+| `status` | `active`, `suspended` (with `suspended_until`, empty when permanent), `deleted` (only the one shared former member, which erased accounts' trips and bookings move to) |
+| `delete_after` | Set while "Delete my account" waits, 7 days; the status stays as it was, so keeping the account never lifts a suspension ([spec 11](../specs/2026-11-13-privacy-self-service.md#34-delete-my-account)) |
 | `created_at`, `deleted_at` | Deletion anonymises; see [privacy](../compliance/privacy-gdpr.md) |
 
 ### Vehicle
@@ -59,7 +60,8 @@ in capitals without spaces or hyphens, 2 to 8 letters and digits; shown only
 to booked passengers), `removed_at` (a removed car leaves the driver's list
 and their drafts, and stays on the published trips that used it; a car no
 published trip used is deleted; a car on a trip that has not ended cannot
-be removed). Who owns the car in real life does not
+be removed; when the driver's account is erased, a car trips used stays with
+them for the former member, without its plate). Who owns the car in real life does not
 matter; the user is responsible for being allowed to use it
 ([spec 3](../specs/2026-11-13-post-a-trip.md#32-cars)).
 
@@ -69,7 +71,25 @@ See [meeting points](../product/meeting-points.md#data-kept-for-each-meeting-poi
 and [spec 2](../specs/2026-11-13-meeting-points.md#6-data-and-api).
 Location stored as PostGIS `geography(Point, 4326)`. `status` is `draft`,
 `active`, `paused`, `retiring` or `retired`. `search_text` holds the
-normalised names and aliases with a trigram index. Photos are
+normalised names and aliases with a trigram index. `shelter_hours` is a
+week from Monday (`jsonb`, seven entries, each `{ opens, closes }` such as
+`07:00` to `23:30`, or null when closed; a close before the open is after
+midnight), with `shelter_note_is` and `_en`, and only on a point with a
+shelter. `last_checked_on` is the day the operator last confirmed the
+point (spec 2, decision 2); `amenities_reviewed_on` and
+`season_reviewed_on` record the activation checklist's reviews (R2.3).
+The console's rules for each field are `validateMeetingPointDraft` in
+`packages/domain/src/meeting-points/draft.ts`. Its status changes are
+`nextPointStatus` in `status.ts`: an active point is paused with a reason
+in both languages and an optional end date (`pause_reason_is`, `_en`,
+`paused_until`), and is active again by hand or from that date in
+Iceland; retiring an active point that trips still stop at makes it
+`retiring` until the last of them has passed it, then `retired`; a draft,
+or a paused point, retires at once. A point retired while paused keeps its
+pause reason, as the trips that stop there still need another stop
+(`pauseStillApplies`). Retired is final. `review_due_on` is a
+year after `last_checked_on` while the point is in use (R2.9), and empty
+for a draft or a retired point. Photos are
 `MeetingPointPhoto` records. `sample` marks the sample points that local
 and staging databases get until the real list exists (milestone 3); the app
 tags them.
@@ -198,23 +218,32 @@ sender, so a retry is stored once; only a message to all passengers puts
 one client ID in several conversations of a trip), `sent_at`, `read_at`,
 `hidden_at` (ShareRide removed it: both people read "Removed by ShareRide",
 spec 9, 3.4.3; a message to all passengers is removed in every
-conversation it went to).
+conversation it went to), and `erased_at` (when the sender's account was
+erased: the text, key and params are emptied, the sender becomes the former
+member, and the message reads "Message deleted", [spec 11](../specs/2026-11-13-privacy-self-service.md#35-what-is-erased-and-what-is-kept)).
 Opened in the transaction that confirms the booking. Retained per the
 [privacy](../compliance/privacy-gdpr.md#retention) schedule. See
 [spec 7](../specs/2026-11-13-chat-and-notifications.md#6-data-and-api).
 
 ### Review
 
-`booking_id`, `author_id`, `subject_id`, `role` (`as_driver` or
-`as_passenger`), `rating` (1–5), `comment`, `created_at`, `revealed_at`,
-`hidden_at` (moderation).
+`booking_id`, `author_id`, `subject_id`, `author_role` (`driver` or
+`passenger`), `rating` (1–5), `comment` (empty for none), `created_at` (when
+it was sent; never changed after), `revealed_at` (once both have reviewed,
+or 14 days after the booking completed), `hidden_at` (moderation, spec 9).
+One per author per completed booking; a driver absence that stands, or a
+passenger found absent, deletes the booking's reviews
+([spec 8, 3.7](../specs/2026-11-13-trip-day-reviews-and-reliability.md#37-ratings-and-reviews-g1)).
 
 ### Trip day and reliability records
 
 Detailed in [spec 8](../specs/2026-11-13-trip-day-reviews-and-reliability.md#6-data-and-api):
 `CheckIn` ("I'm here": trip stop, user, the passenger's booking, time;
 never a location), `Dispute`
-(a no-show or a missing driver, the other side's answer and the outcome),
+(a no-show or a missing driver, one per booking: the kind, when, the
+reporter's note, the other side's answer and its note, the outcome, who
+decided it, the system or the operator, and the operator's note; who
+reported it follows from the kind, and every note is the operator's only),
 `ReliabilityRecord` (one per kept or not-kept trip or booking, with whether
 it counts and why not) and `UserStats` (rating and reliability totals).
 

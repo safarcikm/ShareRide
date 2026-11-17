@@ -1,4 +1,5 @@
 import { err, ok, type Result } from "../result.ts";
+import { fromIceland, inIceland } from "../time.ts";
 import { addDays, addIcelandMonths } from "./calendar.ts";
 import { privacySettings } from "./settings.ts";
 
@@ -7,7 +8,9 @@ import { privacySettings } from "./settings.ts";
  * by the name its runs are recorded under. The periods of the older rules
  * stay with their modules (`retentionCutoffs` for sign-in records,
  * `deleteArrivedBy` for conversations, `notificationRetention`,
- * `draftRetentionDays`); `privacyCutoffs` has the ones this feature adds.
+ * `draftRetentionDays`, `operatorSessionRules`); `privacyCutoffs` has the
+ * ones this feature adds. Trips and bookings after 3 years join with
+ * their PR (plan, PR 9b).
  */
 export const retentionRules = [
   "sign_in_codes",
@@ -21,12 +24,14 @@ export const retentionRules = [
   "notification_log",
   "scheduled_notifications",
   "outbox_events",
+  "operator_sessions",
+  "operator_sign_in",
   "data_exports",
   "accounts",
   "blocked_numbers",
   "erased_accounts",
   "privacy_requests",
-  "trips_and_bookings",
+  "holds",
   "retention_runs",
 ] as const;
 export type RetentionRule = (typeof retentionRules)[number];
@@ -48,6 +53,8 @@ export interface PrivacyCutoffs {
   readonly requestsAnsweredBy: Date;
   /** Records of clean-up runs older than this are deleted. */
   readonly retentionRunsBefore: Date;
+  /** Holds that ended, or ran to their end, at or before this are deleted. */
+  readonly holdsEndedBefore: Date;
 }
 
 export function privacyCutoffs(now: Date): PrivacyCutoffs {
@@ -61,6 +68,7 @@ export function privacyCutoffs(now: Date): PrivacyCutoffs {
     tripsArrivedBy: yearsAgo(privacySettings.tripsKeptYears),
     requestsAnsweredBy: yearsAgo(privacySettings.requestsKeptYears),
     retentionRunsBefore: addDays(now, -privacySettings.retentionRunsKeptDays),
+    holdsEndedBefore: yearsAgo(privacySettings.holdsKeptYears),
   };
 }
 
@@ -78,7 +86,7 @@ export interface Hold {
   readonly subject: HoldSubject;
   readonly endsAt: Date;
   /** When the operator ended it early. */
-  readonly releasedAt: Date | null;
+  readonly endedAt: Date | null;
 }
 
 /**
@@ -92,7 +100,7 @@ export function isHeld(
 ): boolean {
   return holds.some(
     (hold) =>
-      hold.releasedAt === null &&
+      hold.endedAt === null &&
       hold.endsAt > now &&
       subjects.some(
         (subject) => subject.kind === hold.subject.kind && subject.id === hold.subject.id,
@@ -112,4 +120,20 @@ export function validateHold(
   if (reason.length === 0) return err({ code: "hold_reason_required" });
   if (input.endsAt <= now) return err({ code: "hold_end_not_future" });
   return ok({ reason, endsAt: input.endsAt });
+}
+
+const dayPattern = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/**
+ * When a hold given until a calendar day ends: it lasts through that day
+ * in Iceland. Null unless the day is a real one written `YYYY-MM-DD`.
+ */
+export function holdEndsAt(day: string): Date | null {
+  const match = dayPattern.exec(day);
+  if (match === null) return null;
+  const [year, month, date] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const start = fromIceland({ year, month, day: date, hour: 0, minute: 0 });
+  const shown = inIceland(start);
+  if (shown.year !== year || shown.month !== month || shown.day !== date) return null;
+  return fromIceland({ year, month, day: date + 1, hour: 0, minute: 0 });
 }

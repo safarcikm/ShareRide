@@ -23,7 +23,7 @@ import { TakesFocus } from "@/components/takes-focus";
 import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
-import { memberSinceText, monthOf } from "@/people/texts";
+import { memberSinceText, monthOf, firstNameOf } from "@/people/texts";
 import { PartStop } from "@/trip-details/trip-parts";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -81,7 +81,7 @@ export function RequestCard({
   const [notice, setNotice] = useState<string | null>(null);
   // Two quick presses send one answer: the second comes before the screen shows busy.
   const sending = useRef(false);
-  const name = booking.passenger.firstName;
+  const name = firstNameOf(t, booking.passenger);
 
   const failed = (failure: CallFailure) => {
     if (failure.error.code === "booking_not_requested" || failure.error.code === "not_found") {

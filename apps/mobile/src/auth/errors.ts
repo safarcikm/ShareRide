@@ -20,6 +20,7 @@ export function errorText(t: Translate, failure: CallFailure): string {
     case "network_error":
     case "legal_version_outdated":
     case "account_suspended":
+    case "deletion_blocked":
       return t(`error.${code}`);
     case "rate_limited":
       return t("error.rate_limited", { wait: formatWait(t, retryAfterSeconds) });

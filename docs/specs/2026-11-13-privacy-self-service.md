@@ -169,9 +169,10 @@ date appear on the console home (spec 10).
 Entities (see [domain model](../architecture/domain-model.md)):
 
 - `DataExport`: user, requested at, ready at, file location, expires at.
-- `User` (existing): `status` gains a `deletion_scheduled` state, with
-  `delete_after`; a deleted user becomes an anonymous
-  placeholder with no personal fields.
+- `User` (existing): `delete_after` is set while deletion waits, and the
+  status stays as it was (plan 4.5, so keeping the account never lifts a
+  suspension); a deleted user's trips and bookings move to one shared
+  former member with the status `deleted` and no personal fields.
 - `ErasedAccount`: former user ID and erased at, for re-applying erasures
   after a restore.
 - `BlockedNumber`: phone number hash, until (the suspension's end, at most 3

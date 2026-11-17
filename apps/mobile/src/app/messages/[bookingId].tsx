@@ -21,6 +21,7 @@ import { MessageList } from "@/chat/message-list";
 import { otherPerson } from "@/chat/texts";
 import { useConversation } from "@/chat/use-conversation";
 import { useLanguage } from "@/i18n/language";
+import { firstNameOf } from "@/people/texts";
 import { suspensionNow } from "@/safety/suspended-account";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -110,7 +111,7 @@ export default function ConversationScreen() {
         <BackButton fallback="/messages" />
         <View style={styles.header}>
           <View style={styles.fill}>
-            <Title align="start">{otherPerson(booking).firstName}</Title>
+            <Title align="start">{firstNameOf(t, otherPerson(booking))}</Title>
             <Text style={[typography.small, { color: palette.textMuted }]}>
               {`${day} · ${route}`}
             </Text>
@@ -119,7 +120,7 @@ export default function ConversationScreen() {
             {/* Reporting and blocking ask first, on their own screens (spec 9, 3.1 and 3.2). */}
             <Button
               variant="text"
-              label={t("report.person", { name: otherPerson(booking).firstName })}
+              label={t("report.person", { name: firstNameOf(t, otherPerson(booking)) })}
               onPress={() => {
                 // No name in the address: the report screen reads it from the booking.
                 router.push({ pathname: "/report", params: { kind: "user", id: booking.id } });
@@ -128,7 +129,7 @@ export default function ConversationScreen() {
             {conversation.blockedByMe ? null : (
               <Button
                 variant="text"
-                label={t("block.action", { name: otherPerson(booking).firstName })}
+                label={t("block.action", { name: firstNameOf(t, otherPerson(booking)) })}
                 onPress={() => {
                   router.push({ pathname: "/bookings/[id]/block", params: { id: booking.id } });
                 }}
@@ -138,7 +139,7 @@ export default function ConversationScreen() {
         </View>
         {conversation.blockedByMe ? (
           <Body align="start">
-            {t("block.youBlocked", { name: otherPerson(booking).firstName })}
+            {t("block.youBlocked", { name: firstNameOf(t, otherPerson(booking)) })}
           </Body>
         ) : null}
         <Notice kind="info" urgent={false} message={t("chat.safetyTip")} />

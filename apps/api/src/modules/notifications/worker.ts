@@ -4,18 +4,23 @@ import {
   canUseConsole,
   channelsFor,
   defaultNotificationSettings,
+  defaultReviewSettings,
   defaultSafetySettings,
+  defaultTripDaySettings,
   eventAttempts,
   isAccountNotice,
   isOperatorNotice,
   notificationsFor,
   operatorNoticeKinds,
   operatorRole,
+  pauseStillApplies,
   payReminderAt,
   reminderStillTimely,
   reminderTimes,
   requestHalfwayAt,
   retryAt,
+  reviewClosesAt,
+  reviewReminderAt,
   sendLeaseSeconds,
   startOfIcelandDay,
   statusAt,
@@ -26,6 +31,7 @@ import {
   type CancelReason,
   type CarColour,
   type ChannelDecision,
+  type MeetingPointStatus,
   type NotificationEvent,
   type ModeratedContent,
   type ModerationActionKind,
@@ -35,6 +41,7 @@ import {
   type OutboxEventType,
   type Recipient,
   type ReportOutcome,
+  type ReviewSettings,
   type TripRole,
 } from "@shareride/domain";
 import type { CarFacts } from "@shareride/i18n";
@@ -46,6 +53,8 @@ import { deviceNotRegistered, type PushReceipt, type PushSender } from "../../pl
 import { SmsMaybeSent, type SmsSender } from "../../platform/sms.ts";
 import type { Queryable, Transaction } from "../bookings/seats.ts";
 import { quickOf } from "../chat/service.ts";
+import { isHidden, shown } from "../privacy/hidden.ts";
+import { answerByOf, disputesOf } from "../trip-day/disputes.ts";
 import { emailContent } from "./email-content.ts";
 import { preferencesOf } from "./preferences.ts";
 import {
@@ -55,6 +64,8 @@ import {
   type AccountNoticeFacts,
   type NotificationFacts,
   type OperatorNoticeFacts,
+  type PausedPoint,
+  type PointPausedFacts,
   type TripReminderFacts,
 } from "./texts.ts";
 
@@ -66,15 +77,18 @@ const {
   bookings,
   conversations,
   dataExports,
+  disputes,
   meetingPoints,
   messages,
   moderationActions,
   notificationDeliveries,
   notifications,
   outboxEvents,
+  privacyRequests,
   pushTickets,
   pushTokens,
   reports,
+  reviews,
   scheduledNotifications,
   sessions,
   tripChanges,
@@ -130,6 +144,7 @@ async function partiesOf(q: Queryable, bookingId: string) {
       expiresAt: bookings.expiresAt,
       decidedAt: bookings.decidedAt,
       paymentDueAt: bookings.paymentDueAt,
+      completedAt: bookings.completedAt,
     })
     .from(bookings)
     .innerJoin(trips, eq(trips.id, bookings.tripId))
@@ -259,9 +274,14 @@ const isDriverReminder = (kind: string): kind is keyof typeof driverReminders =>
 
 /** Which reminder a notification is, and the moment its words count to; null for the rest. */
 function reminderOf(
-  facts: NotificationFacts | TripReminderFacts | AccountNoticeFacts | OperatorNoticeFacts,
+  facts:
+    | NotificationFacts
+    | TripReminderFacts
+    | PointPausedFacts
+    | AccountNoticeFacts
+    | OperatorNoticeFacts,
 ) {
-  if (isAccountNotice(facts.kind) || isOperatorFacts(facts)) return null;
+  if (isAccountNotice(facts.kind) || isOperatorFacts(facts) || "point" in facts) return null;
   if ("passengers" in facts) {
     return { which: driverReminders[facts.kind], startsAt: facts.departsAt };
   }
@@ -331,7 +351,103 @@ async function tripFactsOf(q: Queryable, notification: typeof notifications.$inf
   } as const;
 }
 
-/** News about the person's account: a data export (spec 11), or a notice (spec 9). */
+/**
+ * A meeting point as a notification of its pause tells of it, in the
+ * recipient's language; none once it is back in use, as the news no
+ * longer applies (spec 2, 3.6.4). A point retired while paused still
+ * applies: the trips that stop there need another stop all the same.
+ */
+async function pausedPointOf(
+  q: Queryable,
+  pointId: string | null,
+  locale: "is" | "en",
+): Promise<PausedPoint | null> {
+  if (pointId === null) return null;
+  const [point] = await q
+    .select({
+      status: meetingPoints.status,
+      nameIs: meetingPoints.nameIs,
+      nameEn: meetingPoints.nameEn,
+      reasonIs: meetingPoints.pauseReasonIs,
+      reasonEn: meetingPoints.pauseReasonEn,
+      until: meetingPoints.pausedUntil,
+    })
+    .from(meetingPoints)
+    .where(eq(meetingPoints.id, pointId));
+  if (
+    point === undefined ||
+    !pauseStillApplies(point.status as MeetingPointStatus, point.reasonIs !== null)
+  ) {
+    return null;
+  }
+  const reason = locale === "en" ? point.reasonEn : point.reasonIs;
+  const retired = point.status === "retired";
+  return {
+    name: named(locale, { is: point.nameIs, en: point.nameEn }),
+    reason: reason ?? point.reasonIs ?? "",
+    until: retired ? null : point.until,
+    retired,
+  };
+}
+
+/**
+ * A pause told to the driver of a trip still to stop at the point, with
+ * the trip's time there. `current` is false once the point is back in use,
+ * or the trip no longer stops there or has passed it.
+ */
+async function pausedForDriverOf(
+  q: Queryable,
+  notification: typeof notifications.$inferSelect,
+  now: Date,
+) {
+  if (notification.tripId === null || notification.kind !== "meeting_point_changed_driver") {
+    return undefined;
+  }
+  const [row] = await q
+    .select({
+      locale: recipients.locale,
+      email: recipients.email,
+      emailVerifiedAt: recipients.emailVerifiedAt,
+      tripStatus: trips.status,
+      stopsAt: tripStops.plannedAt,
+    })
+    .from(trips)
+    .innerJoin(recipients, eq(recipients.id, notification.recipientId))
+    .leftJoin(
+      tripStops,
+      and(
+        eq(tripStops.tripId, trips.id),
+        notification.meetingPointId === null
+          ? sql`false`
+          : eq(tripStops.meetingPointId, notification.meetingPointId),
+        isNull(tripStops.removedAt),
+      ),
+    )
+    .where(eq(trips.id, notification.tripId));
+  if (row === undefined) return undefined;
+  const locale = row.locale === "is" ? "is" : "en";
+  const point = await pausedPointOf(q, notification.meetingPointId, locale);
+  const running = row.tripStatus === "published" || row.tripStatus === "departed";
+  const stopsAt = row.stopsAt ?? new Date(0);
+  const facts: PointPausedFacts = {
+    kind: "meeting_point_changed_driver",
+    role: "driver",
+    tripId: notification.tripId,
+    stopsAt,
+    point: point ?? { name: "", reason: "", until: null, retired: false },
+  };
+  return {
+    facts,
+    current: point !== null && running && row.stopsAt !== null && row.stopsAt > now,
+    locale,
+    recipientId: notification.recipientId,
+    email: row.emailVerifiedAt === null ? null : row.email,
+    phone: null,
+    booking: null,
+  } as const;
+}
+
+/** News about the person's account: their data or its deletion (spec 11), or a notice (spec 9). */
 async function accountFactsOf(
   q: Queryable,
   notification: typeof notifications.$inferSelect,
@@ -341,7 +457,10 @@ async function accountFactsOf(
   if (!isAccountNotice(kind)) return undefined;
   switch (kind) {
     case "data_export_ready":
-      return exportFactsOf(q, notification, now);
+    case "account_deletion_scheduled":
+      return exportFactsOf(q, notification, kind, now);
+    case "privacy_request_answered":
+      return answerFactsOf(q, notification);
     case "report_closed":
       return reportOutcomeFactsOf(q, notification);
     default:
@@ -440,14 +559,16 @@ async function reportOutcomeFactsOf(q: Queryable, notification: typeof notificat
 }
 
 /**
- * The person's data is ready (spec 11): until when the file can be
- * downloaded. `current` is false once the person's latest export cannot be
- * downloaded: it expired or failed, or a newer one was asked for, which
- * deleted this file.
+ * For a data export (spec 11), until when the file can be downloaded:
+ * `current` is false once the person's latest export cannot be downloaded
+ * (it expired or failed, or a newer one was asked for, which deleted this
+ * file). For a deletion, when the data is erased: `current` is false once
+ * the person kept their account.
  */
 async function exportFactsOf(
   q: Queryable,
   notification: typeof notifications.$inferSelect,
+  kind: "data_export_ready" | "account_deletion_scheduled",
   now: Date,
 ) {
   const [row] = await q
@@ -455,6 +576,7 @@ async function exportFactsOf(
       locale: recipients.locale,
       email: recipients.email,
       emailVerifiedAt: recipients.emailVerifiedAt,
+      deleteAfter: recipients.deleteAfter,
       readyAt: dataExports.readyAt,
       failedAt: dataExports.failedAt,
       expiresAt: dataExports.expiresAt,
@@ -466,10 +588,17 @@ async function exportFactsOf(
     .orderBy(desc(dataExports.askedAt))
     .limit(1);
   if (row === undefined) return undefined;
-  const until = row.expiresAt;
-  const current =
-    row.readyAt !== null && row.failedAt === null && row.hasFile && until !== null && until > now;
-  const facts: AccountNoticeFacts = { kind: "data_export_ready", expiresAt: until ?? now };
+  let until: Date | null;
+  let current: boolean;
+  if (kind === "account_deletion_scheduled") {
+    until = row.deleteAfter;
+    current = until !== null && until > now;
+  } else {
+    until = row.expiresAt;
+    current =
+      row.readyAt !== null && row.failedAt === null && row.hasFile && until !== null && until > now;
+  }
+  const facts: AccountNoticeFacts = { kind, until: until ?? now };
   return {
     facts,
     current,
@@ -496,6 +625,7 @@ async function operatorFactsOf(q: Queryable, notification: typeof notifications.
       phoneVerifiedAt: recipients.phoneVerifiedAt,
       roles: recipients.roles,
       status: recipients.status,
+      deleteAfter: recipients.deleteAfter,
       reportStatus: reports.status,
     })
     .from(recipients)
@@ -514,20 +644,70 @@ async function operatorFactsOf(q: Queryable, notification: typeof notifications.
   } as const;
 }
 
+/**
+ * The answer to a request about the person's data (spec 11, 3.6), with the
+ * day it came: nothing once the request is no longer theirs (erased since).
+ */
+async function answerFactsOf(q: Queryable, notification: typeof notifications.$inferSelect) {
+  if (notification.privacyRequestId === null) return undefined;
+  const [row] = await q
+    .select({
+      locale: recipients.locale,
+      email: recipients.email,
+      emailVerifiedAt: recipients.emailVerifiedAt,
+      receivedAt: privacyRequests.receivedAt,
+      answer: privacyRequests.answer,
+    })
+    .from(privacyRequests)
+    .innerJoin(recipients, eq(recipients.id, privacyRequests.userId))
+    .where(
+      and(
+        eq(privacyRequests.id, notification.privacyRequestId),
+        eq(privacyRequests.userId, notification.recipientId),
+      ),
+    );
+  if (row === undefined || row.answer === null) return undefined;
+  const facts: AccountNoticeFacts = {
+    kind: "privacy_request_answered",
+    receivedAt: row.receivedAt,
+    answer: row.answer,
+  };
+  return {
+    facts,
+    current: true,
+    locale: row.locale === "is" ? "is" : "en",
+    recipientId: notification.recipientId,
+    email: row.emailVerifiedAt === null ? null : row.email,
+    phone: null,
+    booking: null,
+  } as const;
+}
+
+/** The kinds that ask for an answer to a report, with its deadline. */
+const answerKinds: ReadonlySet<string> = new Set<NotificationKind>([
+  "no_show_marked",
+  "driver_absent_reported",
+]);
+
 /** What a notification's text is made from, and where it goes, as of now. */
 async function factsOf(q: Queryable, notificationId: string, now: Date) {
   const [found] = await q.select().from(notifications).where(eq(notifications.id, notificationId));
   if (found === undefined) return undefined;
   if (isAccountNotice(found.kind as NotificationKind)) return accountFactsOf(q, found, now);
   if (isOperatorNotice(found.kind as NotificationKind)) return operatorFactsOf(q, found);
+  if (found.kind === "meeting_point_changed_driver") return pausedForDriverOf(q, found, now);
   if (found.bookingId === null) return tripFactsOf(q, found);
   const [row] = await q
     .select({
       notification: notifications,
       booking: bookings,
       driverId: trips.driverId,
+      arrivesAt: trips.arrivesAt,
       boardsAt: boards.plannedAt,
       boardPointId: boards.meetingPointId,
+      boardRemovedAt: boards.removedAt,
+      alightPointId: alights.meetingPointId,
+      alightRemovedAt: alights.removedAt,
       car: { make: vehicles.make, model: vehicles.model, colour: vehicles.colour },
       board: { is: boardPoint.nameIs, en: boardPoint.nameEn },
       alight: { is: alightPoint.nameIs, en: alightPoint.nameEn },
@@ -575,6 +755,8 @@ async function factsOf(q: Queryable, notificationId: string, now: Date) {
     notification.tripChangeId === null
       ? undefined
       : await removedStopOf(q, notification.tripChangeId);
+  // A report asks the other side to answer by its deadline (spec 8, R8.6).
+  const [report] = answerKinds.has(notification.kind) ? await disputesOf(q, [booking.id]) : [];
   const facts: NotificationFacts = {
     kind: notification.kind as NotificationFacts["kind"],
     role,
@@ -606,6 +788,18 @@ async function factsOf(q: Queryable, notificationId: string, now: Date) {
     removedStop: removedStop === undefined ? null : { name: named(locale, removedStop.name) },
     moved: moved === undefined ? null : { from: moved.from, to: moved.to },
     paid: booking.status === "confirmed" && booking.totalPrice > 0,
+    answerBy:
+      report === undefined || row.arrivesAt === null
+        ? null
+        : answerByOf(report, row.arrivesAt, defaultTripDaySettings),
+    // Only while the booking still gets in or out there: after the driver
+    // chose another stop, the news names a point the passenger no longer uses.
+    pausedPoint:
+      notification.meetingPointId !== null &&
+      ((row.boardPointId === notification.meetingPointId && row.boardRemovedAt === null) ||
+        (row.alightPointId === notification.meetingPointId && row.alightRemovedAt === null))
+        ? await pausedPointOf(q, notification.meetingPointId, locale)
+        : null,
   };
   return {
     facts,
@@ -642,6 +836,8 @@ export function createNotificationWorker(dependencies: {
    */
   readonly email?: EmailChannel;
   readonly settings?: NotificationSettings;
+  /** The time to review and its reminder (spec 8, 3.7). */
+  readonly reviewSettings?: ReviewSettings;
   /**
    * Text messages for last-minute news (spec 7, 3.4; ADR 0023). Without
    * it, SMS is skipped as `sms_off`.
@@ -660,6 +856,7 @@ export function createNotificationWorker(dependencies: {
 }): NotificationWorker {
   const { db, clock, push, email, sms, onSendError, onEventError } = dependencies;
   const settings = dependencies.settings ?? defaultNotificationSettings;
+  const reviewSettings = dependencies.reviewSettings ?? defaultReviewSettings;
 
   /**
    * When the passenger gets in, for the SMS window: for a moved departure,
@@ -795,6 +992,8 @@ export function createNotificationWorker(dependencies: {
       readonly tripChangeId?: string | null;
       readonly reportId?: string;
       readonly moderationActionId?: string;
+      readonly privacyRequestId?: string;
+      readonly meetingPointId?: string;
     },
     key: string,
     now: Date,
@@ -811,6 +1010,8 @@ export function createNotificationWorker(dependencies: {
         tripChangeId: notification.tripChangeId ?? null,
         reportId: notification.reportId ?? null,
         moderationActionId: notification.moderationActionId ?? null,
+        privacyRequestId: notification.privacyRequestId ?? null,
+        meetingPointId: notification.meetingPointId ?? null,
         uniqueKey: `${key}:${kind}:${recipientId}`,
         createdAt: now,
         updatedAt: now,
@@ -1037,6 +1238,218 @@ export function createNotificationWorker(dependencies: {
       .onConflictDoNothing();
   }
 
+  /**
+   * A paused meeting point (spec 2, 3.6.4), for one trip still to stop
+   * there: its driver is asked to choose another stop, and each passenger
+   * whose accepted or confirmed booking gets in or out there is told, once
+   * each. Back in use since, or the trip over or the stop gone: nobody.
+   * Retired while paused: told all the same, as the trip needs another stop.
+   */
+  async function tellOfPause(
+    tx: Transaction,
+    payload: Readonly<Record<string, string>>,
+    key: string,
+    now: Date,
+  ): Promise<void> {
+    const tripId = idIn(payload, "tripId");
+    const meetingPointId = idIn(payload, "meetingPointId");
+    if (tripId === undefined || meetingPointId === undefined) return;
+    const [stop] = await tx
+      .select({
+        driverId: trips.driverId,
+        status: meetingPoints.status,
+        reasonIs: meetingPoints.pauseReasonIs,
+      })
+      .from(tripStops)
+      .innerJoin(trips, eq(trips.id, tripStops.tripId))
+      .innerJoin(meetingPoints, eq(meetingPoints.id, tripStops.meetingPointId))
+      .where(
+        and(
+          eq(tripStops.tripId, tripId),
+          eq(tripStops.meetingPointId, meetingPointId),
+          isNull(tripStops.removedAt),
+          gt(tripStops.plannedAt, now),
+          inArray(trips.status, ["published", "departed"]),
+        ),
+      );
+    if (
+      stop === undefined ||
+      !pauseStillApplies(stop.status as MeetingPointStatus, stop.reasonIs !== null)
+    ) {
+      return;
+    }
+    await add(
+      tx,
+      {
+        kind: "meeting_point_changed_driver",
+        to: "driver",
+        recipientId: stop.driverId,
+        tripId,
+        meetingPointId,
+      },
+      key,
+      now,
+    );
+    const booked = await tx
+      .select({ id: bookings.id, passengerId: bookings.passengerId })
+      .from(bookings)
+      .innerJoin(boards, eq(boards.id, bookings.fromStopId))
+      .innerJoin(alights, eq(alights.id, bookings.toStopId))
+      .where(
+        and(
+          eq(bookings.tripId, tripId),
+          inArray(bookings.status, ["accepted", "confirmed"]),
+          or(eq(boards.meetingPointId, meetingPointId), eq(alights.meetingPointId, meetingPointId)),
+        ),
+      )
+      .orderBy(asc(bookings.createdAt), asc(bookings.id));
+    for (const booking of booked) {
+      // A passenger with two such bookings on the trip is told once: the key is per person.
+      await add(
+        tx,
+        {
+          kind: "meeting_point_changed",
+          to: "passenger",
+          recipientId: booking.passengerId,
+          bookingId: booking.id,
+          meetingPointId,
+        },
+        key,
+        now,
+      );
+    }
+  }
+
+  /**
+   * "How was your trip?" once a booking completes (spec 8, 3.7.6): the
+   * passenger about their booking, and the driver once for the trip, each
+   * only with trip reminders on and never about a person who has left or is
+   * leaving, whom nobody can review. Then one reminder each, 3 days after
+   * completion, unless that moment has passed. A ride the operator finds
+   * happened after the 14 days asks nobody: it can no longer be reviewed.
+   */
+  async function askForReviews(
+    tx: Transaction,
+    booking: Parties,
+    key: string,
+    now: Date,
+  ): Promise<void> {
+    if (booking.status !== "completed" || booking.completedAt === null) return;
+    if (now >= reviewClosesAt(booking.completedAt, reviewSettings)) return;
+    const people = await tx
+      .select({ id: users.id, deleteAfter: users.deleteAfter })
+      .from(users)
+      .where(inArray(users.id, [booking.passengerId, booking.driverId]));
+    const stays = (id: string) => {
+      const person = people.find((row) => row.id === id);
+      return person !== undefined && !isHidden(person);
+    };
+    if (stays(booking.driverId) && (await preferencesOf(tx, booking.passengerId)).reminders) {
+      await notify(tx, { type: "RateTrip", to: "passenger" }, booking, { key }, now);
+    }
+    if (stays(booking.passengerId) && (await preferencesOf(tx, booking.driverId)).reminders) {
+      await add(
+        tx,
+        {
+          kind: "rate_trip_driver",
+          to: "driver",
+          recipientId: booking.driverId,
+          bookingId: booking.id,
+        },
+        `trip-completed:${booking.tripId}`,
+        now,
+      );
+    }
+    const runAt = reviewReminderAt(booking.completedAt, now, reviewSettings);
+    if (runAt === null) return;
+    const base = { runAt, createdAt: now, updatedAt: now };
+    await tx
+      .insert(scheduledNotifications)
+      .values([
+        {
+          ...base,
+          key: `rate_trip:${booking.id}`,
+          kind: "rate_trip",
+          bookingId: booking.id,
+          recipient: "passenger",
+        },
+        {
+          ...base,
+          key: `rate_trip_driver:${booking.tripId}`,
+          kind: "rate_trip_driver",
+          tripId: booking.tripId,
+          recipient: "driver",
+        },
+      ])
+      .onConflictDoNothing();
+  }
+
+  /**
+   * The one reminder to review (3.7.6): the passenger's while their booking
+   * is completed, not reviewed by them, with no open report, the 14 days
+   * not over and the driver still here; the driver's while one passenger of
+   * the trip is so, about the first of them. Only with trip reminders on.
+   */
+  async function remindToReview(
+    tx: Transaction,
+    scheduled: typeof scheduledNotifications.$inferSelect,
+    key: string,
+    now: Date,
+  ): Promise<void> {
+    const forDriver = scheduled.kind === "rate_trip_driver";
+    const which = forDriver
+      ? scheduled.tripId === null
+        ? undefined
+        : eq(bookings.tripId, scheduled.tripId)
+      : scheduled.bookingId === null
+        ? undefined
+        : eq(bookings.id, scheduled.bookingId);
+    if (which === undefined) return;
+    const subject = alias(users, "subject");
+    const waiting = await tx
+      .select({
+        id: bookings.id,
+        passengerId: bookings.passengerId,
+        driverId: trips.driverId,
+        completedAt: bookings.completedAt,
+      })
+      .from(bookings)
+      .innerJoin(trips, eq(trips.id, bookings.tripId))
+      .leftJoin(
+        reviews,
+        and(
+          eq(reviews.bookingId, bookings.id),
+          eq(reviews.authorId, forDriver ? trips.driverId : bookings.passengerId),
+        ),
+      )
+      .leftJoin(disputes, and(eq(disputes.bookingId, bookings.id), isNull(disputes.outcome)))
+      .innerJoin(subject, eq(subject.id, forDriver ? bookings.passengerId : trips.driverId))
+      .where(
+        and(
+          which,
+          eq(bookings.status, "completed"),
+          isNull(reviews.id),
+          isNull(disputes.id),
+          shown(subject),
+        ),
+      )
+      .orderBy(asc(bookings.completedAt), asc(bookings.id));
+    const open = waiting.find(
+      (row) => row.completedAt !== null && now < reviewClosesAt(row.completedAt, reviewSettings),
+    );
+    if (open === undefined) return;
+    const recipientId = forDriver ? open.driverId : open.passengerId;
+    if (!(await preferencesOf(tx, recipientId)).reminders) return;
+    await add(
+      tx,
+      forDriver
+        ? { kind: "rate_trip_driver", to: "driver", recipientId, bookingId: open.id }
+        : { kind: "rate_trip", to: "passenger", recipientId, bookingId: open.id },
+      key,
+      now,
+    );
+  }
+
   async function handleEvent(
     tx: Transaction,
     event: typeof outboxEvents.$inferSelect,
@@ -1044,13 +1457,14 @@ export function createNotificationWorker(dependencies: {
   ): Promise<void> {
     const type = event.kind as OutboxEventType;
     const key = `event:${event.id}`;
-    if (type === "DataExportReady") {
+    if (type === "DataExportReady" || type === "AccountDeletionScheduled") {
       const userId = idIn(event.payload, "userId");
       if (userId === undefined) return;
       // Gone with the account in the meantime: nobody to tell.
       const [user] = await tx.select({ id: users.id }).from(users).where(eq(users.id, userId));
       if (user === undefined) return;
-      await add(tx, { kind: "data_export_ready", to: null, recipientId: userId }, key, now);
+      const kind = type === "DataExportReady" ? "data_export_ready" : "account_deletion_scheduled";
+      await add(tx, { kind, to: null, recipientId: userId }, key, now);
       return;
     }
     if (type === "ModerationActionTaken") {
@@ -1143,6 +1557,33 @@ export function createNotificationWorker(dependencies: {
       }
       return;
     }
+    if (type === "PrivacyRequestAnswered") {
+      const userId = idIn(event.payload, "userId");
+      const requestId = idIn(event.payload, "requestId");
+      if (userId === undefined || requestId === undefined) return;
+      // Still the person's: an erasure in the meantime moved it to the former member.
+      const [request] = await tx
+        .select({ id: privacyRequests.id })
+        .from(privacyRequests)
+        .where(and(eq(privacyRequests.id, requestId), eq(privacyRequests.userId, userId)));
+      if (request === undefined) return;
+      await add(
+        tx,
+        {
+          kind: "privacy_request_answered",
+          to: null,
+          recipientId: userId,
+          privacyRequestId: requestId,
+        },
+        key,
+        now,
+      );
+      return;
+    }
+    if (type === "MeetingPointChanged") {
+      await tellOfPause(tx, event.payload, key, now);
+      return;
+    }
     if (type === "MessageSent") {
       const messageId = idIn(event.payload, "messageId");
       if (messageId === undefined) return;
@@ -1183,6 +1624,23 @@ export function createNotificationWorker(dependencies: {
         (await removedStopOf(tx, tripChangeId)) !== undefined;
       if (!told) return;
       await notify(tx, { type }, booking, { key, tripChangeId }, now);
+      return;
+    }
+    if (type === "BookingCompleted") {
+      await askForReviews(tx, booking, key, now);
+      return;
+    }
+    if (type === "ReviewRevealed") {
+      const reviewId = idIn(event.payload, "reviewId");
+      if (reviewId === undefined) return;
+      const [shown] = await tx
+        .select({ authorRole: reviews.authorRole, hiddenAt: reviews.hiddenAt })
+        .from(reviews)
+        .where(eq(reviews.id, reviewId));
+      // Removed since with the booking's reviews, or hidden by the operator.
+      if (shown === undefined || shown.hiddenAt !== null) return;
+      const about = shown.authorRole === "passenger" ? "driver" : "passenger";
+      await notify(tx, { type, about }, booking, { key }, now);
       return;
     }
     const happened: NotificationEvent =
@@ -1313,7 +1771,9 @@ export function createNotificationWorker(dependencies: {
           scheduled.bookingId === null ? undefined : await partiesOf(tx, scheduled.bookingId);
         const source = { key: `schedule:${scheduled.key}` };
         const to = scheduled.recipient;
-        if (booking !== undefined && scheduled.kind === "unread_messages") {
+        if (scheduled.kind === "rate_trip" || scheduled.kind === "rate_trip_driver") {
+          await remindToReview(tx, scheduled, source.key, now);
+        } else if (booking !== undefined && scheduled.kind === "unread_messages") {
           if (to === "driver" || to === "passenger") {
             const at = await unreadEmailAt(tx, booking, to);
             if (at !== null && at > now) {
@@ -1428,6 +1888,13 @@ export function createNotificationWorker(dependencies: {
     ) {
       return { skipped: "no_longer_applies" };
     }
+    // "How was your trip?" follows the trip reminders switch (spec 8, 3.7.6).
+    if (
+      (found.facts.kind === "rate_trip" || found.facts.kind === "rate_trip_driver") &&
+      !(await preferencesOf(db, found.recipientId)).reminders
+    ) {
+      return { skipped: "no_longer_applies" };
+    }
     if (
       found.facts.kind === "unread_messages" &&
       !(await anyUnread(db, found.facts.bookingId, found.recipientId))
@@ -1435,6 +1902,11 @@ export function createNotificationWorker(dependencies: {
       return { skipped: "no_longer_applies" };
     }
     if ("messageRemoved" in found && found.messageRemoved) return { skipped: "no_longer_applies" };
+    // A point back in use since it was paused, or a booking that no longer
+    // stops there (spec 2, 3.6.4).
+    if (found.facts.kind === "meeting_point_changed" && found.facts.pausedPoint === null) {
+      return { skipped: "no_longer_applies" };
+    }
     const text = () => notificationText(found.facts, found.locale, settings);
     switch (delivery.channel) {
       case "push": {

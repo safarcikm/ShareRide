@@ -480,7 +480,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   or their chat is closed. `blocks` is in the personal data catalogue,
   erased with either account, and gets its own export section, People you
   blocked: each by first name, and since when, never who blocked them.
-  Migration `0025_blocks`. `POST /v1/bookings/{id}/block`,
+  Migration `0033_blocks`. `POST /v1/bookings/{id}/block`,
   `GET /v1/me/blocks`, `DELETE /v1/me/blocks/{id}`.
 - Reports (milestone 9, PR 5a, spec 9, 3.1; R9.1, R9.2): "Report this
   trip" on trip details (not to its driver, whatever the trip's state:
@@ -500,7 +500,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   trip, message or booking that the person cannot see is refused as not
   found; a person cannot report themselves; 10 reports a day, also when
   sent at once. The person reported is never told who reported them.
-  Migration `0026_reports`; `reports` is in the personal data catalogue,
+  Migration `0034_reports`; `reports` is in the personal data catalogue,
   kept 3 years after closing, and chat clean-up keeps a conversation a
   report covers that long. "Download my data" has Reports you sent, never
   a report about the person. The category and outcome texts moved to
@@ -518,7 +518,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   "New report" or "New safety report", never who or what, and one not yet
   sent is dropped once its report is closed or the operator loses the
   role. A new outbox event `ReportFiled`; notifications gain `report_id`,
-  in migration `0026_reports`.
+  in migration `0034_reports`.
 - Suspension, warnings and reinstating (milestone 9, PR 6a, spec 9, 3.4.3
   and 3.6; R9.5, R9.7, R9.10): the operator's `suspend`, `warn` and
   `reinstate` in `apps/api/src/modules/moderation/`, for the console to
@@ -531,15 +531,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   why. A trip under way carries on, but takes nobody new: it leaves search,
   booking it is refused (`trip_not_bookable`), and its driver cannot
   accept a request, only decline it. While suspended, searching, booking,
-  requesting, publishing, changing a trip, accepting a request and sending
-  messages answer 403 `account_suspended` with `suspendedUntil`; the
-  person stays signed in to read, download or delete their data. Every minute the API ends the
-  suspensions whose end has passed. Each action writes one audit entry
+  requesting, publishing, changing a trip, accepting a request, sending
+  messages and reviewing answer 403 `account_suspended` with
+  `suspendedUntil`; the person stays signed in to read, download or delete
+  their data. Every minute the API ends the suspensions whose end has
+  passed. Each action writes one audit entry
   (IDs and the names of the fields changed only) and sends the person
   their notice: the push says what happened, the email adds the rule,
   the reason and until when it can be appealed in the app (14 days).
   Two suspensions at once lock their trips in the same order, so they
-  never deadlock. Migration `0027_moderation` adds `moderation_actions`,
+  never deadlock. Migration `0035_moderation` adds `moderation_actions`,
   `users.suspended_until`, `trips.cancelled_by` (earlier cancellations
   are the driver's; empty from the version before, which only drivers
   used) and `notifications.moderation_action_id`; "Download my data" has
@@ -557,7 +558,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   outcome. The person hears "ShareRide answered your appeal" by push and
   email (the email with the answer), and the reporter "Your report" with
   the outcome in general terms, by push. Each writes one audit entry.
-  Migration `0028_appeals` widens the notification and event kinds.
+  Migration `0036_appeals` widens the notification and event kinds.
 - Notices and the suspended account in the app (milestone 9, PR 6c, spec
   9, 3.4.4 and 3.6.2): Profile has Notices, where a notice's push and
   email lead: what ShareRide did and why, the rule, what it concerned,
@@ -587,7 +588,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   "Download my data"; the passengers of a cancelled trip only that
   ShareRide cancelled it. Reversing a hiding on appeal shows the
   content again. Each writes one audit entry. Migration
-  `0029_hidden_content` adds `messages.hidden_at`,
+  `0037_hidden_content` adds `messages.hidden_at`,
   `trips.note_hidden_at` and `users.about_hidden_at`, which "Download my
   data" includes.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
@@ -630,6 +631,80 @@ releases follow [Semantic Versioning](https://semver.org/).
   browser tests' API can move one trip's times closer
   (`POST /e2e/trips/{id}/move`), never in the real server, and a journey
   has both sides check in and see each other's.
+- Reports on the trip day in the API (milestone 7, PR 5a, spec 8, 3.3 to
+  3.5): the driver marks a no-show 10 minutes after the passenger's stop
+  time, once they said "I'm here" there, until the trip completes
+  (`POST /v1/bookings/{id}/no-show`); the passenger says the driver didn't
+  come from the same wait until 24 hours after the trip completes
+  (`POST /v1/bookings/{id}/driver-absent`). Each takes a note for the
+  operator, and a booking is reported once. The other side is told by push
+  and email and answers "That's right" or "That's not right"
+  (`POST /v1/disputes/{id}/answer`). An agreed report, or one nobody
+  answered in time (the minute job), stands; a contested one waits for the
+  operator's decision (`decideDispute`, with an audit entry, both sides
+  told), which the operator's command and console will call. A no-show
+  frees the seat and gives no refund; a driver absence that stands, or a
+  passenger left behind, cancels the booking as if by the driver with the
+  new reason "The driver didn't come", a full refund, and counts on the
+  driver; a ride found to have happened completes. A booking with an open
+  report does not complete with its trip. Bookings show their report
+  (never the notes) and when each report opens and closes. Migration
+  `0026_trip_day_disputes` adds the `disputes` table and widens the
+  cancellation reasons and notification kinds.
+- Reports on the trip day in the app (milestone 7, PR 5b, spec 8, screens
+  3 to 5): "The driver didn't come" on the passenger's booking, from the
+  wait after their time until 24 hours after the trip completes, and "Mark
+  as no-show" for each passenger getting in on the driver's trip day, once
+  the wait has passed and the driver said "I'm here" there; before that,
+  the stop says to say it first. Each opens a screen that says what it does
+  and who is told, with a note only ShareRide reads. The other side is asked
+  "Is this right?" with the deadline and what not answering does, and
+  answers "That's right" or "That's not right" on its own screen, with a
+  note. Both sides see where a report stands: waiting for the other side,
+  contested and waiting for ShareRide, or decided; the driver's trip page
+  lists its reports first. A driver absence that stood says "{name} didn't
+  come, so ShareRide cancelled this booking." with the refund. The browser
+  tests' trip move also moves its "I'm here" and reports and lets a report
+  nobody answered stand, and two journeys cover a no-show nobody contests
+  and a driver absence that stands with a full refund.
+- The console's dispute routes (milestone 7, PR 5c, spec 8, 3.5): the
+  contested reports waiting for the operator (`GET /admin/v1/disputes`) and
+  the last ones decided, one report with its notes, answer, planned times
+  and "I'm here" times, and the decision, which tells both sides and is
+  recorded in the audit log. The booking's conversation opens only for a
+  contested report, through one function that checks this and that spec
+  9's reports reuse, and each opening goes in the audit log as
+  `conversation.opened`, without the text (R9.6). Martin chose this console page over the planned server
+  command (decision 1, changed on 2026-11-17); the page follows in 5d.
+- Ratings and reviews in the API (milestone 7, PR 6a, spec 8, 3.7): once a
+  booking completes, the passenger rates the driver and the driver rates
+  the passenger, 1 to 5 stars and an optional comment of up to 500
+  characters without phone numbers, email addresses or links
+  (`POST /v1/bookings/{id}/review`), once each and within 14 days. Nothing
+  is written about someone who has left ShareRide or is leaving, and
+  nothing while the passenger's report that the driver didn't come is
+  open. A review shows once both have reviewed, or 14 days after
+  completion (the minute job), and the person it is about is told by push.
+  "How was your trip?" goes by push to each passenger and once to the
+  driver when the trip completes, and once more 3 days later to those who
+  have not reviewed, following the trip reminders switch. A driver
+  absence that stands, or a passenger found absent, removes the booking's
+  reviews. Bookings show their reviews: until when, your own, and the
+  other's once it shows (never one the operator hid). Migration
+  `0030_reviews` adds the `reviews` table, with `hidden_at` for
+  moderation (spec 9), and widens the notification kinds.
+- Rating and reviewing in the app (milestone 7, PR 6b, spec 8, screen 6):
+  "Rate the driver" on a completed booking and "Rate your passenger" under
+  each passenger of the driver's completed trip, with until when; while a
+  report on the booking is open, or once the other person has left, it says
+  why instead. Stars take the design system's rating colour (a new `rating`
+  token) and show the number next to them. The rate
+  screen takes 1 to 5 stars and an optional comment, checked as it is typed
+  (500 characters, no phone numbers, emails or links), and says the review
+  appears once the other person has reviewed too or after 14 days, or that
+  both show now. The booking and the trip then show the review sent and,
+  once it shows, the other's review. A browser journey: both review and
+  each sees the other's.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
@@ -649,6 +724,35 @@ releases follow [Semantic Versioning](https://semver.org/).
   (`recordAudit`, a trigger that refuses changes); passkey sign-in with
   `@simplewebauthn/server` (setup link, sign-in, adding and removing
   passkeys) and the `operator` command that gives or removes the role.
+- `packages/ui`: the design tokens and the map of Iceland (data,
+  projection, roads and views) moved out of the app, to be shared with the
+  operator console; the app looks the same.
+- The operator console app (`apps/admin`, React and Vite), served by the
+  API at `/admin` with its own content security policy: sign-in and
+  first-passkey setup with passkeys (`@simplewebauthn/browser`), the home
+  page, the passkeys page, Icelandic and English, and the console in the
+  API image.
+- The audit log page in the console (spec 9, 3.8) and
+  `GET /admin/v1/audit-log`: entries newest first, 50 at a time, filtered
+  by the start of the action, the record, the operator and days in Iceland,
+  each with its changes, network address and device. The filters stay in
+  the address, so a filtered log can be reloaded or shared.
+- Meeting points in the console (spec 2, 3.6). The Meeting points page
+  shows every point on the map and in a list, filtered by status, region,
+  type, season, review overdue and name, with the filters in the address.
+  Its form adds a draft or edits a point: the spot is pasted as
+  coordinates or a map link and shown on the map, and each problem is
+  named by its field before saving. The API behind it, `GET`, `POST` and
+  `PUT /admin/v1/meeting-points`, writes an audit entry of what changed.
+  The rules for each field are in the domain (`validateMeetingPointDraft`);
+  an edit made on an older copy is refused, and only a draft's spot is
+  edited there. Migration `0027_meeting_point_console_fields` adds the
+  shelter's weekly hours and note, and when the amenities and season were
+  reviewed. The texts for regions, types and amenities move from the app
+  to `@shareride/i18n`, so the console uses them too.
+- The console is closed to an operator whose own account waits to be
+  deleted (spec 11): their sessions, passkey sign-in and setup links are
+  refused, and the `operator` command does not give them the role.
 
 - Privacy self-service, part 1 (spec 11): the rules in the domain (what
   is open before deleting an account, the 7-day wait, what deletion does to
@@ -665,6 +769,82 @@ releases follow [Semantic Versioning](https://semver.org/).
   only; kept encrypted for 7 days and downloaded through a one-time link
   that works for 2 minutes. A push and an email say when it is ready,
   without a link.
+- Download my data in the app (spec 11, 3.1 and 3.2): a Privacy page in
+  Settings, with Download my data and the Privacy Policy. The person
+  confirms with a code sent to their own number, sees the file being made
+  and when it is ready, and downloads it. The ready notice opens this
+  screen.
+- Delete my account, the API (spec 11, 3.4): what is still open, and with
+  a fresh code and nothing open, signed out everywhere and hidden at once
+  from search, trip details, booking and messages, with the data erased 7
+  days later. Signing in meanwhile shows when, and keeping the account
+  undoes it, leaving a suspension in place. Nothing new is booked or
+  published while it waits. An email says when the data will be erased.
+  The export now has the person's own check-in times.
+- Erasure 7 days after "Delete my account" (spec 11, 3.5), in the hourly
+  clean-up: what was the person's alone is deleted, and their trips,
+  bookings and the cars those used move to one shared former member
+  without free text or number plates, so the people they rode with keep
+  their bookings, payments and history. Their messages read "Message
+  deleted", and the app shows "A former member" for them. A suspended
+  person's number cannot sign up again until the suspension would have
+  ended. An open report about a ride (milestone 7) holds a deletion until
+  it is decided. After a database restore, `privacy reapply-erasures`
+  erases the accounts again and takes the deletions asked for or undone
+  since from the old database.
+- Pausing, bringing back and retiring a meeting point, the API (spec 2,
+  3.6.4 and 3.6.5): `POST /admin/v1/meeting-points/{id}/pause`, `/resume`
+  and `/retire`, with their rules in the domain (`nextPointStatus`,
+  `validatePause`) and an audit entry each. A pause asks the driver of
+  each future trip that stops there to choose another stop and tells the
+  passengers who get in or out there, by SMS too within 24 hours of
+  boarding. The API's minute job brings a paused point back on its end
+  date and retires a retiring one after its last trip. A point in use is
+  due for review a year after its last check (R2.9). Migration
+  `0032_meeting_point_pauses` adds the `MeetingPointChanged` event and the
+  meeting point of a notification. A point retired while paused keeps its
+  reason and its news still goes out. Publishing a trip and adding a stop
+  wait for a pause under way. The sample seed keeps the status the console
+  gave a sample point.
+- Pausing, bringing back and retiring a meeting point in the operator
+  console: the point's "In use" panel shows its upcoming trips and a
+  pause's reason, pauses it with a reason in both languages and an
+  optional end date, brings it back, and retires it after saying whether
+  that is at once or after its last trip.
+- Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
+  what is still open, each opened where it is cancelled under the normal
+  rules and looked at again on coming back, and what is erased and kept.
+  Once nothing is open, a fresh code by text message deletes it: this
+  device is signed out with the rest, and the screen says when the data
+  goes. Signing in meanwhile shows only that date, with "Keep my account"
+  and "Sign out", and no other signed-in screen opens. Asking to delete
+  again while it waits keeps the first date.
+- Download my data has each report about a ride the person made or
+  answered (spec 8, 3.3 and 3.4): what was reported and by whom, the
+  answer, the outcome and when, with the person's own note only. The other
+  side's note and the operator's stay with the operator.
+- Retention runs and holds (spec 11, 3.7): the hourly clean-up records, for
+  each retention rule, when it ran and how many records it erased, never
+  which; a rule that fails is reported and the others still run. It now
+  also deletes blocked numbers once their date comes, the list of erased
+  accounts after 30 days, ended holds after 3 years and its own records
+  after 90 days. A hold keeps what the clean-up would delete about a
+  person, a trip or a booking (their conversations, ended sessions,
+  notification log and drafts, and the account itself) until its end. The
+  `privacy` command shows the last run of each rule (`runs`) and lists,
+  sets and ends holds (`holds`, `hold`, `end-hold`), each in the audit log.
+- Ask about my data in the API (spec 11, 3.6): `POST /v1/me/privacy-requests`
+  takes an objection, a restriction, a correction or a question from
+  someone with a verified email, at most 5 a day, due a month later. The
+  `privacy` command lists those waiting (`requests`) and answers one
+  (`answer`), in the audit log; the answer goes by email in the person's
+  language. Requests and answers are in Download my data, kept under the
+  former member when the account is erased, and deleted 3 years after the
+  answer.
+- Ask about my data in the app (spec 11, 3.6): under Settings, Privacy,
+  choose what it is about (an objection, a limit, a correction or a
+  question) and write it; the app says the answer comes by email within a
+  month. Without an email, it asks to add one first.
 
 ### Fixed
 

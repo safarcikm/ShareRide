@@ -33,6 +33,7 @@ export function messageText(
   message: ChatMessage,
   other: string,
 ): string {
+  if (message.kind === "erased") return t("chat.messageDeleted");
   if (message.removed) return t("chat.removed");
   if (message.system !== null) return systemLineText(t, shownLine(message.system, locale), other);
   if (message.quick !== null) return quickMessageText(t, message.quick);

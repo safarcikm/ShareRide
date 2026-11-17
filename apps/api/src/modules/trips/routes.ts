@@ -220,6 +220,13 @@ export function registerDraftRoutes(
         return notDraft(c);
       case "distances_missing":
         return pending(c);
+      case "account_deletion_pending":
+        return errorResponse(
+          c,
+          403,
+          "account_deletion_pending",
+          "Your account is being deleted. Keep it to book or publish again.",
+        );
       case "trip_not_publishable":
         return errorResponse(c, 422, "trip_not_publishable", "The trip breaks some rules.", {
           details: result.error.problems.map((problem) => ({

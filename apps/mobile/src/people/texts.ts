@@ -17,3 +17,8 @@ export function monthOf(yearMonth: string): { readonly year: number; readonly mo
   const [year, month] = yearMonth.split("-").map(Number);
   return { year: year ?? 0, month: month ?? 1 };
 }
+
+/** A person's first name, or "A former member" once their data was erased (spec 11, 3.5). */
+export function firstNameOf(t: Translate, person: { readonly firstName: string | null }): string {
+  return person.firstName ?? t("people.formerMember");
+}

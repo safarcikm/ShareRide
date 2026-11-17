@@ -2,11 +2,16 @@ import { describe, expect, it } from "vitest";
 import { defaultTripDaySettings as settings } from "../trips/day.ts";
 import {
   answerDeadline,
+  answererOf,
   checkAnswer,
   checkDecision,
+  checkDisputeNote,
+  decidableOutcomes,
   disputeEffect,
   outcomeOfAnswer,
   reportCountsOn,
+  operatorMayRead,
+  reporterOf,
   settlesUnanswered,
   type Dispute,
 } from "./disputes.ts";
@@ -19,6 +24,43 @@ const after = (base: Date, hours: number) => new Date(base.getTime() + hours * h
 
 const noShow: Dispute = { kind: "no_show", raisedAt, answer: null, outcome: null };
 const absent: Dispute = { kind: "driver_absent", raisedAt, answer: null, outcome: null };
+
+describe("who reports and who answers (spec 8, 3.3 and 3.4)", () => {
+  it("has the driver mark a no-show and the passenger answer it", () => {
+    expect(reporterOf("no_show")).toBe("driver");
+    expect(answererOf("no_show")).toBe("passenger");
+  });
+
+  it("has the passenger report the driver's absence and the driver answer it", () => {
+    expect(reporterOf("driver_absent")).toBe("passenger");
+    expect(answererOf("driver_absent")).toBe("driver");
+  });
+});
+
+describe("a note to the operator with a report or an answer", () => {
+  it("is trimmed, and may be empty", () => {
+    expect(checkDisputeNote("  Waited 15 minutes at the stop.  ")).toEqual({
+      ok: true,
+      value: "Waited 15 minutes at the stop.",
+    });
+    expect(checkDisputeNote("   ")).toEqual({ ok: true, value: "" });
+  });
+
+  it("takes 500 characters as the database counts them, and not 501", () => {
+    // "þ" composed of two code points still counts as one character.
+    const decomposed = "\u00fe".normalize("NFD");
+    expect(checkDisputeNote("þ".repeat(500))).toEqual({ ok: true, value: "þ".repeat(500) });
+    expect(checkDisputeNote(`${"a".repeat(499)}${decomposed}`).ok).toBe(true);
+    expect(checkDisputeNote("þ".repeat(501))).toEqual({
+      ok: false,
+      error: { code: "note_too_long" },
+    });
+  });
+
+  it("may hold a phone number, as only the operator reads it (spec 8, section 7)", () => {
+    expect(checkDisputeNote("Call me on 555 1234").ok).toBe(true);
+  });
+});
 
 describe("the time to answer a report (R8.6)", () => {
   it("lets the passenger answer a no-show until 24 hours after the trip completes (3.3)", () => {
@@ -72,6 +114,21 @@ describe("the time to answer a report (R8.6)", () => {
 
 describe("the operator's decision (3.5, decision 4)", () => {
   const contested = (dispute: Dispute): Dispute => ({ ...dispute, answer: "contested" });
+
+  it("offers the operator the outcomes of a contested report until it is decided", () => {
+    expect(decidableOutcomes(contested(noShow))).toEqual(["stands", "rode", "left_behind"]);
+    expect(decidableOutcomes(contested(absent))).toEqual(["stands", "rode", "passenger_absent"]);
+    expect(decidableOutcomes(noShow)).toEqual([]);
+    expect(decidableOutcomes({ ...noShow, answer: "agreed", outcome: "stands" })).toEqual([]);
+    expect(decidableOutcomes({ ...contested(absent), outcome: "rode" })).toEqual([]);
+  });
+
+  it("lets the operator read the booking's conversation only for a contested report (R9.6)", () => {
+    expect(operatorMayRead(contested(noShow))).toBe(true);
+    expect(operatorMayRead({ ...contested(absent), outcome: "rode" })).toBe(true);
+    expect(operatorMayRead(noShow)).toBe(false);
+    expect(operatorMayRead({ ...absent, answer: "agreed", outcome: "stands" })).toBe(false);
+  });
 
   it("decides a contested no-show as standing, ridden or left behind", () => {
     for (const outcome of ["stands", "rode", "left_behind"] as const) {

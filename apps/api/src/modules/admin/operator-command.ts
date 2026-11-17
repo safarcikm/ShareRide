@@ -31,7 +31,8 @@ const icelandTime = new Intl.DateTimeFormat("en-GB", {
   timeStyle: "short",
 });
 
-async function findAccount(db: Database, who: string) {
+/** The account with this user ID or phone number, or null. */
+export async function findAccount(db: Database, who: string) {
   let condition;
   if (uuidPattern.test(who)) {
     condition = eq(users.id, who.toLowerCase());
@@ -46,6 +47,7 @@ async function findAccount(db: Database, who: string) {
       firstName: users.firstName,
       roles: users.roles,
       status: users.status,
+      deleteAfter: users.deleteAfter,
     })
     .from(users)
     .where(condition);
@@ -107,6 +109,10 @@ export async function runOperatorCommand(
     }
     if (account.status !== "active") {
       write("This account is suspended, so it cannot use the console.");
+      return 1;
+    }
+    if (account.deleteAfter !== null) {
+      write("This account waits to be deleted, so it cannot use the console.");
       return 1;
     }
     if (!account.roles.includes(operatorRole)) {

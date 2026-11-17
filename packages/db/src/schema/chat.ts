@@ -57,6 +57,11 @@ export const messages = pgTable(
     sentAt: at().notNull(),
     /** When the other person read it ("Seen"); never set on a system line. */
     readAt: at(),
+    /**
+     * When its sender's data was erased (spec 11, 3.5): what it said is gone,
+     * and the other person sees "Message deleted".
+     */
+    erasedAt: at(),
     /** When ShareRide removed it (spec 9, 3.4.3): both read "Removed by ShareRide". */
     hiddenAt: at(),
     ...timestamps,
@@ -67,9 +72,12 @@ export const messages = pgTable(
     check("messages_kind_check", oneOf(table.kind, messageKinds)),
     check(
       "messages_body_check",
-      sql`(${table.kind} = 'text') = (${table.body} is not null) and char_length(${table.body}) between 1 and ${sql.raw(String(defaultChatSettings.messageMaxLength))}`,
+      sql`case when ${table.erasedAt} is null then (${table.kind} = 'text') = (${table.body} is not null) and char_length(${table.body}) between 1 and ${sql.raw(String(defaultChatSettings.messageMaxLength))} else ${table.body} is null end`,
     ),
-    check("messages_key_check", sql`(${table.kind} = 'text') = (${table.key} is null)`),
+    check(
+      "messages_key_check",
+      sql`case when ${table.erasedAt} is null then (${table.kind} = 'text') = (${table.key} is null) else ${table.key} is null and ${table.params} is null and ${table.kind} <> 'system' end`,
+    ),
     check(
       "messages_sender_check",
       sql`(${table.kind} = 'system') = (${table.senderId} is null) and (${table.kind} = 'system') = (${table.clientId} is null)`,

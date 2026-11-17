@@ -35,10 +35,17 @@ export const passengerCancelReasons = [
 ] as const;
 export type PassengerCancelReason = (typeof passengerCancelReasons)[number];
 
+/**
+ * The reason only ShareRide gives, never offered to anyone: a booking
+ * cancelled as if by the driver because the driver didn't come (spec 8, 3.4).
+ */
+export const systemCancelReasons = ["driver_absent"] as const;
+export type SystemCancelReason = (typeof systemCancelReasons)[number];
+
 /** Every reason a cancellation can store, each once. */
 export const cancelReasons = [
-  ...new Set([...driverCancelReasons, ...passengerCancelReasons]),
-] as readonly (DriverCancelReason | PassengerCancelReason)[];
+  ...new Set([...driverCancelReasons, ...passengerCancelReasons, ...systemCancelReasons]),
+] as readonly (DriverCancelReason | PassengerCancelReason | SystemCancelReason)[];
 export type CancelReason = (typeof cancelReasons)[number];
 
 /** The reasons offered to the one who cancels. */

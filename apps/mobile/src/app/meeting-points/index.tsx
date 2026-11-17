@@ -1,6 +1,7 @@
 import type { CallResult } from "@shareride/api-client";
 import { meetingPointsRoute, type MeetingPointSummary } from "@shareride/contracts";
 import { regions } from "@shareride/domain";
+import { regionKeys } from "@shareride/i18n";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { errorText } from "@/auth/errors";
@@ -17,7 +18,6 @@ import { IcelandMap } from "@/maps/iceland-map";
 import { openSearchResult } from "@/meeting-points/open-result";
 import { PlaceSearch } from "@/meeting-points/place-search";
 import { MeetingPointCard } from "@/meeting-points/result-cards";
-import { regionKeys } from "@/meeting-points/texts";
 import { spacing } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 

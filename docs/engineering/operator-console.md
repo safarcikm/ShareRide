@@ -43,10 +43,18 @@ section works the same way. Security details are in
 
 `pnpm --filter @shareride/api operator add <phone number or user ID>`
 gives the role and prints a setup link for the first passkey; the link
-opens the console's setup page, which comes with the console app
-(milestone 8, PR 4). `remove` takes the role away and `list` lists
-operators. Locally, passkeys
-are bound to `http://localhost:3000` unless `ADMIN_ORIGIN` says otherwise.
+opens the console's setup page. `remove` takes the role away and `list`
+lists operators. Passkeys are bound to `ADMIN_ORIGIN`, which is
+`http://localhost:3000` locally unless you set it.
+
+To work on the console locally, run the API
+(`pnpm --filter @shareride/api dev`) with `ADMIN_ORIGIN=http://localhost:5173`
+in `.env`, then `pnpm --filter @shareride/admin dev` and open
+`http://localhost:5173/admin/`. Vite passes `/admin/v1` on to the API, so
+the cookie and the passkeys see one origin. The API serves the built console
+at `/admin` itself when `ADMIN_APP_DIR` points at
+`apps/admin/dist` (`pnpm --filter @shareride/admin build`), as the image
+does.
 
 ## The guard
 
@@ -68,8 +76,155 @@ deleting entries younger than 3 years, and refuse `TRUNCATE`. Drizzle does
 not know about them. When a later migration changes `audit_log`, check the
 triggers still apply, and never drop them.
 
+The console's Audit log page reads it through `GET /admin/v1/audit-log`,
+newest first, 50 entries a page. Its action filter matches the start of
+the name, so `meeting_point.` finds every meeting point action: name new
+actions with the record's kind first. "Only this record" filters by
+`subjectType` and `subjectId`, so give every action on a record the same
+pair. The page shows `before` and `after` field by field.
+
+## Meeting points
+
+`apps/api/src/modules/meeting-points/admin-routes.ts` holds the console's
+meeting point routes (`registerMeetingPointsAdminRoutes`), with the work in
+`admin-service.ts`:
+
+- `GET /admin/v1/meeting-points` lists every point, drafts and retired
+  ones too, by Icelandic name, with the domain's filters
+  (`matchesConsoleFilters`): status, region, type, season this month,
+  review overdue and part of a name. There are a few hundred points at
+  most, so it filters them all in the API.
+- `POST /admin/v1/meeting-points` adds a draft; `PUT
+  /admin/v1/meeting-points/{id}` saves its fields. Both check the fields
+  with `validateMeetingPointDraft` and answer `validation_failed` with each
+  field and its problem in `details`, which the form shows by its field.
+- An edit sends back the `updatedAt` it loaded. If the point was saved
+  since, the edit is refused with `meeting_point_changed`, so one copy
+  never overwrites a newer one. The comparison is in SQL, to the
+  millisecond, as JavaScript dates hold no more.
+- Only a draft's spot is edited there (`move_needed` otherwise): moving a
+  point in use recomputes its distances and tells the trips that use it
+  (R2.10), its own step. A retired point is not edited
+  (`meeting_point_retired`).
+- Audit entries are `meeting_point.created` with the fields, and
+  `meeting_point.updated` with only the fields that changed. Saving
+  without a change writes nothing.
+- `POST /admin/v1/meeting-points/{id}/pause`, `/resume` and `/retire`
+  change its status (`nextPointStatus`), each with the `updatedAt` the
+  console loaded, and refuse a change the status does not allow with
+  `status_change_not_allowed`. A pause takes a reason in both languages
+  and an optional end date (`validatePause`). Each point's answer has
+  `futureTrips`: the trips still to stop there (published or under way,
+  with that stop not removed and still ahead).
+- A pause writes one `MeetingPointChanged` event per future trip in the
+  same transaction. The notification worker asks that trip's driver to
+  choose another stop, and tells each passenger whose accepted or
+  confirmed booking gets in or out there, with an SMS within 24 hours of
+  boarding (spec 7, 3.4). Each is told once. News of a point back in use
+  before it goes out is not sent, nor news to a driver whose trip has
+  passed the point or a passenger whose booking no longer stops there. A
+  point retired while paused keeps its reason, and its news still goes
+  out ("no longer in use"). The trips are not changed or cancelled.
+- Publishing a trip and adding a stop read their points `FOR SHARE`, so
+  a pause or a retirement under way and the trip wait for each other: the
+  pause counts the trip among those to tell, or the trip sees the point
+  not offered.
+- Not covered yet: a request the driver accepts after the pause is not
+  told (search no longer offers the point, but the booking API does not
+  refuse it); a point paused, brought back and paused again before the
+  first news went out tells its people twice. While an older API version
+  still runs during a deploy, it marks `MeetingPointChanged` events done
+  without telling anyone, so pause no point during a deploy.
+- Audit entries are `meeting_point.paused`, `meeting_point.resumed` and
+  `meeting_point.retired`, with the status, the pause and the review date
+  before and after, and how many future trips there were.
+- The API's minute job (`moveMeetingPointsOn`) brings a paused point back
+  into use on its end date in Iceland, and retires a retiring point once
+  no trip is still to stop there. These follow from an operator's earlier
+  action, which has the audit entry, so they write none.
+
+The console's pages are in `apps/admin/src/pages/meeting-points/`:
+`list.tsx` (the map and the list, the filters kept in the address),
+`form.tsx` (add or edit one) and `form-values.ts`, which turns what was
+typed into the API's input and checks it with the same
+`validateMeetingPointDraft` before sending. A field's error goes as soon as
+the field is changed; the form checks everything again on saving. A browser's time
+field cannot hold 24:00, so the form shows a shelter closing at midnight as
+00:00 and sends a closing time of 00:00 as 24:00; 00:00 to 00:00 is open
+all day. The date
+the operator confirmed the point (R2.3) is its `lastCheckedOn`, the "Last
+checked" date the app shows.
+
+`status-panel.tsx` is the point's "In use" panel above the form: how many
+upcoming trips stop there, a paused point's reason and end date, and the
+buttons its status allows (`nextPointStatus`). Pausing opens a short form
+(the reason in both languages, an optional end date) checked with
+`validatePause` before it is sent; retiring asks first and says whether the
+point retires at once or after its last trip. Bringing a point back needs
+no question, as it can be paused again. What a pause or a retirement does
+is read with its button (`aria-describedby`). After a status change the
+form keeps what was typed in it but not saved, as a status change leaves
+the other fields as they were. A point changed elsewhere since the page
+loaded offers the newest copy, as a save does, which replaces what was
+typed.
+
+## Disputes
+
+`apps/api/src/modules/trip-day/admin-routes.ts` holds the console's
+dispute routes (`registerDisputeAdminRoutes`), with the work in
+`admin.ts` (spec 8, 3.5):
+
+- `GET /admin/v1/disputes` lists the contested reports waiting for a
+  decision, oldest first; `?state=decided` the last 50 an operator
+  decided, newest first. A report nobody answered settles by itself
+  after its 24 hours, so it never waits for the operator.
+- `GET /admin/v1/disputes/{id}` gives one report with what the system
+  knows: both notes, the answer, every stop's planned time and the
+  driver's "I'm here" there, the passenger's "I'm here", and the
+  outcomes the operator can choose (`decidableOutcomes`), none once it is
+  decided or if nobody contested it.
+- `POST /admin/v1/disputes/{id}/decision` with `{ outcome, note }` calls
+  `decideDispute` (`decide.ts`), which applies the outcome, tells both
+  sides and writes `dispute.decided`, all in one transaction.
+- `GET /admin/v1/disputes/{id}/conversation` reads the booking's
+  conversation through `readConversationAsOperator` in
+  `apps/api/src/modules/chat/operator.ts`. It takes only the record that
+  covers the reading (`{ type: "dispute", id }`), finds the booking from
+  it and checks that it covers a reading: a dispute only once it was
+  contested (`operatorMayRead`), else `not_contested`. In the same
+  transaction it writes `conversation.opened` with that record as the
+  subject and only the booking's and conversation's IDs, never what was
+  said (R9.6); a refused reading writes nothing. Spec 9's reports add
+  their own type and rule there. Messages come oldest first, from the
+  driver, the passenger or the system, with system lines worded as for
+  the driver (`by: "me"` is the driver); a message whose sender was
+  erased comes as `erased`, without its text. The trip's changes (spec 8,
+  3.5) are those system lines, so the operator sees them in the
+  conversation.
+
 ## A console page
 
-Comes with the console app (milestone 8, PR 4): a page file and one entry
-in `apps/admin/src/sections.ts`, with its texts in `packages/i18n` under
-`admin.<area>.*` in both languages.
+The console is `apps/admin`: React for the web, built with Vite, served by
+the API at `/admin` with its own content security policy
+([security](security.md#operator-console)). It uses the shared design
+tokens from `packages/ui` as CSS variables and the app's fonts and texts.
+
+1. Add the page in `apps/admin/src/pages/<area>.tsx`. `useConsole()` gives
+   `t` for texts, `call(route, input)` for the API, `navigate(path)` and
+   the signed-in `operator`. A call that finds the session ended sends the
+   operator back to sign in by itself.
+2. Add one entry to `sections` in `apps/admin/src/sections.ts`: its path
+   under `/admin/<area>`, its title key and the page. The menu and the
+   router follow; a section owns every path below its own, for its detail
+   pages.
+3. Put its texts in `packages/i18n/src/messages/en.ts` and `is.ts` under
+   `admin.<area>.*`, in both languages.
+4. Style it with the classes in `apps/admin/src/styles.css` and the
+   `var(--…)` tokens, never raw colours or sizes. Lay it out for a laptop
+   first, and check it on a phone. Link to another console page with
+   `ConsoleLink` (`apps/admin/src/components/console-link.tsx`), and show
+   places with `IcelandMap` (`components/iceland-map.tsx`), our own map
+   (ADR 0024).
+5. Test it in `apps/admin/src/app.test.tsx` style: render `ConsoleApp`
+   against the fake API in `apps/admin/src/testing/fake-api.ts`, signed in,
+   and drive it as the operator would.

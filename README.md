@@ -42,7 +42,8 @@ The full documentation map is in [docs/README.md](docs/README.md).
 │   ├── contracts/            # API schemas and route definitions (Zod)
 │   ├── db/                   # Database schema, migrations and connection (Drizzle)
 │   ├── domain/               # Pure business rules (money, countries, sign-in rules)
-│   └── i18n/                 # Icelandic and English texts and formatting
+│   ├── i18n/                 # Icelandic and English texts and formatting
+│   └── ui/                   # Design tokens and the map of Iceland, shared by the app and console
 ├── infra/
 │   ├── docker/               # Local PostgreSQL with PostGIS; the image smoke test
 │   └── render/               # Staging on Render (blueprint)

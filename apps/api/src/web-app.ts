@@ -1,5 +1,6 @@
 import { serveStatic } from "@hono/node-server/serve-static";
 import type { Context } from "hono";
+import { isConsolePath } from "./admin-app.ts";
 import type { AppEnv } from "./context.ts";
 
 const isApiPath = (path: string) =>
@@ -66,7 +67,9 @@ export function createWebApp(root: string): WebApp {
 
   return async (c) => {
     const read = c.req.method === "GET" || c.req.method === "HEAD";
-    if (!read || isApiPath(c.req.path)) return undefined;
+    // The console's paths are never the app's, even when the console is not
+    // built: a setup link must not open the public web app (ADR 0028).
+    if (!read || isApiPath(c.req.path) || isConsolePath(c.req.path)) return undefined;
     // Set before serving: serveStatic builds its response straight away.
     c.header("Content-Security-Policy", contentSecurityPolicy);
     c.header(
