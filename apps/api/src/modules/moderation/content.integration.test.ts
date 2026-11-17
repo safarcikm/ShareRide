@@ -31,9 +31,9 @@ import { choicesOf } from "../trips/drafts.ts";
 import { createModerationService, type Moderator } from "./actions.ts";
 
 // Content ShareRide hides, and a trip it cancels, as the console will call
-// them (spec 9, 3.4.3): a message, a trip's note or About you; each with
-// its notice and audit entry, and the content shown again when an appeal
-// reverses it. The sample trips at the test clock (Friday 13 November
+// them (spec 9, 3.4.3): a message, a review, a trip's note or About you;
+// each with its notice and audit entry, and the content shown again when an
+// appeal reverses it. The sample trips at the test clock (Friday 13 November
 // 2026, noon): Jón drives Hlemmur to Keflavík Airport on Saturday at 05:30
 // (instant booking).
 
@@ -633,6 +633,95 @@ describe("hiding About you (spec 9, 3.4.3)", () => {
       await moderation().hideContent(
         await moderator(),
         { content: { kind: "about", id: jon.userId }, rule: "offensive", reason },
+        request,
+      ),
+    ).toEqual({ ok: false, error: { code: "not_found" } });
+  });
+});
+
+describe("hiding a review (spec 9, 3.4.3)", () => {
+  /** Gunna's review of Jón after the airport ride, shown already. */
+  async function review(comment: string) {
+    const { jon, gunna, bookingId } = await ride();
+    const [row] = await api.connection.db
+      .insert(schema.reviews)
+      .values({
+        bookingId,
+        authorId: gunna.userId,
+        subjectId: jon.userId,
+        authorRole: "passenger",
+        rating: 1,
+        comment,
+        revealedAt: api.now(),
+      })
+      .returning({ id: schema.reviews.id });
+    if (row === undefined) throw new Error("No review.");
+    return { jon, gunna, reviewId: row.id };
+  }
+
+  async function reviewHiddenAt(reviewId: string) {
+    const [row] = await api.connection.db
+      .select({ at: schema.reviews.hiddenAt })
+      .from(schema.reviews)
+      .where(eq(schema.reviews.id, reviewId));
+    return row?.at ?? null;
+  }
+
+  it("hides it from the person it is about, and tells its author why", async () => {
+    const { gunna, reviewId } = await review("Rude words about the driver");
+    const by = await moderator();
+    const hide = () =>
+      moderation().hideContent(
+        by,
+        { content: { kind: "review", id: reviewId }, rule: "offensive", reason },
+        request,
+      );
+
+    const hidden = await hide();
+
+    if (!hidden.ok) throw new Error(hidden.error.code);
+    expect(await reviewHiddenAt(reviewId)).toEqual(api.now());
+    expect(await hide()).toEqual({ ok: false, error: { code: "already_hidden" } });
+    expect(await noticesOf(gunna)).toMatchObject([
+      {
+        id: hidden.value.actionId,
+        kind: "content_hidden",
+        rule: "offensive",
+        reason,
+        content: { kind: "review" },
+        canAppeal: true,
+      },
+    ]);
+    // Who acted and what changed, never the words (spec 9, section 7).
+    expect(await auditOf(reviewId)).toEqual([
+      {
+        action: "review.hidden",
+        subjectType: "review",
+        after: { fields: ["hiddenAt"], moderationActionId: hidden.value.actionId },
+      },
+    ]);
+  });
+
+  it("shows it again when an appeal reverses it, and not when the decision stands", async () => {
+    const by = await moderator();
+    for (const outcome of ["upheld", "reversed"] as const) {
+      const { reviewId } = await review(`A joke, taken wrong (${outcome})`);
+      const hidden = await moderation().hideContent(
+        by,
+        { content: { kind: "review", id: reviewId }, rule: "offensive", reason },
+        request,
+      );
+      if (!hidden.ok) throw new Error(hidden.error.code);
+      await appealed(by, hidden.value.actionId, outcome);
+      expect(await reviewHiddenAt(reviewId)).toEqual(outcome === "reversed" ? null : api.now());
+    }
+  });
+
+  it("refuses a review that does not exist", async () => {
+    expect(
+      await moderation().hideContent(
+        await moderator(),
+        { content: { kind: "review", id: randomUUID() }, rule: "offensive", reason },
         request,
       ),
     ).toEqual({ ok: false, error: { code: "not_found" } });

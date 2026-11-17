@@ -264,8 +264,9 @@ completed).
   every copy, with one notice. A message removed before its push went out
   sends none. In "Download my data", the sender keeps their own words,
   marked removed, and the other person reads "Removed by ShareRide".
-  Reviews are hidden the same way once milestone 7 stores them
-  (`reviews.hidden_at`). Reversing an appeal on a cancelled trip leaves
+  A review is hidden the same way (`reviews.hidden_at`, from milestone
+  7): it no longer shows to the person it is about, nor counts in their
+  rating. Reversing an appeal on a cancelled trip leaves
   the cancellation, and whether it counts on reliability is changed on
   the trip (3.5.3, PR 8). Left for later: a notice names the kind of
   content, not which trip or message, so the operator's reason says
@@ -400,7 +401,7 @@ In four parts, each its own pull request:
 
 ### Afterwards, with milestone 7
 
-- [ ] Report and hide a review; Block and Report on the public profile
+- [ ] Report a review (hiding one is in PR 6d); Block and Report on the public profile
 
 ## 6. Review focus
 

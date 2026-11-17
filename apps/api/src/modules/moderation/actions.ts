@@ -6,6 +6,7 @@ import {
   checkSuspension,
   defaultSafetySettings,
   err,
+  hideableContent,
   isSuspended,
   ok,
   suspensionEffects,
@@ -38,7 +39,7 @@ import { recordEvents } from "../notifications/outbox.ts";
 // changed, never their values: the action's own row holds what was done
 // and why (spec 9, section 7; privacy register, "Audit log").
 
-const { bookings, messages, moderationActions, reports, trips, tripStops, users } = schema;
+const { bookings, messages, moderationActions, reports, reviews, trips, tripStops, users } = schema;
 
 /** Who acts: an operator, with their console session (none from a command). */
 export interface Moderator {
@@ -56,17 +57,12 @@ export type HideContentError = NotFound | { readonly code: "already_hidden" } | 
 export type CancelTripError =
   NotFound | { readonly code: "already_cancelled" | "trip_not_cancellable" } | StatementProblem;
 
-/** What the operator can hide today; a review joins when reviews exist (spec 8). */
-export const hideableNow = [
-  "message",
-  "trip_note",
-  "about",
-] as const satisfies readonly HideableContent[];
-export type HideableNow = (typeof hideableNow)[number];
-
-/** A piece of content: a message, a trip's note (by the trip's ID) or About you (by the person's). */
+/**
+ * A piece of content: a message, a review, a trip's note (by the trip's ID)
+ * or About you (by the person's).
+ */
 export interface Content {
-  readonly kind: HideableNow;
+  readonly kind: HideableContent;
   readonly id: string;
 }
 export type CloseReportError = NotFound | { readonly code: "already_closed" };
@@ -130,8 +126,9 @@ export interface ModerationService {
   ): Promise<Result<void, AnswerAppealError>>;
   /**
    * Hides content (3.4.3): a message reads "Removed by ShareRide" to both
-   * people; a trip's note and About you are no longer shown to others, until
-   * the person writes a new one. Reversing it on appeal shows it again.
+   * people; a review no longer shows to the person it is about, nor counts;
+   * a trip's note and About you are no longer shown to others, until the
+   * person writes a new one. Reversing it on appeal shows it again.
    */
   hideContent(
     by: Moderator,
@@ -193,6 +190,13 @@ async function ownerOf(tx: Transaction, content: Content): Promise<string | unde
         .where(eq(messages.id, content.id));
       return row?.senderId ?? undefined;
     }
+    case "review": {
+      const [row] = await tx
+        .select({ authorId: reviews.authorId })
+        .from(reviews)
+        .where(eq(reviews.id, content.id));
+      return row?.authorId;
+    }
     case "trip_note": {
       const [row] = await tx
         .select({ driverId: trips.driverId })
@@ -245,6 +249,15 @@ async function lockContent(
             also: copies.filter((copy) => copy.id !== content.id).map((copy) => copy.id),
           };
     }
+    case "review": {
+      // Hidden before it shows, it never shows.
+      const [row] = await tx
+        .select({ hiddenAt: reviews.hiddenAt })
+        .from(reviews)
+        .where(eq(reviews.id, content.id))
+        .for("update");
+      return row === undefined ? undefined : { hiddenAt: row.hiddenAt, also: [] };
+    }
     case "trip_note": {
       const [row] = await tx
         .select({ status: trips.status, note: trips.note, hiddenAt: trips.noteHiddenAt })
@@ -283,6 +296,12 @@ async function setHidden(
         .set({ hiddenAt: at, updatedAt: now })
         .where(inArray(messages.id, [content.id, ...also]));
       return;
+    case "review":
+      await tx
+        .update(reviews)
+        .set({ hiddenAt: at, updatedAt: now })
+        .where(eq(reviews.id, content.id));
+      return;
     case "trip_note":
       await tx
         .update(trips)
@@ -301,12 +320,16 @@ async function setHidden(
 /** Each content's audit entry: the record it is on, and the field that changes. */
 const hiding = {
   message: { action: "message.hidden", subjectType: "message", field: "hiddenAt" },
+  review: { action: "review.hidden", subjectType: "review", field: "hiddenAt" },
   trip_note: { action: "trip.note_hidden", subjectType: "trip", field: "noteHiddenAt" },
   about: { action: "user.about_hidden", subjectType: "user", field: "aboutHiddenAt" },
-} as const satisfies Record<HideableNow, { action: string; subjectType: string; field: string }>;
+} as const satisfies Record<
+  HideableContent,
+  { action: string; subjectType: string; field: string }
+>;
 
-function isHideableNow(kind: string | null): kind is HideableNow {
-  return (hideableNow as readonly (string | null)[]).includes(kind);
+function isHideable(kind: string | null): kind is HideableContent {
+  return (hideableContent as readonly (string | null)[]).includes(kind);
 }
 
 /**
@@ -622,7 +645,7 @@ export function createModerationService(dependencies: {
           input.outcome === "reversed" &&
           action.kind === "content_hidden" &&
           action.contentId !== null &&
-          isHideableNow(action.contentKind)
+          isHideable(action.contentKind)
             ? { kind: action.contentKind, id: action.contentId }
             : undefined;
         let shown: boolean | { readonly copies: readonly string[] } = false;
