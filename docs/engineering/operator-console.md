@@ -155,6 +155,19 @@ all day. The date
 the operator confirmed the point (R2.3) is its `lastCheckedOn`, the "Last
 checked" date the app shows.
 
+`status-panel.tsx` is the point's "In use" panel above the form: how many
+upcoming trips stop there, a paused point's reason and end date, and the
+buttons its status allows (`nextPointStatus`). Pausing opens a short form
+(the reason in both languages, an optional end date) checked with
+`validatePause` before it is sent; retiring asks first and says whether the
+point retires at once or after its last trip. Bringing a point back needs
+no question, as it can be paused again. What a pause or a retirement does
+is read with its button (`aria-describedby`). After a status change the
+form keeps what was typed in it but not saved, as a status change leaves
+the other fields as they were. A point changed elsewhere since the page
+loaded offers the newest copy, as a save does, which replaces what was
+typed.
+
 ## Disputes
 
 `apps/api/src/modules/trip-day/admin-routes.ts` holds the console's
