@@ -758,6 +758,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   choose what it is about (an objection, a limit, a correction or a
   question) and write it; the app says the answer comes by email within a
   month. Without an email, it asks to add one first.
+- Download my data has the reviews (spec 8, 3.7): with each booking, and
+  each passenger on a trip the person drove, the review they wrote and
+  the one about them once it shows, and when ShareRide hid either. A
+  review that does not show yet stays out of the other person's file.
 
 ### Fixed
 
