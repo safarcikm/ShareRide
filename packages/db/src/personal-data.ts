@@ -174,7 +174,8 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     personColumns: [],
     // What was reported and how it ended decide a refund and reliability
     // for the other side too (spec 8, 3.5). The notes were for the
-    // operator, and go.
+    // operator, and go. Each side's export has its own note only: a
+    // passenger's with their booking, a driver's with the trip's passengers.
     onDeletion: keep(
       ["kind", "answer", "outcome", "decidedBy"],
       ["note", "answerNote", "decisionNote"],
