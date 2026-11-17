@@ -34,8 +34,9 @@
    passenger.
 3. **Cost sharing, not a taxi.** Drivers share the cost of a trip; they do
    not earn a living from it. The app suggests prices from the distance and
-   caps them, so that a full car does not bring the driver more than the
-   cost of driving. Using ShareRide as a business, as a taxi or to make a
+   caps them, so that a trip never brings the driver more than the
+   passengers' share of the cost of driving it, counting everything
+   passengers have already paid. Using ShareRide as a business, as a taxi or to make a
    profit is not allowed.
 4. **We are not an emergency service.** In an emergency, call 112.
 5. We do not check drivers, passengers, cars or licences before they use the

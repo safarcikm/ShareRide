@@ -9,9 +9,10 @@ import {
   reportSubjects,
 } from "@shareride/domain";
 import { z } from "zod";
-import { bookingSchema, peopleColourSchema } from "./bookings.ts";
+import { bookingSchema } from "./bookings.ts";
 import { timestampSchema } from "./common.ts";
 import { errorResponseSchema } from "./errors.ts";
+import { peopleColourSchema } from "./people.ts";
 import { defineRoute } from "./route.ts";
 
 // Safety and moderation (spec 9): blocking, reports and the person's
