@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 import {
   acceptRequestRoute,
   bookTripRoute,
@@ -8,6 +8,7 @@ import {
   deletionCheckRoute,
   getMeRoute,
   messageAllPassengersRoute,
+  myConversationsRoute,
   publishTripRoute,
   refreshRoute,
   sendConfirmCodeRoute,
@@ -33,6 +34,7 @@ import {
   seedForBookings,
   type Member,
 } from "../bookings/testing.ts";
+import { createAuthService } from "../auth/service.ts";
 import { createNotificationWorker } from "../notifications/worker.ts";
 import { createDeletionService } from "./deletion.ts";
 
@@ -120,6 +122,17 @@ function soonestIds(accessToken: string) {
     });
 }
 
+/** Whether the conversation of `bookingId` shows as open for writing to `accessToken`'s person. */
+async function canWriteTo(accessToken: string, bookingId: string) {
+  const list = await api.client.call(myConversationsRoute, { accessToken });
+  if (!list.ok) throw new Error(list.error.code);
+  const found = list.data.conversations.find(
+    (conversation) => conversation.booking.id === bookingId,
+  );
+  if (found === undefined) throw new Error("No such conversation.");
+  return found.canWrite;
+}
+
 function detailsOf(tripId: string) {
   return api.client.call(tripDetailsRoute, { params: { id: tripId }, query: { seats: 1 } });
 }
@@ -144,7 +157,7 @@ describe("delete my account (spec 11, 3.4)", () => {
     });
   });
 
-  it("lists what is open, refuses while it is, and keeps the code for after", async () => {
+  it("lists what is open, and refuses while it is before the code is used", async () => {
     const anna = await driverOf(sampleTrip.north, "Anna");
     const gunna = await newMember("Gunna");
     const request = await booked(gunna.accessToken, sampleTrip.north, { fromStop: 0, toStop: 3 });
@@ -195,6 +208,54 @@ describe("delete my account (spec 11, 3.4)", () => {
     expect(new Date(deleted.data.deleteAfter)).toEqual(
       new Date(api.now().getTime() + days(7) * 1000),
     );
+  });
+
+  it("checks again with the code, so a request made meanwhile still stops it", async () => {
+    const anna = await driverOf(sampleTrip.north, "Anna");
+    const gunna = await newMember("Gunna");
+    const code = await freshCode(anna);
+    const auth = createAuthService({
+      ...api.features,
+      logger: createLogger({ level: "silent" }),
+      randomInt: (max) => randomInt(max),
+    });
+    let requestId: string | undefined;
+    const deletion = createDeletionService({
+      db: api.connection.db,
+      clock: () => api.now(),
+      // Gunna asks for a seat after the first check, before the code is checked.
+      auth: {
+        withConfirmCode: async (userId, given, action) => {
+          requestId = (
+            await booked(gunna.accessToken, sampleTrip.north, { fromStop: 0, toStop: 3 })
+          ).id;
+          return auth.withConfirmCode(userId, given, action);
+        },
+      },
+      tripDaySettings: defaultTripDaySettings,
+      logger: createLogger({ level: "silent" }),
+    });
+
+    expect(await deletion.schedule(anna.userId, code)).toEqual({
+      ok: false,
+      error: { code: "deletion_blocked" },
+    });
+    const [row] = await api.connection.db
+      .select({ deleteAfter: schema.users.deleteAfter })
+      .from(schema.users)
+      .where(eq(schema.users.id, anna.userId));
+    expect(row?.deleteAfter).toBeNull();
+    expect((await me(anna.accessToken)).ok).toBe(true);
+
+    // The code was kept: once the request is withdrawn, it works.
+    if (requestId === undefined) throw new Error("No request.");
+    const withdrawn = await api.client.call(withdrawRequestRoute, {
+      accessToken: gunna.accessToken,
+      params: { id: requestId },
+      body: {},
+    });
+    if (!withdrawn.ok) throw new Error(withdrawn.error.code);
+    expect(await deleteAccount(anna, code)).toMatchObject({ ok: true, status: 202 });
   });
 
   it("waits while a trip is under way, until it completes", async () => {
@@ -277,6 +338,18 @@ describe("delete my account (spec 11, 3.4)", () => {
         body: { clientId: randomUUID(), text: "Thanks, everyone" },
       }),
     ).toMatchObject({ ok: true, data: { sent: 0 } });
+    expect(await canWriteTo(anna.accessToken, bookingId)).toBe(false);
+
+    // Nor does the person write to those who cannot answer.
+    const back = await api.signIn(await phoneOf(gunna));
+    expect(
+      await api.client.call(sendMessageRoute, {
+        accessToken: back.accessToken,
+        params: { id: bookingId },
+        body: { clientId: randomUUID(), text: "Bye" },
+      }),
+    ).toMatchObject({ ok: false, status: 409, error: { code: "chat_closed" } });
+    expect(await canWriteTo(back.accessToken, bookingId)).toBe(false);
   });
 
   it("signs in while it waits, and keeps the account as it was", async () => {

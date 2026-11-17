@@ -461,7 +461,9 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
     async refresh(refreshToken) {
       const now = clock();
       return db.transaction(async (tx): Promise<Result<Refreshed, RefreshError>> => {
-        // Locks the token and its session, so two refreshes of one session run in turn.
+        // Locks the token and its session, so two refreshes of one session run
+        // in turn; not the account, which deleting one locks before it ends
+        // the sessions.
         const [row] = await tx
           .select({ token: sessionTokens, session: sessions, userStatus: users.status })
           .from(sessionTokens)
@@ -473,7 +475,7 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
               eq(sessionTokens.kind, "refresh"),
             ),
           )
-          .for("update");
+          .for("update", { of: [sessionTokens, sessions] });
         if (row === undefined) return err({ code: "refresh_invalid" });
         const { token, session } = row;
         if (row.userStatus !== "active") {

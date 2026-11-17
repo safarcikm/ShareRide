@@ -92,6 +92,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     licenceDeclaredAt: when(user.licenceDeclaredAt),
     roles: user.roles,
     status: user.status,
+    deleteAfter: when(user.deleteAfter),
     memberSince: when(user.createdAt),
   };
 

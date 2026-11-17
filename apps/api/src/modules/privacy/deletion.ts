@@ -276,8 +276,16 @@ export function createDeletionService(dependencies: DeletionServiceDependencies)
         return err({ code: "deletion_blocked" });
       }
       return auth.withConfirmCode(userId, code, async (tx) => {
-        // The same lock booking takes, so no booking starts meanwhile.
+        // The locks booking and publishing take, in their order: the person,
+        // so they book or publish nothing meanwhile, then the trips they
+        // drive, so nobody books on them.
         await tx.select({ id: users.id }).from(users).where(eq(users.id, userId)).for("update");
+        await tx
+          .select({ id: trips.id })
+          .from(trips)
+          .where(and(eq(trips.driverId, userId), inArray(trips.status, ["published", "departed"])))
+          .orderBy(asc(trips.id))
+          .for("update");
         if (!(await openFor(tx, userId, now, tripDaySettings)).allowed) {
           return err({ code: "deletion_blocked" as const });
         }

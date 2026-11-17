@@ -1130,6 +1130,7 @@ export const en = {
   "export.field.currency": "Currency",
   "export.field.decidedAt": "Answered",
   "export.field.declineReason": "Reason for declining",
+  "export.field.deleteAfter": "Account to be deleted",
   "export.field.departsAt": "Departs",
   "export.field.deviceName": "Device",
   "export.field.document": "Document",

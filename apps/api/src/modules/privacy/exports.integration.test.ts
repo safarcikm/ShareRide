@@ -269,7 +269,7 @@ describe("download my data (spec 11, 3.2)", () => {
     const { data, html } = await exportOf(await newMember("Siggi"));
     expect(data).toMatchObject({ format: "shareride-export", version: 1, locale: "en" });
     expect(Object.keys(data.sections)).toEqual([...exportSections]);
-    expect(data.sections.account).toMatchObject({ firstName: "Siggi" });
+    expect(data.sections.account).toMatchObject({ firstName: "Siggi", deleteAfter: null });
     expect(html).toContain("<h1>Your ShareRide data</h1>");
     expect(html).not.toMatch(/<script|https?:\/\//i);
   });

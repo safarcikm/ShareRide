@@ -645,13 +645,12 @@ export function createBookingService(dependencies: {
         const trip = await lockTrip(tx, tripId);
         if (trip === undefined) return err({ code: "not_found" });
         // Nobody books with a driver deleting their account (spec 11, 3.4.3).
-        // Shared with other bookings, and taken before deleting checks for
-        // bookings under its own lock, so one of the two waits for the other.
+        // Deleting locks the driver's trips before it checks for bookings, so
+        // with the trip locked this reads the date as it stands.
         const [driver] = await tx
           .select({ deleteAfter: users.deleteAfter })
           .from(users)
-          .where(eq(users.id, trip.driverId))
-          .for("share");
+          .where(eq(users.id, trip.driverId));
         if (driver === undefined || driver.deleteAfter !== null) return err({ code: "not_found" });
         const now = clock();
         await expireDueBookings(tx, tripId, now);

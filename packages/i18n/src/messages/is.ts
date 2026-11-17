@@ -1135,6 +1135,7 @@ export const is = {
   "export.field.currency": "Gjaldmiðill",
   "export.field.decidedAt": "Svarað",
   "export.field.declineReason": "Ástæða höfnunar",
+  "export.field.deleteAfter": "Aðganginum verður eytt",
   "export.field.departsAt": "Leggur af stað",
   "export.field.deviceName": "Tæki",
   "export.field.document": "Skjal",
