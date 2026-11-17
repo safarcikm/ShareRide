@@ -20,6 +20,7 @@ export type OutboxEvent =
         | "TripCancelled"
         | "MessageSent"
         | "DataExportReady"
+        | "AccountDeletionScheduled"
       >;
       readonly bookingId: string;
     }
@@ -62,6 +63,11 @@ export type OutboxEvent =
       readonly type: "DataExportReady";
       readonly userId: string;
       readonly exportId: string;
+    }
+  | {
+      /** The person asked to delete their account; the email says when (spec 11, 3.4.5). */
+      readonly type: "AccountDeletionScheduled";
+      readonly userId: string;
     };
 
 /**

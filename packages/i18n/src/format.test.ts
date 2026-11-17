@@ -4,6 +4,7 @@ import {
   formatClock,
   formatDate,
   formatDay,
+  formatDayAndMonth,
   formatDistance,
   formatDuration,
   formatMoney,
@@ -109,6 +110,15 @@ describe("formatDay", () => {
       "sunnudagur 22. nóvember",
     ]);
     expect(formatDay(new Date("2027-01-01T00:00:00Z"), "en")).toBe("Friday 1 January");
+  });
+});
+
+describe("formatDayAndMonth", () => {
+  it("names the day and month in Iceland, without a weekday to decline", () => {
+    const moment = new Date("2026-11-23T23:30:00Z");
+    expect(formatDayAndMonth(moment, "en")).toBe("23 November");
+    expect(formatDayAndMonth(moment, "is")).toBe("23. nóvember");
+    expect(formatDayAndMonth(new Date("2027-01-01T00:00:00Z"), "is")).toBe("1. janúar");
   });
 });
 

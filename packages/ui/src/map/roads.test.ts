@@ -1,5 +1,6 @@
-import { alongRoads, pathLength } from "./roads";
-import { kilometresPerUnit, project } from "./projection";
+import { describe, expect, it } from "vitest";
+import { alongRoads, pathLength } from "./roads.ts";
+import { kilometresPerUnit, project } from "./projection.ts";
 
 const reykjavik = project({ longitude: -21.86, latitude: 64.13 });
 const borgarnes = project({ longitude: -21.92, latitude: 64.54 });

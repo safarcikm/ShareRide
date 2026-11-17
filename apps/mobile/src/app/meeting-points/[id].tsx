@@ -1,5 +1,5 @@
 import { meetingPointRoute, type MeetingPointDetails } from "@shareride/contracts";
-import { formatDate } from "@shareride/i18n";
+import { amenityKeys, formatDate, regionKeys, seasonText, typeKeys } from "@shareride/i18n";
 import { useLocalSearchParams } from "expo-router";
 import { Check } from "lucide-react-native";
 import { useCallback, useState } from "react";
@@ -18,7 +18,6 @@ import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { IcelandMap } from "@/maps/iceland-map";
 import { mapsUrl } from "@/meeting-points/maps-url";
-import { amenityKeys, regionKeys, seasonText, typeKeys } from "@/meeting-points/texts";
 import { iconSizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 

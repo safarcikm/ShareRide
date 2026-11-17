@@ -60,6 +60,11 @@ export interface NotPublishable {
   readonly problems: readonly PublishProblem[];
 }
 
+/** The driver is deleting their account (spec 11, 3.4). */
+export interface DeletionPending {
+  readonly code: "account_deletion_pending";
+}
+
 /** A driver's drafts and publishing them (spec 3, 3.4 to 3.8, and section 4). */
 export interface TripService {
   /**
@@ -82,7 +87,9 @@ export interface TripService {
   publish(
     userId: string,
     tripId: string,
-  ): Promise<Result<MyTrip, NotFound | NotDraft | NotPublishable | DistancesMissing>>;
+  ): Promise<
+    Result<MyTrip, NotFound | NotDraft | NotPublishable | DistancesMissing | DeletionPending>
+  >;
   /**
    * Post again, or the return (spec 6, 3.6): a new draft with the trip's
    * stops, reversed for the return, and its car while the driver still has
@@ -572,7 +579,15 @@ export function createTripService(dependencies: {
       const readiness = await driving.readiness(userId);
       return db.transaction(async (tx) => {
         // One publish at a time per driver, so two cannot overlap (R3.7).
-        await tx.select({ id: users.id }).from(users).where(eq(users.id, userId)).for("update");
+        // Deleting an account takes the same lock before it checks.
+        const [driver] = await tx
+          .select({ deleteAfter: users.deleteAfter })
+          .from(users)
+          .where(eq(users.id, userId))
+          .for("update");
+        if (driver === undefined || driver.deleteAfter !== null) {
+          return err({ code: "account_deletion_pending" });
+        }
         const row = await mine(tx, userId, tripId);
         if (row === undefined || row.status === "cancelled") return err({ code: "not_found" });
         if (row.status !== "draft") return err({ code: "trip_not_draft" });

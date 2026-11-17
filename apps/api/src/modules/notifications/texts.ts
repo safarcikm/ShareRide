@@ -15,6 +15,7 @@ import {
   type CarFacts,
   formatClock,
   formatDay,
+  formatDayAndMonth,
   formatMoney,
   quickMessageText,
   stopAddedText,
@@ -65,6 +66,8 @@ export interface NotificationFacts {
   readonly moved: { readonly from: Date; readonly to: Date } | null;
   /** Confirmed and not free: what they paid would come back if they cancelled (R6.3). */
   readonly paid: boolean;
+  /** For a report to answer: until when the other side can (spec 8, R8.6); otherwise null. */
+  readonly answerBy: Date | null;
 }
 
 /** A driver's trip reminder (3.5): about the trip and everyone booked on it. */
@@ -83,14 +86,20 @@ export interface TripReminderFacts {
   readonly plateMissing: boolean;
 }
 
-/** News about the person's account (spec 11): a data export, and until when it can be downloaded. */
+/**
+ * News about the person's account (spec 11): a data export, until when it
+ * can be downloaded; a deletion, when the data is erased.
+ */
 export interface AccountNoticeFacts {
   readonly kind: AccountNoticeKind;
-  readonly expiresAt: Date;
+  readonly until: Date;
 }
 
 /** The app's screen for downloading one's data (spec 11, 3.2). */
 export const downloadDataPath = "/settings/privacy/download";
+
+/** Where signing in while a deletion waits shows "Keep my account" (spec 11, 3.4.4). */
+export const deletionWaitPath = "/";
 
 export interface NotificationText {
   readonly title: string;
@@ -143,24 +152,36 @@ export function notificationText(
   locale: Locale,
   settings: NotificationSettings,
 ): NotificationText {
-  if ("expiresAt" in facts) return accountText(facts, locale);
+  if ("until" in facts) return accountText(facts, locale);
   return "passengers" in facts
     ? tripReminderText(facts, locale)
     : bookingText(facts, locale, settings);
 }
 
-/** What is ready and until when, never a link (spec 11, 7). */
+/**
+ * What is ready, or what will be deleted, and when; never a link to the file
+ * (spec 11, 7). No weekday: Icelandic would have to decline it after "fyrir".
+ */
 function accountText(facts: AccountNoticeFacts, locale: Locale): NotificationText {
   const t = createTranslator(locale);
-  const until = t("notify.when", {
-    date: formatDay(facts.expiresAt, locale),
-    time: formatClock(facts.expiresAt),
+  const when = t("notify.when", {
+    date: formatDayAndMonth(facts.until, locale),
+    time: formatClock(facts.until),
   });
-  return {
-    title: t("notify.dataExportReady"),
-    body: t("notify.dataExportReadyBody", { until }),
-    path: downloadDataPath,
-  };
+  switch (facts.kind) {
+    case "data_export_ready":
+      return {
+        title: t("notify.dataExportReady"),
+        body: t("notify.dataExportReadyBody", { until: when }),
+        path: downloadDataPath,
+      };
+    case "account_deletion_scheduled":
+      return {
+        title: t("notify.accountDeletionScheduled"),
+        body: t("notify.accountDeletionScheduledBody", { date: when }),
+        path: deletionWaitPath,
+      };
+  }
 }
 
 function bookingText(
@@ -220,6 +241,29 @@ function bookingText(
       case "checked_in":
       case "checked_in_driver":
         return [t("notify.checkedIn", { name }), from];
+      // A report on the trip day (spec 8, 3.3 and 3.4): the other side is
+      // asked whether it is right, and until when they can say. Never the
+      // note, which is for the operator.
+      case "no_show_marked":
+      case "driver_absent_reported":
+        return [
+          facts.kind === "no_show_marked"
+            ? t("notify.noShowMarked")
+            : t("notify.driverAbsentReported", { name }),
+          t("notify.reportBody", {
+            from,
+            to,
+            when: when(facts.boardsAt),
+            deadline: when(required(facts.answerBy, "the time to answer")),
+          }),
+        ];
+      // The outcome is on the booking and trip pages (3.5).
+      case "dispute_decided":
+      case "dispute_decided_driver":
+        return [
+          t("notify.disputeDecided"),
+          t("notify.disputeDecidedBody", { from, to, when: when(facts.boardsAt) }),
+        ];
       case "booking_cancelled_by_driver":
       case "trip_cancelled":
         // Never the driver's note: it may hold a number (R7.9).

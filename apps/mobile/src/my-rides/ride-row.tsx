@@ -21,6 +21,7 @@ import { usePalette } from "@/theme/use-palette";
 import { carText } from "@/trip-details/texts";
 import { routeText } from "@/trips/texts";
 import { needsYou, seatsFree, seatsTaken, type Ride } from "./rides";
+import { firstNameOf } from "@/people/texts";
 
 /** Opens a ride where it lives: the booking (spec 5) or the driver's trip page (spec 3). */
 export function openRide(ride: Ride): void {
@@ -75,8 +76,8 @@ function bookingParts(t: Translate, locale: Locale, booking: Booking): Parts {
       {
         text:
           car === null
-            ? booking.driver.firstName
-            : t("myBookings.driverAndCar", { driver: booking.driver.firstName, car }),
+            ? firstNameOf(t, booking.driver)
+            : t("myBookings.driverAndCar", { driver: firstNameOf(t, booking.driver), car }),
         look: "muted",
       },
     ],

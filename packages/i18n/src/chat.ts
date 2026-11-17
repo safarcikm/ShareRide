@@ -34,6 +34,7 @@ const cancelReasonKeys: Readonly<Record<CancelReason, MessageKey>> = {
   car_smaller: "cancelReason.carSmaller",
   found_another: "cancelReason.foundAnother",
   trip_changed: "cancelReason.tripChanged",
+  driver_absent: "cancelReason.driverAbsent",
 };
 
 /** Why a booking or trip was cancelled, in `t`'s language (spec 6). */

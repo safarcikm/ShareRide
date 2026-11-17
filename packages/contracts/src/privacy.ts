@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { timestampSchema } from "./common.ts";
 import { errorResponseSchema } from "./errors.ts";
-import { confirmCodeBodySchema, confirmCodeErrors } from "./me.ts";
+import { localisedTextSchema } from "./meeting-points.ts";
+import { confirmCodeBodySchema, confirmCodeErrors, meSchema } from "./me.ts";
 import { defineRoute } from "./route.ts";
 
 // "Download my data" (spec 11, 3.2): ask with a fresh code, wait while it
@@ -95,5 +96,106 @@ export const downloadDataExportRoute = defineRoute({
   responses: {
     200: { description: "The ZIP file (application/zip)" },
     404: { description: "not_found: the link is unknown, used or expired", ...errors },
+  },
+});
+
+// "Delete my account" (spec 11, 3.4): see what is still open, confirm with
+// a fresh code, then 7 days to change one's mind.
+
+const placesSchema = z.object({ from: localisedTextSchema, to: localisedTextSchema });
+
+/**
+ * Something still open (spec 11, 3.4.1), with what the app needs to show it
+ * and open its own screen: the trip or booking, and its cancel screen
+ * (spec 6) for those that can be cancelled.
+ */
+export const openItemSchema = z.discriminatedUnion("kind", [
+  z.object({
+    /** A trip the person drives, with bookings or requests on it. */
+    kind: z.literal("trip"),
+    id: z.uuid(),
+    departsAt: timestampSchema,
+    places: placesSchema,
+  }),
+  z.object({
+    /** The person's own booking or request as a passenger, with their part of the trip. */
+    kind: z.enum(["booking", "request"]),
+    id: z.uuid(),
+    tripId: z.uuid(),
+    boardsAt: timestampSchema,
+    places: placesSchema,
+  }),
+  z.object({
+    /** A trip on its way, which nobody can cancel: deleting waits until it completes. */
+    kind: z.literal("trip_under_way"),
+    tripId: z.uuid(),
+    completesAt: timestampSchema,
+    places: placesSchema,
+  }),
+  z.object({
+    /** Settled elsewhere first: an open dispute (spec 8) or a held payout (spec 13). */
+    kind: z.enum(["dispute", "held_payout"]),
+    id: z.uuid(),
+  }),
+]);
+
+export type OpenItem = z.infer<typeof openItemSchema>;
+
+export const deletionCheckSchema = z.object({
+  /** True when nothing is open, so the account can be deleted now (R11.3). */
+  allowed: z.boolean(),
+  /** What must be settled first, and cannot be cancelled from the deletion screen. */
+  mustSettle: z.array(openItemSchema),
+  /** Trips, bookings and requests the person can cancel under the normal rules (spec 6). */
+  canCancel: z.array(openItemSchema),
+});
+
+export type DeletionCheck = z.infer<typeof deletionCheckSchema>;
+
+export const deletionCheckRoute = defineRoute({
+  method: "get",
+  path: "/v1/me/deletion-check",
+  summary: "What is still open before I can delete my account (spec 11, 3.4.1)",
+  tags: ["privacy"],
+  auth: true,
+  responses: {
+    200: { description: "What is open", schema: deletionCheckSchema },
+    401: unauthenticated,
+  },
+});
+
+export const deleteAccountRoute = defineRoute({
+  method: "post",
+  path: "/v1/me/delete",
+  summary:
+    "Delete my account, with a fresh code: signed out everywhere and hidden at once, erased after 7 days (spec 11, 3.4)",
+  tags: ["privacy"],
+  auth: true,
+  request: { body: confirmCodeBodySchema },
+  responses: {
+    202: {
+      description: "Deletion scheduled; every session has ended, this one too",
+      schema: z.object({ deleteAfter: timestampSchema }),
+    },
+    400: confirmCodeErrors[400],
+    401: unauthenticated,
+    409: {
+      description: "deletion_blocked: something is still open; GET /v1/me/deletion-check says what",
+      ...errors,
+    },
+    429: confirmCodeErrors[429],
+  },
+});
+
+export const cancelDeletionRoute = defineRoute({
+  method: "post",
+  path: "/v1/me/delete/cancel",
+  summary: "Keep my account: undo a deletion while it waits (spec 11, 3.4.4)",
+  tags: ["privacy"],
+  auth: true,
+  request: { body: z.object({}) },
+  responses: {
+    200: { description: "Kept, as it was", schema: meSchema },
+    401: unauthenticated,
   },
 });

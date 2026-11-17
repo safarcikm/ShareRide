@@ -280,3 +280,55 @@ export const adminRemovePasskeyRoute = defineRoute({
     409: { description: "last_passkey", ...errors },
   },
 });
+
+/** One operator action in the audit log (spec 9, 3.8). */
+export const auditEntrySchema = z.object({
+  id: z.uuid(),
+  at: timestampSchema,
+  operator: z.object({ userId: z.uuid(), firstName: z.string().nullable() }),
+  /** Taken through the `operator` command on the server, not in the console. */
+  byCommand: z.boolean(),
+  action: z.string(),
+  subjectType: z.string().nullable(),
+  subjectId: z.string().nullable(),
+  /** The changed fields before and after; for a person's record, field names only. */
+  before: z.record(z.string(), z.unknown()).nullable(),
+  after: z.record(z.string(), z.unknown()).nullable(),
+  ipAddress: z.string().nullable(),
+  userAgent: z.string().nullable(),
+});
+
+export type AuditEntry = z.infer<typeof auditEntrySchema>;
+
+const auditDaySchema = z.iso.date();
+
+export const adminAuditLogRoute = defineRoute({
+  method: "get",
+  path: "/admin/v1/audit-log",
+  summary: "The audit log, newest first, a page at a time, with filters",
+  tags: ["admin"],
+  auth: "operator",
+  request: {
+    query: z.object({
+      /** Actions that start with this, such as `meeting_point.` or `operator.signed_in`. */
+      action: z.string().min(1).max(100).optional(),
+      subjectType: z.string().min(1).max(50).optional(),
+      subjectId: z.string().min(1).max(100).optional(),
+      operatorUserId: z.uuid().optional(),
+      /** Calendar days in Iceland, both included; `to` may not be before `from`. */
+      from: auditDaySchema.optional(),
+      to: auditDaySchema.optional(),
+      /** The oldest entry of the last page: the page before it. */
+      before: z.uuid().optional(),
+    }),
+  },
+  responses: {
+    200: {
+      description: "Up to 50 entries before `before`, newest first",
+      schema: z.object({ entries: z.array(auditEntrySchema), hasMore: z.boolean() }),
+    },
+    400: { description: "validation_failed, also when `to` is before `from`", ...errors },
+    401: { description: "operator_unauthenticated", ...errors },
+    404: { description: "not_found: `before` is not an entry", ...errors },
+  },
+});

@@ -16,6 +16,7 @@ import { newClientId } from "./client-id";
 import { merged, newestTheirs, type Outgoing, type Pending } from "./messages";
 import { otherPerson, outgoingText, spokenMessage } from "./texts";
 import { useUnread } from "./unread";
+import { firstNameOf } from "@/people/texts";
 
 /** While a conversation is open, new messages are fetched this often (spec 7, 3.1, item 10). */
 export const pollMs = 5_000;
@@ -108,7 +109,7 @@ export function useConversation(bookingId: string) {
           if (!inView || !inFront() || !answer.ok || shownNow.current === null) return;
           // New messages from the other person are read out (plan 4.3).
           const known = new Set(shownNow.current.messages.map((message) => message.id));
-          const other = otherPerson(answer.data.conversation.booking).firstName;
+          const other = firstNameOf(t, otherPerson(answer.data.conversation.booking));
           const arrived = answer.data.messages
             .filter((message) => message.from === "them" && !known.has(message.id))
             .reverse()

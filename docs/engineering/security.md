@@ -185,9 +185,19 @@ is built, in `apps/api/src/modules/admin` with the rules in
   development, and holds 256 random bits (prefix `sr_os_`) kept only as a
   SHA-256 hash. A session ends 30 minutes after its last use, 12 hours after
   sign-in, when the account loses the role or is suspended, or on sign-out,
-  and never works again. Ended sessions are deleted after 30 days.
+  and never works again. Ended sessions are deleted after 30 days. While the
+  operator's own account waits to be deleted (spec 11), the console refuses
+  their sessions, passkeys and setup links, and the `operator` command will
+  not give the role. Erasing the account is to delete them (spec 11).
 - **Other origins:** the console's routes answer no CORS request, so only
   pages on the API's own origin can call them.
+- **The console's pages:** the API serves the console's build at `/admin`
+  (`apps/api/src/admin-app.ts`) with its own content security policy:
+  `default-src 'none'`, and scripts, styles, fonts, images and API calls
+  from its own origin only, no forms sent anywhere, no framing, and
+  `noindex`. The build has no inline script or style. The public web app
+  never answers a path under `/admin`, so no app page can stand in for the
+  console, and the console's pages never shadow `/admin/v1`.
 - **Audit log:** `recordAudit` writes each operator action in the same
   transaction as the change. A database trigger refuses updates, truncation
   and deletes of entries younger than 3 years.

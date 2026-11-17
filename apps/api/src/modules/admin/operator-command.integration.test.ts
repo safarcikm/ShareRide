@@ -90,6 +90,18 @@ describe("the operator command (ADR 0028)", () => {
     expect(await rolesOf(userId)).not.toContain("operator");
   });
 
+  it("refuses an account that waits to be deleted", async () => {
+    const { userId } = await api.signIn(api.newPhoneNumber());
+    await api.connection.db
+      .update(schema.users)
+      .set({ deleteAfter: new Date("2026-12-01T10:00:00Z") })
+      .where(eq(schema.users.id, userId));
+    const { exitCode, output } = await run("add", userId);
+    expect(exitCode).toBe(1);
+    expect(output).toContain("waits to be deleted");
+    expect(await rolesOf(userId)).not.toContain("operator");
+  });
+
   it("says when no account matches", async () => {
     const { exitCode, output } = await run("add", "00000000-0000-7000-8000-000000000000");
     expect(exitCode).toBe(1);

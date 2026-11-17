@@ -18,11 +18,20 @@ export const operatorSessionRules = {
 export interface ConsoleAccount {
   readonly roles: readonly string[];
   readonly status: string;
+  /** Set while the account waits to be deleted (spec 11). */
+  readonly deleteAfter: Date | null;
 }
 
-/** True for an active account that holds the operator role. */
+/**
+ * True for an active account that holds the operator role and is not
+ * waiting to be deleted.
+ */
 export function canUseConsole(account: ConsoleAccount): boolean {
-  return account.status === "active" && account.roles.includes(operatorRole);
+  return (
+    account.status === "active" &&
+    account.roles.includes(operatorRole) &&
+    account.deleteAfter === null
+  );
 }
 
 export interface OperatorSessionTimes {

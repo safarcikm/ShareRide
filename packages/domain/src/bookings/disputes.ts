@@ -32,6 +32,32 @@ export const operatorOutcomes: Readonly<Record<DisputeKind, readonly DisputeOutc
   driver_absent: ["stands", "rode", "passenger_absent"],
 };
 
+/** Who reports: the driver marks a no-show, the passenger says the driver didn't come. */
+export function reporterOf(kind: DisputeKind): "passenger" | "driver" {
+  return kind === "no_show" ? "driver" : "passenger";
+}
+
+/** Who answers a report: the other side (R8.6). */
+export function answererOf(kind: DisputeKind): "passenger" | "driver" {
+  return kind === "no_show" ? "passenger" : "driver";
+}
+
+/** A note with a report or an answer, for the operator (spec 8, 3.3 and 3.4). */
+export const disputeNoteMaxLength = 500;
+
+/**
+ * A report's or an answer's note, trimmed and composed as the database
+ * counts it: up to 500 characters, and may be empty. Only the operator reads
+ * it (spec 8, section 7), so unlike a trip's note it may hold contact
+ * details.
+ */
+export function checkDisputeNote(note: string): Result<string, { readonly code: "note_too_long" }> {
+  const tidy = note.trim().normalize("NFC");
+  // Characters as the database counts them (code points).
+  if (Array.from(tidy).length > disputeNoteMaxLength) return err({ code: "note_too_long" });
+  return ok(tidy);
+}
+
 export interface Dispute {
   readonly kind: DisputeKind;
   readonly raisedAt: Date;

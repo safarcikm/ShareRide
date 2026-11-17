@@ -43,10 +43,18 @@ section works the same way. Security details are in
 
 `pnpm --filter @shareride/api operator add <phone number or user ID>`
 gives the role and prints a setup link for the first passkey; the link
-opens the console's setup page, which comes with the console app
-(milestone 8, PR 4). `remove` takes the role away and `list` lists
-operators. Locally, passkeys
-are bound to `http://localhost:3000` unless `ADMIN_ORIGIN` says otherwise.
+opens the console's setup page. `remove` takes the role away and `list`
+lists operators. Passkeys are bound to `ADMIN_ORIGIN`, which is
+`http://localhost:3000` locally unless you set it.
+
+To work on the console locally, run the API
+(`pnpm --filter @shareride/api dev`) with `ADMIN_ORIGIN=http://localhost:5173`
+in `.env`, then `pnpm --filter @shareride/admin dev` and open
+`http://localhost:5173/admin/`. Vite passes `/admin/v1` on to the API, so
+the cookie and the passkeys see one origin. The API serves the built console
+at `/admin` itself when `ADMIN_APP_DIR` points at
+`apps/admin/dist` (`pnpm --filter @shareride/admin build`), as the image
+does.
 
 ## The guard
 
@@ -68,8 +76,75 @@ deleting entries younger than 3 years, and refuse `TRUNCATE`. Drizzle does
 not know about them. When a later migration changes `audit_log`, check the
 triggers still apply, and never drop them.
 
+The console's Audit log page reads it through `GET /admin/v1/audit-log`,
+newest first, 50 entries a page. Its action filter matches the start of
+the name, so `meeting_point.` finds every meeting point action: name new
+actions with the record's kind first. "Only this record" filters by
+`subjectType` and `subjectId`, so give every action on a record the same
+pair. The page shows `before` and `after` field by field.
+
+## Meeting points
+
+`apps/api/src/modules/meeting-points/admin-routes.ts` holds the console's
+meeting point routes (`registerMeetingPointsAdminRoutes`), with the work in
+`admin-service.ts`:
+
+- `GET /admin/v1/meeting-points` lists every point, drafts and retired
+  ones too, by Icelandic name, with the domain's filters
+  (`matchesConsoleFilters`): status, region, type, season this month,
+  review overdue and part of a name. There are a few hundred points at
+  most, so it filters them all in the API.
+- `POST /admin/v1/meeting-points` adds a draft; `PUT
+  /admin/v1/meeting-points/{id}` saves its fields. Both check the fields
+  with `validateMeetingPointDraft` and answer `validation_failed` with each
+  field and its problem in `details`, which the form shows by its field.
+- An edit sends back the `updatedAt` it loaded. If the point was saved
+  since, the edit is refused with `meeting_point_changed`, so one copy
+  never overwrites a newer one. The comparison is in SQL, to the
+  millisecond, as JavaScript dates hold no more.
+- Only a draft's spot is edited there (`move_needed` otherwise): moving a
+  point in use recomputes its distances and tells the trips that use it
+  (R2.10), its own step. A retired point is not edited
+  (`meeting_point_retired`).
+- Audit entries are `meeting_point.created` with the fields, and
+  `meeting_point.updated` with only the fields that changed. Saving
+  without a change writes nothing.
+
+The console's pages are in `apps/admin/src/pages/meeting-points/`:
+`list.tsx` (the map and the list, the filters kept in the address),
+`form.tsx` (add or edit one) and `form-values.ts`, which turns what was
+typed into the API's input and checks it with the same
+`validateMeetingPointDraft` before sending. A field's error goes as soon as
+the field is changed; the form checks everything again on saving. A browser's time
+field cannot hold 24:00, so the form shows a shelter closing at midnight as
+00:00 and sends a closing time of 00:00 as 24:00; 00:00 to 00:00 is open
+all day. The date
+the operator confirmed the point (R2.3) is its `lastCheckedOn`, the "Last
+checked" date the app shows.
+
 ## A console page
 
-Comes with the console app (milestone 8, PR 4): a page file and one entry
-in `apps/admin/src/sections.ts`, with its texts in `packages/i18n` under
-`admin.<area>.*` in both languages.
+The console is `apps/admin`: React for the web, built with Vite, served by
+the API at `/admin` with its own content security policy
+([security](security.md#operator-console)). It uses the shared design
+tokens from `packages/ui` as CSS variables and the app's fonts and texts.
+
+1. Add the page in `apps/admin/src/pages/<area>.tsx`. `useConsole()` gives
+   `t` for texts, `call(route, input)` for the API, `navigate(path)` and
+   the signed-in `operator`. A call that finds the session ended sends the
+   operator back to sign in by itself.
+2. Add one entry to `sections` in `apps/admin/src/sections.ts`: its path
+   under `/admin/<area>`, its title key and the page. The menu and the
+   router follow; a section owns every path below its own, for its detail
+   pages.
+3. Put its texts in `packages/i18n/src/messages/en.ts` and `is.ts` under
+   `admin.<area>.*`, in both languages.
+4. Style it with the classes in `apps/admin/src/styles.css` and the
+   `var(--…)` tokens, never raw colours or sizes. Lay it out for a laptop
+   first, and check it on a phone. Link to another console page with
+   `ConsoleLink` (`apps/admin/src/components/console-link.tsx`), and show
+   places with `IcelandMap` (`components/iceland-map.tsx`), our own map
+   (ADR 0024).
+5. Test it in `apps/admin/src/app.test.tsx` style: render `ConsoleApp`
+   against the fake API in `apps/admin/src/testing/fake-api.ts`, signed in,
+   and drive it as the operator would.

@@ -1,0 +1,25 @@
+{
+  "name": "@shareride/ui",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Design tokens and the map of Iceland, shared by the app and the operator console (ADR 0017, ADR 0024)",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./map": "./src/map/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc && tsc -p scripts",
+    "test": "vitest run",
+    "build:map": "node scripts/build-iceland-map.ts"
+  },
+  "devDependencies": {
+    "@shareride/config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

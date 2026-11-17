@@ -1,7 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
-import { glaciers, land, roads } from "./iceland-data";
 import { IcelandMap, type MapDot } from "./iceland-map";
-import { mapSize, project, type Position } from "./projection";
+import { glaciers, land, mapSize, project, roads, type Position } from "@shareride/ui/map";
 import { RouteMap } from "./route-map";
 
 const bsi: MapDot = { id: "bsi", position: { latitude: 64.1376, longitude: -21.9365 } };
