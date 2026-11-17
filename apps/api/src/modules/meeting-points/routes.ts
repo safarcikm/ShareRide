@@ -8,6 +8,7 @@ import {
 import type { AppEnv } from "../../context.ts";
 import { errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
+import type { MeetingPointPhotoService } from "./photos.ts";
 import type { MeetingPointService } from "./service.ts";
 
 /** The catalogue changes rarely; a few minutes' cache spares the database. */
@@ -16,6 +17,7 @@ const catalogueCache = "public, max-age=300";
 export function registerMeetingPointRoutes(
   app: OpenAPIHono<AppEnv>,
   meetingPoints: MeetingPointService,
+  photos: MeetingPointPhotoService,
 ): void {
   app.openapi(toOpenApiRoute(meetingPointsRoute), async (c) => {
     c.header("Cache-Control", catalogueCache);
@@ -28,8 +30,9 @@ export function registerMeetingPointRoutes(
     if (details === undefined) {
       return errorResponse(c, 404, "not_found", "There is no such meeting point.");
     }
+    // The photos' links last an hour at least, longer than the cache.
     c.header("Cache-Control", catalogueCache);
-    return c.json(details, 200);
+    return c.json({ ...details, photos: await photos.forApp(id) }, 200);
   });
 
   app.openapi(toOpenApiRoute(placeSearchRoute), async (c) => {

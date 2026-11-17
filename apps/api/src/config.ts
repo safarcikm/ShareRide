@@ -1,3 +1,5 @@
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { z } from "zod";
 
 /** An origin such as https://shareride.is: scheme, host and port, nothing more. */
@@ -109,6 +111,27 @@ const environmentSchema = z
      * server, the console's sign-in is off until it is set.
      */
     ADMIN_ORIGIN: originSchema.optional(),
+    /**
+     * Where meeting point photos are kept (ADR 0022): `hetzner` is the
+     * Hetzner Object Storage bucket; `folder` a folder on this computer,
+     * for development and tests; `none` takes no photos. By default
+     * `folder`, except under NODE_ENV=production (staging too), where it is
+     * `none` until the bucket is set.
+     */
+    PHOTO_STORAGE: z.enum(["none", "folder", "hetzner"]).optional(),
+    PHOTO_FOLDER: z.string().min(1).optional(),
+    /** The bucket's location, such as https://hel1.your-objectstorage.com. */
+    PHOTO_BUCKET_ENDPOINT: originSchema
+      .refine((value) => value.startsWith("https://"), "not https")
+      .optional(),
+    /** The bucket's name: lowercase letters, digits, dots and hyphens. */
+    PHOTO_BUCKET: z
+      .string()
+      // No dots: the bucket's address is a host name under the endpoint's certificate.
+      .regex(/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/)
+      .optional(),
+    PHOTO_BUCKET_ACCESS_KEY: z.string().min(1).optional(),
+    PHOTO_BUCKET_SECRET_KEY: z.string().min(1).optional(),
   })
   .superRefine((env, context) => {
     if (env.NODE_ENV === "production" && env.AUTH_SECRET.startsWith("local-only-")) {
@@ -152,6 +175,29 @@ const environmentSchema = z
         path: ["EMAIL_PROVIDER"],
         message: "dev prints emails in the terminal and is not allowed in production",
       });
+    }
+    if (env.NODE_ENV === "production" && env.PHOTO_STORAGE === "folder") {
+      context.addIssue({
+        code: "custom",
+        path: ["PHOTO_STORAGE"],
+        message: "a folder loses its photos on each deploy and is not allowed in production",
+      });
+    }
+    if (env.PHOTO_STORAGE === "hetzner") {
+      for (const key of [
+        "PHOTO_BUCKET_ENDPOINT",
+        "PHOTO_BUCKET",
+        "PHOTO_BUCKET_ACCESS_KEY",
+        "PHOTO_BUCKET_SECRET_KEY",
+      ] as const) {
+        if (env[key] === undefined) {
+          context.addIssue({
+            code: "custom",
+            path: [key],
+            message: "needed when PHOTO_STORAGE is hetzner",
+          });
+        }
+      }
     }
     if (env.EMAIL_PROVIDER === "mailjet") {
       for (const key of [
@@ -229,6 +275,36 @@ function emailConfig(env: z.infer<typeof environmentSchema>): EmailConfig {
   }
 }
 
+export type PhotoStorageConfig =
+  | { readonly provider: "none" }
+  | { readonly provider: "folder"; readonly folder: string }
+  | {
+      readonly provider: "hetzner";
+      readonly endpoint: string;
+      readonly bucket: string;
+      readonly accessKey: string;
+      readonly secretKey: string;
+    };
+
+/** The photo storage chosen; the schema checked the bucket's settings are there. */
+function photoStorageConfig(env: z.infer<typeof environmentSchema>): PhotoStorageConfig {
+  const provider = env.PHOTO_STORAGE ?? (env.NODE_ENV === "production" ? "none" : "folder");
+  switch (provider) {
+    case "none":
+      return { provider };
+    case "folder":
+      return { provider, folder: env.PHOTO_FOLDER ?? join(tmpdir(), "shareride-photos") };
+    case "hetzner":
+      return {
+        provider,
+        endpoint: env.PHOTO_BUCKET_ENDPOINT ?? "",
+        bucket: env.PHOTO_BUCKET ?? "",
+        accessKey: env.PHOTO_BUCKET_ACCESS_KEY ?? "",
+        secretKey: env.PHOTO_BUCKET_SECRET_KEY ?? "",
+      };
+  }
+}
+
 export interface PaymentsConfig {
   readonly provider: "none" | "test";
 }
@@ -254,6 +330,8 @@ export interface Config {
   readonly email: EmailConfig;
   /** The console's origin for passkeys; undefined turns its sign-in off (ADR 0028). */
   readonly adminOrigin: string | undefined;
+  /** Where meeting point photos are kept, if anywhere (ADR 0022). */
+  readonly photos: PhotoStorageConfig;
 }
 
 export class ConfigError extends Error {
@@ -401,5 +479,6 @@ export function loadConfig(environment: Readonly<Record<string, string | undefin
     push: { accessToken: env.EXPO_ACCESS_TOKEN },
     email: emailConfig(env),
     adminOrigin: adminOriginOf(env),
+    photos: photoStorageConfig(env),
   };
 }
