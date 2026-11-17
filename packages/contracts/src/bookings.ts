@@ -11,7 +11,7 @@ import {
 } from "@shareride/domain";
 import { z } from "zod";
 import { cancellationTermsSchema, moneySchema, timestampSchema } from "./common.ts";
-import { errorResponseSchema } from "./errors.ts";
+import { accountSuspendedResponse, errorResponseSchema } from "./errors.ts";
 import { localisedTextSchema, meetingPointSummarySchema } from "./meeting-points.ts";
 import { bookingReviewSchema } from "./reviews.ts";
 import { peopleColourSchema, standingSchema, yearMonthSchema } from "./people.ts";
@@ -155,6 +155,12 @@ export const bookingSchema = z.object({
    */
   movedFar: z.boolean(),
   /**
+   * A problem with this booking can still be reported: it ran or is to run
+   * (confirmed, completed or no-show), until 24 hours after its trip
+   * completed (R9.1).
+   */
+  problemReportable: z.boolean(),
+  /**
    * `firstName` is null for a former member, whose data was erased (spec 11,
    * 3.5). `profileId` opens their public profile (spec 1, 3.5); null for a
    * former member or someone leaving ShareRide, who have none.
@@ -254,13 +260,13 @@ export const bookTripRoute = defineRoute({
     401: unauthenticated,
     403: {
       description:
-        "account_incomplete: verify the phone number and accept the current terms first (R5.1); own_trip; account_deletion_pending: the passenger is deleting their account (spec 11, 3.4)",
+        "account_incomplete: verify the phone number and accept the current terms first (R5.1); own_trip; account_suspended, with `suspendedUntil` (spec 9, 3.6.2); account_deletion_pending: the passenger is deleting their account (spec 11, 3.4)",
       ...errors,
     },
     404: { description: "not_found: no such published trip", ...errors },
     409: {
       description:
-        "seats_taken (with `freeSeats`), price_changed (with the current `total`), stops_changed (`fromPoint` or `toPoint` is no longer at its position), overlapping_booking, booking_closed or trip_not_bookable",
+        "seats_taken (with `freeSeats`), price_changed (with the current `total`), stops_changed (`fromPoint` or `toPoint` is no longer at its position), overlapping_booking, booking_closed or trip_not_bookable (also while its driver is suspended)",
       ...errors,
     },
   },
@@ -403,6 +409,7 @@ export const acceptRequestRoute = defineRoute({
   responses: {
     200: { description: "The accepted booking", schema: bookingSchema },
     401: unauthenticated,
+    403: accountSuspendedResponse,
     404: notFound,
     409: notRequested,
   },

@@ -477,4 +477,83 @@ describe("notification texts", () => {
       path: "/drive/trips/trip-1",
     });
   });
+
+  it("never say why ShareRide cancelled a trip or booking (spec 9, 3.6.2)", () => {
+    expect(text({ kind: "trip_cancelled", role: "passenger", cancelReason: null })).toEqual({
+      title: "ShareRide cancelled the trip",
+      body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00. Search for another ride.",
+      path: "/bookings/booking-1",
+    });
+    expect(
+      text({ kind: "booking_cancelled_by_shareride", role: "driver", cancelReason: null }, "is"),
+    ).toMatchObject({ title: "ShareRide afbókaði: Jón" });
+  });
+
+  it("tell the person what ShareRide did, and the email why and how to appeal (spec 9, R9.5)", () => {
+    const settings = defaultNotificationSettings;
+    const notice = {
+      kind: "moderation_action",
+      action: "suspension",
+      rule: "harassment",
+      reason: "Repeated messages after being asked to stop.",
+      until: new Date("2026-12-13T12:00:00Z"),
+      at: new Date("2026-11-13T12:00:00Z"),
+    } as const;
+    // The push names what happened, never the reason: a lock screen shows it.
+    expect(notificationText(notice, "en", settings)).toEqual({
+      title: "Your account is suspended until 13 December at 12:00",
+      body: "Read why in ShareRide.",
+      path: "/notices",
+      open: "Open your notices in ShareRide",
+      emailBody: [
+        "Your account is suspended until 13 December at 12:00",
+        "",
+        "Rule: Harassment",
+        "Reason: Repeated messages after being asked to stop.",
+        "",
+        "If you disagree, you can appeal in ShareRide, under Notices, until 27 November at 12:00.",
+      ].join("\n"),
+    });
+    expect(notificationText({ ...notice, until: null }, "is", settings)).toMatchObject({
+      title: "Aðganginum þínum hefur verið lokað ótímabundið",
+      body: "Lestu ástæðuna í ShareRide.",
+    });
+    expect(
+      notificationText(
+        { ...notice, action: "reinstatement", rule: null, reason: "A mix-up.", until: null },
+        "en",
+        settings,
+      ),
+    ).toEqual({
+      title: "Your account is open again",
+      body: "You can use ShareRide as before.",
+      path: "/",
+      emailBody: "You can use ShareRide as before.\n\nNote: A mix-up.",
+    });
+    expect(notificationText({ kind: "suspension_ended" }, "is", settings)).toEqual({
+      title: "Aðgangurinn þinn er opinn á ný",
+      body: "Lokuninni er lokið. Þú getur notað ShareRide eins og áður.",
+      path: "/",
+    });
+  });
+
+  it("tell an operator only that a report came in, and whether about safety (spec 9, R9.9)", () => {
+    const settings = defaultNotificationSettings;
+    expect(notificationText({ kind: "report_filed" }, "en", settings)).toEqual({
+      title: "New report",
+      body: "Look at it in the console within 24 hours.",
+      path: "/",
+    });
+    expect(notificationText({ kind: "report_filed_urgent" }, "is", settings)).toEqual({
+      title: "Ný öryggistilkynning",
+      body: "Skoðaðu hana strax í stjórnborðinu.",
+      path: "/",
+    });
+    expect(smsText({ kind: "report_filed_urgent" }, "en")).toBe(
+      "ShareRide: a new safety report. Look at it in the console now.",
+    );
+    expect(smsText({ kind: "report_filed_urgent" }, "is")).toBe(
+      "ShareRide: ný öryggistilkynning. Skoðaðu hana strax í stjórnborðinu.",
+    );
+  });
 });

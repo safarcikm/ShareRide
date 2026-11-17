@@ -8,6 +8,7 @@ import { createApp } from "./app.ts";
 import { ConfigError, loadConfig, type Config } from "./config.ts";
 import { createLogger } from "./logger.ts";
 import { expireAllDueBookings } from "./modules/bookings/index.ts";
+import { endDueSuspensions } from "./modules/moderation/index.ts";
 import { moveMeetingPointsOn } from "./modules/meeting-points/index.ts";
 import { createNotificationWorker } from "./modules/notifications/index.ts";
 import { createPaymentService } from "./modules/payments/index.ts";
@@ -122,6 +123,11 @@ const jobs = [
     if (settled > 0) logger.info({ settled }, "reports settled");
     const revealed = await revealDueReviews(database.db, new Date(), defaultReviewSettings);
     if (revealed > 0) logger.info({ revealed }, "reviews revealed");
+  }),
+  // Suspensions end when their end passes, and each person is told (spec 9, 3.6.3).
+  every(60_000, "suspensions", async () => {
+    const ended = await endDueSuspensions(database.db, new Date());
+    if (ended > 0) logger.info({ ended }, "suspensions ended");
   }),
   // Paused meeting points come back into use on their end date, and
   // retiring ones retire after their last trip (spec 2, 3.6.4 and 3.6.5).

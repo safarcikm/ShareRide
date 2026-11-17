@@ -1,6 +1,6 @@
 import { act, fireEvent, screen, within } from "expo-router/testing-library";
 import { getLocales } from "expo-localization";
-import { AccessibilityInfo, Dimensions, Linking } from "react-native";
+import { AccessibilityInfo, Dimensions, Linking, StyleSheet } from "react-native";
 import type { MeetingPointSummary } from "@shareride/contracts";
 import { mapSize, project } from "@shareride/ui/map";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
@@ -263,6 +263,86 @@ describe("Meeting point details", () => {
     expect(
       screen.getByRole("image", { name: "BSÍ bus terminal on a map of Iceland" }),
     ).toBeVisible();
+  });
+
+  /** BSÍ with two photos: one kept by the API itself, one in the bucket. */
+  function withPhotos(client: FakeClient) {
+    catalogue(client);
+    client.answer("/v1/meeting-points/{id}", () =>
+      ok(
+        200,
+        details(bsi, {
+          photos: [
+            {
+              url: "/v1/photo-files/0190a1d6-0000-7000-8000-00000000f001.jpg",
+              description: {
+                is: "Strætóskýlið við aðalinnganginn",
+                en: "The bus shelter at the main entrance",
+              },
+              width: 1600,
+              height: 1200,
+            },
+            {
+              url: "https://photos.example.com/0190a1d6-0000-7000-8000-00000000f002.jpg?X-Amz-Signature=abc",
+              description: { is: "Bílastæðið að framan", en: "The car park in front" },
+              width: 900,
+              height: 1200,
+            },
+          ],
+        }),
+      ),
+    );
+  }
+
+  it("shows the photos in order, each described for screen readers", async () => {
+    await renderApp(`/meeting-points/${bsi.id}`, { setUp: withPhotos });
+    expect(await screen.findByRole("header", { name: "BSÍ bus terminal" })).toBeVisible();
+    const photos = screen.getAllByTestId("meeting-point-photo");
+    expect(photos.map((photo) => photo.props["accessibilityLabel"] as unknown)).toEqual([
+      "The bus shelter at the main entrance",
+      "The car park in front",
+    ]);
+    const shelter = screen.getByRole("image", { name: "The bus shelter at the main entrance" });
+    expect(shelter).toBeVisible();
+    // A path on the API is fetched from the API; a bucket link as it is.
+    expect(shelter.props.source).toEqual({
+      uri: "http://localhost:3000/v1/photo-files/0190a1d6-0000-7000-8000-00000000f001.jpg",
+    });
+    expect(screen.getByRole("image", { name: "The car park in front" }).props.source).toEqual({
+      uri: "https://photos.example.com/0190a1d6-0000-7000-8000-00000000f002.jpg?X-Amz-Signature=abc",
+    });
+    expect(StyleSheet.flatten(shelter.props.style)).toMatchObject({ aspectRatio: 1600 / 1200 });
+  });
+
+  it("describes the photos in the user's language", async () => {
+    deviceLanguage("is-IS");
+    await renderApp(`/meeting-points/${bsi.id}`, { setUp: withPhotos });
+    expect(
+      await screen.findByRole("image", { name: "Strætóskýlið við aðalinnganginn" }),
+    ).toBeVisible();
+  });
+
+  it("says so when a photo does not load, and what it shows", async () => {
+    await renderApp(`/meeting-points/${bsi.id}`, { setUp: withPhotos });
+    const shelter = await screen.findByRole("image", {
+      name: "The bus shelter at the main entrance",
+    });
+    await fireEvent(shelter, "error");
+    expect(
+      await screen.findByText(
+        "This photo didn't load. It shows: The bus shelter at the main entrance",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("image", { name: "The bus shelter at the main entrance" }),
+    ).toBeNull();
+    expect(screen.getByRole("image", { name: "The car park in front" })).toBeVisible();
+  });
+
+  it("shows no photos where the point has none", async () => {
+    await openDetails(/^BSÍ/);
+    expect(await screen.findByRole("header", { name: "BSÍ bus terminal" })).toBeVisible();
+    expect(screen.queryAllByTestId("meeting-point-photo")).toHaveLength(0);
   });
 
   it("shows the season in months and the other names", async () => {

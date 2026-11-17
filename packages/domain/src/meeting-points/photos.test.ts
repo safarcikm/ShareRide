@@ -3,6 +3,7 @@ import {
   checkPhotoFile,
   checkPhotoOrder,
   photoLimits,
+  stripPhotoMetadata,
   validatePhotoDescriptions,
 } from "./photos.ts";
 
@@ -200,6 +201,55 @@ describe("checkPhotoFile", () => {
     const big = jpeg({ before: Array.from({ length: 33 }, () => padding).flat() });
     expect(big.length).toBeGreaterThan(photoLimits.maxBytes);
     expect(checkPhotoFile(big)).toEqual({ ok: false, error: "too_large" });
+  });
+});
+
+describe("stripPhotoMetadata", () => {
+  const exif = segment(0xe1, [...ascii("Exif"), 0, 0, 0x4d, 0x4d, 0, 0x2a]);
+  const photoshop = segment(0xed, ascii("Photoshop 3.0\0"));
+
+  it("leaves a file with only the picture's segments as it is", () => {
+    const file = jpeg();
+    expect(stripPhotoMetadata(file)).toEqual(file);
+  });
+
+  it("keeps only the picture of a file as Safari's canvas writes it", () => {
+    const tables = jpeg().slice(2 + jfif.length);
+    const safari = Uint8Array.from([0xff, 0xd8, ...exif, ...photoshop, ...tables]);
+    expect(checkPhotoFile(safari)).toEqual({ ok: false, error: "metadata" });
+    const stripped = stripPhotoMetadata(safari);
+    expect(stripped).toEqual(Uint8Array.from([0xff, 0xd8, ...tables]));
+    expect(checkPhotoFile(stripped)).toEqual({ ok: true, value: { width: 1200, height: 900 } });
+  });
+
+  it("drops comments, ICC profiles, JFIF thumbnails, metadata after a scan and after the end", () => {
+    const thumbnail = segment(0xe0, [
+      ...ascii("JFIF"),
+      ...[0, 1, 1, 0, 0, 1, 0, 1, 1, 1],
+      ...[0xaa, 0xbb, 0xcc],
+    ]);
+    const iccProfile = segment(0xe2, [...ascii("ICC_PROFILE"), 0, 1, 1]);
+    const comment = segment(0xfe, ascii("Taken at N1 Fitjar"));
+    const file = Uint8Array.from([
+      0xff,
+      0xd8,
+      ...thumbnail,
+      ...jpeg({
+        before: [...iccProfile, ...comment],
+        afterScan: comment,
+        trailing: ascii("PK"),
+      }).slice(2 + jfif.length),
+    ]);
+    const stripped = stripPhotoMetadata(file);
+    expect(checkPhotoFile(stripped)).toEqual({ ok: true, value: { width: 1200, height: 900 } });
+    expect(stripped).toEqual(Uint8Array.from([0xff, 0xd8, ...jpeg().slice(2 + jfif.length)]));
+  });
+
+  it("leaves a file that is not a whole JPEG for the check to refuse", () => {
+    const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47]);
+    expect(stripPhotoMetadata(png)).toEqual(png);
+    const cut = jpeg().slice(0, 40);
+    expect(checkPhotoFile(stripPhotoMetadata(cut)).ok).toBe(false);
   });
 });
 

@@ -15,8 +15,10 @@ import type { Context, MiddlewareHandler } from "hono";
 import { authOf, type AppEnv } from "../../context.ts";
 import { errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
+import { accountSuspended } from "../account/standing.ts";
 import type { TripService } from "../trips/drafts.ts";
 import type {
+  AcceptError,
   AnswerError,
   BookError,
   BookingService,
@@ -41,6 +43,8 @@ function bookError(c: Context, error: BookError) {
       );
     case "own_trip":
       return errorResponse(c, 403, "own_trip", "This is your own trip.");
+    case "account_suspended":
+      return accountSuspended(c, error);
     case "account_deletion_pending":
       return errorResponse(
         c,
@@ -95,10 +99,15 @@ function bookError(c: Context, error: BookError) {
 const bookingNotFound = (c: Context) =>
   errorResponse(c, 404, "not_found", "There is no such booking of yours, or on your trip.");
 
-function answerError(c: Context, error: AnswerError) {
-  return error.code === "not_found"
-    ? bookingNotFound(c)
-    : errorResponse(c, 409, "booking_not_requested", "The booking is no longer a request.");
+function answerError(c: Context, error: AnswerError | AcceptError) {
+  switch (error.code) {
+    case "not_found":
+      return bookingNotFound(c);
+    case "booking_not_requested":
+      return errorResponse(c, 409, "booking_not_requested", "The booking is no longer a request.");
+    case "account_suspended":
+      return accountSuspended(c, error);
+  }
 }
 
 function cancelError(c: Context, error: CancelError | PreviewError) {
