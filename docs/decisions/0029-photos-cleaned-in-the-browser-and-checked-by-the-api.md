@@ -1,6 +1,7 @@
 # 0029. Photos made in the browser and checked by the API; links signed per hour
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-17, by Martin on a decision card in the
+  project thread)
 - **Date:** 2026-11-17
 - **Deciders:** Martin
 - **Supersedes:** in [ADR 0022](0022-photo-storage-on-hetzner.md), "the API

@@ -711,8 +711,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   pause's reason, pauses it with a reason in both languages and an
   optional end date, brings it back, and retires it after saying whether
   that is at once or after its last trip.
-- Meeting point photos, the API (spec 2, 3.6.3; ADR 0022, and ADR 0029,
-  proposed): the console
+- Meeting point photos, the API (spec 2, 3.6.3; ADR 0022 and ADR 0029): the console
   routes under `/admin/v1/meeting-points/{id}/photos` add, describe in both
   languages, order and remove up to five photos a point, each with an audit
   entry; the app's meeting point details list them with their
