@@ -91,7 +91,7 @@ pnpm --filter @shareride/api clean-up  # delete sign-in records, drafts, chats, 
 pnpm --filter @shareride/api privacy reapply-erasures  # after a database restore: erase again the accounts erased since (runbook)
 pnpm --filter @shareride/api expire-bookings  # store booking deadlines that passed, once (the API does it every minute)
 pnpm --filter @shareride/api operator add <phone or user ID>  # give the console role, print a passkey setup link (also remove, list)
-pnpm --filter @shareride/api test:contract  # 46elks, Vonage and Mailjet checks, need their keys; not in CI
+pnpm --filter @shareride/api test:contract  # 46elks, Vonage, Mailjet and photo bucket checks, need their keys; not in CI
 pnpm --filter @shareride/api sentry:check   # send a test error (needs SENTRY_DSN)
 pnpm --filter @shareride/db generate   # SQL migration from schema changes
 infra/docker/smoke-test.sh <image>     # start the API image and check it (needs DATABASE_URL)

@@ -500,7 +500,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   trip, message or booking that the person cannot see is refused as not
   found; a person cannot report themselves; 10 reports a day, also when
   sent at once. The person reported is never told who reported them.
-  Migration `0034_reports`; `reports` is in the personal data catalogue,
+  Migration `0035_reports`; `reports` is in the personal data catalogue,
   kept 3 years after closing, and chat clean-up keeps a conversation a
   report covers that long. "Download my data" has Reports you sent, never
   a report about the person. The category and outcome texts moved to
@@ -518,7 +518,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   "New report" or "New safety report", never who or what, and one not yet
   sent is dropped once its report is closed or the operator loses the
   role. A new outbox event `ReportFiled`; notifications gain `report_id`,
-  in migration `0034_reports`.
+  in migration `0035_reports`.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its
@@ -748,6 +748,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   pause's reason, pauses it with a reason in both languages and an
   optional end date, brings it back, and retires it after saying whether
   that is at once or after its last trip.
+- Meeting point photos, the API (spec 2, 3.6.3; ADR 0022 and ADR 0029): the console
+  routes under `/admin/v1/meeting-points/{id}/photos` add, describe in both
+  languages, order and remove up to five photos a point, each with an audit
+  entry; the app's meeting point details list them with their
+  descriptions. The domain's `checkPhotoFile` takes only a JPEG made of the
+  segments a picture needs, without metadata, at most 2 MB and 1 600
+  pixels. Photos are kept in the Hetzner
+  bucket (`PHOTO_STORAGE=hetzner`, signed links that last at least an
+  hour), a folder in development, or not at all. Migration
+  `0034_meeting_point_photos` adds the `meeting_point_photos` table.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.

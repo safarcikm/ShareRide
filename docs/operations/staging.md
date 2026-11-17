@@ -303,6 +303,32 @@ Staging sends no email until ShareRide has a domain (ADR 0027). Then:
 
 To stop email again, set `EMAIL_PROVIDER` to `none`.
 
+## Turn on photos
+
+Staging takes no meeting point photos until the bucket is open (ADR 0022,
+about €5 a month). Real meeting points need one to go into use. Martin's
+steps:
+
+1. In the Hetzner Console, open (or create) a project, then **Object
+   Storage**, **Create Bucket**: location Helsinki (`hel1`), a name such
+   as `shareride-staging-photos`, and visibility **Private**. Sign
+   Hetzner's data processing agreement in the account's settings.
+2. In the project's **Security**, **S3 credentials**, generate
+   credentials. The secret key is shown once: copy it straight into
+   Render, never anywhere else.
+3. Open `shareride-staging-api`, **Environment**, and add
+   `PHOTO_STORAGE` set to `hetzner`, `PHOTO_BUCKET_ENDPOINT` set to
+   `https://hel1.your-objectstorage.com`, `PHOTO_BUCKET` (the bucket's
+   name), and `PHOTO_BUCKET_ACCESS_KEY` and `PHOTO_BUCKET_SECRET_KEY` (as
+   secrets), then save. Render deploys the service again; a missing one
+   stops the API from starting, and the running version stays.
+4. Check: add a photo to a point in the console. It shows there and in
+   the app's meeting point details, and its link stops working about two
+   hours later.
+
+To stop taking photos, set `PHOTO_STORAGE` to `none`: the app and the
+console then show none, and the bucket keeps the files.
+
 ## Restore the database
 
 Staging data is generated, so a restore is rarely needed; we rehearse it
@@ -408,3 +434,7 @@ but no email goes.
   **Environment**, wait for the deploy, then revoke the old secret there.
 - 46elks keys: create new ones in the 46elks dashboard, paste them in the
   service's **Environment**, then delete the old ones there.
+- Photo bucket keys: generate new S3 credentials in the Hetzner project,
+  paste them as `PHOTO_BUCKET_ACCESS_KEY` and `PHOTO_BUCKET_SECRET_KEY` in
+  the service's **Environment**, wait for the deploy, then delete the old
+  ones there.
