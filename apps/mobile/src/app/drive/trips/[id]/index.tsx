@@ -3,7 +3,7 @@ import { myTripRoute, tripBookingsRoute, type Booking } from "@shareride/contrac
 import { cancelReasonText, capitalised, formatClock, formatDay } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import { acceptedText } from "@/booking/texts";
@@ -23,9 +23,11 @@ import { now } from "@/lib/clock";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { tripShareText } from "@/safety/share-details";
 import { DriverTripDay, onTripDay } from "@/trip-day/driver";
+import { ReportStatus } from "@/trip-day/report-status";
+import { reportState } from "@/trip-day/reports";
 import { useTripDayRefresh } from "@/trip-day/use-refresh";
 import { TripSafety } from "@/safety/trip-safety";
-import { typography } from "@/theme/tokens";
+import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { routeText } from "@/trips/texts";
 
@@ -44,12 +46,13 @@ export default function DriverTripScreen() {
   const { locale, t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
-  const { id, cancelled, tripCancelled, changed, told } = useLocalSearchParams<{
+  const { id, cancelled, tripCancelled, changed, told, report } = useLocalSearchParams<{
     id: string;
     cancelled?: string;
     tripCancelled?: string;
     changed?: string;
     told?: string;
+    report?: string;
   }>();
   const load = useCallback(
     () =>
@@ -191,6 +194,7 @@ export default function DriverTripScreen() {
           />
         </TakesFocus>
       )}
+      <Reports riding={riding} report={report} />
       {onTripDay(trip.data) ? (
         <DriverTripDay
           trip={trip.data}
@@ -284,3 +288,46 @@ export default function DriverTripScreen() {
     </Screen>
   );
 }
+
+/**
+ * The passengers' reports (spec 8, 3.3 to 3.5), first, as some ask the
+ * driver to answer: each under the passenger's name. `report` names the
+ * booking just reported or answered, which takes focus; when it is no
+ * longer listed, the driver agreed they didn't come, which cancelled it
+ * (3.4), and that shows instead.
+ */
+function Reports({
+  riding,
+  report,
+}: {
+  readonly riding: readonly Booking[];
+  readonly report: string | undefined;
+}) {
+  const { t } = useLanguage();
+  const palette = usePalette();
+  const reported = riding.filter((booking) => reportState(booking, now()) !== null);
+  const ended = report !== undefined && !riding.some((booking) => booking.id === report);
+  if (reported.length === 0 && !ended) return null;
+  return (
+    <>
+      <Heading>{t("dispute.heading")}</Heading>
+      {ended ? (
+        <TakesFocus key={report}>
+          <Notice kind="info" urgent={false} message={t("dispute.cancelledAsIfByYou")} />
+        </TakesFocus>
+      ) : null}
+      {reported.map((booking) => (
+        <View key={booking.id} style={styles.report}>
+          <Text style={[typography.label, { color: palette.text }]}>
+            {booking.passenger.firstName}
+          </Text>
+          <ReportStatus booking={booking} announce={report === booking.id} />
+        </View>
+      ))}
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  report: { gap: spacing.xs },
+});

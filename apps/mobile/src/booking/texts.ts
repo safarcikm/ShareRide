@@ -126,18 +126,21 @@ export function cancellationTexts(
   const { cancellation } = booking;
   if (cancellation === null) return null;
   const reason = cancellation.reason === null ? null : cancelReasonText(t, cancellation.reason);
-  // The operator gives no reason; a passenger or driver always does.
+  // The operator gives no reason; a passenger or driver always does. A
+  // driver's absence that stood is ShareRide's doing (spec 8, 3.4).
   const said =
     cancellation.by === "operator"
       ? t("booking.cancelledByOperator")
-      : reason === null
-        ? null
-        : cancellation.by === "passenger"
-          ? t("booking.cancelledByYou", { reason })
-          : t(cancellation.wholeTrip ? "booking.tripCancelledBy" : "booking.cancelledByOther", {
-              name: booking.driver.firstName,
-              reason,
-            });
+      : cancellation.reason === "driver_absent"
+        ? t("booking.cancelledDriverAbsent", { name: booking.driver.firstName })
+        : reason === null
+          ? null
+          : cancellation.by === "passenger"
+            ? t("booking.cancelledByYou", { reason })
+            : t(cancellation.wholeTrip ? "booking.tripCancelledBy" : "booking.cancelledByOther", {
+                name: booking.driver.firstName,
+                reason,
+              });
   return {
     said,
     note: cancellation.note === "" ? null : t("booking.driverNote", { note: cancellation.note }),

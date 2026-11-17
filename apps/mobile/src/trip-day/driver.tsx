@@ -1,9 +1,11 @@
 import { driverCheckInRoute, type Booking, type MyTrip } from "@shareride/contracts";
 import { driverCheckInStops, type Arrival } from "@shareride/domain";
 import { formatClock, type Translate } from "@shareride/i18n";
+import { router } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import { useSession } from "@/auth/session";
 import { Avatar } from "@/components/avatar";
+import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
 import { Tag, type TagKind } from "@/components/tag";
@@ -13,6 +15,7 @@ import { now } from "@/lib/clock";
 import { controlOutline, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { ImHere } from "./im-here";
+import { noShowOpen } from "./reports";
 
 /**
  * Whether the driver's trip page shows the trip day (spec 8, 3.1): from 3
@@ -74,7 +77,10 @@ function Rider({
  * seats and whether they are here, and who gets out. "I'm here" shows at
  * each stop where it is open now, after the last one where it was said and
  * where someone gets in (`driverCheckInStops`), or when it opens at the
- * next; saying it tells everyone getting in there (3.2).
+ * next; saying it tells everyone getting in there (3.2). Once the wait
+ * after a stop's time has passed, and "I'm here" was said there, each
+ * passenger getting in there can be marked as a no-show, which opens its
+ * own screen; before "I'm here", the stop says to say it first (3.3).
  */
 export function DriverTripDay({
   trip,
@@ -122,6 +128,8 @@ export function DriverTripDay({
           (booking) => booking.alight.position === position && booking.status !== "no_show",
         );
         const { checkIn } = stop;
+        const saidHere = checkIn !== null && checkIn.at !== null;
+        const markable = gettingIn.filter((booking) => noShowOpen(booking, now()));
         return (
           <Card key={stop.id}>
             <View accessible style={styles.stop}>
@@ -138,12 +146,32 @@ export function DriverTripDay({
                   {t("tripDay.gettingIn")}
                 </Text>
                 {gettingIn.map((booking) => (
-                  <Rider
-                    key={booking.id}
-                    booking={booking}
-                    arrival={booking.tripDay?.arrival ?? null}
-                  />
+                  <View key={booking.id} style={styles.group}>
+                    <Rider booking={booking} arrival={booking.tripDay?.arrival ?? null} />
+                    {saidHere && markable.includes(booking) ? (
+                      <View style={styles.end}>
+                        <Button
+                          variant="text"
+                          label={t("tripDay.markNoShow")}
+                          accessibilityLabel={t("tripDay.markNoShowOf", {
+                            name: booking.passenger.firstName,
+                          })}
+                          onPress={() => {
+                            router.push({
+                              pathname: "/bookings/[id]/no-show",
+                              params: { id: booking.id },
+                            });
+                          }}
+                        />
+                      </View>
+                    ) : null}
+                  </View>
                 ))}
+                {!saidHere && open.includes(position) && markable.length > 0 ? (
+                  <Text style={[typography.small, { color: palette.textMuted }]}>
+                    {t("tripDay.noShowNeedsImHere")}
+                  </Text>
+                ) : null}
               </View>
             )}
             {gettingOut.length === 0 ? null : (
@@ -186,5 +214,6 @@ const styles = StyleSheet.create({
   group: { gap: spacing.sm },
   rider: { flexDirection: "row", alignItems: "center", gap: spacing.ms },
   action: { borderTopWidth: controlOutline / 2, paddingTop: spacing.ms },
+  end: { flexDirection: "row", justifyContent: "flex-end" },
   grow: { flex: 1 },
 });
