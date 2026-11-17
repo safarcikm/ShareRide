@@ -5,7 +5,7 @@ import type { Transaction } from "../bookings/seats.ts";
 const { outboxEvents } = schema;
 
 /**
- * What happened, as booking, payment, chat, privacy and console code records
+ * What happened, as booking, payment, chat, privacy, console and safety code records
  * it for the worker. IDs only: the worker reads the rest when it sends (R7.9).
  */
 export type OutboxEvent =
@@ -22,6 +22,7 @@ export type OutboxEvent =
         | "ReviewRevealed"
         | "MeetingPointChanged"
         | "DataExportReady"
+        | "ReportFiled"
         | "AccountDeletionScheduled"
       >;
       readonly bookingId: string;
@@ -81,6 +82,11 @@ export type OutboxEvent =
       readonly type: "DataExportReady";
       readonly userId: string;
       readonly exportId: string;
+    }
+  | {
+      /** A new report: every operator is told, never who or what (spec 9, R9.9). */
+      readonly type: "ReportFiled";
+      readonly reportId: string;
     }
   | {
       /** The person asked to delete their account; the email says when (spec 11, 3.4.5). */

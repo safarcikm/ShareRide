@@ -108,13 +108,15 @@ export function createBlockService(dependencies: {
       const shared = await db.transaction(async (tx) => {
         // Both people, in ID order: booking and sending a message lock the
         // passenger or sender first, so a booking made at the same moment
-        // is either refused by the block or listed below.
+        // is either refused by the block or listed below. Not a full update
+        // lock: a report filed at the same moment checks its key on one of
+        // us and must not wait on this, or the two would deadlock.
         await tx
           .select({ id: users.id })
           .from(users)
           .where(inArray(users.id, [me, other]))
           .orderBy(asc(users.id))
-          .for("update");
+          .for("no key update");
         const now = clock();
         await tx
           .insert(blocks)

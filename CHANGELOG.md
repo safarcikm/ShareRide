@@ -482,6 +482,43 @@ releases follow [Semantic Versioning](https://semver.org/).
   blocked: each by first name, and since when, never who blocked them.
   Migration `0033_blocks`. `POST /v1/bookings/{id}/block`,
   `GET /v1/me/blocks`, `DELETE /v1/me/blocks/{id}`.
+- Reports (milestone 9, PR 5a, spec 9, 3.1; R9.1, R9.2): "Report this
+  trip" on trip details (not to its driver, whatever the trip's state:
+  trip details gain `drivenByMe`); "Report {name}" in a conversation, on
+  a request and by each passenger on the driver's trip page; a message
+  pressed and held, a screen reader's action, or on the web a right click
+  or the keyboard's menu key; and "Report a problem with this trip" on a
+  booking that ran or is to run, until 24 hours after the trip
+  (`problemReportable`, from the domain's `bookingProblemReportable`; a
+  request has none). The report screen names the person from the booking
+  the two share, never from its address; puts "Emergency: 112" first for
+  a safety report, read out at once; takes an optional description of up
+  to 1 000 characters; sends nothing until "Send report"; thanks; and
+  offers to block the person too. A report about a person says it doesn't
+  let us read the conversation (Q22). Settings, under Safety, has My
+  reports with each report's outcome in general terms. Someone else's
+  trip, message or booking that the person cannot see is refused as not
+  found; a person cannot report themselves; 10 reports a day, also when
+  sent at once. The person reported is never told who reported them.
+  Migration `0035_reports`; `reports` is in the personal data catalogue,
+  kept 3 years after closing, and chat clean-up keeps a conversation a
+  report covers that long. "Download my data" has Reports you sent, never
+  a report about the person. The category and outcome texts moved to
+  `packages/i18n` (`reportCategoryText`, `reportOutcomeText`) for the app
+  and the export. Blocking and reporting take a lighter row lock, so two
+  people reporting or blocking each other at once cannot deadlock.
+  `POST /v1/reports`, `GET /v1/me/reports`.
+- The operator's alert for a new report (milestone 9, PR 5b, spec 9,
+  R9.9): every active operator gets `report_filed` by push, or
+  `report_filed_urgent` for a safety report, by push and also by SMS from
+  07:00 to 23:00 Reykjavik time, push only at night (the domain's
+  `alertChannels`, checked again on each try, so a retry never sends one
+  after 23:00). Alerts have no daily SMS limit and don't count towards an
+  operator's own one as a passenger (spec 7, R7.10). The alert says only
+  "New report" or "New safety report", never who or what, and one not yet
+  sent is dropped once its report is closed or the operator loses the
+  role. A new outbox event `ReportFiled`; notifications gain `report_id`,
+  in migration `0035_reports`.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its
@@ -610,7 +647,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   person's first name, about, languages, badges, the month they joined,
   colour, rating and reliability figure, never their phone number, email, last name or
   user ID. A profile is reached by its own random reference: migration
-  `0035_profile_ids` adds `users.profile_id`. The rating is the average of
+  `0036_profile_ids` adds `users.profile_id`. The rating is the average of
   the reviews that show, to one decimal; `GET /v1/people/{profileId}/reviews`
   lists them newest first, 20 at a time, for one role or both, with the
   author's first name ("A former member" once erased) and the month. The

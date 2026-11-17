@@ -3,8 +3,10 @@ import { schema, type Database } from "@shareride/db";
 import {
   arrivalOf,
   bookingClosedTo,
+  bookingProblemReportable,
   cancellationTerms,
   cancelReasonsFor,
+  defaultSafetySettings,
   checkBooking,
   checkNote,
   dayPhase,
@@ -294,6 +296,7 @@ async function bookingRows(q: Queryable, where: SQL | undefined) {
         status: trips.status,
         cancelledAt: trips.cancelledAt,
         countsOnReliability: trips.countsOnReliability,
+        completedAt: trips.completedAt,
       },
       driverName: drivers.firstName,
       passengerName: passengers.firstName,
@@ -518,6 +521,11 @@ function present(
     }),
     // Null only for a booking the previous version made during a deploy.
     movedFar: movedFar(booking.departsAtWhenBooked ?? departsAt, departsAt),
+    problemReportable: bookingProblemReportable(
+      { status, tripCompletedAt: trip.completedAt },
+      now,
+      defaultSafetySettings,
+    ),
     driver: { firstName: row.driverName, colour: peopleColourOf(trip.driverId) },
     passenger: {
       firstName: row.passengerName,

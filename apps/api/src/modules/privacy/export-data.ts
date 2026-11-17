@@ -35,6 +35,7 @@ const {
   payments,
   privacyRequests,
   pushTokens,
+  reports,
   reviews,
   segments,
   sessions,
@@ -52,6 +53,7 @@ const toStops = alias(tripStops, "to_stops");
 const fromPoints = alias(meetingPoints, "from_points");
 const toPoints = alias(meetingPoints, "to_points");
 const blockedPeople = alias(users, "blocked_people");
+const reportedPeople = alias(users, "reported_people");
 
 /** A moment as text, or null. */
 type When = string | null;
@@ -179,7 +181,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
   // Reports about a ride they raised or answered (spec 8, 3.3 and 3.4), each
   // with the person's own note only: the other side's note and the
   // operator's are for the operator (spec 8, 7), so they are not read here.
-  const reports = await q
+  const rideReports = await q
     .select({
       bookingId: disputes.bookingId,
       kind: disputes.kind,
@@ -197,7 +199,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     .innerJoin(trips, eq(trips.id, bookings.tripId))
     .where(or(eq(bookings.passengerId, userId), eq(trips.driverId, userId)));
   const reportOn = (bookingId: string, role: TripRole) => {
-    const report = reports.find((row) => row.bookingId === bookingId);
+    const report = rideReports.find((row) => row.bookingId === bookingId);
     if (report === undefined) return null;
     const reportedBy = reporterOf(report.kind as DisputeKind);
     return {
@@ -543,6 +545,23 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     };
   });
 
+  // The reports the person filed, never reports about them (spec 9, R9.2).
+  const filed = await q
+    .select({
+      subject: reports.subject,
+      person: reportedPeople.firstName,
+      category: reports.category,
+      description: reports.description,
+      sentAt: reports.createdAt,
+      status: reports.status,
+      outcome: reports.outcome,
+      closedAt: reports.closedAt,
+    })
+    .from(reports)
+    .leftJoin(reportedPeople, eq(reportedPeople.id, reports.subjectUserId))
+    .where(eq(reports.reporterId, userId))
+    .orderBy(asc(reports.createdAt), asc(reports.id));
+
   // The blocks the person made, never who blocked them (spec 9, 3.2).
   const blocked = await q
     .select({ firstName: blockedPeople.firstName, since: blocks.createdAt })
@@ -610,6 +629,11 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
       bookings: bookingsSection,
       payments: paymentsSection,
       conversations: conversationsSection,
+      reports: filed.map((row) => ({
+        ...row,
+        sentAt: when(row.sentAt),
+        closedAt: when(row.closedAt),
+      })),
       blocks: blocked.map((row) => ({ firstName: row.firstName ?? "", since: when(row.since) })),
       notifications: told.map((row) => ({
         kind: row.kind,

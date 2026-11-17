@@ -319,6 +319,20 @@ function BookingDetails({
           }}
         />
       ) : null}
+
+      {/* A booking that ran or is to run, until 24 hours after the trip completed (R9.1). */}
+      {booking.problemReportable ? (
+        <Button
+          variant="text"
+          label={t("report.problem")}
+          onPress={() => {
+            router.push({
+              pathname: "/report",
+              params: { kind: "booking", id: booking.id },
+            });
+          }}
+        />
+      ) : null}
     </Screen>
   );
 }

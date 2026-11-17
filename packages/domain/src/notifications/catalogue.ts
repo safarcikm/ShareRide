@@ -1,5 +1,7 @@
 import { freeCancellationMoveMinutes } from "../bookings/cancellation.ts";
 import type { BookingStatus } from "../bookings/lifecycle.ts";
+import { alertChannels } from "../safety/alerts.ts";
+import { defaultSafetySettings, type SafetySettings } from "../safety/settings.ts";
 import type { NotificationSettings } from "./settings.ts";
 
 // The notification catalogue (spec 7, 3.3 and 3.4): who is told about each
@@ -68,6 +70,10 @@ export const notificationRules = {
   // News about the account rather than a trip (spec 11): the texts say what
   // is ready and until when, never a link (spec 11, 7).
   data_export_ready: { push: true, email: "always", sms: false },
+  // To every operator when a report comes in (spec 9, 3.4.1; R9.9): only
+  // "New report" or "New safety report", never who or what.
+  report_filed: { push: true, email: "never", sms: false },
+  report_filed_urgent: { push: true, email: "never", sms: true },
   // By email only: deleting signs the person out of every device (spec 11, 3.4.5).
   account_deletion_scheduled: { push: false, email: "always", sms: false },
   // The answer to "Ask about my data" goes by email, which asking needs (spec 11, 3.6).
@@ -89,6 +95,14 @@ export type AccountNoticeKind = (typeof accountNoticeKinds)[number];
 
 export function isAccountNotice(kind: NotificationKind): kind is AccountNoticeKind {
   return (accountNoticeKinds as readonly NotificationKind[]).includes(kind);
+}
+
+/** The kinds that tell the operator, about no trip of theirs (spec 9). */
+export const operatorNoticeKinds = ["report_filed", "report_filed_urgent"] as const;
+export type OperatorNoticeKind = (typeof operatorNoticeKinds)[number];
+
+export function isOperatorNotice(kind: NotificationKind): kind is OperatorNoticeKind {
+  return (operatorNoticeKinds as readonly NotificationKind[]).includes(kind);
 }
 
 /**
@@ -325,15 +339,17 @@ const hourMs = 60 * 60_000;
 
 /**
  * Per channel the kind uses, whether to send to this person now or why not,
- * so a skipped channel is recorded too (3.7, item 5). SMS goes only to
+ * so a skipped channel is recorded too (3.7, item 5). SMS goes to
  * passengers, from `smsWindowHours` before boarding until boarding, to a
- * verified number, at most `smsDailyLimit` a day (R7.10).
+ * verified number, at most `smsDailyLimit` a day (R7.10); and to the
+ * operator for a safety report, in the alert's hours (R9.9).
  */
 export function channelsFor(
   kind: NotificationKind,
   recipient: Recipient,
   now: Date,
   settings: NotificationSettings,
+  safety: SafetySettings = defaultSafetySettings,
 ): ChannelDecision[] {
   const rule: NotificationRule = notificationRules[kind];
   const decisions: ChannelDecision[] = [];
@@ -358,6 +374,15 @@ export function channelsFor(
   }
   if (rule.sms && recipient.role === "passenger") {
     decisions.push(smsDecision(recipient, now, settings));
+  }
+  if (rule.sms && isOperatorNotice(kind)) {
+    decisions.push(
+      !recipient.hasVerifiedPhone
+        ? skip("sms", "no_phone")
+        : alertChannels(true, now, safety).includes("sms")
+          ? { channel: "sms", send: true }
+          : skip("sms", "outside_sms_window"),
+    );
   }
   return decisions;
 }

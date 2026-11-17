@@ -154,6 +154,12 @@ export const bookingSchema = z.object({
    * refund, without it counting against them (R6.3).
    */
   movedFar: z.boolean(),
+  /**
+   * A problem with this booking can still be reported: it ran or is to run
+   * (confirmed, completed or no-show), until 24 hours after its trip
+   * completed (R9.1).
+   */
+  problemReportable: z.boolean(),
   /** `firstName` is null for a former member, whose data was erased (spec 11, 3.5). */
   driver: z.object({ firstName: z.string().nullable(), colour: peopleColourSchema }),
   /** Ratings and reliability come with spec 8; until then every member is new. */

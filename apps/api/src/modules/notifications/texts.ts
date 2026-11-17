@@ -1,10 +1,12 @@
 import {
   isAccountNotice,
+  isOperatorNotice,
   type AccountNoticeKind,
   type CancelReason,
   type Money,
   type NotificationKind,
   type NotificationSettings,
+  type OperatorNoticeKind,
   type QuickMessage,
   type TripRole,
 } from "@shareride/domain";
@@ -36,7 +38,7 @@ import {
 export interface NotificationFacts {
   readonly kind: Exclude<
     NotificationKind,
-    TripReminderFacts["kind"] | PointPausedFacts["kind"] | AccountNoticeKind
+    TripReminderFacts["kind"] | PointPausedFacts["kind"] | AccountNoticeKind | OperatorNoticeKind
   >;
   /** The recipient's place on the trip. */
   readonly role: TripRole;
@@ -133,6 +135,17 @@ export type AccountNoticeFacts =
       readonly answer: string;
     };
 
+/** A new report, to the operator: only whether it is about safety (spec 9, R9.9). */
+export interface OperatorNoticeFacts {
+  readonly kind: OperatorNoticeKind;
+}
+
+export function isOperatorFacts(facts: {
+  readonly kind: NotificationKind;
+}): facts is OperatorNoticeFacts {
+  return isOperatorNotice(facts.kind);
+}
+
 /** The app's screen for downloading one's data (spec 11, 3.2). */
 export const downloadDataPath = "/settings/privacy/download";
 
@@ -160,8 +173,10 @@ function required<T>(value: T | null, what: string): T {
  * The words of an SMS (spec 7, 3.4), for the kinds that go by SMS: short,
  * with the day and time, and never a name, place or note (R7.9).
  */
-export function smsText(facts: NotificationFacts, locale: Locale): string {
+export function smsText(facts: NotificationFacts | OperatorNoticeFacts, locale: Locale): string {
   const t = createTranslator(locale);
+  // Never who or what: the operator reads it in the console (spec 9, R9.9).
+  if (isOperatorFacts(facts)) return t("sms.reportFiledUrgent");
   const values = { date: formatDay(facts.boardsAt, locale), time: formatClock(facts.boardsAt) };
   switch (facts.kind) {
     case "booking_cancelled_by_driver":
@@ -187,24 +202,37 @@ export function smsText(facts: NotificationFacts, locale: Locale): string {
   }
 }
 
-const isAccountFacts = (
-  facts: NotificationFacts | TripReminderFacts | PointPausedFacts | AccountNoticeFacts,
-): facts is AccountNoticeFacts => isAccountNotice(facts.kind);
+const isAccountFacts = (facts: { readonly kind: NotificationKind }): facts is AccountNoticeFacts =>
+  isAccountNotice(facts.kind);
 
 /**
  * The title, body and screen of a notification: the kinds of spec 5's
  * events, new messages, the email about unread ones, and trip reminders.
  */
 export function notificationText(
-  facts: NotificationFacts | TripReminderFacts | PointPausedFacts | AccountNoticeFacts,
+  facts:
+    | NotificationFacts
+    | TripReminderFacts
+    | PointPausedFacts
+    | AccountNoticeFacts
+    | OperatorNoticeFacts,
   locale: Locale,
   settings: NotificationSettings,
 ): NotificationText {
   if (isAccountFacts(facts)) return accountText(facts, locale);
+  if (isOperatorFacts(facts)) return operatorText(facts.kind, locale);
   if ("point" in facts) return pointPausedText(facts, locale);
   return "passengers" in facts
     ? tripReminderText(facts, locale)
     : bookingText(facts, locale, settings);
+}
+
+/** Only that a report came in, and whether about safety, never who or what (R9.9). */
+function operatorText(kind: OperatorNoticeKind, locale: Locale): NotificationText {
+  const t = createTranslator(locale);
+  return kind === "report_filed_urgent"
+    ? { title: t("notify.reportFiledUrgent"), body: t("notify.reportFiledUrgentBody"), path: "/" }
+    : { title: t("notify.reportFiled"), body: t("notify.reportFiledBody"), path: "/" };
 }
 
 /**
