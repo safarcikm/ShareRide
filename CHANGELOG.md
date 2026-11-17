@@ -618,6 +618,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   last 12 months, from 5 that count, with the counts by role. Nobody leaving
   ShareRide has a profile, and what they wrote shows nowhere until they are
   erased.
+- Public profiles in the app (milestone 7, PR 7b, spec 8, screen 7): a
+  member signed in opens the driver's profile from trip details ("See
+  profile"). It shows the first name, about, languages, the month they
+  joined and the verified badges; the rating to one decimal ("4.3 (3
+  ratings)", or "No ratings yet"); the reliability figure, or "not enough
+  trips yet" before 5 count, which opens the counts by role when tapped;
+  and the reviews, newest first, each with the stars, the author's first
+  name, how they travelled and the month, for both roles or one, with
+  "Show more reviews". "See it as others do" now shows the same, from the
+  API. `GET /v1/me` gives `profileId`, and trip details gives the driver's
+  to members signed in only. The reviews journey ends on the driver's
+  profile.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

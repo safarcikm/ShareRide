@@ -52,6 +52,7 @@ export function createTripDetailsService(dependencies: {
         .select({
           trip: trips,
           firstName: users.firstName,
+          profileId: users.profileId,
           car: { make: vehicles.make, model: vehicles.model, colour: vehicles.colour },
         })
         .from(trips)
@@ -149,7 +150,12 @@ export function createTripDetailsService(dependencies: {
         })),
         part: part.value,
         seatsOffered: trip.capacity,
-        driver: { firstName: found.firstName ?? "", colour: peopleColourOf(trip.driverId) },
+        driver: {
+          firstName: found.firstName ?? "",
+          colour: peopleColourOf(trip.driverId),
+          // Profiles are for members (spec 1, 3.5): nobody else gets the reference.
+          profileId: viewerId === null ? null : found.profileId,
+        },
         car:
           car === null
             ? null

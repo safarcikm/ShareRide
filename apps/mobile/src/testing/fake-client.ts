@@ -14,6 +14,7 @@ export interface FakeClient extends ApiClient {
 
 export const testMe: Me = {
   id: "0190a1d6-0000-7000-8000-000000000001",
+  profileId: "6c1b7e0a-41d2-4f0e-9a51-000000000001",
   phoneNumber: "+3546900000",
   firstName: null,
   about: null,

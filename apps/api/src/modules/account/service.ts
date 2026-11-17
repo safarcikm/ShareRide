@@ -57,6 +57,7 @@ export function createAccountService(dependencies: {
       .limit(1);
     return {
       id: user.id,
+      profileId: user.profileId,
       phoneNumber: user.phoneE164,
       firstName: user.firstName,
       about: user.about,

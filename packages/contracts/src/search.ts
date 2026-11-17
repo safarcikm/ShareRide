@@ -223,6 +223,8 @@ export const tripDetailsSchema = z.object({
       .int()
       .min(0)
       .max(peopleColourCount - 1),
+    /** Their public profile, for members signed in (spec 1, 3.5); null otherwise. */
+    profileId: z.uuid().nullable(),
   }),
   /** Make, model and colour; the number plate only after booking (spec 3, decision 7). */
   car: z.object({ make: z.string(), model: z.string(), colour: z.enum(carColours) }).nullable(),
