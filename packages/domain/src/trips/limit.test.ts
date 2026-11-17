@@ -4,6 +4,7 @@ import {
   fitLevelWithin,
   highestLevelWithin,
   isLevelWithin,
+  limitRoom,
   takingsOf,
   tripLimit,
   type TripLoad,
@@ -61,6 +62,28 @@ describe("takingsOf (rule P3)", () => {
 
   it("does not count declined or expired bookings", () => {
     expect(takingsOf([booking("declined", 5_800), booking("expired", 5_800)])).toEqual(kr(0));
+  });
+});
+
+describe("limitRoom (rule P3)", () => {
+  const stretches = [
+    { capacity: 3, cap: 2_400 },
+    { capacity: 3, cap: 5_600 },
+  ];
+  const paid = (totalPrice: number, refundAmount: number | null = null) => ({
+    status: "confirmed" as const,
+    totalPrice,
+    refundAmount,
+    confirmedAt: new Date("2026-11-14T12:00:00Z"),
+  });
+
+  it("is the stored caps' limit less the takings", () => {
+    expect(limitRoom(stretches, [])).toEqual(kr(24_000));
+    expect(limitRoom(stretches, [paid(8_000), paid(8_000, 3_000)])).toEqual(kr(11_000));
+  });
+
+  it("is never below 0", () => {
+    expect(limitRoom([{ capacity: 1, cap: 2_400 }], [paid(8_000)])).toEqual(kr(0));
   });
 });
 
@@ -134,12 +157,21 @@ describe("highestLevelWithin (rule P4)", () => {
         const takings = bookedSeats * paid.reduce((sum, price) => sum + price.amount, 0);
         const occupancy = distancesM.map(() => bookedSeats);
         const found = highestLevelWithin({ distancesM, occupancy, seats, takings }, settings);
-        const rest = segmentPrices(distancesM, found.level, seats, settings).reduce(
-          (sum, price) => sum + (seats - bookedSeats) * price.amount,
-          0,
-        );
         const limit = tripLimit(distancesM, seats, settings).amount;
-        return found.level === 0 ? true : takings + rest <= limit;
+        // A full car at level `at`: what is booked, and the free seats at its prices.
+        const fits = (at: number) =>
+          takings +
+            segmentPrices(distancesM, at, seats, settings).reduce(
+              (sum, price) => sum + (seats - bookedSeats) * price.amount,
+              0,
+            ) <=
+          limit;
+        const top = highestPriceLevel(seats, settings);
+        // Within the limit, and the highest step that is: the next one up
+        // is above the seats' level or does not fit.
+        expect(found.level === 0 || fits(found.level)).toBe(true);
+        expect(found.level <= top).toBe(true);
+        expect(found.level === top || !fits(found.level + settings.priceLevelStep)).toBe(true);
       }),
     );
   });
@@ -172,8 +204,16 @@ describe("fitLevelWithin and isLevelWithin (rule P4)", () => {
     expect(isLevelWithin(-10, gap1, settings)).toBe(false);
   });
 
-  it("uses the rounded caps the segments store", () => {
+  it("builds the limit from the rounded caps the segments store", () => {
     const caps = example.map((distanceM) => priceCap(distanceM, 3, settings).amount);
-    expect(3 * caps.reduce((sum, cap) => sum + cap, 0)).toBe(43_800);
+    expect(tripLimit(example, 3, settings).amount).toBe(
+      3 * caps.reduce((sum, cap) => sum + cap, 0),
+    );
+    expect(
+      limitRoom(
+        caps.map((cap) => ({ capacity: 3, cap })),
+        [],
+      ),
+    ).toEqual(tripLimit(example, 3, settings));
   });
 });

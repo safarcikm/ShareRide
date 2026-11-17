@@ -159,7 +159,7 @@ the domain to the app's error text. Nothing changes for drivers yet.
 - [x] **Step 3: Implement** the check; update every `BookingAttempt` in
   existing tests with a large `limitRoom`.
 - [x] **Step 4:** Run the same command; expect pass.
-- [x] **Step 5: Commit** `feat(booking): refuse a booking past the trip limit`.
+- [x] **Step 5: Commit** with Task 3.
 
 ### Task 3: The API counts takings when booking
 
@@ -179,9 +179,12 @@ the domain to the app's error text. Nothing changes for drivers yet.
 - Produces: `limitRoomOf(tx: Transaction, tripId: string): Promise<Money>`:
   `Σ segments.capacity × segments.cap` less the takings summed in SQL as in
   `takingsOf`, never below 0. Call it with the trip locked.
-- Text `booking.tripLimitReached`: EN "This ride's price has just changed.
-  Go back to the trip to see it again." IS "Verð þessarar ferðar breyttist
-  rétt í þessu. Farðu aftur í ferðina til að skoða það aftur."
+- Produces in the domain: `limitRoom(segments: readonly { capacity: number; cap: number }[], bookings: readonly TakingsBooking[]): Money`,
+  which `limitRoomOf` calls with the trip's rows, so the rule is not
+  written again in SQL.
+- Text `booking.tripLimitReached` (spec 17, section 11), shown with a
+  "Back to the trip" button; the screen asks for the trip again, in case
+  its price has fallen.
 
 - [x] **Step 1: Write the failing integration tests** (a trip of three
   stretches, capacity 3, cap and price 1 000 kr each, so its limit is
@@ -195,14 +198,16 @@ the domain to the app's error text. Nothing changes for drivers yet.
   - a request that expires gives its room back: the same booking, refused
     before, now succeeds;
   - a request the passenger withdrew before paying counts nothing;
+  - a paid booking cancelled late counts what it leaves the driver, and
+    nothing once refunded in full;
   - the app shows `booking.tripLimitReached` when the API answers with it.
 - [x] **Step 2:** Run `pnpm --filter @shareride/api test:integration bookings`;
   expect failures (2 of the 4 failed without the check; the other two now
   assert the refusal first).
 - [x] **Step 3: Implement.**
 - [x] **Step 4:** Run the same command; expect pass.
-- [x] **Step 5: Commit** `feat(booking): the API keeps each trip within its limit`;
-  open PR 1.
+- [x] **Step 5: Commit** `feat(booking): keep every booking within the trip limit`
+  (Tasks 2 and 3 landed as one commit); open PR 1.
 
 ## PR 2: changes, no-shows and the edit screens
 
@@ -221,6 +226,11 @@ the domain to the app's error text. Nothing changes for drivers yet.
 - Produces: `ChangeableTrip.takings: number`; the change effect's
   `priceLevelLowered` stays, and gains `levelLimitedBy: LevelLimit | null`
   (null when the level did not fall).
+- The level must fit the same limit the booking check uses (`limitRoom`,
+  from the caps the segments store). `tripLimit` recomputes the caps from
+  today's settings, so once operators can change settings (milestone 11)
+  the two could differ: give `TripLoad` the stored caps, or test that they
+  agree.
 
 - [ ] **Step 1: Write the failing tests** (spec 17's trip, 1 seat booked
   at 500%, takings 29 100, occupancy `[1, 1, 1]`):
@@ -261,7 +271,9 @@ the domain to the app's error text. Nothing changes for drivers yet.
   booking lowers the level to 120% and stores the repriced segments; the
   trip change records `{ seats: 3, priceLevel: 120 }`; the driver's trip
   shows `takings` 29 100 kr; another person's view of the trip has no
-  `takings`.
+  `takings`; the gap 1 sequence end to end (1 seat at 500% booked, seats
+  → 3, two bookings of the whole route at the new price) leaves the
+  driver's bookings at 43 100 kr, within the 43 800 kr limit.
 - [ ] **Step 2:** Run `pnpm --filter @shareride/api test:integration changes`;
   expect failures.
 - [ ] **Step 3: Implement.**

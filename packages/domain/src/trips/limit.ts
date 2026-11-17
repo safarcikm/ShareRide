@@ -25,10 +25,10 @@ const isk = (amount: number): Money => ({ amount, currency: "ISK" });
 
 /**
  * Bookings whose money goes, or went, to the driver (rule P3): those holding
- * seats, and those the driver is paid for after the trip. A cancelled one
- * counts only if it was confirmed first, less its refund.
+ * seats, paid or not yet, and those the driver is paid for after the trip.
+ * A cancelled one counts too, but only if it was confirmed first.
  */
-export const payingStatuses: readonly BookingStatus[] = [
+export const takingsStatuses: readonly BookingStatus[] = [
   "requested",
   "accepted",
   "confirmed",
@@ -50,29 +50,44 @@ export function tripLimit(
   );
 }
 
+/** A booking as the takings see it: its status, its price snapshot and any refund. */
+export interface TakingsBooking {
+  readonly status: BookingStatus;
+  readonly totalPrice: number;
+  readonly refundAmount: number | null;
+  readonly confirmedAt: Date | null;
+}
+
 /**
  * Rule P3: everything the bookings pay the driver at the prices they were
  * made at, less refunds. Money kept after a no-show or a late cancellation
  * counts; a request withdrawn or a booking cancelled before it was paid
  * does not; the passenger service fee is never part of it.
  */
-export function takingsOf(
-  bookings: readonly {
-    readonly status: BookingStatus;
-    readonly totalPrice: number;
-    readonly refundAmount: number | null;
-    readonly confirmedAt: Date | null;
-  }[],
-): Money {
+export function takingsOf(bookings: readonly TakingsBooking[]): Money {
   return isk(
     bookings
       .filter(
         (booking) =>
-          payingStatuses.includes(booking.status) ||
+          takingsStatuses.includes(booking.status) ||
           (booking.status === "cancelled" && booking.confirmedAt !== null),
       )
       .reduce((total, booking) => total + booking.totalPrice - (booking.refundAmount ?? 0), 0),
   );
+}
+
+/**
+ * Rule P3: what a trip can still take before a booking is refused, from the
+ * caps its stretches store and its bookings: the limit less the takings,
+ * never below 0. The stored caps are the ones its prices were checked
+ * against, whatever the settings say now.
+ */
+export function limitRoom(
+  segments: readonly { readonly capacity: number; readonly cap: number }[],
+  bookings: readonly TakingsBooking[],
+): Money {
+  const limit = segments.reduce((total, segment) => total + segment.capacity * segment.cap, 0);
+  return isk(Math.max(0, limit - takingsOf(bookings).amount));
 }
 
 /**

@@ -357,6 +357,10 @@ Enforced in the domain package and, where possible, in the database too.
 9. A trip with active bookings cannot be deleted, only cancelled.
 10. Only users who have opted in, and whose access is not withdrawn, can
     publish, request or book a women-only trip.
+11. A booking never takes a trip past its limit: what its bookings pay or
+    paid the driver, less refunds, stays within the sum over its segments
+    of capacity times cap (rule P3, spec 17). The limit and the takings are
+    computed from segments and bookings, not stored.
 
 ## Trip lifecycle
 

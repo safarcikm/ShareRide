@@ -3,8 +3,8 @@
 // same transaction, and first stores the expiry of bookings past their
 // deadlines. Reads that cannot wait for that correct the stored occupancy.
 import { schema, type Database } from "@shareride/db";
-import { payingStatuses, type Money } from "@shareride/domain";
-import { and, asc, eq, gte, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from "drizzle-orm";
+import { limitRoom, type BookingStatus, type Money } from "@shareride/domain";
+import { and, asc, eq, gte, inArray, isNull, lt, lte, ne, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { recordEvents } from "../notifications/outbox.ts";
 
@@ -80,34 +80,28 @@ export async function lockTrip(tx: Transaction, tripId: string) {
 }
 
 /**
- * The trip limit less the trip's takings, never below 0 (rule P3, spec 17):
- * what a full car pays at the stretches' stored caps, less what the trip's
- * bookings pay or paid the driver, refunds taken off (`takingsOf`). Call it
- * with the trip locked and its due expiries stored, so it counts every booking.
+ * What the trip can still take (rule P3, spec 17; the domain's `limitRoom`):
+ * its stretches' stored caps and every booking it has. Call it with the trip
+ * locked and its due expiries stored, so it counts every booking.
  */
 export async function limitRoomOf(tx: Transaction, tripId: string): Promise<Money> {
-  const [limit] = await tx
-    .select({ amount: sql<number>`coalesce(sum(${segments.capacity} * ${segments.cap}), 0)::int` })
+  const stretches = await tx
+    .select({ capacity: segments.capacity, cap: segments.cap })
     .from(segments)
     .where(eq(segments.tripId, tripId));
-  const [takings] = await tx
+  const held = await tx
     .select({
-      amount: sql<number>`coalesce(sum(${bookings.totalPrice} - coalesce(${bookings.refundAmount}, 0)), 0)::int`,
+      status: bookings.status,
+      totalPrice: bookings.totalPrice,
+      refundAmount: bookings.refundAmount,
+      confirmedAt: bookings.confirmedAt,
     })
     .from(bookings)
-    .where(
-      and(
-        eq(bookings.tripId, tripId),
-        or(
-          inArray(bookings.status, [...payingStatuses]),
-          and(eq(bookings.status, "cancelled"), isNotNull(bookings.confirmedAt)),
-        ),
-      ),
-    );
-  return {
-    amount: Math.max(0, (limit?.amount ?? 0) - (takings?.amount ?? 0)),
-    currency: "ISK",
-  };
+    .where(eq(bookings.tripId, tripId));
+  return limitRoom(
+    stretches,
+    held.map((booking) => ({ ...booking, status: booking.status as BookingStatus })),
+  );
 }
 
 /**

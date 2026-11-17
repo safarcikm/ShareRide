@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, within } from "expo-router/testing-library";
+import { act, fireEvent, screen, waitFor, within } from "expo-router/testing-library";
 import { Linking } from "react-native";
 import { newAttemptKey } from "@/booking/attempt-key";
 import { readAppData, writeAppData } from "@/lib/app-data";
@@ -754,14 +754,21 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     expect(await screen.findByRole("button", { name: "Send request at 3,100 ISK" })).toBeVisible();
   });
 
-  it("says the price changed when the trip limit refuses the booking (spec 17)", async () => {
-    await openBooking({ book: () => failure(409, "trip_limit_reached") });
+  it("says what may fit when the trip limit refuses the booking, and leads back (spec 17)", async () => {
+    const { client } = await openBooking({ book: () => failure(409, "trip_limit_reached") });
     await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
     expect(
       await screen.findByText(
-        "This ride's price has just changed. Go back to the trip to see it again.",
+        "This trip can't take this booking right now. Go back and try fewer seats or a shorter part of the trip.",
       ),
     ).toBeVisible();
+    // The price per seat is asked for again, in case it has fallen.
+    await waitFor(() => {
+      expect(client.calls.filter((call) => call.path === "/v1/trips/{id}")).toHaveLength(2);
+    });
+    await fireEvent.press(screen.getByRole("button", { name: "Back to the trip" }));
+    expect(screen).toHavePathname(`/trips/${id}`);
+    expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "1" });
   });
 
   it.each([

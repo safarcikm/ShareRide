@@ -567,6 +567,27 @@ describe("the trip limit (rule P3, spec 17)", () => {
     });
   });
 
+  it("counts what a paid booking cancelled late leaves the driver, less its refund", async () => {
+    const { request } = await bookedEarlier(7000);
+    // Paid, then cancelled with nothing back (rule M2); the driver keeps 7 000 kr.
+    await api.connection.db
+      .update(schema.bookings)
+      .set({ status: "cancelled", confirmedAt: new Date(), refundAmount: 0 })
+      .where(eq(schema.bookings.id, request.id));
+    const kari = await newMember("Kári");
+    expect(await book(kari.accessToken, north, { fromStop: 0, toStop: 3 })).toMatchObject({
+      error: { code: "trip_limit_reached" },
+    });
+    // ShareRide refunds it all after all: nothing is kept, and the room comes back.
+    await api.connection.db
+      .update(schema.bookings)
+      .set({ refundAmount: 7000 })
+      .where(eq(schema.bookings.id, request.id));
+    expect(await book(kari.accessToken, north, { fromStop: 0, toStop: 3 })).toMatchObject({
+      status: 201,
+    });
+  });
+
   it("does not count a request withdrawn before it was paid", async () => {
     const { jon, request } = await bookedEarlier(7000);
     const kari = await newMember("Kári");

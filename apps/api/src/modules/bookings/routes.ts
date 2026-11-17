@@ -80,7 +80,7 @@ function bookError(c: Context, error: BookError) {
         c,
         409,
         "trip_limit_reached",
-        "This ride's price has just changed. Look at it again before booking.",
+        "The booking would take the trip past what a full car pays at the price caps (rule P3).",
       );
     case "overlapping_booking":
       return errorResponse(

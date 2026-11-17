@@ -51,7 +51,11 @@ export type BookingProblem =
   | { readonly code: "message_has_contact_details"; readonly kinds: readonly ContactKind[] }
   | { readonly code: "seats_taken"; readonly freeSeats: number }
   | { readonly code: "price_changed"; readonly total: Money }
-  /** The booking would take the trip past its limit (rule P3, spec 17); a second line of defence. */
+  /**
+   * The booking would take the trip past its limit (rule P3, spec 17). Once
+   * the level follows the limit (plan PR 2) this is only a race; until then
+   * it is the only defence.
+   */
   | { readonly code: "trip_limit_reached" }
   | { readonly code: "overlapping_booking" };
 
