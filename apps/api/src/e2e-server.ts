@@ -8,11 +8,13 @@
 // (default 3001). `POST /e2e/trips/{id}/move` with `{ "minutes": 10 }` puts a
 // trip's first stop that many minutes from the real time, with its "I'm here"
 // and reports, for the trip day journeys; moved far enough back, a report
-// nobody answered stands. For the console's browser tests (apps/admin/e2e),
+// nobody answered stands. Only the requests that send a code run ahead of the
+// real time (see `sendingCode`). For the console's browser tests (apps/admin/e2e),
 // E2E_ADMIN_APP_DIR is the console's build, served at /admin, and
 // E2E_OPERATOR_LINK a file: the API makes a new operator account and writes
 // its passkey setup link there, with passkeys bound to E2E_ADMIN_ORIGIN.
 // Never use it for anything else.
+import { AsyncLocalStorage } from "node:async_hooks";
 import { randomBytes } from "node:crypto";
 import { appendFileSync, writeFileSync } from "node:fs";
 import { serve } from "@hono/node-server";
@@ -65,7 +67,14 @@ writeFileSync(emailOutbox, "");
 
 // Each code sent moves the clock 31 seconds on, so a test can sign in to the
 // same account again at once without waiting out the resend limit (R1.3).
+// Only the requests that send a code read that clock: everything else, the
+// trip day above all, runs on the real time, which the browser goes by too.
+// Otherwise the API would run further ahead of the browser with each code
+// any journey sends, and a trip moved to 15 minutes ago would, by the end of
+// a full run, already be past its "I'm here" window on the API.
 let clockOffsetMs = 0;
+const sendingCode = new AsyncLocalStorage<true>();
+const codeSendingPaths = new Set(["/v1/auth/phone/start", "/v1/me/confirm-code"]);
 const sms: SmsSender = {
   send(message) {
     appendFileSync(outbox, `${JSON.stringify(message)}\n`);
@@ -81,7 +90,7 @@ const email: EmailSender = {
     return Promise.resolve({ id: `e2e-${message.idempotencyKey}` });
   },
 };
-const clock = () => new Date(Date.now() + clockOffsetMs);
+const clock = () => new Date(Date.now() + (sendingCode.getStore() === true ? clockOffsetMs : 0));
 
 if (operatorLink !== undefined && operatorLink !== "") {
   const [operator] = await connection.db
@@ -130,8 +139,8 @@ const app = createApp({
 });
 
 // The trip day journeys move one trip's times, never the shared clock
-// (milestone 7 plan, 4.2). Minutes from the real time, which the browser
-// goes by, not from this API's clock, which runs ahead with each code sent.
+// (milestone 7 plan, 4.2). Minutes from the real time, which the browser and
+// this API's trip day both go by.
 app.post("/e2e/trips/:id/move", async (c) => {
   const body: unknown = await c.req.json();
   const minutes =
@@ -176,6 +185,11 @@ startRepeating({
   },
 });
 
-serve({ fetch: app.fetch, port }, (info) => {
+const fetch: typeof app.fetch = (request, ...rest) =>
+  codeSendingPaths.has(new URL(request.url).pathname)
+    ? sendingCode.run(true, () => app.fetch(request, ...rest))
+    : app.fetch(request, ...rest);
+
+serve({ fetch, port }, (info) => {
   process.stdout.write(`e2e API listening on port ${String(info.port)}\n`);
 });
