@@ -183,6 +183,8 @@ describe("the channels of each kind (spec 7, 3.3 and 3.4)", () => {
     ["report_closed", true, "never", false],
     ["report_filed", true, "never", false],
     ["report_filed_urgent", true, "never", true],
+    // The answer to a question about one's data goes by email (spec 11, 3.6).
+    ["privacy_request_answered", false, "always", false],
   ] as const)("%s: push %s, email %s, SMS %s", (kind, push, email, sms) => {
     expect(notificationRules[kind]).toEqual({ push, email, sms });
   });
@@ -231,6 +233,7 @@ describe("how one person is reached (spec 7, 3.3, 3.4 and 3.7)", () => {
       { channel: "email", send: true },
     ]);
     expect(isAccountNotice("data_export_ready")).toBe(true);
+    expect(isAccountNotice("privacy_request_answered")).toBe(true);
     expect(isAccountNotice("booking_confirmed")).toBe(false);
   });
 
@@ -356,6 +359,15 @@ describe("stillApplies", () => {
       for (const status of ["cancelled", "no_show", "completed"] as const) {
         expect(stillApplies(kind, status)).toBe(false);
       }
+    }
+  });
+
+  it("tells a passenger about their meeting point only while the booking holds a seat (spec 2, 3.6.4)", () => {
+    for (const status of ["accepted", "confirmed"] as const) {
+      expect(stillApplies("meeting_point_changed", status)).toBe(true);
+    }
+    for (const status of ["requested", "cancelled", "expired", "completed"] as const) {
+      expect(stillApplies("meeting_point_changed", status)).toBe(false);
     }
   });
 

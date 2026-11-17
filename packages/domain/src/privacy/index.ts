@@ -29,10 +29,15 @@ export {
 export { personalDataKeys, redactDeep, redactText } from "./redact.ts";
 export {
   privacyRequestKinds,
+  requestAllowed,
   requestDueAt,
+  requestsCountedSince,
   validatePrivacyRequest,
+  validateRequestAnswer,
   type PrivacyRequestInput,
   type PrivacyRequestKind,
+  type RecentRequests,
+  type RequestsTooMany,
 } from "./requests.ts";
 export {
   holdEndsAt,

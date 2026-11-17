@@ -78,6 +78,19 @@ export function tidyReviewComment(comment: string): string {
 }
 
 /**
+ * What is wrong with a comment, tidied (R8.8): too long, or with contact
+ * details or links; null when nothing is. The app checks it as it is typed.
+ */
+export function reviewCommentProblem(
+  comment: string,
+): Extract<ReviewProblem, { code: "comment_too_long" | "comment_has_contact_details" }> | null {
+  const tidy = tidyReviewComment(comment);
+  if (Array.from(tidy).length > reviewMaxLength) return { code: "comment_too_long" };
+  const kinds = contactDetailsIn(tidy);
+  return kinds.length > 0 ? { code: "comment_has_contact_details", kinds } : null;
+}
+
+/**
  * R8.8: one review per author per completed booking, within 14 days, 1 to 5
  * whole stars and an optional comment of up to 500 characters without
  * contact details or links. It cannot be changed once sent. No-shows,
@@ -99,11 +112,9 @@ export function checkReview(
   if (!Number.isInteger(review.rating) || review.rating < 1 || review.rating > 5) {
     return err({ code: "rating_invalid" });
   }
-  const comment = tidyReviewComment(review.comment);
-  if (Array.from(comment).length > reviewMaxLength) return err({ code: "comment_too_long" });
-  const kinds = contactDetailsIn(comment);
-  if (kinds.length > 0) return err({ code: "comment_has_contact_details", kinds });
-  return ok({ rating: review.rating, comment });
+  const problem = reviewCommentProblem(review.comment);
+  if (problem !== null) return err(problem);
+  return ok({ rating: review.rating, comment: tidyReviewComment(review.comment) });
 }
 
 /** R8.9: shown once both sides have reviewed, or 14 days after completion. */

@@ -50,6 +50,10 @@ describe("the retention rules this feature adds (spec 11, 3.7)", () => {
       expect.arrayContaining(["operator_sessions", "operator_sign_in", "holds"]),
     );
   });
+
+  it("names the privacy requests, deleted 3 years after the answer", () => {
+    expect(retentionRules).toContain("privacy_requests");
+  });
 });
 
 describe("holds (3.7.3, R11.6)", () => {

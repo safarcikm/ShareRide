@@ -369,6 +369,29 @@ node apps/api/src/privacy-cli.ts end-hold <hold ID> --by <your user ID>
 `holds` lists those in force, nearest end first. Once a hold ends, its
 records go at the next clean-up if their own dates have passed.
 
+## Answer privacy requests
+
+What people send through "Ask about my data" must be answered within a
+month (R11.7). To list those waiting, nearest due first, with their text:
+
+```sh
+node apps/api/src/privacy-cli.ts requests
+```
+
+A request past its due date ends with `overdue`. To answer one, give your
+own user ID or phone number for the audit log:
+
+```sh
+node apps/api/src/privacy-cli.ts answer <request ID> \
+  --text "<the answer>" --by <your user ID>
+```
+
+The answer goes to the person by email within a minute, in their
+language, with the day they asked. Write it as you would an email: it is
+sent as written, and stays with the request for 3 years. A request can be
+answered once. If the account has been deleted since, the answer is kept
+but no email goes.
+
 ## Rotate a secret
 
 - `AUTH_SECRET`: set a new value in the service's **Environment** (for

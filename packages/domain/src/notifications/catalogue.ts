@@ -88,6 +88,8 @@ export const notificationRules = {
   report_filed_urgent: { push: true, email: "never", sms: true },
   // By email only: deleting signs the person out of every device (spec 11, 3.4.5).
   account_deletion_scheduled: { push: false, email: "always", sms: false },
+  // The answer to "Ask about my data" goes by email, which asking needs (spec 11, 3.6).
+  privacy_request_answered: { push: false, email: "always", sms: false },
 } as const satisfies Record<string, NotificationRule>;
 
 export type NotificationKind = keyof typeof notificationRules;
@@ -99,6 +101,7 @@ export type TripRole = "driver" | "passenger";
 export const accountNoticeKinds = [
   "data_export_ready",
   "account_deletion_scheduled",
+  "privacy_request_answered",
   "moderation_action",
   "suspension_ended",
   "appeal_answered",
@@ -304,6 +307,10 @@ export function stillApplies(kind: NotificationKind, status: BookingStatus): boo
     case "checked_in":
     case "checked_in_driver":
       return status === "confirmed";
+    // A paused meeting point matters to a booking that will get in or out
+    // there: accepted or confirmed (spec 2, 3.6.4).
+    case "meeting_point_changed":
+      return status === "accepted" || status === "confirmed";
     // A report asks for an answer while the booking is as the report left
     // it (spec 8, 3.3 and 3.4); once decided otherwise, it would ask too late.
     case "no_show_marked":

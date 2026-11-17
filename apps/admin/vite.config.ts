@@ -28,5 +28,9 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/testing/setup.ts"],
     restoreMocks: true,
+    // Screen tests render the whole console; on a busy CI runner the longest
+    // forms take several seconds (about 7 times as long as locally), as the
+    // app's do (apps/mobile/jest.config.js).
+    testTimeout: 15_000,
   },
 });

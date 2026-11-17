@@ -1,6 +1,6 @@
 {
-  "id": "a87c7f9b-8aa5-4130-ad4e-8bb864e397e1",
-  "prevId": "a355f746-d981-4140-99bd-df64544701c6",
+  "id": "25ee50b7-cf8f-4868-a84a-efb529dc5600",
+  "prevId": "541aecab-96ab-4181-b6c5-71fd2bf025ac",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -2657,8 +2657,14 @@
           "primaryKey": false,
           "notNull": false
         },
-        "moderation_action_id": {
-          "name": "moderation_action_id",
+        "privacy_request_id": {
+          "name": "privacy_request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "meeting_point_id": {
+          "name": "meeting_point_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -2781,11 +2787,11 @@
           "method": "btree",
           "with": {}
         },
-        "notifications_moderation_action_index": {
-          "name": "notifications_moderation_action_index",
+        "notifications_privacy_request_index": {
+          "name": "notifications_privacy_request_index",
           "columns": [
             {
-              "expression": "moderation_action_id",
+              "expression": "privacy_request_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -2867,13 +2873,22 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "notifications_moderation_action_id_moderation_actions_id_fk": {
-          "name": "notifications_moderation_action_id_moderation_actions_id_fk",
+        "notifications_privacy_request_id_privacy_requests_id_fk": {
+          "name": "notifications_privacy_request_id_privacy_requests_id_fk",
           "tableFrom": "notifications",
-          "tableTo": "moderation_actions",
-          "columnsFrom": ["moderation_action_id"],
+          "tableTo": "privacy_requests",
+          "columnsFrom": ["privacy_request_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "notifications_meeting_point_id_meeting_points_id_fk": {
+          "name": "notifications_meeting_point_id_meeting_points_id_fk",
+          "tableFrom": "notifications",
+          "tableTo": "meeting_points",
+          "columnsFrom": ["meeting_point_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
@@ -2889,7 +2904,7 @@
       "checkConstraints": {
         "notifications_kind_check": {
           "name": "notifications_kind_check",
-          "value": "\"notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'booking_cancelled_by_shareride', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'no_show_marked', 'driver_absent_reported', 'dispute_decided', 'dispute_decided_driver', 'rate_trip', 'rate_trip_driver', 'review_visible', 'data_export_ready', 'moderation_action', 'suspension_ended', 'appeal_answered', 'report_closed', 'report_filed', 'report_filed_urgent', 'account_deletion_scheduled')"
+          "value": "\"notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'no_show_marked', 'driver_absent_reported', 'dispute_decided', 'dispute_decided_driver', 'rate_trip', 'rate_trip_driver', 'review_visible', 'data_export_ready', 'report_filed', 'report_filed_urgent', 'account_deletion_scheduled', 'privacy_request_answered')"
         }
       },
       "isRLSEnabled": false
@@ -2976,7 +2991,7 @@
       "checkConstraints": {
         "outbox_events_kind_check": {
           "name": "outbox_events_kind_check",
-          "value": "\"outbox_events\".\"kind\" in ('BookingRequested', 'BookingAccepted', 'BookingConfirmed', 'BookingDeclined', 'BookingExpired', 'BookingWithdrawn', 'BookingCancelled', 'DepartureMoved', 'TripChanged', 'TripCancelled', 'RefundIssued', 'MessageSent', 'CheckedIn', 'NoShowMarked', 'DriverAbsentReported', 'DisputeDecided', 'BookingCompleted', 'ReviewRevealed', 'DataExportReady', 'ReportFiled', 'AccountDeletionScheduled', 'ModerationActionTaken', 'SuspensionEnded', 'AppealAnswered', 'ReportClosed')"
+          "value": "\"outbox_events\".\"kind\" in ('BookingRequested', 'BookingAccepted', 'BookingConfirmed', 'BookingDeclined', 'BookingExpired', 'BookingWithdrawn', 'BookingCancelled', 'DepartureMoved', 'TripChanged', 'TripCancelled', 'RefundIssued', 'MessageSent', 'CheckedIn', 'NoShowMarked', 'DriverAbsentReported', 'DisputeDecided', 'BookingCompleted', 'ReviewRevealed', 'MeetingPointChanged', 'DataExportReady', 'ReportFiled', 'AccountDeletionScheduled', 'PrivacyRequestAnswered')"
         }
       },
       "isRLSEnabled": false
@@ -3301,7 +3316,7 @@
       "checkConstraints": {
         "scheduled_notifications_kind_check": {
           "name": "scheduled_notifications_kind_check",
-          "value": "\"scheduled_notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'booking_cancelled_by_shareride', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'no_show_marked', 'driver_absent_reported', 'dispute_decided', 'dispute_decided_driver', 'rate_trip', 'rate_trip_driver', 'review_visible', 'data_export_ready', 'moderation_action', 'suspension_ended', 'appeal_answered', 'report_closed', 'report_filed', 'report_filed_urgent', 'account_deletion_scheduled')"
+          "value": "\"scheduled_notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'no_show_marked', 'driver_absent_reported', 'dispute_decided', 'dispute_decided_driver', 'rate_trip', 'rate_trip_driver', 'review_visible', 'data_export_ready', 'report_filed', 'report_filed_urgent', 'account_deletion_scheduled', 'privacy_request_answered')"
         },
         "scheduled_notifications_recipient_check": {
           "name": "scheduled_notifications_recipient_check",
@@ -4033,6 +4048,138 @@
       },
       "isRLSEnabled": false
     },
+    "public.privacy_requests": {
+      "name": "privacy_requests",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "text": {
+          "name": "text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "received_at": {
+          "name": "received_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "due_at": {
+          "name": "due_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "answered_at": {
+          "name": "answered_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "answer": {
+          "name": "answer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "privacy_requests_user_index": {
+          "name": "privacy_requests_user_index",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "received_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "privacy_requests_due_index": {
+          "name": "privacy_requests_due_index",
+          "columns": [
+            {
+              "expression": "due_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "privacy_requests_user_id_users_id_fk": {
+          "name": "privacy_requests_user_id_users_id_fk",
+          "tableFrom": "privacy_requests",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "privacy_requests_kind_check": {
+          "name": "privacy_requests_kind_check",
+          "value": "\"privacy_requests\".\"kind\" in ('objection', 'restriction', 'correction', 'question')"
+        },
+        "privacy_requests_answer_check": {
+          "name": "privacy_requests_answer_check",
+          "value": "(\"privacy_requests\".\"answered_at\" is null) = (\"privacy_requests\".\"answer\" is null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.retention_runs": {
       "name": "retention_runs",
       "schema": "",
@@ -4396,229 +4543,6 @@
         "blocks_self_check": {
           "name": "blocks_self_check",
           "value": "\"blocks\".\"blocker_id\" <> \"blocks\".\"blocked_id\""
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.moderation_actions": {
-      "name": "moderation_actions",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "uuidv7()"
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "kind": {
-          "name": "kind",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "report_id": {
-          "name": "report_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "rule": {
-          "name": "rule",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "reason": {
-          "name": "reason",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "content_kind": {
-          "name": "content_kind",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "content_id": {
-          "name": "content_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "until": {
-          "name": "until",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "operator_id": {
-          "name": "operator_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "appeal_text": {
-          "name": "appeal_text",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "appealed_at": {
-          "name": "appealed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "appeal_answer": {
-          "name": "appeal_answer",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "appeal_outcome": {
-          "name": "appeal_outcome",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "appeal_answered_at": {
-          "name": "appeal_answered_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "appeal_answered_by_id": {
-          "name": "appeal_answered_by_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "moderation_actions_user_index": {
-          "name": "moderation_actions_user_index",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "moderation_actions_report_index": {
-          "name": "moderation_actions_report_index",
-          "columns": [
-            {
-              "expression": "report_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "moderation_actions_user_id_users_id_fk": {
-          "name": "moderation_actions_user_id_users_id_fk",
-          "tableFrom": "moderation_actions",
-          "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "moderation_actions_report_id_reports_id_fk": {
-          "name": "moderation_actions_report_id_reports_id_fk",
-          "tableFrom": "moderation_actions",
-          "tableTo": "reports",
-          "columnsFrom": ["report_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "moderation_actions_operator_id_users_id_fk": {
-          "name": "moderation_actions_operator_id_users_id_fk",
-          "tableFrom": "moderation_actions",
-          "tableTo": "users",
-          "columnsFrom": ["operator_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "moderation_actions_appeal_answered_by_id_users_id_fk": {
-          "name": "moderation_actions_appeal_answered_by_id_users_id_fk",
-          "tableFrom": "moderation_actions",
-          "tableTo": "users",
-          "columnsFrom": ["appeal_answered_by_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "moderation_actions_kind_check": {
-          "name": "moderation_actions_kind_check",
-          "value": "\"moderation_actions\".\"kind\" in ('warning', 'content_hidden', 'suspension', 'reinstatement', 'trip_cancelled', 'refund')"
-        },
-        "moderation_actions_rule_check": {
-          "name": "moderation_actions_rule_check",
-          "value": "(\"moderation_actions\".\"kind\" = 'reinstatement') = (\"moderation_actions\".\"rule\" is null) and (\"moderation_actions\".\"rule\" is null or \"moderation_actions\".\"rule\" in ('safety', 'harassment', 'discrimination', 'scam', 'false_info', 'offensive', 'not_as_listed', 'reliability', 'other'))"
-        },
-        "moderation_actions_content_check": {
-          "name": "moderation_actions_content_check",
-          "value": "(\"moderation_actions\".\"content_kind\" is null) = (\"moderation_actions\".\"content_id\" is null) and (\"moderation_actions\".\"content_kind\" is null or \"moderation_actions\".\"content_kind\" in ('message', 'review', 'trip_note', 'about', 'trip', 'booking'))"
-        },
-        "moderation_actions_until_check": {
-          "name": "moderation_actions_until_check",
-          "value": "\"moderation_actions\".\"until\" is null or \"moderation_actions\".\"kind\" = 'suspension'"
-        },
-        "moderation_actions_appeal_check": {
-          "name": "moderation_actions_appeal_check",
-          "value": "(\"moderation_actions\".\"appeal_text\" is null) = (\"moderation_actions\".\"appealed_at\" is null) and (\"moderation_actions\".\"appeal_answered_at\" is null or \"moderation_actions\".\"appealed_at\" is not null) and (\"moderation_actions\".\"appeal_answered_at\" is null) = (\"moderation_actions\".\"appeal_outcome\" is null) and (\"moderation_actions\".\"appeal_answered_at\" is null) = (\"moderation_actions\".\"appeal_answer\" is null)"
-        },
-        "moderation_actions_outcome_check": {
-          "name": "moderation_actions_outcome_check",
-          "value": "\"moderation_actions\".\"appeal_outcome\" is null or \"moderation_actions\".\"appeal_outcome\" in ('upheld', 'reversed')"
         }
       },
       "isRLSEnabled": false
@@ -5440,12 +5364,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "cancelled_by": {
-          "name": "cancelled_by",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "cancel_reason": {
           "name": "cancel_reason",
           "type": "text",
@@ -5596,10 +5514,6 @@
           "name": "trips_cancel_reason_check",
           "value": "\"trips\".\"cancel_reason\" in ('weather', 'road_closed', 'car_problem', 'illness', 'plans_changed', 'other')"
         },
-        "trips_cancelled_by_check": {
-          "name": "trips_cancelled_by_check",
-          "value": "\"trips\".\"cancelled_by\" is null or (\"trips\".\"cancelled_at\" is not null and \"trips\".\"cancelled_by\" in ('driver', 'operator'))"
-        },
         "trips_cancel_note_check": {
           "name": "trips_cancel_note_check",
           "value": "char_length(\"trips\".\"cancel_note\") <= 500"
@@ -5707,12 +5621,6 @@
           "notNull": true,
           "default": "'active'"
         },
-        "suspended_until": {
-          "name": "suspended_until",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -5752,10 +5660,6 @@
         "users_status_check": {
           "name": "users_status_check",
           "value": "\"users\".\"status\" in ('active', 'suspended', 'deleted')"
-        },
-        "users_suspended_until_check": {
-          "name": "users_suspended_until_check",
-          "value": "\"users\".\"suspended_until\" is null or \"users\".\"status\" = 'suspended'"
         }
       },
       "isRLSEnabled": false

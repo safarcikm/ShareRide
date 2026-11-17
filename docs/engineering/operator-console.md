@@ -109,6 +109,39 @@ meeting point routes (`registerMeetingPointsAdminRoutes`), with the work in
 - Audit entries are `meeting_point.created` with the fields, and
   `meeting_point.updated` with only the fields that changed. Saving
   without a change writes nothing.
+- `POST /admin/v1/meeting-points/{id}/pause`, `/resume` and `/retire`
+  change its status (`nextPointStatus`), each with the `updatedAt` the
+  console loaded, and refuse a change the status does not allow with
+  `status_change_not_allowed`. A pause takes a reason in both languages
+  and an optional end date (`validatePause`). Each point's answer has
+  `futureTrips`: the trips still to stop there (published or under way,
+  with that stop not removed and still ahead).
+- A pause writes one `MeetingPointChanged` event per future trip in the
+  same transaction. The notification worker asks that trip's driver to
+  choose another stop, and tells each passenger whose accepted or
+  confirmed booking gets in or out there, with an SMS within 24 hours of
+  boarding (spec 7, 3.4). Each is told once. News of a point back in use
+  before it goes out is not sent, nor news to a driver whose trip has
+  passed the point or a passenger whose booking no longer stops there. A
+  point retired while paused keeps its reason, and its news still goes
+  out ("no longer in use"). The trips are not changed or cancelled.
+- Publishing a trip and adding a stop read their points `FOR SHARE`, so
+  a pause or a retirement under way and the trip wait for each other: the
+  pause counts the trip among those to tell, or the trip sees the point
+  not offered.
+- Not covered yet: a request the driver accepts after the pause is not
+  told (search no longer offers the point, but the booking API does not
+  refuse it); a point paused, brought back and paused again before the
+  first news went out tells its people twice. While an older API version
+  still runs during a deploy, it marks `MeetingPointChanged` events done
+  without telling anyone, so pause no point during a deploy.
+- Audit entries are `meeting_point.paused`, `meeting_point.resumed` and
+  `meeting_point.retired`, with the status, the pause and the review date
+  before and after, and how many future trips there were.
+- The API's minute job (`moveMeetingPointsOn`) brings a paused point back
+  into use on its end date in Iceland, and retires a retiring point once
+  no trip is still to stop there. These follow from an operator's earlier
+  action, which has the audit entry, so they write none.
 
 The console's pages are in `apps/admin/src/pages/meeting-points/`:
 `list.tsx` (the map and the list, the filters kept in the address),
@@ -121,6 +154,40 @@ field cannot hold 24:00, so the form shows a shelter closing at midnight as
 all day. The date
 the operator confirmed the point (R2.3) is its `lastCheckedOn`, the "Last
 checked" date the app shows.
+
+## Disputes
+
+`apps/api/src/modules/trip-day/admin-routes.ts` holds the console's
+dispute routes (`registerDisputeAdminRoutes`), with the work in
+`admin.ts` (spec 8, 3.5):
+
+- `GET /admin/v1/disputes` lists the contested reports waiting for a
+  decision, oldest first; `?state=decided` the last 50 an operator
+  decided, newest first. A report nobody answered settles by itself
+  after its 24 hours, so it never waits for the operator.
+- `GET /admin/v1/disputes/{id}` gives one report with what the system
+  knows: both notes, the answer, every stop's planned time and the
+  driver's "I'm here" there, the passenger's "I'm here", and the
+  outcomes the operator can choose (`decidableOutcomes`), none once it is
+  decided or if nobody contested it.
+- `POST /admin/v1/disputes/{id}/decision` with `{ outcome, note }` calls
+  `decideDispute` (`decide.ts`), which applies the outcome, tells both
+  sides and writes `dispute.decided`, all in one transaction.
+- `GET /admin/v1/disputes/{id}/conversation` reads the booking's
+  conversation through `readConversationAsOperator` in
+  `apps/api/src/modules/chat/operator.ts`. It takes only the record that
+  covers the reading (`{ type: "dispute", id }`), finds the booking from
+  it and checks that it covers a reading: a dispute only once it was
+  contested (`operatorMayRead`), else `not_contested`. In the same
+  transaction it writes `conversation.opened` with that record as the
+  subject and only the booking's and conversation's IDs, never what was
+  said (R9.6); a refused reading writes nothing. Spec 9's reports add
+  their own type and rule there. Messages come oldest first, from the
+  driver, the passenger or the system, with system lines worded as for
+  the driver (`by: "me"` is the driver); a message whose sender was
+  erased comes as `erased`, without its text. The trip's changes (spec 8,
+  3.5) are those system lines, so the operator sees them in the
+  conversation.
 
 ## A console page
 

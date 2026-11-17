@@ -480,7 +480,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   or their chat is closed. `blocks` is in the personal data catalogue,
   erased with either account, and gets its own export section, People you
   blocked: each by first name, and since when, never who blocked them.
-  Migration `0031_blocks`. `POST /v1/bookings/{id}/block`,
+  Migration `0033_blocks`. `POST /v1/bookings/{id}/block`,
   `GET /v1/me/blocks`, `DELETE /v1/me/blocks/{id}`.
 - Reports (milestone 9, PR 5a, spec 9, 3.1; R9.1, R9.2): "Report this
   trip" on trip details (not to its driver, whatever the trip's state:
@@ -500,7 +500,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   trip, message or booking that the person cannot see is refused as not
   found; a person cannot report themselves; 10 reports a day, also when
   sent at once. The person reported is never told who reported them.
-  Migration `0032_reports`; `reports` is in the personal data catalogue,
+  Migration `0034_reports`; `reports` is in the personal data catalogue,
   kept 3 years after closing, and chat clean-up keeps a conversation a
   report covers that long. "Download my data" has Reports you sent, never
   a report about the person. The category and outcome texts moved to
@@ -518,7 +518,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   "New report" or "New safety report", never who or what, and one not yet
   sent is dropped once its report is closed or the operator loses the
   role. A new outbox event `ReportFiled`; notifications gain `report_id`,
-  in migration `0032_reports`.
+  in migration `0034_reports`.
 - Suspension, warnings and reinstating (milestone 9, PR 6a, spec 9, 3.4.3
   and 3.6; R9.5, R9.7, R9.10): the operator's `suspend`, `warn` and
   `reinstate` in `apps/api/src/modules/moderation/`, for the console to
@@ -540,7 +540,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   their notice: the push says what happened, the email adds the rule,
   the reason and until when it can be appealed in the app (14 days).
   Two suspensions at once lock their trips in the same order, so they
-  never deadlock. Migration `0033_moderation` adds `moderation_actions`,
+  never deadlock. Migration `0035_moderation` adds `moderation_actions`,
   `users.suspended_until`, `trips.cancelled_by` (earlier cancellations
   are the driver's; empty from the version before, which only drivers
   used) and `notifications.moderation_action_id`; "Download my data" has
@@ -558,7 +558,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   outcome. The person hears "ShareRide answered your appeal" by push and
   email (the email with the answer), and the reporter "Your report" with
   the outcome in general terms, by push. Each writes one audit entry.
-  Migration `0034_appeals` widens the notification and event kinds.
+  Migration `0036_appeals` widens the notification and event kinds.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its
@@ -635,6 +635,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   tests' trip move also moves its "I'm here" and reports and lets a report
   nobody answered stand, and two journeys cover a no-show nobody contests
   and a driver absence that stands with a full refund.
+- The console's dispute routes (milestone 7, PR 5c, spec 8, 3.5): the
+  contested reports waiting for the operator (`GET /admin/v1/disputes`) and
+  the last ones decided, one report with its notes, answer, planned times
+  and "I'm here" times, and the decision, which tells both sides and is
+  recorded in the audit log. The booking's conversation opens only for a
+  contested report, through one function that checks this and that spec
+  9's reports reuse, and each opening goes in the audit log as
+  `conversation.opened`, without the text (R9.6). Martin chose this console page over the planned server
+  command (decision 1, changed on 2026-11-17); the page follows in 5d.
 - Ratings and reviews in the API (milestone 7, PR 6a, spec 8, 3.7): once a
   booking completes, the passenger rates the driver and the driver rates
   the passenger, 1 to 5 stars and an optional comment of up to 500
@@ -652,6 +661,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   other's once it shows (never one the operator hid). Migration
   `0030_reviews` adds the `reviews` table, with `hidden_at` for
   moderation (spec 9), and widens the notification kinds.
+- Rating and reviewing in the app (milestone 7, PR 6b, spec 8, screen 6):
+  "Rate the driver" on a completed booking and "Rate your passenger" under
+  each passenger of the driver's completed trip, with until when; while a
+  report on the booking is open, or once the other person has left, it says
+  why instead. Stars take the design system's rating colour (a new `rating`
+  token) and show the number next to them. The rate
+  screen takes 1 to 5 stars and an optional comment, checked as it is typed
+  (500 characters, no phone numbers, emails or links), and says the review
+  appears once the other person has reviewed too or after 14 days, or that
+  both show now. The booking and the trip then show the review sent and,
+  once it shows, the other's review. A browser journey: both review and
+  each sees the other's.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
@@ -739,6 +760,20 @@ releases follow [Semantic Versioning](https://semver.org/).
   it is decided. After a database restore, `privacy reapply-erasures`
   erases the accounts again and takes the deletions asked for or undone
   since from the old database.
+- Pausing, bringing back and retiring a meeting point, the API (spec 2,
+  3.6.4 and 3.6.5): `POST /admin/v1/meeting-points/{id}/pause`, `/resume`
+  and `/retire`, with their rules in the domain (`nextPointStatus`,
+  `validatePause`) and an audit entry each. A pause asks the driver of
+  each future trip that stops there to choose another stop and tells the
+  passengers who get in or out there, by SMS too within 24 hours of
+  boarding. The API's minute job brings a paused point back on its end
+  date and retires a retiring one after its last trip. A point in use is
+  due for review a year after its last check (R2.9). Migration
+  `0032_meeting_point_pauses` adds the `MeetingPointChanged` event and the
+  meeting point of a notification. A point retired while paused keeps its
+  reason and its news still goes out. Publishing a trip and adding a stop
+  wait for a pause under way. The sample seed keeps the status the console
+  gave a sample point.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.
@@ -761,6 +796,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   notification log and drafts, and the account itself) until its end. The
   `privacy` command shows the last run of each rule (`runs`) and lists,
   sets and ends holds (`holds`, `hold`, `end-hold`), each in the audit log.
+- Ask about my data in the API (spec 11, 3.6): `POST /v1/me/privacy-requests`
+  takes an objection, a restriction, a correction or a question from
+  someone with a verified email, at most 5 a day, due a month later. The
+  `privacy` command lists those waiting (`requests`) and answers one
+  (`answer`), in the audit log; the answer goes by email in the person's
+  language. Requests and answers are in Download my data, kept under the
+  former member when the account is erased, and deleted 3 years after the
+  answer.
+- Ask about my data in the app (spec 11, 3.6): under Settings, Privacy,
+  choose what it is about (an objection, a limit, a correction or a
+  question) and write it; the app says the answer comes by email within a
+  month. Without an email, it asks to add one first.
 
 ### Fixed
 

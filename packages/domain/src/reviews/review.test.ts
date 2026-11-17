@@ -6,6 +6,7 @@ import {
   isRevealed,
   ratingOf,
   reviewClosesAt,
+  reviewCommentProblem,
   reviewMaxLength,
   reviewReminderAt,
   tidyReviewComment,
@@ -41,6 +42,19 @@ describe("writing a review (R8.8)", () => {
     // "é" written as e and a combining accent is one character, as typed.
     expect(tidyReviewComment("  Frábær ferð, takk! \n")).toBe("Frábær ferð, takk!");
     expect(tidyReviewComment("Cafe\u0301")).toBe("Caf\u00e9");
+  });
+
+  it("checks a comment as it is typed, as the server will", () => {
+    expect(reviewCommentProblem("  Lovely trip, on time.  ")).toBeNull();
+    expect(reviewCommentProblem("")).toBeNull();
+    expect(reviewCommentProblem("é".repeat(reviewMaxLength))).toBeNull();
+    expect(reviewCommentProblem("é".repeat(reviewMaxLength + 1))).toEqual({
+      code: "comment_too_long",
+    });
+    expect(reviewCommentProblem("Call me on 555 1234")).toEqual({
+      code: "comment_has_contact_details",
+      kinds: ["phone"],
+    });
   });
 
   it.each(["confirmed", "cancelled", "no_show"] as const)(
