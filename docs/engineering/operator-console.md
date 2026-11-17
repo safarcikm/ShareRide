@@ -76,6 +76,13 @@ deleting entries younger than 3 years, and refuse `TRUNCATE`. Drizzle does
 not know about them. When a later migration changes `audit_log`, check the
 triggers still apply, and never drop them.
 
+The console's Audit log page reads it through `GET /admin/v1/audit-log`,
+newest first, 50 entries a page. Its action filter matches the start of
+the name, so `meeting_point.` finds every meeting point action: name new
+actions with the record's kind first. "Only this record" filters by
+`subjectType` and `subjectId`, so give every action on a record the same
+pair. The page shows `before` and `after` field by field.
+
 ## A console page
 
 The console is `apps/admin`: React for the web, built with Vite, served by

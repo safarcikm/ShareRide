@@ -8,8 +8,10 @@ import {
   completesAt,
   completesWithTrip,
   dayPhase,
+  driverAbsentWindow,
   driverCheckInStops,
   hasTripDay,
+  noShowWindow,
   runsOrRan,
   defaultTripDaySettings as settings,
   tripStatusAt,
@@ -312,6 +314,28 @@ describe("the driver didn't come (R8.5)", () => {
       ).toEqual({ ok: false, error: { code: "not_boarding" } });
     },
   );
+});
+
+describe("when each report can be made, as the pages show it (R8.4, R8.5)", () => {
+  it("opens a no-show after the wait at the boarding stop, until the trip completes", () => {
+    expect(noShowWindow(boardsAt, lastStopAt, settings)).toEqual({
+      opensAt: at(boardsAt, 10),
+      closesAt: at(lastStopAt, 120),
+    });
+  });
+
+  it("opens the driver's absence after the same wait, until 24 hours after the trip completes", () => {
+    expect(driverAbsentWindow(boardsAt, lastStopAt, settings)).toEqual({
+      opensAt: at(boardsAt, 10),
+      closesAt: at(lastStopAt, 120 + 24 * 60),
+    });
+  });
+
+  it("follows a boarding time moved on the day (spec 6)", () => {
+    const moved = at(boardsAt, 25);
+    expect(noShowWindow(moved, lastStopAt, settings).opensAt).toEqual(at(moved, 10));
+    expect(driverAbsentWindow(moved, lastStopAt, settings).opensAt).toEqual(at(moved, 10));
+  });
 });
 
 describe("which bookings complete with the trip (R8.2)", () => {

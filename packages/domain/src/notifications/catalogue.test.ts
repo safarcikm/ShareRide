@@ -91,6 +91,17 @@ describe("who is told about each event (spec 7, 3.3)", () => {
     // "I'm here" (spec 8, 3.2): the other side at that stop.
     [{ type: "CheckedIn", by: "driver" }, [{ kind: "checked_in", to: "passenger" }]],
     [{ type: "CheckedIn", by: "passenger" }, [{ kind: "checked_in_driver", to: "driver" }]],
+    // Reports (spec 8, 3.3 to 3.5): the other side is asked to answer, and
+    // both are told what the operator decided.
+    [{ type: "NoShowMarked" }, [{ kind: "no_show_marked", to: "passenger" }]],
+    [{ type: "DriverAbsentReported" }, [{ kind: "driver_absent_reported", to: "driver" }]],
+    [
+      { type: "DisputeDecided" },
+      [
+        { kind: "dispute_decided", to: "passenger" },
+        { kind: "dispute_decided_driver", to: "driver" },
+      ],
+    ],
   ];
 
   it.each(cases)("%o", (event, expected) => {
@@ -136,6 +147,11 @@ describe("the channels of each kind (spec 7, 3.3 and 3.4)", () => {
     // Push only (spec 8, 3.9): it matters at the stop, and nowhere later.
     ["checked_in", true, "never", false],
     ["checked_in_driver", true, "never", false],
+    // Push and email (spec 8, 3.9): the answer has a deadline.
+    ["no_show_marked", true, "always", false],
+    ["driver_absent_reported", true, "always", false],
+    ["dispute_decided", true, "always", false],
+    ["dispute_decided_driver", true, "always", false],
     ["data_export_ready", true, "always", false],
   ] as const)("%s: push %s, email %s, SMS %s", (kind, push, email, sms) => {
     expect(notificationRules[kind]).toEqual({ push, email, sms });
@@ -274,6 +290,23 @@ describe("stillApplies", () => {
       for (const status of ["confirmed", "expired", "requested"] as const) {
         expect(stillApplies(kind, status)).toBe(false);
       }
+    }
+  });
+
+  it("asks for an answer to a report only while the booking is as the report left it (spec 8, 3.3 and 3.4)", () => {
+    expect(stillApplies("no_show_marked", "no_show")).toBe(true);
+    for (const status of ["completed", "cancelled"] as const) {
+      expect(stillApplies("no_show_marked", status)).toBe(false);
+    }
+    for (const status of ["confirmed", "completed"] as const) {
+      expect(stillApplies("driver_absent_reported", status)).toBe(true);
+    }
+    for (const status of ["cancelled", "no_show"] as const) {
+      expect(stillApplies("driver_absent_reported", status)).toBe(false);
+    }
+    // The decision tells what happened, whatever the booking became.
+    for (const status of ["completed", "cancelled", "no_show"] as const) {
+      expect(stillApplies("dispute_decided", status)).toBe(true);
     }
   });
 

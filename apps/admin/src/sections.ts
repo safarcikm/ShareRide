@@ -1,5 +1,6 @@
 import type { MessageKey } from "@shareride/i18n";
 import type { ComponentType } from "react";
+import { AuditLogPage } from "./pages/audit-log.tsx";
 import { HomePage } from "./pages/home.tsx";
 import { PasskeysPage } from "./pages/passkeys.tsx";
 
@@ -19,6 +20,7 @@ export const homePath = "/admin";
 
 export const sections: readonly Section[] = [
   { path: homePath, title: "admin.home.title", Page: HomePage },
+  { path: "/admin/audit-log", title: "admin.auditLog.title", Page: AuditLogPage },
   { path: "/admin/passkeys", title: "admin.passkeys.title", Page: PasskeysPage },
 ];
 
