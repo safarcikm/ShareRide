@@ -350,6 +350,16 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     ),
     otherIds: ["contentId"],
   },
+  operator_notes: {
+    category: "moderation",
+    // The notes about the person, never who wrote them (spec 9, 3.5.3; Q24).
+    export: { section: "notes" },
+    personColumns: ["userId", "byId"],
+    onDeletion: {
+      rows: "erase",
+      note: "notes about the person go with them; so do those an operator wrote, if the operator's own account is erased",
+    },
+  },
   blocks: {
     category: "blocks",
     // Only the blocks the person made: who blocked them is never shown (R9.4).

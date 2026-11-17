@@ -414,11 +414,27 @@ In four parts, each its own pull request:
 
 ### PR 8: `feat(console)`: users, trips and bookings
 
-- [ ] Search and detail pages (3.5); Suspend, Reinstate and Add note
-      (`operator_notes`); decline rates
+Split in two, as PR 7 was: 8a the API, 8b the pages.
+
+- [x] 8a: `GET /admin/v1/users?q=` (first name, phone number, email or
+      ID), a person's page, `POST /admin/v1/users/{id}/notes`
+      (`operator_notes`, migration `0039_operator_notes`), trips by day,
+      place, driver or a trip's or booking's ID, a trip's page with its
+      bookings and requests, and `GET /admin/v1/decline-rates`;
+      `checkOperatorNote`, `requestAnswer` and `declineRates` in the domain
+- [ ] 8b: Users and Trips pages in the console: search, a person's page
+      with Suspend, Reinstate and Add note, a trip's page, and the decline
+      rates
 - Verify: integration tests (search by name, phone, email and ID; every
   action audited); a console browser journey: find a user and reinstate
   them
+- Found while building (8a): a person's notes are in their Download my
+  data, without who wrote them, until Martin answers open question Q24.
+  Decline rates count the requests made in the last 90 days that the
+  driver accepted or declined; a request declined because its trip was
+  cancelled is no answer. Searching by phone reads a number without +354
+  as Icelandic. Ratings and reliability join the person's page with
+  milestone 7's profiles.
 
 ### Afterwards, with milestone 7
 

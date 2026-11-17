@@ -1411,6 +1411,7 @@ export const is = {
   "export.section.blocks": "Fólk sem þú lokaðir á",
   "export.section.notifications": "Tilkynningar síðustu 90 daga",
   "export.section.notices": "Orðsendingar frá ShareRide",
+  "export.section.notes": "Athugasemdir ShareRide um þig",
   "export.section.privacy_requests": "Spurningar um gögnin þín",
   "export.field.about": "Um þig",
   "export.field.acceptedAt": "Samþykkt",
