@@ -38,6 +38,7 @@ import {
   type FormValues,
 } from "./form-values.ts";
 import { meetingPointsPath } from "./list.tsx";
+import { PhotosPanel } from "./photos-panel.tsx";
 import { StatusPanel, type StatusResult } from "./status-panel.tsx";
 import { issueKey, statusKeys, type FieldIssue } from "./texts.ts";
 
@@ -817,6 +818,8 @@ export function MeetingPointForm({ id }: { readonly id: string | undefined }) {
           </button>
         )}
       </form>
+
+      {point === null ? null : <PhotosPanel key={point.id} point={point} />}
     </section>
   );
 }
