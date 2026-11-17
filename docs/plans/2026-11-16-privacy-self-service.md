@@ -178,6 +178,7 @@ threads meet it.
 - Signing in while it waits works: `me.deletionScheduledFor` is set, and
   the app shows only "Your account will be deleted on {date}" with "Keep
   my account" and "Sign out". `POST /v1/me/delete/cancel` clears it.
+  Deleting again meanwhile keeps the first date.
 - While it waits, the person takes on nothing new: booking and publishing
   refuse with `account_deletion_pending` (403). Both take the person's row
   lock, as deleting does before its second check, so nothing opens between
@@ -336,9 +337,9 @@ journeys, and gets a code review before it opens.
 
 ### PR 8: `feat(privacy)`: Delete my account in the app
 
-- [ ] What is open with Cancel; what happens; confirm with a code; the
+- [x] What is open with Cancel; what happens; confirm with a code; the
       waiting screen with "Keep my account"; "Message deleted" and "A
-      former member"
+      former member" (those two came with PR 7)
 - Verify: screen tests; a browser journey deletes an account with an
   upcoming booking, cancelling it from the deletion screen
 
@@ -384,6 +385,8 @@ What the spec implies and a person would meet first, each with its test:
 - **Milestone 7** adds check-ins, disputes and reviews: check-ins and
   disputes move to the former member, reviews about the person are erased
   and reviews they wrote move, and open disputes feed `mustSettle`.
+  Download my data has the disputes they raised or answered, with their
+  own note only (spec 8, section 7).
 - **Safety and moderation** adds reports, moderation actions, blocks and
   `users.suspended_until`: reports and actions are kept 3 years after
   closure and move, blocks are erased, and a suspended person must still

@@ -198,6 +198,20 @@ describe("createSessionManager", () => {
     expect(session.state()).toEqual({ status: "signedOut" });
   });
 
+  it("forgets the tokens without a call when the API ended the session itself", async () => {
+    const client = createFakeClient();
+    const store = memoryStore();
+    client.answer("/v1/auth/phone/verify", () =>
+      ok(200, { ...tokens(1), user: testMe, isNewUser: false }),
+    );
+    const session = createSessionManager({ client, tokenStore: store, device });
+    await session.verify("+3546900000", "123456", "en");
+    await session.ended();
+    expect(store.value).toBeNull();
+    expect(session.state()).toEqual({ status: "signedOut" });
+    expect(client.calls.map((call) => call.path)).toEqual(["/v1/auth/phone/verify"]);
+  });
+
   it("tells listeners about every change", async () => {
     const client = createFakeClient();
     client.answer("/v1/auth/phone/verify", () =>
