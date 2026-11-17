@@ -38,6 +38,7 @@ import {
   type FormValues,
 } from "./form-values.ts";
 import { meetingPointsPath } from "./list.tsx";
+import { StatusPanel, type StatusResult } from "./status-panel.tsx";
 import { issueKey, statusKeys, type FieldIssue } from "./texts.ts";
 
 type Loaded =
@@ -46,14 +47,20 @@ type Loaded =
   | { readonly state: "failed" }
   | { readonly state: "ready"; readonly point: AdminMeetingPoint | null };
 
+type Conflict = "save" | "status";
+
 type Outcome =
   | { readonly kind: "none" }
   | { readonly kind: "created"; readonly name: string }
   | { readonly kind: "saved" }
   | { readonly kind: "problems"; readonly problems: readonly FieldProblem[] }
-  | { readonly kind: "changed" }
-  | { readonly kind: "reloaded" }
-  | { readonly kind: "failed" };
+  /** Changed elsewhere since it was loaded, found on a save or a status change. */
+  | { readonly kind: "changed"; readonly on: Conflict }
+  | { readonly kind: "reloaded"; readonly on: Conflict }
+  | { readonly kind: "failed" }
+  /** A status changed: what it came to, naming the point. */
+  | { readonly kind: "status"; readonly text: MessageKey; readonly name: string }
+  | { readonly kind: "statusFailed" };
 
 /** The fields typed as text. */
 type TextField =
@@ -86,16 +93,16 @@ export function MeetingPointForm({ id }: { readonly id: string | undefined }) {
   const base = useId();
   const idOf = (field: string) => `${base}-${field.replace(".", "-")}`;
 
-  /** Loads the point; `quietly` keeps the form in place while it does. */
+  /** Loads the point; after a conflict the form stays in place while it does. */
   const load = useCallback(
-    async (pointId: string, quietly = false) => {
-      if (!quietly) setLoaded({ state: "loading" });
+    async (pointId: string, after: Conflict | null = null) => {
+      if (after === null) setLoaded({ state: "loading" });
       const result = await call(adminMeetingPointRoute, { params: { id: pointId } });
       if (result.ok) {
         setValues(valuesOf(result.data));
         setLoaded({ state: "ready", point: result.data });
         setEdited(new Set());
-        if (quietly) setOutcome({ kind: "reloaded" });
+        if (after !== null) setOutcome({ kind: "reloaded", on: after });
       } else {
         setLoaded({ state: result.status === 404 ? "missing" : "failed" });
       }
@@ -246,10 +253,10 @@ export function MeetingPointForm({ id }: { readonly id: string | undefined }) {
     } else if (code === "move_needed") {
       setOutcome({ kind: "problems", problems: [{ field: "position", issue: "move_needed" }] });
     } else if (code === "meeting_point_changed") {
-      setOutcome({ kind: "changed" });
+      setOutcome({ kind: "changed", on: "save" });
     } else if (code === "meeting_point_retired") {
       // Retired since it was opened: the newest copy shows it.
-      setOutcome({ kind: "changed" });
+      setOutcome({ kind: "changed", on: "save" });
     } else {
       setOutcome({ kind: "failed" });
     }
@@ -371,6 +378,26 @@ export function MeetingPointForm({ id }: { readonly id: string | undefined }) {
     set({ hours: values.hours.map((day, at) => (at === index ? { ...day, ...change } : day)) });
   };
 
+  /** A status changed: the newest copy, and the form keeps what was typed in it. */
+  const statusChanged = (result: StatusResult) => {
+    if (result.kind === "changed") {
+      setOutcome({ kind: "changed", on: "status" });
+    } else if (result.kind === "failed") {
+      setOutcome({ kind: "statusFailed" });
+    } else {
+      setLoaded({ state: "ready", point: result.point });
+      const text: MessageKey =
+        result.change === "pause"
+          ? "admin.meetingPoint.paused"
+          : result.change === "resume"
+            ? "admin.meetingPoint.resumed"
+            : result.point.status === "retiring"
+              ? "admin.meetingPoint.retiring"
+              : "admin.meetingPoint.retired";
+      setOutcome({ kind: "status", text, name: result.point.nameIs });
+    }
+  };
+
   const title = point === null ? t("admin.meetingPoint.newTitle") : point.nameIs;
   const amenitiesError = errorFor("amenities");
   const hoursError = errorFor("shelterHours");
@@ -434,7 +461,7 @@ export function MeetingPointForm({ id }: { readonly id: string | undefined }) {
               type="button"
               className="button-secondary type-label"
               onClick={() => {
-                if (point !== null) void load(point.id, true);
+                if (point !== null) void load(point.id, outcome.on);
               }}
             >
               {t("admin.meetingPoint.reload")}
@@ -442,14 +469,28 @@ export function MeetingPointForm({ id }: { readonly id: string | undefined }) {
           </div>
         ) : outcome.kind === "reloaded" ? (
           <p className="notice type-body" role="status" tabIndex={-1}>
-            {t("admin.meetingPoint.reloaded")}
+            {t(
+              outcome.on === "status"
+                ? "admin.meetingPoint.reloadedStatus"
+                : "admin.meetingPoint.reloaded",
+            )}
           </p>
         ) : outcome.kind === "failed" ? (
           <p className="problem type-body" role="alert" tabIndex={-1}>
             {t("admin.meetingPoint.saveFailed")}
           </p>
+        ) : outcome.kind === "status" ? (
+          <p className="notice type-body" role="status" tabIndex={-1}>
+            {t(outcome.text, { name: outcome.name })}
+          </p>
+        ) : outcome.kind === "statusFailed" ? (
+          <p className="problem type-body" role="alert" tabIndex={-1}>
+            {t("admin.meetingPoint.statusFailed")}
+          </p>
         ) : null}
       </div>
+
+      {point === null ? null : <StatusPanel point={point} onResult={statusChanged} />}
 
       <form
         className="stack"

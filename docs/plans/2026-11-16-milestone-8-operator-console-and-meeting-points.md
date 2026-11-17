@@ -302,7 +302,7 @@ recomputes distances, so both come in PR 12. PR 7 is in two parts.
 
 - [x] 7a, the API: `nextPointStatus`, `validatePause`, `reviewDueOn`; the
       routes, the minute job's resume and retire steps, the notifications
-- [ ] 7b, the console: pause, back in use and retire on a point's page
+- [x] 7b, the console: pause, back in use and retire on a point's page
 - Verify: domain tests per status change; integration tests (pause with
   future trips notifies each driver and passenger once; retire with and
   without future trips; the minute job); a browser journey (7b)
