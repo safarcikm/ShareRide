@@ -697,6 +697,11 @@ releases follow [Semantic Versioning](https://semver.org/).
   reason and its news still goes out. Publishing a trip and adding a stop
   wait for a pause under way. The sample seed keeps the status the console
   gave a sample point.
+- Pausing, bringing back and retiring a meeting point in the operator
+  console: the point's "In use" panel shows its upcoming trips and a
+  pause's reason, pauses it with a reason in both languages and an
+  optional end date, brings it back, and retires it after saying whether
+  that is at once or after its last trip.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.

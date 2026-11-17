@@ -3,11 +3,16 @@ import {
   adminMeetingPointRoute,
   adminMeetingPointsRoute,
   adminMeRoute,
+  adminPauseMeetingPointRoute,
+  adminResumeMeetingPointRoute,
+  adminRetireMeetingPointRoute,
   adminUpdateMeetingPointRoute,
   type AdminMe,
   type AdminMeetingPoint,
   type AdminMeetingPointListItem,
 } from "@shareride/contracts";
+import { icelandDate } from "@shareride/domain";
+import { formatDate } from "@shareride/i18n";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ConsoleApp } from "../../app.tsx";
@@ -559,5 +564,227 @@ describe("the meeting point form (spec 2, 3.6.2)", () => {
     const api = start(`/admin/meeting-points/${pointId}`);
     api.on(adminMeetingPointRoute, { status: 404, error: { code: "not_found" } });
     expect(await screen.findByText("This meeting point could not be found.")).toBeTruthy();
+  });
+});
+
+describe("pausing, bringing back and retiring a point (spec 2, 3.6.4 and 3.6.5)", () => {
+  const active: AdminMeetingPoint = { ...draft, status: "active", futureTrips: 2 };
+  const inAWeek = icelandDate(new Date(Date.now() + 7 * 24 * 3600_000));
+  const paused: AdminMeetingPoint = {
+    ...active,
+    status: "paused",
+    pauseReason: { is: "Vegavinna við innganginn.", en: "Road works by the entrance." },
+    pausedUntil: inAWeek,
+    updatedAt: "2026-11-16T11:00:00.000Z",
+  };
+
+  function open(point: AdminMeetingPoint) {
+    const api = start(`/admin/meeting-points/${pointId}`);
+    api.on(adminMeetingPointRoute, { status: 200, data: point });
+    return api;
+  }
+
+  const panel = () => screen.getByRole("region", { name: "In use" });
+
+  it("pauses an active point with a reason in both languages and an end date", async () => {
+    const api = open(active);
+    let sent: Record<string, unknown> = {};
+    api.on(adminPauseMeetingPointRoute, (input) => {
+      sent = input["body"] as Record<string, unknown>;
+      return { status: 200, data: paused };
+    });
+    await screen.findByRole("heading", { name: "N1 Borgarnesi", level: 1 });
+    // Typed before the pause, and not saved yet.
+    type("Where to stand, in English", "By the pumps.");
+    expect(panel().textContent).toContain("2 upcoming trips stop here.");
+    fireEvent.click(within(panel()).getByRole("button", { name: "Pause" }));
+    expect(document.activeElement).toBe(field("Reason, in Icelandic"));
+    expect(panel().textContent).toContain(
+      "Their drivers, and the passengers who get in or out here, are told at once. Drivers are asked to choose another stop.",
+    );
+    type("Reason, in Icelandic", " Vegavinna við innganginn. ");
+    type("Reason, in English", "Road works by the entrance.");
+    type("Back in use on (optional)", inAWeek);
+    // The button is read with what a pause does.
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Pause N1 Borgarnesi",
+        description: /are told at once/,
+      }),
+    );
+
+    const notice = await screen.findByText("N1 Borgarnesi is paused.");
+    await waitFor(() => {
+      expect(document.activeElement).toBe(notice);
+    });
+    expect(sent).toEqual({
+      reasonIs: "Vegavinna við innganginn.",
+      reasonEn: "Road works by the entrance.",
+      until: inAWeek,
+      updatedAt: active.updatedAt,
+    });
+    expect(screen.getByText("Status: Paused")).toBeTruthy();
+    expect(panel().textContent).toContain("Road works by the entrance.");
+    expect(panel().textContent).toContain(`Back in use on ${formatDate(inAWeek, "en")}.`);
+    // The form keeps what was typed, and saves it with the copy the pause returned.
+    expect(field("Where to stand, in English").value).toBe("By the pumps.");
+    api.on(adminUpdateMeetingPointRoute, { status: 200, data: paused });
+    fireEvent.click(screen.getByRole("button", { name: "Save the changes" }));
+    await waitFor(() => {
+      expect(api.called(adminUpdateMeetingPointRoute).at(-1)?.input["body"]).toMatchObject({
+        whereToStandEn: "By the pumps.",
+        updatedAt: paused.updatedAt,
+      });
+    });
+  });
+
+  it("checks the pause before sending it, and can be put away", async () => {
+    const api = open(active);
+    await screen.findByRole("heading", { name: "N1 Borgarnesi", level: 1 });
+    fireEvent.click(within(panel()).getByRole("button", { name: "Pause" }));
+    type("Reason, in English", "x".repeat(201));
+    type("Back in use on (optional)", icelandDate(new Date()));
+    fireEvent.click(screen.getByRole("button", { name: "Pause N1 Borgarnesi" }));
+
+    expect(await screen.findByText("Fill this in.")).toBeTruthy();
+    expect(screen.getByText("This is too long.")).toBeTruthy();
+    expect(screen.getByText("Give a day after today.")).toBeTruthy();
+    expect(field("Reason, in Icelandic").getAttribute("aria-invalid")).toBe("true");
+    expect(document.activeElement).toBe(field("Reason, in Icelandic"));
+    expect(api.called(adminPauseMeetingPointRoute)).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Keep it in use" }));
+    expect(screen.queryByLabelText("Reason, in Icelandic")).toBeNull();
+    expect(document.activeElement).toBe(within(panel()).getByRole("button", { name: "Pause" }));
+  });
+
+  it("shows a paused point's reason, and brings it back into use", async () => {
+    const api = open({ ...paused, pausedUntil: null });
+    let sent: Record<string, unknown> = {};
+    api.on(adminResumeMeetingPointRoute, (input) => {
+      sent = input["body"] as Record<string, unknown>;
+      return { status: 200, data: { ...active, updatedAt: "2026-11-16T12:00:00.000Z" } };
+    });
+    await screen.findByRole("heading", { name: "N1 Borgarnesi", level: 1 });
+    expect(panel().textContent).toContain("Vegavinna við innganginn.");
+    expect(panel().textContent).toContain("Road works by the entrance.");
+    expect(panel().textContent).toContain("Paused until you bring it back.");
+    fireEvent.click(within(panel()).getByRole("button", { name: "Bring it back into use" }));
+
+    expect(await screen.findByText("N1 Borgarnesi is back in use.")).toBeTruthy();
+    expect(sent).toEqual({ updatedAt: paused.updatedAt });
+    expect(screen.getByText("Status: Active")).toBeTruthy();
+    expect(within(panel()).getByRole("button", { name: "Pause" })).toBeTruthy();
+  });
+
+  it("retires a point with trips to come after the last one, saying so first", async () => {
+    const api = open(active);
+    let sent: Record<string, unknown> = {};
+    api.on(adminRetireMeetingPointRoute, (input) => {
+      sent = input["body"] as Record<string, unknown>;
+      return { status: 200, data: { ...active, status: "retiring" } };
+    });
+    await screen.findByRole("heading", { name: "N1 Borgarnesi", level: 1 });
+    fireEvent.click(within(panel()).getByRole("button", { name: "Retire" }));
+    const confirm = screen.getByRole("button", {
+      name: "Retire N1 Borgarnesi",
+      description: /retires after the last of them\. Retiring is for good\./,
+    });
+    expect(document.activeElement).toBe(confirm);
+    expect(panel().textContent).toContain(
+      "New trips cannot use it from now. 2 upcoming trips stop here, so it retires after the last of them. Retiring is for good.",
+    );
+    fireEvent.click(confirm);
+
+    expect(await screen.findByText("N1 Borgarnesi retires after its last trip.")).toBeTruthy();
+    expect(sent).toEqual({ updatedAt: active.updatedAt });
+    expect(screen.getByText("Status: Retiring")).toBeTruthy();
+    expect(within(panel()).queryAllByRole("button")).toHaveLength(0);
+  });
+
+  it("retires a point without trips to come at once, or keeps it", async () => {
+    const api = open(draft);
+    api.on(adminRetireMeetingPointRoute, { status: 200, data: { ...draft, status: "retired" } });
+    await screen.findByRole("heading", { name: "N1 Borgarnesi", level: 1 });
+    expect(within(panel()).queryByRole("button", { name: "Pause" })).toBeNull();
+    fireEvent.click(within(panel()).getByRole("button", { name: "Retire" }));
+    expect(panel().textContent).toContain("It is retired at once. Retiring is for good.");
+    fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
+    expect(document.activeElement).toBe(within(panel()).getByRole("button", { name: "Retire" }));
+
+    fireEvent.click(within(panel()).getByRole("button", { name: "Retire" }));
+    fireEvent.click(screen.getByRole("button", { name: "Retire N1 Borgarnesi" }));
+    expect(await screen.findByText("N1 Borgarnesi is retired.")).toBeTruthy();
+    expect(screen.getByText("Status: Retired")).toBeTruthy();
+    expect(field("Icelandic name").matches(":disabled")).toBe(true);
+    expect(screen.queryByRole("region", { name: "In use" })).toBeNull();
+  });
+
+  it("says when the point changed elsewhere, and loads the newest copy", async () => {
+    const api = open(active);
+    api.on(adminRetireMeetingPointRoute, {
+      status: 409,
+      error: { code: "status_change_not_allowed" },
+    });
+    await screen.findByRole("heading", { name: "N1 Borgarnesi", level: 1 });
+    fireEvent.click(within(panel()).getByRole("button", { name: "Retire" }));
+    fireEvent.click(screen.getByRole("button", { name: "Retire N1 Borgarnesi" }));
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "This meeting point was saved somewhere else after you opened it.",
+    );
+    api.on(adminMeetingPointRoute, { status: 200, data: paused });
+    fireEvent.click(screen.getByRole("button", { name: "Load the newest copy" }));
+    expect(await screen.findByText("Status: Paused")).toBeTruthy();
+    // Nothing to save again: the status is what to check.
+    expect(
+      screen.getByText("This is the newest copy. Check its status, then try again."),
+    ).toBeTruthy();
+  });
+
+  it("says when a pause finds the point saved elsewhere since", async () => {
+    const api = open(active);
+    api.on(adminPauseMeetingPointRoute, { status: 409, error: { code: "meeting_point_changed" } });
+    await screen.findByRole("heading", { name: "N1 Borgarnesi", level: 1 });
+    fireEvent.click(within(panel()).getByRole("button", { name: "Pause" }));
+    type("Reason, in Icelandic", "Lokað.");
+    type("Reason, in English", "Closed.");
+    fireEvent.click(screen.getByRole("button", { name: "Pause N1 Borgarnesi" }));
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "This meeting point was saved somewhere else after you opened it.",
+    );
+    expect(screen.queryByLabelText("Reason, in Icelandic")).toBeNull();
+  });
+
+  it("shows the API's problems with a pause under their fields", async () => {
+    const api = open(active);
+    api.on(adminPauseMeetingPointRoute, {
+      status: 400,
+      error: {
+        code: "validation_failed",
+        details: [{ path: "until", issue: "not_after_today" }],
+      },
+    });
+    await screen.findByRole("heading", { name: "N1 Borgarnesi", level: 1 });
+    fireEvent.click(within(panel()).getByRole("button", { name: "Pause" }));
+    type("Reason, in Icelandic", "Lokað.");
+    type("Reason, in English", "Closed.");
+    type("Back in use on (optional)", inAWeek);
+    fireEvent.click(screen.getByRole("button", { name: "Pause N1 Borgarnesi" }));
+    expect(await screen.findByText("Give a day after today.")).toBeTruthy();
+    expect(field("Back in use on (optional)").getAttribute("aria-invalid")).toBe("true");
+    expect(document.activeElement).toBe(field("Back in use on (optional)"));
+  });
+
+  it("says when a change could not be made", async () => {
+    const api = open(paused);
+    api.on(adminResumeMeetingPointRoute, { status: 500, error: { code: "internal" } });
+    await screen.findByRole("heading", { name: "N1 Borgarnesi", level: 1 });
+    fireEvent.click(within(panel()).getByRole("button", { name: "Bring it back into use" }));
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toBe("The status could not be changed. Try again.");
+    await waitFor(() => {
+      expect(document.activeElement).toBe(alert);
+    });
+    expect(screen.getByText("Status: Paused")).toBeTruthy();
   });
 });
