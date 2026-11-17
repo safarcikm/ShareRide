@@ -1,0 +1,464 @@
+import { Writable } from "node:stream";
+import { schema } from "@shareride/db";
+import { defaultTripDaySettings, type HoldSubjectKind } from "@shareride/domain";
+import { and, asc, eq, inArray, notExists } from "drizzle-orm";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { createLogger } from "../../logger.ts";
+import { startTestApi, type TestApi } from "../../testing.ts";
+import {
+  bookingHelpers,
+  freshSampleTrips,
+  sampleTrip,
+  seedForBookings,
+} from "../bookings/testing.ts";
+import { createErasure } from "./erasure.ts";
+import { retentionSteps, runRetention } from "./retention.ts";
+
+// Trips and bookings 3 years after the trip (spec 11, 3.7; plan 4.7, PR 9b):
+// moved to the former member with their free text emptied, as an erasure
+// would, unless a hold covers them. The sample trips at the test clock
+// (Friday 13 November 2026, noon): Jón drives Hlemmur to Keflavík Airport on
+// Saturday morning; Anna drives to Akureyri later.
+
+let api: TestApi;
+
+beforeAll(async () => {
+  api = await startTestApi();
+  await seedForBookings(api);
+});
+
+beforeEach(async () => {
+  await freshSampleTrips(api);
+  const { db } = api.connection;
+  await db.delete(schema.retentionRuns);
+  await db.delete(schema.holds);
+});
+
+afterEach(() => {
+  rewind();
+});
+
+afterAll(async () => {
+  // The former member's cars made here, which no trip uses once the sample trips are back.
+  await freshSampleTrips(api);
+  const { db } = api.connection;
+  await db
+    .delete(schema.vehicles)
+    .where(
+      and(
+        eq(schema.vehicles.ownerId, formerMemberId),
+        notExists(
+          db
+            .select({ id: schema.trips.id })
+            .from(schema.trips)
+            .where(eq(schema.trips.vehicleId, schema.vehicles.id)),
+        ),
+      ),
+    );
+  await api.close();
+});
+
+const { newMember, rewind, driverOf, booked, paid } = bookingHelpers(() => api);
+const { airport, north } = sampleTrip;
+const day = 24 * 3600 * 1000;
+const { formerMemberId } = schema;
+
+const quiet = () =>
+  createLogger({
+    level: "info",
+    destination: new Writable({
+      write(_chunk, _encoding, callback) {
+        callback();
+      },
+    }),
+  });
+
+/** The clean-up once, at `now`; none of its rules may fail. */
+async function run(now: Date) {
+  const db = api.connection.db;
+  const erasure = createErasure({
+    db,
+    clock: () => now,
+    hasher: api.features.hasher,
+    tripDaySettings: defaultTripDaySettings,
+    logger: quiet(),
+  });
+  const result = await runRetention({
+    db,
+    now,
+    steps: retentionSteps({ db, erasure }),
+    logger: quiet(),
+  });
+  expect(result.failedRules).toEqual([]);
+  return result.counts.trips_and_bookings;
+}
+
+async function arrival(tripId: string) {
+  const [trip] = await api.connection.db
+    .select({ arrivesAt: schema.trips.arrivesAt })
+    .from(schema.trips)
+    .where(eq(schema.trips.id, tripId));
+  if (trip?.arrivesAt === undefined || trip.arrivesAt === null) throw new Error("No arrival.");
+  return trip.arrivesAt;
+}
+
+/** Three calendar years after the trip's last stop: the first moment it is due. */
+async function threeYearsAfter(tripId: string) {
+  const due = new Date(await arrival(tripId));
+  due.setUTCFullYear(due.getUTCFullYear() + 3);
+  return due;
+}
+
+async function hold(kind: HoldSubjectKind, id: string, endsAt: Date) {
+  const operator = await api.signInOperator();
+  const [row] = await api.connection.db
+    .insert(schema.holds)
+    .values({
+      subjectType: kind,
+      subjectId: id,
+      reason: "Chargeback",
+      endsAt,
+      setBy: operator.userId,
+    })
+    .returning({ id: schema.holds.id });
+  if (row === undefined) throw new Error("No hold.");
+  return row.id;
+}
+
+/**
+ * Jón's airport trip with everything a ride leaves: his note, Gunna's paid
+ * booking with her message, both their "I'm here", a report with its notes,
+ * and a change of car.
+ */
+async function rideWithEverything() {
+  const { db } = api.connection;
+  const jon = await driverOf(airport, "Jón");
+  const gunna = await newMember("Gunna");
+  const booking = await booked(gunna.accessToken, airport, { fromStop: 0, toStop: 1 });
+  await paid(gunna.accessToken, booking.id);
+  const [trip] = await db
+    .select({ vehicleId: schema.trips.vehicleId })
+    .from(schema.trips)
+    .where(eq(schema.trips.id, airport));
+  if (trip?.vehicleId === undefined || trip.vehicleId === null) throw new Error("No car.");
+  await db
+    .update(schema.trips)
+    .set({ note: "Two bags each at most" })
+    .where(eq(schema.trips.id, airport));
+  await db
+    .update(schema.bookings)
+    .set({ message: "I'll wait by the door" })
+    .where(eq(schema.bookings.id, booking.id));
+  const [first] = await db
+    .select({ id: schema.tripStops.id })
+    .from(schema.tripStops)
+    .where(and(eq(schema.tripStops.tripId, airport), eq(schema.tripStops.position, 0)));
+  if (first === undefined) throw new Error("No stop.");
+  const at = await arrival(airport);
+  await db.insert(schema.checkIns).values([
+    { tripStopId: first.id, userId: jon.userId, bookingId: null, checkedInAt: at },
+    { tripStopId: first.id, userId: gunna.userId, bookingId: booking.id, checkedInAt: at },
+  ]);
+  await db.insert(schema.disputes).values({
+    bookingId: booking.id,
+    kind: "no_show",
+    raisedAt: at,
+    note: "Waited ten minutes",
+    answer: "contested",
+    answeredAt: at,
+    answerNote: "I was by the bus stop",
+    outcome: "rode",
+    decidedBy: "system",
+    decidedAt: at,
+    decisionNote: "Both were there",
+  });
+  await db.insert(schema.tripChanges).values({
+    tripId: airport,
+    kind: "vehicle",
+    before: { vehicleId: trip.vehicleId, make: "Kia", model: "Ceed", colour: "blue" },
+    after: { vehicleId: trip.vehicleId, make: "Kia", model: "Ceed", colour: "blue" },
+    changedAt: at,
+  });
+  return { jon, gunna, bookingId: booking.id, carId: trip.vehicleId };
+}
+
+async function tripOf(tripId: string) {
+  const [trip] = await api.connection.db
+    .select()
+    .from(schema.trips)
+    .where(eq(schema.trips.id, tripId));
+  if (trip === undefined) throw new Error("No trip.");
+  return trip;
+}
+
+async function bookingOf(bookingId: string) {
+  const [booking] = await api.connection.db
+    .select()
+    .from(schema.bookings)
+    .where(eq(schema.bookings.id, bookingId));
+  if (booking === undefined) throw new Error("No booking.");
+  return booking;
+}
+
+async function carOf(carId: string) {
+  const [car] = await api.connection.db
+    .select()
+    .from(schema.vehicles)
+    .where(eq(schema.vehicles.id, carId));
+  return car;
+}
+
+/** A blue Kia Ceed, as Jón's, owned by `ownerId`; removed by them, or not. */
+async function newCar(ownerId: string, { removed }: { readonly removed: boolean }) {
+  const [car] = await api.connection.db
+    .insert(schema.vehicles)
+    .values({
+      ownerId,
+      make: "Kia",
+      model: "Ceed",
+      colour: "blue",
+      registration: ownerId === formerMemberId ? null : "AB123",
+      removedAt: removed ? api.now() : null,
+    })
+    .returning({ id: schema.vehicles.id });
+  if (car === undefined) throw new Error("No car.");
+  return car.id;
+}
+
+describe("trips and bookings 3 years after the trip (spec 11, 3.7; plan 4.7)", () => {
+  it("leaves a trip as it is until 3 years after its last stop", async () => {
+    const { jon, bookingId } = await rideWithEverything();
+    const due = await threeYearsAfter(airport);
+
+    expect(await run(new Date(due.getTime() - 1))).toEqual({ erased: 0, anonymised: 0 });
+
+    expect((await tripOf(airport)).driverId).toBe(jon.userId);
+    expect((await bookingOf(bookingId)).message).toBe("I'll wait by the door");
+  });
+
+  it("moves the trip, its bookings, check-ins and reports to the former member, with their free text emptied", async () => {
+    const { bookingId, carId } = await rideWithEverything();
+    const { db } = api.connection;
+    const before = {
+      trip: await tripOf(airport),
+      booking: await bookingOf(bookingId),
+      car: await carOf(carId),
+    };
+    const stops = await db
+      .select()
+      .from(schema.tripStops)
+      .where(eq(schema.tripStops.tripId, airport));
+    const prices = await db
+      .select()
+      .from(schema.bookingSegmentPrices)
+      .where(eq(schema.bookingSegmentPrices.bookingId, bookingId));
+    const payments = await db
+      .select()
+      .from(schema.payments)
+      .where(eq(schema.payments.bookingId, bookingId));
+
+    // One trip and one booking.
+    expect(await run(await threeYearsAfter(airport))).toEqual({ erased: 0, anonymised: 2 });
+
+    const trip = await tripOf(airport);
+    expect(trip).toEqual({
+      ...before.trip,
+      driverId: formerMemberId,
+      vehicleId: expect.any(String) as unknown,
+      note: "",
+      cancelNote: "",
+      updatedAt: expect.any(Date) as unknown,
+    });
+    // A car of the same make, model and colour, the former member's, with no plate.
+    expect(trip.vehicleId).not.toBe(carId);
+    expect(await carOf(trip.vehicleId ?? "")).toMatchObject({
+      ownerId: formerMemberId,
+      make: "Kia",
+      model: "Ceed",
+      colour: "blue",
+      registration: null,
+    });
+    // The car he drove is its owner's as it was.
+    expect(await carOf(carId)).toEqual(before.car);
+
+    expect(await bookingOf(bookingId)).toEqual({
+      ...before.booking,
+      passengerId: formerMemberId,
+      message: "",
+      cancelNote: "",
+      updatedAt: expect.any(Date) as unknown,
+    });
+    const checkIns = await db
+      .select({ userId: schema.checkIns.userId })
+      .from(schema.checkIns)
+      .innerJoin(schema.tripStops, eq(schema.tripStops.id, schema.checkIns.tripStopId))
+      .where(eq(schema.tripStops.tripId, airport));
+    expect(checkIns).toEqual([{ userId: formerMemberId }, { userId: formerMemberId }]);
+    const [dispute] = await db
+      .select()
+      .from(schema.disputes)
+      .where(eq(schema.disputes.bookingId, bookingId));
+    expect(dispute).toMatchObject({
+      kind: "no_show",
+      answer: "contested",
+      outcome: "rode",
+      note: "",
+      answerNote: "",
+      decisionNote: "",
+    });
+    // A change of car keeps what the passengers were told, not which car.
+    const changes = await db
+      .select({ before: schema.tripChanges.before, after: schema.tripChanges.after })
+      .from(schema.tripChanges)
+      .where(eq(schema.tripChanges.tripId, airport));
+    expect(changes).toEqual([
+      {
+        before: { make: "Kia", model: "Ceed", colour: "blue" },
+        after: { make: "Kia", model: "Ceed", colour: "blue" },
+      },
+    ]);
+    // Stops, prices and the payment are as they were.
+    expect(
+      await db.select().from(schema.tripStops).where(eq(schema.tripStops.tripId, airport)),
+    ).toEqual(stops);
+    expect(
+      await db
+        .select()
+        .from(schema.bookingSegmentPrices)
+        .where(eq(schema.bookingSegmentPrices.bookingId, bookingId)),
+    ).toEqual(prices);
+    expect(
+      await db.select().from(schema.payments).where(eq(schema.payments.bookingId, bookingId)),
+    ).toEqual(payments);
+  });
+
+  it("leaves the driver's and passengers' later trips as they were", async () => {
+    const { gunna } = await rideWithEverything();
+    const later = await booked(gunna.accessToken, north, { fromStop: 0, toStop: 1 });
+    expect((await arrival(north)).getTime()).toBeGreaterThan((await arrival(airport)).getTime());
+    const before = { trip: await tripOf(north), booking: await bookingOf(later.id) };
+
+    await run(await threeYearsAfter(airport));
+
+    expect(await tripOf(north)).toEqual(before.trip);
+    expect(await bookingOf(later.id)).toEqual(before.booking);
+  });
+
+  it.each([
+    ["the trip", "trip"],
+    ["the booking", "booking"],
+    ["the driver", "driver"],
+    ["the passenger", "passenger"],
+  ] as const)(
+    "keeps the trip as it is while %s is held, and lets go after",
+    async (_name, which) => {
+      const { jon, gunna, bookingId } = await rideWithEverything();
+      const due = await threeYearsAfter(airport);
+      const subject: [HoldSubjectKind, string] =
+        which === "trip"
+          ? ["trip", airport]
+          : which === "booking"
+            ? ["booking", bookingId]
+            : ["user", which === "driver" ? jon.userId : gunna.userId];
+      const held = await hold(...subject, new Date(due.getTime() + day));
+
+      expect(await run(due)).toEqual({ erased: 0, anonymised: 0 });
+      expect((await tripOf(airport)).driverId).toBe(jon.userId);
+      expect((await bookingOf(bookingId)).passengerId).toBe(gunna.userId);
+
+      await api.connection.db
+        .update(schema.holds)
+        .set({ endedAt: due })
+        .where(eq(schema.holds.id, held));
+      expect(await run(due)).toEqual({ erased: 0, anonymised: 2 });
+      expect((await tripOf(airport)).driverId).toBe(formerMemberId);
+    },
+  );
+
+  it("waits for a hold being set on the passenger, then keeps the trip", async () => {
+    const { gunna, bookingId } = await rideWithEverything();
+    const due = await threeYearsAfter(airport);
+    const operator = await api.signInOperator();
+    // As setting a hold does: the people it covers locked, then the hold saved.
+    const client = await api.connection.pool.connect();
+    try {
+      await client.query("begin");
+      await client.query("select id from users where id = $1 for share", [gunna.userId]);
+      await client.query(
+        "insert into holds (subject_type, subject_id, reason, ends_at, set_by) values ('user', $1, 'Claim', $2, $3)",
+        [gunna.userId, new Date(due.getTime() + day), operator.userId],
+      );
+      const running = run(due);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await client.query("commit");
+
+      expect(await running).toEqual({ erased: 0, anonymised: 0 });
+    } finally {
+      client.release();
+    }
+    expect((await bookingOf(bookingId)).passengerId).toBe(gunna.userId);
+  });
+
+  it("is safe to run twice: the second run changes nothing", async () => {
+    await rideWithEverything();
+    const due = await threeYearsAfter(airport);
+    await run(due);
+    const trip = await tripOf(airport);
+    const cars = await api.connection.db
+      .select()
+      .from(schema.vehicles)
+      .orderBy(asc(schema.vehicles.id));
+
+    expect(await run(due)).toEqual({ erased: 0, anonymised: 0 });
+
+    expect(await tripOf(airport)).toEqual(trip);
+    expect(
+      await api.connection.db.select().from(schema.vehicles).orderBy(asc(schema.vehicles.id)),
+    ).toEqual(cars);
+  });
+
+  it("uses one former member's car for trips in cars that look the same", async () => {
+    await rideWithEverything();
+    const { db } = api.connection;
+    // Anna's trip, in a car like Jón's, ends before the airport trip is due.
+    const anna = await tripOf(north);
+    const lookAlike = await newCar(anna.driverId, { removed: true });
+    await db.update(schema.trips).set({ vehicleId: lookAlike }).where(eq(schema.trips.id, north));
+
+    await run(await threeYearsAfter(north));
+
+    const used = await db
+      .select({ vehicleId: schema.trips.vehicleId })
+      .from(schema.trips)
+      .where(inArray(schema.trips.id, [airport, north]));
+    expect(new Set(used.map((trip) => trip.vehicleId)).size).toBe(1);
+  });
+
+  it("deletes a removed car once no trip uses it", async () => {
+    await rideWithEverything();
+    const { db } = api.connection;
+    // Jón removed the car he drove to the airport in; it was kept for that trip.
+    const removed = await newCar((await tripOf(airport)).driverId, { removed: true });
+    await db.update(schema.trips).set({ vehicleId: removed }).where(eq(schema.trips.id, airport));
+
+    expect(await run(await threeYearsAfter(airport))).toEqual({ erased: 1, anonymised: 2 });
+
+    expect(await carOf(removed)).toBeUndefined();
+  });
+
+  it("finishes a trip whose driver was erased: the passengers still named move too", async () => {
+    const { bookingId } = await rideWithEverything();
+    const { db } = api.connection;
+    // As an erasure of Jón leaves it: his trip and car the former member's.
+    const car = await newCar(formerMemberId, { removed: false });
+    await db
+      .update(schema.trips)
+      .set({ driverId: formerMemberId, vehicleId: car, note: "" })
+      .where(eq(schema.trips.id, airport));
+
+    expect(await run(await threeYearsAfter(airport))).toEqual({ erased: 0, anonymised: 2 });
+
+    expect((await bookingOf(bookingId)).passengerId).toBe(formerMemberId);
+    expect((await tripOf(airport)).vehicleId).toBe(car);
+  });
+});

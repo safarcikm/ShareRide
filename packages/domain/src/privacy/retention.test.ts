@@ -54,6 +54,10 @@ describe("the retention rules this feature adds (spec 11, 3.7)", () => {
   it("names the privacy requests, deleted 3 years after the answer", () => {
     expect(retentionRules).toContain("privacy_requests");
   });
+
+  it("names trips and bookings, made anonymous 3 years after the trip", () => {
+    expect(retentionRules).toContain("trips_and_bookings");
+  });
 });
 
 describe("holds (3.7.3, R11.6)", () => {

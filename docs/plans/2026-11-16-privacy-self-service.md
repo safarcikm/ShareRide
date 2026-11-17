@@ -363,11 +363,17 @@ journeys, and gets a code review before it opens.
 
 ### PR 9b: `feat(privacy)`: trips and bookings after 3 years
 
-- [ ] The `trips_and_bookings` rule of 4.7: trips 3 years after they
+- [x] The `trips_and_bookings` rule of 4.7: trips 3 years after they
       arrive, with their bookings, check-ins and reports, moved to the
-      former member with free text emptied; held ones wait
+      former member with free text emptied; held ones wait. As built: the
+      car becomes a former member's of the same make, model and colour
+      with no plate, a change of car drops which car, and a removed car
+      no trip uses any more is deleted. Each trip is its own transaction,
+      with the people on it locked as a new hold locks them. Reviews keep
+      to their own rule
 - Verify: integration tests (at the edge of the period; the drivers' and
-  passengers' other trips unchanged; a hold keeps them; twice safe)
+  passengers' other trips unchanged; a hold keeps them, also one being set
+  as the rule runs; twice safe)
 
 ### PR 10: `feat(privacy)`: ask about my data, the API
 
