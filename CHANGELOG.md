@@ -936,6 +936,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   `trip_limit_reached`, and the app says fewer seats or a shorter part may
   fit and leads back to the trip; the domain gains `tripLimit`, `takingsOf`,
   `limitRoom` and the highest price level within the limit.
+- The trip limit, part 2 (spec 17, ADR 0030): the price level follows the
+  limit. More seats after people booked, a stop whose new stretches leave
+  too little room, a no-show or a late cancellation lower the level for new
+  bookings to the highest that keeps a full car within the limit, recorded
+  as a price level change with its reason; a higher level is refused. The
+  driver's trip shows its takings, and the price and seats screens say when
+  what passengers paid sets the highest level, down to free.
 
 ### Fixed
 

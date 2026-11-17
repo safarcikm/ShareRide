@@ -29,7 +29,7 @@ import {
 import { and, asc, desc, eq, gte, inArray, isNull, ne, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { lockActive } from "../account/standing.ts";
-import { expireDueBookings, lockTrip, type Transaction } from "../bookings/seats.ts";
+import { expireDueBookings, lockTrip, takingsOfTrip, type Transaction } from "../bookings/seats.ts";
 import { addSystemLine } from "../chat/conversations.ts";
 import { followDepartureMove } from "../notifications/schedule.ts";
 import { recordEvents } from "../notifications/outbox.ts";
@@ -276,6 +276,7 @@ export function createTripChangeService(dependencies: {
       seats: effect.trip.seats,
       priceLevel: effect.trip.priceLevel,
       priceLevelLowered: effect.priceLevelLowered,
+      levelLimitedBy: effect.levelLimitedBy,
       prices:
         effect.pricing?.map(({ price }) => price) ??
         stored.map((amount) => ({ amount, currency: "ISK" as const })),
@@ -323,6 +324,30 @@ export function createTripChangeService(dependencies: {
   }
 
   /**
+   * A stop added or removed left too little room in the trip limit for the
+   * level (spec 17): the level falls and every stretch is priced again, as
+   * a price level change of its own, with its reason. Call it after the
+   * stop is saved, so the stretches have their new positions.
+   */
+  async function lowerAfterStop(
+    tx: Transaction,
+    trip: TripRow,
+    effect: ChangeEffect,
+    now: Date,
+  ): Promise<void> {
+    if (effect.pricing === null) return;
+    await reprice(tx, trip.id, effect, now);
+    await record(
+      tx,
+      trip.id,
+      "priceLevel",
+      { priceLevel: trip.priceLevel },
+      { priceLevel: effect.trip.priceLevel, reason: "trip_limit" },
+      now,
+    );
+  }
+
+  /**
    * Saves a change that is not a move, when it changes something: seats,
    * price level, booking mode, or the preferences and note. Nobody is told
    * (spec 7, 3.3); passengers see it on the trip.
@@ -348,7 +373,11 @@ export function createTripChangeService(dependencies: {
           trip.id,
           "seats",
           { seats: before.seats, priceLevel: before.priceLevel },
-          { seats: after.seats, priceLevel: after.priceLevel },
+          {
+            seats: after.seats,
+            priceLevel: after.priceLevel,
+            ...(effect.levelLimitedBy === "trip_limit" ? { reason: "trip_limit" } : {}),
+          },
           now,
         );
         return;
@@ -889,6 +918,7 @@ export function createTripChangeService(dependencies: {
             distancesM: segmentRows.map((segment) => segment.distanceM),
             occupancy: segmentRows.map((segment) => segment.occupancy),
             ...choicesOf(trip),
+            takings: (await takingsOfTrip(tx, tripId)).amount,
             vehicleId: trip.vehicleId ?? "",
             cars: cars.map((car) => car.id),
             note: trip.note,
@@ -953,6 +983,7 @@ export function createTripChangeService(dependencies: {
             segmentRows,
             now,
           );
+          await lowerAfterStop(tx, trip, checked.value, now);
         } else if (read.kind === "removeStop") {
           await removeStop(
             tx,
@@ -962,6 +993,7 @@ export function createTripChangeService(dependencies: {
             segmentRows,
             now,
           );
+          await lowerAfterStop(tx, trip, checked.value, now);
         } else {
           await saveChoice(tx, trip, read, checked.value, now);
         }

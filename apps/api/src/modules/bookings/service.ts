@@ -80,6 +80,7 @@ import {
   type Queryable,
   type Transaction,
 } from "./seats.ts";
+import { refitToTripLimit } from "../trips/limit.ts";
 
 const {
   bookings,
@@ -976,6 +977,9 @@ export function createBookingService(dependencies: {
         // so its stops are still on the trip.
         const part = partOf(await stopsOf(tx, found.tripId), booking);
         await changeOccupancy(tx, found.tripId, part, -booking.seats);
+        // Money kept after a late cancellation counts while the seat is free
+        // again (spec 17).
+        if (refund.amount < booking.totalPrice) await refitToTripLimit(tx, found.tripId, now);
         if (refund.amount > 0) await oweRefund(tx, bookingId, refund, now);
         await addSystemLine(
           tx,

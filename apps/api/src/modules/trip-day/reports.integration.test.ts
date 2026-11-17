@@ -230,6 +230,49 @@ describe("marking a no-show (spec 8, 3.3; R8.4)", () => {
     expect(await eventsOf(bookingId)).toEqual(["NoShowMarked"]);
   });
 
+  it("lowers the level for the seats ahead when the driver keeps a no-show's money (spec 17)", async () => {
+    const trip = await onTheTrip();
+    const { jon, bookingId } = trip;
+    // As if Gunna had paid as much as a full car pays at the caps: the
+    // freed seat can then only be sold for free (rule P3).
+    const stretches = await api.connection.db
+      .select({ capacity: schema.segments.capacity, cap: schema.segments.cap })
+      .from(schema.segments)
+      .where(eq(schema.segments.tripId, airport));
+    const limit = stretches.reduce((sum, row) => sum + row.capacity * row.cap, 0);
+    await api.connection.db
+      .update(schema.bookings)
+      .set({ totalPrice: limit })
+      .where(eq(schema.bookings.id, bookingId));
+    const [before] = await api.connection.db
+      .select({ priceLevel: schema.trips.priceLevel })
+      .from(schema.trips)
+      .where(eq(schema.trips.id, airport));
+    await waitedAtHlemmur(trip);
+
+    expect((await markNoShow(jon, bookingId)).ok).toBe(true);
+    const [after] = await api.connection.db
+      .select({ priceLevel: schema.trips.priceLevel })
+      .from(schema.trips)
+      .where(eq(schema.trips.id, airport));
+    expect(after?.priceLevel).toBe(0);
+    const changes = await api.connection.db
+      .select({
+        kind: schema.tripChanges.kind,
+        before: schema.tripChanges.before,
+        after: schema.tripChanges.after,
+      })
+      .from(schema.tripChanges)
+      .where(eq(schema.tripChanges.tripId, airport));
+    expect(changes).toEqual([
+      {
+        kind: "priceLevel",
+        before: { priceLevel: before?.priceLevel },
+        after: { priceLevel: 0, reason: "trip_limit" },
+      },
+    ]);
+  });
+
   it("is refused before the wait, saying when, and until the driver said I'm here at that stop", async () => {
     const trip = await onTheTrip();
     const { jon, gunna, bookingId, hlemmur } = trip;

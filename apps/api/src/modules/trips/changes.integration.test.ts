@@ -14,6 +14,7 @@ import {
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
 import { sampleId } from "@shareride/db/seed";
+import { defaultTripSettings, highestPriceLevel } from "@shareride/domain";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
@@ -630,14 +631,15 @@ describe("changing the seats, price level, booking mode and details (spec 6, 3.2
     const shown = await details(north, 0, 3);
     expect(booking.total).toEqual(shown.part.total);
 
-    // A fourth seat allows 200 at most.
+    // A fourth seat allows 200 at most, and what Gunna paid at 250 leaves
+    // room for 180 (spec 17).
     const more = await change(anna, north, { kind: "seats", seats: 4 });
     expect(more).toMatchObject({
       status: 200,
-      data: { seats: 4, priceLevel: 200, priceLevelLowered: true },
+      data: { seats: 4, priceLevel: 180, priceLevelLowered: true, levelLimitedBy: "trip_limit" },
     });
     const lowered = await mine(anna, north);
-    expect(lowered.priceLevel).toBe(200);
+    expect(lowered.priceLevel).toBe(180);
     const prices = lowered.segments.map((segment) => segment.price.amount);
     expect((await segmentsOf(north)).map((segment) => segment.price)).toEqual(prices);
     expect((await details(north, 0, 3)).part.pricePerSeat).toEqual(
@@ -657,7 +659,7 @@ describe("changing the seats, price level, booking mode and details (spec 6, 3.2
       {
         kind: "seats",
         before: { seats: 3, priceLevel: 250 },
-        after: { seats: 4, priceLevel: 200 },
+        after: { seats: 4, priceLevel: 180, reason: "trip_limit" },
       },
     ]);
   });
@@ -779,6 +781,126 @@ describe("changing the seats, price level, booking mode and details (spec 6, 3.2
     }
     expect(await changesOf(north)).toEqual([]);
     expect((await mine(anna, north)).updatedAt).toBe(trip.updatedAt);
+  });
+});
+
+describe("the trip limit (rule P3, spec 17)", () => {
+  async function mine(member: Member) {
+    const trip = await api.client.call(myTripRoute, {
+      accessToken: member.accessToken,
+      params: { id: north },
+    });
+    if (!trip.ok) throw new Error(trip.error.code);
+    return trip.data;
+  }
+
+  /** What a full car pays at the caps the stretches store. */
+  async function limitOf() {
+    const rows = await api.connection.db
+      .select({ capacity: schema.segments.capacity, cap: schema.segments.cap })
+      .from(schema.segments)
+      .where(eq(schema.segments.tripId, north));
+    return rows.reduce((sum, row) => sum + row.capacity * row.cap, 0);
+  }
+
+  /** The level's changes as recorded, without their ids. */
+  async function recorded() {
+    return (await changesOf(north)).map(({ kind, before, after }) => ({ kind, before, after }));
+  }
+
+  async function cancelled(member: Member, id: string) {
+    const terms = await cancelling(member, id, "plans_changed");
+    if (terms === undefined) throw new Error("No terms");
+    const answer = await api.client.call(cancelBookingRoute, {
+      accessToken: member.accessToken,
+      params: { id },
+      body: {
+        reason: "plans_changed",
+        terms: { refund: terms.refund, countsOnReliability: terms.countsOnReliability },
+      },
+    });
+    if (!answer.ok) throw new Error(answer.error.code);
+    return terms.refund.amount;
+  }
+
+  it("lowers the level when seats are added after people paid, and the seats left then fit (gap 1)", async () => {
+    const anna = await driverOf(north);
+    // One seat at the highest level one seat allows, paid for the whole route.
+    expect((await change(anna, north, { kind: "seats", seats: 1 })).ok).toBe(true);
+    const dearest = highestPriceLevel(1, defaultTripSettings);
+    expect((await change(anna, north, { kind: "priceLevel", priceLevel: dearest })).ok).toBe(true);
+    const gunna = await newMember("Gunna");
+    const first = await paidBooking(anna, gunna);
+
+    const preview = await change(anna, north, { kind: "seats", seats: 3 }, true);
+    expect(preview).toMatchObject({
+      status: 200,
+      data: { seats: 3, priceLevelLowered: true, levelLimitedBy: "trip_limit" },
+    });
+    const level = preview.ok ? preview.data.priceLevel : -1;
+    // Below what 3 seats alone allow: what Gunna paid counts.
+    expect(level).toBeLessThan(highestPriceLevel(3, defaultTripSettings));
+    expect((await change(anna, north, { kind: "seats", seats: 3 })).ok).toBe(true);
+    const trip = await mine(anna);
+    expect(trip.priceLevel).toBe(level);
+    expect(trip.takings).toEqual(first.total);
+
+    // No higher level is allowed while seats are free.
+    expect(await change(anna, north, { kind: "priceLevel", priceLevel: level + 10 })).toMatchObject(
+      {
+        status: 422,
+        error: { details: [{ path: "priceLevel", issue: "price_level_invalid" }] },
+      },
+    );
+    // The seats left, at the new prices, fit: the booking check agrees.
+    const others = [await newMember("Kári"), await newMember("Lára")];
+    const more = [];
+    for (const member of others) {
+      more.push(await booked(member.accessToken, north, { fromStop: 0, toStop: 3 }));
+    }
+    const totals = [first, ...more].reduce((sum, booking) => sum + booking.total.amount, 0);
+    expect(totals).toBeLessThanOrEqual(await limitOf());
+    expect((await recorded()).at(-1)).toEqual({
+      kind: "seats",
+      before: { seats: 1, priceLevel: dearest },
+      after: { seats: 3, priceLevel: level, reason: "trip_limit" },
+    });
+  });
+
+  it("lowers the level after a late cancellation frees a seat whose money is kept, not after a refund", async () => {
+    const anna = await driverOf(north);
+    expect((await change(anna, north, { kind: "priceLevel", priceLevel: 250 })).ok).toBe(true);
+    const [gunna, kari, lara] = [
+      await newMember("Gunna"),
+      await newMember("Kári"),
+      await newMember("Lára"),
+    ];
+    const bookings = [];
+    for (const member of [gunna, kari, lara]) bookings.push(await paidBooking(anna, member));
+    const [gunnas, , laras] = bookings;
+    if (gunnas === undefined || laras === undefined) throw new Error("Not booked");
+
+    // A day ahead, Lára gets all of it back: nothing is kept, the level stays.
+    expect(await cancelled(lara, laras.id)).toBe(laras.total.amount);
+    expect((await mine(anna)).priceLevel).toBe(250);
+
+    // Ten minutes before boarding, Gunna gets nothing back (rule M2).
+    await until("2026-11-14T08:50:00.000Z", anna, gunna);
+    expect(await cancelled(gunna, gunnas.id)).toBe(0);
+    const trip = await mine(anna);
+    expect(trip.priceLevel).toBeLessThan(250);
+    expect(trip.takings.amount).toBe(2 * gunnas.total.amount);
+    // A full car at the new prices stays within the limit.
+    const free = trip.segments.reduce(
+      (sum, segment) => sum + (trip.seats - segment.seatsTaken) * segment.price.amount,
+      0,
+    );
+    expect(trip.takings.amount + free).toBeLessThanOrEqual(await limitOf());
+    expect((await recorded()).at(-1)).toEqual({
+      kind: "priceLevel",
+      before: { priceLevel: 250 },
+      after: { priceLevel: trip.priceLevel, reason: "trip_limit" },
+    });
   });
 });
 

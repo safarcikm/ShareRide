@@ -372,6 +372,12 @@ export const en = {
   "trip.price.whyBody":
     "ShareRide is for sharing the cost of a trip you're making anyway. A full car must not earn more than the trip costs, so prices have a ceiling.",
   "trip.price.rules": "Read the Community Rules",
+  "trip.price.limitUsed":
+    "Passengers have already paid most of this trip's limit, so the seats left can cost at most {level}%.",
+  "trip.price.limitUsedFree":
+    "Passengers have already paid this trip's limit, so the seats left are free.",
+  "trip.price.whyLimit.trip":
+    "The limit is for the whole trip, so what passengers have already paid counts towards it.",
   "trip.price.lowered":
     "With {seats, plural, one {# seat} other {# seats}} the highest price level is {level}%, so we lowered yours to it.",
   "trip.price.next": "Choose seats",

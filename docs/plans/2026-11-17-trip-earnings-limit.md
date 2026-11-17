@@ -211,6 +211,14 @@ the domain to the app's error text. Nothing changes for drivers yet.
 
 ## PR 2: changes, no-shows and the edit screens
 
+Built 2026-11-17. As built, it differs from the tasks below in three
+places: a stop added or removed can lower the level too (its stretches'
+prices round on their own), and then every stretch is priced again; the
+refit has its own small update instead of sharing the change service's
+reprice step; and its tests sit with the flows they follow
+(`trips/changes.integration.test.ts` for a late cancellation,
+`trip-day/reports.integration.test.ts` for a no-show).
+
 ### Task 4: Trip changes use the trip limit
 
 **Files:**
@@ -232,7 +240,7 @@ the domain to the app's error text. Nothing changes for drivers yet.
   the two could differ: give `TripLoad` the stored caps, or test that they
   agree.
 
-- [ ] **Step 1: Write the failing tests** (spec 17's trip, 1 seat booked
+- [x] **Step 1: Write the failing tests** (spec 17's trip, 1 seat booked
   at 500%, takings 29 100, occupancy `[1, 1, 1]`):
   - seats → 3 lowers the level to 120 with `levelLimitedBy: "trip_limit"`,
     and every stretch's new price matches `segmentPrices(d, 120, 3)`;
@@ -241,14 +249,14 @@ the domain to the app's error text. Nothing changes for drivers yet.
     250, `levelLimitedBy: "seats"`);
   - adding a stop on the 171 km stretch never raises the level, and the
     level it ends at passes `isLevelWithin` for the new stretches.
-- [ ] **Step 2:** Run `pnpm --filter @shareride/domain test changes`;
+- [x] **Step 2:** Run `pnpm --filter @shareride/domain test changes`;
   expect failures.
-- [ ] **Step 3: Implement:** build a `TripLoad` from the trip after the
+- [x] **Step 3: Implement:** build a `TripLoad` from the trip after the
   change (its distances, occupancy, seats and takings) and use
   `fitLevelWithin` for seats and stops, `isLevelWithin` for the price level.
-- [ ] **Step 4:** Run the same command, then
+- [x] **Step 4:** Run the same command, then
   `pnpm --filter @shareride/domain check`; expect pass.
-- [ ] **Step 5: Commit** `feat(trips): changes keep a trip within its limit`.
+- [x] **Step 5: Commit** `feat(trips): changes keep a trip within its limit`.
 
 ### Task 5: Trip changes and the driver's trip carry the takings
 
@@ -267,18 +275,18 @@ the domain to the app's error text. Nothing changes for drivers yet.
 - Consumes: `ChangeableTrip.takings` (Task 4), `limitRoomOf` (Task 3).
 - Produces: `DriverTrip.takings` for the app (Task 7).
 
-- [ ] **Step 1: Write the failing tests:** raising the seats after a
+- [x] **Step 1: Write the failing tests:** raising the seats after a
   booking lowers the level to 120% and stores the repriced segments; the
   trip change records `{ seats: 3, priceLevel: 120 }`; the driver's trip
   shows `takings` 29 100 kr; another person's view of the trip has no
   `takings`; the gap 1 sequence end to end (1 seat at 500% booked, seats
   → 3, two bookings of the whole route at the new price) leaves the
   driver's bookings at 43 100 kr, within the 43 800 kr limit.
-- [ ] **Step 2:** Run `pnpm --filter @shareride/api test:integration changes`;
+- [x] **Step 2:** Run `pnpm --filter @shareride/api test:integration changes`;
   expect failures.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4:** Run the same command and `pnpm check`; expect pass.
-- [ ] **Step 5: Commit** `feat(trips): seat and price changes count what is booked`.
+- [x] **Step 3: Implement.**
+- [x] **Step 4:** Run the same command and `pnpm check`; expect pass.
+- [x] **Step 5: Commit** `feat(trips): seat and price changes count what is booked`.
 
 ### Task 6: A no-show or a late cancellation refits the level
 
@@ -300,17 +308,17 @@ the domain to the app's error text. Nothing changes for drivers yet.
   `{ priceLevel, reason: "trip_limit" }`. Passengers are not told (spec 7,
   3.3: nobody is told of price changes).
 
-- [ ] **Step 1: Write the failing tests:** a full car of 3 at 250% with two
+- [x] **Step 1: Write the failing tests:** a full car of 3 at 250% with two
   no-shows prices the stretches still ahead at 0; a trip at 100% with one
   no-show keeps its level; a passenger's cancellation with a full refund
   does not refit.
-- [ ] **Step 2:** Run `pnpm --filter @shareride/api test:integration limit`;
+- [x] **Step 2:** Run `pnpm --filter @shareride/api test:integration limit`;
   expect failures.
-- [ ] **Step 3: Implement.** Tell the trip day thread before merging: its
+- [x] **Step 3: Implement.** Tell the trip day thread before merging: its
   file `reports.ts` gains one call.
-- [ ] **Step 4:** Run the same command and the trip day and bookings
+- [x] **Step 4:** Run the same command and the trip day and bookings
   integration tests; expect pass.
-- [ ] **Step 5: Commit** `feat(trips): a no-show's kept money counts towards the limit`.
+- [x] **Step 5: Commit** `feat(trips): a no-show's kept money counts towards the limit`.
 
 ### Task 7: The edit screens say why the level fell
 
@@ -329,16 +337,16 @@ the domain to the app's error text. Nothing changes for drivers yet.
 - Texts, as spec 17 section 11 fixes them: `trip.price.limitUsed` and
   `trip.price.whyLimit.trip`.
 
-- [ ] **Step 1: Write the failing screen tests:** with 1 seat booked at
+- [x] **Step 1: Write the failing screen tests:** with 1 seat booked at
   500%, choosing 3 seats shows "Passengers have already paid most of this
   trip's limit, so the seats left can cost at most 120%."; the price screen
   stops at 120%; a trip with no bookings shows today's text; "Why is there
   a limit?" has the new sentence; both in Icelandic too.
-- [ ] **Step 2:** Run `pnpm --filter @shareride/mobile test edit`; expect
+- [x] **Step 2:** Run `pnpm --filter @shareride/mobile test edit`; expect
   failures.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4:** Run the same command and `pnpm check`; expect pass.
-- [ ] **Step 5: Commit** `feat(app): the price and seats screens follow the trip limit`.
+- [x] **Step 3: Implement.**
+- [x] **Step 4:** Run the same command and `pnpm check`; expect pass.
+- [x] **Step 5: Commit** `feat(app): the price and seats screens follow the trip limit`.
 
 ### Task 8: Docs
 
@@ -346,8 +354,8 @@ the domain to the app's error text. Nothing changes for drivers yet.
 from segments and bookings, not stored), `CHANGELOG.md`, the plan and spec
 indexes (status built), this plan's ticks.
 
-- [ ] **Step 1:** Update them; run `npx --yes markdownlint-cli2@0.24.0`.
-- [ ] **Step 2: Commit** `docs: the trip limit is built`; open PR 2.
+- [x] **Step 1:** Update them; run `npx --yes markdownlint-cli2@0.24.0`.
+- [x] **Step 2: Commit** `docs: the trip limit is built`; open PR 2.
 
 ## Not in this plan
 

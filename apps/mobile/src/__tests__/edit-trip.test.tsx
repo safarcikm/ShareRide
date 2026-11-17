@@ -160,6 +160,67 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     expect(changes(client)).toEqual([{ preview: saved, body: { kind: "seats", seats: 4 } }]);
   });
 
+  /**
+   * The north trip with one seat, booked on the whole route at 500% for
+   * 22,500 ISK (spec 17, gap 1).
+   */
+  const paidAtOneSeat = {
+    ...north,
+    seats: 1,
+    priceLevel: 500,
+    segments: north.segments.map((segment) => ({ ...segment, seatsTaken: 1 })),
+    takings: { amount: 22_500, currency: "ISK" as const },
+  };
+
+  it("says when what passengers paid lowers the price level for more seats (spec 17)", async () => {
+    const { client } = await openPart("Change the seats", paidAtOneSeat);
+    await fireEvent.press(screen.getByRole("button", { name: "One seat more" }));
+    expect(
+      screen.getByText(
+        "Passengers have already paid most of this trip's limit, so the seats left can cost at most 160%.",
+      ),
+    ).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "One seat more" }));
+    expect(
+      screen.getByText(
+        "Passengers have already paid most of this trip's limit, so the seats left can cost at most 120%.",
+      ),
+    ).toBeVisible();
+    await saveAndSeeIt();
+    expect(changes(client)).toEqual([{ preview: saved, body: { kind: "seats", seats: 3 } }]);
+  });
+
+  it("stops the price at what the trip limit leaves, and says why (spec 17)", async () => {
+    await openPart("Change the price", { ...paidAtOneSeat, seats: 3, priceLevel: 120 });
+    expect(screen.getByRole("button", { name: "Raise the price" })).toBeDisabled();
+    expect(
+      screen.getByText(
+        "Passengers have already paid most of this trip's limit, so the seats left can cost at most 120%.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "The limit is for the whole trip, so what passengers have already paid counts towards it.",
+      ),
+    ).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Lower the price" }));
+    expect(screen.getByRole("button", { name: "Raise the price" })).toBeEnabled();
+  });
+
+  it("says the seats left are free once passengers have paid the whole limit (spec 17)", async () => {
+    await openPart("Change the price", {
+      ...paidAtOneSeat,
+      seats: 3,
+      priceLevel: 0,
+      takings: { amount: 99_000, currency: "ISK" as const },
+    });
+    expect(
+      screen.getByText(
+        "Passengers have already paid this trip's limit, so the seats left are free.",
+      ),
+    ).toBeVisible();
+  });
+
   it("says why the server refused the seats", async () => {
     await openPart("Change the seats", north, {
       change: () =>

@@ -1,8 +1,8 @@
 # Spec 17: A limit on what one trip brings the driver
 
-**Owner:** Martin · **Date:** 2026-11-17 · **Status:** Approved
-(2026-11-17); being built: the booking check is in, the price level
-follows next, see the
+**Owner:** Martin · **Date:** 2026-11-17 · **Status:** Approved and
+built (2026-11-17), except the payout hold, which comes with payouts in
+milestone 15; see the
 [implementation plan](../plans/2026-11-17-trip-earnings-limit.md)
 
 Decision record: [ADR 0030](../decisions/0030-limit-what-a-whole-trip-brings-the-driver.md)

@@ -83,9 +83,8 @@ opinion before the beta.**
 **The trip limit.** The cap per seat keeps a full car within the cost only
 while nothing changes after people book. A whole trip is limited too
 ([ADR 0030](../decisions/0030-limit-what-a-whole-trip-brings-the-driver.md),
-[spec 17](../specs/2026-11-17-trip-earnings-limit.md); accepted 2026-11-17;
-the booking check is built, lowering the level after a change is being
-built):
+[spec 17](../specs/2026-11-17-trip-earnings-limit.md); accepted and built
+2026-11-17, the payout hold with payouts in milestone 15):
 
 ```text
 trip_limit = Σ_k capacity × cap[k]
