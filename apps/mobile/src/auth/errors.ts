@@ -19,6 +19,7 @@ export function errorText(t: Translate, failure: CallFailure): string {
     case "account_unavailable":
     case "network_error":
     case "legal_version_outdated":
+    case "account_suspended":
     case "deletion_blocked":
       return t(`error.${code}`);
     case "rate_limited":

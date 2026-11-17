@@ -283,8 +283,8 @@ spec 7: the reporter on the outcome (push), the affected user on an action
 | `safety.beforeYouGo` | Before you go: check the weather, road conditions and SafeTravel. | Áður en lagt er af stað: kannaðu veður, færð og SafeTravel. |
 | `share.title` | Share trip details | Deila upplýsingum um ferðina |
 | `share.text` | My trip: {date} at {time} · {from} – {to} · Meeting point: {point} · Driver: {driver} · Car: {car}, {plate} · Booked on ShareRide | Ferðin mín: {date} kl. {time} · {from} – {to} · Mótsstaður: {point} · Bílstjóri: {driver} · Bíll: {car}, {plate} · Bókað á ShareRide |
-| `suspension.notice` | Your account is suspended until {date}. Reason: {reason}. To appeal, open Notices. | Aðganginum þínum hefur verið lokað til {date}. Ástæða: {reason}. Opnaðu Skilaboð frá ShareRide til að andmæla. |
-| `suspension.permanent` | Your account is suspended with no end date. Reason: {reason}. To appeal, open Notices. | Aðganginum þínum hefur verið lokað ótímabundið. Ástæða: {reason}. Opnaðu Skilaboð frá ShareRide til að andmæla. |
+| `suspension.notice` | Your account is suspended until {date}. Reason: {reason}. To appeal, open Notices. | Aðganginum þínum hefur verið lokað til: {date}. Ástæða: {reason}. Opnaðu Orðsendingar frá ShareRide til að andmæla. |
+| `suspension.permanent` | Your account is suspended with no end date. Reason: {reason}. To appeal, open Notices. | Aðganginum þínum hefur verið lokað ótímabundið. Ástæða: {reason}. Opnaðu Orðsendingar frá ShareRide til að andmæla. |
 
 ## 9. Testing
 

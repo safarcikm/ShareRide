@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Me } from "@shareride/contracts";
+import { AppState } from "react-native";
 import { createClient, thisDevice } from "./api";
 import { createSessionManager, type SessionManager, type SessionState } from "./session-manager";
 import { tokenStore } from "./token-store";
@@ -20,6 +21,16 @@ export function SessionProvider({ children }: { readonly children: ReactNode }) 
   );
   useEffect(() => {
     void session.restore();
+  }, [session]);
+  // Back in view, the account may have changed meanwhile, such as a
+  // suspension that started or ended (spec 9, 3.6.2).
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (next) => {
+      if (next === "active") void session.reloadMe();
+    });
+    return () => {
+      subscription.remove();
+    };
   }, [session]);
   return <SessionContext value={session}>{children}</SessionContext>;
 }
