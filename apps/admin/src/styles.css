@@ -276,6 +276,11 @@ code {
   min-width: 0;
 }
 
+/* Text written on several lines, such as where to stand. */
+.line-breaks {
+  white-space: pre-line;
+}
+
 /* A link that does what a button does, such as opening a form. */
 .link-button {
   display: inline-flex;
