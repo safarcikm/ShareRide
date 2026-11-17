@@ -1,3 +1,5 @@
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { ConfigError, loadAdminOrigin, loadConfig, loadErrorReportingConfig } from "./config.ts";
 
@@ -52,7 +54,66 @@ describe("loadConfig", () => {
       push: { accessToken: undefined },
       email: { provider: "dev", webAppUrl: "http://localhost:8081" },
       adminOrigin: "http://localhost:8080",
+      photos: { provider: "folder", folder: join(tmpdir(), "shareride-photos") },
     });
+  });
+
+  it("keeps photos in a folder locally, and takes none on a server until a bucket is set (ADR 0022)", () => {
+    expect(loadConfig(development).photos).toEqual({
+      provider: "folder",
+      folder: join(tmpdir(), "shareride-photos"),
+    });
+    expect(loadConfig({ ...development, PHOTO_FOLDER: "/data/photos" }).photos).toEqual({
+      provider: "folder",
+      folder: "/data/photos",
+    });
+    expect(loadConfig(valid).photos).toEqual({ provider: "none" });
+    expect(loadConfig({ ...valid, APP_ENV: "staging" }).photos).toEqual({ provider: "none" });
+  });
+
+  it("refuses the folder in production, where a deploy would lose the photos", () => {
+    expect(() => loadConfig({ ...valid, PHOTO_STORAGE: "folder" })).toThrow(
+      "PHOTO_STORAGE: a folder loses its photos on each deploy and is not allowed in production",
+    );
+  });
+
+  it("stores photos in the Hetzner bucket with its endpoint, name and keys", () => {
+    const bucket = {
+      PHOTO_STORAGE: "hetzner",
+      PHOTO_BUCKET_ENDPOINT: "https://hel1.your-objectstorage.com",
+      PHOTO_BUCKET: "shareride-photos",
+      PHOTO_BUCKET_ACCESS_KEY: "access-example",
+      PHOTO_BUCKET_SECRET_KEY: "secret-example",
+    };
+    expect(loadConfig({ ...valid, ...bucket }).photos).toEqual({
+      provider: "hetzner",
+      endpoint: "https://hel1.your-objectstorage.com",
+      bucket: "shareride-photos",
+      accessKey: "access-example",
+      secretKey: "secret-example",
+    });
+    try {
+      loadConfig({ ...valid, PHOTO_STORAGE: "hetzner" });
+      expect.unreachable();
+    } catch (error) {
+      expect((error as ConfigError).problems).toEqual([
+        "PHOTO_BUCKET_ENDPOINT: needed when PHOTO_STORAGE is hetzner",
+        "PHOTO_BUCKET: needed when PHOTO_STORAGE is hetzner",
+        "PHOTO_BUCKET_ACCESS_KEY: needed when PHOTO_STORAGE is hetzner",
+        "PHOTO_BUCKET_SECRET_KEY: needed when PHOTO_STORAGE is hetzner",
+      ]);
+    }
+    expect(() =>
+      loadConfig({
+        ...valid,
+        ...bucket,
+        PHOTO_BUCKET_ENDPOINT: "http://hel1.your-objectstorage.com",
+      }),
+    ).toThrow("PHOTO_BUCKET_ENDPOINT");
+    // A dot breaks the bucket's HTTPS address, which is a host name under the endpoint's.
+    for (const name of ["Shareride_Photos", "shareride.photos"]) {
+      expect(() => loadConfig({ ...valid, ...bucket, PHOTO_BUCKET: name })).toThrow("PHOTO_BUCKET");
+    }
   });
 
   it("binds the console's passkeys to ADMIN_ORIGIN, or the API itself locally (ADR 0028)", () => {

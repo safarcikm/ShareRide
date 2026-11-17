@@ -5,3 +5,4 @@ export * from "./coordinates.ts";
 export * from "./draft.ts";
 export * from "./console-list.ts";
 export * from "./status.ts";
+export * from "./photos.ts";
