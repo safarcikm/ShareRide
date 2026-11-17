@@ -38,12 +38,26 @@ export const meetingPointSummarySchema = z.object({
 
 export type MeetingPointSummary = z.infer<typeof meetingPointSummarySchema>;
 
-/** Everything about one meeting point (spec 2, 3.2). Photos come with the real list. */
+/** A photo of a meeting point, in the order the operator chose (spec 2, 3.2). */
+export const meetingPointPhotoSchema = z.object({
+  /** A signed link that lasts at least an hour: absolute, or a path on this API. */
+  url: z.string(),
+  /** For screen readers. */
+  description: localisedTextSchema,
+  width: z.int().positive(),
+  height: z.int().positive(),
+});
+
+export type MeetingPointPhoto = z.infer<typeof meetingPointPhotoSchema>;
+
+/** Everything about one meeting point (spec 2, 3.2). */
 export const meetingPointDetailsSchema = meetingPointSummarySchema.extend({
   aliases: z.array(z.string()),
   whereToStand: localisedTextSchema.nullable(),
   pausedUntil: dateSchema.nullable(),
   lastCheckedOn: dateSchema.nullable(),
+  /** Up to five, in order; none where no photo storage is set up. */
+  photos: z.array(meetingPointPhotoSchema),
 });
 
 export type MeetingPointDetails = z.infer<typeof meetingPointDetailsSchema>;

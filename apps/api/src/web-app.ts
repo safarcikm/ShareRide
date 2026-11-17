@@ -26,21 +26,24 @@ const isFilePath = (path: string) =>
 /**
  * The web app loads only its own files and calls only its own origin, plus
  * Sentry's EU region for error reports (ADR 0020). Styles may be inline
- * because React Native Web writes them at run time. Maps add their hosts
- * here when they arrive.
+ * because React Native Web writes them at run time. Images may also come
+ * from photo storage (ADR 0022).
  */
-const contentSecurityPolicy = [
-  "default-src 'self'",
-  "script-src 'self'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
-  "font-src 'self' data:",
-  "connect-src 'self' https://*.ingest.de.sentry.io",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-].join("; ");
+export const webContentSecurityPolicy = (photoOrigin: string | null = null) =>
+  [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    photoOrigin === null
+      ? "img-src 'self' data: blob:"
+      : `img-src 'self' data: blob: ${photoOrigin}`,
+    "font-src 'self' data:",
+    "connect-src 'self' https://*.ingest.de.sentry.io",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ].join("; ");
 
 /**
  * Trip pages show a person's first name and travel plans, so search engines
@@ -61,7 +64,8 @@ export type WebApp = (c: Context<AppEnv, string>) => Promise<Response | undefine
  * shows it. Returns undefined for everything else, which gets the API's 404.
  * Running after the routes, not as a route, keeps API route names in logs.
  */
-export function createWebApp(root: string): WebApp {
+export function createWebApp(root: string, photoOrigin: string | null = null): WebApp {
+  const contentSecurityPolicy = webContentSecurityPolicy(photoOrigin);
   const files = serveStatic<AppEnv>({ root });
   const page = serveStatic<AppEnv>({ root, path: "index.html" });
 

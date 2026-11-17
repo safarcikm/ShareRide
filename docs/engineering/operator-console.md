@@ -168,6 +168,60 @@ the other fields as they were. A point changed elsewhere since the page
 loaded offers the newest copy, as a save does, which replaces what was
 typed.
 
+### Photos
+
+A point's photos (spec 2, 3.6.3) are in
+`apps/api/src/modules/meeting-points/photos.ts`, with their routes in
+`registerMeetingPointPhotoAdminRoutes`:
+
+- `GET /admin/v1/meeting-points/{id}/photos` lists them in order, each
+  with a link, its descriptions in both languages, its size and its
+  `updatedAt`. `POST` the same path adds one last: the descriptions and
+  `file`, the JPEG in base64, as the API takes only JSON. `PUT
+  .../photos/{photoId}` changes its descriptions with the `updatedAt` it
+  loaded (`photo_changed` if it was changed since), `PUT .../photo-order`
+  takes every photo's ID once in the new order (`photos_changed` if one
+  was added or removed since), and `DELETE .../photos/{photoId}` removes
+  one. Each answers with the point's photos as they now are.
+- The console resizes each photo to at most 1 600 pixels and writes it as
+  a new JPEG with only the picture's own segments, which leaves out
+  location, camera and other metadata ([ADR 0029](../decisions/0029-photos-cleaned-in-the-browser-and-checked-by-the-api.md)).
+  The API checks the result with the domain's `checkPhotoFile`, which
+  takes only the segments on its list: the plain JFIF header without a
+  thumbnail, quantisation and Huffman tables, a restart interval, one
+  baseline or progressive frame and its scans, each exactly as long as
+  its parts, and coded data only after a scan's header. Exif, XMP, ICC
+  profiles, comments and anything after the end are refused as
+  `metadata`; other forms as `not_jpeg`. At most 2 MB and 1 600 pixels on
+  the longer side. A body over 3 MB is refused with 413 before it is read.
+- At most five per point (`too_many_photos`), and none for a retired
+  point. Changes take the point's row `FOR UPDATE`, so two operators'
+  changes to one point's photos go one at a time.
+- A new photo's file is stored first, under a random key
+  (`meeting-points/<uuid>.jpg`), then its row and audit entry in one
+  transaction; if that fails, the file is deleted. Removing deletes the
+  row first and the file after the commit, so a failure leaves a file
+  no photo points to, never a photo without its file.
+- Audit entries are `meeting_point.photo_added` and
+  `meeting_point.photo_removed` (its ID, descriptions and size, never the
+  file), `meeting_point.photo_described` (only what changed) and
+  `meeting_point.photos_ordered` (the IDs before and after).
+- The app's `GET /v1/meeting-points/{id}` has the photos in order, each
+  with its link, size and descriptions for screen readers.
+
+The storage (`apps/api/src/platform/photo-storage.ts`) is chosen by
+`PHOTO_STORAGE`: `hetzner` (the bucket, `photo-storage-hetzner.ts`), a
+`folder` (development, the default; the API serves its files at
+`/v1/photo-files/`, and production refuses it, as a deploy would lose
+them) or `none` (no photos are taken or shown). Links to the bucket are
+signed (AWS Signature V4, with `aws4fetch`) from the start of the hour for
+two hours (ADR 0029), so a link lasts at least an hour and stays the same
+all hour, and the app's five-minute cache of a point's details always holds
+links that work. The console's and the web app's content security policies allow
+images from the bucket's origin. `pnpm --filter @shareride/api
+test:contract` checks the adapter against the real bucket with its keys
+(`photo-storage-hetzner.contract.test.ts`).
+
 ## Disputes
 
 `apps/api/src/modules/trip-day/admin-routes.ts` holds the console's

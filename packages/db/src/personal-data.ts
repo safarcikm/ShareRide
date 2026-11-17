@@ -126,6 +126,9 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     ),
   },
   meeting_points: notAboutAPerson("public places chosen by the operator"),
+  meeting_point_photos: notAboutAPerson(
+    "photos of public places, faces and number plates blurred by the operator",
+  ),
   places: notAboutAPerson("public place names"),
   legs: notAboutAPerson("driving distances between meeting points"),
   trips: {
