@@ -734,10 +734,15 @@ async function factsOf(q: Queryable, notificationId: string, now: Date) {
   if (row === undefined) return undefined;
   const { notification, booking, recipient } = row;
   if (row.boardsAt === null) throw new Error("A booked trip has the times of its stops.");
+  // An erased sender's message is gone for the other person, even where a
+  // report keeps what it said for the operator (A47).
   const [message] =
     notification.messageId === null
       ? []
-      : await q.select().from(messages).where(eq(messages.id, notification.messageId));
+      : await q
+          .select()
+          .from(messages)
+          .where(and(eq(messages.id, notification.messageId), isNull(messages.erasedAt)));
   const locale = recipient.locale === "is" ? "is" : "en";
   const role: TripRole = notification.recipientId === row.driverId ? "driver" : "passenger";
   const moved =
@@ -1895,6 +1900,10 @@ export function createNotificationWorker(dependencies: {
       found.facts.kind === "unread_messages" &&
       !(await anyUnread(db, found.facts.bookingId, found.recipientId))
     ) {
+      return { skipped: "no_longer_applies" };
+    }
+    // A message whose sender was erased since says nothing (A47).
+    if (found.facts.kind === "new_message" && found.facts.message === null) {
       return { skipped: "no_longer_applies" };
     }
     // A point back in use since it was paused, or a booking that no longer

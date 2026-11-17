@@ -914,6 +914,8 @@ releases follow [Semantic Versioning](https://semver.org/).
   Martin's answer A47): the erased person's messages read "Message deleted" to
   the other person, but the operator can still read them until the
   report's time is over and the clean-up deletes the conversation.
+- A chat push still waiting when its sender is erased is no longer sent,
+  so what a report keeps never reaches the other person (A47).
 - Ask about my data in the API (spec 11, 3.6): `POST /v1/me/privacy-requests`
   takes an objection, a restriction, a correction or a question from
   someone with a verified email, at most 5 a day, due a month later. The
