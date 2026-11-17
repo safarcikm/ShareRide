@@ -6,6 +6,7 @@ import {
   defaultBookingSettings,
   defaultChatSettings,
   defaultNotificationSettings,
+  defaultReliabilitySettings,
   defaultReviewSettings,
   defaultSearchSettings,
   defaultTripDaySettings,
@@ -54,6 +55,7 @@ import {
   registerTripDayRoutes,
 } from "./modules/trip-day/index.ts";
 import { createReviewService, registerReviewRoutes } from "./modules/reviews/index.ts";
+import { createPeopleService, registerPeopleRoutes } from "./modules/people/index.ts";
 import { createDrivingService, registerDrivingRoutes } from "./modules/driving/index.ts";
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
@@ -333,6 +335,11 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     registerReviewRoutes(
       app,
       createReviewService({ ...features, settings: defaultReviewSettings }),
+      requireAuth,
+    );
+    registerPeopleRoutes(
+      app,
+      createPeopleService({ ...features, settings: defaultReliabilitySettings }),
       requireAuth,
     );
     registerNotificationRoutes(app, { ...features, requireAuth });

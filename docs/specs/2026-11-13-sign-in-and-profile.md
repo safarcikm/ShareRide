@@ -192,7 +192,7 @@ Endpoints (`/v1`, shapes defined in `packages/contracts`):
 | `PUT /me/email` | Send a link to verify an email address; it is mine once opened ([milestone 5 plan, 4.6](../plans/2026-11-15-milestone-5-chat-and-notifications.md#46-email)) |
 | `POST /email-verifications` | Open that link, signed in or not |
 | `GET /me/sessions`, `DELETE /me/sessions/{id}` | List and end sessions |
-| `GET /users/{id}` | Public profile |
+| `GET /people/{profileId}` | Public profile, by its own random reference, never the user ID |
 | `GET /legal/{type}/current` | Current document in my language |
 | `POST /me/legal-acceptances` | Record acceptance |
 

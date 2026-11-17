@@ -583,6 +583,19 @@ releases follow [Semantic Versioning](https://semver.org/).
   both show now. The booking and the trip then show the review sent and,
   once it shows, the other's review. A browser journey: both review and
   each sees the other's.
+- Public profiles in the API (milestone 7, PR 7a, spec 1, 3.5, and spec 8,
+  3.7 and 3.8): `GET /v1/people/{profileId}` gives anyone signed in a
+  person's first name, about, languages, badges, the month they joined,
+  colour, rating and reliability figure, never their phone number, email, last name or
+  user ID. A profile is reached by its own random reference: migration
+  `0033_profile_ids` adds `users.profile_id`. The rating is the average of
+  the reviews that show, to one decimal; `GET /v1/people/{profileId}/reviews`
+  lists them newest first, 20 at a time, for one role or both, with the
+  author's first name ("A former member" once erased) and the month. The
+  figure is the share kept of the trips and bookings that count over the
+  last 12 months, from 5 that count, with the counts by role. Nobody leaving
+  ShareRide has a profile, and what they wrote shows nowhere until they are
+  erased.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

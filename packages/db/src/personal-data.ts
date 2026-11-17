@@ -57,6 +57,8 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     export: { section: "account" },
     personColumns: [],
     onDeletion: { rows: "erase", note: "the row itself; what is kept moves to the former member" },
+    // The person's public reference for their profile: random, it goes with the row.
+    otherIds: ["profileId"],
   },
   verification_codes: notAboutAPerson(
     "keyed hashes of a number and a code, not linked to an account and gone within minutes",
