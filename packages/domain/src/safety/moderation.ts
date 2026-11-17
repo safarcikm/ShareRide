@@ -128,9 +128,7 @@ export function canAppeal(
 }
 
 export type AppealAnswerProblem =
-  | { readonly code: "not_appealed" }
-  | { readonly code: "already_answered" }
-  | StatementProblem;
+  { readonly code: "not_appealed" } | { readonly code: "already_answered" } | StatementProblem;
 
 /** The operator answers an appeal once; the answer is final in the app (3.4.4). */
 export function checkAppealAnswer(

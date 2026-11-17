@@ -101,16 +101,17 @@ describe("the operator's answer to an appeal (3.4.4)", () => {
       ok: false,
       error: { code: "not_appealed" },
     });
-    expect(
-      checkAppealAnswer({ ...appealed, appealAnsweredAt: actedAt }, "Yes.", settings),
-    ).toEqual({ ok: false, error: { code: "already_answered" } });
+    expect(checkAppealAnswer({ ...appealed, appealAnsweredAt: actedAt }, "Yes.", settings)).toEqual(
+      { ok: false, error: { code: "already_answered" } },
+    );
     expect(checkAppealAnswer(appealed, " ", settings)).toEqual({
       ok: false,
       error: { code: "reason_missing" },
     });
-    expect(
-      checkAppealAnswer(appealed, "Too long", { ...settings, textMaxLength: 5 }),
-    ).toEqual({ ok: false, error: { code: "too_long" } });
+    expect(checkAppealAnswer(appealed, "Too long", { ...settings, textMaxLength: 5 })).toEqual({
+      ok: false,
+      error: { code: "too_long" },
+    });
   });
 });
 
