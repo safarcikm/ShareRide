@@ -3,6 +3,7 @@ import {
   adminAddMeetingPointPhotoRoute,
   adminCreateMeetingPointRoute,
   adminDescribeMeetingPointPhotoRoute,
+  adminImportMeetingPointsRoute,
   adminMeetingPointPhotosRoute,
   adminMeetingPointRoute,
   adminMeetingPointsRoute,
@@ -13,7 +14,7 @@ import {
   adminRetireMeetingPointRoute,
   adminUpdateMeetingPointRoute,
 } from "@shareride/contracts";
-import type { DraftProblem, PauseProblem } from "@shareride/domain";
+import type { DraftProblem, ImportFileProblem, PauseProblem } from "@shareride/domain";
 import type { Context, MiddlewareHandler } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { operatorOf, type AppEnv } from "../../context.ts";
@@ -29,6 +30,25 @@ export interface MeetingPointsAdminRoutesDependencies {
   readonly requireOperator: MiddlewareHandler<AppEnv>;
   readonly clientAddress: (c: Context) => string;
 }
+
+/**
+ * An import's JSON: a file of at most 1 MB (`importLimits`), with room for
+ * the quotes and line breaks JSON escapes.
+ */
+const importBodyLimit = 2 * 1024 * 1024;
+
+/** Why a file cannot be read, by the column or line it is about. */
+const fileProblemDetail = ({ issue, column, position, line }: ImportFileProblem) => ({
+  path:
+    column !== undefined
+      ? `columns.${column}`
+      : position !== undefined
+        ? `columns.${String(position)}`
+        : line !== undefined
+          ? `lines.${String(line)}`
+          : "file",
+  issue,
+});
 
 /** Each field and its problem, so the form can show them by the fields. */
 const invalid = (problems: readonly (DraftProblem | PauseProblem | PhotoFieldProblem)[]) =>
@@ -68,6 +88,31 @@ export function registerMeetingPointsAdminRoutes(
     const result = await meetingPoints.create(body, actorOf(c));
     if (!result.ok) return c.json(invalid(result.error), 400);
     return c.json(result.value, 201);
+  });
+
+  app.use(
+    adminImportMeetingPointsRoute.path,
+    bodyLimit({
+      maxSize: importBodyLimit,
+      onError: (c) =>
+        c.json(errorBody("payload_too_large", "An import file is at most 1 MB."), 413),
+    }),
+  );
+
+  app.openapi(toOpenApiRoute(adminImportMeetingPointsRoute, requireOperator), async (c) => {
+    const { file, save } = validated(c, "json", adminImportMeetingPointsRoute.request.body);
+    const result = await meetingPoints.importFile(file, save, actorOf(c));
+    if (!result.ok) {
+      return c.json(
+        errorBody(
+          "validation_failed",
+          "The file cannot be read.",
+          result.error.map(fileProblemDetail),
+        ),
+        400,
+      );
+    }
+    return c.json({ rows: [...result.value.rows], added: result.value.added }, 200);
   });
 
   app.openapi(toOpenApiRoute(adminUpdateMeetingPointRoute, requireOperator), async (c) => {
