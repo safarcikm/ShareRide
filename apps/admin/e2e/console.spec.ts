@@ -418,3 +418,54 @@ test("the operator closes one report and suspends from another", async ({ reques
   await page.goto("/admin/audit-log?action=user.suspended");
   await expect(entries).toHaveCount(1);
 });
+
+// People and trips (spec 9, 3.5): the operator finds Anna, suspended in the
+// journey before, by part of her first name, which never enters the
+// address; adds a note; reinstates her after reading the notice as she
+// will; and opens a trip she drives. Each step is in the audit log.
+test("the operator finds a person, adds a note and reinstates them", async () => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const menu = page.getByRole("navigation", { name: "Console menu" });
+  await menu.getByRole("link", { name: "Users" }).click();
+  await expect(page.getByRole("heading", { name: "Users", level: 1 })).toBeVisible();
+  await page.getByLabel("Name, phone number, email or ID").fill("ann");
+  await page.getByRole("button", { name: "Find", exact: true }).click();
+  const found = page.getByRole("list", { name: "People found" }).getByRole("listitem");
+  const anna = found.filter({ hasText: "Suspended" });
+  await expect(anna).toHaveCount(1);
+  expect(new URL(page.url()).search).toBe("");
+  await anna.getByRole("link", { name: "Anna" }).click();
+  await expect(page.getByRole("heading", { name: "Anna", level: 1 })).toBeVisible();
+
+  await page.getByLabel("New note").fill("Test: called about the report.");
+  await page.getByRole("button", { name: "Add note" }).click();
+  await expect(page.getByText("Note added.")).toBeFocused();
+  await expect(page.getByRole("list", { name: "Notes" })).toContainText(
+    "Test: called about the report.",
+  );
+
+  const act = page.getByRole("region", { name: "Act on it" });
+  await act.getByRole("radio", { name: "Reinstate Anna" }).check();
+  await act
+    .getByRole("textbox", { name: "Note, written for Anna" })
+    .fill("Við skoðuðum málið aftur.");
+  await act.getByRole("button", { name: "Review the notice" }).click();
+  const preview = act.getByRole("group", { name: "What Anna reads, in Icelandic" });
+  await expect(preview).toContainText("Aðgangurinn þinn er opinn á ný");
+  await preview.getByRole("button", { name: "Send" }).click();
+  await expect(act.getByRole("status")).toHaveText("Reinstated. Anna is told.");
+  await expect(act.getByRole("radio", { name: "Suspend Anna" })).toBeVisible();
+
+  // A trip she drives, from her page, names her as its driver.
+  await page.getByRole("region", { name: "Trips they drive" }).getByRole("link").first().click();
+  await expect(page.getByRole("region", { name: "The trip" })).toContainText("Anna");
+  await expect(page.getByRole("region", { name: "Bookings and requests" })).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+
+  const entries = page.getByRole("list", { name: "Entries" }).getByRole("listitem");
+  await page.goto("/admin/audit-log?action=user.note_added");
+  await expect(entries).toHaveCount(1);
+  await page.goto("/admin/audit-log?action=user.reinstated");
+  await expect(entries).toHaveCount(1);
+});

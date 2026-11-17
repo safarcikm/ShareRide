@@ -5,6 +5,7 @@ import {
   adminReinstateRoute,
   adminSuspendRoute,
   adminWarnRoute,
+  type AdminPerson,
   type AdminReport,
 } from "@shareride/contracts";
 import {
@@ -31,8 +32,8 @@ import {
 
 const maxLength = defaultSafetySettings.textMaxLength;
 
-/** What the operator can do from a report to the person reported (3.4.3). */
-type Choice =
+/** What the operator can do to a person (3.4.3, 3.5.3). */
+export type Choice =
   | { readonly kind: "warn" }
   | { readonly kind: "suspend" }
   | { readonly kind: "reinstate" }
@@ -42,8 +43,8 @@ type Choice =
 const choiceKey = (choice: Choice) =>
   choice.kind === "hide" ? `hide-${choice.content}` : choice.kind;
 
-/** The actions this report allows, as the API would take them. */
-function choicesOf(report: AdminReport): readonly Choice[] {
+/** The actions this report allows on the person reported, as the API would take them. */
+export function choicesOf(report: AdminReport): readonly Choice[] {
   const reported = report.reported;
   if (reported === null || reported.status === "deleted") return [];
   // Whether the person reported drives the trip, so its note and the trip are theirs.
@@ -91,21 +92,26 @@ type Said =
   | { readonly kind: "refused"; readonly text: string };
 
 /**
- * Act on the person reported (3.4.3): warn them, hide what they posted,
- * suspend them or cancel the trip they drive. Each asks for the rule and
- * the reason, and shows the notice as they will read it, in their language,
- * before it goes (R9.5).
+ * Act on a person (3.4.3, 3.5.3): warn them, hide what they posted,
+ * suspend or reinstate them, or cancel the trip they drive, from a report
+ * or from their page. Each asks for the rule and the reason, and shows the
+ * notice as they will read it, in their language, before it goes (R9.5).
  */
 export function ActPanel({
-  report,
+  person,
+  choices,
+  reportId,
   onActed,
 }: {
-  readonly report: AdminReport;
-  /** The action went: load the report again, with it. */
+  /** Null once their account is deleted. */
+  readonly person: AdminPerson | null;
+  readonly choices: readonly Choice[];
+  /** The report the action answers, if any. */
+  readonly reportId?: string;
+  /** The action went: load the page again, with it. */
   readonly onActed: () => void;
 }) {
   const { t, locale, call } = useConsole();
-  const choices = choicesOf(report);
   const [chosen, setChosen] = useState<string | null>(null);
   const [rule, setRule] = useState<ModerationRule | "">("");
   const [reason, setReason] = useState("");
@@ -168,7 +174,7 @@ export function ActPanel({
     // Only on a press of "Review the notice", never as the operator types.
   }, [checks]);
 
-  const reported = report.reported;
+  const reported = person;
   const name = personName(t, reported);
   if (reported === null || choices.length === 0) {
     return (
@@ -250,7 +256,11 @@ export function ActPanel({
         : { ok: false, code: result.error.code };
     }
     if (statement.rule === null) return { ok: false, code: "validation_failed" };
-    const body = { rule: statement.rule, reason: statement.reason, reportId: report.id };
+    const body = {
+      rule: statement.rule,
+      reason: statement.reason,
+      ...(reportId === undefined ? {} : { reportId }),
+    };
     switch (one.kind) {
       case "suspend": {
         const result = await call(adminSuspendRoute, {

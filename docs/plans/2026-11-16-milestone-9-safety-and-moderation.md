@@ -422,7 +422,7 @@ Split in two, as PR 7 was: 8a the API, 8b the pages.
       place, driver or a trip's or booking's ID, a trip's page with its
       bookings and requests, and `GET /admin/v1/decline-rates`;
       `checkOperatorNote`, `requestAnswer` and `declineRates` in the domain
-- [ ] 8b: Users and Trips pages in the console: search, a person's page
+- [x] 8b: Users and Trips pages in the console: search, a person's page
       with Suspend, Reinstate and Add note, a trip's page, and the decline
       rates
 - Verify: integration tests (search by name, phone, email and ID; every
@@ -440,6 +440,9 @@ Split in two, as PR 7 was: 8a the API, 8b the pages.
   ratings, reliability and payments on a person's page: reviews, ratings
   and reliability join it with milestone 7's profiles, and payments with
   the payments milestone (spec 13).
+- Found while building (8b): a person's page acts through the report
+  page's panel, without a report; it offers hiding About you only while
+  they have one shown. A report's page links to each person's page.
 
 ### Afterwards, with milestone 7
 
