@@ -3,7 +3,7 @@ import { inIceland } from "@shareride/domain";
 import { capitalised, formatClock, formatDay } from "@shareride/i18n";
 import { CircleAlert } from "lucide-react-native";
 import { Fragment, type ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Icon } from "@/components/icon";
 import { useLanguage } from "@/i18n/language";
 import { controlOutline, iconSizes, radii, spacing, typography } from "@/theme/tokens";
@@ -30,11 +30,14 @@ export function MessageList({
   messages,
   pending,
   onRetry,
+  onReport,
 }: {
   readonly booking: Booking;
   readonly messages: readonly ChatMessage[];
   readonly pending: readonly Pending[];
   readonly onRetry: (pending: Pending) => void;
+  /** The other person's message, pressed and held (spec 9, 3.1.1). */
+  readonly onReport?: (message: ChatMessage) => void;
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
@@ -65,7 +68,12 @@ export function MessageList({
                 {capitalised(formatDay(new Date(message.sentAt), locale), locale)}
               </Text>
             ) : null}
-            <Message message={message} other={other} seen={message.id === seenId} />
+            <Message
+              message={message}
+              other={other}
+              seen={message.id === seenId}
+              onReport={onReport}
+            />
           </Fragment>
         );
       })}
@@ -110,10 +118,12 @@ function Message({
   message,
   other,
   seen,
+  onReport,
 }: {
   readonly message: ChatMessage;
   readonly other: string;
   readonly seen: boolean;
+  readonly onReport: ((message: ChatMessage) => void) | undefined;
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
@@ -126,17 +136,55 @@ function Message({
   }
   const mine = message.from === "me";
   const time = formatClock(new Date(message.sentAt));
-  return (
-    <View
-      accessible
-      accessibilityLabel={spokenMessage(t, locale, message, other, seen)}
-      style={[styles.item, mine ? styles.mine : styles.theirs]}
-    >
+  const content = (
+    <>
       <Bubble mine={mine}>{messageText(t, locale, message, other)}</Bubble>
       <Text style={[typography.caption, { color: palette.textMuted }]}>
         {seen ? `${time} · ${t("chat.seen")}` : time}
       </Text>
-    </View>
+    </>
+  );
+  if (mine || onReport === undefined) {
+    return (
+      <View
+        accessible
+        accessibilityLabel={spokenMessage(t, locale, message, other, seen)}
+        style={[styles.item, mine ? styles.mine : styles.theirs]}
+      >
+        {content}
+      </View>
+    );
+  }
+  const report = () => {
+    onReport(message);
+  };
+  // On the web, a right click or the keyboard's menu key (Shift+F10) reports
+  // it too. A touch's press and hold already did, and stopped the menu.
+  const contextMenu: object =
+    Platform.OS === "web"
+      ? {
+          onContextMenu: (event: { defaultPrevented: boolean; preventDefault: () => void }) => {
+            if (event.defaultPrevented) return;
+            event.preventDefault();
+            report();
+          },
+        }
+      : {};
+  // Press and hold to report it; a screen reader offers it as an action.
+  return (
+    <Pressable
+      {...contextMenu}
+      accessible
+      accessibilityLabel={spokenMessage(t, locale, message, other, seen)}
+      accessibilityActions={[{ name: "report", label: t("report.message") }]}
+      onAccessibilityAction={(event) => {
+        if (event.nativeEvent.actionName === "report") report();
+      }}
+      onLongPress={report}
+      style={[styles.item, styles.theirs]}
+    >
+      {content}
+    </Pressable>
   );
 }
 

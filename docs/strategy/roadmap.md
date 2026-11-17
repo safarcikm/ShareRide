@@ -174,7 +174,8 @@ accepted 2026-11-16; built alongside milestones 7 and 8)
 - [x] Safety rules in the domain
 - [x] Emergency 112, "Before you go" and sharing trip details
 - [x] Block and unblock
-- [ ] Reports and the operator's alert
+- [x] Reports and My reports
+- [x] The operator's alert for new reports
 - [ ] Moderation actions, suspension and appeals
 - [ ] Console: the reports queue, the report page and appeals
 - [ ] Console: users, trips and bookings

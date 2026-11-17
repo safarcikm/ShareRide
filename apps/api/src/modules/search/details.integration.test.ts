@@ -216,14 +216,29 @@ describe("GET /v1/trips/{id} (spec 4, 3.6)", () => {
   it("tells the signed-in driver the trip is their own, and refuses a token that is not valid", async () => {
     const { accessToken, userId } = await api.signIn(api.newPhoneNumber());
     expect((await details(north, {}, accessToken)).part.state).toBe("open");
+    expect((await details(north, {}, accessToken)).drivenByMe).toBe(false);
     await api.connection.db
       .update(schema.trips)
       .set({ driverId: userId })
       .where(eq(schema.trips.id, north));
     try {
       expect((await details(north, {}, accessToken)).part.state).toBe("own");
+      expect((await details(north, {}, accessToken)).drivenByMe).toBe(true);
       expect((await details(north)).part.state).toBe("open");
+      expect((await details(north)).drivenByMe).toBe(false);
+      // Still the driver's once it is cancelled (spec 9: not theirs to report).
+      await api.connection.db
+        .update(schema.trips)
+        .set({ status: "cancelled" })
+        .where(eq(schema.trips.id, north));
+      const cancelled = await details(north, {}, accessToken);
+      expect(cancelled.part.state).toBe("cancelled");
+      expect(cancelled.drivenByMe).toBe(true);
     } finally {
+      await api.connection.db
+        .update(schema.trips)
+        .set({ status: "published" })
+        .where(eq(schema.trips.id, north));
       await api.connection.db
         .update(schema.trips)
         .set({ driverId: sampleId("user:anna") })

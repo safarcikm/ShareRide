@@ -110,16 +110,26 @@ export default function ConversationScreen() {
               {`${day} · ${route}`}
             </Text>
           </View>
-          {/* Blocking asks first, on its own screen (spec 9, 3.2). */}
-          {conversation.blockedByMe ? null : (
+          <View style={styles.actions}>
+            {/* Reporting and blocking ask first, on their own screens (spec 9, 3.1 and 3.2). */}
             <Button
               variant="text"
-              label={t("block.action", { name: firstNameOf(t, otherPerson(booking)) })}
+              label={t("report.person", { name: firstNameOf(t, otherPerson(booking)) })}
               onPress={() => {
-                router.push({ pathname: "/bookings/[id]/block", params: { id: booking.id } });
+                // No name in the address: the report screen reads it from the booking.
+                router.push({ pathname: "/report", params: { kind: "user", id: booking.id } });
               }}
             />
-          )}
+            {conversation.blockedByMe ? null : (
+              <Button
+                variant="text"
+                label={t("block.action", { name: firstNameOf(t, otherPerson(booking)) })}
+                onPress={() => {
+                  router.push({ pathname: "/bookings/[id]/block", params: { id: booking.id } });
+                }}
+              />
+            )}
+          </View>
         </View>
         {conversation.blockedByMe ? (
           <Body align="start">
@@ -127,6 +137,11 @@ export default function ConversationScreen() {
           </Body>
         ) : null}
         <Notice kind="info" urgent={false} message={t("chat.safetyTip")} />
+        {messages.some((message) => message.from === "them") ? (
+          <Text style={[typography.small, { color: palette.textMuted }]}>
+            {t(Platform.OS === "web" ? "report.messageHintWeb" : "report.messageHint")}
+          </Text>
+        ) : null}
         {hasEarlier ? (
           <Button
             variant="text"
@@ -141,6 +156,12 @@ export default function ConversationScreen() {
           // A closed conversation takes no more messages.
           pending={conversation.canWrite ? chat.pending : []}
           onRetry={chat.retry}
+          onReport={(message) => {
+            router.push({
+              pathname: "/report",
+              params: { kind: "message", id: message.id, booking: booking.id },
+            });
+          }}
         />
         <Announcer message={chat.announcement} />
       </Screen>
@@ -151,5 +172,6 @@ export default function ConversationScreen() {
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   header: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
+  actions: { alignItems: "flex-end" },
   gap: { gap: spacing.sm },
 });

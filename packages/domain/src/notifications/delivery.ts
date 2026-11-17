@@ -36,6 +36,7 @@ export const outboxEventTypes = [
   "ReviewRevealed",
   "MeetingPointChanged",
   "DataExportReady",
+  "ReportFiled",
   "AccountDeletionScheduled",
   "PrivacyRequestAnswered",
 ] as const;

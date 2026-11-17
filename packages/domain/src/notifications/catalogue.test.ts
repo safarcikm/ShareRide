@@ -3,7 +3,9 @@ import {
   accountNoticeKinds,
   channelsFor,
   isAccountNotice,
+  isOperatorNotice,
   notificationKinds,
+  operatorNoticeKinds,
   notificationRules,
   notificationsFor,
   stillApplies,
@@ -116,7 +118,9 @@ describe("who is told about each event (spec 7, 3.3)", () => {
 
   it("covers every kind of notification, with news about the account", () => {
     const told = new Set(cases.flatMap(([event]) => notificationsFor(event).map((n) => n.kind)));
-    expect([...told, ...accountNoticeKinds].sort()).toEqual([...notificationKinds].sort());
+    expect([...told, ...accountNoticeKinds, ...operatorNoticeKinds].sort()).toEqual(
+      [...notificationKinds].sort(),
+    );
   });
 });
 
@@ -163,6 +167,8 @@ describe("the channels of each kind (spec 7, 3.3 and 3.4)", () => {
     ["rate_trip_driver", true, "never", false],
     ["review_visible", true, "never", false],
     ["data_export_ready", true, "always", false],
+    ["report_filed", true, "never", false],
+    ["report_filed_urgent", true, "never", true],
     // The answer to a question about one's data goes by email (spec 11, 3.6).
     ["privacy_request_answered", false, "always", false],
   ] as const)("%s: push %s, email %s, SMS %s", (kind, push, email, sms) => {
@@ -364,5 +370,55 @@ describe("stillApplies", () => {
     for (const kind of ["booking_confirmed", "request_declined", "new_message"] as const) {
       expect(stillApplies(kind, "expired")).toBe(true);
     }
+  });
+});
+
+describe("the operator's alert of a new report (spec 9, 3.4.1; R9.9)", () => {
+  const operator: Recipient = {
+    role: null,
+    hasPushDevice: true,
+    hasVerifiedEmail: true,
+    hasVerifiedPhone: true,
+    boardsAt: null,
+    smsSentToday: 9,
+  };
+  // Reykjavik keeps UTC all year.
+  const at = (time: string) => new Date(`2026-11-20T${time}:00Z`);
+  const channels = (kind: (typeof operatorNoticeKinds)[number], now: Date, changes = {}) =>
+    channelsFor(kind, { ...operator, ...changes }, now, defaultNotificationSettings);
+
+  it("are notices to the operator, not about a trip or the account", () => {
+    expect(operatorNoticeKinds.every(isOperatorNotice)).toBe(true);
+    expect(isOperatorNotice("data_export_ready")).toBe(false);
+    expect(operatorNoticeKinds.some(isAccountNotice)).toBe(false);
+  });
+
+  it("pushes a new report, never by email", () => {
+    expect(channels("report_filed", at("12:00"))).toEqual([{ channel: "push", send: true }]);
+  });
+
+  it("sends a safety report by SMS too from 07:00 to 23:00, whatever SMS went today", () => {
+    for (const time of ["07:00", "12:00", "22:59"]) {
+      expect(channels("report_filed_urgent", at(time))).toEqual([
+        { channel: "push", send: true },
+        { channel: "sms", send: true },
+      ]);
+    }
+  });
+
+  it("pushes it only at night", () => {
+    for (const time of ["23:00", "03:00", "06:59"]) {
+      expect(channels("report_filed_urgent", at(time))).toEqual([
+        { channel: "push", send: true },
+        { channel: "sms", send: false, reason: "outside_sms_window" },
+      ]);
+    }
+  });
+
+  it("needs a verified number for the SMS", () => {
+    expect(channels("report_filed_urgent", at("12:00"), { hasVerifiedPhone: false })).toEqual([
+      { channel: "push", send: true },
+      { channel: "sms", send: false, reason: "no_phone" },
+    ]);
   });
 });
