@@ -92,6 +92,8 @@ section 9, whose answers may change the drafts too.
    the terms allow that?
 7. **Moderation.** Do the statement of reasons, the 14-day appeal and the
    point of contact meet the Digital Services Act, if it applies in Iceland?
+   Must our final answer to an appeal also point to other ways to seek
+   redress, such as out-of-court dispute settlement or the courts?
 8. **Disputes.** Which law, complaints body and court should the terms name
    for consumers, and is the Complaints Committee on Goods and Services
    (Kærunefnd vöru- og þjónustukaupa) the right body?

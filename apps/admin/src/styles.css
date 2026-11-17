@@ -176,6 +176,11 @@ button:disabled {
   gap: var(--space-sm);
 }
 
+/* A card whose parts stack, such as a problem report: each takes the width, from the left. */
+.card.stack {
+  align-items: stretch;
+}
+
 .card-text {
   display: flex;
   flex-direction: column;

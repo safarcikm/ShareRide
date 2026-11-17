@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { mapSize, project, type Position } from "@shareride/ui/map";
+import { enterCode, english, finishSignUp } from "./support/account";
+import { newPhoneNumber } from "./support/sms";
 
 /** Phones show the map first and the list on a choice; wide screens show both. */
 async function showList(page: Page) {
@@ -101,5 +103,34 @@ test.describe("meeting points on the web", () => {
     await field.fill("KEF");
     await page.getByRole("button", { name: /^Keflavík Airport/ }).click();
     await expect(page.getByText(/^Also known as .*KEF/)).toBeVisible();
+  });
+
+  // "Something wrong here?" (spec 2, 3.5): signed out, it asks to sign in,
+  // and after signing up the form opens again for the same point.
+  test("reports a problem with a point after signing up", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "See the meeting points" }).click();
+    await showList(page);
+    await page.getByRole("button", { name: /^N1 Vík/ }).click();
+    await expect(page.getByRole("heading", { name: "N1 Vík" })).toBeVisible();
+    await page.getByRole("button", { name: "Something wrong here?" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Sign in to tell us what's wrong" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await enterCode(page, english, newPhoneNumber());
+    await finishSignUp(page, english, "Freyja");
+
+    await expect(page.getByRole("heading", { name: "What's wrong here?" })).toBeVisible();
+    await page.getByRole("button", { name: "Send" }).click();
+    await expect(page.getByText("Choose what is wrong.")).toBeVisible();
+    await page.getByRole("radio", { name: "It's in the wrong place on the map" }).click();
+    await page
+      .getByRole("textbox", { name: "Tell us more (optional)" })
+      .fill("The pin is across the road.");
+    await page.getByRole("button", { name: "Send" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Thank you. We'll check this meeting point." }),
+    ).toBeVisible();
   });
 });

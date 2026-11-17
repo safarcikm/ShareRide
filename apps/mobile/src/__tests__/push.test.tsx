@@ -130,7 +130,24 @@ describe("Push notifications (plan 4.5)", () => {
     expect(screen).toHavePathname(page);
   });
 
-  it("ignores a tap that leads anywhere but a booking, a trip, a conversation or a meeting point", async () => {
+  it("opens Notices from a notice of ShareRide's action (spec 9, R9.5)", async () => {
+    await renderApp("/", {
+      me: completeMe,
+      setUp: (client) => {
+        withPush(client);
+        client.answer("/v1/me/notices", () => ok(200, { notices: [] }), "get");
+      },
+    });
+    await screen.findAllByRole("header");
+    await act(async () => {
+      mockNotifications.tap("/notices");
+      await Promise.resolve();
+    });
+    expect(await screen.findByRole("header", { name: "Notices" })).toBeVisible();
+    expect(screen).toHavePathname("/notices");
+  });
+
+  it("ignores a tap that leads anywhere but a booking, a trip, a conversation, a meeting point or Notices", async () => {
     await renderApp("/profile", { me: completeMe, setUp: withPush });
     await screen.findAllByRole("header");
     expect(screen).toHavePathname("/profile");

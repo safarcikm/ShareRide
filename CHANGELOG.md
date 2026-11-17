@@ -546,6 +546,35 @@ releases follow [Semantic Versioning](https://semver.org/).
   used) and `notifications.moderation_action_id`; "Download my data" has
   Notices from ShareRide, the suspension's end, and who cancelled each
   trip.
+- Notices, appeals and closing reports (milestone 9, PR 6b, spec 9, 3.1.6
+  and 3.4.4; R9.5): `GET /v1/me/notices` lists what ShareRide did about
+  the person and why, the latest first, never which operator; `POST
+  /v1/me/notices/{id}/appeal` takes one appeal of up to 1 000 characters
+  within 14 days, also while suspended (409 `not_appealable` for a
+  reinstatement, `already_appealed`, `appeal_window_closed`). For the
+  console, the operator's `answerAppeal` answers once and finally;
+  reversing the suspension the person is under lifts it, while what it
+  cancelled stays cancelled. `closeReport` closes a report with its
+  outcome. The person hears "ShareRide answered your appeal" by push and
+  email (the email with the answer), and the reporter "Your report" with
+  the outcome in general terms, by push. Each writes one audit entry.
+  Migration `0038_appeals` widens the notification and event kinds.
+- Notices and the suspended account in the app (milestone 9, PR 6c, spec
+  9, 3.4.4 and 3.6.2): Profile has Notices, where a notice's push and
+  email lead: what ShareRide did and why, the rule, what it concerned,
+  and one appeal of up to 1 000 characters within 14 days, then
+  ShareRide's answer. A suspended person sees, in place of Find and
+  Offer, until when and why, what is closed and what stays open, with
+  "Read why and appeal" and My rides; booking a seat and a new trip are
+  closed too, and a conversation stays readable with a line saying why
+  nothing can be sent. The app reads the account again when it comes back
+  into view and when an action is refused as suspended, and a suspension
+  whose end has passed is over at once. Tapping the push of a notice opens
+  Notices, and that of a report's outcome My reports. `GET /v1/me` gains
+  `suspension` (its end, or null when not suspended). The browser tests'
+  API can suspend a person (`POST /e2e/suspend`), as the console will. In
+  Icelandic, Notices are "Orðsendingar frá ShareRide", apart from
+  Messages ("Skilaboð").
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its
@@ -674,7 +703,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   person's first name, about, languages, badges, the month they joined,
   colour, rating and reliability figure, never their phone number, email, last name or
   user ID. A profile is reached by its own random reference: migration
-  `0038_profile_ids` adds `users.profile_id`. The rating is the average of
+  `0039_profile_ids` adds `users.profile_id`. The rating is the average of
   the reviews that show, to one decimal; `GET /v1/people/{profileId}/reviews`
   lists them newest first, 20 at a time, for one role or both, with the
   author's first name ("A former member" once erased) and the month. The
@@ -710,7 +739,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   the operator's note and an audit entry, and the people below 80%. Trips
   and bookings save whether their cancellation was excused by its reason,
   and when and why the operator overruled it (migration
-  `0039_reliability_overrules`). "Download my data" tells whoever
+  `0040_reliability_overrules`). "Download my data" tells whoever
   cancelled whether it counts and when ShareRide made it count; a booking
   the driver cancelled no longer shows this in the passenger's file. The
   operator's note goes when the account of whoever cancelled is erased.
@@ -854,6 +883,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   opens the form again afterwards. Reports go to `meeting_point_issues`
   through `POST /v1/meeting-points/{id}/issues` for the operator's queue,
   and the open ones are in Download my data.
+- The console's problem reports (milestone 8, PR 10b; spec 2, 3.5 and
+  3.6): the open reports, the oldest first, with the point, what is wrong
+  and the note, never who sent it; the home page counts them, and the
+  list of points marks and filters the points with one, as needing
+  review. Resolving needs a note of what was done, removes the link to
+  the person and can mark the point checked today, with audit entries for
+  the report and the point; "Pause … now" opens the point's pause at
+  once. The hourly clean-up deletes a resolved report after 12 months.
+  Browser journeys cover both sides.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.
