@@ -374,6 +374,102 @@ describe("download my data (spec 11, 3.2)", () => {
     expect(unlabelledFields(driver.data)).toEqual([]);
   });
 
+  it("has reports about a ride with the person's own note only (spec 8, 7)", async () => {
+    const { anna, passengers } = await busyTrip();
+    const [gunna, siggi] = passengers;
+    if (gunna === undefined || siggi === undefined) throw new Error("No passengers.");
+    const bookingOf = async (member: Member) => {
+      const [booking] = await api.connection.db
+        .select({ id: schema.bookings.id })
+        .from(schema.bookings)
+        .where(eq(schema.bookings.passengerId, member.userId));
+      if (booking === undefined) throw new Error("No booking.");
+      return booking.id;
+    };
+    const raisedAt = api.now();
+    const answeredAt = new Date(raisedAt.getTime() + hours(1) * 1000);
+    const decidedAt = new Date(raisedAt.getTime() + hours(2) * 1000);
+    // Anna marked Gunna a no-show, Gunna contested it and ShareRide decided;
+    // Siggi says Anna didn't come, and Anna's contest waits for ShareRide.
+    await api.connection.db.insert(schema.disputes).values([
+      {
+        bookingId: await bookingOf(gunna),
+        kind: "no_show",
+        raisedAt,
+        note: "Waited ten minutes at the stop",
+        answer: "contested",
+        answeredAt,
+        answerNote: "I stood at the main entrance",
+        outcome: "rode",
+        decidedBy: "operator",
+        decidedAt,
+        decisionNote: "The check-in times agree",
+      },
+      {
+        bookingId: await bookingOf(siggi),
+        kind: "driver_absent",
+        raisedAt,
+        note: "Nobody came by quarter past",
+        answer: "contested",
+        answeredAt,
+        answerNote: "I was parked by the bus bay",
+      },
+    ]);
+    const noShow = {
+      kind: "no_show",
+      reportedBy: "driver",
+      reportedAt: raisedAt.toISOString(),
+      answer: "contested",
+      answeredAt: answeredAt.toISOString(),
+      outcome: "rode",
+      decidedBy: "operator",
+      closedAt: decidedAt.toISOString(),
+    };
+    const driverAbsent = {
+      kind: "driver_absent",
+      reportedBy: "passenger",
+      reportedAt: raisedAt.toISOString(),
+      answer: "contested",
+      answeredAt: answeredAt.toISOString(),
+      outcome: null,
+      decidedBy: null,
+      closedAt: null,
+    };
+    const notes = [
+      "Waited ten minutes",
+      "main entrance",
+      "check-in times",
+      "Nobody came",
+      "bus bay",
+    ] as const;
+    const mentioned = (text: string) => notes.filter((note) => text.includes(note));
+
+    // Gunna answered hers, Siggi reported his.
+    const gunnas = await exportOf(gunna);
+    const [answered] = gunnas.data.sections.bookings as { dispute: unknown }[];
+    expect(answered?.dispute).toEqual({ ...noShow, yourNote: "I stood at the main entrance" });
+    expect(mentioned(gunnas.text)).toEqual(["main entrance"]);
+    expect(unlabelledFields(gunnas.data)).toEqual([]);
+    expect(gunnas.html).toContain("<dt>Answer</dt><dd>That&#39;s not right</dd>");
+
+    const siggis = await exportOf(siggi);
+    const [reported] = siggis.data.sections.bookings as { dispute: unknown }[];
+    expect(reported?.dispute).toEqual({ ...driverAbsent, yourNote: "Nobody came by quarter past" });
+    expect(mentioned(siggis.text)).toEqual(["Nobody came"]);
+
+    // Anna reported one and answered the other: her own notes, each with
+    // that passenger only.
+    const annas = await exportOf(anna);
+    const [trip] = annas.data.sections.trips_posted as { passengers: { dispute: unknown }[] }[];
+    expect(trip?.passengers.map((passenger) => passenger.dispute)).toEqual([
+      { ...noShow, yourNote: "Waited ten minutes at the stop" },
+      { ...driverAbsent, yourNote: "I was parked by the bus bay" },
+      null,
+    ]);
+    expect(mentioned(annas.text)).toEqual(["Waited ten minutes", "bus bay"]);
+    expect(unlabelledFields(annas.data)).toEqual([]);
+  });
+
   it("labels every field of the readable page in both languages", async () => {
     const { passengers, anna } = await busyTrip();
     for (const member of [anna, ...passengers]) {
