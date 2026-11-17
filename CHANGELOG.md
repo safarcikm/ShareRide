@@ -947,8 +947,8 @@ releases follow [Semantic Versioning](https://semver.org/).
   limit, recorded as a price level change with its reason; a higher level
   is refused. The driver's trip shows its takings, and the price, seats and
   stop screens say when what passengers booked sets the highest level,
-  down to free. Open question Q27 asks whether a departed trip should count
-  only the stretches ahead.
+  down to free. On a trip under way, the stretches already driven still
+  count (A50).
 
 ### Fixed
 

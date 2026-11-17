@@ -146,6 +146,10 @@ The same examples with the rule:
   freed seats can still be offered, but only free (0%).
 - A driver at the suggested level is hardly ever touched: with 3 seats, 1
   booking at 100% and a no-show, the highest level is still 210%.
+- On a trip under way, the free seats on stretches already driven count
+  too, although nobody can book them any more. That leaves the seats ahead
+  a little cheaper than the limit needs, and never lets the trip past it
+  (A50).
 
 Why C over the others: it keeps the price a passenger sees fixed when they
 book, it needs no refunds, it builds on the price level drivers already
