@@ -235,41 +235,53 @@ export function PassengersByPart({ bookings }: { readonly bookings: readonly Boo
                     <Tag kind={statusTag(booking)} label={t(statusKey(booking))} />
                   </View>
                   {/* A confirmed booking has its conversation (spec 7, R7.1); a
-                      booking can be cancelled until the time to get in (spec 6, 3.4). */}
-                  {booking.confirmed === null && !cancellable ? null : (
-                    <View style={styles.end}>
-                      {booking.confirmed === null ? null : (
-                        <Button
-                          variant="text"
-                          label={t("chat.message")}
-                          accessibilityLabel={t("chat.messageTo", {
-                            name: firstNameOf(t, booking.passenger),
-                          })}
-                          onPress={() => {
-                            router.push({
-                              pathname: "/messages/[bookingId]",
-                              params: { bookingId: booking.id },
-                            });
-                          }}
-                        />
-                      )}
-                      {cancellable ? (
-                        <Button
-                          variant="text"
-                          label={t("booking.cancel")}
-                          accessibilityLabel={t("driverTrip.cancelBooking", {
-                            name: firstNameOf(t, booking.passenger),
-                          })}
-                          onPress={() => {
-                            router.push({
-                              pathname: "/bookings/[id]/cancel",
-                              params: { id: booking.id },
-                            });
-                          }}
-                        />
-                      ) : null}
-                    </View>
-                  )}
+                      booking can be cancelled until the time to get in (spec 6,
+                      3.4); its passenger can be reported (spec 9, 3.1.1). */}
+                  <View style={styles.end}>
+                    {booking.confirmed === null ? null : (
+                      <Button
+                        variant="text"
+                        label={t("chat.message")}
+                        accessibilityLabel={t("chat.messageTo", {
+                          name: firstNameOf(t, booking.passenger),
+                        })}
+                        onPress={() => {
+                          router.push({
+                            pathname: "/messages/[bookingId]",
+                            params: { bookingId: booking.id },
+                          });
+                        }}
+                      />
+                    )}
+                    {cancellable ? (
+                      <Button
+                        variant="text"
+                        label={t("booking.cancel")}
+                        accessibilityLabel={t("driverTrip.cancelBooking", {
+                          name: firstNameOf(t, booking.passenger),
+                        })}
+                        onPress={() => {
+                          router.push({
+                            pathname: "/bookings/[id]/cancel",
+                            params: { id: booking.id },
+                          });
+                        }}
+                      />
+                    ) : null}
+                    <Button
+                      variant="text"
+                      label={t("report.short")}
+                      accessibilityLabel={t("report.person", {
+                        name: firstNameOf(t, booking.passenger),
+                      })}
+                      onPress={() => {
+                        router.push({
+                          pathname: "/report",
+                          params: { kind: "user", id: booking.id },
+                        });
+                      }}
+                    />
+                  </View>
                   <ReviewSection booking={booking} framed={false} />
                 </View>
               );

@@ -134,7 +134,7 @@ ordered pair of active meeting points connected by road.
 | `women_only` | Shown to everyone; only women who have opted in can book it; fixed once a request or booking exists (not built yet) |
 | `published_at` | |
 | `completed_at` | Two hours after its last stop's planned time, when it completed on its own ([spec 8, R8.1](../specs/2026-11-13-trip-day-reviews-and-reliability.md#36-trip-completion-e4)), however late the job ran |
-| `cancelled_at`, `cancel_reason`, `cancel_note`, `counts_on_reliability` | When the driver cancelled the trip, why (a fixed list), their note to everyone on it (up to 500 characters, without contact details), and whether it counts on their reliability, once for the trip ([spec 6, 3.3](../specs/2026-11-13-changes-and-cancellations.md#33-cancelling-a-trip-driver)) |
+| `cancelled_at`, `cancelled_by`, `cancel_reason`, `cancel_note`, `counts_on_reliability` | When the trip was cancelled and by whom (`driver`, or `operator` for ShareRide, spec 9, 3.4.3 and 3.6), why (a fixed list, the driver's only), the driver's note to everyone on it (up to 500 characters, without contact details), and whether it counts on their reliability, once for the trip ([spec 6, 3.3](../specs/2026-11-13-changes-and-cancellations.md#33-cancelling-a-trip-driver)); ShareRide's never counts unless the operator says so |
 | `sample` | Sample data made by the seed for local development and staging |
 
 ### TripStop
@@ -248,14 +248,33 @@ it counts and why not) and `UserStats` (rating and reliability totals).
 
 ### Report
 
-`reporter_id`, `subject_user_id` or `subject_trip_id`, `category`,
-`description`, `status`, `resolution`, `handled_by`, timestamps. Every action
-on a report is written to the audit log. A report can also be about a
-message, review or booking; safety reports are urgent. Related records, in
+`reporter_id`, `subject` (trip, message, booking, user, later review),
+`subject_user_id` (the person reported, or the driver of a trip), the
+records it links (`trip_id`, `booking_id`, `message_id`,
+`conversation_id`), `category`, `description` (up to 1 000 characters),
+`urgent` (safety reports), `status` (open or closed), `outcome`,
+`closed_at`, `closed_by_id`, timestamps. Every action on a report is
+written to the audit log. A conversation a report links is kept past chat
+retention until 3 years after the report closes. Related records, in
 [spec 9](../specs/2026-11-13-safety-and-moderation.md#6-data-and-api):
 `ModerationAction` (warning, hidden content, suspension, reinstatement,
 operator cancellation or refund, each with a statement of reasons and an
 appeal) and `OperatorNote`.
+
+### ModerationAction
+
+`user_id` (the person affected), `kind` (`warning`, `content_hidden`,
+`suspension`, `reinstatement`, `trip_cancelled`, `refund`), `report_id`
+(when it came from a report), `rule` (none for a reinstatement), `reason`
+(written for the person: the statement of reasons, R9.5; a
+reinstatement's note), `content_kind` and `content_id` (what was hidden,
+cancelled or refunded), `until` (a suspension's end, empty for good),
+`operator_id`, the appeal (`appeal_text`, `appealed_at`, `appeal_answer`,
+`appeal_outcome` `upheld` or `reversed`, `appeal_answered_at`,
+`appeal_answered_by_id`), timestamps. A suspension sets the user's
+`status` to `suspended` with `suspended_until`; the minute job ends it when
+that passes. Each action writes one audit entry and sends the person their
+notice ([spec 9](../specs/2026-11-13-safety-and-moderation.md#36-suspension)).
 
 ### Payment
 
@@ -333,7 +352,7 @@ stateDiagram-v2
   [*] --> draft
   draft --> published : driver publishes
   draft --> [*] : driver discards
-  published --> cancelled : driver cancels
+  published --> cancelled : driver or ShareRide cancels
   published --> departed : planned time of first stop passes
   departed --> completed : planned time of last stop passes plus 2 hours
   cancelled --> [*]
@@ -355,7 +374,7 @@ recorded change), `TripChanged` (a new car or stop, likewise), `TripCancelled`, 
 `BookingWithdrawn`, `BookingCancelled`,
 `TripDeparted`, `CheckedIn`, `PassengerNoShow`, `DriverAbsentReported`,
 `DisputeAnswered`, `DisputeDecided`, `TripCompleted`, `MessageSent`, `ReviewSubmitted`, `ReviewsRevealed`, `ReportFiled`, `ReportResolved`,
-`UserBlocked`, `UserSuspended`, `UserReinstated`, `ContentHidden`,
+`UserBlocked`, `ModerationActionTaken` (a warning, suspension, reinstatement or other operator action on a person), `SuspensionEnded`, `ContentHidden`,
 `WomenOnlyAccessWithdrawn`, `WomenOnlyAccessRestored`,
 `WeatherWarningMatched`, `RoadClosureMatched`.
 

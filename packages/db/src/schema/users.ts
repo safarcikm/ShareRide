@@ -43,11 +43,17 @@ export const users = pgTable(
      */
     deleteAfter: at(),
     status: text().notNull().default("active"),
+    /** The end of a suspension (spec 9, 3.6); empty while suspended means for good. */
+    suspendedUntil: at(),
     ...timestamps,
   },
   (table) => [
     check("users_locale_check", sql`${table.locale} in ('is', 'en')`),
     // "deleted" is the former member's alone (formerMemberId).
     check("users_status_check", sql`${table.status} in ('active', 'suspended', 'deleted')`),
+    check(
+      "users_suspended_until_check",
+      sql`${table.suspendedUntil} is null or ${table.status} = 'suspended'`,
+    ),
   ],
 );

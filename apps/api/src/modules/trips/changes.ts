@@ -20,6 +20,7 @@ import {
   type ChangeProblem,
   type LegLookup,
   type MeetingPointStatus,
+  type AccountSuspended,
   type NotificationSettings,
   type Result,
   type TripChange,
@@ -27,6 +28,7 @@ import {
 } from "@shareride/domain";
 import { and, asc, desc, eq, gte, inArray, isNull, ne, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
+import { lockActive } from "../account/standing.ts";
 import { expireDueBookings, lockTrip, type Transaction } from "../bookings/seats.ts";
 import { addSystemLine } from "../chat/conversations.ts";
 import { followDepartureMove } from "../notifications/schedule.ts";
@@ -42,7 +44,6 @@ const {
   tripChanges,
   trips,
   tripStops,
-  users,
   vehicles,
 } = schema;
 
@@ -85,7 +86,10 @@ export interface TripChangeService {
     change: TripChangeBody,
     options: { readonly preview: boolean },
   ): Promise<
-    Result<TripChangeEffect, NotFound | NotChangeable | ChangeNotAllowed | DistancesPending>
+    Result<
+      TripChangeEffect,
+      NotFound | NotChangeable | ChangeNotAllowed | DistancesPending | AccountSuspended
+    >
   >;
 }
 
@@ -815,8 +819,10 @@ export function createTripChangeService(dependencies: {
   return {
     async change(driverId, tripId, change, { preview }) {
       return db.transaction(async (tx) => {
-        // As publishing: one at a time per driver, so two trips cannot overlap (R3.7).
-        await tx.select({ id: users.id }).from(users).where(eq(users.id, driverId)).for("update");
+        // As publishing: one at a time per driver, so two trips cannot overlap
+        // (R3.7), and none while suspended (spec 9, 3.6.2).
+        const active = await lockActive(tx, driverId, clock());
+        if (!active.ok) return active;
         const trip = await lockTrip(tx, tripId);
         if (trip?.driverId !== driverId) return err({ code: "not_found" });
         // After the lock, which may have waited while a deadline passed.

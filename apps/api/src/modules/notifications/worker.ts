@@ -1,12 +1,18 @@
 import { schema, type Database } from "@shareride/db";
 import {
+  alertChannels,
+  canUseConsole,
   channelsFor,
   defaultNotificationSettings,
   defaultReviewSettings,
+  defaultSafetySettings,
   defaultTripDaySettings,
   eventAttempts,
   isAccountNotice,
+  isOperatorNotice,
   notificationsFor,
+  operatorNoticeKinds,
+  operatorRole,
   pauseStillApplies,
   payReminderAt,
   reminderStillTimely,
@@ -26,6 +32,8 @@ import {
   type ChannelDecision,
   type MeetingPointStatus,
   type NotificationEvent,
+  type ModerationActionKind,
+  type ModerationRule,
   type NotificationKind,
   type NotificationSettings,
   type OutboxEventType,
@@ -34,7 +42,7 @@ import {
   type TripRole,
 } from "@shareride/domain";
 import type { CarFacts } from "@shareride/i18n";
-import { and, asc, desc, eq, gt, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lte, ne, notInArray, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { EmailChannel } from "../../platform/email.ts";
 import { MaybeSent } from "../../platform/maybe-sent.ts";
@@ -47,10 +55,12 @@ import { answerByOf, disputesOf } from "../trip-day/disputes.ts";
 import { emailContent } from "./email-content.ts";
 import { preferencesOf } from "./preferences.ts";
 import {
+  isOperatorFacts,
   notificationText,
   smsText,
   type AccountNoticeFacts,
   type NotificationFacts,
+  type OperatorNoticeFacts,
   type PausedPoint,
   type PointPausedFacts,
   type TripReminderFacts,
@@ -67,12 +77,14 @@ const {
   disputes,
   meetingPoints,
   messages,
+  moderationActions,
   notificationDeliveries,
   notifications,
   outboxEvents,
   privacyRequests,
   pushTickets,
   pushTokens,
+  reports,
   reviews,
   scheduledNotifications,
   sessions,
@@ -154,14 +166,16 @@ function idIn(payload: Readonly<Record<string, string>>, name: string): string |
   return typeof value === "string" && uuidPattern.test(value) ? value : undefined;
 }
 
-/**
- * Who did it, as a `BookingCancelled` or `CheckedIn` event says: who
- * cancelled, or who said "I'm here". The other person is told.
- */
+/** Who said "I'm here", as a `CheckedIn` event says: the other person is told. */
 function doneBy(payload: Readonly<Record<string, string>>, type: OutboxEventType): TripRole {
   const by = payload["by"];
   if (by === "passenger" || by === "driver") return by;
   throw new Error(`A ${type} event names who did it.`);
+}
+
+/** Who cancelled, as a `BookingCancelled` event says: one side, or ShareRide (spec 9, 3.6). */
+function cancelledBy(payload: Readonly<Record<string, string>>): TripRole | "operator" {
+  return payload["by"] === "operator" ? "operator" : doneBy(payload, "BookingCancelled");
 }
 
 const boards = alias(tripStops, "boards");
@@ -257,9 +271,14 @@ const isDriverReminder = (kind: string): kind is keyof typeof driverReminders =>
 
 /** Which reminder a notification is, and the moment its words count to; null for the rest. */
 function reminderOf(
-  facts: NotificationFacts | TripReminderFacts | PointPausedFacts | AccountNoticeFacts,
+  facts:
+    | NotificationFacts
+    | TripReminderFacts
+    | PointPausedFacts
+    | AccountNoticeFacts
+    | OperatorNoticeFacts,
 ) {
-  if (isAccountNotice(facts.kind) || "point" in facts) return null;
+  if (isAccountNotice(facts.kind) || isOperatorFacts(facts) || "point" in facts) return null;
   if ("passengers" in facts) {
     return { which: driverReminders[facts.kind], startsAt: facts.departsAt };
   }
@@ -425,13 +444,7 @@ async function pausedForDriverOf(
   } as const;
 }
 
-/**
- * News about the person's account (spec 11). For a data export, until when
- * the file can be downloaded: `current` is false once the person's latest
- * export cannot be downloaded (it expired or failed, or a newer one was asked
- * for, which deleted this file). For a deletion, when the data is erased:
- * `current` is false once the person kept their account.
- */
+/** News about the person's account: their data or its deletion (spec 11), or a notice (spec 9). */
 async function accountFactsOf(
   q: Queryable,
   notification: typeof notifications.$inferSelect,
@@ -440,6 +453,77 @@ async function accountFactsOf(
   const kind = notification.kind as NotificationKind;
   if (!isAccountNotice(kind)) return undefined;
   if (kind === "privacy_request_answered") return answerFactsOf(q, notification);
+  return kind === "moderation_action" || kind === "suspension_ended"
+    ? noticeFactsOf(q, notification, kind)
+    : exportFactsOf(q, notification, kind, now);
+}
+
+/**
+ * An operator's action that affects the person, with its statement of
+ * reasons (spec 9, R9.5), or the end of their suspension (3.6), which is
+ * dropped if they were suspended again before it went out.
+ */
+async function noticeFactsOf(
+  q: Queryable,
+  notification: typeof notifications.$inferSelect,
+  kind: "moderation_action" | "suspension_ended",
+) {
+  const [row] = await q
+    .select({
+      locale: recipients.locale,
+      email: recipients.email,
+      emailVerifiedAt: recipients.emailVerifiedAt,
+      status: recipients.status,
+      action: moderationActions,
+    })
+    .from(recipients)
+    .leftJoin(
+      moderationActions,
+      notification.moderationActionId === null
+        ? sql`false`
+        : eq(moderationActions.id, notification.moderationActionId),
+    )
+    .where(eq(recipients.id, notification.recipientId));
+  if (row === undefined) return undefined;
+  const { action } = row;
+  let facts: AccountNoticeFacts;
+  if (kind === "suspension_ended") {
+    facts = { kind };
+  } else {
+    if (action === null) return undefined;
+    facts = {
+      kind,
+      action: action.kind as ModerationActionKind,
+      rule: action.rule as ModerationRule | null,
+      reason: action.reason,
+      until: action.until,
+      at: action.createdAt,
+    };
+  }
+  return {
+    facts,
+    current: kind === "moderation_action" || row.status === "active",
+    locale: row.locale === "is" ? "is" : "en",
+    recipientId: notification.recipientId,
+    email: row.emailVerifiedAt === null ? null : row.email,
+    phone: null,
+    booking: null,
+  } as const;
+}
+
+/**
+ * For a data export (spec 11), until when the file can be downloaded:
+ * `current` is false once the person's latest export cannot be downloaded
+ * (it expired or failed, or a newer one was asked for, which deleted this
+ * file). For a deletion, when the data is erased: `current` is false once
+ * the person kept their account.
+ */
+async function exportFactsOf(
+  q: Queryable,
+  notification: typeof notifications.$inferSelect,
+  kind: "data_export_ready" | "account_deletion_scheduled",
+  now: Date,
+) {
   const [row] = await q
     .select({
       locale: recipients.locale,
@@ -475,6 +559,40 @@ async function accountFactsOf(
     recipientId: notification.recipientId,
     email: row.emailVerifiedAt === null ? null : row.email,
     phone: null,
+    booking: null,
+  } as const;
+}
+
+/**
+ * A new report, to an operator (spec 9, R9.9): only whether it is about
+ * safety. `current` is false once the report is closed, or the operator no
+ * longer holds the role.
+ */
+async function operatorFactsOf(q: Queryable, notification: typeof notifications.$inferSelect) {
+  const kind = notification.kind as NotificationKind;
+  if (!isOperatorNotice(kind) || notification.reportId === null) return undefined;
+  const [row] = await q
+    .select({
+      locale: recipients.locale,
+      phone: recipients.phoneE164,
+      phoneVerifiedAt: recipients.phoneVerifiedAt,
+      roles: recipients.roles,
+      status: recipients.status,
+      deleteAfter: recipients.deleteAfter,
+      reportStatus: reports.status,
+    })
+    .from(recipients)
+    .leftJoin(reports, eq(reports.id, notification.reportId))
+    .where(eq(recipients.id, notification.recipientId));
+  if (row === undefined) return undefined;
+  const facts: OperatorNoticeFacts = { kind };
+  return {
+    facts,
+    current: row.reportStatus === "open" && canUseConsole(row),
+    locale: row.locale === "is" ? "is" : "en",
+    recipientId: notification.recipientId,
+    email: null,
+    phone: row.phoneVerifiedAt === null ? null : row.phone,
     booking: null,
   } as const;
 }
@@ -529,6 +647,7 @@ async function factsOf(q: Queryable, notificationId: string, now: Date) {
   const [found] = await q.select().from(notifications).where(eq(notifications.id, notificationId));
   if (found === undefined) return undefined;
   if (isAccountNotice(found.kind as NotificationKind)) return accountFactsOf(q, found, now);
+  if (isOperatorNotice(found.kind as NotificationKind)) return operatorFactsOf(q, found);
   if (found.kind === "meeting_point_changed_driver") return pausedForDriverOf(q, found, now);
   if (found.bookingId === null) return tripFactsOf(q, found);
   const [row] = await q
@@ -753,6 +872,8 @@ export function createNotificationWorker(dependencies: {
         and(
           eq(notifications.recipientId, userId),
           eq(notificationDeliveries.channel, "sms"),
+          // An operator's alerts have no limit, and take nothing from it (R9.9).
+          notInArray(notifications.kind, [...operatorNoticeKinds]),
           or(
             inArray(notificationDeliveries.status, ["queued", "sending", "sent"]),
             and(
@@ -820,6 +941,8 @@ export function createNotificationWorker(dependencies: {
       readonly tripId?: string;
       readonly messageId?: string | null;
       readonly tripChangeId?: string | null;
+      readonly reportId?: string;
+      readonly moderationActionId?: string;
       readonly privacyRequestId?: string;
       readonly meetingPointId?: string;
     },
@@ -836,6 +959,8 @@ export function createNotificationWorker(dependencies: {
         tripId: notification.tripId ?? null,
         messageId: notification.messageId ?? null,
         tripChangeId: notification.tripChangeId ?? null,
+        reportId: notification.reportId ?? null,
+        moderationActionId: notification.moderationActionId ?? null,
         privacyRequestId: notification.privacyRequestId ?? null,
         meetingPointId: notification.meetingPointId ?? null,
         uniqueKey: `${key}:${kind}:${recipientId}`,
@@ -1293,6 +1418,57 @@ export function createNotificationWorker(dependencies: {
       await add(tx, { kind, to: null, recipientId: userId }, key, now);
       return;
     }
+    if (type === "ModerationActionTaken") {
+      // The person's notice (spec 9, R9.5); nobody, once their account is gone.
+      const actionId = idIn(event.payload, "actionId");
+      if (actionId === undefined) return;
+      const [action] = await tx
+        .select({ userId: moderationActions.userId })
+        .from(moderationActions)
+        .where(eq(moderationActions.id, actionId));
+      if (action === undefined || action.userId === null) return;
+      await add(
+        tx,
+        {
+          kind: "moderation_action",
+          to: null,
+          recipientId: action.userId,
+          moderationActionId: actionId,
+        },
+        key,
+        now,
+      );
+      return;
+    }
+    if (type === "SuspensionEnded") {
+      const userId = idIn(event.payload, "userId");
+      if (userId === undefined) return;
+      const [user] = await tx.select({ id: users.id }).from(users).where(eq(users.id, userId));
+      if (user === undefined) return;
+      await add(tx, { kind: "suspension_ended", to: null, recipientId: userId }, key, now);
+      return;
+    }
+    if (type === "ReportFiled") {
+      // Every operator, at once (R9.9); a report closed or deleted since tells nobody.
+      const reportId = idIn(event.payload, "reportId");
+      if (reportId === undefined) return;
+      const [report] = await tx
+        .select({ urgent: reports.urgent })
+        .from(reports)
+        .where(and(eq(reports.id, reportId), eq(reports.status, "open")));
+      if (report === undefined) return;
+      const operators = await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(
+          and(eq(users.status, "active"), sql`${users.roles} @> array[${operatorRole}]::text[]`),
+        );
+      const kind = report.urgent ? "report_filed_urgent" : "report_filed";
+      for (const operator of operators) {
+        await add(tx, { kind, to: null, recipientId: operator.id, reportId }, key, now);
+      }
+      return;
+    }
     if (type === "PrivacyRequestAnswered") {
       const userId = idIn(event.payload, "userId");
       const requestId = idIn(event.payload, "requestId");
@@ -1382,9 +1558,11 @@ export function createNotificationWorker(dependencies: {
     const happened: NotificationEvent =
       type === "BookingExpired"
         ? { type, reason: event.payload["reason"] === "unpaid" ? "unpaid" : "unanswered" }
-        : type === "BookingCancelled" || type === "CheckedIn"
-          ? { type, by: doneBy(event.payload, type) }
-          : { type };
+        : type === "BookingCancelled"
+          ? { type, by: cancelledBy(event.payload) }
+          : type === "CheckedIn"
+            ? { type, by: doneBy(event.payload, type) }
+            : { type };
     await notify(tx, happened, booking, { key }, now);
     await scheduleAfter(tx, type, booking, now);
     if (type === "BookingConfirmed") await scheduleReminders(tx, booking, event.createdAt, now);
@@ -1685,8 +1863,18 @@ export function createNotificationWorker(dependencies: {
       }
       case "sms": {
         if (sms === undefined) return { skipped: "sms_off" };
-        if (found.booking === null) throw new Error("An SMS is about a booking.");
+        // Booking news, and an operator's alert of a safety report.
+        if (!("phone" in found) || isAccountNotice(found.facts.kind)) {
+          throw new Error("An SMS is about a booking or a safety report.");
+        }
         if (found.phone === null) return { skipped: "no_phone" };
+        // Never at night, even when a send from before 23:00 is tried again (R9.9).
+        if (
+          isOperatorFacts(found.facts) &&
+          !alertChannels(true, clock(), defaultSafetySettings).includes("sms")
+        ) {
+          return { skipped: "outside_sms_window" };
+        }
         try {
           await sms.send({ to: found.phone, text: smsText(found.facts, found.locale) });
         } catch (error) {

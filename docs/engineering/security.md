@@ -117,8 +117,11 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   another person's record. A new `AUTH_SECRET` makes files not yet
   downloaded unreadable: the download marks such a file failed, and the
   person asks again at once.
-- **Suspended accounts:** their access tokens stop working at once, and a
-  refresh ends the session.
+- **Suspended accounts:** stay signed in, so the person can still read,
+  download or delete their data (spec 9, 3.6.2), but the API answers 403
+  `account_suspended` to searching, booking, requesting, posting or
+  changing a trip and sending messages, at once for every session. Their
+  console sessions end on their next request.
 - **Sign-out** ends the session and deletes its tokens at once; there are no
   signed tokens that stay valid until they expire. A person can end any of
   their own sessions, and the API answers "not found" for anyone else's.
