@@ -1,4 +1,5 @@
 import type { MeetingPointSummary, Place } from "@shareride/contracts";
+import { placeKindKeys, regionKeys, typeKeys } from "@shareride/i18n";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Card } from "@/components/card";
@@ -6,7 +7,6 @@ import { Tag, type TagKind } from "@/components/tag";
 import { useLanguage } from "@/i18n/language";
 import { minTouchTarget, radii, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
-import { placeKindKeys, regionKeys, typeKeys } from "./texts";
 
 /**
  * A meeting point in a list: its name, type and municipality, an optional

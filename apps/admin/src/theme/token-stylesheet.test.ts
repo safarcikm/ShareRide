@@ -1,4 +1,4 @@
-import { colors, edges, typeScale } from "@shareride/ui";
+import { colors, edges, mapDrawing, typeScale } from "@shareride/ui";
 import { describe, expect, it } from "vitest";
 import { faceParts, tokenStylesheet } from "./token-stylesheet.ts";
 
@@ -10,6 +10,13 @@ describe("tokenStylesheet", () => {
     expect(css).toContain(`--color-text-muted: ${colors.dark.textMuted};`);
     const count = (css.match(/--color-/g) ?? []).length;
     expect(count).toBe(Object.keys(colors.light).length * 2);
+  });
+
+  it("has the map's colours, light and dark (ADR 0024)", () => {
+    expect(css).toContain(`--map-ring-road: ${mapDrawing.light.ringRoad};`);
+    expect(css).toContain(`--map-ring-road: ${mapDrawing.dark.ringRoad};`);
+    const count = (css.match(/--map-/g) ?? []).length;
+    expect(count).toBe(Object.keys(mapDrawing.light).length * 2);
   });
 
   it("has a class for each type style, weighted by its face", () => {
