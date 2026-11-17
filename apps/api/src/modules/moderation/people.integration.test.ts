@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import {
   acceptRequestRoute,
+  cancelTripRoute,
   declineRequestRoute,
   fileReportRoute,
   type AdminDeclineRate,
@@ -65,6 +66,9 @@ async function send(cookie: string, method: string, path: string, body?: unknown
   return { status: response.status, body: (await response.json()) as unknown };
 }
 
+/** The console's search, with what to look for in the body, never the address. */
+const find = (cookie: string, q: string) => send(cookie, "POST", "/admin/v1/users/search", { q });
+
 const person = (member: Member, firstName: string | null) => ({
   userId: member.userId,
   firstName,
@@ -118,7 +122,7 @@ describe("the console's users and trips", () => {
     const gunna = await newMember("Gunna");
     const asGunna = { authorization: `Bearer ${gunna.accessToken}` };
     for (const [method, path, body] of [
-      ["GET", "/admin/v1/users?q=Gunna", undefined],
+      ["POST", "/admin/v1/users/search", { q: "Gunna" }],
       ["GET", `/admin/v1/users/${gunna.userId}`, undefined],
       ["POST", `/admin/v1/users/${gunna.userId}/notes`, { text: "A note." }],
       ["GET", "/admin/v1/trips", undefined],
@@ -143,10 +147,11 @@ describe("finding people (spec 9, 3.5.1)", () => {
     await newMember("Anna");
     const { cookie } = await api.signInOperator();
 
-    const { status, body } = await send(cookie, "GET", "/admin/v1/users?q=gUNN");
+    const { status, body } = await find(cookie, "gUNN");
 
     expect(status).toBe(200);
-    const { users } = body as { users: AdminUserListItem[] };
+    const { users, more } = body as { users: AdminUserListItem[]; more: boolean };
+    expect(more).toBe(false);
     expect(users.map((user) => user.person.firstName)).toEqual(
       expect.arrayContaining(["Gunnar", "Gunnhildur"]),
     );
@@ -167,7 +172,7 @@ describe("finding people (spec 9, 3.5.1)", () => {
     const { cookie } = await api.signInOperator();
 
     for (const q of ["%", "_"]) {
-      const { body } = await send(cookie, "GET", `/admin/v1/users?q=${encodeURIComponent(q)}`);
+      const { body } = await find(cookie, q);
       expect((body as { users: AdminUserListItem[] }).users, q).toEqual([]);
     }
   });
@@ -189,11 +194,7 @@ describe("finding people (spec 9, 3.5.1)", () => {
       gunna.userId,
       gunna.userId.toUpperCase(),
     ]) {
-      const { status, body } = await send(
-        cookie,
-        "GET",
-        `/admin/v1/users?q=${encodeURIComponent(q)}`,
-      );
+      const { status, body } = await find(cookie, q);
       expect(status, q).toBe(200);
       expect((body as { users: AdminUserListItem[] }).users, q).toEqual([
         expect.objectContaining({ person: person(gunna, "Gunna"), email: "gunna@example.com" }),
@@ -204,7 +205,7 @@ describe("finding people (spec 9, 3.5.1)", () => {
   it("never lists the former member", async () => {
     const { cookie } = await api.signInOperator();
 
-    const { body } = await send(cookie, "GET", `/admin/v1/users?q=${schema.formerMemberId}`);
+    const { body } = await find(cookie, schema.formerMemberId);
 
     expect((body as { users: AdminUserListItem[] }).users).toEqual([]);
     const page = await send(cookie, "GET", `/admin/v1/users/${schema.formerMemberId}`);
@@ -214,10 +215,30 @@ describe("finding people (spec 9, 3.5.1)", () => {
   it("needs something to search for", async () => {
     const { cookie } = await api.signInOperator();
 
-    const { status, body } = await send(cookie, "GET", "/admin/v1/users?q=%20%20");
+    for (const sent of [{ q: "  " }, {}]) {
+      const { status, body } = await send(cookie, "POST", "/admin/v1/users/search", sent);
 
-    expect(status).toBe(400);
-    expect(body).toMatchObject({ error: { code: "validation_failed" } });
+      expect(status).toBe(400);
+      expect(body).toMatchObject({ error: { code: "validation_failed" } });
+    }
+  });
+
+  it("lists 50 at most, and says there were more", async () => {
+    const { db } = api.connection;
+    await db.insert(schema.users).values(
+      Array.from({ length: 51 }, (_, index) => ({
+        firstName: `Þórdís${String(index)}`,
+        status: "active",
+        locale: "en",
+      })),
+    );
+    const { cookie } = await api.signInOperator();
+
+    const { body } = await find(cookie, "Þórdís");
+
+    const found = body as { users: AdminUserListItem[]; more: boolean };
+    expect(found.users).toHaveLength(50);
+    expect(found.more).toBe(true);
   });
 });
 
@@ -516,12 +537,21 @@ describe("a trip's page (spec 9, 3.5.2)", () => {
     ]);
   });
 
-  it("answers not found for no such trip", async () => {
+  it("answers not found for no such trip, or a draft", async () => {
+    await api.connection.db
+      .update(schema.trips)
+      .set({ status: "draft" })
+      .where(eq(schema.trips.id, vik));
     const { cookie } = await api.signInOperator();
 
-    const { status } = await send(cookie, "GET", `/admin/v1/trips/${randomUUID()}`);
-
-    expect(status).toBe(404);
+    for (const id of [randomUUID(), vik]) {
+      const { status } = await send(cookie, "GET", `/admin/v1/trips/${id}`);
+      expect(status, id).toBe(404);
+    }
+    const listed = await send(cookie, "GET", `/admin/v1/trips?id=${vik}`);
+    expect(listed.body).toEqual({ trips: [], more: false });
+    const driver = await send(cookie, "GET", `/admin/v1/users/${(await driverOf(vik)).userId}`);
+    expect((driver.body as AdminUser).trips.map((trip) => trip.id)).not.toContain(vik);
   });
 });
 
@@ -548,5 +578,40 @@ describe("decline rates (spec 9, 3.4.5)", () => {
       },
     ]);
     expect(drivers.some((rate) => rate.driver.userId === jon.userId)).toBe(false);
+  });
+
+  it("leaves out a request declined because the driver cancelled the trip", async () => {
+    const anna = await driverOf(north, "Anna");
+    const gunna = await newMember("Gunna");
+    const asked = await booked(gunna.accessToken, north, { fromStop: 0, toStop: 3 });
+    const cancelled = await api.client.call(cancelTripRoute, {
+      accessToken: anna.accessToken,
+      params: { id: north },
+      body: { reason: "illness", countsOnReliability: false },
+    });
+    expect(cancelled.ok).toBe(true);
+    const { cookie } = await api.signInOperator();
+
+    const { body } = await send(cookie, "GET", "/admin/v1/decline-rates");
+
+    const [request] = await api.connection.db
+      .select({ status: schema.bookings.status })
+      .from(schema.bookings)
+      .where(eq(schema.bookings.id, asked.id));
+    expect(request?.status).toBe("declined");
+    expect((body as { drivers: AdminDeclineRate[] }).drivers).toEqual([]);
+  });
+
+  it("counts only the requests made in the last 90 days", async () => {
+    await answeredRequests();
+    await api.connection.db
+      .update(schema.bookings)
+      .set({ requestedAt: new Date(api.now().getTime() - 91 * 86_400_000) })
+      .where(eq(schema.bookings.tripId, north));
+    const { cookie } = await api.signInOperator();
+
+    const { body } = await send(cookie, "GET", "/admin/v1/decline-rates");
+
+    expect((body as { drivers: AdminDeclineRate[] }).drivers).toEqual([]);
   });
 });

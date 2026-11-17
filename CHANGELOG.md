@@ -619,12 +619,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   by day, place, driver or a trip's or booking's ID; a person's page with
   their profile, cars, trips, bookings, reports, actions, notes and decline
   rate; a trip's page with every booking and request, and why a request
-  was declined. Operators add notes about a person that only they read
+  was declined. Searching for a person is a POST, so a phone number or an
+  email never sits in an address. Operators add notes about a person
   (migration `0039_operator_notes`), each in the audit log without its
   words; the person gets them in Download my data, never who wrote them
-  (open question Q24). Each driver's decline rate over 90 days, the
-  highest first, so a pattern that could be discrimination can be looked
-  at.
+  (open question Q24). Erasing the person erases the notes about them;
+  erasing an operator keeps the notes they wrote, by the former member.
+  Each driver's decline rate over 90 days, the highest first, so a pattern
+  that could be discrimination can be looked at.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its

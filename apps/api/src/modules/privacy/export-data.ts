@@ -582,15 +582,16 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     .where(eq(blocks.blockerId, userId))
     .orderBy(asc(blocks.createdAt), asc(blocks.id));
 
-  // What ShareRide did about the person and why, with their appeals (spec 9,
-  // R9.5); never which operator, nor the report it came from.
-  // What operators wrote down about the person, never who wrote it (spec 9, 3.5.3).
+  // What operators wrote down about the person, never who wrote it (spec 9,
+  // 3.5.3; Q24).
   const noted = await q
     .select({ text: operatorNotes.text, addedAt: operatorNotes.createdAt })
     .from(operatorNotes)
     .where(eq(operatorNotes.userId, userId))
     .orderBy(asc(operatorNotes.createdAt), asc(operatorNotes.id));
 
+  // What ShareRide did about the person and why, with their appeals (spec 9,
+  // R9.5); never which operator, nor the report it came from.
   const noticed = await q
     .select({
       kind: moderationActions.kind,

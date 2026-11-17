@@ -109,4 +109,24 @@ describe("each driver's decline rate (spec 9, 3.4.5)", () => {
 
     expect(rates.map((rate) => rate.driverId)).toEqual(["c", "b", "a"]);
   });
+
+  it("keeps one order for equal rates: by ID", () => {
+    const rates = declineRates([row("zed"), row("ana")], now, defaultSafetySettings);
+
+    expect(rates.map((rate) => rate.driverId)).toEqual(["ana", "zed"]);
+  });
+
+  it("counts a request made exactly 90 days ago, not one a moment earlier", () => {
+    const edge = new Date(now.getTime() - 90 * 86_400_000);
+    const rates = declineRates(
+      [
+        row("jon", { requestedAt: edge }),
+        row("jon", { requestedAt: new Date(edge.getTime() - 1) }),
+      ],
+      now,
+      defaultSafetySettings,
+    );
+
+    expect(rates.map((rate) => rate.answered)).toEqual([1]);
+  });
 });

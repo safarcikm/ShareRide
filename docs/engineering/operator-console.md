@@ -350,23 +350,30 @@ users and trips routes (`registerPeopleAdminRoutes`), with the work in
 reports, actions and stops through `console-reads.ts`, so every page names
 them the same way.
 
-- `GET /admin/v1/users?q=` finds people: an ID, an email in any case, a
-  phone number (Icelandic without +354 too, as `normalisePhoneNumber`
-  reads it) or part of a first name, where `%` and `_` match themselves.
-  At most 50, by first name; never the former member.
+- `POST /admin/v1/users/search` with `{ q }` finds people: an ID, an
+  email in any case, a phone number (Icelandic without +354 too, as
+  `normalisePhoneNumber` reads it) or part of a first name, where `%` and
+  `_` match themselves. A POST, so a number or an email never sits in an
+  address or a log. At most 50, by first name in Icelandic order, with
+  `more` when there were more; never the former member.
 - `GET /admin/v1/users/{id}` gives a person's page: the profile with when
   each thing was verified or declared, About you and whether ShareRide hid
   it, cars, the 20 latest trips they drive and bookings they made (a
   declined request with its reason, R5.7), the 20 latest reports by and
   about them and actions on them, every note, and their decline rate.
-- `POST /admin/v1/users/{id}/notes` with `{ text }` adds a note only
-  operators read, at most 1 000 characters (`checkOperatorNote`). Its audit
-  entry, `user.note_added`, names the note's ID, never its words.
+- `POST /admin/v1/users/{id}/notes` with `{ text }` adds a note about the
+  person, at most 1 000 characters (`checkOperatorNote`). Only operators
+  see notes in the console, but the person gets each note's text and date
+  in Download my data, never who wrote it (open question Q24), so a note
+  keeps to facts. Its audit entry, `user.note_added`, names the note's ID,
+  never its words. Erasing the person erases the notes about them; erasing
+  an operator keeps the notes they wrote, by the former member.
 - `GET /admin/v1/trips` finds trips by `date` (the day they leave in
   Iceland), `place` (part of a stop's name in either language),
   `driverId`, or `id` (a trip's, or a booking's, which finds its trip);
   the latest departure first. With no filter, the trips from today on, the
-  soonest first. Drafts never show.
+  soonest first. At most 50, with `more` when there were more. Drafts
+  never show, here or on a trip's page.
 - `GET /admin/v1/trips/{id}` gives a trip with every stop (removed ones
   marked), the car, and every booking and request on it.
 - `GET /admin/v1/decline-rates` lists each driver who answered a request

@@ -1,7 +1,8 @@
 // The console's users, trips and bookings (spec 9, 3.5; milestone 9, PR 8):
-// finding people and trips, a person's page and a trip's page, notes only
-// operators read, and each driver's request decline rate (3.4.5). Suspending
-// and reinstating go through the moderation console service.
+// finding people and trips, a person's page and a trip's page, notes
+// operators write about a person (who gets them in Download my data, never
+// who wrote them; Q24), and each driver's request decline rate (3.4.5).
+// Suspending and reinstating go through the moderation console service.
 import type {
   AdminDeclineRate,
   AdminOperatorNote,
@@ -40,6 +41,7 @@ import {
   gte,
   ilike,
   inArray,
+  isNotNull,
   isNull,
   lt,
   max,
@@ -81,15 +83,21 @@ export interface TripFilters {
 
 export type AddNoteError = { readonly code: "not_found" } | OperatorNoteProblem;
 
+/** What a search found, at most `adminSearchShown`; `more` when there were more. */
+export interface Found<Item> {
+  readonly items: readonly Item[];
+  readonly more: boolean;
+}
+
 export interface PeopleConsoleService {
-  users(q: string): Promise<readonly AdminUserListItem[]>;
+  users(q: string): Promise<Found<AdminUserListItem>>;
   user(id: string): Promise<AdminUser | undefined>;
   addNote(
     userId: string,
     text: string,
     actor: ConsoleActor,
   ): Promise<Result<AdminOperatorNote, AddNoteError>>;
-  trips(filters: TripFilters): Promise<readonly AdminTripListItem[]>;
+  trips(filters: TripFilters): Promise<Found<AdminTripListItem>>;
   trip(id: string): Promise<AdminTrip | undefined>;
   declineRates(): Promise<readonly AdminDeclineRate[]>;
 }
@@ -236,6 +244,7 @@ export function createPeopleConsoleService(dependencies: {
       .where(
         and(
           gte(bookings.requestedAt, since),
+          isNotNull(bookings.decidedAt),
           ne(trips.driverId, formerMemberId),
           driverId === undefined ? undefined : eq(trips.driverId, driverId),
         ),
@@ -285,11 +294,16 @@ export function createPeopleConsoleService(dependencies: {
         .from(users)
         .where(and(match, ne(users.id, formerMemberId)))
         .orderBy(asc(users.firstName), asc(users.id))
-        .limit(adminSearchShown);
-      const found = await listOf(rows);
-      return found.sort((a, b) =>
-        collator.compare(a.person.firstName ?? "", b.person.firstName ?? ""),
-      );
+        .limit(adminSearchShown + 1);
+      const found = await listOf(rows.slice(0, adminSearchShown));
+      // The database's order may not be Iceland's, so a list cut short says
+      // so and the operator narrows the search.
+      return {
+        items: found.sort((a, b) =>
+          collator.compare(a.person.firstName ?? "", b.person.firstName ?? ""),
+        ),
+        more: rows.length > adminSearchShown,
+      };
     },
 
     async user(id) {
@@ -462,8 +476,11 @@ export function createPeopleConsoleService(dependencies: {
             ? [desc(trips.departsAt), desc(trips.id)]
             : [asc(trips.departsAt), asc(trips.id)]),
         )
-        .limit(adminSearchShown);
-      return tripItems(rows);
+        .limit(adminSearchShown + 1);
+      return {
+        items: await tripItems(rows.slice(0, adminSearchShown)),
+        more: rows.length > adminSearchShown,
+      };
     },
 
     async trip(id) {
@@ -478,7 +495,7 @@ export function createPeopleConsoleService(dependencies: {
           cancelledBy: trips.cancelledBy,
         })
         .from(trips)
-        .where(eq(trips.id, id));
+        .where(and(eq(trips.id, id), ne(trips.status, "draft")));
       if (row === undefined) return undefined;
       const [item] = await tripItems([row]);
       if (item === undefined) throw new Error("A trip lists as itself.");

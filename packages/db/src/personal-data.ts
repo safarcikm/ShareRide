@@ -355,10 +355,14 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     // The notes about the person, never who wrote them (spec 9, 3.5.3; Q24).
     export: { section: "notes" },
     personColumns: ["userId", "byId"],
-    onDeletion: {
-      rows: "erase",
-      note: "notes about the person go with them; so do those an operator wrote, if the operator's own account is erased",
-    },
+    // Notes about the person go with them: the erasure deletes them by
+    // person before it moves the rest. Those an operator wrote about others
+    // stay for the console, by the former member.
+    onDeletion: keep(
+      ["text"],
+      [],
+      "notes about the person are erased first; those an operator wrote about others move to the former member",
+    ),
   },
   blocks: {
     category: "blocks",

@@ -4,8 +4,8 @@ import {
   adminDeclineRatesRoute,
   adminTripRoute,
   adminTripsRoute,
+  adminFindUsersRoute,
   adminUserRoute,
-  adminUsersRoute,
 } from "@shareride/contracts";
 import type { Context, MiddlewareHandler } from "hono";
 import type { AppEnv } from "../../context.ts";
@@ -27,9 +27,10 @@ export function registerPeopleAdminRoutes(
 ): void {
   const { people, requireOperator, clientAddress } = dependencies;
 
-  app.openapi(toOpenApiRoute(adminUsersRoute, requireOperator), async (c) => {
-    const { q } = validated(c, "query", adminUsersRoute.request.query);
-    return c.json({ users: [...(await people.users(q))] }, 200);
+  app.openapi(toOpenApiRoute(adminFindUsersRoute, requireOperator), async (c) => {
+    const { q } = validated(c, "json", adminFindUsersRoute.request.body);
+    const found = await people.users(q);
+    return c.json({ users: [...found.items], more: found.more }, 200);
   });
 
   app.openapi(toOpenApiRoute(adminUserRoute, requireOperator), async (c) => {
@@ -53,7 +54,8 @@ export function registerPeopleAdminRoutes(
 
   app.openapi(toOpenApiRoute(adminTripsRoute, requireOperator), async (c) => {
     const filters = validated(c, "query", adminTripsRoute.request.query);
-    return c.json({ trips: [...(await people.trips(filters))] }, 200);
+    const found = await people.trips(filters);
+    return c.json({ trips: [...found.items], more: found.more }, 200);
   });
 
   app.openapi(toOpenApiRoute(adminTripRoute, requireOperator), async (c) => {

@@ -19,11 +19,12 @@ import { defineRoute } from "./route.ts";
 
 // The console's users, trips and bookings (spec 9, 3.5; milestone 9, PR 8):
 // search, a person's page with everything ShareRide holds on them that the
-// operator needs, a trip's page with its bookings, notes only operators
-// read, and each driver's request decline rate (3.4.5). Suspending and
-// reinstating use the moderation routes. Only the operator sees any of this.
+// operator needs, a trip's page with its bookings, notes operators write
+// about a person, and each driver's request decline rate (3.4.5). Suspending
+// and reinstating use the moderation routes. Only operators reach these
+// routes; the person gets the notes about them in Download my data (Q24).
 
-/** The most people or trips one search lists. */
+/** The most people or trips one search lists; `more` says when there were more. */
 export const adminSearchShown = 50;
 
 const errors = { schema: errorResponseSchema } as const;
@@ -40,11 +41,15 @@ export const adminUserListItemSchema = z.object({
 
 export type AdminUserListItem = z.infer<typeof adminUserListItemSchema>;
 
-/** A note only operators read (3.5.3). */
+/**
+ * A note an operator wrote about a person (3.5.3). Only operators see it in
+ * the console; the person gets its text and date in Download my data, never
+ * who wrote it (Q24).
+ */
 export const adminOperatorNoteSchema = z.object({
   id: z.uuid(),
   text: z.string(),
-  /** The operator who wrote it; null once their account is gone. */
+  /** The operator who wrote it; the former member once their account is erased. */
   by: adminPersonSchema.nullable(),
   at: timestampSchema,
 });
@@ -179,22 +184,28 @@ export const adminAddNoteBodySchema = z.object({
 
 export type AdminAddNoteBody = z.infer<typeof adminAddNoteBodySchema>;
 
-export const adminUsersRoute = defineRoute({
-  method: "get",
-  path: "/admin/v1/users",
+export const adminFindUsersBodySchema = z.object({
+  /** An ID, an email, a phone number (Icelandic without +354) or part of a first name. */
+  q: z.string().trim().min(1).max(200),
+});
+
+export type AdminFindUsersBody = z.infer<typeof adminFindUsersBodySchema>;
+
+/**
+ * A POST, so a phone number or an email searched for stays out of addresses,
+ * logs and browser history (privacy register: no personal data in URLs).
+ */
+export const adminFindUsersRoute = defineRoute({
+  method: "post",
+  path: "/admin/v1/users/search",
   summary: "Find people by first name, phone number, email or ID (3.5.1)",
   tags: ["admin", "users"],
   auth: "operator",
-  request: {
-    query: z.object({
-      /** An ID, an email, a phone number (Icelandic without +354) or part of a first name. */
-      q: z.string().trim().min(1).max(200),
-    }),
-  },
+  request: { body: adminFindUsersBodySchema },
   responses: {
     200: {
-      description: `The people found, by first name, at most ${String(adminSearchShown)}`,
-      schema: z.object({ users: z.array(adminUserListItemSchema) }),
+      description: `The people found, by first name, at most ${String(adminSearchShown)}; \`more\` when there were more`,
+      schema: z.object({ users: z.array(adminUserListItemSchema), more: z.boolean() }),
     },
     400: { description: "validation_failed: nothing to search for (`q`)", ...errors },
     401: unauthenticated,
@@ -218,7 +229,7 @@ export const adminUserRoute = defineRoute({
 export const adminAddNoteRoute = defineRoute({
   method: "post",
   path: "/admin/v1/users/{id}/notes",
-  summary: "Add a note about a person, read only by operators (3.5.3)",
+  summary: "Add a note about a person (3.5.3); they get it in Download my data, never who wrote it",
   tags: ["admin", "users"],
   auth: "operator",
   request: { params: z.object({ id: z.uuid() }), body: adminAddNoteBodySchema },
@@ -253,8 +264,8 @@ export const adminTripsRoute = defineRoute({
   },
   responses: {
     200: {
-      description: `The trips found, the latest departure first; with no filter, those from today on, the soonest first. At most ${String(adminSearchShown)}`,
-      schema: z.object({ trips: z.array(adminTripListItemSchema) }),
+      description: `The trips found, the latest departure first; with no filter, those from today on, the soonest first. At most ${String(adminSearchShown)}; \`more\` when there were more`,
+      schema: z.object({ trips: z.array(adminTripListItemSchema), more: z.boolean() }),
     },
     400: { description: "validation_failed: a filter is not valid", ...errors },
     401: unauthenticated,

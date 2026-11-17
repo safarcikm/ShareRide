@@ -7,7 +7,10 @@ import { characterCount, defaultSafetySettings, type SafetySettings } from "./se
 
 export type OperatorNoteProblem = { readonly code: "note_missing" } | { readonly code: "too_long" };
 
-/** A note only operators read: trimmed, not empty, as long as a statement's reason at most. */
+/**
+ * A note an operator writes about a person: trimmed, not empty, as long as a
+ * statement's reason at most. The person gets it in Download my data (Q24).
+ */
 export function checkOperatorNote(
   text: string,
   settings: SafetySettings = defaultSafetySettings,
@@ -57,7 +60,8 @@ export interface DeclineRate {
 
 /**
  * Each driver who answered a request made in the last `declineRateDays`
- * days, the highest share of declines first, then the most answered.
+ * days, the highest share of declines first, then the most answered, then
+ * by ID.
  */
 export function declineRates(
   rows: readonly RequestRow[],
@@ -93,7 +97,10 @@ export function declineRates(
     .map(([driverId, rate]) => ({ driverId, ...rate }))
     .sort(
       (a, b) =>
-        // a.declined / a.answered against b's, without dividing.
-        b.declined * a.answered - a.declined * b.answered || b.answered - a.answered,
+        // a.declined / a.answered against b's, without dividing; then the
+        // most answered, then by ID, so equal rates keep one order.
+        b.declined * a.answered - a.declined * b.answered ||
+        b.answered - a.answered ||
+        (a.driverId < b.driverId ? -1 : a.driverId > b.driverId ? 1 : 0),
     );
 }
