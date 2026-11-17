@@ -220,7 +220,10 @@ Opened in the transaction that confirms the booking. Retained per the
 Detailed in [spec 8](../specs/2026-11-13-trip-day-reviews-and-reliability.md#6-data-and-api):
 `CheckIn` ("I'm here": trip stop, user, the passenger's booking, time;
 never a location), `Dispute`
-(a no-show or a missing driver, the other side's answer and the outcome),
+(a no-show or a missing driver, one per booking: the kind, when, the
+reporter's note, the other side's answer and its note, the outcome, who
+decided it, the system or the operator, and the operator's note; who
+reported it follows from the kind, and every note is the operator's only),
 `ReliabilityRecord` (one per kept or not-kept trip or booking, with whether
 it counts and why not) and `UserStats` (rating and reliability totals).
 

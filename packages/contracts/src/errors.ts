@@ -30,6 +30,8 @@ export const errorResponseSchema = z.object({
     bookingsAtStop: z.int().positive().optional(),
     /** When "I'm here" opens at the stop (`check_in_not_open`, R8.3). */
     opensAt: timestampSchema.optional(),
+    /** When the wait after the stop's time ends (`no_show_too_early`, `report_too_early`; R8.4, R8.5). */
+    allowedAt: timestampSchema.optional(),
   }),
 });
 

@@ -201,6 +201,38 @@ export function arrivalOf(booking: {
   return booking.checkedIn ? "here" : "not_here";
 }
 
+/**
+ * R8.4: the driver can mark a no-show from the wait after the passenger's
+ * boarding time until the trip completes: from `opensAt`, and before
+ * `closesAt`. The boarding time is the stop's as it is now.
+ */
+export function noShowWindow(
+  boardsAt: Date,
+  lastStopAt: Date,
+  settings: TripDaySettings,
+): { readonly opensAt: Date; readonly closesAt: Date } {
+  return {
+    opensAt: later(boardsAt, settings.noShowWaitMinutes),
+    closesAt: completesAt(lastStopAt, settings),
+  };
+}
+
+/**
+ * R8.5: the passenger can say the driver didn't come from the same wait
+ * until 24 hours after the trip completes, both included: the 24 hours the
+ * other side has to answer a report (R8.6).
+ */
+export function driverAbsentWindow(
+  boardsAt: Date,
+  lastStopAt: Date,
+  settings: TripDaySettings,
+): { readonly opensAt: Date; readonly closesAt: Date } {
+  return {
+    opensAt: later(boardsAt, settings.noShowWaitMinutes),
+    closesAt: later(completesAt(lastStopAt, settings), settings.answerWindowHours * 60),
+  };
+}
+
 export interface NoShowCheck {
   readonly bookingStatus: BookingStatus;
   /** The planned time at the passenger's boarding stop. */
@@ -236,9 +268,9 @@ export function checkNoShow(
 ): Result<null, NoShowProblem> {
   if (booking.bookingStatus !== "confirmed") return err({ code: "not_confirmed" });
   if (booking.reported) return err({ code: "already_reported" });
-  if (now >= completesAt(booking.lastStopAt, settings)) return err({ code: "trip_completed" });
-  const allowedAt = later(booking.boardsAt, settings.noShowWaitMinutes);
-  if (now < allowedAt) return err({ code: "no_show_too_early", allowedAt });
+  const { opensAt, closesAt } = noShowWindow(booking.boardsAt, booking.lastStopAt, settings);
+  if (now >= closesAt) return err({ code: "trip_completed" });
+  if (now < opensAt) return err({ code: "no_show_too_early", allowedAt: opensAt });
   if (!booking.driverCheckedIn) return err({ code: "driver_not_checked_in" });
   return ok(null);
 }
@@ -274,12 +306,8 @@ export function checkDriverAbsent(
     return err({ code: "not_boarding" });
   }
   if (booking.reported) return err({ code: "already_reported" });
-  const allowedAt = later(booking.boardsAt, settings.noShowWaitMinutes);
-  if (now < allowedAt) return err({ code: "report_too_early", allowedAt });
-  const closesAt = later(
-    completesAt(booking.lastStopAt, settings),
-    settings.answerWindowHours * 60,
-  );
+  const { opensAt, closesAt } = driverAbsentWindow(booking.boardsAt, booking.lastStopAt, settings);
+  if (now < opensAt) return err({ code: "report_too_early", allowedAt: opensAt });
   if (now > closesAt) return err({ code: "report_too_late" });
   return ok(null);
 }

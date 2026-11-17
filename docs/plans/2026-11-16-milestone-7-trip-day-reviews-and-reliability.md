@@ -292,10 +292,15 @@ In two parts: 4a the API, 4b the screens and the browser journey.
 
 ### PR 5: `feat(bookings)`: no-shows, the driver didn't come, and answers
 
-- [ ] `disputes`; the no-show, driver-absent and answer routes; settling
-      after 24 hours; refunds and reliability; notifications
-- [ ] Mark as no-show, The driver didn't come, and the answer screen
-- [ ] The operator's command (decision 1)
+In two parts: 5a the API, 5b the operator's command, the screens and the
+browser journey.
+
+- [x] `disputes`; the no-show, driver-absent and answer routes; settling
+      after 24 hours; refunds and reliability; notifications; the
+      operator's decision as one function for the command and the console
+      (5a)
+- [ ] Mark as no-show, The driver didn't come, and the answer screen (5b)
+- [ ] The operator's command (decision 1) (5b)
 - Verify: integration tests for every path of 4.4 and decision 4, and
   twice gives one effect; a browser journey: a no-show nobody contests,
   and a driver absence that stands with a full refund

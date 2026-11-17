@@ -11,7 +11,7 @@ import {
   type TripDaySettings,
   type TripStatus,
 } from "@shareride/domain";
-import { and, eq, inArray, lte } from "drizzle-orm";
+import { and, eq, inArray, isNull, lte } from "drizzle-orm";
 import {
   changeOccupancy,
   expireDueBookings,
@@ -20,7 +20,7 @@ import {
   type Transaction,
 } from "../bookings/seats.ts";
 
-const { bookings, trips } = schema;
+const { bookings, disputes, trips } = schema;
 
 /** The trips time moves on: published or departed. */
 const runningStatuses: TripStatus[] = ["published", "departed"];
@@ -96,9 +96,29 @@ async function complete(tx: Transaction, tripId: string, completedAt: Date, now:
     })
     .from(bookings)
     .where(and(eq(bookings.tripId, tripId), eq(bookings.status, "confirmed")));
-  // Reports come with milestone 7's PR 5; until then none is open.
+  // A passenger who said the driver didn't come waits for that to be
+  // decided (spec 8, 3.4); a no-show is no longer confirmed.
+  const open =
+    confirmed.length === 0
+      ? []
+      : await tx
+          .select({ bookingId: disputes.bookingId })
+          .from(disputes)
+          .where(
+            and(
+              inArray(
+                disputes.bookingId,
+                confirmed.map((booking) => booking.id),
+              ),
+              isNull(disputes.outcome),
+            ),
+          );
+  const reported = new Set(open.map((row) => row.bookingId));
   const completing = confirmed.filter((booking) =>
-    completesWithTrip({ status: booking.status as BookingStatus, openReport: false }),
+    completesWithTrip({
+      status: booking.status as BookingStatus,
+      openReport: reported.has(booking.id),
+    }),
   );
   if (completing.length === 0) return;
   const stops = await stopsOf(tx, tripId);

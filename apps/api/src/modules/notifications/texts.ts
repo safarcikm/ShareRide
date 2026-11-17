@@ -66,6 +66,8 @@ export interface NotificationFacts {
   readonly moved: { readonly from: Date; readonly to: Date } | null;
   /** Confirmed and not free: what they paid would come back if they cancelled (R6.3). */
   readonly paid: boolean;
+  /** For a report to answer: until when the other side can (spec 8, R8.6); otherwise null. */
+  readonly answerBy: Date | null;
 }
 
 /** A driver's trip reminder (3.5): about the trip and everyone booked on it. */
@@ -239,6 +241,29 @@ function bookingText(
       case "checked_in":
       case "checked_in_driver":
         return [t("notify.checkedIn", { name }), from];
+      // A report on the trip day (spec 8, 3.3 and 3.4): the other side is
+      // asked whether it is right, and until when they can say. Never the
+      // note, which is for the operator.
+      case "no_show_marked":
+      case "driver_absent_reported":
+        return [
+          facts.kind === "no_show_marked"
+            ? t("notify.noShowMarked")
+            : t("notify.driverAbsentReported", { name }),
+          t("notify.reportBody", {
+            from,
+            to,
+            when: when(facts.boardsAt),
+            deadline: when(required(facts.answerBy, "the time to answer")),
+          }),
+        ];
+      // The outcome is on the booking and trip pages (3.5).
+      case "dispute_decided":
+      case "dispute_decided_driver":
+        return [
+          t("notify.disputeDecided"),
+          t("notify.disputeDecidedBody", { from, to, when: when(facts.boardsAt) }),
+        ];
       case "booking_cancelled_by_driver":
       case "trip_cancelled":
         // Never the driver's note: it may hold a number (R7.9).

@@ -1,5 +1,5 @@
 {
-  "id": "8cde13da-3fbb-466c-886b-19f513477c5f",
+  "id": "68cb93ff-e065-44a3-a156-46c0f7997326",
   "prevId": "94dad91f-0fd9-4ebd-b585-b5da4733fe90",
   "version": "7",
   "dialect": "postgresql",
@@ -1499,7 +1499,7 @@
         },
         "bookings_cancel_reason_check": {
           "name": "bookings_cancel_reason_check",
-          "value": "\"bookings\".\"cancel_reason\" in ('weather', 'road_closed', 'car_problem', 'illness', 'plans_changed', 'other', 'passenger_asked', 'car_smaller', 'found_another', 'trip_changed')"
+          "value": "\"bookings\".\"cancel_reason\" in ('weather', 'road_closed', 'car_problem', 'illness', 'plans_changed', 'other', 'passenger_asked', 'car_smaller', 'found_another', 'trip_changed', 'driver_absent')"
         },
         "bookings_cancel_note_check": {
           "name": "bookings_cancel_note_check",
@@ -2115,24 +2115,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "shelter_hours": {
-          "name": "shelter_hours",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "shelter_note_is": {
-          "name": "shelter_note_is",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "shelter_note_en": {
-          "name": "shelter_note_en",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "season_start_month": {
           "name": "season_start_month",
           "type": "smallint",
@@ -2178,18 +2160,6 @@
         },
         "review_due_on": {
           "name": "review_due_on",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "amenities_reviewed_on": {
-          "name": "amenities_reviewed_on",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "season_reviewed_on": {
-          "name": "season_reviewed_on",
           "type": "date",
           "primaryKey": false,
           "notNull": false
@@ -2278,10 +2248,6 @@
         "meeting_points_season_check": {
           "name": "meeting_points_season_check",
           "value": "(\"meeting_points\".\"season_start_month\" is null and \"meeting_points\".\"season_end_month\" is null) or (\"meeting_points\".\"season_start_month\" between 1 and 12 and \"meeting_points\".\"season_end_month\" between 1 and 12)"
-        },
-        "meeting_points_shelter_hours_check": {
-          "name": "meeting_points_shelter_hours_check",
-          "value": "case when \"meeting_points\".\"shelter_hours\" is null then true when jsonb_typeof(\"meeting_points\".\"shelter_hours\") = 'array' then jsonb_array_length(\"meeting_points\".\"shelter_hours\") = 7 else false end"
         }
       },
       "isRLSEnabled": false
@@ -2823,7 +2789,7 @@
       "checkConstraints": {
         "notifications_kind_check": {
           "name": "notifications_kind_check",
-          "value": "\"notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'data_export_ready', 'account_deletion_scheduled')"
+          "value": "\"notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'no_show_marked', 'driver_absent_reported', 'dispute_decided', 'dispute_decided_driver', 'data_export_ready', 'account_deletion_scheduled')"
         }
       },
       "isRLSEnabled": false
@@ -2910,7 +2876,7 @@
       "checkConstraints": {
         "outbox_events_kind_check": {
           "name": "outbox_events_kind_check",
-          "value": "\"outbox_events\".\"kind\" in ('BookingRequested', 'BookingAccepted', 'BookingConfirmed', 'BookingDeclined', 'BookingExpired', 'BookingWithdrawn', 'BookingCancelled', 'DepartureMoved', 'TripChanged', 'TripCancelled', 'RefundIssued', 'MessageSent', 'CheckedIn', 'DataExportReady', 'AccountDeletionScheduled')"
+          "value": "\"outbox_events\".\"kind\" in ('BookingRequested', 'BookingAccepted', 'BookingConfirmed', 'BookingDeclined', 'BookingExpired', 'BookingWithdrawn', 'BookingCancelled', 'DepartureMoved', 'TripChanged', 'TripCancelled', 'RefundIssued', 'MessageSent', 'CheckedIn', 'NoShowMarked', 'DriverAbsentReported', 'DisputeDecided', 'DataExportReady', 'AccountDeletionScheduled')"
         }
       },
       "isRLSEnabled": false
@@ -3235,7 +3201,7 @@
       "checkConstraints": {
         "scheduled_notifications_kind_check": {
           "name": "scheduled_notifications_kind_check",
-          "value": "\"scheduled_notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'data_export_ready', 'account_deletion_scheduled')"
+          "value": "\"scheduled_notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'no_show_marked', 'driver_absent_reported', 'dispute_decided', 'dispute_decided_driver', 'data_export_ready', 'account_deletion_scheduled')"
         },
         "scheduled_notifications_recipient_check": {
           "name": "scheduled_notifications_recipient_check",
@@ -3479,6 +3445,196 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.disputes": {
+      "name": "disputes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "booking_id": {
+          "name": "booking_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "raised_at": {
+          "name": "raised_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "answer": {
+          "name": "answer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "answered_at": {
+          "name": "answered_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "answer_note": {
+          "name": "answer_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decided_by": {
+          "name": "decided_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decided_at": {
+          "name": "decided_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decision_note": {
+          "name": "decision_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "disputes_booking_unique": {
+          "name": "disputes_booking_unique",
+          "columns": [
+            {
+              "expression": "booking_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "disputes_open_index": {
+          "name": "disputes_open_index",
+          "columns": [
+            {
+              "expression": "raised_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"disputes\".\"outcome\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "disputes_booking_id_bookings_id_fk": {
+          "name": "disputes_booking_id_bookings_id_fk",
+          "tableFrom": "disputes",
+          "tableTo": "bookings",
+          "columnsFrom": ["booking_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "disputes_kind_check": {
+          "name": "disputes_kind_check",
+          "value": "\"disputes\".\"kind\" in ('no_show', 'driver_absent')"
+        },
+        "disputes_answer_check": {
+          "name": "disputes_answer_check",
+          "value": "\"disputes\".\"answer\" in ('agreed', 'contested')"
+        },
+        "disputes_outcome_check": {
+          "name": "disputes_outcome_check",
+          "value": "\"disputes\".\"outcome\" in ('stands', 'rode', 'left_behind', 'passenger_absent')"
+        },
+        "disputes_decided_by_check": {
+          "name": "disputes_decided_by_check",
+          "value": "\"disputes\".\"decided_by\" in ('system', 'operator')"
+        },
+        "disputes_note_check": {
+          "name": "disputes_note_check",
+          "value": "char_length(\"disputes\".\"note\") <= 500"
+        },
+        "disputes_answer_note_check": {
+          "name": "disputes_answer_note_check",
+          "value": "char_length(\"disputes\".\"answer_note\") <= 500"
+        },
+        "disputes_decision_note_check": {
+          "name": "disputes_decision_note_check",
+          "value": "char_length(\"disputes\".\"decision_note\") <= 500"
+        },
+        "disputes_answered_check": {
+          "name": "disputes_answered_check",
+          "value": "(\"disputes\".\"answer\" is null) = (\"disputes\".\"answered_at\" is null)"
+        },
+        "disputes_decided_check": {
+          "name": "disputes_decided_check",
+          "value": "(\"disputes\".\"outcome\" is null) = (\"disputes\".\"decided_at\" is null) and (\"disputes\".\"outcome\" is null) = (\"disputes\".\"decided_by\" is null)"
+        },
+        "disputes_operator_check": {
+          "name": "disputes_operator_check",
+          "value": "\"disputes\".\"decided_by\" is distinct from 'operator' or \"disputes\".\"answer\" = 'contested'"
+        },
+        "disputes_kind_outcome_check": {
+          "name": "disputes_kind_outcome_check",
+          "value": "\"disputes\".\"outcome\" is null or (\"disputes\".\"kind\" = 'no_show' and \"disputes\".\"outcome\" in ('stands', 'rode', 'left_behind')) or (\"disputes\".\"kind\" = 'driver_absent' and \"disputes\".\"outcome\" in ('stands', 'rode', 'passenger_absent'))"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.data_exports": {
