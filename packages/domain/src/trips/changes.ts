@@ -1,14 +1,16 @@
 // Changing a published trip (spec 6, 3.2; rules R6.1 to R6.4, S5, P4): what
 // the rules allow, and what a change does for the booked passengers, so
 // the app can show it before saving and the API saves the same, stops
-// added and removed included.
+// added and removed included. Every change keeps the trip within its limit
+// (rule P3, spec 17): the price level falls when it must.
 import { movedFar } from "../bookings/cancellation.ts";
 import type { Season } from "../meeting-points/catalogue.ts";
 import type { NotificationEvent } from "../notifications/catalogue.ts";
 import type { Money } from "../money.ts";
 import { err, ok, type Result } from "../result.ts";
 import { checkNote, type NoteProblem } from "./note.ts";
-import { fitPriceLevel, isPriceLevel, priceCap, segmentPrice } from "./prices.ts";
+import { fitLevelWithin, isLevelWithin, type LevelLimit, type TripLoad } from "./limit.ts";
+import { priceCap, segmentPrice, type PriceSettings } from "./prices.ts";
 import { overlaps, type TimeWindow } from "./publish.ts";
 import {
   insertionLegPairs,
@@ -47,6 +49,11 @@ export interface ChangeableTrip {
   readonly occupancy: readonly number[];
   readonly seats: number;
   readonly priceLevel: number;
+  /**
+   * What the trip's bookings pay or paid the driver, less refunds, in whole
+   * krónur (rule P3; `takingsOf`).
+   */
+  readonly takings: number;
   readonly vehicleId: string;
   /** The driver's cars the trip can take: theirs and not removed (spec 4). */
   readonly cars: readonly string[];
@@ -179,12 +186,17 @@ export interface RemovedStop {
 export interface ChangeEffect {
   /** The trip as it will be. */
   readonly trip: ChangeableTrip;
-  /** More seats lowered the price level to the highest they allow (rule P4; spec 3, 3.6.4). */
+  /**
+   * The price level fell to the highest that fits (rule P4; spec 3, 3.6.4;
+   * spec 17): more seats allow less, or what is booked uses the trip limit.
+   */
   readonly priceLevelLowered: boolean;
+  /** What set the level it fell to; null when it did not fall. */
+  readonly levelLimitedBy: LevelLimit | null;
   /**
    * Each segment's price and cap for new bookings after a change of seats or
-   * price level, as when publishing; null when they stay. Bookings keep
-   * the prices they booked at (rule P1).
+   * price level, or a stop that lowered the level, as when publishing; null
+   * when they stay. Bookings keep the prices they booked at (rule P1).
    */
   readonly pricing: readonly SegmentPricing[] | null;
   /**
@@ -208,8 +220,23 @@ export interface ChangeEffect {
 }
 
 type ChangeSettings = Parameters<typeof checkTimes>[3] &
-  Parameters<typeof isPriceLevel>[2] &
+  PriceSettings &
   Pick<TripSettings, "maxSeats" | "routeFactorPercent">;
+
+/** The trip as its limit sees it (rule P3). */
+const loadOf = (trip: ChangeableTrip): TripLoad => ({
+  distancesM: trip.distancesM,
+  occupancy: trip.occupancy,
+  seats: trip.seats,
+  takings: trip.takings,
+});
+
+/** Each stretch's price and cap for new bookings, as when publishing (rules P3, P4). */
+const pricingOf = (trip: ChangeableTrip, settings: ChangeSettings): SegmentPricing[] =>
+  trip.distancesM.map((distanceM) => ({
+    price: segmentPrice(distanceM, trip.priceLevel, trip.seats, settings),
+    cap: priceCap(distanceM, trip.seats, settings),
+  }));
 
 /**
  * The legs `checkTripChange` looks up to add `stop` to a trip with these
@@ -272,13 +299,43 @@ export function checkTripChange(
         ? withStopAdded(trip, change, settings)
         : withStopRemoved(trip, bookings, change, settings);
     if (!done.ok) return done;
+    const told = whoIsTold(trip, change, done.value.trip, bookings);
+    // The new stretches' caps round on their own, so the limit can fall a
+    // little: if what is booked no longer leaves room at this level, the
+    // level falls and every stretch is priced again (spec 17).
+    const fitted = fitLevelWithin(trip.priceLevel, loadOf(done.value.trip), settings);
+    if (!fitted.lowered) {
+      return ok({
+        priceLevelLowered: false,
+        levelLimitedBy: null,
+        pricing: null,
+        addedStop: null,
+        removedStop: null,
+        ...done.value,
+        told,
+      });
+    }
+    const after = { ...done.value.trip, priceLevel: fitted.level };
+    const pricing = pricingOf(after, settings);
+    const at = (segment: number): SegmentPricing =>
+      pricing[segment] ?? {
+        price: { amount: 0, currency: "ISK" },
+        cap: { amount: 0, currency: "ISK" },
+      };
+    const added = "addedStop" in done.value ? done.value.addedStop : null;
+    const removed = "removedStop" in done.value ? done.value.removedStop : null;
     return ok({
-      priceLevelLowered: false,
-      pricing: null,
-      addedStop: null,
-      removedStop: null,
-      ...done.value,
-      told: whoIsTold(trip, change, done.value.trip, bookings),
+      trip: after,
+      priceLevelLowered: true,
+      levelLimitedBy: fitted.limitedBy,
+      pricing,
+      addedStop:
+        added === null
+          ? null
+          : { position: added.position, stretches: [at(added.position - 1), at(added.position)] },
+      removedStop:
+        removed === null ? null : { position: removed.position, stretch: at(removed.position - 1) },
+      told,
     });
   }
   const changed = applied(trip, change, settings);
@@ -287,12 +344,7 @@ export function checkTripChange(
 
   const after = changed.trip;
   const pricing =
-    change.kind === "seats" || change.kind === "priceLevel"
-      ? after.distancesM.map((distanceM) => ({
-          price: segmentPrice(distanceM, after.priceLevel, after.seats, settings),
-          cap: priceCap(distanceM, after.seats, settings),
-        }))
-      : null;
+    change.kind === "seats" || change.kind === "priceLevel" ? pricingOf(after, settings) : null;
   const told = whoIsTold(trip, change, after, bookings);
   return ok({ ...changed, pricing, addedStop: null, removedStop: null, told });
 }
@@ -446,7 +498,12 @@ function applied(
   trip: ChangeableTrip,
   change: Exclude<TripChange, StopChange>,
   settings: ChangeSettings,
-): { readonly trip: ChangeableTrip; readonly priceLevelLowered: boolean } {
+): {
+  readonly trip: ChangeableTrip;
+  readonly priceLevelLowered: boolean;
+  readonly levelLimitedBy: LevelLimit | null;
+} {
+  const kept = { priceLevelLowered: false, levelLimitedBy: null };
   switch (change.kind) {
     case "departure": {
       const byMs = change.departsAt.getTime() - (trip.stops[0]?.plannedAt.getTime() ?? 0);
@@ -454,26 +511,26 @@ function applied(
         ...stop,
         plannedAt: new Date(stop.plannedAt.getTime() + byMs),
       }));
-      return { trip: { ...trip, stops }, priceLevelLowered: false };
+      return { trip: { ...trip, stops }, ...kept };
     }
     case "seats": {
-      const fitted = fitPriceLevel(trip.priceLevel, change.seats, settings);
+      // The highest level for the seats and what is booked (rule P4, spec 17).
+      const seated = { ...trip, seats: change.seats };
+      const fitted = fitLevelWithin(trip.priceLevel, loadOf(seated), settings);
       return {
-        trip: { ...trip, seats: change.seats, priceLevel: fitted.level },
+        trip: { ...seated, priceLevel: fitted.level },
         priceLevelLowered: fitted.lowered,
+        levelLimitedBy: fitted.lowered ? fitted.limitedBy : null,
       };
     }
     case "priceLevel":
-      return { trip: { ...trip, priceLevel: change.priceLevel }, priceLevelLowered: false };
+      return { trip: { ...trip, priceLevel: change.priceLevel }, ...kept };
     case "vehicle":
-      return { trip: { ...trip, vehicleId: change.vehicleId }, priceLevelLowered: false };
+      return { trip: { ...trip, vehicleId: change.vehicleId }, ...kept };
     case "bookingMode":
-      return { trip: { ...trip, bookingMode: change.bookingMode }, priceLevelLowered: false };
+      return { trip: { ...trip, bookingMode: change.bookingMode }, ...kept };
     case "details":
-      return {
-        trip: { ...trip, preferences: change.preferences, note: change.note },
-        priceLevelLowered: false,
-      };
+      return { trip: { ...trip, preferences: change.preferences, note: change.note }, ...kept };
   }
 }
 
@@ -496,7 +553,9 @@ function changeProblems(
       return change.seats < taken ? [{ code: "seats_below_taken", taken }] : [];
     }
     case "priceLevel":
-      return isPriceLevel(change.priceLevel, trip.seats, settings)
+      // A step from free to the highest the seats and what is booked allow
+      // (rule P4, spec 17).
+      return isLevelWithin(change.priceLevel, loadOf(trip), settings)
         ? []
         : [{ code: "price_level_invalid" }];
     case "details":
