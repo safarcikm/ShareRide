@@ -1,5 +1,7 @@
 import {
   amenities,
+  meetingPointIssueReasons,
+  meetingPointIssueStatuses,
   meetingPointStatuses,
   meetingPointTypes,
   placeKinds,
@@ -22,6 +24,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { at, geographyPoint, id, oneOf, timestamps } from "./columns.ts";
+import { users } from "./users.ts";
 
 /**
  * Curated places where trips start, stop and end (spec 2, ADR 0006). Only
@@ -201,5 +204,44 @@ export const meetingPointPhotos = pgTable(
       sql`${table.width} > 0 and ${table.height} > 0 and ${table.bytes} > 0`,
     ),
     check("meeting_point_photos_position_check", sql`${table.position} >= 0`),
+  ],
+);
+
+/**
+ * Problem reports about a meeting point (spec 2, 3.5): open in the
+ * operator's queue until resolved. Resolving removes the link to the person
+ * who sent it, and the report is deleted 12 months later (section 7).
+ */
+export const meetingPointIssues = pgTable(
+  "meeting_point_issues",
+  {
+    id: id(),
+    meetingPointId: uuid()
+      .notNull()
+      .references(() => meetingPoints.id),
+    /** Who sent it, until it is resolved. */
+    reporterId: uuid().references(() => users.id, { onDelete: "set null" }),
+    reason: text().notNull(),
+    note: text().notNull().default(""),
+    status: text().notNull().default("open"),
+    /** The operator's note on what was done. */
+    resolutionNote: text(),
+    resolvedById: uuid().references(() => users.id, { onDelete: "set null" }),
+    resolvedAt: at(),
+    ...timestamps,
+  },
+  (table) => [
+    index("meeting_point_issues_reporter_index").on(table.reporterId, table.createdAt),
+    index("meeting_point_issues_point_index").on(table.meetingPointId),
+    index("meeting_point_issues_open_index")
+      .on(table.createdAt)
+      .where(sql`${table.status} = 'open'`),
+    index("meeting_point_issues_resolved_index").on(table.resolvedAt),
+    check("meeting_point_issues_reason_check", oneOf(table.reason, meetingPointIssueReasons)),
+    check("meeting_point_issues_status_check", oneOf(table.status, meetingPointIssueStatuses)),
+    check(
+      "meeting_point_issues_resolved_check",
+      sql`(${table.status} = 'resolved') = (${table.resolvedAt} is not null) and (${table.status} = 'resolved') = (${table.resolutionNote} is not null) and (${table.status} = 'open' or ${table.reporterId} is null)`,
+    ),
   ],
 );

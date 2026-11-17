@@ -42,6 +42,8 @@ export const exportSections = [
   "conversations",
   /** Reports the person filed and their outcomes, never who reported them (spec 9). */
   "reports",
+  /** Problems the person reported with meeting points, while still open (spec 2, 3.5). */
+  "meeting_point_reports",
   /** Blocks the person made, never who blocked them (spec 9). */
   "blocks",
   /** What ShareRide did about the person and why, with their appeals; never which operator (spec 9, R9.5). */
