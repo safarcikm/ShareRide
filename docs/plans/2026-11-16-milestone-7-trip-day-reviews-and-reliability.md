@@ -311,7 +311,7 @@ console's dispute routes, 5d the Disputes page (decision 1, as changed).
 - [x] Mark as no-show, The driver didn't come, and the answer screen (5b)
 - [x] `/admin/v1/disputes`: the list, one report with what the system
       knows, the decision, and the conversation with its audit entry (5c)
-- [ ] The console's Disputes page; the app's words for an operator's
+- [x] The console's Disputes page; the app's words for an operator's
       "left behind" (5d)
 - Verify: integration tests for every path of 4.4 and decision 4, and
   twice gives one effect; a browser journey: a no-show nobody contests,
