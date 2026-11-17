@@ -517,7 +517,7 @@ describe("the retention rule (privacy register: privacy requests)", () => {
     const result = await runRetention({
       db,
       now,
-      steps: retentionSteps({ db, erasure: erasure() }),
+      steps: retentionSteps({ db, erasure: erasure(), logger: logger() }),
       logger: logger(),
     });
 

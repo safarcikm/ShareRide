@@ -1,6 +1,6 @@
 {
-  "id": "4e7b10e7-f604-4a41-9d64-2c9cb0503ddc",
-  "prevId": "3d48f7c8-ba54-4157-95b3-2db3d3b535f0",
+  "id": "85a71821-7358-4b4c-ad16-da846f071a27",
+  "prevId": "5ce682e1-6b41-43c6-bc58-1f48e3a77fab",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1668,12 +1668,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "hidden_at": {
-          "name": "hidden_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -2050,6 +2044,135 @@
         "legs_positive_check": {
           "name": "legs_positive_check",
           "value": "\"legs\".\"distance_m\" > 0 and \"legs\".\"duration_s\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.meeting_point_photos": {
+      "name": "meeting_point_photos",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "meeting_point_id": {
+          "name": "meeting_point_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "storage_key": {
+          "name": "storage_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description_is": {
+          "name": "description_is",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description_en": {
+          "name": "description_en",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "width": {
+          "name": "width",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "height": {
+          "name": "height",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bytes": {
+          "name": "bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "meeting_point_photos_point_index": {
+          "name": "meeting_point_photos_point_index",
+          "columns": [
+            {
+              "expression": "meeting_point_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "position",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "meeting_point_photos_meeting_point_id_meeting_points_id_fk": {
+          "name": "meeting_point_photos_meeting_point_id_meeting_points_id_fk",
+          "tableFrom": "meeting_point_photos",
+          "tableTo": "meeting_points",
+          "columnsFrom": ["meeting_point_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "meeting_point_photos_storage_key_unique": {
+          "name": "meeting_point_photos_storage_key_unique",
+          "nullsNotDistinct": false,
+          "columns": ["storage_key"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "meeting_point_photos_size_check": {
+          "name": "meeting_point_photos_size_check",
+          "value": "\"meeting_point_photos\".\"width\" > 0 and \"meeting_point_photos\".\"height\" > 0 and \"meeting_point_photos\".\"bytes\" > 0"
+        },
+        "meeting_point_photos_position_check": {
+          "name": "meeting_point_photos_position_check",
+          "value": "\"meeting_point_photos\".\"position\" >= 0"
         }
       },
       "isRLSEnabled": false
@@ -5593,12 +5716,6 @@
           "notNull": true,
           "default": "''"
         },
-        "note_hidden_at": {
-          "name": "note_hidden_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
         "departs_at": {
           "name": "departs_at",
           "type": "timestamp with time zone",
@@ -5836,12 +5953,6 @@
         "about": {
           "name": "about",
           "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "about_hidden_at": {
-          "name": "about_hidden_at",
-          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },

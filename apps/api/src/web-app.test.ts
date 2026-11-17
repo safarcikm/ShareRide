@@ -5,6 +5,7 @@ import { Writable } from "node:stream";
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
 import { createLogger } from "./logger.ts";
+import { webContentSecurityPolicy } from "./web-app.ts";
 
 const secret = "a file next to the export that must never be served";
 
@@ -58,6 +59,14 @@ describe("the web app on the API's origin", () => {
     expect(policy.split("; ")).toContain("connect-src 'self' https://*.ingest.de.sentry.io");
     expect(policy).toContain("frame-ancestors 'none'");
     expect(policy).not.toContain("unsafe-eval");
+  });
+
+  it("shows images from photo storage too (ADR 0022)", () => {
+    const origin = "https://shareride-photos.hel1.your-objectstorage.com";
+    expect(webContentSecurityPolicy(origin).split("; ")).toContain(
+      `img-src 'self' data: blob: ${origin}`,
+    );
+    expect(webContentSecurityPolicy().split("; ")).toContain("img-src 'self' data: blob:");
   });
 
   it("serves the page for the app's own routes, so a reload works", async () => {

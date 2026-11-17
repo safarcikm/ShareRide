@@ -206,6 +206,7 @@ export const en = {
   "meetingPoints.lastChecked": "Last checked {date}",
   "meetingPoints.openInMaps": "Open in maps",
   "meetingPoints.mapsFailed": "We couldn't open a maps app on this device.",
+  "meetingPoints.photoFailed": "This photo didn't load. It shows: {description}",
   "meetingPoints.type.fuelStation": "Fuel station",
   "meetingPoints.type.busHub": "Bus hub",
   "meetingPoints.type.shoppingCentre": "Shopping centre",
@@ -2240,6 +2241,54 @@ export const en = {
   "admin.meetingPoint.statusFailed": "The status could not be changed. Try again.",
   "admin.meetingPoint.reloadedStatus": "This is the newest copy. Check its status, then try again.",
   "admin.meetingPoint.issue.notAfterToday": "Give a day after today.",
+  "admin.meetingPoint.photos": "Photos",
+  "admin.meetingPoint.photoCount":
+    "{count} of {max} photos. The app shows them in this order, the first first.",
+  "admin.meetingPoint.photoList": "The point's photos",
+  "admin.meetingPoint.photosFailed": "The photos could not be loaded.",
+  "admin.meetingPoint.photoNumber": "Photo {number}",
+  "admin.meetingPoint.photoDescriptionIs": "Description for screen readers, in Icelandic",
+  "admin.meetingPoint.photoDescriptionEn": "Description for screen readers, in English",
+  "admin.meetingPoint.photoDescriptionHint":
+    "Say what the photo shows, such as where to stand, in at most {max} letters.",
+  "admin.meetingPoint.saveDescriptions": "Save descriptions",
+  "admin.meetingPoint.moveEarlier": "Move earlier",
+  "admin.meetingPoint.moveLater": "Move later",
+  "admin.meetingPoint.removePhoto": "Remove",
+  "admin.meetingPoint.removePhotoQuestion": "Remove photo {number}?",
+  "admin.meetingPoint.removePhotoNote": "It is deleted for good.",
+  "admin.meetingPoint.removePhotoConfirm": "Remove photo {number}",
+  "admin.meetingPoint.addPhoto": "Add a photo",
+  "admin.meetingPoint.photoFile": "Photo",
+  "admin.meetingPoint.photoFileHint":
+    "Blur faces and number plates first. The console makes the photo at most 1 600 pixels on its longer side and leaves out where and how it was taken.",
+  "admin.meetingPoint.addPhotoConfirm": "Add the photo",
+  "admin.meetingPoint.maxPhotos":
+    "A meeting point has at most five photos. Remove one to add another.",
+  "admin.meetingPoint.photoAdded": "Photo added.",
+  "admin.meetingPoint.descriptionsSaved": "Descriptions saved.",
+  "admin.meetingPoint.photosOrdered": "Order saved.",
+  "admin.meetingPoint.photoRemoved": "Photo removed.",
+  "admin.meetingPoint.photoChanged":
+    "This photo was changed elsewhere. This is the newest copy; make your change again.",
+  "admin.meetingPoint.photosChanged":
+    "A photo was added or removed elsewhere. This is the newest list; try again.",
+  "admin.meetingPoint.photosRetired":
+    "This meeting point was retired, so its photos can no longer change.",
+  "admin.meetingPoint.photoStorageOff":
+    "No photo storage is set up here, so photos cannot be added.",
+  "admin.meetingPoint.photoStorageUnavailable":
+    "Photo storage did not take the photo. Try again in a few minutes.",
+  "admin.meetingPoint.photoFailed": "The photos could not be changed. Try again.",
+  "admin.meetingPoint.photoIssue.required": "Choose a photo.",
+  "admin.meetingPoint.photoIssue.unreadable":
+    "This browser cannot read the file. Choose a JPEG or PNG photo.",
+  "admin.meetingPoint.photoIssue.notJpeg":
+    "The console could not make this file into a photo to send. Choose a JPEG or PNG photo.",
+  "admin.meetingPoint.photoIssue.metadata":
+    "The photo still carries data besides the picture. Try another browser.",
+  "admin.meetingPoint.photoIssue.tooLarge":
+    "The photo is too large, even made smaller. Choose a smaller one.",
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;

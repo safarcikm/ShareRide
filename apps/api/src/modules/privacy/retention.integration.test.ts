@@ -82,7 +82,7 @@ function erasure() {
 }
 
 function steps(): RetentionStep[] {
-  return retentionSteps({ db: api.connection.db, erasure: erasure() });
+  return retentionSteps({ db: api.connection.db, erasure: erasure(), logger: logger() });
 }
 
 /** The clean-up's rules once, at `now`; with the real steps, none may fail. */

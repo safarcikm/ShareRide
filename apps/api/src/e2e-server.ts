@@ -13,7 +13,7 @@
 // browser tests (apps/admin/e2e), E2E_ADMIN_APP_DIR is the console's build,
 // served at /admin, and E2E_OPERATOR_LINK a file: the API makes a new operator
 // account and writes its passkey setup link there, with passkeys bound to
-// E2E_ADMIN_ORIGIN.
+// E2E_ADMIN_ORIGIN. Meeting point photos go to a new folder each run.
 // `POST /e2e/suspend` with `{ "phone": "+354…", "reason": "…" }` suspends
 // that person with no end, as the console will, for the safety journey.
 // `POST /e2e/report` with `{ "by": "Jón", "tripOf": "Anna", "category":
@@ -21,7 +21,9 @@
 // trip as another sample driver, for the console's reports journey.
 // Never use either for anything else.
 import { randomBytes } from "node:crypto";
-import { appendFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { serve } from "@hono/node-server";
 import { pingDatabase, schema } from "@shareride/db";
 import { seedDevelopmentData } from "@shareride/db/seed";
@@ -30,6 +32,7 @@ import { operatorRole, reportCategories, type ReportCategory } from "@shareride/
 import { and, eq, sql } from "drizzle-orm";
 import { createApp } from "./app.ts";
 import { createLogger } from "./logger.ts";
+import { selectPhotoStorage } from "./platform/select-photo-storage.ts";
 import {
   createOperatorSessionService,
   createPasskeyService,
@@ -144,6 +147,10 @@ const app = createApp({
     secureCookies: false,
     payments: createTestPaymentProvider(),
     adminOrigin,
+    ...selectPhotoStorage({
+      provider: "folder",
+      folder: mkdtempSync(join(tmpdir(), "shareride-e2e-photos-")),
+    }),
   },
 });
 

@@ -50,7 +50,7 @@ try {
   const result = await runRetention({
     db: connection.db,
     now: new Date(),
-    steps: retentionSteps({ db: connection.db, erasure }),
+    steps: retentionSteps({ db: connection.db, erasure, logger }),
     logger,
   });
   logger.info(

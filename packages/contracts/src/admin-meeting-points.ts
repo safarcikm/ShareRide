@@ -2,6 +2,7 @@ import {
   amenities,
   meetingPointStatuses,
   meetingPointTypes,
+  photoLimits,
   regions,
   seasonFilters,
 } from "@shareride/domain";
@@ -26,6 +27,16 @@ export const adminMeetingPointErrorCodes = [
   "move_needed",
   /** The point's status does not allow this change, such as pausing a draft (`nextPointStatus`). */
   "status_change_not_allowed",
+  /** A point has at most `photoLimits.maxPerPoint` photos. */
+  "too_many_photos",
+  /** Someone changed the photo's descriptions since the console loaded them. */
+  "photo_changed",
+  /** A photo was added or removed since the console loaded them, so the new order misses it. */
+  "photos_changed",
+  /** No photo storage is set up here (PHOTO_STORAGE=none, ADR 0022). */
+  "photo_storage_off",
+  /** Photo storage did not take the file; trying again later can work. */
+  "photo_storage_unavailable",
 ] as const;
 
 const errors = { schema: errorResponseSchema } as const;
@@ -282,4 +293,137 @@ export const adminRetireMeetingPointRoute = defineRoute({
   auth: "operator",
   request: { params: z.object({ id: z.uuid() }), body: loadedSchema },
   responses: { ...statusResponses, 400: { description: "validation_failed", ...errors } },
+});
+
+// Photos of a point (spec 2, 3.6.3; milestone 8, PR 8): up to five, each
+// with a description in both languages, in the order the app shows them.
+// The rules are in the domain (`checkPhotoFile`, `validatePhotoDescriptions`).
+
+/** A photo as the console shows it. */
+export const adminMeetingPointPhotoSchema = z.object({
+  id: z.uuid(),
+  /** A signed link that lasts at least an hour: absolute, or a path on this API. */
+  url: z.string(),
+  descriptionIs: z.string(),
+  descriptionEn: z.string(),
+  width: z.int().positive(),
+  height: z.int().positive(),
+  /** Sent back with an edit of its descriptions. */
+  updatedAt: timestampSchema,
+});
+
+export type AdminMeetingPointPhoto = z.infer<typeof adminMeetingPointPhotoSchema>;
+
+const photosSchema = z.object({ photos: z.array(adminMeetingPointPhotoSchema) });
+
+const photoDescriptionsSchema = z.object({
+  /** Read by screen readers; the domain has the limit (`photoLimits`). */
+  descriptionIs: longText,
+  descriptionEn: longText,
+});
+
+const photoParams = z.object({ id: z.uuid(), photoId: z.uuid() });
+
+const photoResponses = {
+  200: { description: "The point's photos, in order", schema: photosSchema },
+  401: { description: "operator_unauthenticated", ...errors },
+  404: { description: "not_found: no such point, or no such photo of it", ...errors },
+} as const;
+
+export const adminMeetingPointPhotosRoute = defineRoute({
+  method: "get",
+  path: "/admin/v1/meeting-points/{id}/photos",
+  summary: "A meeting point's photos, in order",
+  tags: ["admin", "meeting-points"],
+  auth: "operator",
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: photoResponses,
+});
+
+/** A file's bytes in base64: up to `photoLimits.maxBytes` once decoded. */
+const photoFileSchema = z.base64().max(Math.ceil(photoLimits.maxBytes / 3) * 4);
+
+export const adminAddMeetingPointPhotoRoute = defineRoute({
+  method: "post",
+  path: "/admin/v1/meeting-points/{id}/photos",
+  summary: "Add a photo, as the console wrote it again: a JPEG without metadata",
+  tags: ["admin", "meeting-points"],
+  auth: "operator",
+  request: {
+    params: z.object({ id: z.uuid() }),
+    body: photoDescriptionsSchema.extend({ file: photoFileSchema }),
+  },
+  responses: {
+    201: { description: "The point's photos, the new one last", schema: photosSchema },
+    400: {
+      description:
+        "validation_failed, with each field and its problem in `details`; the file's are not_jpeg, metadata and too_large",
+      ...errors,
+    },
+    401: photoResponses[401],
+    404: { description: "not_found", ...errors },
+    409: { description: "too_many_photos; meeting_point_retired", ...errors },
+    413: { description: "payload_too_large", ...errors },
+    503: { description: "photo_storage_off; photo_storage_unavailable", ...errors },
+  },
+});
+
+export const adminDescribeMeetingPointPhotoRoute = defineRoute({
+  method: "put",
+  path: "/admin/v1/meeting-points/{id}/photos/{photoId}",
+  summary: "Change a photo's descriptions",
+  tags: ["admin", "meeting-points"],
+  auth: "operator",
+  request: {
+    params: photoParams,
+    body: photoDescriptionsSchema.extend({
+      /** The photo's `updatedAt` when the console loaded it. */
+      updatedAt: timestampSchema,
+    }),
+  },
+  responses: {
+    ...photoResponses,
+    400: {
+      description: "validation_failed, with each field and its problem in `details`",
+      ...errors,
+    },
+    409: { description: "photo_changed: changed since; meeting_point_retired", ...errors },
+  },
+});
+
+export const adminOrderMeetingPointPhotosRoute = defineRoute({
+  method: "put",
+  path: "/admin/v1/meeting-points/{id}/photo-order",
+  summary: "Put a point's photos in a new order",
+  tags: ["admin", "meeting-points"],
+  auth: "operator",
+  request: {
+    params: z.object({ id: z.uuid() }),
+    body: z.object({
+      /** Every photo of the point once, the first shown first. */
+      order: z.array(z.uuid()).max(photoLimits.maxPerPoint),
+    }),
+  },
+  responses: {
+    ...photoResponses,
+    400: { description: "validation_failed", ...errors },
+    409: {
+      description: "photos_changed: one added or removed since; meeting_point_retired",
+      ...errors,
+    },
+  },
+});
+
+export const adminRemoveMeetingPointPhotoRoute = defineRoute({
+  method: "delete",
+  path: "/admin/v1/meeting-points/{id}/photos/{photoId}",
+  summary: "Remove a photo, here and in photo storage",
+  tags: ["admin", "meeting-points"],
+  auth: "operator",
+  request: { params: photoParams },
+  responses: {
+    ...photoResponses,
+    400: { description: "validation_failed", ...errors },
+    409: { description: "meeting_point_retired", ...errors },
+  },
 });

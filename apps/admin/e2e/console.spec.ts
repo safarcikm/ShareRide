@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { operatorLink } from "../playwright.config.ts";
 import { addAuthenticator } from "./passkeys.ts";
+import { gradientPng } from "./png.ts";
 
 // One operator, one browser tab and its passkeys, through the journeys in
 // order: the setup link works once, so the later journeys go on signed in.
@@ -241,10 +242,93 @@ test("the operator pauses a meeting point, brings it back and retires a draft", 
   await expect(entries.nth(2)).toContainText("meeting_point.paused");
 });
 
+// A point's photos (spec 2, 3.6.3; ADR 0029): the browser makes a large
+// picture at most 1 600 pixels on its longer side and sends it as a JPEG the
+// API takes; the operator orders the photos, changes a description and
+// removes one, and the app's details show what is left. Each change is in
+// the audit log.
+test("the operator adds photos to a meeting point, orders and describes them, and removes one", async () => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/admin/meeting-points");
+  await page.getByRole("link", { name: "BSÍ", exact: true }).click();
+  const photos = page.getByRole("region", { name: "Photos" });
+  await expect(photos).toContainText("0 of 5 photos");
+  const addForm = photos.getByRole("group", { name: "Add a photo" });
+
+  await addForm.getByRole("button", { name: "Add the photo" }).click();
+  await expect(addForm.getByLabel("Photo", { exact: true })).toBeFocused();
+  await expect(addForm).toContainText("Choose a photo.");
+
+  await addForm.getByLabel("Photo", { exact: true }).setInputFiles({
+    name: "terminal.png",
+    mimeType: "image/png",
+    buffer: gradientPng(2400, 1800),
+  });
+  await addForm.getByLabel("Description for screen readers, in Icelandic").fill("Inngangurinn.");
+  await addForm.getByLabel("Description for screen readers, in English").fill("The entrance.");
+  await addForm.getByRole("button", { name: "Add the photo" }).click();
+  await expect(photos.getByRole("status")).toHaveText("Photo added.");
+  await expect(photos.getByRole("status")).toBeFocused();
+  const entrance = photos.getByRole("img", { name: "The entrance." });
+  await expect(entrance).toBeVisible();
+  // Made smaller in the browser, and shown from storage.
+  await expect
+    .poll(() => entrance.evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .toBe(1600);
+
+  await addForm.getByLabel("Photo", { exact: true }).setInputFiles({
+    name: "stop.png",
+    mimeType: "image/png",
+    buffer: gradientPng(800, 600),
+  });
+  await addForm.getByLabel("Description for screen readers, in Icelandic").fill("Stæðið.");
+  await addForm.getByLabel("Description for screen readers, in English").fill("The stop.");
+  await addForm.getByRole("button", { name: "Add the photo" }).click();
+  await expect(photos).toContainText("2 of 5 photos");
+  // A phone fits the photos and their buttons without scrolling sideways.
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await page.setViewportSize({ width: 1280, height: 800 });
+
+  const second = photos.getByRole("listitem", { name: "Photo 2" });
+  await second.getByRole("button", { name: "Move earlier" }).click();
+  await expect(photos.getByText("Order saved.")).toBeVisible();
+  const first = photos.getByRole("listitem", { name: "Photo 1" });
+  await expect(first.getByRole("img")).toHaveAttribute("alt", "The stop.");
+  await expect(first.getByRole("button", { name: "Move later" })).toBeFocused();
+
+  await first.getByLabel("Description for screen readers, in English").fill("The bus stop.");
+  await first.getByRole("button", { name: "Save descriptions" }).click();
+  await expect(photos.getByRole("status")).toHaveText("Descriptions saved.");
+
+  await second.getByRole("button", { name: "Remove" }).click();
+  await expect(second.getByRole("button", { name: "Remove photo 2" })).toBeFocused();
+  await second.getByRole("button", { name: "Remove photo 2" }).click();
+  await expect(photos.getByRole("status")).toHaveText("Photo removed.");
+  await expect(photos.getByRole("status")).toBeFocused();
+  await expect(photos.getByRole("img")).toHaveCount(1);
+
+  // The app's details show the photo that is left, with its descriptions.
+  const id = page.url().split("/").at(-1) ?? "";
+  const details = (await (await page.request.get(`/v1/meeting-points/${id}`)).json()) as {
+    photos: { description: { is: string; en: string }; width: number }[];
+  };
+  expect(details.photos).toEqual([
+    expect.objectContaining({ description: { is: "Stæðið.", en: "The bus stop." }, width: 800 }),
+  ]);
+
+  await page.goto("/admin/audit-log?action=meeting_point.photo");
+  const entries = page.getByRole("list", { name: "Entries" }).getByRole("listitem");
+  await expect(entries.nth(0)).toContainText("meeting_point.photo_removed");
+  await expect(entries.nth(1)).toContainText("meeting_point.photo_described");
+  await expect(entries.nth(2)).toContainText("meeting_point.photos_ordered");
+  await expect(entries.nth(3)).toContainText("meeting_point.photo_added");
+});
+
 // Reports (spec 9, 3.4): two sample drivers' trips are reported. The
 // operator closes one without action, suspends the other driver from their
-// report after reading the notice as she will, and closes that one too.
-// Each step is in the audit log.
+// report after reading the notice as the driver will, and closes that one
+// too. Each step is in the audit log.
 test("the operator closes one report and suspends from another", async ({ request }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   const file = async (data: Record<string, string>) => {
