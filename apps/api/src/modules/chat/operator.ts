@@ -58,10 +58,12 @@ async function coveredBooking(
  * that checks the record covers it (R7.3) and logs the opening (R9.6) as
  * `conversation.opened`, in the same transaction, with IDs only, never what
  * was said. A refused reading is not logged. A message whose sender was
- * erased says nothing; once the conversation is deleted, 12 months after
- * the trip, there are no messages, and the opening is still logged. A
- * message ShareRide removed (spec 9, 3.4.3) keeps its words here, marked
- * `removed`, so the operator can weigh an appeal.
+ * erased says nothing, unless a report covers the conversation: then
+ * erasure kept what it said, for the operator only (spec 9, section 7).
+ * Once the conversation is deleted, 12 months after the trip or when the
+ * report's time is over, there are no messages, and the opening is still
+ * logged. A message ShareRide removed (spec 9, 3.4.3) keeps its words here,
+ * marked `removed`, so the operator can weigh an appeal.
  */
 export async function readConversationAsOperator(
   db: Database,
@@ -94,19 +96,24 @@ export async function readConversationAsOperator(
       .orderBy(asc(messages.sentAt), asc(messages.id));
     return ok(
       rows.map((row): AdminConversationMessage => {
+        // Kept for a report, a message says who sent it: both sides may be
+        // the former member by now.
         const from: AdminConversationMessage["from"] =
           row.senderId === null
             ? "system"
-            : row.senderId === found.driverId
-              ? "driver"
-              : "passenger";
+            : row.sentAs === "driver" || row.sentAs === "passenger"
+              ? row.sentAs
+              : row.senderId === found.driverId
+                ? "driver"
+                : "passenger";
         const said = {
           id: row.id,
           from,
           sentAt: row.sentAt.toISOString(),
           removed: row.hiddenAt !== null,
         };
-        if (row.erasedAt !== null) {
+        // An erased sender's message says nothing, unless a report kept what it said.
+        if (row.erasedAt !== null && row.body === null && row.key === null) {
           return { ...said, kind: "erased", text: null, quick: null, system: null };
         }
         return {

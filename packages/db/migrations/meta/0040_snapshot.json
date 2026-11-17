@@ -1,5 +1,5 @@
 {
-  "id": "98bc7f33-e89c-4192-bfaf-a0dfeba9e346",
+  "id": "e6ff565b-df46-4017-b301-b57a6ceb79f4",
   "prevId": "042d1664-6a45-45ae-bad3-8265ca9194f4",
   "version": "7",
   "dialect": "postgresql",
@@ -1668,9 +1668,9 @@
           "primaryKey": false,
           "notNull": false
         },
-        "hidden_at": {
-          "name": "hidden_at",
-          "type": "timestamp with time zone",
+        "sent_as": {
+          "name": "sent_as",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -1775,11 +1775,11 @@
         },
         "messages_body_check": {
           "name": "messages_body_check",
-          "value": "case when \"messages\".\"erased_at\" is null then (\"messages\".\"kind\" = 'text') = (\"messages\".\"body\" is not null) and char_length(\"messages\".\"body\") between 1 and 1000 else \"messages\".\"body\" is null end"
+          "value": "(\"messages\".\"kind\" = 'text') = (\"messages\".\"body\" is not null) and char_length(\"messages\".\"body\") between 1 and 1000 or (\"messages\".\"erased_at\" is not null and \"messages\".\"body\" is null)"
         },
         "messages_key_check": {
           "name": "messages_key_check",
-          "value": "case when \"messages\".\"erased_at\" is null then (\"messages\".\"kind\" = 'text') = (\"messages\".\"key\" is null) else \"messages\".\"key\" is null and \"messages\".\"params\" is null and \"messages\".\"kind\" <> 'system' end"
+          "value": "(\"messages\".\"erased_at\" is null or \"messages\".\"kind\" <> 'system') and ((\"messages\".\"kind\" = 'text') = (\"messages\".\"key\" is null) or (\"messages\".\"erased_at\" is not null and \"messages\".\"key\" is null and \"messages\".\"params\" is null))"
         },
         "messages_sender_check": {
           "name": "messages_sender_check",
@@ -1788,6 +1788,10 @@
         "messages_read_check": {
           "name": "messages_read_check",
           "value": "\"messages\".\"kind\" <> 'system' or \"messages\".\"read_at\" is null"
+        },
+        "messages_sent_as_check": {
+          "name": "messages_sent_as_check",
+          "value": "\"messages\".\"sent_as\" is null or (\"messages\".\"erased_at\" is not null and \"messages\".\"sent_as\" in ('driver', 'passenger'))"
         }
       },
       "isRLSEnabled": false
@@ -5915,12 +5919,6 @@
           "notNull": true,
           "default": "''"
         },
-        "note_hidden_at": {
-          "name": "note_hidden_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
         "departs_at": {
           "name": "departs_at",
           "type": "timestamp with time zone",
@@ -6158,12 +6156,6 @@
         "about": {
           "name": "about",
           "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "about_hidden_at": {
-          "name": "about_hidden_at",
-          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },

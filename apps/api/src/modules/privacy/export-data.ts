@@ -543,13 +543,15 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
           // The other person's message ShareRide removed stays removed here
           // too; one's own words are one's own data (spec 9, 3.4.3).
           const removed = line.hiddenAt !== null && line.senderId !== userId;
+          // Never what an erased person said, even where a report kept it.
+          const asStored = !removed && line.erasedAt === null;
           return {
             from: line.senderId === null ? "ShareRide" : line.senderId === userId ? "you" : other,
             kind: line.kind,
             text: removed ? t("chat.removed") : said(line, viewer, other),
             // As stored, for other apps: what the text above was made from.
-            key: removed ? null : line.key,
-            params: removed ? null : line.params,
+            key: asStored ? line.key : null,
+            params: asStored ? line.params : null,
             sentAt: when(line.sentAt),
             readAt: when(line.readAt),
             removedByShareRide: line.hiddenAt !== null,
