@@ -75,6 +75,8 @@ const kinds: readonly [NotificationFacts["kind"], "driver" | "passenger"][] = [
   ["departure_moved", "passenger"],
   ["departure_moved_far", "passenger"],
   ["trip_changed", "passenger"],
+  ["checked_in", "passenger"],
+  ["checked_in_driver", "driver"],
 ];
 
 describe("notification texts", () => {
@@ -116,6 +118,19 @@ describe("notification texts", () => {
     expect(text({}, "is")).toMatchObject({
       title: "Ný beiðni: Jón",
       body: "2 sæti · BSÍ – Hof, Akureyri · laugardagur 14. nóvember kl. 09:00",
+    });
+  });
+
+  it("say who is at the meeting point, and which one (spec 8, 3.2)", () => {
+    expect(text({ kind: "checked_in", role: "passenger", name: "Anna" })).toEqual({
+      title: "At the meeting point: Anna",
+      body: "BSÍ",
+      path: "/bookings/booking-1",
+    });
+    expect(text({ kind: "checked_in_driver", name: "Gunna" }, "is")).toEqual({
+      title: "Á mótsstaðnum: Gunna",
+      body: "BSÍ",
+      path: "/drive/trips/trip-1",
     });
   });
 

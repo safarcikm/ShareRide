@@ -28,6 +28,8 @@ export const errorResponseSchema = z.object({
     departureWindow: z.object({ earliest: timestampSchema, latest: timestampSchema }).optional(),
     /** The bookings and requests that get in or out at a stop to remove (`stop_in_use`, R6.5). */
     bookingsAtStop: z.int().positive().optional(),
+    /** When "I'm here" opens at the stop (`check_in_not_open`, R8.3). */
+    opensAt: timestampSchema.optional(),
   }),
 });
 

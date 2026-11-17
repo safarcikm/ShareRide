@@ -35,6 +35,7 @@ export async function seedForBookings(api: TestApi): Promise<void> {
 export async function freshSampleTrips(api: TestApi): Promise<void> {
   await api.connection.db.execute(sql`delete from payments`);
   await api.connection.db.execute(sql`delete from booking_segment_prices`);
+  await api.connection.db.execute(sql`delete from check_ins`);
   await api.connection.db.execute(sql`delete from bookings`);
   await seedSampleTrips(api.connection.db, api.now());
 }

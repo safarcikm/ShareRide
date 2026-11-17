@@ -157,6 +157,13 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     ),
     otherIds: ["attemptKey"],
   },
+  check_ins: {
+    category: "trips_and_bookings",
+    export: { section: "bookings" },
+    personColumns: ["userId"],
+    // "I'm here" times, a time only, matter to the other side if they disagree (spec 8, 3.5).
+    onDeletion: keep([]),
+  },
   booking_segment_prices: {
     category: "trips_and_bookings",
     export: { section: "bookings" },

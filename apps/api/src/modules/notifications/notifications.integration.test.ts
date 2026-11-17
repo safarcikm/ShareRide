@@ -8,7 +8,9 @@ import {
   cancelTripRoute,
   changeTripRoute,
   declineRequestRoute,
+  driverCheckInRoute,
   messageAllPassengersRoute,
+  passengerCheckInRoute,
   readMessagesRoute,
   sendMessageRoute,
   setPushTokenRoute,
@@ -700,6 +702,52 @@ describe("the worker (plan 4.4)", () => {
         reason: null,
         attempts: 1,
       },
+    ]);
+  });
+
+  it("tells the other side of \"I'm here\" by push alone, with the passenger's meeting point (spec 8, 3.2)", async () => {
+    const { jon, passenger, bookingId } = await confirmedBooking();
+    await withDevice(jon);
+    await withDevice(passenger);
+    await withEmail(passenger, "gunna.at.the.stop@example.com");
+    const [hlemmur] = await api.connection.db
+      .select({ id: schema.tripStops.id, plannedAt: schema.tripStops.plannedAt })
+      .from(schema.tripStops)
+      .where(and(eq(schema.tripStops.tripId, airport), eq(schema.tripStops.position, 0)));
+    if (hlemmur === undefined || hlemmur.plannedAt === null) throw new Error("No stop at Hlemmur.");
+    await later((hlemmur.plannedAt.getTime() - api.now().getTime()) / 1000 - 600, jon, passenger);
+    await worker().runOnce();
+    push.sent.length = 0;
+
+    const said = await api.client.call(passengerCheckInRoute, {
+      accessToken: passenger.accessToken,
+      params: { id: bookingId },
+      body: {},
+    });
+    const answered = await api.client.call(driverCheckInRoute, {
+      accessToken: jon.accessToken,
+      params: { id: airport, stopId: hlemmur.id },
+      body: {},
+    });
+    if (!said.ok || !answered.ok) throw new Error("not checked in");
+    await worker().runOnce();
+    expect(push.sent).toEqual([
+      {
+        to: `ExponentPushToken[${jon.userId}]`,
+        title: "At the meeting point: Gunna",
+        body: "Hlemmur",
+        data: { path: `/drive/trips/${airport}` },
+      },
+      {
+        to: `ExponentPushToken[${passenger.userId}]`,
+        title: "At the meeting point: Jón",
+        body: "Hlemmur",
+        data: { path: `/bookings/${bookingId}` },
+      },
+    ]);
+    // Never by email or SMS: it matters only there and then.
+    expect((await logOf(passenger)).filter((row) => row.kind === "checked_in")).toEqual([
+      { kind: "checked_in", channel: "push", status: "sent", reason: null, attempts: 1 },
     ]);
   });
 
