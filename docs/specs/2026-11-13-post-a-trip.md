@@ -152,10 +152,14 @@ Drivers do not edit segment prices one by one (decision 2,
 3. The default is the level of the driver's previous trip, or 100% the first
    time.
 4. If the driver offers more seats, the highest level falls; a level above it
-   is lowered to it and the driver is told.
+   is lowered to it and the driver is told. Once people have booked, the
+   trip limit can lower it further (spec 17, rule P4); the screen then says
+   "Passengers have already paid most of this trip's limit, so the seats
+   left can cost at most 120%."
 5. "Why is there a limit?" explains in two sentences that ShareRide is cost
    sharing, that a full car must not earn more than the cost of the trip, and
-   links to the community rules.
+   links to the community rules. A third sentence says the limit is for the
+   whole trip, so what passengers have already paid counts (spec 17).
 
 ### 3.7 Seats, booking mode and preferences
 

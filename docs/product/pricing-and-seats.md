@@ -1,9 +1,10 @@
 # Pricing and seats
 
-**Owner:** Martin · **Last reviewed:** 2026-11-13 · **Status:** Accepted
+**Owner:** Martin · **Last reviewed:** 2026-11-17 · **Status:** Accepted
 ([ADR 0006](../decisions/0006-meeting-points-and-segment-pricing.md), with the
-driver's price control replaced by [ADR 0012](../decisions/0012-trip-price-level.md)
-and payments by [ADR 0013](../decisions/0013-in-app-payments-only.md));
+driver's price control replaced by [ADR 0012](../decisions/0012-trip-price-level.md),
+payments by [ADR 0013](../decisions/0013-in-app-payments-only.md) and the
+trip limit added by [ADR 0030](../decisions/0030-limit-what-a-whole-trip-brings-the-driver.md));
 configuration values are still to be set
 
 These are the business rules for prices, seat capacity, bookings and
@@ -79,6 +80,30 @@ for government employees (akstursgjald): 150 kr per km to start, the rate for
 the first 10 000 km from 1 June 2026 (decided 2026-11-13). **The formula and its inputs are to be confirmed by the legal
 opinion before the beta.**
 
+**The trip limit.** The cap per seat keeps a full car within the cost only
+while nothing changes after people book. A whole trip is limited too
+([ADR 0030](../decisions/0030-limit-what-a-whole-trip-brings-the-driver.md),
+[spec 17](../specs/2026-11-17-trip-earnings-limit.md); accepted 2026-11-17,
+not built yet):
+
+```text
+trip_limit = Σ_k capacity × cap[k]
+takings    = Σ (total price − refund) of the trip's bookings that are
+             requested, accepted, confirmed, completed, no_show or cancelled
+```
+
+- `trip_limit` is what a full car pays at the caps, with the capacity the
+  trip has now. It is built from the rounded caps, so rounding follows A39.
+- `takings` is everything the trip's bookings pay, or will pay, the driver,
+  at the prices they were made at. Money the driver keeps after a no-show or
+  a late cancellation counts (rule M2); a refund does not. Declined and
+  expired bookings count nothing.
+- The passenger service fee (rule P5) is not part of `takings`.
+- A booking is valid only if `takings` stays at or below `trip_limit` after
+  it (checked with the seats, rule S2). Rule P4 sets the level so that this
+  holds; the check is the second line of defence.
+- Nothing is ever taken back: bookings keep their price whatever changes.
+
 ### Rule P4: the driver's price level
 
 The driver does not edit segment prices one by one
@@ -87,18 +112,26 @@ level** `L` for the whole trip, a percentage of the suggested prices:
 
 ```text
 p[k]  = min(cap[k], round_to_step(distance_km[k] × suggested_rate × L))
-L_max = highest step of L at or below
+L_cap = highest step of L at or below
         reference_cost_per_km / ((capacity + 1) × suggested_rate)
+L_max = highest step of L at or below L_cap with
+        takings + Σ_k (capacity − occupancy(k)) × p[k](L) ≤ trip_limit
 ```
 
 - `L` goes from 0% (a free ride) to `L_max` in steps of `price_level_step`
   (default 10%). The default is the level of the driver's previous trip, or
   100% (the suggested prices) on their first trip.
-- Because the suggestion and the cap are both proportional to distance, `L_max`
+- Because the suggestion and the cap are both proportional to distance, `L_cap`
   is the same for every segment. The `min` with `cap[k]` only absorbs
   rounding.
-- Offering more seats lowers `L_max`. If the chosen level is above the new
-  `L_max`, it is lowered to it and the driver is told.
+- `L_max` is the highest level at which a full car still fits in the trip
+  limit, counting what is already booked. With no bookings, or bookings made
+  with the seats the trip has now, it equals `L_cap`.
+- Offering more seats lowers `L_max`; so can a no-show or a late
+  cancellation, whose seat is free again while its money stays counted
+  (spec 17). If the chosen level is above the new `L_max`, it is lowered to
+  it for new bookings and the driver is told. If nothing fits, `L_max` is 0%
+  and the seats left are free.
 - A price level change applies to new bookings only. Every booking stores a
   snapshot of the segment prices it was made at.
 - Lowering the level is always allowed. Raising it is allowed up to `L_max`.
@@ -138,6 +171,15 @@ If the driver sets the price level to 80%:
 | C → D   | 143 × 15 × 0.8 = 1 716 | 1 700 kr |
 
 The whole route then costs 4 700 kr. At 0% every segment is free.
+
+The trip limit with 3 seats is 3 × (2 800 + 6 400 + 5 400) = 43 800 kr,
+three quarters of the 58 200 kr that 388 km cost at 150 kr per km. Suppose
+the driver first offers 1 seat at its highest level (500%, 29 100 kr for the
+whole route), it is booked, and they then offer 3 seats. Without the trip
+limit the two new seats would cost 14 600 kr each, 58 300 kr in all. With
+it, 43 800 − 29 100 = 14 700 kr is left for two seats, so `L_max` is 120%
+and each new seat costs 7 000 kr for the whole route: 43 100 kr in all
+([spec 17](../specs/2026-11-17-trip-earnings-limit.md#6-recommendation)).
 
 ## Seats
 
@@ -290,7 +332,9 @@ drivers in cash or by direct transfer for a ShareRide booking.
 The driver is paid automatically 24 hours after the trip completes, unless a
 passenger has reported a problem with it, to the bank account they set up with
 the payment provider (decided 2026-11-13). A reported problem holds that
-booking's payout until the operator resolves it.
+booking's payout until the operator resolves it. A trip whose takings are
+above its trip limit (rule P3) is held whole and the operator alerted; this
+should never happen and would mean a bug (spec 17).
 
 ### Rule M4: card fees
 
@@ -317,6 +361,7 @@ in the beta (decided 2026-11-13; reviewed before launch).
 | Remove a stop no booking uses | Yes | Notified |
 | Remove a stop a booking uses | No | The driver must contact the passenger, who cancels or the driver cancels that booking (full refund) |
 | Lower the capacity | Down to the highest occupancy | None |
+| Raise the capacity | Yes, up to 8 | None; the price level for new bookings may fall (trip limit, rule P4) |
 | Change the price level | Yes, from 0% to `L_max` | None; bookings keep their price snapshot |
 | Cancel the trip | Yes, with a reason | Every booking is cancelled with a full refund and the passengers are notified |
 
