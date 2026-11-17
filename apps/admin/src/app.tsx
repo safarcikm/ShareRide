@@ -6,7 +6,7 @@ import {
   type RouteDefinition,
 } from "@shareride/contracts";
 import { createTranslator, type Locale, type MessageKey } from "@shareride/i18n";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ConsoleContext, type Console } from "./console.tsx";
 import { Layout } from "./layout.tsx";
 import { SetupPage } from "./pages/setup.tsx";
@@ -98,7 +98,9 @@ export function ConsoleApp({ client, passkeys }: ConsoleAppProps) {
   }, [client, session.state, onSetup]);
 
   // Each state has one address: the sign-in page, or the page asked for.
-  useEffect(() => {
+  // Set in the same commit as the page it belongs to, so the page is never
+  // shown at another page's address.
+  useLayoutEffect(() => {
     if (session.state === "signedOut" && !onSetup && path !== signInPath) {
       // With its query, so a shared link with filters keeps them.
       returnTo.current =

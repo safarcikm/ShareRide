@@ -1,6 +1,10 @@
-import type { MeetingPointSummary } from "@shareride/contracts";
 import type { Amenity, MeetingPointType, PlaceKind, Region } from "@shareride/domain";
-import { formatMonth, type Locale, type MessageKey, type Translate } from "@shareride/i18n";
+import { formatMonth } from "./format.ts";
+import type { Locale } from "./locales.ts";
+import type { MessageKey, Translate } from "./translator.ts";
+
+// The names of a meeting point's region, type and amenities, and of a
+// place's kind, shared by the app and the operator console (spec 2).
 
 export const regionKeys = {
   capital: "regions.capital",
@@ -42,7 +46,7 @@ export const placeKindKeys = {
 export function seasonText(
   t: Translate,
   locale: Locale,
-  season: MeetingPointSummary["season"],
+  season: { readonly startMonth: number; readonly endMonth: number } | null,
 ): string {
   if (season === null) return t("meetingPoints.inUseAllYear");
   return t("meetingPoints.inUseMonths", {

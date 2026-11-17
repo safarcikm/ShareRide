@@ -568,6 +568,19 @@ releases follow [Semantic Versioning](https://semver.org/).
   by the start of the action, the record, the operator and days in Iceland,
   each with its changes, network address and device. The filters stay in
   the address, so a filtered log can be reloaded or shared.
+- Meeting points in the console (spec 2, 3.6). The Meeting points page
+  shows every point on the map and in a list, filtered by status, region,
+  type, season, review overdue and name, with the filters in the address.
+  Its form adds a draft or edits a point: the spot is pasted as
+  coordinates or a map link and shown on the map, and each problem is
+  named by its field before saving. The API behind it, `GET`, `POST` and
+  `PUT /admin/v1/meeting-points`, writes an audit entry of what changed.
+  The rules for each field are in the domain (`validateMeetingPointDraft`);
+  an edit made on an older copy is refused, and only a draft's spot is
+  edited there. Migration `0027_meeting_point_console_fields` adds the
+  shelter's weekly hours and note, and when the amenities and season were
+  reviewed. The texts for regions, types and amenities move from the app
+  to `@shareride/i18n`, so the console uses them too.
 
 - Privacy self-service, part 1 (spec 11): the rules in the domain (what
   is open before deleting an account, the 7-day wait, what deletion does to
