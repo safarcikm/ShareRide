@@ -9,6 +9,7 @@ import {
   changeTripRoute,
   declineRequestRoute,
   driverCheckInRoute,
+  markNoShowRoute,
   messageAllPassengersRoute,
   passengerCheckInRoute,
   readMessagesRoute,
@@ -749,6 +750,55 @@ describe("the worker (plan 4.4)", () => {
     expect((await logOf(passenger)).filter((row) => row.kind === "checked_in")).toEqual([
       { kind: "checked_in", channel: "push", status: "sent", reason: null, attempts: 1 },
     ]);
+  });
+
+  it("asks a passenger marked as a no-show to answer, by push and email, with the deadline (spec 8, 3.3)", async () => {
+    const { jon, passenger, bookingId } = await confirmedBooking();
+    await withDevice(passenger);
+    await withEmail(passenger, "gunna.no.show@example.com");
+    const stops = await api.connection.db
+      .select({ id: schema.tripStops.id, plannedAt: schema.tripStops.plannedAt })
+      .from(schema.tripStops)
+      .where(eq(schema.tripStops.tripId, airport))
+      .orderBy(asc(schema.tripStops.position));
+    const [hlemmur] = stops;
+    const last = stops.at(-1)?.plannedAt ?? null;
+    if (hlemmur === undefined || hlemmur.plannedAt === null || last === null) {
+      throw new Error("No stops.");
+    }
+    await later((hlemmur.plannedAt.getTime() - api.now().getTime()) / 1000, jon, passenger);
+    await api.client.call(driverCheckInRoute, {
+      accessToken: jon.accessToken,
+      params: { id: airport, stopId: hlemmur.id },
+      body: {},
+    });
+    await worker().runOnce();
+    push.sent.length = 0;
+    email.sent.length = 0;
+
+    await later(10 * 60, jon, passenger);
+    const marked = await api.client.call(markNoShowRoute, {
+      accessToken: jon.accessToken,
+      params: { id: bookingId },
+      body: { note: "Waited at Hlemmur, called twice." },
+    });
+    if (!marked.ok) throw new Error(marked.error.code);
+    await worker().runOnce();
+    // Until 24 hours after the trip completes, 2 hours after its last stop.
+    const deadline = new Date(last.getTime() + 26 * 3_600_000);
+    const body = `Hlemmur – Fjörður shopping centre · Saturday 14 November at ${formatClock(hlemmur.plannedAt)}. Is this right? Answer by Sunday 15 November at ${formatClock(deadline)}.`;
+    expect(push.sent).toEqual([
+      {
+        to: `ExponentPushToken[${passenger.userId}]`,
+        title: "The driver says you didn't come",
+        body,
+        data: { path: `/bookings/${bookingId}` },
+      },
+    ]);
+    expect(email.sent).toHaveLength(1);
+    expect(email.sent[0]).toMatchObject({ subject: "The driver says you didn't come" });
+    // The note is for the operator, never in what the passenger is sent.
+    expect(JSON.stringify([push.sent, email.sent])).not.toContain("called twice");
   });
 
   it("sends no SMS for an unpaid booking's refund, more than 24 hours ahead, or past 5 a day (R7.10)", async () => {

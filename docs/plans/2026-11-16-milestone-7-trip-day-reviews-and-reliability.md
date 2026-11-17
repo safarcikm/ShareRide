@@ -73,6 +73,13 @@ refund, counted on them. Without the second, a passenger who didn't come
 could report the driver first, since a booking is reported once, and
 escape the no-show.
 
+Decision 1 changed on 2026-11-17: Martin chose a Disputes page in the
+operator console instead of the command, as the console's passkey sign-in
+and audit log had merged (milestone 8), so a page cost about the same as
+the command. There is no command for disputes. The command's other parts,
+overruling a weather or road-closure reason and the list of people below
+80%, go with reliability in PR 7, as console pages too.
+
 ## 4. Design notes
 
 ### 4.1 Rules (domain)
@@ -217,12 +224,14 @@ the rating.
   left behind is cancelled the same way, as `disputeEffect` says.
 - Notes are seen by the operator only. The other side sees that the
   report was contested, and later the outcome (spec 8, section 7).
-- The operator's command (decision 1):
-  `pnpm --filter @shareride/api operator disputes`,
-  `operator decide <dispute> <outcome> --note`,
-  `operator reasons` and `operator count <booking or trip> --note`
-  (overrule a weather or road-closure reason), and `operator watch`.
-  Each decision is recorded with who ran it and tells both sides.
+- The operator's Disputes page in the console (decision 1, as changed on
+  2026-11-17): the contested reports waiting for a decision, oldest
+  first, and those decided lately; each with what the system knows (3.5):
+  both "I'm here" times, the planned times, the notes, and the booking's
+  conversation, which shows the trip changes as lines. The conversation
+  opens on a button, and each opening is in the audit log (R9.6),
+  through one function the safety thread's reports reuse. Each decision
+  is recorded in the audit log with who made it and tells both sides.
 
 ### 4.5 Reviews and profiles
 
@@ -292,20 +301,33 @@ In two parts: 4a the API, 4b the screens and the browser journey.
 
 ### PR 5: `feat(bookings)`: no-shows, the driver didn't come, and answers
 
-- [ ] `disputes`; the no-show, driver-absent and answer routes; settling
-      after 24 hours; refunds and reliability; notifications
-- [ ] Mark as no-show, The driver didn't come, and the answer screen
-- [ ] The operator's command (decision 1)
+In four parts: 5a the API, 5b the screens and the browser journey, 5c the
+console's dispute routes, 5d the Disputes page (decision 1, as changed).
+
+- [x] `disputes`; the no-show, driver-absent and answer routes; settling
+      after 24 hours; refunds and reliability; notifications; the
+      operator's decision as one function for the command and the console
+      (5a)
+- [x] Mark as no-show, The driver didn't come, and the answer screen (5b)
+- [x] `/admin/v1/disputes`: the list, one report with what the system
+      knows, the decision, and the conversation with its audit entry (5c)
+- [ ] The console's Disputes page; the app's words for an operator's
+      "left behind" (5d)
 - Verify: integration tests for every path of 4.4 and decision 4, and
   twice gives one effect; a browser journey: a no-show nobody contests,
   and a driver absence that stands with a full refund
 
 ### PR 6: `feat(reviews)`: rate and review
 
-- [ ] `reviews` and `POST /bookings/{id}/review`; the reveal; "A review
-      about you is now visible"; the rate screen
-- [ ] "How was your trip?" on completion and its reminder after 3 days,
-      skipped once reviewed (4.2)
+In two parts, as PR 5: the API (6a), then the screens and the journey (6b).
+
+- [x] `reviews` and `POST /bookings/{id}/review`; the reveal; "A review
+      about you is now visible" (6a)
+- [x] "How was your trip?" on completion and its reminder after 3 days,
+      skipped once reviewed (4.2) (6a)
+- [x] The rate screen, from the booking page and the driver's trip page (6b)
+- [ ] "Did something go wrong?" with a report after 1 or 2 stars (3.7.4):
+      with spec 9's report screen, from the safety thread
 - Verify: integration tests (only completed bookings, one each, 14 days,
   hidden until both; the reminder is skipped after a review); a browser
   journey: both review and then see each other's review
@@ -315,6 +337,8 @@ In two parts: 4a the API, 4b the screens and the browser journey.
 - [ ] `GET /users/{id}`, its reviews and reliability; the profile screen;
       the rating and figure on trip details, requests and passengers
 - [ ] My own profile and "See it as others do" show the same
+- [ ] In the console (decision 1, as changed): overrule a weather or
+      road-closure reason so it counts, and the people below 80%
 - Verify: integration tests (never the phone number or email; hidden
   reviews never shown or counted); screen tests; a browser journey opens
   the driver's profile from trip details

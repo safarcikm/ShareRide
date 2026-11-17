@@ -78,6 +78,7 @@ export function createAccountService(dependencies: {
       )
         ? { until: user.suspendedUntil?.toISOString() ?? null }
         : null,
+      deletionScheduledFor: user.deleteAfter?.toISOString() ?? null,
     };
   }
 

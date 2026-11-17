@@ -10,6 +10,7 @@ import { controlOutline, iconSizes, radii, spacing, typography } from "@/theme/t
 import { usePalette } from "@/theme/use-palette";
 import { lastSeenId, type Pending } from "./messages";
 import { messageText, otherPerson, outgoingText, spokenMessage } from "./texts";
+import { firstNameOf } from "@/people/texts";
 
 const dayOf = (moment: string) => {
   const { year, month, day } = inIceland(new Date(moment));
@@ -40,7 +41,7 @@ export function MessageList({
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
-  const other = otherPerson(booking).firstName;
+  const other = firstNameOf(t, otherPerson(booking));
   const seenId = lastSeenId(messages);
   const fromPassenger = booking.viewer === "passenger";
   return (

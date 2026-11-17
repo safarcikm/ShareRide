@@ -10,11 +10,14 @@ import {
   checkBooking,
   checkNote,
   dayPhase,
+  defaultReviewSettings,
+  driverAbsentWindow,
   err,
   hasTripDay,
   holdsSeats,
   movedFar,
   nextStatus,
+  noShowWindow,
   ok,
   paymentDeadline,
   peopleColourOf,
@@ -36,6 +39,7 @@ import {
   type Money,
   type NoteProblem,
   type Result,
+  type ReviewSettings,
   type TripCancelReason,
   type TripDaySettings,
   type TripStatus,
@@ -55,6 +59,7 @@ import {
 import { bookingConfirmed } from "./confirmed.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import { recordEvents } from "../notifications/outbox.ts";
+import { isHidden } from "../privacy/hidden.ts";
 import { blocksOf } from "../safety/blocks.ts";
 import {
   checkInsAt,
@@ -62,6 +67,8 @@ import {
   passengerCheckedInAt,
   shownWindow,
 } from "../trip-day/check-ins.ts";
+import { reviewsOf, shownReview } from "../reviews/view.ts";
+import { disputesOf, shownDispute } from "../trip-day/disputes.ts";
 import {
   changeOccupancy,
   expireDueBookings,
@@ -94,6 +101,8 @@ export type BookError =
   | { readonly code: "account_incomplete" }
   /** Suspended: no booking or request (spec 9, 3.6.2). */
   | AccountSuspended
+  /** The passenger is deleting their account (spec 11, 3.4). */
+  | { readonly code: "account_deletion_pending" }
   /** The meeting points shown at the part's positions are no longer there (spec 6, 3.2). */
   | { readonly code: "stops_changed" }
   | BookingProblem;
@@ -236,12 +245,13 @@ const toldKinds = ["departure", "vehicle", "addStop", "removeStop"];
 /**
  * Bookings with everything their passenger or driver sees, oldest first,
  * each with its trip's moves, new cars and stops added or removed since it
- * was made (spec 6, 3.2), and "I'm here" at its boarding stop (spec 8, 3.2).
+ * was made (spec 6, 3.2), "I'm here" at its boarding stop (spec 8, 3.2) and
+ * its report, if any (3.3 to 3.5).
  */
 async function readBookings(q: Queryable, where: SQL | undefined) {
   const rows = await bookingRows(q, where);
   const tripIds = [...new Set(rows.map((row) => row.trip.id))];
-  const [changes, checkIns] = await Promise.all([
+  const [changes, checkIns, reports, written] = await Promise.all([
     tripIds.length === 0
       ? []
       : q
@@ -253,6 +263,14 @@ async function readBookings(q: Queryable, where: SQL | undefined) {
       q,
       rows.map((row) => row.boardStop.id),
     ),
+    disputesOf(
+      q,
+      rows.map((row) => row.booking.id),
+    ),
+    reviewsOf(
+      q,
+      rows.map((row) => row.booking.id),
+    ),
   ]);
   return rows.map((row) => {
     const { createdAt, status, cancelledAt, expiredAt, decidedAt } = row.booking;
@@ -262,6 +280,8 @@ async function readBookings(q: Queryable, where: SQL | undefined) {
       ...row,
       passengerCheckedInAt: passengerCheckedInAt(checkIns, row.booking.id),
       driverCheckedInAt: driverCheckedInAt(checkIns, row.boardStop.id),
+      dispute: reports.find((report) => report.bookingId === row.booking.id) ?? null,
+      reviews: written.filter((review) => review.bookingId === row.booking.id),
       // Made under the trip's lock, so one at the same moment came before the booking.
       changes: changes.filter(
         (change) =>
@@ -381,6 +401,9 @@ function shownStatus(booking: BookingRow["booking"], now: Date): BookingStatus {
   );
 }
 
+/** The planned time of the trip's last stop, as the trip day's windows count from it. */
+const lastStopOf = (row: BookingRow) => row.trip.arrivesAt ?? plannedAt(row.alightStop);
+
 /** The trip day at the boarding stop (spec 8, 3.1 and 3.2), for a booking that boards. */
 function tripDayOf(
   row: BookingRow,
@@ -390,18 +413,29 @@ function tripDayOf(
 ): Booking["tripDay"] {
   if (!hasTripDay(status)) return null;
   const boardsAt = plannedAt(row.boardStop);
+  const lastStopAt = lastStopOf(row);
   const window = shownWindow(boardsAt, settings);
+  const noShow = noShowWindow(boardsAt, lastStopAt, settings);
   return {
-    phase: dayPhase(boardsAt, row.trip.arrivesAt ?? plannedAt(row.alightStop), now, settings),
+    phase: dayPhase(boardsAt, lastStopAt, now, settings),
     checkInOpensAt: window.opensAt,
     checkInClosesAt: window.closesAt,
     passengerCheckedInAt: row.passengerCheckedInAt?.toISOString() ?? null,
     driverCheckedInAt: row.driverCheckedInAt?.toISOString() ?? null,
+    reportOpensAt: noShow.opensAt.toISOString(),
+    noShowClosesAt: noShow.closesAt.toISOString(),
+    driverAbsentClosesAt: driverAbsentWindow(boardsAt, lastStopAt, settings).closesAt.toISOString(),
     arrival: arrivalOf({ status, checkedIn: row.passengerCheckedInAt !== null }),
   };
 }
 
-function present(row: BookingRow, viewerId: string, now: Date, settings: TripDaySettings): Booking {
+function present(
+  row: BookingRow,
+  viewerId: string,
+  now: Date,
+  settings: TripDaySettings,
+  reviewSettings: ReviewSettings,
+): Booking {
   const { booking, trip, car } = row;
   const status = shownStatus(booking, now);
   const viewer = viewerId === booking.passengerId ? "passenger" : "driver";
@@ -502,9 +536,9 @@ function present(row: BookingRow, viewerId: string, now: Date, settings: TripDay
       now,
       defaultSafetySettings,
     ),
-    driver: { firstName: row.driverName ?? "", colour: peopleColourOf(trip.driverId) },
+    driver: { firstName: row.driverName, colour: peopleColourOf(trip.driverId) },
     passenger: {
-      firstName: row.passengerName ?? "",
+      firstName: row.passengerName,
       colour: peopleColourOf(booking.passengerId),
       // The month only, as profiles show it (Iceland keeps UTC all year).
       memberSince: row.passengerSince.toISOString().slice(0, 7),
@@ -524,6 +558,8 @@ function present(row: BookingRow, viewerId: string, now: Date, settings: TripDay
           }
         : null,
     tripDay: tripDayOf(row, status, now, settings),
+    dispute: row.dispute === null ? null : shownDispute(row.dispute, lastStopOf(row), settings),
+    review: shownReview(row.reviews, booking, status, viewerId, reviewSettings),
   };
 }
 
@@ -533,14 +569,17 @@ export function createBookingService(dependencies: {
   readonly account: Pick<AccountService, "me">;
   readonly settings: BookingSettings;
   readonly tripDaySettings: TripDaySettings;
+  /** The time to review (spec 8, 3.7). */
+  readonly reviewSettings?: ReviewSettings;
 }): BookingService {
   const { db, clock, account, settings, tripDaySettings } = dependencies;
+  const reviewSettings = dependencies.reviewSettings ?? defaultReviewSettings;
 
   async function readOne(q: Queryable, bookingId: string, viewerId: string, now: Date) {
     const [row] = await readBookings(q, eq(bookings.id, bookingId));
     if (row === undefined) return undefined;
     if (row.booking.passengerId !== viewerId && row.trip.driverId !== viewerId) return undefined;
-    return present(row, viewerId, now, tripDaySettings);
+    return present(row, viewerId, now, tripDaySettings, reviewSettings);
   }
 
   async function byAttemptKey(q: Queryable, passengerId: string, attemptKey: string) {
@@ -655,13 +694,30 @@ export function createBookingService(dependencies: {
       return db.transaction(async (tx) => {
         // One booking at a time per passenger, so two cannot overlap (R5.10)
         // or use the same attempt key; then the trip, for its seats (R5.2).
-        // A suspension holds the same lock while it cancels their bookings.
+        // A suspension holds the same lock while it cancels their bookings,
+        // and deleting an account takes it before it checks.
         const active = await lockActive(tx, passengerId, clock());
         if (!active.ok) return active;
+        const [passenger] = await tx
+          .select({ deleteAfter: users.deleteAfter })
+          .from(users)
+          .where(eq(users.id, passengerId));
         const again = await retried(tx);
         if (again !== undefined) return again;
+        if (passenger === undefined || passenger.deleteAfter !== null) {
+          return err({ code: "account_deletion_pending" });
+        }
         const trip = await lockTrip(tx, tripId);
         if (trip === undefined) return err({ code: "not_found" });
+        // Nobody books with a driver deleting their account, nor on a trip
+        // left with the former member (spec 11, 3.4.3 and 3.5). Deleting
+        // locks the driver's trips before it checks for bookings, so with
+        // the trip locked this reads the date as it stands.
+        const [driver] = await tx
+          .select({ id: users.id, deleteAfter: users.deleteAfter })
+          .from(users)
+          .where(eq(users.id, trip.driverId));
+        if (driver === undefined || isHidden(driver)) return err({ code: "not_found" });
         const now = clock();
         await expireDueBookings(tx, tripId, now);
         // Closed by a block with the driver, silently: as if the trip did
@@ -781,7 +837,7 @@ export function createBookingService(dependencies: {
         when === "upcoming"
           ? rows.filter(upcoming).sort((a, b) => boardsAt(a) - boardsAt(b))
           : rows.filter((row) => !upcoming(row)).sort((a, b) => boardsAt(b) - boardsAt(a));
-      return chosen.map((row) => present(row, passengerId, now, tripDaySettings));
+      return chosen.map((row) => present(row, passengerId, now, tripDaySettings, reviewSettings));
     },
 
     async booking(viewerId, bookingId) {
@@ -794,7 +850,7 @@ export function createBookingService(dependencies: {
       const rows = await readBookings(db, inArray(bookings.id, [...bookingIds]));
       return rows
         .filter((row) => row.booking.passengerId === viewerId || row.trip.driverId === viewerId)
-        .map((row) => present(row, viewerId, now, tripDaySettings));
+        .map((row) => present(row, viewerId, now, tripDaySettings, reviewSettings));
     },
 
     withdraw(passengerId, bookingId) {
@@ -1035,7 +1091,7 @@ export function createBookingService(dependencies: {
         );
       return {
         bookings: [...requests, ...others].map(({ row }) =>
-          present(row, driverId, now, tripDaySettings),
+          present(row, driverId, now, tripDaySettings, reviewSettings),
         ),
         segments: occupancy,
         capacity: trip.capacity,

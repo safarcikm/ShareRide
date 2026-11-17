@@ -5,7 +5,11 @@ import {
   defaultReviewSettings as settings,
   isRevealed,
   ratingOf,
+  reviewClosesAt,
+  reviewCommentProblem,
   reviewMaxLength,
+  reviewReminderAt,
+  tidyReviewComment,
   type ReviewToCheck,
 } from "./review.ts";
 
@@ -31,6 +35,25 @@ describe("writing a review (R8.8)", () => {
     expect(checkReview({ ...good, rating: 1, comment: "" }, after(1), settings)).toEqual({
       ok: true,
       value: { rating: 1, comment: "" },
+    });
+  });
+
+  it("keeps a comment as people see it, without space around it", () => {
+    // "é" written as e and a combining accent is one character, as typed.
+    expect(tidyReviewComment("  Frábær ferð, takk! \n")).toBe("Frábær ferð, takk!");
+    expect(tidyReviewComment("Cafe\u0301")).toBe("Caf\u00e9");
+  });
+
+  it("checks a comment as it is typed, as the server will", () => {
+    expect(reviewCommentProblem("  Lovely trip, on time.  ")).toBeNull();
+    expect(reviewCommentProblem("")).toBeNull();
+    expect(reviewCommentProblem("é".repeat(reviewMaxLength))).toBeNull();
+    expect(reviewCommentProblem("é".repeat(reviewMaxLength + 1))).toEqual({
+      code: "comment_too_long",
+    });
+    expect(reviewCommentProblem("Call me on 555 1234")).toEqual({
+      code: "comment_has_contact_details",
+      kinds: ["phone"],
     });
   });
 
@@ -88,6 +111,22 @@ describe("writing a review (R8.8)", () => {
       ok: false,
       error: { code: "comment_has_contact_details", kinds: ["phone", "link"] },
     });
+  });
+});
+
+describe("the time to review (R8.8; spec 8, 3.7.6)", () => {
+  it("closes 14 days after completion", () => {
+    expect(reviewClosesAt(completedAt, settings)).toEqual(after(14));
+  });
+
+  it("reminds once, 3 days after completion, while that is still ahead", () => {
+    expect(reviewReminderAt(completedAt, after(0), settings)).toEqual(after(3));
+    expect(reviewReminderAt(completedAt, after(2.9), settings)).toEqual(after(3));
+  });
+
+  it("does not remind when that moment has passed, as for a ride the operator found happened", () => {
+    expect(reviewReminderAt(completedAt, after(3), settings)).toBeNull();
+    expect(reviewReminderAt(completedAt, after(5), settings)).toBeNull();
   });
 });
 

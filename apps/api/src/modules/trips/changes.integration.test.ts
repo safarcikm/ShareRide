@@ -1102,6 +1102,40 @@ describe("adding a stop (spec 6, 3.2; milestone 6 plan, decision 2)", () => {
     expect(await occupancy(north)).toEqual([0, 1, 0, 0]);
   });
 
+  it("waits for a pause of the stop under way, then refuses it (spec 2, 3.6.4)", async () => {
+    const anna = await driverOf(north);
+    // The console's pause holds the point while it counts the trips to tell.
+    const pausing = await api.connection.pool.connect();
+    try {
+      await pausing.query("BEGIN");
+      await pausing.query("SELECT 1 FROM meeting_points WHERE id = $1 FOR UPDATE", [
+        point("mosfellsbaer"),
+      ]);
+      let answered = false;
+      const adding = change(anna, north, addStop("mosfellsbaer")).finally(() => {
+        answered = true;
+      });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      expect(answered).toBe(false);
+      await pausing.query("UPDATE meeting_points SET status = 'paused' WHERE id = $1", [
+        point("mosfellsbaer"),
+      ]);
+      await pausing.query("COMMIT");
+      expect(await adding).toMatchObject({
+        status: 422,
+        error: { details: [{ path: "meetingPointId", issue: "stop_unavailable" }] },
+      });
+    } finally {
+      await pausing.query("ROLLBACK");
+      pausing.release();
+      await api.connection.db
+        .update(schema.meetingPoints)
+        .set({ status: "active" })
+        .where(eq(schema.meetingPoints.id, point("mosfellsbaer")));
+    }
+    expect(await stopsOf(north)).toHaveLength(4);
+  });
+
   it("refuses a stop that does not fit between its neighbours, one on the trip, and one not in use", async () => {
     const anna = await driverOf(north);
     // Akranes is 80 minutes off the way to Borgarnes, an hour after BSÍ.

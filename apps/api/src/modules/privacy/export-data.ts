@@ -1,5 +1,5 @@
 import { schema } from "@shareride/db";
-import type { ExportSection, TripRole } from "@shareride/domain";
+import { reporterOf, type DisputeKind, type ExportSection, type TripRole } from "@shareride/domain";
 import {
   createTranslator,
   quickMessageText,
@@ -22,7 +22,9 @@ const {
   moderationActions,
   bookingSegmentPrices,
   bookings,
+  checkIns,
   conversations,
+  disputes,
   emailVerifications,
   legalAcceptances,
   legalDocuments,
@@ -32,6 +34,7 @@ const {
   notificationPreferences,
   notifications,
   payments,
+  privacyRequests,
   pushTokens,
   reports,
   segments,
@@ -97,6 +100,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     roles: user.roles,
     status: user.status,
     suspendedUntil: when(user.suspendedUntil),
+    deleteAfter: when(user.deleteAfter),
     memberSince: when(user.createdAt),
   };
 
@@ -160,6 +164,57 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     .where(eq(vehicles.ownerId, userId))
     .orderBy(asc(vehicles.createdAt));
   const carOf = new Map(cars.map((car) => [car.id, car]));
+
+  // The person's own "I'm here" times (spec 8, 3.2): a passenger's with
+  // their booking, a driver's at a stop of their trip. The other side's stay
+  // with the other side.
+  const ownCheckIns = await q
+    .select({
+      stopId: checkIns.tripStopId,
+      bookingId: checkIns.bookingId,
+      at: checkIns.checkedInAt,
+    })
+    .from(checkIns)
+    .where(eq(checkIns.userId, userId));
+  const checkedInAt = (match: (checkIn: (typeof ownCheckIns)[number]) => boolean) =>
+    when(ownCheckIns.find(match)?.at ?? null);
+
+  // Reports about a ride they raised or answered (spec 8, 3.3 and 3.4), each
+  // with the person's own note only: the other side's note and the
+  // operator's are for the operator (spec 8, 7), so they are not read here.
+  const rideReports = await q
+    .select({
+      bookingId: disputes.bookingId,
+      kind: disputes.kind,
+      raisedAt: disputes.raisedAt,
+      note: disputes.note,
+      answer: disputes.answer,
+      answeredAt: disputes.answeredAt,
+      answerNote: disputes.answerNote,
+      outcome: disputes.outcome,
+      decidedBy: disputes.decidedBy,
+      decidedAt: disputes.decidedAt,
+    })
+    .from(disputes)
+    .innerJoin(bookings, eq(bookings.id, disputes.bookingId))
+    .innerJoin(trips, eq(trips.id, bookings.tripId))
+    .where(or(eq(bookings.passengerId, userId), eq(trips.driverId, userId)));
+  const reportOn = (bookingId: string, role: TripRole) => {
+    const report = rideReports.find((row) => row.bookingId === bookingId);
+    if (report === undefined) return null;
+    const reportedBy = reporterOf(report.kind as DisputeKind);
+    return {
+      kind: report.kind,
+      reportedBy,
+      reportedAt: when(report.raisedAt),
+      yourNote: reportedBy === role ? report.note : report.answerNote,
+      answer: report.answer,
+      answeredAt: when(report.answeredAt),
+      outcome: report.outcome,
+      decidedBy: report.decidedBy,
+      closedAt: when(report.decidedAt),
+    };
+  };
 
   // Trips the person posted, with what passengers booked on them.
   const posted = await q
@@ -246,6 +301,9 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
           place: name(point),
           plannedAt: when(stop.plannedAt),
           removedAt: when(stop.removedAt),
+          checkedInAt: checkedInAt(
+            (checkIn) => checkIn.bookingId === null && checkIn.stopId === stop.id,
+          ),
         })),
       prices: legs
         .filter((leg) => leg.tripId === trip.id)
@@ -283,6 +341,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
           cancelledBy: booking.cancelledBy,
           cancelReason: booking.cancelReason,
           cancelNote: booking.cancelNote,
+          dispute: reportOn(booking.id, "driver"),
         })),
     };
   });
@@ -356,6 +415,8 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     decidedAt: when(booking.decidedAt),
     paymentDueAt: when(booking.paymentDueAt),
     confirmedAt: when(booking.confirmedAt),
+    checkedInAt: checkedInAt((checkIn) => checkIn.bookingId === booking.id),
+    dispute: reportOn(booking.id, "passenger"),
     expiredAt: when(booking.expiredAt),
     cancelledAt: when(booking.cancelledAt),
     cancelledBy: booking.cancelledBy,
@@ -414,6 +475,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
   const t = createTranslator(locale);
   /** What a message says in the person's language: quick messages and ShareRide's lines too. */
   const said = (line: (typeof lines)[number], viewer: TripRole, other: string) => {
+    if (line.erasedAt !== null) return t("chat.messageDeleted");
     if (line.kind === "quick") return quickMessageText(t, quickOf(line));
     if (line.kind !== "system") return line.body;
     const shown = systemLineOf(line, viewer);
@@ -425,7 +487,8 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
   };
   const conversationsSection = talks.map((talk) => {
     const viewer: TripRole = talk.passengerId === userId ? "passenger" : "driver";
-    const other = (viewer === "passenger" ? talk.driverName : talk.passengerName) ?? "";
+    const other =
+      (viewer === "passenger" ? talk.driverName : talk.passengerName) ?? t("people.formerMember");
     return {
       bookingId: talk.bookingId,
       with: { firstName: other },
@@ -480,7 +543,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
       createdAt: moderationActions.createdAt,
       appeal: moderationActions.appealText,
       appealedAt: moderationActions.appealedAt,
-      answer: moderationActions.appealAnswer,
+      appealAnswer: moderationActions.appealAnswer,
       appealOutcome: moderationActions.appealOutcome,
       answeredAt: moderationActions.appealAnsweredAt,
     })
@@ -501,6 +564,19 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     .innerJoin(notificationDeliveries, eq(notificationDeliveries.notificationId, notifications.id))
     .where(and(eq(notifications.recipientId, userId), gte(notifications.createdAt, since)))
     .orderBy(asc(notifications.createdAt));
+
+  const asked = await q
+    .select({
+      kind: privacyRequests.kind,
+      text: privacyRequests.text,
+      receivedAt: privacyRequests.receivedAt,
+      dueAt: privacyRequests.dueAt,
+      answeredAt: privacyRequests.answeredAt,
+      answer: privacyRequests.answer,
+    })
+    .from(privacyRequests)
+    .where(eq(privacyRequests.userId, userId))
+    .orderBy(asc(privacyRequests.receivedAt), asc(privacyRequests.id));
 
   return {
     format: "shareride-export",
@@ -554,8 +630,15 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
         createdAt: when(row.createdAt),
         sentAt: when(row.sentAt),
       })),
-      // "Ask about my data" comes later in this plan (PR 10).
-      privacy_requests: [],
+      // `ourAnswer`, as `answer` is a coded field elsewhere in the file.
+      privacy_requests: asked.map((row) => ({
+        kind: row.kind,
+        text: row.text,
+        receivedAt: when(row.receivedAt),
+        dueAt: when(row.dueAt),
+        answeredAt: when(row.answeredAt),
+        ourAnswer: row.answer,
+      })),
     },
   };
 }

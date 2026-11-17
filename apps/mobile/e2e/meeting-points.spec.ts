@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { mapSize, project, type Position } from "../src/maps/projection.ts";
+import { mapSize, project, type Position } from "@shareride/ui/map";
 
 /** Phones show the map first and the list on a choice; wide screens show both. */
 async function showList(page: Page) {

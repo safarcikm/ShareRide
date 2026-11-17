@@ -9,6 +9,7 @@ import { useLanguage } from "@/i18n/language";
 import { typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { ImHere } from "./im-here";
+import { firstNameOf } from "@/people/texts";
 
 /**
  * Whether the booking page shows the trip day (spec 8, 3.1): for the
@@ -67,7 +68,7 @@ export function PassengerImHere({
         <Notice
           kind="info"
           urgent={false}
-          message={t("tripDay.otherHere", { name: booking.driver.firstName })}
+          message={t("tripDay.otherHere", { name: firstNameOf(t, booking.driver) })}
         />
       )}
       <ImHere

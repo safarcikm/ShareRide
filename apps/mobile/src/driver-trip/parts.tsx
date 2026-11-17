@@ -11,6 +11,8 @@ import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { controlOutline, radii, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { ReviewSection } from "@/reviews/review-section";
+import { firstNameOf } from "@/people/texts";
 
 // Parts of the driver's trip page (spec 5, 3.3 and 3.7): the seats held on
 // each stretch, and the passengers grouped by where they get in and out.
@@ -145,7 +147,7 @@ export function SeatsIfAccepted({
 /** "Jón, 2 seats, Confirmed": a passenger as a screen reader says them. */
 function passengerLabel(t: Translate, booking: Booking) {
   return [
-    booking.passenger.firstName,
+    firstNameOf(t, booking.passenger),
     t("search.seatCount", { count: booking.seats }),
     t(statusKey(booking)),
   ].join(", ");
@@ -214,12 +216,12 @@ export function PassengersByPart({ bookings }: { readonly bookings: readonly Boo
                     style={styles.passenger}
                   >
                     <Avatar
-                      firstName={booking.passenger.firstName}
+                      firstName={firstNameOf(t, booking.passenger)}
                       colour={booking.passenger.colour}
                     />
                     <View style={styles.grow}>
                       <Text style={[typography.bodyStrong, { color: palette.text }]}>
-                        {booking.passenger.firstName}
+                        {firstNameOf(t, booking.passenger)}
                       </Text>
                       <Text style={[typography.small, { color: palette.textMuted }]}>
                         {[
@@ -241,7 +243,7 @@ export function PassengersByPart({ bookings }: { readonly bookings: readonly Boo
                         variant="text"
                         label={t("chat.message")}
                         accessibilityLabel={t("chat.messageTo", {
-                          name: booking.passenger.firstName,
+                          name: firstNameOf(t, booking.passenger),
                         })}
                         onPress={() => {
                           router.push({
@@ -256,7 +258,7 @@ export function PassengersByPart({ bookings }: { readonly bookings: readonly Boo
                         variant="text"
                         label={t("booking.cancel")}
                         accessibilityLabel={t("driverTrip.cancelBooking", {
-                          name: booking.passenger.firstName,
+                          name: firstNameOf(t, booking.passenger),
                         })}
                         onPress={() => {
                           router.push({
@@ -270,7 +272,7 @@ export function PassengersByPart({ bookings }: { readonly bookings: readonly Boo
                       variant="text"
                       label={t("report.short")}
                       accessibilityLabel={t("report.person", {
-                        name: booking.passenger.firstName,
+                        name: firstNameOf(t, booking.passenger),
                       })}
                       onPress={() => {
                         router.push({
@@ -280,6 +282,7 @@ export function PassengersByPart({ bookings }: { readonly bookings: readonly Boo
                       }}
                     />
                   </View>
+                  <ReviewSection booking={booking} framed={false} />
                 </View>
               );
             })}

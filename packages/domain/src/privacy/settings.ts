@@ -21,10 +21,16 @@ export const privacySettings = {
   /** The GDPR's deadline for an answer (R11.7). */
   requestDueMonths: 1,
   requestTextMaxLength: 2000,
+  /** The operator's answer, sent by email. */
+  requestAnswerMaxLength: 5000,
+  /** Requests one person can send in 24 hours, so the form cannot flood the operator. */
+  requestsPerDay: 5,
   /** Trips and bookings are anonymised this long after the trip (register: verify). */
   tripsKeptYears: 3,
   /** Privacy requests are deleted this long after the answer (register: verify). */
   requestsKeptYears: 3,
   /** How long the record of each clean-up run is kept. */
   retentionRunsKeptDays: 90,
+  /** An ended hold is kept this long, like the audit entries that record it (spec 9, 3.8). */
+  holdsKeptYears: 3,
 } as const;

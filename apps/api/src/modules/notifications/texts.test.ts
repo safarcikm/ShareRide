@@ -5,6 +5,7 @@ import {
   notificationText,
   smsText,
   type NotificationFacts,
+  type PointPausedFacts,
   type TripReminderFacts,
 } from "./texts.ts";
 
@@ -32,6 +33,13 @@ const facts: NotificationFacts = {
   removedStop: null,
   moved: { from: new Date("2026-11-14T08:15:00Z"), to: new Date("2026-11-14T09:00:00Z") },
   paid: true,
+  answerBy: new Date("2026-11-15T13:30:00Z"),
+  pausedPoint: {
+    name: "N1 Borgarnes",
+    reason: "Road works at the entrance.",
+    until: null,
+    retired: false,
+  },
 };
 
 const gunna = { name: "Gunna", from: "BSÍ", to: "Hof, Akureyri" };
@@ -42,6 +50,19 @@ const tripFacts: TripReminderFacts = {
   departsAt: new Date("2026-11-14T09:00:00Z"),
   passengers: [gunna, { name: "Siggi", from: "Borgarnes", to: "Blönduós" }],
   plateMissing: false,
+};
+
+const pausedFacts: PointPausedFacts = {
+  kind: "meeting_point_changed_driver",
+  role: "driver",
+  tripId: "trip-1",
+  stopsAt: new Date("2026-11-14T10:10:00Z"),
+  point: {
+    name: "N1 Borgarnes",
+    reason: "Road works at the entrance.",
+    until: null,
+    retired: false,
+  },
 };
 
 const tripText = (changes: Partial<TripReminderFacts>, locale: "is" | "en" = "en") =>
@@ -77,6 +98,11 @@ const kinds: readonly [NotificationFacts["kind"], "driver" | "passenger"][] = [
   ["trip_changed", "passenger"],
   ["checked_in", "passenger"],
   ["checked_in_driver", "driver"],
+  ["no_show_marked", "passenger"],
+  ["driver_absent_reported", "driver"],
+  ["dispute_decided", "passenger"],
+  ["dispute_decided_driver", "driver"],
+  ["meeting_point_changed", "passenger"],
 ];
 
 describe("notification texts", () => {
@@ -106,6 +132,15 @@ describe("notification texts", () => {
           expect(line.charAt(0), kind).toBe(line.charAt(0).toLocaleUpperCase(locale));
         }
       }
+      const paused = notificationText(
+        { ...pausedFacts, point: { ...pausedFacts.point, until: "2026-11-30" } },
+        locale,
+        defaultNotificationSettings,
+      );
+      for (const line of [paused.title, ...paused.body.split("\n")]) {
+        expect(line).not.toMatch(/[{}]/);
+        expect(line.charAt(0)).toBe(line.charAt(0).toLocaleUpperCase(locale));
+      }
     },
   );
 
@@ -130,6 +165,31 @@ describe("notification texts", () => {
     expect(text({ kind: "checked_in_driver", name: "Gunna" }, "is")).toEqual({
       title: "Á mótsstaðnum: Gunna",
       body: "BSÍ",
+      path: "/drive/trips/trip-1",
+    });
+  });
+
+  it("ask the other side of a report to answer, and say until when (spec 8, 3.3 and 3.4)", () => {
+    expect(text({ kind: "no_show_marked", role: "passenger", name: "Anna" })).toEqual({
+      title: "The driver says you didn't come",
+      body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00. Is this right? Answer by Sunday 15 November at 13:30.",
+      path: "/bookings/booking-1",
+    });
+    expect(text({ kind: "driver_absent_reported", name: "Gunna" }, "is")).toEqual({
+      title: "Farþegi segir að þú hafir ekki komið: Gunna",
+      body: "BSÍ – Hof, Akureyri · laugardagur 14. nóvember kl. 09:00. Er þetta rétt? Svarfrestur: sunnudagur 15. nóvember kl. 13:30.",
+      path: "/drive/trips/trip-1",
+    });
+  });
+
+  it("tell both sides that the operator has decided, never how in the text (spec 8, 3.5)", () => {
+    expect(text({ kind: "dispute_decided", role: "passenger" })).toEqual({
+      title: "ShareRide has decided on the report",
+      body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00. See the outcome in the app.",
+      path: "/bookings/booking-1",
+    });
+    expect(text({ kind: "dispute_decided_driver" }, "is")).toMatchObject({
+      title: "ShareRide hefur tekið ákvörðun um tilkynninguna",
       path: "/drive/trips/trip-1",
     });
   });
@@ -306,10 +366,64 @@ describe("notification texts", () => {
     });
   });
 
-  it("refuse a kind that has no text yet", () => {
-    expect(() => text({ kind: "meeting_point_changed" })).toThrow(
-      /No text for meeting_point_changed/,
+  it("tell a passenger their meeting point is paused, the operator's reason, and until when if known (spec 2, 3.6.4)", () => {
+    const paused = { kind: "meeting_point_changed", role: "passenger" } as const;
+    expect(text(paused)).toEqual({
+      title: "Meeting point not in use for now: N1 Borgarnes",
+      body: "Road works at the entrance.\nBSÍ – Hof, Akureyri · Saturday 14 November at 09:00. The driver is asked to choose another stop.",
+      path: "/bookings/booking-1",
+    });
+    const until = {
+      ...paused,
+      pausedPoint: {
+        name: "N1 Borgarnesi",
+        reason: "Vegavinna við innkeyrsluna.",
+        until: "2026-11-30",
+        retired: false,
+      },
+    };
+    expect(text(until, "is")).toMatchObject({
+      title: "Mótsstaður ekki í notkun í bili: N1 Borgarnesi",
+      body: "Vegavinna við innkeyrsluna.\nAftur í notkun: 30. nóvember 2026\nBSÍ – Hof, Akureyri · laugardagur 14. nóvember kl. 09:00. Bílstjórinn er beðinn um að velja annan viðkomustað.",
+    });
+    expect(smsText({ ...facts, ...paused }, "en")).toBe(
+      "ShareRide: the meeting point for your trip on Saturday 14 November has changed. Details in the app.",
     );
+    expect(smsText({ ...facts, ...paused }, "is")).toBe(
+      "ShareRide: Mótsstaður ferðarinnar þinnar hefur breyst: laugardagur 14. nóvember. Nánar í appinu.",
+    );
+    expect(() => text({ ...paused, pausedPoint: null })).toThrow(/needs the paused point/);
+  });
+
+  it("ask the driver to choose another stop for the trip, at the time it stops there (spec 2, 3.6.4)", () => {
+    expect(notificationText(pausedFacts, "en", defaultNotificationSettings)).toEqual({
+      title: "Meeting point not in use for now: N1 Borgarnes",
+      body: "Road works at the entrance.\nChoose another stop for your trip: Saturday 14 November at 10:10.",
+      path: "/drive/trips/trip-1",
+    });
+    const until = { ...pausedFacts.point, until: "2026-11-30" };
+    expect(
+      notificationText({ ...pausedFacts, point: until }, "is", defaultNotificationSettings).body,
+    ).toBe(
+      "Road works at the entrance.\nAftur í notkun: 30. nóvember 2026\nVeldu annan viðkomustað fyrir ferðina: laugardagur 14. nóvember kl. 10:10.",
+    );
+  });
+
+  it("say a point retired while paused is no longer in use, without a day it is back", () => {
+    const retired = { ...pausedFacts.point, retired: true };
+    expect(
+      notificationText({ ...pausedFacts, point: retired }, "en", defaultNotificationSettings),
+    ).toMatchObject({
+      title: "Meeting point no longer in use: N1 Borgarnes",
+      body: "Road works at the entrance.\nChoose another stop for your trip: Saturday 14 November at 10:10.",
+    });
+    expect(
+      text({ kind: "meeting_point_changed", role: "passenger", pausedPoint: retired }, "is").title,
+    ).toBe("Mótsstaður ekki lengur í notkun: N1 Borgarnes");
+  });
+
+  it("refuse a kind that has no text yet", () => {
+    expect(() => text({ kind: "payout_sent" })).toThrow(/No text for payout_sent/);
   });
 
   it("tell of unread messages by the trip's day, never their text, and open the chat (3.6, item 3)", () => {
@@ -387,17 +501,17 @@ describe("notification texts", () => {
     } as const;
     // The push names what happened, never the reason: a lock screen shows it.
     expect(notificationText(notice, "en", settings)).toEqual({
-      title: "Your account is suspended until Sunday 13 December at 12:00",
+      title: "Your account is suspended until 13 December at 12:00",
       body: "Read why in ShareRide.",
       path: "/notices",
       open: "Open your notices in ShareRide",
       emailBody: [
-        "Your account is suspended until Sunday 13 December at 12:00",
+        "Your account is suspended until 13 December at 12:00",
         "",
         "Rule: Harassment",
         "Reason: Repeated messages after being asked to stop.",
         "",
-        "If you disagree, you can appeal in ShareRide, under Notices, until Friday 27 November at 12:00.",
+        "If you disagree, you can appeal in ShareRide, under Notices, until 27 November at 12:00.",
       ].join("\n"),
     });
     expect(notificationText({ ...notice, until: null }, "is", settings)).toMatchObject({

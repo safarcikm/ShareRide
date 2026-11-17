@@ -1071,4 +1071,22 @@ describe("Paying (spec 5, 3.5; rule M1)", () => {
     // The seat will never be confirmed, so the plate is not promised.
     expect(screen.queryByText(/^Number plate/)).toBeNull();
   });
+
+  it("names a driver whose account was erased as a former member (spec 11, 3.5)", async () => {
+    await renderApp(`/bookings/${bookingId}`, {
+      me: completeMe,
+      setUp: (client) => {
+        bookingApi(client, () =>
+          northBooking({
+            ...paidBooking,
+            status: "completed",
+            driver: { ...paidBooking.driver, firstName: null },
+            confirmed: { registration: null, whereToStand: null },
+          }),
+        );
+      },
+    });
+    expect(await screen.findByText("A former member")).toBeVisible();
+    expect(screen.queryByText("Anna")).toBeNull();
+  });
 });

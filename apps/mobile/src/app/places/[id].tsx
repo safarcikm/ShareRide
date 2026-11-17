@@ -1,5 +1,5 @@
 import { nearestMeetingPointsRoute, type NearestMeetingPoints } from "@shareride/contracts";
-import { formatDistance } from "@shareride/i18n";
+import { formatDistance, placeKindKeys, regionKeys } from "@shareride/i18n";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback } from "react";
 import { ActivityIndicator } from "react-native";
@@ -14,7 +14,6 @@ import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { openSearchResult } from "@/meeting-points/open-result";
 import { MeetingPointCard } from "@/meeting-points/result-cards";
-import { placeKindKeys, regionKeys } from "@/meeting-points/texts";
 import { usePalette } from "@/theme/use-palette";
 
 /**
