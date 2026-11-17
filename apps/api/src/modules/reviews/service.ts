@@ -8,6 +8,7 @@ import {
   checkReview,
   err,
   ok,
+  tidyReviewComment,
   type BookingStatus,
   type Result,
   type ReviewProblem,
@@ -83,7 +84,7 @@ export function createReviewService(dependencies: {
         const own = earlier.find((row) => row.authorId === userId);
         // Sent again, as a retry is: the same review, tidied as `checkReview`
         // tidies it, changes nothing.
-        const comment = (input.comment ?? "").normalize("NFC").trim();
+        const comment = tidyReviewComment(input.comment ?? "");
         if (own !== undefined && own.rating === input.rating && own.comment === comment) {
           const view = await shown();
           if (view !== null) return ok(view);

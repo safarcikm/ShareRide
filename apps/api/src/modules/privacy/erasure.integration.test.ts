@@ -624,6 +624,53 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
     });
   });
 
+  it("erases the reviews about the person, and keeps those they wrote by the former member", async () => {
+    const { anna, gunna, bookingId } = await busyDriver();
+    const { db } = api.connection;
+    // Both reviewed the ride, and each sees the other's.
+    await db.insert(schema.reviews).values([
+      {
+        bookingId,
+        authorId: gunna.userId,
+        subjectId: anna.userId,
+        authorRole: "passenger",
+        rating: 5,
+        comment: "Lovely drive",
+        revealedAt: api.now(),
+      },
+      {
+        bookingId,
+        authorId: anna.userId,
+        subjectId: gunna.userId,
+        authorRole: "driver",
+        rating: 4,
+        comment: "On time",
+        revealedAt: api.now(),
+      },
+    ]);
+    const reviewsOfRide = () =>
+      db
+        .select({
+          authorId: schema.reviews.authorId,
+          subjectId: schema.reviews.subjectId,
+          comment: schema.reviews.comment,
+        })
+        .from(schema.reviews)
+        .where(eq(schema.reviews.bookingId, bookingId));
+
+    await waitEnded(gunna);
+    expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+    expect(await reviewsOfRide()).toEqual([
+      { authorId: formerMemberId, subjectId: anna.userId, comment: "Lovely drive" },
+    ]);
+
+    // Then Anna goes too: the review about her goes with her.
+    await waitEnded(anna);
+    expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+    expect(await reviewsOfRide()).toEqual([]);
+    expect(await rowsNaming(anna.userId)).toEqual([]);
+  });
+
   it("goes on with the others when one account fails, and reports it", async () => {
     const siggi = await newMember("Siggi");
     const palli = await newMember("Palli");

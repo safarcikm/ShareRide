@@ -40,6 +40,7 @@ import { deviceNotRegistered, type PushReceipt, type PushSender } from "../../pl
 import { SmsMaybeSent, type SmsSender } from "../../platform/sms.ts";
 import type { Queryable, Transaction } from "../bookings/seats.ts";
 import { quickOf } from "../chat/service.ts";
+import { isHidden, shown } from "../privacy/hidden.ts";
 import { answerByOf, disputesOf } from "../trip-day/disputes.ts";
 import { emailContent } from "./email-content.ts";
 import { preferencesOf } from "./preferences.ts";
@@ -907,8 +908,10 @@ export function createNotificationWorker(dependencies: {
   /**
    * "How was your trip?" once a booking completes (spec 8, 3.7.6): the
    * passenger about their booking, and the driver once for the trip, each
-   * only with trip reminders on. Then one reminder each, 3 days after
-   * completion, unless that moment has passed.
+   * only with trip reminders on and never about a person who has left or is
+   * leaving, whom nobody can review. Then one reminder each, 3 days after
+   * completion, unless that moment has passed. A ride the operator finds
+   * happened after the 14 days asks nobody: it can no longer be reviewed.
    */
   async function askForReviews(
     tx: Transaction,
@@ -917,10 +920,19 @@ export function createNotificationWorker(dependencies: {
     now: Date,
   ): Promise<void> {
     if (booking.status !== "completed" || booking.completedAt === null) return;
-    if ((await preferencesOf(tx, booking.passengerId)).reminders) {
+    if (now >= reviewClosesAt(booking.completedAt, reviewSettings)) return;
+    const people = await tx
+      .select({ id: users.id, deleteAfter: users.deleteAfter })
+      .from(users)
+      .where(inArray(users.id, [booking.passengerId, booking.driverId]));
+    const stays = (id: string) => {
+      const person = people.find((row) => row.id === id);
+      return person !== undefined && !isHidden(person);
+    };
+    if (stays(booking.driverId) && (await preferencesOf(tx, booking.passengerId)).reminders) {
       await notify(tx, { type: "RateTrip", to: "passenger" }, booking, { key }, now);
     }
-    if ((await preferencesOf(tx, booking.driverId)).reminders) {
+    if (stays(booking.passengerId) && (await preferencesOf(tx, booking.driverId)).reminders) {
       await add(
         tx,
         {
@@ -959,9 +971,9 @@ export function createNotificationWorker(dependencies: {
 
   /**
    * The one reminder to review (3.7.6): the passenger's while their booking
-   * is completed, not reviewed by them, with no open report and the 14 days
-   * not over; the driver's while one passenger of the trip is so, about the
-   * first of them. Only with trip reminders on.
+   * is completed, not reviewed by them, with no open report, the 14 days
+   * not over and the driver still here; the driver's while one passenger of
+   * the trip is so, about the first of them. Only with trip reminders on.
    */
   async function remindToReview(
     tx: Transaction,
@@ -978,6 +990,7 @@ export function createNotificationWorker(dependencies: {
         ? undefined
         : eq(bookings.id, scheduled.bookingId);
     if (which === undefined) return;
+    const subject = alias(users, "subject");
     const waiting = await tx
       .select({
         id: bookings.id,
@@ -995,7 +1008,16 @@ export function createNotificationWorker(dependencies: {
         ),
       )
       .leftJoin(disputes, and(eq(disputes.bookingId, bookings.id), isNull(disputes.outcome)))
-      .where(and(which, eq(bookings.status, "completed"), isNull(reviews.id), isNull(disputes.id)))
+      .innerJoin(subject, eq(subject.id, forDriver ? bookings.passengerId : trips.driverId))
+      .where(
+        and(
+          which,
+          eq(bookings.status, "completed"),
+          isNull(reviews.id),
+          isNull(disputes.id),
+          shown(subject),
+        ),
+      )
       .orderBy(asc(bookings.completedAt), asc(bookings.id));
     const open = waiting.find(
       (row) => row.completedAt !== null && now < reviewClosesAt(row.completedAt, reviewSettings),

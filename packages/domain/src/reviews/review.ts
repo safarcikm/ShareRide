@@ -69,6 +69,15 @@ export function reviewReminderAt(
 }
 
 /**
+ * A comment as it is kept and counted: in characters as people see them,
+ * without space around it, as the trip note is (R3.10). A review sent again
+ * is the same one when its tidied comment is.
+ */
+export function tidyReviewComment(comment: string): string {
+  return comment.normalize("NFC").trim();
+}
+
+/**
  * R8.8: one review per author per completed booking, within 14 days, 1 to 5
  * whole stars and an optional comment of up to 500 characters without
  * contact details or links. It cannot be changed once sent. No-shows,
@@ -90,8 +99,7 @@ export function checkReview(
   if (!Number.isInteger(review.rating) || review.rating < 1 || review.rating > 5) {
     return err({ code: "rating_invalid" });
   }
-  // Counted in characters as people see them, as the trip note is (R3.10).
-  const comment = review.comment.normalize("NFC").trim();
+  const comment = tidyReviewComment(review.comment);
   if (Array.from(comment).length > reviewMaxLength) return err({ code: "comment_too_long" });
   const kinds = contactDetailsIn(comment);
   if (kinds.length > 0) return err({ code: "comment_has_contact_details", kinds });

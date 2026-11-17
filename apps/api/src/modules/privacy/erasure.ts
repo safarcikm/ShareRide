@@ -31,6 +31,7 @@ const {
   erasedAccounts,
   formerMemberId,
   messages,
+  reviews,
   scheduledNotifications,
   trips,
   users,
@@ -182,6 +183,11 @@ async function eraseAccount(
         ),
       ),
     );
+
+  // The reviews about the person go with them (spec 11, 3.5); those they
+  // wrote move to the former member below. Done first, a review between two
+  // people who both leave never ends up by and about the former member.
+  await tx.delete(reviews).where(eq(reviews.subjectId, userId));
 
   // Then every table as the catalogue says. First the rows only a booking
   // links to the person, such as a report about a ride, while their

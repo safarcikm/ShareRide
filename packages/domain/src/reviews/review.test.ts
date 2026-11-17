@@ -8,6 +8,7 @@ import {
   reviewClosesAt,
   reviewMaxLength,
   reviewReminderAt,
+  tidyReviewComment,
   type ReviewToCheck,
 } from "./review.ts";
 
@@ -34,6 +35,12 @@ describe("writing a review (R8.8)", () => {
       ok: true,
       value: { rating: 1, comment: "" },
     });
+  });
+
+  it("keeps a comment as people see it, without space around it", () => {
+    // "é" written as e and a combining accent is one character, as typed.
+    expect(tidyReviewComment("  Frábær ferð, takk! \n")).toBe("Frábær ferð, takk!");
+    expect(tidyReviewComment("Cafe\u0301")).toBe("Caf\u00e9");
   });
 
   it.each(["confirmed", "cancelled", "no_show"] as const)(

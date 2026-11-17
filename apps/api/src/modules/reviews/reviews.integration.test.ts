@@ -97,6 +97,39 @@ async function completionOfAirport() {
   return at(last.plannedAt, 120);
 }
 
+/** Gunna says Jón didn't come, 15 minutes after Hlemmur, and he says he did. */
+async function contestedAbsence(jon: Member, gunna: Member, bookingId: string) {
+  const [first] = await api.connection.db
+    .select({ plannedAt: schema.tripStops.plannedAt })
+    .from(schema.tripStops)
+    .where(eq(schema.tripStops.tripId, airport))
+    .orderBy(asc(schema.tripStops.position))
+    .limit(1);
+  if (first === undefined || first.plannedAt === null) throw new Error("No first stop.");
+  await until(first.plannedAt, 15, jon, gunna);
+  const reported = await api.client.call(reportDriverAbsentRoute, {
+    accessToken: gunna.accessToken,
+    params: { id: bookingId },
+    body: {},
+  });
+  if (!reported.ok) throw new Error(reported.error.code);
+  const contested = await api.client.call(answerDisputeRoute, {
+    accessToken: jon.accessToken,
+    params: { id: reported.data.id },
+    body: { answer: "contested" },
+  });
+  if (!contested.ok) throw new Error(contested.error.code);
+  return reported.data.id;
+}
+
+/** Puts the member's account on its way out, as "Delete my account" does. */
+async function leaving(member: Member) {
+  await api.connection.db
+    .update(schema.users)
+    .set({ deleteAfter: at(api.now(), 7 * 24 * 60) })
+    .where(eq(schema.users.id, member.userId));
+}
+
 /** Jón drives; Gunna has paid for Hlemmur to Fjörður. */
 async function onTheTrip() {
   const jon = await driverOf(airport, "Jón");
@@ -569,6 +602,57 @@ describe("asking for reviews (spec 8, 3.7.6 and 3.9)", () => {
       body: "Hlemmur – Fjörður shopping centre · Saturday 14 November at 05:30.",
       path: `/drive/trips/${airport}`,
     });
+  });
+
+  it("asks about a ride the operator found happened while the 14 days are open", async () => {
+    const { jon, gunna, bookingId, completesAt } = await onTheTrip();
+    const disputeId = await contestedAbsence(jon, gunna, bookingId);
+    // The trip completes; Gunna's booking waits for the decision.
+    await until(completesAt, 1, jon, gunna);
+    await minuteJob();
+    await worker().runOnce();
+    expect(await toldTo(gunna)).toEqual([]);
+
+    await until(completesAt, 2 * 24 * 60, jon, gunna);
+    await decide(disputeId, "rode");
+    await worker().runOnce();
+    expect(await toldTo(gunna)).toEqual(["rate_trip"]);
+    expect(await toldTo(jon)).toEqual(["rate_trip_driver"]);
+  });
+
+  it("asks nobody about a ride the operator found happened after the 14 days", async () => {
+    const { jon, gunna, bookingId, completesAt } = await onTheTrip();
+    const disputeId = await contestedAbsence(jon, gunna, bookingId);
+    await until(completesAt, 1, jon, gunna);
+    await minuteJob();
+
+    await until(completesAt, 15 * 24 * 60, jon, gunna);
+    await decide(disputeId, "rode");
+    expect(await eventsOf(bookingId)).toEqual(["BookingCompleted"]);
+    await worker().runOnce();
+    expect(await toldTo(gunna)).toEqual([]);
+    expect(await toldTo(jon)).toEqual([]);
+  });
+
+  it("asks nobody to rate a person who is leaving ShareRide", async () => {
+    const { jon, gunna, completesAt } = await onTheTrip();
+    await leaving(jon);
+    await until(completesAt, 1, jon, gunna);
+    await minuteJob();
+    await worker().runOnce();
+    await until(completesAt, 3 * 24 * 60, jon, gunna);
+    await worker().runOnce();
+    expect(await toldTo(gunna)).toEqual([]);
+  });
+
+  it("does not remind anyone to rate a person who has since asked to leave", async () => {
+    const { jon, gunna, completesAt } = await afterTheTrip();
+    await worker().runOnce();
+    expect(await toldTo(jon)).toEqual(["rate_trip_driver"]);
+    await leaving(gunna);
+    await until(completesAt, 3 * 24 * 60, jon, gunna);
+    await worker().runOnce();
+    expect(await toldTo(jon)).toEqual(["rate_trip_driver"]);
   });
 
   it("asks nobody about a booking whose reviews a driver absence removed", async () => {
