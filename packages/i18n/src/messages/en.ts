@@ -70,6 +70,7 @@ export const en = {
   "error.account_unavailable": "This account can't sign in. Contact us for help.",
   "error.network_error": "We couldn't reach ShareRide. Check your connection and try again.",
   "error.legal_version_outdated": "The terms have just changed. Read them again.",
+  "error.deletion_blocked": "Something new needs to be settled before you can delete your account.",
   "error.firstName": "Use 1 to {max} letters. Spaces, hyphens and apostrophes are fine.",
   "error.about": "Keep it to {max} characters.",
   "error.languages": "Choose languages from the list.",
@@ -1084,6 +1085,28 @@ export const en = {
   "privacy.preparing": "We're preparing your file. We'll let you know when it's ready.",
   "privacy.ready": "Your file is ready. You can download it until {date}.",
   "privacy.when": "{date} at {time}",
+  "privacy.delete": "Delete my account",
+  "privacy.deleteExplain":
+    "Your profile, photos, messages and contact details will be erased. Payment records are kept as the law requires, and reviews you wrote stay as written by a former member.",
+  "privacy.deleteOpen": "Before you can delete your account, these need to be settled:",
+  "privacy.deleteConfirm": "Delete my account",
+  "privacy.delete.wait":
+    "You'll be signed out on every device at once, and nobody can see your profile or trips any more. Your data is erased 7 days later. Until then, you can sign in and keep your account.",
+  "privacy.delete.route": "{from} – {to}",
+  "privacy.delete.trip": "Cancel your trip: {when}",
+  "privacy.delete.booking": "Cancel your booking: {when}",
+  "privacy.delete.request": "Withdraw your request: {when}",
+  "privacy.delete.underWay":
+    "{from} – {to} is on its way. You can delete your account once it has ended, after {when}.",
+  "privacy.delete.dispute":
+    "A report about a ride is waiting for an answer or for ShareRide's decision.",
+  "privacy.delete.heldPayout": "A payout is held until a report about the ride is decided.",
+  "privacy.deletionScheduled": "Your account will be deleted on {date}.",
+  "privacy.delete.signedOut":
+    "You're signed out on every device. If you change your mind, sign in before then and keep your account.",
+  "privacy.undoDeletion": "Keep my account",
+  "privacy.waiting.body":
+    "Nobody can see your profile or trips, book with you or message you. Keep your account to use ShareRide again, as it was.",
   "confirm.title": "Confirm it's you",
   "confirm.sending": "Sending a code to your number…",
   "confirm.sent": "We sent a code by text message to your number ending in {digits}.",
