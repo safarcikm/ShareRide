@@ -59,7 +59,7 @@ Preferred
 ## The meeting-point network
 
 Distances and typical driving times between meeting points are precomputed
-once with a routing engine and stored as **legs**, for every ordered pair of
+from our own file of Iceland's roads and stored as **legs**, for every ordered pair of
 active meeting points connected by road (no ferries or mountain roads). Trips
 are chains of legs. This gives instant price suggestions, and the leg
 distances let us check that a trip's stop order makes geographic sense when
