@@ -19,6 +19,7 @@ export type OutboxEvent =
         | "TripChanged"
         | "TripCancelled"
         | "MessageSent"
+        | "ReviewRevealed"
         | "DataExportReady"
         | "ReportFiled"
         | "AccountDeletionScheduled"
@@ -59,6 +60,12 @@ export type OutboxEvent =
       readonly bookingId: string;
     }
   | { readonly type: "MessageSent"; readonly messageId: string }
+  | {
+      /** A review shows (spec 8, R8.9): the person it is about is told. */
+      readonly type: "ReviewRevealed";
+      readonly bookingId: string;
+      readonly reviewId: string;
+    }
   | {
       /** The person's file of their data is ready to download (spec 11, 3.2). */
       readonly type: "DataExportReady";

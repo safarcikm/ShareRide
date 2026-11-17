@@ -13,10 +13,11 @@ import {
 } from "@shareride/domain";
 import { and, eq, isNull } from "drizzle-orm";
 import { changeOccupancy, partOf, stopsOf, type Transaction } from "../bookings/seats.ts";
+import { recordEvents } from "../notifications/outbox.ts";
 import { oweRefund } from "../payments/refunds.ts";
 import type { DisputeRow } from "./disputes.ts";
 
-const { bookings, disputes, trips } = schema;
+const { bookings, disputes, reviews, trips } = schema;
 
 export interface Decision {
   readonly outcome: DisputeOutcome;
@@ -62,6 +63,9 @@ export async function applyOutcome(
     status,
     tripCompleted: found.tripStatus === "completed",
   });
+  // A booking the driver never drove, or the passenger never rode, has
+  // nothing to review (spec 8, 3.4).
+  if (effect.removesReviews) await tx.delete(reviews).where(eq(reviews.bookingId, booking.id));
   if (effect.bookingEvent === null) return;
   const next = nextStatus(status, effect.bookingEvent);
   if (!next.ok) throw new Error(`A ${status} booking cannot take "${effect.bookingEvent}".`);
@@ -94,4 +98,7 @@ export async function applyOutcome(
     await changeOccupancy(tx, booking.tripId, part, -booking.seats);
   }
   if (refund > 0) await oweRefund(tx, booking.id, { amount: refund, currency: "ISK" }, now);
+  if (next.value === "completed") {
+    await recordEvents(tx, [{ type: "BookingCompleted", bookingId: booking.id }], now);
+  }
 }

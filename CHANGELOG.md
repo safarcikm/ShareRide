@@ -480,7 +480,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   or their chat is closed. `blocks` is in the personal data catalogue,
   erased with either account, and gets its own export section, People you
   blocked: each by first name, and since when, never who blocked them.
-  Migration `0030_blocks`. `POST /v1/bookings/{id}/block`,
+  Migration `0031_blocks`. `POST /v1/bookings/{id}/block`,
   `GET /v1/me/blocks`, `DELETE /v1/me/blocks/{id}`.
 - Reports (milestone 9, PR 5a, spec 9, 3.1; R9.1, R9.2): "Report this
   trip" on trip details (not to its driver, whatever the trip's state:
@@ -500,7 +500,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   trip, message or booking that the person cannot see is refused as not
   found; a person cannot report themselves; 10 reports a day, also when
   sent at once. The person reported is never told who reported them.
-  Migration `0031_reports`; `reports` is in the personal data catalogue,
+  Migration `0032_reports`; `reports` is in the personal data catalogue,
   kept 3 years after closing, and chat clean-up keeps a conversation a
   report covers that long. "Download my data" has Reports you sent, never
   a report about the person. The category and outcome texts moved to
@@ -518,7 +518,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   "New report" or "New safety report", never who or what, and one not yet
   sent is dropped once its report is closed or the operator loses the
   role. A new outbox event `ReportFiled`; notifications gain `report_id`,
-  in migration `0031_reports`.
+  in migration `0032_reports`.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its
@@ -595,6 +595,23 @@ releases follow [Semantic Versioning](https://semver.org/).
   tests' trip move also moves its "I'm here" and reports and lets a report
   nobody answered stand, and two journeys cover a no-show nobody contests
   and a driver absence that stands with a full refund.
+- Ratings and reviews in the API (milestone 7, PR 6a, spec 8, 3.7): once a
+  booking completes, the passenger rates the driver and the driver rates
+  the passenger, 1 to 5 stars and an optional comment of up to 500
+  characters without phone numbers, email addresses or links
+  (`POST /v1/bookings/{id}/review`), once each and within 14 days. Nothing
+  is written about someone who has left ShareRide or is leaving, and
+  nothing while the passenger's report that the driver didn't come is
+  open. A review shows once both have reviewed, or 14 days after
+  completion (the minute job), and the person it is about is told by push.
+  "How was your trip?" goes by push to each passenger and once to the
+  driver when the trip completes, and once more 3 days later to those who
+  have not reviewed, following the trip reminders switch. A driver
+  absence that stands, or a passenger found absent, removes the booking's
+  reviews. Bookings show their reviews: until when, your own, and the
+  other's once it shows (never one the operator hid). Migration
+  `0030_reviews` adds the `reviews` table, with `hidden_at` for
+  moderation (spec 9), and widens the notification kinds.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
