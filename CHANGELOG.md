@@ -815,6 +815,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   notification log and drafts, and the account itself) until its end. The
   `privacy` command shows the last run of each rule (`runs`) and lists,
   sets and ends holds (`holds`, `hold`, `end-hold`), each in the audit log.
+- Erasure blocks a suspended person's number only until their suspension
+  ends, at most 3 years, now that suspensions have an end (R11.9); a
+  suspension for good still gets the 3 years.
 - Trips and bookings are made anonymous 3 years after the trip (spec 11,
   3.7): the hourly clean-up moves the trip, its bookings, "I'm here" and
   reports to the former member with their free text emptied, and gives

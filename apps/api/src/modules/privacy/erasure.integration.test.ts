@@ -422,6 +422,39 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
     expect(again.isNewUser).toBe(true);
   });
 
+  it("keeps a number only until a suspension with an end ends", async () => {
+    const siggi = await newMember("Siggi");
+    const phone = await phoneOf(siggi);
+    const ends = new Date(api.now().getTime() + hours(30 * 24) * 1000);
+    await waitEnded(siggi, "suspended");
+    await api.connection.db
+      .update(schema.users)
+      .set({ suspendedUntil: ends })
+      .where(eq(schema.users.id, siggi.userId));
+
+    expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+    const blocked = await api.connection.db.select().from(schema.blockedNumbers);
+    expect(blocked).toEqual([
+      {
+        phoneHash: api.features.hasher("phone", phone),
+        until: ends,
+        createdAt: expect.any(Date) as unknown,
+      },
+    ]);
+  });
+
+  it("keeps no number once the suspension has ended", async () => {
+    const siggi = await newMember("Siggi");
+    await waitEnded(siggi, "suspended");
+    await api.connection.db
+      .update(schema.users)
+      .set({ suspendedUntil: new Date(api.now().getTime() - 1000) })
+      .where(eq(schema.users.id, siggi.userId));
+
+    expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+    expect(await api.connection.db.select().from(schema.blockedNumbers)).toEqual([]);
+  });
+
   it("lets an active person's number make a new account at once", async () => {
     const palli = await newMember("Palli");
     const phone = await phoneOf(palli);

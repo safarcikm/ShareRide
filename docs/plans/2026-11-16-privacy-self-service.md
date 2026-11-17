@@ -434,7 +434,9 @@ What the spec implies and a person would meet first, each with its test:
 - **Safety and moderation** adds reports, moderation actions, blocks and
   `users.suspended_until`: reports and actions are kept 3 years after
   closure and move, blocks are erased, and a suspended person must still
-  be able to sign in to download and delete (R9.10). The `blocks` table
+  be able to sign in to download and delete (R9.10). Erasure blocks a
+  suspended person's number until `suspended_until`, through
+  `blockedNumberUntil` (done once milestone 9 added it, #124). The `blocks` table
   is in the catalogue (milestone 9, PR 4), with its own export section:
   the blocks the person made, by first name and since, never who blocked
   them.
