@@ -193,6 +193,10 @@ export function tripsApi(
     cancel?: () => unknown;
     change?: (preview: boolean) => unknown;
     told?: Partial<Pick<TripChangeEffect, "told" | "freeCancellations" | "requests" | "expiring">>;
+    /** What adding or removing a stop does to the level, when not left as it is. */
+    stopEffect?: Partial<
+      Pick<TripChangeEffect, "priceLevel" | "priceLevelLowered" | "levelLimitedBy">
+    >;
     /** Meeting points a copy of a trip leaves out, as no longer in use. */
     dropped?: readonly MeetingPointSummary[];
     /** Answers copying a trip instead, when it gives anything. */
@@ -406,6 +410,7 @@ export function tripsApi(
       levelLimitedBy: null,
       prices: segments.map((segment) => segment.price),
       ...answers.told,
+      ...answers.stopEffect,
     } satisfies TripChangeEffect);
   }
 
@@ -454,6 +459,7 @@ export function tripsApi(
       levelLimitedBy: null,
       prices: segments.map((segment) => segment.price),
       ...answers.told,
+      ...answers.stopEffect,
     } satisfies TripChangeEffect);
   }
 

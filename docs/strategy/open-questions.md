@@ -8,12 +8,13 @@ here, update or accept the linked ADR, and move the row to "Answered".
 
 ## Open
 
-A new question goes in a table here with the next free number (Q26
+A new question goes in a table here with the next free number (Q28
 onwards), a recommendation and the docs it affects.
 
 | #   | Question | Recommendation | Affects |
 | --- | -------- | -------------- | ------- |
 | Q23 | 3 years after a trip, its trip and bookings are made anonymous (spec 11, 3.7), but its reviews stay while the person they are about has an account, still naming who wrote them, whom they are about and the booking. Through them the two people stay linked to that ride's route and date. Should an old review lose those links? | Yes: when its trip is made anonymous, a review keeps its stars, comment and date for the person it is about, but no longer names its author or its ride. Needs the booking to be optional on a review. Until decided, reviews keep their links (raised 2026-11-17, privacy PR 9b). | [Privacy register](../compliance/privacy-gdpr.md) (Reviews and ratings), [spec 8](../specs/2026-11-13-trip-day-reviews-and-reliability.md) 3.7, [privacy plan](../plans/2026-11-16-privacy-self-service.md) 4.7 |
+| Q27 | After a trip departs, a no-show refits the price level counting the free seats on stretches already driven, which can no longer be booked (spec 17, section 6). On spec 17's example, with one empty seat all the way and a no-show from Borgarnes, the stretches ahead fall to 150% where counting only those ahead would allow 180%, about 1,500 kr less per seat. Should a departed trip count only the stretches ahead? | Yes, once trips are under way in the beta: count the free seats on stretches whose boarding has not passed, as the booking check does. Until decided, all stretches count, which never lets a trip past its limit (raised 2026-11-17, trip limit PR 2). | [Spec 17](../specs/2026-11-17-trip-earnings-limit.md) 6, [pricing and seats](../product/pricing-and-seats.md) P4 |
 
 ## Answered
 

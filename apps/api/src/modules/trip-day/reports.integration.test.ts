@@ -192,6 +192,34 @@ async function operatorDecides(disputeId: string, outcome: DisputeOutcome, note 
   );
 }
 
+/** What a full car pays at the caps the airport trip's stretches store (rule P3). */
+async function limitOfAirport() {
+  const stretches = await api.connection.db
+    .select({ capacity: schema.segments.capacity, cap: schema.segments.cap })
+    .from(schema.segments)
+    .where(eq(schema.segments.tripId, airport));
+  return stretches.reduce((sum, row) => sum + row.capacity * row.cap, 0);
+}
+
+async function levelOfAirport() {
+  const [trip] = await api.connection.db
+    .select({ priceLevel: schema.trips.priceLevel })
+    .from(schema.trips)
+    .where(eq(schema.trips.id, airport));
+  return trip?.priceLevel;
+}
+
+async function priceChangesOfAirport() {
+  return api.connection.db
+    .select({
+      kind: schema.tripChanges.kind,
+      before: schema.tripChanges.before,
+      after: schema.tripChanges.after,
+    })
+    .from(schema.tripChanges)
+    .where(eq(schema.tripChanges.tripId, airport));
+}
+
 describe("marking a no-show (spec 8, 3.3; R8.4)", () => {
   it("after the wait, once the driver said I'm here: the booking is a no-show, its seat freed, and the passenger told once", async () => {
     const trip = await onTheTrip();
@@ -235,42 +263,31 @@ describe("marking a no-show (spec 8, 3.3; R8.4)", () => {
     const { jon, bookingId } = trip;
     // As if Gunna had paid as much as a full car pays at the caps: the
     // freed seat can then only be sold for free (rule P3).
-    const stretches = await api.connection.db
-      .select({ capacity: schema.segments.capacity, cap: schema.segments.cap })
-      .from(schema.segments)
-      .where(eq(schema.segments.tripId, airport));
-    const limit = stretches.reduce((sum, row) => sum + row.capacity * row.cap, 0);
     await api.connection.db
       .update(schema.bookings)
-      .set({ totalPrice: limit })
+      .set({ totalPrice: await limitOfAirport() })
       .where(eq(schema.bookings.id, bookingId));
-    const [before] = await api.connection.db
-      .select({ priceLevel: schema.trips.priceLevel })
-      .from(schema.trips)
-      .where(eq(schema.trips.id, airport));
+    const before = await levelOfAirport();
     await waitedAtHlemmur(trip);
 
     expect((await markNoShow(jon, bookingId)).ok).toBe(true);
-    const [after] = await api.connection.db
-      .select({ priceLevel: schema.trips.priceLevel })
-      .from(schema.trips)
-      .where(eq(schema.trips.id, airport));
-    expect(after?.priceLevel).toBe(0);
-    const changes = await api.connection.db
-      .select({
-        kind: schema.tripChanges.kind,
-        before: schema.tripChanges.before,
-        after: schema.tripChanges.after,
-      })
-      .from(schema.tripChanges)
-      .where(eq(schema.tripChanges.tripId, airport));
-    expect(changes).toEqual([
+    expect(await levelOfAirport()).toBe(0);
+    expect(await priceChangesOfAirport()).toEqual([
       {
         kind: "priceLevel",
-        before: { priceLevel: before?.priceLevel },
+        before: { priceLevel: before },
         after: { priceLevel: 0, reason: "trip_limit" },
       },
     ]);
+  });
+
+  it("keeps the level after a no-show at the price the trip was booked at (spec 17)", async () => {
+    const trip = await onTheTrip();
+    const before = await levelOfAirport();
+    await waitedAtHlemmur(trip);
+    expect((await markNoShow(trip.jon, trip.bookingId)).ok).toBe(true);
+    expect(await levelOfAirport()).toBe(before);
+    expect(await priceChangesOfAirport()).toEqual([]);
   });
 
   it("is refused before the wait, saying when, and until the driver said I'm here at that stop", async () => {
@@ -607,6 +624,24 @@ describe("the operator decides a contested report (spec 8, 3.5; decisions 4 and 
       refundAmount: null,
     });
     expect(await paymentOf(bookingId)).toBe("succeeded");
+  });
+
+  it("a no-show the operator finds keeps its money, so the level falls for the seats ahead (spec 17)", async () => {
+    const { bookingId, disputeId } = await contestedAbsence();
+    await api.connection.db
+      .update(schema.bookings)
+      .set({ totalPrice: await limitOfAirport() })
+      .where(eq(schema.bookings.id, bookingId));
+    const before = await levelOfAirport();
+    expect(await operatorDecides(disputeId, "passenger_absent")).toMatchObject({ ok: true });
+    expect(await levelOfAirport()).toBe(0);
+    expect(await priceChangesOfAirport()).toEqual([
+      {
+        kind: "priceLevel",
+        before: { priceLevel: before },
+        after: { priceLevel: 0, reason: "trip_limit" },
+      },
+    ]);
   });
 
   it("a driver who was there and the passenger didn't come: the passenger's no-show", async () => {

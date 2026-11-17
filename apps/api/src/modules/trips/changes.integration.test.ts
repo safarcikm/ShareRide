@@ -6,6 +6,7 @@ import {
   cancellationPreviewRoute,
   cancelTripRoute,
   changeTripRoute,
+  declineRequestRoute,
   conversationMessagesRoute,
   myTripRoute,
   soonestTripsRoute,
@@ -901,6 +902,75 @@ describe("the trip limit (rule P3, spec 17)", () => {
       before: { priceLevel: 250 },
       after: { priceLevel: trip.priceLevel, reason: "trip_limit" },
     });
+  });
+
+  it("lowers the level when a request made before the level rose is declined", async () => {
+    const anna = await driverOf(north);
+    // Gap 1: Gunna paid for the whole route while the trip had one seat.
+    expect((await change(anna, north, { kind: "seats", seats: 1 })).ok).toBe(true);
+    const dearest = highestPriceLevel(1, defaultTripSettings);
+    expect((await change(anna, north, { kind: "priceLevel", priceLevel: dearest })).ok).toBe(true);
+    await paidBooking(anna, await newMember("Gunna"));
+    expect((await change(anna, north, { kind: "seats", seats: 3 })).ok).toBe(true);
+    const fitted = (await mine(anna)).priceLevel;
+    // Kári asks at 50%; with his seat taken, the level can rise to 200%.
+    expect((await change(anna, north, { kind: "priceLevel", priceLevel: 50 })).ok).toBe(true);
+    const kari = await booked((await newMember("Kári")).accessToken, north, {
+      fromStop: 0,
+      toStop: 3,
+    });
+    expect((await change(anna, north, { kind: "priceLevel", priceLevel: 200 })).ok).toBe(true);
+
+    // Declined, his seat comes back at 200%, more than the limit leaves.
+    const declined = await api.client.call(declineRequestRoute, {
+      accessToken: anna.accessToken,
+      params: { id: kari.id },
+      body: { reason: null },
+    });
+    expect(declined.ok).toBe(true);
+    expect((await mine(anna)).priceLevel).toBe(fitted);
+    expect((await recorded()).at(-1)).toEqual({
+      kind: "priceLevel",
+      before: { priceLevel: 200 },
+      after: { priceLevel: fitted, reason: "trip_limit" },
+    });
+  });
+
+  it("lowers the whole trip's level when a new stop leaves less room, saying so before saving", async () => {
+    const anna = await driverOf(north);
+    // One seat at 400%, Gunna paid for Blönduós to Akureyri, then 3 seats.
+    expect((await change(anna, north, { kind: "seats", seats: 1 })).ok).toBe(true);
+    expect((await change(anna, north, { kind: "priceLevel", priceLevel: 400 })).ok).toBe(true);
+    await paidBooking(anna, await newMember("Gunna"), 2, 3);
+    expect((await change(anna, north, { kind: "seats", seats: 3 })).ok).toBe(true);
+    const level = (await mine(anna)).priceLevel;
+
+    // Mosfellsbær splits the first stretch, whose halves round up at this level.
+    const preview = await change(anna, north, addStop("mosfellsbaer"), true);
+    if (!preview.ok) throw new Error(preview.error.code);
+    expect(preview.data).toMatchObject({ priceLevelLowered: true, levelLimitedBy: "trip_limit" });
+    expect(preview.data.priceLevel).toBeLessThan(level);
+    const saved = await change(anna, north, addStop("mosfellsbaer"));
+    expect(saved.ok && saved.data).toEqual(preview.data);
+    const trip = await mine(anna);
+    expect(trip.priceLevel).toBe(preview.data.priceLevel);
+    expect(trip.segments.map((segment) => segment.price)).toEqual(preview.data.prices);
+    expect((await recorded()).at(-1)).toEqual({
+      kind: "priceLevel",
+      before: { priceLevel: level },
+      after: { priceLevel: preview.data.priceLevel, reason: "trip_limit" },
+    });
+
+    // Every seat left can be booked at the prices shown: a full car fits.
+    for (const [name, toStop] of [
+      ["Kári", 4],
+      ["Lára", 4],
+      ["Óli", 3],
+    ] as const) {
+      await booked((await newMember(name)).accessToken, north, { fromStop: 0, toStop });
+    }
+    expect((await mine(anna)).segments.map((segment) => segment.seatsTaken)).toEqual([3, 3, 3, 3]);
+    expect((await mine(anna)).takings.amount).toBeLessThanOrEqual(await limitOf());
   });
 });
 

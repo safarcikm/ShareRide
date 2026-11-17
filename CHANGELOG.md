@@ -938,11 +938,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   `limitRoom` and the highest price level within the limit.
 - The trip limit, part 2 (spec 17, ADR 0030): the price level follows the
   limit. More seats after people booked, a stop whose new stretches leave
-  too little room, a no-show or a late cancellation lower the level for new
-  bookings to the highest that keeps a full car within the limit, recorded
-  as a price level change with its reason; a higher level is refused. The
-  driver's trip shows its takings, and the price and seats screens say when
-  what passengers paid sets the highest level, down to free.
+  too little room, a no-show (the driver's or the operator's decision), a
+  cancellation, or a request declined after the level was raised lower the
+  level for new bookings to the highest that keeps a full car within the
+  limit, recorded as a price level change with its reason; a higher level
+  is refused. The driver's trip shows its takings, and the price, seats and
+  stop screens say when what passengers booked sets the highest level,
+  down to free. Open question Q27 asks whether a departed trip should count
+  only the stretches ahead.
 
 ### Fixed
 

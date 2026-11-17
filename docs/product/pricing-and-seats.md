@@ -130,10 +130,12 @@ L_max = highest step of L at or below L_cap with
   limit, counting what is already booked. With no bookings, or bookings made
   with the seats the trip has now, it equals `L_cap`.
 - Offering more seats lowers `L_max`; so can a no-show or a late
-  cancellation, whose seat is free again while its money stays counted
-  (spec 17). If the chosen level is above the new `L_max`, it is lowered to
-  it for new bookings and the driver is told. If nothing fits, `L_max` is 0%
-  and the seats left are free.
+  cancellation, whose seat is free again while its money stays counted, a
+  stop added or removed, whose stretches' prices round on their own, and a
+  booking made before the level was raised that leaves (spec 17). If the
+  chosen level is above the new `L_max`, it is lowered to it for new
+  bookings; a change the driver makes says so before saving. If nothing
+  fits, `L_max` is 0% and the seats left are free.
 - A price level change applies to new bookings only. Every booking stores a
   snapshot of the segment prices it was made at.
 - Lowering the level is always allowed. Raising it is allowed up to `L_max`.

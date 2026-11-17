@@ -211,13 +211,32 @@ the domain to the app's error text. Nothing changes for drivers yet.
 
 ## PR 2: changes, no-shows and the edit screens
 
-Built 2026-11-17. As built, it differs from the tasks below in three
-places: a stop added or removed can lower the level too (its stretches'
-prices round on their own), and then every stretch is priced again; the
-refit has its own small update instead of sharing the change service's
-reprice step; and its tests sit with the flows they follow
-(`trips/changes.integration.test.ts` for a late cancellation,
-`trip-day/reports.integration.test.ts` for a no-show).
+Built 2026-11-17. As built, it differs from the tasks below in these
+places:
+
+- A stop added or removed can lower the level too (its stretches' prices
+  round on their own). Every stretch is then priced again, and the stop's
+  check screen says so before saving.
+- The refit runs whenever a booking frees its seats with money moving: a
+  no-show (the driver's or the operator's decision), any cancellation, and
+  a request declined or withdrawn. A booking made before the driver raised
+  the level gives back less than its seats now cost, so even a full refund
+  can leave too little room. An expiry does not refit yet: the booking
+  check still holds the limit, and the last seat may be refused until the
+  next change.
+- The refit has its own small update instead of sharing the change
+  service's reprice step, and its tests sit with the flows they follow
+  (`trips/changes.integration.test.ts`, `trip-day/reports.integration.test.ts`).
+- The driver is not sent a message when a no-show or a late cancellation
+  lowers the level; they see the new level and prices on their trip.
+- "Why is there a limit?" on the posting screen gains the sentence; the
+  edit price screen shows it under the notice when the limit sets the
+  level. The screen tests are in English; the Icelandic texts are in
+  `is.ts`, for the native speaker review.
+- The highest level is worked out from today's settings, while the booking
+  check uses the caps each stretch stores. They agree while the settings
+  are constants; when operators can change them (feature H4), give
+  `TripLoad` the stored caps.
 
 ### Task 4: Trip changes use the trip limit
 
@@ -338,8 +357,8 @@ reprice step; and its tests sit with the flows they follow
   `trip.price.whyLimit.trip`.
 
 - [x] **Step 1: Write the failing screen tests:** with 1 seat booked at
-  500%, choosing 3 seats shows "Passengers have already paid most of this
-  trip's limit, so the seats left can cost at most 120%."; the price screen
+  500%, choosing 3 seats shows "What passengers have already booked counts
+  towards this trip's limit, so the seats left can cost at most 120%."; the price screen
   stops at 120%; a trip with no bookings shows today's text; "Why is there
   a limit?" has the new sentence; both in Icelandic too.
 - [x] **Step 2:** Run `pnpm --filter @shareride/mobile test edit`; expect

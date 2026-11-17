@@ -66,6 +66,9 @@ const changes = (client: FakeClient) =>
 
 const saved = { preview: false };
 
+/** What the check says when a stop lowers the whole trip's level (spec 17). */
+const lowersAll = "Saving lowers the price of every stretch for new bookings.";
+
 /** Saves, and expects the trip page to say so, with focus. */
 async function saveAndSeeIt() {
   const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
@@ -177,13 +180,13 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     await fireEvent.press(screen.getByRole("button", { name: "One seat more" }));
     expect(
       screen.getByText(
-        "Passengers have already paid most of this trip's limit, so the seats left can cost at most 160%.",
+        "What passengers have already booked counts towards this trip's limit, so the seats left can cost at most 160%.",
       ),
     ).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "One seat more" }));
     expect(
       screen.getByText(
-        "Passengers have already paid most of this trip's limit, so the seats left can cost at most 120%.",
+        "What passengers have already booked counts towards this trip's limit, so the seats left can cost at most 120%.",
       ),
     ).toBeVisible();
     await saveAndSeeIt();
@@ -195,12 +198,12 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     expect(screen.getByRole("button", { name: "Raise the price" })).toBeDisabled();
     expect(
       screen.getByText(
-        "Passengers have already paid most of this trip's limit, so the seats left can cost at most 120%.",
+        "What passengers have already booked counts towards this trip's limit, so the seats left can cost at most 120%.",
       ),
     ).toBeVisible();
     expect(
       screen.getByText(
-        "The limit is for the whole trip, so what passengers have already paid counts towards it.",
+        "The limit is for the whole trip, so what passengers have already booked counts towards it.",
       ),
     ).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Lower the price" }));
@@ -216,7 +219,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     });
     expect(
       screen.getByText(
-        "Passengers have already paid this trip's limit, so the seats left are free.",
+        "What passengers have already booked uses up this trip's limit, so the seats left are free.",
       ),
     ).toBeVisible();
   });
@@ -387,6 +390,7 @@ describe("Edit trip: adding a stop (spec 6, 3.2; milestone 6 plan, decision 2)",
     expect(screen.getByText("10:00  Borgarnes")).toBeVisible();
     expect(screen.getByText("BSÍ bus terminal → Mosfellsbær · 300 ISK per seat")).toBeVisible();
     expect(screen.getByText("Mosfellsbær → Borgarnes · 1,200 ISK per seat")).toBeVisible();
+    expect(screen.queryByText(lowersAll)).toBeNull();
     expect(screen.getByText("2 passengers are told of the new stop now.")).toBeVisible();
     expect(
       screen.getByText("1 person who asked for a seat sees the new stop in the app."),
@@ -409,6 +413,18 @@ describe("Edit trip: adding a stop (spec 6, 3.2; milestone 6 plan, decision 2)",
         "BSÍ bus terminal → Mosfellsbær → Borgarnes → Blönduós → Hof, Akureyri",
       ),
     ).toBeVisible();
+  });
+
+  it("says when the stop lowers the level for the whole trip, before saving (spec 17)", async () => {
+    await choose("mos", "Mosfellsbær", north, {
+      stopEffect: { priceLevel: 90, priceLevelLowered: true, levelLimitedBy: "trip_limit" },
+    });
+    expect(
+      await screen.findByText(
+        "What passengers have already booked counts towards this trip's limit, so the seats left can cost at most 90%.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText(lowersAll)).toBeVisible();
   });
 
   it("says nobody needs to be told without bookings", async () => {
@@ -481,6 +497,18 @@ describe("Edit trip: removing a stop (spec 6, 3.2; R6.5)", () => {
     return app;
   }
 
+  it("says when removing the stop leaves the seats left free, before saving (spec 17)", async () => {
+    await check("Blönduós", north, {
+      stopEffect: { priceLevel: 0, priceLevelLowered: true, levelLimitedBy: "trip_limit" },
+    });
+    expect(
+      await screen.findByText(
+        "What passengers have already booked uses up this trip's limit, so the seats left are free.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText(lowersAll)).toBeVisible();
+  });
+
   it("offers the stops between the ends, checks what changes, and removes one, telling the passengers who booked", async () => {
     const { client } = await openPart("Remove a stop", north, { told: { told: 2, requests: 1 } });
     expect(
@@ -501,6 +529,7 @@ describe("Edit trip: removing a stop (spec 6, 3.2; R6.5)", () => {
     expect(screen.getByText("14:00  Hof, Akureyri")).toBeVisible();
     expect(screen.queryByText(/^\d\d:\d\d {2}Blönduós$/)).toBeNull();
     expect(screen.getByText("Borgarnes → Hof, Akureyri · 2,700 ISK per seat")).toBeVisible();
+    expect(screen.queryByText(lowersAll)).toBeNull();
     expect(screen.getByText("2 passengers are told the stop is removed now.")).toBeVisible();
     expect(
       screen.getByText("1 person who asked for a seat sees the change in the app."),
