@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fromIceland, inIceland, startOfIcelandDay } from "./time.ts";
+import { fromIceland, icelandDate, inIceland, startOfIcelandDay } from "./time.ts";
 
 describe("inIceland", () => {
   it("reads a moment on a clock in Iceland", () => {
@@ -41,5 +41,13 @@ describe("startOfIcelandDay", () => {
     expect(startOfIcelandDay(new Date("2026-11-20T00:00:00Z"))).toEqual(
       new Date("2026-11-20T00:00:00Z"),
     );
+  });
+});
+
+describe("icelandDate", () => {
+  it("is the calendar day on a clock in Iceland, as stored in a date column", () => {
+    expect(icelandDate(new Date("2026-11-30T23:59:00Z"))).toBe("2026-11-30");
+    expect(icelandDate(new Date("2027-01-01T00:05:00Z"))).toBe("2027-01-01");
+    expect(icelandDate(new Date("2026-03-05T12:00:00Z"))).toBe("2026-03-05");
   });
 });

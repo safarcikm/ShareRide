@@ -1,5 +1,5 @@
 {
-  "id": "8187e5ff-6c7f-485d-805f-57ed0c5941e0",
+  "id": "8216bfa5-d9a5-47b2-942b-19cdd1ccac4e",
   "prevId": "68cb93ff-e065-44a3-a156-46c0f7997326",
   "version": "7",
   "dialect": "postgresql",
@@ -1662,12 +1662,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "erased_at": {
-          "name": "erased_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -1769,11 +1763,11 @@
         },
         "messages_body_check": {
           "name": "messages_body_check",
-          "value": "case when \"messages\".\"erased_at\" is null then (\"messages\".\"kind\" = 'text') = (\"messages\".\"body\" is not null) and char_length(\"messages\".\"body\") between 1 and 1000 else \"messages\".\"body\" is null end"
+          "value": "(\"messages\".\"kind\" = 'text') = (\"messages\".\"body\" is not null) and char_length(\"messages\".\"body\") between 1 and 1000"
         },
         "messages_key_check": {
           "name": "messages_key_check",
-          "value": "case when \"messages\".\"erased_at\" is null then (\"messages\".\"kind\" = 'text') = (\"messages\".\"key\" is null) else \"messages\".\"key\" is null and \"messages\".\"params\" is null and \"messages\".\"kind\" <> 'system' end"
+          "value": "(\"messages\".\"kind\" = 'text') = (\"messages\".\"key\" is null)"
         },
         "messages_sender_check": {
           "name": "messages_sender_check",
@@ -2121,6 +2115,24 @@
           "primaryKey": false,
           "notNull": false
         },
+        "shelter_hours": {
+          "name": "shelter_hours",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shelter_note_is": {
+          "name": "shelter_note_is",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shelter_note_en": {
+          "name": "shelter_note_en",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "season_start_month": {
           "name": "season_start_month",
           "type": "smallint",
@@ -2166,6 +2178,18 @@
         },
         "review_due_on": {
           "name": "review_due_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amenities_reviewed_on": {
+          "name": "amenities_reviewed_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "season_reviewed_on": {
+          "name": "season_reviewed_on",
           "type": "date",
           "primaryKey": false,
           "notNull": false
@@ -2254,6 +2278,10 @@
         "meeting_points_season_check": {
           "name": "meeting_points_season_check",
           "value": "(\"meeting_points\".\"season_start_month\" is null and \"meeting_points\".\"season_end_month\" is null) or (\"meeting_points\".\"season_start_month\" between 1 and 12 and \"meeting_points\".\"season_end_month\" between 1 and 12)"
+        },
+        "meeting_points_shelter_hours_check": {
+          "name": "meeting_points_shelter_hours_check",
+          "value": "case when \"meeting_points\".\"shelter_hours\" is null then true when jsonb_typeof(\"meeting_points\".\"shelter_hours\") = 'array' then jsonb_array_length(\"meeting_points\".\"shelter_hours\") = 7 else false end"
         }
       },
       "isRLSEnabled": false
@@ -3643,38 +3671,6 @@
       },
       "isRLSEnabled": false
     },
-    "public.blocked_numbers": {
-      "name": "blocked_numbers",
-      "schema": "",
-      "columns": {
-        "phone_hash": {
-          "name": "phone_hash",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "until": {
-          "name": "until",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.data_exports": {
       "name": "data_exports",
       "schema": "",
@@ -3811,31 +3807,6 @@
           "value": "(\"data_exports\".\"ready_at\" is null) = (\"data_exports\".\"expires_at\" is null) and (\"data_exports\".\"file\" is null or \"data_exports\".\"ready_at\" is not null)"
         }
       },
-      "isRLSEnabled": false
-    },
-    "public.erased_accounts": {
-      "name": "erased_accounts",
-      "schema": "",
-      "columns": {
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "erased_at": {
-          "name": "erased_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.segments": {

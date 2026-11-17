@@ -53,3 +53,11 @@ export function fromIceland(parts: CalendarParts): Date {
 export function startOfIcelandDay(moment: Date): Date {
   return fromIceland({ ...inIceland(moment), hour: 0, minute: 0 });
 }
+
+const twoDigits = (value: number) => String(value).padStart(2, "0");
+
+/** The calendar day of a moment in Iceland, such as "2026-11-17", as a date column stores it. */
+export function icelandDate(moment: Date): string {
+  const { year, month, day } = inIceland(moment);
+  return `${String(year)}-${twoDigits(month)}-${twoDigits(day)}`;
+}

@@ -33,6 +33,10 @@ ol {
   list-style: none;
 }
 
+a {
+  color: var(--color-primary);
+}
+
 :focus-visible {
   outline: var(--focus-width) solid var(--color-focus);
   outline-offset: var(--focus-offset);
@@ -272,6 +276,156 @@ code {
   min-width: 0;
 }
 
+/* A link that does what a button does, such as opening a form. */
+.link-button {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+/* The map above the list on a phone; beside it from 900 wide (below). */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-md);
+}
+
+.point-card {
+  align-items: flex-start;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.tags .tag {
+  margin-left: 0;
+}
+
+/* Active points keep the tag's own fill; the rest say they are not in use. */
+.tag-warning,
+.status-paused,
+.status-retiring {
+  background: var(--color-warning-soft);
+}
+
+.status-draft,
+.status-retired {
+  background: var(--color-border);
+}
+
+/* Check boxes and radio buttons with their text, a touch target high. */
+.checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-lg);
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--touch-target);
+  cursor: pointer;
+}
+
+.check input,
+.day-closed {
+  width: var(--space-lg);
+  height: var(--space-lg);
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.check-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.textarea {
+  padding: var(--space-sm) var(--space-ms);
+  font: inherit;
+  resize: vertical;
+}
+
+.wide {
+  max-width: none;
+  width: 100%;
+}
+
+/* The form's parts as panels; a retired point's are all disabled at once. */
+fieldset {
+  margin: 0;
+  min-width: 0;
+  border: none;
+  padding: 0;
+}
+
+.form-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.form-sections > .panel {
+  padding: var(--space-md);
+}
+
+/* A part's heading inside its panel, not on the panel's edge: a floated
+   legend is laid out like any other block. */
+legend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  margin-bottom: var(--space-sm);
+}
+
+legend + * {
+  clear: both;
+}
+
+.spot-map {
+  max-width: var(--narrow-width);
+}
+
+/* A week of opening hours: one row a day. */
+.hours {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: var(--narrow-width);
+}
+
+.hours caption {
+  text-align: left;
+  padding-bottom: var(--space-xs);
+}
+
+.hours th,
+.hours td {
+  text-align: left;
+  padding: var(--space-xs) var(--space-sm) var(--space-xs) 0;
+  vertical-align: middle;
+}
+
+.hours .input {
+  width: 100%;
+}
+
+.problem-list {
+  list-style: disc;
+  padding-left: var(--space-lg);
+}
+
+.problem-list a {
+  color: var(--color-text);
+}
+
 /* The frame: menu beside the page on a laptop, behind a button on a phone. */
 /* Out of sight above the top until the keyboard reaches it. */
 .skip-link {
@@ -372,4 +526,52 @@ code {
   .page {
     padding: var(--space-xl);
   }
+
+  /* The map beside the list, at most 640 wide, in view while the list
+     scrolls (spec 15, 4.8). */
+  .split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .split > .iceland-map {
+    position: sticky;
+    top: var(--space-md);
+    max-width: var(--aside-width);
+  }
+}
+
+/* Our own map of Iceland (ADR 0024): its colours from the tokens. */
+.iceland-map {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--map-sea);
+  border-radius: var(--radius-card);
+  border-bottom: var(--edge-card) solid var(--color-edge);
+}
+
+.map-land {
+  fill: var(--map-land);
+  stroke: var(--map-coast);
+}
+
+.map-glacier {
+  fill: var(--map-glacier);
+}
+
+.map-road {
+  stroke: var(--map-road);
+}
+
+.map-ring-road {
+  stroke: var(--map-ring-road);
+}
+
+.map-dot {
+  fill: var(--color-primary);
+  stroke: var(--color-surface);
+}
+
+.map-halo {
+  fill: var(--color-primary-soft);
 }

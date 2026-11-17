@@ -4,6 +4,7 @@ import {
   normaliseSearchText,
   placeMatch,
   rankPlaceMatches,
+  searchTextFor,
   type PlaceCandidate,
 } from "./search.ts";
 
@@ -18,6 +19,14 @@ const anyText = fc.string({
     fc.integer({ min: 0x20, max: 0x2fff }).map((code) => String.fromCharCode(code)),
     fc.integer({ min: 0x1f300, max: 0x1faff }).map((code) => String.fromCodePoint(code)),
   ),
+});
+
+describe("searchTextFor (rule R2.6)", () => {
+  it("puts a point's names and aliases in one search text, leaving out the missing", () => {
+    expect(searchTextFor(["Olís Hveragerði", null, undefined, "Hveragerði"])).toBe(
+      "olis hveragerdi hveragerdi",
+    );
+  });
 });
 
 describe("normaliseSearchText (rule R2.6)", () => {
