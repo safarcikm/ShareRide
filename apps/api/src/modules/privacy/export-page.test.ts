@@ -141,6 +141,7 @@ describe("codeText", () => {
       "idle",
       "refresh_reused",
       "account_unavailable",
+      "account_deleted",
     ],
     roles: ["driver", "passenger"],
     cancelledBy: ["passenger", "driver", "operator"],

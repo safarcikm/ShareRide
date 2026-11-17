@@ -51,7 +51,11 @@ import {
 } from "./modules/meeting-points/index.ts";
 import { registerNotificationRoutes } from "./modules/notifications/index.ts";
 import { createPaymentService, registerPaymentRoutes } from "./modules/payments/index.ts";
-import { createExportService, registerPrivacyRoutes } from "./modules/privacy/index.ts";
+import {
+  createDeletionService,
+  createExportService,
+  registerPrivacyRoutes,
+} from "./modules/privacy/index.ts";
 import {
   createSearchService,
   createTripDetailsService,
@@ -282,11 +286,17 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       testProvider: features.payments?.name === "test",
       requireAuth,
     });
-    registerPrivacyRoutes(
-      app,
-      createExportService({ ...features, auth, cipher: features.exportCipher, logger }),
+    registerPrivacyRoutes(app, {
+      exports: createExportService({ ...features, auth, cipher: features.exportCipher, logger }),
+      deletion: createDeletionService({
+        ...features,
+        auth,
+        tripDaySettings: defaultTripDaySettings,
+        logger,
+      }),
+      account,
       requireAuth,
-    );
+    });
   }
 
   app.openAPIRegistry.registerComponent("securitySchemes", bearerAuth, {

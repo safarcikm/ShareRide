@@ -200,7 +200,15 @@ export function createChatService(dependencies: {
     userId: string,
     bookingId: string,
   ): Promise<
-    Result<{ readonly conversation: ConversationRow; readonly viewer: TripRole }, ChatError>
+    Result<
+      {
+        readonly conversation: ConversationRow;
+        readonly viewer: TripRole;
+        /** The other person in the conversation. */
+        readonly otherId: string;
+      },
+      ChatError
+    >
   > {
     const [row] = await q
       .select({
@@ -216,9 +224,11 @@ export function createChatService(dependencies: {
       return err({ code: "not_found" });
     }
     if (row.conversation === null) return err({ code: "not_confirmed" });
+    const viewer = row.passengerId === userId ? "passenger" : "driver";
     return ok({
       conversation: row.conversation,
-      viewer: row.passengerId === userId ? "passenger" : "driver",
+      viewer,
+      otherId: viewer === "passenger" ? row.driverId : row.passengerId,
     });
   }
 
@@ -339,7 +349,7 @@ export function createChatService(dependencies: {
     async send(userId, bookingId, body) {
       const found = await access(db, userId, bookingId);
       if (!found.ok) return found;
-      const { conversation, viewer } = found.value;
+      const { conversation, viewer, otherId } = found.value;
       // A retry gets what was sent, even once the conversation has closed.
       const earlier = async (q: Queryable): Promise<Result<MessageRow | null, ClientIdReused>> => {
         const rows = await q
@@ -364,6 +374,12 @@ export function createChatService(dependencies: {
         if (!canWrite({ opensAt: conversation.openedAt, closesAt: conversation.closesAt }, now)) {
           return err({ code: "chat_closed" });
         }
+        // Nobody can message a person deleting their account (spec 11, 3.4.3).
+        const [other] = await tx
+          .select({ deleteAfter: users.deleteAfter })
+          .from(users)
+          .where(eq(users.id, otherId));
+        if (other === undefined || other.deleteAfter !== null) return err({ code: "chat_closed" });
         const again = await earlier(tx);
         if (!again.ok) return again;
         if (again.value !== null) {
@@ -429,11 +445,14 @@ export function createChatService(dependencies: {
             .select({ conversation: conversations })
             .from(conversations)
             .innerJoin(bookings, eq(bookings.id, conversations.bookingId))
-            // Passengers stay passengers once their booking completes (spec 8, R8.2).
+            .innerJoin(users, eq(users.id, bookings.passengerId))
+            // Passengers stay passengers once their booking completes (spec 8,
+            // R8.2); one deleting their account gets nothing (spec 11, 3.4.3).
             .where(
               and(
                 eq(bookings.tripId, tripId),
                 inArray(bookings.status, ["confirmed", "completed"]),
+                isNull(users.deleteAfter),
               ),
             )
         )

@@ -68,6 +68,7 @@ export function createAccountService(dependencies: {
       ageConfirmed: user.ageConfirmedAt !== null,
       memberSince: user.createdAt.toISOString(),
       missingSteps: steps,
+      deletionScheduledFor: user.deleteAfter?.toISOString() ?? null,
     };
   }
 

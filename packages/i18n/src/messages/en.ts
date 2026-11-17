@@ -967,6 +967,9 @@ export const en = {
   "notify.dataExportReady": "Your data is ready to download",
   "notify.dataExportReadyBody":
     "Download the file in ShareRide by {until}. After that it is deleted.",
+  "notify.accountDeletionScheduled": "Your ShareRide account will be deleted",
+  "notify.accountDeletionScheduledBody":
+    'You asked us to delete your account. Your data will be erased on {date}. Until then, you can sign in and choose "Keep my account". If you didn\'t ask for this, sign in and keep it.',
   "notify.when": "{date} at {time}",
   "notify.part": "{seats, plural, one {# seat} other {# seats}} · {from} – {to} · {when}",
   "notify.searchAgain": "{from} – {to} · {when}. Search for another ride.",
@@ -1100,6 +1103,7 @@ export const en = {
   "export.field.changes": "Changes",
   "export.field.channel": "Channel",
   "export.field.chat": "Chat",
+  "export.field.checkedInAt": "At the meeting point",
   "export.field.childSeat": "Child seat",
   "export.field.colour": "Colour",
   "export.field.confirmedAt": "Confirmed",
@@ -1220,6 +1224,7 @@ export const en = {
   "export.value.kind.checked_in": "At the meeting point",
   "export.value.kind.checked_in_driver": "At the meeting point, as the driver",
   "export.value.kind.data_export_ready": "Your data ready to download",
+  "export.value.kind.account_deletion_scheduled": "Your account to be deleted",
   "export.value.kind.departure": "Departure time",
   "export.value.kind.seats": "Seats",
   "export.value.kind.priceLevel": "Price",
@@ -1244,6 +1249,7 @@ export const en = {
   "export.value.endReason.idle": "Not used for a long time",
   "export.value.endReason.refresh_reused": "Ended to keep the account safe",
   "export.value.endReason.account_unavailable": "Account not available",
+  "export.value.endReason.account_deleted": "You deleted your account",
   "export.value.role.driver": "Driver",
   "export.value.role.passenger": "Passenger",
   "export.value.role.operator": "ShareRide",

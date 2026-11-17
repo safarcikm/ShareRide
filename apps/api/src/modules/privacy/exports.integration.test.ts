@@ -3,13 +3,15 @@ import {
   acceptRequestRoute,
   askDataExportRoute,
   dataExportLinkRoute,
+  driverCheckInRoute,
   getDataExportRoute,
+  passengerCheckInRoute,
   sendConfirmCodeRoute,
   sendMessageRoute,
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
 import { exportSections } from "@shareride/domain";
-import { eq, inArray } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createLogger } from "../../logger.ts";
 import { createFakeEmailSender } from "../../platform/email.ts";
@@ -320,6 +322,56 @@ describe("download my data (spec 11, 3.2)", () => {
       expect(driver.text).not.toContain(secret);
     }
     expect(driver.text).toContain('"from": "Gunna"');
+  });
+
+  it("has the person's own times at the meeting point, with the booking or the stop", async () => {
+    const anna = await driverOf(sampleTrip.north, "Anna");
+    const gunna = await newMember("Gunna");
+    const request = await booked(gunna.accessToken, sampleTrip.north, { fromStop: 0, toStop: 3 });
+    const accepted = await api.client.call(acceptRequestRoute, {
+      accessToken: anna.accessToken,
+      params: { id: request.id },
+      body: {},
+    });
+    if (!accepted.ok) throw new Error(accepted.error.code);
+    if (accepted.data.status === "accepted") await paid(gunna.accessToken, request.id);
+    const [bsi] = await api.connection.db
+      .select({ id: schema.tripStops.id, plannedAt: schema.tripStops.plannedAt })
+      .from(schema.tripStops)
+      .where(eq(schema.tripStops.tripId, sampleTrip.north))
+      .orderBy(asc(schema.tripStops.position));
+    if (bsi?.plannedAt === null || bsi === undefined) throw new Error("No first stop.");
+
+    // Ten minutes before Anna leaves BSÍ, Gunna, then a minute later Anna.
+    const tenBefore = (bsi.plannedAt.getTime() - api.now().getTime()) / 1000 - 10 * 60;
+    await later(Math.round(tenBefore), anna, gunna);
+    const passengerAt = api.now().toISOString();
+    const hers = await api.client.call(passengerCheckInRoute, {
+      accessToken: gunna.accessToken,
+      params: { id: request.id },
+      body: {},
+    });
+    expect(hers).toMatchObject({ ok: true, data: { checkedInAt: passengerAt } });
+    await later(60, anna, gunna);
+    const driverAt = api.now().toISOString();
+    const his = await api.client.call(driverCheckInRoute, {
+      accessToken: anna.accessToken,
+      params: { id: sampleTrip.north, stopId: bsi.id },
+      body: {},
+    });
+    expect(his).toMatchObject({ ok: true, data: { checkedInAt: driverAt } });
+
+    const mine = await exportOf(gunna);
+    const [booking] = mine.data.sections.bookings as { checkedInAt: string | null }[];
+    // Anna's own shows here only as a line of their chat.
+    expect(booking?.checkedInAt).toBe(passengerAt);
+
+    const driver = await exportOf(anna);
+    const [trip] = driver.data.sections.trips_posted as {
+      stops: { checkedInAt: string | null }[];
+    }[];
+    expect(trip?.stops.map((stop) => stop.checkedInAt)).toEqual([driverAt, null, null, null]);
+    expect(unlabelledFields(driver.data)).toEqual([]);
   });
 
   it("labels every field of the readable page in both languages", async () => {

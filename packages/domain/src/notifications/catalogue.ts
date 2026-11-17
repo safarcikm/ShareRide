@@ -55,6 +55,8 @@ export const notificationRules = {
   // News about the account rather than a trip (spec 11): the texts say what
   // is ready and until when, never a link (spec 11, 7).
   data_export_ready: { push: true, email: "always", sms: false },
+  // By email only: deleting signs the person out of every device (spec 11, 3.4.5).
+  account_deletion_scheduled: { push: false, email: "always", sms: false },
 } as const satisfies Record<string, NotificationRule>;
 
 export type NotificationKind = keyof typeof notificationRules;
@@ -63,7 +65,7 @@ export const notificationKinds = Object.keys(notificationRules) as NotificationK
 export type TripRole = "driver" | "passenger";
 
 /** The kinds about the person's account, which no booking or trip event gives. */
-export const accountNoticeKinds = ["data_export_ready"] as const;
+export const accountNoticeKinds = ["data_export_ready", "account_deletion_scheduled"] as const;
 export type AccountNoticeKind = (typeof accountNoticeKinds)[number];
 
 export function isAccountNotice(kind: NotificationKind): kind is AccountNoticeKind {

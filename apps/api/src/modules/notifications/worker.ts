@@ -313,10 +313,11 @@ async function tripFactsOf(q: Queryable, notification: typeof notifications.$inf
 }
 
 /**
- * News about the person's account (spec 11): for a data export, until when
- * the file can be downloaded. `current` is false once the person's latest
- * export cannot be downloaded: it expired or failed, or a newer one was
- * asked for, which deleted this file.
+ * News about the person's account (spec 11). For a data export, until when
+ * the file can be downloaded: `current` is false once the person's latest
+ * export cannot be downloaded (it expired or failed, or a newer one was asked
+ * for, which deleted this file). For a deletion, when the data is erased:
+ * `current` is false once the person kept their account.
  */
 async function accountFactsOf(
   q: Queryable,
@@ -330,6 +331,7 @@ async function accountFactsOf(
       locale: recipients.locale,
       email: recipients.email,
       emailVerifiedAt: recipients.emailVerifiedAt,
+      deleteAfter: recipients.deleteAfter,
       readyAt: dataExports.readyAt,
       failedAt: dataExports.failedAt,
       expiresAt: dataExports.expiresAt,
@@ -341,10 +343,17 @@ async function accountFactsOf(
     .orderBy(desc(dataExports.askedAt))
     .limit(1);
   if (row === undefined) return undefined;
-  const until = row.expiresAt;
-  const current =
-    row.readyAt !== null && row.failedAt === null && row.hasFile && until !== null && until > now;
-  const facts: AccountNoticeFacts = { kind, expiresAt: until ?? now };
+  let until: Date | null;
+  let current: boolean;
+  if (kind === "account_deletion_scheduled") {
+    until = row.deleteAfter;
+    current = until !== null && until > now;
+  } else {
+    until = row.expiresAt;
+    current =
+      row.readyAt !== null && row.failedAt === null && row.hasFile && until !== null && until > now;
+  }
+  const facts: AccountNoticeFacts = { kind, until: until ?? now };
   return {
     facts,
     current,
@@ -877,13 +886,14 @@ export function createNotificationWorker(dependencies: {
   ): Promise<void> {
     const type = event.kind as OutboxEventType;
     const key = `event:${event.id}`;
-    if (type === "DataExportReady") {
+    if (type === "DataExportReady" || type === "AccountDeletionScheduled") {
       const userId = idIn(event.payload, "userId");
       if (userId === undefined) return;
       // Gone with the account in the meantime: nobody to tell.
       const [user] = await tx.select({ id: users.id }).from(users).where(eq(users.id, userId));
       if (user === undefined) return;
-      await add(tx, { kind: "data_export_ready", to: null, recipientId: userId }, key, now);
+      const kind = type === "DataExportReady" ? "data_export_ready" : "account_deletion_scheduled";
+      await add(tx, { kind, to: null, recipientId: userId }, key, now);
       return;
     }
     if (type === "MessageSent") {

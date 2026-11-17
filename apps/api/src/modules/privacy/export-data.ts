@@ -20,6 +20,7 @@ import { quickOf, systemLineOf } from "../chat/service.ts";
 const {
   bookingSegmentPrices,
   bookings,
+  checkIns,
   conversations,
   emailVerifications,
   legalAcceptances,
@@ -155,6 +156,20 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     .orderBy(asc(vehicles.createdAt));
   const carOf = new Map(cars.map((car) => [car.id, car]));
 
+  // The person's own "I'm here" times (spec 8, 3.2): a passenger's with
+  // their booking, a driver's at a stop of their trip. The other side's stay
+  // with the other side.
+  const ownCheckIns = await q
+    .select({
+      stopId: checkIns.tripStopId,
+      bookingId: checkIns.bookingId,
+      at: checkIns.checkedInAt,
+    })
+    .from(checkIns)
+    .where(eq(checkIns.userId, userId));
+  const checkedInAt = (match: (checkIn: (typeof ownCheckIns)[number]) => boolean) =>
+    when(ownCheckIns.find(match)?.at ?? null);
+
   // Trips the person posted, with what passengers booked on them.
   const posted = await q
     .select()
@@ -240,6 +255,9 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
           place: name(point),
           plannedAt: when(stop.plannedAt),
           removedAt: when(stop.removedAt),
+          checkedInAt: checkedInAt(
+            (checkIn) => checkIn.bookingId === null && checkIn.stopId === stop.id,
+          ),
         })),
       prices: legs
         .filter((leg) => leg.tripId === trip.id)
@@ -349,6 +367,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     decidedAt: when(booking.decidedAt),
     paymentDueAt: when(booking.paymentDueAt),
     confirmedAt: when(booking.confirmedAt),
+    checkedInAt: checkedInAt((checkIn) => checkIn.bookingId === booking.id),
     expiredAt: when(booking.expiredAt),
     cancelledAt: when(booking.cancelledAt),
     cancelledBy: booking.cancelledBy,

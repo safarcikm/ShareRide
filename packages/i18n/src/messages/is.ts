@@ -975,6 +975,9 @@ export const is = {
   /** Spec 11, 3.2: never a link, which only the signed-in app gives. */
   "notify.dataExportReady": "Gögnin þín eru tilbúin til niðurhals",
   "notify.dataExportReadyBody": "Sæktu skrána í ShareRide fyrir {until}. Eftir það er henni eytt.",
+  "notify.accountDeletionScheduled": "ShareRide aðganginum þínum verður eytt",
+  "notify.accountDeletionScheduledBody":
+    "Þú baðst okkur að eyða aðganginum þínum. Gögnunum þínum verður eytt {date}. Fram að því getur þú skráð þig inn og valið „Halda aðganginum“. Ef þú baðst ekki um þetta skaltu skrá þig inn og halda honum.",
   "notify.when": "{date} kl. {time}",
   "notify.part": "{seats} sæti · {from} – {to} · {when}",
   "notify.searchAgain": "{from} – {to} · {when}. Leitaðu að annarri ferð.",
@@ -1103,6 +1106,7 @@ export const is = {
   "export.field.changes": "Breytingar",
   "export.field.channel": "Leið",
   "export.field.chat": "Spjall",
+  "export.field.checkedInAt": "Á mótsstaðnum",
   "export.field.childSeat": "Barnastóll",
   "export.field.colour": "Litur",
   "export.field.confirmedAt": "Staðfest",
@@ -1223,6 +1227,7 @@ export const is = {
   "export.value.kind.checked_in": "Á mótsstaðnum",
   "export.value.kind.checked_in_driver": "Á mótsstaðnum, sem bílstjóri",
   "export.value.kind.data_export_ready": "Gögnin þín tilbúin til niðurhals",
+  "export.value.kind.account_deletion_scheduled": "Aðganginum þínum verður eytt",
   "export.value.kind.departure": "Brottfarartími",
   "export.value.kind.seats": "Sæti",
   "export.value.kind.priceLevel": "Verð",
@@ -1247,6 +1252,7 @@ export const is = {
   "export.value.endReason.idle": "Ekki notað lengi",
   "export.value.endReason.refresh_reused": "Lokað til að vernda aðganginn",
   "export.value.endReason.account_unavailable": "Aðgangurinn ekki tiltækur",
+  "export.value.endReason.account_deleted": "Þú eyddir aðganginum",
   "export.value.role.driver": "Bílstjóri",
   "export.value.role.passenger": "Farþegi",
   "export.value.role.operator": "ShareRide",

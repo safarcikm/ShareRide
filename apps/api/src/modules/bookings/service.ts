@@ -80,6 +80,8 @@ export interface NotFound {
 export type BookError =
   | NotFound
   | { readonly code: "account_incomplete" }
+  /** The passenger is deleting their account (spec 11, 3.4). */
+  | { readonly code: "account_deletion_pending" }
   /** The meeting points shown at the part's positions are no longer there (spec 6, 3.2). */
   | { readonly code: "stops_changed" }
   | BookingProblem;
@@ -629,15 +631,28 @@ export function createBookingService(dependencies: {
       return db.transaction(async (tx) => {
         // One booking at a time per passenger, so two cannot overlap (R5.10)
         // or use the same attempt key; then the trip, for its seats (R5.2).
-        await tx
-          .select({ id: users.id })
+        // Deleting an account takes the same lock before it checks.
+        const [passenger] = await tx
+          .select({ deleteAfter: users.deleteAfter })
           .from(users)
           .where(eq(users.id, passengerId))
           .for("update");
         const again = await retried(tx);
         if (again !== undefined) return again;
+        if (passenger === undefined || passenger.deleteAfter !== null) {
+          return err({ code: "account_deletion_pending" });
+        }
         const trip = await lockTrip(tx, tripId);
         if (trip === undefined) return err({ code: "not_found" });
+        // Nobody books with a driver deleting their account (spec 11, 3.4.3).
+        // Shared with other bookings, and taken before deleting checks for
+        // bookings under its own lock, so one of the two waits for the other.
+        const [driver] = await tx
+          .select({ deleteAfter: users.deleteAfter })
+          .from(users)
+          .where(eq(users.id, trip.driverId))
+          .for("share");
+        if (driver === undefined || driver.deleteAfter !== null) return err({ code: "not_found" });
         const now = clock();
         await expireDueBookings(tx, tripId, now);
 
