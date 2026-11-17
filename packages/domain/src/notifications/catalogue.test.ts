@@ -293,6 +293,23 @@ describe("stillApplies", () => {
     }
   });
 
+  it("asks for an answer to a report only while the booking is as the report left it (spec 8, 3.3 and 3.4)", () => {
+    expect(stillApplies("no_show_marked", "no_show")).toBe(true);
+    for (const status of ["completed", "cancelled"] as const) {
+      expect(stillApplies("no_show_marked", status)).toBe(false);
+    }
+    for (const status of ["confirmed", "completed"] as const) {
+      expect(stillApplies("driver_absent_reported", status)).toBe(true);
+    }
+    for (const status of ["cancelled", "no_show"] as const) {
+      expect(stillApplies("driver_absent_reported", status)).toBe(false);
+    }
+    // The decision tells what happened, whatever the booking became.
+    for (const status of ["completed", "cancelled", "no_show"] as const) {
+      expect(stillApplies("dispute_decided", status)).toBe(true);
+    }
+  });
+
   it("says someone is at the meeting point only while the booking is confirmed (spec 8, 3.2)", () => {
     for (const kind of ["checked_in", "checked_in_driver"] as const) {
       expect(stillApplies(kind, "confirmed")).toBe(true);

@@ -438,6 +438,28 @@ describe("answering a report (spec 8, 3.3 and 3.4; R8.6, R8.7)", () => {
     });
   });
 
+  it("settles the others when one report cannot be, and says so", async () => {
+    const trip = await onTheTrip();
+    const { jon, gunna, bookingId, hlemmur } = trip;
+    const sigga = await newMember("Sigga");
+    const other = await booked(sigga.accessToken, airport, { fromStop: 0, toStop: 1 });
+    await paid(sigga.accessToken, other.id);
+    await until(hlemmur.plannedAt, 15, jon, gunna, sigga);
+    const broken = await reportAbsent(gunna, bookingId);
+    const fine = await reportAbsent(sigga, other.id);
+    if (!broken.ok || !fine.ok) throw new Error("not reported");
+    // Gunna's payment is missing, so her refund cannot be owed.
+    await api.connection.db.delete(schema.payments).where(eq(schema.payments.bookingId, bookingId));
+
+    await until(new Date(fine.data.answerBy), 1, jon, gunna, sigga);
+    await expect(settleUnansweredReports(api.connection.db, api.now(), settings)).rejects.toThrow(
+      /1 of 2 reports/,
+    );
+    expect(await storedDispute(other.id)).toMatchObject({ outcome: "stands" });
+    expect(await storedDispute(bookingId)).toMatchObject({ outcome: null });
+    expect(await storedBooking(bookingId)).toMatchObject({ status: "confirmed" });
+  });
+
   it("an unanswered no-show stands 24 hours after the trip completes, and takes no late answer", async () => {
     const trip = await onTheTrip();
     const { jon, gunna, bookingId } = trip;

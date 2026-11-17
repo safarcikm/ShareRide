@@ -247,6 +247,12 @@ export function stillApplies(kind: NotificationKind, status: BookingStatus): boo
     case "checked_in":
     case "checked_in_driver":
       return status === "confirmed";
+    // A report asks for an answer while the booking is as the report left
+    // it (spec 8, 3.3 and 3.4); once decided otherwise, it would ask too late.
+    case "no_show_marked":
+      return status === "no_show";
+    case "driver_absent_reported":
+      return status === "confirmed" || status === "completed";
     default:
       return true;
   }
