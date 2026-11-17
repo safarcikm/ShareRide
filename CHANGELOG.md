@@ -642,10 +642,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   and, on bookings, `profileId`) for these people.
 - The console's reliability routes (milestone 7, PR 7d, spec 8, 3.8; R8.10
   and R8.11): the cancellations that do not count only because of a
-  weather or road-closure reason, overruling one so that it counts (with
-  an audit entry), and the people below 80%. Trips and bookings save
-  whether their cancellation was excused by its reason, and when the
-  operator overruled it (migration `0036_reliability_overrules`).
+  weather or road-closure reason, making one count or undoing that, with
+  the operator's note and an audit entry, and the people below 80%. Trips
+  and bookings save whether their cancellation was excused by its reason,
+  and when and why the operator overruled it (migration
+  `0036_reliability_overrules`). "Download my data" says when ShareRide
+  made a cancellation count.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

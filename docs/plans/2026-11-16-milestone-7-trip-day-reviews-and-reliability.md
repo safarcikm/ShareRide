@@ -251,8 +251,9 @@ the rating.
   this is a small query per profile, so spec 8's `ReliabilityRecord` and
   `UserStats` tables are not needed yet. They come back if profiles get
   slow. The operator's overrule is a column on the booking or trip: when
-  (`overruled_at`), with who in the audit log. A reason overruled is one
-  clearly wrong, so it takes no note. Whether a cancellation could be overruled
+  (`overruled_at`) and why (`overrule_note`), with who in the audit log.
+  The operator can undo it, with a note too (spec 8, section 6). Whether a
+  cancellation could be overruled
   (`excusedByReason`) is saved when it is made, as it depends on the time
   and the bookings then.
 - Profiles show the rating ("4.8 (12 ratings)"), "Reliability: 96%" or
@@ -357,7 +358,7 @@ handed to everyone signed in (spec 1, 3.5; the safety thread's suggestion).
       and from the passengers on the driver's trip (7c)
 - [x] The console's routes (decision 1, as changed): the cancellations
       excused by a weather or road-closure reason, overruling one so it
-      counts, and the people below 80% (7d)
+      counts or undoing that, with a note, and the people below 80% (7d)
 - [ ] The console's Reliability page (7e)
 - Verify: integration tests (never the phone number or email; hidden
   reviews never shown or counted); screen tests; a browser journey opens

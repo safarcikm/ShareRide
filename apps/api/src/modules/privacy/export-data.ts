@@ -360,6 +360,8 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
       cancelReason: trip.cancelReason,
       cancelNote: trip.cancelNote,
       countsOnReliability: trip.countsOnReliability,
+      // The operator's reason for it is theirs only, as a report's decision note is.
+      overruledAt: when(trip.overruledAt),
       passengers: riders
         .filter((row) => row.booking.tripId === trip.id)
         .map(({ booking, firstName, from, to }) => ({
@@ -460,6 +462,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     cancelNote: booking.cancelNote,
     refund: booking.refundAmount,
     countsOnReliability: booking.countsOnReliability,
+    overruledAt: when(booking.overruledAt),
   }));
 
   const paid = await q

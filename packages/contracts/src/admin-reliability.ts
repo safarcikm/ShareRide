@@ -35,12 +35,17 @@ export const adminExcusedCancellationSchema = z.object({
   /** The driver's note to the passengers, as written; empty for none. */
   note: z.string(),
   cancelledAt: timestampSchema,
-  /** The trip's first and last stops, and when it was to leave. */
+  /**
+   * A trip's first and last stops, or where a booking's passenger was to
+   * get in and out; and when the trip was to leave.
+   */
   from: localisedTextSchema,
   to: localisedTextSchema,
   departsAt: timestampSchema.nullable(),
-  /** When the operator overruled the reason, so that it counts; null until then. */
+  /** When the operator overruled the reason, so that it counts; null until then, or once undone. */
   overruledAt: timestampSchema.nullable(),
+  /** The operator's note on the last change of whether it counts; empty before any. */
+  overruleNote: z.string(),
 });
 
 export type AdminExcusedCancellation = z.infer<typeof adminExcusedCancellationSchema>;
@@ -67,22 +72,36 @@ export const adminExcusedCancellationsRoute = defineRoute({
   },
 });
 
-export const adminOverruleRoute = defineRoute({
+export const adminChangeCountingBodySchema = z.object({
+  /** True overrules the reason, so it counts; false undoes that. */
+  counts: z.boolean(),
+  /** Why, for a warning or a complaint later; needed, up to 500 characters (`checkOverruleNote`). */
+  note: z.string(),
+});
+
+export const adminChangeCountingRoute = defineRoute({
   method: "post",
-  path: "/admin/v1/reliability/cancellations/{kind}/{id}/overrule",
-  summary: "Overrule a clearly wrong weather or road-closure reason, so the cancellation counts",
+  path: "/admin/v1/reliability/cancellations/{kind}/{id}/counts",
+  summary:
+    "Overrule a clearly wrong weather or road-closure reason, so the cancellation counts, or undo that, with a note",
   tags: ["admin", "reliability"],
   auth: "operator",
   request: {
     params: z.object({ kind: z.enum(adminCancellationKinds), id: z.uuid() }),
-    body: z.object({}),
+    body: adminChangeCountingBodySchema,
   },
   responses: {
-    200: { description: "The cancellation, overruled", schema: adminExcusedCancellationSchema },
-    400: { description: "validation_failed: an unknown kind or a bad ID", ...errors },
+    200: { description: "The cancellation as it is now", schema: adminExcusedCancellationSchema },
+    400: {
+      description: "validation_failed: an unknown kind, a bad ID, or a note missing or too long",
+      ...errors,
+    },
     401: { description: "operator_unauthenticated", ...errors },
-    404: { description: "not_found: no such cancellation excused by its reason", ...errors },
-    409: { description: "already_overruled", ...errors },
+    404: {
+      description: "not_found: not one of the cancellations the list shows",
+      ...errors,
+    },
+    409: { description: "unchanged: it already counts, or already doesn't", ...errors },
   },
 });
 

@@ -2,12 +2,13 @@ import {
   cancelBookingRoute,
   cancellationPreviewRoute,
   cancelTripRoute,
+  publicProfileRoute,
   type AdminExcusedCancellation,
   type AdminWatchedPerson,
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
 import type { CancelReason } from "@shareride/domain";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, gte } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
 import {
@@ -47,14 +48,24 @@ afterAll(async () => {
 
 const { newMember, later, rewind, driverOf, booked, paid } = bookingHelpers(() => api);
 
-async function send(cookie: string, method: string, path: string) {
+async function send(cookie: string, method: string, path: string, body: unknown = {}) {
   const response = await api.request(path, {
     method,
     headers: { cookie, "content-type": "application/json" },
-    ...(method === "POST" ? { body: "{}" } : {}),
+    ...(method === "POST" ? { body: JSON.stringify(body) } : {}),
   });
   return { status: response.status, body: (await response.json()) as unknown };
 }
+
+const countsPath = (kind: "trip" | "booking", id: string) =>
+  `/admin/v1/reliability/cancellations/${kind}/${id}/counts`;
+
+/** The operator makes it count, or no longer count, with a note. */
+const change = (cookie: string, kind: "trip" | "booking", id: string, counts = true) =>
+  send(cookie, "POST", countsPath(kind, id), {
+    counts,
+    note: counts ? "Clear skies and open roads all day." : "Pressed by mistake.",
+  });
 
 async function listed(cookie: string) {
   const { status, body } = await send(cookie, "GET", "/admin/v1/reliability/cancellations");
@@ -62,7 +73,7 @@ async function listed(cookie: string) {
   return (body as { cancellations: AdminExcusedCancellation[] }).cancellations;
 }
 
-/** The passenger cancels their paid booking for `reason`, on the terms the preview gives. */
+/** The passenger (or the driver) cancels a paid booking for `reason`, on the terms the preview gives. */
 async function passengerCancels(passenger: Member, bookingId: string, reason: CancelReason) {
   const preview = await api.client.call(cancellationPreviewRoute, {
     accessToken: passenger.accessToken,
@@ -103,11 +114,20 @@ async function vikCancelledForWeather() {
   return jon;
 }
 
-async function auditOf(action: string, subjectId: string) {
+// The audit log refuses deletes, so entries of earlier tests on the same
+// sample trip stay: each test looks at those since it began (`from`, on the
+// database's own clock, not the test clock).
+async function auditOf(action: string, subjectId: string, from = new Date(0)) {
   return api.connection.db
     .select()
     .from(schema.auditLog)
-    .where(and(eq(schema.auditLog.action, action), eq(schema.auditLog.subjectId, subjectId)))
+    .where(
+      and(
+        eq(schema.auditLog.action, action),
+        eq(schema.auditLog.subjectId, subjectId),
+        gte(schema.auditLog.createdAt, from),
+      ),
+    )
     .orderBy(asc(schema.auditLog.id));
 }
 
@@ -116,7 +136,7 @@ describe("the console's Reliability routes", () => {
     const gunna = await newMember("Gunna");
     for (const [method, path] of [
       ["GET", "/admin/v1/reliability/cancellations"],
-      ["POST", `/admin/v1/reliability/cancellations/trip/${vik}/overrule`],
+      ["POST", countsPath("trip", vik)],
       ["GET", "/admin/v1/reliability/watch"],
     ] as const) {
       const answered = await api.request(path, {
@@ -125,7 +145,7 @@ describe("the console's Reliability routes", () => {
           authorization: `Bearer ${gunna.accessToken}`,
           "content-type": "application/json",
         },
-        ...(method === "POST" ? { body: "{}" } : {}),
+        ...(method === "POST" ? { body: JSON.stringify({ counts: true, note: "No." }) } : {}),
       });
       expect(answered.status, path).toBe(401);
     }
@@ -151,6 +171,7 @@ describe("cancellations excused by their reason (R8.11)", () => {
         role: "passenger",
         reason: "weather",
         overruledAt: null,
+        overruleNote: "",
       },
       {
         kind: "trip",
@@ -182,37 +203,140 @@ describe("cancellations excused by their reason (R8.11)", () => {
     expect(await listed(cookie)).toEqual([]);
   });
 
-  it("overrules one so that it counts, once, with an audit entry", async () => {
-    await vikCancelledForWeather();
+  it("names the driver who cancelled one booking for a closed road", async () => {
+    const anna = await driverOf(airport, "Anna");
+    const gunna = await paidRide("Gunna", airport);
+    await later(60, gunna.member);
+    await passengerCancels(anna, gunna.bookingId, "road_closed");
+    const { cookie } = await api.signInOperator();
+    expect(await listed(cookie)).toMatchObject([
+      {
+        kind: "booking",
+        id: gunna.bookingId,
+        person: { userId: anna.userId, firstName: "Anna" },
+        role: "driver",
+        reason: "road_closed",
+      },
+    ]);
+  });
+
+  it("leaves out someone leaving ShareRide, and what is older than the period", async () => {
+    const jon = await vikCancelledForWeather();
+    const { cookie } = await api.signInOperator();
+    expect(await listed(cookie)).toHaveLength(1);
+    await api.connection.db
+      .update(users)
+      .set({ deleteAfter: new Date(api.now().getTime() + 7 * 86_400_000) })
+      .where(eq(users.id, jon.userId));
+    expect(await listed(cookie)).toEqual([]);
+    // Nor can it be changed: undoing their deletion brings them back as they were.
+    expect((await change(cookie, "trip", vik)).status).toBe(404);
+
+    await api.connection.db
+      .update(users)
+      .set({ deleteAfter: null })
+      .where(eq(users.id, jon.userId));
+    // Twelve months and a day ago.
+    await api.connection.db
+      .update(trips)
+      .set({ cancelledAt: new Date(api.now().getTime() - 366 * 86_400_000) })
+      .where(eq(trips.id, vik));
+    expect(await listed(cookie)).toEqual([]);
+    expect((await change(cookie, "trip", vik)).status).toBe(404);
+    const [stored] = await api.connection.db
+      .select({ counts: trips.countsOnReliability })
+      .from(trips)
+      .where(eq(trips.id, vik));
+    expect(stored?.counts).toBe(false);
+  });
+
+  it("overrules one so that it counts, with a note and an audit entry, and undoes it", async () => {
+    const from = new Date();
+    const jon = await vikCancelledForWeather();
     const signedIn = await api.signInOperator();
-    const path = `/admin/v1/reliability/cancellations/trip/${vik}/overrule`;
-    const first = await send(signedIn.cookie, "POST", path);
+    const driverCounted = async () => {
+      const [found] = await api.connection.db
+        .select({ profileId: users.profileId })
+        .from(users)
+        .where(eq(users.id, jon.userId));
+      const viewer = await newMember("Dóra");
+      const profile = await api.client.call(publicProfileRoute, {
+        accessToken: viewer.accessToken,
+        params: { profileId: found?.profileId ?? "" },
+      });
+      if (!profile.ok) throw new Error(profile.error.code);
+      return profile.data.reliability.byRole.driver;
+    };
+    expect(await driverCounted()).toEqual({ kept: 0, counted: 0 });
+
+    const overruledAt = api.now();
+    const first = await change(signedIn.cookie, "trip", vik);
     expect(first.status).toBe(200);
     expect(first.body).toMatchObject({
       kind: "trip",
       id: vik,
-      overruledAt: api.now().toISOString(),
+      overruledAt: overruledAt.toISOString(),
+      overruleNote: "Clear skies and open roads all day.",
     });
-    const [stored] = await api.connection.db
-      .select({ counts: trips.countsOnReliability, overruledAt: trips.overruledAt })
-      .from(trips)
-      .where(eq(trips.id, vik));
-    expect(stored).toEqual({ counts: true, overruledAt: api.now() });
-    expect(await auditOf("trip.reason_overruled", vik)).toMatchObject([
+    const stored = () =>
+      api.connection.db
+        .select({
+          counts: trips.countsOnReliability,
+          overruledAt: trips.overruledAt,
+          note: trips.overruleNote,
+        })
+        .from(trips)
+        .where(eq(trips.id, vik));
+    expect(await stored()).toEqual([
+      { counts: true, overruledAt, note: "Clear skies and open roads all day." },
+    ]);
+    // It now counts on Jón's figure, as not kept.
+    expect(await driverCounted()).toEqual({ kept: 0, counted: 1 });
+    expect(await auditOf("trip.reason_overruled", vik, from)).toMatchObject([
       {
         operatorUserId: signedIn.userId,
         operatorSessionId: signedIn.sessionId,
         subjectType: "trip",
         before: null,
-        after: { changed: ["countsOnReliability", "overruledAt"] },
+        // The names of the fields only, never the note.
+        after: { changed: ["countsOnReliability", "overruledAt", "overruleNote"] },
       },
     ]);
-
-    const again = await send(signedIn.cookie, "POST", path);
-    expect(again).toMatchObject({ status: 409, body: { error: { code: "already_overruled" } } });
-    expect(await auditOf("trip.reason_overruled", vik)).toHaveLength(1);
+    const again = await change(signedIn.cookie, "trip", vik);
+    expect(again).toMatchObject({ status: 409, body: { error: { code: "unchanged" } } });
+    expect(await auditOf("trip.reason_overruled", vik, from)).toHaveLength(1);
     // Still listed, as overruled.
-    expect((await listed(signedIn.cookie))[0]?.overruledAt).toBe(api.now().toISOString());
+    expect((await listed(signedIn.cookie))[0]?.overruledAt).toBe(overruledAt.toISOString());
+
+    const undone = await change(signedIn.cookie, "trip", vik, false);
+    expect(undone).toMatchObject({
+      status: 200,
+      body: { overruledAt: null, overruleNote: "Pressed by mistake." },
+    });
+    expect(await stored()).toEqual([
+      { counts: false, overruledAt: null, note: "Pressed by mistake." },
+    ]);
+    expect(await driverCounted()).toEqual({ kept: 0, counted: 0 });
+    expect(await auditOf("trip.overrule_undone", vik, from)).toHaveLength(1);
+    expect((await change(signedIn.cookie, "trip", vik, false)).status).toBe(409);
+  });
+
+  it("needs a note of up to 500 characters", async () => {
+    const from = new Date();
+    await vikCancelledForWeather();
+    const { cookie } = await api.signInOperator();
+    for (const [note, issue] of [
+      ["   ", "missing"],
+      ["x".repeat(501), "too_long"],
+    ] as const) {
+      expect(
+        await send(cookie, "POST", countsPath("trip", vik), { counts: true, note }),
+      ).toMatchObject({
+        status: 400,
+        body: { error: { code: "validation_failed", details: [{ path: "note", issue }] } },
+      });
+    }
+    expect(await auditOf("trip.reason_overruled", vik, from)).toEqual([]);
   });
 
   it("overrules a booking's reason, and finds no cancellation that was not excused", async () => {
@@ -223,25 +347,29 @@ describe("cancellations excused by their reason (R8.11)", () => {
     await passengerCancels(sigga.member, sigga.bookingId, "plans_changed");
     const { cookie } = await api.signInOperator();
 
-    const overruled = await send(
-      cookie,
-      "POST",
-      `/admin/v1/reliability/cancellations/booking/${gunna.bookingId}/overrule`,
-    );
-    expect(overruled.status).toBe(200);
+    expect((await change(cookie, "booking", gunna.bookingId)).status).toBe(200);
     const [stored] = await api.connection.db
       .select({ counts: bookings.countsOnReliability })
       .from(bookings)
       .where(eq(bookings.id, gunna.bookingId));
     expect(stored?.counts).toBe(true);
+    expect(await auditOf("booking.reason_overruled", gunna.bookingId)).toHaveLength(1);
 
-    for (const path of [
-      `/admin/v1/reliability/cancellations/booking/${sigga.bookingId}/overrule`,
-      `/admin/v1/reliability/cancellations/trip/${gunna.bookingId}/overrule`,
-      `/admin/v1/reliability/cancellations/trip/${north}/overrule`,
-    ]) {
-      expect((await send(cookie, "POST", path)).status, path).toBe(404);
+    for (const [kind, id] of [
+      ["booking", sigga.bookingId],
+      ["trip", gunna.bookingId],
+      ["trip", north],
+    ] as const) {
+      expect((await change(cookie, kind, id)).status, `${kind} ${id}`).toBe(404);
     }
+    expect(
+      (
+        await send(cookie, "POST", `/admin/v1/reliability/cancellations/person/${vik}/counts`, {
+          counts: true,
+          note: "No.",
+        })
+      ).status,
+    ).toBe(400);
   });
 });
 

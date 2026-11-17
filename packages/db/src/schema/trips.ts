@@ -4,6 +4,7 @@ import {
   defaultTripSettings,
   luggageOptions,
   noteMaxLength,
+  overruleNoteMaxLength,
   petOptions,
   smokingOptions,
   tripCancelReasons,
@@ -75,8 +76,13 @@ export const trips = pgTable(
      * (spec 8, R8.11).
      */
     excusedByReason: boolean().notNull().default(false),
-    /** When the operator overruled that reason, so it counts; the audit log says who. */
+    /**
+     * When the operator overruled that reason, so it counts; null until then,
+     * or once they undid it. The audit log says who.
+     */
     overruledAt: at(),
+    /** The operator's note on the last change of whether it counts; theirs only. */
+    overruleNote: text().notNull().default(""),
     /** Made by the seed for local and staging (sample trips). */
     sample: boolean().notNull().default(false),
     ...timestamps,
@@ -98,6 +104,10 @@ export const trips = pgTable(
     check(
       "trips_cancel_note_check",
       sql`char_length(${table.cancelNote}) <= ${sql.raw(String(noteMaxLength))}`,
+    ),
+    check(
+      "trips_overrule_note_check",
+      sql`char_length(${table.overruleNote}) <= ${sql.raw(String(overruleNoteMaxLength))}`,
     ),
     check(
       "trips_times_check",
