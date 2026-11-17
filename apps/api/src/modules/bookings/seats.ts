@@ -3,6 +3,7 @@
 // same transaction, and first stores the expiry of bookings past their
 // deadlines. Reads that cannot wait for that correct the stored occupancy.
 import { schema, type Database } from "@shareride/db";
+import { limitRoom, type BookingStatus, type Money } from "@shareride/domain";
 import { and, asc, eq, gte, inArray, isNull, lt, lte, ne, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { recordEvents } from "../notifications/outbox.ts";
@@ -76,6 +77,31 @@ export async function lockTrip(tx: Transaction, tripId: string) {
     .where(and(eq(trips.id, tripId), ne(trips.status, "draft")))
     .for("update");
   return trip;
+}
+
+/**
+ * What the trip can still take (rule P3, spec 17; the domain's `limitRoom`):
+ * its stretches' stored caps and every booking it has. Call it with the trip
+ * locked and its due expiries stored, so it counts every booking.
+ */
+export async function limitRoomOf(tx: Transaction, tripId: string): Promise<Money> {
+  const stretches = await tx
+    .select({ capacity: segments.capacity, cap: segments.cap })
+    .from(segments)
+    .where(eq(segments.tripId, tripId));
+  const held = await tx
+    .select({
+      status: bookings.status,
+      totalPrice: bookings.totalPrice,
+      refundAmount: bookings.refundAmount,
+      confirmedAt: bookings.confirmedAt,
+    })
+    .from(bookings)
+    .where(eq(bookings.tripId, tripId));
+  return limitRoom(
+    stretches,
+    held.map((booking) => ({ ...booking, status: booking.status as BookingStatus })),
+  );
 }
 
 /**
