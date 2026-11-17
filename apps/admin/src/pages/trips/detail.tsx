@@ -54,6 +54,20 @@ export function TripDetail({ id }: { readonly id: string }) {
         <p className="problem type-body" role="alert">
           {t(loaded.state === "missing" ? "admin.trips.notFound" : "admin.trips.loadOneFailed")}
         </p>
+        {loaded.state === "failed" ? (
+          <div className="actions">
+            <button
+              type="button"
+              className="button-secondary type-label"
+              onClick={() => {
+                setLoaded({ state: "loading" });
+                void load();
+              }}
+            >
+              {t("admin.retry")}
+            </button>
+          </div>
+        ) : null}
       </section>
     );
   }

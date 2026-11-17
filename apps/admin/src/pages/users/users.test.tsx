@@ -2,10 +2,12 @@ import {
   adminAddNoteRoute,
   adminDeclineRatesRoute,
   adminFindUsersRoute,
+  adminHideContentRoute,
   adminMeRoute,
   adminReinstateRoute,
   adminSuspendRoute,
   adminUserRoute,
+  adminWarnRoute,
   type AdminDeclines,
   type AdminMe,
   type AdminModerationAction,
@@ -242,7 +244,7 @@ describe("a person's page (spec 9, 3.5.2)", () => {
     });
     await screen.findByRole("heading", { level: 1, name: "Dóra" });
 
-    const act = screen.getByRole("region", { name: "Act on it" });
+    const act = screen.getByRole("region", { name: "Act on the account" });
     fireEvent.click(within(act).getByRole("radio", { name: "Suspend Dóra" }));
     fireEvent.change(within(act).getByRole("combobox", { name: "Community rule" }), {
       target: { value: "safety" },
@@ -255,12 +257,133 @@ describe("a person's page (spec 9, 3.5.2)", () => {
     fireEvent.click(within(act).getByRole("button", { name: "Send" }));
 
     await screen.findByRole("radio", { name: "Reinstate Dóra" });
+    // Loaded again with the suspension, the page still says what was done.
+    expect(within(act).getByRole("status").textContent).toBe(
+      "Suspended. 1 trip and no bookings cancelled. Dóra is told why.",
+    );
     expect(api.called(adminSuspendRoute)[0]?.input).toMatchObject({
       params: { id: dora.userId },
       body: { rule: "safety", reason: "Unsafe driving.", until: null },
     });
     expect(api.called(adminSuspendRoute)[0]?.input["body"]).not.toHaveProperty("reportId");
     expect(api.called(adminReinstateRoute)).toEqual([]);
+  });
+
+  it("keeps the page and what was done when loading it again fails", async () => {
+    const api = start(`/admin/users/${dora.userId}`);
+    api.on(adminWarnRoute, () => {
+      api.on(adminUserRoute, { status: 500, error: { code: "internal" } });
+      return {
+        status: 201,
+        data: { action: { ...suspension, kind: "warning", rule: "reliability" } },
+      };
+    });
+    const act = await screen.findByRole("region", { name: "Act on the account" });
+    fireEvent.click(within(act).getByRole("radio", { name: "Warn Dóra" }));
+    fireEvent.change(within(act).getByRole("combobox", { name: "Community rule" }), {
+      target: { value: "reliability" },
+    });
+    fireEvent.change(within(act).getByRole("textbox", { name: "Reason, written for Dóra" }), {
+      target: { value: "Late twice." },
+    });
+    fireEvent.click(within(act).getByRole("button", { name: "Review the notice" }));
+    fireEvent.click(within(act).getByRole("button", { name: "Send" }));
+
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "The page could not be brought up to date, so it may not show the latest.",
+    );
+    expect(within(act).getByRole("status").textContent).toBe("Done. Dóra is told why.");
+    api.on(adminUserRoute, { status: 200, data: user });
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
+    expect(api.called(adminWarnRoute)).toHaveLength(1);
+  });
+
+  it("hides their About you without a report", async () => {
+    const api = start(`/admin/users/${dora.userId}`);
+    api.on(adminHideContentRoute, {
+      status: 201,
+      data: { action: { ...suspension, kind: "content_hidden", rule: "offensive" } },
+    });
+    const act = await screen.findByRole("region", { name: "Act on the account" });
+    fireEvent.click(within(act).getByRole("radio", { name: "Hide their About you" }));
+    fireEvent.change(within(act).getByRole("combobox", { name: "Community rule" }), {
+      target: { value: "offensive" },
+    });
+    fireEvent.change(within(act).getByRole("textbox", { name: "Reason, written for Dóra" }), {
+      target: { value: "Rude words." },
+    });
+    fireEvent.click(within(act).getByRole("button", { name: "Review the notice" }));
+    fireEvent.click(within(act).getByRole("button", { name: "Send" }));
+
+    expect((await within(act).findByRole("status")).textContent).toBe("Done. Dóra is told why.");
+    expect(api.called(adminHideContentRoute)[0]?.input["body"]).toEqual({
+      rule: "offensive",
+      reason: "Rude words.",
+      content: { kind: "about", id: dora.userId },
+    });
+  });
+
+  it("says when Dóra was suspended meanwhile, and offers Reinstate", async () => {
+    const api = start(`/admin/users/${dora.userId}`);
+    api.on(adminSuspendRoute, () => {
+      api.on(adminUserRoute, {
+        status: 200,
+        data: { ...user, person: { ...dora, status: "suspended" }, actions: [suspension] },
+      });
+      return { status: 409, error: { code: "already_suspended" } };
+    });
+    const act = await screen.findByRole("region", { name: "Act on the account" });
+    fireEvent.click(within(act).getByRole("radio", { name: "Suspend Dóra" }));
+    fireEvent.change(within(act).getByRole("combobox", { name: "Community rule" }), {
+      target: { value: "safety" },
+    });
+    fireEvent.change(within(act).getByRole("textbox", { name: "Reason, written for Dóra" }), {
+      target: { value: "Unsafe driving." },
+    });
+    fireEvent.click(within(act).getByRole("checkbox", { name: "No end date" }));
+    fireEvent.click(within(act).getByRole("button", { name: "Review the notice" }));
+    fireEvent.click(within(act).getByRole("button", { name: "Send" }));
+
+    expect((await within(act).findByRole("alert")).textContent).toBe(
+      "They are suspended already. Reinstate them first to change it.",
+    );
+    expect(await within(act).findByRole("radio", { name: "Reinstate Dóra" })).toBeTruthy();
+  });
+
+  it("links to every trip they drive", async () => {
+    start(`/admin/users/${dora.userId}`, {
+      ...user,
+      trips: [
+        {
+          id: "0196f000-0000-7000-8000-0000000000d1",
+          driver: dora,
+          status: "published",
+          from: { name: { is: "BSÍ", en: "BSÍ" }, plannedAt: "2099-11-20T10:00:00.000Z" },
+          to: { name: { is: "Hof", en: "Hof" }, plannedAt: "2099-11-20T14:00:00.000Z" },
+          departsAt: "2099-11-20T10:00:00.000Z",
+          capacity: 3,
+          seatsHeld: 0,
+        },
+      ],
+    });
+
+    const link = await screen.findByRole("link", { name: "All trips they drive" });
+
+    expect(link.getAttribute("href")).toBe(`/admin/trips?driverId=${dora.userId}`);
+  });
+
+  it("offers to try again when the page could not be loaded", async () => {
+    const api = start(`/admin/users/${dora.userId}`);
+    api.on(adminUserRoute, { status: 500, error: { code: "internal" } });
+
+    expect((await screen.findByRole("alert")).textContent).toBe("The person could not be loaded.");
+    api.on(adminUserRoute, { status: 200, data: user });
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Dóra" })).toBeTruthy();
   });
 
   it("says when there is no such person", async () => {

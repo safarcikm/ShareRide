@@ -35,6 +35,10 @@ export function UserSearch() {
   const [missing, setMissing] = useState(false);
   const [found, setFound] = useState<Found>({ state: "none" });
   const field = useRef<HTMLInputElement>(null);
+  // An empty search takes the focus once its problem is on the page.
+  const [checks, setChecks] = useState(0);
+  // Only the newest request may show its answer.
+  const request = useRef(0);
   const ids = {
     form: useId(),
     query: useId(),
@@ -43,15 +47,21 @@ export function UserSearch() {
     list: useId(),
   };
 
+  useEffect(() => {
+    if (checks > 0) field.current?.focus();
+  }, [checks]);
+
   async function search() {
     const q = query.trim();
     if (q === "") {
       setMissing(true);
-      field.current?.focus();
+      setChecks((count) => count + 1);
       return;
     }
+    const mine = ++request.current;
     setFound({ state: "loading" });
     const result = await call(adminFindUsersRoute, { body: { q } });
+    if (mine !== request.current) return;
     setFound(
       result.ok
         ? { state: "ready", users: result.data.users, more: result.data.more }
@@ -113,58 +123,61 @@ export function UserSearch() {
           </button>
         </div>
       </form>
-      {found.state === "none" ? null : found.state === "loading" ? (
-        <p className="type-body" role="status">
-          {t("common.loading")}
-        </p>
-      ) : found.state === "failed" ? (
-        <p className="problem type-body" role="alert">
-          {t("admin.users.searchFailed")}
-        </p>
-      ) : (
-        <section className="stack" aria-labelledby={ids.list}>
+      <div className="stack">
+        {found.state === "none" ? null : (
           <h2 id={ids.list} className="type-heading">
             {t("admin.users.found")}
           </h2>
-          <div role="status">
-            <p className="type-body">
-              {found.users.length === 0
-                ? t("admin.users.none")
-                : t("admin.users.count", { count: found.users.length })}
-            </p>
-            {found.more ? (
-              <p className="type-body">{t("admin.users.more", { count: found.users.length })}</p>
-            ) : null}
-          </div>
-          {found.users.length === 0 ? null : (
-            <ul className="cards" aria-labelledby={ids.list}>
-              {found.users.map((user) => (
-                <li key={user.person.userId} className="card entry">
-                  <ConsoleLink to={`${usersPath}/${user.person.userId}`} className="type-label">
-                    {personName(t, user.person)}
-                  </ConsoleLink>
-                  <p className="type-body">
-                    {[
-                      user.phone === null ? null : formatPhoneNumber(user.phone),
-                      user.email,
-                      t("admin.users.joined", { when: formatDay(new Date(user.joinedAt), locale) }),
-                    ]
-                      .filter((part) => part !== null)
-                      .join(" · ")}
+        )}
+        {/* One live region for the search, there from the start, so each answer is read out. */}
+        <div role="status">
+          {found.state === "loading" ? (
+            <p className="type-body">{t("common.loading")}</p>
+          ) : found.state === "ready" ? (
+            <>
+              <p className="type-body">
+                {found.users.length === 0
+                  ? t("admin.users.none")
+                  : t("admin.users.count", { count: found.users.length })}
+              </p>
+              {found.more ? (
+                <p className="type-body">{t("admin.users.more", { count: found.users.length })}</p>
+              ) : null}
+            </>
+          ) : null}
+        </div>
+        {found.state === "failed" ? (
+          <p className="problem type-body" role="alert">
+            {t("admin.users.searchFailed")}
+          </p>
+        ) : found.state !== "ready" || found.users.length === 0 ? null : (
+          <ul className="cards" aria-labelledby={ids.list}>
+            {found.users.map((user) => (
+              <li key={user.person.userId} className="card entry">
+                <ConsoleLink to={`${usersPath}/${user.person.userId}`} className="type-label">
+                  {personName(t, user.person)}
+                </ConsoleLink>
+                <p className="type-body">
+                  {[
+                    user.phone === null ? null : formatPhoneNumber(user.phone),
+                    user.email,
+                    t("admin.users.joined", { when: formatDay(new Date(user.joinedAt), locale) }),
+                  ]
+                    .filter((part) => part !== null)
+                    .join(" · ")}
+                </p>
+                {user.person.status === "active" ? null : (
+                  <p className="tags">
+                    <span className="tag tag-warning type-small">
+                      {standingText(t, locale, user.person)}
+                    </span>
                   </p>
-                  {user.person.status === "active" ? null : (
-                    <p className="tags">
-                      <span className="tag tag-warning type-small">
-                        {standingText(t, locale, user.person)}
-                      </span>
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
       <DeclineRates />
     </section>
   );

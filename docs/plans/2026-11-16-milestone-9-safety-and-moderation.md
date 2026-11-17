@@ -442,7 +442,10 @@ Split in two, as PR 7 was: 8a the API, 8b the pages.
   the payments milestone (spec 13).
 - Found while building (8b): a person's page acts through the report
   page's panel, without a report; it offers hiding About you only while
-  they have one shown. A report's page links to each person's page.
+  they have one shown. A report's page links to each person's page. Trips
+  by driver (3.5.1) are reached from a person's page, "All trips they
+  drive". A failed reload after an action keeps the page and what the
+  action said, so the operator never sends it twice.
 
 ### Afterwards, with milestone 7
 

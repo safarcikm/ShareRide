@@ -27,7 +27,12 @@ type Loaded =
   | { readonly state: "loading" }
   | { readonly state: "missing" }
   | { readonly state: "failed" }
-  | { readonly state: "ready"; readonly user: AdminUser };
+  | {
+      readonly state: "ready";
+      readonly user: AdminUser;
+      /** Loading it again after an action or a note failed: what shows may be out of date. */
+      readonly stale?: boolean;
+    };
 
 /** What the operator can do from a person's page (3.5.3): the report's actions, without a report. */
 function personChoices(user: AdminUser): readonly Choice[] {
@@ -62,10 +67,24 @@ export function UserDetail({ id }: { readonly id: string }) {
     actions: useId(),
   };
 
+  // Only the newest request may show its answer.
+  const request = useRef(0);
+
   const load = useCallback(async () => {
+    const mine = ++request.current;
     const result = await call(adminUserRoute, { params: { id } });
-    if (result.ok) setLoaded({ state: "ready", user: result.data });
-    else setLoaded({ state: result.status === 404 ? "missing" : "failed" });
+    if (mine !== request.current) return;
+    if (result.ok) {
+      setLoaded({ state: "ready", user: result.data });
+      return;
+    }
+    // Once the page shows, it stays, with what an action said: a failed
+    // reload says so and offers to try again.
+    setLoaded((was) =>
+      was.state === "ready"
+        ? { ...was, stale: true }
+        : { state: result.status === 404 ? "missing" : "failed" },
+    );
   }, [call, id]);
 
   useEffect(() => {
@@ -88,6 +107,20 @@ export function UserDetail({ id }: { readonly id: string }) {
         <p className="problem type-body" role="alert">
           {t(loaded.state === "missing" ? "admin.users.notFound" : "admin.users.loadOneFailed")}
         </p>
+        {loaded.state === "failed" ? (
+          <div className="actions">
+            <button
+              type="button"
+              className="button-secondary type-label"
+              onClick={() => {
+                setLoaded({ state: "loading" });
+                void load();
+              }}
+            >
+              {t("admin.retry")}
+            </button>
+          </div>
+        ) : null}
       </section>
     );
   }
@@ -103,6 +136,22 @@ export function UserDetail({ id }: { readonly id: string }) {
         {t("admin.users.back")}
       </ConsoleLink>
       <h1 className="type-title">{name}</h1>
+      {loaded.stale === true ? (
+        <div className="stack">
+          <p className="problem type-body" role="alert">
+            {t("admin.users.stale")}
+          </p>
+          <div className="actions">
+            <button
+              type="button"
+              className="button-secondary type-label"
+              onClick={() => void load()}
+            >
+              {t("admin.retry")}
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <section className="panel stack" aria-labelledby={ids.account}>
         <h2 id={ids.account} className="type-heading">
@@ -161,13 +210,23 @@ export function UserDetail({ id }: { readonly id: string }) {
         </dl>
       </section>
 
-      <ActPanel person={user.person} choices={personChoices(user)} onActed={() => void load()} />
+      <ActPanel
+        person={user.person}
+        choices={personChoices(user)}
+        heading={t("admin.users.act")}
+        onActed={() => void load()}
+      />
 
       <Notes
         userId={user.person.userId}
         notes={user.notes}
         onAdded={(note) => {
-          setLoaded({ state: "ready", user: { ...user, notes: [note, ...user.notes] } });
+          // As the page is now, which a reload may have changed meanwhile.
+          setLoaded((was) =>
+            was.state === "ready"
+              ? { ...was, user: { ...was.user, notes: [note, ...was.user.notes] } }
+              : was,
+          );
         }}
       />
 
@@ -211,7 +270,15 @@ export function UserDetail({ id }: { readonly id: string }) {
         {user.trips.length === 0 ? (
           <p className="type-body muted">{t("admin.reports.none")}</p>
         ) : (
-          <TripCards trips={user.trips} labelledBy={ids.trips} />
+          <>
+            <TripCards trips={user.trips} labelledBy={ids.trips} />
+            {user.trips.length < historyShown ? null : (
+              <p className="type-small muted">{t("admin.users.latest", { count: historyShown })}</p>
+            )}
+            <ConsoleLink to={`${tripsPath}?driverId=${user.person.userId}`} className="type-label">
+              {t("admin.users.allTrips")}
+            </ConsoleLink>
+          </>
         )}
       </section>
 
@@ -247,6 +314,9 @@ export function UserDetail({ id }: { readonly id: string }) {
             ))}
           </ul>
         )}
+        {user.bookings.length < historyShown ? null : (
+          <p className="type-small muted">{t("admin.users.latest", { count: historyShown })}</p>
+        )}
       </section>
 
       <section className="panel stack" aria-labelledby={ids.cars}>
@@ -276,6 +346,9 @@ export function UserDetail({ id }: { readonly id: string }) {
   );
 }
 
+/** The most trips, bookings, reports and actions a person's page lists, the latest first. */
+const historyShown = 20;
+
 type Saving =
   | { readonly kind: "none" }
   | { readonly kind: "saving" }
@@ -302,18 +375,24 @@ function Notes({
   const [saving, setSaving] = useState<Saving>({ kind: "none" });
   const field = useRef<HTMLTextAreaElement>(null);
   const said = useRef<HTMLParagraphElement>(null);
+  // A refused note takes the focus once its problem is on the page.
+  const [checks, setChecks] = useState(0);
   const ids = { heading: useId(), field: useId(), hint: useId(), error: useId(), list: useId() };
 
   useEffect(() => {
     if (saving.kind === "added" || saving.kind === "failed") said.current?.focus();
   }, [saving.kind]);
 
+  useEffect(() => {
+    if (checks > 0) field.current?.focus();
+  }, [checks]);
+
   async function add() {
     const checked = checkOperatorNote(text);
     if (!checked.ok) {
       setProblem(checked.error.code);
       setSaving({ kind: "none" });
-      field.current?.focus();
+      setChecks((count) => count + 1);
       return;
     }
     setSaving({ kind: "saving" });

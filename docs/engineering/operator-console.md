@@ -395,8 +395,12 @@ with the same panel as a report's page (`ActPanel` in
 `reports/act.tsx`), their notes with a form to add one, and their history.
 A note's form says the person gets their notes in Download my data. The
 trips page lists the trips from today on until the operator filters them;
-a trip's page links to the driver and each passenger. A list cut at 50
-says so.
+a person's page links to all the trips they drive (`?driverId=`, the only
+filter read from the address), and a trip's page links to the driver and
+each passenger. A list cut short says so. Only the newest search shows
+its answer, and a person's page that fails to load again after an action
+keeps what it showed, with what the action said, and offers to try
+again.
 
 ## A console page
 

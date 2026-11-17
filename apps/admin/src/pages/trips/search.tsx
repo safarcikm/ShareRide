@@ -9,6 +9,14 @@ interface Filters {
   readonly date?: string;
   readonly place?: string;
   readonly id?: string;
+  /** From a person's page: the trips they drive. */
+  readonly driverId?: string;
+}
+
+/** A person's page links here with `?driverId=`; nothing else is read from the address. */
+function filtersFromAddress(): Filters {
+  const driverId = new URLSearchParams(window.location.search).get("driverId");
+  return driverId !== null && isId(driverId) ? { driverId: driverId.toLowerCase() } : {};
 }
 
 type List =
@@ -23,15 +31,21 @@ type List =
 
 /**
  * Find trips by the day they leave, a stop, or a trip's or booking's ID
- * (spec 9, 3.5.1); with nothing filled in, the trips from today on.
+ * (spec 9, 3.5.1); with nothing filled in, the trips from today on. A
+ * person's page opens it with their trips as a driver.
  */
 export function TripSearch() {
-  const { t, call } = useConsole();
-  const [filters, setFilters] = useState<Filters>({});
+  const { t, call, navigate } = useConsole();
+  const [filters, setFilters] = useState<Filters>(filtersFromAddress);
   const [draft, setDraft] = useState({ date: "", place: "", id: "" });
   const [idWrong, setIdWrong] = useState(false);
   const [list, setList] = useState<List>({ state: "loading" });
   const idField = useRef<HTMLInputElement>(null);
+  const listHeading = useRef<HTMLHeadingElement>(null);
+  // A refused ID takes the focus once its problem is on the page.
+  const [idChecks, setIdChecks] = useState(0);
+  // Only the newest request may show its answer.
+  const request = useRef(0);
   const ids = {
     form: useId(),
     date: useId(),
@@ -43,8 +57,10 @@ export function TripSearch() {
   };
 
   const load = useCallback(async () => {
+    const mine = ++request.current;
     setList({ state: "loading" });
     const result = await call(adminTripsRoute, { query: filters });
+    if (mine !== request.current) return;
     setList(
       result.ok
         ? { state: "ready", trips: result.data.trips, more: result.data.more }
@@ -56,15 +72,20 @@ export function TripSearch() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (idChecks > 0) idField.current?.focus();
+  }, [idChecks]);
+
   function apply() {
     const id = draft.id.trim();
     if (id !== "" && !isId(id)) {
       setIdWrong(true);
-      idField.current?.focus();
+      setIdChecks((count) => count + 1);
       return;
     }
     const place = draft.place.trim();
     setFilters({
+      ...(filters.driverId === undefined ? {} : { driverId: filters.driverId }),
       ...(draft.date === "" ? {} : { date: draft.date }),
       ...(place === "" ? {} : { place }),
       ...(id === "" ? {} : { id: id.toLowerCase() }),
@@ -159,7 +180,15 @@ export function TripSearch() {
               onClick={() => {
                 setDraft({ date: "", place: "", id: "" });
                 setIdWrong(false);
+                if (filters.driverId !== undefined) {
+                  // Out of the address too: the page opens afresh.
+                  navigate(tripsPath);
+                  document.getElementById("page")?.focus();
+                  return;
+                }
                 setFilters({});
+                // The button goes with the filters: the list takes the focus.
+                listHeading.current?.focus();
               }}
             >
               {t("admin.trips.clear")}
@@ -167,25 +196,18 @@ export function TripSearch() {
           ) : null}
         </div>
       </form>
-      <h2 id={ids.list} className="type-heading">
+      <h2 id={ids.list} ref={listHeading} className="type-heading" tabIndex={-1}>
         {t(filtered ? "admin.trips.found" : "admin.trips.upcoming")}
       </h2>
-      {list.state === "loading" ? (
-        <p className="type-body" role="status">
-          {t("common.loading")}
-        </p>
-      ) : list.state === "failed" ? (
-        <div className="stack">
-          <p className="problem type-body" role="alert">
-            {t("admin.trips.loadFailed")}
-          </p>
-          <button type="button" className="button-secondary type-label" onClick={() => void load()}>
-            {t("admin.retry")}
-          </button>
-        </div>
-      ) : (
-        <>
-          <div role="status">
+      {filters.driverId === undefined ? null : (
+        <p className="type-body muted">{t("admin.trips.oneDriver")}</p>
+      )}
+      {/* One live region for the page, so each new count is read out. */}
+      <div role="status">
+        {list.state === "loading" ? (
+          <p className="type-body">{t("common.loading")}</p>
+        ) : list.state === "ready" ? (
+          <>
             <p className="type-body">
               {list.trips.length === 0
                 ? t("admin.trips.none")
@@ -196,9 +218,20 @@ export function TripSearch() {
             {list.more ? (
               <p className="type-body">{t("admin.trips.more", { count: list.trips.length })}</p>
             ) : null}
-          </div>
-          {list.trips.length === 0 ? null : <TripCards trips={list.trips} labelledBy={ids.list} />}
-        </>
+          </>
+        ) : null}
+      </div>
+      {list.state === "loading" ? null : list.state === "failed" ? (
+        <div className="stack">
+          <p className="problem type-body" role="alert">
+            {t("admin.trips.loadFailed")}
+          </p>
+          <button type="button" className="button-secondary type-label" onClick={() => void load()}>
+            {t("admin.retry")}
+          </button>
+        </div>
+      ) : list.trips.length === 0 ? null : (
+        <TripCards trips={list.trips} labelledBy={ids.list} />
       )}
     </section>
   );

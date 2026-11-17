@@ -7,7 +7,7 @@ import {
   type AdminTrip,
   type AdminTripListItem,
 } from "@shareride/contracts";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ConsoleApp } from "../../app.tsx";
 import { createFakeApi, createFakePasskeys } from "../../testing/fake-api.ts";
@@ -178,6 +178,90 @@ describe("finding trips (spec 9, 3.5.1)", () => {
   });
 });
 
+describe("finding trips, when answers come late or fail", () => {
+  it("shows only the newest search's answer", async () => {
+    let answerFirst: () => void = () => undefined;
+    window.history.replaceState(null, "", "/admin/trips");
+    const api = createFakeApi();
+    api.on(adminMeRoute, { status: 200, data: operator });
+    const other = { ...listed, id: "0196f000-0000-7000-8000-0000000000a2" };
+    api.on(adminTripsRoute, () => {
+      // The list from today on answers last, after the search for one ID.
+      api.on(adminTripsRoute, { status: 200, data: { trips: [listed], more: false } });
+      return new Promise((resolve) => {
+        answerFirst = () => {
+          resolve({ status: 200, data: { trips: [other], more: false } });
+        };
+      });
+    });
+    render(<ConsoleApp client={api.client} passkeys={createFakePasskeys().passkeys} />);
+    fireEvent.change(await screen.findByLabelText("Trip or booking ID"), {
+      target: { value: tripId },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Find trips" }));
+    await screen.findByRole("list", { name: "Trips found" });
+
+    answerFirst();
+
+    await waitFor(() => {
+      expect(api.called(adminTripsRoute)).toHaveLength(2);
+    });
+    const cards = within(screen.getByRole("list", { name: "Trips found" })).getAllByRole("link");
+    expect(cards.map((card) => card.getAttribute("href"))).toEqual([`/admin/trips/${tripId}`]);
+  });
+
+  it("offers to try again when the trips could not be loaded", async () => {
+    window.history.replaceState(null, "", "/admin/trips");
+    const api = createFakeApi();
+    api.on(adminMeRoute, { status: 200, data: operator });
+    api.on(adminTripsRoute, { status: 500, error: { code: "internal" } });
+    render(<ConsoleApp client={api.client} passkeys={createFakePasskeys().passkeys} />);
+
+    expect((await screen.findByRole("alert")).textContent).toBe("The trips could not be loaded.");
+    api.on(adminTripsRoute, { status: 200, data: { trips: [listed], more: false } });
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+    expect(await screen.findByRole("list", { name: "Trips from today on" })).toBeTruthy();
+  });
+
+  it("lists one driver's trips from their page, until the filter is cleared", async () => {
+    const api = start(`/admin/trips?driverId=${dora.userId}`);
+
+    await screen.findByRole("list", { name: "Trips found" });
+    expect(api.called(adminTripsRoute)[0]?.input["query"]).toEqual({ driverId: dora.userId });
+    expect(screen.getByText("Only the trips one driver drives.")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Stop"), { target: { value: "Hof" } });
+    fireEvent.click(screen.getByRole("button", { name: "Find trips" }));
+    await waitFor(() => {
+      expect(api.called(adminTripsRoute).at(-1)?.input["query"]).toEqual({
+        driverId: dora.userId,
+        place: "Hof",
+      });
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Show trips from today on" }));
+    await screen.findByRole("list", { name: "Trips from today on" });
+    expect(window.location.search).toBe("");
+    expect(api.called(adminTripsRoute).at(-1)?.input["query"]).toEqual({});
+  });
+
+  it("gives the list the focus when the filters are cleared", async () => {
+    start("/admin/trips");
+    await screen.findByRole("list", { name: "Trips from today on" });
+    fireEvent.change(screen.getByLabelText("Stop"), { target: { value: "Hof" } });
+    fireEvent.click(screen.getByRole("button", { name: "Find trips" }));
+    await screen.findByRole("list", { name: "Trips found" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Show trips from today on" }));
+
+    await screen.findByRole("list", { name: "Trips from today on" });
+    expect(document.activeElement).toBe(
+      screen.getByRole("heading", { name: "Trips from today on" }),
+    );
+  });
+});
+
 describe("a trip's page (spec 9, 3.5.2)", () => {
   it("shows the driver, car, note, stops and every booking, with why one was declined", async () => {
     start(`/admin/trips/${tripId}`);
@@ -205,6 +289,19 @@ describe("a trip's page (spec 9, 3.5.2)", () => {
         .getByRole("link", { name: "Kári" })
         .getAttribute("href"),
     ).toBe(`/admin/users/${kari.userId}`);
+  });
+
+  it("offers to try again when the trip could not be loaded", async () => {
+    const api = start(`/admin/trips/${tripId}`);
+    api.on(adminTripRoute, { status: 500, error: { code: "internal" } });
+
+    expect((await screen.findByRole("alert")).textContent).toBe("The trip could not be loaded.");
+    api.on(adminTripRoute, { status: 200, data: trip });
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "N1 Borgarnes – Hof, Akureyri" }),
+    ).toBeTruthy();
   });
 
   it("says when there is no such trip", async () => {

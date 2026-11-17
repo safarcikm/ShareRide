@@ -101,6 +101,7 @@ export function ActPanel({
   person,
   choices,
   reportId,
+  heading,
   onActed,
 }: {
   /** Null once their account is deleted. */
@@ -108,6 +109,8 @@ export function ActPanel({
   readonly choices: readonly Choice[];
   /** The report the action answers, if any. */
   readonly reportId?: string;
+  /** The panel's heading; "Act on it" on a report's page. */
+  readonly heading?: string;
   /** The action went: load the page again, with it. */
   readonly onActed: () => void;
 }) {
@@ -180,7 +183,7 @@ export function ActPanel({
     return (
       <section className="panel stack" aria-labelledby={ids.heading}>
         <h2 id={ids.heading} className="type-heading">
-          {t("admin.reports.act")}
+          {heading ?? t("admin.reports.act")}
         </h2>
         <p className="type-body">{t("admin.reports.nobodyToActOn")}</p>
       </section>
@@ -334,7 +337,7 @@ export function ActPanel({
   return (
     <section className="panel stack" aria-labelledby={ids.heading}>
       <h2 id={ids.heading} className="type-heading">
-        {t("admin.reports.act")}
+        {heading ?? t("admin.reports.act")}
       </h2>
       <p className="type-body muted">{t("admin.reports.actHint", { name })}</p>
       <div ref={message} className="message">

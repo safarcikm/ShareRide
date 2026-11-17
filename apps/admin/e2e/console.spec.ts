@@ -444,7 +444,7 @@ test("the operator finds a person, adds a note and reinstates them", async () =>
     "Test: called about the report.",
   );
 
-  const act = page.getByRole("region", { name: "Act on it" });
+  const act = page.getByRole("region", { name: "Act on the account" });
   await act.getByRole("radio", { name: "Reinstate Anna" }).check();
   await act
     .getByRole("textbox", { name: "Note, written for Anna" })
@@ -456,8 +456,10 @@ test("the operator finds a person, adds a note and reinstates them", async () =>
   await expect(act.getByRole("status")).toHaveText("Reinstated. Anna is told.");
   await expect(act.getByRole("radio", { name: "Suspend Anna" })).toBeVisible();
 
-  // A trip she drives, from her page, names her as its driver.
-  await page.getByRole("region", { name: "Trips they drive" }).getByRole("link").first().click();
+  // Her trips as a driver, from her page; the first names her as its driver.
+  await page.getByRole("link", { name: "All trips they drive" }).click();
+  await expect(page.getByText("Only the trips one driver drives.")).toBeVisible();
+  await page.getByRole("list", { name: "Trips found" }).getByRole("link").first().click();
   await expect(page.getByRole("region", { name: "The trip" })).toContainText("Anna");
   await expect(page.getByRole("region", { name: "Bookings and requests" })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });

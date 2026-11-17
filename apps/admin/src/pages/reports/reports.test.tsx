@@ -245,6 +245,9 @@ describe("a report's page (spec 9, 3.4.2)", () => {
     const reported = screen.getByRole("region", { name: "The person reported: Dóra" });
     expect(reported.textContent).toContain("Icelandic");
     expect(reported.textContent).toContain("As driver: N1 Borgarnes – Hof, Akureyri");
+    expect(
+      within(reported).getByRole("link", { name: "Account page: Dóra" }).getAttribute("href"),
+    ).toBe(`/admin/users/${dora.userId}`);
     expect(api.called(adminReportConversationRoute)).toEqual([]);
   });
 

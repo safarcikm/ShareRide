@@ -7,7 +7,8 @@ type Reply = {
   data?: unknown;
   error?: { code: string; details?: { path: string; issue: string }[] };
 };
-type Handler = (input: Record<string, unknown>) => Reply;
+/** A reply, or one that comes later, so a test can answer requests out of order. */
+type Handler = (input: Record<string, unknown>) => Reply | Promise<Reply>;
 
 /**
  * An API that answers each `METHOD path` with a handler the test sets, and
@@ -17,11 +18,14 @@ export function createFakeApi() {
   const handlers = new Map<string, Handler>();
   const calls: { route: string; input: Record<string, unknown> }[] = [];
   const client: ApiClient = {
-    call<R extends RouteDefinition>(route: R, input: unknown): Promise<CallResult<R>> {
+    async call<R extends RouteDefinition>(route: R, input: unknown): Promise<CallResult<R>> {
       const key = `${route.method.toUpperCase()} ${route.path}`;
       const values = input as Record<string, unknown>;
       calls.push({ route: key, input: values });
-      const reply = handlers.get(key)?.(values) ?? { status: 404, error: { code: "not_found" } };
+      const reply = (await handlers.get(key)?.(values)) ?? {
+        status: 404,
+        error: { code: "not_found" },
+      };
       const result =
         reply.status < 300
           ? { ok: true, status: reply.status, data: reply.data }
@@ -34,7 +38,7 @@ export function createFakeApi() {
                 ...(reply.error?.details === undefined ? {} : { details: reply.error.details }),
               },
             };
-      return Promise.resolve(result as CallResult<R>);
+      return result as CallResult<R>;
     },
   };
   return {
