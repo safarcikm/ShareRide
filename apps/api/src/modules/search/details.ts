@@ -164,6 +164,7 @@ export function createTripDetailsService(dependencies: {
         note: trip.note,
         bookingMode: choices.bookingMode,
         myBooking: myBooking ?? null,
+        drivenByMe: viewerId !== null && viewerId === trip.driverId,
       });
     },
   };

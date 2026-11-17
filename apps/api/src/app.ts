@@ -39,6 +39,7 @@ import {
   registerAccountRoutes,
   registerEmailRoutes,
 } from "./modules/account/index.ts";
+import { checkStanding } from "./modules/account/standing.ts";
 import {
   createAuthService,
   createOptionalAuth,
@@ -74,7 +75,11 @@ import {
   createPrivacyRequests,
   registerPrivacyRoutes,
 } from "./modules/privacy/index.ts";
-import { createBlockService, registerSafetyRoutes } from "./modules/safety/index.ts";
+import {
+  createBlockService,
+  createReportService as createSafetyReportService,
+  registerSafetyRoutes,
+} from "./modules/safety/index.ts";
 import {
   createSearchService,
   createTripDetailsService,
@@ -317,6 +322,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       limiter: createMemoryRateLimiter({ rules: searchLimitsPerAddress, clock: features.clock }),
       // A keyed hash, as for sign-in limits: no plain address is kept, even in memory.
       clientKey: (c) => features.hasher("search-address", addressBlock(features.clientAddress(c))),
+      standing: (userId) => checkStanding(features.db, userId, features.clock()),
     });
     const settings = defaultTripSettings;
     registerTripRoutes(app, createRouteService({ ...features, settings }), requireAuth);
@@ -371,7 +377,14 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       requireAuth,
     );
     registerNotificationRoutes(app, { ...features, requireAuth });
-    registerSafetyRoutes(app, createBlockService({ ...features, bookings }), requireAuth);
+    registerSafetyRoutes(
+      app,
+      {
+        blocks: createBlockService({ ...features, bookings }),
+        reports: createSafetyReportService(features),
+      },
+      requireAuth,
+    );
     registerPaymentRoutes(app, {
       payments: createPaymentService({ ...features, provider: features.payments }),
       bookings,

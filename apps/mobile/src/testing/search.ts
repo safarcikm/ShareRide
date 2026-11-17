@@ -126,6 +126,7 @@ export function northTrip(
     note: "",
     bookingMode: "approval",
     myBooking: null,
+    drivenByMe: false,
     ...rest,
   };
 }

@@ -43,6 +43,10 @@ export type ModerationRule = (typeof moderationRules)[number];
 export const hideableContent = ["message", "review", "trip_note", "about"] as const;
 export type HideableContent = (typeof hideableContent)[number];
 
+/** What an action can concern: content hidden, a trip cancelled or a booking refunded. */
+export const moderatedContent = [...hideableContent, "trip", "booking"] as const;
+export type ModeratedContent = (typeof moderatedContent)[number];
+
 export const appealOutcomes = ["upheld", "reversed"] as const;
 export type AppealOutcome = (typeof appealOutcomes)[number];
 

@@ -115,15 +115,18 @@ describe("refresh (ADR 0016)", () => {
     });
   });
 
-  it("ends the session of a suspended account", async () => {
-    const { userId, refreshToken } = await api.signIn(api.newPhoneNumber());
+  it("keeps a suspended account signed in, to read, download or delete its data (spec 9, 3.6.2)", async () => {
+    const phone = api.newPhoneNumber();
+    const { userId, accessToken, refreshToken } = await api.signIn(phone);
     await api.connection.pool.query("UPDATE users SET status = 'suspended' WHERE id = $1", [
       userId,
     ]);
-    expect(await refresh(refreshToken)).toMatchObject({
-      status: 401,
-      error: { code: "session_ended" },
-    });
+    expect(await me(accessToken)).toMatchObject({ status: 200 });
+    const next = await refreshed(refreshToken);
+    expect(await me(next.accessToken)).toMatchObject({ status: 200 });
+    // And signing in again on another device.
+    const again = await api.signIn(phone, "android");
+    expect(again.userId).toBe(userId);
   });
 
   it("refuses an unknown token", async () => {

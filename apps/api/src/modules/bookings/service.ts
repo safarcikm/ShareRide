@@ -3,8 +3,10 @@ import { schema, type Database } from "@shareride/db";
 import {
   arrivalOf,
   bookingClosedTo,
+  bookingProblemReportable,
   cancellationTerms,
   cancelReasonsFor,
+  defaultSafetySettings,
   checkBooking,
   checkNote,
   dayPhase,
@@ -22,6 +24,7 @@ import {
   statusAt,
   statusOnAcceptance,
   tripCancellation,
+  type AccountSuspended,
   type BookingEvent,
   type BookingMode,
   type BookingProblem,
@@ -44,8 +47,15 @@ import {
 import { and, asc, eq, inArray, ne, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { AccountService } from "../account/index.ts";
+import { checkStanding, lockActive } from "../account/standing.ts";
 import { addSystemLine } from "../chat/conversations.ts";
 import { oweRefund } from "../payments/refunds.ts";
+import {
+  applyTripCancellation,
+  heldBookingsOf,
+  heldStatuses,
+  toCancelWithTrip,
+} from "./cancel-trip.ts";
 import { bookingConfirmed } from "./confirmed.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import { recordEvents } from "../notifications/outbox.ts";
@@ -89,6 +99,8 @@ export interface NotFound {
 export type BookError =
   | NotFound
   | { readonly code: "account_incomplete" }
+  /** Suspended: no booking or request (spec 9, 3.6.2). */
+  | AccountSuspended
   /** The passenger is deleting their account (spec 11, 3.4). */
   | { readonly code: "account_deletion_pending" }
   /** The meeting points shown at the part's positions are no longer there (spec 6, 3.2). */
@@ -97,6 +109,9 @@ export type BookError =
 
 /** The booking is no longer a request: answered, withdrawn or expired. */
 export type AnswerError = NotFound | { readonly code: "booking_not_requested" };
+
+/** A suspended driver takes nobody new (spec 9, 3.6.2); saying no stays open. */
+export type AcceptError = AnswerError | AccountSuspended;
 
 /**
  * Only an accepted or confirmed booking can be cancelled, until the time to
@@ -196,7 +211,7 @@ export interface BookingService {
     tripId: string,
     input: CancelTripInput,
   ): Promise<Result<void, CancelTripError>>;
-  accept(driverId: string, bookingId: string): Promise<Result<Booking, AnswerError>>;
+  accept(driverId: string, bookingId: string): Promise<Result<Booking, AcceptError>>;
   decline(
     driverId: string,
     bookingId: string,
@@ -205,9 +220,6 @@ export interface BookingService {
   /** The driver's published trip, with its requests and bookings (spec 5, 3.7). */
   tripBookings(driverId: string, tripId: string): Promise<TripBookings | undefined>;
 }
-
-/** Statuses a booking can hold seats in, before its deadline is checked (rule S1). */
-const heldStatuses: BookingStatus[] = ["requested", "accepted", "confirmed"];
 
 /** What a driver sees on the trip: everyone who is, or was, riding along. */
 const onTripStatuses: BookingStatus[] = [
@@ -294,6 +306,7 @@ async function bookingRows(q: Queryable, where: SQL | undefined) {
         status: trips.status,
         cancelledAt: trips.cancelledAt,
         countsOnReliability: trips.countsOnReliability,
+        completedAt: trips.completedAt,
       },
       driverName: drivers.firstName,
       passengerName: passengers.firstName,
@@ -518,6 +531,11 @@ function present(
     }),
     // Null only for a booking the previous version made during a deploy.
     movedFar: movedFar(booking.departsAtWhenBooked ?? departsAt, departsAt),
+    problemReportable: bookingProblemReportable(
+      { status, tripCompletedAt: trip.completedAt },
+      now,
+      defaultSafetySettings,
+    ),
     driver: { firstName: row.driverName, colour: peopleColourOf(trip.driverId) },
     passenger: {
       firstName: row.passengerName,
@@ -594,9 +612,10 @@ export function createBookingService(dependencies: {
 
   /**
    * Answers or withdraws a request, with its trip locked. `who` says whose
-   * it is to change: the passenger's (withdraw) or the driver's (accept, decline).
+   * it is to change: the passenger's (withdraw) or the driver's (accept,
+   * decline). `first` runs in the transaction before the trip is locked.
    */
-  async function answer(
+  async function answer<Refused = never>(
     viewerId: string,
     bookingId: string,
     who: "passenger" | "driver",
@@ -606,7 +625,8 @@ export function createBookingService(dependencies: {
       boardsAt: Date,
       now: Date,
     ) => Partial<typeof bookings.$inferInsert>,
-  ): Promise<Result<Booking, AnswerError>> {
+    first?: (tx: Transaction) => Promise<Result<void, Refused>>,
+  ): Promise<Result<Booking, AnswerError | Refused>> {
     const [found] = await db
       .select({
         tripId: bookings.tripId,
@@ -620,6 +640,10 @@ export function createBookingService(dependencies: {
     if (found === undefined || owner !== viewerId) return err({ code: "not_found" });
 
     return db.transaction(async (tx) => {
+      if (first !== undefined) {
+        const allowed = await first(tx);
+        if (!allowed.ok) return allowed;
+      }
       if ((await lockTrip(tx, found.tripId)) === undefined) return err({ code: "not_found" });
       // After the lock, which may have waited while a deadline passed.
       const now = clock();
@@ -670,12 +694,14 @@ export function createBookingService(dependencies: {
       return db.transaction(async (tx) => {
         // One booking at a time per passenger, so two cannot overlap (R5.10)
         // or use the same attempt key; then the trip, for its seats (R5.2).
-        // Deleting an account takes the same lock before it checks.
+        // A suspension holds the same lock while it cancels their bookings,
+        // and deleting an account takes it before it checks.
+        const active = await lockActive(tx, passengerId, clock());
+        if (!active.ok) return active;
         const [passenger] = await tx
           .select({ deleteAfter: users.deleteAfter })
           .from(users)
-          .where(eq(users.id, passengerId))
-          .for("update");
+          .where(eq(users.id, passengerId));
         const again = await retried(tx);
         if (again !== undefined) return again;
         if (passenger === undefined || passenger.deleteAfter !== null) {
@@ -698,6 +724,11 @@ export function createBookingService(dependencies: {
         // not exist (R9.4), even for another part of a trip already booked.
         if (bookingClosedTo(passengerId, trip.driverId, await blocksOf(tx, passengerId))) {
           return err({ code: "not_found" });
+        }
+        // A suspended driver's trip under way takes nobody new (spec 9,
+        // 3.6.2). Read without a lock: the driver's row comes before trips.
+        if (!(await checkStanding(tx, trip.driverId, now)).ok) {
+          return err({ code: "trip_not_bookable" });
         }
 
         // One query at a time: a transaction has one connection.
@@ -967,18 +998,10 @@ export function createBookingService(dependencies: {
         // After the lock, which may have waited while a deadline passed.
         const now = clock();
         await expireDueBookings(tx, tripId, now);
-        const held = await tx
-          .select()
-          .from(bookings)
-          .where(and(eq(bookings.tripId, tripId), inArray(bookings.status, heldStatuses)))
-          .orderBy(asc(bookings.createdAt), asc(bookings.id));
+        const held = await heldBookingsOf(tx, tripId);
         const outcome = tripCancellation(
           { status: trip.status as "published", departsAt: trip.departsAt ?? new Date(0) },
-          held.map((booking) => ({
-            id: booking.id,
-            status: booking.status as "requested" | "accepted" | "confirmed",
-            total: isk(booking.totalPrice),
-          })),
+          toCancelWithTrip(held),
           input.reason,
           now,
         );
@@ -988,68 +1011,12 @@ export function createBookingService(dependencies: {
         if (countsOnReliability !== input.countsOnReliability) {
           return err({ code: "terms_changed", countsOnReliability });
         }
-        await tx
-          .update(trips)
-          .set({
-            status: "cancelled",
-            cancelledAt: now,
-            cancelReason: input.reason,
-            cancelNote: note,
-            countsOnReliability,
-            updatedAt: now,
-          })
-          .where(eq(trips.id, tripId));
-        const stops = await stopsOf(tx, tripId);
-        for (const { id, outcome: what, refund } of outcome.value.bookings) {
-          const booking = held.find((row) => row.id === id);
-          if (booking === undefined) continue;
-          await tx
-            .update(bookings)
-            .set(
-              what === "declined"
-                ? {
-                    status: "declined",
-                    decidedAt: now,
-                    expiresAt: null,
-                    // So the passenger reads why: the trip's reason and note.
-                    cancelledAt: now,
-                    cancelledBy: "driver",
-                    cancelReason: input.reason,
-                    cancelNote: note,
-                    updatedAt: now,
-                  }
-                : {
-                    status: "cancelled",
-                    cancelledAt: now,
-                    cancelledBy: "driver",
-                    cancelReason: input.reason,
-                    cancelNote: note,
-                    refundAmount: refund.amount,
-                    // The trip counts once, not each of its bookings (spec 8, 3.8).
-                    countsOnReliability: false,
-                    updatedAt: now,
-                  },
-            )
-            .where(eq(bookings.id, id));
-          // Requests hold their seats too (rule S1).
-          await changeOccupancy(tx, tripId, partOf(stops, booking), -booking.seats);
-          if (refund.amount > 0) await oweRefund(tx, id, refund, now);
-          if (what === "cancelled") {
-            await addSystemLine(
-              tx,
-              id,
-              { key: "cancelled", by: "driver", reason: input.reason, note, wholeTrip: true },
-              now,
-            );
-          }
-        }
-        await recordEvents(
+        await applyTripCancellation(
           tx,
-          outcome.value.bookings.map(({ id }) => ({
-            type: "TripCancelled",
-            tripId,
-            bookingId: id,
-          })),
+          tripId,
+          held,
+          outcome.value,
+          { by: "driver", reason: input.reason, note },
           now,
         );
         return ok(undefined);
@@ -1057,16 +1024,25 @@ export function createBookingService(dependencies: {
     },
 
     accept(driverId, bookingId) {
-      return answer(driverId, bookingId, "driver", "accept", (booking, boardsAt, now) => {
-        // A free ride needs no payment, so it is confirmed at once (R5.11).
-        const status = statusOnAcceptance(isk(booking.totalPrice));
-        return {
-          status,
-          decidedAt: now,
-          paymentDueAt: status === "accepted" ? paymentDeadline(now, boardsAt, settings) : null,
-          confirmedAt: status === "confirmed" ? now : null,
-        };
-      });
+      return answer(
+        driverId,
+        bookingId,
+        "driver",
+        "accept",
+        (booking, boardsAt, now) => {
+          // A free ride needs no payment, so it is confirmed at once (R5.11).
+          const status = statusOnAcceptance(isk(booking.totalPrice));
+          return {
+            status,
+            decidedAt: now,
+            paymentDueAt: status === "accepted" ? paymentDeadline(now, boardsAt, settings) : null,
+            confirmedAt: status === "confirmed" ? now : null,
+          };
+        },
+        // Accepting takes a passenger on, which a suspension stops; the
+        // driver's row first, as in booking, then the trip.
+        (tx) => lockActive(tx, driverId, clock()),
+      );
     },
 
     decline(driverId, bookingId, reason) {

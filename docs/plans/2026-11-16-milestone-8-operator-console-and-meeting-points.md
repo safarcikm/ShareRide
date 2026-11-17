@@ -315,7 +315,7 @@ PR 8 is in two parts.
 - [x] 8a, the API: `PhotoStorage` with the disk and Hetzner adapters
       (`aws4fetch` signs the requests); upload, order, descriptions,
       remove; photos on the app's details
-- [ ] 8b, the console and the app: resizing in the browser and the
+- [x] 8b, the console and the app: resizing in the browser and the
       photos on a point's page; the photos on the app's meeting point
       details
 - Verify: integration tests (a file with metadata, a sixth photo, a file

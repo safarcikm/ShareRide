@@ -139,6 +139,18 @@ describe("system lines in the reader's language (spec 7, 3.1, item 3)", () => {
       "Þú hættir við ferðina: Veður „Því miður.“",
     );
   });
+
+  it("says ShareRide cancelled the booking or the trip, never why (spec 9, 3.6)", () => {
+    const line = { key: "cancelled_by_shareride", wholeTrip: false } as const;
+    expect(systemLineText(en, line, "Anna")).toBe("ShareRide cancelled the booking.");
+    expect(systemLineText(en, { ...line, wholeTrip: true }, "Anna")).toBe(
+      "ShareRide cancelled the trip.",
+    );
+    expect(systemLineText(is, line, "Anna")).toBe("ShareRide afbókaði.");
+    expect(systemLineText(is, { ...line, wholeTrip: true }, "Anna")).toBe(
+      "ShareRide aflýsti ferðinni.",
+    );
+  });
 });
 
 describe("cancellation reasons (spec 6, 3.3 to 3.5)", () => {

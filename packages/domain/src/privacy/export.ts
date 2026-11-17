@@ -27,7 +27,7 @@ export function exportExpiresAt(readyAt: Date): Date {
  * The parts of an export (spec 11, 3.2.3), in the order the readable page
  * shows them. Each table in the personal data catalogue feeds one of these
  * or says why it is left out. Milestone 7 and spec 9 add theirs (check-ins,
- * disputes, reviews, reports, moderation); blocks are in.
+ * disputes, reviews, moderation); reports and blocks are in.
  */
 export const exportSections = [
   "account",
@@ -40,8 +40,12 @@ export const exportSections = [
   "bookings",
   "payments",
   "conversations",
+  /** Reports the person filed and their outcomes, never who reported them (spec 9). */
+  "reports",
   /** Blocks the person made, never who blocked them (spec 9). */
   "blocks",
+  /** What ShareRide did about the person and why, with their appeals; never which operator (spec 9, R9.5). */
+  "notices",
   "notifications",
   "privacy_requests",
 ] as const;

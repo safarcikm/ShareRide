@@ -5,6 +5,7 @@ import {
   blockFromBookingRoute,
   dataExportLinkRoute,
   driverCheckInRoute,
+  fileReportRoute,
   getDataExportRoute,
   passengerCheckInRoute,
   sendConfirmCodeRoute,
@@ -60,6 +61,7 @@ beforeEach(async () => {
   await api.connection.db.delete(schema.dataExports);
   await api.connection.db.delete(schema.outboxEvents);
   await api.connection.db.delete(schema.blocks);
+  await api.connection.db.delete(schema.reports);
 });
 
 afterEach(() => {
@@ -344,6 +346,44 @@ describe("download my data (spec 11, 3.2)", () => {
     expect(unlabelledFields(mine.data)).toEqual([]);
     expect(mine.html).toContain("<h2>People you blocked</h2>");
     expect((await exportOf(anna)).data.sections.blocks).toEqual([]);
+  });
+
+  it("lists the reports I sent and their outcome, never a report about me (R9.2)", async () => {
+    const anna = await driverOf(sampleTrip.north, "Anna");
+    const gunna = await newMember("Gunna");
+    const at = api.now().toISOString();
+    const filed = await api.client.call(fileReportRoute, {
+      accessToken: gunna.accessToken,
+      body: {
+        about: { kind: "trip", tripId: sampleTrip.north },
+        category: "not_as_listed",
+        description: "The car was not the one listed.",
+      },
+    });
+    if (!filed.ok) throw new Error(filed.error.code);
+
+    const mine = await exportOf(gunna);
+    expect(mine.data.sections.reports).toEqual([
+      {
+        subject: "trip",
+        person: "Anna",
+        category: "not_as_listed",
+        description: "The car was not the one listed.",
+        sentAt: at,
+        status: "open",
+        outcome: null,
+        closedAt: null,
+      },
+    ]);
+    expect(unlabelledFields(mine.data)).toEqual([]);
+    expect(mine.html).toContain("<h2>Reports you sent</h2>");
+    expect(mine.html).toContain("<dd>The trip wasn&#39;t as listed</dd>");
+    expect(mine.text).not.toContain(anna.userId);
+
+    const theirs = await exportOf(anna);
+    expect(theirs.data.sections.reports).toEqual([]);
+    expect(theirs.text).not.toContain("The car was not the one listed.");
+    expect(theirs.text).not.toContain("Gunna");
   });
 
   it("has the person's own times at the meeting point, with the booking or the stop", async () => {

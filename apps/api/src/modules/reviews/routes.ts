@@ -1,6 +1,7 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import { reviewBookingRoute } from "@shareride/contracts";
 import type { Context, MiddlewareHandler } from "hono";
+import { accountSuspended } from "../account/standing.ts";
 import { authOf, type AppEnv } from "../../context.ts";
 import { errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
@@ -49,6 +50,8 @@ function reviewError(c: Context, error: ReviewError) {
       );
     case "person_left":
       return errorResponse(c, 409, "person_left", "The other person has left ShareRide.");
+    case "account_suspended":
+      return accountSuspended(c, error);
   }
 }
 

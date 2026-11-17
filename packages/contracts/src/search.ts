@@ -9,7 +9,7 @@ import {
 } from "@shareride/domain";
 import { z } from "zod";
 import { moneySchema, timestampSchema } from "./common.ts";
-import { errorResponseSchema } from "./errors.ts";
+import { accountSuspendedResponse, errorResponseSchema } from "./errors.ts";
 import { dateSchema, localisedTextSchema, meetingPointSummarySchema } from "./meeting-points.ts";
 import { defineRoute } from "./route.ts";
 import { tripPreferencesSchema } from "./trips.ts";
@@ -80,6 +80,7 @@ const searchErrors = {
     description: "unauthenticated: a token was sent but is not valid; refresh it or send none",
     schema: errorResponseSchema,
   },
+  403: accountSuspendedResponse,
   404: {
     description: "not_found: `from` or `to` is no meeting point or place (details name it)",
     schema: errorResponseSchema,
@@ -158,6 +159,7 @@ export const soonestTripsRoute = defineRoute({
     },
     400: { description: "validation_failed: a limit outside 1 to 50", schema: errorResponseSchema },
     401: searchErrors[401],
+    403: searchErrors[403],
     429: searchErrors[429],
   },
 });
@@ -234,6 +236,8 @@ export const tripDetailsSchema = z.object({
   bookingMode: z.enum(bookingModes),
   /** The signed-in viewer's booking on this trip that holds seats, if any (spec 5). */
   myBooking: z.object({ id: z.uuid(), status: z.enum(bookingStatuses) }).nullable(),
+  /** Whether the signed-in viewer drives this trip, whatever its state (spec 9: not theirs to report). */
+  drivenByMe: z.boolean(),
 });
 
 export type TripDetails = z.infer<typeof tripDetailsSchema>;
