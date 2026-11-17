@@ -156,6 +156,15 @@ dispute routes (`registerDisputeAdminRoutes`), with the work in
   3.5) are those system lines, so the operator sees them in the
   conversation.
 
+The page is `apps/admin/src/pages/disputes/` at `/admin/disputes`: the
+list (`?state=decided` for the decided ones) and each report at its ID.
+The decision asks once more, naming the outcome, before it is sent, as it
+cannot be undone in the app; each outcome shows what it does to the
+booking, the money and reliability. The conversation opens only when the
+operator presses "Show the conversation", so a report read without it
+logs nothing. The console names each system line's driver or passenger
+instead of "you".
+
 ## A console page
 
 The console is `apps/admin`: React for the web, built with Vite, served by

@@ -8,10 +8,13 @@ import { useConsole } from "../console.tsx";
 export function ConsoleLink({
   to,
   className,
+  current = false,
   children,
 }: {
   readonly to: string;
   readonly className?: string;
+  /** The page on show, such as the list a view of it shows. */
+  readonly current?: boolean;
   readonly children: ReactNode;
 }) {
   const { navigate } = useConsole();
@@ -19,6 +22,7 @@ export function ConsoleLink({
     <a
       href={to}
       className={className}
+      aria-current={current ? "page" : undefined}
       onClick={(event) => {
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
         event.preventDefault();
