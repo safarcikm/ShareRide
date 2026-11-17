@@ -10,9 +10,11 @@ import { contactDetailsIn, type ContactKind } from "../trips/note.ts";
 export interface ReviewSettings {
   /** Reviews are written within this many days of completion (`review_window`). */
   readonly reviewWindowDays: number;
+  /** The one reminder to review comes this many days after completion (3.7.6). */
+  readonly reminderAfterDays: number;
 }
 
-export const defaultReviewSettings: ReviewSettings = { reviewWindowDays: 14 };
+export const defaultReviewSettings: ReviewSettings = { reviewWindowDays: 14, reminderAfterDays: 3 };
 
 /** A review's comment, in characters (R8.8). */
 export const reviewMaxLength = 500;
@@ -45,6 +47,25 @@ const dayMs = 86_400_000;
 
 function windowEnd(completedAt: Date, settings: ReviewSettings): Date {
   return new Date(completedAt.getTime() + settings.reviewWindowDays * dayMs);
+}
+
+/** Reviews of a booking completed then can be written until this moment, and not at it (R8.8). */
+export function reviewClosesAt(completedAt: Date, settings: ReviewSettings): Date {
+  return windowEnd(completedAt, settings);
+}
+
+/**
+ * When to remind people to review a booking completed then (3.7.6), or null
+ * when that moment has already passed: a ride the operator found happened
+ * days later gets "How was your trip?" once, not twice in a row.
+ */
+export function reviewReminderAt(
+  completedAt: Date,
+  now: Date,
+  settings: ReviewSettings,
+): Date | null {
+  const at = new Date(completedAt.getTime() + settings.reminderAfterDays * dayMs);
+  return at > now ? at : null;
 }
 
 /**

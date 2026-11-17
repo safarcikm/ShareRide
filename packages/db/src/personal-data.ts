@@ -180,6 +180,18 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
       ["note", "answerNote", "decisionNote"],
     ),
   },
+  reviews: {
+    category: "reviews_written",
+    export: { section: "bookings" },
+    personColumns: ["authorId", "subjectId"],
+    // The reviews a person wrote stay for the people they are about, by "A
+    // former member" (spec 8, 3.7.5); those about them go (reviews_received).
+    onDeletion: keep(
+      ["authorRole", "comment"],
+      [],
+      "reviews about the person are erased; those they wrote move to the former member",
+    ),
+  },
   booking_segment_prices: {
     category: "trips_and_bookings",
     export: { section: "bookings" },
