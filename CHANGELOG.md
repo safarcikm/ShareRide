@@ -583,8 +583,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   (in every conversation a message to all passengers went to), the app
   offers no Report on it, and it sends no push if it had not gone yet; a
   hidden note is not shown to passengers, nor copied by "Post again",
-  until the driver writes a different one, and About you likewise; a
-  hidden review no longer shows to the person it is about. The
+  until the driver writes a different one, and About you likewise, also
+  on the public profile; a hidden review no longer shows to the person it
+  is about. The
   person gets the notice with what it concerned, also in the email and in
   "Download my data"; the passengers of a cancelled trip only that
   ShareRide cancelled it. Reversing a hiding on appeal shows the
