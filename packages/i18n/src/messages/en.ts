@@ -1809,8 +1809,9 @@ export const en = {
   "admin.legs.recompute": "Recompute all",
   "admin.legs.recomputing": "Recomputing…",
   "admin.legs.recomputeHint":
-    "Finds every leg again on the current map data. It can take a few seconds.",
-  "admin.legs.recomputed": "Recomputed: {count, plural, one {# leg} other {# legs}}.",
+    "Finds every leg again on the current map data. With a few hundred meeting points, it takes about ten seconds.",
+  "admin.legs.recomputed":
+    "Recomputed. There {count, plural, one {is # leg} other {are # legs}} between meeting points in service now.",
   "admin.legs.recomputeFailed": "The distances could not be recomputed. Try again.",
   "admin.legs.complete": "Every leg between meeting points in service is there.",
   "admin.legs.offRoad": "No road within 1 km",

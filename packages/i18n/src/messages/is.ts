@@ -1808,7 +1808,7 @@ export const is = {
   "admin.meetingPointIssues.resolveFailed": "Ekki tókst að leysa tilkynninguna. Reyndu aftur.",
   "admin.legs.title": "Vegalengdir milli mótsstaða",
   "admin.legs.intro":
-    "Vegalengd og aksturstími á vegum í hvora átt milli allra tveggja mótsstaða í notkun. Ferðir afrita þær þegar þær eru birtar, svo að endurreikningur breytir aldrei ferð.",
+    "Vegalengd og aksturstími á vegum í hvora átt milli hverra tveggja mótsstaða í notkun. Ferðir afrita þau þegar þær eru birtar, svo að endurreikningur breytir aldrei ferð.",
   "admin.legs.loadFailed": "Ekki tókst að sækja vegalengdirnar.",
   "admin.legs.points": "Mótsstaðir í notkun",
   "admin.legs.legs": "Leggir",
@@ -1822,15 +1822,16 @@ export const is = {
   "admin.legs.recompute": "Reikna allt aftur",
   "admin.legs.recomputing": "Reiknar…",
   "admin.legs.recomputeHint":
-    "Finnur alla leggi aftur á núverandi kortagögnum. Það getur tekið nokkrar sekúndur.",
-  "admin.legs.recomputed": "Reiknað: {count, plural, one {# leggur} other {# leggir}}.",
+    "Finnur alla leggi aftur á núverandi kortagögnum. Með nokkur hundruð mótsstöðum tekur það um tíu sekúndur.",
+  "admin.legs.recomputed":
+    "Reiknað aftur. Nú {count, plural, one {er # leggur} other {eru # leggir}} milli mótsstaða í notkun.",
   "admin.legs.recomputeFailed": "Ekki tókst að reikna vegalengdirnar aftur. Reyndu aftur.",
   "admin.legs.complete": "Allir leggir milli mótsstaða í notkun eru komnir.",
   "admin.legs.offRoad": "Enginn vegur innan 1 km",
   "admin.legs.offRoadIntro": "Þessir mótsstaðir fá enga leggi fyrr en þeir eru færðir nær bílvegi.",
   "admin.legs.missing": "{count, plural, one {# legg vantar} other {# leggi vantar}}",
   "admin.legs.missingIntro":
-    "Enginn bílvegur tengir þessa staði í þessa átt. Ferjur og fjallvegir (F-vegir) eru ekki teknir með.",
+    "Enginn bílvegur tengir þessa staði í þessa átt. Ferjur og fjallvegir (F-vegir) eru ekki tekin með.",
   "admin.legs.from": "Frá",
   "admin.legs.to": "Til",
   "admin.legs.more": "Og {count} í viðbót.",

@@ -3,7 +3,7 @@ import {
   adminResolveMeetingPointIssueRoute,
   type AdminMeetingPointIssue,
 } from "@shareride/contracts";
-import { checkIssueResolution, inIceland, meetingPointIssueLimits } from "@shareride/domain";
+import { checkIssueResolution, icelandDate, meetingPointIssueLimits } from "@shareride/domain";
 import {
   formatClock,
   formatDate,
@@ -41,8 +41,7 @@ export function useProblemQueue() {
 /** "Sent 16 November 2026 at 22:10", in Iceland. */
 function sentText(t: Translate, locale: Locale, at: string): string {
   const moment = new Date(at);
-  const { year, month, day } = inIceland(moment);
-  const date = `${String(year)}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const date = icelandDate(moment);
   return t("admin.meetingPointIssues.sentAt", {
     date: formatDate(date, locale),
     time: formatClock(moment),

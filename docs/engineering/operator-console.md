@@ -343,8 +343,8 @@ The legs between meeting points (spec 2, 3.7;
 our road file ([road file](road-file.md), ADR 0031):
 
 - Points in service, which keep legs with each other, are active, paused
-  and retiring ones (`keepsLegs`). Legs to a point out of service stay,
-  for the trips that already copied them.
+  and retiring ones (`keepsLegs`). Legs to a point out of service stay
+  until that point's own legs are computed again.
 - `GET /admin/v1/legs` says how many points are in service and how many
   of their legs exist, when the newest was computed, on which map data
   (`sources`, with `current` for the map data the API has now), the points
@@ -353,17 +353,24 @@ our road file ([road file](road-file.md), ADR 0031):
   list of points, with the map data's attribution.
 - `POST /admin/v1/legs/recompute` (an empty JSON body) computes every leg
   between points in service again, in the request: one search a point,
-  a few hundredths of a second each, with other requests let in between.
-  It replaces their legs in one transaction and answers with the new
-  status. A point moved meanwhile keeps the legs its move computed. The
-  audit entry is `legs.recomputed`, with the source and how many points,
-  legs and missing legs.
+  a few hundredths of a second each (about 10 seconds for 300 points),
+  with other requests let in between. It replaces their legs in one
+  transaction and answers with the new status. A point moved meanwhile
+  keeps the legs its move computed. A second request while one runs gets
+  the same answer. The audit entry is `legs.recomputed`, with the source
+  and how many points, legs and missing legs.
 - `computeFor` gives one point its legs both ways with every point in
-  service, replacing all its old ones, for activating and moving it
-  (PR 12). If the point moves while they are found, it starts again from
-  where it is.
-- One writer of legs at a time: each takes a transaction lock
-  (`pg_advisory_xact_lock`) before it deletes and inserts.
+  service, replacing all its old ones, those to points out of service
+  too, as they were found from where it was. It is for activating and
+  moving a point (PR 12), and is called after the move is saved. It finds
+  them under the lock, so of two points moved at once, the second reads
+  where the first now is.
+- One writer of legs at a time: the leg service and the sample seed take
+  a transaction lock (`lockLegs` in `@shareride/db`) before they delete
+  and insert. The seed writes the sample road graph's legs again on each
+  deploy, but keeps road file legs, except a moved sample point's.
+- Joining a point to a road looks only at roads whose box is within
+  1 km, so 300 points join in about a third of a second.
 
 ## Disputes
 

@@ -23,6 +23,32 @@ export interface RoadLeg {
 
 const metresPerDegree = (6_371_008.8 * Math.PI) / 180;
 
+/** Each edge's box, as west, south, east and north edges in a row, kept per graph. */
+const boxes = new WeakMap<RoadGraph, Float64Array>();
+
+function edgeBoxes(graph: RoadGraph): Float64Array {
+  let found = boxes.get(graph);
+  if (found !== undefined) return found;
+  found = new Float64Array(graph.edges.length * 4);
+  graph.edges.forEach(({ shape }, index) => {
+    let west = Infinity;
+    let south = Infinity;
+    let east = -Infinity;
+    let north = -Infinity;
+    for (let at = 0; at + 1 < shape.length; at += 2) {
+      const longitude = shape[at] ?? 0;
+      const latitude = shape[at + 1] ?? 0;
+      west = Math.min(west, longitude);
+      east = Math.max(east, longitude);
+      south = Math.min(south, latitude);
+      north = Math.max(north, latitude);
+    }
+    found.set([west, south, east, north], index * 4);
+  });
+  boxes.set(graph, found);
+  return found;
+}
+
 /** The nearest place on a road, or null when no road is within `maxM`. */
 export function joinRoad(
   graph: RoadGraph,
@@ -33,10 +59,22 @@ export function joinRoad(
   const toX = (longitude: number) => (longitude - position.longitude) * xScale;
   const toY = (latitude: number) => (latitude - position.latitude) * metresPerDegree;
   const latitudeMargin = maxM / metresPerDegree;
+  const longitudeMargin = maxM / xScale;
+  // Only roads whose box comes within `maxM` can be near enough: the rest
+  // are passed over without looking at their shapes.
+  const box = edgeBoxes(graph);
 
   let best: RoadPosition | null = null;
   let bestSquared = maxM * maxM;
   graph.edges.forEach((edge, index) => {
+    if (
+      position.longitude < (box[index * 4] ?? 0) - longitudeMargin ||
+      position.latitude < (box[index * 4 + 1] ?? 0) - latitudeMargin ||
+      position.longitude > (box[index * 4 + 2] ?? 0) + longitudeMargin ||
+      position.latitude > (box[index * 4 + 3] ?? 0) + latitudeMargin
+    ) {
+      return;
+    }
     const { shape } = edge;
     let shapeLength = 0;
     let nearestAlong = -1;

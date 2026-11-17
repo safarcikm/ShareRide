@@ -241,7 +241,7 @@ decision 5 gets its own ADR with its PR, refining ADR 0009.
   with the driving time from each road's class and speed limit. Pairs
   with no road connection are listed. "Recompute all" does every pair in
   the request: one search a point, a few hundredths of a second each, so
-  a few seconds for a few hundred points.
+  about 10 seconds for 300 points.
 - The console shows when legs were computed, the map data's date and any
   pairs without a connection.
 - The `Router` port stays, so tests can still use a fixed table.

@@ -4,7 +4,7 @@
 // segment's distance when they are posted, so new legs never change them.
 import { setImmediate as nextTurn } from "node:timers/promises";
 import type { AdminLegsStatus } from "@shareride/contracts";
-import { schema, type Database } from "@shareride/db";
+import { lockLegs, schema, type Database } from "@shareride/db";
 import {
   err,
   keepsLegs,
@@ -17,7 +17,7 @@ import {
 import { and, count, desc, eq, inArray, max, ne, notExists, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { recordAudit } from "../admin/audit.ts";
-import type { Transaction } from "../bookings/seats.ts";
+import type { Queryable, Transaction } from "../bookings/seats.ts";
 import { roadFileSourcePrefix, type Router } from "../../platform/router.ts";
 import type { ConsoleActor } from "./admin-service.ts";
 
@@ -61,10 +61,6 @@ interface Point {
 const samePlace = (a: Position, b: Position) =>
   a.latitude === b.latitude && a.longitude === b.longitude;
 
-/** One writer of legs at a time, so two runs never insert the same leg. */
-const lockLegs = (tx: Transaction) =>
-  tx.execute(sql`select pg_advisory_xact_lock(hashtext('shareride.legs'))`);
-
 async function insertLegs(tx: Transaction, rows: readonly LegRow[]) {
   for (let at = 0; at < rows.length; at += insertBatch) {
     await tx.insert(legs).values(rows.slice(at, at + insertBatch));
@@ -78,8 +74,8 @@ export function createLegService(dependencies: {
 }): LegService {
   const { db, router, clock } = dependencies;
 
-  const pointsInService = (): Promise<Point[]> =>
-    db
+  const pointsInService = (on: Queryable = db): Promise<Point[]> =>
+    on
       .select({
         id: meetingPoints.id,
         nameIs: meetingPoints.nameIs,
@@ -161,83 +157,98 @@ export function createLegService(dependencies: {
     };
   }
 
+  /** "Recompute all" as it runs; a second request meanwhile gets its answer. */
+  let running: Promise<AdminLegsStatus> | null = null;
+
+  async function recompute(actor: ConsoleActor): Promise<AdminLegsStatus> {
+    const points = await pointsInService();
+    const { source } = await router.mapData();
+    const at = clock();
+    const rows: LegRow[] = [];
+    for (const point of points) {
+      const others = points.filter((other) => other !== point);
+      const found = await router.legsFrom(
+        point.location,
+        others.map((other) => other.location),
+      );
+      others.forEach((other, index) => {
+        const leg = found[index] ?? null;
+        if (leg !== null) rows.push(row(point.id, other.id, leg, source, at));
+      });
+      // Each point's search takes a few hundredths of a second: let other
+      // requests in between them.
+      await nextTurn();
+    }
+
+    await db.transaction(async (tx) => {
+      await lockLegs(tx);
+      // A point moved meanwhile keeps the legs its move computed.
+      const now = await tx
+        .select({ id: meetingPoints.id, location: meetingPoints.location })
+        .from(meetingPoints)
+        .where(
+          inArray(
+            meetingPoints.id,
+            points.map((point) => point.id),
+          ),
+        );
+      const unmoved = new Set(
+        points
+          .filter((point) =>
+            now.some(
+              (current) => current.id === point.id && samePlace(current.location, point.location),
+            ),
+          )
+          .map((point) => point.id),
+      );
+      const ids = [...unmoved];
+      if (ids.length > 0) {
+        await tx
+          .delete(legs)
+          .where(and(inArray(legs.fromMeetingPointId, ids), inArray(legs.toMeetingPointId, ids)));
+      }
+      const kept = rows.filter(
+        (leg) => unmoved.has(leg.fromMeetingPointId) && unmoved.has(leg.toMeetingPointId),
+      );
+      await insertLegs(tx, kept);
+      await recordAudit(tx, {
+        operator: actor.operator,
+        action: "legs.recomputed",
+        after: {
+          source,
+          points: ids.length,
+          legs: kept.length,
+          missing: ids.length * Math.max(0, ids.length - 1) - kept.length,
+        },
+        request: actor.request,
+      });
+    });
+    return status();
+  }
+
   return {
     status,
 
-    async recomputeAll(actor) {
-      const points = await pointsInService();
-      const { source } = await router.mapData();
-      const at = clock();
-      const rows: LegRow[] = [];
-      for (const point of points) {
-        const others = points.filter((other) => other !== point);
-        const found = await router.legsFrom(
-          point.location,
-          others.map((other) => other.location),
-        );
-        others.forEach((other, index) => {
-          const leg = found[index] ?? null;
-          if (leg !== null) rows.push(row(point.id, other.id, leg, source, at));
-        });
-        // Each point's search takes a few hundredths of a second: let other
-        // requests in between them.
-        await nextTurn();
-      }
-
-      await db.transaction(async (tx) => {
-        await lockLegs(tx);
-        // A point moved meanwhile keeps the legs its move computed.
-        const now = await tx
-          .select({ id: meetingPoints.id, location: meetingPoints.location })
-          .from(meetingPoints)
-          .where(
-            inArray(
-              meetingPoints.id,
-              points.map((point) => point.id),
-            ),
-          );
-        const unmoved = new Set(
-          points
-            .filter((point) =>
-              now.some(
-                (current) => current.id === point.id && samePlace(current.location, point.location),
-              ),
-            )
-            .map((point) => point.id),
-        );
-        const ids = [...unmoved];
-        if (ids.length > 0) {
-          await tx
-            .delete(legs)
-            .where(and(inArray(legs.fromMeetingPointId, ids), inArray(legs.toMeetingPointId, ids)));
-        }
-        const kept = rows.filter(
-          (leg) => unmoved.has(leg.fromMeetingPointId) && unmoved.has(leg.toMeetingPointId),
-        );
-        await insertLegs(tx, kept);
-        await recordAudit(tx, {
-          operator: actor.operator,
-          action: "legs.recomputed",
-          after: {
-            source,
-            points: points.length,
-            legs: kept.length,
-            missing: points.length * Math.max(0, points.length - 1) - rows.length,
-          },
-          request: actor.request,
-        });
+    recomputeAll(actor) {
+      running ??= recompute(actor).finally(() => {
+        running = null;
       });
-      return status();
+      return running;
     },
 
     async computeFor(pointId) {
-      for (;;) {
-        const [point] = await db
+      // Found and written under the lock: one point's legs take a few
+      // hundredths of a second, and whichever of two moves comes second
+      // reads where the first one put its point. Each move calls this
+      // after it is saved, so the last call has the last places.
+      return db.transaction(async (tx) => {
+        await lockLegs(tx);
+        const [point] = await tx
           .select({ id: meetingPoints.id, location: meetingPoints.location })
           .from(meetingPoints)
           .where(eq(meetingPoints.id, pointId));
-        if (point === undefined) return err({ code: "not_found" });
-        const others = (await pointsInService()).filter((other) => other.id !== pointId);
+        if (point === undefined) return err({ code: "not_found" as const });
+        const others = (await pointsInService(tx)).filter((other) => other.id !== pointId);
         const places = others.map((other) => other.location);
         const [outward, inward, { source }] = await Promise.all([
           router.legsFrom(point.location, places),
@@ -253,22 +264,14 @@ export function createLegService(dependencies: {
             ...(back === null ? [] : [row(other.id, pointId, back, source, at)]),
           ];
         });
-        const written = await db.transaction(async (tx) => {
-          await lockLegs(tx);
-          const [current] = await tx
-            .select({ location: meetingPoints.location })
-            .from(meetingPoints)
-            .where(eq(meetingPoints.id, pointId));
-          // Moved again meanwhile: compute from where it is now.
-          if (current === undefined || !samePlace(current.location, point.location)) return false;
-          await tx
-            .delete(legs)
-            .where(or(eq(legs.fromMeetingPointId, pointId), eq(legs.toMeetingPointId, pointId)));
-          await insertLegs(tx, rows);
-          return true;
-        });
-        if (written) return ok({ legs: rows.length, missing: 2 * others.length - rows.length });
-      }
+        // Its legs to points out of service go too: they were found from
+        // where it was.
+        await tx
+          .delete(legs)
+          .where(or(eq(legs.fromMeetingPointId, pointId), eq(legs.toMeetingPointId, pointId)));
+        await insertLegs(tx, rows);
+        return ok({ legs: rows.length, missing: 2 * others.length - rows.length });
+      });
     },
   };
 }

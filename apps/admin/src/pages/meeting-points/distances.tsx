@@ -3,7 +3,7 @@ import {
   adminRecomputeLegsRoute,
   type AdminLegsStatus,
 } from "@shareride/contracts";
-import { inIceland } from "@shareride/domain";
+import { icelandDate } from "@shareride/domain";
 import { formatClock, formatCount, formatDate, type Locale } from "@shareride/i18n";
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { ConsoleLink } from "../../components/console-link.tsx";
@@ -16,11 +16,7 @@ type Loaded =
   | { readonly state: "ready"; readonly status: AdminLegsStatus };
 
 /** A moment's date in Iceland: "16 November 2026". */
-function dateText(moment: Date, locale: Locale): string {
-  const { year, month, day } = inIceland(moment);
-  const date = `${String(year)}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-  return formatDate(date, locale);
-}
+const dateText = (moment: Date, locale: Locale) => formatDate(icelandDate(moment), locale);
 
 /**
  * Distances between meeting points (spec 2, 3.7.4): how many legs there
@@ -36,6 +32,7 @@ export function MeetingPointDistances() {
   const [failed, setFailed] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const messageRef = useRef<HTMLParagraphElement>(null);
+  const failedRef = useRef<HTMLParagraphElement>(null);
 
   const load = useCallback(async () => {
     setLoaded({ state: "loading" });
@@ -49,8 +46,12 @@ export function MeetingPointDistances() {
   useEffect(() => {
     if (message !== null) messageRef.current?.focus();
   }, [message]);
+  useEffect(() => {
+    if (failed) failedRef.current?.focus();
+  }, [failed]);
 
   async function recompute() {
+    if (busy) return;
     setBusy(true);
     setFailed(false);
     setMessage(null);
@@ -100,7 +101,8 @@ export function MeetingPointDistances() {
               <button
                 type="button"
                 className="button-primary type-button"
-                disabled={busy}
+                // Not `disabled`, which would take the focus away from it.
+                aria-disabled={busy}
                 aria-describedby={`${base}-hint`}
                 onClick={() => void recompute()}
               >
@@ -111,7 +113,7 @@ export function MeetingPointDistances() {
               {t("admin.legs.recomputeHint")}
             </p>
             {failed ? (
-              <p className="problem type-body" role="alert">
+              <p ref={failedRef} className="problem type-body" role="alert" tabIndex={-1}>
                 {t("admin.legs.recomputeFailed")}
               </p>
             ) : null}

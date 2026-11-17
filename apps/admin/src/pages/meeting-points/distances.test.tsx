@@ -146,27 +146,39 @@ describe("distances between meeting points (spec 2, 3.7.4)", () => {
     const api = start();
     await page();
     const button = await screen.findByRole("button", { name: "Recompute all" });
+    button.focus();
     fireEvent.click(button);
-    expect(screen.getByRole("button", { name: "Recomputing…" })).toHaveProperty("disabled", true);
-    const said = await screen.findByText("Recomputed: 600 legs.");
+    // Busy, and still where the focus is.
+    const busy = screen.getByRole("button", { name: "Recomputing…" });
+    expect(busy.getAttribute("aria-disabled")).toBe("true");
+    expect(document.activeElement).toBe(busy);
+    fireEvent.click(busy);
+    const said = await screen.findByText(
+      "Recomputed. There are 600 legs between meeting points in service now.",
+    );
     expect(said.getAttribute("role")).toBe("status");
     expect(document.activeElement).toBe(said);
     expect(summary("Last computed")).toBe("17 November 2026 at 22:30");
     expect(screen.queryByText(/older map data/)).toBeNull();
+    // Pressed twice, sent once.
     expect(api.called(adminRecomputeLegsRoute)).toEqual([
       { route: "POST /admin/v1/legs/recompute", input: { body: {} } },
     ]);
-    expect(screen.getByRole("button", { name: "Recompute all" })).toHaveProperty("disabled", false);
+    expect(
+      screen.getByRole("button", { name: "Recompute all" }).getAttribute("aria-disabled"),
+    ).toBe("false");
   });
 
   it("says when recomputing failed, and lets the operator try again", async () => {
     start({ recompute: () => ({ status: 500 }) });
     await page();
     fireEvent.click(await screen.findByRole("button", { name: "Recompute all" }));
-    expect((await screen.findByRole("alert")).textContent).toBe(
-      "The distances could not be recomputed. Try again.",
-    );
-    expect(screen.getByRole("button", { name: "Recompute all" })).toHaveProperty("disabled", false);
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toBe("The distances could not be recomputed. Try again.");
+    expect(document.activeElement).toBe(alert);
+    expect(
+      screen.getByRole("button", { name: "Recompute all" }).getAttribute("aria-disabled"),
+    ).toBe("false");
     expect(summary("Last computed")).toBe("17 November 2026 at 21:14");
   });
 

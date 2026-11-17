@@ -179,6 +179,21 @@ describe("POST /admin/v1/legs/recompute", () => {
   });
 });
 
+describe("two at once", () => {
+  it("answers a second recompute while one runs with the first one's result", async () => {
+    const entries = () =>
+      api.connection.db.$count(auditLog, eq(auditLog.action, "legs.recomputed"));
+    const before = await entries();
+    const [first, second] = await Promise.all([
+      admin("/admin/v1/legs/recompute", "POST"),
+      admin("/admin/v1/legs/recompute", "POST"),
+    ]);
+    expect([first.status, second.status]).toEqual([200, 200]);
+    expect(second.body).toEqual(first.body);
+    expect(await entries()).toBe(before + 1);
+  });
+});
+
 describe("the legs of one point (for activating and moving it)", () => {
   const service = () =>
     createLegService({

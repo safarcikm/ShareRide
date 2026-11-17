@@ -122,6 +122,23 @@ describe("joinRoad", () => {
   it("joins no road more than a kilometre away", () => {
     expect(joinRoad(graph, { latitude: 64.12, longitude: -21.5 })).toBeNull();
   });
+
+  it("joins a road up to a kilometre away, across or beyond its end", () => {
+    const metresPerDegree = (6_371_008.8 * Math.PI) / 180;
+    // East of the straight road from D up to G, and north of where it ends.
+    const east = (metres: number) => ({
+      latitude: 64.225,
+      longitude: -21.8 + metres / (metresPerDegree * Math.cos((64.225 * Math.PI) / 180)),
+    });
+    const north = (metres: number) => ({
+      latitude: 64.25 + metres / metresPerDegree,
+      longitude: -21.8,
+    });
+    expect(joinRoad(graph, east(990))?.metresFromRoad).toBeCloseTo(990, 0);
+    expect(joinRoad(graph, east(1010))).toBeNull();
+    expect(joinRoad(graph, north(990))?.metresFromRoad).toBeCloseTo(990, 0);
+    expect(joinRoad(graph, north(1010))).toBeNull();
+  });
 });
 
 describe("legsFrom", () => {

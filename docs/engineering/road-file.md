@@ -45,11 +45,12 @@ In the API, the `Router` port (`apps/api/src/platform/router.ts`) reads
 the file on first use and keeps it in memory, about 50 MB; API tests use
 straight lines instead. Each leg stores its source, "road file " and the
 map date, so the console can tell legs on older map data. Legs are
-computed when a point is activated or moved, and for every pair when the
-operator chooses **Recompute all** on the console's **Distances** page
+computed for every pair when the operator chooses **Recompute all** on the console's **Distances** page
 (`/admin/meeting-points/distances`), which also lists the points with no
-road within 1 km and the legs missing. A trip copies its segments'
-distances when it is posted, so new legs never change a trip.
+road within 1 km and the legs missing. From PR 12 of milestone 8, a
+point's own legs are computed when it is activated or moved. A trip
+copies its segments' distances when it is posted, so new legs never
+change a trip.
 
 ## Updating the map data
 
