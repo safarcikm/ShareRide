@@ -3,6 +3,7 @@
 // at 14:00, and completes at 16:00. Not used by the app itself.
 import type { Booking, Dispute, MyTrip } from "@shareride/contracts";
 import { northBooking, northMyTrip, northStop, paidBooking } from "./bookings";
+import { aProfileId, newcomer } from "./people";
 
 export type TripDay = NonNullable<Booking["tripDay"]>;
 
@@ -69,7 +70,13 @@ export function rider(
     board,
     alight: northStop(part.alight),
     seats: part.seats ?? 1,
-    passenger: { firstName, colour: 2, memberSince: "2026-11" },
+    passenger: {
+      firstName,
+      colour: 2,
+      memberSince: "2026-11",
+      profileId: aProfileId(3),
+      ...newcomer,
+    },
     tripDay: {
       phase: "trip_day",
       checkInOpensAt: later(board.plannedAt, -30),

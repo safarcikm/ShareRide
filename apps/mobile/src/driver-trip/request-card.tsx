@@ -17,11 +17,11 @@ import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Chip } from "@/components/chip";
 import { Notice } from "@/components/notice";
-import { Tag } from "@/components/tag";
 import { TakesFocus } from "@/components/takes-focus";
 import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
+import { StandingLines } from "@/people/standing";
 import { memberSinceText, monthOf, firstNameOf } from "@/people/texts";
 import { PartStop } from "@/trip-details/trip-parts";
 import { spacing, typography } from "@/theme/tokens";
@@ -127,9 +127,14 @@ export function RequestCard({
           <Text style={[typography.small, { color: palette.textMuted }]}>
             {memberSinceText(t, locale, monthOf(booking.passenger.memberSince))}
           </Text>
-          <View style={styles.row}>
-            <Tag kind="warning" label={t("request.noReviews")} />
-          </View>
+          {booking.passenger.profileId === null ? null : (
+            <StandingLines
+              standing={booking.passenger}
+              profileId={booking.passenger.profileId}
+              name={name}
+              newLabel={t("request.noReviews")}
+            />
+          )}
         </View>
       </View>
       {booking.requestExpiresAt === null ? null : (
@@ -231,7 +236,6 @@ export function RequestCard({
 const styles = StyleSheet.create({
   person: { flexDirection: "row", alignItems: "center", gap: spacing.ms },
   grow: { flex: 1 },
-  row: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   spread: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   chips: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },
   declining: { gap: spacing.ms },

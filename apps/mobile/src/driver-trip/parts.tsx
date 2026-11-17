@@ -6,6 +6,7 @@ import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Tag } from "@/components/tag";
+import { TextLink } from "@/components/text-link";
 import { canCancel, statusKey, statusTag } from "@/booking/status";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
@@ -205,6 +206,7 @@ export function PassengersByPart({ bookings }: { readonly bookings: readonly Boo
             </View>
             {riding.map((booking) => {
               const cancellable = canCancel(booking, now());
+              const { profileId } = booking.passenger;
               return (
                 <View
                   key={booking.id}
@@ -234,10 +236,20 @@ export function PassengersByPart({ bookings }: { readonly bookings: readonly Boo
                     </View>
                     <Tag kind={statusTag(booking)} label={t(statusKey(booking))} />
                   </View>
-                  {/* A confirmed booking has its conversation (spec 7, R7.1); a
+                  {/* Their profile, for the reviews behind the rating (spec 1, 3.5);
+                      a confirmed booking has its conversation (spec 7, R7.1); a
                       booking can be cancelled until the time to get in (spec 6, 3.4). */}
-                  {booking.confirmed === null && !cancellable ? null : (
+                  {profileId === null && booking.confirmed === null && !cancellable ? null : (
                     <View style={styles.end}>
+                      {profileId === null ? null : (
+                        <TextLink
+                          label={t("people.open")}
+                          accessibilityLabel={t("people.openOf", {
+                            name: firstNameOf(t, booking.passenger),
+                          })}
+                          href={{ pathname: "/people/[profileId]", params: { profileId } }}
+                        />
+                      )}
                       {booking.confirmed === null ? null : (
                         <Button
                           variant="text"

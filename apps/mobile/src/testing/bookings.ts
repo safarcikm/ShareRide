@@ -5,6 +5,7 @@ import { cancelReasonsFor, type BookingStatus, type Money } from "@shareride/dom
 import { failure, ok, type FakeClient } from "./fake-client";
 import { northResult, northStops } from "./search";
 import { myStop, plannedDraft, withTripDay } from "./trips";
+import { aProfileId, annaProfileId, newcomer } from "./people";
 
 /** A stop of the north trip, as a booking holds it. */
 export const northStop = (position: number) => {
@@ -30,8 +31,14 @@ export function northBooking(changes: Partial<Booking> = {}): Booking {
     paymentDueAt: null,
     withdrawn: false,
     cancellation: null,
-    driver: { firstName: "Anna", colour: 1 },
-    passenger: { firstName: "Gunna", colour: 2, memberSince: "2026-11" },
+    driver: { firstName: "Anna", colour: 1, profileId: annaProfileId, ...newcomer },
+    passenger: {
+      firstName: "Gunna",
+      colour: 2,
+      memberSince: "2026-11",
+      profileId: aProfileId(2),
+      ...newcomer,
+    },
     car: { make: "Toyota", model: "Yaris", colour: "white" },
     confirmed: null,
     changes: [],

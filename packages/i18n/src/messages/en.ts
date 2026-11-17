@@ -928,6 +928,7 @@ export const en = {
   "request.memberSince": "Member since {month} {year}",
   "people.formerMember": "A former member",
   "people.open": "See profile",
+  "people.openOf": "See profile: {name}",
   "people.notFound": "This profile isn't available. The person may have left ShareRide.",
   "people.failed": "The profile could not be loaded.",
   "people.phoneVerified": "Phone verified",

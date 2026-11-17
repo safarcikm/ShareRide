@@ -260,7 +260,13 @@ function BookingDetails({
 
       <Card>
         <DriverAndCar
-          driver={{ ...booking.driver, firstName: firstNameOf(t, booking.driver) }}
+          driver={{
+            firstName: firstNameOf(t, booking.driver),
+            colour: booking.driver.colour,
+            profileId: booking.driver.profileId,
+            // Someone leaving, or a former member, has no profile, and shows no standing.
+            standing: booking.driver.profileId === null ? null : booking.driver,
+          }}
           car={booking.car}
           carNote={
             confirmed !== null

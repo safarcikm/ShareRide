@@ -13,6 +13,7 @@ import { Card } from "@/components/card";
 import { Tag } from "@/components/tag";
 import { useLanguage } from "@/i18n/language";
 import { dayOf, isoDay } from "@/lib/days";
+import { RatingLine, ratingText } from "@/people/standing";
 import { tripHref } from "@/trip-details/trip-link";
 import { controlOutline, radii, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -74,7 +75,11 @@ export function ResultCard({
   const mode = result.bookingMode === "instant" ? t("results.instant") : t("results.request");
   const seatsLeft = t("results.seatsLeft", { count: result.freeSeats });
   const day = showDay ? capitalised(formatShortDay(isoDay(dayOf(boardsAt)), locale), locale) : null;
-  const driver = `${result.driver.firstName}, ${t("results.newDriver")}`;
+  // The rating with the number of reviews, or a new driver before the first (spec 4, 3.4.1).
+  const rated = result.driver.rating.count > 0;
+  const driver = `${result.driver.firstName}, ${
+    rated ? ratingText(t, locale, result.driver.rating) : t("results.newDriver")
+  }`;
 
   const label = [
     day,
@@ -146,7 +151,11 @@ export function ResultCard({
             <Text style={[typography.bodyStrong, { color: palette.text }]}>
               {result.driver.firstName}
             </Text>
-            <Tag kind="warning" label={t("results.newDriver")} />
+            {rated ? (
+              <RatingLine rating={result.driver.rating} />
+            ) : (
+              <Tag kind="warning" label={t("results.newDriver")} />
+            )}
           </View>
           <Text style={[typography.label, { color: palette.text }]}>{seatsLeft}</Text>
         </View>

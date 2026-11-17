@@ -349,8 +349,9 @@ handed to everyone signed in (spec 1, 3.5; the safety thread's suggestion).
 - [x] The profile screen, opened from the driver on trip details by
       members signed in (7b)
 - [x] My own profile and "See it as others do" show the same (7b)
-- [ ] The rating and figure on trip details, requests and passengers,
-      each opening the profile (7c)
+- [x] The rating in search results; the rating and figure on trip details,
+      requests and the booking's driver; each person's profile from there
+      and from the passengers on the driver's trip (7c)
 - [ ] In the console (decision 1, as changed): overrule a weather or
       road-closure reason so it counts, and the people below 80% (7d)
 - Verify: integration tests (never the phone number or email; hidden

@@ -1,12 +1,17 @@
 import {
+  bookingRoute,
   cancelTripRoute,
   profileReviewsPageSize,
   profileReviewsRoute,
   publicProfileRoute,
+  tripBookingsRoute,
+  tripDetailsRoute,
+  tripSearchRoute,
   type CancelTripBody,
   type ProfileReview,
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
+import { sampleId } from "@shareride/db/seed";
 import { defaultTripDaySettings as settings } from "@shareride/domain";
 import { desc, eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -529,5 +534,125 @@ describe("the reliability figure (spec 8, 3.8; R8.10)", () => {
       kept: 2,
       counted: 2,
     });
+  });
+});
+
+describe("beside a person's name (spec 4, 3.4 and 3.5; spec 5, 3.3)", () => {
+  const point = (key: string) => sampleId(`point:${key}`);
+  const newcomer = { rating: { average: null, count: 0 }, reliabilityPercent: null };
+
+  it("gives the driver's rating in search results and trip details, and their figure to members", async () => {
+    const jon = await driverOf(north, "Jón");
+    // Five rides Jón took make five that count, all kept.
+    await driverOf(vik, "Sigurður");
+    const ride = await booked(jon.accessToken, vik, { fromStop: 0, toStop: 1 });
+    for (let made = 0; made < 5; made += 1) {
+      await anotherBooking(ride.id, { status: "completed", completedAt: api.now() });
+    }
+    for (const [name, rating, revealedAt] of [
+      ["Gunna", 4, api.now()],
+      // Not yet revealed, so neither shown nor counted.
+      ["Sigga", 1, null],
+    ] as const) {
+      const member = await newMember(name);
+      const booking = await booked(member.accessToken, north, { fromStop: 0, toStop: 1 });
+      await storedReview({
+        bookingId: booking.id,
+        authorId: member.userId,
+        subjectId: jon.userId,
+        authorRole: "passenger",
+        rating,
+        revealedAt,
+      });
+    }
+
+    const found = await api.client.call(tripSearchRoute, {
+      query: { from: point("borgarnes"), to: point("blonduos") },
+    });
+    if (!found.ok) throw new Error(found.error.code);
+    expect(found.data.results.map((result) => result.driver)).toEqual([
+      { firstName: "Jón", rating: { average: 4, count: 1 } },
+    ]);
+
+    const forVisitors = await api.client.call(tripDetailsRoute, {
+      params: { id: north },
+      query: {},
+    });
+    if (!forVisitors.ok) throw new Error(forVisitors.error.code);
+    expect(forVisitors.data.driver).toMatchObject({
+      rating: { average: 4, count: 1 },
+      reliabilityPercent: null,
+      profileId: null,
+    });
+    const dora = await newMember("Dóra");
+    const forMembers = await api.client.call(tripDetailsRoute, {
+      accessToken: dora.accessToken,
+      params: { id: north },
+      query: {},
+    });
+    if (!forMembers.ok) throw new Error(forMembers.error.code);
+    expect(forMembers.data.driver).toMatchObject({
+      rating: { average: 4, count: 1 },
+      reliabilityPercent: 100,
+      profileId: await profileIdOf(jon),
+    });
+  });
+
+  it("gives both people on a booking their profile, rating and figure", async () => {
+    const { jon, gunna, bookingId } = await afterTheTrip();
+    // Four more trips Gunna took make five that count, all kept.
+    for (let made = 0; made < 4; made += 1) {
+      await anotherBooking(bookingId, { status: "completed", completedAt: api.now() });
+    }
+    await storedReview({
+      bookingId,
+      authorId: jon.userId,
+      subjectId: gunna.userId,
+      authorRole: "driver",
+      rating: 5,
+    });
+    const gunnaAsShown = {
+      profileId: await profileIdOf(gunna),
+      rating: { average: 5, count: 1 },
+      reliabilityPercent: 100,
+    };
+    const jonAsShown = { profileId: await profileIdOf(jon), ...newcomer };
+
+    const read = await api.client.call(bookingRoute, {
+      accessToken: gunna.accessToken,
+      params: { id: bookingId },
+    });
+    if (!read.ok) throw new Error(read.error.code);
+    expect(read.data.passenger).toMatchObject(gunnaAsShown);
+    expect(read.data.driver).toMatchObject(jonAsShown);
+
+    const onTrip = await api.client.call(tripBookingsRoute, {
+      accessToken: jon.accessToken,
+      params: { id: airport },
+    });
+    if (!onTrip.ok) throw new Error(onTrip.error.code);
+    const shownOnTrip = onTrip.data.bookings.find((booking) => booking.id === bookingId);
+    expect(shownOnTrip?.passenger).toMatchObject(gunnaAsShown);
+  });
+
+  it("gives no profile, rating or figure for someone leaving ShareRide", async () => {
+    const { jon, gunna, bookingId } = await afterTheTrip();
+    await storedReview({
+      bookingId,
+      authorId: gunna.userId,
+      subjectId: jon.userId,
+      authorRole: "passenger",
+      rating: 5,
+    });
+    await api.connection.db
+      .update(users)
+      .set({ deleteAfter: at(api.now(), 30 * 24 * 60) })
+      .where(eq(users.id, jon.userId));
+    const read = await api.client.call(bookingRoute, {
+      accessToken: gunna.accessToken,
+      params: { id: bookingId },
+    });
+    if (!read.ok) throw new Error(read.error.code);
+    expect(read.data.driver).toMatchObject({ profileId: null, ...newcomer });
   });
 });

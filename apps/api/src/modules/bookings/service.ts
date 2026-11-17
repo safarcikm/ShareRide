@@ -49,6 +49,7 @@ import { oweRefund } from "../payments/refunds.ts";
 import { bookingConfirmed } from "./confirmed.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import { recordEvents } from "../notifications/outbox.ts";
+import { newcomer, standingsOf } from "../people/standing.ts";
 import { isHidden } from "../privacy/hidden.ts";
 import { blocksOf } from "../safety/blocks.ts";
 import {
@@ -230,16 +231,32 @@ const alightPoints = alias(meetingPoints, "alight_points");
 /** The changes a passenger reads on their booking: moves, cars and stops (spec 6, 3.2). */
 const toldKinds = ["departure", "vehicle", "addStop", "removeStop"];
 
+type Row = Awaited<ReturnType<typeof bookingRows>>[number];
+
+const driverOf = (row: Row) => ({
+  id: row.trip.driverId,
+  deleteAfter: row.driverLeaving,
+  profileId: row.driverProfileId,
+});
+
+const passengerOf = (row: Row) => ({
+  id: row.booking.passengerId,
+  deleteAfter: row.passengerLeaving,
+  profileId: row.passengerProfileId,
+});
+
 /**
  * Bookings with everything their passenger or driver sees, oldest first,
  * each with its trip's moves, new cars and stops added or removed since it
- * was made (spec 6, 3.2), "I'm here" at its boarding stop (spec 8, 3.2) and
- * its report, if any (3.3 to 3.5).
+ * was made (spec 6, 3.2), "I'm here" at its boarding stop (spec 8, 3.2),
+ * its report, if any (3.3 to 3.5), and both people's profile and standing
+ * (spec 5, 3.3.2).
  */
-async function readBookings(q: Queryable, where: SQL | undefined) {
+async function readBookings(q: Queryable, where: SQL | undefined, now: Date) {
   const rows = await bookingRows(q, where);
   const tripIds = [...new Set(rows.map((row) => row.trip.id))];
-  const [changes, checkIns, reports, written] = await Promise.all([
+  const people = rows.flatMap((row) => [driverOf(row), passengerOf(row)]);
+  const [changes, checkIns, reports, written, standingOf] = await Promise.all([
     tripIds.length === 0
       ? []
       : q
@@ -259,13 +276,26 @@ async function readBookings(q: Queryable, where: SQL | undefined) {
       q,
       rows.map((row) => row.booking.id),
     ),
+    standingsOf(
+      q,
+      people.filter((person) => !isHidden(person)).map((person) => person.id),
+      now,
+    ),
   ]);
+  // Nobody sees the profile or standing of someone leaving, or of the former
+  // member (spec 11, 3.4.3 and 3.5).
+  const standing = (person: ReturnType<typeof driverOf>) =>
+    isHidden(person)
+      ? { profileId: null, ...newcomer }
+      : { profileId: person.profileId, ...standingOf(person.id) };
   return rows.map((row) => {
     const { createdAt, status, cancelledAt, expiredAt, decidedAt } = row.booking;
     // A booking that ended shows only the changes made while it held seats.
     const endedAt = cancelledAt ?? expiredAt ?? (status === "declined" ? decidedAt : null);
     return {
       ...row,
+      driverStanding: standing(driverOf(row)),
+      passengerStanding: standing(passengerOf(row)),
       passengerCheckedInAt: passengerCheckedInAt(checkIns, row.booking.id),
       driverCheckedInAt: driverCheckedInAt(checkIns, row.boardStop.id),
       dispute: reports.find((report) => report.bookingId === row.booking.id) ?? null,
@@ -296,7 +326,11 @@ async function bookingRows(q: Queryable, where: SQL | undefined) {
         countsOnReliability: trips.countsOnReliability,
       },
       driverName: drivers.firstName,
+      driverProfileId: drivers.profileId,
+      driverLeaving: drivers.deleteAfter,
       passengerName: passengers.firstName,
+      passengerProfileId: passengers.profileId,
+      passengerLeaving: passengers.deleteAfter,
       passengerSince: passengers.createdAt,
       car: {
         make: vehicles.make,
@@ -518,10 +552,15 @@ function present(
     }),
     // Null only for a booking the previous version made during a deploy.
     movedFar: movedFar(booking.departsAtWhenBooked ?? departsAt, departsAt),
-    driver: { firstName: row.driverName, colour: peopleColourOf(trip.driverId) },
+    driver: {
+      firstName: row.driverName,
+      colour: peopleColourOf(trip.driverId),
+      ...row.driverStanding,
+    },
     passenger: {
       firstName: row.passengerName,
       colour: peopleColourOf(booking.passengerId),
+      ...row.passengerStanding,
       // The month only, as profiles show it (Iceland keeps UTC all year).
       memberSince: row.passengerSince.toISOString().slice(0, 7),
     },
@@ -558,7 +597,7 @@ export function createBookingService(dependencies: {
   const reviewSettings = dependencies.reviewSettings ?? defaultReviewSettings;
 
   async function readOne(q: Queryable, bookingId: string, viewerId: string, now: Date) {
-    const [row] = await readBookings(q, eq(bookings.id, bookingId));
+    const [row] = await readBookings(q, eq(bookings.id, bookingId), now);
     if (row === undefined) return undefined;
     if (row.booking.passengerId !== viewerId && row.trip.driverId !== viewerId) return undefined;
     return present(row, viewerId, now, tripDaySettings, reviewSettings);
@@ -797,7 +836,7 @@ export function createBookingService(dependencies: {
 
     async myBookings(passengerId, when) {
       const now = clock();
-      const rows = await readBookings(db, eq(bookings.passengerId, passengerId));
+      const rows = await readBookings(db, eq(bookings.passengerId, passengerId), now);
       const upcoming = (row: BookingRow) =>
         holdsSeats(shownStatus(row.booking, now)) &&
         plannedAt(row.alightStop).getTime() > now.getTime();
@@ -816,7 +855,7 @@ export function createBookingService(dependencies: {
     async bookingsOf(viewerId, bookingIds) {
       if (bookingIds.length === 0) return [];
       const now = clock();
-      const rows = await readBookings(db, inArray(bookings.id, [...bookingIds]));
+      const rows = await readBookings(db, inArray(bookings.id, [...bookingIds]), now);
       return rows
         .filter((row) => row.booking.passengerId === viewerId || row.trip.driverId === viewerId)
         .map((row) => present(row, viewerId, now, tripDaySettings, reviewSettings));
@@ -1087,6 +1126,7 @@ export function createBookingService(dependencies: {
         readBookings(
           db,
           and(eq(bookings.tripId, tripId), inArray(bookings.status, onTripStatuses)),
+          now,
         ),
         db
           .select({ position: segments.position, occupancy: segments.occupancy })

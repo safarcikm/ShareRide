@@ -1,7 +1,14 @@
 // Public profiles and their reviews, for screen tests. Not used by the app
 // itself. All made up.
-import type { ProfileReview, PublicProfile } from "@shareride/contracts";
+import type { ProfileReview, PublicProfile, Standing } from "@shareride/contracts";
 import { failure, ok, type FakeClient } from "./fake-client";
+
+/** No ratings yet, and too few trips for the figure: how a new member stands. */
+export const newcomer: Standing = { rating: { average: null, count: 0 }, reliabilityPercent: null };
+
+/** A member's profile reference; `n` tells them apart. */
+export const aProfileId = (n: number) =>
+  `6c1b7e0a-41d2-4f0e-9a51-${n.toString(16).padStart(12, "0")}`;
 
 /** Anna's profile reference, as trip details gives it to members signed in. */
 export const annaProfileId = "6c1b7e0a-41d2-4f0e-9a51-0000000000a1";

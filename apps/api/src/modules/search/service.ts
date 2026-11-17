@@ -17,6 +17,8 @@ import {
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { occupancyNow } from "../bookings/seats.ts";
 import { searchableStatuses, toSummary } from "../meeting-points/service.ts";
+import { ratingsOf } from "../people/ratings.ts";
+import { newcomer } from "../people/standing.ts";
 import { shown } from "../privacy/hidden.ts";
 import { closedTrips } from "../safety/blocks.ts";
 
@@ -231,6 +233,10 @@ export function createSearchService(dependencies: {
         .orderBy(asc(segments.position)),
       occupancyNow(db, [...ids], clock()),
     ]);
+    const ratings = await ratingsOf(
+      db,
+      tripRows.map(({ trip }) => trip.driverId),
+    );
     return tripRows.map(({ trip, firstName }) => {
       const stops = stopRows.filter((row) => row.stop.tripId === trip.id);
       const searchable: SearchableTrip = {
@@ -253,6 +259,7 @@ export function createSearchService(dependencies: {
         searchable,
         points: stops.map((row) => row.point),
         firstName: firstName ?? "",
+        rating: ratings.get(trip.driverId) ?? newcomer.rating,
         bookingMode: trip.bookingMode as TripSearchResult["bookingMode"],
       };
     });
@@ -290,7 +297,7 @@ export function createSearchService(dependencies: {
       pricePerSeat: found.pricePerSeat,
       total: found.total,
       freeSeats: found.freeSeats,
-      driver: { firstName: candidate.firstName },
+      driver: { firstName: candidate.firstName, rating: candidate.rating },
       bookingMode: candidate.bookingMode,
     };
   }

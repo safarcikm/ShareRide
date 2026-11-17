@@ -286,7 +286,7 @@ function Trip({
       <Card>
         <Heading>{t("trip.whoYouRideWith")}</Heading>
         <DriverAndCar
-          driver={trip.driver}
+          driver={{ ...trip.driver, standing: trip.driver }}
           car={trip.car}
           carNote={t("trip.plateLater")}
           preferences={trip.preferences}

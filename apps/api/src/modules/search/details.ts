@@ -19,6 +19,7 @@ import {
 import { and, asc, eq, inArray, isNull, ne } from "drizzle-orm";
 import { occupancyNow } from "../bookings/seats.ts";
 import { toSummary } from "../meeting-points/service.ts";
+import { standingsOf } from "../people/standing.ts";
 import { shown } from "../privacy/hidden.ts";
 import { closedTrips } from "../safety/blocks.ts";
 import { choicesOf } from "../trips/drafts.ts";
@@ -74,7 +75,7 @@ export function createTripDetailsService(dependencies: {
       // Closed by a block: as if it did not exist (R9.4).
       if ((await closedTrips(db, viewerId, [id])).has(id)) return err({ code: "not_found" });
 
-      const [stopRows, segmentRows, mine, asOfNow] = await Promise.all([
+      const [stopRows, segmentRows, mine, asOfNow, standingOf] = await Promise.all([
         db
           .select({ stop: tripStops, point: meetingPoints })
           .from(tripStops)
@@ -103,6 +104,7 @@ export function createTripDetailsService(dependencies: {
               )
               .orderBy(asc(tripStops.position)),
         occupancyNow(db, [id], now),
+        standingsOf(db, [trip.driverId], now),
       ]);
       // The first stretch the viewer has seats on, if any (spec 5).
       const myBooking = mine
@@ -138,6 +140,7 @@ export function createTripDetailsService(dependencies: {
 
       const { car } = found;
       const choices = choicesOf(trip);
+      const standing = standingOf(trip.driverId);
       return ok({
         id: trip.id,
         stops: stopRows.map((row, position) => ({
@@ -152,6 +155,10 @@ export function createTripDetailsService(dependencies: {
         seatsOffered: trip.capacity,
         driver: {
           firstName: found.firstName ?? "",
+          // The rating is on the trip page for anyone (spec 4, 3.5.3 and section
+          // 7); the figure, like the profile, is for members (spec 1, 3.5).
+          rating: standing.rating,
+          reliabilityPercent: viewerId === null ? null : standing.reliabilityPercent,
           colour: peopleColourOf(trip.driverId),
           // Profiles are for members (spec 1, 3.5): nobody else gets the reference.
           profileId: viewerId === null ? null : found.profileId,

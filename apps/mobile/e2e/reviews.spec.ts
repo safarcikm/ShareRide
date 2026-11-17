@@ -65,7 +65,7 @@ test("after the trip, both review the other, and then each sees the other's revi
   // Dóra opens Bára's profile from the trip's page: her review shows there,
   // in the rating, and the trip counts on Bára's reliability (spec 8, screen 7).
   await passenger.goto(`/trips/${tripId}`);
-  await passenger.getByRole("link", { name: "See profile" }).filter(visible).click();
+  await passenger.getByRole("link", { name: "See profile: Bára" }).filter(visible).click();
   await expect(passenger.getByRole("heading", { name: "Bára" }).filter(visible)).toBeVisible();
   await expect(text(passenger, "5.0 (1 rating)")).toBeVisible();
   await expect(text(passenger, "Lovely drive, right on time.")).toBeVisible();
