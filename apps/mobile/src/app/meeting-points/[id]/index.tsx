@@ -1,6 +1,6 @@
 import { meetingPointRoute, type MeetingPointDetails } from "@shareride/contracts";
 import { amenityKeys, formatDate, regionKeys, seasonText, typeKeys } from "@shareride/i18n";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Check } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Linking, Platform, StyleSheet, Text, View } from "react-native";
@@ -24,7 +24,8 @@ import { usePalette } from "@/theme/use-palette";
 
 /**
  * A meeting point's details (spec 2, screen 2), with the point on our map
- * of Iceland and "Open in maps" for directions (ADR 0024). Open to everyone.
+ * of Iceland and "Open in maps" for directions (ADR 0024). Open to everyone;
+ * "Something wrong here?" reports a problem (3.5).
  */
 export default function MeetingPointScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -129,6 +130,13 @@ function Details({ point }: { readonly point: MeetingPointDetails }) {
         }}
       />
       <Notice message={mapsFailed ? t("meetingPoints.mapsFailed") : null} />
+      <Button
+        variant="text"
+        label={t("meetingPoints.somethingWrong")}
+        onPress={() => {
+          router.push({ pathname: "/meeting-points/[id]/problem", params: { id: point.id } });
+        }}
+      />
     </>
   );
 }
