@@ -33,7 +33,7 @@ test("a person reports a trip and finds it in My reports", async ({
   const tripId = await postTripToSelfoss(driver, "17:30");
   // The driver is not offered to report their own trip.
   await driver.goto(`/trips/${tripId}?from=0&to=1`);
-  await expect(driver.getByRole("heading", { name: /Selfoss/ }).first()).toBeVisible();
+  await expect(driver.getByRole("heading", { name: "Who you ride with" })).toBeVisible();
   await expect(driver.getByRole("button", { name: "Report this trip" })).toHaveCount(0);
 
   await signUp(reporter, english, "Dóra");
