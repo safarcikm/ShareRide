@@ -325,7 +325,9 @@ In two parts, as PR 5: the API (6a), then the screens and the journey (6b).
       about you is now visible" (6a)
 - [x] "How was your trip?" on completion and its reminder after 3 days,
       skipped once reviewed (4.2) (6a)
-- [ ] The rate screen, from the booking page and the driver's trip page (6b)
+- [x] The rate screen, from the booking page and the driver's trip page (6b)
+- [ ] "Did something go wrong?" with a report after 1 or 2 stars (3.7.4):
+      with spec 9's report screen, from the safety thread
 - Verify: integration tests (only completed bookings, one each, 14 days,
   hidden until both; the reminder is skipped after a review); a browser
   journey: both review and then see each other's review
