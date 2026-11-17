@@ -10,6 +10,7 @@ import {
   formatDuration,
   formatMoney,
   formatMonth,
+  formatRating,
   formatShortDay,
   formatWeekdays,
 } from "./format.ts";
@@ -39,6 +40,15 @@ describe("formatMoney (ADR 0011)", () => {
     expect(formatMoney({ amount: 900, currency: "ISK" }, "is")).toBe("900 kr.");
     expect(formatMoney({ amount: 1_234_500, currency: "ISK" }, "is")).toBe("1.234.500 kr.");
     expect(formatMoney({ amount: 1_234_500, currency: "ISK" }, "en")).toBe("1,234,500 ISK");
+  });
+});
+
+describe("formatRating", () => {
+  it("always has one decimal, with the language's mark (spec 8, 3.7.5)", () => {
+    expect(formatRating(4.3, "en")).toBe("4.3");
+    expect(formatRating(4.3, "is")).toBe("4,3");
+    expect(formatRating(5, "en")).toBe("5.0");
+    expect(formatRating(1, "is")).toBe("1,0");
   });
 });
 

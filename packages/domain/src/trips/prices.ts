@@ -4,7 +4,7 @@
 import type { Money } from "../money.ts";
 import type { TripSettings } from "./settings.ts";
 
-type PriceSettings = Pick<
+export type PriceSettings = Pick<
   TripSettings,
   "suggestedRatePerKm" | "referenceCostPerKm" | "priceStep" | "priceLevelStep"
 >;

@@ -98,6 +98,7 @@ function Navigation() {
       <Stack.Protected guard={me !== null && !deleting && !needsLegal && !needsProfile}>
         <Stack.Screen name="profile/edit" />
         <Stack.Screen name="profile/preview" />
+        <Stack.Screen name="people/[profileId]" />
         <Stack.Screen name="drive/cars/index" />
         <Stack.Screen name="drive/cars/new" />
         <Stack.Screen name="drive/cars/[id]" />

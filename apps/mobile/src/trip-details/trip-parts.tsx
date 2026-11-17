@@ -14,6 +14,7 @@ import { Avatar, avatarSize } from "@/components/avatar";
 import { Icon } from "@/components/icon";
 import { NeedBubble } from "@/components/need-bubble";
 import { Tag } from "@/components/tag";
+import { TextLink } from "@/components/text-link";
 import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { people, radii, spacing, typography } from "@/theme/tokens";
@@ -58,7 +59,12 @@ export function DriverAndCar({
   note = "",
   luggageFirst = false,
 }: {
-  readonly driver: TripDetails["driver"];
+  /** With `profileId`, a link to their profile, for members signed in (spec 1, 3.5). */
+  readonly driver: {
+    readonly firstName: string;
+    readonly colour: number;
+    readonly profileId?: string | null;
+  };
   readonly car: TripDetails["car"];
   /** What the passenger learns about the number plate, if anything. */
   readonly carNote?: string;
@@ -105,6 +111,13 @@ export function DriverAndCar({
           <View style={styles.row}>
             <Tag kind="warning" label={t("results.newDriver")} />
           </View>
+          {driver.profileId === undefined || driver.profileId === null ? null : (
+            <TextLink
+              label={t("people.open")}
+              href={{ pathname: "/people/[profileId]", params: { profileId: driver.profileId } }}
+              align="start"
+            />
+          )}
         </View>
       </View>
       {car === null ? null : (
