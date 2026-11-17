@@ -671,6 +671,41 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
     expect(await rowsNaming(anna.userId)).toEqual([]);
   });
 
+  it("erases two passengers whose bookings share a retry key", async () => {
+    const gunna = await newMember("Gunna");
+    const siggi = await newMember("Siggi");
+    const { db } = api.connection;
+    const ids: string[] = [];
+    for (const member of [gunna, siggi]) {
+      const booking = await booked(member.accessToken, sampleTrip.north, {
+        fromStop: 0,
+        toStop: 1,
+      });
+      ids.push(booking.id);
+    }
+    // Each passenger's keys are their own, so two people can send the same;
+    // both bookings were cancelled, so nothing is open.
+    await db
+      .update(schema.bookings)
+      .set({
+        attemptKey: randomUUID(),
+        status: "cancelled",
+        cancelledAt: api.now(),
+        cancelledBy: "passenger",
+      })
+      .where(inArray(schema.bookings.id, ids));
+    await waitEnded(gunna);
+    await waitEnded(siggi);
+
+    expect(await erasure().eraseDue()).toEqual({ erased: 2, failed: 0 });
+
+    const moved = await db
+      .select({ passengerId: schema.bookings.passengerId })
+      .from(schema.bookings)
+      .where(inArray(schema.bookings.id, ids));
+    expect(moved).toEqual([{ passengerId: formerMemberId }, { passengerId: formerMemberId }]);
+  });
+
   it("goes on with the others when one account fails, and reports it", async () => {
     const siggi = await newMember("Siggi");
     const palli = await newMember("Palli");

@@ -363,11 +363,19 @@ journeys, and gets a code review before it opens.
 
 ### PR 9b: `feat(privacy)`: trips and bookings after 3 years
 
-- [ ] The `trips_and_bookings` rule of 4.7: trips 3 years after they
+- [x] The `trips_and_bookings` rule of 4.7: trips 3 years after they
       arrive, with their bookings, check-ins and reports, moved to the
-      former member with free text emptied; held ones wait
+      former member with free text emptied; held ones wait. As built: the
+      car becomes a former member's of the same make, model and colour
+      with no plate, a change of car drops which car, and a removed car
+      no trip uses any more is deleted. Each trip is its own transaction,
+      with the people on it locked as a new hold locks them, and one that
+      fails is logged without stopping the others. Rows moved to the former
+      member get new retry keys, here and in erasure, so two people's never
+      collide. Reviews keep to their own rule (open question Q23)
 - Verify: integration tests (at the edge of the period; the drivers' and
-  passengers' other trips unchanged; a hold keeps them; twice safe)
+  passengers' other trips unchanged; a hold keeps them, also one being set
+  as the rule runs; twice safe)
 
 ### PR 10: `feat(privacy)`: ask about my data, the API
 
@@ -383,6 +391,16 @@ journeys, and gets a code review before it opens.
 - [x] Ask about my data under Settings, Privacy: the kind, the text, the
       thanks, and adding an email first when there is none
 - Verify: screen tests; a browser journey sends a request
+
+### PR 11: `feat(privacy)`: reviews in Download my data
+
+Added once milestone 7 built reviews (spec 8, 3.7).
+
+- [x] Each booking, and each passenger on a trip the person drove, has
+      the review the person wrote and the one about them once it shows
+      (R8.9), with when the operator hid either
+- Verify: integration tests (both sides; one not yet shown left out of
+  the other side's file; hidden ones marked)
 
 ## 6. Review focus
 

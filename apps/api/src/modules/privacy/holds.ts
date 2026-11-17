@@ -58,6 +58,44 @@ export function notHeld(
 }
 
 /**
+ * For a rule that changes a whole trip, in a query over trips: no hold in
+ * force covers the trip, a booking on it, its driver or any passenger.
+ */
+export function tripNotHeld(db: Executor, now: Date): SQL {
+  const onTrip = () => eq(bookings.tripId, trips.id);
+  return notExists(
+    db
+      .select({ id: holds.id })
+      .from(holds)
+      .where(
+        and(
+          inForce(now),
+          or(
+            and(eq(holds.subjectType, "trip"), eq(holds.subjectId, trips.id)),
+            and(
+              eq(holds.subjectType, "user"),
+              or(
+                eq(holds.subjectId, trips.driverId),
+                inArray(
+                  holds.subjectId,
+                  db.select({ id: bookings.passengerId }).from(bookings).where(onTrip()),
+                ),
+              ),
+            ),
+            and(
+              eq(holds.subjectType, "booking"),
+              inArray(
+                holds.subjectId,
+                db.select({ id: bookings.id }).from(bookings).where(onTrip()),
+              ),
+            ),
+          ),
+        ),
+      ),
+  );
+}
+
+/**
  * Whether erasing the account must wait: a hold covers the person, a trip
  * they drove or rode on, or a booking they made or that was on their trip.
  * Erasing would move all of those to the former member and empty their text.
