@@ -6,6 +6,7 @@ import {
   updateMeRoute,
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
+import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { z } from "zod";
 import { startTestApi, type TestApi } from "../../testing.ts";
@@ -174,6 +175,18 @@ describe("profile (spec 1, section 3.5)", () => {
         missingSteps: [],
       },
     });
+  });
+
+  it("gives my public profile's own reference, never my ID (spec 1, 3.5)", async () => {
+    const { accessToken, userId } = await api.signIn(api.newPhoneNumber());
+    const me = await api.client.call(getMeRoute, { accessToken });
+    if (!me.ok) throw new Error(me.error.code);
+    const [stored] = await api.connection.db
+      .select({ profileId: schema.users.profileId })
+      .from(schema.users)
+      .where(eq(schema.users.id, userId));
+    expect(me.data.profileId).toBe(stored?.profileId);
+    expect(me.data.profileId).not.toBe(userId);
   });
 
   it("allows a first name of 1 to 30 letters", async () => {

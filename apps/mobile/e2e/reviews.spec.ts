@@ -6,8 +6,8 @@ import { confirmedBooking, secondPage, visible } from "./support/cancelling";
 // journeys, Bára posts Mjódd to N1 Selfoss and Dóra books and pays; then the
 // test API moves that one trip a day and a half back, so it has completed.
 // Dóra rates Bára, and her review waits; Bára rates Dóra, and both show at
-// once (R8.9). The window, the limits and the errors are left to the API
-// and screen tests.
+// once (R8.9). Then Dóra opens Bára's profile from the trip. The window,
+// the limits and the errors are left to the API and screen tests.
 
 test.use({ locale: "en-GB" });
 
@@ -61,5 +61,18 @@ test("after the trip, both review the other, and then each sees the other's revi
   await passenger.goto(booking);
   await expect(text(passenger, "Review of you")).toBeVisible();
   await expect(passenger.getByLabel("4 stars out of 5").filter(visible)).toBeVisible();
+
+  // Dóra opens Bára's profile from the trip's page: her review shows there,
+  // in the rating, and the trip counts on Bára's reliability (spec 8, screen 7).
+  await passenger.goto(`/trips/${tripId}`);
+  await passenger.getByRole("link", { name: "See profile" }).filter(visible).click();
+  await expect(passenger.getByRole("heading", { name: "Bára" }).filter(visible)).toBeVisible();
+  await expect(text(passenger, "5.0 (1 rating)")).toBeVisible();
+  await expect(text(passenger, "Lovely drive, right on time.")).toBeVisible();
+  await passenger
+    .getByRole("button", { name: "Reliability: not enough trips yet" })
+    .filter(visible)
+    .click();
+  await expect(text(passenger, "As a driver: kept 1 of 1")).toBeVisible();
   await close();
 });
