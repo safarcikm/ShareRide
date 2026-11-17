@@ -125,6 +125,9 @@ function Navigation() {
         <Stack.Screen name="bookings/[id]/index" />
         <Stack.Screen name="bookings/[id]/booked" />
         <Stack.Screen name="bookings/[id]/cancel" />
+        <Stack.Screen name="bookings/[id]/no-show" />
+        <Stack.Screen name="bookings/[id]/driver-absent" />
+        <Stack.Screen name="bookings/[id]/answer" />
       </Stack.Protected>
     </Stack>
   );

@@ -1,5 +1,5 @@
 {
-  "id": "0f13ee45-2892-4986-b9f5-8bb0749c51e5",
+  "id": "21a37a6d-910d-43ef-93de-1e82c030801d",
   "prevId": "d4db171b-07d8-4c50-9704-3191c7f5955c",
   "version": "7",
   "dialect": "postgresql",
@@ -3872,8 +3872,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.blocks": {
-      "name": "blocks",
+    "public.holds": {
+      "name": "holds",
       "schema": "",
       "columns": {
         "id": {
@@ -3883,17 +3883,41 @@
           "notNull": true,
           "default": "uuidv7()"
         },
-        "blocker_id": {
-          "name": "blocker_id",
+        "subject_type": {
+          "name": "subject_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subject_id": {
+          "name": "subject_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "blocked_id": {
-          "name": "blocked_id",
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ends_at": {
+          "name": "ends_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "set_by": {
+          "name": "set_by",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
+        },
+        "ended_at": {
+          "name": "ended_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -3911,11 +3935,17 @@
         }
       },
       "indexes": {
-        "blocks_blocked_index": {
-          "name": "blocks_blocked_index",
+        "holds_subject_index": {
+          "name": "holds_subject_index",
           "columns": [
             {
-              "expression": "blocked_id",
+              "expression": "subject_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "subject_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -3927,39 +3957,91 @@
           "with": {}
         }
       },
-      "foreignKeys": {
-        "blocks_blocker_id_users_id_fk": {
-          "name": "blocks_blocker_id_users_id_fk",
-          "tableFrom": "blocks",
-          "tableTo": "users",
-          "columnsFrom": ["blocker_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "blocks_blocked_id_users_id_fk": {
-          "name": "blocks_blocked_id_users_id_fk",
-          "tableFrom": "blocks",
-          "tableTo": "users",
-          "columnsFrom": ["blocked_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "blocks_pair_unique": {
-          "name": "blocks_pair_unique",
-          "nullsNotDistinct": false,
-          "columns": ["blocker_id", "blocked_id"]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {
-        "blocks_self_check": {
-          "name": "blocks_self_check",
-          "value": "\"blocks\".\"blocker_id\" <> \"blocks\".\"blocked_id\""
+        "holds_subject_type_check": {
+          "name": "holds_subject_type_check",
+          "value": "\"holds\".\"subject_type\" in ('user', 'trip', 'booking')"
+        },
+        "holds_reason_check": {
+          "name": "holds_reason_check",
+          "value": "length(trim(\"holds\".\"reason\")) > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.retention_runs": {
+      "name": "retention_runs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "rule": {
+          "name": "rule",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ran_at": {
+          "name": "ran_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "erased": {
+          "name": "erased",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "anonymised": {
+          "name": "anonymised",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {
+        "retention_runs_rule_index": {
+          "name": "retention_runs_rule_index",
+          "columns": [
+            {
+              "expression": "rule",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "ran_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "retention_runs_counts_check": {
+          "name": "retention_runs_counts_check",
+          "value": "\"retention_runs\".\"erased\" >= 0 and \"retention_runs\".\"anonymised\" >= 0"
         }
       },
       "isRLSEnabled": false

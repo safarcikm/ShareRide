@@ -37,6 +37,8 @@ import { bookingShareText } from "@/safety/share-details";
 import { TripSafety } from "@/safety/trip-safety";
 import { NotificationsPrompt } from "@/notifications/notifications-prompt";
 import { onTripDay, PassengerImHere, TripDayHeading } from "@/trip-day/passenger";
+import { ReportStatus } from "@/trip-day/report-status";
+import { offersDriverAbsent, reportState } from "@/trip-day/reports";
 import { useTripDayRefresh } from "@/trip-day/use-refresh";
 import { DriverAndCar, PartStop } from "@/trip-details/trip-parts";
 import { controlOutline, spacing, typography } from "@/theme/tokens";
@@ -53,6 +55,10 @@ import { firstNameOf } from "@/people/texts";
  * notifications or add an email (spec 7, 3.6.2). An accepted or confirmed
  * booking ends with "Cancel booking", which opens its own screen (spec 6,
  * 3.5); coming back from it with `cancelled`, focus moves to the outcome.
+ * From the wait after the time to get in, the passenger can say the driver
+ * didn't come, and a report about the booking shows above its status, to
+ * answer if it is about them (spec 8, 3.3 to 3.5); coming back from
+ * reporting or answering with `report`, focus moves to it.
  * Changes to the trip since booking show, with the choice to keep or
  * cancel after a big move (spec 6, 3.2). It loads again each time it comes
  * into view.
@@ -61,7 +67,11 @@ export default function BookingScreen() {
   const { t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
-  const { id, cancelled } = useLocalSearchParams<{ id: string; cancelled?: string }>();
+  const { id, cancelled, report } = useLocalSearchParams<{
+    id: string;
+    cancelled?: string;
+    report?: string;
+  }>();
   const load = useCallback(() => session.call(bookingRoute, { params: { id } }), [session, id]);
   const { value: answer, reload, refresh } = useLoadedOnFocus(load);
   useTripDayRefresh(answer?.ok === true && onTripDay(answer.data), refresh);
@@ -73,6 +83,9 @@ export default function BookingScreen() {
   } | null>(null);
   // Whether an action here changed what shows, so focus moves to the outcome.
   const [acted, setActed] = useState(false);
+  // Whether the report or answer made before coming back has been
+  // announced: only once, not again when the report changes later.
+  const [reportAnnounced, setReportAnnounced] = useState(false);
   // Why the booking is loading again, such as the driver answering first. It
   // stays, with focus, while what shows below it changes.
   const [stale, setStale] = useState<string | null>(null);
@@ -116,6 +129,10 @@ export default function BookingScreen() {
     <BookingDetails
       booking={booking}
       announce={acted || cancelled === "1"}
+      reported={report === "1" && !reportAnnounced}
+      onReportAnnounced={() => {
+        setReportAnnounced(true);
+      }}
       stale={stale}
       onAction={() => {
         setStale(null);
@@ -133,6 +150,8 @@ export default function BookingScreen() {
 function BookingDetails({
   booking,
   announce,
+  reported,
+  onReportAnnounced,
   stale,
   onAction,
   onChanged,
@@ -142,6 +161,12 @@ function BookingDetails({
   readonly booking: Booking;
   /** The status changed on this screen: focus moves to it when it shows. */
   readonly announce: boolean;
+  /**
+   * A report about it was just made or answered: focus moves to where it
+   * stands, or to the status when that says how it ended, once.
+   */
+  readonly reported: boolean;
+  readonly onReportAnnounced: () => void;
   /** Why the booking was loaded again, if it was. */
   readonly stale: string | null;
   /** The passenger starts paying or withdrawing. */
@@ -199,10 +224,12 @@ function BookingDetails({
           <Notice message={stale} />
         </TakesFocus>
       )}
+      <ReportStatus booking={booking} announce={reported} onAnnounced={onReportAnnounced} />
       {passenger ? (
         <Status
           booking={booking}
-          announce={announce}
+          announce={announce || (reported && reportState(booking, now()) === null)}
+          onAnnounced={onReportAnnounced}
           onAction={onAction}
           onChanged={onChanged}
           onStale={onStale}
@@ -257,6 +284,16 @@ function BookingDetails({
         />
       )}
 
+      {offersDriverAbsent(booking, now()) ? (
+        <Button
+          variant="secondary"
+          label={t("tripDay.driverAbsent")}
+          onPress={() => {
+            router.push({ pathname: "/bookings/[id]/driver-absent", params: { id: booking.id } });
+          }}
+        />
+      ) : null}
+
       {tripDay ? null : <WhereToStand booking={booking} />}
 
       {/* Until the passenger gets out: no trip to be safe on after that. */}
@@ -305,12 +342,14 @@ function BookingDetails({
 function Status({
   booking,
   announce,
+  onAnnounced,
   onAction,
   onChanged,
   onStale,
 }: {
   readonly booking: Booking;
   readonly announce: boolean;
+  readonly onAnnounced: () => void;
   readonly onAction: () => void;
   readonly onChanged: (booking: Booking) => void;
   readonly onStale: (why: string) => void;
@@ -324,9 +363,15 @@ function Status({
       <Requested booking={booking} onStart={onAction} onWithdrawn={onChanged} onStale={onStale} />
     );
   }
-  // An action that ends in another status, such as confirmed, moves focus to it.
+  // An action that ends in another status, such as confirmed, moves focus
+  // to it; so does a report that ends how the booking stands, such as a
+  // no-show agreed to (spec 8, 3.3).
   return (
-    <TakesFocus key={statusKey(booking)} when={announce}>
+    <TakesFocus
+      key={`${statusKey(booking)}:${booking.dispute?.outcome ?? ""}`}
+      when={announce}
+      onFocused={onAnnounced}
+    >
       <View style={styles.status}>
         <StatusText booking={booking} />
         {offersSearchAgain(booking) ? (
@@ -382,8 +427,12 @@ function StatusText({ booking }: { readonly booking: Booking }) {
       ) : (
         <Cancelled booking={booking} />
       );
+    case "no_show":
+      // While its report is open, the report says where it stands (spec 8, 3.3).
+      return booking.dispute !== null && booking.dispute.outcome === null ? null : (
+        <Notice kind="info" message={t("booking.noShow")} />
+      );
     default:
-      // Completed and no-show come with spec 8.
       return null;
   }
 }

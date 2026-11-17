@@ -480,7 +480,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   or their chat is closed. `blocks` is in the personal data catalogue,
   erased with either account, and gets its own export section, People you
   blocked: each by first name, and since when, never who blocked them.
-  Migration `0029_blocks`. `POST /v1/bookings/{id}/block`,
+  Migration `0030_blocks`. `POST /v1/bookings/{id}/block`,
   `GET /v1/me/blocks`, `DELETE /v1/me/blocks/{id}`.
 - Reports (milestone 9, PR 5a, spec 9, 3.1; R9.1, R9.2): "Report this
   trip" on trip details (not to its driver, whatever the trip's state:
@@ -500,7 +500,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   trip, message or booking that the person cannot see is refused as not
   found; a person cannot report themselves; 10 reports a day, also when
   sent at once. The person reported is never told who reported them.
-  Migration `0030_reports`; `reports` is in the personal data catalogue,
+  Migration `0031_reports`; `reports` is in the personal data catalogue,
   kept 3 years after closing, and chat clean-up keeps a conversation a
   report covers that long. "Download my data" has Reports you sent, never
   a report about the person. The category and outcome texts moved to
@@ -518,7 +518,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   "New report" or "New safety report", never who or what, and one not yet
   sent is dropped once its report is closed or the operator loses the
   role. A new outbox event `ReportFiled`; notifications gain `report_id`,
-  in migration `0030_reports`.
+  in migration `0031_reports`.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its
@@ -579,6 +579,22 @@ releases follow [Semantic Versioning](https://semver.org/).
   (never the notes) and when each report opens and closes. Migration
   `0026_trip_day_disputes` adds the `disputes` table and widens the
   cancellation reasons and notification kinds.
+- Reports on the trip day in the app (milestone 7, PR 5b, spec 8, screens
+  3 to 5): "The driver didn't come" on the passenger's booking, from the
+  wait after their time until 24 hours after the trip completes, and "Mark
+  as no-show" for each passenger getting in on the driver's trip day, once
+  the wait has passed and the driver said "I'm here" there; before that,
+  the stop says to say it first. Each opens a screen that says what it does
+  and who is told, with a note only ShareRide reads. The other side is asked
+  "Is this right?" with the deadline and what not answering does, and
+  answers "That's right" or "That's not right" on its own screen, with a
+  note. Both sides see where a report stands: waiting for the other side,
+  contested and waiting for ShareRide, or decided; the driver's trip page
+  lists its reports first. A driver absence that stood says "{name} didn't
+  come, so ShareRide cancelled this booking." with the refund. The browser
+  tests' trip move also moves its "I'm here" and reports and lets a report
+  nobody answered stand, and two journeys cover a no-show nobody contests
+  and a driver absence that stands with a full refund.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
@@ -678,6 +694,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   answered (spec 8, 3.3 and 3.4): what was reported and by whom, the
   answer, the outcome and when, with the person's own note only. The other
   side's note and the operator's stay with the operator.
+- Retention runs and holds (spec 11, 3.7): the hourly clean-up records, for
+  each retention rule, when it ran and how many records it erased, never
+  which; a rule that fails is reported and the others still run. It now
+  also deletes blocked numbers once their date comes, the list of erased
+  accounts after 30 days, ended holds after 3 years and its own records
+  after 90 days. A hold keeps what the clean-up would delete about a
+  person, a trip or a booking (their conversations, ended sessions,
+  notification log and drafts, and the account itself) until its end. The
+  `privacy` command shows the last run of each rule (`runs`) and lists,
+  sets and ends holds (`holds`, `hold`, `end-hold`), each in the audit log.
 
 ### Fixed
 
