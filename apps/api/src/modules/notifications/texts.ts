@@ -15,6 +15,7 @@ import {
   type CarFacts,
   formatClock,
   formatDay,
+  formatDayAndMonth,
   formatMoney,
   quickMessageText,
   stopAddedText,
@@ -85,14 +86,20 @@ export interface TripReminderFacts {
   readonly plateMissing: boolean;
 }
 
-/** News about the person's account (spec 11): a data export, and until when it can be downloaded. */
+/**
+ * News about the person's account (spec 11): a data export, until when it
+ * can be downloaded; a deletion, when the data is erased.
+ */
 export interface AccountNoticeFacts {
   readonly kind: AccountNoticeKind;
-  readonly expiresAt: Date;
+  readonly until: Date;
 }
 
 /** The app's screen for downloading one's data (spec 11, 3.2). */
 export const downloadDataPath = "/settings/privacy/download";
+
+/** Where signing in while a deletion waits shows "Keep my account" (spec 11, 3.4.4). */
+export const deletionWaitPath = "/";
 
 export interface NotificationText {
   readonly title: string;
@@ -145,24 +152,36 @@ export function notificationText(
   locale: Locale,
   settings: NotificationSettings,
 ): NotificationText {
-  if ("expiresAt" in facts) return accountText(facts, locale);
+  if ("until" in facts) return accountText(facts, locale);
   return "passengers" in facts
     ? tripReminderText(facts, locale)
     : bookingText(facts, locale, settings);
 }
 
-/** What is ready and until when, never a link (spec 11, 7). */
+/**
+ * What is ready, or what will be deleted, and when; never a link to the file
+ * (spec 11, 7). No weekday: Icelandic would have to decline it after "fyrir".
+ */
 function accountText(facts: AccountNoticeFacts, locale: Locale): NotificationText {
   const t = createTranslator(locale);
-  const until = t("notify.when", {
-    date: formatDay(facts.expiresAt, locale),
-    time: formatClock(facts.expiresAt),
+  const when = t("notify.when", {
+    date: formatDayAndMonth(facts.until, locale),
+    time: formatClock(facts.until),
   });
-  return {
-    title: t("notify.dataExportReady"),
-    body: t("notify.dataExportReadyBody", { until }),
-    path: downloadDataPath,
-  };
+  switch (facts.kind) {
+    case "data_export_ready":
+      return {
+        title: t("notify.dataExportReady"),
+        body: t("notify.dataExportReadyBody", { until: when }),
+        path: downloadDataPath,
+      };
+    case "account_deletion_scheduled":
+      return {
+        title: t("notify.accountDeletionScheduled"),
+        body: t("notify.accountDeletionScheduledBody", { date: when }),
+        path: deletionWaitPath,
+      };
+  }
 }
 
 function bookingText(

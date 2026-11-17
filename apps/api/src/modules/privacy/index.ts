@@ -1,3 +1,4 @@
+export * from "./deletion.ts";
 export * from "./export-data.ts";
 export * from "./export-page.ts";
 export * from "./exports.ts";

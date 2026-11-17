@@ -41,6 +41,13 @@ function bookError(c: Context, error: BookError) {
       );
     case "own_trip":
       return errorResponse(c, 403, "own_trip", "This is your own trip.");
+    case "account_deletion_pending":
+      return errorResponse(
+        c,
+        403,
+        "account_deletion_pending",
+        "Your account is being deleted. Keep it to book or publish again.",
+      );
     case "invalid_part":
       return invalid(
         c,

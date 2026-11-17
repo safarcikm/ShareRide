@@ -24,6 +24,12 @@ export const meSchema = z.object({
   memberSince: timestampSchema,
   /** What is still needed, in order; empty when the account is complete. */
   missingSteps: z.array(onboardingStepSchema),
+  /**
+   * When the account's data is erased, while its deletion waits (spec 11,
+   * 3.4.4): the app then shows only that date, "Keep my account" and
+   * "Sign out". Null otherwise.
+   */
+  deletionScheduledFor: timestampSchema.nullable(),
 });
 
 export type Me = z.infer<typeof meSchema>;

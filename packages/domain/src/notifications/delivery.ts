@@ -33,6 +33,7 @@ export const outboxEventTypes = [
   "DriverAbsentReported",
   "DisputeDecided",
   "DataExportReady",
+  "AccountDeletionScheduled",
 ] as const;
 export type OutboxEventType = (typeof outboxEventTypes)[number];
 

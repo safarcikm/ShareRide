@@ -48,7 +48,8 @@ erDiagram
 | `licence_declared_at` | When the user declared they hold a valid driving licence (needed to publish trips) |
 | `women_only_since`, `women_only_withdrawn_at` | When the user opted in to women-only trips, and when the operator withdrew that access; no gender is stored ([spec 14](../specs/2026-11-13-women-only-trips.md)) |
 | `roles` | `member`, `operator`; admin access needs `operator` |
-| `status` | `active`, `suspended` (with `suspended_until`, empty when permanent), `deletion_scheduled` (with `delete_after`, 7 days), `deleted` (an anonymous placeholder) |
+| `status` | `active`, `suspended` (with `suspended_until`, empty when permanent), `deleted` (only the one shared former member, which erased accounts' trips and bookings move to) |
+| `delete_after` | Set while "Delete my account" waits, 7 days; the status stays as it was, so keeping the account never lifts a suspension ([spec 11](../specs/2026-11-13-privacy-self-service.md#34-delete-my-account)) |
 | `created_at`, `deleted_at` | Deletion anonymises; see [privacy](../compliance/privacy-gdpr.md) |
 
 ### Vehicle

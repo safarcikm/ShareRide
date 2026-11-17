@@ -178,6 +178,10 @@ threads meet it.
 - Signing in while it waits works: `me.deletionScheduledFor` is set, and
   the app shows only "Your account will be deleted on {date}" with "Keep
   my account" and "Sign out". `POST /v1/me/delete/cancel` clears it.
+- While it waits, the person takes on nothing new: booking and publishing
+  refuse with `account_deletion_pending` (403). Both take the person's row
+  lock, as deleting does before its second check, so nothing opens between
+  the check and the date being set.
 
 ### 4.6 Erasure
 
@@ -298,9 +302,10 @@ journeys, and gets a code review before it opens.
 
 ### PR 6: `feat(privacy)`: delete my account, the API
 
-- [ ] Migration (`delete_after`, the former member, `restrict`); the
+- [x] Migration (`delete_after`, the former member, `restrict`); the
       check, delete and cancel routes; hiding (4.5); sign-in while waiting;
-      `account_deletion_scheduled`
+      `account_deletion_scheduled`; no booking or publishing while waiting;
+      check-ins (milestone 7) in the export
 - Verify: integration tests (refused without a code or while anything is
   open; signed out everywhere; gone from search, trip details, booking and
   messages at once; undo brings it back as it was, and a suspension stays)

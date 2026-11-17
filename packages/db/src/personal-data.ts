@@ -161,7 +161,8 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     category: "trips_and_bookings",
     export: { section: "bookings" },
     personColumns: ["userId"],
-    // "I'm here" times, a time only, matter to the other side if they disagree (spec 8, 3.5).
+    // "I'm here" times, a time only, matter to the other side if they disagree
+    // (spec 8, 3.5). A driver's own are exported with their trip's stops.
     onDeletion: keep([]),
   },
   disputes: {
