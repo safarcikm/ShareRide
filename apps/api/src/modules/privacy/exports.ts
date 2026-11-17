@@ -380,20 +380,24 @@ export async function cleanUpExports(
   db: Database,
   now: Date,
 ): Promise<{ readonly exportFiles: number; readonly exportRecords: number }> {
-  const files = await db
-    .update(dataExports)
-    .set({ file: null, byteSize: null, linkHash: null, linkExpiresAt: null, updatedAt: now })
-    .where(and(isNotNull(dataExports.file), lt(dataExports.expiresAt, now)))
-    .returning({ id: dataExports.id });
-  // Counted from expiry, or from asking for one never made.
-  const records = await db
-    .delete(dataExports)
-    .where(
-      lt(
-        sql`coalesce(${dataExports.expiresAt}, ${dataExports.askedAt})`,
-        privacyCutoffs(now).exportRecordsExpiredBefore,
-      ),
-    )
-    .returning({ id: dataExports.id });
-  return { exportFiles: files.length, exportRecords: records.length };
+  // All or nothing, so a run's counts are whole. A held person's export
+  // goes too: it is a copy of what the hold keeps.
+  return db.transaction(async (tx) => {
+    const files = await tx
+      .update(dataExports)
+      .set({ file: null, byteSize: null, linkHash: null, linkExpiresAt: null, updatedAt: now })
+      .where(and(isNotNull(dataExports.file), lt(dataExports.expiresAt, now)))
+      .returning({ id: dataExports.id });
+    // Counted from expiry, or from asking for one never made.
+    const records = await tx
+      .delete(dataExports)
+      .where(
+        lt(
+          sql`coalesce(${dataExports.expiresAt}, ${dataExports.askedAt})`,
+          privacyCutoffs(now).exportRecordsExpiredBefore,
+        ),
+      )
+      .returning({ id: dataExports.id });
+    return { exportFiles: files.length, exportRecords: records.length };
+  });
 }

@@ -1,6 +1,7 @@
 import { schema, type Database } from "@shareride/db";
 import { retentionCutoffs } from "@shareride/domain";
 import { and, eq, inArray, isNotNull, isNull, lt, lte, or } from "drizzle-orm";
+import { notHeld } from "../privacy/holds.ts";
 
 const {
   emailVerifications,
@@ -23,8 +24,10 @@ export interface CleanUpCounts {
 
 /**
  * Deletes sign-in records past their retention (privacy inventory) and ends
- * sessions nobody has used for 60 days. Safe to run at any time and more
- * than once; the scheduled clean-up runs it every hour.
+ * sessions nobody has used for 60 days. An ended session of a held person
+ * stays (spec 11, 3.7.3); codes, tokens and links are keys, not records, and
+ * go on time. Safe to run at any time and more than once; the scheduled
+ * clean-up runs it every hour.
  */
 export async function cleanUpSignInRecords(db: Database, now: Date): Promise<CleanUpCounts> {
   const cutoff = retentionCutoffs(now);
@@ -70,7 +73,12 @@ export async function cleanUpSignInRecords(db: Database, now: Date): Promise<Cle
 
     const deleted = await tx
       .delete(sessions)
-      .where(lt(sessions.endedAt, cutoff.sessionsEndedBefore))
+      .where(
+        and(
+          lt(sessions.endedAt, cutoff.sessionsEndedBefore),
+          notHeld(tx, now, [["user", sessions.userId]]),
+        ),
+      )
       .returning({ id: sessions.id });
 
     const links = await tx
