@@ -4,6 +4,7 @@ import {
   profileReviewsPageSize,
   profileReviewsRoute,
   publicProfileRoute,
+  soonestTripsRoute,
   tripBookingsRoute,
   tripDetailsRoute,
   tripSearchRoute,
@@ -537,11 +538,11 @@ describe("the reliability figure (spec 8, 3.8; R8.10)", () => {
   });
 });
 
-describe("beside a person's name (spec 4, 3.4 and 3.5; spec 5, 3.3)", () => {
+describe("beside a person's name (spec 4, 3.4 and 3.6; spec 5, 3.3)", () => {
   const point = (key: string) => sampleId(`point:${key}`);
   const newcomer = { rating: { average: null, count: 0 }, reliabilityPercent: null };
 
-  it("gives the driver's rating in search results and trip details, and their figure to members", async () => {
+  it("gives the driver's rating in search results, the rides leaving soon and trip details, and their figure to members", async () => {
     const jon = await driverOf(north, "Jón");
     // Five rides Jón took make five that count, all kept.
     await driverOf(vik, "Sigurður");
@@ -573,6 +574,12 @@ describe("beside a person's name (spec 4, 3.4 and 3.5; spec 5, 3.3)", () => {
     expect(found.data.results.map((result) => result.driver)).toEqual([
       { firstName: "Jón", rating: { average: 4, count: 1 } },
     ]);
+    const soonest = await api.client.call(soonestTripsRoute, { query: { limit: 50 } });
+    if (!soonest.ok) throw new Error(soonest.error.code);
+    expect(soonest.data.results.find((result) => result.tripId === north)?.driver).toEqual({
+      firstName: "Jón",
+      rating: { average: 4, count: 1 },
+    });
 
     const forVisitors = await api.client.call(tripDetailsRoute, {
       params: { id: north },
@@ -654,5 +661,30 @@ describe("beside a person's name (spec 4, 3.4 and 3.5; spec 5, 3.3)", () => {
     });
     if (!read.ok) throw new Error(read.error.code);
     expect(read.data.driver).toMatchObject({ profileId: null, ...newcomer });
+
+    // The other way round: the driver's trip, with a passenger leaving.
+    await storedReview({
+      bookingId,
+      authorId: jon.userId,
+      subjectId: gunna.userId,
+      authorRole: "driver",
+      rating: 5,
+    });
+    await api.connection.db
+      .update(users)
+      .set({ deleteAfter: null })
+      .where(eq(users.id, jon.userId));
+    await api.connection.db
+      .update(users)
+      .set({ deleteAfter: at(api.now(), 30 * 24 * 60) })
+      .where(eq(users.id, gunna.userId));
+    const onTrip = await api.client.call(tripBookingsRoute, {
+      accessToken: jon.accessToken,
+      params: { id: airport },
+    });
+    if (!onTrip.ok) throw new Error(onTrip.error.code);
+    expect(
+      onTrip.data.bookings.find((booking) => booking.id === bookingId)?.passenger,
+    ).toMatchObject({ profileId: null, ...newcomer });
   });
 });

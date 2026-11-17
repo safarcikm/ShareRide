@@ -248,7 +248,8 @@ upcoming trips.
   show only free seats.
 - Searching, the rides leaving soon and opening trip pages are rate limited
   per IP address, together, to prevent scraping. The rides leaving soon show
-  what a search would: no more than first names and the route.
+  what a search would: no more than first names, the driver's rating and the
+  route.
 
 ## 8. Texts (first draft; Icelandic to be reviewed by a native speaker)
 

@@ -23,12 +23,12 @@ jest.mock("@/lib/app-data", () => ({
 // Saturday 14 November 2026, noon in Iceland.
 jest.mock("@/lib/clock", () => ({ now: () => new Date("2026-11-14T12:00:00Z") }));
 
-// A person's rating and reliability beside their name (spec 4, 3.4 and 3.5;
+// A person's rating and reliability beside their name (spec 4, 3.4 and 3.6;
 // spec 5, 3.3.2), each opening their profile for members. All made up.
 
 const rated = { rating: { average: 4.3, count: 3 }, reliabilityPercent: 91 };
 
-describe("beside the driver of a trip (spec 4, 3.4 and 3.5)", () => {
+describe("beside the driver of a trip (spec 4, 3.4 and 3.6)", () => {
   it("shows a rated driver's rating in the results, and New driver before the first", async () => {
     await renderApp(
       `/search/results?from=${borgarnes.id}&to=${blonduos.id}&fromName=Borgarnes&toName=Bl%C3%B6ndu%C3%B3s&seats=1`,
@@ -51,35 +51,39 @@ describe("beside the driver of a trip (spec 4, 3.4 and 3.5)", () => {
     expect(screen.getByRole("button", { name: /, Bára, New driver, / })).toBeVisible();
   });
 
-  it("shows the rating on trip details to anyone, and the figure and profile to members", async () => {
-    const base = northTrip({ board: 1, alight: 2 });
-    const asAnswered = (signedIn: boolean) => ({
+  const base = northTrip({ board: 1, alight: 2 });
+  const tripUrl = `/trips/${northResult.tripId}?from=1&to=2`;
+
+  it("shows a visitor the driver's rating on trip details, without the figure or profile", async () => {
+    // As the API answers a visitor: the rating, and nothing more.
+    const forVisitors = {
       ...base,
-      driver: {
-        ...base.driver,
-        ...rated,
-        profileId: signedIn ? annaProfileId : null,
-        reliabilityPercent: signedIn ? rated.reliabilityPercent : null,
-      },
-    });
-    const url = `/trips/${northResult.tripId}?from=1&to=2`;
-    await renderApp(url, {
+      driver: { ...base.driver, ...rated, reliabilityPercent: null, profileId: null },
+    };
+    await renderApp(tripUrl, {
       setUp: (client) => {
-        tripDetailsApi(client, () => ok(200, asAnswered(false)));
+        tripDetailsApi(client, () => ok(200, forVisitors));
       },
     });
     expect(await screen.findByText("4.3 (3 ratings)")).toBeVisible();
     expect(screen.queryByText("New driver")).toBeNull();
     expect(screen.queryByText(/^Reliability/)).toBeNull();
     expect(screen.queryByRole("link", { name: /^See profile/ })).toBeNull();
+  });
 
-    await renderApp(url, {
+  it("shows a member the driver's rating, figure and profile on trip details", async () => {
+    const forMembers = {
+      ...base,
+      driver: { ...base.driver, ...rated, profileId: annaProfileId },
+    };
+    await renderApp(tripUrl, {
       me: completeMe,
       setUp: (client) => {
-        tripDetailsApi(client, () => ok(200, asAnswered(true)));
+        tripDetailsApi(client, () => ok(200, forMembers));
       },
     });
-    expect(await screen.findByText("Reliability: 91%")).toBeVisible();
+    expect(await screen.findByText("4.3 (3 ratings)")).toBeVisible();
+    expect(screen.getByText("Reliability: 91%")).toBeVisible();
     expect(screen.getByRole("link", { name: "See profile: Anna" })).toBeVisible();
   });
 
@@ -173,6 +177,15 @@ describe("a passenger, for the driver (spec 5, 3.3 and 3.7)", () => {
     await openTrip([gunna(newcomer)]);
     expect(await screen.findByText("No reviews yet")).toBeVisible();
     expect(screen.getByText("Reliability: not enough trips yet")).toBeVisible();
+  });
+
+  it("shows nothing of the kind for someone asking who is leaving ShareRide", async () => {
+    // As the API answers for someone leaving: no profile, and a newcomer's standing.
+    await openTrip([gunna({ ...newcomer, profileId: null })]);
+    expect(await screen.findByText(/Gunna/)).toBeVisible();
+    expect(screen.queryByText("No reviews yet")).toBeNull();
+    expect(screen.queryByText(/^Reliability/)).toBeNull();
+    expect(screen.queryByRole("link", { name: /^See profile/ })).toBeNull();
   });
 
   it("links each passenger to their profile", async () => {

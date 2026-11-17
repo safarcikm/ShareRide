@@ -257,8 +257,9 @@ the rating.
 - Profiles show the rating ("4.8 (12 ratings)"), "Reliability: 96%" or
   "Not enough trips yet", and the reviews with "As a driver" or "As a
   passenger". Tapping the figure shows "Kept 24 of 25 trips and bookings"
-  by role. Trip details, the driver's requests and passengers show the
-  rating and the figure, and open the profile.
+  by role. Search results show the driver's rating; trip details, the
+  driver's requests and the passenger's booking show the rating and the
+  figure. Each, and each passenger on the driver's trip, opens the profile.
 
 ## 5. Pull requests and tasks
 

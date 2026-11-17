@@ -57,7 +57,7 @@ export function RatingLine({
 
 /**
  * How a person stands, under their name on a trip, a request or a booking
- * (spec 4, 3.5.3; spec 5, 3.3.2): the rating, or `newLabel` before the
+ * (spec 4, 3.6.3; spec 5, 3.3.2): the rating, or `newLabel` before the
  * first; then, for members signed in, who have `profileId`, the reliability
  * figure and a link to their profile with the reviews and the counts behind
  * the figure.

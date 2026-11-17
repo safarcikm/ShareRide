@@ -1,5 +1,5 @@
 // How people stand beside their name on trips, requests and bookings (spec 4,
-// 3.4 and 3.5; spec 5, 3.3.2): their rating and the reliability figure's
+// 3.4 and 3.6; spec 5, 3.3.2): their rating and the reliability figure's
 // share kept, as on their profile.
 import type { Standing } from "@shareride/contracts";
 import { defaultReliabilitySettings, type ReliabilitySettings } from "@shareride/domain";
