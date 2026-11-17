@@ -1,6 +1,13 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { checkBlock, hiddenFrom, isBlockedBetween, tripClosedTo, type Block } from "./blocks.ts";
+import {
+  bookingClosedTo,
+  checkBlock,
+  hiddenFrom,
+  isBlockedBetween,
+  tripClosedTo,
+  type Block,
+} from "./blocks.ts";
 
 const blocks: readonly Block[] = [
   { blockerId: "gunna", blockedId: "jon" },
@@ -49,27 +56,34 @@ describe("blocking someone (3.2)", () => {
   });
 });
 
-describe("a trip closed to me by a block (R9.4, milestone 9 decision 2)", () => {
-  const trip = { driverId: "anna", passengerIds: ["sigga", "olafur"] };
+describe("a trip closed to me by a block (R9.4)", () => {
+  const trip = { driverId: "anna", bookedByMe: false };
 
   it("closes a trip whose driver is in a block with me, either way", () => {
     expect(tripClosedTo("gunna", trip, blocks)).toBe(true);
-  });
-
-  it("closes a trip that someone in a block with me has booked", () => {
-    expect(tripClosedTo("jon", { driverId: "anna", passengerIds: ["gunna"] }, blocks)).toBe(true);
-    expect(tripClosedTo("gunna", { driverId: "sigga", passengerIds: ["jon"] }, blocks)).toBe(true);
+    expect(tripClosedTo("jon", { driverId: "gunna", bookedByMe: false }, blocks)).toBe(true);
+    expect(tripClosedTo("gunna", { driverId: "jon", bookedByMe: false }, blocks)).toBe(true);
   });
 
   it("leaves every other trip open, including my own", () => {
     expect(tripClosedTo("jon", trip, blocks)).toBe(false);
     expect(tripClosedTo("anna", trip, blocks)).toBe(false);
-    expect(tripClosedTo("gunna", { driverId: "gunna", passengerIds: ["jon"] }, blocks)).toBe(false);
+    expect(tripClosedTo("gunna", { driverId: "gunna", bookedByMe: false }, blocks)).toBe(false);
   });
 
-  it("leaves a trip I am booked on open, whoever else is on it", () => {
-    expect(
-      tripClosedTo("gunna", { driverId: "anna", passengerIds: ["gunna", "jon"] }, blocks),
-    ).toBe(false);
+  it("leaves a trip I am booked on open, so I can still read it", () => {
+    expect(tripClosedTo("gunna", { driverId: "anna", bookedByMe: true }, blocks)).toBe(false);
+  });
+});
+
+describe("booking on the trip of someone in a block with me (R9.4)", () => {
+  it("is refused, either way", () => {
+    expect(bookingClosedTo("gunna", "anna", blocks)).toBe(true);
+    expect(bookingClosedTo("anna", "gunna", blocks)).toBe(true);
+  });
+
+  it("is allowed with everyone else", () => {
+    expect(bookingClosedTo("jon", "anna", blocks)).toBe(false);
+    expect(bookingClosedTo("gunna", "sigga", blocks)).toBe(false);
   });
 });

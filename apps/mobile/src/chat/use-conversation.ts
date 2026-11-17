@@ -92,6 +92,7 @@ export function useConversation(bookingId: string) {
 
   // New messages, while the screen is in view and the app in front. One
   // fetch at a time, and an answer that comes after leaving is dropped.
+  const seenBefore = useRef(false);
   useFocusEffect(
     useCallback(() => {
       let inView = true;
@@ -127,6 +128,10 @@ export function useConversation(bookingId: string) {
         });
       };
       const timer = setInterval(fetchNew, pollMs);
+      // Back in view, such as after blocking from here, it fetches at once;
+      // the first time, the first page has just been asked for.
+      if (seenBefore.current) fetchNew();
+      seenBefore.current = true;
       // A push about this conversation fetches it at once (plan 4.5).
       const hide = showConversation(bookingId, fetchNew);
       return () => {

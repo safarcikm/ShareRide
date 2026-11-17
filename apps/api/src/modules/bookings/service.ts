@@ -2,6 +2,7 @@ import type { Booking, CancellationPreview, TripBookings } from "@shareride/cont
 import { schema, type Database } from "@shareride/db";
 import {
   arrivalOf,
+  bookingClosedTo,
   cancellationTerms,
   cancelReasonsFor,
   checkBooking,
@@ -49,6 +50,7 @@ import { bookingConfirmed } from "./confirmed.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import { recordEvents } from "../notifications/outbox.ts";
 import { isHidden } from "../privacy/hidden.ts";
+import { blocksOf } from "../safety/blocks.ts";
 import {
   checkInsAt,
   driverCheckedInAt,
@@ -692,6 +694,11 @@ export function createBookingService(dependencies: {
         if (driver === undefined || isHidden(driver)) return err({ code: "not_found" });
         const now = clock();
         await expireDueBookings(tx, tripId, now);
+        // Closed by a block with the driver, silently: as if the trip did
+        // not exist (R9.4), even for another part of a trip already booked.
+        if (bookingClosedTo(passengerId, trip.driverId, await blocksOf(tx, passengerId))) {
+          return err({ code: "not_found" });
+        }
 
         // One query at a time: a transaction has one connection.
         const stops = await stopsOf(tx, tripId);

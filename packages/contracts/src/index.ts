@@ -15,6 +15,7 @@ export * from "./payments.ts";
 export * from "./privacy.ts";
 export * from "./reviews.ts";
 export * from "./route.ts";
+export * from "./safety.ts";
 export * from "./search.ts";
 export * from "./trip-day.ts";
 export * from "./trips.ts";

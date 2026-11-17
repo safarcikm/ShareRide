@@ -18,6 +18,7 @@ import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { occupancyNow } from "../bookings/seats.ts";
 import { searchableStatuses, toSummary } from "../meeting-points/service.ts";
 import { shown } from "../privacy/hidden.ts";
+import { closedTrips } from "../safety/blocks.ts";
 
 const { meetingPoints, places, segments, trips, tripStops, users } = schema;
 
@@ -164,6 +165,7 @@ export function createSearchService(dependencies: {
   async function candidates(
     from: readonly CoveredPoint[],
     to: readonly CoveredPoint[],
+    searcherId: string | null,
     options: { between?: { start: Date; end: Date }; instant?: boolean },
   ) {
     if (from.length === 0 || to.length === 0) return [];
@@ -193,11 +195,19 @@ export function createSearchService(dependencies: {
       where ${trips.status} in ('published', 'departed')
         ${options.instant === true ? sql`and ${trips.bookingMode} = 'instant'` : sql``}
     `);
-    return load(found.rows.map((row) => row.id));
+    return load(
+      found.rows.map((row) => row.id),
+      searcherId,
+    );
   }
 
-  /** The trips, with everything the domain rules need. */
-  async function load(ids: readonly string[]) {
+  /**
+   * The trips, with everything the domain rules need; those closed to the
+   * searcher by a block are left out, as if they did not exist (R9.4).
+   */
+  async function load(found: readonly string[], searcherId: string | null) {
+    const closed = await closedTrips(db, searcherId, found);
+    const ids = found.filter((id) => !closed.has(id));
     if (ids.length === 0) return [];
     const [tripRows, stopRows, segmentRows, asOfNow] = await Promise.all([
       db
@@ -310,7 +320,7 @@ export function createSearchService(dependencies: {
       if (!resolved.ok) return resolved;
       const { from, to } = resolved.value;
       const date = request.date === undefined ? null : toDay(request.date);
-      const found = await candidates(from.points, to.points, {
+      const found = await candidates(from.points, to.points, searcherId, {
         ...(date === null ? {} : { between: dayBounds(date, date) }),
         ...(request.instant === undefined ? {} : { instant: request.instant }),
       });
@@ -395,7 +405,10 @@ export function createSearchService(dependencies: {
           order by first.planned_at, ${trips.id}
           limit ${batch}
         `);
-        const loaded = await load(page.rows.map((row) => row.id));
+        const loaded = await load(
+          page.rows.map((row) => row.id),
+          searcherId,
+        );
         found.push(...loaded.flatMap(matchWhole));
         const last = page.rows.at(-1);
         if (page.rows.length < batch || last === undefined) break;
@@ -423,7 +436,7 @@ export function createSearchService(dependencies: {
         const around = searchDaysAround(date, settings);
         const first = around[0] ?? date;
         const last = around.at(-1) ?? date;
-        const found = await candidates(from.points, to.points, {
+        const found = await candidates(from.points, to.points, searcherId, {
           between: dayBounds(first, last),
         });
         days = around.map((day) => ({
@@ -445,7 +458,7 @@ export function createSearchService(dependencies: {
         coverage.points.some((point) => point.meetingPointId === id);
       const outside = (coverage: Coverage) => (distanceM: number, id: string) =>
         covers(coverage, id) ? nearbyOf(coverage)(distanceM) : distanceM;
-      const found = await candidates(ends.from, ends.to, {
+      const found = await candidates(ends.from, ends.to, searcherId, {
         ...(date === null ? {} : { between: dayBounds(date, date) }),
       });
       const nearby = found.flatMap((candidate) => {
