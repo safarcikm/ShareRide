@@ -1,4 +1,5 @@
-import { kilometresPerUnit, mapSize, project } from "./projection";
+import { describe, expect, it } from "vitest";
+import { kilometresPerUnit, mapSize, project } from "./projection.ts";
 
 const distance = (a: { x: number; y: number }, b: { x: number; y: number }) =>
   Math.hypot(a.x - b.x, a.y - b.y) * kilometresPerUnit;

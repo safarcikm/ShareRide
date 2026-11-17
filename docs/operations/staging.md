@@ -85,6 +85,33 @@ Render changes its network:
 4. Set `SMS_PAUSED` back to `false`. The computer from step 2 can ask for
    codes again after an hour.
 
+## Sign in to the console
+
+The operator console signs in with passkeys only, bound to one address
+([ADR 0028](../decisions/0028-operator-console-web-app-and-passkeys.md)).
+Its sign-in is off until that address is set. Once:
+
+1. Open `shareride-staging-api`, **Environment**, and add `ADMIN_ORIGIN`
+   set to the staging address above, such as
+   `https://shareride-staging-api.onrender.com` (no path, no slash at the
+   end), then save. Render deploys the service again.
+2. Sign up in the app with your own phone, if you have not yet.
+3. Open the API's **Shell** in Render and run
+   `node apps/api/src/operator-cli.ts add <your phone number>`. It gives
+   your account the operator role and prints a link that works once, for
+   30 minutes.
+4. Open the link on the laptop or phone you will use, and save a passkey
+   there (Touch ID, Face ID, Windows Hello or a security key). Add your
+   other devices from inside the console.
+5. From then on, sign in at the staging address with `/admin` after it,
+   such as `https://shareride-staging-api.onrender.com/admin`.
+
+Lost every passkey: run step 3 again for a new link. To take the role
+away: `node apps/api/src/operator-cli.ts remove <phone number or user
+ID>`, which also ends that account's console sessions and deletes its
+passkeys; `list` shows the operators. Changing `ADMIN_ORIGIN` (for example
+to a domain, milestone 12) means saving passkeys again with a new link.
+
 ## Deploy
 
 Every merge to `main` deploys by itself: when the commit's CI checks pass

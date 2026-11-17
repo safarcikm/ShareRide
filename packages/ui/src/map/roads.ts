@@ -1,5 +1,5 @@
-import { land, roads } from "./iceland-data";
-import { kilometresPerUnit, type MapXY } from "./projection";
+import { land, roads } from "./iceland-data.ts";
+import { kilometresPerUnit, type MapXY } from "./projection.ts";
 
 /** The points of a shape in the map's data ("x,y x,y …"). */
 export function parsePoints(text: string): MapXY[] {
