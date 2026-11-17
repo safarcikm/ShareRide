@@ -59,6 +59,12 @@ export const notificationRules = {
   driver_absent_reported: { push: true, email: "always", sms: false },
   dispute_decided: { push: true, email: "always", sms: false },
   dispute_decided_driver: { push: true, email: "always", sms: false },
+  // Reviews (spec 8, 3.7 and 3.9): "How was your trip?" when the trip
+  // completes and once more 3 days later, and a review about you that now
+  // shows. Push only: a nudge, not news anyone must have.
+  rate_trip: { push: true, email: "never", sms: false },
+  rate_trip_driver: { push: true, email: "never", sms: false },
+  review_visible: { push: true, email: "never", sms: false },
   // News about the account rather than a trip (spec 11): the texts say what
   // is ready and until when, never a link (spec 11, 7).
   data_export_ready: { push: true, email: "always", sms: false },
@@ -118,7 +124,11 @@ export type NotificationEvent =
   /** The passenger said the driver didn't come (3.4): the driver may answer. */
   | { readonly type: "DriverAbsentReported" }
   /** The operator decided a contested report (3.5): both are told. */
-  | { readonly type: "DisputeDecided" };
+  | { readonly type: "DisputeDecided" }
+  /** "How was your trip?" (3.7.6): when the trip completes, and the reminder 3 days later. */
+  | { readonly type: "RateTrip"; readonly to: TripRole }
+  /** A review shows (R8.9): the person it is about is told. */
+  | { readonly type: "ReviewRevealed"; readonly about: TripRole };
 
 export interface Addressed {
   readonly kind: NotificationKind;
@@ -202,6 +212,14 @@ export function notificationsFor(event: NotificationEvent): readonly Addressed[]
         { kind: "dispute_decided", to: "passenger" },
         { kind: "dispute_decided_driver", to: "driver" },
       ];
+    case "RateTrip":
+      return [
+        event.to === "driver"
+          ? { kind: "rate_trip_driver", to: "driver" }
+          : { kind: "rate_trip", to: "passenger" },
+      ];
+    case "ReviewRevealed":
+      return [{ kind: "review_visible", to: event.about }];
   }
 }
 
@@ -261,6 +279,12 @@ export function stillApplies(kind: NotificationKind, status: BookingStatus): boo
       return status === "no_show";
     case "driver_absent_reported":
       return status === "confirmed" || status === "completed";
+    // Only completed bookings are reviewed (R8.8); a driver absence that
+    // stands, or a passenger found absent, removes the reviews (3.4).
+    case "rate_trip":
+    case "rate_trip_driver":
+    case "review_visible":
+      return status === "completed";
     default:
       return true;
   }

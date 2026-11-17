@@ -288,6 +288,19 @@ function bookingText(
           t("notify.disputeDecided"),
           t("notify.disputeDecidedBody", { from, to, when: when(facts.boardsAt) }),
         ];
+      // Reviews (spec 8, 3.7): "How was your trip?", and one about you that shows.
+      case "rate_trip":
+        return [
+          t("review.title"),
+          t("notify.rateDriver", { name, from, to, when: when(facts.boardsAt) }),
+        ];
+      case "rate_trip_driver":
+        return [t("review.title"), t("notify.ratePassengers")];
+      case "review_visible":
+        return [
+          t("notify.reviewVisible"),
+          t("notify.reviewVisibleBody", { from, to, when: when(facts.boardsAt) }),
+        ];
       case "booking_cancelled_by_driver":
       case "trip_cancelled":
         // Never the driver's note: it may hold a number (R7.9).

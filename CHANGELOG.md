@@ -520,6 +520,39 @@ releases follow [Semantic Versioning](https://semver.org/).
   (never the notes) and when each report opens and closes. Migration
   `0026_trip_day_disputes` adds the `disputes` table and widens the
   cancellation reasons and notification kinds.
+- Reports on the trip day in the app (milestone 7, PR 5b, spec 8, screens
+  3 to 5): "The driver didn't come" on the passenger's booking, from the
+  wait after their time until 24 hours after the trip completes, and "Mark
+  as no-show" for each passenger getting in on the driver's trip day, once
+  the wait has passed and the driver said "I'm here" there; before that,
+  the stop says to say it first. Each opens a screen that says what it does
+  and who is told, with a note only ShareRide reads. The other side is asked
+  "Is this right?" with the deadline and what not answering does, and
+  answers "That's right" or "That's not right" on its own screen, with a
+  note. Both sides see where a report stands: waiting for the other side,
+  contested and waiting for ShareRide, or decided; the driver's trip page
+  lists its reports first. A driver absence that stood says "{name} didn't
+  come, so ShareRide cancelled this booking." with the refund. The browser
+  tests' trip move also moves its "I'm here" and reports and lets a report
+  nobody answered stand, and two journeys cover a no-show nobody contests
+  and a driver absence that stands with a full refund.
+- Ratings and reviews in the API (milestone 7, PR 6a, spec 8, 3.7): once a
+  booking completes, the passenger rates the driver and the driver rates
+  the passenger, 1 to 5 stars and an optional comment of up to 500
+  characters without phone numbers, email addresses or links
+  (`POST /v1/bookings/{id}/review`), once each and within 14 days. Nothing
+  is written about someone who has left ShareRide or is leaving, and
+  nothing while the passenger's report that the driver didn't come is
+  open. A review shows once both have reviewed, or 14 days after
+  completion (the minute job), and the person it is about is told by push.
+  "How was your trip?" goes by push to each passenger and once to the
+  driver when the trip completes, and once more 3 days later to those who
+  have not reviewed, following the trip reminders switch. A driver
+  absence that stands, or a passenger found absent, removes the booking's
+  reviews. Bookings show their reviews: until when, your own, and the
+  other's once it shows (never one the operator hid). Migration
+  `0030_reviews` adds the `reviews` table, with `hidden_at` for
+  moderation (spec 9), and widens the notification kinds.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
