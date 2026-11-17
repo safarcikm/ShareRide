@@ -899,6 +899,7 @@ export const en = {
   "request.timeLeft": "{time} left to answer",
   "request.timeUp": "The time to answer ran out",
   "request.memberSince": "Member since {month} {year}",
+  "people.formerMember": "A former member",
   "request.noReviews": "No reviews yet",
   "request.message": "Message",
   "request.ifAccepted":
@@ -953,6 +954,7 @@ export const en = {
   "chat.opened": "Booking confirmed. You can message each other here.",
   "chat.checkedInMe": "You said you're at the meeting point",
   "chat.checkedInThem": "{name} is at the meeting point",
+  "chat.messageDeleted": "Message deleted",
   "chat.withNote": "{line} “{note}”",
   "chat.cancelledByMe": "You cancelled the booking: {reason}",
   "chat.cancelledByThem": "{name} cancelled the booking: {reason}",

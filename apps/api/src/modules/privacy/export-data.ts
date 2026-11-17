@@ -427,6 +427,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
   const t = createTranslator(locale);
   /** What a message says in the person's language: quick messages and ShareRide's lines too. */
   const said = (line: (typeof lines)[number], viewer: TripRole, other: string) => {
+    if (line.erasedAt !== null) return t("chat.messageDeleted");
     if (line.kind === "quick") return quickMessageText(t, quickOf(line));
     if (line.kind !== "system") return line.body;
     const shown = systemLineOf(line, viewer);
@@ -438,7 +439,8 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
   };
   const conversationsSection = talks.map((talk) => {
     const viewer: TripRole = talk.passengerId === userId ? "passenger" : "driver";
-    const other = (viewer === "passenger" ? talk.driverName : talk.passengerName) ?? "";
+    const other =
+      (viewer === "passenger" ? talk.driverName : talk.passengerName) ?? t("people.formerMember");
     return {
       bookingId: talk.bookingId,
       with: { firstName: other },

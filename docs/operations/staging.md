@@ -14,7 +14,7 @@ edge ([privacy providers](../compliance/privacy-gdpr.md#providers)).
 | Part | Render name | What it is |
 | ---- | ----------- | ---------- |
 | API and web app | `shareride-staging-api` | Web service built from `apps/api/Dockerfile`; serves `/v1` and the web app on one origin |
-| Clean-up | `shareride-staging-clean-up` | Cron job, every hour at minute 17 (UTC): deletes sign-in records past their retention (with the push tokens of sessions ended for being idle), old trip drafts, conversations 12 months after their trip, the notification log after 90 days, operator console sessions 30 days after they end, passkey challenges and setup links once they expire, and data export files once expired (their dates 30 days later) |
+| Clean-up | `shareride-staging-clean-up` | Cron job, every hour at minute 17 (UTC): deletes sign-in records past their retention (with the push tokens of sessions ended for being idle), old trip drafts, conversations 12 months after their trip, the notification log after 90 days, operator console sessions 30 days after they end, passkey challenges and setup links once they expire, and data export files once expired (their dates 30 days later); then erases the accounts whose 7 days after "Delete my account" have ended (spec 11). It takes `AUTH_SECRET` from the API |
 | Database | `shareride-staging-db` | PostgreSQL 18 with PostGIS, private network only |
 | Settings | `shareride-staging` | Environment group: `NODE_ENV=production`, `APP_ENV=staging`, `LOG_LEVEL`. `PAYMENT_PROVIDER` is unset, so staging pays with the test provider: no card, no money moves. `WORKER` is unset, so the API runs the notification worker: it pushes through Expo to the phones that registered, with `EXPO_ACCESS_TOKEN` once it is set ([app builds](app-builds.md#android-build-with-push)); `EMAIL_PROVIDER` is unset, so it sends no email and records who would have been emailed, until email is turned on (below) |
 
@@ -313,18 +313,44 @@ Hobby workspace (7 on Pro).
    Database**. Pick a time at least ten minutes ago and a new name.
 2. Render creates a new database. Check it with the PSQL command on its
    **Info** page.
-3. Point the services at it: in the blueprint, change the name under
+3. Bring over the deletions since the restore's point, so the restored
+   database never serves an erased account and never erases one kept
+   (spec 11, 3.7). Copy the new database's **Internal Database URL** from
+   its **Info** page, open the API's **Shell** (it still uses the old
+   database) and run:
+
+   ```sh
+   PREVIOUS_DATABASE_URL="$DATABASE_URL" DATABASE_URL="<new database URL>" \
+     node apps/api/src/privacy-cli.ts reapply-erasures
+   ```
+
+   It takes each "Delete my account" or "Keep my account" pressed in the
+   old database since, then erases again every erased account that came
+   back, and says how many of each. If it ends with `Failed:`, do not go
+   on: the log names each account, and the step can be run again once
+   fixed. If the old database is lost, leave out `PREVIOUS_DATABASE_URL`:
+   deletions asked for, undone or finished after the restore's point are
+   then missed, a gap point-in-time recovery keeps to minutes.
+4. Point the services at it: in the blueprint, change the name under
    `databases` and the `fromDatabase` name of both services to the new
    database's name, merge, and let the blueprint sync. Changing only the
    services would leave the old name under `databases`, and deleting the old
    database would then make the next sync create an empty one.
-4. Once the services work, suspend or delete the old database.
+5. Run step 3 again from the API's Shell, now with
+   `PREVIOUS_DATABASE_URL="<old database URL>"` and the shell's own
+   `DATABASE_URL`, for what happened in the old database in the meantime.
+   A change made in the new database since is newer, so it stays.
+6. Once the services work, suspend or delete the old database.
 
 ## Rotate a secret
 
 - `AUTH_SECRET`: set a new value in the service's **Environment** (for
   example from `openssl rand -base64 32`). Codes waiting to be used stop
-  working and sending limits reset; sessions are not affected.
+  working and sending limits reset; sessions are not affected. Data
+  exports waiting to be downloaded can no longer be read (people ask for
+  a new one), and the numbers of erased suspended accounts are no longer
+  recognised, so they could sign up again. The clean-up job takes the
+  new value from the API at its next deploy.
 - Vonage secret: an account holds two secrets at most, so first revoke the
   one not in use if there are two. Create a new secret in the Vonage
   dashboard (**Settings**, **API

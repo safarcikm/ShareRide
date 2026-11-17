@@ -20,6 +20,7 @@ import { NotificationsPrompt } from "@/notifications/notifications-prompt";
 import { YourSeat } from "@/trip-details/seat-view";
 import { radii, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { firstNameOf } from "@/people/texts";
 
 /**
  * The finish after booking (spec 16, 3.7, items 4 and 5): "You're booked!"
@@ -101,7 +102,7 @@ export default function BookedScreen() {
 function Finished({ booking }: { readonly booking: Booking }) {
   const { locale, t } = useLanguage();
   const { board, confirmed } = booking;
-  const driver = booking.driver.firstName;
+  const driver = firstNameOf(t, booking.driver);
   const time = formatClock(new Date(board.plannedAt));
   const requested = booking.status === "requested";
   const steps = requested

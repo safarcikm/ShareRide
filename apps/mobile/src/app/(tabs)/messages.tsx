@@ -19,6 +19,7 @@ import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { SignInFirst } from "@/navigation/sign-in-first";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { firstNameOf } from "@/people/texts";
 
 /**
  * Messages, a place of the menu: my conversations (spec 7, 3.1, item 9,
@@ -85,9 +86,9 @@ function ConversationRow({ conversation }: { readonly conversation: Conversation
     to: booking.alight.meetingPoint.name[locale],
   };
   const preview =
-    lastMessage === null ? null : previewText(t, locale, lastMessage, other.firstName);
+    lastMessage === null ? null : previewText(t, locale, lastMessage, firstNameOf(t, other));
   const unreadText = unread === 0 ? null : t("chat.unread", { count: unread });
-  const label = [other.firstName, day, t("trip.stretchSpoken", names), preview, unreadText]
+  const label = [firstNameOf(t, other), day, t("trip.stretchSpoken", names), preview, unreadText]
     .filter((part) => part !== null)
     .join(", ");
   return (
@@ -98,9 +99,11 @@ function ConversationRow({ conversation }: { readonly conversation: Conversation
       }}
     >
       <View style={styles.row}>
-        <Avatar firstName={other.firstName} colour={other.colour} />
+        <Avatar firstName={firstNameOf(t, other)} colour={other.colour} />
         <View style={styles.grow}>
-          <Text style={[typography.bodyStrong, { color: palette.text }]}>{other.firstName}</Text>
+          <Text style={[typography.bodyStrong, { color: palette.text }]}>
+            {firstNameOf(t, other)}
+          </Text>
           <Text style={[typography.small, { color: palette.textMuted }]}>
             {`${day} · ${t("search.route", names)}`}
           </Text>

@@ -19,6 +19,7 @@ import {
 import { and, asc, eq, inArray, isNull, ne } from "drizzle-orm";
 import { occupancyNow } from "../bookings/seats.ts";
 import { toSummary } from "../meeting-points/service.ts";
+import { shown } from "../privacy/hidden.ts";
 import { choicesOf } from "../trips/drafts.ts";
 
 const { bookings, meetingPoints, segments, trips, tripStops, users, vehicles } = schema;
@@ -55,8 +56,9 @@ export function createTripDetailsService(dependencies: {
         .from(trips)
         .innerJoin(users, eq(users.id, trips.driverId))
         .leftJoin(vehicles, eq(vehicles.id, trips.vehicleId))
-        // A driver deleting their account is hidden at once (spec 11, 3.4.3).
-        .where(and(eq(trips.id, id), ne(trips.status, "draft"), isNull(users.deleteAfter)));
+        // A driver deleting their account is hidden at once (spec 11, 3.4.3),
+        // and an erased one's trips stay hidden (3.5).
+        .where(and(eq(trips.id, id), ne(trips.status, "draft"), shown(users)));
       const now = clock();
       if (found === undefined) return err({ code: "not_found" });
       const { trip } = found;
