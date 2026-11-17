@@ -2,6 +2,7 @@ import { schema, type Database } from "@shareride/db";
 import {
   channelsFor,
   defaultNotificationSettings,
+  defaultTripDaySettings,
   eventAttempts,
   isAccountNotice,
   notificationsFor,
@@ -35,6 +36,7 @@ import { deviceNotRegistered, type PushReceipt, type PushSender } from "../../pl
 import { SmsMaybeSent, type SmsSender } from "../../platform/sms.ts";
 import type { Queryable, Transaction } from "../bookings/seats.ts";
 import { quickOf } from "../chat/service.ts";
+import { answerByOf, disputesOf } from "../trip-day/disputes.ts";
 import { emailContent } from "./email-content.ts";
 import { preferencesOf } from "./preferences.ts";
 import {
@@ -356,6 +358,12 @@ async function accountFactsOf(
   } as const;
 }
 
+/** The kinds that ask for an answer to a report, with its deadline. */
+const answerKinds: ReadonlySet<string> = new Set<NotificationKind>([
+  "no_show_marked",
+  "driver_absent_reported",
+]);
+
 /** What a notification's text is made from, and where it goes, as of now. */
 async function factsOf(q: Queryable, notificationId: string, now: Date) {
   const [found] = await q.select().from(notifications).where(eq(notifications.id, notificationId));
@@ -367,6 +375,7 @@ async function factsOf(q: Queryable, notificationId: string, now: Date) {
       notification: notifications,
       booking: bookings,
       driverId: trips.driverId,
+      arrivesAt: trips.arrivesAt,
       boardsAt: boards.plannedAt,
       boardPointId: boards.meetingPointId,
       car: { make: vehicles.make, model: vehicles.model, colour: vehicles.colour },
@@ -416,6 +425,8 @@ async function factsOf(q: Queryable, notificationId: string, now: Date) {
     notification.tripChangeId === null
       ? undefined
       : await removedStopOf(q, notification.tripChangeId);
+  // A report asks the other side to answer by its deadline (spec 8, R8.6).
+  const [report] = answerKinds.has(notification.kind) ? await disputesOf(q, [booking.id]) : [];
   const facts: NotificationFacts = {
     kind: notification.kind as NotificationFacts["kind"],
     role,
@@ -447,6 +458,10 @@ async function factsOf(q: Queryable, notificationId: string, now: Date) {
     removedStop: removedStop === undefined ? null : { name: named(locale, removedStop.name) },
     moved: moved === undefined ? null : { from: moved.from, to: moved.to },
     paid: booking.status === "confirmed" && booking.totalPrice > 0,
+    answerBy:
+      report === undefined || row.arrivesAt === null
+        ? null
+        : answerByOf(report, row.arrivesAt, defaultTripDaySettings),
   };
   return {
     facts,

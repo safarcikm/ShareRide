@@ -45,7 +45,11 @@ import {
 } from "./modules/auth/index.ts";
 import { createBookingService, registerBookingRoutes } from "./modules/bookings/index.ts";
 import { createChatService, registerChatRoutes } from "./modules/chat/index.ts";
-import { createTripDayService, registerTripDayRoutes } from "./modules/trip-day/index.ts";
+import {
+  createReportService,
+  createTripDayService,
+  registerTripDayRoutes,
+} from "./modules/trip-day/index.ts";
 import { createDrivingService, registerDrivingRoutes } from "./modules/driving/index.ts";
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
@@ -299,6 +303,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     registerTripDayRoutes(
       app,
       createTripDayService({ ...features, settings: defaultTripDaySettings }),
+      createReportService({ ...features, settings: defaultTripDaySettings }),
       requireAuth,
     );
     registerNotificationRoutes(app, { ...features, requireAuth });

@@ -500,6 +500,26 @@ releases follow [Semantic Versioning](https://semver.org/).
   browser tests' API can move one trip's times closer
   (`POST /e2e/trips/{id}/move`), never in the real server, and a journey
   has both sides check in and see each other's.
+- Reports on the trip day in the API (milestone 7, PR 5a, spec 8, 3.3 to
+  3.5): the driver marks a no-show 10 minutes after the passenger's stop
+  time, once they said "I'm here" there, until the trip completes
+  (`POST /v1/bookings/{id}/no-show`); the passenger says the driver didn't
+  come from the same wait until 24 hours after the trip completes
+  (`POST /v1/bookings/{id}/driver-absent`). Each takes a note for the
+  operator, and a booking is reported once. The other side is told by push
+  and email and answers "That's right" or "That's not right"
+  (`POST /v1/disputes/{id}/answer`). An agreed report, or one nobody
+  answered in time (the minute job), stands; a contested one waits for the
+  operator's decision (`decideDispute`, with an audit entry, both sides
+  told), which the operator's command and console will call. A no-show
+  frees the seat and gives no refund; a driver absence that stands, or a
+  passenger left behind, cancels the booking as if by the driver with the
+  new reason "The driver didn't come", a full refund, and counts on the
+  driver; a ride found to have happened completes. A booking with an open
+  report does not complete with its trip. Bookings show their report
+  (never the notes) and when each report opens and closes. Migration
+  `0025_trip_day_disputes` adds the `disputes` table and widens the
+  cancellation reasons and notification kinds.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
