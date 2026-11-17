@@ -518,7 +518,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   driver; a ride found to have happened completes. A booking with an open
   report does not complete with its trip. Bookings show their report
   (never the notes) and when each report opens and closes. Migration
-  `0025_trip_day_disputes` adds the `disputes` table and widens the
+  `0026_trip_day_disputes` adds the `disputes` table and widens the
   cancellation reasons and notification kinds.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
