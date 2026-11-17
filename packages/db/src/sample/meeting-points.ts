@@ -1,8 +1,8 @@
 // Sample meeting points, places and roads for local development and
 // staging (milestone 3 plan, decision 1). Real public places on three
 // corridors from Reykjavík, with approximate positions and road distances.
-// The operator's real list v1 and routing-engine legs replace them before
-// the beta; nothing here has been checked on site.
+// The operator's real list v1 and legs from the road file (ADR 0030)
+// replace them before the beta; nothing here has been checked on site.
 import type { Amenity, MeetingPointType, PlaceKind, Region } from "@shareride/domain";
 import type { Position } from "../schema/columns.ts";
 
@@ -180,7 +180,8 @@ export const samplePoints: readonly SamplePoint[] = [
     nameIs: "Keflavíkurflugvöllur",
     nameEn: "Keflavík Airport",
     aliases: ["KEF", "Leifsstöð"],
-    position: at(63.9851, -22.6056),
+    // The drop-off road in front of the terminal, not the airfield's centre.
+    position: at(63.9968, -22.625),
     region: "southern-peninsula",
     municipality: "Reykjanesbær",
     type: "airport",

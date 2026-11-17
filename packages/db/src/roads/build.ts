@@ -76,6 +76,8 @@ export interface RoadFileSummary {
   readonly shapePoints: number;
   readonly lengthKm: number;
   readonly leftOutNetworks: number;
+  /** One-way roads into or out of a dead end, which cars could not drive back from. */
+  readonly leftOutOneWay: number;
 }
 
 interface Road {
@@ -255,37 +257,27 @@ function assemble(
     }
   }
 
-  // Networks joined to nothing else, by the length of their roads.
-  const parent = new Map<number, number>();
-  const find = (node: number): number => {
-    let root = node;
-    while ((parent.get(root) ?? root) !== root) root = parent.get(root) ?? root;
-    let at = node;
-    while (at !== root) {
-      const next = parent.get(at) ?? root;
-      parent.set(at, root);
-      at = next;
+  // Keep only roads from which cars can drive to every other road of their
+  // network: a strongly connected part of the roads. A one-way road between
+  // two parts leads into a dead end or out of one, and a part shorter than
+  // `minNetworkM` is joined to nothing else.
+  const part = stronglyConnectedParts(stretches);
+  const partLength = new Map<number, number>();
+  let leftOutOneWay = 0;
+  const within: Stretch[] = [];
+  for (const stretch of stretches) {
+    const from = part.get(stretch.from) ?? -1;
+    if (from !== part.get(stretch.to)) {
+      leftOutOneWay += 1;
+      continue;
     }
-    return root;
-  };
-  for (const stretch of stretches) {
-    if (!parent.has(stretch.from)) parent.set(stretch.from, stretch.from);
-    if (!parent.has(stretch.to)) parent.set(stretch.to, stretch.to);
-    const a = find(stretch.from);
-    const b = find(stretch.to);
-    if (a !== b) parent.set(a, b);
+    within.push(stretch);
+    partLength.set(from, (partLength.get(from) ?? 0) + stretch.lengthM);
   }
-  const networkLength = new Map<number, number>();
-  for (const stretch of stretches) {
-    const root = find(stretch.from);
-    networkLength.set(root, (networkLength.get(root) ?? 0) + stretch.lengthM);
-  }
-  const kept = stretches.filter(
-    (stretch) => (networkLength.get(find(stretch.from)) ?? 0) >= minNetworkM,
+  const kept = within.filter(
+    (stretch) => (partLength.get(part.get(stretch.from) ?? -1) ?? 0) >= minNetworkM,
   );
-  const leftOutNetworks = [...networkLength.values()].filter(
-    (length) => length < minNetworkM,
-  ).length;
+  const leftOutNetworks = [...partLength.values()].filter((length) => length < minNetworkM).length;
 
   // Number the nodes in rows of a twentieth of a degree, west to east, so
   // that neighbours are near in the file and their differences small.
@@ -346,8 +338,73 @@ function assemble(
       shapePoints,
       lengthKm: Math.round(lengthM / 1000),
       leftOutNetworks,
+      leftOutOneWay,
     },
   };
+}
+
+/**
+ * Numbers the strongly connected parts of the roads (Tarjan's algorithm,
+ * without recursion): within a part, cars can drive from every node to
+ * every other. Gives each node's part.
+ */
+function stronglyConnectedParts(stretches: readonly Stretch[]): Map<number, number> {
+  const ids = [...new Set(stretches.flatMap((stretch) => [stretch.from, stretch.to]))];
+  const indexOf = new Map(ids.map((id, index) => [id, index]));
+  const onward: number[][] = ids.map(() => []);
+  for (const stretch of stretches) {
+    const from = indexOf.get(stretch.from) ?? 0;
+    const to = indexOf.get(stretch.to) ?? 0;
+    onward[from]?.push(to);
+    if (!stretch.oneWay) onward[to]?.push(from);
+  }
+
+  const unvisited = -1;
+  const order = new Int32Array(ids.length).fill(unvisited);
+  const low = new Int32Array(ids.length);
+  const onStack = new Uint8Array(ids.length);
+  const stack: number[] = [];
+  const work: { node: number; next: number }[] = [];
+  const part = new Map<number, number>();
+  let visited = 0;
+  let parts = 0;
+  const visit = (node: number) => {
+    order[node] = visited;
+    low[node] = visited;
+    visited += 1;
+    stack.push(node);
+    onStack[node] = 1;
+    work.push({ node, next: 0 });
+  };
+
+  for (let root = 0; root < ids.length; root += 1) {
+    if (order[root] !== unvisited) continue;
+    visit(root);
+    for (let top = work.at(-1); top !== undefined; top = work.at(-1)) {
+      const { node } = top;
+      const roads = onward[node] ?? [];
+      if (top.next < roads.length) {
+        const to = roads[top.next] ?? 0;
+        top.next += 1;
+        if (order[to] === unvisited) visit(to);
+        else if (onStack[to] === 1) low[node] = Math.min(low[node] ?? 0, order[to] ?? 0);
+        continue;
+      }
+      work.pop();
+      const caller = work.at(-1);
+      if (caller !== undefined) {
+        low[caller.node] = Math.min(low[caller.node] ?? 0, low[node] ?? 0);
+      }
+      if (low[node] !== order[node]) continue;
+      for (let member = stack.pop(); member !== undefined; member = stack.pop()) {
+        onStack[member] = 0;
+        part.set(ids[member] ?? 0, parts);
+        if (member === node) break;
+      }
+      parts += 1;
+    }
+  }
+  return part;
 }
 
 /** Douglas–Peucker: keeps the points that bend the line more than `toleranceM`. */

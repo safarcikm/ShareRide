@@ -108,9 +108,11 @@ describe("the road file builder", () => {
 
   it("keeps the direction of one-way roads", () => {
     const direction = (tags: string) => {
-      const file = build([...row([1, 2]), way(1, tags, [1, 2])]);
+      // A road back from node 2 to node 1 through node 3, to the north.
+      const back = [node(3, -21.895, 64.11), way(2, "highway=residential", [2, 3, 1])];
+      const file = build([...row([1, 2]), way(1, tags, [1, 2]), ...back]);
       const graph = readRoadFile(file);
-      const edge = graph.edges[0];
+      const edge = graph.edges.find((road) => road.shape.length === 4);
       if (edge === undefined) return "none";
       if (!edge.oneWay) return "both";
       // Node 1 is the western end.
@@ -137,6 +139,31 @@ describe("the road file builder", () => {
     const { file, summary } = builder.finish({ mapDate, minNetworkM: 500 });
     expect(file.edges).toHaveLength(1);
     expect(summary.leftOutNetworks).toBe(1);
+  });
+
+  it("leaves out one-way roads that cars could not drive back from", () => {
+    const lines = [
+      ...row([1, 2, 3]),
+      way(1, "highway=primary", [1, 2, 3]),
+      // Into the road from a dead end that nothing leads to.
+      node(21, -21.89, 64.11),
+      way(2, "highway=service,oneway=yes", [21, 2]),
+      // Out of the road to a dead end that nothing leads from.
+      node(22, -21.89, 64.09),
+      way(3, "highway=service,oneway=yes", [2, 22]),
+      // A one-way loop at the end of the road, which cars can drive round.
+      node(31, -21.87, 64.1),
+      node(32, -21.875, 64.105),
+      way(4, "highway=service,oneway=yes", [3, 31]),
+      way(5, "highway=service,oneway=yes", [31, 32, 3]),
+    ];
+    const builder = createRoadFileBuilder();
+    for (const line of lines) builder.add(line);
+    const { file, summary } = builder.finish({ mapDate, minNetworkM: 0 });
+    const graph = readRoadFile(file);
+    // The primary road from node 1 to 2 and from 2 to 3, and the loop.
+    expect(graph.edges.map((edge) => edge.oneWay)).toEqual([false, false, true, true]);
+    expect(summary.leftOutOneWay).toBe(2);
   });
 
   it("writes coordinates that read back to the same places", () => {

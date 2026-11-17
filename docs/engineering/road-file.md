@@ -10,8 +10,9 @@ The roads cars may use in Iceland, from OpenStreetMap: motorways to
 residential and living streets, their links, and service roads to places
 such as airports and fuel stations. Left out are mountain (F) roads,
 parking aisles, driveways, tracks, ferries, roads closed to cars or
-private, and small networks joined to nothing else (under 2 km of road in
-all).
+private, one-way roads into or out of a dead end, and small networks joined
+to nothing else (under 2 km of road in all). So from every road in the
+file, cars can drive to every other road of its network.
 
 The file is gzipped JSON (format 1, read by `readRoadFile` in
 `packages/domain/src/roads/road-file.ts`):
@@ -45,7 +46,7 @@ At least every three months, or when roads change:
    `main`. The job downloads the Iceland extract from Geofabrik, checks its
    checksum, keeps the roads with `osmium-tool`, and runs
    `packages/db/src/roads/build-cli.ts`. Its log shows how many roads and
-   nodes the file has.
+   nodes the file has, and how many it left out.
 2. Download the `road-file` artifact and put its `iceland-roads.json.gz` in
    `packages/db/src/roads/`, on a branch.
 3. Run `pnpm --filter @shareride/db test`: the known distances must still
