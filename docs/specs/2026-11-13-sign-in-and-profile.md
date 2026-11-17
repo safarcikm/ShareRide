@@ -172,7 +172,8 @@ Phone first, then wide screen (web) with the same content in a centred column.
 ## 6. Data and API
 
 Entities (see [domain model](../architecture/domain-model.md)): `User`
-(adds `email_verified_at`, `phone_verified_at`, `age_confirmed_at`),
+(adds `email_verified_at`, `phone_verified_at`, `age_confirmed_at`, and
+`profile_id`, the random reference of the public profile, never the ID),
 `AuthIdentity` (provider, subject), `Session` (device, created, last active,
 refresh family), `VerificationCode` (hashed code, expiry, attempts),
 `LegalDocument` (type, version, material flag, text per language, published
@@ -192,7 +193,7 @@ Endpoints (`/v1`, shapes defined in `packages/contracts`):
 | `PUT /me/email` | Send a link to verify an email address; it is mine once opened ([milestone 5 plan, 4.6](../plans/2026-11-15-milestone-5-chat-and-notifications.md#46-email)) |
 | `POST /email-verifications` | Open that link, signed in or not |
 | `GET /me/sessions`, `DELETE /me/sessions/{id}` | List and end sessions |
-| `GET /users/{id}` | Public profile |
+| `GET /people/{profileId}` | Public profile, by its own random reference, never the user ID |
 | `GET /legal/{type}/current` | Current document in my language |
 | `POST /me/legal-acceptances` | Record acceptance |
 

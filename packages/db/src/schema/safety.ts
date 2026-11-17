@@ -169,7 +169,7 @@ export const moderationActions = pgTable(
 /**
  * What an operator wrote down about a person (spec 9, 3.5.3), read in the
  * console. The person gets their own in Download my data, never who wrote
- * them (A48). Erased with the person; kept, by the former member, when the
+ * them (A49). Erased with the person; kept, by the former member, when the
  * operator who wrote them is erased.
  */
 export const operatorNotes = pgTable(
