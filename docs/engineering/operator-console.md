@@ -247,6 +247,60 @@ images from the bucket's origin. `pnpm --filter @shareride/api
 test:contract` checks the adapter against the real bucket with its keys
 (`photo-storage-hetzner.contract.test.ts`).
 
+### Importing drafts from a file
+
+"Import from a file" on the list (`apps/admin/src/pages/meeting-points/import.tsx`)
+adds meeting points as drafts in bulk, for the first corridors (spec 2,
+3.6.9). The operator chooses a CSV file and checks it; the console reads
+it as UTF-8 and sends its text to `POST /admin/v1/meeting-points/import`
+with `save: false`. The API reads it with the domain's
+`readMeetingPointImport` and answers with each row as it will be saved,
+or its problems by column. "Add N drafts" sends the same text with
+`save: true`.
+
+- The first row names the columns, in any order. `name_is`, `latitude`,
+  `longitude`, `type`, `region` and `municipality` are needed; `name_en`,
+  `aliases`, `where_to_stand_is`, `where_to_stand_en`, `amenities`,
+  `season_start` and `season_end` may be left out. Aliases and amenities
+  are separated by `|`. Types, regions and amenities are the catalogue's
+  names (`fuel-station`, `southern-peninsula`, `step-free`). Shelter hours
+  and "Last checked" are added later in each draft's form.
+- Cells may be separated by commas, semicolons or tabs, whichever the
+  first line with text uses most, as Excel in Icelandic saves with
+  semicolons and decimal commas; coordinates take a decimal comma too.
+  Excel's `sep=;` first line names the separator and is left out. Quoted
+  cells may hold the separator, line breaks and doubled quotes. A byte
+  order mark is dropped; a file in another encoding is refused
+  (`not_utf8`). Columns with no name and no text, which spreadsheets save
+  at the end, are left out; a column with text and no name is refused
+  (`unnamed_column`, by its place).
+- Names, aliases and the municipality are put on one line (line breaks,
+  tabs and control characters become single spaces); where to stand keeps
+  its line breaks and loses other control characters.
+- Each row is checked as the form checks a draft
+  (`validateMeetingPointDraft`). A row whose Icelandic name, compared as
+  search compares names, is the name of a point that is not retired, or
+  of an earlier row, is a `duplicate`, so importing the same file twice
+  adds nothing. A name with no letters or digits, such as `?`, is
+  compared as it is, in lower case.
+- Rows with problems are skipped; the rest become drafts, inserted one at
+  a time in the file's order so each row gets its own ID, in one
+  transaction with one audit entry, `meeting_point.imported` (how many
+  were added and skipped, and each new point's ID and name). Imports take
+  an advisory lock, so two at once cannot add the same name.
+- At most 500 rows and 1 MB (`importLimits`). The console refuses a file
+  over 1 MB before sending it. The API answers 413 to a body over 2 MB
+  before reading it, and `validation_failed` to a text over 1 000 000
+  characters. A file that cannot be read gets `validation_failed` with
+  each problem in `details`: `file`, `columns.<name>`, `columns.<place>`
+  or `lines.<number>`.
+
+```csv
+name_is,name_en,aliases,latitude,longitude,type,region,municipality,amenities,season_start,season_end
+N1 Borgarnesi,N1 Borgarnes,Hyrnan,64.5383,-21.9206,fuel-station,west,Borgarbyggð,toilets|shop,,
+Hof,,"Menningarhúsið Hof",65.6839,-18.0878,other,northeast,Akureyrarbær,,5,9
+```
+
 ## Disputes
 
 `apps/api/src/modules/trip-day/admin-routes.ts` holds the console's
