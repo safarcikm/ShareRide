@@ -209,6 +209,31 @@ A point's photos (spec 2, 3.6.3) are in
 - The app's `GET /v1/meeting-points/{id}` has the photos in order, each
   with its link, size and descriptions for screen readers.
 
+In the console, a point's page has a Photos panel
+(`apps/admin/src/pages/meeting-points/photos-panel.tsx`) under its form:
+each photo with its descriptions to change, Move earlier, Move later and
+Remove (which asks first), and a form to add one with both descriptions.
+A retired point's photos are shown without the buttons, and so are a
+point's that another operator retires while the page is open
+(`meeting_point_retired`). Each result takes the focus, as the button that
+made the change may be gone; after a move the focus stays on the photo
+and the result is read out from a live region. Before upload,
+`browserPhotos` (`apps/admin/src/photos.ts`) draws the chosen file on a
+white canvas at most 1 600 pixels on the longer side, turned the way the
+camera held it, and writes a JPEG, at lower quality until it fits in 2 MB. The
+domain's `stripPhotoMetadata` then keeps only the picture's own segments,
+as Safari's canvas may add an Exif segment, and the console runs
+`checkPhotoFile` itself before sending, so a refusal is explained before
+the upload. Tests give the console a fake `PhotoBrowser`; the Playwright
+journey uploads a real file through Chromium's canvas.
+
+The app shows a point's photos on its details, above "Where to stand",
+each the width of the column in its own shape and described for screen
+readers in the user's language. A path on the API (the folder storage) is
+fetched from the API's address (`photoUrl`). A photo that does not load,
+offline or after its link ran out, is replaced by a note with its
+description.
+
 The storage (`apps/api/src/platform/photo-storage.ts`) is chosen by
 `PHOTO_STORAGE`: `hetzner` (the bucket, `photo-storage-hetzner.ts`), a
 `folder` (development, the default; the API serves its files at

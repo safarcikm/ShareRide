@@ -209,6 +209,7 @@ export const is = {
   "meetingPoints.lastChecked": "Síðast yfirfarið {date}",
   "meetingPoints.openInMaps": "Opna í kortaforriti",
   "meetingPoints.mapsFailed": "Ekki tókst að opna kortaforrit á þessu tæki.",
+  "meetingPoints.photoFailed": "Ekki tókst að sækja þessa mynd. Hún sýnir: {description}",
   "meetingPoints.type.fuelStation": "Bensínstöð",
   "meetingPoints.type.busHub": "Strætó- og rútustöð",
   "meetingPoints.type.shoppingCentre": "Verslunarmiðstöð",
@@ -1982,4 +1983,51 @@ export const is = {
   "admin.meetingPoint.reloadedStatus":
     "Þetta er nýjasta afritið. Athugaðu stöðuna og reyndu svo aftur.",
   "admin.meetingPoint.issue.notAfterToday": "Veldu dag eftir daginn í dag.",
+  "admin.meetingPoint.photos": "Myndir",
+  "admin.meetingPoint.photoCount":
+    "{count} af {max} myndum. Appið sýnir þær í þessari röð, þá fyrstu fyrst.",
+  "admin.meetingPoint.photoList": "Myndir staðarins",
+  "admin.meetingPoint.photosFailed": "Ekki tókst að sækja myndirnar.",
+  "admin.meetingPoint.photoNumber": "Mynd {number}",
+  "admin.meetingPoint.photoDescriptionIs": "Lýsing fyrir skjálesara, á íslensku",
+  "admin.meetingPoint.photoDescriptionEn": "Lýsing fyrir skjálesara, á ensku",
+  "admin.meetingPoint.photoDescriptionHint":
+    "Segðu hvað myndin sýnir, til dæmis hvar á að standa, í mesta lagi {max} stafir.",
+  "admin.meetingPoint.saveDescriptions": "Vista lýsingar",
+  "admin.meetingPoint.moveEarlier": "Færa framar",
+  "admin.meetingPoint.moveLater": "Færa aftar",
+  "admin.meetingPoint.removePhoto": "Fjarlægja",
+  "admin.meetingPoint.removePhotoQuestion": "Fjarlægja mynd {number}?",
+  "admin.meetingPoint.removePhotoNote": "Henni er eytt fyrir fullt og allt.",
+  "admin.meetingPoint.removePhotoConfirm": "Fjarlægja mynd {number}",
+  "admin.meetingPoint.addPhoto": "Bæta við mynd",
+  "admin.meetingPoint.photoFile": "Mynd",
+  "admin.meetingPoint.photoFileHint":
+    "Gerðu andlit og bílnúmer ógreinileg fyrst. Stjórnborðið gerir lengri hlið myndarinnar í mesta lagi 1 600 punkta og sleppir því hvar og hvernig hún var tekin.",
+  "admin.meetingPoint.addPhotoConfirm": "Bæta myndinni við",
+  "admin.meetingPoint.maxPhotos":
+    "Staður getur haft í mesta lagi fimm myndir. Fjarlægðu eina til að bæta annarri við.",
+  "admin.meetingPoint.photoAdded": "Mynd bætt við.",
+  "admin.meetingPoint.descriptionsSaved": "Lýsingar vistaðar.",
+  "admin.meetingPoint.photosOrdered": "Röðin vistuð.",
+  "admin.meetingPoint.photoRemoved": "Mynd fjarlægð.",
+  "admin.meetingPoint.photoChanged":
+    "Þessari mynd var breytt annars staðar. Þetta er nýjasta afritið; gerðu breytinguna aftur.",
+  "admin.meetingPoint.photosChanged":
+    "Mynd var bætt við eða fjarlægð annars staðar. Þetta er nýjasti listinn; reyndu aftur.",
+  "admin.meetingPoint.photosRetired":
+    "Þessi mótsstaður er hættur, svo myndunum hans verður ekki breytt lengur.",
+  "admin.meetingPoint.photoStorageOff":
+    "Engin myndageymsla er sett upp hér, svo ekki er hægt að bæta við myndum.",
+  "admin.meetingPoint.photoStorageUnavailable":
+    "Myndageymslan tók ekki við myndinni. Reyndu aftur eftir nokkrar mínútur.",
+  "admin.meetingPoint.photoFailed": "Ekki tókst að breyta myndunum. Reyndu aftur.",
+  "admin.meetingPoint.photoIssue.required": "Veldu mynd.",
+  "admin.meetingPoint.photoIssue.unreadable":
+    "Þessi vafri getur ekki lesið skrána. Veldu JPEG- eða PNG-mynd.",
+  "admin.meetingPoint.photoIssue.notJpeg":
+    "Stjórnborðinu tókst ekki að gera mynd úr þessari skrá til að senda. Veldu JPEG- eða PNG-mynd.",
+  "admin.meetingPoint.photoIssue.metadata":
+    "Myndin ber enn önnur gögn en myndina sjálfa. Prófaðu annan vafra.",
+  "admin.meetingPoint.photoIssue.tooLarge": "Myndin er of stór, jafnvel minnkuð. Veldu minni mynd.",
 } as const satisfies Record<MessageKey, string>;
