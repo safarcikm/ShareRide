@@ -1879,7 +1879,7 @@ export const is = {
   "admin.meetingPoint.addPhoto": "Bæta við mynd",
   "admin.meetingPoint.photoFile": "Mynd",
   "admin.meetingPoint.photoFileHint":
-    "Gerðu andlit og bílnúmer ógreinileg fyrst. Stjórnborðið gerir myndina í mesta lagi 1 600 punkta breiða og sleppir því hvar og hvernig hún var tekin.",
+    "Gerðu andlit og bílnúmer ógreinileg fyrst. Stjórnborðið gerir lengri hlið myndarinnar í mesta lagi 1 600 punkta og sleppir því hvar og hvernig hún var tekin.",
   "admin.meetingPoint.addPhotoConfirm": "Bæta myndinni við",
   "admin.meetingPoint.maxPhotos":
     "Staður getur haft í mesta lagi fimm myndir. Fjarlægðu eina til að bæta annarri við.",
@@ -1891,6 +1891,8 @@ export const is = {
     "Þessari mynd var breytt annars staðar. Þetta er nýjasta afritið; gerðu breytinguna aftur.",
   "admin.meetingPoint.photosChanged":
     "Mynd var bætt við eða fjarlægð annars staðar. Þetta er nýjasti listinn; reyndu aftur.",
+  "admin.meetingPoint.photosRetired":
+    "Þessi mótsstaður er hættur, svo myndunum hans verður ekki breytt lengur.",
   "admin.meetingPoint.photoStorageOff":
     "Engin myndageymsla er sett upp hér, svo ekki er hægt að bæta við myndum.",
   "admin.meetingPoint.photoStorageUnavailable":

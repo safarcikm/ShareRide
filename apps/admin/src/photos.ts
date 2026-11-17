@@ -26,6 +26,9 @@ export const browserPhotos: PhotoBrowser = {
       canvas.height = Math.max(1, Math.round(bitmap.height * scale));
       const context = canvas.getContext("2d");
       if (context === null) throw new Error("The browser cannot draw the photo.");
+      // A JPEG has no transparency: see-through parts of a PNG come out white, not black.
+      context.fillStyle = "white";
+      context.fillRect(0, 0, canvas.width, canvas.height);
       context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
       let bytes: Uint8Array = new Uint8Array();
       for (const quality of qualities) {

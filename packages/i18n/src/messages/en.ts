@@ -1865,7 +1865,7 @@ export const en = {
   "admin.meetingPoint.addPhoto": "Add a photo",
   "admin.meetingPoint.photoFile": "Photo",
   "admin.meetingPoint.photoFileHint":
-    "Blur faces and number plates first. The console makes the photo at most 1 600 pixels wide and leaves out where and how it was taken.",
+    "Blur faces and number plates first. The console makes the photo at most 1 600 pixels on its longer side and leaves out where and how it was taken.",
   "admin.meetingPoint.addPhotoConfirm": "Add the photo",
   "admin.meetingPoint.maxPhotos":
     "A meeting point has at most five photos. Remove one to add another.",
@@ -1877,6 +1877,8 @@ export const en = {
     "This photo was changed elsewhere. This is the newest copy; make your change again.",
   "admin.meetingPoint.photosChanged":
     "A photo was added or removed elsewhere. This is the newest list; try again.",
+  "admin.meetingPoint.photosRetired":
+    "This meeting point was retired, so its photos can no longer change.",
   "admin.meetingPoint.photoStorageOff":
     "No photo storage is set up here, so photos cannot be added.",
   "admin.meetingPoint.photoStorageUnavailable":

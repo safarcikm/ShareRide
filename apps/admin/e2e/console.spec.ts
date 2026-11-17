@@ -243,9 +243,10 @@ test("the operator pauses a meeting point, brings it back and retires a draft", 
 });
 
 // A point's photos (spec 2, 3.6.3; ADR 0029): the browser makes a large
-// picture at most 1 600 pixels wide and sends it as a JPEG the API takes;
-// the operator orders the photos, changes a description and removes one, and
-// the app's details show what is left. Each change is in the audit log.
+// picture at most 1 600 pixels on its longer side and sends it as a JPEG the
+// API takes; the operator orders the photos, changes a description and
+// removes one, and the app's details show what is left. Each change is in
+// the audit log.
 test("the operator adds photos to a meeting point, orders and describes them, and removes one", async () => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/admin/meeting-points");
@@ -267,6 +268,7 @@ test("the operator adds photos to a meeting point, orders and describes them, an
   await addForm.getByLabel("Description for screen readers, in English").fill("The entrance.");
   await addForm.getByRole("button", { name: "Add the photo" }).click();
   await expect(photos.getByRole("status")).toHaveText("Photo added.");
+  await expect(photos.getByRole("status")).toBeFocused();
   const entrance = photos.getByRole("img", { name: "The entrance." });
   await expect(entrance).toBeVisible();
   // Made smaller in the browser, and shown from storage.
@@ -283,10 +285,14 @@ test("the operator adds photos to a meeting point, orders and describes them, an
   await addForm.getByLabel("Description for screen readers, in English").fill("The stop.");
   await addForm.getByRole("button", { name: "Add the photo" }).click();
   await expect(photos).toContainText("2 of 5 photos");
+  // A phone fits the photos and their buttons without scrolling sideways.
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await page.setViewportSize({ width: 1280, height: 800 });
 
   const second = photos.getByRole("listitem", { name: "Photo 2" });
   await second.getByRole("button", { name: "Move earlier" }).click();
-  await expect(photos.getByRole("status")).toHaveText("Order saved.");
+  await expect(photos.getByText("Order saved.")).toBeVisible();
   const first = photos.getByRole("listitem", { name: "Photo 1" });
   await expect(first.getByRole("img")).toHaveAttribute("alt", "The stop.");
   await expect(first.getByRole("button", { name: "Move later" })).toBeFocused();

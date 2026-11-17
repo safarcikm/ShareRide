@@ -31,7 +31,16 @@ interface Draft {
   readonly updatedAt: string;
 }
 
-type Message = { readonly kind: "status" | "alert"; readonly text: MessageKey } | null;
+/**
+ * The last change's result. It takes the focus, so it is read at once, as
+ * the button that made the change may be gone or waiting; only a move keeps
+ * the focus on the photo, and its result is read out where it appears.
+ */
+type Message = {
+  readonly kind: "status" | "alert";
+  readonly text: MessageKey;
+  readonly focus: boolean;
+} | null;
 
 /** Where a refused change shows its field problems: the new photo's form, or a photo's. */
 type Form = "add" | { readonly photoId: string };
@@ -81,10 +90,11 @@ export function PhotosPanel({ point }: { readonly point: AdminMeetingPoint }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Message>(null);
   const messageRef = useRef<HTMLParagraphElement>(null);
-  const focusMessage = useRef(false);
   // Where the focus goes once the list is drawn again, by element ID.
   const focusAfter = useRef<string | null>(null);
-  const readOnly = point.status === "retired";
+  // Retired by someone else while this page was open.
+  const [retiredHere, setRetiredHere] = useState(false);
+  const readOnly = point.status === "retired" || retiredHere;
 
   const idOf = (form: Form, field: Field) =>
     `${base}-${form === "add" ? "add" : form.photoId}-${field}`;
@@ -119,10 +129,7 @@ export function PhotosPanel({ point }: { readonly point: AdminMeetingPoint }) {
   }, [load]);
 
   useEffect(() => {
-    if (focusMessage.current && message !== null) {
-      focusMessage.current = false;
-      messageRef.current?.focus();
-    }
+    if (message?.focus === true) messageRef.current?.focus();
   }, [message]);
 
   useEffect(() => {
@@ -184,11 +191,14 @@ export function PhotosPanel({ point }: { readonly point: AdminMeetingPoint }) {
     setBusy(true);
   }
 
-  function done(next: readonly AdminMeetingPointPhoto[], text: MessageKey, focus = false) {
+  function done(next: readonly AdminMeetingPointPhoto[], text: MessageKey, focus = true) {
     setBusy(false);
     show(next);
-    focusMessage.current = focus;
-    setMessage({ kind: "status", text });
+    setMessage({ kind: "status", text, focus });
+  }
+
+  function say(kind: "status" | "alert", text: MessageKey) {
+    setMessage({ kind, text, focus: true });
   }
 
   function refused(
@@ -209,22 +219,27 @@ export function PhotosPanel({ point }: { readonly point: AdminMeetingPoint }) {
         break;
       case "photo_changed":
         void load(form === "add" ? undefined : form.photoId);
-        setMessage({ kind: "status", text: "admin.meetingPoint.photoChanged" });
+        say("status", "admin.meetingPoint.photoChanged");
         return;
       case "photos_changed":
       case "too_many_photos":
       case "not_found":
         void load();
-        setMessage({ kind: "status", text: "admin.meetingPoint.photosChanged" });
+        say("status", "admin.meetingPoint.photosChanged");
+        return;
+      case "meeting_point_retired":
+        setRetiredHere(true);
+        void load();
+        say("status", "admin.meetingPoint.photosRetired");
         return;
       case "photo_storage_off":
-        setMessage({ kind: "alert", text: "admin.meetingPoint.photoStorageOff" });
+        say("alert", "admin.meetingPoint.photoStorageOff");
         return;
       case "photo_storage_unavailable":
-        setMessage({ kind: "alert", text: "admin.meetingPoint.photoStorageUnavailable" });
+        say("alert", "admin.meetingPoint.photoStorageUnavailable");
         return;
     }
-    setMessage({ kind: "alert", text: "admin.meetingPoint.photoFailed" });
+    say("alert", "admin.meetingPoint.photoFailed");
   }
 
   async function add() {
@@ -309,7 +324,7 @@ export function PhotosPanel({ point }: { readonly point: AdminMeetingPoint }) {
     const hasLater = at < order.length - 1;
     const button = by === -1 ? (hasEarlier ? "earlier" : "later") : hasLater ? "later" : "earlier";
     focusAfter.current = `${base}-${moved}-${button}`;
-    done(result.data.photos, "admin.meetingPoint.photosOrdered");
+    done(result.data.photos, "admin.meetingPoint.photosOrdered", false);
   }
 
   async function remove(photo: AdminMeetingPointPhoto) {
@@ -322,7 +337,7 @@ export function PhotosPanel({ point }: { readonly point: AdminMeetingPoint }) {
       refused({ photoId: photo.id }, result.error);
       return;
     }
-    done(result.data.photos, "admin.meetingPoint.photoRemoved", true);
+    done(result.data.photos, "admin.meetingPoint.photoRemoved");
   }
 
   const problemOf = (form: Form, field: Field) =>
@@ -393,7 +408,7 @@ export function PhotosPanel({ point }: { readonly point: AdminMeetingPoint }) {
           {t("admin.meetingPoint.photoDescriptionHint", { max: photoLimits.descriptionMaxLength })}
         </p>
       )}
-      {message === null ? null : (
+      {message?.focus === true ? (
         <p
           ref={messageRef}
           className={`${message.kind === "alert" ? "problem" : "notice"} type-body`}
@@ -402,7 +417,13 @@ export function PhotosPanel({ point }: { readonly point: AdminMeetingPoint }) {
         >
           {t(message.text)}
         </p>
-      )}
+      ) : null}
+      {/* Always there, so a result put in it is read out while the focus stays put. */}
+      <div aria-live="polite">
+        {message === null || message.focus ? null : (
+          <p className="notice type-body">{t(message.text)}</p>
+        )}
+      </div>
 
       {list.length === 0 ? null : (
         <ol className="photo-list" aria-label={t("admin.meetingPoint.photoList")}>

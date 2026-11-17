@@ -216,6 +216,7 @@ describe("stripPhotoMetadata", () => {
   it("keeps only the picture of a file as Safari's canvas writes it", () => {
     const tables = jpeg().slice(2 + jfif.length);
     const safari = Uint8Array.from([0xff, 0xd8, ...exif, ...photoshop, ...tables]);
+    expect(checkPhotoFile(safari)).toEqual({ ok: false, error: "metadata" });
     const stripped = stripPhotoMetadata(safari);
     expect(stripped).toEqual(Uint8Array.from([0xff, 0xd8, ...tables]));
     expect(checkPhotoFile(stripped)).toEqual({ ok: true, value: { width: 1200, height: 900 } });
