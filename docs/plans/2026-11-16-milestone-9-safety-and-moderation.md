@@ -388,7 +388,7 @@ In four parts, each its own pull request:
 - [ ] 7a: `/admin/v1/reports` and the report page, the logged
       conversation, the actions (close, warn, suspend, reinstate, hide
       content, cancel a trip) and the appeals
-- [ ] 7b: their console pages, with the statement shown before it goes
+- [x] 7b: their console pages, with the statement shown before it goes
 - Verify: integration tests (only the operator; only a message report
   opens a conversation, and it is logged); a console browser journey:
   dismiss one report, suspend from another, the reporter sees each outcome
@@ -397,6 +397,11 @@ In four parts, each its own pull request:
   is logged. Ratings and reliability join the page with milestone 7's
   profiles. An appeal shows the action and links its report; what was
   hidden is read there.
+- Found while building (7b): the browser journey files two reports about
+  sample drivers' trips through the test API (`POST /e2e/report`), closes
+  one and suspends from the other; the reporter's outcome under My reports
+  is covered by the integration tests, as the sample drivers cannot sign
+  in. After closing a report, "All reports" goes back to the open ones.
 
 ### PR 8: `feat(console)`: users, trips and bookings
 

@@ -16,15 +16,18 @@
 // E2E_ADMIN_ORIGIN.
 // `POST /e2e/suspend` with `{ "phone": "+354…", "reason": "…" }` suspends
 // that person with no end, as the console will, for the safety journey.
-// Never use it for anything else.
+// `POST /e2e/report` with `{ "by": "Jón", "tripOf": "Anna", "category":
+// "safety", "description": "…" }` files a report about a sample driver's
+// trip as another sample driver, for the console's reports journey.
+// Never use either for anything else.
 import { randomBytes } from "node:crypto";
 import { appendFileSync, writeFileSync } from "node:fs";
 import { serve } from "@hono/node-server";
 import { pingDatabase, schema } from "@shareride/db";
 import { seedDevelopmentData } from "@shareride/db/seed";
 import { freshTestDatabase } from "@shareride/db/testing";
-import { operatorRole } from "@shareride/domain";
-import { eq, sql } from "drizzle-orm";
+import { operatorRole, reportCategories, type ReportCategory } from "@shareride/domain";
+import { and, eq, sql } from "drizzle-orm";
 import { createApp } from "./app.ts";
 import { createLogger } from "./logger.ts";
 import {
@@ -35,6 +38,7 @@ import {
 import { createModerationService } from "./modules/moderation/index.ts";
 import { createNotificationWorker } from "./modules/notifications/index.ts";
 import { createExportBuilder, exportCipherPurpose } from "./modules/privacy/index.ts";
+import { createReportService } from "./modules/safety/index.ts";
 import { moveTripForTests } from "./modules/trip-day/testing.ts";
 import { createFileCipher, createKeyedHasher } from "./platform/crypto.ts";
 import type { EmailSender } from "./platform/email.ts";
@@ -190,6 +194,49 @@ app.post("/e2e/suspend", async (c) => {
     null,
   );
   return result.ok ? c.json(result.value, 200) : c.json({ error: result.error.code }, 409);
+});
+
+// A report by one sample driver about another's trip, as the app files it
+// (spec 9, 3.1), for the console's reports journey.
+const reports = createReportService({ db: connection.db, clock });
+app.post("/e2e/report", async (c) => {
+  const body: unknown = await c.req.json();
+  const field = (name: string) =>
+    typeof body === "object" && body !== null && name in body
+      ? (body as Record<string, unknown>)[name]
+      : undefined;
+  const by = field("by");
+  const tripOf = field("tripOf");
+  const category = field("category");
+  const description = field("description");
+  if (
+    typeof by !== "string" ||
+    typeof tripOf !== "string" ||
+    typeof description !== "string" ||
+    !reportCategories.some((one) => one === category)
+  ) {
+    return c.json({ error: "Send { by, tripOf, category, description }." }, 400);
+  }
+  const { users, trips } = schema;
+  const [reporter] = await connection.db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.firstName, by));
+  const [trip] = await connection.db
+    .select({ id: trips.id })
+    .from(trips)
+    .innerJoin(users, eq(users.id, trips.driverId))
+    .where(and(eq(users.firstName, tripOf), eq(trips.status, "published")))
+    .limit(1);
+  if (reporter === undefined || trip === undefined) {
+    return c.json({ error: "No such person or trip." }, 404);
+  }
+  const result = await reports.file(reporter.id, {
+    about: { kind: "trip", tripId: trip.id },
+    category: category as ReportCategory,
+    description,
+  });
+  return result.ok ? c.json(result.value, 201) : c.json({ error: result.error.code }, 409);
 });
 
 // A browser registers no push token, so nothing is pushed.
