@@ -238,8 +238,8 @@ Endpoints (`/v1`, shapes defined in `packages/contracts`):
 | `POST /bookings/{id}/driver-absent` | Passenger: the driver didn't come |
 | `POST /disputes/{id}/answer` | The other side agrees or contests |
 | `POST /bookings/{id}/review` | Rate and review |
-| `GET /users/{id}/reviews?role=` | Visible reviews of a user, paged |
-| `GET /users/{id}/reliability` | The counts behind the figure |
+| `GET /people/{profileId}/reviews?role=` | Visible reviews of a person, paged |
+| `GET /people/{profileId}` | The profile, with the rating and the counts behind the figure (spec 1) |
 
 Console endpoints under `/admin/v1`: list and decide disputes; list weather
 and road-closure cancellations and change whether one counts; the reliability

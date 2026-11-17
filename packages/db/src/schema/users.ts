@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { check, pgTable, text } from "drizzle-orm/pg-core";
+import { check, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { at, id, timestamps } from "./columns.ts";
 
 /**
@@ -45,6 +45,12 @@ export const users = pgTable(
      */
     deleteAfter: at(),
     status: text().notNull().default("active"),
+    /**
+     * The person's public reference, for their profile (spec 1, 3.5; spec 8,
+     * 3.7 and 3.8): random, so it cannot be guessed or linked to anything
+     * else, and never the ID their account, trips and bookings use.
+     */
+    profileId: uuid().notNull().defaultRandom().unique("users_profile_id_unique"),
     /** The end of a suspension (spec 9, 3.6); empty while suspended means for good. */
     suspendedUntil: at(),
     ...timestamps,
