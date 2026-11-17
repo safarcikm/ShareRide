@@ -122,7 +122,16 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     export: { section: "trips_posted" },
     personColumns: ["driverId"],
     onDeletion: keep(
-      ["status", "bookingMode", "luggage", "pets", "smoking", "chat", "cancelReason"],
+      [
+        "status",
+        "bookingMode",
+        "luggage",
+        "pets",
+        "smoking",
+        "chat",
+        "cancelledBy",
+        "cancelReason",
+      ],
       ["note", "cancelNote"],
       "drafts are deleted, and trips not yet departed are cancelled first",
     ),
@@ -263,6 +272,18 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
       [],
       "kept 3 years after closure for safety, the person's side emptied (spec 9, section 7)",
     ),
+  },
+  moderation_actions: {
+    category: "moderation",
+    // The person's notices: what ShareRide did and why, and their appeal (R9.5); never which operator.
+    export: { section: "notices" },
+    personColumns: ["userId", "operatorId", "appealAnsweredById"],
+    onDeletion: keep(
+      ["kind", "rule", "reason", "contentKind", "appealText", "appealAnswer", "appealOutcome"],
+      [],
+      "kept 3 years for safety, as reports, so a suspension cannot be undone by deleting (spec 9, section 7)",
+    ),
+    otherIds: ["contentId"],
   },
   blocks: {
     category: "blocks",

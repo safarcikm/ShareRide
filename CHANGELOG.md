@@ -519,6 +519,27 @@ releases follow [Semantic Versioning](https://semver.org/).
   sent is dropped once its report is closed or the operator loses the
   role. A new outbox event `ReportFiled`; notifications gain `report_id`,
   in migration `0026_reports`.
+- Suspension, warnings and reinstating (milestone 9, PR 6a, spec 9, 3.4.3
+  and 3.6; R9.5, R9.7, R9.10): the operator's `suspend`, `warn` and
+  `reinstate` in `apps/api/src/modules/moderation/`, for the console to
+  call. A suspension has a rule, a reason written for the person and an
+  end, or none; it cancels at once the person's upcoming trips and every
+  booking or request they have not boarded, as ShareRide, with full
+  refunds of what was paid and nothing on anyone's reliability. The
+  others read only that ShareRide cancelled ("ShareRide cancelled the
+  trip", "Cancelled by ShareRide: Jón", and a line in the chat), never
+  why. A trip under way carries on. While suspended, searching, booking,
+  requesting, publishing, changing a trip and sending messages answer 403
+  `account_suspended` with `suspendedUntil`; the person stays signed in
+  to read, download or delete their data. Every minute the API ends the
+  suspensions whose end has passed. Each action writes one audit entry
+  (IDs and the names of the fields changed only) and sends the person
+  their notice: the push says what happened, the email adds the rule,
+  the reason and until when it can be appealed in the app (14 days).
+  Migration `0027_moderation` adds `moderation_actions`,
+  `users.suspended_until`, `trips.cancelled_by` (earlier cancellations
+  are the driver's) and `notifications.moderation_action_id`; "Download
+  my data" has Notices from ShareRide.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its

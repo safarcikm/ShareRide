@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import { defaultSafetySettings } from "./settings.ts";
 import {
   checkActive,
+  checkReinstatement,
   checkSuspension,
   isSuspended,
+  operatorBookingRefund,
   restrictedActions,
   suspensionEffects,
   type SuspendedPassengerBooking,
@@ -84,6 +86,24 @@ describe("suspending someone (3.6.1)", () => {
   });
 });
 
+describe("reinstating someone (3.6.3)", () => {
+  it("needs a note for the person, trimmed and held to the settings' length", () => {
+    expect(checkReinstatement("  Shown to be a mix-up.  ", defaultSafetySettings)).toEqual({
+      ok: true,
+      value: "Shown to be a mix-up.",
+    });
+    expect(checkReinstatement(" \n ", defaultSafetySettings)).toEqual({
+      ok: false,
+      error: { code: "reason_missing" },
+    });
+    const settings = { ...defaultSafetySettings, textMaxLength: 5 };
+    expect(checkReinstatement("Too long", settings)).toEqual({
+      ok: false,
+      error: { code: "too_long" },
+    });
+  });
+});
+
 describe("what a suspension cancels (3.6.2, R9.10, milestone 9 decision 3)", () => {
   const trips = [
     { id: "upcoming", status: "published", departsAt: later },
@@ -132,5 +152,13 @@ describe("what a suspension cancels (3.6.2, R9.10, milestone 9 decision 3)", () 
     expect(
       suspensionEffects([], [booking("later-stop", "confirmed", "departed", later)], now).bookings,
     ).toEqual([{ id: "later-stop", event: "cancel", refund: kr(2900) }]);
+  });
+});
+
+describe("ShareRide's refund when it cancels a booking (decision 3)", () => {
+  it("gives back all that was paid, and nothing for what was not", () => {
+    expect(operatorBookingRefund("confirmed", kr(5600))).toEqual(kr(5600));
+    expect(operatorBookingRefund("accepted", kr(5600))).toEqual(kr(0));
+    expect(operatorBookingRefund("requested", kr(5600))).toEqual(kr(0));
   });
 });

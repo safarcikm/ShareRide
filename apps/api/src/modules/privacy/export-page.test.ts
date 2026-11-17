@@ -1,5 +1,6 @@
 import { schema } from "@shareride/db";
 import {
+  appealOutcomes,
   bookingModes,
   bookingStatuses,
   cancelReasons,
@@ -11,6 +12,8 @@ import {
   exportSections,
   legalDocumentTypes,
   luggageOptions,
+  moderationActionKinds,
+  moderationRules,
   notificationKinds,
   paymentStatuses,
   petOptions,
@@ -135,7 +138,12 @@ describe("codeText", () => {
       "active",
       "suspended",
     ],
-    kind: [...notificationKinds, ...tripChangeKinds, ...schema.messageKinds],
+    kind: [
+      ...notificationKinds,
+      ...tripChangeKinds,
+      ...schema.messageKinds,
+      ...moderationActionKinds,
+    ],
     channel: channels,
     platform: ["ios", "android", "web"],
     endReason: [
@@ -161,6 +169,8 @@ describe("codeText", () => {
     subject: reportSubjects,
     category: reportCategories,
     outcome: reportOutcomes,
+    rule: moderationRules,
+    appealOutcome: appealOutcomes,
     document: legalDocumentTypes,
     locale: locales,
     languages: spokenLanguages,

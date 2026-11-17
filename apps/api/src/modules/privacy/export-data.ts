@@ -19,6 +19,7 @@ import { quickOf, systemLineOf } from "../chat/service.ts";
 
 const {
   blocks,
+  moderationActions,
   bookingSegmentPrices,
   bookings,
   conversations,
@@ -466,6 +467,25 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     .where(eq(blocks.blockerId, userId))
     .orderBy(asc(blocks.createdAt), asc(blocks.id));
 
+  // What ShareRide did about the person and why, with their appeals (spec 9,
+  // R9.5); never which operator, nor the report it came from.
+  const noticed = await q
+    .select({
+      kind: moderationActions.kind,
+      rule: moderationActions.rule,
+      reason: moderationActions.reason,
+      until: moderationActions.until,
+      createdAt: moderationActions.createdAt,
+      appeal: moderationActions.appealText,
+      appealedAt: moderationActions.appealedAt,
+      answer: moderationActions.appealAnswer,
+      appealOutcome: moderationActions.appealOutcome,
+      answeredAt: moderationActions.appealAnsweredAt,
+    })
+    .from(moderationActions)
+    .where(eq(moderationActions.userId, userId))
+    .orderBy(asc(moderationActions.createdAt), asc(moderationActions.id));
+
   const since = new Date(now.getTime() - notificationDays * 24 * 3600 * 1000);
   const told = await q
     .select({
@@ -518,6 +538,13 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
         closedAt: when(row.closedAt),
       })),
       blocks: blocked.map((row) => ({ firstName: row.firstName ?? "", since: when(row.since) })),
+      notices: noticed.map((row) => ({
+        ...row,
+        until: when(row.until),
+        createdAt: when(row.createdAt),
+        appealedAt: when(row.appealedAt),
+        answeredAt: when(row.answeredAt),
+      })),
       notifications: told.map((row) => ({
         kind: row.kind,
         channel: row.channel,

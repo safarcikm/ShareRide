@@ -232,7 +232,7 @@ export const bookTripRoute = defineRoute({
     401: unauthenticated,
     403: {
       description:
-        "account_incomplete: verify the phone number and accept the current terms first (R5.1); own_trip",
+        "account_incomplete: verify the phone number and accept the current terms first (R5.1); own_trip; account_suspended, with `suspendedUntil` (spec 9, 3.6.2)",
       ...errors,
     },
     404: { description: "not_found: no such published trip", ...errors },

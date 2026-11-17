@@ -443,7 +443,12 @@ describe("the driver's \"I'm here\" (spec 8, 3.2; R8.3)", () => {
     if (hlemmur === undefined) throw new Error("No stop at Hlemmur.");
     await api.connection.db
       .update(schema.trips)
-      .set({ status: "cancelled", cancelledAt: api.now(), cancelReason: "illness" })
+      .set({
+        status: "cancelled",
+        cancelledAt: api.now(),
+        cancelledBy: "driver",
+        cancelReason: "illness",
+      })
       .where(eq(schema.trips.id, airport));
     const cancelled = await tripAs(jon, airport);
     expect(cancelled.phase).toBeNull();

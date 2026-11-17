@@ -142,6 +142,14 @@ export interface AuthServiceDependencies {
 
 const addSeconds = (date: Date, seconds: number) => new Date(date.getTime() + seconds * 1000);
 
+/**
+ * The accounts that can sign in and stay signed in. A suspended person
+ * keeps reading, downloading and deleting their data (spec 9, 3.6.2); the
+ * API refuses them what a suspension takes away.
+ */
+const signInStatuses = ["active", "suspended"];
+const canSignIn = (status: string) => signInStatuses.includes(status);
+
 /** How often `last_active_at` is written, so not every request writes. */
 const lastActiveWriteSeconds = 5 * 60;
 
@@ -411,7 +419,7 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
             .returning({ id: users.id, status: users.status });
           if (user === undefined) throw new Error("The new user was not stored.");
         }
-        if (user.status !== "active") return err({ code: "account_unavailable" });
+        if (!canSignIn(user.status)) return err({ code: "account_unavailable" });
 
         const [session] = await tx
           .insert(sessions)
@@ -457,7 +465,7 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
           .for("update");
         if (row === undefined) return err({ code: "refresh_invalid" });
         const { token, session } = row;
-        if (row.userStatus !== "active") {
+        if (!canSignIn(row.userStatus)) {
           await endSessions(tx, [session.id], "account_unavailable", now);
           return err({ code: "session_ended" });
         }
@@ -543,7 +551,7 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
             eq(sessionTokens.kind, "access"),
             gt(sessionTokens.expiresAt, now),
             isNull(sessions.endedAt),
-            eq(users.status, "active"),
+            inArray(users.status, signInStatuses),
           ),
         )
         .limit(1);

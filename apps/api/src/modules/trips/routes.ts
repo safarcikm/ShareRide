@@ -17,6 +17,7 @@ import type { Context, MiddlewareHandler } from "hono";
 import { authOf, type AppEnv } from "../../context.ts";
 import { errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
+import { accountSuspended } from "../account/standing.ts";
 import type { ChangeNotAllowed, TripChangeService } from "./changes.ts";
 import type { DraftInvalid, TripService } from "./drafts.ts";
 import type { RouteService, StopUnavailable } from "./service.ts";
@@ -211,6 +212,8 @@ export function registerDraftRoutes(
     const result = await drafts.publish(authOf(c).userId, id);
     if (result.ok) return c.json(result.value, 200);
     switch (result.error.code) {
+      case "account_suspended":
+        return accountSuspended(c, result.error);
       case "not_found":
         return tripNotFound(c);
       case "trip_not_draft":
@@ -301,6 +304,8 @@ export function registerTripChangeRoutes(
     const result = await changes.change(authOf(c).userId, id, body, { preview });
     if (result.ok) return c.json(result.value, 200);
     switch (result.error.code) {
+      case "account_suspended":
+        return accountSuspended(c, result.error);
       case "not_found":
         return tripNotFound(c);
       case "trip_not_changeable":

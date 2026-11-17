@@ -8,6 +8,7 @@ import { createApp } from "./app.ts";
 import { ConfigError, loadConfig, type Config } from "./config.ts";
 import { createLogger } from "./logger.ts";
 import { expireAllDueBookings } from "./modules/bookings/index.ts";
+import { endDueSuspensions } from "./modules/moderation/index.ts";
 import { createNotificationWorker } from "./modules/notifications/index.ts";
 import { createPaymentService } from "./modules/payments/index.ts";
 import { moveTripsOn } from "./modules/trips/index.ts";
@@ -110,6 +111,11 @@ const jobs = [
   every(60_000, "trip-day", async () => {
     const moved = await moveTripsOn(database.db, new Date(), defaultTripDaySettings);
     if (moved.departed + moved.completed > 0) logger.info(moved, "trips moved on");
+  }),
+  // Suspensions end when their end passes, and each person is told (spec 9, 3.6.3).
+  every(60_000, "suspensions", async () => {
+    const ended = await endDueSuspensions(database.db, new Date());
+    if (ended > 0) logger.info({ ended }, "suspensions ended");
   }),
 ];
 // "Download my data" files (spec 11, 3.2), built within seconds of asking.

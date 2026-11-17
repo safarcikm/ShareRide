@@ -21,6 +21,7 @@ import {
   statusAt,
   statusOnAcceptance,
   tripCancellation,
+  type AccountSuspended,
   type BookingEvent,
   type BookingMode,
   type BookingProblem,
@@ -42,8 +43,15 @@ import {
 import { and, asc, eq, inArray, ne, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { AccountService } from "../account/index.ts";
+import { lockActive } from "../account/standing.ts";
 import { addSystemLine } from "../chat/conversations.ts";
 import { oweRefund } from "../payments/refunds.ts";
+import {
+  applyTripCancellation,
+  heldBookingsOf,
+  heldStatuses,
+  toCancelWithTrip,
+} from "./cancel-trip.ts";
 import { bookingConfirmed } from "./confirmed.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import { recordEvents } from "../notifications/outbox.ts";
@@ -84,6 +92,8 @@ export interface NotFound {
 export type BookError =
   | NotFound
   | { readonly code: "account_incomplete" }
+  /** Suspended: no booking or request (spec 9, 3.6.2). */
+  | AccountSuspended
   /** The meeting points shown at the part's positions are no longer there (spec 6, 3.2). */
   | { readonly code: "stops_changed" }
   | BookingProblem;
@@ -198,9 +208,6 @@ export interface BookingService {
   /** The driver's published trip, with its requests and bookings (spec 5, 3.7). */
   tripBookings(driverId: string, tripId: string): Promise<TripBookings | undefined>;
 }
-
-/** Statuses a booking can hold seats in, before its deadline is checked (rule S1). */
-const heldStatuses: BookingStatus[] = ["requested", "accepted", "confirmed"];
 
 /** What a driver sees on the trip: everyone who is, or was, riding along. */
 const onTripStatuses: BookingStatus[] = [
@@ -639,11 +646,9 @@ export function createBookingService(dependencies: {
       return db.transaction(async (tx) => {
         // One booking at a time per passenger, so two cannot overlap (R5.10)
         // or use the same attempt key; then the trip, for its seats (R5.2).
-        await tx
-          .select({ id: users.id })
-          .from(users)
-          .where(eq(users.id, passengerId))
-          .for("update");
+        // A suspension holds the same lock while it cancels their bookings.
+        const active = await lockActive(tx, passengerId, clock());
+        if (!active.ok) return active;
         const again = await retried(tx);
         if (again !== undefined) return again;
         const trip = await lockTrip(tx, tripId);
@@ -923,18 +928,10 @@ export function createBookingService(dependencies: {
         // After the lock, which may have waited while a deadline passed.
         const now = clock();
         await expireDueBookings(tx, tripId, now);
-        const held = await tx
-          .select()
-          .from(bookings)
-          .where(and(eq(bookings.tripId, tripId), inArray(bookings.status, heldStatuses)))
-          .orderBy(asc(bookings.createdAt), asc(bookings.id));
+        const held = await heldBookingsOf(tx, tripId);
         const outcome = tripCancellation(
           { status: trip.status as "published", departsAt: trip.departsAt ?? new Date(0) },
-          held.map((booking) => ({
-            id: booking.id,
-            status: booking.status as "requested" | "accepted" | "confirmed",
-            total: isk(booking.totalPrice),
-          })),
+          toCancelWithTrip(held),
           input.reason,
           now,
         );
@@ -944,68 +941,12 @@ export function createBookingService(dependencies: {
         if (countsOnReliability !== input.countsOnReliability) {
           return err({ code: "terms_changed", countsOnReliability });
         }
-        await tx
-          .update(trips)
-          .set({
-            status: "cancelled",
-            cancelledAt: now,
-            cancelReason: input.reason,
-            cancelNote: note,
-            countsOnReliability,
-            updatedAt: now,
-          })
-          .where(eq(trips.id, tripId));
-        const stops = await stopsOf(tx, tripId);
-        for (const { id, outcome: what, refund } of outcome.value.bookings) {
-          const booking = held.find((row) => row.id === id);
-          if (booking === undefined) continue;
-          await tx
-            .update(bookings)
-            .set(
-              what === "declined"
-                ? {
-                    status: "declined",
-                    decidedAt: now,
-                    expiresAt: null,
-                    // So the passenger reads why: the trip's reason and note.
-                    cancelledAt: now,
-                    cancelledBy: "driver",
-                    cancelReason: input.reason,
-                    cancelNote: note,
-                    updatedAt: now,
-                  }
-                : {
-                    status: "cancelled",
-                    cancelledAt: now,
-                    cancelledBy: "driver",
-                    cancelReason: input.reason,
-                    cancelNote: note,
-                    refundAmount: refund.amount,
-                    // The trip counts once, not each of its bookings (spec 8, 3.8).
-                    countsOnReliability: false,
-                    updatedAt: now,
-                  },
-            )
-            .where(eq(bookings.id, id));
-          // Requests hold their seats too (rule S1).
-          await changeOccupancy(tx, tripId, partOf(stops, booking), -booking.seats);
-          if (refund.amount > 0) await oweRefund(tx, id, refund, now);
-          if (what === "cancelled") {
-            await addSystemLine(
-              tx,
-              id,
-              { key: "cancelled", by: "driver", reason: input.reason, note, wholeTrip: true },
-              now,
-            );
-          }
-        }
-        await recordEvents(
+        await applyTripCancellation(
           tx,
-          outcome.value.bookings.map(({ id }) => ({
-            type: "TripCancelled",
-            tripId,
-            bookingId: id,
-          })),
+          tripId,
+          held,
+          outcome.value,
+          { by: "driver", reason: input.reason, note },
           now,
         );
         return ok(undefined);

@@ -30,10 +30,21 @@ export const errorResponseSchema = z.object({
     bookingsAtStop: z.int().positive().optional(),
     /** When "I'm here" opens at the stop (`check_in_not_open`, R8.3). */
     opensAt: timestampSchema.optional(),
+    /** When the suspension ends, or null for one for good (`account_suspended`, spec 9, 3.6). */
+    suspendedUntil: timestampSchema.nullable().optional(),
   }),
 });
 
 export type ErrorResponse = z.infer<typeof errorResponseSchema>;
+
+/**
+ * 403 for what a suspended account can no longer do: search, book, request,
+ * post or change a trip, send a message (spec 9, 3.6.2; R9.10).
+ */
+export const accountSuspendedResponse = {
+  description: "account_suspended, with `suspendedUntil` (null for good): the account is suspended",
+  schema: errorResponseSchema,
+} as const;
 
 /** Error codes shared by every endpoint. Each module adds its own. */
 export const commonErrorCodes = [

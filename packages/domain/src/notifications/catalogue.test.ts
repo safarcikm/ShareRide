@@ -62,6 +62,11 @@ describe("who is told about each event (spec 7, 3.3)", () => {
       { type: "BookingCancelled", by: "passenger" },
       [{ kind: "booking_cancelled_by_passenger", to: "driver" }],
     ],
+    // A suspended passenger's booking (spec 9, 3.6): the driver, never why.
+    [
+      { type: "BookingCancelled", by: "operator" },
+      [{ kind: "booking_cancelled_by_shareride", to: "driver" }],
+    ],
     [{ type: "RefundIssued" }, [{ kind: "refund_issued", to: "passenger" }]],
     [
       { type: "MeetingPointChanged" },
@@ -127,6 +132,7 @@ describe("the channels of each kind (spec 7, 3.3 and 3.4)", () => {
     ["trip_cancelled", true, "always", true],
     ["booking_cancelled_by_driver", true, "always", true],
     ["booking_cancelled_by_passenger", true, "always", false],
+    ["booking_cancelled_by_shareride", true, "always", false],
     ["refund_issued", false, "always", false],
     ["meeting_point_changed", true, "always", true],
     ["meeting_point_changed_driver", true, "always", false],
@@ -141,6 +147,10 @@ describe("the channels of each kind (spec 7, 3.3 and 3.4)", () => {
     ["checked_in", true, "never", false],
     ["checked_in_driver", true, "never", false],
     ["data_export_ready", true, "always", false],
+    // The statement of reasons (spec 9, R9.5; milestone 9 decision 1): in
+    // the app, with a copy by email.
+    ["moderation_action", true, "always", false],
+    ["suspension_ended", true, "always", false],
     ["report_filed", true, "never", false],
     ["report_filed_urgent", true, "never", true],
   ] as const)("%s: push %s, email %s, SMS %s", (kind, push, email, sms) => {
@@ -323,6 +333,8 @@ describe("the operator's alert of a new report (spec 9, 3.4.1; R9.9)", () => {
     channelsFor(kind, { ...operator, ...changes }, now, defaultNotificationSettings);
 
   it("are notices to the operator, not about a trip or the account", () => {
+    expect(isAccountNotice("moderation_action")).toBe(true);
+    expect(isAccountNotice("suspension_ended")).toBe(true);
     expect(operatorNoticeKinds.every(isOperatorNotice)).toBe(true);
     expect(isOperatorNotice("data_export_ready")).toBe(false);
     expect(operatorNoticeKinds.some(isAccountNotice)).toBe(false);

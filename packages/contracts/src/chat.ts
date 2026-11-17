@@ -2,7 +2,7 @@ import { cancelReasons, lateMinutes, quickMessageKeys } from "@shareride/domain"
 import { z } from "zod";
 import { bookingSchema, carSummarySchema } from "./bookings.ts";
 import { timestampSchema } from "./common.ts";
-import { errorResponseSchema } from "./errors.ts";
+import { accountSuspendedResponse, errorResponseSchema } from "./errors.ts";
 import { localisedTextSchema } from "./meeting-points.ts";
 import { defineRoute } from "./route.ts";
 
@@ -56,7 +56,7 @@ export const chatMessageSchema = z.object({
   /** A text message's text, as written. */
   text: z.string().nullable(),
   quick: quickMessageSchema.nullable(),
-  /** A line about the booking: opened, the departure or the car changed, it or its trip cancelled by me or them with the reason (spec 6), or "I'm here" (spec 8). */
+  /** A line about the booking: opened, the departure or the car changed, it or its trip cancelled by me or them with the reason (spec 6) or by ShareRide (spec 9), or "I'm here" (spec 8). */
   system: z
     .discriminatedUnion("key", [
       z.object({ key: z.literal("opened") }),
@@ -78,6 +78,8 @@ export const chatMessageSchema = z.object({
       z.object({ key: z.literal("stop_removed"), stop: localisedTextSchema }),
       /** "I'm here" at the passenger's meeting point, mine or theirs (spec 8, 3.2). */
       z.object({ key: z.literal("checked_in"), by: z.enum(["me", "them"]) }),
+      /** ShareRide cancelled the booking, or its whole trip, never saying why (spec 9, 3.6). */
+      z.object({ key: z.literal("cancelled_by_shareride"), wholeTrip: z.boolean() }),
       z.object({
         key: z.literal("cancelled"),
         by: z.enum(["me", "them"]),
@@ -188,6 +190,7 @@ export const sendMessageRoute = defineRoute({
       ...errors,
     },
     401: unauthenticated,
+    403: accountSuspendedResponse,
     404: notFound,
     409: notConfirmed,
     429: tooMany,
@@ -229,6 +232,7 @@ export const messageAllPassengersRoute = defineRoute({
       ...errors,
     },
     401: unauthenticated,
+    403: accountSuspendedResponse,
     404: { description: "not_found: no such published trip of yours", ...errors },
     429: tooMany,
   },

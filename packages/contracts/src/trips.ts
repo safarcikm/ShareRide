@@ -12,7 +12,7 @@ import {
 } from "@shareride/domain";
 import { z } from "zod";
 import { moneySchema, timestampSchema } from "./common.ts";
-import { errorResponseSchema } from "./errors.ts";
+import { accountSuspendedResponse, errorResponseSchema } from "./errors.ts";
 import { dateSchema, meetingPointSummarySchema } from "./meeting-points.ts";
 import { defineRoute } from "./route.ts";
 
@@ -270,7 +270,7 @@ export const myTripSchema = z.object({
   openRequests: z.int().nonnegative(),
   /** The first deadline among those requests, for "Answer by" (spec 16, 3.3); null for none. */
   requestsCloseAt: timestampSchema.nullable(),
-  /** Why the driver cancelled it, with their note; null unless cancelled (spec 6, 3.3). */
+  /** Why the driver cancelled it, with their note; null unless the driver cancelled it (spec 6, 3.3), as when ShareRide did (spec 9, 3.6). */
   cancellation: z
     .object({
       reason: z.enum(tripCancelReasons),
@@ -398,6 +398,7 @@ export const publishTripRoute = defineRoute({
   responses: {
     200: { description: "The published trip", schema: myTripSchema },
     401: unauthenticated,
+    403: accountSuspendedResponse,
     404: notMine,
     409: notDraft,
     422: { description: "trip_not_publishable: what to fix, in details", ...errors },
@@ -538,6 +539,7 @@ export const changeTripRoute = defineRoute({
   responses: {
     200: { description: "What the change does", schema: tripChangeEffectSchema },
     401: unauthenticated,
+    403: accountSuspendedResponse,
     404: {
       ...errors,
       description: "not_found: no such trip of mine, or a draft (changed with PATCH instead)",

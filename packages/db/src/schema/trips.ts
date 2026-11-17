@@ -61,7 +61,9 @@ export const trips = pgTable(
     cancelledAt: at(),
     /** Two hours after its last stop's planned time (spec 8, R8.1), as the job stored it. */
     completedAt: at(),
-    /** Why the driver cancelled the trip (spec 6, 3.3). */
+    /** `driver`, or `operator` for ShareRide (spec 9, 3.4.3 and 3.6). */
+    cancelledBy: text(),
+    /** Why the driver cancelled the trip (spec 6, 3.3); never given for ShareRide. */
     cancelReason: text(),
     /** The driver's note to the passengers, as written (spec 6, 3.3); empty for none. */
     cancelNote: text().notNull().default(""),
@@ -85,6 +87,10 @@ export const trips = pgTable(
     check("trips_chat_check", oneOf(table.chat, chatOptions)),
     check("trips_note_check", sql`char_length(${table.note}) <= ${sql.raw(String(noteMaxLength))}`),
     check("trips_cancel_reason_check", oneOf(table.cancelReason, tripCancelReasons)),
+    check(
+      "trips_cancelled_by_check",
+      sql`(${table.cancelledBy} is null) = (${table.cancelledAt} is null) and (${table.cancelledBy} is null or ${oneOf(table.cancelledBy, ["driver", "operator"])})`,
+    ),
     check(
       "trips_cancel_note_check",
       sql`char_length(${table.cancelNote}) <= ${sql.raw(String(noteMaxLength))}`,

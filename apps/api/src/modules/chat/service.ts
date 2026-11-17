@@ -11,6 +11,7 @@ import {
   type MessageBody,
   type MessageProblem,
   type QuickMessage,
+  type AccountSuspended,
   type CancelReason,
   type CarColour,
   type Result,
@@ -18,11 +19,12 @@ import {
 } from "@shareride/domain";
 import { and, desc, eq, gt, inArray, isNotNull, isNull, ne, or, sql, type SQL } from "drizzle-orm";
 import type { BookingService } from "../bookings/index.ts";
-import type { Queryable } from "../bookings/seats.ts";
+import type { Queryable, Transaction } from "../bookings/seats.ts";
+import { lockActive } from "../account/standing.ts";
 import { recordEvents } from "../notifications/outbox.ts";
 import { blocksOf } from "../safety/blocks.ts";
 
-const { bookings, conversations, messages, trips, users } = schema;
+const { bookings, conversations, messages, trips } = schema;
 
 export type ChatError =
   | { readonly code: "not_found" }
@@ -40,6 +42,8 @@ export type ClientIdReused = { readonly code: "client_id_reused" };
 
 export type SendError =
   | ChatError
+  /** Suspended: no messages (spec 9, 3.6.2). */
+  | AccountSuspended
   | { readonly code: "chat_closed" }
   | { readonly code: "too_many_messages" }
   | ClientIdReused
@@ -47,6 +51,7 @@ export type SendError =
 
 export type MessageAllError =
   | { readonly code: "not_found" }
+  | AccountSuspended
   | { readonly code: "too_many_messages" }
   | ClientIdReused
   | MessageProblem;
@@ -123,6 +128,8 @@ export function systemLineOf(
       };
     case "checked_in":
       return { key: "checked_in", by: row.params?.["by"] === viewer ? "me" : "them" };
+    case "cancelled_by_shareride":
+      return { key: "cancelled_by_shareride", wholeTrip: row.params?.["wholeTrip"] === true };
     case "cancelled":
       return {
         key: "cancelled",
@@ -323,9 +330,12 @@ export function createChatService(dependencies: {
     return row?.count ?? 0;
   }
 
-  /** Waits for the person's other sends, so two at once cannot pass the limit together. */
-  async function lockSender(q: Queryable, userId: string) {
-    await q.select({ id: users.id }).from(users).where(eq(users.id, userId)).for("update");
+  /**
+   * Waits for the person's other sends, so two at once cannot pass the
+   * limit together; and refuses a suspended person (spec 9, 3.6.2).
+   */
+  function lockSender(tx: Transaction, userId: string) {
+    return lockActive(tx, userId, clock());
   }
 
   return {
@@ -399,7 +409,8 @@ export function createChatService(dependencies: {
       if (!checked.ok) return checked;
 
       return db.transaction(async (tx) => {
-        await lockSender(tx, userId);
+        const active = await lockSender(tx, userId);
+        if (!active.ok) return active;
         const now = clock();
         if (
           !canWrite({ opensAt: conversation.openedAt, closesAt: conversation.closesAt }, now) ||
@@ -456,7 +467,8 @@ export function createChatService(dependencies: {
       if (!checked.ok) return checked;
 
       return db.transaction(async (tx) => {
-        await lockSender(tx, driverId);
+        const active = await lockSender(tx, driverId);
+        if (!active.ok) return active;
         const now = clock();
         const earlier = await tx
           .select({ tripId: bookings.tripId })

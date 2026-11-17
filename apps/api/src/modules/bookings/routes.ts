@@ -15,6 +15,7 @@ import type { Context, MiddlewareHandler } from "hono";
 import { authOf, type AppEnv } from "../../context.ts";
 import { errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
+import { accountSuspended } from "../account/standing.ts";
 import type { TripService } from "../trips/drafts.ts";
 import type {
   AnswerError,
@@ -41,6 +42,8 @@ function bookError(c: Context, error: BookError) {
       );
     case "own_trip":
       return errorResponse(c, 403, "own_trip", "This is your own trip.");
+    case "account_suspended":
+      return accountSuspended(c, error);
     case "invalid_part":
       return invalid(
         c,

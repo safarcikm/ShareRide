@@ -15,6 +15,7 @@ export interface ErrorExtras {
   readonly departureWindow?: NonNullable<ErrorResponse["error"]["departureWindow"]>;
   readonly bookingsAtStop?: number;
   readonly opensAt?: string;
+  readonly suspendedUntil?: string | null;
 }
 
 export function errorBody(code: string, message: string, details?: ErrorDetails): ErrorResponse {

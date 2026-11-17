@@ -13,6 +13,7 @@ import {
   routeLegPairs,
   runsOrRan,
   stopsToCopy,
+  type AccountSuspended,
   type DistancesMissing,
   type MeetingPointStatus,
   type PublishProblem,
@@ -23,12 +24,13 @@ import {
   type TripSettings,
 } from "@shareride/domain";
 import { and, asc, count, desc, eq, gt, inArray, isNull, lte, min, ne, or, sql } from "drizzle-orm";
+import { lockActive } from "../account/standing.ts";
 import type { DrivingService } from "../driving/index.ts";
 import { seatsTakenNow } from "../bookings/seats.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import { checkInsAt, driverCheckedInAt, shownWindow } from "../trip-day/check-ins.ts";
 
-const { bookings, legs, meetingPoints, segments, trips, tripStops, users, vehicles } = schema;
+const { bookings, legs, meetingPoints, segments, trips, tripStops, vehicles } = schema;
 
 type TripRow = typeof trips.$inferSelect;
 type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
@@ -82,7 +84,9 @@ export interface TripService {
   publish(
     userId: string,
     tripId: string,
-  ): Promise<Result<MyTrip, NotFound | NotDraft | NotPublishable | DistancesMissing>>;
+  ): Promise<
+    Result<MyTrip, NotFound | NotDraft | NotPublishable | DistancesMissing | AccountSuspended>
+  >;
   /**
    * Post again, or the return (spec 6, 3.6): a new draft with the trip's
    * stops, reversed for the return, and its car while the driver still has
@@ -571,8 +575,10 @@ export function createTripService(dependencies: {
     async publish(userId, tripId) {
       const readiness = await driving.readiness(userId);
       return db.transaction(async (tx) => {
-        // One publish at a time per driver, so two cannot overlap (R3.7).
-        await tx.select({ id: users.id }).from(users).where(eq(users.id, userId)).for("update");
+        // One publish at a time per driver, so two cannot overlap (R3.7);
+        // and none while suspended (spec 9, 3.6.2).
+        const active = await lockActive(tx, userId, clock());
+        if (!active.ok) return active;
         const row = await mine(tx, userId, tripId);
         if (row === undefined || row.status === "cancelled") return err({ code: "not_found" });
         if (row.status !== "draft") return err({ code: "trip_not_draft" });

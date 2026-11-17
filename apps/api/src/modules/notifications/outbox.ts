@@ -21,6 +21,8 @@ export type OutboxEvent =
         | "MessageSent"
         | "DataExportReady"
         | "ReportFiled"
+        | "ModerationActionTaken"
+        | "SuspensionEnded"
       >;
       readonly bookingId: string;
     }
@@ -33,8 +35,11 @@ export type OutboxEvent =
   | {
       readonly type: "BookingCancelled";
       readonly bookingId: string;
-      /** Who cancelled: the other person is told (spec 7, 3.3). */
-      readonly by: "passenger" | "driver";
+      /**
+       * Who cancelled: the other person is told (spec 7, 3.3). ShareRide
+       * cancels a suspended passenger's booking: the driver is told (spec 9, 3.6).
+       */
+      readonly by: "passenger" | "driver" | "operator";
     }
   | {
       /** "I'm here" (spec 8, 3.2): one for each booking at the stop; the other side is told. */
@@ -68,6 +73,16 @@ export type OutboxEvent =
       /** A new report: every operator is told, never who or what (spec 9, R9.9). */
       readonly type: "ReportFiled";
       readonly reportId: string;
+    }
+  | {
+      /** An operator's action that affects the person: they get its notice (spec 9, R9.5). */
+      readonly type: "ModerationActionTaken";
+      readonly actionId: string;
+    }
+  | {
+      /** The person's suspension reached its end: they are told (spec 9, 3.6). */
+      readonly type: "SuspensionEnded";
+      readonly userId: string;
     };
 
 /**

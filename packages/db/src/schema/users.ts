@@ -30,10 +30,16 @@ export const users = pgTable(
       .notNull()
       .default(sql`'{}'`),
     status: text().notNull().default("active"),
+    /** The end of a suspension (spec 9, 3.6); empty while suspended means for good. */
+    suspendedUntil: at(),
     ...timestamps,
   },
   (table) => [
     check("users_locale_check", sql`${table.locale} in ('is', 'en')`),
     check("users_status_check", sql`${table.status} in ('active', 'suspended')`),
+    check(
+      "users_suspended_until_check",
+      sql`${table.suspendedUntil} is null or ${table.status} = 'suspended'`,
+    ),
   ],
 );

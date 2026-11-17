@@ -42,6 +42,9 @@ export const notificationRules = {
   trip_cancelled: { push: true, email: "always", sms: true },
   booking_cancelled_by_driver: { push: true, email: "always", sms: true },
   booking_cancelled_by_passenger: { push: true, email: "always", sms: false },
+  // ShareRide cancelled a suspended passenger's booking (spec 9, 3.6): the
+  // driver is told it was cancelled, never why.
+  booking_cancelled_by_shareride: { push: true, email: "always", sms: false },
   refund_issued: { push: false, email: "always", sms: false },
   meeting_point_changed: { push: true, email: "always", sms: true },
   meeting_point_changed_driver: { push: true, email: "always", sms: false },
@@ -57,6 +60,11 @@ export const notificationRules = {
   // News about the account rather than a trip (spec 11): the texts say what
   // is ready and until when, never a link (spec 11, 7).
   data_export_ready: { push: true, email: "always", sms: false },
+  // An operator's action that affects the person, and the end of a
+  // suspension (spec 9, R9.5): the push says only that there is a notice;
+  // the email is the copy of the statement of reasons (decision 1).
+  moderation_action: { push: true, email: "always", sms: false },
+  suspension_ended: { push: true, email: "always", sms: false },
   // To every operator when a report comes in (spec 9, 3.4.1; R9.9): only
   // "New report" or "New safety report", never who or what.
   report_filed: { push: true, email: "never", sms: false },
@@ -69,7 +77,11 @@ export const notificationKinds = Object.keys(notificationRules) as NotificationK
 export type TripRole = "driver" | "passenger";
 
 /** The kinds about the person's account, which no booking or trip event gives. */
-export const accountNoticeKinds = ["data_export_ready"] as const;
+export const accountNoticeKinds = [
+  "data_export_ready",
+  "moderation_action",
+  "suspension_ended",
+] as const;
 export type AccountNoticeKind = (typeof accountNoticeKinds)[number];
 
 export function isAccountNotice(kind: NotificationKind): kind is AccountNoticeKind {
@@ -103,7 +115,8 @@ export type NotificationEvent =
   | { readonly type: "DepartureMoved"; readonly byMinutes: number }
   | { readonly type: "TripChanged" }
   | { readonly type: "TripCancelled" }
-  | { readonly type: "BookingCancelled"; readonly by: TripRole }
+  /** By `operator`: ShareRide cancelled it, for a suspension (spec 9, 3.6). */
+  | { readonly type: "BookingCancelled"; readonly by: TripRole | "operator" }
   | { readonly type: "RefundIssued" }
   | { readonly type: "MeetingPointChanged" }
   | { readonly type: "MessageSent"; readonly to: TripRole }
@@ -164,9 +177,12 @@ export function notificationsFor(event: NotificationEvent): readonly Addressed[]
     case "TripCancelled":
       return [{ kind: "trip_cancelled", to: "passenger" }];
     case "BookingCancelled":
-      return event.by === "driver"
-        ? [{ kind: "booking_cancelled_by_driver", to: "passenger" }]
-        : [{ kind: "booking_cancelled_by_passenger", to: "driver" }];
+      if (event.by === "driver") return [{ kind: "booking_cancelled_by_driver", to: "passenger" }];
+      if (event.by === "passenger") {
+        return [{ kind: "booking_cancelled_by_passenger", to: "driver" }];
+      }
+      // The suspended passenger reads why in their notice (spec 9, 3.6).
+      return [{ kind: "booking_cancelled_by_shareride", to: "driver" }];
     case "RefundIssued":
       return [{ kind: "refund_issued", to: "passenger" }];
     case "MeetingPointChanged":
