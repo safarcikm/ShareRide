@@ -43,15 +43,19 @@ export function ConsoleApp({ client, passkeys }: ConsoleAppProps) {
   const returnTo = useRef(homePath);
   const t = useMemo(() => createTranslator(locale), [locale]);
 
+  // Each visit to a page shows it afresh, even the page on show.
+  const [visit, setVisit] = useState(0);
   const navigate = useCallback((to: string, replace = false) => {
     if (replace) window.history.replaceState(null, "", to);
     else window.history.pushState(null, "", to);
-    setPath(to);
+    setPath(currentPath());
+    setVisit((count) => count + 1);
   }, []);
 
   useEffect(() => {
     const onPopState = () => {
       setPath(currentPath());
+      setVisit((count) => count + 1);
     };
     window.addEventListener("popstate", onPopState);
     return () => {
@@ -96,7 +100,9 @@ export function ConsoleApp({ client, passkeys }: ConsoleAppProps) {
   // Each state has one address: the sign-in page, or the page asked for.
   useEffect(() => {
     if (session.state === "signedOut" && !onSetup && path !== signInPath) {
-      returnTo.current = sectionFor(path) === undefined ? homePath : path;
+      // With its query, so a shared link with filters keeps them.
+      returnTo.current =
+        sectionFor(path) === undefined ? homePath : `${path}${window.location.search}`;
       navigate(signInPath, true);
     }
     if (session.state === "signedIn" && path === signInPath) navigate(homePath, true);
@@ -157,7 +163,7 @@ export function ConsoleApp({ client, passkeys }: ConsoleAppProps) {
           setLocale(locale === "is" ? "en" : "is");
         }}
       >
-        {Page === undefined ? null : <Page />}
+        {Page === undefined ? null : <Page key={visit} />}
       </Layout>
     );
   }
