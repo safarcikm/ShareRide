@@ -13,6 +13,8 @@ const apiPort = 3001;
 const env = process.env as Readonly<Record<string, string | undefined>>;
 export const smsOutbox = join(tmpdir(), "shareride-e2e-sms.jsonl");
 export const emailOutbox = join(tmpdir(), "shareride-e2e-email.jsonl");
+/** The test API, for its `/e2e/...` routes. */
+export const apiUrl = `http://localhost:${String(apiPort)}`;
 
 export default defineConfig({
   testDir: "e2e",

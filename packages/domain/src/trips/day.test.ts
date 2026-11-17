@@ -8,6 +8,7 @@ import {
   completesAt,
   completesWithTrip,
   dayPhase,
+  driverCheckInStops,
   hasTripDay,
   runsOrRan,
   defaultTripDaySettings as settings,
@@ -158,6 +159,56 @@ describe("who is at their stop (spec 8, 3.1)", () => {
     expect(arrivalOf({ status: "no_show", checkedIn: false })).toBe("no_show");
     // A no-show contested as "they rode" completes; marked, it stays a no-show.
     expect(arrivalOf({ status: "no_show", checkedIn: true })).toBe("no_show");
+  });
+});
+
+describe("where the driver can say I'm here (spec 8, 3.1 and 3.2)", () => {
+  // Stops at 08:00, 08:45, 09:30 and 10:15; windows overlap, from 30
+  // minutes before each to 60 after.
+  const at = (time: string) => new Date(`2026-11-20T${time}:00Z`);
+  const stop = (time: string, said: string | null = null) => ({
+    ...checkInWindow(at(time), settings),
+    at: said === null ? null : at(said),
+  });
+  const stops = [stop("08:00"), stop("08:45"), stop("09:30"), stop("10:15")];
+  const everyone = new Set([0, 1, 2, 3]);
+
+  it("offers every open stop where someone gets in, so a skipped one never blocks the next", () => {
+    expect(driverCheckInStops(stops, everyone, at("08:20"))).toEqual({ open: [0, 1], next: null });
+  });
+
+  it("names the first one to open when none is open yet", () => {
+    expect(driverCheckInStops(stops, everyone, at("07:00"))).toEqual({ open: [], next: 0 });
+  });
+
+  it("moves on past a stop once said there", () => {
+    const said = [stop("08:00", "07:55"), ...stops.slice(1)];
+    expect(driverCheckInStops(said, everyone, at("07:58"))).toEqual({ open: [], next: 1 });
+  });
+
+  it("never goes back to a stop before the last one said", () => {
+    const said = [stops[0] ?? null, stop("08:45", "08:20"), ...stops.slice(2)];
+    expect(driverCheckInStops(said, everyone, at("08:25"))).toEqual({ open: [], next: 2 });
+  });
+
+  it("skips stops where nobody gets in, since saying it there tells nobody", () => {
+    expect(driverCheckInStops(stops, new Set([2]), at("08:20"))).toEqual({ open: [], next: 2 });
+  });
+
+  it("leaves out a stop whose window has closed, and keeps it open to its last minute", () => {
+    expect(driverCheckInStops(stops, everyone, at("09:00"))).toEqual({
+      open: [0, 1, 2],
+      next: null,
+    });
+    expect(driverCheckInStops(stops, everyone, at("09:01"))).toEqual({ open: [1, 2], next: null });
+  });
+
+  it("has nothing once every window has closed, or for a stop without one", () => {
+    expect(driverCheckInStops(stops, everyone, at("11:30"))).toEqual({ open: [], next: null });
+    expect(driverCheckInStops([null, null], everyone, at("08:00"))).toEqual({
+      open: [],
+      next: null,
+    });
   });
 });
 
