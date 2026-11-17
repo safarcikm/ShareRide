@@ -1,6 +1,6 @@
 {
-  "id": "05c81374-5764-4c9a-9b40-a349e3467313",
-  "prevId": "a1a47047-3ce8-462a-a2fc-a2793f5090d4",
+  "id": "541aecab-96ab-4181-b6c5-71fd2bf025ac",
+  "prevId": "339dae04-8042-47f6-abc8-b047574a5f2a",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -2651,14 +2651,14 @@
           "primaryKey": false,
           "notNull": false
         },
-        "report_id": {
-          "name": "report_id",
+        "privacy_request_id": {
+          "name": "privacy_request_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
-        "privacy_request_id": {
-          "name": "privacy_request_id",
+        "meeting_point_id": {
+          "name": "meeting_point_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -2766,21 +2766,6 @@
           "method": "btree",
           "with": {}
         },
-        "notifications_report_index": {
-          "name": "notifications_report_index",
-          "columns": [
-            {
-              "expression": "report_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "notifications_privacy_request_index": {
           "name": "notifications_privacy_request_index",
           "columns": [
@@ -2858,15 +2843,6 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "notifications_report_id_reports_id_fk": {
-          "name": "notifications_report_id_reports_id_fk",
-          "tableFrom": "notifications",
-          "tableTo": "reports",
-          "columnsFrom": ["report_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
         "notifications_privacy_request_id_privacy_requests_id_fk": {
           "name": "notifications_privacy_request_id_privacy_requests_id_fk",
           "tableFrom": "notifications",
@@ -2874,6 +2850,15 @@
           "columnsFrom": ["privacy_request_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "notifications_meeting_point_id_meeting_points_id_fk": {
+          "name": "notifications_meeting_point_id_meeting_points_id_fk",
+          "tableFrom": "notifications",
+          "tableTo": "meeting_points",
+          "columnsFrom": ["meeting_point_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
@@ -2889,7 +2874,7 @@
       "checkConstraints": {
         "notifications_kind_check": {
           "name": "notifications_kind_check",
-          "value": "\"notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'no_show_marked', 'driver_absent_reported', 'dispute_decided', 'dispute_decided_driver', 'rate_trip', 'rate_trip_driver', 'review_visible', 'data_export_ready', 'report_filed', 'report_filed_urgent', 'account_deletion_scheduled', 'privacy_request_answered')"
+          "value": "\"notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'no_show_marked', 'driver_absent_reported', 'dispute_decided', 'dispute_decided_driver', 'rate_trip', 'rate_trip_driver', 'review_visible', 'data_export_ready', 'account_deletion_scheduled', 'privacy_request_answered')"
         }
       },
       "isRLSEnabled": false
@@ -2976,7 +2961,7 @@
       "checkConstraints": {
         "outbox_events_kind_check": {
           "name": "outbox_events_kind_check",
-          "value": "\"outbox_events\".\"kind\" in ('BookingRequested', 'BookingAccepted', 'BookingConfirmed', 'BookingDeclined', 'BookingExpired', 'BookingWithdrawn', 'BookingCancelled', 'DepartureMoved', 'TripChanged', 'TripCancelled', 'RefundIssued', 'MessageSent', 'CheckedIn', 'NoShowMarked', 'DriverAbsentReported', 'DisputeDecided', 'BookingCompleted', 'ReviewRevealed', 'DataExportReady', 'ReportFiled', 'AccountDeletionScheduled', 'PrivacyRequestAnswered')"
+          "value": "\"outbox_events\".\"kind\" in ('BookingRequested', 'BookingAccepted', 'BookingConfirmed', 'BookingDeclined', 'BookingExpired', 'BookingWithdrawn', 'BookingCancelled', 'DepartureMoved', 'TripChanged', 'TripCancelled', 'RefundIssued', 'MessageSent', 'CheckedIn', 'NoShowMarked', 'DriverAbsentReported', 'DisputeDecided', 'BookingCompleted', 'ReviewRevealed', 'MeetingPointChanged', 'DataExportReady', 'AccountDeletionScheduled', 'PrivacyRequestAnswered')"
         }
       },
       "isRLSEnabled": false
@@ -3301,7 +3286,7 @@
       "checkConstraints": {
         "scheduled_notifications_kind_check": {
           "name": "scheduled_notifications_kind_check",
-          "value": "\"scheduled_notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'no_show_marked', 'driver_absent_reported', 'dispute_decided', 'dispute_decided_driver', 'rate_trip', 'rate_trip_driver', 'review_visible', 'data_export_ready', 'report_filed', 'report_filed_urgent', 'account_deletion_scheduled', 'privacy_request_answered')"
+          "value": "\"scheduled_notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'no_show_marked', 'driver_absent_reported', 'dispute_decided', 'dispute_decided_driver', 'rate_trip', 'rate_trip_driver', 'review_visible', 'data_export_ready', 'account_deletion_scheduled', 'privacy_request_answered')"
         },
         "scheduled_notifications_recipient_check": {
           "name": "scheduled_notifications_recipient_check",
@@ -4528,330 +4513,6 @@
         "blocks_self_check": {
           "name": "blocks_self_check",
           "value": "\"blocks\".\"blocker_id\" <> \"blocks\".\"blocked_id\""
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.reports": {
-      "name": "reports",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "uuidv7()"
-        },
-        "reporter_id": {
-          "name": "reporter_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "subject_user_id": {
-          "name": "subject_user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "subject": {
-          "name": "subject",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "trip_id": {
-          "name": "trip_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "booking_id": {
-          "name": "booking_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "message_id": {
-          "name": "message_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "conversation_id": {
-          "name": "conversation_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "category": {
-          "name": "category",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
-        "urgent": {
-          "name": "urgent",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'open'"
-        },
-        "outcome": {
-          "name": "outcome",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "closed_by_id": {
-          "name": "closed_by_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "closed_at": {
-          "name": "closed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "reports_reporter_index": {
-          "name": "reports_reporter_index",
-          "columns": [
-            {
-              "expression": "reporter_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "reports_subject_user_index": {
-          "name": "reports_subject_user_index",
-          "columns": [
-            {
-              "expression": "subject_user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "reports_open_index": {
-          "name": "reports_open_index",
-          "columns": [
-            {
-              "expression": "urgent",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "\"reports\".\"status\" = 'open'",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "reports_conversation_index": {
-          "name": "reports_conversation_index",
-          "columns": [
-            {
-              "expression": "conversation_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "reports_trip_index": {
-          "name": "reports_trip_index",
-          "columns": [
-            {
-              "expression": "trip_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "reports_booking_index": {
-          "name": "reports_booking_index",
-          "columns": [
-            {
-              "expression": "booking_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "reports_message_index": {
-          "name": "reports_message_index",
-          "columns": [
-            {
-              "expression": "message_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "reports_reporter_id_users_id_fk": {
-          "name": "reports_reporter_id_users_id_fk",
-          "tableFrom": "reports",
-          "tableTo": "users",
-          "columnsFrom": ["reporter_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "reports_subject_user_id_users_id_fk": {
-          "name": "reports_subject_user_id_users_id_fk",
-          "tableFrom": "reports",
-          "tableTo": "users",
-          "columnsFrom": ["subject_user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "reports_trip_id_trips_id_fk": {
-          "name": "reports_trip_id_trips_id_fk",
-          "tableFrom": "reports",
-          "tableTo": "trips",
-          "columnsFrom": ["trip_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "reports_booking_id_bookings_id_fk": {
-          "name": "reports_booking_id_bookings_id_fk",
-          "tableFrom": "reports",
-          "tableTo": "bookings",
-          "columnsFrom": ["booking_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "reports_message_id_messages_id_fk": {
-          "name": "reports_message_id_messages_id_fk",
-          "tableFrom": "reports",
-          "tableTo": "messages",
-          "columnsFrom": ["message_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "reports_conversation_id_conversations_id_fk": {
-          "name": "reports_conversation_id_conversations_id_fk",
-          "tableFrom": "reports",
-          "tableTo": "conversations",
-          "columnsFrom": ["conversation_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "reports_closed_by_id_users_id_fk": {
-          "name": "reports_closed_by_id_users_id_fk",
-          "tableFrom": "reports",
-          "tableTo": "users",
-          "columnsFrom": ["closed_by_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "reports_subject_check": {
-          "name": "reports_subject_check",
-          "value": "\"reports\".\"subject\" in ('user', 'trip', 'message', 'review', 'booking')"
-        },
-        "reports_category_check": {
-          "name": "reports_category_check",
-          "value": "\"reports\".\"category\" in ('safety', 'harassment', 'discrimination', 'scam', 'false_info', 'offensive', 'not_as_listed', 'other')"
-        },
-        "reports_status_check": {
-          "name": "reports_status_check",
-          "value": "\"reports\".\"status\" in ('open', 'closed')"
-        },
-        "reports_outcome_check": {
-          "name": "reports_outcome_check",
-          "value": "\"reports\".\"outcome\" is null or \"reports\".\"outcome\" in ('action_taken', 'no_breach')"
-        },
-        "reports_closed_check": {
-          "name": "reports_closed_check",
-          "value": "(\"reports\".\"status\" = 'closed') = (\"reports\".\"closed_at\" is not null) and (\"reports\".\"status\" = 'closed') = (\"reports\".\"outcome\" is not null)"
         }
       },
       "isRLSEnabled": false

@@ -301,6 +301,10 @@ export function stillApplies(kind: NotificationKind, status: BookingStatus): boo
     case "checked_in":
     case "checked_in_driver":
       return status === "confirmed";
+    // A paused meeting point matters to a booking that will get in or out
+    // there: accepted or confirmed (spec 2, 3.6.4).
+    case "meeting_point_changed":
+      return status === "accepted" || status === "confirmed";
     // A report asks for an answer while the booking is as the report left
     // it (spec 8, 3.3 and 3.4); once decided otherwise, it would ask too late.
     case "no_show_marked":

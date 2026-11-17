@@ -1,5 +1,5 @@
 {
-  "id": "a1a47047-3ce8-462a-a2fc-a2793f5090d4",
+  "id": "339dae04-8042-47f6-abc8-b047574a5f2a",
   "prevId": "28c2ed23-7cbf-4b97-8358-ee25fb771806",
   "version": "7",
   "dialect": "postgresql",
@@ -2657,6 +2657,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "meeting_point_id": {
+          "name": "meeting_point_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "unique_key": {
           "name": "unique_key",
           "type": "text",
@@ -2845,6 +2851,15 @@
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
+        },
+        "notifications_meeting_point_id_meeting_points_id_fk": {
+          "name": "notifications_meeting_point_id_meeting_points_id_fk",
+          "tableFrom": "notifications",
+          "tableTo": "meeting_points",
+          "columnsFrom": ["meeting_point_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2946,7 +2961,7 @@
       "checkConstraints": {
         "outbox_events_kind_check": {
           "name": "outbox_events_kind_check",
-          "value": "\"outbox_events\".\"kind\" in ('BookingRequested', 'BookingAccepted', 'BookingConfirmed', 'BookingDeclined', 'BookingExpired', 'BookingWithdrawn', 'BookingCancelled', 'DepartureMoved', 'TripChanged', 'TripCancelled', 'RefundIssued', 'MessageSent', 'CheckedIn', 'NoShowMarked', 'DriverAbsentReported', 'DisputeDecided', 'BookingCompleted', 'ReviewRevealed', 'DataExportReady', 'AccountDeletionScheduled', 'PrivacyRequestAnswered')"
+          "value": "\"outbox_events\".\"kind\" in ('BookingRequested', 'BookingAccepted', 'BookingConfirmed', 'BookingDeclined', 'BookingExpired', 'BookingWithdrawn', 'BookingCancelled', 'DepartureMoved', 'TripChanged', 'TripCancelled', 'RefundIssued', 'MessageSent', 'CheckedIn', 'NoShowMarked', 'DriverAbsentReported', 'DisputeDecided', 'BookingCompleted', 'ReviewRevealed', 'MeetingPointChanged', 'DataExportReady', 'AccountDeletionScheduled', 'PrivacyRequestAnswered')"
         }
       },
       "isRLSEnabled": false
@@ -4406,98 +4421,6 @@
         "reviews_people_check": {
           "name": "reviews_people_check",
           "value": "\"reviews\".\"author_id\" <> \"reviews\".\"subject_id\""
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.blocks": {
-      "name": "blocks",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "uuidv7()"
-        },
-        "blocker_id": {
-          "name": "blocker_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "blocked_id": {
-          "name": "blocked_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "blocks_blocked_index": {
-          "name": "blocks_blocked_index",
-          "columns": [
-            {
-              "expression": "blocked_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "blocks_blocker_id_users_id_fk": {
-          "name": "blocks_blocker_id_users_id_fk",
-          "tableFrom": "blocks",
-          "tableTo": "users",
-          "columnsFrom": ["blocker_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "blocks_blocked_id_users_id_fk": {
-          "name": "blocks_blocked_id_users_id_fk",
-          "tableFrom": "blocks",
-          "tableTo": "users",
-          "columnsFrom": ["blocked_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "blocks_pair_unique": {
-          "name": "blocks_pair_unique",
-          "nullsNotDistinct": false,
-          "columns": ["blocker_id", "blocked_id"]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {
-        "blocks_self_check": {
-          "name": "blocks_self_check",
-          "value": "\"blocks\".\"blocker_id\" <> \"blocks\".\"blocked_id\""
         }
       },
       "isRLSEnabled": false

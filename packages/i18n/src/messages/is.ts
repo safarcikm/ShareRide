@@ -1219,6 +1219,13 @@ export const is = {
   "notify.ratePassengers": "Gefðu farþegunum einkunn. Það hjálpar öðrum bílstjórum að velja.",
   "notify.reviewVisible": "Umsögn um þig er nú sýnileg",
   "notify.reviewVisibleBody": "{from} – {to} · {when}.",
+  // A paused meeting point (spec 2, 3.6.4): the reason is the operator's.
+  "notify.pointPaused": "Mótsstaður ekki í notkun í bili: {point}",
+  "notify.pointRetired": "Mótsstaður ekki lengur í notkun: {point}",
+  "notify.pointBack": "Aftur í notkun: {date}",
+  "notify.pointPausedBody":
+    "{from} – {to} · {when}. Bílstjórinn er beðinn um að velja annan viðkomustað.",
+  "notify.pointPausedDriverBody": "Veldu annan viðkomustað fyrir ferðina: {when}.",
   "notify.unpaid": "Sætið var ekki greitt í tæka tíð",
   "notify.unpaidDriver": "Ekki greitt í tæka tíð: {name}",
   "notify.cancelledByDriver": "Bílstjórinn afbókaði: {reason}",
@@ -1269,6 +1276,8 @@ export const is = {
     "ShareRide: Ný brottför: {date} kl. {time}. Haltu bókuninni eða afbókaðu með fullri endurgreiðslu í appinu.",
   "sms.departureMovedUnpaid": "ShareRide: Ný brottför: {date} kl. {time}. Nánar í appinu.",
   "sms.reportFiledUrgent": "ShareRide: ný öryggistilkynning. Skoðaðu hana strax í stjórnborðinu.",
+  "sms.meetingPointChanged":
+    "ShareRide: Mótsstaður ferðarinnar þinnar hefur breyst: {date}. Nánar í appinu.",
   // Privacy (spec 11, section 8; plan 4.9).
   "settings.privacy": "Persónuvernd og gögnin þín",
   "privacy.title": "Persónuvernd",
@@ -1301,6 +1310,31 @@ export const is = {
     "{from} – {to} er á leiðinni. Þú getur eytt aðganginum þegar ferðinni lýkur, eftir {when}.",
   "privacy.delete.dispute": "Tilkynning um ferð bíður svars eða ákvörðunar ShareRide.",
   "privacy.delete.heldPayout": "Útborgun er í bið þar til ákveðið er um tilkynningu um ferðina.",
+  /** Spec 11, 3.6: answered by email within a month (R11.7). */
+  "privacy.ask": "Spyrja um gögnin mín",
+  "privacy.ask.intro":
+    "Andmæltu notkun gagnanna þinna, biddu okkur að takmarka hana, leiðréttu eitthvað sem þú getur ekki breytt í appinu eða spurðu spurningar.",
+  "privacy.ask.kind": "Um hvað snýst þetta?",
+  "privacy.ask.kind.objection": "Andmæla notkun",
+  "privacy.ask.kind.objectionHelp": "Biddu okkur að hætta að nota gögnin þín á ákveðinn hátt.",
+  "privacy.ask.kind.restriction": "Takmarka notkun",
+  "privacy.ask.kind.restrictionHelp":
+    "Biddu okkur að geyma gögnin en nota þau minna, til dæmis á meðan eitthvað er kannað.",
+  "privacy.ask.kind.correction": "Leiðrétta eitthvað",
+  "privacy.ask.kind.correctionHelp":
+    "Eitthvað um þig er rangt og þú getur ekki breytt því í appinu.",
+  "privacy.ask.kind.question": "Spyrja spurningar",
+  "privacy.ask.kind.questionHelp": "Allt annað um gögnin þín.",
+  "privacy.ask.text": "Skilaboðin þín",
+  "privacy.ask.textHelp": "Við svörum á {email}.",
+  "privacy.ask.send": "Senda",
+  "privacy.ask.chooseKind": "Veldu um hvað þetta snýst.",
+  "privacy.ask.textRequired": "Skrifaðu skilaboðin, mest 2.000 stafi.",
+  "privacy.ask.emailFirst": "Við svörum með tölvupósti, svo bættu fyrst við netfanginu þínu.",
+  "privacy.ask.addEmail": "Bæta við netfangi",
+  "privacy.ask.tooMany": "Þú getur sent 5 á dag. Reyndu aftur eftir {wait}.",
+  "privacy.askThanks": "Takk. Við svörum með tölvupósti innan mánaðar.",
+  "privacy.ask.backToPrivacy": "Aftur í Persónuvernd",
   "privacy.deletionScheduled": "Aðganginum þínum verður eytt {date}.",
   "privacy.delete.signedOut":
     "Innskráningu á öllum tækjum er lokið. Ef þú skiptir um skoðun skaltu skrá þig inn fyrir þann tíma og halda aðganginum.",
