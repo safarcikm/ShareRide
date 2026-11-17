@@ -85,6 +85,14 @@ export const bookings = pgTable(
     /** Whether the cancellation shows on the canceller's reliability (R6.7, R6.8; spec 8). */
     countsOnReliability: boolean().notNull().default(false),
     /**
+     * It does not count only because of its weather or road-closure reason,
+     * as worked out when it was made: the one the operator can overrule
+     * (spec 8, R8.11).
+     */
+    excusedByReason: boolean().notNull().default(false),
+    /** When the operator overruled that reason, so it counts; the audit log says who. */
+    overruledAt: at(),
+    /**
      * The trip's departure when the booking was made: moves are counted from
      * it (R6.3, R6.4). Older bookings took their trip's departure. Null only
      * for one made by the previous version during a deploy, read as the

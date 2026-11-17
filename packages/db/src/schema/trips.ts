@@ -69,6 +69,14 @@ export const trips = pgTable(
     cancelNote: text().notNull().default(""),
     /** Whether the cancellation shows on the driver's reliability, once for the trip (spec 8, 3.8). */
     countsOnReliability: boolean().notNull().default(false),
+    /**
+     * It does not count only because of its weather or road-closure reason,
+     * as worked out when it was made: the one the operator can overrule
+     * (spec 8, R8.11).
+     */
+    excusedByReason: boolean().notNull().default(false),
+    /** When the operator overruled that reason, so it counts; the audit log says who. */
+    overruledAt: at(),
     /** Made by the seed for local and staging (sample trips). */
     sample: boolean().notNull().default(false),
     ...timestamps,

@@ -11,6 +11,7 @@ import {
   defaultReviewSettings,
   driverAbsentWindow,
   err,
+  excusedByReason,
   hasTripDay,
   holdsSeats,
   movedFar,
@@ -22,6 +23,7 @@ import {
   statusAt,
   statusOnAcceptance,
   tripCancellation,
+  tripExcusedByReason,
   type BookingEvent,
   type BookingMode,
   type BookingProblem,
@@ -953,11 +955,13 @@ export function createBookingService(dependencies: {
           .from(tripStops)
           .where(eq(tripStops.id, booking.fromStopId));
         const boardsAt = plannedAt(boarding ?? { plannedAt: null });
-        const terms = cancellationTerms(
-          toCancel(booking, booking.status as BookingStatus, trip.departsAt, boardsAt),
-          canceller,
-          now,
+        const toBeCancelled = toCancel(
+          booking,
+          booking.status as BookingStatus,
+          trip.departsAt,
+          boardsAt,
         );
+        const terms = cancellationTerms(toBeCancelled, canceller, now);
         if (!terms.ok) return err({ code: "booking_not_cancellable" });
         if (!sameTerms(terms.value, input.terms)) {
           return err({ code: "terms_changed", terms: terms.value });
@@ -974,6 +978,8 @@ export function createBookingService(dependencies: {
             cancelNote: note,
             refundAmount: refund.amount,
             countsOnReliability,
+            // Worked out now, as it depends on the time (R8.11).
+            excusedByReason: excusedByReason(toBeCancelled, canceller, now),
             updatedAt: now,
           })
           .where(eq(bookings.id, bookingId));
@@ -1035,6 +1041,12 @@ export function createBookingService(dependencies: {
             cancelReason: input.reason,
             cancelNote: note,
             countsOnReliability,
+            excusedByReason: tripExcusedByReason(
+              held.map((booking) => ({
+                status: booking.status as "requested" | "accepted" | "confirmed",
+              })),
+              input.reason,
+            ),
             updatedAt: now,
           })
           .where(eq(trips.id, tripId));
