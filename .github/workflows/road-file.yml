@@ -1,6 +1,6 @@
 name: Road file
 
-# Builds our road file (ADR 0030) from the latest OpenStreetMap extract of
+# Builds our road file (ADR 0031) from the latest OpenStreetMap extract of
 # Iceland. Run it by hand when the map data should be updated (at least every
 # three months); a pull request that changes the builder runs it too. The file
 # comes out as the "road-file" artifact, to be committed as

@@ -819,7 +819,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   once. The hourly clean-up deletes a resolved report after 12 months.
   Browser journeys cover both sides.
 - Our own road file for distances between meeting points (milestone 8,
-  PR 11; ADR 0030, proposed): the "Road file" GitHub Actions job builds it
+  PR 11; ADR 0031, proposed): the "Road file" GitHub Actions job builds it
   from the OpenStreetMap extract of Iceland with `osmium-tool` and our
   builder, keeping the roads cars may use without F roads, closed roads
   and ferries, with a typical speed for each. The domain reads it, joins a

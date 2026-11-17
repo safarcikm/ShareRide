@@ -152,7 +152,7 @@ the point for review, and the user sees a thank-you message.
    connected by road: road distance and typical driving time. A→B and B→A are
    separate legs.
 2. Legs are computed on our own road file, built from the Iceland
-   OpenStreetMap extract (ADR 0030, which replaces the routing engine of
+   OpenStreetMap extract (ADR 0031, which replaces the routing engine of
    ADR 0009). It leaves out
    ferries, mountain (F) roads and roads closed to cars.
 3. The job runs when a point is activated or moved, and for all points when the
@@ -231,7 +231,7 @@ Events: `MeetingPointActivated`, `MeetingPointUpdated`, `MeetingPointMoved`,
 `MeetingPointIssueReported`. Pausing and moving
 notify trip participants through spec 7.
 
-Legs come from our own road file (ADR 0030) through a `Router` port, so
+Legs come from our own road file (ADR 0031) through a `Router` port, so
 domain and API tests can use a fixed distance table.
 
 ## 7. Privacy and safety

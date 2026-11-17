@@ -1,4 +1,4 @@
-// Builds our road file (ADR 0030) from the roads in an OPL file:
+// Builds our road file (ADR 0031) from the roads in an OPL file:
 //   node packages/db/src/roads/build-cli.ts <roads.opl> <map date> <out.json.gz>
 // The "Road file" GitHub Actions job runs it on the latest Iceland extract
 // (.github/workflows/road-file.yml); see docs/engineering/road-file.md.

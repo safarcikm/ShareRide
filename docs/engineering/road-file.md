@@ -2,7 +2,7 @@
 
 Legs between meeting points (spec 2, 3.7) come from our own road file,
 `packages/db/src/roads/iceland-roads.json.gz`, not from a routing engine
-([ADR 0030](../decisions/0030-distances-from-our-own-road-file.md)).
+([ADR 0031](../decisions/0031-distances-from-our-own-road-file.md)).
 
 ## What is in it
 

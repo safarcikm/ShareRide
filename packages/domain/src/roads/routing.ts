@@ -1,4 +1,4 @@
-// Finding legs on our own road file (ADR 0030): a meeting point joins the
+// Finding legs on our own road file (ADR 0031): a meeting point joins the
 // nearest road, and the fastest way between two points gives the leg's
 // distance and typical driving time.
 import type { Position } from "../meeting-points/coordinates.ts";

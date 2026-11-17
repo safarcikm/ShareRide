@@ -1,4 +1,4 @@
-// Checks the road file in the repository (ADR 0030), or the one ROAD_FILE
+// Checks the road file in the repository (ADR 0031), or the one ROAD_FILE
 // names (the "Road file" job sets it to the file it built): real distances,
 // and that every sample meeting point still gets its legs.
 import { joinRoad, legsFrom, type RoadGraph, type RoadPosition } from "@shareride/domain";

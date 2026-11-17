@@ -1,4 +1,4 @@
-// Builds our road file (ADR 0030) from OpenStreetMap data in OPL, the text
+// Builds our road file (ADR 0031) from OpenStreetMap data in OPL, the text
 // format `osmium cat -f opl` writes: one node or way a line. It keeps the
 // roads cars may use, splits them where they meet, and writes each road
 // between two junctions with its length, typical speed and shape.
