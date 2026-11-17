@@ -11,6 +11,7 @@ import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { controlOutline, radii, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { ReviewSection } from "@/reviews/review-section";
 import { firstNameOf } from "@/people/texts";
 
 // Parts of the driver's trip page (spec 5, 3.3 and 3.7): the seats held on
@@ -281,6 +282,7 @@ export function PassengersByPart({ bookings }: { readonly bookings: readonly Boo
                       }}
                     />
                   </View>
+                  <ReviewSection booking={booking} framed={false} />
                 </View>
               );
             })}

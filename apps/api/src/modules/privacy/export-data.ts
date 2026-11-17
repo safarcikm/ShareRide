@@ -33,6 +33,7 @@ const {
   notificationPreferences,
   notifications,
   payments,
+  privacyRequests,
   pushTokens,
   reports,
   segments,
@@ -542,6 +543,19 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     .where(and(eq(notifications.recipientId, userId), gte(notifications.createdAt, since)))
     .orderBy(asc(notifications.createdAt));
 
+  const asked = await q
+    .select({
+      kind: privacyRequests.kind,
+      text: privacyRequests.text,
+      receivedAt: privacyRequests.receivedAt,
+      dueAt: privacyRequests.dueAt,
+      answeredAt: privacyRequests.answeredAt,
+      answer: privacyRequests.answer,
+    })
+    .from(privacyRequests)
+    .where(eq(privacyRequests.userId, userId))
+    .orderBy(asc(privacyRequests.receivedAt), asc(privacyRequests.id));
+
   return {
     format: "shareride-export",
     version: 1,
@@ -587,8 +601,15 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
         createdAt: when(row.createdAt),
         sentAt: when(row.sentAt),
       })),
-      // "Ask about my data" comes later in this plan (PR 10).
-      privacy_requests: [],
+      // `ourAnswer`, as `answer` is a coded field elsewhere in the file.
+      privacy_requests: asked.map((row) => ({
+        kind: row.kind,
+        text: row.text,
+        receivedAt: when(row.receivedAt),
+        dueAt: when(row.dueAt),
+        answeredAt: when(row.answeredAt),
+        ourAnswer: row.answer,
+      })),
     },
   };
 }
