@@ -1724,6 +1724,7 @@ export const is = {
   "admin.meetingPoints.intro":
     "Allir mótsstaðir, líka drög og þeir sem eru hættir. Aðeins stjórnandinn bætir þeim við og breytir þeim.",
   "admin.meetingPoints.add": "Bæta við mótsstað",
+  "admin.meetingPoints.import": "Flytja inn úr skrá",
   "admin.meetingPoints.filters": "Síur",
   "admin.meetingPoints.name": "Heiti",
   "admin.meetingPoints.status": "Staða",
@@ -2017,6 +2018,56 @@ export const is = {
     "Mynd var bætt við eða fjarlægð annars staðar. Þetta er nýjasti listinn; reyndu aftur.",
   "admin.meetingPoint.photosRetired":
     "Þessi mótsstaður er hættur, svo myndunum hans verður ekki breytt lengur.",
+  "admin.meetingPointImport.title": "Flytja inn mótsstaði",
+  "admin.meetingPointImport.intro":
+    "Bættu mótsstöðum við sem drögum úr CSV-skrá, einum stað í hverri röð. Þú sérð hverja röð áður en nokkuð er vistað, og röðum með vandamál er sleppt.",
+  "admin.meetingPointImport.helpTitle": "Hvað skráin geymir",
+  "admin.meetingPointImport.helpColumns":
+    "Fyrsta röðin nefnir dálkana, í hvaða röð sem er. Hver skrá þarf {required}. Þessum má sleppa eða hafa tóma: {optional}. Aðgreindu önnur heiti og aðstöðu með {separator}. Hólf mega vera aðgreind með kommum, semíkommum eða dálkastöfum (tab), og hnit mega hafa aukastafakommu.",
+  "admin.meetingPointImport.helpValues":
+    "Skrifaðu hnit í tugabrotsgráðum, til dæmis 64.1376 og -21.9365. Árstíð er tveir mánuðir frá 1 til 12, til dæmis 5 og 9 fyrir maí til september; hafðu báða tóma fyrir allt árið. Heiti sem mótsstaður hefur nú þegar er sleppt.",
+  "admin.meetingPointImport.file": "CSV-skrá",
+  "admin.meetingPointImport.fileHint":
+    "Í mesta lagi {max} raðir og 1 MB, vistuð sem UTF-8 (í Excel: CSV UTF-8).",
+  "admin.meetingPointImport.fileRequired": "Veldu skrá.",
+  "admin.meetingPointImport.tooLarge": "Skráin er yfir 1 MB. Skiptu henni í minni skrár.",
+  "admin.meetingPointImport.unreadable": "Þessi vafri getur ekki lesið skrána. Veldu hana aftur.",
+  "admin.meetingPointImport.check": "Yfirfara skrána",
+  "admin.meetingPointImport.cannotRead": "Ekki er hægt að lesa þessa skrá:",
+  "admin.meetingPointImport.unknownColumn": "Það er enginn dálkur sem heitir {column}.",
+  "admin.meetingPointImport.repeatedColumn": "Dálkurinn {column} er tvisvar.",
+  "admin.meetingPointImport.unnamedColumn":
+    "Dálkur {position} hefur ekkert heiti í fyrstu röðinni.",
+  "admin.meetingPointImport.missingColumn": "Dálkinn {column} vantar.",
+  "admin.meetingPointImport.unclosedQuote": "Gæsalöppum sem byrja í línu {line} er aldrei lokað.",
+  "admin.meetingPointImport.empty": "Það eru engar raðir undir dálkaheitunum.",
+  "admin.meetingPointImport.notUtf8":
+    "Hún er ekki vistuð sem UTF-8. Í Excel skaltu vista hana sem CSV UTF-8.",
+  "admin.meetingPointImport.tooManyRows":
+    "Hún hefur fleiri en {max} raðir. Skiptu henni í minni skrár.",
+  "admin.meetingPointImport.checkFailed": "Ekki tókst að yfirfara skrána. Reyndu aftur.",
+  "admin.meetingPointImport.addFailed": "Ekki tókst að bæta drögunum við. Reyndu aftur.",
+  "admin.meetingPointImport.rows": "Raðir skrárinnar",
+  "admin.meetingPointImport.summary":
+    "Raðir: {rows}. Tilbúnar: {ready}. Sleppt vegna vandamála: {skipped}.",
+  "admin.meetingPointImport.add": "Bæta við {count, plural, one {# drögum} other {# drögum}}",
+  "admin.meetingPointImport.added": "Bætt við sem drögum: {added}. Sleppt: {skipped}.",
+  "admin.meetingPointImport.seeDrafts": "Sjá drögin",
+  "admin.meetingPointImport.again": "Yfirfara aðra skrá",
+  "admin.meetingPointImport.nothingToAdd":
+    "Engri röð er hægt að bæta við. Lagaðu vandamálin í skránni og yfirfarðu hana aftur.",
+  "admin.meetingPointImport.noName": "Ekkert heiti",
+  "admin.meetingPointImport.line": "Lína {line}",
+  "admin.meetingPointImport.ready": "Tilbúin",
+  "admin.meetingPointImport.skipped": "Sleppt",
+  "admin.meetingPointImport.addedTag": "Bætt við",
+  "admin.meetingPointImport.problem": "{column}: {problem}",
+  "admin.meetingPointImport.cells":
+    "Þessi röð hefur fleiri eða færri hólf en fyrsta röðin hefur dálkaheiti.",
+  "admin.meetingPointImport.duplicate": "Mótsstaður eða fyrri röð hefur þetta heiti nú þegar.",
+  "admin.meetingPointImport.degrees": "Skrifaðu það í tugabrotsgráðum, til dæmis 64.1376.",
+  "admin.meetingPointImport.unknownValue": "Notaðu eitt af heitunum undir Hvað skráin geymir.",
+  "admin.meetingPointImport.month": "Gefðu upp mánuð frá 1 til 12.",
   "admin.meetingPoint.photoStorageOff":
     "Engin myndageymsla er sett upp hér, svo ekki er hægt að bæta við myndum.",
   "admin.meetingPoint.photoStorageUnavailable":

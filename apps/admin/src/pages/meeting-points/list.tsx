@@ -133,12 +133,20 @@ export function MeetingPointList() {
     <section className="stack">
       <h1 className="type-title">{t("admin.meetingPoints.title")}</h1>
       <p className="type-body muted">{t("admin.meetingPoints.intro")}</p>
-      <ConsoleLink
-        to={`${meetingPointsPath}/new`}
-        className="button-primary link-button type-button"
-      >
-        {t("admin.meetingPoints.add")}
-      </ConsoleLink>
+      <div className="actions">
+        <ConsoleLink
+          to={`${meetingPointsPath}/new`}
+          className="button-primary link-button type-button"
+        >
+          {t("admin.meetingPoints.add")}
+        </ConsoleLink>
+        <ConsoleLink
+          to={`${meetingPointsPath}/import`}
+          className="button-secondary link-button type-label"
+        >
+          {t("admin.meetingPoints.import")}
+        </ConsoleLink>
+      </div>
       <form
         className="stack panel"
         role="search"
