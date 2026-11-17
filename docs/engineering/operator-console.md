@@ -222,10 +222,11 @@ safety routes (`registerModerationAdminRoutes`), with the work in
   oldest (`queueOrder`), each with `dueAt`, 24 hours after it was filed
   (R9.9); `?state=closed` the last 50 closed, newest first.
 - `GET /admin/v1/reports/{id}` gives one report with its records (the
-  trip, the booking, the reported message without its words, About you
-  for a report about a person), the actions taken under it, and for each
-  of the two people their other reports, by and about them, their recent
-  trips and the actions on them.
+  trip with its driver, the booking, the reported message without its
+  words, About you for a report about a person), the actions taken under
+  it, and for each of the two people their other reports, by and about
+  them, the last 10 trips they drove or held a seat on, and the actions on
+  them.
 - `GET /admin/v1/reports/{id}/conversation` reads the conversation through
   `readConversationAsOperator` with `{ type: "report", id }`: only a
   report about a message covers it (R9.6), else `not_covered`. A message

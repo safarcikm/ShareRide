@@ -57,6 +57,8 @@ const closedShown = 50;
 /** Each side's earlier reports and actions on a report's page. */
 const historyShown = 20;
 const recentTripsShown = 10;
+/** A booking that held a seat: paid, then ridden or missed. */
+const ridden: BookingStatus[] = ["confirmed", "completed", "no_show"];
 
 /** Who acts in the console, for the audit log. */
 export interface ConsoleActor {
@@ -261,7 +263,10 @@ export function createModerationConsoleService(dependencies: {
     return { from: shownStop(kept[0]), to: shownStop(kept.at(-1)) };
   }
 
-  /** The trips the person drove or booked, latest first (3.4.2). */
+  /**
+   * The trips the person drove or held a seat on, latest first (3.4.2): a
+   * request declined, expired or cancelled before it was paid is no ride.
+   */
   async function recentTrips(userId: string): Promise<AdminRecentTrip[]> {
     const driven = await db
       .select({ tripId: trips.id, status: trips.status, departsAt: trips.departsAt })
@@ -279,7 +284,7 @@ export function createModerationConsoleService(dependencies: {
       })
       .from(bookings)
       .innerJoin(trips, eq(trips.id, bookings.tripId))
-      .where(eq(bookings.passengerId, userId))
+      .where(and(eq(bookings.passengerId, userId), inArray(bookings.status, ridden)))
       .orderBy(desc(trips.departsAt))
       .limit(recentTripsShown);
     const stops = await stopsOf([...driven, ...booked].map((trip) => trip.tripId));
@@ -336,6 +341,7 @@ export function createModerationConsoleService(dependencies: {
         : await db
             .select({
               id: trips.id,
+              driverId: trips.driverId,
               status: trips.status,
               note: trips.note,
               noteHiddenAt: trips.noteHiddenAt,
@@ -373,6 +379,7 @@ export function createModerationConsoleService(dependencies: {
           ? null
           : {
               id: trip.id,
+              driverId: trip.driverId,
               status: trip.status as TripStatus,
               ...route,
               note: trip.note,

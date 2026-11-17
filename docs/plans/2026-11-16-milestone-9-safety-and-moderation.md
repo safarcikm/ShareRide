@@ -386,7 +386,7 @@ In four parts, each its own pull request:
 
 ### PR 7: `feat(console)`: reports queue, report page and appeals
 
-- [ ] 7a: `/admin/v1/reports` and the report page, the logged
+- [x] 7a: `/admin/v1/reports` and the report page, the logged
       conversation, the actions (close, warn, suspend, reinstate, hide
       content, cancel a trip) and the appeals
 - [ ] 7b: their console pages, with the statement shown before it goes
