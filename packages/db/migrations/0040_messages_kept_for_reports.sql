@@ -1,0 +1,6 @@
+ALTER TABLE "messages" DROP CONSTRAINT "messages_body_check";--> statement-breakpoint
+ALTER TABLE "messages" DROP CONSTRAINT "messages_key_check";--> statement-breakpoint
+ALTER TABLE "messages" ADD COLUMN "sent_as" text;--> statement-breakpoint
+ALTER TABLE "messages" ADD CONSTRAINT "messages_sent_as_check" CHECK ("messages"."sent_as" is null or ("messages"."erased_at" is not null and "messages"."sent_as" in ('driver', 'passenger')));--> statement-breakpoint
+ALTER TABLE "messages" ADD CONSTRAINT "messages_body_check" CHECK (("messages"."kind" = 'text') = ("messages"."body" is not null) and char_length("messages"."body") between 1 and 1000 or ("messages"."erased_at" is not null and "messages"."body" is null));--> statement-breakpoint
+ALTER TABLE "messages" ADD CONSTRAINT "messages_key_check" CHECK (("messages"."erased_at" is null or "messages"."kind" <> 'system') and (("messages"."kind" = 'text') = ("messages"."key" is null) or ("messages"."erased_at" is not null and "messages"."key" is null and "messages"."params" is null)));

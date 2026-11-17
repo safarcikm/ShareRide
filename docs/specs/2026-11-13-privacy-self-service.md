@@ -109,7 +109,7 @@ else goes through "Ask about my data" (3.6).
 | Phone number | Erased. For a suspended account, a one-way hash is kept until the suspension ends, at most 3 years, so the number cannot sign up again (decision 2) |
 | Signed-in devices, push tokens, notification log, consents | Erased |
 | Vehicles | Erased |
-| Messages they sent | Erased; the other person sees "Message deleted" |
+| Messages they sent | Erased; the other person sees "Message deleted". In a conversation a report covers, the operator can still read them until the report's time is over (spec 9, section 7; Martin's answer A47) |
 | Reviews they received | Erased with the profile |
 | Reviews they wrote | Kept, shown as written by "A former member" (spec 8) |
 | Trips and bookings | Kept without the person: linked to an anonymous placeholder, so the other people's history, payouts and statistics stay right |

@@ -159,6 +159,8 @@ function Book() {
 type Problem =
   | { readonly kind: "seats_taken"; readonly freeSeats: number }
   | { readonly kind: "price_changed"; readonly total: Money }
+  /** The trip limit refused it (rule P3, spec 17): fewer seats or a shorter part may fit. */
+  | { readonly kind: "trip_limit" }
   | { readonly kind: "message"; readonly text: string }
   | { readonly kind: "other"; readonly text: string };
 
@@ -301,6 +303,10 @@ function BookForm({
       setProblem({ kind: "price_changed", total: changedTotal });
       // The price per seat comes again too.
       onReload();
+    } else if (code === "trip_limit_reached") {
+      setProblem({ kind: "trip_limit" });
+      // The price per seat comes again, in case it has fallen.
+      onReload();
     } else if (code === "account_incomplete") {
       void finishAccount(failure);
     } else if (failure.status === 400 && failure.error.details?.[0]?.path === "message") {
@@ -315,6 +321,20 @@ function BookForm({
     } else {
       setProblem({ kind: "other", text: bookErrorText(t, failure) });
     }
+  };
+
+  // Back to the trip page beneath, with these seats; without one, it opens
+  // in place of this screen.
+  const backToTrip = (seats: number) => {
+    router.dismissTo({
+      pathname: "/trips/[id]",
+      params: {
+        id: trip.id,
+        from: String(part.board),
+        to: String(part.alight),
+        seats: String(seats),
+      },
+    });
   };
 
   const book = async () => {
@@ -462,17 +482,21 @@ function BookForm({
               variant="secondary"
               label={t("booking.backToTrip")}
               onPress={() => {
-                // Back to the trip page beneath, with the seats free now;
-                // without one, it opens in place of this screen.
-                router.dismissTo({
-                  pathname: "/trips/[id]",
-                  params: {
-                    id: trip.id,
-                    from: String(part.board),
-                    to: String(part.alight),
-                    seats: String(Math.max(1, problem.freeSeats)),
-                  },
-                });
+                backToTrip(Math.max(1, problem.freeSeats));
+              }}
+            />
+          </View>
+        </TakesFocus>
+      ) : null}
+      {problem?.kind === "trip_limit" ? (
+        <TakesFocus>
+          <View style={styles.problem}>
+            <Notice message={t("booking.tripLimitReached")} />
+            <Button
+              variant="secondary"
+              label={t("booking.backToTrip")}
+              onPress={() => {
+                backToTrip(part.seats);
               }}
             />
           </View>

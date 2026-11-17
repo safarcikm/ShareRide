@@ -1,6 +1,6 @@
 {
-  "id": "8d75597e-8d0b-4f3f-a516-e1c53ee1f504",
-  "prevId": "98bc7f33-e89c-4192-bfaf-a0dfeba9e346",
+  "id": "144bd486-dca4-4bb2-b4cc-8cd200280969",
+  "prevId": "e6ff565b-df46-4017-b301-b57a6ceb79f4",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1674,6 +1674,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "sent_as": {
+          "name": "sent_as",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -1775,11 +1781,11 @@
         },
         "messages_body_check": {
           "name": "messages_body_check",
-          "value": "case when \"messages\".\"erased_at\" is null then (\"messages\".\"kind\" = 'text') = (\"messages\".\"body\" is not null) and char_length(\"messages\".\"body\") between 1 and 1000 else \"messages\".\"body\" is null end"
+          "value": "(\"messages\".\"kind\" = 'text') = (\"messages\".\"body\" is not null) and char_length(\"messages\".\"body\") between 1 and 1000 or (\"messages\".\"erased_at\" is not null and \"messages\".\"body\" is null)"
         },
         "messages_key_check": {
           "name": "messages_key_check",
-          "value": "case when \"messages\".\"erased_at\" is null then (\"messages\".\"kind\" = 'text') = (\"messages\".\"key\" is null) else \"messages\".\"key\" is null and \"messages\".\"params\" is null and \"messages\".\"kind\" <> 'system' end"
+          "value": "(\"messages\".\"erased_at\" is null or \"messages\".\"kind\" <> 'system') and ((\"messages\".\"kind\" = 'text') = (\"messages\".\"key\" is null) or (\"messages\".\"erased_at\" is not null and \"messages\".\"key\" is null and \"messages\".\"params\" is null))"
         },
         "messages_sender_check": {
           "name": "messages_sender_check",
@@ -1788,6 +1794,10 @@
         "messages_read_check": {
           "name": "messages_read_check",
           "value": "\"messages\".\"kind\" <> 'system' or \"messages\".\"read_at\" is null"
+        },
+        "messages_sent_as_check": {
+          "name": "messages_sent_as_check",
+          "value": "\"messages\".\"sent_as\" is null or (\"messages\".\"erased_at\" is not null and \"messages\".\"sent_as\" in ('driver', 'passenger'))"
         }
       },
       "isRLSEnabled": false
@@ -5124,104 +5134,6 @@
         "moderation_actions_outcome_check": {
           "name": "moderation_actions_outcome_check",
           "value": "\"moderation_actions\".\"appeal_outcome\" is null or \"moderation_actions\".\"appeal_outcome\" in ('upheld', 'reversed')"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.operator_notes": {
-      "name": "operator_notes",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "uuidv7()"
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "text": {
-          "name": "text",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "by_id": {
-          "name": "by_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "operator_notes_user_index": {
-          "name": "operator_notes_user_index",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "operator_notes_user_id_users_id_fk": {
-          "name": "operator_notes_user_id_users_id_fk",
-          "tableFrom": "operator_notes",
-          "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "operator_notes_by_id_users_id_fk": {
-          "name": "operator_notes_by_id_users_id_fk",
-          "tableFrom": "operator_notes",
-          "tableTo": "users",
-          "columnsFrom": ["by_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "operator_notes_text_check": {
-          "name": "operator_notes_text_check",
-          "value": "char_length(\"operator_notes\".\"text\") between 1 and 4000"
         }
       },
       "isRLSEnabled": false

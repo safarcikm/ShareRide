@@ -462,6 +462,26 @@ describe("the booking's conversation, for a dispute (R7.3, R9.6)", () => {
     });
   });
 
+  it("shows what an erased sender's message said while a report keeps it", async () => {
+    const trip = await onTheTrip();
+    const disputeId = await contestedAbsence(trip);
+    const conversationId = await conversationOf(trip.bookingId);
+    // Erasure keeps the text of a conversation a report covers (spec 9, section 7).
+    await api.connection.db
+      .update(schema.messages)
+      .set({ erasedAt: api.now() })
+      .where(
+        and(eq(schema.messages.conversationId, conversationId), eq(schema.messages.kind, "text")),
+      );
+    const { cookie } = await operator();
+    const { body } = await send(cookie, "GET", `/admin/v1/disputes/${disputeId}/conversation`);
+    const { messages } = body as { messages: AdminConversationMessage[] };
+    expect(messages.find((message) => message.from === "passenger")).toMatchObject({
+      kind: "text",
+      text: "I'll be by the bus shelter.",
+    });
+  });
+
   it("stays closed, and logs nothing, for a report nobody contested", async () => {
     const trip = await onTheTrip();
     const disputeId = await unansweredNoShow(trip);

@@ -9,6 +9,7 @@ import { and, asc, eq, inArray, lte, notExists, or, sql } from "drizzle-orm";
 import type { Logger } from "../../logger.ts";
 import type { KeyedHasher } from "../../platform/crypto.ts";
 import type { Transaction } from "../bookings/seats.ts";
+import { reportCovers } from "../chat/clean-up.ts";
 import { catalogued, emptiedOf, freshIdsOf, tableOf } from "./catalogue.ts";
 import { lockDrivenTrips, openFor } from "./deletion.ts";
 import { accountHeld } from "./holds.ts";
@@ -140,6 +141,29 @@ async function eraseAccount(
   // So do the notes operators wrote about them (spec 9, 3.5.3); those an
   // operator wrote about others stay, by the former member, below.
   await tx.delete(operatorNotes).where(eq(operatorNotes.userId, userId));
+
+  // What they said in a conversation a report covers stays for the operator
+  // until the report's own time is over, then goes with the conversation
+  // (spec 9, section 7). Everyone else reads "Message deleted". Done while
+  // their trips still name them, to keep whether the driver or the
+  // passenger said it: the other side may be erased too, later.
+  const drove = inArray(
+    messages.conversationId,
+    tx
+      .select({ id: conversations.id })
+      .from(conversations)
+      .innerJoin(bookings, eq(bookings.id, conversations.bookingId))
+      .where(inArray(bookings.tripId, theirTrips())),
+  );
+  await tx
+    .update(messages)
+    .set({
+      ...freshIdsOf(personalData["messages"]?.otherIds),
+      senderId: formerMemberId,
+      erasedAt: now,
+      sentAs: sql`case when ${drove} then 'driver' else 'passenger' end`,
+    })
+    .where(and(eq(messages.senderId, userId), reportCovers(tx, now, messages.conversationId)));
 
   // Then every table as the catalogue says. First the rows only a booking
   // links to the person, such as a report about a ride, while their
