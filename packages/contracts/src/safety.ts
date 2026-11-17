@@ -1,4 +1,8 @@
 import {
+  appealOutcomes,
+  moderatedContent,
+  moderationActionKinds,
+  moderationRules,
   reportCategories,
   reportOutcomes,
   reportStatuses,
@@ -11,7 +15,8 @@ import { errorResponseSchema } from "./errors.ts";
 import { peopleColourSchema } from "./people.ts";
 import { defineRoute } from "./route.ts";
 
-// Safety and moderation (spec 9): blocking and reports. A person is blocked
+// Safety and moderation (spec 9): blocking, reports and the person's
+// notices from ShareRide. A person is blocked
 // or reported through what the two share, such as a booking or a message,
 // so no one's own ID is ever shown to someone else (it holds when their
 // account was made).
@@ -160,5 +165,79 @@ export const myReportsRoute = defineRoute({
       schema: z.object({ reports: z.array(myReportSchema) }),
     },
     401: unauthenticated,
+  },
+});
+
+/**
+ * What ShareRide did about me and why: the statement of reasons (spec 9,
+ * 3.4.4; R9.5), with my appeal and its answer. Never which operator.
+ */
+export const noticeSchema = z.object({
+  id: z.uuid(),
+  kind: z.enum(moderationActionKinds),
+  /** The community rule it concerns; null for a reinstatement. */
+  rule: z.enum(moderationRules).nullable(),
+  /** As ShareRide wrote it for me; a reinstatement's note. */
+  reason: z.string(),
+  /** What it concerned, when it was something I posted, a trip or a booking. */
+  content: z.object({ kind: z.enum(moderatedContent) }).nullable(),
+  /** A suspension's end; null for one with no end, and for every other kind. */
+  until: timestampSchema.nullable(),
+  at: timestampSchema,
+  /** The last moment to appeal; null for a reinstatement, which is not appealed. */
+  appealUntil: timestampSchema.nullable(),
+  /** Whether "Appeal" is offered now: once, within 14 days. */
+  canAppeal: z.boolean(),
+  appeal: z
+    .object({
+      text: z.string(),
+      sentAt: timestampSchema,
+      /** ShareRide's answer, final in the app; null until answered. */
+      answer: z.string().nullable(),
+      outcome: z.enum(appealOutcomes).nullable(),
+      answeredAt: timestampSchema.nullable(),
+    })
+    .nullable(),
+});
+
+export type Notice = z.infer<typeof noticeSchema>;
+
+export const myNoticesRoute = defineRoute({
+  method: "get",
+  path: "/v1/me/notices",
+  summary: "What ShareRide did about me and why, the latest first, with my appeals (R9.5)",
+  tags: ["safety"],
+  auth: true,
+  responses: {
+    200: { description: "My notices", schema: z.object({ notices: z.array(noticeSchema) }) },
+    401: unauthenticated,
+  },
+});
+
+export const appealNoticeBodySchema = z.object({
+  /** Up to 1 000 characters as chat counts them; not empty. */
+  text: z.string().max(4000),
+});
+
+export const appealNoticeRoute = defineRoute({
+  method: "post",
+  path: "/v1/me/notices/{id}/appeal",
+  summary: "Appeal a notice once, within 14 days; also while suspended (spec 9, 3.4.4)",
+  tags: ["safety"],
+  auth: true,
+  request: { params: z.object({ id: z.uuid() }), body: appealNoticeBodySchema },
+  responses: {
+    200: { description: "The notice, with the appeal", schema: noticeSchema },
+    400: {
+      description: "validation_failed: the text is empty or over 1 000 characters (`text`)",
+      ...errors,
+    },
+    401: unauthenticated,
+    404: { description: "not_found: no such notice of mine", ...errors },
+    409: {
+      description:
+        "not_appealable: a reinstatement; already_appealed; appeal_window_closed: more than 14 days after the action",
+      ...errors,
+    },
   },
 });

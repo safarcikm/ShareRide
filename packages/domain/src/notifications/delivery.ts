@@ -41,6 +41,8 @@ export const outboxEventTypes = [
   "PrivacyRequestAnswered",
   "ModerationActionTaken",
   "SuspensionEnded",
+  "AppealAnswered",
+  "ReportClosed",
 ] as const;
 export type OutboxEventType = (typeof outboxEventTypes)[number];
 

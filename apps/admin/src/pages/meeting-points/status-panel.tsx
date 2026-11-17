@@ -51,12 +51,19 @@ const tomorrow = () => icelandDate(new Date(Date.now() + 24 * 3600_000));
 export function StatusPanel({
   point,
   onResult,
+  startPausing = false,
 }: {
   readonly point: AdminMeetingPoint;
   readonly onResult: (result: StatusResult) => void;
+  /** Opens with the pause asked for, as from a problem report (spec 2, 3.6.7). */
+  readonly startPausing?: boolean;
 }) {
   const { t, locale, call } = useConsole();
-  const [step, setStep] = useState<Step>("none");
+  const [step, setStep] = useState<Step>(() =>
+    startPausing && nextPointStatus(point.status, "pause", point.futureTrips).ok
+      ? "pausing"
+      : "none",
+  );
   const [pause, setPause] = useState({ reasonIs: "", reasonEn: "", until: "" });
   const [problems, setProblems] = useState<readonly PauseProblem[]>([]);
   const [busy, setBusy] = useState(false);
