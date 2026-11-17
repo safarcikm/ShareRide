@@ -358,7 +358,7 @@ type Saving =
 /**
  * Notes about the person (3.5.3), the latest first, and a new one. Only
  * operators see them here; the person gets them in Download my data,
- * without who wrote them (Q25), so the hint asks for facts.
+ * without who wrote them (A48), so the hint asks for facts.
  */
 function Notes({
   userId,
