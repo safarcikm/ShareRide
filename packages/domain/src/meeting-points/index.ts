@@ -8,3 +8,4 @@ export * from "./status.ts";
 export * from "./photos.ts";
 export * from "./import.ts";
 export * from "./issues.ts";
+export * from "./activation.ts";

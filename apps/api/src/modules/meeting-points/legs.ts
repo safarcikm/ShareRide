@@ -47,9 +47,15 @@ export interface LegService {
   recomputeAll(actor: ConsoleActor): Promise<AdminLegsStatus>;
   /**
    * A point's legs to and from every point in service, replacing all its
-   * old ones: for activating a point (R2.3) and moving it (R2.10).
+   * old ones: for activating a point (R2.3) and moving it (R2.10). In `tx`
+   * when given, so the activation or move and its legs are one change.
    */
-  computeFor(pointId: string): Promise<Result<LegsComputed, { readonly code: "not_found" }>>;
+  computeFor(
+    pointId: string,
+    tx?: Transaction,
+  ): Promise<Result<LegsComputed, { readonly code: "not_found" }>>;
+  /** Whether a place is within 1 km of a road, so it can have legs (R2.3). */
+  nearRoad(position: Position): Promise<boolean>;
 }
 
 interface Point {
@@ -236,12 +242,14 @@ export function createLegService(dependencies: {
       return running;
     },
 
-    async computeFor(pointId) {
+    nearRoad: (position) => router.nearRoad(position),
+
+    computeFor(pointId, within) {
       // Found and written under the lock: one point's legs take a few
       // hundredths of a second, and whichever of two moves comes second
       // reads where the first one put its point. Each move calls this
-      // after it is saved, so the last call has the last places.
-      return db.transaction(async (tx) => {
+      // with the move, so the last call has the last places.
+      const compute = async (tx: Transaction) => {
         await lockLegs(tx);
         const [point] = await tx
           .select({ id: meetingPoints.id, location: meetingPoints.location })
@@ -271,7 +279,8 @@ export function createLegService(dependencies: {
           .where(or(eq(legs.fromMeetingPointId, pointId), eq(legs.toMeetingPointId, pointId)));
         await insertLegs(tx, rows);
         return ok({ legs: rows.length, missing: 2 * others.length - rows.length });
-      });
+      };
+      return within === undefined ? db.transaction(compute) : compute(within);
     },
   };
 }

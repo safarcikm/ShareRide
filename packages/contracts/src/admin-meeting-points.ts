@@ -1,4 +1,5 @@
 import {
+  activationItems,
   amenities,
   importLimits,
   meetingPointIssueReasons,
@@ -29,6 +30,8 @@ export const adminMeetingPointErrorCodes = [
   "move_needed",
   /** The point's status does not allow this change, such as pausing a draft (`nextPointStatus`). */
   "status_change_not_allowed",
+  /** An item of the activation checklist is not done (R2.3); `details` names each one. */
+  "activation_not_ready",
   /** A point has at most `photoLimits.maxPerPoint` photos. */
   "too_many_photos",
   /** Someone changed the photo's descriptions since the console loaded them. */
@@ -304,6 +307,50 @@ export const adminRetireMeetingPointRoute = defineRoute({
   auth: "operator",
   request: { params: z.object({ id: z.uuid() }), body: loadedSchema },
   responses: { ...statusResponses, 400: { description: "validation_failed", ...errors } },
+});
+
+// Activating a draft (spec 2, 3.6.3; milestone 8, PR 12a): only when its
+// checklist passes (R2.3, `activationChecklist`). Activation computes the
+// point's legs with every point in service (3.7) in the same transaction.
+
+export const adminActivationChecklistSchema = z.object({
+  /** Each item of R2.3, in the order the console shows them. */
+  items: z.array(z.object({ item: z.enum(activationItems), done: z.boolean() })),
+  /** Every item is done. */
+  ready: z.boolean(),
+});
+export type AdminActivationChecklist = z.infer<typeof adminActivationChecklistSchema>;
+
+export const adminActivationChecklistRoute = defineRoute({
+  method: "get",
+  path: "/admin/v1/meeting-points/{id}/activation",
+  summary: "The point's activation checklist: what R2.3 asks and whether it has it",
+  tags: ["admin", "meeting-points"],
+  auth: "operator",
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    200: { description: "The checklist", schema: adminActivationChecklistSchema },
+    401: { description: "operator_unauthenticated", ...errors },
+    404: { description: "not_found", ...errors },
+  },
+});
+
+export const adminActivateMeetingPointRoute = defineRoute({
+  method: "post",
+  path: "/admin/v1/meeting-points/{id}/activate",
+  summary: "Activate a draft whose checklist passes, computing its legs",
+  tags: ["admin", "meeting-points"],
+  auth: "operator",
+  request: { params: z.object({ id: z.uuid() }), body: loadedSchema },
+  responses: {
+    ...statusResponses,
+    400: { description: "validation_failed", ...errors },
+    409: {
+      description:
+        "meeting_point_changed: saved by someone else since; status_change_not_allowed: not a draft; activation_not_ready: with each item not done in `details`",
+      ...errors,
+    },
+  },
 });
 
 // Photos of a point (spec 2, 3.6.3; milestone 8, PR 8): up to five, each
