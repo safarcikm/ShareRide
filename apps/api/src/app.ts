@@ -5,6 +5,7 @@ import type { Database } from "@shareride/db";
 import {
   defaultBookingSettings,
   defaultChatSettings,
+  defaultMeetingPointIssueSettings,
   defaultNotificationSettings,
   defaultReliabilitySettings,
   defaultReviewSettings,
@@ -66,6 +67,7 @@ import { createDrivingService, registerDrivingRoutes } from "./modules/driving/i
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
   createMeetingPointAdminService,
+  createMeetingPointIssueService,
   createMeetingPointPhotoService,
   createMeetingPointService,
   registerMeetingPointPhotoAdminRoutes,
@@ -298,7 +300,13 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     registerDrivingRoutes(app, driving, requireAuth);
     registerLegalRoutes(app, legal);
     const photos = createMeetingPointPhotoService({ ...features, logger });
-    registerMeetingPointRoutes(app, createMeetingPointService(features), photos);
+    registerMeetingPointRoutes(
+      app,
+      createMeetingPointService(features),
+      photos,
+      createMeetingPointIssueService({ ...features, settings: defaultMeetingPointIssueSettings }),
+      requireAuth,
+    );
     const meetingPointsAdmin = {
       ...features,
       meetingPoints: createMeetingPointAdminService(features),

@@ -1,4 +1,10 @@
-import type { Amenity, MeetingPointType, PlaceKind, Region } from "@shareride/domain";
+import type {
+  Amenity,
+  MeetingPointIssueReason,
+  MeetingPointType,
+  PlaceKind,
+  Region,
+} from "@shareride/domain";
 import { formatMonth } from "./format.ts";
 import type { Locale } from "./locales.ts";
 import type { MessageKey, Translate } from "./translator.ts";
@@ -34,6 +40,14 @@ export const amenityKeys = {
   parking: "amenities.parking",
   "step-free": "amenities.stepFree",
 } as const satisfies Record<Amenity, MessageKey>;
+
+export const issueReasonKeys = {
+  closed_or_moved: "meetingPoints.issue.reason.closedOrMoved",
+  unsafe: "meetingPoints.issue.reason.unsafe",
+  wrong_location: "meetingPoints.issue.reason.wrongLocation",
+  wrong_information: "meetingPoints.issue.reason.wrongInformation",
+  other: "meetingPoints.issue.reason.other",
+} as const satisfies Record<MeetingPointIssueReason, MessageKey>;
 
 export const placeKindKeys = {
   area: "places.kind.area",
