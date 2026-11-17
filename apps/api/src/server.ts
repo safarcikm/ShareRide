@@ -22,6 +22,7 @@ import { createTestPaymentProvider } from "./platform/payments.ts";
 import { createExpoPushSender } from "./platform/push-expo.ts";
 import { startRepeating } from "./platform/repeat.ts";
 import { selectEmail } from "./platform/select-email.ts";
+import { selectPhotoStorage } from "./platform/select-photo-storage.ts";
 import { selectSmsSender } from "./platform/select-sms-sender.ts";
 
 let config: Config;
@@ -86,6 +87,7 @@ const app = createApp({
     ...(config.adminOrigin === undefined ? {} : { adminOrigin: config.adminOrigin }),
     ...(payments === undefined ? {} : { payments }),
     ...(email === undefined ? {} : { email }),
+    ...selectPhotoStorage(config.photos),
   },
 });
 
