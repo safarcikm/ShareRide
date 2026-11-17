@@ -3,7 +3,7 @@ import {
   adminResolveMeetingPointIssueRoute,
   type AdminMeetingPointIssue,
 } from "@shareride/contracts";
-import { characterCount, inIceland, meetingPointIssueLimits } from "@shareride/domain";
+import { checkIssueResolution, inIceland, meetingPointIssueLimits } from "@shareride/domain";
 import {
   formatClock,
   formatDate,
@@ -105,9 +105,11 @@ export function MeetingPointProblems() {
             <Problem
               key={issue.id}
               issue={issue}
-              onResolved={() => {
+              onGone={(resolvedHere) => {
                 setMessage(
-                  t("admin.meetingPointIssues.resolved", { name: issue.meetingPoint.nameIs }),
+                  resolvedHere
+                    ? t("admin.meetingPointIssues.resolved", { name: issue.meetingPoint.nameIs })
+                    : t("admin.meetingPointIssues.alreadyResolved"),
                 );
                 setFocusMessage(true);
                 void reload();
@@ -120,14 +122,18 @@ export function MeetingPointProblems() {
   );
 }
 
-type NoteProblem = "required" | "tooLong" | "alreadyResolved" | "failed";
+type NoteProblem = "required" | "tooLong" | "failed";
 
+/**
+ * One open report and its resolve form. `onGone` takes it off the list:
+ * resolved here, or by someone else meanwhile.
+ */
 function Problem({
   issue,
-  onResolved,
+  onGone,
 }: {
   readonly issue: AdminMeetingPointIssue;
-  readonly onResolved: () => void;
+  readonly onGone: (resolvedHere: boolean) => void;
 }) {
   const { t, locale, call } = useConsole();
   const base = useId();
@@ -145,31 +151,39 @@ function Problem({
   const problemText: Record<NoteProblem, string> = {
     required: t("admin.meetingPointIssues.resolutionRequired"),
     tooLong: t("admin.meetingPointIssues.resolutionTooLong", { max }),
-    alreadyResolved: t("admin.meetingPointIssues.alreadyResolved"),
     failed: t("admin.meetingPointIssues.resolveFailed"),
   };
 
+  /** The note's problem, by the field, from the domain's own check. */
+  function showNoteProblem(issueCode: string) {
+    setProblem(issueCode === "too_long" ? "tooLong" : "required");
+    noteField.current?.focus();
+  }
+
   async function resolve() {
-    const tidied = note.trim();
-    const local: NoteProblem | null =
-      tidied === "" ? "required" : characterCount(tidied) > max ? "tooLong" : null;
-    if (local !== null) {
-      setProblem(local);
-      noteField.current?.focus();
+    const checked = checkIssueResolution(note);
+    if (!checked.ok) {
+      showNoteProblem(checked.error.code);
       return;
     }
     setProblem(null);
     setBusy(true);
     const result = await call(adminResolveMeetingPointIssueRoute, {
       params: { id: issue.id },
-      body: { note: tidied, checkedToday },
+      body: { note: checked.value, checkedToday },
     });
-    setBusy(false);
-    if (result.ok) {
-      onResolved();
+    if (result.ok || result.error.code === "issue_resolved") {
+      // The card goes with the next list; until then, nothing to press.
+      onGone(result.ok);
       return;
     }
-    setProblem(result.error.code === "issue_resolved" ? "alreadyResolved" : "failed");
+    setBusy(false);
+    const noteIssue = result.error.details?.find((detail) => detail.path === "note")?.issue;
+    if (result.error.code === "validation_failed" && noteIssue !== undefined) {
+      showNoteProblem(noteIssue);
+      return;
+    }
+    setProblem("failed");
   }
 
   const fieldProblem = problem === "required" || problem === "tooLong";
@@ -238,13 +252,19 @@ function Problem({
             {t("admin.meetingPointIssues.checkedToday")}
           </label>
         </p>
-        <p className="type-small muted">{t("admin.meetingPointIssues.pauseHint")}</p>
+        {meetingPoint.status === "active" ? (
+          <p className="type-body">
+            <ConsoleLink to={`${meetingPointsPath}/${meetingPoint.id}?pause`}>
+              {t("admin.meetingPointIssues.pause", { name: meetingPoint.nameIs })}
+            </ConsoleLink>
+          </p>
+        ) : null}
         <div className="actions">
           <button type="submit" className="button-primary type-button" disabled={busy}>
             {t("admin.meetingPointIssues.resolve")}
           </button>
         </div>
-        {problem === "alreadyResolved" || problem === "failed" ? (
+        {problem === "failed" ? (
           <p className="problem type-body" role="alert">
             {problemText[problem]}
           </p>

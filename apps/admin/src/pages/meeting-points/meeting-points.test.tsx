@@ -596,6 +596,17 @@ describe("pausing, bringing back and retiring a point (spec 2, 3.6.4 and 3.6.5)"
 
   const panel = () => screen.getByRole("region", { name: "In use" });
 
+  it("opens the pause at once when a problem report leads here", async () => {
+    const api = start(`/admin/meeting-points/${pointId}?pause`);
+    api.on(adminMeetingPointRoute, { status: 200, data: active });
+    await screen.findByRole("heading", { name: "N1 Borgarnesi", level: 1 });
+    await waitFor(() => {
+      expect(document.activeElement).toBe(field("Reason, in Icelandic"));
+    });
+    // Reloading the page later does not open it again.
+    expect(window.location.search).toBe("");
+  });
+
   it("pauses an active point with a reason in both languages and an end date", async () => {
     const api = open(active);
     let sent: Record<string, unknown> = {};

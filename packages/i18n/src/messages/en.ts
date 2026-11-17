@@ -1744,8 +1744,7 @@ export const en = {
   "admin.meetingPointIssues.resolutionRequired": "Say what you did.",
   "admin.meetingPointIssues.resolutionTooLong": "Shorten it to {max} characters or fewer.",
   "admin.meetingPointIssues.checkedToday": "I checked the point today (sets Last confirmed on)",
-  "admin.meetingPointIssues.pauseHint":
-    "To stop it being used at once, open the point and choose Pause.",
+  "admin.meetingPointIssues.pause": "Pause {name} now",
   "admin.meetingPointIssues.resolve": "Resolve",
   "admin.meetingPointIssues.resolved": "Resolved: {name}.",
   "admin.meetingPointIssues.alreadyResolved": "Someone resolved this report already.",

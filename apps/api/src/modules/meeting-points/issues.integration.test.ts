@@ -191,6 +191,24 @@ describe("the console's queue (spec 2, 3.5 and 3.6)", () => {
   const resolve = (id: string, body: unknown) =>
     admin(`/admin/v1/meeting-point-issues/${id}/resolve`, { method: "POST", body });
 
+  async function pointDates(id: string) {
+    const [point] = await api.connection.db
+      .select({
+        lastCheckedOn: schema.meetingPoints.lastCheckedOn,
+        reviewDueOn: schema.meetingPoints.reviewDueOn,
+      })
+      .from(schema.meetingPoints)
+      .where(eq(schema.meetingPoints.id, id));
+    return point;
+  }
+
+  async function auditOf(action: string, subjectId: string) {
+    return api.connection.db
+      .select()
+      .from(schema.auditLog)
+      .where(and(eq(schema.auditLog.action, action), eq(schema.auditLog.subjectId, subjectId)));
+  }
+
   async function sentBySomeone(point: string, reason: string, note: string) {
     const person = await api.signIn(api.newPhoneNumber());
     expect((await report(person.accessToken, point, { reason, note })).ok).toBe(true);
@@ -255,12 +273,16 @@ describe("the console's queue (spec 2, 3.5 and 3.6)", () => {
     expect(entry).toMatchObject({
       operatorUserId: operatorId,
       subjectType: "meeting_point_issue",
+      before: { status: "open" },
       after: {
+        status: "resolved",
         meetingPointId: borgarnes,
         reason: "wrong_information",
         resolutionNote: "Heitið lagað.",
       },
     });
+    // Not checked today: the point is as it was, with nothing in its history.
+    expect(entry?.after).not.toHaveProperty("lastCheckedOn");
 
     const again = await resolve(id, { note: "Aftur.", checkedToday: false });
     expect([again.status, (again.body as ErrorResponse).error.code]).toEqual([
@@ -271,20 +293,40 @@ describe("the console's queue (spec 2, 3.5 and 3.6)", () => {
 
   it("marks the point checked today when asked, which moves its yearly review", async () => {
     const bsi = sampleId("point:bsi");
+    const before = await pointDates(bsi);
     const { id } = await sentBySomeone(bsi, "closed_or_moved", "");
     expect((await resolve(id, { note: "Skoðað á staðnum.", checkedToday: true })).status).toBe(204);
-    const [point] = await api.connection.db
-      .select({
-        lastCheckedOn: schema.meetingPoints.lastCheckedOn,
-        reviewDueOn: schema.meetingPoints.reviewDueOn,
-      })
-      .from(schema.meetingPoints)
-      .where(eq(schema.meetingPoints.id, bsi));
     const today = api.now().toISOString().slice(0, 10);
-    expect(point).toEqual({
+    const checked = {
       lastCheckedOn: today,
       reviewDueOn: `${String(Number(today.slice(0, 4)) + 1)}${today.slice(4)}`,
+    };
+    expect(await pointDates(bsi)).toEqual(checked);
+
+    // The point's history has the change, before and after, as an edit's would.
+    const [pointEntry] = await auditOf("meeting_point.updated", bsi);
+    expect(pointEntry).toMatchObject({
+      subjectType: "meeting_point",
+      operatorUserId: operatorId,
+      before,
+      after: checked,
     });
+    const [issueEntry] = await auditOf("meeting_point_issue.resolved", id);
+    expect(issueEntry?.after).toMatchObject({ lastCheckedOn: today });
+  });
+
+  it("leaves a retired point as it was, checked today or not", async () => {
+    const retired = sampleId("test:retired");
+    const [issue] = await api.connection.db
+      .insert(schema.meetingPointIssues)
+      .values({ meetingPointId: retired, reason: "closed_or_moved" })
+      .returning({ id: schema.meetingPointIssues.id });
+    if (issue === undefined) throw new Error("No report.");
+    expect((await resolve(issue.id, { note: "Hætt.", checkedToday: true })).status).toBe(204);
+    expect(await pointDates(retired)).toEqual({ lastCheckedOn: null, reviewDueOn: null });
+    expect(await auditOf("meeting_point.updated", retired)).toEqual([]);
+    const [entry] = await auditOf("meeting_point_issue.resolved", issue.id);
+    expect(entry?.after).not.toHaveProperty("lastCheckedOn");
   });
 
   it("marks the point in the console's list while a report is open", async () => {
@@ -305,16 +347,68 @@ describe("the console's queue (spec 2, 3.5 and 3.6)", () => {
     expect(await listed("?openIssues=true")).toMatchObject({ openIssues: 1 });
   });
 
-  it("counts only open reports towards the 5 a day, as a resolved one is no longer linked to anyone", async () => {
+  it("still counts a resolved report towards the 5 a day (R2.8)", async () => {
     const { accessToken, userId } = await api.signIn(api.newPhoneNumber());
     for (let sent = 0; sent < 5; sent += 1) {
       expect((await report(accessToken, borgarnes)).ok).toBe(true);
     }
-    expect((await report(accessToken, borgarnes)).status).toBe(429);
     const [first] = await issuesOf(userId);
     if (first === undefined) throw new Error("No report.");
-    await resolve(first.id, { note: "Lagað.", checkedToday: false });
-    expect((await report(accessToken, borgarnes)).ok).toBe(true);
+    expect((await resolve(first.id, { note: "Lagað.", checkedToday: false })).status).toBe(204);
+    expect((await report(accessToken, borgarnes)).status).toBe(429);
+  });
+
+  it("resolves a report once when two operators resolve it at the same moment", async () => {
+    const { id } = await sentBySomeone(borgarnes, "other", "");
+    const answers = await Promise.all([
+      resolve(id, { note: "Fyrri.", checkedToday: false }),
+      resolve(id, { note: "Seinni.", checkedToday: false }),
+    ]);
+    expect(answers.map((answer) => answer.status).sort()).toEqual([204, 409]);
+    const entries = await api.connection.db
+      .select()
+      .from(schema.auditLog)
+      .where(
+        and(
+          eq(schema.auditLog.action, "meeting_point_issue.resolved"),
+          eq(schema.auditLog.subjectId, id),
+        ),
+      );
+    expect(entries).toHaveLength(1);
+  });
+
+  it("saves nothing when the audit log cannot take the entry", async () => {
+    const hlemmur = sampleId("point:hlemmur");
+    const { id, person } = await sentBySomeone(hlemmur, "unsafe", "");
+    const pointBefore = await pointDates(hlemmur);
+    const { pool } = api.connection;
+    await pool.query(`
+      CREATE FUNCTION test_refuse_audit() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN
+        IF NEW.after ->> 'resolutionNote' = 'Refused by the audit log' THEN
+          RAISE EXCEPTION 'test: audit entry refused';
+        END IF;
+        RETURN NEW;
+      END $$;
+      CREATE TRIGGER test_refuse_audit BEFORE INSERT ON audit_log
+        FOR EACH ROW EXECUTE FUNCTION test_refuse_audit();
+    `);
+    try {
+      const refused = await resolve(id, { note: "Refused by the audit log", checkedToday: true });
+      expect(refused.status).toBe(500);
+    } finally {
+      await pool.query(`
+        DROP TRIGGER test_refuse_audit ON audit_log;
+        DROP FUNCTION test_refuse_audit();
+      `);
+    }
+    const [row] = await api.connection.db
+      .select()
+      .from(schema.meetingPointIssues)
+      .where(eq(schema.meetingPointIssues.id, id));
+    expect(row).toMatchObject({ status: "open", reporterId: person.userId, resolutionNote: null });
+    expect(await pointDates(hlemmur)).toEqual(pointBefore);
+    expect((await queue()).map((issue) => issue.id)).toContain(id);
   });
 
   it("needs a note, and knows only reports there are", async () => {
@@ -336,7 +430,11 @@ describe("the console's queue (spec 2, 3.5 and 3.6)", () => {
   it("deletes a resolved report 12 months after it was resolved", async () => {
     const { id: old } = await sentBySomeone(borgarnes, "other", "Gamalt.");
     await resolve(old, { note: "Lagað.", checkedToday: false });
+    // Sent as long ago, but still open, or resolved only later: both stay.
+    const { id: longOpen } = await sentBySomeone(borgarnes, "other", "Enn opið.");
+    const { id: lateResolved } = await sentBySomeone(borgarnes, "other", "Seint.");
     api.advance(200 * 24 * 3_600);
+    await resolve(lateResolved, { note: "Lagað seint.", checkedToday: false });
     const { id: newer } = await sentBySomeone(borgarnes, "other", "Nýrra.");
     await resolve(newer, { note: "Lagað.", checkedToday: false });
     const { id: open } = await sentBySomeone(borgarnes, "other", "Opið.");
@@ -362,6 +460,6 @@ describe("the console's queue (spec 2, 3.5 and 3.6)", () => {
       .from(schema.meetingPointIssues);
     const ids = left.map((row) => row.id);
     expect(ids).not.toContain(old);
-    expect(ids).toEqual(expect.arrayContaining([newer, open]));
+    expect(ids).toEqual(expect.arrayContaining([newer, open, longOpen, lateResolved]));
   });
 });

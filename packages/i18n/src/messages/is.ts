@@ -1758,8 +1758,7 @@ export const is = {
   "admin.meetingPointIssues.resolutionRequired": "Segðu hvað þú gerðir.",
   "admin.meetingPointIssues.resolutionTooLong": "Styttu textann í {max} stafi eða færri.",
   "admin.meetingPointIssues.checkedToday": "Ég skoðaði staðinn í dag (setur Síðast staðfest)",
-  "admin.meetingPointIssues.pauseHint":
-    "Til að stöðva notkun strax, opnaðu staðinn og veldu Gera hlé.",
+  "admin.meetingPointIssues.pause": "Gera hlé á {name} strax",
   "admin.meetingPointIssues.resolve": "Leysa",
   "admin.meetingPointIssues.resolved": "Leyst: {name}.",
   "admin.meetingPointIssues.alreadyResolved": "Einhver hefur þegar leyst þessa tilkynningu.",

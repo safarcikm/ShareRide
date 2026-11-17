@@ -1,6 +1,7 @@
 import { schema, type Database } from "@shareride/db";
 import type { AdminMeetingPointIssue } from "@shareride/contracts";
 import {
+  changedFields,
   checkIssueResolution,
   checkMeetingPointIssue,
   defaultMeetingPointIssueSettings,
@@ -20,7 +21,7 @@ import {
 import { and, asc, eq, gt } from "drizzle-orm";
 import type { KeyedHasher } from "../../platform/crypto.ts";
 import { recordAudit } from "../admin/audit.ts";
-import type { ConsoleActor } from "./admin-service.ts";
+import { changedNow, type ConsoleActor } from "./admin-service.ts";
 
 const { meetingPointIssues, meetingPoints, rateLimitEvents, users } = schema;
 
@@ -181,21 +182,40 @@ export function createMeetingPointIssueService(dependencies: {
         let checkedOn: string | null = null;
         if (input.checkedToday) {
           const [point] = await tx
-            .select({ status: meetingPoints.status, lastCheckedOn: meetingPoints.lastCheckedOn })
+            .select({
+              status: meetingPoints.status,
+              lastCheckedOn: meetingPoints.lastCheckedOn,
+              reviewDueOn: meetingPoints.reviewDueOn,
+            })
             .from(meetingPoints)
             .where(eq(meetingPoints.id, issue.meetingPointId))
             .for("update");
           // A retired point stays as it was (R2.2).
           if (point !== undefined && point.status !== "retired") {
             checkedOn = today;
-            await tx
-              .update(meetingPoints)
-              .set({
-                lastCheckedOn: today,
-                reviewDueOn: reviewDueOn(point.status as MeetingPointStatus, today),
-                updatedAt: now,
-              })
-              .where(eq(meetingPoints.id, issue.meetingPointId));
+            const checked = {
+              lastCheckedOn: today,
+              reviewDueOn: reviewDueOn(point.status as MeetingPointStatus, today),
+            };
+            const changes = changedFields(
+              { lastCheckedOn: point.lastCheckedOn, reviewDueOn: point.reviewDueOn },
+              checked,
+            );
+            if (Object.keys(changes.after).length > 0) {
+              await tx
+                .update(meetingPoints)
+                .set({ ...checked, updatedAt: changedNow })
+                .where(eq(meetingPoints.id, issue.meetingPointId));
+              // The point's own history shows its new date, as an edit's would.
+              await recordAudit(tx, {
+                operator: actor.operator,
+                action: "meeting_point.updated",
+                subjectType: "meeting_point",
+                subjectId: issue.meetingPointId,
+                ...changes,
+                request: actor.request,
+              });
+            }
           }
         }
         await recordAudit(tx, {
@@ -203,7 +223,9 @@ export function createMeetingPointIssueService(dependencies: {
           action: "meeting_point_issue.resolved",
           subjectType: "meeting_point_issue",
           subjectId: id,
+          before: { status: "open" },
           after: {
+            status: "resolved",
             meetingPointId: issue.meetingPointId,
             reason: issue.reason,
             resolutionNote: note.value,

@@ -317,14 +317,22 @@ What people send with "Something wrong here?" in the app (spec 2, 3.5;
   "Only points with an open problem report" filter and a tag on the row
   show it. Resolving it, having checked the point, is the review.
 - `POST /admin/v1/meeting-point-issues/{id}/resolve` takes a note of what
-  was done (1 to 1 000 characters, `checkIssueResolution`) and
-  `checkedToday`. It removes the link to the person who sent it, so a
-  resolved report no longer counts towards their 5 a day (R2.8). With
+  was done (1 to 1 000 characters, `checkIssueResolution`, which the page
+  calls too) and `checkedToday`. It removes the link to the person who
+  sent it. Their 5 a day (R2.8) still counts it: each report is also a
+  rate limit event under a keyed hash of their number, kept 24 hours. With
   `checkedToday`, the point's Last confirmed on becomes today in Iceland
   and its yearly review moves with it, unless it is retired. A report
-  resolved already answers 409 `issue_resolved`. Audit entry:
-  `meeting_point_issue.resolved`, with the point, the reason and the note.
-  Pausing a point is on its own page.
+  resolved already answers 409 `issue_resolved`, and the page takes it off
+  the list and says so. The report is locked while it is resolved, so two
+  operators at once resolve it once.
+- Audit entries, in the same transaction: `meeting_point_issue.resolved`
+  (before: open; after: resolved, the point, the reason and the note), and
+  with a new date `meeting_point.updated` on the point, with its Last
+  confirmed on and review date before and after, as an edit writes.
+- "Pause … now" on a report for a point in use opens the point's page with
+  `?pause`: its pause form opens at once (spec 2, 3.6.7), and the address
+  drops `?pause`.
 - The hourly clean-up deletes a resolved report 12 months after it was
   resolved (rule `meeting_point_issues`).
 

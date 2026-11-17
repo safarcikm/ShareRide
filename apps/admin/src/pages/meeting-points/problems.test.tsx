@@ -114,6 +114,63 @@ describe("problem reports about meeting points (spec 2, 3.5)", () => {
     });
   });
 
+  it("shows what the server finds wrong with the note by the field", async () => {
+    const api = start();
+    api.on(adminResolveMeetingPointIssueRoute, {
+      status: 400,
+      error: { code: "validation_failed", details: [{ path: "note", issue: "too_long" }] },
+    });
+    await page();
+    const first = (await screen.findAllByRole("article"))[0] as HTMLElement;
+    fireEvent.change(within(first).getByLabelText("What did you do?"), {
+      target: { value: "Put up a light." },
+    });
+    fireEvent.click(within(first).getByRole("button", { name: "Resolve" }));
+    expect(await within(first).findByText("Shorten it to 1000 characters or fewer.")).toBeTruthy();
+    expect(within(first).getByLabelText("What did you do?").getAttribute("aria-invalid")).toBe(
+      "true",
+    );
+  });
+
+  it("takes a report someone resolved meanwhile off the list, and says so", async () => {
+    const api = start();
+    let open = [unsafe, other];
+    api.on(adminMeetingPointIssuesRoute, () => ({ status: 200, data: { issues: open } }));
+    api.on(adminResolveMeetingPointIssueRoute, () => {
+      open = [other];
+      return { status: 409, error: { code: "issue_resolved" } };
+    });
+    await page();
+    const first = (await screen.findAllByRole("article"))[0] as HTMLElement;
+    fireEvent.change(within(first).getByLabelText("What did you do?"), {
+      target: { value: "Put up a light." },
+    });
+    fireEvent.click(within(first).getByRole("button", { name: "Resolve" }));
+    const said = await screen.findByRole("status");
+    expect(said.textContent).toBe("Someone resolved this report already.");
+    await waitFor(() => {
+      expect(document.activeElement).toBe(said);
+    });
+    await waitFor(() => {
+      expect(screen.getAllByRole("article")).toHaveLength(1);
+    });
+  });
+
+  it("leads to pausing a point in use at once", async () => {
+    start();
+    await page();
+    const reports = await screen.findAllByRole("article");
+    const first = reports[0] as HTMLElement;
+    const second = reports[1] as HTMLElement;
+    expect(
+      within(first)
+        .getByRole("link", { name: "Pause Áningarstaður við Laxá now" })
+        .getAttribute("href"),
+    ).toBe(`/admin/meeting-points/${pointId}?pause`);
+    // Paused already: nothing to pause.
+    expect(within(second).queryByRole("link", { name: /^Pause/ })).toBeNull();
+  });
+
   it("says when there are none", async () => {
     start(undefined, []);
     await page();

@@ -814,9 +814,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   and the note, never who sent it; the home page counts them, and the
   list of points marks and filters the points with one, as needing
   review. Resolving needs a note of what was done, removes the link to
-  the person and can mark the point checked today, with an audit entry
-  (`meeting_point_issue.resolved`). The hourly clean-up deletes a
-  resolved report after 12 months. Browser journeys cover both sides.
+  the person and can mark the point checked today, with audit entries for
+  the report and the point; "Pause … now" opens the point's pause at
+  once. The hourly clean-up deletes a resolved report after 12 months.
+  Browser journeys cover both sides.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.

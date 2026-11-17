@@ -534,7 +534,8 @@ export function createMeetingPointAdminService(dependencies: {
 }
 
 /** Later than the copy the console loaded, even within one millisecond. */
-const changedNow = sql`greatest(now(), ${meetingPoints.updatedAt} + interval '1 millisecond')`;
+/** Later than any copy the console loaded, so an edit from one is refused. */
+export const changedNow = sql`greatest(now(), ${meetingPoints.updatedAt} + interval '1 millisecond')`;
 
 /**
  * The point, locked for the change, and whether it is the copy the console
