@@ -52,10 +52,11 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0019](0019-sms-with-46elks.md) | Send sign-in codes by SMS with 46elks | Superseded by ADR 0023 |
 | [0020](0020-error-tracking-with-sentry-eu.md) | Error tracking and uptime checks with Sentry in its EU region | Accepted |
 | [0021](0021-map-tiles-from-maptiler.md) | Map tiles from MapTiler | Superseded by ADR 0024 |
-| [0022](0022-photo-storage-on-hetzner.md) | Store photos in Hetzner Object Storage in Helsinki | Accepted |
+| [0022](0022-photo-storage-on-hetzner.md) | Store photos in Hetzner Object Storage in Helsinki | Accepted (re-encoding and link lifetime superseded by ADR 0029) |
 | [0023](0023-sms-with-vonage.md) | Send sign-in codes by SMS with Vonage, 46elks as the fallback | Accepted |
 | [0024](0024-own-simple-map-of-iceland.md) | Our own simple map of Iceland instead of map tiles | Accepted |
 | [0025](0025-own-date-and-number-formatting.md) | Our own date and number formatting instead of Intl's locale data | Accepted |
 | [0026](0026-push-through-expo.md) | Send push notifications through Expo's push service | Accepted |
 | [0027](0027-email-through-mailjet.md) | Send email through Mailjet | Accepted |
 | [0028](0028-operator-console-web-app-and-passkeys.md) | The operator console as its own web app, signed in with passkeys | Accepted |
+| [0029](0029-photos-cleaned-in-the-browser-and-checked-by-the-api.md) | Photos made in the browser and checked by the API; links signed per hour | Proposed |

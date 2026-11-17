@@ -711,6 +711,17 @@ releases follow [Semantic Versioning](https://semver.org/).
   pause's reason, pauses it with a reason in both languages and an
   optional end date, brings it back, and retires it after saying whether
   that is at once or after its last trip.
+- Meeting point photos, the API (spec 2, 3.6.3; ADR 0022, and ADR 0029,
+  proposed): the console
+  routes under `/admin/v1/meeting-points/{id}/photos` add, describe in both
+  languages, order and remove up to five photos a point, each with an audit
+  entry; the app's meeting point details list them with their
+  descriptions. The domain's `checkPhotoFile` takes only a JPEG made of the
+  segments a picture needs, without metadata, at most 2 MB and 1 600
+  pixels. Photos are kept in the Hetzner
+  bucket (`PHOTO_STORAGE=hetzner`, signed links that last at least an
+  hour), a folder in development, or not at all. Migration
+  `0034_meeting_point_photos` adds the `meeting_point_photos` table.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.

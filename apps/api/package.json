@@ -29,6 +29,7 @@
     "@shareride/domain": "workspace:*",
     "@shareride/i18n": "workspace:*",
     "@simplewebauthn/server": "14.1.0",
+    "aws4fetch": "1.0.20",
     "drizzle-orm": "catalog:",
     "hono": "catalog:",
     "pino": "catalog:",

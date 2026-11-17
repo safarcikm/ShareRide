@@ -205,7 +205,8 @@ decision 5 gets its own ADR with its PR, refining ADR 0009.
 - The console resizes each photo in the browser to at most 1 600 pixels
   and saves it as a new JPEG, which leaves out location, camera and other
   metadata. The API accepts only JPEG without metadata segments, at most
-  2 MB, and up to 5 per point.
+  2 MB, and up to 5 per point. [ADR 0029](../decisions/0029-photos-cleaned-in-the-browser-and-checked-by-the-api.md)
+  records this, as it changes ADR 0022.
 - The app's meeting point details show the photos with their descriptions
   for screen readers (spec 2, 3.2).
 
@@ -309,8 +310,14 @@ recomputes distances, so both come in PR 12. PR 7 is in two parts.
 
 ### PR 8: `feat(meeting-points)`: photos
 
-- [ ] `PhotoStorage` with the disk and Hetzner adapters; upload, order,
-      descriptions, remove; photos on the app's details
+PR 8 is in two parts.
+
+- [x] 8a, the API: `PhotoStorage` with the disk and Hetzner adapters
+      (`aws4fetch` signs the requests); upload, order, descriptions,
+      remove; photos on the app's details
+- [ ] 8b, the console and the app: resizing in the browser and the
+      photos on a point's page; the photos on the app's meeting point
+      details
 - Verify: integration tests (a file with metadata, a sixth photo, a file
   that is not a JPEG are refused); the Hetzner adapter's contract test,
   run by hand with keys like the SMS ones

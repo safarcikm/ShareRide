@@ -239,6 +239,13 @@
       "when": 1794923118110,
       "tag": "0033_blocks",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1794924836586,
+      "tag": "0034_meeting_point_photos",
+      "breakpoints": true
     }
   ]
 }

@@ -70,6 +70,7 @@ export function details(
     whereToStand: null,
     pausedUntil: null,
     lastCheckedOn: null,
+    photos: [],
     ...more,
   };
 }

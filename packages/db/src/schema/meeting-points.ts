@@ -18,6 +18,7 @@ import {
   primaryKey,
   smallint,
   text,
+  unique,
   uuid,
 } from "drizzle-orm/pg-core";
 import { at, geographyPoint, id, oneOf, timestamps } from "./columns.ts";
@@ -164,5 +165,41 @@ export const legs = pgTable(
     ),
     check("legs_positive_check", sql`${table.distanceM} > 0 and ${table.durationS} > 0`),
     index("legs_to_index").on(table.toMeetingPointId),
+  ],
+);
+
+/**
+ * Photos of a meeting point (spec 2, 3.6.3), up to five, shown in their
+ * order. The file is in photo storage under `storageKey` (ADR 0022): a
+ * JPEG the console wrote again without metadata, of faces and number
+ * plates blurred by the operator. A photo the operator removes is deleted
+ * here and in storage.
+ */
+export const meetingPointPhotos = pgTable(
+  "meeting_point_photos",
+  {
+    id: id(),
+    meetingPointId: uuid()
+      .notNull()
+      .references(() => meetingPoints.id),
+    /** A random name in photo storage, never the operator's file name. */
+    storageKey: text().notNull(),
+    descriptionIs: text().notNull(),
+    descriptionEn: text().notNull(),
+    /** From 0, the first shown first. */
+    position: smallint().notNull(),
+    width: smallint().notNull(),
+    height: smallint().notNull(),
+    bytes: integer().notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    unique("meeting_point_photos_storage_key_unique").on(table.storageKey),
+    index("meeting_point_photos_point_index").on(table.meetingPointId, table.position),
+    check(
+      "meeting_point_photos_size_check",
+      sql`${table.width} > 0 and ${table.height} > 0 and ${table.bytes} > 0`,
+    ),
+    check("meeting_point_photos_position_check", sql`${table.position} >= 0`),
   ],
 );
