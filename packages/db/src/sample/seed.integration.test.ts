@@ -87,4 +87,18 @@ describe("seedSampleMeetingPoints", () => {
     expect(old?.status).toBe("retired");
     expect(await connection.db.$count(legs)).toBe(samplePoints.length * (samplePoints.length - 1));
   });
+
+  it("keeps the status the console gave a sample point, so a deploy does not undo a pause", async () => {
+    const bsi = sampleId("point:bsi");
+    await connection.db
+      .update(meetingPoints)
+      .set({ status: "paused", pauseReasonIs: "Lokað.", pauseReasonEn: "Closed." })
+      .where(eq(meetingPoints.id, bsi));
+    await seedSampleMeetingPoints(connection.db, new Date("2026-11-16T12:00:00Z"));
+    const [point] = await connection.db
+      .select()
+      .from(meetingPoints)
+      .where(eq(meetingPoints.id, bsi));
+    expect(point).toMatchObject({ status: "paused", pauseReasonEn: "Closed." });
+  });
 });

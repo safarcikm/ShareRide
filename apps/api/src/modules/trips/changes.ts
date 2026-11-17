@@ -141,7 +141,10 @@ async function readChange(
           seasonEndMonth: meetingPoints.seasonEndMonth,
         })
         .from(meetingPoints)
-        .where(eq(meetingPoints.id, meetingPointId));
+        .where(eq(meetingPoints.id, meetingPointId))
+        // Shared, as when publishing: a pause under way and the new stop
+        // wait for each other, so the pause tells this trip or it is refused.
+        .for("share");
       const offered =
         point !== undefined && isOfferedForNewTrips(point.status as MeetingPointStatus);
       return {

@@ -1112,6 +1112,13 @@ export const is = {
   "notify.ratePassengers": "Gefðu farþegunum einkunn. Það hjálpar öðrum bílstjórum að velja.",
   "notify.reviewVisible": "Umsögn um þig er nú sýnileg",
   "notify.reviewVisibleBody": "{from} – {to} · {when}.",
+  // A paused meeting point (spec 2, 3.6.4): the reason is the operator's.
+  "notify.pointPaused": "Mótsstaður ekki í notkun í bili: {point}",
+  "notify.pointRetired": "Mótsstaður ekki lengur í notkun: {point}",
+  "notify.pointBack": "Aftur í notkun: {date}",
+  "notify.pointPausedBody":
+    "{from} – {to} · {when}. Bílstjórinn er beðinn um að velja annan viðkomustað.",
+  "notify.pointPausedDriverBody": "Veldu annan viðkomustað fyrir ferðina: {when}.",
   "notify.unpaid": "Sætið var ekki greitt í tæka tíð",
   "notify.unpaidDriver": "Ekki greitt í tæka tíð: {name}",
   "notify.cancelledByDriver": "Bílstjórinn afbókaði: {reason}",
@@ -1161,6 +1168,8 @@ export const is = {
   "sms.departureMoved":
     "ShareRide: Ný brottför: {date} kl. {time}. Haltu bókuninni eða afbókaðu með fullri endurgreiðslu í appinu.",
   "sms.departureMovedUnpaid": "ShareRide: Ný brottför: {date} kl. {time}. Nánar í appinu.",
+  "sms.meetingPointChanged":
+    "ShareRide: Mótsstaður ferðarinnar þinnar hefur breyst: {date}. Nánar í appinu.",
   // Privacy (spec 11, section 8; plan 4.9).
   "settings.privacy": "Persónuvernd og gögnin þín",
   "privacy.title": "Persónuvernd",

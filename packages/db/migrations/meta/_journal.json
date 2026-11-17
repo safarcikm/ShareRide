@@ -225,6 +225,13 @@
       "when": 1794911244743,
       "tag": "0031_privacy_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1794921720475,
+      "tag": "0032_meeting_point_pauses",
+      "breakpoints": true
     }
   ]
 }

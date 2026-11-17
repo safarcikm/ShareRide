@@ -1098,6 +1098,12 @@ export const en = {
   "notify.ratePassengers": "Rate your passengers. It helps other drivers choose.",
   "notify.reviewVisible": "A review about you is now visible",
   "notify.reviewVisibleBody": "{from} – {to} · {when}.",
+  // A paused meeting point (spec 2, 3.6.4): the reason is the operator's.
+  "notify.pointPaused": "Meeting point not in use for now: {point}",
+  "notify.pointRetired": "Meeting point no longer in use: {point}",
+  "notify.pointBack": "Back in use: {date}",
+  "notify.pointPausedBody": "{from} – {to} · {when}. The driver is asked to choose another stop.",
+  "notify.pointPausedDriverBody": "Choose another stop for your trip: {when}.",
   "notify.unpaid": "Seat not paid for in time",
   "notify.unpaidDriver": "Not paid for in time: {name}",
   "notify.cancelledByDriver": "The driver cancelled: {reason}",
@@ -1152,6 +1158,8 @@ export const en = {
     "ShareRide: your trip on {date} now leaves at {time}. Keep it or cancel with a full refund in the app.",
   "sms.departureMovedUnpaid":
     "ShareRide: your trip on {date} now leaves at {time}. Details in the app.",
+  "sms.meetingPointChanged":
+    "ShareRide: the meeting point for your trip on {date} has changed. Details in the app.",
   // Privacy (spec 11, section 8; plan 4.9).
   "settings.privacy": "Privacy and your data",
   "privacy.title": "Privacy",

@@ -11,9 +11,10 @@ import { errorResponseSchema } from "./errors.ts";
 import { dateSchema, localisedTextSchema, positionSchema } from "./meeting-points.ts";
 import { defineRoute } from "./route.ts";
 
-// The operator console's meeting points (spec 2, 3.6; milestone 8, PR 6):
-// every point, drafts and retired ones too. The rules for each field are
-// in the domain (`validateMeetingPointDraft`); these shapes only bound them.
+// The operator console's meeting points (spec 2, 3.6; milestone 8, PRs 6
+// and 7): every point, drafts and retired ones too. The rules for each
+// field are in the domain (`validateMeetingPointDraft`, `validatePause`,
+// `nextPointStatus`); these shapes only bound them.
 
 /** Error codes of the console's meeting point routes. */
 export const adminMeetingPointErrorCodes = [
@@ -23,6 +24,8 @@ export const adminMeetingPointErrorCodes = [
   "meeting_point_retired",
   /** Only a draft's spot is edited; moving a point in use has its own step (R2.10). */
   "move_needed",
+  /** The point's status does not allow this change, such as pausing a draft (`nextPointStatus`). */
+  "status_change_not_allowed",
 ] as const;
 
 const errors = { schema: errorResponseSchema } as const;
@@ -73,6 +76,12 @@ export const adminMeetingPointSchema = z.object({
   seasonReviewedOn: dateSchema.nullable(),
   /** Sample data for testing, not a checked meeting point (milestone 3). */
   sample: z.boolean(),
+  /**
+   * Trips still to stop here: published or under way, with this stop still
+   * ahead. Their drivers and passengers are told of a pause, and a retiring
+   * point retires after the last of them (spec 2, 3.6.4 and 3.6.5).
+   */
+  futureTrips: z.int().min(0),
   createdAt: timestampSchema,
   /** Sent back with an edit, so an edit never overwrites a newer one. */
   updatedAt: timestampSchema,
@@ -211,4 +220,66 @@ export const adminUpdateMeetingPointRoute = defineRoute({
       ...errors,
     },
   },
+});
+
+/** The copy the console acted on: a change to a point saved since is refused. */
+const loadedSchema = z.object({
+  /** The point's `updatedAt` when the console loaded it. */
+  updatedAt: timestampSchema,
+});
+
+const statusResponses = {
+  200: { description: "The point with its new status", schema: adminMeetingPointSchema },
+  401: { description: "operator_unauthenticated", ...errors },
+  404: { description: "not_found", ...errors },
+  409: {
+    description:
+      "meeting_point_changed: saved by someone else since; status_change_not_allowed: not from this status",
+    ...errors,
+  },
+} as const;
+
+export const adminPauseMeetingPointRoute = defineRoute({
+  method: "post",
+  path: "/admin/v1/meeting-points/{id}/pause",
+  summary: "Pause an active point, telling the drivers and passengers of its future trips",
+  tags: ["admin", "meeting-points"],
+  auth: "operator",
+  request: {
+    params: z.object({ id: z.uuid() }),
+    body: loadedSchema.extend({
+      /** Shown to users in their language; the domain has the limit (`pauseLimits`). */
+      reasonIs: shortText,
+      reasonEn: shortText,
+      /** The day it is back in use in Iceland, or null until the operator brings it back. */
+      until: dateSchema.nullable(),
+    }),
+  },
+  responses: {
+    ...statusResponses,
+    400: {
+      description: "validation_failed, with each field and its problem in `details`",
+      ...errors,
+    },
+  },
+});
+
+export const adminResumeMeetingPointRoute = defineRoute({
+  method: "post",
+  path: "/admin/v1/meeting-points/{id}/resume",
+  summary: "Bring a paused point back into use",
+  tags: ["admin", "meeting-points"],
+  auth: "operator",
+  request: { params: z.object({ id: z.uuid() }), body: loadedSchema },
+  responses: { ...statusResponses, 400: { description: "validation_failed", ...errors } },
+});
+
+export const adminRetireMeetingPointRoute = defineRoute({
+  method: "post",
+  path: "/admin/v1/meeting-points/{id}/retire",
+  summary: "Retire a point for good, at once or after its last future trip",
+  tags: ["admin", "meeting-points"],
+  auth: "operator",
+  request: { params: z.object({ id: z.uuid() }), body: loadedSchema },
+  responses: { ...statusResponses, 400: { description: "validation_failed", ...errors } },
 });

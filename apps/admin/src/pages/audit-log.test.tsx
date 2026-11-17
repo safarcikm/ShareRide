@@ -123,9 +123,11 @@ describe("the audit log page", () => {
     expect(window.location.search).toBe("?action=meeting_point.&subjectId=point-7");
 
     fireEvent.click(screen.getByRole("button", { name: "Clear the filters" }));
-    await cards();
-    expect(queries().at(-1)).toEqual({});
-    expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Entries" }));
+    // The entries shown before are still there while the new ones load.
+    await waitFor(() => {
+      expect(queries().at(-1)).toEqual({});
+      expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Entries" }));
+    });
     expect(window.location.search).toBe("");
     expect(screen.getByLabelText<HTMLInputElement>("Record ID").value).toBe("");
   });
@@ -185,10 +187,12 @@ describe("the audit log page", () => {
         name: "Only this record: meeting_point point-7",
       }),
     );
-    await cards();
-    expect(queries().at(-1)).toEqual({ subjectType: "meeting_point", subjectId: "point-7" });
+    // The entries shown before are still there while the new ones load.
+    await waitFor(() => {
+      expect(queries().at(-1)).toEqual({ subjectType: "meeting_point", subjectId: "point-7" });
+      expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Entries" }));
+    });
     expect(screen.getByLabelText<HTMLInputElement>("Record type").value).toBe("meeting_point");
-    expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Entries" }));
 
     const [again] = await cards();
     fireEvent.click(
@@ -218,7 +222,10 @@ describe("the audit log page", () => {
     expect(queries().at(-1)).toEqual({ action: "meeting_point.", before: "e2" });
     expect(screen.queryByRole("button", { name: "Show older entries" })).toBeNull();
     // The first older entry takes the focus, as the button is gone.
-    expect(document.activeElement).toBe((await cards())[2]);
+    const older = (await cards())[2];
+    await waitFor(() => {
+      expect(document.activeElement).toBe(older);
+    });
   });
 
   it("says when older entries could not be loaded, and keeps the ones shown", async () => {
