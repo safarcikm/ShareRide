@@ -52,7 +52,8 @@ export const chatMessageSchema = z.object({
   id: z.uuid(),
   /** Mine, the other person's, or a line about the booking. */
   from: z.enum(["me", "them", "system"]),
-  kind: z.enum(["text", "quick", "system"]),
+  /** `erased`: its sender's data was erased (spec 11, 3.5), so it says nothing: "Message deleted". */
+  kind: z.enum(["text", "quick", "system", "erased"]),
   /** A text message's text, as written. */
   text: z.string().nullable(),
   quick: quickMessageSchema.nullable(),

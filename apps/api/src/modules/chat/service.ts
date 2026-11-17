@@ -18,13 +18,15 @@ import {
   type TripRole,
 } from "@shareride/domain";
 import { and, desc, eq, gt, inArray, isNotNull, isNull, ne, or, sql, type SQL } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import type { BookingService } from "../bookings/index.ts";
 import type { Queryable, Transaction } from "../bookings/seats.ts";
 import { lockActive } from "../account/standing.ts";
 import { recordEvents } from "../notifications/outbox.ts";
 import { blocksOf } from "../safety/blocks.ts";
+import { hidden, isHidden, shown } from "../privacy/hidden.ts";
 
-const { bookings, conversations, messages, trips } = schema;
+const { bookings, conversations, messages, trips, users } = schema;
 
 export type ChatError =
   | { readonly code: "not_found" }
@@ -148,6 +150,19 @@ export function systemLineOf(
 function present(row: MessageRow, viewerId: string, viewer: TripRole): ChatMessage {
   const from = row.senderId === null ? "system" : row.senderId === viewerId ? "me" : "them";
   const mine = from === "me";
+  if (row.erasedAt !== null) {
+    return {
+      id: row.id,
+      from,
+      kind: "erased",
+      text: null,
+      quick: null,
+      system: null,
+      clientId: null,
+      sentAt: row.sentAt.toISOString(),
+      readAt: null,
+    };
+  }
   return {
     id: row.id,
     from,
@@ -215,6 +230,8 @@ export function createChatService(dependencies: {
         readonly viewer: TripRole;
         /** The passenger and the driver. */
         readonly people: readonly [string, string];
+        /** The other person in the conversation. */
+        readonly otherId: string;
       },
       ChatError
     >
@@ -233,10 +250,12 @@ export function createChatService(dependencies: {
       return err({ code: "not_found" });
     }
     if (row.conversation === null) return err({ code: "not_confirmed" });
+    const viewer = row.passengerId === userId ? "passenger" : "driver";
     return ok({
       conversation: row.conversation,
-      viewer: row.passengerId === userId ? "passenger" : "driver",
+      viewer,
       people: [row.passengerId, row.driverId],
+      otherId: viewer === "passenger" ? row.driverId : row.passengerId,
     });
   }
 
@@ -248,11 +267,28 @@ export function createChatService(dependencies: {
     return row;
   }
 
+  /**
+   * The bookings whose passenger or driver is deleting their account, or
+   * was erased: their conversations are closed both ways (spec 11, 3.4.3).
+   */
+  async function deleting(q: Queryable, bookingIds: readonly string[]) {
+    const passenger = alias(users, "passenger");
+    const driver = alias(users, "driver");
+    const rows = await q
+      .select({ bookingId: bookings.id })
+      .from(bookings)
+      .innerJoin(trips, eq(trips.id, bookings.tripId))
+      .innerJoin(passenger, eq(passenger.id, bookings.passengerId))
+      .innerJoin(driver, eq(driver.id, trips.driverId))
+      .where(and(inArray(bookings.id, [...bookingIds]), or(hidden(passenger), hidden(driver))));
+    return new Set(rows.map((row) => row.bookingId));
+  }
+
   /** The conversations as `userId` sees them, in the order given. */
   async function summaries(userId: string, rows: readonly ConversationRow[]) {
     if (rows.length === 0) return [];
     const ids = rows.map((row) => row.id);
-    const [booked, unread, last, people, blocks] = await Promise.all([
+    const [booked, unread, last, people, blocks, closed] = await Promise.all([
       dependencies.bookings.bookingsOf(
         userId,
         rows.map((row) => row.bookingId),
@@ -282,6 +318,10 @@ export function createChatService(dependencies: {
           ),
         ),
       blocksOf(db, userId),
+      deleting(
+        db,
+        rows.map((row) => row.bookingId),
+      ),
     ]);
     const now = clock();
     /** A block between the two makes the chat read-only, never saying whose (R9.4). */
@@ -304,6 +344,7 @@ export function createChatService(dependencies: {
           booking,
           closesAt: row.closesAt.toISOString(),
           canWrite:
+            !closed.has(row.bookingId) &&
             canWrite({ opensAt: row.openedAt, closesAt: row.closesAt }, now) &&
             !blocked(row.bookingId),
           blockedByMe: blockedByMe(row.bookingId),
@@ -332,10 +373,17 @@ export function createChatService(dependencies: {
 
   /**
    * Waits for the person's other sends, so two at once cannot pass the
-   * limit together; and refuses a suspended person (spec 9, 3.6.2).
+   * limit together; refuses a suspended person (spec 9, 3.6.2); and says
+   * whether they are deleting their account.
    */
-  function lockSender(tx: Transaction, userId: string) {
-    return lockActive(tx, userId, clock());
+  async function lockSender(tx: Transaction, userId: string) {
+    const active = await lockActive(tx, userId, clock());
+    if (!active.ok) return active;
+    const [sender] = await tx
+      .select({ id: users.id, deleteAfter: users.deleteAfter })
+      .from(users)
+      .where(eq(users.id, userId));
+    return ok({ deleting: sender === undefined || isHidden(sender) });
   }
 
   return {
@@ -389,7 +437,7 @@ export function createChatService(dependencies: {
     async send(userId, bookingId, body) {
       const found = await access(db, userId, bookingId);
       if (!found.ok) return found;
-      const { conversation, viewer, people } = found.value;
+      const { conversation, viewer, people, otherId } = found.value;
       // A retry gets what was sent, even once the conversation has closed.
       const earlier = async (q: Queryable): Promise<Result<MessageRow | null, ClientIdReused>> => {
         const rows = await q
@@ -409,13 +457,22 @@ export function createChatService(dependencies: {
       if (!checked.ok) return checked;
 
       return db.transaction(async (tx) => {
-        const active = await lockSender(tx, userId);
-        if (!active.ok) return active;
+        const sender = await lockSender(tx, userId);
+        if (!sender.ok) return sender;
         const now = clock();
         if (
           !canWrite({ opensAt: conversation.openedAt, closesAt: conversation.closesAt }, now) ||
           isBlockedBetween(await blocksOf(tx, userId), ...people)
         ) {
+          return err({ code: "chat_closed" });
+        }
+        // Nobody messages a person deleting their account or the former
+        // member, nor do they write to people who cannot answer (spec 11, 3.4.3).
+        const [other] = await tx
+          .select({ id: users.id, deleteAfter: users.deleteAfter })
+          .from(users)
+          .where(eq(users.id, otherId));
+        if (sender.value.deleting || other === undefined || isHidden(other)) {
           return err({ code: "chat_closed" });
         }
         const again = await earlier(tx);
@@ -467,8 +524,8 @@ export function createChatService(dependencies: {
       if (!checked.ok) return checked;
 
       return db.transaction(async (tx) => {
-        const active = await lockSender(tx, driverId);
-        if (!active.ok) return active;
+        const sender = await lockSender(tx, driverId);
+        if (!sender.ok) return sender;
         const now = clock();
         const earlier = await tx
           .select({ tripId: bookings.tripId })
@@ -479,17 +536,23 @@ export function createChatService(dependencies: {
         if (earlier.some((row) => row.tripId !== tripId)) return err({ code: "client_id_reused" });
         // A retry sends nothing more, not even to a passenger confirmed since.
         if (earlier.length > 0) return ok({ sent: earlier.length });
+        // A driver deleting their account writes to nobody (spec 11, 3.4.3).
+        if (sender.value.deleting) return ok({ sent: 0 });
         const blocks = await blocksOf(tx, driverId);
         const open = (
           await tx
             .select({ conversation: conversations, passengerId: bookings.passengerId })
             .from(conversations)
             .innerJoin(bookings, eq(bookings.id, conversations.bookingId))
-            // Passengers stay passengers once their booking completes (spec 8, R8.2).
+            .innerJoin(users, eq(users.id, bookings.passengerId))
+            // Passengers stay passengers once their booking completes (spec 8,
+            // R8.2); one deleting their account, or erased, gets nothing
+            // (spec 11, 3.4.3).
             .where(
               and(
                 eq(bookings.tripId, tripId),
                 inArray(bookings.status, ["confirmed", "completed"]),
+                shown(users),
               ),
             )
         )

@@ -7,16 +7,24 @@
 // every second with email only (no push from a browser), and runs on PORT
 // (default 3001). `POST /e2e/trips/{id}/move` with `{ "minutes": 10 }` puts a
 // trip's first stop that many minutes from the real time, for the trip day
-// journeys.
+// journeys. For the console's browser tests (apps/admin/e2e),
+// E2E_ADMIN_APP_DIR is the console's build, served at /admin, and
+// E2E_OPERATOR_LINK a file: the API makes a new operator account and writes
+// its passkey setup link there, with passkeys bound to E2E_ADMIN_ORIGIN.
 // Never use it for anything else.
 import { randomBytes } from "node:crypto";
 import { appendFileSync, writeFileSync } from "node:fs";
 import { serve } from "@hono/node-server";
-import { pingDatabase } from "@shareride/db";
+import { pingDatabase, schema } from "@shareride/db";
 import { seedDevelopmentData } from "@shareride/db/seed";
 import { freshTestDatabase } from "@shareride/db/testing";
 import { createApp } from "./app.ts";
 import { createLogger } from "./logger.ts";
+import {
+  createOperatorSessionService,
+  createPasskeyService,
+  runOperatorCommand,
+} from "./modules/admin/index.ts";
 import { createNotificationWorker } from "./modules/notifications/index.ts";
 import { createExportBuilder, exportCipherPurpose } from "./modules/privacy/index.ts";
 import { moveTripForTests } from "./modules/trip-day/testing.ts";
@@ -44,6 +52,9 @@ if (
 }
 const port = Number(env["PORT"] ?? "3001");
 const webOrigin = env["E2E_WEB_ORIGIN"] ?? "http://localhost:8082";
+const adminAppDir = env["E2E_ADMIN_APP_DIR"];
+const operatorLink = env["E2E_OPERATOR_LINK"];
+const adminOrigin = env["E2E_ADMIN_ORIGIN"] ?? `http://localhost:${String(port)}`;
 
 // Refuses databases whose name does not end in _test, because it empties them.
 const connection = await freshTestDatabase();
@@ -71,6 +82,28 @@ const email: EmailSender = {
 };
 const clock = () => new Date(Date.now() + clockOffsetMs);
 
+if (operatorLink !== undefined && operatorLink !== "") {
+  const [operator] = await connection.db
+    .insert(schema.users)
+    .values({ firstName: "Operator", locale: "en" })
+    .returning({ id: schema.users.id });
+  const sessions = createOperatorSessionService({ db: connection.db, clock });
+  const printed: string[] = [];
+  const status = await runOperatorCommand(["add", operator?.id ?? ""], {
+    db: connection.db,
+    adminOrigin,
+    sessions,
+    passkeys: createPasskeyService({ db: connection.db, clock, sessions, adminOrigin }),
+    write: (line) => printed.push(line),
+  });
+  const link = printed.join("\n").match(/\S+\/admin\/setup#\S+/)?.[0];
+  if (status !== 0 || link === undefined) {
+    process.stderr.write(`The operator command failed:\n${printed.join("\n")}\n`);
+    process.exit(1);
+  }
+  writeFileSync(operatorLink, link);
+}
+
 // Every request counts as a new address, so the per-address limit never
 // stops a test run; the limits have their own integration tests.
 let requests = 0;
@@ -80,6 +113,7 @@ const app = createApp({
   logger: createLogger({ level: "warn" }),
   checkDatabase: () => pingDatabase(connection.pool),
   webOrigins: [webOrigin],
+  ...(adminAppDir === undefined || adminAppDir === "" ? {} : { adminAppDir }),
   features: {
     db: connection.db,
     sms,
@@ -90,6 +124,7 @@ const app = createApp({
     clientAddress: () => `e2e-${String((requests += 1))}`,
     secureCookies: false,
     payments: createTestPaymentProvider(),
+    adminOrigin,
   },
 });
 

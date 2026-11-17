@@ -1,5 +1,7 @@
 // The audit log's entries (spec 9, 3.8; R9.7, R10.8).
 
+import { fromIceland } from "../time.ts";
+
 const actionPattern = /^[a-z][a-z_]*(\.[a-z][a-z_]*)+$/;
 
 /**
@@ -32,4 +34,27 @@ export function changedFields(
     changed.after[key] = now;
   }
   return changed;
+}
+
+/** Entries per page of the console's audit log. */
+export const auditLogPageSize = 50;
+
+const icelandMidnight = (date: string, addDays = 0): Date => {
+  const [year = 0, month = 0, day = 0] = date.split("-").map(Number);
+  return fromIceland({ year, month, day: day + addDays, hour: 0, minute: 0 });
+};
+
+/**
+ * The moments a filter by calendar days covers: from the start of the
+ * first day in Iceland until the start of the day after the last, so the
+ * last day counts whole. A side left out stays open.
+ */
+export function auditLogPeriod(days: { readonly from?: string; readonly to?: string }): {
+  from?: Date;
+  until?: Date;
+} {
+  return {
+    ...(days.from === undefined ? {} : { from: icelandMidnight(days.from) }),
+    ...(days.to === undefined ? {} : { until: icelandMidnight(days.to, 1) }),
+  };
 }

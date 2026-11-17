@@ -751,7 +751,7 @@ describe("Download my data, after ShareRide acted (spec 11; spec 9, R9.5)", () =
         createdAt: expect.any(String) as unknown,
         appeal: null,
         appealedAt: null,
-        answer: null,
+        appealAnswer: null,
         appealOutcome: null,
         answeredAt: null,
       },

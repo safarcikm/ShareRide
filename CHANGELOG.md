@@ -480,7 +480,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   or their chat is closed. `blocks` is in the personal data catalogue,
   erased with either account, and gets its own export section, People you
   blocked: each by first name, and since when, never who blocked them.
-  Migration `0025_blocks`. `POST /v1/bookings/{id}/block`,
+  Migration `0029_blocks`. `POST /v1/bookings/{id}/block`,
   `GET /v1/me/blocks`, `DELETE /v1/me/blocks/{id}`.
 - Reports (milestone 9, PR 5a, spec 9, 3.1; R9.1, R9.2): "Report this
   trip" on trip details (not to its driver, whatever the trip's state:
@@ -500,7 +500,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   trip, message or booking that the person cannot see is refused as not
   found; a person cannot report themselves; 10 reports a day, also when
   sent at once. The person reported is never told who reported them.
-  Migration `0026_reports`; `reports` is in the personal data catalogue,
+  Migration `0030_reports`; `reports` is in the personal data catalogue,
   kept 3 years after closing, and chat clean-up keeps a conversation a
   report covers that long. "Download my data" has Reports you sent, never
   a report about the person. The category and outcome texts moved to
@@ -518,7 +518,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   "New report" or "New safety report", never who or what, and one not yet
   sent is dropped once its report is closed or the operator loses the
   role. A new outbox event `ReportFiled`; notifications gain `report_id`,
-  in migration `0026_reports`.
+  in migration `0030_reports`.
 - Suspension, warnings and reinstating (milestone 9, PR 6a, spec 9, 3.4.3
   and 3.6; R9.5, R9.7, R9.10): the operator's `suspend`, `warn` and
   `reinstate` in `apps/api/src/modules/moderation/`, for the console to
@@ -539,7 +539,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   their notice: the push says what happened, the email adds the rule,
   the reason and until when it can be appealed in the app (14 days).
   Two suspensions at once lock their trips in the same order, so they
-  never deadlock. Migration `0027_moderation` adds `moderation_actions`,
+  never deadlock. Migration `0031_moderation` adds `moderation_actions`,
   `users.suspended_until`, `trips.cancelled_by` (earlier cancellations
   are the driver's; empty from the version before, which only drivers
   used) and `notifications.moderation_action_id`; "Download my data" has
@@ -585,6 +585,26 @@ releases follow [Semantic Versioning](https://semver.org/).
   browser tests' API can move one trip's times closer
   (`POST /e2e/trips/{id}/move`), never in the real server, and a journey
   has both sides check in and see each other's.
+- Reports on the trip day in the API (milestone 7, PR 5a, spec 8, 3.3 to
+  3.5): the driver marks a no-show 10 minutes after the passenger's stop
+  time, once they said "I'm here" there, until the trip completes
+  (`POST /v1/bookings/{id}/no-show`); the passenger says the driver didn't
+  come from the same wait until 24 hours after the trip completes
+  (`POST /v1/bookings/{id}/driver-absent`). Each takes a note for the
+  operator, and a booking is reported once. The other side is told by push
+  and email and answers "That's right" or "That's not right"
+  (`POST /v1/disputes/{id}/answer`). An agreed report, or one nobody
+  answered in time (the minute job), stands; a contested one waits for the
+  operator's decision (`decideDispute`, with an audit entry, both sides
+  told), which the operator's command and console will call. A no-show
+  frees the seat and gives no refund; a driver absence that stands, or a
+  passenger left behind, cancels the booking as if by the driver with the
+  new reason "The driver didn't come", a full refund, and counts on the
+  driver; a ride found to have happened completes. A booking with an open
+  report does not complete with its trip. Bookings show their report
+  (never the notes) and when each report opens and closes. Migration
+  `0026_trip_day_disputes` adds the `disputes` table and widens the
+  cancellation reasons and notification kinds.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
@@ -604,6 +624,35 @@ releases follow [Semantic Versioning](https://semver.org/).
   (`recordAudit`, a trigger that refuses changes); passkey sign-in with
   `@simplewebauthn/server` (setup link, sign-in, adding and removing
   passkeys) and the `operator` command that gives or removes the role.
+- `packages/ui`: the design tokens and the map of Iceland (data,
+  projection, roads and views) moved out of the app, to be shared with the
+  operator console; the app looks the same.
+- The operator console app (`apps/admin`, React and Vite), served by the
+  API at `/admin` with its own content security policy: sign-in and
+  first-passkey setup with passkeys (`@simplewebauthn/browser`), the home
+  page, the passkeys page, Icelandic and English, and the console in the
+  API image.
+- The audit log page in the console (spec 9, 3.8) and
+  `GET /admin/v1/audit-log`: entries newest first, 50 at a time, filtered
+  by the start of the action, the record, the operator and days in Iceland,
+  each with its changes, network address and device. The filters stay in
+  the address, so a filtered log can be reloaded or shared.
+- Meeting points in the console (spec 2, 3.6). The Meeting points page
+  shows every point on the map and in a list, filtered by status, region,
+  type, season, review overdue and name, with the filters in the address.
+  Its form adds a draft or edits a point: the spot is pasted as
+  coordinates or a map link and shown on the map, and each problem is
+  named by its field before saving. The API behind it, `GET`, `POST` and
+  `PUT /admin/v1/meeting-points`, writes an audit entry of what changed.
+  The rules for each field are in the domain (`validateMeetingPointDraft`);
+  an edit made on an older copy is refused, and only a draft's spot is
+  edited there. Migration `0027_meeting_point_console_fields` adds the
+  shelter's weekly hours and note, and when the amenities and season were
+  reviewed. The texts for regions, types and amenities move from the app
+  to `@shareride/i18n`, so the console uses them too.
+- The console is closed to an operator whose own account waits to be
+  deleted (spec 11): their sessions, passkey sign-in and setup links are
+  refused, and the `operator` command does not give them the role.
 
 - Privacy self-service, part 1 (spec 11): the rules in the domain (what
   is open before deleting an account, the 7-day wait, what deletion does to
@@ -620,6 +669,41 @@ releases follow [Semantic Versioning](https://semver.org/).
   only; kept encrypted for 7 days and downloaded through a one-time link
   that works for 2 minutes. A push and an email say when it is ready,
   without a link.
+- Download my data in the app (spec 11, 3.1 and 3.2): a Privacy page in
+  Settings, with Download my data and the Privacy Policy. The person
+  confirms with a code sent to their own number, sees the file being made
+  and when it is ready, and downloads it. The ready notice opens this
+  screen.
+- Delete my account, the API (spec 11, 3.4): what is still open, and with
+  a fresh code and nothing open, signed out everywhere and hidden at once
+  from search, trip details, booking and messages, with the data erased 7
+  days later. Signing in meanwhile shows when, and keeping the account
+  undoes it, leaving a suspension in place. Nothing new is booked or
+  published while it waits. An email says when the data will be erased.
+  The export now has the person's own check-in times.
+- Erasure 7 days after "Delete my account" (spec 11, 3.5), in the hourly
+  clean-up: what was the person's alone is deleted, and their trips,
+  bookings and the cars those used move to one shared former member
+  without free text or number plates, so the people they rode with keep
+  their bookings, payments and history. Their messages read "Message
+  deleted", and the app shows "A former member" for them. A suspended
+  person's number cannot sign up again until the suspension would have
+  ended. An open report about a ride (milestone 7) holds a deletion until
+  it is decided. After a database restore, `privacy reapply-erasures`
+  erases the accounts again and takes the deletions asked for or undone
+  since from the old database.
+- Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
+  what is still open, each opened where it is cancelled under the normal
+  rules and looked at again on coming back, and what is erased and kept.
+  Once nothing is open, a fresh code by text message deletes it: this
+  device is signed out with the rest, and the screen says when the data
+  goes. Signing in meanwhile shows only that date, with "Keep my account"
+  and "Sign out", and no other signed-in screen opens. Asking to delete
+  again while it waits keeps the first date.
+- Download my data has each report about a ride the person made or
+  answered (spec 8, 3.3 and 3.4): what was reported and by whom, the
+  answer, the outcome and when, with the person's own note only. The other
+  side's note and the operator's stay with the operator.
 
 ### Fixed
 

@@ -1,5 +1,5 @@
 import { fireEvent, screen, within } from "expo-router/testing-library";
-import type { Booking, MyReport, ReportBody } from "@shareride/contracts";
+import type { Booking, MyReport, FileReportBody } from "@shareride/contracts";
 import { Linking } from "react-native";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -50,7 +50,7 @@ const filed = (changes: Partial<MyReport> = {}): MyReport => ({
 function reportsApi(client: FakeClient, answer?: () => unknown) {
   client.answer(
     "/v1/reports",
-    (input) => answer?.() ?? ok(201, filed({ kind: (input["body"] as ReportBody).about.kind })),
+    (input) => answer?.() ?? ok(201, filed({ kind: (input["body"] as FileReportBody).about.kind })),
     "post",
   );
 }

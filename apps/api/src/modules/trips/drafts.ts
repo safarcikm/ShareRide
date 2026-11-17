@@ -30,7 +30,7 @@ import { seatsTakenNow } from "../bookings/seats.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import { checkInsAt, driverCheckedInAt, shownWindow } from "../trip-day/check-ins.ts";
 
-const { bookings, legs, meetingPoints, segments, trips, tripStops, vehicles } = schema;
+const { bookings, legs, meetingPoints, segments, trips, tripStops, users, vehicles } = schema;
 
 type TripRow = typeof trips.$inferSelect;
 type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
@@ -62,6 +62,11 @@ export interface NotPublishable {
   readonly problems: readonly PublishProblem[];
 }
 
+/** The driver is deleting their account (spec 11, 3.4). */
+export interface DeletionPending {
+  readonly code: "account_deletion_pending";
+}
+
 /** A driver's drafts and publishing them (spec 3, 3.4 to 3.8, and section 4). */
 export interface TripService {
   /**
@@ -85,7 +90,10 @@ export interface TripService {
     userId: string,
     tripId: string,
   ): Promise<
-    Result<MyTrip, NotFound | NotDraft | NotPublishable | DistancesMissing | AccountSuspended>
+    Result<
+      MyTrip,
+      NotFound | NotDraft | NotPublishable | DistancesMissing | AccountSuspended | DeletionPending
+    >
   >;
   /**
    * Post again, or the return (spec 6, 3.6): a new draft with the trip's
@@ -576,9 +584,17 @@ export function createTripService(dependencies: {
       const readiness = await driving.readiness(userId);
       return db.transaction(async (tx) => {
         // One publish at a time per driver, so two cannot overlap (R3.7);
-        // and none while suspended (spec 9, 3.6.2).
+        // none while suspended (spec 9, 3.6.2). Deleting an account takes
+        // the same lock before it checks.
         const active = await lockActive(tx, userId, clock());
         if (!active.ok) return active;
+        const [driver] = await tx
+          .select({ deleteAfter: users.deleteAfter })
+          .from(users)
+          .where(eq(users.id, userId));
+        if (driver === undefined || driver.deleteAfter !== null) {
+          return err({ code: "account_deletion_pending" });
+        }
         const row = await mine(tx, userId, tripId);
         if (row === undefined || row.status === "cancelled") return err({ code: "not_found" });
         if (row.status !== "draft") return err({ code: "trip_not_draft" });

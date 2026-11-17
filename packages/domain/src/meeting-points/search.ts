@@ -27,6 +27,14 @@ export function normaliseSearchText(text: string): string {
     .trim();
 }
 
+/**
+ * The search text stored with a meeting point or a place: its names and
+ * aliases in one normalised text, so a query finds it by any of them.
+ */
+export function searchTextFor(names: readonly (string | null | undefined)[]): string {
+  return normaliseSearchText(names.filter((name) => name !== null && name !== undefined).join(" "));
+}
+
 /** How well a query matches a place: the order of the results (spec 2, 3.4.4). */
 export type PlaceMatchQuality = "exact" | "prefix" | "alias" | "close";
 

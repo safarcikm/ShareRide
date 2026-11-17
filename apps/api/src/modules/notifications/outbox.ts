@@ -23,6 +23,7 @@ export type OutboxEvent =
         | "ReportFiled"
         | "ModerationActionTaken"
         | "SuspensionEnded"
+        | "AccountDeletionScheduled"
       >;
       readonly bookingId: string;
     }
@@ -82,6 +83,11 @@ export type OutboxEvent =
   | {
       /** The person's suspension reached its end: they are told (spec 9, 3.6). */
       readonly type: "SuspensionEnded";
+      readonly userId: string;
+    }
+  | {
+      /** The person asked to delete their account; the email says when (spec 11, 3.4.5). */
+      readonly type: "AccountDeletionScheduled";
       readonly userId: string;
     };
 

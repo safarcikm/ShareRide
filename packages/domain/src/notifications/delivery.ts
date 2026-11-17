@@ -29,8 +29,12 @@ export const outboxEventTypes = [
   "RefundIssued",
   "MessageSent",
   "CheckedIn",
+  "NoShowMarked",
+  "DriverAbsentReported",
+  "DisputeDecided",
   "DataExportReady",
   "ReportFiled",
+  "AccountDeletionScheduled",
   "ModerationActionTaken",
   "SuspensionEnded",
 ] as const;

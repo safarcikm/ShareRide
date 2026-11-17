@@ -15,6 +15,7 @@ import { cancellationTermsSchema, moneySchema, timestampSchema } from "./common.
 import { accountSuspendedResponse, errorResponseSchema } from "./errors.ts";
 import { localisedTextSchema, meetingPointSummarySchema } from "./meeting-points.ts";
 import { defineRoute } from "./route.ts";
+import { disputeSchema } from "./trip-day.ts";
 
 // Booking and requests (spec 5): a passenger books or requests seats on a
 // part of a trip; the driver decides on requests; both see their bookings.
@@ -162,10 +163,12 @@ export const bookingSchema = z.object({
    * completed (R9.1).
    */
   problemReportable: z.boolean(),
-  driver: z.object({ firstName: z.string(), colour: peopleColourSchema }),
+  /** `firstName` is null for a former member, whose data was erased (spec 11, 3.5). */
+  driver: z.object({ firstName: z.string().nullable(), colour: peopleColourSchema }),
   /** Ratings and reliability come with spec 8; until then every member is new. */
   passenger: z.object({
-    firstName: z.string(),
+    /** Null for a former member, whose data was erased (spec 11, 3.5). */
+    firstName: z.string().nullable(),
     colour: peopleColourSchema,
     /** The year and month they joined, such as 2026-11. */
     memberSince: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
@@ -198,12 +201,27 @@ export const bookingSchema = z.object({
       /** When the driver said "I'm here" there; null until then. */
       driverCheckedInAt: timestampSchema.nullable(),
       /**
+       * From then on, 10 minutes after the boarding time, the driver can mark
+       * a no-show (R8.4) and the passenger can say the driver didn't come
+       * (R8.5).
+       */
+      reportOpensAt: timestampSchema,
+      /** A no-show can be marked until then, when the trip completes, and not at it. */
+      noShowClosesAt: timestampSchema,
+      /** "The driver didn't come" until then, 24 hours after the trip completes. */
+      driverAbsentClosesAt: timestampSchema,
+      /**
        * Whether the passenger is at their stop, as the driver sees it on the
        * trip day; after it, the status says how the ride went.
        */
       arrival: z.enum(arrivals),
     })
     .nullable(),
+  /**
+   * The report on this booking (spec 8, 3.3 to 3.5): a no-show the driver
+   * marked or "The driver didn't come", once one is made; null with none.
+   */
+  dispute: disputeSchema.nullable(),
 });
 
 export type Booking = z.infer<typeof bookingSchema>;
@@ -232,7 +250,7 @@ export const bookTripRoute = defineRoute({
     401: unauthenticated,
     403: {
       description:
-        "account_incomplete: verify the phone number and accept the current terms first (R5.1); own_trip; account_suspended, with `suspendedUntil` (spec 9, 3.6.2)",
+        "account_incomplete: verify the phone number and accept the current terms first (R5.1); own_trip; account_suspended, with `suspendedUntil` (spec 9, 3.6.2); account_deletion_pending: the passenger is deleting their account (spec 11, 3.4)",
       ...errors,
     },
     404: { description: "not_found: no such published trip", ...errors },

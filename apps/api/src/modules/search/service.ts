@@ -18,6 +18,7 @@ import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { occupancyNow } from "../bookings/seats.ts";
 import { searchableStatuses, toSummary } from "../meeting-points/service.ts";
 import { notSuspended } from "../account/standing.ts";
+import { shown } from "../privacy/hidden.ts";
 import { closedTrips } from "../safety/blocks.ts";
 
 const { meetingPoints, places, segments, trips, tripStops, users } = schema;
@@ -214,7 +215,10 @@ export function createSearchService(dependencies: {
         .select({ trip: trips, firstName: users.firstName })
         .from(trips)
         .innerJoin(users, eq(users.id, trips.driverId))
-        .where(and(inArray(trips.id, [...ids]), notSuspended(clock()))),
+        // A driver deleting their account is hidden at once (spec 11, 3.4.3),
+        // and an erased one's trips stay hidden (3.5); a suspended driver's
+        // trip takes nobody new (spec 9, 3.6.2).
+        .where(and(inArray(trips.id, [...ids]), shown(users), notSuspended(clock()))),
       db
         .select({ stop: tripStops, point: meetingPoints })
         .from(tripStops)

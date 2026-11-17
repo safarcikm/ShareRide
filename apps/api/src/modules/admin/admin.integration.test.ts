@@ -160,6 +160,17 @@ describe("console sessions", () => {
     expect(await endReasonOf(sessionId)).toBe("suspended");
   });
 
+  it("stop working while the account waits to be deleted, and are not ended for it", async () => {
+    const { userId, cookie, sessionId } = await api.signInOperator();
+    await api.connection.db
+      .update(schema.users)
+      .set({ deleteAfter: new Date(api.now().getTime() + 7 * 24 * 3600_000) })
+      .where(eq(schema.users.id, userId));
+    expect((await me(cookie)).status).toBe(401);
+    // No end reason fits; the session runs out on its own.
+    expect(await endReasonOf(sessionId)).toBeNull();
+  });
+
   it("all end together when the role is taken away", async () => {
     const { userId, cookie } = await api.signInOperator();
     const second = await createOperatorSessionService(api.features).start({

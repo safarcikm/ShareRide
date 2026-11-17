@@ -32,6 +32,7 @@ const facts: NotificationFacts = {
   removedStop: null,
   moved: { from: new Date("2026-11-14T08:15:00Z"), to: new Date("2026-11-14T09:00:00Z") },
   paid: true,
+  answerBy: new Date("2026-11-15T13:30:00Z"),
 };
 
 const gunna = { name: "Gunna", from: "BSÍ", to: "Hof, Akureyri" };
@@ -77,6 +78,10 @@ const kinds: readonly [NotificationFacts["kind"], "driver" | "passenger"][] = [
   ["trip_changed", "passenger"],
   ["checked_in", "passenger"],
   ["checked_in_driver", "driver"],
+  ["no_show_marked", "passenger"],
+  ["driver_absent_reported", "driver"],
+  ["dispute_decided", "passenger"],
+  ["dispute_decided_driver", "driver"],
 ];
 
 describe("notification texts", () => {
@@ -130,6 +135,31 @@ describe("notification texts", () => {
     expect(text({ kind: "checked_in_driver", name: "Gunna" }, "is")).toEqual({
       title: "Á mótsstaðnum: Gunna",
       body: "BSÍ",
+      path: "/drive/trips/trip-1",
+    });
+  });
+
+  it("ask the other side of a report to answer, and say until when (spec 8, 3.3 and 3.4)", () => {
+    expect(text({ kind: "no_show_marked", role: "passenger", name: "Anna" })).toEqual({
+      title: "The driver says you didn't come",
+      body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00. Is this right? Answer by Sunday 15 November at 13:30.",
+      path: "/bookings/booking-1",
+    });
+    expect(text({ kind: "driver_absent_reported", name: "Gunna" }, "is")).toEqual({
+      title: "Farþegi segir að þú hafir ekki komið: Gunna",
+      body: "BSÍ – Hof, Akureyri · laugardagur 14. nóvember kl. 09:00. Er þetta rétt? Svarfrestur: sunnudagur 15. nóvember kl. 13:30.",
+      path: "/drive/trips/trip-1",
+    });
+  });
+
+  it("tell both sides that the operator has decided, never how in the text (spec 8, 3.5)", () => {
+    expect(text({ kind: "dispute_decided", role: "passenger" })).toEqual({
+      title: "ShareRide has decided on the report",
+      body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00. See the outcome in the app.",
+      path: "/bookings/booking-1",
+    });
+    expect(text({ kind: "dispute_decided_driver" }, "is")).toMatchObject({
+      title: "ShareRide hefur tekið ákvörðun um tilkynninguna",
       path: "/drive/trips/trip-1",
     });
   });
@@ -387,17 +417,17 @@ describe("notification texts", () => {
     } as const;
     // The push names what happened, never the reason: a lock screen shows it.
     expect(notificationText(notice, "en", settings)).toEqual({
-      title: "Your account is suspended until Sunday 13 December at 12:00",
+      title: "Your account is suspended until 13 December at 12:00",
       body: "Read why in ShareRide.",
       path: "/notices",
       open: "Open your notices in ShareRide",
       emailBody: [
-        "Your account is suspended until Sunday 13 December at 12:00",
+        "Your account is suspended until 13 December at 12:00",
         "",
         "Rule: Harassment",
         "Reason: Repeated messages after being asked to stop.",
         "",
-        "If you disagree, you can appeal in ShareRide, under Notices, until Friday 27 November at 12:00.",
+        "If you disagree, you can appeal in ShareRide, under Notices, until 27 November at 12:00.",
       ].join("\n"),
     });
     expect(notificationText({ ...notice, until: null }, "is", settings)).toMatchObject({
