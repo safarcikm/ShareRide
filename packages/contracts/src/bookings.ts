@@ -266,7 +266,7 @@ export const bookTripRoute = defineRoute({
     404: { description: "not_found: no such published trip", ...errors },
     409: {
       description:
-        "seats_taken (with `freeSeats`), price_changed (with the current `total`), stops_changed (`fromPoint` or `toPoint` is no longer at its position), overlapping_booking, booking_closed or trip_not_bookable (also while its driver is suspended)",
+        "seats_taken (with `freeSeats`), price_changed (with the current `total`), trip_limit_reached (the booking would take the trip past its limit, rule P3; fewer seats or a shorter part may fit), stops_changed (`fromPoint` or `toPoint` is no longer at its position), overlapping_booking, booking_closed or trip_not_bookable (also while its driver is suspended)",
       ...errors,
     },
   },

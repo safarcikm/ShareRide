@@ -39,7 +39,7 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0006](0006-meeting-points-and-segment-pricing.md) | Meeting-point network with per-segment prices and seats | Superseded by ADR 0012 |
 | [0007](0007-eea-hosting-and-data-residency.md) | EEA hosting and data residency | Accepted |
 | [0008](0008-payments-phased.md) | Phased payments behind a provider-agnostic port | Superseded by ADR 0013 |
-| [0009](0009-maps-and-routing.md) | Maps with MapLibre and OpenStreetMap; precomputed routing | Accepted (map display superseded by ADR 0024) |
+| [0009](0009-maps-and-routing.md) | Maps with MapLibre and OpenStreetMap; precomputed routing | Accepted (map display superseded by ADR 0024, routing engine by ADR 0031) |
 | [0010](0010-authentication-and-identity.md) | Phone-first authentication and layered identity verification | Accepted (implementation superseded by ADR 0016) |
 | [0011](0011-localization.md) | Icelandic and English from day one | Accepted (formatting superseded by ADR 0025) |
 | [0012](0012-trip-price-level.md) | One price level per trip instead of per-segment price editing | Accepted |
@@ -60,3 +60,5 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0027](0027-email-through-mailjet.md) | Send email through Mailjet | Accepted |
 | [0028](0028-operator-console-web-app-and-passkeys.md) | The operator console as its own web app, signed in with passkeys | Accepted |
 | [0029](0029-photos-cleaned-in-the-browser-and-checked-by-the-api.md) | Photos made in the browser and checked by the API; links signed per hour | Accepted |
+| [0030](0030-limit-what-a-whole-trip-brings-the-driver.md) | Limit what a whole trip brings the driver, counting money already booked | Accepted |
+| [0031](0031-distances-from-our-own-road-file.md) | Distances between meeting points from our own road file | Accepted |

@@ -41,6 +41,7 @@ const attempt: BookingAttempt = {
   shownTotal: kr(2600),
   message: "",
   heldBookings: [],
+  limitRoom: kr(43_800),
   now,
 };
 
@@ -151,6 +152,19 @@ describe("checking a booking (rule S4, R5.3, R5.6, R5.10)", () => {
     });
     // Before the busy stretch, all three are free.
     expect(problem({ board: 0, alight: 1, seats: 3, shownTotal: kr(3600) })).toBeNull();
+  });
+
+  it("refuses a booking that would take the trip past its limit (rule P3, spec 17)", () => {
+    expect(problem({ limitRoom: kr(2500) })).toEqual({ code: "trip_limit_reached" });
+    expect(problem({ limitRoom: kr(2600) })).toBeNull();
+  });
+
+  it("lets a free booking through when the limit is used up (rule P3, spec 17)", () => {
+    const free: BookableTrip = {
+      ...northTrip,
+      segments: northTrip.segments.map((segment) => ({ ...segment, price: 0 })),
+    };
+    expect(problem({ trip: free, shownTotal: kr(0), limitRoom: kr(0) })).toBeNull();
   });
 
   it("asks again when the price is not the one last shown (R5.3)", () => {
