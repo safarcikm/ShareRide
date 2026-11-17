@@ -336,6 +336,35 @@ What people send with "Something wrong here?" in the app (spec 2, 3.5;
 - The hourly clean-up deletes a resolved report 12 months after it was
   resolved (rule `meeting_point_issues`).
 
+### Distances
+
+The legs between meeting points (spec 2, 3.7;
+`apps/api/src/modules/meeting-points/legs.ts`), found by the `Router` on
+our road file ([road file](road-file.md), ADR 0031):
+
+- Points in service, which keep legs with each other, are active, paused
+  and retiring ones (`keepsLegs`). Legs to a point out of service stay,
+  for the trips that already copied them.
+- `GET /admin/v1/legs` says how many points are in service and how many
+  of their legs exist, when the newest was computed, on which map data
+  (`sources`, with `current` for the map data the API has now), the points
+  with no road within 1 km and the first 100 legs missing, by name. The
+  console's page is `/admin/meeting-points/distances`, linked from the
+  list of points, with the map data's attribution.
+- `POST /admin/v1/legs/recompute` (an empty JSON body) computes every leg
+  between points in service again, in the request: one search a point,
+  a few hundredths of a second each, with other requests let in between.
+  It replaces their legs in one transaction and answers with the new
+  status. A point moved meanwhile keeps the legs its move computed. The
+  audit entry is `legs.recomputed`, with the source and how many points,
+  legs and missing legs.
+- `computeFor` gives one point its legs both ways with every point in
+  service, replacing all its old ones, for activating and moving it
+  (PR 12). If the point moves while they are found, it starts again from
+  where it is.
+- One writer of legs at a time: each takes a transaction lock
+  (`pg_advisory_xact_lock`) before it deletes and inserts.
+
 ## Disputes
 
 `apps/api/src/modules/trip-day/admin-routes.ts` holds the console's

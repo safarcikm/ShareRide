@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   capitalised,
   formatClock,
+  formatCount,
   formatDate,
   formatDay,
   formatDayAndMonth,
@@ -12,6 +13,14 @@ import {
   formatShortDay,
   formatWeekdays,
 } from "./format.ts";
+
+describe("formatCount", () => {
+  it("groups thousands with each language's mark", () => {
+    expect(formatCount(650, "en")).toBe("650");
+    expect(formatCount(90_300, "en")).toBe("90,300");
+    expect(formatCount(90_300, "is")).toBe("90.300");
+  });
+});
 
 describe("formatMoney (ADR 0011)", () => {
   it("shows whole krónur in Icelandic as 2.500 kr.", () => {

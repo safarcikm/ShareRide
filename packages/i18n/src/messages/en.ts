@@ -1731,6 +1731,7 @@ export const en = {
   "admin.meetingPoints.add": "Add a meeting point",
   "admin.meetingPoints.import": "Import from a file",
   "admin.meetingPoints.problems": "Problem reports",
+  "admin.meetingPoints.distances": "Distances",
   "admin.meetingPointIssues.title": "Problem reports",
   "admin.meetingPointIssues.intro":
     "What people reported about meeting points in the app, the oldest first. Resolving a report removes the link to the person who sent it, and the report is deleted 12 months later.",
@@ -1749,6 +1750,35 @@ export const en = {
   "admin.meetingPointIssues.resolved": "Resolved: {name}.",
   "admin.meetingPointIssues.alreadyResolved": "Someone resolved this report already.",
   "admin.meetingPointIssues.resolveFailed": "The report could not be resolved. Try again.",
+  "admin.legs.title": "Distances between meeting points",
+  "admin.legs.intro":
+    "The road distance and driving time each way between every two meeting points in service. Trips copy them when they are posted, so recomputing never changes a trip.",
+  "admin.legs.loadFailed": "The distances could not be loaded.",
+  "admin.legs.points": "Meeting points in service",
+  "admin.legs.legs": "Legs",
+  "admin.legs.legsOf": "{legs} of {pairs}",
+  "admin.legs.computed": "Last computed",
+  "admin.legs.computedAt": "{date} at {time}",
+  "admin.legs.never": "Never",
+  "admin.legs.mapData": "Map data",
+  "admin.legs.olderData":
+    "{count, plural, one {# leg is} other {# legs are}} on older map data. Recompute all to use the current map data.",
+  "admin.legs.recompute": "Recompute all",
+  "admin.legs.recomputing": "Recomputing…",
+  "admin.legs.recomputeHint":
+    "Finds every leg again on the current map data. It can take a few seconds.",
+  "admin.legs.recomputed": "Recomputed: {count, plural, one {# leg} other {# legs}}.",
+  "admin.legs.recomputeFailed": "The distances could not be recomputed. Try again.",
+  "admin.legs.complete": "Every leg between meeting points in service is there.",
+  "admin.legs.offRoad": "No road within 1 km",
+  "admin.legs.offRoadIntro":
+    "These meeting points get no legs until they are moved nearer a road for cars.",
+  "admin.legs.missing": "{count, plural, one {# leg is missing} other {# legs are missing}}",
+  "admin.legs.missingIntro":
+    "No road for cars connects these, in this direction. Ferries and mountain (F) roads are left out.",
+  "admin.legs.from": "From",
+  "admin.legs.to": "To",
+  "admin.legs.more": "And {count} more.",
   "admin.meetingPoints.filters": "Filters",
   "admin.meetingPoints.name": "Name",
   "admin.meetingPoints.status": "Status",

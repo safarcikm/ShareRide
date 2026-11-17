@@ -122,10 +122,11 @@ rules are in `packages/domain/src/meeting-points/issues.ts`.
 ### Leg
 
 `from_meeting_point_id`, `to_meeting_point_id`, `distance_m`, `duration_s`,
-`computed_at`, `source` (routing engine and data version, or the sample road
-graph for the sample points). Directional:
-A→B and B→A are separate legs because routes can differ. Computed for every
-ordered pair of active meeting points connected by road.
+`computed_at`, `source` ("road file " and the map data's date, from our
+own road file, ADR 0031; or the sample road graph for the sample points).
+Directional: A→B and B→A are separate legs because routes can differ.
+Computed for every ordered pair of meeting points in service (active,
+paused or retiring) connected by road.
 
 ### Trip
 

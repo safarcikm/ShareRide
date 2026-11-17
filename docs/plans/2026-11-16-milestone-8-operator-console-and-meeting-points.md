@@ -240,7 +240,8 @@ decision 5 gets its own ADR with its PR, refining ADR 0009.
   road and finds the shortest way to and from every other active point,
   with the driving time from each road's class and speed limit. Pairs
   with no road connection are listed. "Recompute all" does every pair in
-  a job.
+  the request: one search a point, a few hundredths of a second each, so
+  a few seconds for a few hundred points.
 - The console shows when legs were computed, the map data's date and any
   pairs without a connection.
 - The `Router` port stays, so tests can still use a fixed table.
@@ -340,8 +341,13 @@ PR 8 is in two parts.
 
 ### PR 11: `feat(meeting-points)`: distances for real meeting points
 
-- [ ] ADR for decision 5; the road file script and the file; legs on
-      activation and move; "Recompute all"; the legs status page
+PR 11 is in two parts.
+
+- [x] 11a: ADR 0031 for decision 5; the road file job, builder and file;
+      `joinRoad` and `legsFrom` in the domain
+- [x] 11b: `legsTo`; the `Router` port on the road file (straight lines
+      in API tests); the legs status, "Recompute all" and `computeFor`
+      for activation and move in the API; the console's Distances page
 - Verify: known distances within 3% of the road authority's figures;
   every sample point still gets its legs
 
