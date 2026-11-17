@@ -129,6 +129,17 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
   meeting_point_photos: notAboutAPerson(
     "photos of public places, faces and number plates blurred by the operator",
   ),
+  meeting_point_issues: {
+    category: "moderation",
+    // While open, the problems the person reported; resolving removes the link (spec 2, section 7).
+    export: { section: "meeting_point_reports" },
+    personColumns: ["reporterId", "resolvedById"],
+    onDeletion: keep(
+      ["reason", "note", "status", "resolutionNote"],
+      [],
+      "a problem with a public place, kept for the operator's queue and deleted 12 months after it is resolved (spec 2, section 7)",
+    ),
+  },
   places: notAboutAPerson("public place names"),
   legs: notAboutAPerson("driving distances between meeting points"),
   trips: {
