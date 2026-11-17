@@ -29,6 +29,8 @@ export interface TablePrivacy {
   /**
    * UUID columns that point nowhere: not a foreign key to a person, such as
    * a retry key, or the person's own public reference stored on their row.
+   * A row moved to the former member gets new ones, so keys unique per
+   * person never collide there.
    */
   readonly otherIds?: readonly string[];
 }

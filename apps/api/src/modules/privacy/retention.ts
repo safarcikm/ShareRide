@@ -10,6 +10,7 @@ import { cleanUpDrafts } from "../trips/clean-up.ts";
 import type { Erasure } from "./erasure.ts";
 import { cleanUpExports } from "./exports.ts";
 import { notHeld } from "./holds.ts";
+import { anonymiseOldTrips } from "./old-trips.ts";
 
 const { blockedNumbers, erasedAccounts, holds, privacyRequests, retentionRuns } = schema;
 
@@ -95,9 +96,11 @@ const deleted = (rows: readonly unknown[]) => rows.length;
 export function retentionSteps({
   db,
   erasure,
+  logger,
 }: {
   readonly db: Database;
   readonly erasure: Pick<Erasure, "eraseDue">;
+  readonly logger: Logger;
 }): RetentionStep[] {
   return [
     {
@@ -131,6 +134,21 @@ export function retentionSteps({
     {
       rules: ["conversations"],
       run: async (now) => ({ counts: { conversations: await cleanUpConversations(db, now) } }),
+    },
+    {
+      rules: ["trips_and_bookings"],
+      async run(now) {
+        const counts = await anonymiseOldTrips(db, now, logger);
+        return {
+          counts: {
+            trips_and_bookings: {
+              erased: counts.cars,
+              anonymised: counts.trips + counts.bookings,
+            },
+          },
+          failures: counts.failed,
+        };
+      },
     },
     {
       rules: ["notification_log", "scheduled_notifications", "outbox_events"],

@@ -758,6 +758,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   notification log and drafts, and the account itself) until its end. The
   `privacy` command shows the last run of each rule (`runs`) and lists,
   sets and ends holds (`holds`, `hold`, `end-hold`), each in the audit log.
+- Trips and bookings are made anonymous 3 years after the trip (spec 11,
+  3.7): the hourly clean-up moves the trip, its bookings, "I'm here" and
+  reports to the former member with their free text emptied, and gives
+  the trip a car of the same make, model and colour without a plate.
+  Stops, prices and payments stay. A hold on the trip, a booking, the
+  driver or a passenger keeps it until the hold ends.
 - Ask about my data in the API (spec 11, 3.6): `POST /v1/me/privacy-requests`
   takes an objection, a restriction, a correction or a question from
   someone with a verified email, at most 5 a day, due a month later. The
