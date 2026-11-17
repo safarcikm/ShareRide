@@ -10,17 +10,25 @@ const startedAt = new Date("2026-11-16T08:00:00Z");
 const minutes = (count: number) => new Date(startedAt.getTime() + count * 60_000);
 
 describe("canUseConsole", () => {
+  const operator = { roles: ["operator"], status: "active", deleteAfter: null };
+
   it("lets an active account with the operator role in", () => {
-    expect(canUseConsole({ roles: ["operator"], status: "active" })).toBe(true);
+    expect(canUseConsole(operator)).toBe(true);
   });
 
   it("refuses an account without the role", () => {
-    expect(canUseConsole({ roles: [], status: "active" })).toBe(false);
-    expect(canUseConsole({ roles: ["driver"], status: "active" })).toBe(false);
+    expect(canUseConsole({ ...operator, roles: [] })).toBe(false);
+    expect(canUseConsole({ ...operator, roles: ["driver"] })).toBe(false);
   });
 
   it("refuses a suspended operator", () => {
-    expect(canUseConsole({ roles: ["operator"], status: "suspended" })).toBe(false);
+    expect(canUseConsole({ ...operator, status: "suspended" })).toBe(false);
+  });
+
+  it("refuses an operator whose account waits to be deleted (spec 11)", () => {
+    expect(canUseConsole({ ...operator, deleteAfter: new Date("2026-11-24T10:00:00Z") })).toBe(
+      false,
+    );
   });
 });
 
