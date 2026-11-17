@@ -349,7 +349,7 @@ In four parts, each its own pull request:
 - [x] 6b: `GET /v1/me/notices` and the appeal; `closeReport` (with
       `report_closed` to the reporter) and `answerAppeal` (with
       `appeal_answered` to the person; reversing the suspension they are
-      under lifts it); migration `0037_appeals`
+      under lifts it); migration `0038_appeals`
 - [x] 6c: Notices with Appeal (Profile, and where a notice's push
       opens), and the suspended account screen in place of Find and
       Offer; `suspension` in `GET /v1/me`; a browser journey with a

@@ -1,4 +1,11 @@
-import { amenities, meetingPointTypes, placeKinds, regions } from "@shareride/domain";
+import {
+  amenities,
+  meetingPointIssueLimits,
+  meetingPointIssueReasons,
+  meetingPointTypes,
+  placeKinds,
+  regions,
+} from "@shareride/domain";
 import { z } from "zod";
 import { errorResponseSchema } from "./errors.ts";
 import { defineRoute } from "./route.ts";
@@ -85,6 +92,35 @@ export const meetingPointRoute = defineRoute({
   responses: {
     200: { description: "The meeting point", schema: meetingPointDetailsSchema },
     404: { description: "not_found: no such point, or not shown", schema: errorResponseSchema },
+  },
+});
+
+/** Spec 2, 3.5: what is wrong, and a note of up to 300 characters. */
+export const meetingPointIssueBodySchema = z.object({
+  reason: z.enum(meetingPointIssueReasons),
+  // Counted in characters as people see them by the API; this only bounds the body.
+  note: z.string().max(meetingPointIssueLimits.noteMax * 8),
+});
+
+export const reportMeetingPointIssueRoute = defineRoute({
+  method: "post",
+  path: "/v1/meeting-points/{id}/issues",
+  summary: "Report a problem with a meeting point for the operator to check (spec 2, 3.5; R2.8)",
+  tags: ["meeting-points"],
+  auth: true,
+  request: { params: z.object({ id: z.uuid() }), body: meetingPointIssueBodySchema },
+  responses: {
+    204: { description: "Sent to the operator's queue" },
+    400: {
+      description: "validation_failed: the note is over 300 characters (`note`, `too_long`)",
+      schema: errorResponseSchema,
+    },
+    401: { description: "unauthenticated", schema: errorResponseSchema },
+    404: { description: "not_found: no such point, or not shown", schema: errorResponseSchema },
+    429: {
+      description: "too_many_reports: 5 in 24 hours, with retryAfterSeconds",
+      schema: errorResponseSchema,
+    },
   },
 });
 
