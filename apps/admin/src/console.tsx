@@ -2,6 +2,7 @@ import type { ApiClient, CallInput, CallResult } from "@shareride/api-client";
 import type { AdminMe, RouteDefinition } from "@shareride/contracts";
 import type { Locale, Translate } from "@shareride/i18n";
 import { createContext, useContext } from "react";
+import type { PhotoBrowser } from "./photos.ts";
 import type { PasskeyBrowser } from "./webauthn.ts";
 
 /** What every console page can use. */
@@ -9,6 +10,7 @@ export interface Console {
   readonly t: Translate;
   readonly locale: Locale;
   readonly passkeys: PasskeyBrowser;
+  readonly photos: PhotoBrowser;
   /**
    * Calls the API. When the console session has ended it shows the sign-in
    * page, and the result still says why.

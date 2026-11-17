@@ -617,3 +617,21 @@ legend + * {
 .map-halo {
   fill: var(--color-primary-soft);
 }
+
+/* A meeting point's photos, each with its descriptions and buttons. */
+.photo-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.photo {
+  display: block;
+  width: 100%;
+  max-width: var(--narrow-width);
+  height: auto;
+  border-radius: var(--radius-card);
+}
