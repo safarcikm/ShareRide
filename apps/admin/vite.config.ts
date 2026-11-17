@@ -15,12 +15,20 @@ function tokens(): Plugin {
 }
 
 // The API serves the build at /admin (ADR 0028). In development, Vite serves
-// it at http://localhost:5173/admin/ and passes /admin/v1 on to the API; set
+// it at http://localhost:5173/admin/ and passes /admin/v1 on to the API, and
+// /v1/photo-files, where the API serves photos kept in a folder; set
 // ADMIN_ORIGIN=http://localhost:5173 for the API, so passkeys match.
 export default defineConfig({
   base: "/admin/",
   plugins: [react(), tokens()],
-  server: { port: 5173, strictPort: true, proxy: { "/admin/v1": "http://localhost:3000" } },
+  server: {
+    port: 5173,
+    strictPort: true,
+    proxy: {
+      "/admin/v1": "http://localhost:3000",
+      "/v1/photo-files": "http://localhost:3000",
+    },
+  },
   build: { outDir: "dist", sourcemap: false },
   test: {
     // The browser journeys in e2e/ run with Playwright (pnpm e2e).

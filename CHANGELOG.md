@@ -831,6 +831,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   bucket (`PHOTO_STORAGE=hetzner`, signed links that last at least an
   hour), a folder in development, or not at all. Migration
   `0034_meeting_point_photos` adds the `meeting_point_photos` table.
+- Meeting point photos in the console and the app (milestone 8, PR 8b):
+  a point's page has a Photos panel to add, describe in both languages,
+  order and remove up to five photos. The browser makes each photo at most
+  1 600 pixels and writes a new JPEG, and `stripPhotoMetadata` in the
+  domain keeps only the picture's own segments, so Safari's Exif segment
+  is gone before upload (ADR 0029). The app's meeting point details show
+  the photos above "Where to stand", described for screen readers, with a
+  note in place of a photo that does not load.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.

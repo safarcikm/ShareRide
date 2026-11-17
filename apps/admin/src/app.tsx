@@ -12,6 +12,7 @@ import { Layout } from "./layout.tsx";
 import { SetupPage } from "./pages/setup.tsx";
 import { SignInPage } from "./pages/sign-in.tsx";
 import { homePath, sectionFor } from "./sections.ts";
+import { browserPhotos, type PhotoBrowser } from "./photos.ts";
 import type { PasskeyBrowser } from "./webauthn.ts";
 
 export const signInPath = "/admin/sign-in";
@@ -25,6 +26,8 @@ type Session =
 export interface ConsoleAppProps {
   readonly client: ApiClient;
   readonly passkeys: PasskeyBrowser;
+  /** Left out, the browser's canvas makes photos ready to send. */
+  readonly photos?: PhotoBrowser;
 }
 
 /** Icelandic when the browser prefers it, until the operator's account says. */
@@ -35,7 +38,7 @@ function browserLocale(): Locale {
 const currentPath = () => window.location.pathname;
 
 /** The operator console (ADR 0028): sign-in and setup, then the sections. */
-export function ConsoleApp({ client, passkeys }: ConsoleAppProps) {
+export function ConsoleApp({ client, passkeys, photos = browserPhotos }: ConsoleAppProps) {
   const [path, setPath] = useState(currentPath);
   const [locale, setLocale] = useState<Locale>(browserLocale);
   const [session, setSession] = useState<Session>({ state: "checking" });
@@ -137,6 +140,7 @@ export function ConsoleApp({ client, passkeys }: ConsoleAppProps) {
     t,
     locale,
     passkeys,
+    photos,
     call,
     navigate,
     operator: session.state === "signedIn" ? session.operator : undefined,
