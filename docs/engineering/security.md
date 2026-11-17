@@ -45,6 +45,9 @@ apps.
   maps go to Sentry and are never served, and Render's secret files are kept
   out of the image (`.dockerignore`, checked by the smoke test).
 - Dependencies and containers scanned in CI; critical findings block merge.
+  `pnpm audit --audit-level high` fails on high advisories too. An advisory
+  is passed over only when Martin agrees, in `auditConfig.ignoreGhsas` in
+  `pnpm-workspace.yaml`, each with why and when it comes out.
 - No person's user ID is shown to another person. Our IDs are UUIDv7 and
   show when the account was made. Someone else is reached through what the
   two share (a booking, a message) or through a public reference made for
