@@ -339,6 +339,40 @@ describe("publishing (spec 3, 3.8 and section 4)", () => {
     expect(removed).toMatchObject({ status: 409, error: { code: "trip_not_draft" } });
   });
 
+  it("waits for a pause of one of its stops under way, then refuses it (spec 2, 3.6.4)", async () => {
+    const { accessToken } = await newDriver();
+    const trip = await draft(accessToken, { departure: tomorrowAt("09:00") });
+    const borgarnes = id("borgarnes");
+    // The console's pause holds the point while it counts the trips to tell.
+    const pausing = await api.connection.pool.connect();
+    try {
+      await pausing.query("BEGIN");
+      await pausing.query("SELECT 1 FROM meeting_points WHERE id = $1 FOR UPDATE", [borgarnes]);
+      let answered = false;
+      const publishing = publish(accessToken, trip.id).finally(() => {
+        answered = true;
+      });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      expect(answered).toBe(false);
+      await pausing.query("UPDATE meeting_points SET status = 'paused' WHERE id = $1", [borgarnes]);
+      await pausing.query("COMMIT");
+      expect(await publishing).toMatchObject({
+        status: 422,
+        error: {
+          code: "trip_not_publishable",
+          details: [{ path: "stops.1", issue: "stop_unavailable" }],
+        },
+      });
+    } finally {
+      await pausing.query("ROLLBACK");
+      pausing.release();
+      await api.connection.db
+        .update(schema.meetingPoints)
+        .set({ status: "active" })
+        .where(eq(schema.meetingPoints.id, borgarnes));
+    }
+  });
+
   it("lists everything to fix instead of publishing", async () => {
     const { accessToken } = await newDriver({ ready: false });
     const trip = await draft(accessToken, { priceLevel: 300, note: "Call me on 555 1234" });
