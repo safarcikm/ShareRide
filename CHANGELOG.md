@@ -608,8 +608,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   3.4): the open reports, safety first, each with when it is due and an
   Overdue tag, and the last ones closed; a report's page with its records,
   both people and their history, the conversation only when asked, the
-  actions with the notice shown as the person reads it, in their language,
-  before it is sent, and closing it, asked once more. Appeals lists those
+  actions (Reinstate too, for a suspended person) with the notice shown as
+  the person reads it, in their language, before it is sent, and closing
+  it, asked once more. Appeals lists those
   waiting with the action and its report, and the answer asks once more as
   it is final. A browser journey closes one report and suspends from
   another.

@@ -294,7 +294,7 @@ test("the operator closes one report and suspends from another", async ({ reques
     .getByRole("link", { name: "A trip: Safety: dangerous driving, threats or violence" })
     .click();
   const reported = page.getByRole("region", { name: "The person reported: Anna" });
-  await expect(reported).toContainText("Drove");
+  await expect(reported).toContainText("As driver:");
   const act = page.getByRole("region", { name: "Act on it" });
   await act.getByRole("radio", { name: "Suspend Anna" }).check();
   await act.getByRole("combobox", { name: "Community rule" }).selectOption("safety");

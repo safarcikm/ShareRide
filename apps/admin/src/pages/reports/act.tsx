@@ -2,6 +2,7 @@ import {
   adminCancelTripRoute,
   adminCloseReportRoute,
   adminHideContentRoute,
+  adminReinstateRoute,
   adminSuspendRoute,
   adminWarnRoute,
   type AdminReport,
@@ -34,6 +35,7 @@ const maxLength = defaultSafetySettings.textMaxLength;
 type Choice =
   | { readonly kind: "warn" }
   | { readonly kind: "suspend" }
+  | { readonly kind: "reinstate" }
   | { readonly kind: "hide"; readonly content: HideableContent; readonly id: string }
   | { readonly kind: "cancelTrip"; readonly tripId: string };
 
@@ -45,12 +47,7 @@ function choicesOf(report: AdminReport): readonly Choice[] {
   const reported = report.reported;
   if (reported === null || reported.status === "deleted") return [];
   // Whether the person reported drives the trip, so its note and the trip are theirs.
-  const drives =
-    report.trip !== null &&
-    (report.reportedSide?.recentTrips.some(
-      (trip) => trip.tripId === report.trip?.id && trip.role === "driver",
-    ) ??
-      false);
+  const drives = report.trip !== null && report.trip.driverId === reported.userId;
   return [
     { kind: "warn" },
     ...(report.message !== null && !report.message.removed
@@ -63,6 +60,8 @@ function choicesOf(report: AdminReport): readonly Choice[] {
       ? [{ kind: "hide", content: "about", id: reported.userId } as const]
       : []),
     ...(reported.status === "active" ? [{ kind: "suspend" } as const] : []),
+    // A suspension made by mistake, or one to end early (3.6.3).
+    ...(reported.status === "suspended" ? [{ kind: "reinstate" } as const] : []),
     ...(drives && report.trip?.status === "published"
       ? [{ kind: "cancelTrip", tripId: report.trip.id } as const]
       : []),
@@ -72,6 +71,7 @@ function choicesOf(report: AdminReport): readonly Choice[] {
 /** Refusals the operator can act on, each with its own words. */
 const refusals = [
   "already_suspended",
+  "not_suspended",
   "already_hidden",
   "already_cancelled",
   "trip_not_cancellable",
@@ -118,10 +118,18 @@ export function ActPanel({
   const [said, setSaid] = useState<Said>({ kind: "none" });
   const message = useRef<HTMLDivElement>(null);
   const sendButton = useRef<HTMLButtonElement>(null);
+  const firstChoice = useRef<HTMLInputElement>(null);
+  const ruleField = useRef<HTMLSelectElement>(null);
+  const reasonField = useRef<HTMLTextAreaElement>(null);
+  const untilField = useRef<HTMLInputElement>(null);
+  // Counts each press of "Review the notice" that found a problem.
+  const [checks, setChecks] = useState(0);
   const ids = {
     heading: useId(),
     choice: useId(),
+    choiceError: useId(),
     rule: useId(),
+    ruleError: useId(),
     reason: useId(),
     reasonHint: useId(),
     reasonError: useId(),
@@ -140,6 +148,25 @@ export function ActPanel({
   useEffect(() => {
     if (preview !== null) sendButton.current?.focus();
   }, [preview]);
+
+  // After a press of "Review the notice" that found a problem, the first
+  // field with one takes the focus, and its problem is read out with it.
+  useEffect(() => {
+    if (checks === 0) return;
+    const first = problems[0];
+    const field =
+      first === "choose"
+        ? firstChoice.current
+        : first === "rule"
+          ? ruleField.current
+          : first === "reasonMissing" || first === "reasonTooLong"
+            ? reasonField.current
+            : first === "untilMissing" || first === "untilPast"
+              ? untilField.current
+              : null;
+    field?.focus();
+    // Only on a press of "Review the notice", never as the operator types.
+  }, [checks]);
 
   const reported = report.reported;
   const name = personName(t, reported);
@@ -164,6 +191,8 @@ export function ActPanel({
     one.kind === "hide"
       ? t(`admin.reports.effect.hide.${one.content}`)
       : t(`admin.reports.effect.${one.kind}`);
+  // A reinstatement has no rule, only a note the person reads (3.6.3).
+  const needsRule = choice?.kind !== "reinstate";
 
   /** The day picked, as the moment the suspension ends: that day's start in Iceland (UTC). */
   const untilIso = until === "" ? null : `${until}T00:00:00.000Z`;
@@ -171,7 +200,7 @@ export function ActPanel({
   function review() {
     const found: Problem[] = [];
     if (choice === undefined) found.push("choose");
-    if (rule === "") found.push("rule");
+    if (needsRule && rule === "") found.push("rule");
     const checked = checkStatement({ rule: rule === "" ? "other" : rule, reason });
     if (!checked.ok) {
       found.push(checked.error.code === "reason_missing" ? "reasonMissing" : "reasonTooLong");
@@ -182,17 +211,20 @@ export function ActPanel({
     }
     setProblems(found);
     setSaid({ kind: "none" });
-    if (found.length > 0 || choice === undefined || rule === "") return;
+    if (found.length > 0) setChecks((count) => count + 1);
+    if (found.length > 0 || choice === undefined) return;
     setPreview({
       kind:
         choice.kind === "warn"
           ? "warning"
           : choice.kind === "suspend"
             ? "suspension"
-            : choice.kind === "hide"
-              ? "content_hidden"
-              : "trip_cancelled",
-      rule,
+            : choice.kind === "reinstate"
+              ? "reinstatement"
+              : choice.kind === "hide"
+                ? "content_hidden"
+                : "trip_cancelled",
+      rule: !needsRule || rule === "" ? null : rule,
       reason: reason.trim(),
       content:
         choice.kind === "hide" ? choice.content : choice.kind === "cancelTrip" ? "trip" : null,
@@ -203,11 +235,21 @@ export function ActPanel({
   /** Calls the action's route; on success, what to tell the operator. */
   async function perform(
     one: Choice,
-    statement: Statement & { readonly rule: ModerationRule },
+    statement: Statement,
     person: { readonly userId: string },
   ): Promise<
     { readonly ok: true; readonly text: string } | { readonly ok: false; readonly code: string }
   > {
+    if (one.kind === "reinstate") {
+      const result = await call(adminReinstateRoute, {
+        params: { id: person.userId },
+        body: { note: statement.reason },
+      });
+      return result.ok
+        ? { ok: true, text: t("admin.reports.doneReinstated", { name }) }
+        : { ok: false, code: result.error.code };
+    }
+    if (statement.rule === null) return { ok: false, code: "validation_failed" };
     const body = { rule: statement.rule, reason: statement.reason, reportId: report.id };
     switch (one.kind) {
       case "suspend": {
@@ -253,9 +295,9 @@ export function ActPanel({
   }
 
   async function send(statement: Statement) {
-    if (choice === undefined || statement.rule === null || reported === null) return;
+    if (choice === undefined || reported === null) return;
     setSaving(true);
-    const result = await perform(choice, { ...statement, rule: statement.rule }, reported);
+    const result = await perform(choice, statement, reported);
     setSaving(false);
     setPreview(null);
     if (result.ok) {
@@ -269,12 +311,14 @@ export function ActPanel({
       onActed();
       return;
     }
-    setSaid({
-      kind: "refused",
-      text: isRefusal(result.code)
-        ? t(`admin.reports.refused.${result.code}`)
-        : t("admin.reports.actFailed"),
-    });
+    if (!isRefusal(result.code)) {
+      setSaid({ kind: "refused", text: t("admin.reports.actFailed") });
+      return;
+    }
+    // Someone acted meanwhile: the report, loaded again, shows how it is now.
+    setChosen(null);
+    setSaid({ kind: "refused", text: t(`admin.reports.refused.${result.code}`) });
+    onActed();
   }
 
   return (
@@ -310,19 +354,25 @@ export function ActPanel({
           role="radiogroup"
           aria-labelledby={ids.choice}
           aria-invalid={has("choose")}
+          aria-describedby={has("choose") ? ids.choiceError : undefined}
         >
-          {choices.map((one) => {
+          {choices.map((one, index) => {
             const key = choiceKey(one);
             return (
               <div key={key}>
                 <label className="check type-body">
                   <input
+                    ref={index === 0 ? firstChoice : undefined}
                     type="radio"
                     name={ids.choice}
                     value={key}
                     checked={chosen === key}
                     disabled={preview !== null}
-                    aria-describedby={`${ids.effect}-${key}`}
+                    aria-describedby={
+                      has("choose")
+                        ? `${ids.choiceError} ${ids.effect}-${key}`
+                        : `${ids.effect}-${key}`
+                    }
                     onChange={() => {
                       setChosen(key);
                       setProblems(problems.filter((problem) => problem !== "choose"));
@@ -338,39 +388,48 @@ export function ActPanel({
           })}
         </div>
         {has("choose") ? (
-          <p className="field-error type-small">{t("admin.reports.chooseAction")}</p>
+          <p id={ids.choiceError} className="field-error type-small">
+            {t("admin.reports.chooseAction")}
+          </p>
+        ) : null}
+        {needsRule ? (
+          <div className="field">
+            <label htmlFor={ids.rule} className="type-label">
+              {t("admin.reports.rule")}
+            </label>
+            <select
+              ref={ruleField}
+              id={ids.rule}
+              className="input type-body"
+              value={rule}
+              disabled={preview !== null}
+              aria-invalid={has("rule")}
+              aria-describedby={has("rule") ? ids.ruleError : undefined}
+              onChange={(event) => {
+                setRule(event.target.value as ModerationRule | "");
+                setProblems(problems.filter((problem) => problem !== "rule"));
+              }}
+            >
+              <option value="">{t("admin.reports.chooseRule")}</option>
+              {moderationRules.map((one) => (
+                <option key={one} value={one}>
+                  {moderationRuleText(t, one)}
+                </option>
+              ))}
+            </select>
+            {has("rule") ? (
+              <p id={ids.ruleError} className="field-error type-small">
+                {t("admin.reports.ruleMissing")}
+              </p>
+            ) : null}
+          </div>
         ) : null}
         <div className="field">
-          <label htmlFor={ids.rule} className="type-label">
-            {t("admin.reports.rule")}
-          </label>
-          <select
-            id={ids.rule}
-            className="input type-body"
-            value={rule}
-            disabled={preview !== null}
-            aria-invalid={has("rule")}
-            onChange={(event) => {
-              setRule(event.target.value as ModerationRule | "");
-              setProblems(problems.filter((problem) => problem !== "rule"));
-            }}
-          >
-            <option value="">{t("admin.reports.chooseRule")}</option>
-            {moderationRules.map((one) => (
-              <option key={one} value={one}>
-                {moderationRuleText(t, one)}
-              </option>
-            ))}
-          </select>
-          {has("rule") ? (
-            <p className="field-error type-small">{t("admin.reports.ruleMissing")}</p>
-          ) : null}
-        </div>
-        <div className="field">
           <label htmlFor={ids.reason} className="type-label">
-            {t("admin.reports.reasonLabel", { name })}
+            {t(needsRule ? "admin.reports.reasonLabel" : "admin.reports.noteLabel", { name })}
           </label>
           <textarea
+            ref={reasonField}
             id={ids.reason}
             className="input textarea type-body"
             rows={4}
@@ -416,6 +475,7 @@ export function ActPanel({
               {t("admin.reports.until")}
             </label>
             <input
+              ref={untilField}
               id={ids.until}
               type="date"
               className="input type-body"
@@ -538,7 +598,9 @@ export function ClosePanel({
   readonly onClosed: (report: AdminReport) => void;
 }) {
   const { t, locale, call } = useConsole();
-  const [chosen, setChosen] = useState<ReportOutcome | null>(null);
+  // Once an action is taken on the report, closing it says so to the reporter.
+  const acted = report.actions.length > 0;
+  const [chosen, setChosen] = useState<ReportOutcome | null>(acted ? "action_taken" : null);
   const [confirming, setConfirming] = useState(false);
   const [saving, setSaving] = useState(false);
   const [said, setSaid] = useState<"none" | "choose" | "closed" | "alreadyClosed" | "failed">(
@@ -552,6 +614,11 @@ export function ClosePanel({
     const shown = message.current?.firstElementChild;
     if (said !== "none" && shown instanceof HTMLElement) shown.focus();
   }, [said]);
+
+  // An action taken here, with the panel open.
+  useEffect(() => {
+    if (acted) setChosen((was) => was ?? "action_taken");
+  }, [acted]);
 
   useEffect(() => {
     if (confirming) confirmButton.current?.focus();

@@ -4,6 +4,7 @@ import {
   adminMeRoute,
   type AdminMe,
   type AdminModerationAction,
+  type AdminPerson,
 } from "@shareride/contracts";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -21,16 +22,18 @@ const anna: AdminMe = {
 
 const reportId = "0196f000-0000-7000-8000-0000000000d1";
 
+const dora: AdminPerson = {
+  userId: "0196f000-0000-7000-8000-0000000000c1",
+  firstName: "Dóra",
+  status: "active",
+  suspendedUntil: null,
+  locale: "is",
+};
+
 const appealed: AdminModerationAction = {
   id: "0196f000-0000-7000-8000-0000000000f1",
   kind: "content_hidden",
-  person: {
-    userId: "0196f000-0000-7000-8000-0000000000c1",
-    firstName: "Dóra",
-    status: "active",
-    suspendedUntil: null,
-    locale: "is",
-  },
+  person: dora,
   reportId,
   rule: "offensive",
   reason: "Rude words about another member.",
@@ -61,7 +64,7 @@ describe("appeals (spec 9, 3.4.4)", () => {
     const list = await screen.findByRole("list", { name: "Waiting for an answer" });
     const card = within(list).getByRole("group", { name: "Content hidden: Dóra" });
     expect(card.textContent).toContain("Reason: Rude words about another member.");
-    expect(card.textContent).toContain("Concerns: a message you sent");
+    expect(card.textContent).toContain("Concerns: their message");
     expect(card.textContent).toContain("It was a joke between friends.");
     expect(within(card).getByRole("link", { name: "Open the report" }).getAttribute("href")).toBe(
       `/admin/reports/${reportId}`,
@@ -120,6 +123,30 @@ describe("appeals (spec 9, 3.4.4)", () => {
     expect((await within(card).findByRole("alert")).textContent).toBe(
       "Someone answered this appeal meanwhile.",
     );
+  });
+
+  it("shows a suspension's end and whether Dóra is still under it", async () => {
+    window.history.replaceState(null, "", "/admin/appeals");
+    const api = createFakeApi();
+    api.on(adminMeRoute, { status: 200, data: anna });
+    api.on(adminAppealsRoute, {
+      status: 200,
+      data: {
+        appeals: [
+          {
+            ...appealed,
+            kind: "suspension",
+            content: null,
+            until: "2099-12-01T00:00:00.000Z",
+            person: dora,
+          } satisfies AdminModerationAction,
+        ],
+      },
+    });
+    render(<ConsoleApp client={api.client} passkeys={createFakePasskeys().passkeys} />);
+    const card = await screen.findByRole("group", { name: "Suspension: Dóra" });
+    expect(card.textContent).toContain("It runs until");
+    expect(card.textContent).toContain("Their account now: Open");
   });
 
   it("says when none wait", async () => {

@@ -4,6 +4,7 @@ import {
   type AdminConversationMessage,
   type AdminModerationAction,
   type AdminReport,
+  type AdminReportListItem,
 } from "@shareride/contracts";
 import { reportCategoryText } from "@shareride/i18n";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
@@ -151,7 +152,7 @@ export function ReportDetail({ id }: { readonly id: string }) {
               <dt>{t("admin.reports.tripNote")}</dt>
               <dd>
                 {report.trip.note === "" ? t("admin.reports.none") : report.trip.note}
-                {report.trip.noteHidden ? <HiddenTag /> : null}
+                {report.trip.noteHidden ? <HiddenTag removed={false} /> : null}
               </dd>
             </>
           )}
@@ -171,7 +172,7 @@ export function ReportDetail({ id }: { readonly id: string }) {
               <dt>{t("admin.reports.message")}</dt>
               <dd>
                 {t("admin.reports.messageSent", { when: at(report.message.sentAt) })}
-                {report.message.removed ? <HiddenTag /> : null}
+                {report.message.removed ? <HiddenTag removed /> : null}
               </dd>
             </>
           )}
@@ -180,7 +181,7 @@ export function ReportDetail({ id }: { readonly id: string }) {
               <dt>{t("admin.reports.about")}</dt>
               <dd>
                 {report.about.text}
-                {report.about.hidden ? <HiddenTag /> : null}
+                {report.about.hidden ? <HiddenTag removed={false} /> : null}
               </dd>
             </>
           )}
@@ -215,11 +216,14 @@ export function ReportDetail({ id }: { readonly id: string }) {
   );
 }
 
-function HiddenTag() {
+/** A message ShareRide removed, or a note or About you it hid until the person writes anew. */
+function HiddenTag({ removed }: { readonly removed: boolean }) {
   const { t } = useConsole();
   return (
     <span className="tags">
-      <span className="tag tag-warning type-small">{t("admin.reports.hiddenTag")}</span>
+      <span className="tag tag-warning type-small">
+        {t(removed ? "admin.reports.hiddenTag" : "admin.reports.hiddenByTag")}
+      </span>
     </span>
   );
 }
@@ -261,13 +265,7 @@ function Side({
 }) {
   const { t, locale } = useConsole();
   const headingId = useId();
-  const reportList = (
-    reports: AdminReport["reportedSide"] extends infer S
-      ? S extends { reportsBy: infer R }
-        ? R
-        : never
-      : never,
-  ) =>
+  const reportList = (reports: readonly AdminReportListItem[]) =>
     reports.length === 0 ? (
       <p className="type-body muted">{t("admin.reports.none")}</p>
     ) : (
@@ -401,7 +399,8 @@ function Conversation({ report }: { readonly report: AdminReport }) {
                     {t("admin.reports.reportedTag")}
                   </span>
                 ) : null}
-                {one.removed ? (
+                {/* Hidden after the conversation opened: the report, loaded again, says so. */}
+                {one.removed || (one.id === report.message?.id && report.message.removed) ? (
                   <span className="tag tag-warning type-small">{t("admin.reports.hiddenTag")}</span>
                 ) : null}
               </p>

@@ -403,6 +403,13 @@ In four parts, each its own pull request:
   one and suspends from the other; the reporter's outcome under My reports
   is covered by the integration tests, as the sample drivers cannot sign
   in. After closing a report, "All reports" goes back to the open ones.
+  From the review: the report page offers Reinstate for a suspended
+  person, so a suspension made by mistake is undone from there; the API
+  names the trip's driver, as the person's ten latest trips may not
+  include it; and a recent trip as a passenger is one that held a seat.
+  The Icelandic console says "andmæli" and "Orðsendingar" as the app
+  does. Left as is: an action may name any report as `reportId`, as the
+  operator may act on the reporter too (PR 8).
 
 ### PR 8: `feat(console)`: users, trips and bookings
 

@@ -2041,6 +2041,7 @@ export const en = {
   "admin.reports.messageSent": "Sent {when}. Its words are in the conversation below.",
   "admin.reports.about": "About you",
   "admin.reports.hiddenTag": "Removed by ShareRide",
+  "admin.reports.hiddenByTag": "Hidden by ShareRide",
   "admin.reports.reportedTag": "Reported",
   "admin.reports.conversation": "The conversation",
   "admin.reports.conversationHint":
@@ -2080,8 +2081,8 @@ export const en = {
   "admin.reports.reportsBy": "Other reports they filed",
   "admin.reports.personActions": "Actions on them",
   "admin.reports.recentTrips": "Recent trips",
-  "admin.reports.tripRole.driver": "Drove {from} – {to}",
-  "admin.reports.tripRole.passenger": "Rode {from} – {to}",
+  "admin.reports.tripRole.driver": "As driver: {from} – {to}",
+  "admin.reports.tripRole.passenger": "As passenger: {from} – {to}",
   "admin.reports.act": "Act on it",
   "admin.reports.actHint":
     "{name} is told what was done, under which rule and why, in their language, under Notices and by email. They can appeal once within 14 days.",
@@ -2090,6 +2091,7 @@ export const en = {
   "admin.reports.action": "Action",
   "admin.reports.action.warn": "Warn {name}",
   "admin.reports.action.suspend": "Suspend {name}",
+  "admin.reports.action.reinstate": "Reinstate {name}",
   "admin.reports.action.hide": "Hide {content}",
   "admin.reports.action.cancelTrip": "Cancel the trip as ShareRide",
   "admin.reports.hide.message": "the message reported",
@@ -2099,6 +2101,8 @@ export const en = {
   "admin.reports.effect.warn": "Nothing else changes.",
   "admin.reports.effect.suspend":
     "They can no longer search, book, offer trips, send messages or review. Their upcoming trips and bookings are cancelled with full refunds; the others are not told why.",
+  "admin.reports.effect.reinstate":
+    "Their account opens at once. What the suspension cancelled stays cancelled.",
   "admin.reports.effect.hide.message": "Both people read “Removed by ShareRide” in its place.",
   "admin.reports.effect.hide.review":
     "It no longer shows to the person it is about, nor counts in their rating.",
@@ -2112,6 +2116,7 @@ export const en = {
   "admin.reports.chooseRule": "Choose a rule",
   "admin.reports.ruleMissing": "Choose the rule it concerns.",
   "admin.reports.reasonLabel": "Reason, written for {name}",
+  "admin.reports.noteLabel": "Note, written for {name}",
   "admin.reports.reasonHint":
     "{count} of {max} characters. They read it as you write it, so use plain words and never say who reported them.",
   "admin.reports.reasonMissing": "Write the reason.",
@@ -2130,13 +2135,15 @@ export const en = {
   "admin.reports.done": "Done. {name} is told why.",
   "admin.reports.doneSuspended":
     "Suspended. {trips, plural, =0 {No trips} one {# trip} other {# trips}} and {bookings, plural, =0 {no bookings} one {# booking} other {# bookings}} cancelled. {name} is told why.",
+  "admin.reports.doneReinstated": "Reinstated. {name} is told.",
   "admin.reports.refused.already_suspended":
     "They are suspended already. Reinstate them first to change it.",
+  "admin.reports.refused.not_suspended": "They are not suspended any more.",
   "admin.reports.refused.already_hidden": "It is hidden already.",
   "admin.reports.refused.already_cancelled": "The trip is cancelled already.",
   "admin.reports.refused.trip_not_cancellable":
     "The trip has left or completed, so it cannot be cancelled.",
-  "admin.reports.refused.not_found": "It no longer exists. Reload the report.",
+  "admin.reports.refused.not_found": "It no longer exists.",
   "admin.reports.actFailed": "It could not be saved. Try again.",
   "admin.reports.close": "Close the report",
   "admin.reports.closeHint":
@@ -2168,6 +2175,15 @@ export const en = {
   "admin.appeals.loadFailed": "The appeals could not be loaded.",
   "admin.appeals.cardTitle": "{kind}: {name}",
   "admin.appeals.concerns": "Concerns: {content}",
+  "admin.appeals.content.message": "their message",
+  "admin.appeals.content.review": "their review",
+  "admin.appeals.content.trip_note": "their trip's note",
+  "admin.appeals.content.about": "their About you",
+  "admin.appeals.content.trip": "the trip they offered",
+  "admin.appeals.content.booking": "a booking",
+  "admin.appeals.until": "It runs until {when}.",
+  "admin.appeals.untilNone": "It has no end date.",
+  "admin.appeals.standing": "Their account now: {standing}",
   "admin.appeals.openReport": "Open the report",
   "admin.appeals.appeal": "{name}'s appeal, sent {when}",
   "admin.appeals.decision": "Your decision",

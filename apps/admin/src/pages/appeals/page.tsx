@@ -10,7 +10,6 @@ import {
   defaultSafetySettings,
   type AppealOutcome,
 } from "@shareride/domain";
-import { moderatedContentName } from "@shareride/i18n";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ConsoleLink } from "../../components/console-link.tsx";
 import { useConsole } from "../../console.tsx";
@@ -21,6 +20,7 @@ import {
   atText,
   personName,
   reportsPath,
+  standingText,
 } from "../reports/texts.ts";
 
 const maxLength = defaultSafetySettings.textMaxLength;
@@ -110,10 +110,17 @@ export function AppealsPage() {
                 <Appeal
                   action={action}
                   onAnswered={(answered) => {
-                    setList({
-                      state: "ready",
-                      appeals: list.appeals.map((one) => (one.id === answered.id ? answered : one)),
-                    });
+                    // From the list as it is now: another answer may have come meanwhile.
+                    setList((was) =>
+                      was.state === "ready"
+                        ? {
+                            state: "ready",
+                            appeals: was.appeals.map((one) =>
+                              one.id === answered.id ? answered : one,
+                            ),
+                          }
+                        : was,
+                    );
                   }}
                 />
               </li>
@@ -215,9 +222,26 @@ function Appeal({
       <p className="type-body">{t("admin.reports.reason", { reason: action.reason })}</p>
       {action.content === null ? null : (
         <p className="type-body">
-          {t("admin.appeals.concerns", { content: moderatedContentName(t, action.content.kind) })}
+          {t("admin.appeals.concerns", {
+            content: t(`admin.appeals.content.${action.content.kind}`),
+          })}
         </p>
       )}
+      {action.kind === "suspension" ? (
+        <>
+          <p className="type-body">
+            {action.until === null
+              ? t("admin.appeals.untilNone")
+              : t("admin.appeals.until", { when: atText(t, locale, action.until) })}
+          </p>
+          {/* Whether this suspension is the one they are under, as reversing lifts only that. */}
+          {action.person === null ? null : (
+            <p className="type-body">
+              {t("admin.appeals.standing", { standing: standingText(t, locale, action.person) })}
+            </p>
+          )}
+        </>
+      ) : null}
       {action.reportId === null ? null : (
         <ConsoleLink to={`${reportsPath}/${action.reportId}`} className="type-label">
           {t("admin.appeals.openReport")}

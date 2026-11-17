@@ -1,6 +1,9 @@
 import {
+  adminCancelTripRoute,
   adminCloseReportRoute,
+  adminHideContentRoute,
   adminMeRoute,
+  adminReinstateRoute,
   adminReportConversationRoute,
   adminReportRoute,
   adminReportsRoute,
@@ -78,6 +81,7 @@ const report: AdminReport = {
   description: "She was rude to me.",
   trip: {
     id: tripId,
+    driverId: dora.userId,
     status: "published",
     from: { name: borgarnes, plannedAt: "2099-11-20T10:00:00.000Z" },
     to: { name: akureyri, plannedAt: "2099-11-20T13:30:00.000Z" },
@@ -240,7 +244,7 @@ describe("a report's page (spec 9, 3.4.2)", () => {
     expect(document.body.textContent).not.toContain("Something unkind");
     const reported = screen.getByRole("region", { name: "The person reported: Dóra" });
     expect(reported.textContent).toContain("Icelandic");
-    expect(reported.textContent).toContain("Drove N1 Borgarnes – Hof, Akureyri");
+    expect(reported.textContent).toContain("As driver: N1 Borgarnes – Hof, Akureyri");
     expect(api.called(adminReportConversationRoute)).toEqual([]);
   });
 
@@ -272,6 +276,18 @@ describe("acting on a report (spec 9, 3.4.3)", () => {
     expect(act.textContent).toContain("Choose the rule it concerns.");
     expect(act.textContent).toContain("Write the reason.");
     expect(api.called(adminWarnRoute)).toEqual([]);
+    // The first field with a problem takes the focus and reads its problem out.
+    const first = within(act).getByRole("radio", { name: "Warn Dóra" });
+    await waitFor(() => {
+      expect(document.activeElement).toBe(first);
+    });
+    expect(first.getAttribute("aria-describedby")).toContain(
+      within(act).getByText("Choose an action.").id,
+    );
+    const rule = within(act).getByRole("combobox", { name: "Community rule" });
+    expect(rule.getAttribute("aria-describedby")).toBe(
+      within(act).getByText("Choose the rule it concerns.").id,
+    );
   });
 
   it("shows the warning as Dóra reads it, in Icelandic, then sends it", async () => {
@@ -307,7 +323,11 @@ describe("acting on a report (spec 9, 3.4.3)", () => {
   });
 
   it("offers hiding the message and the trip's note, and cancelling the trip Dóra drives", async () => {
-    start(detailPath);
+    // Her ten latest trips need not include it.
+    start(detailPath, {
+      ...report,
+      reportedSide: report.reportedSide && { ...report.reportedSide, recentTrips: [] },
+    });
     const act = await screen.findByRole("region", { name: "Act on it" });
     const choices = within(act)
       .getAllByRole("radio")
@@ -357,7 +377,170 @@ describe("acting on a report (spec 9, 3.4.3)", () => {
     });
   });
 
-  it("says when the person is suspended already", async () => {
+  it("offers no trip actions when Dóra does not drive it, and Reinstate once she is suspended", async () => {
+    start(detailPath, {
+      ...report,
+      trip: report.trip && { ...report.trip, driverId: bara.userId },
+      reported: { ...dora, status: "suspended", suspendedUntil: null },
+    });
+    const act = await screen.findByRole("region", { name: "Act on it" });
+    const choices = within(act)
+      .getAllByRole("radio")
+      .map((radio) => radio.closest("label")?.textContent);
+    expect(choices).toEqual(["Warn Dóra", "Hide the message reported", "Reinstate Dóra"]);
+  });
+
+  it("reinstates with a note and no rule, shown first as Dóra reads it", async () => {
+    const api = start(detailPath, {
+      ...report,
+      reported: { ...dora, status: "suspended", suspendedUntil: null },
+    });
+    api.on(adminReinstateRoute, {
+      status: 201,
+      data: { action: { ...warning, kind: "reinstatement", rule: null } },
+    });
+    const act = await screen.findByRole("region", { name: "Act on it" });
+    fireEvent.click(within(act).getByRole("radio", { name: "Reinstate Dóra" }));
+    expect(within(act).queryByRole("combobox", { name: "Community rule" })).toBeNull();
+    fireEvent.change(within(act).getByRole("textbox", { name: "Note, written for Dóra" }), {
+      target: { value: "We looked again." },
+    });
+    fireEvent.click(within(act).getByRole("button", { name: "Review the notice" }));
+    const preview = within(act).getByRole("group", { name: "What Dóra reads, in Icelandic" });
+    expect(preview.textContent).toContain("Aðgangurinn þinn er opinn á ný");
+    expect(preview.textContent).toContain("Athugasemd: We looked again.");
+    fireEvent.click(within(preview).getByRole("button", { name: "Send" }));
+    expect((await within(act).findByRole("status")).textContent).toBe("Reinstated. Dóra is told.");
+    expect(api.called(adminReinstateRoute)[0]?.input).toEqual({
+      params: { id: dora.userId },
+      body: { note: "We looked again." },
+    });
+  });
+
+  it("suspends until the start of the day chosen", async () => {
+    const api = start(detailPath);
+    api.on(adminSuspendRoute, {
+      status: 201,
+      data: { action: { ...warning, kind: "suspension" }, tripsCancelled: 0, bookingsCancelled: 0 },
+    });
+    const act = await screen.findByRole("region", { name: "Act on it" });
+    fireEvent.click(within(act).getByRole("radio", { name: "Suspend Dóra" }));
+    fireEvent.change(within(act).getByRole("combobox", { name: "Community rule" }), {
+      target: { value: "harassment" },
+    });
+    fireEvent.change(within(act).getByRole("textbox", { name: "Reason, written for Dóra" }), {
+      target: { value: "Repeated unwanted messages." },
+    });
+    fireEvent.change(within(act).getByLabelText("Suspended until"), {
+      target: { value: "2099-12-01" },
+    });
+    fireEvent.click(within(act).getByRole("button", { name: "Review the notice" }));
+    fireEvent.click(within(act).getByRole("button", { name: "Send" }));
+    await within(act).findByRole("status");
+    expect(api.called(adminSuspendRoute)[0]?.input["body"]).toEqual({
+      rule: "harassment",
+      reason: "Repeated unwanted messages.",
+      reportId,
+      until: "2099-12-01T00:00:00.000Z",
+    });
+  });
+
+  it("hides the message reported, marking it in the conversation already open", async () => {
+    const api = start(detailPath);
+    api.on(adminHideContentRoute, {
+      status: 201,
+      data: { action: { ...warning, kind: "content_hidden" } },
+    });
+    api.on(adminReportConversationRoute, { status: 200, data: { messages: conversation } });
+    fireEvent.click(await screen.findByRole("button", { name: "Show the conversation" }));
+    const list = await screen.findByRole("list", { name: "The conversation" });
+    const act = await screen.findByRole("region", { name: "Act on it" });
+    fireEvent.click(within(act).getByRole("radio", { name: "Hide the message reported" }));
+    fireEvent.change(within(act).getByRole("combobox", { name: "Community rule" }), {
+      target: { value: "offensive" },
+    });
+    fireEvent.change(within(act).getByRole("textbox", { name: "Reason, written for Dóra" }), {
+      target: { value: "Rude words." },
+    });
+    fireEvent.click(within(act).getByRole("button", { name: "Review the notice" }));
+    api.on(adminReportRoute, {
+      status: 200,
+      data: { ...report, message: report.message && { ...report.message, removed: true } },
+    });
+    fireEvent.click(within(act).getByRole("button", { name: "Send" }));
+    expect((await within(act).findByRole("status")).textContent).toBe("Done. Dóra is told why.");
+    expect(api.called(adminHideContentRoute)[0]?.input["body"]).toEqual({
+      rule: "offensive",
+      reason: "Rude words.",
+      reportId,
+      content: { kind: "message", id: messageId },
+    });
+    await waitFor(() => {
+      expect(within(list).getAllByRole("listitem")[0]?.textContent).toContain(
+        "Removed by ShareRide",
+      );
+    });
+    // Read once: the mark comes from the report, not from opening it again.
+    expect(api.called(adminReportConversationRoute)).toHaveLength(1);
+  });
+
+  it("cancels the trip, counting it on her reliability when asked", async () => {
+    const api = start(detailPath);
+    api.on(adminCancelTripRoute, {
+      status: 201,
+      data: { action: { ...warning, kind: "trip_cancelled" }, bookingsCancelled: 1 },
+    });
+    const act = await screen.findByRole("region", { name: "Act on it" });
+    fireEvent.click(within(act).getByRole("radio", { name: "Cancel the trip as ShareRide" }));
+    fireEvent.change(within(act).getByRole("combobox", { name: "Community rule" }), {
+      target: { value: "not_as_listed" },
+    });
+    fireEvent.change(within(act).getByRole("textbox", { name: "Reason, written for Dóra" }), {
+      target: { value: "The car is not as listed." },
+    });
+    fireEvent.click(
+      within(act).getByRole("checkbox", { name: "Count it on the driver's reliability" }),
+    );
+    fireEvent.click(within(act).getByRole("button", { name: "Review the notice" }));
+    fireEvent.click(within(act).getByRole("button", { name: "Send" }));
+    await within(act).findByRole("status");
+    expect(api.called(adminCancelTripRoute)[0]?.input).toEqual({
+      params: { id: tripId },
+      body: {
+        rule: "not_as_listed",
+        reason: "The car is not as listed.",
+        reportId,
+        countsOnReliability: true,
+      },
+    });
+  });
+
+  it("says when she is suspended already, and loads the report again", async () => {
+    const api = start(detailPath);
+    api.on(adminSuspendRoute, { status: 409, error: { code: "already_suspended" } });
+    const act = await screen.findByRole("region", { name: "Act on it" });
+    fireEvent.click(within(act).getByRole("radio", { name: "Suspend Dóra" }));
+    fireEvent.change(within(act).getByRole("combobox", { name: "Community rule" }), {
+      target: { value: "other" },
+    });
+    fireEvent.change(within(act).getByRole("textbox", { name: "Reason, written for Dóra" }), {
+      target: { value: "Something." },
+    });
+    fireEvent.click(within(act).getByRole("checkbox", { name: "No end date" }));
+    fireEvent.click(within(act).getByRole("button", { name: "Review the notice" }));
+    api.on(adminReportRoute, {
+      status: 200,
+      data: { ...report, reported: { ...dora, status: "suspended", suspendedUntil: null } },
+    });
+    fireEvent.click(within(act).getByRole("button", { name: "Send" }));
+    expect((await within(act).findByRole("alert")).textContent).toBe(
+      "They are suspended already. Reinstate them first to change it.",
+    );
+    expect(await within(act).findByRole("radio", { name: "Reinstate Dóra" })).toBeTruthy();
+    expect(api.called(adminReportRoute)).toHaveLength(2);
+  });
+
+  it("says when what it acts on is gone", async () => {
     const api = start(detailPath);
     api.on(adminWarnRoute, { status: 404, error: { code: "not_found" } });
     const act = await screen.findByRole("region", { name: "Act on it" });
@@ -370,13 +553,22 @@ describe("acting on a report (spec 9, 3.4.3)", () => {
     });
     fireEvent.click(within(act).getByRole("button", { name: "Review the notice" }));
     fireEvent.click(within(act).getByRole("button", { name: "Send" }));
-    expect((await within(act).findByRole("alert")).textContent).toBe(
-      "It no longer exists. Reload the report.",
-    );
+    expect((await within(act).findByRole("alert")).textContent).toBe("It no longer exists.");
+    await waitFor(() => {
+      expect(api.called(adminReportRoute)).toHaveLength(2);
+    });
   });
 });
 
 describe("closing a report (spec 9, 3.1.6)", () => {
+  it("chooses Action taken once an action is on the report", async () => {
+    start(detailPath, { ...report, actions: [warning] });
+    const close = await screen.findByRole("region", { name: "Close the report" });
+    expect(
+      within(close).getByRole<HTMLInputElement>("radio", { name: "Action taken" }).checked,
+    ).toBe(true);
+  });
+
   it("asks once more, then closes it and says the reporter is told", async () => {
     const api = start(detailPath);
     api.on(adminCloseReportRoute, {
