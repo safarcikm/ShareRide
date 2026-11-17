@@ -30,7 +30,8 @@ export type QuickMessage =
  * What happened to the booking, as lines in its conversation (spec 7, 3.1,
  * item 3), shown in the reader's language: the conversation opened, the
  * departure or the car changed, a stop added or removed, the booking
- * cancelled, by whom and why (spec 6), and who said "I'm here" (spec 8).
+ * cancelled, by whom and why (spec 6) or by ShareRide (spec 9), and who
+ * said "I'm here" (spec 8).
  */
 export const systemLineKeys = [
   "opened",
@@ -39,6 +40,7 @@ export const systemLineKeys = [
   "stop_added",
   "stop_removed",
   "cancelled",
+  "cancelled_by_shareride",
   "checked_in",
 ] as const;
 export type SystemLineKey = (typeof systemLineKeys)[number];
@@ -83,6 +85,11 @@ export type SystemLine =
       /** The driver cancelled the whole trip (spec 6, 3.3), not this booking alone. */
       readonly wholeTrip: boolean;
     }
+  /**
+   * ShareRide cancelled the booking, or its whole trip, for a suspension
+   * (spec 9, 3.6): never why, to either side.
+   */
+  | { readonly key: "cancelled_by_shareride"; readonly wholeTrip: boolean }
   /** "I'm here" at the passenger's meeting point (spec 8, 3.2). */
   | { readonly key: "checked_in"; readonly by: "passenger" | "driver" };
 

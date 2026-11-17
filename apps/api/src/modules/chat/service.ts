@@ -11,6 +11,7 @@ import {
   type MessageBody,
   type MessageProblem,
   type QuickMessage,
+  type AccountSuspended,
   type CancelReason,
   type CarColour,
   type Result,
@@ -19,7 +20,8 @@ import {
 import { and, desc, eq, gt, inArray, isNotNull, isNull, ne, or, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { BookingService } from "../bookings/index.ts";
-import type { Queryable } from "../bookings/seats.ts";
+import type { Queryable, Transaction } from "../bookings/seats.ts";
+import { lockActive } from "../account/standing.ts";
 import { recordEvents } from "../notifications/outbox.ts";
 import { blocksOf } from "../safety/blocks.ts";
 import { hidden, isHidden, shown } from "../privacy/hidden.ts";
@@ -42,6 +44,8 @@ export type ClientIdReused = { readonly code: "client_id_reused" };
 
 export type SendError =
   | ChatError
+  /** Suspended: no messages (spec 9, 3.6.2). */
+  | AccountSuspended
   | { readonly code: "chat_closed" }
   | { readonly code: "too_many_messages" }
   | ClientIdReused
@@ -49,6 +53,7 @@ export type SendError =
 
 export type MessageAllError =
   | { readonly code: "not_found" }
+  | AccountSuspended
   | { readonly code: "too_many_messages" }
   | ClientIdReused
   | MessageProblem;
@@ -125,6 +130,8 @@ export function systemLineOf(
       };
     case "checked_in":
       return { key: "checked_in", by: row.params?.["by"] === viewer ? "me" : "them" };
+    case "cancelled_by_shareride":
+      return { key: "cancelled_by_shareride", wholeTrip: row.params?.["wholeTrip"] === true };
     case "cancelled":
       return {
         key: "cancelled",
@@ -366,15 +373,17 @@ export function createChatService(dependencies: {
 
   /**
    * Waits for the person's other sends, so two at once cannot pass the
-   * limit together; whether they are deleting their account.
+   * limit together; refuses a suspended person (spec 9, 3.6.2); and says
+   * whether they are deleting their account.
    */
-  async function lockSender(q: Queryable, userId: string) {
-    const [sender] = await q
+  async function lockSender(tx: Transaction, userId: string) {
+    const active = await lockActive(tx, userId, clock());
+    if (!active.ok) return active;
+    const [sender] = await tx
       .select({ id: users.id, deleteAfter: users.deleteAfter })
       .from(users)
-      .where(eq(users.id, userId))
-      .for("update");
-    return { deleting: sender === undefined || isHidden(sender) };
+      .where(eq(users.id, userId));
+    return ok({ deleting: sender === undefined || isHidden(sender) });
   }
 
   return {
@@ -449,6 +458,7 @@ export function createChatService(dependencies: {
 
       return db.transaction(async (tx) => {
         const sender = await lockSender(tx, userId);
+        if (!sender.ok) return sender;
         const now = clock();
         if (
           !canWrite({ opensAt: conversation.openedAt, closesAt: conversation.closesAt }, now) ||
@@ -462,7 +472,7 @@ export function createChatService(dependencies: {
           .select({ id: users.id, deleteAfter: users.deleteAfter })
           .from(users)
           .where(eq(users.id, otherId));
-        if (sender.deleting || other === undefined || isHidden(other)) {
+        if (sender.value.deleting || other === undefined || isHidden(other)) {
           return err({ code: "chat_closed" });
         }
         const again = await earlier(tx);
@@ -515,6 +525,7 @@ export function createChatService(dependencies: {
 
       return db.transaction(async (tx) => {
         const sender = await lockSender(tx, driverId);
+        if (!sender.ok) return sender;
         const now = clock();
         const earlier = await tx
           .select({ tripId: bookings.tripId })
@@ -526,7 +537,7 @@ export function createChatService(dependencies: {
         // A retry sends nothing more, not even to a passenger confirmed since.
         if (earlier.length > 0) return ok({ sent: earlier.length });
         // A driver deleting their account writes to nobody (spec 11, 3.4.3).
-        if (sender.deleting) return ok({ sent: 0 });
+        if (sender.value.deleting) return ok({ sent: 0 });
         const blocks = await blocksOf(tx, driverId);
         const open = (
           await tx

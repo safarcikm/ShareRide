@@ -5,7 +5,7 @@ import type { Money } from "../money.ts";
 import { err, ok, type Result } from "../result.ts";
 import type { TripStatus } from "../trips/trip.ts";
 import { checkStatement, type ModerationRule, type StatementProblem } from "./moderation.ts";
-import { defaultSafetySettings, type SafetySettings } from "./settings.ts";
+import { characterCount, defaultSafetySettings, type SafetySettings } from "./settings.ts";
 
 export interface AccountStanding {
   readonly status: "active" | "suspended";
@@ -32,6 +32,9 @@ export const restrictedActions = [
   "request",
   "post_trip",
   "change_trip",
+  // A trip under way carries on, but takes nobody new: accepting is
+  // refused, and others cannot find or book it (milestone 9, PR 6a).
+  "accept_request",
   "send_message",
   "review",
 ] as const;
@@ -70,6 +73,17 @@ export function checkSuspension(
   return ok({ ...input, ...statement.value });
 }
 
+/** Reinstating ends a suspension early, with a note the person reads (3.6.3). */
+export function checkReinstatement(
+  note: string,
+  settings: SafetySettings = defaultSafetySettings,
+): Result<string, StatementProblem> {
+  const trimmed = note.trim();
+  if (trimmed === "") return err({ code: "reason_missing" });
+  if (characterCount(trimmed) > settings.textMaxLength) return err({ code: "too_long" });
+  return ok(trimmed);
+}
+
 /** A trip the suspended person drives. */
 export interface DrivenTrip {
   readonly id: string;
@@ -96,6 +110,11 @@ export interface SuspensionEffects {
     readonly event: Extract<BookingEvent, "withdraw" | "cancel">;
     readonly refund: Money;
   }[];
+}
+
+/** What goes back when ShareRide cancels a booking: all that was paid (decision 3). */
+export function operatorBookingRefund(status: BookingStatus, total: Money): Money {
+  return status === "confirmed" ? total : { amount: 0, currency: total.currency };
 }
 
 const upcoming = (status: TripStatus, departsAt: Date, now: Date) =>
@@ -126,7 +145,7 @@ export function suspensionEffects(
       .map(({ id, status, total }) => ({
         id,
         event: status === "requested" ? "withdraw" : "cancel",
-        refund: status === "confirmed" ? total : { amount: 0, currency: total.currency },
+        refund: operatorBookingRefund(status, total),
       })),
   };
 }

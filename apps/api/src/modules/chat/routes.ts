@@ -11,6 +11,7 @@ import type { Context, MiddlewareHandler } from "hono";
 import { authOf, type AppEnv } from "../../context.ts";
 import { errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
+import { accountSuspended } from "../account/standing.ts";
 import type {
   ChatService,
   ClientIdReused,
@@ -75,6 +76,8 @@ function sendError(c: Context, error: SendError) {
       );
     case "too_many_messages":
       return tooMany(c);
+    case "account_suspended":
+      return accountSuspended(c, error);
     default:
       return problem(c, error);
   }
@@ -86,6 +89,8 @@ function messageAllError(c: Context, error: MessageAllError) {
       return errorResponse(c, 404, "not_found", "There is no such published trip of yours.");
     case "too_many_messages":
       return tooMany(c);
+    case "account_suspended":
+      return accountSuspended(c, error);
     default:
       return problem(c, error);
   }

@@ -9,12 +9,14 @@ import {
   err,
   ok,
   tidyReviewComment,
+  type AccountSuspended,
   type BookingStatus,
   type Result,
   type ReviewProblem,
   type ReviewSettings,
 } from "@shareride/domain";
 import { and, eq, isNull, or } from "drizzle-orm";
+import { lockActive } from "../account/standing.ts";
 import { lockTrip } from "../bookings/seats.ts";
 import { recordEvents } from "../notifications/outbox.ts";
 import { isHidden } from "../privacy/hidden.ts";
@@ -27,6 +29,8 @@ export type ReviewError =
   | { readonly code: "not_found" }
   /** The other person has left ShareRide, or is leaving: nothing new is written about them. */
   | { readonly code: "person_left" }
+  /** Suspended: no reviews (spec 9, 3.6.2). */
+  | AccountSuspended
   | ReviewProblem;
 
 export interface ReviewService {
@@ -65,6 +69,9 @@ export function createReviewService(dependencies: {
       const role = mine.passengerId === userId ? "passenger" : "driver";
       const subjectId = role === "passenger" ? mine.driverId : mine.passengerId;
       return db.transaction(async (tx) => {
+        // The person first, then the trip, as a suspension locks them.
+        const active = await lockActive(tx, userId, clock());
+        if (!active.ok) return active;
         // A report's outcome changes the booking and removes its reviews
         // under the trip's lock, so a review waits for it.
         const trip = await lockTrip(tx, mine.tripId);
