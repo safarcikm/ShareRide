@@ -336,8 +336,8 @@ In two parts, as PR 5: the API (6a), then the screens and the journey (6b).
 
 ### PR 7: `feat(people)`: public profiles with rating, reviews and reliability
 
-In three parts: 7a the API, 7b the screens and the journey, 7c the
-console pages.
+In four parts: 7a the API, 7b the profile screen and the journey, 7c the
+rating and figure where people appear, 7d the console pages.
 
 A profile is reached by its own random reference, `users.profile_id`, never
 the person's user ID, so that the ID other routes and records use is never
@@ -346,11 +346,13 @@ handed to everyone signed in (spec 1, 3.5; the safety thread's suggestion).
 - [x] `GET /people/{profileId}` and its reviews, newest first a page at a
       time; the rating; the reliability figure with its counts by role;
       nobody leaving ShareRide, nor what they wrote (7a)
-- [ ] The profile screen; the rating and figure on trip details, requests
-      and passengers (7b)
-- [ ] My own profile and "See it as others do" show the same (7b)
+- [x] The profile screen, opened from the driver on trip details by
+      members signed in (7b)
+- [x] My own profile and "See it as others do" show the same (7b)
+- [ ] The rating and figure on trip details, requests and passengers,
+      each opening the profile (7c)
 - [ ] In the console (decision 1, as changed): overrule a weather or
-      road-closure reason so it counts, and the people below 80% (7c)
+      road-closure reason so it counts, and the people below 80% (7d)
 - Verify: integration tests (never the phone number or email; hidden
   reviews never shown or counted); screen tests; a browser journey opens
   the driver's profile from trip details

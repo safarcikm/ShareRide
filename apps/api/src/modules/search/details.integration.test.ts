@@ -213,6 +213,16 @@ describe("GET /v1/trips/{id} (spec 4, 3.6)", () => {
     }
   });
 
+  it("links the driver's profile for members signed in only", async () => {
+    expect((await details(north)).driver.profileId).toBeNull();
+    const { accessToken } = await api.signIn(api.newPhoneNumber());
+    const [anna] = await api.connection.db
+      .select({ profileId: schema.users.profileId })
+      .from(schema.users)
+      .where(eq(schema.users.id, sampleId("user:anna")));
+    expect((await details(north, {}, accessToken)).driver.profileId).toBe(anna?.profileId);
+  });
+
   it("tells the signed-in driver the trip is their own, and refuses a token that is not valid", async () => {
     const { accessToken, userId } = await api.signIn(api.newPhoneNumber());
     expect((await details(north, {}, accessToken)).part.state).toBe("open");
