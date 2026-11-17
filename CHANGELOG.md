@@ -637,6 +637,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   language. Requests and answers are in Download my data, kept under the
   former member when the account is erased, and deleted 3 years after the
   answer.
+- Ask about my data in the app (spec 11, 3.6): under Settings, Privacy,
+  choose what it is about (an objection, a limit, a correction or a
+  question) and write it; the app says the answer comes by email within a
+  month. Without an email, it asks to add one first.
 
 ### Fixed
 

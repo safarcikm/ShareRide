@@ -1108,6 +1108,31 @@ export const is = {
     "{from} – {to} er á leiðinni. Þú getur eytt aðganginum þegar ferðinni lýkur, eftir {when}.",
   "privacy.delete.dispute": "Tilkynning um ferð bíður svars eða ákvörðunar ShareRide.",
   "privacy.delete.heldPayout": "Útborgun er í bið þar til ákveðið er um tilkynningu um ferðina.",
+  /** Spec 11, 3.6: answered by email within a month (R11.7). */
+  "privacy.ask": "Spyrja um gögnin mín",
+  "privacy.ask.intro":
+    "Andmæltu notkun gagnanna þinna, biddu okkur að takmarka hana, leiðréttu eitthvað sem þú getur ekki breytt í appinu eða spurðu spurningar.",
+  "privacy.ask.kind": "Um hvað snýst þetta?",
+  "privacy.ask.kind.objection": "Andmæla notkun",
+  "privacy.ask.kind.objectionHelp": "Biddu okkur að hætta að nota gögnin þín á ákveðinn hátt.",
+  "privacy.ask.kind.restriction": "Takmarka notkun",
+  "privacy.ask.kind.restrictionHelp":
+    "Biddu okkur að geyma gögnin en nota þau minna, til dæmis á meðan eitthvað er kannað.",
+  "privacy.ask.kind.correction": "Leiðrétta eitthvað",
+  "privacy.ask.kind.correctionHelp":
+    "Eitthvað um þig er rangt og þú getur ekki breytt því í appinu.",
+  "privacy.ask.kind.question": "Spyrja spurningar",
+  "privacy.ask.kind.questionHelp": "Allt annað um gögnin þín.",
+  "privacy.ask.text": "Skilaboðin þín",
+  "privacy.ask.textHelp": "Við svörum á {email}.",
+  "privacy.ask.send": "Senda",
+  "privacy.ask.chooseKind": "Veldu um hvað þetta snýst.",
+  "privacy.ask.textRequired": "Skrifaðu skilaboðin, mest 2.000 stafi.",
+  "privacy.ask.emailFirst": "Við svörum með tölvupósti, svo bættu fyrst við netfanginu þínu.",
+  "privacy.ask.addEmail": "Bæta við netfangi",
+  "privacy.ask.tooMany": "Þú getur sent 5 á dag. Reyndu aftur eftir {wait}.",
+  "privacy.askThanks": "Takk. Við svörum með tölvupósti innan mánaðar.",
+  "privacy.ask.backToPrivacy": "Aftur í Persónuvernd",
   "privacy.deletionScheduled": "Aðganginum þínum verður eytt {date}.",
   "privacy.delete.signedOut":
     "Innskráningu á öllum tækjum er lokið. Ef þú skiptir um skoðun skaltu skrá þig inn fyrir þann tíma og halda aðganginum.",

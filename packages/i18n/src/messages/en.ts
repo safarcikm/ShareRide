@@ -1104,6 +1104,31 @@ export const en = {
   "privacy.delete.dispute":
     "A report about a ride is waiting for an answer or for ShareRide's decision.",
   "privacy.delete.heldPayout": "A payout is held until a report about the ride is decided.",
+  /** Spec 11, 3.6: answered by email within a month (R11.7). */
+  "privacy.ask": "Ask about my data",
+  "privacy.ask.intro":
+    "Object to a use of your data, ask us to limit one, correct something you can't change in the app, or ask a question.",
+  "privacy.ask.kind": "What is it about?",
+  "privacy.ask.kind.objection": "Object to a use",
+  "privacy.ask.kind.objectionHelp": "Ask us to stop using your data in a certain way.",
+  "privacy.ask.kind.restriction": "Limit a use",
+  "privacy.ask.kind.restrictionHelp":
+    "Ask us to keep your data but use it less, for example while something is checked.",
+  "privacy.ask.kind.correction": "Correct something",
+  "privacy.ask.kind.correctionHelp":
+    "Something about you is wrong and you can't change it in the app.",
+  "privacy.ask.kind.question": "Ask a question",
+  "privacy.ask.kind.questionHelp": "Anything else about your data.",
+  "privacy.ask.text": "Your message",
+  "privacy.ask.textHelp": "We answer at {email}.",
+  "privacy.ask.send": "Send",
+  "privacy.ask.chooseKind": "Choose what it's about.",
+  "privacy.ask.textRequired": "Write your message, up to 2,000 characters.",
+  "privacy.ask.emailFirst": "We answer by email, so add your email first.",
+  "privacy.ask.addEmail": "Add my email",
+  "privacy.ask.tooMany": "You can send 5 a day. Try again in {wait}.",
+  "privacy.askThanks": "Thank you. We'll answer by email within a month.",
+  "privacy.ask.backToPrivacy": "Back to Privacy",
   "privacy.deletionScheduled": "Your account will be deleted on {date}.",
   "privacy.delete.signedOut":
     "You're signed out on every device. If you change your mind, sign in before then and keep your account.",
