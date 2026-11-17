@@ -64,6 +64,12 @@ export const messages = pgTable(
      * time is over (spec 9, section 7).
      */
     erasedAt: at(),
+    /**
+     * Whether the driver or the passenger sent it, kept when erasure keeps
+     * what it said for a report: its sender is then the former member, and
+     * so may the other side be, later. Empty otherwise.
+     */
+    sentAs: text(),
     ...timestamps,
   },
   (table) => [
@@ -84,6 +90,10 @@ export const messages = pgTable(
       sql`(${table.kind} = 'system') = (${table.senderId} is null) and (${table.kind} = 'system') = (${table.clientId} is null)`,
     ),
     check("messages_read_check", sql`${table.kind} <> 'system' or ${table.readAt} is null`),
+    check(
+      "messages_sent_as_check",
+      sql`${table.sentAs} is null or (${table.erasedAt} is not null and ${table.sentAs} in ('driver', 'passenger'))`,
+    ),
     // A conversation's messages, newest first, and its unread count.
     index("messages_conversation_index").on(table.conversationId, table.sentAt, table.id),
     // The rate limit counts a person's messages in the last minute (R7.5).

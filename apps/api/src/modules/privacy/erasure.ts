@@ -138,6 +138,29 @@ async function eraseAccount(
   // people who both leave never ends up by and about the former member.
   await tx.delete(reviews).where(eq(reviews.subjectId, userId));
 
+  // What they said in a conversation a report covers stays for the operator
+  // until the report's own time is over, then goes with the conversation
+  // (spec 9, section 7). Everyone else reads "Message deleted". Done while
+  // their trips still name them, to keep whether the driver or the
+  // passenger said it: the other side may be erased too, later.
+  const drove = inArray(
+    messages.conversationId,
+    tx
+      .select({ id: conversations.id })
+      .from(conversations)
+      .innerJoin(bookings, eq(bookings.id, conversations.bookingId))
+      .where(inArray(bookings.tripId, theirTrips())),
+  );
+  await tx
+    .update(messages)
+    .set({
+      ...freshIdsOf(personalData["messages"]?.otherIds),
+      senderId: formerMemberId,
+      erasedAt: now,
+      sentAs: sql`case when ${drove} then 'driver' else 'passenger' end`,
+    })
+    .where(and(eq(messages.senderId, userId), reportCovers(tx, now, messages.conversationId)));
+
   // Then every table as the catalogue says. First the rows only a booking
   // links to the person, such as a report about a ride, while their
   // bookings and trips still name them: kept, with their free text emptied.
@@ -157,18 +180,8 @@ async function eraseAccount(
         await tx.delete(table).where(eq(column(person), userId));
         continue;
       }
-      // A message keeps when it was sent, and reads "Message deleted". Where
-      // a report covers its conversation, what it said stays for the
-      // operator until the report's own time is over (spec 9, section 7),
-      // then goes with the conversation.
-      const message = table === messages;
-      if (message) {
-        await tx
-          .update(messages)
-          .set({ ...freshIdsOf(entry.otherIds), erasedAt: now, [person]: formerMemberId })
-          .where(and(eq(column(person), userId), reportCovers(tx, now, messages.conversationId)));
-      }
-      const marked = message ? { erasedAt: now } : {};
+      // A message keeps when it was sent, and reads "Message deleted".
+      const marked = table === messages ? { erasedAt: now } : {};
       await tx
         .update(table)
         .set({

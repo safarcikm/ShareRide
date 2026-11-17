@@ -86,12 +86,16 @@ export async function readConversationAsOperator(
       .orderBy(asc(messages.sentAt), asc(messages.id));
     return ok(
       rows.map((row): AdminConversationMessage => {
+        // Kept for a report, a message says who sent it: both sides may be
+        // the former member by now.
         const from: AdminConversationMessage["from"] =
           row.senderId === null
             ? "system"
-            : row.senderId === found.driverId
-              ? "driver"
-              : "passenger";
+            : row.sentAs === "driver" || row.sentAs === "passenger"
+              ? row.sentAs
+              : row.senderId === found.driverId
+                ? "driver"
+                : "passenger";
         const said = { id: row.id, from, sentAt: row.sentAt.toISOString() };
         // An erased sender's message says nothing, unless a report kept what it said.
         if (row.erasedAt !== null && row.body === null && row.key === null) {
