@@ -621,6 +621,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   reason and its news still goes out. Publishing a trip and adding a stop
   wait for a pause under way. The sample seed keeps the status the console
   gave a sample point.
+- Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
+  what is still open, each opened where it is cancelled under the normal
+  rules and looked at again on coming back, and what is erased and kept.
+  Once nothing is open, a fresh code by text message deletes it: this
+  device is signed out with the rest, and the screen says when the data
+  goes. Signing in meanwhile shows only that date, with "Keep my account"
+  and "Sign out", and no other signed-in screen opens. Asking to delete
+  again while it waits keeps the first date.
 - Download my data has each report about a ride the person made or
   answered (spec 8, 3.3 and 3.4): what was reported and by whom, the
   answer, the outcome and when, with the person's own note only. The other

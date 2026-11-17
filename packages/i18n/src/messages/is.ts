@@ -73,6 +73,7 @@ export const is = {
     "Ekki er hægt að skrá sig inn á þennan reikning. Hafðu samband við okkur.",
   "error.network_error": "Ekki náðist samband við ShareRide. Athugaðu tenginguna og reyndu aftur.",
   "error.legal_version_outdated": "Skilmálarnir voru að breytast. Lestu þá aftur.",
+  "error.deletion_blocked": "Eitthvað nýtt þarf að klára áður en þú getur eytt aðganginum.",
   "error.firstName": "Notaðu 1 til {max} bókstafi. Bil, bandstrik og úrfellingarmerki eru í lagi.",
   "error.about": "Hámark {max} stafir.",
   "error.languages": "Veldu tungumál af listanum.",
@@ -1098,6 +1099,27 @@ export const is = {
   "privacy.preparing": "Við erum að útbúa skrána. Við látum þig vita þegar hún er tilbúin.",
   "privacy.ready": "Skráin er tilbúin. Þú getur sótt hana til {date}.",
   "privacy.when": "{date} kl. {time}",
+  "privacy.delete": "Eyða aðganginum mínum",
+  "privacy.deleteExplain":
+    "Prófílnum, myndum, skilaboðum og samskiptaupplýsingum þínum verður eytt. Greiðsluupplýsingar eru geymdar eins og lög krefjast, og umsagnir sem þú skrifaðir standa áfram sem skrifaðar af fyrrverandi notanda.",
+  "privacy.deleteOpen": "Áður en þú getur eytt aðganginum þarf að ljúka þessu:",
+  "privacy.deleteConfirm": "Eyða aðganginum",
+  "privacy.delete.wait":
+    "Innskráningu á öllum tækjum lýkur strax og enginn sér prófílinn þinn eða ferðirnar lengur. Gögnunum er eytt 7 dögum síðar. Þangað til getur þú skráð þig inn og haldið aðganginum.",
+  "privacy.delete.route": "{from} – {to}",
+  "privacy.delete.trip": "Hætta við ferðina: {when}",
+  "privacy.delete.booking": "Hætta við bókunina: {when}",
+  "privacy.delete.request": "Draga beiðnina til baka: {when}",
+  "privacy.delete.underWay":
+    "{from} – {to} er á leiðinni. Þú getur eytt aðganginum þegar ferðinni lýkur, eftir {when}.",
+  "privacy.delete.dispute": "Tilkynning um ferð bíður svars eða ákvörðunar ShareRide.",
+  "privacy.delete.heldPayout": "Útborgun er í bið þar til ákveðið er um tilkynningu um ferðina.",
+  "privacy.deletionScheduled": "Aðganginum þínum verður eytt {date}.",
+  "privacy.delete.signedOut":
+    "Innskráningu á öllum tækjum er lokið. Ef þú skiptir um skoðun skaltu skrá þig inn fyrir þann tíma og halda aðganginum.",
+  "privacy.undoDeletion": "Halda aðganginum",
+  "privacy.waiting.body":
+    "Enginn sér prófílinn þinn eða ferðirnar, bókar hjá þér eða sendir þér skilaboð. Haltu aðganginum til að nota ShareRide aftur eins og áður.",
   "confirm.title": "Staðfestu að þetta sért þú",
   "confirm.sending": "Sendi kóða í númerið þitt…",
   "confirm.sent": "Við sendum kóða með SMS í númerið þitt sem endar á {digits}.",

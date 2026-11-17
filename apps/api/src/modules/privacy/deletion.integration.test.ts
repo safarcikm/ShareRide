@@ -370,6 +370,26 @@ describe("delete my account (spec 11, 3.4)", () => {
     expect((await detailsOf(sampleTrip.vik)).ok).toBe(true);
   });
 
+  it("keeps the first date when asked again while it waits", async () => {
+    const jon = await driverOf(sampleTrip.vik, "Jón");
+    const first = await deleteAccount(jon, await freshCode(jon));
+    if (!first.ok) throw new Error(first.error.code);
+
+    await later(hours(24));
+    const { accessToken, refreshToken } = await api.signIn(await phoneOf(jon));
+    const back = { ...jon, accessToken, refreshToken };
+    const again = await deleteAccount(back, await freshCode(back));
+    expect(again).toMatchObject({
+      ok: true,
+      status: 202,
+      data: { deleteAfter: first.data.deleteAfter },
+    });
+    expect(await me((await api.signIn(await phoneOf(jon))).accessToken)).toMatchObject({
+      ok: true,
+      data: { deletionScheduledFor: first.data.deleteAfter },
+    });
+  });
+
   it("takes on nothing new while it waits: no booking, no trip published", async () => {
     const gunna = await newMember("Gunna");
     const jon = await driverOf(sampleTrip.vik, "Jón");

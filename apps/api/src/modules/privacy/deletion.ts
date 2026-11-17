@@ -303,12 +303,17 @@ export function createDeletionService(dependencies: DeletionServiceDependencies)
         // The locks booking and publishing take, in their order: the person,
         // so they book or publish nothing meanwhile, then the trips they
         // drive, so nobody books on them.
-        await tx.select({ id: users.id }).from(users).where(eq(users.id, userId)).for("update");
+        const [person] = await tx
+          .select({ deleteAfter: users.deleteAfter })
+          .from(users)
+          .where(eq(users.id, userId))
+          .for("update");
         await lockDrivenTrips(tx, userId);
         if (!(await openFor(tx, userId, now, tripDaySettings)).allowed) {
           return err({ code: "deletion_blocked" as const });
         }
-        const until = deleteAfter(now);
+        // Asked again while it waits: signed out again, the date stays.
+        const until = person?.deleteAfter ?? deleteAfter(now);
         await tx
           .update(users)
           .set({ deleteAfter: until, updatedAt: now })

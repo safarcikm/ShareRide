@@ -11,9 +11,9 @@ import { BackToMenu } from "@/navigation/back-to-menu";
 import { spacing } from "@/theme/tokens";
 
 /**
- * Privacy in Settings (spec 11; plan 4.9): Download my data and the privacy
- * policy. Delete my account and Ask about my data join them as they are
- * built (plan PRs 8 and 10).
+ * Privacy in Settings (spec 11; plan 4.9): Download my data, Delete my
+ * account and the privacy policy. Ask about my data joins them when it is
+ * built (plan PR 10).
  */
 export default function PrivacyScreen() {
   const { t } = useLanguage();
@@ -30,6 +30,12 @@ export default function PrivacyScreen() {
             title={t("privacy.download")}
             onPress={() => {
               router.push("/settings/privacy/download");
+            }}
+          />
+          <Row
+            title={t("privacy.delete")}
+            onPress={() => {
+              router.push("/settings/privacy/delete");
             }}
           />
           <Row

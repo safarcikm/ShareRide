@@ -38,7 +38,9 @@ export default function RootLayout() {
 /**
  * Which screens can open depends on the session: a new account goes
  * through step 3, about you, with the terms in it, before the rest; an
- * account whose terms changed sees only the terms (spec 16, 3.5). When the
+ * account whose terms changed sees only the terms (spec 16, 3.5); an
+ * account waiting to be deleted sees only when it goes, with "Keep my
+ * account" (spec 11, 3.4.4). When the
  * session changes (signed in, a step done, signed out, or the session ended
  * elsewhere), screens that no longer fit close and the app returns to the
  * start, which leads on from there. Sign-in and Settings,
@@ -54,8 +56,9 @@ function Navigation() {
   if (state.status === "loading" || !fontsReady) return <Loading />;
   if (state.status === "unreachable") return <Unreachable />;
   const me = state.status === "signedIn" ? state.me : null;
-  const needsLegal = me?.missingSteps.includes("legal") ?? false;
-  const needsProfile = me?.missingSteps.includes("profile") ?? false;
+  const deleting = me !== null && me.deletionScheduledFor !== null;
+  const needsLegal = !deleting && (me?.missingSteps.includes("legal") ?? false);
+  const needsProfile = !deleting && (me?.missingSteps.includes("profile") ?? false);
   const stack = (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
@@ -69,16 +72,28 @@ function Navigation() {
       <Stack.Screen name="search/index" />
       <Stack.Screen name="search/results" />
       <Stack.Screen name="trips/[id]/index" />
-      {/* These two close themselves when the session changes (BackToMenu). */}
+      {/* Sign-in and Settings close themselves when the session changes (BackToMenu). */}
       <Stack.Screen name="sign-in" />
-      <Stack.Screen name="settings" />
+      {/* Open signed in or out, but not while an account waits to be deleted. */}
+      <Stack.Protected guard={!deleting}>
+        <Stack.Screen name="settings" />
+        <Stack.Screen name="settings/email" />
+        <Stack.Screen name="settings/privacy/index" />
+        <Stack.Screen name="settings/privacy/download" />
+        <Stack.Screen name="settings/privacy/delete" />
+        <Stack.Screen name="messages/[bookingId]" />
+        <Stack.Screen name="verify-email" />
+      </Stack.Protected>
+      <Stack.Protected guard={deleting}>
+        <Stack.Screen name="account/deletion" />
+      </Stack.Protected>
       <Stack.Protected guard={me !== null && needsProfile}>
         <Stack.Screen name="onboarding/about-you" />
       </Stack.Protected>
       <Stack.Protected guard={needsLegal && !needsProfile}>
         <Stack.Screen name="onboarding/terms" />
       </Stack.Protected>
-      <Stack.Protected guard={me !== null && !needsLegal && !needsProfile}>
+      <Stack.Protected guard={me !== null && !deleting && !needsLegal && !needsProfile}>
         <Stack.Screen name="profile/edit" />
         <Stack.Screen name="profile/preview" />
         <Stack.Screen name="drive/cars/index" />
