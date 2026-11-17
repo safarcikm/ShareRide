@@ -1056,6 +1056,29 @@ export const en = {
     "ShareRide: your trip on {date} now leaves at {time}. Keep it or cancel with a full refund in the app.",
   "sms.departureMovedUnpaid":
     "ShareRide: your trip on {date} now leaves at {time}. Details in the app.",
+  // Privacy (spec 11, section 8; plan 4.9).
+  "settings.privacy": "Privacy and your data",
+  "privacy.title": "Privacy",
+  "privacy.intro": "See what ShareRide keeps about you, and read how it is used.",
+  "privacy.download": "Download my data",
+  "privacy.download.intro":
+    "You get a ZIP file with what ShareRide keeps about you: your account, trips, bookings, payments, messages and notifications. Other people appear by first name only. You can ask for one file a day.",
+  "privacy.download.make": "Make my file",
+  "privacy.download.makeNew": "Make a new file",
+  "privacy.download.replaces": "A new file replaces this one.",
+  "privacy.download.file": "Download the file",
+  "privacy.download.nextAt": "You can ask for another file from {date}.",
+  "privacy.download.expired": "Your last file was deleted on {date}.",
+  "privacy.download.failed": "We couldn't make your file. Please ask for it again.",
+  "privacy.preparing": "We're preparing your file. We'll let you know when it's ready.",
+  "privacy.ready": "Your file is ready. You can download it until {date}.",
+  "privacy.when": "{date} at {time}",
+  "confirm.title": "Confirm it's you",
+  "confirm.sending": "Sending a code to your number…",
+  "confirm.sent": "We sent a code by text message to your number ending in {digits}.",
+  "confirm.sentNoNumber": "We sent a code by text message to your number.",
+  "error.export_too_soon": "You can ask for one file a day. Try again in {wait}.",
+  "error.export_not_ready": "The file isn't ready to download.",
   /** "Download my data": the readable page in the ZIP (spec 11, 3.2.3). */
   "export.title": "Your ShareRide data",
   "export.intro":
