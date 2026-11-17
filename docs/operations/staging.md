@@ -313,20 +313,24 @@ Hobby workspace (7 on Pro).
    Database**. Pick a time at least ten minutes ago and a new name.
 2. Render creates a new database. Check it with the PSQL command on its
    **Info** page.
-3. Erase again the accounts erased since the restore's point, so the
-   restored database never serves them (spec 11, 3.7). Copy the new
-   database's **Internal Database URL** from its **Info** page, open the
-   API's **Shell** (it still uses the old database) and run:
+3. Bring over the deletions since the restore's point, so the restored
+   database never serves an erased account and never erases one kept
+   (spec 11, 3.7). Copy the new database's **Internal Database URL** from
+   its **Info** page, open the API's **Shell** (it still uses the old
+   database) and run:
 
    ```sh
    PREVIOUS_DATABASE_URL="$DATABASE_URL" DATABASE_URL="<new database URL>" \
      node apps/api/src/privacy-cli.ts reapply-erasures
    ```
 
-   It says how many erased accounts the old database lists and how many it
-   erased again. If the old database is lost, leave out
-   `PREVIOUS_DATABASE_URL`: deletions finished after the restore's point
-   are then missed, a gap point-in-time recovery keeps to minutes.
+   It takes each "Delete my account" or "Keep my account" pressed in the
+   old database since, then erases again every erased account that came
+   back, and says how many of each. If it ends with `Failed:`, do not go
+   on: the log names each account, and the step can be run again once
+   fixed. If the old database is lost, leave out `PREVIOUS_DATABASE_URL`:
+   deletions asked for, undone or finished after the restore's point are
+   then missed, a gap point-in-time recovery keeps to minutes.
 4. Point the services at it: in the blueprint, change the name under
    `databases` and the `fromDatabase` name of both services to the new
    database's name, merge, and let the blueprint sync. Changing only the
@@ -334,8 +338,8 @@ Hobby workspace (7 on Pro).
    database would then make the next sync create an empty one.
 5. Run step 3 again from the API's Shell, now with
    `PREVIOUS_DATABASE_URL="<old database URL>"` and the shell's own
-   `DATABASE_URL`, for any account the old database's clean-up erased in
-   the meantime.
+   `DATABASE_URL`, for what happened in the old database in the meantime.
+   A change made in the new database since is newer, so it stays.
 6. Once the services work, suspend or delete the old database.
 
 ## Rotate a secret

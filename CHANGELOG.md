@@ -600,8 +600,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   their bookings, payments and history. Their messages read "Message
   deleted", and the app shows "A former member" for them. A suspended
   person's number cannot sign up again until the suspension would have
-  ended. After a database restore, `privacy reapply-erasures` erases the
-  accounts again.
+  ended. An open report about a ride (milestone 7) holds a deletion until
+  it is decided. After a database restore, `privacy reapply-erasures`
+  erases the accounts again and takes the deletions asked for or undone
+  since from the old database.
 
 ### Fixed
 
