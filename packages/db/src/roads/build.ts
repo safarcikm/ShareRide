@@ -243,7 +243,9 @@ function assemble(
       for (let p = 1; p < points.length; p += 1) {
         lengthM += metresBetween(points[p - 1] ?? nowhere, points[p] ?? nowhere);
       }
-      if (lengthM >= 0.5) {
+      // A loop of no length leads nowhere; a short road between two
+      // junctions may be the only link between them.
+      if (lengthM >= 0.5 || refs[0] !== refs[refs.length - 1]) {
         stretches.push({
           from: refs[0] ?? 0,
           to: refs[refs.length - 1] ?? 0,

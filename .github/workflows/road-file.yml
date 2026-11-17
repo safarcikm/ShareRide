@@ -4,7 +4,8 @@ name: Road file
 # Iceland. Run it by hand when the map data should be updated (at least every
 # three months); a pull request that changes the builder runs it too. The file
 # comes out as the "road-file" artifact, to be committed as
-# packages/db/src/roads/iceland-roads.json.gz (docs/engineering/road-file.md).
+# packages/db/src/roads/iceland-roads.json.gz (docs/engineering/road-file.md),
+# and the job checks known distances on it.
 
 on:
   workflow_dispatch:
@@ -13,6 +14,8 @@ on:
       - .github/workflows/road-file.yml
       - packages/db/src/roads/build.ts
       - packages/db/src/roads/build-cli.ts
+      - packages/db/src/roads/iceland-roads.test.ts
+      - packages/domain/src/roads/road-file.ts
 
 permissions:
   contents: read
@@ -56,3 +59,7 @@ jobs:
           path: iceland-roads.json.gz
           if-no-files-found: error
           retention-days: 30
+      - name: Check known distances on the new file
+        run: pnpm --filter @shareride/db exec vitest run src/roads/iceland-roads.test.ts
+        env:
+          ROAD_FILE: ${{ github.workspace }}/iceland-roads.json.gz

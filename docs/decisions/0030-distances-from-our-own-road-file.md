@@ -3,8 +3,9 @@
 - **Status:** Proposed
 - **Date:** 2026-11-17
 - **Deciders:** Martin
-- **Related:** supersedes the routing engine of [ADR 0009](0009-maps-and-routing.md);
-  [spec 2, 3.7](../specs/2026-11-13-meeting-points.md);
+- **Supersedes:** in [ADR 0009](0009-maps-and-routing.md) the routing engine
+  (OSRM or Valhalla); its precomputed legs stay
+- **Related:** [spec 2, 3.7](../specs/2026-11-13-meeting-points.md);
   [milestone 8 plan](../plans/2026-11-16-milestone-8-operator-console-and-meeting-points.md),
   decision 5 (accepted 2026-11-16)
 
@@ -68,8 +69,10 @@ in the milestone 8 plan (decision 5).
 - No routing service, cost or key; positions of meeting points never leave
   our servers; routing is the same code in tests and in production.
 - Driving times are rougher than a routing engine's: no turn costs or
-  traffic. Distances, which prices use, are within a few percent of the
-  road authority's (a test checks known pairs).
+  traffic. Distances, which prices use, should be within a few percent of
+  real road distances: a test checks Reykjavík to Akureyri against the
+  published 390 km, and that other distances move less than 3% from one
+  file to the next.
 - Updating the map data means running the job and committing its file.
   The repository grows by a few megabytes each time.
 - OpenStreetMap's licence (ODbL) applies to the file: the console and the

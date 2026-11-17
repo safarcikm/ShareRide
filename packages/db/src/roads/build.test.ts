@@ -166,6 +166,20 @@ describe("the road file builder", () => {
     expect(summary.leftOutOneWay).toBe(2);
   });
 
+  it("keeps a very short road that is the only link between two roads", () => {
+    const lines = [
+      node(1, -21.9, 64.1),
+      node(2, -21.89, 64.1),
+      node(3, -21.889996, 64.1), // 0.2 m east of node 2
+      node(4, -21.88, 64.1),
+      way(1, "highway=primary", [1, 2]),
+      way(2, "highway=service", [2, 3]),
+      way(3, "highway=primary", [3, 4]),
+    ];
+    const graph = readRoadFile(build(lines));
+    expect(graph.edges.map((edge) => edge.lengthM)).toEqual([486, 1, 486]);
+  });
+
   it("writes coordinates that read back to the same places", () => {
     const lines = [
       node(1, -21.9358913, 64.1265432),

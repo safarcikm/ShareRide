@@ -149,3 +149,45 @@ describe("legsFrom", () => {
     expect(legsFrom(graph, a, [a])).toEqual([{ distanceM: 1, durationS: 1 }]);
   });
 });
+
+describe("legsFrom at a junction", () => {
+  // P to Q one way only, Q and R both ways, R and P both ways, and a loop
+  // road that leaves Q and comes back to it.
+  //
+  //        R
+  //       / \
+  //      P--->Q
+  //           O  (the loop)
+  const triangle = readRoadFile({
+    format: 1,
+    mapDate: "2026-11-16T21:21:02Z",
+    source: "© OpenStreetMap contributors",
+    // P, Q and R, each the difference from the one before.
+    nodes: [-2_190_000, 6_410_000, 10_000, 0, -5000, 5000],
+    edges: [
+      [0, 1, 5000, 50, 1, []],
+      [1, 2, 4000, 50, 0, []],
+      [2, 0, 4000, 50, 0, []],
+      [1, 1, 3000, 50, 0, [0, -2000, 1000, 0]],
+    ],
+  });
+  const p = { edge: 0, along: 0, metresFromRoad: 0 };
+  const q = { edge: 0, along: 1, metresFromRoad: 0 };
+  const r = { edge: 1, along: 1, metresFromRoad: 0 };
+
+  it("sets off from the start of a one-way road the other way", () => {
+    // Straight from P to R, not first along the one-way road to Q.
+    expect(legsFrom(triangle, p, [r])).toEqual([{ distanceM: 4000, durationS: 288 }]);
+  });
+
+  it("arrives at the end of a one-way road from the other way", () => {
+    // Straight from R to Q, not round by P and the one-way road.
+    expect(legsFrom(triangle, r, [q])).toEqual([{ distanceM: 4000, durationS: 288 }]);
+  });
+
+  it("drives round a loop road either way", () => {
+    const halfway = { edge: 3, along: 0.5, metresFromRoad: 0 };
+    expect(legsFrom(triangle, halfway, [r])).toEqual([{ distanceM: 5500, durationS: 396 }]);
+    expect(legsFrom(triangle, r, [halfway])).toEqual([{ distanceM: 5500, durationS: 396 }]);
+  });
+});

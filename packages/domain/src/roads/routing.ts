@@ -84,6 +84,9 @@ const part = (edge: RoadGraphEdge, share: number) => ({
   durationS: edge.durationS * share,
 });
 
+/** A point this close to the end of a road is at the junction there. */
+const atJunctionM = 1;
+
 /**
  * The fastest way by road from `start` to each of `ends`: its distance and
  * time, rounded up to at least 1 metre and 1 second, or null when no road
@@ -109,7 +112,9 @@ export function legsFrom(
   if (startEdge === undefined) throw new Error("The start is on a road the graph does not have.");
   const ahead = part(startEdge, 1 - start.along);
   reach(startEdge.to, ahead.durationS, ahead.distanceM);
-  if (!startEdge.oneWay) {
+  // A start at the beginning of a one-way road is at its junction, free to
+  // set off any way.
+  if (!startEdge.oneWay || start.along * startEdge.lengthM < atJunctionM) {
     const behind = part(startEdge, start.along);
     reach(startEdge.from, behind.durationS, behind.distanceM);
   }
@@ -139,7 +144,9 @@ export function legsFrom(
       durationS: (time[edge.from] ?? Infinity) + viaFrom.durationS,
       distanceM: (distance[edge.from] ?? Infinity) + viaFrom.distanceM,
     });
-    if (!edge.oneWay) {
+    // An end at the end of a one-way road is at its junction, which cars can
+    // reach from any way.
+    if (!edge.oneWay || (1 - end.along) * edge.lengthM < atJunctionM) {
       const viaTo = part(edge, 1 - end.along);
       ways.push({
         durationS: (time[edge.to] ?? Infinity) + viaTo.durationS,

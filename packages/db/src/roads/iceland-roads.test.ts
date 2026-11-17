@@ -1,5 +1,6 @@
-// Checks the road file in the repository (ADR 0030): real distances, and
-// that every sample meeting point still gets its legs.
+// Checks the road file in the repository (ADR 0030), or the one ROAD_FILE
+// names (the "Road file" job sets it to the file it built): real distances,
+// and that every sample meeting point still gets its legs.
 import { joinRoad, legsFrom, type RoadGraph, type RoadPosition } from "@shareride/domain";
 import { beforeAll, describe, expect, it } from "vitest";
 import { samplePoints } from "../sample/meeting-points.ts";
@@ -7,7 +8,7 @@ import { loadRoadGraph } from "./load.ts";
 
 let graph: RoadGraph;
 beforeAll(async () => {
-  graph = await loadRoadGraph();
+  graph = await loadRoadGraph(process.env.ROAD_FILE);
 });
 
 const town = {
