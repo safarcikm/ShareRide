@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import {
   acceptRequestRoute,
   askDataExportRoute,
+  blockFromBookingRoute,
   dataExportLinkRoute,
   driverCheckInRoute,
   getDataExportRoute,
@@ -58,6 +59,7 @@ beforeEach(async () => {
   await freshSampleTrips(api);
   await api.connection.db.delete(schema.dataExports);
   await api.connection.db.delete(schema.outboxEvents);
+  await api.connection.db.delete(schema.blocks);
 });
 
 afterEach(() => {
@@ -322,6 +324,26 @@ describe("download my data (spec 11, 3.2)", () => {
       expect(driver.text).not.toContain(secret);
     }
     expect(driver.text).toContain('"from": "Gunna"');
+  });
+
+  it("lists the people I blocked by first name and date, never who blocked me", async () => {
+    const anna = await driverOf(sampleTrip.north, "Anna");
+    const gunna = await newMember("Gunna");
+    const request = await booked(gunna.accessToken, sampleTrip.north, { fromStop: 0, toStop: 3 });
+    const at = api.now().toISOString();
+    const blocked = await api.client.call(blockFromBookingRoute, {
+      accessToken: gunna.accessToken,
+      params: { id: request.id },
+      body: {},
+    });
+    if (!blocked.ok) throw new Error(blocked.error.code);
+
+    const mine = await exportOf(gunna);
+    expect(mine.data.sections.blocks).toEqual([{ firstName: "Anna", since: at }]);
+    expect(mine.text).not.toContain(anna.userId);
+    expect(unlabelledFields(mine.data)).toEqual([]);
+    expect(mine.html).toContain("<h2>People you blocked</h2>");
+    expect((await exportOf(anna)).data.sections.blocks).toEqual([]);
   });
 
   it("has the person's own times at the meeting point, with the booking or the stop", async () => {

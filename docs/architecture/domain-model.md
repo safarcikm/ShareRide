@@ -293,7 +293,7 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
   `WaitlistEntry`, `InviteCode` (users record the code they joined with),
   `Feedback`.
 - `NotificationPreference`, `PushToken`.
-- `Block`: blocker and blocked; hides both from each other ([spec 9](../specs/2026-11-13-safety-and-moderation.md#32-blocking-g2)).
+- `Block`: blocker and blocked; hides both from each other, with the trips each drives ([spec 9](../specs/2026-11-13-safety-and-moderation.md#32-blocking-g2)). A trip someone else is booked on stays open: who is booked is private.
 - `Notification` and `NotificationDelivery`: who was told what kind of thing,
   about which booking or message, on which channel and what came of it
   (`queued`, `sending`, `sent`, `failed` or `skipped` with the reason, the

@@ -18,6 +18,7 @@ import { quickOf, systemLineOf } from "../chat/service.ts";
 // (packages/db/src/personal-data.ts) names for it.
 
 const {
+  blocks,
   bookingSegmentPrices,
   bookings,
   checkIns,
@@ -49,6 +50,7 @@ const fromStops = alias(tripStops, "from_stops");
 const toStops = alias(tripStops, "to_stops");
 const fromPoints = alias(meetingPoints, "from_points");
 const toPoints = alias(meetingPoints, "to_points");
+const blockedPeople = alias(users, "blocked_people");
 
 /** A moment as text, or null. */
 type When = string | null;
@@ -500,6 +502,14 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     };
   });
 
+  // The blocks the person made, never who blocked them (spec 9, 3.2).
+  const blocked = await q
+    .select({ firstName: blockedPeople.firstName, since: blocks.createdAt })
+    .from(blocks)
+    .innerJoin(blockedPeople, eq(blockedPeople.id, blocks.blockedId))
+    .where(eq(blocks.blockerId, userId))
+    .orderBy(asc(blocks.createdAt), asc(blocks.id));
+
   const since = new Date(now.getTime() - notificationDays * 24 * 3600 * 1000);
   const told = await q
     .select({
@@ -559,6 +569,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
       bookings: bookingsSection,
       payments: paymentsSection,
       conversations: conversationsSection,
+      blocks: blocked.map((row) => ({ firstName: row.firstName ?? "", since: when(row.since) })),
       notifications: told.map((row) => ({
         kind: row.kind,
         channel: row.channel,

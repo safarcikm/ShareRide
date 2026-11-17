@@ -1,5 +1,5 @@
 {
-  "id": "e3ef1661-ba08-415a-92b5-885051f561c3",
+  "id": "541aecab-96ab-4181-b6c5-71fd2bf025ac",
   "prevId": "339dae04-8042-47f6-abc8-b047574a5f2a",
   "version": "7",
   "dialect": "postgresql",
@@ -4425,6 +4425,98 @@
       },
       "isRLSEnabled": false
     },
+    "public.blocks": {
+      "name": "blocks",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "blocker_id": {
+          "name": "blocker_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "blocked_id": {
+          "name": "blocked_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "blocks_blocked_index": {
+          "name": "blocks_blocked_index",
+          "columns": [
+            {
+              "expression": "blocked_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "blocks_blocker_id_users_id_fk": {
+          "name": "blocks_blocker_id_users_id_fk",
+          "tableFrom": "blocks",
+          "tableTo": "users",
+          "columnsFrom": ["blocker_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "blocks_blocked_id_users_id_fk": {
+          "name": "blocks_blocked_id_users_id_fk",
+          "tableFrom": "blocks",
+          "tableTo": "users",
+          "columnsFrom": ["blocked_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "blocks_pair_unique": {
+          "name": "blocks_pair_unique",
+          "nullsNotDistinct": false,
+          "columns": ["blocker_id", "blocked_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "blocks_self_check": {
+          "name": "blocks_self_check",
+          "value": "\"blocks\".\"blocker_id\" <> \"blocks\".\"blocked_id\""
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.segments": {
       "name": "segments",
       "schema": "",
@@ -5175,13 +5267,6 @@
           "notNull": true,
           "default": "'active'"
         },
-        "profile_id": {
-          "name": "profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -5210,11 +5295,6 @@
           "name": "users_email_unique",
           "nullsNotDistinct": false,
           "columns": ["email"]
-        },
-        "users_profile_id_unique": {
-          "name": "users_profile_id_unique",
-          "nullsNotDistinct": false,
-          "columns": ["profile_id"]
         }
       },
       "policies": {},

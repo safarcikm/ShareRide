@@ -460,6 +460,28 @@ releases follow [Semantic Versioning](https://semver.org/).
   plate, or the driver's date, time and route, through the share sheet, or
   copies it in a browser without one, or else shows it to copy. Nothing is stored (R9.8). On trip
   details, the booking page and the driver's trip page.
+- Block and unblock (milestone 9, PR 4, spec 9, 3.2; R9.4): "Block" in a
+  conversation asks first and blocks silently, then lists the bookings and
+  requests the two still have together, each with the usual way out:
+  cancel under the normal rules, withdraw or decline. Neither then finds
+  the other's trips in search, rides leaving soon or "nothing matches",
+  nor opens or books them, not even another part of a trip already booked.
+  A trip the other person is only booked on stays open: who is booked is
+  private, and closing it would let a block reveal their rides (milestone
+  9 decision 2, revised on review; `tripClosedTo` counts only the driver
+  now, `bookingClosedTo` is new). Their chats become read-only for both;
+  only the blocker's says who blocked whom (`blockedByMe`), and the
+  driver's message to all passengers skips them. Settings has a Safety
+  section with Blocked people and Unblock. No user ID is shown to another
+  person: blocking goes through a booking, unblocking through the block's
+  own ID. A conversation coming back into view fetches at once, and so
+  does each booking on the block screen. With no one to message, the
+  driver's message to all passengers says that no passenger is confirmed
+  or their chat is closed. `blocks` is in the personal data catalogue,
+  erased with either account, and gets its own export section, People you
+  blocked: each by first name, and since when, never who blocked them.
+  Migration `0033_blocks`. `POST /v1/bookings/{id}/block`,
+  `GET /v1/me/blocks`, `DELETE /v1/me/blocks/{id}`.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its

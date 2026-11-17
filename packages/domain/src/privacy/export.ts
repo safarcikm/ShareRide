@@ -27,7 +27,7 @@ export function exportExpiresAt(readyAt: Date): Date {
  * The parts of an export (spec 11, 3.2.3), in the order the readable page
  * shows them. Each table in the personal data catalogue feeds one of these
  * or says why it is left out. Milestone 7 and spec 9 add theirs (check-ins,
- * disputes, reviews, reports, moderation, blocks).
+ * disputes, reviews, reports, moderation); blocks are in.
  */
 export const exportSections = [
   "account",
@@ -40,6 +40,8 @@ export const exportSections = [
   "bookings",
   "payments",
   "conversations",
+  /** Blocks the person made, never who blocked them (spec 9). */
+  "blocks",
   "notifications",
   "privacy_requests",
 ] as const;

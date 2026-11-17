@@ -313,4 +313,11 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     },
     otherIds: ["operatorSessionId"],
   },
+  blocks: {
+    category: "blocks",
+    // Only the blocks the person made: who blocked them is never shown (R9.4).
+    export: { section: "blocks" },
+    personColumns: ["blockerId", "blockedId"],
+    onDeletion: { rows: "erase", note: "blocks made by the person and blocks of them" },
+  },
 };
