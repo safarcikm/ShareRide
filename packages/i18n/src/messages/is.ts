@@ -1821,4 +1821,39 @@ export const is = {
   "admin.meetingPoint.issue.needsShelter": "Merktu fyrst við Skjól undir aðstöðu.",
   "admin.meetingPoint.issue.moveNeeded":
     "Hér er aðeins staðsetningu draga breytt. Að færa mótsstað í notkun er sérstakt skref.",
+  "admin.meetingPoint.inUse": "Í notkun",
+  "admin.meetingPoint.draftNotOffered": "Drög eru ekki í boði fyrir bílstjóra.",
+  "admin.meetingPoint.upcomingTrips":
+    "{count, plural, =0 {Engar væntanlegar ferðir stoppa hér.} one {# væntanleg ferð stoppar hér.} other {# væntanlegar ferðir stoppa hér.}}",
+  "admin.meetingPoint.reasonIs": "Ástæða, á íslensku",
+  "admin.meetingPoint.reasonEn": "Ástæða, á ensku",
+  "admin.meetingPoint.reasonHint":
+    "Sýnd bílstjórum og farþegum, til dæmis vegavinna við innganginn.",
+  "admin.meetingPoint.backOn": "Aftur í notkun {date}.",
+  "admin.meetingPoint.backByHand": "Í hléi þar til þú tekur hann aftur í notkun.",
+  "admin.meetingPoint.retiresAfterLastTrip": "Hættir eftir síðustu ferðina.",
+  "admin.meetingPoint.pause": "Gera hlé",
+  "admin.meetingPoint.pauseNote":
+    "Bílstjórar þeirra, og farþegar sem fara inn eða út hér, fá að vita það strax. Bílstjórar eru beðnir um að velja annan viðkomustað.",
+  "admin.meetingPoint.until": "Aftur í notkun (valfrjálst)",
+  "admin.meetingPoint.untilHint":
+    "Hafðu þetta autt og taktu hann aftur í notkun þegar hann er tilbúinn.",
+  "admin.meetingPoint.pauseConfirm": "Gera hlé á {name}",
+  "admin.meetingPoint.keepInUse": "Halda honum í notkun",
+  "admin.meetingPoint.resume": "Taka aftur í notkun",
+  "admin.meetingPoint.retire": "Hætta notkun",
+  "admin.meetingPoint.retireQuestion": "Hætta notkun {name}?",
+  "admin.meetingPoint.retireLater":
+    "Nýjar ferðir geta ekki notað hann héðan í frá. {count, plural, one {# væntanleg ferð stoppar hér, svo hann hættir eftir þá ferð.} other {# væntanlegar ferðir stoppa hér, svo hann hættir eftir þá síðustu.}} Það er endanlegt.",
+  "admin.meetingPoint.retireNow": "Hann hættir strax. Það er endanlegt.",
+  "admin.meetingPoint.retireConfirm": "Hætta notkun {name}",
+  "admin.meetingPoint.keep": "Halda honum",
+  "admin.meetingPoint.paused": "{name} er í hléi.",
+  "admin.meetingPoint.resumed": "{name} er aftur í notkun.",
+  "admin.meetingPoint.retiring": "{name} hættir eftir síðustu ferðina.",
+  "admin.meetingPoint.retired": "{name} er hættur.",
+  "admin.meetingPoint.statusFailed": "Ekki tókst að breyta stöðunni. Reyndu aftur.",
+  "admin.meetingPoint.reloadedStatus":
+    "Þetta er nýjasta afritið. Athugaðu stöðuna og reyndu svo aftur.",
+  "admin.meetingPoint.issue.notAfterToday": "Veldu dag eftir daginn í dag.",
 } as const satisfies Record<MessageKey, string>;

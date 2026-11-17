@@ -1809,6 +1809,39 @@ export const en = {
   "admin.meetingPoint.issue.needsShelter": "Tick Shelter under the amenities first.",
   "admin.meetingPoint.issue.moveNeeded":
     "Only a draft's spot is changed here. Moving a meeting point in use is its own step.",
+  "admin.meetingPoint.inUse": "In use",
+  "admin.meetingPoint.draftNotOffered": "A draft is not offered to drivers.",
+  "admin.meetingPoint.upcomingTrips":
+    "{count, plural, =0 {No upcoming trips stop here.} one {# upcoming trip stops here.} other {# upcoming trips stop here.}}",
+  "admin.meetingPoint.reasonIs": "Reason, in Icelandic",
+  "admin.meetingPoint.reasonEn": "Reason, in English",
+  "admin.meetingPoint.reasonHint":
+    "Shown to drivers and passengers, such as road works by the entrance.",
+  "admin.meetingPoint.backOn": "Back in use on {date}.",
+  "admin.meetingPoint.backByHand": "Paused until you bring it back.",
+  "admin.meetingPoint.retiresAfterLastTrip": "Retires after its last trip.",
+  "admin.meetingPoint.pause": "Pause",
+  "admin.meetingPoint.pauseNote":
+    "Their drivers, and the passengers who get in or out here, are told at once. Drivers are asked to choose another stop.",
+  "admin.meetingPoint.until": "Back in use on (optional)",
+  "admin.meetingPoint.untilHint": "Leave it empty to bring it back yourself.",
+  "admin.meetingPoint.pauseConfirm": "Pause {name}",
+  "admin.meetingPoint.keepInUse": "Keep it in use",
+  "admin.meetingPoint.resume": "Bring it back into use",
+  "admin.meetingPoint.retire": "Retire",
+  "admin.meetingPoint.retireQuestion": "Retire {name}?",
+  "admin.meetingPoint.retireLater":
+    "New trips cannot use it from now. {count, plural, one {# upcoming trip stops here, so it retires after that trip.} other {# upcoming trips stop here, so it retires after the last of them.}} Retiring is for good.",
+  "admin.meetingPoint.retireNow": "It is retired at once. Retiring is for good.",
+  "admin.meetingPoint.retireConfirm": "Retire {name}",
+  "admin.meetingPoint.keep": "Keep it",
+  "admin.meetingPoint.paused": "{name} is paused.",
+  "admin.meetingPoint.resumed": "{name} is back in use.",
+  "admin.meetingPoint.retiring": "{name} retires after its last trip.",
+  "admin.meetingPoint.retired": "{name} is retired.",
+  "admin.meetingPoint.statusFailed": "The status could not be changed. Try again.",
+  "admin.meetingPoint.reloadedStatus": "This is the newest copy. Check its status, then try again.",
+  "admin.meetingPoint.issue.notAfterToday": "Give a day after today.",
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;

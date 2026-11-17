@@ -193,3 +193,50 @@ test("the operator adds a meeting point as a draft, finds it and edits it", asyn
   await expect(entries.nth(0)).toContainText("meeting_point.updated");
   await expect(entries.nth(2)).toContainText("meeting_point.created");
 });
+
+// Pausing, bringing back and retiring (spec 2, 3.6.4 and 3.6.5): a pause
+// needs its reason in both languages, a retirement asks first, and each
+// change is in the audit log.
+test("the operator pauses a meeting point, brings it back and retires a draft", async () => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const inUse = page.getByRole("region", { name: "In use" });
+  await page.goto("/admin/meeting-points");
+  await page.getByRole("link", { name: "BSÍ", exact: true }).click();
+  await expect(page.getByText("Status: Active")).toBeVisible();
+
+  await inUse.getByRole("button", { name: "Pause" }).click();
+  await expect(page.getByLabel("Reason, in Icelandic")).toBeFocused();
+  await page.getByRole("button", { name: "Pause BSÍ" }).click();
+  await expect(inUse.getByText("Fill this in.")).toHaveCount(2);
+  await expect(page.getByLabel("Reason, in Icelandic")).toBeFocused();
+  await page.getByLabel("Reason, in Icelandic").fill("Vegavinna við stöðina.");
+  await page.getByLabel("Reason, in English").fill("Road works at the terminal.");
+  await page.getByRole("button", { name: "Pause BSÍ" }).click();
+  await expect(page.getByText("BSÍ is paused.")).toBeFocused();
+  await expect(page.getByText("Status: Paused")).toBeVisible();
+  await expect(inUse).toContainText("Road works at the terminal.");
+  await expect(inUse).toContainText("Paused until you bring it back.");
+
+  await inUse.getByRole("button", { name: "Bring it back into use" }).click();
+  await expect(page.getByText("BSÍ is back in use.")).toBeFocused();
+  await expect(page.getByText("Status: Active")).toBeVisible();
+
+  // The draft added before retires at once: no trip stops there.
+  await page.getByRole("link", { name: "All meeting points" }).click();
+  await page.getByRole("link", { name: "Prófunarstaður við Hveragerði" }).click();
+  await inUse.getByRole("button", { name: "Retire" }).click();
+  await expect(inUse).toContainText("It is retired at once. Retiring is for good.");
+  await page.getByRole("button", { name: "Keep it" }).click();
+  await expect(inUse.getByRole("button", { name: "Retire" })).toBeFocused();
+  await inUse.getByRole("button", { name: "Retire" }).click();
+  await page.getByRole("button", { name: "Retire Prófunarstaður við Hveragerði" }).click();
+  await expect(page.getByText("Prófunarstaður við Hveragerði is retired.")).toBeFocused();
+  await expect(page.getByLabel("Icelandic name")).toBeDisabled();
+  await expect(inUse).toHaveCount(0);
+
+  await page.goto("/admin/audit-log?action=meeting_point.");
+  const entries = page.getByRole("list", { name: "Entries" }).getByRole("listitem");
+  await expect(entries.nth(0)).toContainText("meeting_point.retired");
+  await expect(entries.nth(1)).toContainText("meeting_point.resumed");
+  await expect(entries.nth(2)).toContainText("meeting_point.paused");
+});
