@@ -86,8 +86,9 @@ view. It is built to be used while parked: large buttons and no typing needed.
 1. Once the wait time has passed after the planned time at their boarding
    stop, a passenger can report "The driver didn't come", with an optional
    note. This is possible until 24 hours after the trip completes.
-2. The booking's payout is held at once (spec 13), and the driver is asked
-   "Did you pick up {passenger}?" with 24 hours to answer.
+2. The booking's payout is held at once (spec 13), and the driver is told
+   "{passenger} says you didn't come." and asked "Is this right?", as a
+   passenger marked as a no-show is (section 8), with 24 hours to answer.
 3. If the driver agrees or does not answer, the booking is cancelled as if by
    the driver (reason: the driver didn't come), even if the trip has already
    completed. The passenger gets a full refund, it counts on the driver's

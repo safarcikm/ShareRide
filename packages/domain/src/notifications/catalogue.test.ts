@@ -102,6 +102,12 @@ describe("who is told about each event (spec 7, 3.3)", () => {
         { kind: "dispute_decided_driver", to: "driver" },
       ],
     ],
+    // Reviews (spec 8, 3.7 and 3.9): "How was your trip?" to each side, and
+    // the person a review is about, once it shows.
+    [{ type: "RateTrip", to: "passenger" }, [{ kind: "rate_trip", to: "passenger" }]],
+    [{ type: "RateTrip", to: "driver" }, [{ kind: "rate_trip_driver", to: "driver" }]],
+    [{ type: "ReviewRevealed", about: "driver" }, [{ kind: "review_visible", to: "driver" }]],
+    [{ type: "ReviewRevealed", about: "passenger" }, [{ kind: "review_visible", to: "passenger" }]],
   ];
 
   it.each(cases)("%o", (event, expected) => {
@@ -152,6 +158,10 @@ describe("the channels of each kind (spec 7, 3.3 and 3.4)", () => {
     ["driver_absent_reported", true, "always", false],
     ["dispute_decided", true, "always", false],
     ["dispute_decided_driver", true, "always", false],
+    // Push only (spec 8, 3.9): a nudge, not news anyone must have.
+    ["rate_trip", true, "never", false],
+    ["rate_trip_driver", true, "never", false],
+    ["review_visible", true, "never", false],
     ["data_export_ready", true, "always", false],
     // The answer to a question about one's data goes by email (spec 11, 3.6).
     ["privacy_request_answered", false, "always", false],
@@ -310,6 +320,16 @@ describe("stillApplies", () => {
     // The decision tells what happened, whatever the booking became.
     for (const status of ["completed", "cancelled", "no_show"] as const) {
       expect(stillApplies("dispute_decided", status)).toBe(true);
+    }
+  });
+
+  it("asks for a review, and says one shows, only while the booking is completed (spec 8, 3.7)", () => {
+    for (const kind of ["rate_trip", "rate_trip_driver", "review_visible"] as const) {
+      expect(stillApplies(kind, "completed")).toBe(true);
+      // A driver absence that stands, or a passenger found absent, removes the reviews.
+      for (const status of ["cancelled", "no_show"] as const) {
+        expect(stillApplies(kind, status)).toBe(false);
+      }
     }
   });
 
