@@ -1,12 +1,14 @@
 import {
+  cancelTripRoute,
   profileReviewsPageSize,
   profileReviewsRoute,
   publicProfileRoute,
+  type CancelTripBody,
   type ProfileReview,
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
 import { defaultTripDaySettings as settings } from "@shareride/domain";
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
 import {
@@ -136,6 +138,17 @@ async function storedReview(
     .returning({ id: reviews.id });
   if (row === undefined) throw new Error("Not stored.");
   return row.id;
+}
+
+const cancelTrip = (driver: Member, id: string, body: CancelTripBody) =>
+  api.client.call(cancelTripRoute, { accessToken: driver.accessToken, params: { id }, body });
+
+/** Jón drives the Vík trip too, and Sigga has booked and paid for a seat on it. */
+async function jonDrivesVikWithSigga(jon: Member) {
+  await api.connection.db.update(trips).set({ driverId: jon.userId }).where(eq(trips.id, vik));
+  const sigga = await newMember("Sigga");
+  const booking = await booked(sigga.accessToken, vik, { fromStop: 0, toStop: 1 });
+  await paid(sigga.accessToken, booking.id);
 }
 
 describe("a public profile (spec 1, 3.5)", () => {
@@ -352,7 +365,36 @@ describe("the rating and reviews on a profile (spec 8, 3.7; R8.9)", () => {
     const second = await shownReviews(gunna, jon, { before: last?.id });
     expect(second).toMatchObject({ more: false, reviews: [{ id: written[0] }] });
     const profileId = await profileIdOf(jon);
-    expect((await reviewsOf(gunna, profileId, { before: crypto.randomUUID() })).status).toBe(404);
+    expect((await reviewsOf(gunna, profileId, { before: crypto.randomUUID() })).status).toBe(400);
+  });
+
+  it("goes on from where the last page ended, even once that review is hidden", async () => {
+    const { jon, gunna, bookingId } = await afterTheTrip();
+    const written: string[] = [];
+    for (let index = 0; index <= profileReviewsPageSize; index += 1) {
+      const booking = index === 0 ? bookingId : await anotherBooking(bookingId, {});
+      written.push(
+        await storedReview({
+          bookingId: booking,
+          authorId: gunna.userId,
+          subjectId: jon.userId,
+          authorRole: "passenger",
+          rating: 5,
+          createdAt: at(api.now(), index),
+        }),
+      );
+    }
+    const first = await shownReviews(gunna, jon);
+    const last = first.reviews.at(-1)?.id;
+    if (last === undefined) throw new Error("A full page.");
+    await api.connection.db
+      .update(reviews)
+      .set({ hiddenAt: api.now() })
+      .where(eq(reviews.id, last));
+    expect(await shownReviews(gunna, jon, { before: last })).toMatchObject({
+      more: false,
+      reviews: [{ id: written[0] }],
+    });
   });
 });
 
@@ -420,47 +462,71 @@ describe("the reliability figure (spec 8, 3.8; R8.10)", () => {
       percent: 71,
       byRole: { driver: { kept: 0, counted: 0 }, passenger: { kept: 5, counted: 7 } },
     });
-  });
-
-  it("counts a driver's cancelled trip once, and never a trip without passengers", async () => {
-    const { jon, gunna } = await afterTheTrip();
-    const { db } = api.connection;
-    const now = api.now();
-    await db
-      .update(trips)
-      .set({
-        driverId: jon.userId,
-        status: "cancelled",
-        cancelledAt: now,
-        cancelReason: "car_problem",
-        countsOnReliability: true,
-      })
-      .where(eq(trips.id, vik));
-    await db
-      .update(trips)
-      .set({ driverId: jon.userId, status: "completed", completedAt: now })
-      .where(eq(trips.id, north));
-    // A trip cancelled for the weather doesn't count (R8.11).
-    const [weather] = await db
-      .select({ id: trips.id })
-      .from(trips)
-      .where(
-        sql`${trips.id} not in (${airport}, ${vik}, ${north}) and ${trips.status} = 'published'`,
-      )
-      .limit(1);
-    if (weather !== undefined) {
-      await db
-        .update(trips)
-        .set({
-          driverId: jon.userId,
-          status: "cancelled",
-          cancelledAt: now,
-          cancelReason: "weather",
-        })
-        .where(eq(trips.id, weather.id));
-    }
+    // For Jón: the trip kept, once however many rode, and the passenger left behind.
     expect((await shownProfile(gunna, jon)).reliability.byRole.driver).toEqual({
       kept: 1,
+      counted: 2,
+    });
+  });
+
+  it("counts a driver's cancelled trip once, not again for each booking on it", async () => {
+    const { jon, gunna } = await afterTheTrip();
+    await jonDrivesVikWithSigga(jon);
+    const cancelled = await cancelTrip(jon, vik, {
+      reason: "car_problem",
+      countsOnReliability: true,
+    });
+    expect(cancelled.ok).toBe(true);
+    // The airport trip kept, the Vík trip not.
+    expect((await shownProfile(gunna, jon)).reliability.byRole.driver).toEqual({
+      kept: 1,
+      counted: 2,
+    });
+  });
+
+  it("never counts a trip cancelled for the weather (R8.11), or one without passengers", async () => {
+    const { jon, gunna } = await afterTheTrip();
+    await jonDrivesVikWithSigga(jon);
+    const cancelled = await cancelTrip(jon, vik, { reason: "weather", countsOnReliability: false });
+    expect(cancelled.ok).toBe(true);
+    await api.connection.db
+      .update(trips)
+      .set({ driverId: jon.userId, status: "completed", completedAt: api.now() })
+      .where(eq(trips.id, north));
+    expect((await shownProfile(gunna, jon)).reliability.byRole.driver).toEqual({
+      kept: 1,
+      counted: 1,
+    });
+  });
+
+  it("counts a trip whose only passenger didn't come as kept, once the no-show stands", async () => {
+    const { jon, gunna, bookingId } = await afterTheTrip();
+    const { db } = api.connection;
+    await db
+      .update(trips)
+      .set({ driverId: jon.userId, status: "completed", completedAt: api.now() })
+      .where(eq(trips.id, north));
+    const noShow = await anotherBooking(bookingId, {
+      tripId: north,
+      status: "no_show",
+      completedAt: null,
+    });
+    const [report] = await db
+      .insert(disputes)
+      .values({ bookingId: noShow, kind: "no_show", raisedAt: at(api.now(), -60) })
+      .returning({ id: disputes.id });
+    if (report === undefined) throw new Error("Not stored.");
+    // While Gunna can still answer, the north trip doesn't count yet.
+    expect((await shownProfile(gunna, jon)).reliability.byRole.driver).toEqual({
+      kept: 1,
+      counted: 1,
+    });
+    await db
+      .update(disputes)
+      .set({ outcome: "stands", decidedBy: "system", decidedAt: api.now() })
+      .where(eq(disputes.id, report.id));
+    expect((await shownProfile(gunna, jon)).reliability.byRole.driver).toEqual({
+      kept: 2,
       counted: 2,
     });
   });

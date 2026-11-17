@@ -24,9 +24,10 @@ import { reliabilityOfPeople } from "./reliability.ts";
 
 const { reviews, users } = schema;
 
-export interface PeopleError {
-  readonly code: "not_found";
-}
+export type PeopleError =
+  | { readonly code: "not_found" }
+  /** `before` is not one of the person's reviews. */
+  | { readonly code: "before_unknown" };
 
 export interface PeopleService {
   profile(profileId: string): Promise<Result<PublicProfile, PeopleError>>;
@@ -102,12 +103,13 @@ export function createPeopleService(dependencies: {
       );
       let after: SQL | undefined;
       if (query.before !== undefined) {
+        // Any review about them marks the place, so a page goes on even when
+        // the last one shown was hidden meanwhile; nothing of it is sent.
         const [last] = await db
           .select({ id: reviews.id })
           .from(reviews)
-          .innerJoin(authors, eq(authors.id, reviews.authorId))
-          .where(and(shownToAll, eq(reviews.id, query.before)));
-        if (last === undefined) return err({ code: "not_found" });
+          .where(and(eq(reviews.id, query.before), eq(reviews.subjectId, person.id)));
+        if (last === undefined) return err({ code: "before_unknown" });
         // Compared in the database, which keeps the microseconds.
         after = sql`(${reviews.createdAt}, ${reviews.id}) < (select created_at, id from reviews where id = ${last.id})`;
       }

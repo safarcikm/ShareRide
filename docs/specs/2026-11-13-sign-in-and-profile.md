@@ -172,7 +172,8 @@ Phone first, then wide screen (web) with the same content in a centred column.
 ## 6. Data and API
 
 Entities (see [domain model](../architecture/domain-model.md)): `User`
-(adds `email_verified_at`, `phone_verified_at`, `age_confirmed_at`),
+(adds `email_verified_at`, `phone_verified_at`, `age_confirmed_at`, and
+`profile_id`, the random reference of the public profile, never the ID),
 `AuthIdentity` (provider, subject), `Session` (device, created, last active,
 refresh family), `VerificationCode` (hashed code, expiry, attempts),
 `LegalDocument` (type, version, material flag, text per language, published

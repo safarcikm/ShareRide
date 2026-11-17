@@ -44,7 +44,7 @@ export const yearMonthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 export const publicProfileSchema = z.object({
   profileId: z.uuid(),
   firstName: z.string(),
-  /** Empty or hidden by ShareRide: null. */
+  /** Null when empty. */
   about: z.string().nullable(),
   /** ISO 639-1 codes. */
   languages: z.array(z.string()),
@@ -96,6 +96,7 @@ export const publicProfileRoute = defineRoute({
   request: { params: profileParams },
   responses: {
     200: { description: "The profile", schema: publicProfileSchema },
+    400: { description: "validation_failed: `profileId` is not a UUID", ...errors },
     401: { description: "unauthenticated", ...errors },
     404: notFound,
   },
@@ -121,11 +122,11 @@ export const profileReviewsRoute = defineRoute({
       description: `Up to ${String(profileReviewsPageSize)} reviews; \`more\` when there are older ones`,
       schema: z.object({ reviews: z.array(profileReviewSchema), more: z.boolean() }),
     },
-    400: { description: "validation_failed: an unknown role", ...errors },
-    401: { description: "unauthenticated", ...errors },
-    404: {
-      description: `${notFound.description}; or \`before\` is not one of its reviews`,
+    400: {
+      description: "validation_failed: an unknown role, or `before` is not one of their reviews",
       ...errors,
     },
+    401: { description: "unauthenticated", ...errors },
+    404: notFound,
   },
 });

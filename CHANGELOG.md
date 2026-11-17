@@ -610,7 +610,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   person's first name, about, languages, badges, the month they joined,
   colour, rating and reliability figure, never their phone number, email, last name or
   user ID. A profile is reached by its own random reference: migration
-  `0033_profile_ids` adds `users.profile_id`. The rating is the average of
+  `0034_profile_ids` adds `users.profile_id`. The rating is the average of
   the reviews that show, to one decimal; `GET /v1/people/{profileId}/reviews`
   lists them newest first, 20 at a time, for one role or both, with the
   author's first name ("A former member" once erased) and the month. The

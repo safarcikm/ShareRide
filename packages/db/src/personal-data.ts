@@ -26,7 +26,10 @@ export interface TablePrivacy {
    * erasure (apps/api/src/modules/privacy/erasure.ts) follows this.
    */
   readonly onDeletion: Deletion | null;
-  /** UUID columns that are not a person and point nowhere, such as a retry key. */
+  /**
+   * UUID columns that point nowhere: not a foreign key to a person, such as
+   * a retry key, or the person's own public reference stored on their row.
+   */
   readonly otherIds?: readonly string[];
 }
 
@@ -57,7 +60,8 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     export: { section: "account" },
     personColumns: [],
     onDeletion: { rows: "erase", note: "the row itself; what is kept moves to the former member" },
-    // The person's public reference for their profile: random, it goes with the row.
+    // The person's public reference for their profile (`/people/{profileId}`):
+    // random, never their ID, and erased with the row.
     otherIds: ["profileId"],
   },
   verification_codes: notAboutAPerson(
