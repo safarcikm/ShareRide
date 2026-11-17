@@ -177,6 +177,58 @@ export function checkPhotoFile(bytes: Uint8Array): Result<PhotoSize, PhotoFileIs
   return err("not_jpeg");
 }
 
+/**
+ * Drops what a browser may add to the JPEG it writes besides the picture
+ * (Safari's Exif and Photoshop segments, ICC profiles, comments, a JFIF
+ * header with a thumbnail) and anything after the picture's end, as the
+ * console does before it sends a photo (ADR 0029). The picture's own
+ * segments stay as they are; a file that is not a whole JPEG is given back
+ * unchanged, for `checkPhotoFile` to refuse.
+ */
+export function stripPhotoMetadata(bytes: Uint8Array): Uint8Array {
+  if (bytes[0] !== 0xff || bytes[1] !== marker.start) return bytes;
+  const kept: Uint8Array[] = [];
+  let from = 0;
+  let at = 2;
+  while (at < bytes.length) {
+    if (bytes[at] !== 0xff) {
+      at += 1;
+      continue;
+    }
+    const code = bytes[at + 1];
+    if (code === undefined) return bytes;
+    if (code === 0xff) {
+      at += 1;
+      continue;
+    }
+    if (code === 0x00 || isRestart(code)) {
+      at += 2;
+      continue;
+    }
+    if (code === marker.end) {
+      kept.push(bytes.subarray(from, at + 2));
+      const stripped = new Uint8Array(kept.reduce((sum, part) => sum + part.length, 0));
+      let written = 0;
+      for (const part of kept) {
+        stripped.set(part, written);
+        written += part.length;
+      }
+      return stripped;
+    }
+    const length = ((bytes[at + 2] ?? 0) << 8) | (bytes[at + 3] ?? 0);
+    const next = at + 2 + length;
+    if (length < 2 || next > bytes.length) return bytes;
+    const extra =
+      isMetadata(code) || (code === marker.app0 && !isPlainJfif(bytes.subarray(at + 4, next)));
+    if (extra) {
+      kept.push(bytes.subarray(from, at));
+      from = next;
+    }
+    at = next;
+  }
+  return bytes;
+}
+
 /** A photo's description in both languages, read by screen readers (spec 2, 3.2). */
 export interface PhotoDescriptions {
   readonly descriptionIs: string;

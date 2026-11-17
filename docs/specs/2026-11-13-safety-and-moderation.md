@@ -215,6 +215,9 @@ Endpoints (`/v1`, shapes defined in `packages/contracts`):
 | `POST /bookings/{id}/block` | Block the other person of a booking (later also from a profile's public reference): no user ID is shown ([security](../engineering/security.md)) |
 | `GET /me/blocks`, `DELETE /me/blocks/{id}` | People I blocked; unblock by the block's own ID |
 
+A booking (`GET /bookings/{id}`) says whether its problem can still be
+reported (`problemReportable`, until 24 hours after the trip completes).
+
 Console endpoints under `/admin/v1` (operator role, passkey sign-in,
 [security](../engineering/security.md)): reports (list, view, act), users,
 trips and bookings (search, view, act), moderation actions and appeals, and

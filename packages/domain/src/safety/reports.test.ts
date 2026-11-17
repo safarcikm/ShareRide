@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
+import { bookingStatuses } from "../bookings/lifecycle.ts";
 import {
+  bookingProblemReportable,
   checkReport,
   holdsPayout,
   isUrgent,
   queueOrder,
   reportCategories,
+  reportLimitReached,
+  reportsClosedBy,
   responseDueAt,
   type ReportContext,
 } from "./reports.ts";
@@ -42,6 +46,7 @@ describe("what can be reported, and by whom (3.1.1, R9.1)", () => {
       kind: "booking",
       passengerId: "jon",
       driverId: "anna",
+      bookingStatus: "confirmed",
       tripCompletedAt: null,
     } as const;
     expect(check("jon", booking)).toMatchObject({ ok: true, value: { subjectUserId: "anna" } });
@@ -74,6 +79,7 @@ describe("what can be reported, and by whom (3.1.1, R9.1)", () => {
         kind: "booking",
         passengerId: "jon",
         driverId: "anna",
+        bookingStatus: "confirmed",
         tripCompletedAt: null,
       }),
     ).toEqual({ ok: false, error: { code: "not_involved" } });
@@ -86,6 +92,7 @@ describe("the time to report a booking problem (R9.1)", () => {
     kind: "booking",
     passengerId: "jon",
     driverId: "anna",
+    bookingStatus: "completed",
     tripCompletedAt: completedAt,
   } as const;
 
@@ -99,6 +106,30 @@ describe("the time to report a booking problem (R9.1)", () => {
       ok: false,
       error: { code: "window_closed" },
     });
+  });
+
+  it("has nothing to report for a request, or a booking that ended before its trip", () => {
+    const ran = bookingStatuses.filter(
+      (bookingStatus) => check("jon", { ...booking, bookingStatus }).ok,
+    );
+    expect(ran).toEqual(["confirmed", "completed", "no_show"]);
+    expect(check("jon", { ...booking, bookingStatus: "cancelled" })).toEqual({
+      ok: false,
+      error: { code: "not_reportable" },
+    });
+  });
+
+  it("says so for the booking page, whoever asks", () => {
+    const later = new Date(now.getTime() + 1000);
+    const reportable = (status: (typeof bookingStatuses)[number], at = now) =>
+      bookingProblemReportable({ status, tripCompletedAt: completedAt }, at, settings);
+    expect(
+      bookingProblemReportable({ status: "confirmed", tripCompletedAt: null }, now, settings),
+    ).toBe(true);
+    expect(reportable("completed")).toBe(true);
+    expect(reportable("completed", later)).toBe(false);
+    expect(reportable("requested")).toBe(false);
+    expect(reportable("cancelled")).toBe(false);
   });
 });
 
@@ -165,5 +196,22 @@ describe("a booking problem holds its payout (R9.3)", () => {
     expect(holdsPayout({ subject: "booking", status: "open" })).toBe(true);
     expect(holdsPayout({ subject: "booking", status: "closed" })).toBe(false);
     expect(holdsPayout({ subject: "trip", status: "open" })).toBe(false);
+  });
+});
+
+describe("how many reports a day (against abuse of reports)", () => {
+  it("allows 10 in 24 hours, and refuses the 11th", () => {
+    expect(reportLimitReached(9, settings)).toBe(false);
+    expect(reportLimitReached(10, settings)).toBe(true);
+  });
+});
+
+describe("how long a report is kept (spec 9, section 7)", () => {
+  const gone = (closedAt: string, at: string) =>
+    new Date(closedAt) <= reportsClosedBy(new Date(at), settings);
+
+  it("is 3 years after it was closed", () => {
+    expect(gone("2026-11-20T12:00:00Z", "2029-11-20T11:59:00Z")).toBe(false);
+    expect(gone("2026-11-20T12:00:00Z", "2029-11-20T12:00:00Z")).toBe(true);
   });
 });

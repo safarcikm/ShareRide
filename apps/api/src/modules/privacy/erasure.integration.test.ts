@@ -547,7 +547,7 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
     ).toMatchObject({ ok: false, status: 404, error: { code: "not_found" } });
   });
 
-  it("empties the driver's cancel note on the passengers' bookings and in their chat", async () => {
+  it("empties the driver's cancel note and the operator's note on the passengers' bookings and in their chat", async () => {
     const anna = await driverOf(sampleTrip.north, "Anna");
     const gunna = await newMember("Gunna");
     const bookingId = await confirmedOnNorth(anna, gunna);
@@ -557,15 +557,24 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
       body: { reason: "illness", note: "Sorry, my daughter is ill", countsOnReliability: true },
     });
     if (!cancelled.ok) throw new Error(cancelled.error.code);
+    // An operator's note on why it counts is about the driver too (spec 8, 6).
+    await api.connection.db
+      .update(schema.bookings)
+      .set({ overruleNote: "Ill again, third time this month" })
+      .where(eq(schema.bookings.id, bookingId));
     await waitEnded(anna);
 
     expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
     const { db } = api.connection;
     const [booking] = await db
-      .select({ cancelNote: schema.bookings.cancelNote, reason: schema.bookings.cancelReason })
+      .select({
+        cancelNote: schema.bookings.cancelNote,
+        overruleNote: schema.bookings.overruleNote,
+        reason: schema.bookings.cancelReason,
+      })
       .from(schema.bookings)
       .where(eq(schema.bookings.id, bookingId));
-    expect(booking).toEqual({ cancelNote: "", reason: "illness" });
+    expect(booking).toEqual({ cancelNote: "", overruleNote: "", reason: "illness" });
     const chat = await api.client.call(conversationMessagesRoute, {
       accessToken: gunna.accessToken,
       params: { id: bookingId },

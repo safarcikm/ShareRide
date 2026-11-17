@@ -39,14 +39,15 @@ export function emailContent(
   const link = `${webAppUrl}${notification.path}`;
   const open = words?.open ?? notification.open ?? t("email.open");
   const footer = words?.footer ?? t("email.footer");
-  const text = [notification.body, "", `${open}: ${link}`, "", footer].join("\n");
+  const body = notification.emailBody ?? notification.body;
+  const text = [body, "", `${open}: ${link}`, "", footer].join("\n");
   const html = [
     "<!doctype html>",
     `<html lang="${locale}">`,
     '<head><meta charset="utf-8"><meta name="viewport" content="width=device-width">',
     `<title>${escaped(notification.title)}</title></head>`,
     "<body>",
-    `<p>${escaped(notification.body).replaceAll("\n", "<br>")}</p>`,
+    `<p>${escaped(body).replaceAll("\n", "<br>")}</p>`,
     `<p><a href="${escaped(link)}">${escaped(open)}</a></p>`,
     "<hr>",
     `<p><small>${escaped(footer)}</small></p>`,

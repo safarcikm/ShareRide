@@ -1,10 +1,17 @@
 import {
+  appealDueAt,
   isAccountNotice,
+  isAppealable,
+  isOperatorNotice,
+  defaultSafetySettings,
   type AccountNoticeKind,
   type CancelReason,
+  type ModerationActionKind,
+  type ModerationRule,
   type Money,
   type NotificationKind,
   type NotificationSettings,
+  type OperatorNoticeKind,
   type QuickMessage,
   type TripRole,
 } from "@shareride/domain";
@@ -19,6 +26,7 @@ import {
   formatDay,
   formatDayAndMonth,
   formatMoney,
+  moderationRuleText,
   quickMessageText,
   stopAddedText,
   type Locale,
@@ -36,7 +44,7 @@ import {
 export interface NotificationFacts {
   readonly kind: Exclude<
     NotificationKind,
-    TripReminderFacts["kind"] | PointPausedFacts["kind"] | AccountNoticeKind
+    TripReminderFacts["kind"] | PointPausedFacts["kind"] | AccountNoticeKind | OperatorNoticeKind
   >;
   /** The recipient's place on the trip. */
   readonly role: TripRole;
@@ -117,21 +125,53 @@ export interface TripReminderFacts {
   readonly plateMissing: boolean;
 }
 
+/** What each account notice says; a kind added without its facts does not compile. */
+interface AccountNoticeFactsByKind {
+  /** Until when the file can be downloaded. */
+  readonly data_export_ready: { readonly until: Date };
+  /** When the data is erased. */
+  readonly account_deletion_scheduled: { readonly until: Date };
+  readonly moderation_action: {
+    readonly action: ModerationActionKind;
+    /** None for a reinstatement. */
+    readonly rule: ModerationRule | null;
+    /** As the operator wrote it for the person: their reason, or a reinstatement's note. */
+    readonly reason: string;
+    /** The end of a suspension; null for one for good. */
+    readonly until: Date | null;
+    readonly at: Date;
+  };
+  readonly suspension_ended: object;
+  readonly privacy_request_answered: { readonly receivedAt: Date; readonly answer: string };
+}
+
 /**
- * News about the person's account (spec 11): a data export, until when it
- * can be downloaded; a deletion, when the data is erased; the answer to a
- * request about their data, with the day it came.
+ * News about the person's account: their data ready to download, or their
+ * deletion and when the data is erased (spec 11); an operator's action that
+ * affects them, with its statement of reasons (spec 9, R9.5), or the end of
+ * their suspension (3.6); the answer to a request about their data, with the
+ * day it came (spec 11, 3.6).
  */
-export type AccountNoticeFacts =
-  | {
-      readonly kind: Exclude<AccountNoticeKind, "privacy_request_answered">;
-      readonly until: Date;
-    }
-  | {
-      readonly kind: "privacy_request_answered";
-      readonly receivedAt: Date;
-      readonly answer: string;
-    };
+export type AccountNoticeFacts = {
+  readonly [Kind in AccountNoticeKind]: { readonly kind: Kind } & AccountNoticeFactsByKind[Kind];
+}[AccountNoticeKind];
+
+export function isAccountFacts(facts: {
+  readonly kind: NotificationKind;
+}): facts is AccountNoticeFacts {
+  return isAccountNotice(facts.kind);
+}
+
+/** A new report, to the operator: only whether it is about safety (spec 9, R9.9). */
+export interface OperatorNoticeFacts {
+  readonly kind: OperatorNoticeKind;
+}
+
+export function isOperatorFacts(facts: {
+  readonly kind: NotificationKind;
+}): facts is OperatorNoticeFacts {
+  return isOperatorNotice(facts.kind);
+}
 
 /** The app's screen for downloading one's data (spec 11, 3.2). */
 export const downloadDataPath = "/settings/privacy/download";
@@ -149,6 +189,8 @@ export interface NotificationText {
   readonly path: string;
   /** The words of an email's link to it, when not the usual "Open in ShareRide". */
   readonly open?: string;
+  /** The email's words, when they say more than the push may (a statement of reasons). */
+  readonly emailBody?: string;
 }
 
 function required<T>(value: T | null, what: string): T {
@@ -160,8 +202,10 @@ function required<T>(value: T | null, what: string): T {
  * The words of an SMS (spec 7, 3.4), for the kinds that go by SMS: short,
  * with the day and time, and never a name, place or note (R7.9).
  */
-export function smsText(facts: NotificationFacts, locale: Locale): string {
+export function smsText(facts: NotificationFacts | OperatorNoticeFacts, locale: Locale): string {
   const t = createTranslator(locale);
+  // Never who or what: the operator reads it in the console (spec 9, R9.9).
+  if (isOperatorFacts(facts)) return t("sms.reportFiledUrgent");
   const values = { date: formatDay(facts.boardsAt, locale), time: formatClock(facts.boardsAt) };
   switch (facts.kind) {
     case "booking_cancelled_by_driver":
@@ -187,24 +231,34 @@ export function smsText(facts: NotificationFacts, locale: Locale): string {
   }
 }
 
-const isAccountFacts = (
-  facts: NotificationFacts | TripReminderFacts | PointPausedFacts | AccountNoticeFacts,
-): facts is AccountNoticeFacts => isAccountNotice(facts.kind);
-
 /**
  * The title, body and screen of a notification: the kinds of spec 5's
  * events, new messages, the email about unread ones, and trip reminders.
  */
 export function notificationText(
-  facts: NotificationFacts | TripReminderFacts | PointPausedFacts | AccountNoticeFacts,
+  facts:
+    | NotificationFacts
+    | TripReminderFacts
+    | PointPausedFacts
+    | AccountNoticeFacts
+    | OperatorNoticeFacts,
   locale: Locale,
   settings: NotificationSettings,
 ): NotificationText {
   if (isAccountFacts(facts)) return accountText(facts, locale);
+  if (isOperatorFacts(facts)) return operatorText(facts.kind, locale);
   if ("point" in facts) return pointPausedText(facts, locale);
   return "passengers" in facts
     ? tripReminderText(facts, locale)
     : bookingText(facts, locale, settings);
+}
+
+/** Only that a report came in, and whether about safety, never who or what (R9.9). */
+function operatorText(kind: OperatorNoticeKind, locale: Locale): NotificationText {
+  const t = createTranslator(locale);
+  return kind === "report_filed_urgent"
+    ? { title: t("notify.reportFiledUrgent"), body: t("notify.reportFiledUrgentBody"), path: "/" }
+    : { title: t("notify.reportFiled"), body: t("notify.reportFiledBody"), path: "/" };
 }
 
 /**
@@ -213,33 +267,88 @@ export function notificationText(
  */
 function accountText(facts: AccountNoticeFacts, locale: Locale): NotificationText {
   const t = createTranslator(locale);
-  if (facts.kind === "privacy_request_answered") {
-    // The answer itself, as the operator wrote it, after a line that says
-    // which request it answers.
-    return {
-      title: t("notify.privacyRequestAnswered"),
-      body: `${t("notify.privacyRequestAnsweredBody", { date: formatDayAndMonth(facts.receivedAt, locale) })}\n\n${facts.answer}`,
-      path: privacyPath,
-    };
-  }
-  const when = t("notify.when", {
-    date: formatDayAndMonth(facts.until, locale),
-    time: formatClock(facts.until),
-  });
+  const when = (moment: Date) =>
+    t("notify.when", { date: formatDayAndMonth(moment, locale), time: formatClock(moment) });
   switch (facts.kind) {
     case "data_export_ready":
       return {
         title: t("notify.dataExportReady"),
-        body: t("notify.dataExportReadyBody", { until: when }),
+        body: t("notify.dataExportReadyBody", { until: when(facts.until) }),
         path: downloadDataPath,
       };
     case "account_deletion_scheduled":
       return {
         title: t("notify.accountDeletionScheduled"),
-        body: t("notify.accountDeletionScheduledBody", { date: when }),
+        body: t("notify.accountDeletionScheduledBody", { date: when(facts.until) }),
         path: deletionWaitPath,
       };
+    case "privacy_request_answered":
+      // The answer itself, as the operator wrote it, after a line that says
+      // which request it answers.
+      return {
+        title: t("notify.privacyRequestAnswered"),
+        body: `${t("notify.privacyRequestAnsweredBody", { date: formatDayAndMonth(facts.receivedAt, locale) })}\n\n${facts.answer}`,
+        path: privacyPath,
+      };
+    case "suspension_ended":
+      return {
+        title: t("notice.title.reinstatement"),
+        body: t("notify.suspensionEnded"),
+        path: "/",
+      };
+    case "moderation_action":
+      return noticeText(facts, locale);
   }
+}
+
+/** The app's screen of the person's notices, where they read and appeal them (spec 9, R9.5). */
+export const noticesPath = "/notices";
+
+/**
+ * An operator's action, as the person is told (spec 9, 3.4.4; R9.5). The
+ * push says only what happened, as others may see a lock screen; the email
+ * is the copy of the statement of reasons: the rule, the reason as the
+ * operator wrote it, and until when it can be appealed in the app
+ * (milestone 9 decision 1).
+ */
+function noticeText(
+  facts: Extract<AccountNoticeFacts, { kind: "moderation_action" }>,
+  locale: Locale,
+): NotificationText {
+  const t = createTranslator(locale);
+  // No weekday, as for the account's other news: "til" would decline it.
+  const when = (moment: Date) =>
+    t("notify.when", { date: formatDayAndMonth(moment, locale), time: formatClock(moment) });
+  const title =
+    facts.action === "suspension"
+      ? facts.until === null
+        ? t("notice.title.suspensionPermanent")
+        : t("notice.title.suspension", { until: when(facts.until) })
+      : t(`notice.title.${facts.action}`);
+  if (!isAppealable(facts.action)) {
+    const body = t("notify.reinstatedBody");
+    return {
+      title,
+      body,
+      path: "/",
+      emailBody: [body, "", t("notice.note", { note: facts.reason })].join("\n"),
+    };
+  }
+  const appealBy = appealDueAt(facts.at, defaultSafetySettings);
+  return {
+    title,
+    body: t("notify.noticeBody"),
+    path: noticesPath,
+    emailBody: [
+      title,
+      "",
+      t("notice.rule", { rule: moderationRuleText(t, required(facts.rule, "the rule")) }),
+      t("notice.reason", { reason: facts.reason }),
+      "",
+      t("notice.appealUntil", { until: when(appealBy) }),
+    ].join("\n"),
+    open: t("notice.open"),
+  };
 }
 
 function bookingText(
@@ -295,6 +404,9 @@ function bookingText(
         return [t("notify.unpaidDriver", { name }), part()];
       case "booking_cancelled_by_passenger":
         return [t("notify.cancelledByPassenger", { name }), part()];
+      // A suspended passenger's booking (spec 9, 3.6): never why.
+      case "booking_cancelled_by_shareride":
+        return [t("notify.cancelledByShareRide", { name }), part()];
       // "I'm here" (spec 8, 3.2): who, at the passenger's meeting point.
       case "checked_in":
       case "checked_in_driver":
@@ -337,11 +449,17 @@ function bookingText(
         ];
       case "booking_cancelled_by_driver":
       case "trip_cancelled":
-        // Never the driver's note: it may hold a number (R7.9).
+        // Never the driver's note: it may hold a number (R7.9). ShareRide
+        // gives no reason: it cancelled for a suspension (spec 9, 3.6).
         return [
-          t(facts.kind === "trip_cancelled" ? "notify.tripCancelled" : "notify.cancelledByDriver", {
-            reason: cancelReasonText(t, required(facts.cancelReason, "the reason")),
-          }),
+          facts.kind === "trip_cancelled" && facts.cancelReason === null
+            ? t("notify.tripCancelledByShareRide")
+            : t(
+                facts.kind === "trip_cancelled"
+                  ? "notify.tripCancelled"
+                  : "notify.cancelledByDriver",
+                { reason: cancelReasonText(t, required(facts.cancelReason, "the reason")) },
+              ),
           facts.refund.amount > 0
             ? t("notify.cancelledRefundBody", {
                 from,

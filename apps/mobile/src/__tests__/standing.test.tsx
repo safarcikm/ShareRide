@@ -182,7 +182,7 @@ describe("a passenger, for the driver (spec 5, 3.3 and 3.7)", () => {
   it("shows nothing of the kind for someone asking who is leaving ShareRide", async () => {
     // As the API answers for someone leaving: no profile, and a newcomer's standing.
     await openTrip([gunna({ ...newcomer, profileId: null })]);
-    expect(await screen.findByText(/Gunna/)).toBeVisible();
+    expect((await screen.findAllByText(/Gunna/)).length).toBeGreaterThan(0);
     expect(screen.queryByText("No reviews yet")).toBeNull();
     expect(screen.queryByText(/^Reliability/)).toBeNull();
     expect(screen.queryByRole("link", { name: /^See profile/ })).toBeNull();

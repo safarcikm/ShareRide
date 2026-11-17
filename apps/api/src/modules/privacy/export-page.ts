@@ -1,4 +1,14 @@
-import { cancelReasons, exportSections, type CancelReason } from "@shareride/domain";
+import {
+  cancelReasons,
+  exportSections,
+  moderationRules,
+  reportCategories,
+  reportOutcomes,
+  type CancelReason,
+  type ModerationRule,
+  type ReportCategory,
+  type ReportOutcome,
+} from "@shareride/domain";
 import {
   cancelReasonText,
   createTranslator,
@@ -6,6 +16,9 @@ import {
   formatDate,
   isMessageKey,
   languageNames,
+  moderationRuleText,
+  reportCategoryText,
+  reportOutcomeText,
   type Locale,
   type Translate,
 } from "@shareride/i18n";
@@ -34,6 +47,12 @@ const legalDocumentKeys: Readonly<Record<string, string>> = {
 
 const isCancelReason = (code: string): code is CancelReason =>
   (cancelReasons as readonly string[]).includes(code);
+const isReportCategory = (code: string): code is ReportCategory =>
+  (reportCategories as readonly string[]).includes(code);
+const isReportOutcome = (code: string): code is ReportOutcome =>
+  (reportOutcomes as readonly string[]).includes(code);
+const isModerationRule = (code: string): code is ModerationRule =>
+  (moderationRules as readonly string[]).includes(code);
 
 /**
  * Fields that hold a stored code, and how to say each code in the person's
@@ -57,7 +76,6 @@ function codeWords(t: Translate, locale: Locale): Readonly<Record<string, Say>> 
     cancelledBy: keyed("export.value.role"),
     reportedBy: keyed("export.value.role"),
     answer: keyed("export.value.answer"),
-    outcome: keyed("export.value.outcome"),
     decidedBy: keyed("export.value.decidedBy"),
     from: keyed("export.value.from"),
     bookingMode: keyed("trip.bookingMode"),
@@ -68,6 +86,15 @@ function codeWords(t: Translate, locale: Locale): Readonly<Record<string, Say>> 
     colour: keyed("vehicle.colour"),
     declineReason: keyed("request.reason"),
     cancelReason: (code) => (isCancelReason(code) ? cancelReasonText(t, code) : undefined),
+    subject: keyed("export.value.subject"),
+    category: (code) => (isReportCategory(code) ? reportCategoryText(t, code) : undefined),
+    // A ride report's outcome and a safety report's outcome share the field;
+    // their codes differ.
+    outcome: (code) =>
+      keyed("export.value.outcome")(code) ??
+      (isReportOutcome(code) ? reportOutcomeText(t, code) : undefined),
+    rule: (code) => (isModerationRule(code) ? moderationRuleText(t, code) : undefined),
+    appealOutcome: keyed("export.value.appealOutcome"),
     document: (code) => {
       const key = legalDocumentKeys[code];
       return key !== undefined && isMessageKey(key) ? t(key) : undefined;

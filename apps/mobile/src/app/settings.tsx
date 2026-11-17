@@ -137,6 +137,12 @@ function Settings({ me }: { readonly me: Me }) {
         {heading(t("safety.title"))}
         <Card>
           <Row
+            title={t("reports.title")}
+            onPress={() => {
+              router.push("/settings/reports");
+            }}
+          />
+          <Row
             title={t("blocks.title")}
             onPress={() => {
               router.push("/settings/blocked");

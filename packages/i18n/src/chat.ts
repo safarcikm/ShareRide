@@ -66,6 +66,8 @@ export type ShownSystemLine =
     }
   /** "I'm here" (spec 8, 3.2): mine, or the other person's. */
   | { readonly key: "checked_in"; readonly by: "me" | "them" }
+  /** ShareRide cancelled the booking or the trip (spec 9, 3.6), never saying why. */
+  | { readonly key: "cancelled_by_shareride"; readonly wholeTrip: boolean }
   | {
       readonly key: "cancelled";
       readonly by: "me" | "them";
@@ -85,6 +87,9 @@ export function systemLineText(t: Translate, line: ShownSystemLine, other: strin
   if (line.key === "stop_removed") return t("trip.stopRemoved", { stop: line.stop });
   if (line.key === "checked_in") {
     return line.by === "me" ? t("chat.checkedInMe") : t("chat.checkedInThem", { name: other });
+  }
+  if (line.key === "cancelled_by_shareride") {
+    return t(line.wholeTrip ? "chat.tripCancelledByShareRide" : "chat.cancelledByShareRide");
   }
   const reason = cancelReasonText(t, line.reason);
   const said = line.wholeTrip

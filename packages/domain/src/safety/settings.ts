@@ -15,8 +15,10 @@ export interface SafetySettings {
   readonly smsAlertUntilHour: number;
   /** An action that affects someone can be appealed for this many days (R9.5). */
   readonly appealDays: number;
-  /** One person files at most this many reports a day, against abuse of reports. */
+  /** One person files at most this many reports in 24 hours, against abuse of reports. */
   readonly reportsPerDay: number;
+  /** Reports, actions and appeals are kept this many years after closure (spec 9, section 7). */
+  readonly reportKeptYears: number;
 }
 
 /** The starting values (spec 9, accepted 2026-11-13; milestone 9 plan). */
@@ -28,6 +30,7 @@ export const defaultSafetySettings: SafetySettings = {
   smsAlertUntilHour: 23,
   appealDays: 14,
   reportsPerDay: 10,
+  reportKeptYears: 3,
 };
 
 /**

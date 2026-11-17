@@ -19,6 +19,7 @@ import { quickOf, systemLineOf } from "../chat/service.ts";
 
 const {
   blocks,
+  moderationActions,
   bookingSegmentPrices,
   bookings,
   checkIns,
@@ -35,6 +36,7 @@ const {
   payments,
   privacyRequests,
   pushTokens,
+  reports,
   reviews,
   segments,
   sessions,
@@ -52,10 +54,25 @@ const toStops = alias(tripStops, "to_stops");
 const fromPoints = alias(meetingPoints, "from_points");
 const toPoints = alias(meetingPoints, "to_points");
 const blockedPeople = alias(users, "blocked_people");
+const reportedPeople = alias(users, "reported_people");
 
 /** A moment as text, or null. */
 type When = string | null;
 const when = (moment: Date | null): When => (moment === null ? null : moment.toISOString());
+
+/**
+ * Whether a cancellation counts on reliability, and when ShareRide made it
+ * count: part of the record of whoever cancelled (spec 8, 6), so a booking
+ * the driver cancelled has it in the driver's export, not the passenger's.
+ * The operator's reason for it is theirs only, as a report's decision note is.
+ */
+const countingOf = (row: {
+  readonly countsOnReliability: boolean;
+  readonly overruledAt: Date | null;
+}) => ({
+  countsOnReliability: row.countsOnReliability,
+  overruledAt: when(row.overruledAt),
+});
 
 /** The notification log in an export goes back this far (spec 11, 3.2.3). */
 const notificationDays = 90;
@@ -97,6 +114,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     licenceDeclaredAt: when(user.licenceDeclaredAt),
     roles: user.roles,
     status: user.status,
+    suspendedUntil: when(user.suspendedUntil),
     deleteAfter: when(user.deleteAfter),
     memberSince: when(user.createdAt),
   };
@@ -179,7 +197,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
   // Reports about a ride they raised or answered (spec 8, 3.3 and 3.4), each
   // with the person's own note only: the other side's note and the
   // operator's are for the operator (spec 8, 7), so they are not read here.
-  const reports = await q
+  const rideReports = await q
     .select({
       bookingId: disputes.bookingId,
       kind: disputes.kind,
@@ -197,7 +215,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     .innerJoin(trips, eq(trips.id, bookings.tripId))
     .where(or(eq(bookings.passengerId, userId), eq(trips.driverId, userId)));
   const reportOn = (bookingId: string, role: TripRole) => {
-    const report = reports.find((row) => row.bookingId === bookingId);
+    const report = rideReports.find((row) => row.bookingId === bookingId);
     if (report === undefined) return null;
     const reportedBy = reporterOf(report.kind as DisputeKind);
     return {
@@ -357,11 +375,10 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
           changedAt: when(change.changedAt),
         })),
       cancelledAt: when(trip.cancelledAt),
+      cancelledBy: trip.cancelledBy,
       cancelReason: trip.cancelReason,
       cancelNote: trip.cancelNote,
-      countsOnReliability: trip.countsOnReliability,
-      // The operator's reason for it is theirs only, as a report's decision note is.
-      overruledAt: when(trip.overruledAt),
+      ...countingOf(trip),
       passengers: riders
         .filter((row) => row.booking.tripId === trip.id)
         .map(({ booking, firstName, from, to }) => ({
@@ -377,6 +394,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
           cancelledBy: booking.cancelledBy,
           cancelReason: booking.cancelReason,
           cancelNote: booking.cancelNote,
+          ...(booking.cancelledBy === "driver" ? countingOf(booking) : {}),
           dispute: reportOn(booking.id, "driver"),
           ...reviewsOn(booking.id),
         })),
@@ -461,8 +479,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     cancelReason: booking.cancelReason,
     cancelNote: booking.cancelNote,
     refund: booking.refundAmount,
-    countsOnReliability: booking.countsOnReliability,
-    overruledAt: when(booking.overruledAt),
+    ...(booking.cancelledBy === "driver" ? {} : countingOf(booking)),
   }));
 
   const paid = await q
@@ -546,6 +563,23 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     };
   });
 
+  // The reports the person filed, never reports about them (spec 9, R9.2).
+  const filed = await q
+    .select({
+      subject: reports.subject,
+      person: reportedPeople.firstName,
+      category: reports.category,
+      description: reports.description,
+      sentAt: reports.createdAt,
+      status: reports.status,
+      outcome: reports.outcome,
+      closedAt: reports.closedAt,
+    })
+    .from(reports)
+    .leftJoin(reportedPeople, eq(reportedPeople.id, reports.subjectUserId))
+    .where(eq(reports.reporterId, userId))
+    .orderBy(asc(reports.createdAt), asc(reports.id));
+
   // The blocks the person made, never who blocked them (spec 9, 3.2).
   const blocked = await q
     .select({ firstName: blockedPeople.firstName, since: blocks.createdAt })
@@ -553,6 +587,25 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     .innerJoin(blockedPeople, eq(blockedPeople.id, blocks.blockedId))
     .where(eq(blocks.blockerId, userId))
     .orderBy(asc(blocks.createdAt), asc(blocks.id));
+
+  // What ShareRide did about the person and why, with their appeals (spec 9,
+  // R9.5); never which operator, nor the report it came from.
+  const noticed = await q
+    .select({
+      kind: moderationActions.kind,
+      rule: moderationActions.rule,
+      reason: moderationActions.reason,
+      until: moderationActions.until,
+      createdAt: moderationActions.createdAt,
+      appeal: moderationActions.appealText,
+      appealedAt: moderationActions.appealedAt,
+      appealAnswer: moderationActions.appealAnswer,
+      appealOutcome: moderationActions.appealOutcome,
+      answeredAt: moderationActions.appealAnsweredAt,
+    })
+    .from(moderationActions)
+    .where(eq(moderationActions.userId, userId))
+    .orderBy(asc(moderationActions.createdAt), asc(moderationActions.id));
 
   const since = new Date(now.getTime() - notificationDays * 24 * 3600 * 1000);
   const told = await q
@@ -613,7 +666,19 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
       bookings: bookingsSection,
       payments: paymentsSection,
       conversations: conversationsSection,
+      reports: filed.map((row) => ({
+        ...row,
+        sentAt: when(row.sentAt),
+        closedAt: when(row.closedAt),
+      })),
       blocks: blocked.map((row) => ({ firstName: row.firstName ?? "", since: when(row.since) })),
+      notices: noticed.map((row) => ({
+        ...row,
+        until: when(row.until),
+        createdAt: when(row.createdAt),
+        appealedAt: when(row.appealedAt),
+        answeredAt: when(row.answeredAt),
+      })),
       notifications: told.map((row) => ({
         kind: row.kind,
         channel: row.channel,
