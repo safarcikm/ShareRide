@@ -51,6 +51,13 @@ export interface SessionManager {
   /** After a change to the account, such as a saved profile. */
   update(me: Me): void;
   /**
+   * Reads the account again while signed in, keeping the last copy if the
+   * API cannot be reached: when the app comes back into view, and after a
+   * refusal that says the account changed, such as a suspension (spec 9,
+   * 3.6.2).
+   */
+  reloadMe(): Promise<void>;
+  /**
    * Forgets the tokens once the API confirms. On a phone, signing out of this
    * device forgets them even when the API cannot be reached, since deleting
    * the stored token is enough there. On the web only the API can delete the
@@ -141,6 +148,30 @@ export function createSessionManager(options: {
     route: R,
     input: CallInput<R>,
   ): Promise<CallResult<R>> {
+    const result = await callOnce(route, input);
+    // Suspended since the account was read: the screens follow (spec 9, 3.6.2).
+    if (!result.ok && result.error.code === "account_suspended") void reloadMe();
+    return result;
+  }
+
+  async function reloadMe(): Promise<void> {
+    if (current.status !== "signedIn") return;
+    const me = await callOnce(getMeRoute, {});
+    // Read again: signing out may have happened while the answer was on its way.
+    const now = stateNow();
+    if (!me.ok || now.status !== "signedIn") return;
+    if (JSON.stringify(me.data) === JSON.stringify(now.me)) return;
+    set({ status: "signedIn", me: me.data });
+  }
+
+  function stateNow(): SessionState {
+    return current;
+  }
+
+  async function callOnce<R extends RouteDefinition>(
+    route: R,
+    input: CallInput<R>,
+  ): Promise<CallResult<R>> {
     const used = accessToken;
     const result = await client.call(route, { ...input, accessToken: used });
     if (result.ok || result.status !== 401 || result.error.code !== "unauthenticated") {
@@ -199,6 +230,8 @@ export function createSessionManager(options: {
     update(me) {
       set({ status: "signedIn", me });
     },
+
+    reloadMe,
 
     async signOut({ all }) {
       const result = await call(signOutRoute, { body: { all } });
