@@ -176,13 +176,6 @@
       "when": 1794873915321,
       "tag": "0024_operator_passkeys",
       "breakpoints": true
-    },
-    {
-      "idx": 25,
-      "version": "7",
-      "when": 1794887206030,
-      "tag": "0025_trip_day_disputes",
-      "breakpoints": true
     }
   ]
 }
