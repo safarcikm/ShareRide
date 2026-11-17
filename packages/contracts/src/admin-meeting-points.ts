@@ -1,5 +1,6 @@
 import {
   amenities,
+  importLimits,
   meetingPointStatuses,
   meetingPointTypes,
   photoLimits,
@@ -425,5 +426,66 @@ export const adminRemoveMeetingPointPhotoRoute = defineRoute({
     ...photoResponses,
     400: { description: "validation_failed", ...errors },
     409: { description: "meeting_point_retired", ...errors },
+  },
+});
+
+// Adding drafts from a CSV file (spec 2, 3.6.9; milestone 8 plan, 4.6). The
+// domain reads and checks the file (`readMeetingPointImport`).
+
+/** A row of the file as it will be saved, or why it will be skipped. */
+export const adminImportRowSchema = z.object({
+  /** The line of the file the row starts on; the header is line 1. */
+  line: z.int().positive(),
+  nameIs: z.string(),
+  /** The draft as it will be saved; null when the row has problems. */
+  point: adminMeetingPointInputSchema
+    .pick({
+      nameEn: true,
+      aliases: true,
+      position: true,
+      region: true,
+      municipality: true,
+      type: true,
+      amenities: true,
+      whereToStandIs: true,
+      whereToStandEn: true,
+      season: true,
+    })
+    .nullable(),
+  /** By the file's column, "position" for both coordinates, or "row". */
+  problems: z.array(z.object({ column: z.string(), issue: z.string() })),
+  /** The new draft's ID, once saved. */
+  id: z.uuid().nullable(),
+});
+
+export type AdminImportRow = z.infer<typeof adminImportRowSchema>;
+
+export const adminImportMeetingPointsRoute = defineRoute({
+  method: "post",
+  path: "/admin/v1/meeting-points/import",
+  summary: "Check a CSV file of meeting points, or add its rows without problems as drafts",
+  tags: ["admin", "meeting-points"],
+  auth: "operator",
+  request: {
+    body: z.object({
+      /** The file's text, read as UTF-8. */
+      file: z.string().max(importLimits.maxBytes),
+      /** False shows what would be saved; true saves it, in one transaction. */
+      save: z.boolean(),
+    }),
+  },
+  responses: {
+    200: {
+      description: "Each row with its problems, and the drafts added when saved",
+      schema: z.object({ rows: z.array(adminImportRowSchema), added: z.int().min(0) }),
+    },
+    400: {
+      description:
+        "validation_failed: the file cannot be read; `details` has each problem, with `path` " +
+        "`file`, `columns.<name>` or `lines.<number>`",
+      ...errors,
+    },
+    401: { description: "operator_unauthenticated", ...errors },
+    413: { description: "payload_too_large: the file is over 1 MB", ...errors },
   },
 });
