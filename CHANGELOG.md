@@ -559,6 +559,22 @@ releases follow [Semantic Versioning](https://semver.org/).
   email (the email with the answer), and the reporter "Your report" with
   the outcome in general terms, by push. Each writes one audit entry.
   Migration `0038_appeals` widens the notification and event kinds.
+- Notices and the suspended account in the app (milestone 9, PR 6c, spec
+  9, 3.4.4 and 3.6.2): Profile has Notices, where a notice's push and
+  email lead: what ShareRide did and why, the rule, what it concerned,
+  and one appeal of up to 1 000 characters within 14 days, then
+  ShareRide's answer. A suspended person sees, in place of Find and
+  Offer, until when and why, what is closed and what stays open, with
+  "Read why and appeal" and My rides; booking a seat and a new trip are
+  closed too, and a conversation stays readable with a line saying why
+  nothing can be sent. The app reads the account again when it comes back
+  into view and when an action is refused as suspended, and a suspension
+  whose end has passed is over at once. Tapping the push of a notice opens
+  Notices, and that of a report's outcome My reports. `GET /v1/me` gains
+  `suspension` (its end, or null when not suspended). The browser tests'
+  API can suspend a person (`POST /e2e/suspend`), as the console will. In
+  Icelandic, Notices are "Orðsendingar frá ShareRide", apart from
+  Messages ("Skilaboð").
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its
@@ -682,6 +698,19 @@ releases follow [Semantic Versioning](https://semver.org/).
   both show now. The booking and the trip then show the review sent and,
   once it shows, the other's review. A browser journey: both review and
   each sees the other's.
+- Public profiles in the API (milestone 7, PR 7a, spec 1, 3.5, and spec 8,
+  3.7 and 3.8): `GET /v1/people/{profileId}` gives anyone signed in a
+  person's first name, about, languages, badges, the month they joined,
+  colour, rating and reliability figure, never their phone number, email, last name or
+  user ID. A profile is reached by its own random reference: migration
+  `0039_profile_ids` adds `users.profile_id`. The rating is the average of
+  the reviews that show, to one decimal; `GET /v1/people/{profileId}/reviews`
+  lists them newest first, 20 at a time, for one role or both, with the
+  author's first name ("A former member" once erased) and the month. The
+  figure is the share kept of the trips and bookings that count over the
+  last 12 months, from 5 that count, with the counts by role. Nobody leaving
+  ShareRide has a profile, and what they wrote shows nowhere until they are
+  erased.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

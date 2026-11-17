@@ -3,6 +3,7 @@ import { schema, type Database } from "@shareride/db";
 import {
   checkAcceptance,
   err,
+  isSuspended,
   missingSteps,
   ok,
   validateProfileChanges,
@@ -68,6 +69,15 @@ export function createAccountService(dependencies: {
       ageConfirmed: user.ageConfirmedAt !== null,
       memberSince: user.createdAt.toISOString(),
       missingSteps: steps,
+      suspension: isSuspended(
+        {
+          status: user.status === "suspended" ? "suspended" : "active",
+          suspendedUntil: user.suspendedUntil,
+        },
+        clock(),
+      )
+        ? { until: user.suspendedUntil?.toISOString() ?? null }
+        : null,
       deletionScheduledFor: user.deleteAfter?.toISOString() ?? null,
     };
   }

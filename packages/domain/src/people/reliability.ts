@@ -48,6 +48,23 @@ export interface BookingForReliability {
   readonly at: Date;
 }
 
+/** A no-show the passenger can no longer contest: it stands, or was found their absence. */
+const noShowStands = (outcome: DisputeOutcome | null) =>
+  outcome === "stands" || outcome === "passenger_absent";
+
+/**
+ * Whether the driver came for this booking's passenger: it completed, or
+ * it is a no-show that stands (`TripForReliability.passengersDue`).
+ */
+export function passengerWasDue(
+  booking: Pick<BookingForReliability, "status" | "reportOutcome">,
+): boolean {
+  return (
+    booking.status === "completed" ||
+    (booking.status === "no_show" && noShowStands(booking.reportOutcome))
+  );
+}
+
 /**
  * The passenger's side of a booking: kept once completed; not kept as a
  * no-show that stands, or when their own cancellation counts (spec 6,
@@ -62,9 +79,7 @@ export function passengerRecord(booking: BookingForReliability): ReliabilityReco
   if (booking.status === "no_show") {
     // Marked by the driver and standing, or the passenger's own report that
     // the driver didn't come, found to be their absence (spec 8, decision 5).
-    const decided =
-      booking.reportOutcome === "stands" || booking.reportOutcome === "passenger_absent";
-    return decided ? record(false) : null;
+    return noShowStands(booking.reportOutcome) ? record(false) : null;
   }
   if (
     booking.status === "cancelled" &&
@@ -140,11 +155,14 @@ export interface Reliability {
   readonly belowWatchLevel: boolean;
 }
 
-/** The same day and time some months earlier, or that month's last day when it is shorter. */
-function monthsBefore(now: Date, months: number): Date {
+/**
+ * Where the period that counts begins: the same day and time
+ * `periodMonths` earlier, or that month's last day when it is shorter.
+ */
+export function reliabilitySince(now: Date, settings: ReliabilitySettings): Date {
   const since = new Date(now);
   since.setUTCDate(1);
-  since.setUTCMonth(since.getUTCMonth() - months);
+  since.setUTCMonth(since.getUTCMonth() - settings.periodMonths);
   const year = since.getUTCFullYear();
   const lastDay = new Date(Date.UTC(year, since.getUTCMonth() + 1, 0)).getUTCDate();
   since.setUTCDate(Math.min(now.getUTCDate(), lastDay));
@@ -156,7 +174,7 @@ export function reliabilityOf(
   now: Date,
   settings: ReliabilitySettings,
 ): Reliability {
-  const since = monthsBefore(now, settings.periodMonths);
+  const since = reliabilitySince(now, settings);
   const byRole = {
     driver: { kept: 0, counted: 0 },
     passenger: { kept: 0, counted: 0 },

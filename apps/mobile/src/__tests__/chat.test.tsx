@@ -581,6 +581,21 @@ describe("A conversation (spec 7, 3.1)", () => {
   });
 });
 
+describe("A conversation while suspended (spec 9, 3.6.2)", () => {
+  it("stays readable, and says why nothing can be sent instead of the field", async () => {
+    await renderApp(conversationPage, {
+      me: { ...completeMe, suspension: { until: null } },
+      setUp: (client) => {
+        chatServer(client);
+      },
+    });
+    expect(
+      await screen.findByText("Your account is suspended. Read why under Profile, Notices."),
+    ).toBeVisible();
+    expect(screen.queryByLabelText("Write a message")).toBeNull();
+  });
+});
+
 describe("Conversations list (spec 7, 3.1, item 9)", () => {
   const other = northBooking({
     id: "0190a1d6-0000-7000-8000-0000000000b7",
