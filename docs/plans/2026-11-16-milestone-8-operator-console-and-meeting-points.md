@@ -324,7 +324,7 @@ PR 8 is in two parts.
 
 ### PR 9: `feat(meeting-points)`: import drafts from a CSV file
 
-- [ ] Parse and check rows, the preview, saving in one transaction
+- [x] Parse and check rows, the preview, saving in one transaction
 - Verify: domain tests for each column's problems; integration test
 
 ### PR 10: `feat(meeting-points)`: problem reports
