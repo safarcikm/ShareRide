@@ -623,7 +623,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   email never sits in an address. Operators add notes about a person
   (migration `0039_operator_notes`), each in the audit log without its
   words; the person gets them in Download my data, never who wrote them
-  (open question Q24). Erasing the person erases the notes about them;
+  (open question Q25). Erasing the person erases the notes about them;
   erasing an operator keeps the notes they wrote, by the former member.
   Each driver's decline rate over 90 days, the highest first, so a pattern
   that could be discrimination can be looked at.

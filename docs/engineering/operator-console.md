@@ -364,7 +364,7 @@ them the same way.
 - `POST /admin/v1/users/{id}/notes` with `{ text }` adds a note about the
   person, at most 1 000 characters (`checkOperatorNote`). Only operators
   see notes in the console, but the person gets each note's text and date
-  in Download my data, never who wrote it (open question Q24), so a note
+  in Download my data, never who wrote it (open question Q25), so a note
   keeps to facts. Its audit entry, `user.note_added`, names the note's ID,
   never its words. Erasing the person erases the notes about them; erasing
   an operator keeps the notes they wrote, by the former member.

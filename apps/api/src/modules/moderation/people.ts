@@ -1,7 +1,7 @@
 // The console's users, trips and bookings (spec 9, 3.5; milestone 9, PR 8):
 // finding people and trips, a person's page and a trip's page, notes
 // operators write about a person (who gets them in Download my data, never
-// who wrote them; Q24), and each driver's request decline rate (3.4.5).
+// who wrote them; Q25), and each driver's request decline rate (3.4.5).
 // Suspending and reinstating go through the moderation console service.
 import type {
   AdminDeclineRate,
