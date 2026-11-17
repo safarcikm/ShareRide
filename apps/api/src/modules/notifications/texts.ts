@@ -1,11 +1,12 @@
-import type {
-  AccountNoticeKind,
-  CancelReason,
-  Money,
-  NotificationKind,
-  NotificationSettings,
-  QuickMessage,
-  TripRole,
+import {
+  isAccountNotice,
+  type AccountNoticeKind,
+  type CancelReason,
+  type Money,
+  type NotificationKind,
+  type NotificationSettings,
+  type QuickMessage,
+  type TripRole,
 } from "@shareride/domain";
 import {
   cancelReasonText,
@@ -118,18 +119,28 @@ export interface TripReminderFacts {
 
 /**
  * News about the person's account (spec 11): a data export, until when it
- * can be downloaded; a deletion, when the data is erased.
+ * can be downloaded; a deletion, when the data is erased; the answer to a
+ * request about their data, with the day it came.
  */
-export interface AccountNoticeFacts {
-  readonly kind: AccountNoticeKind;
-  readonly until: Date;
-}
+export type AccountNoticeFacts =
+  | {
+      readonly kind: Exclude<AccountNoticeKind, "privacy_request_answered">;
+      readonly until: Date;
+    }
+  | {
+      readonly kind: "privacy_request_answered";
+      readonly receivedAt: Date;
+      readonly answer: string;
+    };
 
 /** The app's screen for downloading one's data (spec 11, 3.2). */
 export const downloadDataPath = "/settings/privacy/download";
 
 /** Where signing in while a deletion waits shows "Keep my account" (spec 11, 3.4.4). */
 export const deletionWaitPath = "/";
+
+/** Where a person asks about their data (spec 11, 3.6). */
+export const privacyPath = "/settings/privacy";
 
 export interface NotificationText {
   readonly title: string;
@@ -176,6 +187,10 @@ export function smsText(facts: NotificationFacts, locale: Locale): string {
   }
 }
 
+const isAccountFacts = (
+  facts: NotificationFacts | TripReminderFacts | PointPausedFacts | AccountNoticeFacts,
+): facts is AccountNoticeFacts => isAccountNotice(facts.kind);
+
 /**
  * The title, body and screen of a notification: the kinds of spec 5's
  * events, new messages, the email about unread ones, and trip reminders.
@@ -185,7 +200,7 @@ export function notificationText(
   locale: Locale,
   settings: NotificationSettings,
 ): NotificationText {
-  if ("until" in facts) return accountText(facts, locale);
+  if (isAccountFacts(facts)) return accountText(facts, locale);
   if ("point" in facts) return pointPausedText(facts, locale);
   return "passengers" in facts
     ? tripReminderText(facts, locale)
@@ -198,6 +213,15 @@ export function notificationText(
  */
 function accountText(facts: AccountNoticeFacts, locale: Locale): NotificationText {
   const t = createTranslator(locale);
+  if (facts.kind === "privacy_request_answered") {
+    // The answer itself, as the operator wrote it, after a line that says
+    // which request it answers.
+    return {
+      title: t("notify.privacyRequestAnswered"),
+      body: `${t("notify.privacyRequestAnsweredBody", { date: formatDayAndMonth(facts.receivedAt, locale) })}\n\n${facts.answer}`,
+      path: privacyPath,
+    };
+  }
   const when = t("notify.when", {
     date: formatDayAndMonth(facts.until, locale),
     time: formatClock(facts.until),

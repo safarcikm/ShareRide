@@ -15,6 +15,7 @@ import {
 import { sessions } from "./auth.ts";
 import { bookings } from "./bookings.ts";
 import { messages } from "./chat.ts";
+import { privacyRequests } from "./privacy.ts";
 import { at, id, oneOf, timestamps } from "./columns.ts";
 import { meetingPoints } from "./meeting-points.ts";
 import { tripChanges, trips } from "./trips.ts";
@@ -70,6 +71,8 @@ export const notifications = pgTable(
     messageId: uuid().references(() => messages.id, { onDelete: "cascade" }),
     /** For a moved departure: the change, for the times before and after (spec 6, 3.2). */
     tripChangeId: uuid().references(() => tripChanges.id, { onDelete: "cascade" }),
+    /** For an answer to "Ask about my data": the request, whose answer the email gives (spec 11, 3.6). */
+    privacyRequestId: uuid().references(() => privacyRequests.id, { onDelete: "cascade" }),
     /**
      * For a paused meeting point: the point, which the text names with its
      * reason (spec 2, 3.6.4). Points are never deleted (R2.2).
@@ -86,6 +89,7 @@ export const notifications = pgTable(
     index("notifications_trip_index").on(table.tripId),
     index("notifications_message_index").on(table.messageId),
     index("notifications_trip_change_index").on(table.tripChangeId),
+    index("notifications_privacy_request_index").on(table.privacyRequestId),
     // The clean-up finds old ones.
     index("notifications_created_index").on(table.createdAt),
   ],

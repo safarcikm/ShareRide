@@ -1,6 +1,7 @@
+import { privacyRequestKinds } from "@shareride/domain";
 import { sql } from "drizzle-orm";
 import { check, index, integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
-import { at, bytes, id, timestamps } from "./columns.ts";
+import { at, bytes, id, oneOf, timestamps } from "./columns.ts";
 import { users } from "./users.ts";
 
 /**
@@ -62,6 +63,39 @@ export const blockedNumbers = pgTable("blocked_numbers", {
   until: at().notNull(),
   createdAt: at().notNull().defaultNow(),
 });
+
+/**
+ * "Ask about my data" (spec 11, 3.6): an objection, a restriction, a
+ * correction or a question, due one month after it arrives (R11.7) and
+ * answered by email through the `privacy` command until the console has a
+ * page for it. Kept 3 years after the answer; when the account is erased,
+ * it moves to the former member, to show it was answered.
+ */
+export const privacyRequests = pgTable(
+  "privacy_requests",
+  {
+    id: id(),
+    userId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    kind: text().notNull(),
+    text: text().notNull(),
+    receivedAt: at().notNull(),
+    dueAt: at().notNull(),
+    answeredAt: at(),
+    answer: text(),
+    ...timestamps,
+  },
+  (table) => [
+    index("privacy_requests_user_index").on(table.userId, table.receivedAt),
+    index("privacy_requests_due_index").on(table.dueAt),
+    check("privacy_requests_kind_check", oneOf(table.kind, privacyRequestKinds)),
+    check(
+      "privacy_requests_answer_check",
+      sql`(${table.answeredAt} is null) = (${table.answer} is null)`,
+    ),
+  ],
+);
 
 /**
  * One row per retention rule each time the hourly clean-up runs it (spec

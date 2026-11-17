@@ -553,6 +553,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   other's once it shows (never one the operator hid). Migration
   `0030_reviews` adds the `reviews` table, with `hidden_at` for
   moderation (spec 9), and widens the notification kinds.
+- Rating and reviewing in the app (milestone 7, PR 6b, spec 8, screen 6):
+  "Rate the driver" on a completed booking and "Rate your passenger" under
+  each passenger of the driver's completed trip, with until when; while a
+  report on the booking is open, or once the other person has left, it says
+  why instead. Stars take the design system's rating colour (a new `rating`
+  token) and show the number next to them. The rate
+  screen takes 1 to 5 stars and an optional comment, checked as it is typed
+  (500 characters, no phone numbers, emails or links), and says the review
+  appears once the other person has reviewed too or after 14 days, or that
+  both show now. The booking and the trip then show the review sent and,
+  once it shows, the other's review. A browser journey: both review and
+  each sees the other's.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
@@ -649,7 +661,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   boarding. The API's minute job brings a paused point back on its end
   date and retires a retiring one after its last trip. A point in use is
   due for review a year after its last check (R2.9). Migration
-  `0031_meeting_point_pauses` adds the `MeetingPointChanged` event and the
+  `0032_meeting_point_pauses` adds the `MeetingPointChanged` event and the
   meeting point of a notification. A point retired while paused keeps its
   reason and its news still goes out. Publishing a trip and adding a stop
   wait for a pause under way. The sample seed keeps the status the console
@@ -676,6 +688,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   notification log and drafts, and the account itself) until its end. The
   `privacy` command shows the last run of each rule (`runs`) and lists,
   sets and ends holds (`holds`, `hold`, `end-hold`), each in the audit log.
+- Ask about my data in the API (spec 11, 3.6): `POST /v1/me/privacy-requests`
+  takes an objection, a restriction, a correction or a question from
+  someone with a verified email, at most 5 a day, due a month later. The
+  `privacy` command lists those waiting (`requests`) and answers one
+  (`answer`), in the audit log; the answer goes by email in the person's
+  language. Requests and answers are in Download my data, kept under the
+  former member when the account is erased, and deleted 3 years after the
+  answer.
 
 ### Fixed
 

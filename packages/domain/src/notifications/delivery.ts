@@ -37,6 +37,7 @@ export const outboxEventTypes = [
   "MeetingPointChanged",
   "DataExportReady",
   "AccountDeletionScheduled",
+  "PrivacyRequestAnswered",
 ] as const;
 export type OutboxEventType = (typeof outboxEventTypes)[number];
 

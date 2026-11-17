@@ -37,6 +37,7 @@ import { bookingShareText } from "@/safety/share-details";
 import { TripSafety } from "@/safety/trip-safety";
 import { NotificationsPrompt } from "@/notifications/notifications-prompt";
 import { onTripDay, PassengerImHere, TripDayHeading } from "@/trip-day/passenger";
+import { ReviewSection } from "@/reviews/review-section";
 import { ReportStatus } from "@/trip-day/report-status";
 import { offersDriverAbsent, reportState } from "@/trip-day/reports";
 import { useTripDayRefresh } from "@/trip-day/use-refresh";
@@ -244,6 +245,7 @@ function BookingDetails({
           onCancel={onAction}
         />
       ) : null}
+      <ReviewSection booking={booking} framed />
       {/* Not on the trip day, when time and place come first. */}
       {occasion === null || tripDay ? null : <NotificationsPrompt occasion={occasion} />}
 
