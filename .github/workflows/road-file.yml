@@ -36,8 +36,10 @@ jobs:
       - name: Download the Iceland extract and check it
         run: |
           base=https://download.geofabrik.de/europe/iceland-latest.osm.pbf
-          curl -fsSL --retry 3 -o iceland.osm.pbf "$base"
-          curl -fsSL --retry 3 -o iceland.osm.pbf.md5 "$base.md5"
+          # Geofabrik sometimes refuses a connection: try again on any error.
+          fetch() { curl -fsSL --retry 5 --retry-delay 20 --retry-all-errors -o "$1" "$2"; }
+          fetch iceland.osm.pbf "$base"
+          fetch iceland.osm.pbf.md5 "$base.md5"
           echo "$(cut -d ' ' -f 1 iceland.osm.pbf.md5)  iceland.osm.pbf" | md5sum -c -
           osmium fileinfo -g header.option.osmosis_replication_timestamp iceland.osm.pbf | tee map-date.txt
       - name: Keep the roads cars may use
