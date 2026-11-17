@@ -3,7 +3,9 @@ import {
   bookingRoute,
   changeTripRoute,
   conversationMessagesRoute,
+  copyTripRoute,
   getMeRoute,
+  messageAllPassengersRoute,
   myConversationsRoute,
   myNoticesRoute,
   sendMessageRoute,
@@ -141,6 +143,20 @@ async function noteShown(tripId: string) {
   return result.data.note;
 }
 
+/** The person's appeal of the action, straight in the database, then the operator's answer. */
+async function appealed(by: Moderator, actionId: string, outcome: "upheld" | "reversed") {
+  await api.connection.db
+    .update(schema.moderationActions)
+    .set({ appealText: "Please look again.", appealedAt: api.now() })
+    .where(eq(schema.moderationActions.id, actionId));
+  const answered = await moderation().answerAppeal(
+    by,
+    { actionId, outcome, answer: "We read it again." },
+    request,
+  );
+  if (!answered.ok) throw new Error(answered.error.code);
+}
+
 async function withNote(tripId: string, note: string) {
   await api.connection.db.update(schema.trips).set({ note }).where(eq(schema.trips.id, tripId));
 }
@@ -271,6 +287,61 @@ describe("hiding a message (spec 9, 3.4.3)", () => {
       }),
     ]);
     expect(JSON.stringify(await conversations(gunna))).not.toContain("Something rude");
+    // The notice names what it concerned (R9.5).
+    const data = await collectExport(api.connection.db, jon.userId, api.now());
+    expect(data.sections.notices).toEqual([
+      expect.objectContaining({ kind: "content_hidden", content: "message" }),
+    ]);
+  });
+
+  it("hides a message to all passengers in every conversation it went to, as one", async () => {
+    const { jon, gunna, bookingId } = await ride();
+    const siggi = await newMember("Siggi");
+    const other = await booked(siggi.accessToken, airport, { fromStop: 0, toStop: 1 });
+    await paid(siggi.accessToken, other.id);
+    const sent = await api.client.call(messageAllPassengersRoute, {
+      accessToken: jon.accessToken,
+      params: { id: airport },
+      body: { clientId: randomUUID(), text: "Something rude to you all" },
+    });
+    expect(sent).toMatchObject({ data: { sent: 2 } });
+    const [reported] = (await messagesOf(gunna, bookingId)).filter((line) => line.from === "them");
+    if (reported === undefined) throw new Error("No message.");
+    const by = await moderator();
+
+    const hidden = await moderation().hideContent(
+      by,
+      { content: { kind: "message", id: reported.id }, rule: "offensive", reason },
+      request,
+    );
+
+    if (!hidden.ok) throw new Error(hidden.error.code);
+    const [copy] = (await messagesOf(siggi, other.id)).filter((line) => line.from === "them");
+    expect(copy).toMatchObject({ text: null, removed: true });
+    expect(await auditOf(reported.id)).toEqual([
+      {
+        action: "message.hidden",
+        subjectType: "message",
+        after: {
+          fields: ["hiddenAt"],
+          moderationActionId: hidden.value.actionId,
+          copies: [copy?.id],
+        },
+      },
+    ]);
+    // One notice for one message, and the copy cannot be hidden again.
+    expect(await noticesOf(jon)).toHaveLength(1);
+    expect(
+      await moderation().hideContent(
+        by,
+        { content: { kind: "message", id: copy?.id ?? "" }, rule: "offensive", reason },
+        request,
+      ),
+    ).toEqual({ ok: false, error: { code: "already_hidden" } });
+    await appealed(by, hidden.value.actionId, "reversed");
+    expect((await messagesOf(siggi, other.id)).filter((line) => line.from === "them")).toEqual([
+      expect.objectContaining({ text: "Something rude to you all", removed: false }),
+    ]);
   });
 
   it("refuses hiding it twice, a line of ShareRide's, and what does not exist", async () => {
@@ -411,6 +482,59 @@ describe("hiding a trip's note (spec 9, 3.4.3)", () => {
     expect(await noteShown(airport)).toBe("Two bags each, please");
   });
 
+  it("leaves a hidden note out when the driver posts the trip again", async () => {
+    const jon = await driverOf(airport, "Jón");
+    await withNote(airport, "Rude words");
+    const copy = async () => {
+      const result = await api.client.call(copyTripRoute, {
+        accessToken: jon.accessToken,
+        params: { id: airport },
+        query: {},
+        body: {},
+      });
+      if (!result.ok) throw new Error(result.error.code);
+      return result.data.trip.note;
+    };
+    expect(await copy()).toBe("Rude words");
+    await moderation().hideContent(
+      await moderator(),
+      { content: { kind: "trip_note", id: airport }, rule: "offensive", reason },
+      request,
+    );
+    expect(await copy()).toBe("");
+  });
+
+  it("shows a note again on appeal only while it is still the one hidden", async () => {
+    await driverOf(airport, "Jón");
+    const by = await moderator();
+    const hide = async () => {
+      const hidden = await moderation().hideContent(
+        by,
+        { content: { kind: "trip_note", id: airport }, rule: "offensive", reason },
+        request,
+      );
+      if (!hidden.ok) throw new Error(hidden.error.code);
+      return hidden.value.actionId;
+    };
+    await withNote(airport, "First rude note");
+    const first = await hide();
+    // The driver writes a new note, which the operator hides too.
+    await api.connection.db
+      .update(schema.trips)
+      .set({ note: "Second rude note", noteHiddenAt: null })
+      .where(eq(schema.trips.id, airport));
+    const second = await hide();
+
+    await appealed(by, first, "reversed");
+    expect(await noteShown(airport)).toBe("");
+    expect((await auditOf(first)).at(-1)?.after).toEqual({
+      fields: ["appealAnswer", "appealOutcome", "appealAnsweredAt"],
+    });
+
+    await appealed(by, second, "reversed");
+    expect(await noteShown(airport)).toBe("Second rude note");
+  });
+
   it("refuses a trip with no note, hiding it twice and a draft", async () => {
     const by = await moderator();
     const hide = () =>
@@ -468,8 +592,39 @@ describe("hiding About you (spec 9, 3.4.3)", () => {
     expect(await api.client.call(getMeRoute, { accessToken: jon.accessToken })).toMatchObject({
       data: { about: "Rude words" },
     });
+    // Saving the profile with the same text, as the form does, keeps it hidden.
+    expect(
+      (
+        await api.client.call(updateMeRoute, {
+          accessToken: jon.accessToken,
+          body: { about: "Rude words", firstName: "Jónsi" },
+        })
+      ).ok,
+    ).toBe(true);
+    expect(await hiddenAt()).toEqual(api.now());
     expect((await update("I like quiet drives")).ok).toBe(true);
     expect(await hiddenAt()).toBeNull();
+  });
+
+  it("shows About you again when an appeal reverses it", async () => {
+    const jon = await newMember("Jón");
+    await api.client.call(updateMeRoute, {
+      accessToken: jon.accessToken,
+      body: { about: "A joke, taken wrong" },
+    });
+    const by = await moderator();
+    const hidden = await moderation().hideContent(
+      by,
+      { content: { kind: "about", id: jon.userId }, rule: "offensive", reason },
+      request,
+    );
+    if (!hidden.ok) throw new Error(hidden.error.code);
+    await appealed(by, hidden.value.actionId, "reversed");
+    const [row] = await api.connection.db
+      .select({ at: schema.users.aboutHiddenAt })
+      .from(schema.users)
+      .where(eq(schema.users.id, jon.userId));
+    expect(row?.at).toBeNull();
   });
 
   it("refuses an empty About you", async () => {
@@ -530,6 +685,7 @@ describe("ShareRide cancelling a trip (spec 9, 3.4.3)", () => {
         after: {
           fields: ["status", "cancelledAt", "cancelledBy", "countsOnReliability"],
           moderationActionId: cancelled.value.actionId,
+          cancelledBookings: [bookingId],
         },
       },
     ]);

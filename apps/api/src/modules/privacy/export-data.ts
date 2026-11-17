@@ -484,6 +484,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
       kind: moderationActions.kind,
       rule: moderationActions.rule,
       reason: moderationActions.reason,
+      content: moderationActions.contentKind,
       until: moderationActions.until,
       createdAt: moderationActions.createdAt,
       appeal: moderationActions.appealText,

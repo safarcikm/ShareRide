@@ -1331,6 +1331,7 @@ export const en = {
   "export.field.aboutHiddenAt": "About you hidden by ShareRide",
   "export.field.noteHiddenAt": "Note hidden by ShareRide",
   "export.field.removedByShareRide": "Removed by ShareRide",
+  "export.field.content": "Concerns",
   "export.field.with": "With",
   "export.value.status.draft": "Draft",
   "export.value.status.published": "Published",

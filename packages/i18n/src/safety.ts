@@ -61,7 +61,12 @@ const moderatedContentKeys: Readonly<Record<ModeratedContent, MessageKey>> = {
   booking: "notices.content.booking",
 };
 
-/** "Concerns: a message you sent": the content an operator's action affected (R9.5). */
+/** "a message you sent": the content an operator's action affected (R9.5). */
+export function moderatedContentName(t: Translate, content: ModeratedContent): string {
+  return t(moderatedContentKeys[content]);
+}
+
+/** "Concerns: a message you sent", as a notice and its email say it. */
 export function moderatedContentText(t: Translate, content: ModeratedContent): string {
-  return t("notices.concerns", { content: t(moderatedContentKeys[content]) });
+  return t("notices.concerns", { content: moderatedContentName(t, content) });
 }

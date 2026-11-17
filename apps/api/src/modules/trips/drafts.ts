@@ -684,7 +684,8 @@ export function createTripService(dependencies: {
         priceLevel,
         bookingMode,
         preferences,
-        note: row.note,
+        // A note ShareRide hid stays behind: the driver writes a new one (spec 9, 3.4.3).
+        note: row.noteHiddenAt === null ? row.note : "",
         // A car removed since: the driver's other car, as for a new draft.
         ...(carStays ? { vehicleId: row.vehicleId } : {}),
       });

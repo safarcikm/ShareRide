@@ -197,7 +197,8 @@ quick message or system line, `client_id` (one message per client ID and
 sender, so a retry is stored once; only a message to all passengers puts
 one client ID in several conversations of a trip), `sent_at`, `read_at`,
 `hidden_at` (ShareRide removed it: both people read "Removed by ShareRide",
-spec 9, 3.4.3).
+spec 9, 3.4.3; a message to all passengers is removed in every
+conversation it went to).
 Opened in the transaction that confirms the booking. Retained per the
 [privacy](../compliance/privacy-gdpr.md#retention) schedule. See
 [spec 7](../specs/2026-11-13-chat-and-notifications.md#6-data-and-api).

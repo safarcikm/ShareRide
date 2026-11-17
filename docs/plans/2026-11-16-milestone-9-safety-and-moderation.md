@@ -256,13 +256,22 @@ completed).
   driver can decline a request but not accept one. A suspended person
   stays signed in, as spec 9, 3.6.2 needs; security.md said before that
   their sessions end.
-- Found while building (PR 6d): a new note or About you is new content,
-  shown again until the operator hides it too; a reversed appeal shows
-  hidden content again only if it is still the one hidden. A message
-  removed before its push went out sends none. In "Download my data", the
-  sender keeps their own words, marked removed, and the other person reads
-  "Removed by ShareRide". Reviews are hidden the same way once milestone 7
-  stores them (`reviews.hidden_at`).
+- Found while building (PR 6d): a different note or About you is new
+  content, shown again until the operator hides it too; the same text
+  saved again stays hidden, and "Post again" leaves a hidden note out. A
+  reversed appeal shows hidden content again only if it is still the one
+  hidden. A message to all passengers is one message: hiding it hides
+  every copy, with one notice. A message removed before its push went out
+  sends none. In "Download my data", the sender keeps their own words,
+  marked removed, and the other person reads "Removed by ShareRide".
+  Reviews are hidden the same way once milestone 7 stores them
+  (`reviews.hidden_at`). Reversing an appeal on a cancelled trip leaves
+  the cancellation, and whether it counts on reliability is changed on
+  the trip (3.5.3, PR 8). Left for later: a notice names the kind of
+  content, not which trip or message, so the operator's reason says
+  which; the driver's own trip and profile do not yet show that a note or
+  About you is hidden; the API still takes a report of a removed message,
+  which the app does not offer.
 - `GET /v1/me/notices` and `POST /v1/me/notices/{id}/appeal` (once, within
   14 days).
 - **Suspended account screen**, in place of Find and Offer: until when,

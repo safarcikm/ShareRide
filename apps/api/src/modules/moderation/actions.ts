@@ -206,22 +206,44 @@ async function ownerOf(tx: Transaction, content: Content): Promise<string | unde
 }
 
 /**
+ * A person's message and its copies, locked: one sent to all passengers is
+ * stored once in each conversation with the same client ID, and is one
+ * message to hide. Empty for a line of ShareRide's.
+ */
+async function copiesOf(tx: Transaction, messageId: string) {
+  const [row] = await tx
+    .select({ senderId: messages.senderId, clientId: messages.clientId })
+    .from(messages)
+    .where(eq(messages.id, messageId));
+  if (row === undefined || row.senderId === null || row.clientId === null) return [];
+  return tx
+    .select({ id: messages.id, hiddenAt: messages.hiddenAt })
+    .from(messages)
+    .where(and(eq(messages.senderId, row.senderId), eq(messages.clientId, row.clientId)))
+    .orderBy(asc(messages.id))
+    .for("update");
+}
+
+/**
  * Locks the content's row, after its owner's (users first, then trips, as
- * everywhere), and says when it was hidden; undefined when there is nothing
- * others can read: a line of ShareRide's, a draft's note, an empty text.
+ * everywhere), and says when it was hidden, with a message's copies in other
+ * conversations (`also`); undefined when there is nothing others can read: a
+ * line of ShareRide's, a draft's note, an empty text.
  */
 async function lockContent(
   tx: Transaction,
   content: Content,
-): Promise<{ readonly hiddenAt: Date | null } | undefined> {
+): Promise<{ readonly hiddenAt: Date | null; readonly also: readonly string[] } | undefined> {
   switch (content.kind) {
     case "message": {
-      const [row] = await tx
-        .select({ kind: messages.kind, hiddenAt: messages.hiddenAt })
-        .from(messages)
-        .where(eq(messages.id, content.id))
-        .for("update");
-      return row === undefined || row.kind === "system" ? undefined : { hiddenAt: row.hiddenAt };
+      const copies = await copiesOf(tx, content.id);
+      const own = copies.find((copy) => copy.id === content.id);
+      return own === undefined
+        ? undefined
+        : {
+            hiddenAt: own.hiddenAt,
+            also: copies.filter((copy) => copy.id !== content.id).map((copy) => copy.id),
+          };
     }
     case "trip_note": {
       const [row] = await tx
@@ -231,7 +253,7 @@ async function lockContent(
         .for("update");
       return row === undefined || row.status === "draft" || row.note === ""
         ? undefined
-        : { hiddenAt: row.hiddenAt };
+        : { hiddenAt: row.hiddenAt, also: [] };
     }
     case "about": {
       // The person's row, locked already as the owner's.
@@ -241,19 +263,25 @@ async function lockContent(
         .where(eq(users.id, content.id));
       return row === undefined || row.about === null || row.about === ""
         ? undefined
-        : { hiddenAt: row.hiddenAt };
+        : { hiddenAt: row.hiddenAt, also: [] };
     }
   }
 }
 
-/** Hides the content at `at`, or shows it again with null. */
-async function setHidden(tx: Transaction, content: Content, at: Date | null, now: Date) {
+/** Hides the content at `at`, or shows it again with null; a message with its copies. */
+async function setHidden(
+  tx: Transaction,
+  content: Content,
+  also: readonly string[],
+  at: Date | null,
+  now: Date,
+) {
   switch (content.kind) {
     case "message":
       await tx
         .update(messages)
         .set({ hiddenAt: at, updatedAt: now })
-        .where(eq(messages.id, content.id));
+        .where(inArray(messages.id, [content.id, ...also]));
       return;
     case "trip_note":
       await tx
@@ -597,12 +625,12 @@ export function createModerationService(dependencies: {
           isHideableNow(action.contentKind)
             ? { kind: action.contentKind, id: action.contentId }
             : undefined;
-        let shown = false;
+        let shown: boolean | { readonly copies: readonly string[] } = false;
         if (content !== undefined && (await latestHiding(tx, content)) === action.id) {
           const locked = await lockContent(tx, content);
           if (locked !== undefined && locked.hiddenAt !== null) {
-            await setHidden(tx, content, null, now);
-            shown = true;
+            await setHidden(tx, content, locked.also, null, now);
+            shown = locked.also.length === 0 ? true : { copies: locked.also };
           }
         }
         if (userId !== null) {
@@ -619,8 +647,14 @@ export function createModerationService(dependencies: {
             ...(lifted
               ? { suspensionLifted: { userId, fields: ["status", "suspendedUntil"] } }
               : {}),
-            ...(shown && content !== undefined
-              ? { contentShown: { ...content, fields: [hiding[content.kind].field] } }
+            ...(shown !== false && content !== undefined
+              ? {
+                  contentShown: {
+                    ...content,
+                    fields: [hiding[content.kind].field],
+                    ...(shown === true ? {} : shown),
+                  },
+                }
               : {}),
           },
           request,
@@ -649,7 +683,7 @@ export function createModerationService(dependencies: {
         if (shown === undefined) return err({ code: "not_found" });
         if (shown.hiddenAt !== null) return err({ code: "already_hidden" });
         const now = clock();
-        await setHidden(tx, content, now, now);
+        await setHidden(tx, content, shown.also, now, now);
         const actionId = await addAction(
           tx,
           {
@@ -674,6 +708,8 @@ export function createModerationService(dependencies: {
             fields: [audit.field],
             moderationActionId: actionId,
             ...(input.reportId === undefined ? {} : { reportId: input.reportId }),
+            // The same message in the other passengers' conversations.
+            ...(shown.also.length === 0 ? {} : { copies: shown.also }),
           },
           request,
         });
@@ -703,6 +739,19 @@ export function createModerationService(dependencies: {
         );
         if (!cancelled.ok) return cancelled;
         if (!cancelled.value) return err({ code: "already_cancelled" });
+        // The bookings and requests it ended, for the audit entry, as a suspension names them.
+        const ended = await tx
+          .select({ id: bookings.id })
+          .from(bookings)
+          .innerJoin(trips, eq(trips.id, bookings.tripId))
+          .where(
+            and(
+              eq(bookings.tripId, input.tripId),
+              eq(bookings.cancelledBy, "operator"),
+              eq(bookings.cancelledAt, trips.cancelledAt),
+            ),
+          )
+          .orderBy(asc(bookings.id));
         const now = clock();
         const actionId = await addAction(
           tx,
@@ -727,6 +776,7 @@ export function createModerationService(dependencies: {
             fields: ["status", "cancelledAt", "cancelledBy", "countsOnReliability"],
             moderationActionId: actionId,
             ...(input.reportId === undefined ? {} : { reportId: input.reportId }),
+            cancelledBookings: ended.map(({ id }) => id),
           },
           request,
         });
