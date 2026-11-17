@@ -128,12 +128,19 @@ export function cancellationTexts(
   if (cancellation === null) return null;
   const reason = cancellation.reason === null ? null : cancelReasonText(t, cancellation.reason);
   // The operator gives no reason; a passenger or driver always does. A
-  // driver's absence that stood is ShareRide's doing (spec 8, 3.4).
+  // driver's absence that stood is ShareRide's doing (spec 8, 3.4), and so
+  // is a no-show ShareRide found was the driver leaving without them
+  // (decision 4), which cancels the same way.
   const said =
     cancellation.by === "operator"
       ? t("booking.cancelledByOperator")
       : cancellation.reason === "driver_absent"
-        ? t("booking.cancelledDriverAbsent", { name: firstNameOf(t, booking.driver) })
+        ? t(
+            booking.dispute?.outcome === "left_behind"
+              ? "booking.cancelledLeftBehind"
+              : "booking.cancelledDriverAbsent",
+            { name: firstNameOf(t, booking.driver) },
+          )
         : reason === null
           ? null
           : cancellation.by === "passenger"

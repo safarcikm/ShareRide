@@ -152,7 +152,7 @@ export function decidableOutcomes(dispute: Dispute): readonly DisputeOutcome[] {
  * (spec 8, 3.5; R7.3, R9.6): only when it was contested, which is what
  * brings it to the operator, before or after the decision.
  */
-export function operatorMayRead(dispute: Dispute): boolean {
+export function operatorMayRead(dispute: Pick<Dispute, "answer">): boolean {
   return dispute.answer === "contested";
 }
 
