@@ -159,13 +159,19 @@ describe("saving the first passkey with a setup link (ADR 0028)", () => {
     expect(options.status).toBe(400);
   });
 
-  it("refuses a link whose account lost the role or was suspended", async () => {
+  it("refuses a link whose account lost the role, was suspended or waits to be deleted", async () => {
     const lostRole = await newOperator();
     const suspended = await newOperator();
+    const deleting = await newOperator();
     const links = [
       await passkeys.createSetupLink(lostRole),
       await passkeys.createSetupLink(suspended),
+      await passkeys.createSetupLink(deleting),
     ];
+    await api.connection.db
+      .update(schema.users)
+      .set({ deleteAfter: new Date("2026-12-01T10:00:00Z") })
+      .where(eq(schema.users.id, deleting));
     await api.connection.db
       .update(schema.users)
       .set({ roles: [] })
@@ -275,6 +281,7 @@ describe("signing in with a passkey", () => {
   it.each([
     ["was suspended", { status: "suspended" }],
     ["lost the role", { roles: [] }],
+    ["waits to be deleted", { deleteAfter: new Date("2026-12-01T10:00:00Z") }],
   ])("refuses an account that %s", async (_case, change) => {
     const userId = await newOperator();
     const key = authenticator();

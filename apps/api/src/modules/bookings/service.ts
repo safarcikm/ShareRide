@@ -46,6 +46,7 @@ import { oweRefund } from "../payments/refunds.ts";
 import { bookingConfirmed } from "./confirmed.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import { recordEvents } from "../notifications/outbox.ts";
+import { isHidden } from "../privacy/hidden.ts";
 import {
   checkInsAt,
   driverCheckedInAt,
@@ -501,9 +502,9 @@ function present(row: BookingRow, viewerId: string, now: Date, settings: TripDay
     }),
     // Null only for a booking the previous version made during a deploy.
     movedFar: movedFar(booking.departsAtWhenBooked ?? departsAt, departsAt),
-    driver: { firstName: row.driverName ?? "", colour: peopleColourOf(trip.driverId) },
+    driver: { firstName: row.driverName, colour: peopleColourOf(trip.driverId) },
     passenger: {
-      firstName: row.passengerName ?? "",
+      firstName: row.passengerName,
       colour: peopleColourOf(booking.passengerId),
       // The month only, as profiles show it (Iceland keeps UTC all year).
       memberSince: row.passengerSince.toISOString().slice(0, 7),
@@ -662,14 +663,15 @@ export function createBookingService(dependencies: {
         }
         const trip = await lockTrip(tx, tripId);
         if (trip === undefined) return err({ code: "not_found" });
-        // Nobody books with a driver deleting their account (spec 11, 3.4.3).
-        // Deleting locks the driver's trips before it checks for bookings, so
-        // with the trip locked this reads the date as it stands.
+        // Nobody books with a driver deleting their account, nor on a trip
+        // left with the former member (spec 11, 3.4.3 and 3.5). Deleting
+        // locks the driver's trips before it checks for bookings, so with
+        // the trip locked this reads the date as it stands.
         const [driver] = await tx
-          .select({ deleteAfter: users.deleteAfter })
+          .select({ id: users.id, deleteAfter: users.deleteAfter })
           .from(users)
           .where(eq(users.id, trip.driverId));
-        if (driver === undefined || driver.deleteAfter !== null) return err({ code: "not_found" });
+        if (driver === undefined || isHidden(driver)) return err({ code: "not_found" });
         const now = clock();
         await expireDueBookings(tx, tripId, now);
 

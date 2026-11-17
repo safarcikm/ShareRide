@@ -20,6 +20,7 @@ import { alias } from "drizzle-orm/pg-core";
 import type { BookingService } from "../bookings/index.ts";
 import type { Queryable } from "../bookings/seats.ts";
 import { recordEvents } from "../notifications/outbox.ts";
+import { hidden, isHidden, shown } from "../privacy/hidden.ts";
 
 const { bookings, conversations, messages, trips, users } = schema;
 
@@ -140,6 +141,19 @@ export function systemLineOf(
 function present(row: MessageRow, viewerId: string, viewer: TripRole): ChatMessage {
   const from = row.senderId === null ? "system" : row.senderId === viewerId ? "me" : "them";
   const mine = from === "me";
+  if (row.erasedAt !== null) {
+    return {
+      id: row.id,
+      from,
+      kind: "erased",
+      text: null,
+      quick: null,
+      system: null,
+      clientId: null,
+      sentAt: row.sentAt.toISOString(),
+      readAt: null,
+    };
+  }
   return {
     id: row.id,
     from,
@@ -242,8 +256,8 @@ export function createChatService(dependencies: {
   }
 
   /**
-   * The bookings whose passenger or driver is deleting their account: their
-   * conversations are closed both ways (spec 11, 3.4.3).
+   * The bookings whose passenger or driver is deleting their account, or
+   * was erased: their conversations are closed both ways (spec 11, 3.4.3).
    */
   async function deleting(q: Queryable, bookingIds: readonly string[]) {
     const passenger = alias(users, "passenger");
@@ -254,12 +268,7 @@ export function createChatService(dependencies: {
       .innerJoin(trips, eq(trips.id, bookings.tripId))
       .innerJoin(passenger, eq(passenger.id, bookings.passengerId))
       .innerJoin(driver, eq(driver.id, trips.driverId))
-      .where(
-        and(
-          inArray(bookings.id, [...bookingIds]),
-          or(isNotNull(passenger.deleteAfter), isNotNull(driver.deleteAfter)),
-        ),
-      );
+      .where(and(inArray(bookings.id, [...bookingIds]), or(hidden(passenger), hidden(driver))));
     return new Set(rows.map((row) => row.bookingId));
   }
 
@@ -328,11 +337,11 @@ export function createChatService(dependencies: {
    */
   async function lockSender(q: Queryable, userId: string) {
     const [sender] = await q
-      .select({ deleteAfter: users.deleteAfter })
+      .select({ id: users.id, deleteAfter: users.deleteAfter })
       .from(users)
       .where(eq(users.id, userId))
       .for("update");
-    return { deleting: sender === undefined || sender.deleteAfter !== null };
+    return { deleting: sender === undefined || isHidden(sender) };
   }
 
   return {
@@ -411,13 +420,13 @@ export function createChatService(dependencies: {
         if (!canWrite({ opensAt: conversation.openedAt, closesAt: conversation.closesAt }, now)) {
           return err({ code: "chat_closed" });
         }
-        // Nobody messages a person deleting their account, nor do they
-        // write to people who cannot answer (spec 11, 3.4.3).
+        // Nobody messages a person deleting their account or the former
+        // member, nor do they write to people who cannot answer (spec 11, 3.4.3).
         const [other] = await tx
-          .select({ deleteAfter: users.deleteAfter })
+          .select({ id: users.id, deleteAfter: users.deleteAfter })
           .from(users)
           .where(eq(users.id, otherId));
-        if (sender.deleting || other === undefined || other.deleteAfter !== null) {
+        if (sender.deleting || other === undefined || isHidden(other)) {
           return err({ code: "chat_closed" });
         }
         const again = await earlier(tx);
@@ -489,12 +498,13 @@ export function createChatService(dependencies: {
             .innerJoin(bookings, eq(bookings.id, conversations.bookingId))
             .innerJoin(users, eq(users.id, bookings.passengerId))
             // Passengers stay passengers once their booking completes (spec 8,
-            // R8.2); one deleting their account gets nothing (spec 11, 3.4.3).
+            // R8.2); one deleting their account, or erased, gets nothing
+            // (spec 11, 3.4.3).
             .where(
               and(
                 eq(bookings.tripId, tripId),
                 inArray(bookings.status, ["confirmed", "completed"]),
-                isNull(users.deleteAfter),
+                shown(users),
               ),
             )
         )

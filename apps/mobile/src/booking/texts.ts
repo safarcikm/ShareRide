@@ -9,6 +9,7 @@ import {
 } from "@shareride/i18n";
 import { errorText } from "@/auth/errors";
 import { compareDays, dayOf } from "@/lib/days";
+import { firstNameOf } from "@/people/texts";
 
 // Booking texts that depend on the answer or the clock (spec 5, section 8).
 
@@ -59,7 +60,7 @@ export function acceptedText(t: Translate, accepted: Booking, at: Date): string 
   if (accepted.paymentDueAt === null) return t("request.acceptedFree");
   const { time, tomorrow } = onDay(new Date(accepted.paymentDueAt), at);
   return t(tomorrow ? "request.acceptedTomorrow" : "request.accepted", {
-    name: accepted.passenger.firstName,
+    name: firstNameOf(t, accepted.passenger),
     time,
   });
 }
@@ -95,7 +96,7 @@ export function refundText(
   terms: CancellationTerms,
 ): string {
   if (booking.total.amount === 0) return t("booking.nothingToRefund");
-  const name = booking.passenger.firstName;
+  const name = firstNameOf(t, booking.passenger);
   if (booking.status === "accepted") {
     return booking.viewer === "driver"
       ? t("booking.driverNothingPaid", { name })
@@ -132,13 +133,13 @@ export function cancellationTexts(
     cancellation.by === "operator"
       ? t("booking.cancelledByOperator")
       : cancellation.reason === "driver_absent"
-        ? t("booking.cancelledDriverAbsent", { name: booking.driver.firstName })
+        ? t("booking.cancelledDriverAbsent", { name: firstNameOf(t, booking.driver) })
         : reason === null
           ? null
           : cancellation.by === "passenger"
             ? t("booking.cancelledByYou", { reason })
             : t(cancellation.wholeTrip ? "booking.tripCancelledBy" : "booking.cancelledByOther", {
-                name: booking.driver.firstName,
+                name: firstNameOf(t, booking.driver),
                 reason,
               });
   return {

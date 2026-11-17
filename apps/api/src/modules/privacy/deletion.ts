@@ -14,14 +14,14 @@ import {
   type TripDaySettings,
   type TripStatus,
 } from "@shareride/domain";
-import { and, asc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { Logger } from "../../logger.ts";
 import { endAllSessions, type AuthService, type ConfirmError } from "../auth/service.ts";
 import type { Queryable } from "../bookings/seats.ts";
 import { recordEvents } from "../notifications/outbox.ts";
 
-const { bookings, meetingPoints, tripStops, trips, users } = schema;
+const { bookings, disputes, meetingPoints, tripStops, trips, users } = schema;
 
 // "Delete my account" (spec 11, 3.4; privacy plan 4.5): what is still open,
 // then, with a fresh code, signed out everywhere and hidden at once, with 7
@@ -87,7 +87,7 @@ export interface DeletionServiceDependencies {
 const point = (nameIs: string, nameEn: string | null) => ({ is: nameIs, en: nameEn ?? nameIs });
 
 /** Everything open for `userId` now, as the domain rule and the app need it. */
-async function openFor(q: Queryable, userId: string, now: Date, settings: TripDaySettings) {
+export async function openFor(q: Queryable, userId: string, now: Date, settings: TripDaySettings) {
   const driving = await q
     .select({
       id: trips.id,
@@ -178,6 +178,20 @@ async function openFor(q: Queryable, userId: string, now: Date, settings: TripDa
     return { from: point(first.nameIs, first.nameEn), to: point(last.nameIs, last.nameEn) };
   };
 
+  // Reports about a ride of theirs not yet decided, whoever made them (spec 8, 3.5).
+  const disputed = await q
+    .select({ id: disputes.id })
+    .from(disputes)
+    .innerJoin(bookings, eq(bookings.id, disputes.bookingId))
+    .innerJoin(trips, eq(trips.id, bookings.tripId))
+    .where(
+      and(
+        isNull(disputes.outcome),
+        or(eq(bookings.passengerId, userId), eq(trips.driverId, userId)),
+      ),
+    )
+    .orderBy(asc(disputes.raisedAt), asc(disputes.id));
+
   const inputs: DeletionInputs = {
     trips: driving.flatMap((trip) =>
       trip.departsAt === null || trip.arrivesAt === null
@@ -205,8 +219,8 @@ async function openFor(q: Queryable, userId: string, now: Date, settings: TripDa
             },
           ],
     ),
-    // Milestone 7's disputes and spec 13's payouts add theirs when they exist.
-    openDisputes: [],
+    openDisputes: disputed.map((row) => row.id),
+    // Spec 13's payouts add theirs when they exist.
     heldPayouts: [],
   };
   const found = deletionCheck(inputs, now, settings);
@@ -260,6 +274,16 @@ async function openFor(q: Queryable, userId: string, now: Date, settings: TripDa
   };
 }
 
+/** Locks the trips `userId` drives that can still be booked, in the order every path takes them. */
+export async function lockDrivenTrips(q: Queryable, userId: string): Promise<void> {
+  await q
+    .select({ id: trips.id })
+    .from(trips)
+    .where(and(eq(trips.driverId, userId), inArray(trips.status, ["published", "departed"])))
+    .orderBy(asc(trips.id))
+    .for("update");
+}
+
 export function createDeletionService(dependencies: DeletionServiceDependencies): DeletionService {
   const { db, clock, auth, tripDaySettings, logger } = dependencies;
 
@@ -280,12 +304,7 @@ export function createDeletionService(dependencies: DeletionServiceDependencies)
         // so they book or publish nothing meanwhile, then the trips they
         // drive, so nobody books on them.
         await tx.select({ id: users.id }).from(users).where(eq(users.id, userId)).for("update");
-        await tx
-          .select({ id: trips.id })
-          .from(trips)
-          .where(and(eq(trips.driverId, userId), inArray(trips.status, ["published", "departed"])))
-          .orderBy(asc(trips.id))
-          .for("update");
+        await lockDrivenTrips(tx, userId);
         if (!(await openFor(tx, userId, now, tripDaySettings)).allowed) {
           return err({ code: "deletion_blocked" as const });
         }

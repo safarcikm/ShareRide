@@ -181,7 +181,10 @@ is built, in `apps/api/src/modules/admin` with the rules in
   development, and holds 256 random bits (prefix `sr_os_`) kept only as a
   SHA-256 hash. A session ends 30 minutes after its last use, 12 hours after
   sign-in, when the account loses the role or is suspended, or on sign-out,
-  and never works again. Ended sessions are deleted after 30 days.
+  and never works again. Ended sessions are deleted after 30 days. While the
+  operator's own account waits to be deleted (spec 11), the console refuses
+  their sessions, passkeys and setup links, and the `operator` command will
+  not give the role. Erasing the account is to delete them (spec 11).
 - **Other origins:** the console's routes answer no CORS request, so only
   pages on the API's own origin can call them.
 - **The console's pages:** the API serves the console's build at `/admin`

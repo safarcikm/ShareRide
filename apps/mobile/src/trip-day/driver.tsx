@@ -15,6 +15,7 @@ import { now } from "@/lib/clock";
 import { controlOutline, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { ImHere } from "./im-here";
+import { firstNameOf } from "@/people/texts";
 import { noShowOpen } from "./reports";
 
 /**
@@ -40,7 +41,7 @@ const arrivalTag: Record<Arrival, TagKind> = {
 /** "Gunna, 1 seat, Here": a passenger getting in, as a screen reader says them. */
 function riderLabel(t: Translate, booking: Booking, arrival: Arrival | null) {
   return [
-    booking.passenger.firstName,
+    firstNameOf(t, booking.passenger),
     t("search.seatCount", { count: booking.seats }),
     ...(arrival === null ? [] : [t(arrivalKey[arrival])]),
   ].join(", ");
@@ -57,10 +58,10 @@ function Rider({
   const palette = usePalette();
   return (
     <View accessible accessibilityLabel={riderLabel(t, booking, arrival)} style={styles.rider}>
-      <Avatar firstName={booking.passenger.firstName} colour={booking.passenger.colour} />
+      <Avatar firstName={firstNameOf(t, booking.passenger)} colour={booking.passenger.colour} />
       <View style={styles.grow}>
         <Text style={[typography.bodyStrong, { color: palette.text }]}>
-          {booking.passenger.firstName}
+          {firstNameOf(t, booking.passenger)}
         </Text>
         <Text style={[typography.small, { color: palette.textMuted }]}>
           {t("search.seatCount", { count: booking.seats })}
@@ -154,7 +155,7 @@ export function DriverTripDay({
                           variant="text"
                           label={t("tripDay.markNoShow")}
                           accessibilityLabel={t("tripDay.markNoShowOf", {
-                            name: booking.passenger.firstName,
+                            name: firstNameOf(t, booking.passenger),
                           })}
                           onPress={() => {
                             router.push({

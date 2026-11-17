@@ -330,6 +330,24 @@ describe("A conversation (spec 7, 3.1)", () => {
     expect(screen.queryByRole("button", { name: "Thank you!" })).toBeNull();
   });
 
+  it("shows a former member and their deleted messages once their account is erased (spec 11, 3.5)", async () => {
+    const erased = chatMessage({
+      id: messageId(2),
+      kind: "erased",
+      text: null,
+      sentAt: "2026-11-14T11:55:00.000Z",
+    });
+    await openConversation({
+      booking: { ...chatBooking, driver: { ...chatBooking.driver, firstName: null } },
+      canWrite: false,
+      messages: [openedLine, erased, seen],
+    });
+    expect(await screen.findByRole("header", { name: "A former member" })).toBeVisible();
+    expect(screen.getByLabelText("A former member, 11:55: Message deleted")).toBeVisible();
+    expect(screen.getByLabelText("You, 11:56: Great, thank you. Seen")).toBeVisible();
+    expect(screen.queryByLabelText("Write a message")).toBeNull();
+  });
+
   it("says it has closed when a message is sent just after", async () => {
     const { server } = await openConversation();
     server.nextSends.push(() => {

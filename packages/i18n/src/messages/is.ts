@@ -909,6 +909,7 @@ export const is = {
   "request.timeLeft": "{time} eftir til að svara",
   "request.timeUp": "Tíminn til að svara er liðinn",
   "request.memberSince": "Meðlimur frá {month} {year}",
+  "people.formerMember": "Fyrrverandi notandi",
   "request.noReviews": "Engar umsagnir enn",
   "request.message": "Skilaboð",
   "request.ifAccepted":
@@ -964,6 +965,7 @@ export const is = {
   "chat.opened": "Bókunin er staðfest. Þið getið skrifast á hér.",
   "chat.checkedInMe": "Þú sagðist vera á mótsstaðnum",
   "chat.checkedInThem": "{name} er á mótsstaðnum",
+  "chat.messageDeleted": "Skilaboðum eytt",
   "chat.withNote": "{line} „{note}“",
   "chat.cancelledByMe": "Þú afbókaðir: {reason}",
   "chat.cancelledByThem": "{name} afbókaði: {reason}",

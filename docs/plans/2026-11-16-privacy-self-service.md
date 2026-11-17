@@ -214,8 +214,21 @@ person with no first name.
 
 After a restore, `privacy reapply-erasures` erases again every ID in
 `erased_accounts` that came back, before the services point at the
-restored database (runbook, "Restore the database"). Accounts whose wait
-ended before the backup are erased by the next run anyway.
+restored database (runbook, "Restore the database"). With
+`PREVIOUS_DATABASE_URL` it first takes from the old database each
+deletion date changed there after the restored row's last change (so an
+account kept after the restore's point is never erased) and copies its
+list of erasures. Accounts whose wait ended before the backup are erased
+by the next run anyway. One account that fails to erase is logged and
+reported, and does not stop the others.
+
+The former member is hidden wherever a deleting person is: no booking on
+a trip left with it, and its conversations are closed both ways. An
+erasure cancels every trip of the person's that nobody rode or holds a
+seat on, also one that has left its first stop. A driver's cancel note,
+copied to the passengers' bookings and chat lines, is emptied with the
+trip's own, and so are the notes of milestone 7's reports about the
+person's rides. An open report holds a deletion.
 
 ### 4.7 Retention runs and holds
 
@@ -312,10 +325,10 @@ journeys, and gets a code review before it opens.
 
 ### PR 7: `feat(privacy)`: erasure after 7 days
 
-- [ ] The `accounts` rule (4.6); `erased_accounts`; `blocked_numbers` and
+- [x] The `accounts` rule (4.6); `erased_accounts`; `blocked_numbers` and
       the sign-up refusal; `messages.erased_at`; "Message deleted" and "A
-      former member" in the answers; `privacy reapply-erasures` and the
-      runbook step
+      former member" in the answers and the app's existing screens;
+      `privacy reapply-erasures` and the runbook step
 - Verify: integration tests (every category of 3.5; the other people's
   trips, bookings, payments and reliability unchanged; a second run
   changes nothing; an undo just before the run wins; a blocked number

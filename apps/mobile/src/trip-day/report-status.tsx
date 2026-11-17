@@ -11,6 +11,7 @@ import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { firstNameOf } from "@/people/texts";
 import { deadlineText, reportState, type ReportState } from "./reports";
 
 /**
@@ -53,7 +54,7 @@ function ToAnswer({
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
-  const name = otherPerson(booking).firstName;
+  const name = firstNameOf(t, otherPerson(booking));
   const noShow = report.kind === "no_show";
   const answer = (chosen: "agreed" | "contested") => {
     router.push({ pathname: "/bookings/[id]/answer", params: { id: booking.id, answer: chosen } });
@@ -98,7 +99,7 @@ function ReportLine({
   readonly report: Exclude<ReportState, { state: "to_answer" }>;
 }) {
   const { locale, t } = useLanguage();
-  const name = otherPerson(booking).firstName;
+  const name = firstNameOf(t, otherPerson(booking));
   const message = (() => {
     switch (report.state) {
       case "waiting":

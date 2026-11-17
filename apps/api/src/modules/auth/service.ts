@@ -23,7 +23,15 @@ import { hashToken, newToken, sameHash, type KeyedHasher } from "../../platform/
 import type { SmsSender } from "../../platform/sms.ts";
 import type { Logger } from "../../logger.ts";
 
-const { pushTokens, rateLimitEvents, sessions, sessionTokens, users, verificationCodes } = schema;
+const {
+  blockedNumbers,
+  pushTokens,
+  rateLimitEvents,
+  sessions,
+  sessionTokens,
+  users,
+  verificationCodes,
+} = schema;
 
 export type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 type Executor = Database | Transaction;
@@ -418,6 +426,13 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
           .for("update");
         const isNewUser = user === undefined;
         if (user === undefined) {
+          // The number of a suspended person whose data was erased cannot
+          // sign up again until the suspension would have ended (R11.9).
+          const [blocked] = await tx
+            .select({ until: blockedNumbers.until })
+            .from(blockedNumbers)
+            .where(and(eq(blockedNumbers.phoneHash, phoneHash), gt(blockedNumbers.until, now)));
+          if (blocked !== undefined) return err({ code: "account_unavailable" });
           [user] = await tx
             .insert(users)
             .values({

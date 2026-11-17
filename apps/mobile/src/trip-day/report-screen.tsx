@@ -25,6 +25,7 @@ import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { firstNameOf } from "@/people/texts";
 import { deadlineText } from "./reports";
 
 /**
@@ -182,7 +183,7 @@ export function ReportScreen({ kind }: { readonly kind: DisputeKind }) {
     noShow
       ? booking === undefined
         ? t("tripDay.markNoShow")
-        : t("tripDay.markNoShowOf", { name: booking.passenger.firstName })
+        : t("tripDay.markNoShowOf", { name: firstNameOf(t, booking.passenger) })
       : t("tripDay.driverAbsent");
   if (answer === undefined || !answer.ok) {
     return <NotLoaded id={id} title={title()} answer={answer} onRetry={reload} />;
@@ -207,7 +208,7 @@ function ReportForm({
   const [notice, setNotice] = useState<string | null>(null);
   const [changed, setChanged] = useState(false);
   const noShow = kind === "no_show";
-  const name = otherPerson(booking).firstName;
+  const name = firstNameOf(t, otherPerson(booking));
   const problem = noteError(t, note);
   // A no-show can be answered until 24 hours after the trip completes, the
   // end of the window to say the driver didn't come.

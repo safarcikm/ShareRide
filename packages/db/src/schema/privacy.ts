@@ -41,3 +41,24 @@ export const dataExports = pgTable(
     ),
   ],
 );
+
+/**
+ * Accounts erased in the last 30 days, by their former ID only (spec 11,
+ * 3.7.4): after a restore, `privacy reapply-erasures` erases again each
+ * one that came back. Longer than the 7 days of point-in-time recovery.
+ */
+export const erasedAccounts = pgTable("erased_accounts", {
+  userId: uuid().primaryKey(),
+  erasedAt: at().notNull(),
+});
+
+/**
+ * The number of a suspended person whose data was erased, as the keyed
+ * hash sign-in uses, so it cannot sign up again until the suspension ends,
+ * at most 3 years (R11.9, decision 2). Not linked to any account.
+ */
+export const blockedNumbers = pgTable("blocked_numbers", {
+  phoneHash: text().primaryKey(),
+  until: at().notNull(),
+  createdAt: at().notNull().defaultNow(),
+});

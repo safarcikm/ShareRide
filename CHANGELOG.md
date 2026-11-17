@@ -581,6 +581,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   shelter's weekly hours and note, and when the amenities and season were
   reviewed. The texts for regions, types and amenities move from the app
   to `@shareride/i18n`, so the console uses them too.
+- The console is closed to an operator whose own account waits to be
+  deleted (spec 11): their sessions, passkey sign-in and setup links are
+  refused, and the `operator` command does not give them the role.
 
 - Privacy self-service, part 1 (spec 11): the rules in the domain (what
   is open before deleting an account, the 7-day wait, what deletion does to
@@ -609,6 +612,17 @@ releases follow [Semantic Versioning](https://semver.org/).
   undoes it, leaving a suspension in place. Nothing new is booked or
   published while it waits. An email says when the data will be erased.
   The export now has the person's own check-in times.
+- Erasure 7 days after "Delete my account" (spec 11, 3.5), in the hourly
+  clean-up: what was the person's alone is deleted, and their trips,
+  bookings and the cars those used move to one shared former member
+  without free text or number plates, so the people they rode with keep
+  their bookings, payments and history. Their messages read "Message
+  deleted", and the app shows "A former member" for them. A suspended
+  person's number cannot sign up again until the suspension would have
+  ended. An open report about a ride (milestone 7) holds a deletion until
+  it is decided. After a database restore, `privacy reapply-erasures`
+  erases the accounts again and takes the deletions asked for or undone
+  since from the old database.
 
 ### Fixed
 

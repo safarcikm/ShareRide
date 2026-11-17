@@ -30,6 +30,7 @@ import { TripSafety } from "@/safety/trip-safety";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { routeText } from "@/trips/texts";
+import { firstNameOf } from "@/people/texts";
 
 /**
  * The driver's trip (spec 5, screens 5 and 9): requests first, each to
@@ -333,7 +334,7 @@ function Reports({
       {reported.map((booking) => (
         <View key={booking.id} style={styles.report}>
           <Text style={[typography.label, { color: palette.text }]}>
-            {booking.passenger.firstName}
+            {firstNameOf(t, booking.passenger)}
           </Text>
           <ReportStatus
             booking={booking}

@@ -19,6 +19,7 @@ import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { firstNameOf } from "@/people/texts";
 import {
   backTo,
   BookingLine,
@@ -89,7 +90,7 @@ function AnswerForm({
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [changed, setChanged] = useState(false);
-  const name = otherPerson(booking).firstName;
+  const name = firstNameOf(t, otherPerson(booking));
   const noShow = dispute.kind === "no_show";
   const problem = noteError(t, note);
 
