@@ -31,7 +31,8 @@ const icelandTime = new Intl.DateTimeFormat("en-GB", {
   timeStyle: "short",
 });
 
-async function findAccount(db: Database, who: string) {
+/** The account with this user ID or phone number, or null. */
+export async function findAccount(db: Database, who: string) {
   let condition;
   if (uuidPattern.test(who)) {
     condition = eq(users.id, who.toLowerCase());

@@ -62,3 +62,54 @@ export const blockedNumbers = pgTable("blocked_numbers", {
   until: at().notNull(),
   createdAt: at().notNull().defaultNow(),
 });
+
+/**
+ * One row per retention rule each time the hourly clean-up runs it (spec
+ * 11, 3.7.2; R11.5): how many records it erased or made anonymous, never
+ * which or what they held. Kept 90 days; the `privacy runs` command shows
+ * the last of each rule.
+ */
+export const retentionRuns = pgTable(
+  "retention_runs",
+  {
+    id: id(),
+    /** The rule's name (`retentionRules` in the domain). */
+    rule: text().notNull(),
+    ranAt: at().notNull(),
+    erased: integer().notNull().default(0),
+    anonymised: integer().notNull().default(0),
+  },
+  (table) => [
+    index("retention_runs_rule_index").on(table.rule, table.ranAt),
+    check("retention_runs_counts_check", sql`${table.erased} >= 0 and ${table.anonymised} >= 0`),
+  ],
+);
+
+/**
+ * Keeps records past their date while a dispute, chargeback or legal
+ * claim needs them (spec 11, 3.7.3; R11.6): everything the clean-up would
+ * delete or make anonymous about a person, a trip or a booking, until its
+ * end or until an operator ends it. Set and ended through the `privacy`
+ * command, each in the audit log. No foreign keys: a hold names the record
+ * it keeps, and outlives it once it has ended. Deleted 3 years after its end.
+ */
+export const holds = pgTable(
+  "holds",
+  {
+    id: id(),
+    subjectType: text().notNull(),
+    subjectId: uuid().notNull(),
+    reason: text().notNull(),
+    endsAt: at().notNull(),
+    /** The operator who set it. */
+    setBy: uuid().notNull(),
+    /** When an operator ended it before its end. */
+    endedAt: at(),
+    ...timestamps,
+  },
+  (table) => [
+    index("holds_subject_index").on(table.subjectType, table.subjectId),
+    check("holds_subject_type_check", sql`${table.subjectType} in ('user', 'trip', 'booking')`),
+    check("holds_reason_check", sql`length(trim(${table.reason})) > 0`),
+  ],
+);

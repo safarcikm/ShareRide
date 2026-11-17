@@ -635,6 +635,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   answered (spec 8, 3.3 and 3.4): what was reported and by whom, the
   answer, the outcome and when, with the person's own note only. The other
   side's note and the operator's stay with the operator.
+- Retention runs and holds (spec 11, 3.7): the hourly clean-up records, for
+  each retention rule, when it ran and how many records it erased, never
+  which; a rule that fails is reported and the others still run. It now
+  also deletes blocked numbers once their date comes, the list of erased
+  accounts after 30 days, ended holds after 3 years and its own records
+  after 90 days. A hold keeps what the clean-up would delete about a
+  person, a trip or a booking (their conversations, ended sessions,
+  notification log and drafts, and the account itself) until its end. The
+  `privacy` command shows the last run of each rule (`runs`) and lists,
+  sets and ends holds (`holds`, `hold`, `end-hold`), each in the audit log.
 
 ### Fixed
 
