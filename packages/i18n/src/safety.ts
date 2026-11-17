@@ -1,4 +1,9 @@
-import type { ModerationRule, ReportCategory, ReportOutcome } from "@shareride/domain";
+import type {
+  ModeratedContent,
+  ModerationRule,
+  ReportCategory,
+  ReportOutcome,
+} from "@shareride/domain";
 import type { MessageKey, Translate } from "./translator.ts";
 
 // Reports are stored as codes and put into words in the reader's language:
@@ -45,4 +50,18 @@ const moderationRuleKeys: Readonly<Record<ModerationRule, MessageKey>> = {
 /** The community rule an operator's action concerns, as its notice names it (R9.5). */
 export function moderationRuleText(t: Translate, rule: ModerationRule): string {
   return t(moderationRuleKeys[rule]);
+}
+
+const moderatedContentKeys: Readonly<Record<ModeratedContent, MessageKey>> = {
+  message: "notices.content.message",
+  review: "notices.content.review",
+  trip_note: "notices.content.tripNote",
+  about: "notices.content.about",
+  trip: "notices.content.trip",
+  booking: "notices.content.booking",
+};
+
+/** "Concerns: a message you sent": the content an operator's action affected (R9.5). */
+export function moderatedContentText(t: Translate, content: ModeratedContent): string {
+  return t("notices.concerns", { content: t(moderatedContentKeys[content]) });
 }

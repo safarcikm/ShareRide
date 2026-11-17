@@ -12,6 +12,7 @@ import {
   type AppealAnswerProblem,
   type AppealOutcome,
   type BookingStatus,
+  type HideableContent,
   type ModerationRule,
   type ReportOutcome,
   type Result,
@@ -37,7 +38,7 @@ import { recordEvents } from "../notifications/outbox.ts";
 // changed, never their values: the action's own row holds what was done
 // and why (spec 9, section 7; privacy register, "Audit log").
 
-const { bookings, moderationActions, reports, trips, tripStops, users } = schema;
+const { bookings, messages, moderationActions, reports, trips, tripStops, users } = schema;
 
 /** Who acts: an operator, with their console session (none from a command). */
 export interface Moderator {
@@ -51,6 +52,23 @@ export type SuspendError = NotFound | { readonly code: "already_suspended" } | S
 export type WarnError = NotFound | StatementProblem;
 export type ReinstateError = NotFound | { readonly code: "not_suspended" } | StatementProblem;
 export type AnswerAppealError = NotFound | AppealAnswerProblem;
+export type HideContentError = NotFound | { readonly code: "already_hidden" } | StatementProblem;
+export type CancelTripError =
+  NotFound | { readonly code: "already_cancelled" | "trip_not_cancellable" } | StatementProblem;
+
+/** What the operator can hide today; a review joins when reviews exist (spec 8). */
+export const hideableNow = [
+  "message",
+  "trip_note",
+  "about",
+] as const satisfies readonly HideableContent[];
+export type HideableNow = (typeof hideableNow)[number];
+
+/** A piece of content: a message, a trip's note (by the trip's ID) or About you (by the person's). */
+export interface Content {
+  readonly kind: HideableNow;
+  readonly id: string;
+}
 export type CloseReportError = NotFound | { readonly code: "already_closed" };
 
 export interface ModerationService {
@@ -110,6 +128,38 @@ export interface ModerationService {
     },
     request: AuditRequest | null,
   ): Promise<Result<void, AnswerAppealError>>;
+  /**
+   * Hides content (3.4.3): a message reads "Removed by ShareRide" to both
+   * people; a trip's note and About you are no longer shown to others, until
+   * the person writes a new one. Reversing it on appeal shows it again.
+   */
+  hideContent(
+    by: Moderator,
+    input: {
+      readonly content: Content;
+      readonly rule: ModerationRule;
+      readonly reason: string;
+      readonly reportId?: string;
+    },
+    request: AuditRequest | null,
+  ): Promise<Result<{ readonly actionId: string }, HideContentError>>;
+  /**
+   * Cancels an upcoming trip as ShareRide (3.4.3): full refunds, the
+   * passengers told it was cancelled and never why, and the driver the
+   * reason. It counts on the driver's reliability only when the operator
+   * says so.
+   */
+  cancelTrip(
+    by: Moderator,
+    input: {
+      readonly tripId: string;
+      readonly rule: ModerationRule;
+      readonly reason: string;
+      readonly countsOnReliability: boolean;
+      readonly reportId?: string;
+    },
+    request: AuditRequest | null,
+  ): Promise<Result<{ readonly actionId: string }, CancelTripError>>;
   /** Closes a report, and tells the reporter the outcome in general terms (3.1.6). */
   closeReport(
     by: Moderator,
@@ -131,6 +181,124 @@ async function lockPerson(tx: Transaction, userId: string) {
     .where(eq(users.id, userId))
     .for("update");
   return row;
+}
+
+/** Who posted the content, if it exists; a line of ShareRide's has no one. */
+async function ownerOf(tx: Transaction, content: Content): Promise<string | undefined> {
+  switch (content.kind) {
+    case "message": {
+      const [row] = await tx
+        .select({ senderId: messages.senderId })
+        .from(messages)
+        .where(eq(messages.id, content.id));
+      return row?.senderId ?? undefined;
+    }
+    case "trip_note": {
+      const [row] = await tx
+        .select({ driverId: trips.driverId })
+        .from(trips)
+        .where(eq(trips.id, content.id));
+      return row?.driverId;
+    }
+    case "about":
+      return content.id;
+  }
+}
+
+/**
+ * Locks the content's row, after its owner's (users first, then trips, as
+ * everywhere), and says when it was hidden; undefined when there is nothing
+ * others can read: a line of ShareRide's, a draft's note, an empty text.
+ */
+async function lockContent(
+  tx: Transaction,
+  content: Content,
+): Promise<{ readonly hiddenAt: Date | null } | undefined> {
+  switch (content.kind) {
+    case "message": {
+      const [row] = await tx
+        .select({ kind: messages.kind, hiddenAt: messages.hiddenAt })
+        .from(messages)
+        .where(eq(messages.id, content.id))
+        .for("update");
+      return row === undefined || row.kind === "system" ? undefined : { hiddenAt: row.hiddenAt };
+    }
+    case "trip_note": {
+      const [row] = await tx
+        .select({ status: trips.status, note: trips.note, hiddenAt: trips.noteHiddenAt })
+        .from(trips)
+        .where(eq(trips.id, content.id))
+        .for("update");
+      return row === undefined || row.status === "draft" || row.note === ""
+        ? undefined
+        : { hiddenAt: row.hiddenAt };
+    }
+    case "about": {
+      // The person's row, locked already as the owner's.
+      const [row] = await tx
+        .select({ about: users.about, hiddenAt: users.aboutHiddenAt })
+        .from(users)
+        .where(eq(users.id, content.id));
+      return row === undefined || row.about === null || row.about === ""
+        ? undefined
+        : { hiddenAt: row.hiddenAt };
+    }
+  }
+}
+
+/** Hides the content at `at`, or shows it again with null. */
+async function setHidden(tx: Transaction, content: Content, at: Date | null, now: Date) {
+  switch (content.kind) {
+    case "message":
+      await tx
+        .update(messages)
+        .set({ hiddenAt: at, updatedAt: now })
+        .where(eq(messages.id, content.id));
+      return;
+    case "trip_note":
+      await tx
+        .update(trips)
+        .set({ noteHiddenAt: at, updatedAt: now })
+        .where(eq(trips.id, content.id));
+      return;
+    case "about":
+      await tx
+        .update(users)
+        .set({ aboutHiddenAt: at, updatedAt: now })
+        .where(eq(users.id, content.id));
+      return;
+  }
+}
+
+/** Each content's audit entry: the record it is on, and the field that changes. */
+const hiding = {
+  message: { action: "message.hidden", subjectType: "message", field: "hiddenAt" },
+  trip_note: { action: "trip.note_hidden", subjectType: "trip", field: "noteHiddenAt" },
+  about: { action: "user.about_hidden", subjectType: "user", field: "aboutHiddenAt" },
+} as const satisfies Record<HideableNow, { action: string; subjectType: string; field: string }>;
+
+function isHideableNow(kind: string | null): kind is HideableNow {
+  return (hideableNow as readonly (string | null)[]).includes(kind);
+}
+
+/**
+ * The latest action that hid this content: the one in force, as a new note
+ * or About you shows it again and the operator can hide it once more.
+ */
+async function latestHiding(tx: Transaction, content: Content) {
+  const [row] = await tx
+    .select({ id: moderationActions.id })
+    .from(moderationActions)
+    .where(
+      and(
+        eq(moderationActions.kind, "content_hidden"),
+        eq(moderationActions.contentKind, content.kind),
+        eq(moderationActions.contentId, content.id),
+      ),
+    )
+    .orderBy(desc(moderationActions.createdAt), desc(moderationActions.id))
+    .limit(1);
+  return row?.id;
 }
 
 async function reportExists(tx: Transaction, reportId: string | undefined) {
@@ -420,6 +588,23 @@ export function createModerationService(dependencies: {
             .set({ status: "active", suspendedUntil: null, updatedAt: now })
             .where(eq(users.id, userId));
         }
+        // Reversing a hiding shows the content again, unless it has changed
+        // or been hidden again since (3.4.3).
+        const content =
+          input.outcome === "reversed" &&
+          action.kind === "content_hidden" &&
+          action.contentId !== null &&
+          isHideableNow(action.contentKind)
+            ? { kind: action.contentKind, id: action.contentId }
+            : undefined;
+        let shown = false;
+        if (content !== undefined && (await latestHiding(tx, content)) === action.id) {
+          const locked = await lockContent(tx, content);
+          if (locked !== undefined && locked.hiddenAt !== null) {
+            await setHidden(tx, content, null, now);
+            shown = true;
+          }
+        }
         if (userId !== null) {
           await recordEvents(tx, [{ type: "AppealAnswered", actionId: action.id }], now);
         }
@@ -434,10 +619,118 @@ export function createModerationService(dependencies: {
             ...(lifted
               ? { suspensionLifted: { userId, fields: ["status", "suspendedUntil"] } }
               : {}),
+            ...(shown && content !== undefined
+              ? { contentShown: { ...content, fields: [hiding[content.kind].field] } }
+              : {}),
           },
           request,
         });
         return ok(undefined);
+      });
+    },
+
+    async hideContent(by, input, request) {
+      const checked = checkStatement(input, settings);
+      if (!checked.ok) return checked;
+      const { rule, reason } = checked.value;
+      const { content } = input;
+      return db.transaction(async (tx) => {
+        const ownerId = await ownerOf(tx, content);
+        const owner = ownerId === undefined ? undefined : await lockPerson(tx, ownerId);
+        if (
+          ownerId === undefined ||
+          owner === undefined ||
+          owner.status === "deleted" ||
+          !(await reportExists(tx, input.reportId))
+        ) {
+          return err({ code: "not_found" });
+        }
+        const shown = await lockContent(tx, content);
+        if (shown === undefined) return err({ code: "not_found" });
+        if (shown.hiddenAt !== null) return err({ code: "already_hidden" });
+        const now = clock();
+        await setHidden(tx, content, now, now);
+        const actionId = await addAction(
+          tx,
+          {
+            userId: ownerId,
+            kind: "content_hidden",
+            reportId: input.reportId ?? null,
+            rule,
+            reason,
+            contentKind: content.kind,
+            contentId: content.id,
+            operatorId: by.userId,
+          },
+          now,
+        );
+        const audit = hiding[content.kind];
+        await recordAudit(tx, {
+          operator: by,
+          action: audit.action,
+          subjectType: audit.subjectType,
+          subjectId: content.id,
+          after: {
+            fields: [audit.field],
+            moderationActionId: actionId,
+            ...(input.reportId === undefined ? {} : { reportId: input.reportId }),
+          },
+          request,
+        });
+        return ok({ actionId });
+      });
+    },
+
+    async cancelTrip(by, input, request) {
+      const checked = checkStatement(input, settings);
+      if (!checked.ok) return checked;
+      const { rule, reason } = checked.value;
+      return db.transaction(async (tx) => {
+        const [trip] = await tx
+          .select({ driverId: trips.driverId })
+          .from(trips)
+          .where(eq(trips.id, input.tripId));
+        if (trip === undefined || !(await reportExists(tx, input.reportId))) {
+          return err({ code: "not_found" });
+        }
+        // The driver first, then the trip, as everywhere.
+        await lockPerson(tx, trip.driverId);
+        const cancelled = await cancelTripAsOperator(
+          tx,
+          input.tripId,
+          input.countsOnReliability,
+          clock,
+        );
+        if (!cancelled.ok) return cancelled;
+        if (!cancelled.value) return err({ code: "already_cancelled" });
+        const now = clock();
+        const actionId = await addAction(
+          tx,
+          {
+            userId: trip.driverId,
+            kind: "trip_cancelled",
+            reportId: input.reportId ?? null,
+            rule,
+            reason,
+            contentKind: "trip",
+            contentId: input.tripId,
+            operatorId: by.userId,
+          },
+          now,
+        );
+        await recordAudit(tx, {
+          operator: by,
+          action: "trip.cancelled",
+          subjectType: "trip",
+          subjectId: input.tripId,
+          after: {
+            fields: ["status", "cancelledAt", "cancelledBy", "countsOnReliability"],
+            moderationActionId: actionId,
+            ...(input.reportId === undefined ? {} : { reportId: input.reportId }),
+          },
+          request,
+        });
+        return ok({ actionId });
       });
     },
 

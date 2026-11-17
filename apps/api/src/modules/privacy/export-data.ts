@@ -88,6 +88,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     phoneVerifiedAt: when(user.phoneVerifiedAt),
     firstName: user.firstName,
     about: user.about,
+    aboutHiddenAt: when(user.aboutHiddenAt),
     languages: user.languages,
     locale: user.locale,
     email: user.emailVerifiedAt === null ? null : user.email,
@@ -231,6 +232,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
       childSeat: trip.childSeat,
       chat: trip.chat,
       note: trip.note,
+      noteHiddenAt: when(trip.noteHiddenAt),
       car:
         car === undefined
           ? null
@@ -431,16 +433,22 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
       with: { firstName: other },
       messages: lines
         .filter((line) => line.conversationId === talk.conversationId)
-        .map((line) => ({
-          from: line.senderId === null ? "ShareRide" : line.senderId === userId ? "you" : other,
-          kind: line.kind,
-          text: said(line, viewer, other),
-          // As stored, for other apps: what the text above was made from.
-          key: line.key,
-          params: line.params,
-          sentAt: when(line.sentAt),
-          readAt: when(line.readAt),
-        })),
+        .map((line) => {
+          // The other person's message ShareRide removed stays removed here
+          // too; one's own words are one's own data (spec 9, 3.4.3).
+          const removed = line.hiddenAt !== null && line.senderId !== userId;
+          return {
+            from: line.senderId === null ? "ShareRide" : line.senderId === userId ? "you" : other,
+            kind: line.kind,
+            text: removed ? t("chat.removed") : said(line, viewer, other),
+            // As stored, for other apps: what the text above was made from.
+            key: removed ? null : line.key,
+            params: removed ? null : line.params,
+            sentAt: when(line.sentAt),
+            readAt: when(line.readAt),
+            removedByShareRide: line.hiddenAt !== null,
+          };
+        }),
     };
   });
 

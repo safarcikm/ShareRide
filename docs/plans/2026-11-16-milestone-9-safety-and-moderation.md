@@ -234,7 +234,7 @@ completed).
   `hidden_at` on messages, on the trip note (`trips.note_hidden_at`) and
   on the bio (`users.about_hidden_at`). A hidden message reads "Removed by
   ShareRide" to both people; a hidden note or bio is simply not shown.
-- `operator_notes`: person, text, by, when.
+- `operator_notes`: person, text, by, when (PR 8, with Add note).
 - Each action is one function in `apps/api/src/modules/moderation/`, run
   in one transaction with its `recordAudit` entry (R9.7) and its
   `moderation_action` notification (the statement of reasons by email and
@@ -243,8 +243,10 @@ completed).
     bookings of `suspensionEffects` through milestone 6's cancellation
     code as the operator, with full refunds. The other people get the
     usual "cancelled" notification, never why (R9.10).
-  - `reinstate`, `warn`, `hideContent`, `cancelTripAsOperator`,
-    `refundBooking`, `closeReport` and `answerAppeal`.
+  - `reinstate`, `warn`, `hideContent`, `cancelTrip` (through
+    `cancelTripAsOperator`), `closeReport` and `answerAppeal`;
+    `refundBooking` comes with payouts (spec 13), which own refunds
+    outside a cancellation.
 - Requests from a suspended person to search, book, request, post, change
   a trip, send a message or review get 403 `account_suspended`. The
   minute job ends suspensions whose end has passed and tells the person.
@@ -254,6 +256,13 @@ completed).
   driver can decline a request but not accept one. A suspended person
   stays signed in, as spec 9, 3.6.2 needs; security.md said before that
   their sessions end.
+- Found while building (PR 6d): a new note or About you is new content,
+  shown again until the operator hides it too; a reversed appeal shows
+  hidden content again only if it is still the one hidden. A message
+  removed before its push went out sends none. In "Download my data", the
+  sender keeps their own words, marked removed, and the other person reads
+  "Removed by ShareRide". Reviews are hidden the same way once milestone 7
+  stores them (`reviews.hidden_at`).
 - `GET /v1/me/notices` and `POST /v1/me/notices/{id}/appeal` (once, within
   14 days).
 - **Suspended account screen**, in place of Find and Offer: until when,
@@ -353,9 +362,11 @@ In four parts, each its own pull request:
       opens), and the suspended account screen in place of Find and
       Offer; `suspension` in `GET /v1/me`; a browser journey with a
       suspension made by the test API (`POST /e2e/suspend`)
-- [ ] 6d: `operator_notes` and the `hidden_at` columns; `hideContent`
-      (reversing it on appeal shows the content again),
-      `cancelTripAsOperator` and `refundBooking`
+- [x] 6d: the `hidden_at` columns (migration `0029_hidden_content`);
+      `hideContent` for a message, a trip's note and About you
+      (reversing it on appeal shows the content again), and `cancelTrip`
+      with the driver's notice; "Removed by ShareRide" in the chat.
+      `operator_notes` moves to PR 8 and `refundBooking` to payouts
 - Verify: integration tests (a suspension cancels upcoming trips and
   bookings with full refunds and tells the others without the reason; a
   suspended person can read but not act; an appeal once, within 14 days;
@@ -372,8 +383,8 @@ In four parts, each its own pull request:
 
 ### PR 8: `feat(console)`: users, trips and bookings
 
-- [ ] Search and detail pages (3.5); Suspend, Reinstate and Add note;
-      decline rates
+- [ ] Search and detail pages (3.5); Suspend, Reinstate and Add note
+      (`operator_notes`); decline rates
 - Verify: integration tests (search by name, phone, email and ID; every
   action audited); a console browser journey: find a user and reinstate
   them

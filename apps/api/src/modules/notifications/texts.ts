@@ -7,6 +7,7 @@ import {
   type AccountNoticeKind,
   type AppealOutcome,
   type CancelReason,
+  type ModeratedContent,
   type ModerationActionKind,
   type ModerationRule,
   type Money,
@@ -26,6 +27,7 @@ import {
   formatClock,
   formatDay,
   formatMoney,
+  moderatedContentText,
   moderationRuleText,
   quickMessageText,
   reportOutcomeText,
@@ -116,6 +118,8 @@ interface AccountNoticeFactsByKind {
     /** The end of a suspension; null for one for good. */
     readonly until: Date | null;
     readonly at: Date;
+    /** What it affected, when it was something they posted, a trip or a booking. */
+    readonly content: ModeratedContent | null;
   };
   readonly suspension_ended: object;
   readonly appeal_answered: {
@@ -304,6 +308,7 @@ function noticeText(
       "",
       t("notice.rule", { rule: moderationRuleText(t, required(facts.rule, "the rule")) }),
       t("notice.reason", { reason: facts.reason }),
+      ...(facts.content === null ? [] : [moderatedContentText(t, facts.content)]),
       "",
       t("notice.appealUntil", { until: when(appealBy) }),
     ].join("\n"),

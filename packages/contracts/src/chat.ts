@@ -53,7 +53,7 @@ export const chatMessageSchema = z.object({
   /** Mine, the other person's, or a line about the booking. */
   from: z.enum(["me", "them", "system"]),
   kind: z.enum(["text", "quick", "system"]),
-  /** A text message's text, as written. */
+  /** A text message's text, as written; null once ShareRide removed it. */
   text: z.string().nullable(),
   quick: quickMessageSchema.nullable(),
   /** A line about the booking: opened, the departure or the car changed, it or its trip cancelled by me or them with the reason (spec 6) or by ShareRide (spec 9), or "I'm here" (spec 8). */
@@ -96,6 +96,11 @@ export const chatMessageSchema = z.object({
   sentAt: timestampSchema,
   /** On my messages: when the other person read it ("Seen"). */
   readAt: timestampSchema.nullable(),
+  /**
+   * ShareRide removed it (spec 9, 3.4.3): both people read "Removed by
+   * ShareRide", without its text or quick message.
+   */
+  removed: z.boolean().default(false),
 });
 
 export type ChatMessage = z.infer<typeof chatMessageSchema>;

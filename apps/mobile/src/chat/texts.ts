@@ -23,7 +23,8 @@ function shownLine(line: NonNullable<ChatMessage["system"]>, locale: Locale): Sh
 
 /**
  * A message in the reader's language: text as written, quick messages and
- * system lines translated (R7.2). `other` is the other person's first name,
+ * system lines translated (R7.2); "Removed by ShareRide" for one ShareRide
+ * removed (spec 9, 3.4.3). `other` is the other person's first name,
  * for "Anna cancelled the booking".
  */
 export function messageText(
@@ -32,6 +33,7 @@ export function messageText(
   message: ChatMessage,
   other: string,
 ): string {
+  if (message.removed) return t("chat.removed");
   if (message.system !== null) return systemLineText(t, shownLine(message.system, locale), other);
   if (message.quick !== null) return quickMessageText(t, message.quick);
   return message.text ?? "";

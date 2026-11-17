@@ -41,7 +41,7 @@ erDiagram
 | `id` | UUID v7 |
 | `phone` | E.164, verified; unique |
 | `email` | Optional, verified if present |
-| `first_name`, `photo`, `bio` | Public profile; last name is never shown publicly |
+| `first_name`, `photo`, `bio` | Public profile; last name is never shown publicly. The bio is `about`; `about_hidden_at` is set when ShareRide hid it from others (spec 9, 3.4.3), and a new text clears it |
 | `languages` | Languages spoken, shown on profile |
 | `locale` | App language |
 | `verification` | Set of: `phone`, `email`, `audkenni` |
@@ -107,7 +107,7 @@ ordered pair of active meeting points connected by road.
 | `price_level` | Percentage of the suggested prices, 0 (free) up to the cap ([ADR 0012](../decisions/0012-trip-price-level.md)) |
 | `status` | `draft`, `published`, `departed`, `completed`, `cancelled` |
 | `luggage`, `pets`, `smoking`, `child_seat`, `chat` | The preferences, one column each with a fixed list of values |
-| `note` | Free text from the driver, at most 500 characters, no contact details |
+| `note`, `note_hidden_at` | Free text from the driver, at most 500 characters, no contact details; when ShareRide hid it from passengers (spec 9, 3.4.3), until the driver writes a new one |
 | `departs_at`, `arrives_at` | Copies of the first and last stops' planned times, for overlap checks and clean-up; empty in a draft until the departure is chosen |
 | `women_only` | Shown to everyone; only women who have opted in can book it; fixed once a request or booking exists (not built yet) |
 | `published_at` | |
@@ -195,7 +195,9 @@ planned arrival). Messages have `sender_id` (empty for a system line), `kind`
 (`text`, `quick`, `system`), `body` for a text, or `key` and `params` for a
 quick message or system line, `client_id` (one message per client ID and
 sender, so a retry is stored once; only a message to all passengers puts
-one client ID in several conversations of a trip), `sent_at`, `read_at`.
+one client ID in several conversations of a trip), `sent_at`, `read_at`,
+`hidden_at` (ShareRide removed it: both people read "Removed by ShareRide",
+spec 9, 3.4.3).
 Opened in the transaction that confirms the booking. Retained per the
 [privacy](../compliance/privacy-gdpr.md#retention) schedule. See
 [spec 7](../specs/2026-11-13-chat-and-notifications.md#6-data-and-api).
@@ -248,6 +250,9 @@ The person reads their actions as Notices and appeals one once, within 14
 days of `created_at`; a reinstatement is not appealed. The operator answers
 once, finally; reversing the suspension the person is under (their latest,
 while they are suspended) lifts it, and what it cancelled stays cancelled.
+Reversing a `content_hidden` shows the content again, unless it has changed
+or been hidden again since. A `trip_cancelled` names the trip; the driver
+reads why, the passengers only that ShareRide cancelled it.
 
 ### Payment
 
@@ -347,7 +352,7 @@ recorded change), `TripChanged` (a new car or stop, likewise), `TripCancelled`, 
 `BookingWithdrawn`, `BookingCancelled`,
 `TripDeparted`, `CheckedIn`, `PassengerNoShow`, `DriverAbsentReported`,
 `DisputeAnswered`, `DisputeDecided`, `TripCompleted`, `MessageSent`, `ReviewSubmitted`, `ReviewsRevealed`, `ReportFiled`, `ReportClosed` (the reporter is told the outcome),
-`UserBlocked`, `ModerationActionTaken` (a warning, suspension, reinstatement or other operator action on a person), `SuspensionEnded`, `AppealAnswered`, `ContentHidden`,
+`UserBlocked`, `ModerationActionTaken` (a warning, content hidden, a suspension, reinstatement, trip cancelled or other operator action on a person), `SuspensionEnded`, `AppealAnswered`,
 `WomenOnlyAccessWithdrawn`, `WomenOnlyAccessRestored`,
 `WeatherWarningMatched`, `RoadClosureMatched`.
 

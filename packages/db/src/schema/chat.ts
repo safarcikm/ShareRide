@@ -57,6 +57,8 @@ export const messages = pgTable(
     sentAt: at().notNull(),
     /** When the other person read it ("Seen"); never set on a system line. */
     readAt: at(),
+    /** When ShareRide removed it (spec 9, 3.4.3): both read "Removed by ShareRide". */
+    hiddenAt: at(),
     ...timestamps,
   },
   (table) => [

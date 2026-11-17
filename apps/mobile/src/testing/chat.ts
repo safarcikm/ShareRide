@@ -18,6 +18,7 @@ export function chatMessage(changes: Partial<ChatMessage> & Pick<ChatMessage, "i
     clientId: null,
     sentAt: "2026-11-14T12:00:00.000Z",
     readAt: null,
+    removed: false,
     ...changes,
   };
 }

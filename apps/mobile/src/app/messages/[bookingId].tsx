@@ -142,7 +142,7 @@ export default function ConversationScreen() {
           </Body>
         ) : null}
         <Notice kind="info" urgent={false} message={t("chat.safetyTip")} />
-        {messages.some((message) => message.from === "them") ? (
+        {messages.some((message) => message.from === "them" && !message.removed) ? (
           <Text style={[typography.small, { color: palette.textMuted }]}>
             {t(Platform.OS === "web" ? "report.messageHintWeb" : "report.messageHint")}
           </Text>

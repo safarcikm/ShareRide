@@ -92,7 +92,8 @@ export function createAccountService(dependencies: {
         .update(users)
         .set({
           ...(firstName === undefined ? {} : { firstName }),
-          ...(about === undefined ? {} : { about }),
+          // A new text is shown again, even after ShareRide hid the last (spec 9, 3.4.3).
+          ...(about === undefined ? {} : { about, aboutHiddenAt: null }),
           ...(languages === undefined ? {} : { languages: [...languages] }),
           ...(changes.locale === undefined ? {} : { locale: changes.locale }),
           updatedAt: clock(),

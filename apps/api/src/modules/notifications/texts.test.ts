@@ -384,6 +384,7 @@ describe("notification texts", () => {
       reason: "Repeated messages after being asked to stop.",
       until: new Date("2026-12-13T12:00:00Z"),
       at: new Date("2026-11-13T12:00:00Z"),
+      content: null,
     } as const;
     // The push names what happened, never the reason: a lock screen shows it.
     expect(notificationText(notice, "en", settings)).toEqual({
@@ -416,6 +417,29 @@ describe("notification texts", () => {
       path: "/",
       emailBody: "You can use ShareRide as before.\n\nNote: A mix-up.",
     });
+    // The email names what it affected (R9.5).
+    const hidden = {
+      ...notice,
+      action: "content_hidden",
+      rule: "offensive",
+      reason: "Rude words about another member.",
+      until: null,
+      content: "message",
+    } as const;
+    expect(notificationText(hidden, "en", settings).emailBody).toBe(
+      [
+        "We removed something you posted",
+        "",
+        "Rule: Offensive content",
+        "Reason: Rude words about another member.",
+        "Concerns: a message you sent",
+        "",
+        "If you disagree, you can appeal in ShareRide, under Notices, until Friday 27 November at 12:00.",
+      ].join("\n"),
+    );
+    expect(
+      notificationText({ ...hidden, content: "trip_note" }, "is", settings).emailBody,
+    ).toContain("Varðar: ");
     expect(notificationText({ kind: "suspension_ended" }, "is", settings)).toEqual({
       title: "Aðgangurinn þinn er opinn á ný",
       body: "Lokuninni er lokið. Þú getur notað ShareRide eins og áður.",
