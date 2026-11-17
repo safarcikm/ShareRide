@@ -247,6 +247,41 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
     ).toBeVisible();
     expect(screen.queryByText("ShareRide has looked into it and decided.")).toBeNull();
   });
+
+  it("says the driver left without them when ShareRide decides so (decision 4)", async () => {
+    const marked = dispute();
+    await openBooking(
+      northBooking({
+        ...paidBooking,
+        status: "cancelled",
+        confirmed: null,
+        cancellation: {
+          by: "driver",
+          reason: "driver_absent",
+          note: "",
+          wholeTrip: false,
+          refund: paidBooking.total,
+          countsOnReliability: null,
+        },
+        dispute: {
+          ...marked,
+          answer: "contested",
+          answeredAt: marked.raisedAt,
+          outcome: "left_behind",
+          decidedBy: "operator",
+          decidedAt: "2026-11-16T10:15:00.000Z",
+        },
+      }),
+    );
+    expect(
+      await screen.findByText("Anna left without you, so ShareRide cancelled this booking."),
+    ).toBeVisible();
+    expect(screen.queryByText("Anna didn't come, so ShareRide cancelled this booking.")).toBeNull();
+    expect(
+      screen.getByText("Full refund of 2,900 ISK, back to the card you paid with."),
+    ).toBeVisible();
+    expect(screen.getByText("ShareRide has looked into it and decided.")).toBeVisible();
+  });
 });
 
 /** Gunna's booking once Anna marked her as a no-show, with the report open. */

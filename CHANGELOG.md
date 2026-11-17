@@ -567,6 +567,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   9's reports reuse, and each opening goes in the audit log as
   `conversation.opened`, without the text (R9.6). Martin chose this console page over the planned server
   command (decision 1, changed on 2026-11-17); the page follows in 5d.
+- The console's Disputes page (milestone 7, PR 5d, spec 8, 3.5), at
+  `/admin/disputes`: the reports waiting for a decision and the last ones
+  decided; each report with what each side said, every stop's planned and
+  "I'm here" times, and the passenger's "I'm here"; the decision, with
+  what each outcome does and the operator's reasons, asked once more
+  before it is made; and the booking's conversation, opened only when
+  asked. In the app, a passenger whose no-show ShareRide finds was the
+  driver leaving without them reads "{driver} left without you, so
+  ShareRide cancelled this booking." instead of "didn't come".
 - Ratings and reviews in the API (milestone 7, PR 6a, spec 8, 3.7): once a
   booking completes, the passenger rates the driver and the driver rates
   the passenger, 1 to 5 stars and an optional comment of up to 500
