@@ -1,7 +1,7 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import {
+  adminChangeCountingRoute,
   adminExcusedCancellationsRoute,
-  adminOverruleRoute,
   adminReliabilityWatchRoute,
 } from "@shareride/contracts";
 import type { ReliabilitySettings } from "@shareride/domain";
@@ -30,22 +30,39 @@ export function registerReliabilityAdminRoutes(
     return c.json({ cancellations: [...(await reliability.excusedCancellations())] }, 200);
   });
 
-  app.openapi(toOpenApiRoute(adminOverruleRoute, requireOperator), async (c) => {
-    const { kind, id } = validated(c, "param", adminOverruleRoute.request.params);
+  app.openapi(toOpenApiRoute(adminChangeCountingRoute, requireOperator), async (c) => {
+    const { kind, id } = validated(c, "param", adminChangeCountingRoute.request.params);
+    const { counts, note } = validated(c, "json", adminChangeCountingRoute.request.body);
     const { userId, sessionId } = operatorOf(c);
-    const overruled = await reliability.overrule(kind, id, {
-      operator: { userId, sessionId },
-      request: auditRequestOf(c, clientAddress),
-    });
-    if (overruled.ok) return c.json(overruled.value, 200);
-    return overruled.error.code === "not_found"
-      ? errorResponse(
+    const changed = await reliability.changeCounting(
+      { kind, id, counts, note },
+      { operator: { userId, sessionId }, request: auditRequestOf(c, clientAddress) },
+    );
+    if (changed.ok) return c.json(changed.value, 200);
+    switch (changed.error.code) {
+      case "note_missing":
+        return errorResponse(c, 400, "validation_failed", "Say why in a note.", {
+          details: [{ path: "note", issue: "missing" }],
+        });
+      case "note_too_long":
+        return errorResponse(c, 400, "validation_failed", "The note is too long.", {
+          details: [{ path: "note", issue: "too_long" }],
+        });
+      case "not_found":
+        return errorResponse(
           c,
           404,
           "not_found",
           "There is no such cancellation excused by a weather or road-closure reason.",
-        )
-      : errorResponse(c, 409, "already_overruled", "Its reason is already overruled.");
+        );
+      case "unchanged":
+        return errorResponse(
+          c,
+          409,
+          "unchanged",
+          counts ? "It counts already." : "It doesn't count already.",
+        );
+    }
   });
 
   app.openapi(toOpenApiRoute(adminReliabilityWatchRoute, requireOperator), async (c) => {

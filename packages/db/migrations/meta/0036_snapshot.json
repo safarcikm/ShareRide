@@ -1,5 +1,5 @@
 {
-  "id": "6b222562-a5ee-4b5d-b34a-b962487807bf",
+  "id": "2d465aa8-d127-4758-b313-9d64c48c5d0f",
   "prevId": "c9ddc13c-30fd-4f99-a3b1-e6468236c47d",
   "version": "7",
   "dialect": "postgresql",
@@ -1341,6 +1341,13 @@
           "primaryKey": false,
           "notNull": false
         },
+        "overrule_note": {
+          "name": "overrule_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
         "departs_at_when_booked": {
           "name": "departs_at_when_booked",
           "type": "timestamp with time zone",
@@ -1517,6 +1524,10 @@
         "bookings_cancel_note_check": {
           "name": "bookings_cancel_note_check",
           "value": "char_length(\"bookings\".\"cancel_note\") <= 500"
+        },
+        "bookings_overrule_note_check": {
+          "name": "bookings_overrule_note_check",
+          "value": "char_length(\"bookings\".\"overrule_note\") <= 500"
         },
         "bookings_refund_check": {
           "name": "bookings_refund_check",
@@ -5185,6 +5196,13 @@
           "primaryKey": false,
           "notNull": false
         },
+        "overrule_note": {
+          "name": "overrule_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
         "sample": {
           "name": "sample",
           "type": "boolean",
@@ -5318,6 +5336,10 @@
         "trips_cancel_note_check": {
           "name": "trips_cancel_note_check",
           "value": "char_length(\"trips\".\"cancel_note\") <= 500"
+        },
+        "trips_overrule_note_check": {
+          "name": "trips_overrule_note_check",
+          "value": "char_length(\"trips\".\"overrule_note\") <= 500"
         },
         "trips_times_check": {
           "name": "trips_times_check",

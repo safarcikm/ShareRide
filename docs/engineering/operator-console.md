@@ -276,13 +276,20 @@ reliability routes (`registerReliabilityAdminRoutes`), with the work in
   its reason is the weather or a closed road (`excused_by_reason`, saved
   when they are cancelled), newest first, with who cancelled, in which
   role, the route and the time. Those already overruled stay, with
-  `overruledAt`. Nobody leaving ShareRide, nor the former member.
-- `POST /admin/v1/reliability/cancellations/{kind}/{id}/overrule`, with
-  `kind` `trip` or `booking` and an empty body, makes it count
-  (`canOverrule` in the domain), sets `overruled_at` and writes
-  `trip.reason_overruled` or `booking.reason_overruled` with the names of
-  the fields changed. It answers `not_found` for anything not on that
-  list, and `already_overruled` the second time.
+  `overruledAt` and the operator's note. Nobody leaving ShareRide, nor the
+  former member.
+- `POST /admin/v1/reliability/cancellations/{kind}/{id}/counts`, with
+  `kind` `trip` or `booking` and `{ counts, note }`, changes whether it
+  counts (spec 8, section 6). `counts: true` overrules the reason, so it
+  counts (`canOverrule` in the domain) and sets `overruled_at`;
+  `counts: false` undoes that (`canUndoOverrule`), for a press by
+  mistake. The note is needed, up to 500 characters
+  (`checkOverruleNote`), and is the operator's only. It writes
+  `trip.reason_overruled` or `trip.overrule_undone` (or `booking.…`) with
+  the names of the fields changed, never the note. It answers
+  `not_found` for anything not on that list, so nobody leaving ShareRide
+  is changed, and `unchanged` when it already counts, or already
+  doesn't.
 - `GET /admin/v1/reliability/watch` gives the watch level (80%) and the
   people below it, lowest first, with their counts by role. The operator
   decides on a warning or a suspension as a person (3.8.4); nothing here
