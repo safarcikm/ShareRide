@@ -6,9 +6,11 @@ import {
   checkAnswer,
   checkDecision,
   checkDisputeNote,
+  decidableOutcomes,
   disputeEffect,
   outcomeOfAnswer,
   reportCountsOn,
+  operatorMayRead,
   reporterOf,
   settlesUnanswered,
   type Dispute,
@@ -112,6 +114,21 @@ describe("the time to answer a report (R8.6)", () => {
 
 describe("the operator's decision (3.5, decision 4)", () => {
   const contested = (dispute: Dispute): Dispute => ({ ...dispute, answer: "contested" });
+
+  it("offers the operator the outcomes of a contested report until it is decided", () => {
+    expect(decidableOutcomes(contested(noShow))).toEqual(["stands", "rode", "left_behind"]);
+    expect(decidableOutcomes(contested(absent))).toEqual(["stands", "rode", "passenger_absent"]);
+    expect(decidableOutcomes(noShow)).toEqual([]);
+    expect(decidableOutcomes({ ...noShow, answer: "agreed", outcome: "stands" })).toEqual([]);
+    expect(decidableOutcomes({ ...contested(absent), outcome: "rode" })).toEqual([]);
+  });
+
+  it("lets the operator read the booking's conversation only for a contested report (R9.6)", () => {
+    expect(operatorMayRead(contested(noShow))).toBe(true);
+    expect(operatorMayRead({ ...contested(absent), outcome: "rode" })).toBe(true);
+    expect(operatorMayRead(noShow)).toBe(false);
+    expect(operatorMayRead({ ...absent, answer: "agreed", outcome: "stands" })).toBe(false);
+  });
 
   it("decides a contested no-show as standing, ridden or left behind", () => {
     for (const outcome of ["stands", "rode", "left_behind"] as const) {

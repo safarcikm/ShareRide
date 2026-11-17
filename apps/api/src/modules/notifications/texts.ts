@@ -115,13 +115,15 @@ interface AccountNoticeFactsByKind {
     readonly at: Date;
   };
   readonly suspension_ended: object;
+  readonly privacy_request_answered: { readonly receivedAt: Date; readonly answer: string };
 }
 
 /**
  * News about the person's account: their data ready to download, or their
  * deletion and when the data is erased (spec 11); an operator's action that
  * affects them, with its statement of reasons (spec 9, R9.5), or the end of
- * their suspension (3.6).
+ * their suspension (3.6); the answer to a request about their data, with the
+ * day it came (spec 11, 3.6).
  */
 export type AccountNoticeFacts = {
   readonly [Kind in AccountNoticeKind]: { readonly kind: Kind } & AccountNoticeFactsByKind[Kind];
@@ -149,6 +151,9 @@ export const downloadDataPath = "/settings/privacy/download";
 
 /** Where signing in while a deletion waits shows "Keep my account" (spec 11, 3.4.4). */
 export const deletionWaitPath = "/";
+
+/** Where a person asks about their data (spec 11, 3.6). */
+export const privacyPath = "/settings/privacy";
 
 export interface NotificationText {
   readonly title: string;
@@ -240,6 +245,14 @@ function accountText(facts: AccountNoticeFacts, locale: Locale): NotificationTex
         title: t("notify.accountDeletionScheduled"),
         body: t("notify.accountDeletionScheduledBody", { date: when(facts.until) }),
         path: deletionWaitPath,
+      };
+    case "privacy_request_answered":
+      // The answer itself, as the operator wrote it, after a line that says
+      // which request it answers.
+      return {
+        title: t("notify.privacyRequestAnswered"),
+        body: `${t("notify.privacyRequestAnsweredBody", { date: formatDayAndMonth(facts.receivedAt, locale) })}\n\n${facts.answer}`,
+        path: privacyPath,
       };
     case "suspension_ended":
       return {

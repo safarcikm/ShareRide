@@ -96,6 +96,12 @@ export type OutboxEvent =
       /** The person asked to delete their account; the email says when (spec 11, 3.4.5). */
       readonly type: "AccountDeletionScheduled";
       readonly userId: string;
+    }
+  | {
+      /** The operator answered the person's question about their data; the email has the answer (spec 11, 3.6). */
+      readonly type: "PrivacyRequestAnswered";
+      readonly userId: string;
+      readonly requestId: string;
     };
 
 /**
