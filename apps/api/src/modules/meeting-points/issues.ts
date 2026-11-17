@@ -18,10 +18,18 @@ import {
   type Result,
 } from "@shareride/domain";
 import { and, asc, eq, gt } from "drizzle-orm";
+import type { KeyedHasher } from "../../platform/crypto.ts";
 import { recordAudit } from "../admin/audit.ts";
 import type { ConsoleActor } from "./admin-service.ts";
 
-const { meetingPointIssues, meetingPoints, users } = schema;
+const { meetingPointIssues, meetingPoints, rateLimitEvents, users } = schema;
+
+/**
+ * The limit counts each report as a rate limit event, under a keyed hash of
+ * the person's number, as sign-in does (R2.8). A report loses its link to
+ * the person once it is resolved; the event, kept 24 hours, still counts.
+ */
+const limitScope = "meeting_point_issue";
 
 export type IssueResolveError =
   IssueResolutionProblem | { readonly code: "not_found" } | { readonly code: "issue_resolved" };
@@ -56,9 +64,10 @@ const dayMs = 24 * 3_600_000;
 export function createMeetingPointIssueService(dependencies: {
   readonly db: Database;
   readonly clock: () => Date;
+  readonly hasher: KeyedHasher;
   readonly settings?: MeetingPointIssueSettings;
 }): MeetingPointIssueService {
-  const { db, clock } = dependencies;
+  const { db, clock, hasher } = dependencies;
   const settings = dependencies.settings ?? defaultMeetingPointIssueSettings;
   return {
     async report(me, meetingPointId, draft) {
@@ -73,14 +82,20 @@ export function createMeetingPointIssueService(dependencies: {
 
       return db.transaction(async (tx) => {
         // One report at a time per person, so the daily limit holds.
-        await tx.select({ id: users.id }).from(users).where(eq(users.id, me)).for("no key update");
+        const [user] = await tx
+          .select({ phoneE164: users.phoneE164 })
+          .from(users)
+          .where(eq(users.id, me))
+          .for("no key update");
+        const keyHash = hasher("phone", user?.phoneE164 ?? me);
         const today = await tx
-          .select({ at: meetingPointIssues.createdAt })
-          .from(meetingPointIssues)
+          .select({ at: rateLimitEvents.createdAt })
+          .from(rateLimitEvents)
           .where(
             and(
-              eq(meetingPointIssues.reporterId, me),
-              gt(meetingPointIssues.createdAt, new Date(now.getTime() - dayMs)),
+              eq(rateLimitEvents.scope, limitScope),
+              eq(rateLimitEvents.keyHash, keyHash),
+              gt(rateLimitEvents.createdAt, new Date(now.getTime() - dayMs)),
             ),
           );
         const retryAfterSeconds = meetingPointIssueRetryAfter(
@@ -97,6 +112,9 @@ export function createMeetingPointIssueService(dependencies: {
           createdAt: now,
           updatedAt: now,
         });
+        await tx
+          .insert(rateLimitEvents)
+          .values({ scope: limitScope, keyHash, createdAt: now, updatedAt: now });
         return ok(null);
       });
     },

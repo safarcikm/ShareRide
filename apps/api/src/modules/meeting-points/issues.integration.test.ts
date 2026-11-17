@@ -121,6 +121,24 @@ describe("POST /v1/meeting-points/{id}/issues", () => {
     expect((await report((await api.signIn(phone)).accessToken, borgarnes)).ok).toBe(true);
   });
 
+  it("still counts a report that is no longer linked to the person, as once resolved", async () => {
+    const { accessToken, userId } = await api.signIn(api.newPhoneNumber());
+    for (let sent = 0; sent < 5; sent += 1) {
+      expect((await report(accessToken, borgarnes)).ok).toBe(true);
+    }
+    await api.connection.db
+      .update(schema.meetingPointIssues)
+      .set({
+        status: "resolved",
+        resolutionNote: "Lagað.",
+        resolvedAt: api.now(),
+        reporterId: null,
+      })
+      .where(eq(schema.meetingPointIssues.reporterId, userId));
+    const sixth = await report(accessToken, borgarnes);
+    expect(sixth.ok ? null : [sixth.status, sixth.error.code]).toEqual([429, "too_many_reports"]);
+  });
+
   it("holds the limit for reports sent at the same moment", async () => {
     const { accessToken, userId } = await api.signIn(api.newPhoneNumber());
     const results = await Promise.all(
