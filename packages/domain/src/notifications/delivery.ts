@@ -29,8 +29,12 @@ export const outboxEventTypes = [
   "RefundIssued",
   "MessageSent",
   "CheckedIn",
+  "NoShowMarked",
+  "DriverAbsentReported",
+  "DisputeDecided",
   "DataExportReady",
   "ReportFiled",
+  "AccountDeletionScheduled",
 ] as const;
 export type OutboxEventType = (typeof outboxEventTypes)[number];
 

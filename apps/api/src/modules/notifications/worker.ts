@@ -5,6 +5,7 @@ import {
   channelsFor,
   defaultNotificationSettings,
   defaultSafetySettings,
+  defaultTripDaySettings,
   eventAttempts,
   isAccountNotice,
   isOperatorNotice,
@@ -41,6 +42,7 @@ import { deviceNotRegistered, type PushReceipt, type PushSender } from "../../pl
 import { SmsMaybeSent, type SmsSender } from "../../platform/sms.ts";
 import type { Queryable, Transaction } from "../bookings/seats.ts";
 import { quickOf } from "../chat/service.ts";
+import { answerByOf, disputesOf } from "../trip-day/disputes.ts";
 import { emailContent } from "./email-content.ts";
 import { preferencesOf } from "./preferences.ts";
 import {
@@ -324,10 +326,11 @@ async function tripFactsOf(q: Queryable, notification: typeof notifications.$inf
 }
 
 /**
- * News about the person's account (spec 11): for a data export, until when
- * the file can be downloaded. `current` is false once the person's latest
- * export cannot be downloaded: it expired or failed, or a newer one was
- * asked for, which deleted this file.
+ * News about the person's account (spec 11). For a data export, until when
+ * the file can be downloaded: `current` is false once the person's latest
+ * export cannot be downloaded (it expired or failed, or a newer one was asked
+ * for, which deleted this file). For a deletion, when the data is erased:
+ * `current` is false once the person kept their account.
  */
 async function accountFactsOf(
   q: Queryable,
@@ -341,6 +344,7 @@ async function accountFactsOf(
       locale: recipients.locale,
       email: recipients.email,
       emailVerifiedAt: recipients.emailVerifiedAt,
+      deleteAfter: recipients.deleteAfter,
       readyAt: dataExports.readyAt,
       failedAt: dataExports.failedAt,
       expiresAt: dataExports.expiresAt,
@@ -352,10 +356,17 @@ async function accountFactsOf(
     .orderBy(desc(dataExports.askedAt))
     .limit(1);
   if (row === undefined) return undefined;
-  const until = row.expiresAt;
-  const current =
-    row.readyAt !== null && row.failedAt === null && row.hasFile && until !== null && until > now;
-  const facts: AccountNoticeFacts = { kind, expiresAt: until ?? now };
+  let until: Date | null;
+  let current: boolean;
+  if (kind === "account_deletion_scheduled") {
+    until = row.deleteAfter;
+    current = until !== null && until > now;
+  } else {
+    until = row.expiresAt;
+    current =
+      row.readyAt !== null && row.failedAt === null && row.hasFile && until !== null && until > now;
+  }
+  const facts: AccountNoticeFacts = { kind, until: until ?? now };
   return {
     facts,
     current,
@@ -382,6 +393,7 @@ async function operatorFactsOf(q: Queryable, notification: typeof notifications.
       phoneVerifiedAt: recipients.phoneVerifiedAt,
       roles: recipients.roles,
       status: recipients.status,
+      deleteAfter: recipients.deleteAfter,
       reportStatus: reports.status,
     })
     .from(recipients)
@@ -400,6 +412,12 @@ async function operatorFactsOf(q: Queryable, notification: typeof notifications.
   } as const;
 }
 
+/** The kinds that ask for an answer to a report, with its deadline. */
+const answerKinds: ReadonlySet<string> = new Set<NotificationKind>([
+  "no_show_marked",
+  "driver_absent_reported",
+]);
+
 /** What a notification's text is made from, and where it goes, as of now. */
 async function factsOf(q: Queryable, notificationId: string, now: Date) {
   const [found] = await q.select().from(notifications).where(eq(notifications.id, notificationId));
@@ -412,6 +430,7 @@ async function factsOf(q: Queryable, notificationId: string, now: Date) {
       notification: notifications,
       booking: bookings,
       driverId: trips.driverId,
+      arrivesAt: trips.arrivesAt,
       boardsAt: boards.plannedAt,
       boardPointId: boards.meetingPointId,
       car: { make: vehicles.make, model: vehicles.model, colour: vehicles.colour },
@@ -461,6 +480,8 @@ async function factsOf(q: Queryable, notificationId: string, now: Date) {
     notification.tripChangeId === null
       ? undefined
       : await removedStopOf(q, notification.tripChangeId);
+  // A report asks the other side to answer by its deadline (spec 8, R8.6).
+  const [report] = answerKinds.has(notification.kind) ? await disputesOf(q, [booking.id]) : [];
   const facts: NotificationFacts = {
     kind: notification.kind as NotificationFacts["kind"],
     role,
@@ -492,6 +513,10 @@ async function factsOf(q: Queryable, notificationId: string, now: Date) {
     removedStop: removedStop === undefined ? null : { name: named(locale, removedStop.name) },
     moved: moved === undefined ? null : { from: moved.from, to: moved.to },
     paid: booking.status === "confirmed" && booking.totalPrice > 0,
+    answerBy:
+      report === undefined || row.arrivesAt === null
+        ? null
+        : answerByOf(report, row.arrivesAt, defaultTripDaySettings),
   };
   return {
     facts,
@@ -926,13 +951,14 @@ export function createNotificationWorker(dependencies: {
   ): Promise<void> {
     const type = event.kind as OutboxEventType;
     const key = `event:${event.id}`;
-    if (type === "DataExportReady") {
+    if (type === "DataExportReady" || type === "AccountDeletionScheduled") {
       const userId = idIn(event.payload, "userId");
       if (userId === undefined) return;
       // Gone with the account in the meantime: nobody to tell.
       const [user] = await tx.select({ id: users.id }).from(users).where(eq(users.id, userId));
       if (user === undefined) return;
-      await add(tx, { kind: "data_export_ready", to: null, recipientId: userId }, key, now);
+      const kind = type === "DataExportReady" ? "data_export_ready" : "account_deletion_scheduled";
+      await add(tx, { kind, to: null, recipientId: userId }, key, now);
       return;
     }
     if (type === "ReportFiled") {

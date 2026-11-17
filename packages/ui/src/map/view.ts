@@ -1,4 +1,4 @@
-import { mapSize, type MapXY } from "./projection";
+import { mapSize, type MapXY } from "./projection.ts";
 
 /** A part of the map, in map units: what the drawing's view box shows. */
 export interface MapView {

@@ -63,6 +63,8 @@ const environmentSchema = z
       .transform(Number),
     /** The exported web app, served on the API's own origin (staging, production). */
     WEB_APP_DIR: z.string().min(1).optional(),
+    /** The operator console's build, served at /admin (ADR 0028). */
+    ADMIN_APP_DIR: z.string().min(1).optional(),
     /**
      * The deployment: local, staging or production. Unset, it is production
      * when NODE_ENV is, as for the seed guard.
@@ -242,6 +244,7 @@ export interface Config {
   /** Proxies in front of the API that append to X-Forwarded-For. */
   readonly trustedProxies: number;
   readonly webAppDir: string | undefined;
+  readonly adminAppDir: string | undefined;
   readonly errorReporting: ErrorReportingConfig;
   readonly payments: PaymentsConfig;
   /** Whether this process runs the notification worker. */
@@ -389,6 +392,7 @@ export function loadConfig(environment: Readonly<Record<string, string | undefin
     webOrigins: env.WEB_ORIGINS,
     trustedProxies: env.TRUST_PROXY,
     webAppDir: env.WEB_APP_DIR,
+    adminAppDir: env.ADMIN_APP_DIR,
     errorReporting,
     payments: {
       provider: env.PAYMENT_PROVIDER ?? (deploymentOf(env) === "production" ? "none" : "test"),

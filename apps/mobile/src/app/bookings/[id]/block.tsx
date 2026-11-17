@@ -24,6 +24,7 @@ import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { useLoaded } from "@/lib/use-loaded";
+import { firstNameOf } from "@/people/texts";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
@@ -68,7 +69,7 @@ export default function BlockScreen() {
 function BlockPerson({ booking, back }: { readonly booking: Booking; readonly back: ReactNode }) {
   const { t } = useLanguage();
   const session = useSession();
-  const name = otherPerson(booking).firstName;
+  const name = firstNameOf(t, otherPerson(booking));
   const [state, setState] = useState<"asking" | "blocking" | "failed">("asking");
   const [together, setTogether] = useState<readonly Booking[] | null>(null);
 

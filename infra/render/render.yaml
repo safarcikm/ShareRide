@@ -54,7 +54,7 @@ services:
       # ADMIN_ORIGIN (the operator console, ADR 0028) and the email settings
       # are added in the dashboard when they are turned on; see the runbook.
 
-  # Deletes sign-in records and trip drafts past their retention, every hour (UTC).
+  # Deletes records past their retention and erases deleted accounts, every hour (UTC).
   - type: cron
     name: shareride-staging-clean-up
     runtime: docker
@@ -77,6 +77,13 @@ services:
         fromDatabase:
           name: shareride-staging-db
           property: connectionString
+      # The API's own: erasing a suspended account keeps its number's keyed
+      # hash, which sign-up must recognise.
+      - key: AUTH_SECRET
+        fromService:
+          type: web
+          name: shareride-staging-api
+          envVarKey: AUTH_SECRET
 
 databases:
   - name: shareride-staging-db

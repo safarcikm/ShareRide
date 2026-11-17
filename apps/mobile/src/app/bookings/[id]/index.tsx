@@ -41,6 +41,7 @@ import { useTripDayRefresh } from "@/trip-day/use-refresh";
 import { DriverAndCar, PartStop } from "@/trip-details/trip-parts";
 import { controlOutline, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { firstNameOf } from "@/people/texts";
 
 /**
  * A booking (spec 5, screens 3, 4, 6 and 8): a request waiting for the
@@ -230,7 +231,7 @@ function BookingDetails({
 
       <Card>
         <DriverAndCar
-          driver={booking.driver}
+          driver={{ ...booking.driver, firstName: firstNameOf(t, booking.driver) }}
           car={booking.car}
           carNote={
             confirmed !== null
@@ -249,7 +250,7 @@ function BookingDetails({
       {confirmed === null ? null : (
         <Button
           variant="secondary"
-          label={t("chat.messageTo", { name: otherPerson(booking).firstName })}
+          label={t("chat.messageTo", { name: firstNameOf(t, otherPerson(booking)) })}
           onPress={() => {
             router.push({ pathname: "/messages/[bookingId]", params: { bookingId: booking.id } });
           }}
@@ -424,7 +425,7 @@ function Requested({
   const [keptAfterAsking, setKeptAfterAsking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const driver = booking.driver.firstName;
+  const driver = firstNameOf(t, booking.driver);
 
   const withdraw = async () => {
     setNotice(null);

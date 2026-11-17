@@ -10,11 +10,13 @@ import {
   checkBooking,
   checkNote,
   dayPhase,
+  driverAbsentWindow,
   err,
   hasTripDay,
   holdsSeats,
   movedFar,
   nextStatus,
+  noShowWindow,
   ok,
   paymentDeadline,
   peopleColourOf,
@@ -47,6 +49,7 @@ import { oweRefund } from "../payments/refunds.ts";
 import { bookingConfirmed } from "./confirmed.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import { recordEvents } from "../notifications/outbox.ts";
+import { isHidden } from "../privacy/hidden.ts";
 import { blocksOf } from "../safety/blocks.ts";
 import {
   checkInsAt,
@@ -54,6 +57,7 @@ import {
   passengerCheckedInAt,
   shownWindow,
 } from "../trip-day/check-ins.ts";
+import { disputesOf, shownDispute } from "../trip-day/disputes.ts";
 import {
   changeOccupancy,
   expireDueBookings,
@@ -84,6 +88,8 @@ export interface NotFound {
 export type BookError =
   | NotFound
   | { readonly code: "account_incomplete" }
+  /** The passenger is deleting their account (spec 11, 3.4). */
+  | { readonly code: "account_deletion_pending" }
   /** The meeting points shown at the part's positions are no longer there (spec 6, 3.2). */
   | { readonly code: "stops_changed" }
   | BookingProblem;
@@ -226,12 +232,13 @@ const toldKinds = ["departure", "vehicle", "addStop", "removeStop"];
 /**
  * Bookings with everything their passenger or driver sees, oldest first,
  * each with its trip's moves, new cars and stops added or removed since it
- * was made (spec 6, 3.2), and "I'm here" at its boarding stop (spec 8, 3.2).
+ * was made (spec 6, 3.2), "I'm here" at its boarding stop (spec 8, 3.2) and
+ * its report, if any (3.3 to 3.5).
  */
 async function readBookings(q: Queryable, where: SQL | undefined) {
   const rows = await bookingRows(q, where);
   const tripIds = [...new Set(rows.map((row) => row.trip.id))];
-  const [changes, checkIns] = await Promise.all([
+  const [changes, checkIns, reports] = await Promise.all([
     tripIds.length === 0
       ? []
       : q
@@ -243,6 +250,10 @@ async function readBookings(q: Queryable, where: SQL | undefined) {
       q,
       rows.map((row) => row.boardStop.id),
     ),
+    disputesOf(
+      q,
+      rows.map((row) => row.booking.id),
+    ),
   ]);
   return rows.map((row) => {
     const { createdAt, status, cancelledAt, expiredAt, decidedAt } = row.booking;
@@ -252,6 +263,7 @@ async function readBookings(q: Queryable, where: SQL | undefined) {
       ...row,
       passengerCheckedInAt: passengerCheckedInAt(checkIns, row.booking.id),
       driverCheckedInAt: driverCheckedInAt(checkIns, row.boardStop.id),
+      dispute: reports.find((report) => report.bookingId === row.booking.id) ?? null,
       // Made under the trip's lock, so one at the same moment came before the booking.
       changes: changes.filter(
         (change) =>
@@ -371,6 +383,9 @@ function shownStatus(booking: BookingRow["booking"], now: Date): BookingStatus {
   );
 }
 
+/** The planned time of the trip's last stop, as the trip day's windows count from it. */
+const lastStopOf = (row: BookingRow) => row.trip.arrivesAt ?? plannedAt(row.alightStop);
+
 /** The trip day at the boarding stop (spec 8, 3.1 and 3.2), for a booking that boards. */
 function tripDayOf(
   row: BookingRow,
@@ -380,13 +395,18 @@ function tripDayOf(
 ): Booking["tripDay"] {
   if (!hasTripDay(status)) return null;
   const boardsAt = plannedAt(row.boardStop);
+  const lastStopAt = lastStopOf(row);
   const window = shownWindow(boardsAt, settings);
+  const noShow = noShowWindow(boardsAt, lastStopAt, settings);
   return {
-    phase: dayPhase(boardsAt, row.trip.arrivesAt ?? plannedAt(row.alightStop), now, settings),
+    phase: dayPhase(boardsAt, lastStopAt, now, settings),
     checkInOpensAt: window.opensAt,
     checkInClosesAt: window.closesAt,
     passengerCheckedInAt: row.passengerCheckedInAt?.toISOString() ?? null,
     driverCheckedInAt: row.driverCheckedInAt?.toISOString() ?? null,
+    reportOpensAt: noShow.opensAt.toISOString(),
+    noShowClosesAt: noShow.closesAt.toISOString(),
+    driverAbsentClosesAt: driverAbsentWindow(boardsAt, lastStopAt, settings).closesAt.toISOString(),
     arrival: arrivalOf({ status, checkedIn: row.passengerCheckedInAt !== null }),
   };
 }
@@ -492,9 +512,9 @@ function present(row: BookingRow, viewerId: string, now: Date, settings: TripDay
       now,
       defaultSafetySettings,
     ),
-    driver: { firstName: row.driverName ?? "", colour: peopleColourOf(trip.driverId) },
+    driver: { firstName: row.driverName, colour: peopleColourOf(trip.driverId) },
     passenger: {
-      firstName: row.passengerName ?? "",
+      firstName: row.passengerName,
       colour: peopleColourOf(booking.passengerId),
       // The month only, as profiles show it (Iceland keeps UTC all year).
       memberSince: row.passengerSince.toISOString().slice(0, 7),
@@ -514,6 +534,7 @@ function present(row: BookingRow, viewerId: string, now: Date, settings: TripDay
           }
         : null,
     tripDay: tripDayOf(row, status, now, settings),
+    dispute: row.dispute === null ? null : shownDispute(row.dispute, lastStopOf(row), settings),
   };
 }
 
@@ -639,15 +660,28 @@ export function createBookingService(dependencies: {
       return db.transaction(async (tx) => {
         // One booking at a time per passenger, so two cannot overlap (R5.10)
         // or use the same attempt key; then the trip, for its seats (R5.2).
-        await tx
-          .select({ id: users.id })
+        // Deleting an account takes the same lock before it checks.
+        const [passenger] = await tx
+          .select({ deleteAfter: users.deleteAfter })
           .from(users)
           .where(eq(users.id, passengerId))
           .for("update");
         const again = await retried(tx);
         if (again !== undefined) return again;
+        if (passenger === undefined || passenger.deleteAfter !== null) {
+          return err({ code: "account_deletion_pending" });
+        }
         const trip = await lockTrip(tx, tripId);
         if (trip === undefined) return err({ code: "not_found" });
+        // Nobody books with a driver deleting their account, nor on a trip
+        // left with the former member (spec 11, 3.4.3 and 3.5). Deleting
+        // locks the driver's trips before it checks for bookings, so with
+        // the trip locked this reads the date as it stands.
+        const [driver] = await tx
+          .select({ id: users.id, deleteAfter: users.deleteAfter })
+          .from(users)
+          .where(eq(users.id, trip.driverId));
+        if (driver === undefined || isHidden(driver)) return err({ code: "not_found" });
         const now = clock();
         await expireDueBookings(tx, tripId, now);
         // Closed by a block with the driver, silently: as if the trip did

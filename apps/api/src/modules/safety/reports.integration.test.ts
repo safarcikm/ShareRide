@@ -7,7 +7,7 @@ import {
   fileReportRoute,
   myReportsRoute,
   sendMessageRoute,
-  type ReportBody,
+  type FileReportBody,
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
 import { operatorRole } from "@shareride/domain";
@@ -58,7 +58,7 @@ afterAll(async () => {
 
 const { newMember, rewind, later, driverOf, booked, paid } = bookingHelpers(() => api);
 
-function report(member: Member | null, body: ReportBody) {
+function report(member: Member | null, body: FileReportBody) {
   return api.client.call(fileReportRoute, {
     ...(member === null ? {} : { accessToken: member.accessToken }),
     body,

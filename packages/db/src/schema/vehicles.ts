@@ -17,9 +17,10 @@ export const vehicles = pgTable(
   "vehicles",
   {
     id: id(),
+    // Restrict, as trips' driver: erasure deletes or moves cars itself.
     ownerId: uuid()
       .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+      .references(() => users.id, { onDelete: "restrict" }),
     make: text().notNull(),
     model: text().notNull(),
     colour: text().notNull(),

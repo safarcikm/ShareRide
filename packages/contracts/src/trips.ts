@@ -398,6 +398,10 @@ export const publishTripRoute = defineRoute({
   responses: {
     200: { description: "The published trip", schema: myTripSchema },
     401: unauthenticated,
+    403: {
+      description: "account_deletion_pending: the driver is deleting their account (spec 11, 3.4)",
+      ...errors,
+    },
     404: notMine,
     409: notDraft,
     422: { description: "trip_not_publishable: what to fix, in details", ...errors },

@@ -21,6 +21,7 @@ export type OutboxEvent =
         | "MessageSent"
         | "DataExportReady"
         | "ReportFiled"
+        | "AccountDeletionScheduled"
       >;
       readonly bookingId: string;
     }
@@ -68,6 +69,11 @@ export type OutboxEvent =
       /** A new report: every operator is told, never who or what (spec 9, R9.9). */
       readonly type: "ReportFiled";
       readonly reportId: string;
+    }
+  | {
+      /** The person asked to delete their account; the email says when (spec 11, 3.4.5). */
+      readonly type: "AccountDeletionScheduled";
+      readonly userId: string;
     };
 
 /**

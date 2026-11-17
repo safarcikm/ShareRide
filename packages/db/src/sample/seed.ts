@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { legsFromRoadGraph, normaliseSearchText, type PlaceKind } from "@shareride/domain";
+import { legsFromRoadGraph, searchTextFor, type PlaceKind } from "@shareride/domain";
 import { and, eq, inArray, notInArray, or } from "drizzle-orm";
 import type { Database } from "../index.ts";
 import { legs, meetingPoints, places } from "../schema/index.ts";
@@ -32,9 +32,6 @@ const defaultRadiusM: Readonly<Record<PlaceKind, number>> = {
   landmark: 5_000,
 };
 
-const searchText = (names: readonly (string | undefined)[]) =>
-  normaliseSearchText(names.filter((name) => name !== undefined).join(" "));
-
 /**
  * Adds or updates the sample meeting points, places and legs. Sample points
  * that are no longer in the list are retired, never deleted (rule R2.2).
@@ -62,7 +59,7 @@ export async function seedSampleMeetingPoints(db: Database, now: Date): Promise<
         seasonEndMonth: null,
         status: "active",
         sample: true,
-        searchText: searchText([point.nameIs, point.nameEn, ...(point.aliases ?? [])]),
+        searchText: searchTextFor([point.nameIs, point.nameEn, ...(point.aliases ?? [])]),
       };
       await tx
         .insert(meetingPoints)
@@ -91,7 +88,7 @@ export async function seedSampleMeetingPoints(db: Database, now: Date): Promise<
         matchRadiusM: place.matchRadiusM ?? defaultRadiusM[place.kind],
         municipalities: [...(place.municipalities ?? [])],
         sample: true,
-        searchText: searchText([place.nameIs, place.nameEn, ...(place.aliases ?? [])]),
+        searchText: searchTextFor([place.nameIs, place.nameEn, ...(place.aliases ?? [])]),
       };
       await tx
         .insert(places)

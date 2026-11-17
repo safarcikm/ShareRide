@@ -10,6 +10,7 @@ import { createLogger } from "./logger.ts";
 import { expireAllDueBookings } from "./modules/bookings/index.ts";
 import { createNotificationWorker } from "./modules/notifications/index.ts";
 import { createPaymentService } from "./modules/payments/index.ts";
+import { settleUnansweredReports } from "./modules/trip-day/index.ts";
 import { moveTripsOn } from "./modules/trips/index.ts";
 import { clientAddress } from "./platform/client-address.ts";
 import { createExportBuilder, exportCipherPurpose } from "./modules/privacy/index.ts";
@@ -62,6 +63,7 @@ const app = createApp({
   checkDatabase: () => pingDatabase(database.pool),
   webOrigins: config.webOrigins,
   ...(config.webAppDir === undefined ? {} : { webAppDir: config.webAppDir }),
+  ...(config.adminAppDir === undefined ? {} : { adminAppDir: config.adminAppDir }),
   ...(reportError === undefined ? {} : { reportError }),
   features: {
     db: database.db,
@@ -106,10 +108,13 @@ const jobs = [
     if (expired > 0) logger.info({ expired }, "bookings expired");
   }),
   // Trips depart at their first stop and complete 2 hours after their last,
-  // with their confirmed bookings (spec 8, R8.1 and R8.2).
+  // with their confirmed bookings (spec 8, R8.1 and R8.2). Reports nobody
+  // answered within 24 hours stand (R8.6).
   every(60_000, "trip-day", async () => {
     const moved = await moveTripsOn(database.db, new Date(), defaultTripDaySettings);
     if (moved.departed + moved.completed > 0) logger.info(moved, "trips moved on");
+    const settled = await settleUnansweredReports(database.db, new Date(), defaultTripDaySettings);
+    if (settled > 0) logger.info({ settled }, "reports settled");
   }),
 ];
 // "Download my data" files (spec 11, 3.2), built within seconds of asking.
@@ -185,6 +190,7 @@ const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
       worker: config.worker,
       trustedProxies: config.trustedProxies,
       webApp: config.webAppDir !== undefined,
+      console: config.adminAppDir !== undefined,
       errorReporting: reportError !== undefined,
       release: config.errorReporting.release,
     },
