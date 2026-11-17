@@ -821,8 +821,8 @@ releases follow [Semantic Versioning](https://semver.org/).
   the trip a car of the same make, model and colour without a plate.
   Stops, prices and payments stay. A hold on the trip, a booking, the
   driver or a passenger keeps it until the hold ends.
-- Erasure keeps a conversation a report covers (spec 9, section 7; open
-  question Q24): the erased person's messages read "Message deleted" to
+- Erasure keeps a conversation a report covers (spec 9, section 7;
+  Martin's answer A47): the erased person's messages read "Message deleted" to
   the other person, but the operator can still read them until the
   report's time is over and the clean-up deletes the conversation.
 - Ask about my data in the API (spec 11, 3.6): `POST /v1/me/privacy-requests`

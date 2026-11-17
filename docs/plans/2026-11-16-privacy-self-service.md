@@ -405,7 +405,8 @@ Added once milestone 7 built reviews (spec 8, 3.7).
 
 ### PR 12: `feat(privacy)`: erasure keeps a reported conversation
 
-Added once milestone 9 built reports (#119). Open question Q24.
+Added once milestone 9 built reports (#119). Martin chose this on
+2026-11-17 (open question Q24, answer A47).
 
 - [x] Erasure keeps what the person said in a conversation a report
       covers (a message report, open or closed under 3 years ago; the same
