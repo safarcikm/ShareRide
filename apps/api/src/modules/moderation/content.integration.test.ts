@@ -8,6 +8,7 @@ import {
   messageAllPassengersRoute,
   myConversationsRoute,
   myNoticesRoute,
+  publicProfileRoute,
   sendMessageRoute,
   tripDetailsRoute,
   updateMeRoute,
@@ -557,8 +558,24 @@ describe("hiding a trip's note (spec 9, 3.4.3)", () => {
 });
 
 describe("hiding About you (spec 9, 3.4.3)", () => {
+  /** What another member reads as Jón's About you on his public profile. */
+  async function aboutOnProfile(viewer: Member, member: Member) {
+    const [row] = await api.connection.db
+      .select({ profileId: schema.users.profileId })
+      .from(schema.users)
+      .where(eq(schema.users.id, member.userId));
+    if (row === undefined) throw new Error("No such member.");
+    const profile = await api.client.call(publicProfileRoute, {
+      accessToken: viewer.accessToken,
+      params: { profileId: row.profileId },
+    });
+    if (!profile.ok) throw new Error(profile.error.code);
+    return profile.data.about;
+  }
+
   it("marks it hidden until the person writes a new one, which they still read as theirs", async () => {
     const jon = await newMember("Jón");
+    const gunna = await newMember("Gunna");
     const update = (about: string) =>
       api.client.call(updateMeRoute, { accessToken: jon.accessToken, body: { about } });
     expect((await update("Rude words")).ok).toBe(true);
@@ -581,6 +598,7 @@ describe("hiding About you (spec 9, 3.4.3)", () => {
 
     if (!hidden.ok) throw new Error(hidden.error.code);
     expect(await hiddenAt()).toEqual(api.now());
+    expect(await aboutOnProfile(gunna, jon)).toBeNull();
     expect(await hide()).toEqual({ ok: false, error: { code: "already_hidden" } });
     expect(await auditOf(jon.userId)).toEqual([
       {
@@ -602,8 +620,10 @@ describe("hiding About you (spec 9, 3.4.3)", () => {
       ).ok,
     ).toBe(true);
     expect(await hiddenAt()).toEqual(api.now());
+    expect(await aboutOnProfile(gunna, jon)).toBeNull();
     expect((await update("I like quiet drives")).ok).toBe(true);
     expect(await hiddenAt()).toBeNull();
+    expect(await aboutOnProfile(gunna, jon)).toBe("I like quiet drives");
   });
 
   it("shows About you again when an appeal reverses it", async () => {
