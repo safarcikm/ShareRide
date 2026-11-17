@@ -1,5 +1,6 @@
 import {
   adminCreateMeetingPointRoute,
+  adminMeetingPointPhotosRoute,
   adminMeetingPointRoute,
   adminMeetingPointsRoute,
   adminMeRoute,
@@ -92,6 +93,7 @@ function start(path: string) {
   api.on(adminMeRoute, { status: 200, data: anna });
   api.on(adminMeetingPointsRoute, { status: 200, data: { meetingPoints: [bsi, listItem(draft)] } });
   api.on(adminMeetingPointRoute, { status: 200, data: draft });
+  api.on(adminMeetingPointPhotosRoute, { status: 200, data: { photos: [] } });
   render(<ConsoleApp client={api.client} passkeys={createFakePasskeys().passkeys} />);
   return api;
 }
