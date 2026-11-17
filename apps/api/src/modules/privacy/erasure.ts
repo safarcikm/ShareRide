@@ -44,7 +44,12 @@ const rodeOrHolding = bookingStatuses.filter(
 /** Erases one account inside `tx`, with its row locked. */
 async function eraseAccount(
   tx: Transaction,
-  user: { readonly id: string; readonly phoneE164: string | null; readonly status: string },
+  user: {
+    readonly id: string;
+    readonly phoneE164: string | null;
+    readonly status: string;
+    readonly suspendedUntil: Date | null;
+  },
   now: Date,
   hasher: KeyedHasher,
 ): Promise<void> {
@@ -194,9 +199,9 @@ async function eraseAccount(
     }
   }
 
-  // A suspended person's number cannot sign up again for a while (R11.9).
-  // Suspensions have no end date yet (safety, spec 9), so the longest.
-  const until = user.status === "suspended" ? blockedNumberUntil(null, now) : null;
+  // A suspended person's number cannot sign up again until the suspension
+  // ends, at most 3 years; a suspension for good gets the 3 years (R11.9).
+  const until = user.status === "suspended" ? blockedNumberUntil(user.suspendedUntil, now) : null;
   if (until !== null && user.phoneE164 !== null) {
     await tx
       .insert(blockedNumbers)
@@ -277,6 +282,7 @@ export function createErasure(dependencies: ErasureDependencies): Erasure {
           id: users.id,
           phoneE164: users.phoneE164,
           status: users.status,
+          suspendedUntil: users.suspendedUntil,
           deleteAfter: users.deleteAfter,
         })
         .from(users)
