@@ -545,7 +545,15 @@ describe("what a suspended person can still do (spec 9, 3.6.2)", () => {
   it("keeps reading their account, trips, bookings and chats, and others keep searching", async () => {
     const { jon, gunna, ride } = await suspendedDriverWithPassenger();
     const accessToken = jon.accessToken;
-    expect(await api.client.call(getMeRoute, { accessToken })).toMatchObject({ status: 200 });
+    // The app shows the suspended account screen from this (spec 9, 3.6.2).
+    expect(await api.client.call(getMeRoute, { accessToken })).toMatchObject({
+      status: 200,
+      data: { suspension: { until: days(30).toISOString() } },
+    });
+    expect(await api.client.call(getMeRoute, { accessToken: gunna.accessToken })).toMatchObject({
+      status: 200,
+      data: { suspension: null },
+    });
     expect(
       await api.client.call(myTripsRoute, { accessToken, query: { when: "upcoming" } }),
     ).toMatchObject({
@@ -581,6 +589,9 @@ describe("what a suspended person can still do (spec 9, 3.6.2)", () => {
   it("is refused nothing once the end has passed, before the minute job stores it", async () => {
     const { jon } = await suspendedDriverWithPassenger();
     await later(hours(24 * 30) + 60, jon);
+    expect(await api.client.call(getMeRoute, { accessToken: jon.accessToken })).toMatchObject({
+      data: { suspension: null },
+    });
     expect(
       await api.client.call(tripSearchRoute, {
         accessToken: jon.accessToken,
