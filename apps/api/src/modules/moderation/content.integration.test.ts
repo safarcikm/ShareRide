@@ -667,7 +667,7 @@ describe("hiding a review (spec 9, 3.4.3)", () => {
     return row?.at ?? null;
   }
 
-  it("hides it from the person it is about, and tells its author why", async () => {
+  it("hides it, and tells its author why", async () => {
     const { gunna, reviewId } = await review("Rude words about the driver");
     const by = await moderator();
     const hide = () =>
@@ -715,6 +715,29 @@ describe("hiding a review (spec 9, 3.4.3)", () => {
       await appealed(by, hidden.value.actionId, outcome);
       expect(await reviewHiddenAt(reviewId)).toEqual(outcome === "reversed" ? null : api.now());
     }
+  });
+
+  it("hides one whose author's account is erased, telling nobody", async () => {
+    const { reviewId } = await review("Rude words, then the account was deleted");
+    // Erasure keeps the review under the former member (spec 11).
+    await api.connection.db
+      .update(schema.reviews)
+      .set({ authorId: schema.formerMemberId })
+      .where(eq(schema.reviews.id, reviewId));
+
+    const hidden = await moderation().hideContent(
+      await moderator(),
+      { content: { kind: "review", id: reviewId }, rule: "offensive", reason },
+      request,
+    );
+
+    if (!hidden.ok) throw new Error(hidden.error.code);
+    expect(await reviewHiddenAt(reviewId)).toEqual(api.now());
+    const [action] = await api.connection.db
+      .select({ userId: schema.moderationActions.userId })
+      .from(schema.moderationActions)
+      .where(eq(schema.moderationActions.id, hidden.value.actionId));
+    expect(action).toEqual({ userId: null });
   });
 
   it("refuses a review that does not exist", async () => {

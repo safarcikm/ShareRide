@@ -249,6 +249,8 @@ describe("a report's page (spec 9, 3.4.2)", () => {
       about: { kind: "trip", tripId: airport },
       category: "other",
     });
+    // A request never paid is no ride, so not among her recent trips.
+    await booked(gunna.accessToken, north, { fromStop: 0, toStop: 1 });
     const { cookie } = await api.signInOperator();
 
     const { status, body } = await send(cookie, "GET", `/admin/v1/reports/${reportId}`);
@@ -262,7 +264,7 @@ describe("a report's page (spec 9, 3.4.2)", () => {
       description: "He was rude to me.",
       reporter: person(gunna, "Gunna"),
       reported: person(jon, "Jón"),
-      trip: { id: airport, status: "published", noteHidden: false },
+      trip: { id: airport, driverId: jon.userId, status: "published", noteHidden: false },
       booking: { id: bookingId, status: "confirmed", seats: 1 },
       message: { id: messageId, removed: false },
       about: null,

@@ -112,7 +112,7 @@ export const adminReportSideSchema = z.object({
   reportsBy: z.array(adminReportListItemSchema),
   /** Other reports about them, latest first, at most 20. */
   reportsAbout: z.array(adminReportListItemSchema),
-  /** At most 10. */
+  /** Trips they drove or held a seat on, latest departure first, at most 10. */
   recentTrips: z.array(adminRecentTripSchema),
   /** Actions on them, latest first, at most 20. */
   actions: z.array(adminModerationActionSchema),
@@ -126,6 +126,8 @@ export const adminReportSchema = adminReportListItemSchema.extend({
   trip: z
     .object({
       id: z.uuid(),
+      /** Who drives it: the console offers hiding its note or cancelling it only for them. */
+      driverId: z.uuid(),
       status: z.enum(tripStatuses),
       from: stopSchema,
       to: stopSchema,

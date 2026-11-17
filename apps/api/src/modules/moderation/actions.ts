@@ -39,7 +39,17 @@ import { recordEvents } from "../notifications/outbox.ts";
 // changed, never their values: the action's own row holds what was done
 // and why (spec 9, section 7; privacy register, "Audit log").
 
-const { bookings, messages, moderationActions, reports, reviews, trips, tripStops, users } = schema;
+const {
+  bookings,
+  formerMemberId,
+  messages,
+  moderationActions,
+  reports,
+  reviews,
+  trips,
+  tripStops,
+  users,
+} = schema;
 
 /** Who acts: an operator, with their console session (none from a command). */
 export interface Moderator {
@@ -694,10 +704,13 @@ export function createModerationService(dependencies: {
       return db.transaction(async (tx) => {
         const ownerId = await ownerOf(tx, content);
         const owner = ownerId === undefined ? undefined : await lockPerson(tx, ownerId);
+        // An erased person's reviews stay, under the former member, and can
+        // still be hidden; nobody is told. Nothing else of theirs is left.
+        const formerMember = ownerId === formerMemberId && content.kind === "review";
         if (
           ownerId === undefined ||
           owner === undefined ||
-          owner.status === "deleted" ||
+          (owner.status === "deleted" && !formerMember) ||
           !(await reportExists(tx, input.reportId))
         ) {
           return err({ code: "not_found" });
@@ -710,7 +723,7 @@ export function createModerationService(dependencies: {
         const actionId = await addAction(
           tx,
           {
-            userId: ownerId,
+            userId: formerMember ? null : ownerId,
             kind: "content_hidden",
             reportId: input.reportId ?? null,
             rule,
