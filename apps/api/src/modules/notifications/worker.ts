@@ -33,6 +33,7 @@ import {
   type ChannelDecision,
   type MeetingPointStatus,
   type NotificationEvent,
+  type ModeratedContent,
   type ModerationActionKind,
   type ModerationRule,
   type NotificationKind,
@@ -516,6 +517,7 @@ async function noticeFactsOf(
       reason: action.reason,
       until: action.until,
       at: action.createdAt,
+      content: action.contentKind as ModeratedContent | null,
     };
   }
   return {
@@ -805,6 +807,8 @@ async function factsOf(q: Queryable, notificationId: string, now: Date) {
     recipientId: notification.recipientId,
     email: recipient.emailVerifiedAt === null ? null : recipient.email,
     phone: recipient.phoneVerifiedAt === null ? null : recipient.phone,
+    // ShareRide removed it before it went out (spec 9, 3.4.3).
+    messageRemoved: message !== undefined && message.hiddenAt !== null,
     booking: {
       status: booking.status as BookingStatus,
       requestExpiresAt: booking.expiresAt,
@@ -1897,6 +1901,7 @@ export function createNotificationWorker(dependencies: {
     ) {
       return { skipped: "no_longer_applies" };
     }
+    if ("messageRemoved" in found && found.messageRemoved) return { skipped: "no_longer_applies" };
     // A point back in use since it was paused, or a booking that no longer
     // stops there (spec 2, 3.6.4).
     if (found.facts.kind === "meeting_point_changed" && found.facts.pausedPoint === null) {

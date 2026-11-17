@@ -575,6 +575,24 @@ releases follow [Semantic Versioning](https://semver.org/).
   API can suspend a person (`POST /e2e/suspend`), as the console will. In
   Icelandic, Notices are "Orðsendingar frá ShareRide", apart from
   Messages ("Skilaboð").
+- Hidden content and ShareRide's trip cancel (milestone 9, PR 6d, spec 9,
+  3.4.3): for the console, the operator's `hideContent` hides a message,
+  a review, a trip's note or About you, and `cancelTrip` cancels an upcoming trip
+  with full refunds, on the driver's reliability only when the operator
+  says so. A hidden message reads "Removed by ShareRide" to both people
+  (in every conversation a message to all passengers went to), the app
+  offers no Report on it, and it sends no push if it had not gone yet; a
+  hidden note is not shown to passengers, nor copied by "Post again",
+  until the driver writes a different one, and About you likewise, also
+  on the public profile; a hidden review no longer shows to the person it
+  is about. The
+  person gets the notice with what it concerned, also in the email and in
+  "Download my data"; the passengers of a cancelled trip only that
+  ShareRide cancelled it. Reversing a hiding on appeal shows the
+  content again. Each writes one audit entry. Migration
+  `0041_hidden_content` adds `messages.hidden_at`,
+  `trips.note_hidden_at` and `users.about_hidden_at`, which "Download my
+  data" includes.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its

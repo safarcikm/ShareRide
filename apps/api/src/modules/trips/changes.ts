@@ -390,7 +390,13 @@ export function createTripChangeService(dependencies: {
         }
         await tx
           .update(trips)
-          .set({ ...after.preferences, note: after.note, updatedAt: now })
+          .set({
+            ...after.preferences,
+            note: after.note,
+            // A new note is new content: one ShareRide hid stays hidden only as it was (spec 9, 3.4.3).
+            ...(made.note === kept.note ? {} : { noteHiddenAt: null }),
+            updatedAt: now,
+          })
           .where(eq(trips.id, trip.id));
         // The note's text is not kept, only whether it changed: the trip
         // shows the one it has now, and an old note has no use (minimisation).

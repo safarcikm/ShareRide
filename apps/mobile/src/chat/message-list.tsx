@@ -138,13 +138,16 @@ function Message({
   const time = formatClock(new Date(message.sentAt));
   const content = (
     <>
-      <Bubble mine={mine}>{messageText(t, locale, message, other)}</Bubble>
+      <Bubble mine={mine} removed={message.removed}>
+        {messageText(t, locale, message, other)}
+      </Bubble>
       <Text style={[typography.caption, { color: palette.textMuted }]}>
         {seen ? `${time} · ${t("chat.seen")}` : time}
       </Text>
     </>
   );
-  if (mine || onReport === undefined) {
+  // What ShareRide removed has been dealt with: nothing left to report.
+  if (mine || onReport === undefined || message.removed) {
     return (
       <View
         accessible
@@ -188,7 +191,15 @@ function Message({
   );
 }
 
-function Bubble({ mine, children }: { readonly mine: boolean; readonly children: ReactNode }) {
+function Bubble({
+  mine,
+  removed = false,
+  children,
+}: {
+  readonly mine: boolean;
+  readonly removed?: boolean;
+  readonly children: ReactNode;
+}) {
   const palette = usePalette();
   return (
     <View
@@ -199,7 +210,14 @@ function Bubble({ mine, children }: { readonly mine: boolean; readonly children:
           : { backgroundColor: palette.surface, borderColor: palette.border },
       ]}
     >
-      <Text selectable style={[typography.body, { color: palette.text }]}>
+      <Text
+        selectable={!removed}
+        style={[
+          typography.body,
+          // Muted, as ShareRide's own lines are.
+          { color: removed ? palette.textMuted : palette.text },
+        ]}
+      >
         {children}
       </Text>
     </View>
