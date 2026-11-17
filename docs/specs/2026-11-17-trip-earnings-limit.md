@@ -1,7 +1,8 @@
 # Spec 17: A limit on what one trip brings the driver
 
 **Owner:** Martin · **Date:** 2026-11-17 · **Status:** Approved
-(2026-11-17); not built yet, see the
+(2026-11-17); being built: the booking check is in, the price level
+follows next, see the
 [implementation plan](../plans/2026-11-17-trip-earnings-limit.md)
 
 Decision record: [ADR 0030](../decisions/0030-limit-what-a-whole-trip-brings-the-driver.md)
@@ -164,10 +165,12 @@ takings     = Σ price of every booking of the trip whose money goes, or went, t
 ```
 
 - `takings` counts bookings that are `requested`, `accepted`, `confirmed`,
-  `completed` or `no_show`, and `cancelled` bookings the driver is paid for
-  (a passenger's cancellation less than 15 minutes before boarding, rule
-  M2). A refunded booking counts nothing. Each booking counts the price it
-  was made at (its snapshot), not today's prices.
+  `completed` or `no_show`, and `cancelled` bookings that were confirmed
+  first, each less its refund: what a late cancellation leaves the driver
+  (rule M2) counts, a fully refunded booking counts nothing, and a request
+  withdrawn or a booking cancelled before it was paid counts nothing. Each
+  booking counts the price it was made at (its snapshot), not today's
+  prices.
 - `trip_limit` uses the trip's capacity now. It is built from the rounded
   caps, so rounding stays as A39 decided and goes with that question.
 - The passenger service fee (rule P5) is not part of `takings`
@@ -222,7 +225,9 @@ L_max   = highest step L, at or below today's L_max for the capacity, with
   left can cost at most 120%."
 - **"Why is there a limit?"** adds one sentence: the limit is for the whole
   trip, so money already paid counts.
-- **Passengers:** nothing new; their price is fixed when they book.
+- **Passengers:** their price is fixed when they book. A booking the limit
+  refuses says so and leads back to the trip; once the level follows the
+  limit this only happens in a race with a change, as a seat taken does.
 - **Console:** the trip page shows takings against the limit; a held payout
   shows in the alerts.
 - **Later, with spec 13 receipts:** the driver's receipt and yearly
@@ -246,6 +251,7 @@ L_max   = highest step L, at or below today's L_max for the capacity, with
 | --- | ------- | -------- |
 | `trip.price.limitUsed` | Passengers have already paid most of this trip's limit, so the seats left can cost at most {level}. | Farþegar hafa þegar greitt stóran hluta af hámarki ferðarinnar, svo sætin sem eftir eru mega kosta mest {level}. |
 | `trip.price.whyLimit.trip` | The limit is for the whole trip, so what passengers have already paid counts towards it. | Hámarkið gildir fyrir alla ferðina, svo það sem farþegar hafa þegar greitt telst með. |
+| `booking.tripLimitReached` | This trip can't take this booking right now. Go back and try fewer seats or a shorter part of the trip. | Þessi ferð getur ekki tekið við þessari bókun núna. Farðu til baka og prófaðu færri sæti eða styttri hluta ferðarinnar. |
 
 ## 12. Testing
 

@@ -590,7 +590,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   "Download my data"; the passengers of a cancelled trip only that
   ShareRide cancelled it. Reversing a hiding on appeal shows the
   content again. Each writes one audit entry. Migration
-  `0040_hidden_content` adds `messages.hidden_at`,
+  `0041_hidden_content` adds `messages.hidden_at`,
   `trips.note_hidden_at` and `users.about_hidden_at`, which "Download my
   data" includes.
 - The console's reports API (milestone 9, PR 7a, spec 9, 3.4 to 3.6):
@@ -918,6 +918,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   the trip a car of the same make, model and colour without a plate.
   Stops, prices and payments stay. A hold on the trip, a booking, the
   driver or a passenger keeps it until the hold ends.
+- Erasure keeps a conversation a report covers (spec 9, section 7;
+  Martin's answer A47): the erased person's messages read "Message deleted" to
+  the other person, but the operator can still read them until the
+  report's time is over and the clean-up deletes the conversation.
 - Ask about my data in the API (spec 11, 3.6): `POST /v1/me/privacy-requests`
   takes an objection, a restriction, a correction or a question from
   someone with a verified email, at most 5 a day, due a month later. The
@@ -934,6 +938,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   each passenger on a trip the person drove, the review they wrote and
   the one about them once it shows, and when ShareRide hid either. A
   review that does not show yet stays out of the other person's file.
+- The trip limit, part 1 (spec 17, ADR 0030): a booking that would take a
+  trip past what a full car pays at the price caps, counting what the
+  trip's bookings already pay the driver, is refused with
+  `trip_limit_reached`, and the app says fewer seats or a shorter part may
+  fit and leads back to the trip; the domain gains `tripLimit`, `takingsOf`,
+  `limitRoom` and the highest price level within the limit.
 
 ### Fixed
 

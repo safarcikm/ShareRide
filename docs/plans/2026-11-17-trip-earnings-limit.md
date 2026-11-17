@@ -44,16 +44,19 @@ Accepted by Martin on 2026-11-17.
 2. The driver lowers the seats while kept money is above the new limit: the
    highest level is 0%, nothing errors and nothing is taken back. Task 1
    tests it.
-3. A request that expires gives its room back to the next booking. Task 4
+3. A request that expires gives its room back to the next booking. Task 3
    tests it.
 4. A stop added after bookings re-rounds the caps of the split stretch: the
-   level may fall but never rises on its own. Task 3 tests it.
+   level may fall but never rises on its own. Task 4 tests it.
 5. A free trip (level 0, takings 0) behaves exactly as today. Task 1 tests
    it.
 
 ---
 
-## PR 1: the rule in the domain
+## PR 1: bookings never go past the limit
+
+Built 2026-11-17: the rule in the domain and the booking check, from
+the domain to the app's error text. Nothing changes for drivers yet.
 
 ### Task 1: Trip limit, takings and the highest level that fits
 
@@ -70,9 +73,11 @@ Accepted by Martin on 2026-11-17.
     (takings in whole krónur).
   - `tripLimit(distancesM: readonly number[], seats: number, settings: PriceSettings): Money`:
     the sum of `seats × priceCap(distanceM, seats)`.
-  - `takingsOf(bookings: readonly { status: BookingStatus; totalPrice: number; refundAmount: number | null }[]): Money`:
+  - `takingsOf(bookings: readonly { status: BookingStatus; totalPrice: number; refundAmount: number | null; confirmedAt: Date | null }[]): Money`:
     sum of `totalPrice − (refundAmount ?? 0)` for `requested`, `accepted`,
-    `confirmed`, `completed`, `no_show` and `cancelled`.
+    `confirmed`, `completed` and `no_show` (`payingStatuses`), and for
+    `cancelled` only when `confirmedAt` is set (a request withdrawn or a
+    booking cancelled before it was paid counts nothing).
   - `type LevelLimit = "seats" | "trip_limit"`.
   - `highestLevelWithin(load: TripLoad, settings: PriceSettings): { level: number; limitedBy: LevelLimit }`.
   - `fitLevelWithin(level: number, load: TripLoad, settings: PriceSettings): { level: number; lowered: boolean; limitedBy: LevelLimit }`.
@@ -80,13 +85,14 @@ Accepted by Martin on 2026-11-17.
 - `PriceSettings` is the `Pick<TripSettings, …>` already used in
   `prices.ts`; export it from there.
 
-- [ ] **Step 1: Write the failing tests.** The trip is spec 17's example,
+- [x] **Step 1: Write the failing tests.** The trip is spec 17's example,
   `d = [74_000, 171_000, 143_000]`, with `defaultTripSettings`:
   - `tripLimit(d, 3)` is 43 800 kr, `tripLimit(d, 1)` 29 100 kr,
     `tripLimit(d, 8)` 52 000 kr.
   - `takingsOf` counts 14 600 for a confirmed booking, 14 600 for a
     `no_show`, 0 for a cancelled one refunded in full, 9 600 for one with
-    a 5 000 refund, 0 for `declined` and `expired`.
+    a 5 000 refund, 0 for `declined` and `expired`, 0 for a cancelled
+    booking that was never confirmed.
   - No bookings, 3 seats: `{ level: 250, limitedBy: "seats" }`.
   - Gap 1: 3 seats, occupancy `[1, 1, 1]`, takings 29 100:
     `{ level: 120, limitedBy: "trip_limit" }`.
@@ -105,9 +111,9 @@ Accepted by Martin on 2026-11-17.
     stretches), seats 1 to 8, occupancy within seats and takings from
     bookings priced at or below the caps, `takings + Σ free × price at the
     returned level ≤ tripLimit`.
-- [ ] **Step 2:** Run `pnpm --filter @shareride/domain test limit`; expect
+- [x] **Step 2:** Run `pnpm --filter @shareride/domain test limit`; expect
   failures.
-- [ ] **Step 3: Implement** in `limit.ts`. The only algorithm the
+- [x] **Step 3: Implement** in `limit.ts`. The only algorithm the
   signatures leave open:
 
   ```ts
@@ -127,9 +133,9 @@ Accepted by Martin on 2026-11-17.
   return { level: 0, limitedBy: top === 0 ? "seats" : "trip_limit" };
   ```
 
-- [ ] **Step 4:** Run the same command; expect all to pass. Then
+- [x] **Step 4:** Run the same command; expect all to pass. Then
   `pnpm --filter @shareride/domain check`.
-- [ ] **Step 5: Commit** `feat(pricing): the trip limit and the highest level within it`.
+- [x] **Step 5: Commit** `feat(pricing): the trip limit and the highest level within it`.
 
 ### Task 2: Booking checks the room left
 
@@ -145,17 +151,67 @@ Accepted by Martin on 2026-11-17.
   least 0) and the problem `{ code: "trip_limit_reached" }`, checked right
   after `price_changed`.
 
-- [ ] **Step 1: Write the failing tests:** a booking whose total is above
+- [x] **Step 1: Write the failing tests:** a booking whose total is above
   `limitRoom` is refused with `trip_limit_reached`; equal to it is
   accepted; a free booking (total 0) with `limitRoom` 0 is accepted.
-- [ ] **Step 2:** Run `pnpm --filter @shareride/domain test check`; expect
+- [x] **Step 2:** Run `pnpm --filter @shareride/domain test check`; expect
   failures.
-- [ ] **Step 3: Implement** the check; update every `BookingAttempt` in
+- [x] **Step 3: Implement** the check; update every `BookingAttempt` in
   existing tests with a large `limitRoom`.
-- [ ] **Step 4:** Run the same command; expect pass.
-- [ ] **Step 5: Commit** `feat(booking): refuse a booking past the trip limit`.
+- [x] **Step 4:** Run the same command; expect pass.
+- [x] **Step 5: Commit** with Task 3.
 
-### Task 3: Trip changes use the trip limit
+### Task 3: The API counts takings when booking
+
+**Files:**
+
+- Modify: `apps/api/src/modules/bookings/seats.ts` (add `limitRoomOf`)
+- Modify: `apps/api/src/modules/bookings/service.ts` (pass `limitRoom` to
+  `checkBooking`)
+- Modify: `apps/api/src/modules/bookings/routes.ts`,
+  `packages/contracts/src/bookings.ts` (`trip_limit_reached`, 409)
+- Modify: `apps/mobile/src/booking/texts.ts`, `packages/i18n/src/messages/en.ts`, `is.ts`
+- Test: `apps/api/src/modules/bookings/bookings.integration.test.ts`,
+  `apps/mobile/src/__tests__/booking.test.tsx`
+
+**Interfaces:**
+
+- Produces: `limitRoomOf(tx: Transaction, tripId: string): Promise<Money>`:
+  `Σ segments.capacity × segments.cap` less the takings summed in SQL as in
+  `takingsOf`, never below 0. Call it with the trip locked.
+- Produces in the domain: `limitRoom(segments: readonly { capacity: number; cap: number }[], bookings: readonly TakingsBooking[]): Money`,
+  which `limitRoomOf` calls with the trip's rows, so the rule is not
+  written again in SQL.
+- Text `booking.tripLimitReached` (spec 17, section 11), shown with a
+  "Back to the trip" button; the screen asks for the trip again, in case
+  its price has fallen.
+
+- [x] **Step 1: Write the failing integration tests** (a trip of three
+  stretches, capacity 3, cap and price 1 000 kr each, so its limit is
+  9 000 kr; seats added are PR 2, so an earlier booking at a higher level
+  is set up by its `total_price`):
+  - with 7 000 kr already booked, a booking of the whole route (3 000 kr)
+    is refused with `trip_limit_reached`, and seats stay as they were; two
+    of the three stretches (2 000 kr) fit;
+  - two bookings at once for the last room: one succeeds, the other gets
+    `trip_limit_reached`;
+  - a request that expires gives its room back: the same booking, refused
+    before, now succeeds;
+  - a request the passenger withdrew before paying counts nothing;
+  - a paid booking cancelled late counts what it leaves the driver, and
+    nothing once refunded in full;
+  - the app shows `booking.tripLimitReached` when the API answers with it.
+- [x] **Step 2:** Run `pnpm --filter @shareride/api test:integration bookings`;
+  expect failures (2 of the 4 failed without the check; the other two now
+  assert the refusal first).
+- [x] **Step 3: Implement.**
+- [x] **Step 4:** Run the same command; expect pass.
+- [x] **Step 5: Commit** `feat(booking): keep every booking within the trip limit`
+  (Tasks 2 and 3 landed as one commit); open PR 1.
+
+## PR 2: changes, no-shows and the edit screens
+
+### Task 4: Trip changes use the trip limit
 
 **Files:**
 
@@ -170,6 +226,11 @@ Accepted by Martin on 2026-11-17.
 - Produces: `ChangeableTrip.takings: number`; the change effect's
   `priceLevelLowered` stays, and gains `levelLimitedBy: LevelLimit | null`
   (null when the level did not fall).
+- The level must fit the same limit the booking check uses (`limitRoom`,
+  from the caps the segments store). `tripLimit` recomputes the caps from
+  today's settings, so once operators can change settings (milestone 11)
+  the two could differ: give `TripLoad` the stored caps, or test that they
+  agree.
 
 - [ ] **Step 1: Write the failing tests** (spec 17's trip, 1 seat booked
   at 500%, takings 29 100, occupancy `[1, 1, 1]`):
@@ -187,45 +248,7 @@ Accepted by Martin on 2026-11-17.
   `fitLevelWithin` for seats and stops, `isLevelWithin` for the price level.
 - [ ] **Step 4:** Run the same command, then
   `pnpm --filter @shareride/domain check`; expect pass.
-- [ ] **Step 5: Commit** `feat(trips): changes keep a trip within its limit`;
-  open PR 1.
-
-## PR 2: the API and the app
-
-### Task 4: The API counts takings when booking
-
-**Files:**
-
-- Modify: `apps/api/src/modules/bookings/seats.ts` (add `limitRoomOf`)
-- Modify: `apps/api/src/modules/bookings/service.ts` (pass `limitRoom` to
-  `checkBooking`)
-- Modify: `apps/api/src/modules/bookings/routes.ts`,
-  `packages/contracts/src/bookings.ts` (`trip_limit_reached`, 409)
-- Modify: `packages/i18n/src/messages/en.ts`, `is.ts`
-- Test: `apps/api/src/modules/bookings/bookings.integration.test.ts`
-
-**Interfaces:**
-
-- Produces: `limitRoomOf(tx: Transaction, tripId: string): Promise<Money>`:
-  `Σ segments.capacity × segments.cap` less the takings summed in SQL as in
-  `takingsOf`, never below 0. Call it with the trip locked.
-- Text `booking.problem.tripLimitReached`: EN "This ride's price has just
-  changed. Look at it again before booking." IS "Verð þessarar ferðar
-  breyttist rétt í þessu. Skoðaðu hana aftur áður en þú bókar."
-
-- [ ] **Step 1: Write the failing integration tests:**
-  - the gap 1 sequence through the API (1 seat at 500% booked; seats → 3;
-    two bookings of the whole route) ends with the driver's bookings
-    totalling 43 100 kr;
-  - two bookings at once for the last room: one succeeds, the other gets
-    `trip_limit_reached` or `seats_taken`;
-  - a request that expires gives its room back: the next booking at the
-    old price succeeds.
-- [ ] **Step 2:** Run `pnpm --filter @shareride/api test:integration bookings`;
-  expect failures.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4:** Run the same command; expect pass.
-- [ ] **Step 5: Commit** `feat(booking): the API keeps each trip within its limit`.
+- [ ] **Step 5: Commit** `feat(trips): changes keep a trip within its limit`.
 
 ### Task 5: Trip changes and the driver's trip carry the takings
 
@@ -241,14 +264,16 @@ Accepted by Martin on 2026-11-17.
 
 **Interfaces:**
 
-- Consumes: `ChangeableTrip.takings` (Task 3), `limitRoomOf` (Task 4).
+- Consumes: `ChangeableTrip.takings` (Task 4), `limitRoomOf` (Task 3).
 - Produces: `DriverTrip.takings` for the app (Task 7).
 
 - [ ] **Step 1: Write the failing tests:** raising the seats after a
   booking lowers the level to 120% and stores the repriced segments; the
   trip change records `{ seats: 3, priceLevel: 120 }`; the driver's trip
   shows `takings` 29 100 kr; another person's view of the trip has no
-  `takings`.
+  `takings`; the gap 1 sequence end to end (1 seat at 500% booked, seats
+  → 3, two bookings of the whole route at the new price) leaves the
+  driver's bookings at 43 100 kr, within the 43 800 kr limit.
 - [ ] **Step 2:** Run `pnpm --filter @shareride/api test:integration changes`;
   expect failures.
 - [ ] **Step 3: Implement.**
