@@ -34,7 +34,12 @@ const facts: NotificationFacts = {
   moved: { from: new Date("2026-11-14T08:15:00Z"), to: new Date("2026-11-14T09:00:00Z") },
   paid: true,
   answerBy: new Date("2026-11-15T13:30:00Z"),
-  pausedPoint: { name: "N1 Borgarnes", reason: "Road works at the entrance.", until: null },
+  pausedPoint: {
+    name: "N1 Borgarnes",
+    reason: "Road works at the entrance.",
+    until: null,
+    retired: false,
+  },
 };
 
 const gunna = { name: "Gunna", from: "BSÍ", to: "Hof, Akureyri" };
@@ -52,7 +57,12 @@ const pausedFacts: PointPausedFacts = {
   role: "driver",
   tripId: "trip-1",
   stopsAt: new Date("2026-11-14T10:10:00Z"),
-  point: { name: "N1 Borgarnes", reason: "Road works at the entrance.", until: null },
+  point: {
+    name: "N1 Borgarnes",
+    reason: "Road works at the entrance.",
+    until: null,
+    retired: false,
+  },
 };
 
 const tripText = (changes: Partial<TripReminderFacts>, locale: "is" | "en" = "en") =>
@@ -369,6 +379,7 @@ describe("notification texts", () => {
         name: "N1 Borgarnesi",
         reason: "Vegavinna við innkeyrsluna.",
         until: "2026-11-30",
+        retired: false,
       },
     };
     expect(text(until, "is")).toMatchObject({
@@ -396,6 +407,19 @@ describe("notification texts", () => {
     ).toBe(
       "Road works at the entrance.\nAftur í notkun: 30. nóvember 2026\nVeldu annan viðkomustað fyrir ferðina: laugardagur 14. nóvember kl. 10:10.",
     );
+  });
+
+  it("say a point retired while paused is no longer in use, without a day it is back", () => {
+    const retired = { ...pausedFacts.point, retired: true };
+    expect(
+      notificationText({ ...pausedFacts, point: retired }, "en", defaultNotificationSettings),
+    ).toMatchObject({
+      title: "Meeting point no longer in use: N1 Borgarnes",
+      body: "Road works at the entrance.\nChoose another stop for your trip: Saturday 14 November at 10:10.",
+    });
+    expect(
+      text({ kind: "meeting_point_changed", role: "passenger", pausedPoint: retired }, "is").title,
+    ).toBe("Mótsstaður ekki lengur í notkun: N1 Borgarnes");
   });
 
   it("refuse a kind that has no text yet", () => {

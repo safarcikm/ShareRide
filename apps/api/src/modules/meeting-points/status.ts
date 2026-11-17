@@ -49,6 +49,7 @@ export interface PointsMoved {
 export async function moveMeetingPointsOn(db: Database, now: Date): Promise<PointsMoved> {
   // Later than any copy the console loaded, so a save from one is refused.
   const changedNow = sql`greatest(now(), ${meetingPoints.updatedAt} + interval '1 millisecond')`;
+  // The end date is the first day back in use, in Iceland.
   const resumed = await db
     .update(meetingPoints)
     .set({

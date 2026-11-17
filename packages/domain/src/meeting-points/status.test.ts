@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  backInUse,
   nextPointStatus,
+  pauseStillApplies,
   pauseLimits,
   reviewDueOn,
   validatePause,
@@ -97,12 +97,17 @@ describe("validatePause", () => {
   });
 });
 
-describe("backInUse", () => {
-  it("is on the end date, in Iceland, and never without one", () => {
-    expect(backInUse("2026-11-20", "2026-11-19")).toBe(false);
-    expect(backInUse("2026-11-20", "2026-11-20")).toBe(true);
-    expect(backInUse("2026-11-20", "2026-12-01")).toBe(true);
-    expect(backInUse(null, "2030-01-01")).toBe(false);
+describe("pauseStillApplies", () => {
+  it("holds for a paused point, and one retired while paused, which keeps its reason", () => {
+    expect(pauseStillApplies("paused", true)).toBe(true);
+    expect(pauseStillApplies("retired", true)).toBe(true);
+  });
+
+  it("no longer holds once the point is back in use, or for one never paused", () => {
+    expect(pauseStillApplies("active", false)).toBe(false);
+    expect(pauseStillApplies("retiring", false)).toBe(false);
+    expect(pauseStillApplies("retired", false)).toBe(false);
+    expect(pauseStillApplies("draft", false)).toBe(false);
   });
 });
 

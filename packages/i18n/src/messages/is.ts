@@ -1025,6 +1025,7 @@ export const is = {
   "notify.disputeDecidedBody": "{from} – {to} · {when}. Sjáðu niðurstöðuna í appinu.",
   // A paused meeting point (spec 2, 3.6.4): the reason is the operator's.
   "notify.pointPaused": "Mótsstaður ekki í notkun í bili: {point}",
+  "notify.pointRetired": "Mótsstaður ekki lengur í notkun: {point}",
   "notify.pointBack": "Aftur í notkun: {date}",
   "notify.pointPausedBody":
     "{from} – {to} · {when}. Bílstjórinn er beðinn um að velja annan viðkomustað.",

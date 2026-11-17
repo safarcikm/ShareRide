@@ -617,8 +617,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   date and retires a retiring one after its last trip. A point in use is
   due for review a year after its last check (R2.9). Migration
   `0029_meeting_point_pauses` adds the `MeetingPointChanged` event and the
-  meeting point of a notification. The sample seed keeps the status the
-  console gave a sample point.
+  meeting point of a notification. A point retired while paused keeps its
+  reason and its news still goes out. Publishing a trip and adding a stop
+  wait for a pause under way. The sample seed keeps the status the console
+  gave a sample point.
 
 ### Fixed
 

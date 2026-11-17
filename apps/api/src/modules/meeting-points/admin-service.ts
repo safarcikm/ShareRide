@@ -352,8 +352,14 @@ export function createMeetingPointAdminService(dependencies: {
     },
 
     retire(id, input, actor) {
-      return changeStatus(id, input, actor, "retire", () =>
-        Promise.resolve({ pauseReasonIs: null, pauseReasonEn: null, pausedUntil: null }),
+      // A point retired while paused keeps its reason: the trips still to
+      // stop there need another stop all the same, and their news names it.
+      return changeStatus(id, input, actor, "retire", (_tx, _trips, row) =>
+        Promise.resolve({
+          pauseReasonIs: row.pauseReasonIs,
+          pauseReasonEn: row.pauseReasonEn,
+          pausedUntil: null,
+        }),
       );
     },
   };
@@ -371,6 +377,7 @@ export function createMeetingPointAdminService(dependencies: {
     alongside: (
       tx: Transaction,
       futureTrips: readonly string[],
+      row: MeetingPointRow,
     ) => Promise<Pick<MeetingPointRow, "pauseReasonIs" | "pauseReasonEn" | "pausedUntil">>,
   ): Promise<Result<AdminMeetingPoint, StatusProblem>> {
     return db.transaction(async (tx): Promise<Result<AdminMeetingPoint, StatusProblem>> => {
@@ -381,7 +388,7 @@ export function createMeetingPointAdminService(dependencies: {
       const futureTrips = await futureTripsAt(tx, id, clock());
       const status = nextPointStatus(row.status as MeetingPointStatus, change, futureTrips.length);
       if (!status.ok) return err({ code: "status_change_not_allowed" });
-      const columns = await alongside(tx, futureTrips);
+      const columns = await alongside(tx, futureTrips, row);
       const [saved] = await tx
         .update(meetingPoints)
         .set({

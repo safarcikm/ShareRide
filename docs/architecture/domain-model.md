@@ -85,7 +85,9 @@ in both languages and an optional end date (`pause_reason_is`, `_en`,
 `paused_until`), and is active again by hand or from that date in
 Iceland; retiring an active point that trips still stop at makes it
 `retiring` until the last of them has passed it, then `retired`; a draft,
-or a paused point, retires at once. Retired is final. `review_due_on` is a
+or a paused point, retires at once. A point retired while paused keeps its
+pause reason, as the trips that stop there still need another stop
+(`pauseStillApplies`). Retired is final. `review_due_on` is a
 year after `last_checked_on` while the point is in use (R2.9), and empty
 for a draft or a retired point. Photos are
 `MeetingPointPhoto` records. `sample` marks the sample points that local

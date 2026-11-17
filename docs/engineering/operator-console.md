@@ -121,7 +121,20 @@ meeting point routes (`registerMeetingPointsAdminRoutes`), with the work in
   choose another stop, and tells each passenger whose accepted or
   confirmed booking gets in or out there, with an SMS within 24 hours of
   boarding (spec 7, 3.4). Each is told once. News of a point back in use
-  before it goes out is not sent. The trips are not changed or cancelled.
+  before it goes out is not sent, nor news to a driver whose trip has
+  passed the point or a passenger whose booking no longer stops there. A
+  point retired while paused keeps its reason, and its news still goes
+  out ("no longer in use"). The trips are not changed or cancelled.
+- Publishing a trip and adding a stop read their points `FOR SHARE`, so
+  a pause or a retirement under way and the trip wait for each other: the
+  pause counts the trip among those to tell, or the trip sees the point
+  not offered.
+- Not covered yet: a request the driver accepts after the pause is not
+  told (search no longer offers the point, but the booking API does not
+  refuse it); a point paused, brought back and paused again before the
+  first news went out tells its people twice. While an older API version
+  still runs during a deploy, it marks `MeetingPointChanged` events done
+  without telling anyone, so pause no point during a deploy.
 - Audit entries are `meeting_point.paused`, `meeting_point.resumed` and
   `meeting_point.retired`, with the status, the pause and the review date
   before and after, and how many future trips there were.

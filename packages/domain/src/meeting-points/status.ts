@@ -14,7 +14,8 @@ export type StatusChange = (typeof statusChanges)[number];
  * are: on a pause their drivers are asked to choose another stop (spec 6),
  * and an active point retiring stays in use for them until the last one.
  * A paused point retires at once: nobody boards there, so going back into
- * use for those trips would undo the pause. Retired is final (R2.2).
+ * use for those trips would undo the pause; it keeps its pause reason
+ * (`pauseStillApplies`). Retired is final (R2.2).
  */
 export function nextPointStatus(
   status: MeetingPointStatus,
@@ -94,9 +95,14 @@ export function validatePause(
   return problems.length > 0 ? err(problems) : ok({ reasonIs, reasonEn, until });
 }
 
-/** A paused point with an end date is back in use from that day in Iceland. */
-export function backInUse(pausedUntil: string | null, today: string): boolean {
-  return pausedUntil !== null && today >= pausedUntil;
+/**
+ * Whether news of a pause still applies to the trips that stop at the
+ * point: it is paused, or was retired while paused, which keeps the
+ * reason, so those trips need another stop all the same. Back in use
+ * since, the news no longer applies.
+ */
+export function pauseStillApplies(status: MeetingPointStatus, hasPauseReason: boolean): boolean {
+  return hasPauseReason && (status === "paused" || status === "retired");
 }
 
 /**

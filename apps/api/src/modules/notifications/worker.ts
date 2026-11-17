@@ -6,6 +6,7 @@ import {
   eventAttempts,
   isAccountNotice,
   notificationsFor,
+  pauseStillApplies,
   payReminderAt,
   reminderStillTimely,
   reminderTimes,
@@ -20,6 +21,7 @@ import {
   type CancelReason,
   type CarColour,
   type ChannelDecision,
+  type MeetingPointStatus,
   type NotificationEvent,
   type NotificationKind,
   type NotificationSettings,
@@ -320,8 +322,9 @@ async function tripFactsOf(q: Queryable, notification: typeof notifications.$inf
 
 /**
  * A meeting point as a notification of its pause tells of it, in the
- * recipient's language; none once it is no longer paused, as the news no
- * longer applies (spec 2, 3.6.4).
+ * recipient's language; none once it is back in use, as the news no
+ * longer applies (spec 2, 3.6.4). A point retired while paused still
+ * applies: the trips that stop there need another stop all the same.
  */
 async function pausedPointOf(
   q: Queryable,
@@ -340,21 +343,32 @@ async function pausedPointOf(
     })
     .from(meetingPoints)
     .where(eq(meetingPoints.id, pointId));
-  if (point?.status !== "paused") return null;
+  if (
+    point === undefined ||
+    !pauseStillApplies(point.status as MeetingPointStatus, point.reasonIs !== null)
+  ) {
+    return null;
+  }
   const reason = locale === "en" ? point.reasonEn : point.reasonIs;
+  const retired = point.status === "retired";
   return {
     name: named(locale, { is: point.nameIs, en: point.nameEn }),
     reason: reason ?? point.reasonIs ?? "",
-    until: point.until,
+    until: retired ? null : point.until,
+    retired,
   };
 }
 
 /**
  * A pause told to the driver of a trip still to stop at the point, with
- * the trip's time there. `current` is false once the point is back in use
- * or the trip no longer stops there.
+ * the trip's time there. `current` is false once the point is back in use,
+ * or the trip no longer stops there or has passed it.
  */
-async function pausedForDriverOf(q: Queryable, notification: typeof notifications.$inferSelect) {
+async function pausedForDriverOf(
+  q: Queryable,
+  notification: typeof notifications.$inferSelect,
+  now: Date,
+) {
   if (notification.tripId === null || notification.kind !== "meeting_point_changed_driver") {
     return undefined;
   }
@@ -389,11 +403,11 @@ async function pausedForDriverOf(q: Queryable, notification: typeof notification
     role: "driver",
     tripId: notification.tripId,
     stopsAt,
-    point: point ?? { name: "", reason: "", until: null },
+    point: point ?? { name: "", reason: "", until: null, retired: false },
   };
   return {
     facts,
-    current: point !== null && running && row.stopsAt !== null,
+    current: point !== null && running && row.stopsAt !== null && row.stopsAt > now,
     locale,
     recipientId: notification.recipientId,
     email: row.emailVerifiedAt === null ? null : row.email,
@@ -466,7 +480,7 @@ async function factsOf(q: Queryable, notificationId: string, now: Date) {
   const [found] = await q.select().from(notifications).where(eq(notifications.id, notificationId));
   if (found === undefined) return undefined;
   if (isAccountNotice(found.kind as NotificationKind)) return accountFactsOf(q, found, now);
-  if (found.kind === "meeting_point_changed_driver") return pausedForDriverOf(q, found);
+  if (found.kind === "meeting_point_changed_driver") return pausedForDriverOf(q, found, now);
   if (found.bookingId === null) return tripFactsOf(q, found);
   const [row] = await q
     .select({
@@ -476,6 +490,9 @@ async function factsOf(q: Queryable, notificationId: string, now: Date) {
       arrivesAt: trips.arrivesAt,
       boardsAt: boards.plannedAt,
       boardPointId: boards.meetingPointId,
+      boardRemovedAt: boards.removedAt,
+      alightPointId: alights.meetingPointId,
+      alightRemovedAt: alights.removedAt,
       car: { make: vehicles.make, model: vehicles.model, colour: vehicles.colour },
       board: { is: boardPoint.nameIs, en: boardPoint.nameEn },
       alight: { is: alightPoint.nameIs, en: alightPoint.nameEn },
@@ -560,7 +577,14 @@ async function factsOf(q: Queryable, notificationId: string, now: Date) {
       report === undefined || row.arrivesAt === null
         ? null
         : answerByOf(report, row.arrivesAt, defaultTripDaySettings),
-    pausedPoint: await pausedPointOf(q, notification.meetingPointId, locale),
+    // Only while the booking still gets in or out there: after the driver
+    // chose another stop, the news names a point the passenger no longer uses.
+    pausedPoint:
+      notification.meetingPointId !== null &&
+      ((row.boardPointId === notification.meetingPointId && row.boardRemovedAt === null) ||
+        (row.alightPointId === notification.meetingPointId && row.alightRemovedAt === null))
+        ? await pausedPointOf(q, notification.meetingPointId, locale)
+        : null,
   };
   return {
     facts,
@@ -991,6 +1015,7 @@ export function createNotificationWorker(dependencies: {
    * there: its driver is asked to choose another stop, and each passenger
    * whose accepted or confirmed booking gets in or out there is told, once
    * each. Back in use since, or the trip over or the stop gone: nobody.
+   * Retired while paused: told all the same, as the trip needs another stop.
    */
   async function tellOfPause(
     tx: Transaction,
@@ -1002,7 +1027,11 @@ export function createNotificationWorker(dependencies: {
     const meetingPointId = idIn(payload, "meetingPointId");
     if (tripId === undefined || meetingPointId === undefined) return;
     const [stop] = await tx
-      .select({ driverId: trips.driverId, status: meetingPoints.status })
+      .select({
+        driverId: trips.driverId,
+        status: meetingPoints.status,
+        reasonIs: meetingPoints.pauseReasonIs,
+      })
       .from(tripStops)
       .innerJoin(trips, eq(trips.id, tripStops.tripId))
       .innerJoin(meetingPoints, eq(meetingPoints.id, tripStops.meetingPointId))
@@ -1015,7 +1044,12 @@ export function createNotificationWorker(dependencies: {
           inArray(trips.status, ["published", "departed"]),
         ),
       );
-    if (stop === undefined || stop.status !== "paused") return;
+    if (
+      stop === undefined ||
+      !pauseStillApplies(stop.status as MeetingPointStatus, stop.reasonIs !== null)
+    ) {
+      return;
+    }
     await add(
       tx,
       {
@@ -1368,7 +1402,8 @@ export function createNotificationWorker(dependencies: {
     ) {
       return { skipped: "no_longer_applies" };
     }
-    // A point back in use since it was paused (spec 2, 3.6.4).
+    // A point back in use since it was paused, or a booking that no longer
+    // stops there (spec 2, 3.6.4).
     if (found.facts.kind === "meeting_point_changed" && found.facts.pausedPoint === null) {
       return { skipped: "no_longer_applies" };
     }

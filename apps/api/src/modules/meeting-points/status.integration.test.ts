@@ -142,6 +142,15 @@ async function told() {
     .orderBy(asc(notifications.createdAt), asc(notifications.kind));
 }
 
+/** The tries of a paused point's news of a kind on a channel. */
+async function triesOf(kind: string, channel: "push" | "sms") {
+  return api.connection.db
+    .select({ status: notificationDeliveries.status, reason: notificationDeliveries.reason })
+    .from(notificationDeliveries)
+    .innerJoin(notifications, eq(notifications.id, notificationDeliveries.notificationId))
+    .where(and(eq(notifications.kind, kind), eq(notificationDeliveries.channel, channel)));
+}
+
 describe("pausing a meeting point (spec 2, 3.6.4)", () => {
   it("needs a console session", async () => {
     const noSession = "sr_operator=sr_os_not-a-session";
@@ -294,6 +303,55 @@ describe("pausing a meeting point (spec 2, 3.6.4)", () => {
     expect(sms.outbox).toEqual([]);
   });
 
+  it("drops a driver's news a failed try left once the trip has passed the point", async () => {
+    const jon = await driverOf(airport, "Jón");
+    await api.client.call(setPushTokenRoute, {
+      accessToken: jon.accessToken,
+      body: { token: "ExponentPushToken[jon]" },
+    });
+    await pause(fitjar);
+    const push = createFakePushSender();
+    push.failure = new Error("The push service is down.");
+    await worker({ push }).runOnce();
+    expect(push.attempts).toBe(1);
+
+    // Saturday at noon: the trip passed Fitjar in the morning.
+    await later(hours(24));
+    push.failure = null;
+    await worker({ push }).runOnce();
+    expect(push.sent).toEqual([]);
+    expect(await triesOf("meeting_point_changed_driver", "push")).toEqual([
+      { status: "skipped", reason: "no_longer_applies" },
+    ]);
+  });
+
+  it("drops a passenger's news a failed try left once their booking no longer stops there", async () => {
+    const anna = await newMember("Anna");
+    const annas = await booked(anna.accessToken, airport, { fromStop: 0, toStop: 2 });
+    await paid(anna.accessToken, annas.id);
+    await pause(fitjar);
+    const failing: SmsSender = {
+      send: () => Promise.reject(new Error("The SMS provider is down.")),
+    };
+    await worker({ sms: failing }).runOnce();
+
+    // Anna now gets out at Fjörður, the stop before.
+    const [fjordur] = await api.connection.db
+      .select({ id: schema.tripStops.id })
+      .from(schema.tripStops)
+      .where(and(eq(schema.tripStops.tripId, airport), eq(schema.tripStops.position, 1)));
+    await api.connection.db
+      .update(schema.bookings)
+      .set({ toStopId: fjordur?.id })
+      .where(eq(schema.bookings.id, annas.id));
+    await later(60);
+    await worker().runOnce();
+    expect(sms.outbox).toEqual([]);
+    expect(await triesOf("meeting_point_changed", "sms")).toEqual([
+      { status: "skipped", reason: "no_longer_applies" },
+    ]);
+  });
+
   it("checks the reason in both languages and the end date, naming each problem", async () => {
     const { updatedAt } = await point(fitjar);
     const { status, body } = await send(`/admin/v1/meeting-points/${fitjar}/pause`, {
@@ -371,15 +429,56 @@ describe("retiring a meeting point (spec 2, 3.6.5)", () => {
     expect(await point(fitjar)).toMatchObject({ status: "retired", futureTrips: 0 });
   });
 
-  it("retires a paused point at once, so it never comes back into use for its trips", async () => {
-    await pause(fitjar);
+  it("keeps a point in use while a trip under way is still to stop there", async () => {
+    await change(fitjar, "retire");
+    // Jón set off, and Fitjar is still ahead.
+    await api.connection.db
+      .update(schema.trips)
+      .set({ status: "departed" })
+      .where(eq(schema.trips.id, airport));
+    expect(await moveMeetingPointsOn(api.connection.db, api.now())).toEqual({
+      resumed: 0,
+      retired: 0,
+    });
+    expect((await point(fitjar)).status).toBe("retiring");
+  });
+
+  it("retires a paused point at once, and its trips still hear of it", async () => {
+    const anna = await newMember("Anna");
+    const annas = await booked(anna.accessToken, airport, { fromStop: 0, toStop: 2 });
+    await paid(anna.accessToken, annas.id);
+    const jon = await driverOf(airport, "Jón");
+    await api.client.call(setPushTokenRoute, {
+      accessToken: jon.accessToken,
+      body: { token: "ExponentPushToken[jon]" },
+    });
+    await pause(fitjar, "2026-11-20");
     const { body } = await change(fitjar, "retire");
+    // The reason stays: the trips that stop there still need another stop.
     expect(body).toMatchObject({
       status: "retired",
       futureTrips: 1,
-      pauseReason: null,
+      pauseReason: { is: closed.reasonIs, en: closed.reasonEn },
       pausedUntil: null,
     });
+
+    // Retired before the news went out: the driver and Anna still hear of it.
+    const push = createFakePushSender();
+    await worker({ push }).runOnce();
+    expect(push.sent.filter((message) => message.title.startsWith("Meeting point"))).toEqual([
+      {
+        to: "ExponentPushToken[jon]",
+        title: "Meeting point no longer in use: N1 Fitjar",
+        body: expect.stringMatching(
+          /^Road works at the entrance\.\nChoose another stop for your trip: Saturday 14 November at \d\d:\d\d\.$/,
+        ) as unknown,
+        data: { path: `/drive/trips/${airport}` },
+      },
+    ]);
+    expect((await told()).map((made) => made.recipientId).sort()).toEqual(
+      [anna.userId, jon.userId].sort(),
+    );
+    expect(sms.outbox).toHaveLength(1);
   });
 });
 

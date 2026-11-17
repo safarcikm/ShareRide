@@ -1015,6 +1015,7 @@ export const en = {
   "notify.disputeDecidedBody": "{from} – {to} · {when}. See the outcome in the app.",
   // A paused meeting point (spec 2, 3.6.4): the reason is the operator's.
   "notify.pointPaused": "Meeting point not in use for now: {point}",
+  "notify.pointRetired": "Meeting point no longer in use: {point}",
   "notify.pointBack": "Back in use: {date}",
   "notify.pointPausedBody": "{from} – {to} · {when}. The driver is asked to choose another stop.",
   "notify.pointPausedDriverBody": "Choose another stop for your trip: {when}.",

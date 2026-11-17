@@ -140,7 +140,10 @@ there is asked to choose another stop, once per trip. Each passenger
 whose accepted or confirmed booking gets in or out there is told once,
 with their part and boarding time, and by SMS within 24 hours of boarding;
 a request is not told, and a passenger only passing through is not either.
-Nothing goes once the point is back in use.
+Nothing goes once the point is back in use, after the trip has passed it,
+or once the booking no longer stops there. A point retired while paused
+is told as "Meeting point no longer in use: N1 Fitjar", without a day it
+is back.
 
 ### 3.4 SMS for last-minute news
 

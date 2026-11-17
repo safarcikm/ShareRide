@@ -72,7 +72,7 @@ export interface NotificationFacts {
   readonly paid: boolean;
   /** For a report to answer: until when the other side can (spec 8, R8.6); otherwise null. */
   readonly answerBy: Date | null;
-  /** For a paused meeting point: the point, while it is still paused; otherwise null. */
+  /** For a paused meeting point: the point, while the pause still applies; otherwise null. */
   readonly pausedPoint: PausedPoint | null;
 }
 
@@ -83,6 +83,8 @@ export interface PausedPoint {
   readonly reason: string;
   /** The day it is back in use, such as "2026-11-30", or null until the operator says. */
   readonly until: string | null;
+  /** Retired while paused: it never comes back, and the trips still need another stop. */
+  readonly retired: boolean;
 }
 
 /**
@@ -346,7 +348,7 @@ function bookingText(
       case "meeting_point_changed": {
         const point = required(facts.pausedPoint, "the paused point");
         return [
-          t("notify.pointPaused", { point: point.name }),
+          t(point.retired ? "notify.pointRetired" : "notify.pointPaused", { point: point.name }),
           [
             point.reason,
             ...(point.until === null
@@ -438,7 +440,10 @@ function pointPausedText(facts: PointPausedFacts, locale: Locale): NotificationT
     time: formatClock(facts.stopsAt),
   });
   return {
-    title: capitalised(t("notify.pointPaused", { point: point.name }), locale),
+    title: capitalised(
+      t(point.retired ? "notify.pointRetired" : "notify.pointPaused", { point: point.name }),
+      locale,
+    ),
     body: [
       point.reason,
       ...(point.until === null
