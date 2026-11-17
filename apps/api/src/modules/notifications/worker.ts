@@ -21,6 +21,7 @@ import {
   statusAt,
   stillApplies,
   unreadSummaryAt,
+  type AppealOutcome,
   type BookingStatus,
   type CancelReason,
   type CarColour,
@@ -32,6 +33,7 @@ import {
   type NotificationSettings,
   type OutboxEventType,
   type Recipient,
+  type ReportOutcome,
   type TripRole,
 } from "@shareride/domain";
 import type { CarFacts } from "@shareride/i18n";
@@ -336,20 +338,26 @@ async function accountFactsOf(
 ) {
   const kind = notification.kind as NotificationKind;
   if (!isAccountNotice(kind)) return undefined;
-  return kind === "data_export_ready"
-    ? exportFactsOf(q, notification, now)
-    : noticeFactsOf(q, notification, kind);
+  switch (kind) {
+    case "data_export_ready":
+      return exportFactsOf(q, notification, now);
+    case "report_closed":
+      return reportOutcomeFactsOf(q, notification);
+    default:
+      return noticeFactsOf(q, notification, kind);
+  }
 }
 
 /**
  * An operator's action that affects the person, with its statement of
- * reasons (spec 9, R9.5), or the end of their suspension (3.6), which is
- * dropped if they were suspended again before it went out.
+ * reasons (spec 9, R9.5), the answer to their appeal (3.4.4), or the end
+ * of their suspension (3.6), which is dropped if they were suspended again
+ * before it went out.
  */
 async function noticeFactsOf(
   q: Queryable,
   notification: typeof notifications.$inferSelect,
-  kind: "moderation_action" | "suspension_ended",
+  kind: "moderation_action" | "suspension_ended" | "appeal_answered",
 ) {
   const [row] = await q
     .select({
@@ -372,8 +380,16 @@ async function noticeFactsOf(
   let facts: AccountNoticeFacts;
   if (kind === "suspension_ended") {
     facts = { kind };
+  } else if (action === null) {
+    return undefined;
+  } else if (kind === "appeal_answered") {
+    if (action.appealOutcome === null || action.appealAnswer === null) return undefined;
+    facts = {
+      kind,
+      outcome: action.appealOutcome as AppealOutcome,
+      answer: action.appealAnswer,
+    };
   } else {
-    if (action === null) return undefined;
     facts = {
       kind,
       action: action.kind as ModerationActionKind,
@@ -385,10 +401,37 @@ async function noticeFactsOf(
   }
   return {
     facts,
-    current: kind === "moderation_action" || row.status === "active",
+    current: kind !== "suspension_ended" || row.status === "active",
     locale: row.locale === "is" ? "is" : "en",
     recipientId: notification.recipientId,
     email: row.emailVerifiedAt === null ? null : row.email,
+    phone: null,
+    booking: null,
+  } as const;
+}
+
+/** The outcome of the person's report, in general terms (spec 9, 3.1.6). */
+async function reportOutcomeFactsOf(q: Queryable, notification: typeof notifications.$inferSelect) {
+  if (notification.reportId === null) return undefined;
+  const [row] = await q
+    .select({
+      locale: recipients.locale,
+      outcome: reports.outcome,
+    })
+    .from(recipients)
+    .innerJoin(reports, eq(reports.id, notification.reportId))
+    .where(eq(recipients.id, notification.recipientId));
+  if (row === undefined || row.outcome === null) return undefined;
+  const facts: AccountNoticeFacts = {
+    kind: "report_closed",
+    outcome: row.outcome as ReportOutcome,
+  };
+  return {
+    facts,
+    current: true,
+    locale: row.locale === "is" ? "is" : "en",
+    recipientId: notification.recipientId,
+    email: null,
     phone: null,
     booking: null,
   } as const;
@@ -1034,6 +1077,45 @@ export function createNotificationWorker(dependencies: {
       const [user] = await tx.select({ id: users.id }).from(users).where(eq(users.id, userId));
       if (user === undefined) return;
       await add(tx, { kind: "suspension_ended", to: null, recipientId: userId }, key, now);
+      return;
+    }
+    if (type === "AppealAnswered") {
+      // The answer to the person's appeal (spec 9, 3.4.4); nobody, once their account is gone.
+      const actionId = idIn(event.payload, "actionId");
+      if (actionId === undefined) return;
+      const [action] = await tx
+        .select({ userId: moderationActions.userId })
+        .from(moderationActions)
+        .where(eq(moderationActions.id, actionId));
+      if (action === undefined || action.userId === null) return;
+      await add(
+        tx,
+        {
+          kind: "appeal_answered",
+          to: null,
+          recipientId: action.userId,
+          moderationActionId: actionId,
+        },
+        key,
+        now,
+      );
+      return;
+    }
+    if (type === "ReportClosed") {
+      // The reporter, in general terms (spec 9, 3.1.6); nobody, once their account is gone.
+      const reportId = idIn(event.payload, "reportId");
+      if (reportId === undefined) return;
+      const [report] = await tx
+        .select({ reporterId: reports.reporterId })
+        .from(reports)
+        .where(eq(reports.id, reportId));
+      if (report === undefined || report.reporterId === null) return;
+      await add(
+        tx,
+        { kind: "report_closed", to: null, recipientId: report.reporterId, reportId },
+        key,
+        now,
+      );
       return;
     }
     if (type === "ReportFiled") {

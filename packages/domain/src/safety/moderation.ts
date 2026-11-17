@@ -110,6 +110,42 @@ export function checkAppeal(
   return ok(trimmed);
 }
 
+/** Whether the notice offers "Appeal" now: once, within 14 days, and never for good news. */
+export function canAppeal(
+  action: {
+    readonly kind: ModerationActionKind;
+    readonly at: Date;
+    readonly appealedAt: Date | null;
+  },
+  now: Date,
+  settings: SafetySettings,
+): boolean {
+  return (
+    isAppealable(action.kind) &&
+    action.appealedAt === null &&
+    now.getTime() <= appealDueAt(action.at, settings).getTime()
+  );
+}
+
+export type AppealAnswerProblem =
+  | { readonly code: "not_appealed" }
+  | { readonly code: "already_answered" }
+  | StatementProblem;
+
+/** The operator answers an appeal once; the answer is final in the app (3.4.4). */
+export function checkAppealAnswer(
+  action: { readonly appealedAt: Date | null; readonly appealAnsweredAt: Date | null },
+  answer: string,
+  settings: SafetySettings,
+): Result<string, AppealAnswerProblem> {
+  if (action.appealedAt === null) return err({ code: "not_appealed" });
+  if (action.appealAnsweredAt !== null) return err({ code: "already_answered" });
+  const trimmed = answer.trim();
+  if (trimmed === "") return err({ code: "reason_missing" });
+  if (characterCount(trimmed) > settings.textMaxLength) return err({ code: "too_long" });
+  return ok(trimmed);
+}
+
 /**
  * The operator cancels an upcoming trip (3.4.3): full refunds, as any trip
  * cancellation, and it counts on the driver only when the operator says so

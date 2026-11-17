@@ -1063,6 +1063,12 @@ export const en = {
   "notify.noticeBody": "Read why in ShareRide.",
   "notify.reinstatedBody": "You can use ShareRide as before.",
   "notify.suspensionEnded": "Your suspension has ended. You can use ShareRide as before.",
+  /** The operator's answer to an appeal, final in the app (spec 9, 3.4.4). */
+  "notify.appealAnswered": "ShareRide answered your appeal",
+  "notify.appealUpheld": "We looked again and the decision stands.",
+  "notify.appealReversed": "We looked again and changed our decision.",
+  /** The reporter's outcome; the body is report.outcomeAction or report.outcomeNone. */
+  "notify.reportClosed": "Your report",
   /** An operator's action, as the person is told (spec 9, 3.4.4; R9.5). */
   "notice.title.warning": "A warning from ShareRide",
   "notice.title.content_hidden": "We removed something you posted",
@@ -1074,6 +1080,7 @@ export const en = {
   "notice.rule": "Rule: {rule}",
   "notice.reason": "Reason: {reason}",
   "notice.note": "Note: {note}",
+  "notice.answer": "Our answer: {answer}",
   "notice.appealUntil":
     "If you disagree, you can appeal in ShareRide, under Notices, until {until}.",
   "notice.open": "Open your notices in ShareRide",
@@ -1352,6 +1359,8 @@ export const en = {
   "export.value.kind.report_filed_urgent": "New safety report",
   "export.value.kind.moderation_action": "Notice from ShareRide",
   "export.value.kind.suspension_ended": "Suspension ended",
+  "export.value.kind.appeal_answered": "Answer to your appeal",
+  "export.value.kind.report_closed": "Outcome of your report",
   "export.value.kind.warning": "Warning",
   "export.value.kind.content_hidden": "Content removed",
   "export.value.kind.suspension": "Suspension",

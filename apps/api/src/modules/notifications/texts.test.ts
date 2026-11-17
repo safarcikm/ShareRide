@@ -423,6 +423,50 @@ describe("notification texts", () => {
     });
   });
 
+  it("tell the person ShareRide's answer to their appeal, the email with its words (spec 9, 3.4.4)", () => {
+    const settings = defaultNotificationSettings;
+    const answer = {
+      kind: "appeal_answered",
+      outcome: "upheld",
+      answer: "The messages show it.",
+    } as const;
+    expect(notificationText(answer, "en", settings)).toEqual({
+      title: "ShareRide answered your appeal",
+      body: "We looked again and the decision stands.",
+      path: "/notices",
+      open: "Open your notices in ShareRide",
+      emailBody: [
+        "ShareRide answered your appeal",
+        "",
+        "We looked again and the decision stands.",
+        "",
+        "Our answer: The messages show it.",
+      ].join("\n"),
+    });
+    expect(notificationText({ ...answer, outcome: "reversed" }, "is", settings)).toMatchObject({
+      title: "ShareRide svaraði áfrýjuninni þinni",
+      body: "Við skoðuðum málið aftur og breyttum ákvörðuninni.",
+    });
+  });
+
+  it("tell the reporter the outcome in general terms only (spec 9, 3.1.6)", () => {
+    const settings = defaultNotificationSettings;
+    expect(
+      notificationText({ kind: "report_closed", outcome: "action_taken" }, "en", settings),
+    ).toEqual({
+      title: "Your report",
+      body: "We've looked into your report and taken action.",
+      path: "/settings/reports",
+    });
+    expect(
+      notificationText({ kind: "report_closed", outcome: "no_breach" }, "is", settings),
+    ).toEqual({
+      title: "Tilkynningin þín",
+      body: "Við höfum skoðað tilkynninguna og fundum ekki brot á reglunum.",
+      path: "/settings/reports",
+    });
+  });
+
   it("tell an operator only that a report came in, and whether about safety (spec 9, R9.9)", () => {
     const settings = defaultNotificationSettings;
     expect(notificationText({ kind: "report_filed" }, "en", settings)).toEqual({

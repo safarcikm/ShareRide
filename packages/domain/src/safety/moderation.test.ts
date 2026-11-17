@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   appealDueAt,
+  canAppeal,
   checkAppeal,
+  checkAppealAnswer,
   checkStatement,
   isAppealable,
   moderationActionKinds,
@@ -73,6 +75,42 @@ describe("appeals (3.4.4, R9.5)", () => {
       ok: false,
       error: { code: "not_appealable" },
     });
+  });
+});
+
+describe("offering Appeal on a notice (3.4.4, R9.5)", () => {
+  const action = { kind: "suspension", at: actedAt, appealedAt: null } as const;
+
+  it("is offered once, until 14 days after the action, and never for a reinstatement", () => {
+    expect(canAppeal(action, new Date(actedAt.getTime() + days(14)), settings)).toBe(true);
+    expect(canAppeal(action, new Date(actedAt.getTime() + days(14) + 1), settings)).toBe(false);
+    expect(canAppeal({ ...action, appealedAt: actedAt }, actedAt, settings)).toBe(false);
+    expect(canAppeal({ ...action, kind: "reinstatement" }, actedAt, settings)).toBe(false);
+  });
+});
+
+describe("the operator's answer to an appeal (3.4.4)", () => {
+  const appealed = { appealedAt: actedAt, appealAnsweredAt: null };
+
+  it("answers an appeal once, in words for the person", () => {
+    expect(checkAppealAnswer(appealed, "  We looked again.  ", settings)).toEqual({
+      ok: true,
+      value: "We looked again.",
+    });
+    expect(checkAppealAnswer({ ...appealed, appealedAt: null }, "Yes.", settings)).toEqual({
+      ok: false,
+      error: { code: "not_appealed" },
+    });
+    expect(
+      checkAppealAnswer({ ...appealed, appealAnsweredAt: actedAt }, "Yes.", settings),
+    ).toEqual({ ok: false, error: { code: "already_answered" } });
+    expect(checkAppealAnswer(appealed, " ", settings)).toEqual({
+      ok: false,
+      error: { code: "reason_missing" },
+    });
+    expect(
+      checkAppealAnswer(appealed, "Too long", { ...settings, textMaxLength: 5 }),
+    ).toEqual({ ok: false, error: { code: "too_long" } });
   });
 });
 

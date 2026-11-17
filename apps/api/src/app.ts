@@ -53,6 +53,7 @@ import {
   createMeetingPointService,
   registerMeetingPointRoutes,
 } from "./modules/meeting-points/index.ts";
+import { createNoticeService, registerNoticeRoutes } from "./modules/moderation/index.ts";
 import { registerNotificationRoutes } from "./modules/notifications/index.ts";
 import { createPaymentService, registerPaymentRoutes } from "./modules/payments/index.ts";
 import { createExportService, registerPrivacyRoutes } from "./modules/privacy/index.ts";
@@ -317,6 +318,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       },
       requireAuth,
     );
+    registerNoticeRoutes(app, createNoticeService(features), requireAuth);
     registerPaymentRoutes(app, {
       payments: createPaymentService({ ...features, provider: features.payments }),
       bookings,

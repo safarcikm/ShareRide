@@ -70,7 +70,10 @@ export const notifications = pgTable(
     messageId: uuid().references(() => messages.id, { onDelete: "cascade" }),
     /** For a moved departure: the change, for the times before and after (spec 6, 3.2). */
     tripChangeId: uuid().references(() => tripChanges.id, { onDelete: "cascade" }),
-    /** For an operator's alert: the new report, never shown in it (spec 9, R9.9). */
+    /**
+     * For an operator's alert, the new report, never shown in it (spec 9,
+     * R9.9); for the reporter, its outcome (3.1.6).
+     */
     reportId: uuid().references(() => reports.id, { onDelete: "cascade" }),
     /** For a notice: the operator's action it tells of (spec 9, R9.5). */
     moderationActionId: uuid().references(() => moderationActions.id, { onDelete: "cascade" }),

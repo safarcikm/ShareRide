@@ -23,6 +23,8 @@ export type OutboxEvent =
         | "ReportFiled"
         | "ModerationActionTaken"
         | "SuspensionEnded"
+        | "AppealAnswered"
+        | "ReportClosed"
       >;
       readonly bookingId: string;
     }
@@ -83,6 +85,16 @@ export type OutboxEvent =
       /** The person's suspension reached its end: they are told (spec 9, 3.6). */
       readonly type: "SuspensionEnded";
       readonly userId: string;
+    }
+  | {
+      /** The operator answered the person's appeal: they are told (spec 9, 3.4.4). */
+      readonly type: "AppealAnswered";
+      readonly actionId: string;
+    }
+  | {
+      /** A report was closed: the reporter is told the outcome (spec 9, 3.1.6). */
+      readonly type: "ReportClosed";
+      readonly reportId: string;
     };
 
 /**
