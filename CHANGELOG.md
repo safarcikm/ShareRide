@@ -646,8 +646,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   the operator's note and an audit entry, and the people below 80%. Trips
   and bookings save whether their cancellation was excused by its reason,
   and when and why the operator overruled it (migration
-  `0036_reliability_overrules`). "Download my data" says when ShareRide
-  made a cancellation count.
+  `0036_reliability_overrules`). "Download my data" tells whoever
+  cancelled whether it counts and when ShareRide made it count; a booking
+  the driver cancelled no longer shows this in the passenger's file. The
+  operator's note goes when the account of whoever cancelled is erased.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

@@ -105,10 +105,11 @@ async function eraseAccount(
     );
 
   // A driver's cancel note is copied to each booking and its chat line
-  // (spec 6, 3.3): those go as the trip's own note does.
+  // (spec 6, 3.3): those go as the trip's own note does. So does an
+  // operator's note on why such a cancellation counts on them (spec 8, 6).
   await tx
     .update(bookings)
-    .set({ cancelNote: "" })
+    .set({ cancelNote: "", overruleNote: "" })
     .where(and(inArray(bookings.tripId, theirTrips()), eq(bookings.cancelledBy, "driver")));
   await tx
     .update(messages)

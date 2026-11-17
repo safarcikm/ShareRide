@@ -492,6 +492,54 @@ describe("download my data (spec 11, 3.2)", () => {
     expect(unlabelledFields(annas.data)).toEqual([]);
   });
 
+  it("has whether a cancellation counts, and when ShareRide made it, with whoever cancelled (spec 8, 6)", async () => {
+    const { anna, passengers } = await busyTrip();
+    const [gunna, siggi] = passengers;
+    if (gunna === undefined || siggi === undefined) throw new Error("No passengers.");
+    const cancelledAt = api.now();
+    const overruledAt = new Date(cancelledAt.getTime() + hours(1) * 1000);
+    const cancel = (member: Member, cancelledBy: "driver" | "passenger") =>
+      api.connection.db
+        .update(schema.bookings)
+        .set({
+          status: "cancelled",
+          cancelledAt,
+          cancelledBy,
+          cancelReason: "weather",
+          countsOnReliability: true,
+          overruledAt,
+          overruleNote: "The road was open all day",
+        })
+        .where(eq(schema.bookings.passengerId, member.userId));
+    // Anna cancelled Gunna's booking and Siggi his own, both for the
+    // weather; ShareRide made each count on whoever cancelled.
+    await cancel(gunna, "driver");
+    await cancel(siggi, "passenger");
+    const counted = { countsOnReliability: true, overruledAt: overruledAt.toISOString() };
+    const notCounted = (entry: Record<string, unknown> | undefined) => {
+      expect(entry).toBeDefined();
+      expect(entry).not.toHaveProperty("countsOnReliability");
+      expect(entry).not.toHaveProperty("overruledAt");
+    };
+
+    const gunnas = await exportOf(gunna);
+    const [hers] = gunnas.data.sections.bookings as Record<string, unknown>[];
+    notCounted(hers);
+
+    const siggis = await exportOf(siggi);
+    const [his] = siggis.data.sections.bookings as Record<string, unknown>[];
+    expect(his).toMatchObject(counted);
+
+    const annas = await exportOf(anna);
+    const [trip] = annas.data.sections.trips_posted as { passengers: Record<string, unknown>[] }[];
+    const [forGunna, forSiggi] = trip?.passengers ?? [];
+    expect(forGunna).toMatchObject(counted);
+    notCounted(forSiggi);
+    expect(unlabelledFields(annas.data)).toEqual([]);
+    // The operator's note is theirs only.
+    for (const { text } of [gunnas, siggis, annas]) expect(text).not.toContain("road was open");
+  });
+
   it("has the reviews the person wrote, and those about them once shown (spec 8, R8.9)", async () => {
     const { anna, passengers } = await busyTrip();
     const [gunna, siggi] = passengers;
