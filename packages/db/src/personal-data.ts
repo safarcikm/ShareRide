@@ -226,6 +226,19 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
   blocked_numbers: notAboutAPerson(
     "keyed hashes of the numbers of erased suspended accounts, linked to no account",
   ),
+  retention_runs: notAboutAPerson("how many records each clean-up rule erased, never which"),
+  holds: {
+    category: "audit",
+    export: {
+      leftOut:
+        "the operator's records of what is kept for a dispute or claim; asked about through Ask about my data",
+    },
+    personColumns: ["subjectId", "setBy"],
+    onDeletion: {
+      rows: "leave",
+      note: "an account is not erased while a hold covers it; an ended hold keeps the IDs, and goes 3 years after its end",
+    },
+  },
   data_exports: {
     category: "exports",
     export: { leftOut: "the exports themselves, kept 7 days" },

@@ -1,5 +1,5 @@
 {
-  "id": "356d098a-5079-4dca-81b3-18a5ba81c0f6",
+  "id": "21a37a6d-910d-43ef-93de-1e82c030801d",
   "prevId": "d4db171b-07d8-4c50-9704-3191c7f5955c",
   "version": "7",
   "dialect": "postgresql",
@@ -2829,7 +2829,7 @@
       "checkConstraints": {
         "notifications_kind_check": {
           "name": "notifications_kind_check",
-          "value": "\"notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'no_show_marked', 'driver_absent_reported', 'dispute_decided', 'dispute_decided_driver', 'rate_trip', 'rate_trip_driver', 'review_visible', 'data_export_ready', 'account_deletion_scheduled')"
+          "value": "\"notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'no_show_marked', 'driver_absent_reported', 'dispute_decided', 'dispute_decided_driver', 'data_export_ready', 'account_deletion_scheduled')"
         }
       },
       "isRLSEnabled": false
@@ -2916,7 +2916,7 @@
       "checkConstraints": {
         "outbox_events_kind_check": {
           "name": "outbox_events_kind_check",
-          "value": "\"outbox_events\".\"kind\" in ('BookingRequested', 'BookingAccepted', 'BookingConfirmed', 'BookingDeclined', 'BookingExpired', 'BookingWithdrawn', 'BookingCancelled', 'DepartureMoved', 'TripChanged', 'TripCancelled', 'RefundIssued', 'MessageSent', 'CheckedIn', 'NoShowMarked', 'DriverAbsentReported', 'DisputeDecided', 'BookingCompleted', 'ReviewRevealed', 'DataExportReady', 'AccountDeletionScheduled')"
+          "value": "\"outbox_events\".\"kind\" in ('BookingRequested', 'BookingAccepted', 'BookingConfirmed', 'BookingDeclined', 'BookingExpired', 'BookingWithdrawn', 'BookingCancelled', 'DepartureMoved', 'TripChanged', 'TripCancelled', 'RefundIssued', 'MessageSent', 'CheckedIn', 'NoShowMarked', 'DriverAbsentReported', 'DisputeDecided', 'DataExportReady', 'AccountDeletionScheduled')"
         }
       },
       "isRLSEnabled": false
@@ -3241,7 +3241,7 @@
       "checkConstraints": {
         "scheduled_notifications_kind_check": {
           "name": "scheduled_notifications_kind_check",
-          "value": "\"scheduled_notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'no_show_marked', 'driver_absent_reported', 'dispute_decided', 'dispute_decided_driver', 'rate_trip', 'rate_trip_driver', 'review_visible', 'data_export_ready', 'account_deletion_scheduled')"
+          "value": "\"scheduled_notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'no_show_marked', 'driver_absent_reported', 'dispute_decided', 'dispute_decided_driver', 'data_export_ready', 'account_deletion_scheduled')"
         },
         "scheduled_notifications_recipient_check": {
           "name": "scheduled_notifications_recipient_check",
@@ -3872,8 +3872,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.reviews": {
-      "name": "reviews",
+    "public.holds": {
+      "name": "holds",
       "schema": "",
       "columns": {
         "id": {
@@ -3883,15 +3883,9 @@
           "notNull": true,
           "default": "uuidv7()"
         },
-        "booking_id": {
-          "name": "booking_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "author_id": {
-          "name": "author_id",
-          "type": "uuid",
+        "subject_type": {
+          "name": "subject_type",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -3901,33 +3895,26 @@
           "primaryKey": false,
           "notNull": true
         },
-        "author_role": {
-          "name": "author_role",
+        "reason": {
+          "name": "reason",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "rating": {
-          "name": "rating",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "comment": {
-          "name": "comment",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
-        "revealed_at": {
-          "name": "revealed_at",
+        "ends_at": {
+          "name": "ends_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
-        "hidden_at": {
-          "name": "hidden_at",
+        "set_by": {
+          "name": "set_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ended_at": {
+          "name": "ended_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
@@ -3948,128 +3935,113 @@
         }
       },
       "indexes": {
-        "reviews_booking_author_unique": {
-          "name": "reviews_booking_author_unique",
+        "holds_subject_index": {
+          "name": "holds_subject_index",
           "columns": [
             {
-              "expression": "booking_id",
+              "expression": "subject_type",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
             },
-            {
-              "expression": "author_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "reviews_subject_index": {
-          "name": "reviews_subject_index",
-          "columns": [
             {
               "expression": "subject_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
-            },
-            {
-              "expression": "revealed_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
             }
           ],
           "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "reviews_author_index": {
-          "name": "reviews_author_index",
-          "columns": [
-            {
-              "expression": "author_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "reviews_waiting_index": {
-          "name": "reviews_waiting_index",
-          "columns": [
-            {
-              "expression": "booking_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "\"reviews\".\"revealed_at\" is null",
           "concurrently": false,
           "method": "btree",
           "with": {}
         }
       },
-      "foreignKeys": {
-        "reviews_booking_id_bookings_id_fk": {
-          "name": "reviews_booking_id_bookings_id_fk",
-          "tableFrom": "reviews",
-          "tableTo": "bookings",
-          "columnsFrom": ["booking_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "reviews_author_id_users_id_fk": {
-          "name": "reviews_author_id_users_id_fk",
-          "tableFrom": "reviews",
-          "tableTo": "users",
-          "columnsFrom": ["author_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "reviews_subject_id_users_id_fk": {
-          "name": "reviews_subject_id_users_id_fk",
-          "tableFrom": "reviews",
-          "tableTo": "users",
-          "columnsFrom": ["subject_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {
-        "reviews_author_role_check": {
-          "name": "reviews_author_role_check",
-          "value": "\"reviews\".\"author_role\" in ('driver', 'passenger')"
+        "holds_subject_type_check": {
+          "name": "holds_subject_type_check",
+          "value": "\"holds\".\"subject_type\" in ('user', 'trip', 'booking')"
         },
-        "reviews_rating_check": {
-          "name": "reviews_rating_check",
-          "value": "\"reviews\".\"rating\" between 1 and 5"
+        "holds_reason_check": {
+          "name": "holds_reason_check",
+          "value": "length(trim(\"holds\".\"reason\")) > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.retention_runs": {
+      "name": "retention_runs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
         },
-        "reviews_comment_check": {
-          "name": "reviews_comment_check",
-          "value": "char_length(\"reviews\".\"comment\") <= 500"
+        "rule": {
+          "name": "rule",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         },
-        "reviews_people_check": {
-          "name": "reviews_people_check",
-          "value": "\"reviews\".\"author_id\" <> \"reviews\".\"subject_id\""
+        "ran_at": {
+          "name": "ran_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "erased": {
+          "name": "erased",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "anonymised": {
+          "name": "anonymised",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {
+        "retention_runs_rule_index": {
+          "name": "retention_runs_rule_index",
+          "columns": [
+            {
+              "expression": "rule",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "ran_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "retention_runs_counts_check": {
+          "name": "retention_runs_counts_check",
+          "value": "\"retention_runs\".\"erased\" >= 0 and \"retention_runs\".\"anonymised\" >= 0"
         }
       },
       "isRLSEnabled": false

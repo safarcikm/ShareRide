@@ -800,6 +800,8 @@ describe("the privacy command", () => {
   async function runFrom(before: ReadBeforeRestore | undefined, ...args: string[]) {
     const lines: string[] = [];
     const exitCode = await runPrivacyCommand(args, {
+      db: api.connection.db,
+      clock: () => api.now(),
       erasure: erasure(),
       before,
       write: (line) => lines.push(line),
