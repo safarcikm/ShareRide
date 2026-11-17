@@ -329,9 +329,10 @@ PR 8 is in two parts.
 
 ### PR 10: `feat(meeting-points)`: problem reports
 
-- [ ] `meeting_point_issues`; "Something wrong here?" in the app; the
-      queue, resolving and the home count; the 12-month deletion in the
-      clean-up job
+- [x] 10a: `meeting_point_issues`; "Something wrong here?" in the app;
+      the person's open reports in Download my data
+- [ ] 10b: the queue, resolving and the home count; the 12-month
+      deletion in the clean-up job
 - Verify: integration tests (verified phone only, 5 a day, the link to
   the person removed on resolving); screen test; browser journey
 
