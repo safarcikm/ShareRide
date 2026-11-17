@@ -9,6 +9,7 @@ const point: ListedMeetingPoint = {
   seasonStartMonth: null,
   seasonEndMonth: null,
   reviewDueOn: "2027-06-01",
+  openIssues: 0,
   searchText: searchTextFor(["Olís Hveragerði", "Olis Hveragerdi", "Hveragerði"]),
 };
 
@@ -57,6 +58,13 @@ describe("matchesConsoleFilters (spec 2, 3.6.1)", () => {
     const overdue = { ...point, reviewDueOn: "2026-11-16" };
     expect(matchesConsoleFilters(overdue, { reviewOverdue: true }, now)).toBe(true);
     expect(matchesConsoleFilters(point, { reviewOverdue: true }, now)).toBe(false);
+  });
+
+  it("filters points with an open problem report, which marks them for review (spec 2, 3.5)", () => {
+    const reported = { ...point, openIssues: 2 };
+    expect(matchesConsoleFilters(reported, { openIssues: true }, now)).toBe(true);
+    expect(matchesConsoleFilters(point, { openIssues: true }, now)).toBe(false);
+    expect(matchesConsoleFilters(point, { openIssues: false }, now)).toBe(true);
   });
 
   it("needs every filter given to match", () => {

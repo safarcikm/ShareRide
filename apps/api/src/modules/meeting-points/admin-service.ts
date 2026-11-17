@@ -30,13 +30,13 @@ import {
   type StatusChange,
   type ValidMeetingPointDraft,
 } from "@shareride/domain";
-import { eq, ne, sql } from "drizzle-orm";
+import { count, eq, ne, sql } from "drizzle-orm";
 import { recordAudit, type AuditRequest } from "../admin/audit.ts";
 import type { Transaction } from "../bookings/seats.ts";
 import { recordEvents } from "../notifications/outbox.ts";
 import { futureTripsAt } from "./status.ts";
 
-const { meetingPoints } = schema;
+const { meetingPointIssues, meetingPoints } = schema;
 
 type MeetingPointRow = typeof meetingPoints.$inferSelect;
 
@@ -181,7 +181,7 @@ export function toAdminMeetingPoint(row: MeetingPointRow, futureTrips: number): 
   };
 }
 
-function toListItem(row: MeetingPointRow): AdminMeetingPointListItem {
+function toListItem(row: MeetingPointRow & { openIssues: number }): AdminMeetingPointListItem {
   const point = toAdminMeetingPoint(row, 0);
   return {
     id: point.id,
@@ -196,6 +196,7 @@ function toListItem(row: MeetingPointRow): AdminMeetingPointListItem {
     reviewDueOn: point.reviewDueOn,
     sample: point.sample,
     updatedAt: point.updatedAt,
+    openIssues: row.openIssues,
   };
 }
 
@@ -271,7 +272,14 @@ export function createMeetingPointAdminService(dependencies: {
       const now = clock();
       const at = { month: monthInIceland(now), today: icelandDate(now) };
       const rows = await db.select().from(meetingPoints);
+      const reported = await db
+        .select({ id: meetingPointIssues.meetingPointId, count: count() })
+        .from(meetingPointIssues)
+        .where(eq(meetingPointIssues.status, "open"))
+        .groupBy(meetingPointIssues.meetingPointId);
+      const openIssues = new Map(reported.map((row) => [row.id, row.count]));
       return rows
+        .map((row) => ({ ...row, openIssues: openIssues.get(row.id) ?? 0 }))
         .filter((row) => matchesConsoleFilters(row, filters, at))
         .sort((a, b) => collator.compare(a.nameIs, b.nameIs) || a.id.localeCompare(b.id))
         .map(toListItem);
