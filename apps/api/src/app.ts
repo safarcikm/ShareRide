@@ -70,6 +70,7 @@ import {
   createPrivacyRequests,
   registerPrivacyRoutes,
 } from "./modules/privacy/index.ts";
+import { createBlockService, registerSafetyRoutes } from "./modules/safety/index.ts";
 import {
   createSearchService,
   createTripDetailsService,
@@ -336,6 +337,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       requireAuth,
     );
     registerNotificationRoutes(app, { ...features, requireAuth });
+    registerSafetyRoutes(app, createBlockService({ ...features, bookings }), requireAuth);
     registerPaymentRoutes(app, {
       payments: createPaymentService({ ...features, provider: features.payments }),
       bookings,

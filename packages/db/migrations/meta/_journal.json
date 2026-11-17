@@ -225,6 +225,20 @@
       "when": 1794911244743,
       "tag": "0031_privacy_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1794921720475,
+      "tag": "0032_meeting_point_pauses",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1794923118110,
+      "tag": "0033_blocks",
+      "breakpoints": true
     }
   ]
 }

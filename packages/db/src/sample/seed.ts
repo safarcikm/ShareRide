@@ -57,13 +57,14 @@ export async function seedSampleMeetingPoints(db: Database, now: Date): Promise<
         whereToStandEn: point.whereToStand.en,
         seasonStartMonth: null,
         seasonEndMonth: null,
-        status: "active",
         sample: true,
         searchText: searchTextFor([point.nameIs, point.nameEn, ...(point.aliases ?? [])]),
       };
+      // A new sample point starts active; one already there keeps the
+      // status the console gave it, so a deploy does not undo a pause.
       await tx
         .insert(meetingPoints)
-        .values(row)
+        .values({ ...row, status: "active" })
         .onConflictDoUpdate({ target: meetingPoints.id, set: { ...row, updatedAt: now } });
     }
     await tx

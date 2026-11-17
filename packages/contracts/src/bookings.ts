@@ -35,7 +35,7 @@ const notFound = {
   description: "not_found: no such booking of yours, or on your trip",
   ...errors,
 } as const;
-const peopleColourSchema = z
+export const peopleColourSchema = z
   .int()
   .min(0)
   .max(peopleColourCount - 1);

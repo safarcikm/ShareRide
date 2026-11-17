@@ -78,7 +78,7 @@ No module reads another module's tables directly.
 
 | Module | Responsibility |
 | ------ | -------------- |
-| `users` | Accounts, profiles, vehicles, verification levels, blocking |
+| `users` | Accounts, profiles, vehicles, verification levels |
 | `auth` | Sign-in, sessions, tokens, roles |
 | `meeting-points` | Meeting points, legs, problem reports, search by name and location |
 | `trips` | Creating, editing, publishing, cancelling trips; stops and segments |
@@ -88,7 +88,7 @@ No module reads another module's tables directly.
 | `messaging` | Chat between driver and booked passengers |
 | `notifications` | Push, email, SMS; user preferences; templates per language |
 | `reviews` | Ratings and reviews, reveal rules |
-| `safety` | Reports, moderation actions, audit log |
+| `safety` | Blocks, reports, moderation actions, audit log |
 | `conditions` | Weather warnings and road closures matched to trips |
 | `payments` | Payments, refunds and payouts through the payment port and provider adapters |
 | `admin` | Operator tools on top of the other modules |

@@ -110,6 +110,8 @@ export async function postTripToSelfoss(
   page: Page,
   departure: string,
   skip: readonly string[] = [],
+  /** The driver has posted before: their car and licence are in place. */
+  ready = false,
 ) {
   const choose = async (end: "From" | "To", typed: string, card: RegExp) => {
     await page.getByRole("button", { name: new RegExp(`^${end}: `) }).click();
@@ -129,6 +131,7 @@ export async function postTripToSelfoss(
   await page.getByRole("button", { name: "Set your price" }).click();
   await page.getByRole("button", { name: "Choose seats" }).click();
   await page.getByRole("button", { name: "Review your trip" }).click();
+  if (ready) return publish(page);
   await page.getByRole("button", { name: "Add a car" }).click();
   await page.getByLabel("Make").fill("Toyota");
   await page.getByLabel("Model").fill("Yaris");
@@ -141,6 +144,11 @@ export async function postTripToSelfoss(
     })
     .click();
   await page.getByRole("button", { name: "Confirm", exact: true }).click();
+  return publish(page);
+}
+
+/** Publishes the trip under review; its ID. */
+async function publish(page: Page) {
   await page.getByRole("button", { name: "Publish trip" }).click();
   await expect(page.getByRole("heading", { name: "Your trip is published" })).toBeVisible();
   const [, id] = /\/drive\/trips\/([0-9a-f-]+)\/published/.exec(page.url()) ?? [];

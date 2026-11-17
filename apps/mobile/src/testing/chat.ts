@@ -40,6 +40,7 @@ export function conversationOf(
     booking,
     closesAt: "2026-11-22T12:05:00.000Z",
     canWrite: true,
+    blockedByMe: false,
     unread: 0,
     lastMessage: null,
     ...changes,
@@ -61,13 +62,20 @@ const order = (a: ChatMessage, b: ChatMessage) =>
  */
 export function chatServer(
   client: FakeClient,
-  start: { booking?: Booking; messages?: readonly ChatMessage[]; canWrite?: boolean } = {},
+  start: {
+    booking?: Booking;
+    messages?: readonly ChatMessage[];
+    canWrite?: boolean;
+    blockedByMe?: boolean;
+  } = {},
 ) {
   const booking = start.booking ?? chatBooking;
   let count = 100;
   const server = {
     messages: [...(start.messages ?? [openedLine])],
     canWrite: start.canWrite ?? true,
+    /** I blocked the other person (R9.4). */
+    blockedByMe: start.blockedByMe ?? false,
     /** Answers the next sends, oldest first, in place of the server. */
     nextSends: [] as ((body: SendMessageBody) => unknown)[],
     /** While set, the next page waits for it. */
@@ -113,7 +121,11 @@ export function chatServer(
       const page = newest.slice(from, from + 50);
       const unread = server.messages.filter((m) => m.from === "them" && m.readAt === null).length;
       const answer = ok(200, {
-        conversation: conversationOf(booking, { canWrite: server.canWrite, unread }),
+        conversation: conversationOf(booking, {
+          canWrite: server.canWrite,
+          blockedByMe: server.blockedByMe,
+          unread,
+        }),
         messages: page,
         hasMore: newest.length > from + 50,
       });

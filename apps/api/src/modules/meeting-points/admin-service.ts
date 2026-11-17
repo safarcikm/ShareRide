@@ -10,17 +10,27 @@ import {
   icelandDate,
   matchesConsoleFilters,
   monthInIceland,
+  nextPointStatus,
   ok,
+  reviewDueOn,
   reviewedOn,
   searchTextFor,
   validateMeetingPointDraft,
+  validatePause,
   type ConsoleFilters,
   type DraftProblem,
+  type MeetingPointStatus,
+  type PauseProblem,
+  type PauseRequest,
   type Result,
+  type StatusChange,
   type ValidMeetingPointDraft,
 } from "@shareride/domain";
 import { eq, sql } from "drizzle-orm";
 import { recordAudit, type AuditRequest } from "../admin/audit.ts";
+import type { Transaction } from "../bookings/seats.ts";
+import { recordEvents } from "../notifications/outbox.ts";
+import { futureTripsAt } from "./status.ts";
 
 const { meetingPoints } = schema;
 
@@ -37,6 +47,15 @@ export type UpdateProblem =
   | { readonly code: "not_found" | "meeting_point_changed" | "meeting_point_retired" }
   | { readonly code: "move_needed" };
 
+export type StatusProblem =
+  | { readonly code: "validation_failed"; readonly problems: readonly PauseProblem[] }
+  | { readonly code: "not_found" | "meeting_point_changed" | "status_change_not_allowed" };
+
+/** The point's `updatedAt` when the console loaded it. */
+interface Loaded {
+  readonly updatedAt: string;
+}
+
 export interface MeetingPointAdminService {
   list(filters: ConsoleFilters): Promise<AdminMeetingPointListItem[]>;
   get(id: string): Promise<AdminMeetingPoint | undefined>;
@@ -47,9 +66,30 @@ export interface MeetingPointAdminService {
   /** `updatedAt` is the point's when the form loaded it. */
   update(
     id: string,
-    input: AdminMeetingPointInput & { readonly updatedAt: string },
+    input: AdminMeetingPointInput & Loaded,
     actor: ConsoleActor,
   ): Promise<Result<AdminMeetingPoint, UpdateProblem>>;
+  /**
+   * Pauses an active point (spec 2, 3.6.4): new trips cannot use it, and
+   * the drivers and passengers of its future trips are told.
+   */
+  pause(
+    id: string,
+    input: PauseRequest & Loaded,
+    actor: ConsoleActor,
+  ): Promise<Result<AdminMeetingPoint, StatusProblem>>;
+  /** Brings a paused point back into use before its end date, or without one. */
+  resume(
+    id: string,
+    input: Loaded,
+    actor: ConsoleActor,
+  ): Promise<Result<AdminMeetingPoint, StatusProblem>>;
+  /** Retires a point for good (3.6.5): at once, or after its last future trip. */
+  retire(
+    id: string,
+    input: Loaded,
+    actor: ConsoleActor,
+  ): Promise<Result<AdminMeetingPoint, StatusProblem>>;
 }
 
 const sixDecimals = (degrees: number) => Math.round(degrees * 1e6) / 1e6;
@@ -58,7 +98,7 @@ const samePosition = (a: MeetingPointRow["location"], b: MeetingPointRow["locati
   sixDecimals(a.latitude) === sixDecimals(b.latitude) &&
   sixDecimals(a.longitude) === sixDecimals(b.longitude);
 
-export function toAdminMeetingPoint(row: MeetingPointRow): AdminMeetingPoint {
+export function toAdminMeetingPoint(row: MeetingPointRow, futureTrips: number): AdminMeetingPoint {
   return {
     id: row.id,
     nameIs: row.nameIs,
@@ -89,13 +129,14 @@ export function toAdminMeetingPoint(row: MeetingPointRow): AdminMeetingPoint {
     amenitiesReviewedOn: row.amenitiesReviewedOn,
     seasonReviewedOn: row.seasonReviewedOn,
     sample: row.sample,
+    futureTrips,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
 }
 
 function toListItem(row: MeetingPointRow): AdminMeetingPointListItem {
-  const point = toAdminMeetingPoint(row);
+  const point = toAdminMeetingPoint(row, 0);
   return {
     id: point.id,
     nameIs: point.nameIs,
@@ -192,7 +233,8 @@ export function createMeetingPointAdminService(dependencies: {
 
     async get(id) {
       const [row] = await db.select().from(meetingPoints).where(eq(meetingPoints.id, id));
-      return row === undefined ? undefined : toAdminMeetingPoint(row);
+      if (row === undefined) return undefined;
+      return toAdminMeetingPoint(row, (await futureTripsAt(db, id, clock())).length);
     },
 
     async create(input, actor) {
@@ -209,7 +251,8 @@ export function createMeetingPointAdminService(dependencies: {
           .values({ ...columns, status: "draft" })
           .returning();
         if (row === undefined) throw new Error("The meeting point was not saved.");
-        const point = toAdminMeetingPoint(row);
+        // A new draft, so no trip stops there yet.
+        const point = toAdminMeetingPoint(row, 0);
         await recordAudit(tx, {
           operator: actor.operator,
           action: "meeting_point.created",
@@ -229,15 +272,7 @@ export function createMeetingPointAdminService(dependencies: {
       const draft = checked.value;
 
       return db.transaction(async (tx): Promise<Result<AdminMeetingPoint, UpdateProblem>> => {
-        // Compared in SQL: the copy the form loaded has its time to the millisecond only.
-        const [found] = await tx
-          .select({
-            row: meetingPoints,
-            loaded: sql<boolean>`date_trunc('milliseconds', ${meetingPoints.updatedAt}) = ${input.updatedAt}::timestamptz`,
-          })
-          .from(meetingPoints)
-          .where(eq(meetingPoints.id, id))
-          .for("update");
+        const found = await loadForChange(tx, id, input.updatedAt);
         if (found === undefined) return err({ code: "not_found" });
         const { row } = found;
         if (row.status === "retired") return err({ code: "meeting_point_retired" });
@@ -245,7 +280,8 @@ export function createMeetingPointAdminService(dependencies: {
         const moved = !samePosition(row.location, draft.position);
         if (moved && row.status !== "draft") return err({ code: "move_needed" });
 
-        const before = toAdminMeetingPoint(row);
+        const futureTrips = (await futureTripsAt(tx, id, clock())).length;
+        const before = toAdminMeetingPoint(row, futureTrips);
         const columns = columnsOf(
           { ...draft, position: moved ? draft.position : row.location },
           {
@@ -257,17 +293,20 @@ export function createMeetingPointAdminService(dependencies: {
             seasonReviewedOn: reviewedOn(row.seasonReviewedOn, input.seasonReviewed, today),
           },
         );
-        const unsaved = toAdminMeetingPoint({ ...row, ...columns });
+        const unsaved = toAdminMeetingPoint(
+          {
+            ...row,
+            ...columns,
+            reviewDueOn: reviewDueOn(row.status as MeetingPointStatus, columns.lastCheckedOn),
+          },
+          futureTrips,
+        );
         const changes = changedFields(auditValuesOf(before), auditValuesOf(unsaved));
         if (Object.keys(changes.after).length === 0) return ok(before);
 
         const [saved] = await tx
           .update(meetingPoints)
-          .set({
-            ...columns,
-            // Always later than the copy the form loaded, even within one millisecond.
-            updatedAt: sql`greatest(now(), ${meetingPoints.updatedAt} + interval '1 millisecond')`,
-          })
+          .set({ ...columns, reviewDueOn: unsaved.reviewDueOn, updatedAt: changedNow })
           .where(eq(meetingPoints.id, id))
           .returning();
         if (saved === undefined) throw new Error("The meeting point was not saved.");
@@ -279,8 +318,137 @@ export function createMeetingPointAdminService(dependencies: {
           ...changes,
           request: actor.request,
         });
-        return ok(toAdminMeetingPoint(saved));
+        return ok(toAdminMeetingPoint(saved, futureTrips));
       });
     },
+
+    pause(id, input, actor) {
+      const checked = validatePause(input, icelandDate(clock()));
+      if (!checked.ok) {
+        return Promise.resolve(err({ code: "validation_failed", problems: checked.error }));
+      }
+      const { reasonIs, reasonEn, until } = checked.value;
+      return changeStatus(id, input, actor, "pause", async (tx, futureTrips) => {
+        // One event per trip: the worker tells its driver once, and each
+        // passenger who gets in or out here once (spec 2, 3.6.4). The trips
+        // themselves are not changed or cancelled.
+        await recordEvents(
+          tx,
+          futureTrips.map((tripId) => ({
+            type: "MeetingPointChanged",
+            tripId,
+            meetingPointId: id,
+          })),
+          clock(),
+        );
+        return { pauseReasonIs: reasonIs, pauseReasonEn: reasonEn, pausedUntil: until };
+      });
+    },
+
+    resume(id, input, actor) {
+      return changeStatus(id, input, actor, "resume", () =>
+        Promise.resolve({ pauseReasonIs: null, pauseReasonEn: null, pausedUntil: null }),
+      );
+    },
+
+    retire(id, input, actor) {
+      // A point retired while paused keeps its reason: the trips still to
+      // stop there need another stop all the same, and their news names it.
+      return changeStatus(id, input, actor, "retire", (_tx, _trips, row) =>
+        Promise.resolve({
+          pauseReasonIs: row.pauseReasonIs,
+          pauseReasonEn: row.pauseReasonEn,
+          pausedUntil: null,
+        }),
+      );
+    },
+  };
+
+  /**
+   * One status change in one transaction with its audit entry, refused on
+   * a copy older than the point's. `alongside` adds the change's own
+   * columns, and its events, in the same transaction.
+   */
+  function changeStatus(
+    id: string,
+    input: Loaded,
+    actor: ConsoleActor,
+    change: StatusChange,
+    alongside: (
+      tx: Transaction,
+      futureTrips: readonly string[],
+      row: MeetingPointRow,
+    ) => Promise<Pick<MeetingPointRow, "pauseReasonIs" | "pauseReasonEn" | "pausedUntil">>,
+  ): Promise<Result<AdminMeetingPoint, StatusProblem>> {
+    return db.transaction(async (tx): Promise<Result<AdminMeetingPoint, StatusProblem>> => {
+      const found = await loadForChange(tx, id, input.updatedAt);
+      if (found === undefined) return err({ code: "not_found" });
+      if (!found.loaded) return err({ code: "meeting_point_changed" });
+      const { row } = found;
+      const futureTrips = await futureTripsAt(tx, id, clock());
+      const status = nextPointStatus(row.status as MeetingPointStatus, change, futureTrips.length);
+      if (!status.ok) return err({ code: "status_change_not_allowed" });
+      const columns = await alongside(tx, futureTrips, row);
+      const [saved] = await tx
+        .update(meetingPoints)
+        .set({
+          ...columns,
+          status: status.value,
+          reviewDueOn: reviewDueOn(status.value, row.lastCheckedOn),
+          updatedAt: changedNow,
+        })
+        .where(eq(meetingPoints.id, id))
+        .returning();
+      if (saved === undefined) throw new Error("The meeting point was not saved.");
+      const before = toAdminMeetingPoint(row, futureTrips.length);
+      const after = toAdminMeetingPoint(saved, futureTrips.length);
+      const changes = changedFields(statusValuesOf(before), statusValuesOf(after));
+      await recordAudit(tx, {
+        operator: actor.operator,
+        action: `meeting_point.${auditActions[change]}`,
+        subjectType: "meeting_point",
+        subjectId: id,
+        before: changes.before,
+        // How many trips were still to stop there: told of a pause, waited for by a retirement.
+        after: { ...changes.after, futureTrips: futureTrips.length },
+        request: actor.request,
+      });
+      return ok(after);
+    });
+  }
+}
+
+/** Later than the copy the console loaded, even within one millisecond. */
+const changedNow = sql`greatest(now(), ${meetingPoints.updatedAt} + interval '1 millisecond')`;
+
+/**
+ * The point, locked for the change, and whether it is the copy the console
+ * loaded: compared in SQL, as that copy has its time to the millisecond only.
+ */
+async function loadForChange(tx: Transaction, id: string, updatedAt: string) {
+  const [found] = await tx
+    .select({
+      row: meetingPoints,
+      loaded: sql<boolean>`date_trunc('milliseconds', ${meetingPoints.updatedAt}) = ${updatedAt}::timestamptz`,
+    })
+    .from(meetingPoints)
+    .where(eq(meetingPoints.id, id))
+    .for("update");
+  return found;
+}
+
+const auditActions = {
+  pause: "paused",
+  resume: "resumed",
+  retire: "retired",
+} as const satisfies Record<StatusChange, string>;
+
+/** What a status change's audit entry compares: the status, the pause and the review date. */
+function statusValuesOf(point: AdminMeetingPoint): Record<string, unknown> {
+  return {
+    status: point.status,
+    pauseReason: point.pauseReason,
+    pausedUntil: point.pausedUntil,
+    reviewDueOn: point.reviewDueOn,
   };
 }

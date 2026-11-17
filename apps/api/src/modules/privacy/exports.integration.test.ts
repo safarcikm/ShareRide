@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import {
   acceptRequestRoute,
   askDataExportRoute,
+  blockFromBookingRoute,
   dataExportLinkRoute,
   driverCheckInRoute,
   getDataExportRoute,
@@ -58,6 +59,7 @@ beforeEach(async () => {
   await freshSampleTrips(api);
   await api.connection.db.delete(schema.dataExports);
   await api.connection.db.delete(schema.outboxEvents);
+  await api.connection.db.delete(schema.blocks);
 });
 
 afterEach(() => {
@@ -324,6 +326,26 @@ describe("download my data (spec 11, 3.2)", () => {
     expect(driver.text).toContain('"from": "Gunna"');
   });
 
+  it("lists the people I blocked by first name and date, never who blocked me", async () => {
+    const anna = await driverOf(sampleTrip.north, "Anna");
+    const gunna = await newMember("Gunna");
+    const request = await booked(gunna.accessToken, sampleTrip.north, { fromStop: 0, toStop: 3 });
+    const at = api.now().toISOString();
+    const blocked = await api.client.call(blockFromBookingRoute, {
+      accessToken: gunna.accessToken,
+      params: { id: request.id },
+      body: {},
+    });
+    if (!blocked.ok) throw new Error(blocked.error.code);
+
+    const mine = await exportOf(gunna);
+    expect(mine.data.sections.blocks).toEqual([{ firstName: "Anna", since: at }]);
+    expect(mine.text).not.toContain(anna.userId);
+    expect(unlabelledFields(mine.data)).toEqual([]);
+    expect(mine.html).toContain("<h2>People you blocked</h2>");
+    expect((await exportOf(anna)).data.sections.blocks).toEqual([]);
+  });
+
   it("has the person's own times at the meeting point, with the booking or the stop", async () => {
     const anna = await driverOf(sampleTrip.north, "Anna");
     const gunna = await newMember("Gunna");
@@ -467,6 +489,107 @@ describe("download my data (spec 11, 3.2)", () => {
       null,
     ]);
     expect(mentioned(annas.text)).toEqual(["Waited ten minutes", "bus bay"]);
+    expect(unlabelledFields(annas.data)).toEqual([]);
+  });
+
+  it("has the reviews the person wrote, and those about them once shown (spec 8, R8.9)", async () => {
+    const { anna, passengers } = await busyTrip();
+    const [gunna, siggi] = passengers;
+    if (gunna === undefined || siggi === undefined) throw new Error("No passengers.");
+    const bookingOf = async (member: Member) => {
+      const [booking] = await api.connection.db
+        .select({ id: schema.bookings.id })
+        .from(schema.bookings)
+        .where(eq(schema.bookings.passengerId, member.userId));
+      if (booking === undefined) throw new Error("No booking.");
+      return booking.id;
+    };
+    const sentAt = api.now();
+    const shownAt = new Date(sentAt.getTime() + hours(1) * 1000);
+    const hiddenAt = new Date(sentAt.getTime() + hours(2) * 1000);
+    // Gunna and Anna reviewed each other, so both show; the operator then
+    // hid Anna's. Siggi reviewed Anna, who hasn't yet: it shows to nobody.
+    await api.connection.db.insert(schema.reviews).values([
+      {
+        bookingId: await bookingOf(gunna),
+        authorId: gunna.userId,
+        subjectId: anna.userId,
+        authorRole: "passenger",
+        rating: 5,
+        comment: "Smooth ride",
+        revealedAt: shownAt,
+        createdAt: sentAt,
+      },
+      {
+        bookingId: await bookingOf(gunna),
+        authorId: anna.userId,
+        subjectId: gunna.userId,
+        authorRole: "driver",
+        rating: 4,
+        comment: "On time",
+        revealedAt: shownAt,
+        hiddenAt,
+        createdAt: sentAt,
+      },
+      {
+        bookingId: await bookingOf(siggi),
+        authorId: siggi.userId,
+        subjectId: anna.userId,
+        authorRole: "passenger",
+        rating: 2,
+        comment: "Late pickup",
+        createdAt: sentAt,
+      },
+    ]);
+    const review = (
+      rating: number,
+      comment: string,
+      shown: Date | null,
+      hidden: Date | null = null,
+    ) => ({
+      rating,
+      comment,
+      sentAt: sentAt.toISOString(),
+      shownAt: shown?.toISOString() ?? null,
+      hiddenAt: hidden?.toISOString() ?? null,
+    });
+    const comments = ["Smooth ride", "On time", "Late pickup"] as const;
+    const mentioned = (text: string) => comments.filter((comment) => text.includes(comment));
+
+    const gunnas = await exportOf(gunna);
+    const [gunnasBooking] = gunnas.data.sections.bookings as {
+      yourReview: unknown;
+      theirReview: unknown;
+    }[];
+    expect(gunnasBooking?.yourReview).toEqual(review(5, "Smooth ride", shownAt));
+    expect(gunnasBooking?.theirReview).toEqual(review(4, "On time", shownAt, hiddenAt));
+    expect(unlabelledFields(gunnas.data)).toEqual([]);
+
+    // Siggi's own, waiting to show; nothing about him yet.
+    const siggis = await exportOf(siggi);
+    const [siggisBooking] = siggis.data.sections.bookings as {
+      yourReview: unknown;
+      theirReview: unknown;
+    }[];
+    expect(siggisBooking?.yourReview).toEqual(review(2, "Late pickup", null));
+    expect(siggisBooking?.theirReview).toBeNull();
+
+    // Anna sees Gunna's review of her, and her own of Gunna; Siggi's waits.
+    const annas = await exportOf(anna);
+    const [trip] = annas.data.sections.trips_posted as {
+      passengers: { yourReview: unknown; theirReview: unknown }[];
+    }[];
+    expect(
+      trip?.passengers.map(({ yourReview, theirReview }) => ({ yourReview, theirReview })),
+    ).toEqual([
+      {
+        yourReview: review(4, "On time", shownAt, hiddenAt),
+        theirReview: review(5, "Smooth ride", shownAt),
+      },
+      { yourReview: null, theirReview: null },
+      { yourReview: null, theirReview: null },
+    ]);
+    expect(mentioned(annas.text)).toEqual(["Smooth ride", "On time"]);
     expect(unlabelledFields(annas.data)).toEqual([]);
   });
 

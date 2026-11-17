@@ -1,7 +1,7 @@
 # Milestone 9 plan: safety and moderation
 
-**Owner:** Martin · **Date:** 2026-11-16 · **Status:** Proposed; the
-choices in section 3 wait for Martin
+**Owner:** Martin · **Date:** 2026-11-16 · **Status:** In progress; the
+choices in section 3 accepted by Martin on 2026-11-16 as recommended
 
 Lets people get help fast, tell someone where they are going, keep away
 from someone, and report bad behaviour knowing it will be looked at. Gives
@@ -66,6 +66,13 @@ When this milestone is done, on the web and on an Android test build:
 | 1 | How people read a statement of reasons and appeal | **In the app.** Each action that affects someone appears in Profile, under "Notices", with what was done, the rule, the content and an "Appeal" box for 14 days. The appeal lands in the console, and the answer comes back to the notice. An email with the same statement also goes to everyone with a verified email, and says to appeal in the app | Email is optional (spec 1, decision 5), so many people could not appeal by email. It needs no inbox to watch, and each appeal is kept with its action | Reply to the email, as spec 9 says: needs a domain, an inbox and a way to match replies to actions, and people without an email cannot appeal |
 | 2 | Whether a block keeps two passengers out of the same car | **Yes.** Someone who blocked you, or whom you blocked, being booked on a trip hides that trip from you and refuses your booking, silently | Spec 9 covers trips the other person drives. A passenger who blocks another passenger for harassment would otherwise still meet them in the car | Blocks apply only between a driver and a passenger, as spec 9 says. Simpler, but two passengers can still end up side by side |
 | 3 | What a suspension does to the suspended person's own bookings as a passenger | **A full refund to them**, as with every operator cancellation (spec 9, 3.4) | One rule for every cancellation the operator makes; the driver's seat is free to book again at once | The normal cancellation rules (spec 6), as if they had cancelled: the driver keeps a share when it is late, but the operator then decides what someone else pays |
+
+**Decision 2 revised on review (2026-11-16, Martin confirmed 2026-11-17):** closing
+a trip because someone in a block is booked on it would show the blocker
+which rides the other person booked (compare a signed-in search with a
+signed-out one), and a block can be made through any booking ever shared.
+Blocks therefore close only the trips the other person drives, as spec 9
+says; two passengers in a block can still share a car.
 
 Spec 9 says "the rule it concerns" for each action, but the community
 rules are not written yet. Until they are, the operator picks from a
@@ -151,25 +158,40 @@ completed).
 
 - `blocks`: blocker, blocked and when; one per pair and direction; gone
   when either account is deleted.
-- `POST /v1/users/{id}/block`, `DELETE /v1/users/{id}/block` (both safe to
-  repeat) and `GET /v1/me/blocks` (first name, colour and since).
-- In effect both ways (R9.4), and with decision 2 also for a person booked
-  on the trip:
+- People are blocked through something the two share, never by their own
+  ID: user IDs are uuidv7 and show when the account was made, so the API
+  never shows them to another person. `POST /v1/bookings/{id}/block`
+  blocks the other person of a booking of mine and answers the bookings
+  and requests the two still have together. `GET /v1/me/blocks` lists
+  whom I blocked (the block's own ID, first name, colour and since), and
+  `DELETE /v1/me/blocks/{id}` lifts one of mine. Both changes are safe to
+  repeat.
+- In effect both ways (R9.4), for the trips the other person drives; a
+  trip someone else is booked on stays open, since who is booked is
+  private (decision 2, revised):
   - Search, rides leaving soon and trip details leave the trip out, as if
     it did not exist (`not_found`). Signed out, anyone sees public trips;
     a block cannot change that, but booking needs signing in.
   - Booking and requesting refuse with `not_found`.
-  - Sending a message refuses with `conversation_closed`. The conversation
-    shows "You can't send messages here", never who blocked whom. The
-    driver's message to all passengers skips them. ShareRide's own trip
-    news (changes, cancellations, check-ins) still reaches both.
-- Block from the conversation's menu now, and the public profile once
-  milestone 7's merges. The confirmation is spec 9's `block.confirm`. If
-  they share a booking that is requested, awaiting payment or confirmed,
-  the next question offers to cancel, decline or withdraw it under the
-  normal rules (spec 9 decision 1).
-- Profile gains a "Safety" section: Blocked people (with Unblock), My
-  reports, and the community rules.
+  - Sending a message refuses with `chat_closed`, as a closed chat does,
+    and `canWrite` is false. The conversation shows "This chat is closed.
+    You can still read it.", never telling the blocked person who blocked
+    whom. The driver's message to all passengers skips them. ShareRide's
+    own trip news (changes, cancellations, check-ins) still reaches both.
+- Block from the conversation, beside the other person's name, now, and
+  the public profile once milestone 7's merges (through the profile's own
+  public reference, not a user ID). The confirmation is spec 9's
+  `block.confirm`, on its own screen. Once blocked, the screen lists the
+  bookings and requests the two still have together, on any trip, each
+  with the usual way out (spec 9 decision 1): Cancel opens the
+  cancellation screen with its reasons and refund; a request is withdrawn
+  by the passenger or declined by the driver there and then. Blocking
+  alone changes no refund. The blocker's conversation says "You blocked
+  {name}" and where to unblock; the other person's says only that the
+  chat is closed (`blockedByMe`).
+- Settings gains a "Safety" section, as spec 9 puts it there: Blocked
+  people (with Unblock) now, and My reports with PR 5. The community rules
+  stay with the other legal documents.
 
 ### 4.4 Reports
 
@@ -280,10 +302,10 @@ merging, and generated again if another thread's lands first.
 
 ### PR 4: `feat(safety)`: block and unblock
 
-- [ ] `blocks` and its routes; blocks in search, rides leaving soon, trip
-      details, booking, requesting and chat (decision 2)
-- [ ] Block in the conversation's menu with the booking question; the
-      Safety section and Blocked people
+- [x] `blocks` and its routes; blocks in search, rides leaving soon, trip
+      details, booking, requesting and chat
+- [x] Block in the conversation with the bookings together; the Safety
+      section in Settings and Blocked people
 - Verify: integration tests (each way, and for two passengers; repeat is
   safe; the message to all passengers skips them); a browser journey:
   block, lose each other's trips, unblock
@@ -368,6 +390,10 @@ What the spec implies and a person would meet first, each with its test:
   milestone 6's queue, which already retries.
 - **Abuse of reports:** the daily limit, and the operator sees earlier
   reports by the reporter too.
+- **Blocks used to watch someone:** a block can be made through any
+  booking two people ever shared, so nothing a block changes may depend on
+  the other person's private bookings (decision 2, revised). Blocks close
+  only the trips the other person drives, which are public anyway.
 
 ## 9. Definition of done
 

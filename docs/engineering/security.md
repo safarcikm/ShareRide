@@ -15,7 +15,7 @@ apps.
 | ------ | ------- | ------------- |
 | Account takeover | SIM swap, guessed codes | Code expiry and attempt limits, device sessions list, re-verification for sensitive changes |
 | SMS fraud (SMS pumping) | Bots trigger thousands of codes to premium numbers | Rate limits per IP, number and prefix, and a daily cap per country (the SMS budget); country allow-list; a kill switch (`SMS_PAUSED`); bot checks; spending alerts |
-| Scraping and stalking | Collecting who travels where and when | Public profiles show first name only; exact trip details and vehicle plate only to booked passengers; rate-limited search |
+| Scraping and stalking | Collecting who travels where and when | Public profiles show first name only; exact trip details and vehicle plate only to booked passengers; rate-limited search; no answer depends on who else is booked on a trip, so a block cannot reveal the other person's bookings |
 | Broken access control | Editing someone else's trip, reading other people's chats | Ownership checks in every application service; tests for each endpoint as another user |
 | Overbooking or price tampering | Race conditions, manipulated requests | Server computes prices and availability; transactional capacity check; database constraints |
 | Harassment | Abusive messages, unsafe behaviour | Report and block, moderation queue, suspension, retained evidence for reports |
@@ -45,6 +45,10 @@ apps.
   maps go to Sentry and are never served, and Render's secret files are kept
   out of the image (`.dockerignore`, checked by the smoke test).
 - Dependencies and containers scanned in CI; critical findings block merge.
+- No person's user ID is shown to another person. Our IDs are UUIDv7 and
+  show when the account was made. Someone else is reached through what the
+  two share (a booking, a message) or through a public reference made for
+  it, never through their user ID; a person's own ID goes only to them.
 
 ## Sign-in and sessions
 

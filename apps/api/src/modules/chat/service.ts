@@ -5,6 +5,7 @@ import {
   canWrite,
   checkMessage,
   err,
+  isBlockedBetween,
   ok,
   type ChatSettings,
   type MessageBody,
@@ -20,6 +21,7 @@ import { alias } from "drizzle-orm/pg-core";
 import type { BookingService } from "../bookings/index.ts";
 import type { Queryable } from "../bookings/seats.ts";
 import { recordEvents } from "../notifications/outbox.ts";
+import { blocksOf } from "../safety/blocks.ts";
 import { hidden, isHidden, shown } from "../privacy/hidden.ts";
 
 const { bookings, conversations, messages, trips, users } = schema;
@@ -219,6 +221,8 @@ export function createChatService(dependencies: {
       {
         readonly conversation: ConversationRow;
         readonly viewer: TripRole;
+        /** The passenger and the driver. */
+        readonly people: readonly [string, string];
         /** The other person in the conversation. */
         readonly otherId: string;
       },
@@ -243,6 +247,7 @@ export function createChatService(dependencies: {
     return ok({
       conversation: row.conversation,
       viewer,
+      people: [row.passengerId, row.driverId],
       otherId: viewer === "passenger" ? row.driverId : row.passengerId,
     });
   }
@@ -276,7 +281,7 @@ export function createChatService(dependencies: {
   async function summaries(userId: string, rows: readonly ConversationRow[]) {
     if (rows.length === 0) return [];
     const ids = rows.map((row) => row.id);
-    const [booked, unread, last, closed] = await Promise.all([
+    const [booked, unread, last, people, blocks, closed] = await Promise.all([
       dependencies.bookings.bookingsOf(
         userId,
         rows.map((row) => row.bookingId),
@@ -291,12 +296,38 @@ export function createChatService(dependencies: {
         .from(messages)
         .where(inArray(messages.conversationId, ids))
         .orderBy(messages.conversationId, desc(messages.sentAt), desc(messages.id)),
+      db
+        .select({
+          bookingId: bookings.id,
+          passengerId: bookings.passengerId,
+          driverId: trips.driverId,
+        })
+        .from(bookings)
+        .innerJoin(trips, eq(trips.id, bookings.tripId))
+        .where(
+          inArray(
+            bookings.id,
+            rows.map((row) => row.bookingId),
+          ),
+        ),
+      blocksOf(db, userId),
       deleting(
         db,
         rows.map((row) => row.bookingId),
       ),
     ]);
     const now = clock();
+    /** A block between the two makes the chat read-only, never saying whose (R9.4). */
+    const blocked = (bookingId: string) => {
+      const pair = people.find((row) => row.bookingId === bookingId);
+      return pair !== undefined && isBlockedBetween(blocks, pair.passengerId, pair.driverId);
+    };
+    /** Only the blocker learns it was them. */
+    const blockedByMe = (bookingId: string) => {
+      const pair = people.find((row) => row.bookingId === bookingId);
+      const other = pair?.passengerId === userId ? pair.driverId : pair?.passengerId;
+      return blocks.some((block) => block.blockerId === userId && block.blockedId === other);
+    };
     return rows.flatMap((row): Conversation[] => {
       const booking = booked.find((found) => found.id === row.bookingId);
       if (booking === undefined) return [];
@@ -307,7 +338,9 @@ export function createChatService(dependencies: {
           closesAt: row.closesAt.toISOString(),
           canWrite:
             !closed.has(row.bookingId) &&
-            canWrite({ opensAt: row.openedAt, closesAt: row.closesAt }, now),
+            canWrite({ opensAt: row.openedAt, closesAt: row.closesAt }, now) &&
+            !blocked(row.bookingId),
+          blockedByMe: blockedByMe(row.bookingId),
           unread: unread.find((count) => count.conversationId === row.id)?.count ?? 0,
           lastMessage:
             lastMessage === undefined ? null : present(lastMessage, userId, booking.viewer),
@@ -395,7 +428,7 @@ export function createChatService(dependencies: {
     async send(userId, bookingId, body) {
       const found = await access(db, userId, bookingId);
       if (!found.ok) return found;
-      const { conversation, viewer, otherId } = found.value;
+      const { conversation, viewer, people, otherId } = found.value;
       // A retry gets what was sent, even once the conversation has closed.
       const earlier = async (q: Queryable): Promise<Result<MessageRow | null, ClientIdReused>> => {
         const rows = await q
@@ -417,7 +450,10 @@ export function createChatService(dependencies: {
       return db.transaction(async (tx) => {
         const sender = await lockSender(tx, userId);
         const now = clock();
-        if (!canWrite({ opensAt: conversation.openedAt, closesAt: conversation.closesAt }, now)) {
+        if (
+          !canWrite({ opensAt: conversation.openedAt, closesAt: conversation.closesAt }, now) ||
+          isBlockedBetween(await blocksOf(tx, userId), ...people)
+        ) {
           return err({ code: "chat_closed" });
         }
         // Nobody messages a person deleting their account or the former
@@ -491,9 +527,10 @@ export function createChatService(dependencies: {
         if (earlier.length > 0) return ok({ sent: earlier.length });
         // A driver deleting their account writes to nobody (spec 11, 3.4.3).
         if (sender.deleting) return ok({ sent: 0 });
+        const blocks = await blocksOf(tx, driverId);
         const open = (
           await tx
-            .select({ conversation: conversations })
+            .select({ conversation: conversations, passengerId: bookings.passengerId })
             .from(conversations)
             .innerJoin(bookings, eq(bookings.id, conversations.bookingId))
             .innerJoin(users, eq(users.id, bookings.passengerId))
@@ -508,6 +545,8 @@ export function createChatService(dependencies: {
               ),
             )
         )
+          // A passenger in a block with the driver is left out (R9.4).
+          .filter((row) => !isBlockedBetween(blocks, driverId, row.passengerId))
           .map((row) => row.conversation)
           .filter((row) => canWrite({ opensAt: row.openedAt, closesAt: row.closesAt }, now));
         if (open.length === 0) return ok({ sent: 0 });

@@ -1,5 +1,5 @@
 import { capitalised, formatDay } from "@shareride/i18n";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -14,7 +14,7 @@ import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
-import { Title } from "@/components/text";
+import { Body, Title } from "@/components/text";
 import { Composer } from "@/chat/composer";
 import { MessageList } from "@/chat/message-list";
 import { otherPerson } from "@/chat/texts";
@@ -27,7 +27,8 @@ import { usePalette } from "@/theme/use-palette";
 /**
  * A booking's conversation (spec 7, 3.1, screen 2): the safety tip, the
  * message sent with the request, then the messages, with quick messages and
- * the field at the bottom. Once closed it can only be read (R7.1).
+ * the field at the bottom. Once closed, or once one of the two blocked the
+ * other, it can only be read (R7.1, R9.4). "Block" sits by the name.
  */
 export default function ConversationScreen() {
   const { locale, t } = useLanguage();
@@ -102,12 +103,29 @@ export default function ConversationScreen() {
         }
       >
         <BackButton fallback="/messages" />
-        <View>
-          <Title align="start">{firstNameOf(t, otherPerson(booking))}</Title>
-          <Text style={[typography.small, { color: palette.textMuted }]}>
-            {`${day} · ${route}`}
-          </Text>
+        <View style={styles.header}>
+          <View style={styles.fill}>
+            <Title align="start">{firstNameOf(t, otherPerson(booking))}</Title>
+            <Text style={[typography.small, { color: palette.textMuted }]}>
+              {`${day} · ${route}`}
+            </Text>
+          </View>
+          {/* Blocking asks first, on its own screen (spec 9, 3.2). */}
+          {conversation.blockedByMe ? null : (
+            <Button
+              variant="text"
+              label={t("block.action", { name: firstNameOf(t, otherPerson(booking)) })}
+              onPress={() => {
+                router.push({ pathname: "/bookings/[id]/block", params: { id: booking.id } });
+              }}
+            />
+          )}
         </View>
+        {conversation.blockedByMe ? (
+          <Body align="start">
+            {t("block.youBlocked", { name: firstNameOf(t, otherPerson(booking)) })}
+          </Body>
+        ) : null}
         <Notice kind="info" urgent={false} message={t("chat.safetyTip")} />
         {hasEarlier ? (
           <Button
@@ -132,5 +150,6 @@ export default function ConversationScreen() {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  header: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
   gap: { gap: spacing.sm },
 });

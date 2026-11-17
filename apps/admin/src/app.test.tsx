@@ -14,7 +14,7 @@ import {
   type AdminMe,
   type Passkey,
 } from "@shareride/contracts";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ConsoleApp } from "./app.tsx";
 import { createFakeApi, createFakePasskeys } from "./testing/fake-api.ts";
@@ -181,7 +181,9 @@ describe("the frame", () => {
     expect(await screen.findByRole("heading", { name: "Passkeys" })).toBeTruthy();
     expect(window.location.pathname).toBe("/admin/passkeys");
     // The new page takes the focus, so a screen reader reads it from the top.
-    expect(document.activeElement).toBe(screen.getByRole("main"));
+    await waitFor(() => {
+      expect(document.activeElement).toBe(screen.getByRole("main"));
+    });
   });
 
   it("follows the operator's language and switches it", async () => {

@@ -460,6 +460,28 @@ releases follow [Semantic Versioning](https://semver.org/).
   plate, or the driver's date, time and route, through the share sheet, or
   copies it in a browser without one, or else shows it to copy. Nothing is stored (R9.8). On trip
   details, the booking page and the driver's trip page.
+- Block and unblock (milestone 9, PR 4, spec 9, 3.2; R9.4): "Block" in a
+  conversation asks first and blocks silently, then lists the bookings and
+  requests the two still have together, each with the usual way out:
+  cancel under the normal rules, withdraw or decline. Neither then finds
+  the other's trips in search, rides leaving soon or "nothing matches",
+  nor opens or books them, not even another part of a trip already booked.
+  A trip the other person is only booked on stays open: who is booked is
+  private, and closing it would let a block reveal their rides (milestone
+  9 decision 2, revised on review; `tripClosedTo` counts only the driver
+  now, `bookingClosedTo` is new). Their chats become read-only for both;
+  only the blocker's says who blocked whom (`blockedByMe`), and the
+  driver's message to all passengers skips them. Settings has a Safety
+  section with Blocked people and Unblock. No user ID is shown to another
+  person: blocking goes through a booking, unblocking through the block's
+  own ID. A conversation coming back into view fetches at once, and so
+  does each booking on the block screen. With no one to message, the
+  driver's message to all passengers says that no passenger is confirmed
+  or their chat is closed. `blocks` is in the personal data catalogue,
+  erased with either account, and gets its own export section, People you
+  blocked: each by first name, and since when, never who blocked them.
+  Migration `0033_blocks`. `POST /v1/bookings/{id}/block`,
+  `GET /v1/me/blocks`, `DELETE /v1/me/blocks/{id}`.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its
@@ -661,6 +683,25 @@ releases follow [Semantic Versioning](https://semver.org/).
   it is decided. After a database restore, `privacy reapply-erasures`
   erases the accounts again and takes the deletions asked for or undone
   since from the old database.
+- Pausing, bringing back and retiring a meeting point, the API (spec 2,
+  3.6.4 and 3.6.5): `POST /admin/v1/meeting-points/{id}/pause`, `/resume`
+  and `/retire`, with their rules in the domain (`nextPointStatus`,
+  `validatePause`) and an audit entry each. A pause asks the driver of
+  each future trip that stops there to choose another stop and tells the
+  passengers who get in or out there, by SMS too within 24 hours of
+  boarding. The API's minute job brings a paused point back on its end
+  date and retires a retiring one after its last trip. A point in use is
+  due for review a year after its last check (R2.9). Migration
+  `0032_meeting_point_pauses` adds the `MeetingPointChanged` event and the
+  meeting point of a notification. A point retired while paused keeps its
+  reason and its news still goes out. Publishing a trip and adding a stop
+  wait for a pause under way. The sample seed keeps the status the console
+  gave a sample point.
+- Pausing, bringing back and retiring a meeting point in the operator
+  console: the point's "In use" panel shows its upcoming trips and a
+  pause's reason, pauses it with a reason in both languages and an
+  optional end date, brings it back, and retires it after saying whether
+  that is at once or after its last trip.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.
@@ -701,6 +742,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   choose what it is about (an objection, a limit, a correction or a
   question) and write it; the app says the answer comes by email within a
   month. Without an email, it asks to add one first.
+- Download my data has the reviews (spec 8, 3.7): with each booking, and
+  each passenger on a trip the person drove, the review they wrote and
+  the one about them once it shows, and when ShareRide hid either. A
+  review that does not show yet stays out of the other person's file.
 
 ### Fixed
 

@@ -81,7 +81,17 @@ shelter. `last_checked_on` is the day the operator last confirmed the
 point (spec 2, decision 2); `amenities_reviewed_on` and
 `season_reviewed_on` record the activation checklist's reviews (R2.3).
 The console's rules for each field are `validateMeetingPointDraft` in
-`packages/domain/src/meeting-points/draft.ts`. Photos are
+`packages/domain/src/meeting-points/draft.ts`. Its status changes are
+`nextPointStatus` in `status.ts`: an active point is paused with a reason
+in both languages and an optional end date (`pause_reason_is`, `_en`,
+`paused_until`), and is active again by hand or from that date in
+Iceland; retiring an active point that trips still stop at makes it
+`retiring` until the last of them has passed it, then `retired`; a draft,
+or a paused point, retires at once. A point retired while paused keeps its
+pause reason, as the trips that stop there still need another stop
+(`pauseStillApplies`). Retired is final. `review_due_on` is a
+year after `last_checked_on` while the point is in use (R2.9), and empty
+for a draft or a retired point. Photos are
 `MeetingPointPhoto` records. `sample` marks the sample points that local
 and staging databases get until the real list exists (milestone 3); the app
 tags them.
@@ -285,7 +295,7 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
   `WaitlistEntry`, `InviteCode` (users record the code they joined with),
   `Feedback`.
 - `NotificationPreference`, `PushToken`.
-- `Block`: blocker and blocked; hides both from each other ([spec 9](../specs/2026-11-13-safety-and-moderation.md#32-blocking-g2)).
+- `Block`: blocker and blocked; hides both from each other, with the trips each drives ([spec 9](../specs/2026-11-13-safety-and-moderation.md#32-blocking-g2)). A trip someone else is booked on stays open: who is booked is private.
 - `Notification` and `NotificationDelivery`: who was told what kind of thing,
   about which booking or message, on which channel and what came of it
   (`queued`, `sending`, `sent`, `failed` or `skipped` with the reason, the
