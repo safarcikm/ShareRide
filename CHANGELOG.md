@@ -553,6 +553,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   other's once it shows (never one the operator hid). Migration
   `0030_reviews` adds the `reviews` table, with `hidden_at` for
   moderation (spec 9), and widens the notification kinds.
+- Rating and reviewing in the app (milestone 7, PR 6b, spec 8, screen 6):
+  "Rate the driver" on a completed booking and "Rate your passenger" under
+  each passenger of the driver's completed trip, with until when; while a
+  report on the booking is open, or once the other person has left, it says
+  why instead. Stars take the design system's rating colour (a new `rating`
+  token) and show the number next to them. The rate
+  screen takes 1 to 5 stars and an optional comment, checked as it is typed
+  (500 characters, no phone numbers, emails or links), and says the review
+  appears once the other person has reviewed too or after 14 days, or that
+  both show now. The booking and the trip then show the review sent and,
+  once it shows, the other's review. A browser journey: both review and
+  each sees the other's.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
