@@ -15,6 +15,7 @@ import {
 } from "@shareride/domain";
 import { and, asc, desc, eq, gt } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
+import { recordEvents } from "../notifications/outbox.ts";
 import { closedTrips } from "./blocks.ts";
 
 const { bookings, conversations, messages, reports, trips, users } = schema;
@@ -218,6 +219,8 @@ export function createReportService(dependencies: {
           })
           .returning({ id: reports.id });
         if (row === undefined) throw new Error("The report was not stored.");
+        // The operator hears of it at once, by push, and by SMS for safety in the day (R9.9).
+        await recordEvents(tx, [{ type: "ReportFiled", reportId: row.id }], now);
         return ok(row.id);
       });
       if (!filed.ok) return filed;

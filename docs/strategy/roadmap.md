@@ -175,7 +175,7 @@ accepted 2026-11-16; built alongside milestones 7 and 8)
 - [x] Emergency 112, "Before you go" and sharing trip details
 - [x] Block and unblock
 - [x] Reports and My reports
-- [ ] The operator's alert for new reports
+- [x] The operator's alert for new reports
 - [ ] Moderation actions, suspension and appeals
 - [ ] Console: the reports queue, the report page and appeals
 - [ ] Console: users, trips and bookings

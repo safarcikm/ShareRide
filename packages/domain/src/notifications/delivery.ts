@@ -29,6 +29,7 @@ export const outboxEventTypes = [
   "RefundIssued",
   "MessageSent",
   "DataExportReady",
+  "ReportFiled",
 ] as const;
 export type OutboxEventType = (typeof outboxEventTypes)[number];
 

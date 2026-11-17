@@ -1,10 +1,13 @@
 import { schema, type Database } from "@shareride/db";
 import {
+  canUseConsole,
   channelsFor,
   defaultNotificationSettings,
   eventAttempts,
   isAccountNotice,
+  isOperatorNotice,
   notificationsFor,
+  operatorRole,
   payReminderAt,
   reminderStillTimely,
   reminderTimes,
@@ -38,10 +41,12 @@ import { quickOf } from "../chat/service.ts";
 import { emailContent } from "./email-content.ts";
 import { preferencesOf } from "./preferences.ts";
 import {
+  isOperatorFacts,
   notificationText,
   smsText,
   type AccountNoticeFacts,
   type NotificationFacts,
+  type OperatorNoticeFacts,
   type TripReminderFacts,
 } from "./texts.ts";
 
@@ -60,6 +65,7 @@ const {
   outboxEvents,
   pushTickets,
   pushTokens,
+  reports,
   scheduledNotifications,
   sessions,
   tripChanges,
@@ -238,8 +244,10 @@ const isDriverReminder = (kind: string): kind is keyof typeof driverReminders =>
   kind in driverReminders;
 
 /** Which reminder a notification is, and the moment its words count to; null for the rest. */
-function reminderOf(facts: NotificationFacts | TripReminderFacts | AccountNoticeFacts) {
-  if (isAccountNotice(facts.kind)) return null;
+function reminderOf(
+  facts: NotificationFacts | TripReminderFacts | AccountNoticeFacts | OperatorNoticeFacts,
+) {
+  if (isAccountNotice(facts.kind) || isOperatorFacts(facts)) return null;
   if ("passengers" in facts) {
     return { which: driverReminders[facts.kind], startsAt: facts.departsAt };
   }
@@ -353,11 +361,45 @@ async function accountFactsOf(
   } as const;
 }
 
+/**
+ * A new report, to an operator (spec 9, R9.9): only whether it is about
+ * safety. `current` is false once the report is closed, or the operator no
+ * longer holds the role.
+ */
+async function operatorFactsOf(q: Queryable, notification: typeof notifications.$inferSelect) {
+  const kind = notification.kind as NotificationKind;
+  if (!isOperatorNotice(kind) || notification.reportId === null) return undefined;
+  const [row] = await q
+    .select({
+      locale: recipients.locale,
+      phone: recipients.phoneE164,
+      phoneVerifiedAt: recipients.phoneVerifiedAt,
+      roles: recipients.roles,
+      status: recipients.status,
+      reportStatus: reports.status,
+    })
+    .from(recipients)
+    .leftJoin(reports, eq(reports.id, notification.reportId))
+    .where(eq(recipients.id, notification.recipientId));
+  if (row === undefined) return undefined;
+  const facts: OperatorNoticeFacts = { kind };
+  return {
+    facts,
+    current: row.reportStatus === "open" && canUseConsole(row),
+    locale: row.locale === "is" ? "is" : "en",
+    recipientId: notification.recipientId,
+    email: null,
+    phone: row.phoneVerifiedAt === null ? null : row.phone,
+    booking: null,
+  } as const;
+}
+
 /** What a notification's text is made from, and where it goes, as of now. */
 async function factsOf(q: Queryable, notificationId: string, now: Date) {
   const [found] = await q.select().from(notifications).where(eq(notifications.id, notificationId));
   if (found === undefined) return undefined;
   if (isAccountNotice(found.kind as NotificationKind)) return accountFactsOf(q, found, now);
+  if (isOperatorNotice(found.kind as NotificationKind)) return operatorFactsOf(q, found);
   if (found.bookingId === null) return tripFactsOf(q, found);
   const [row] = await q
     .select({
@@ -627,6 +669,7 @@ export function createNotificationWorker(dependencies: {
       readonly tripId?: string;
       readonly messageId?: string | null;
       readonly tripChangeId?: string | null;
+      readonly reportId?: string;
     },
     key: string,
     now: Date,
@@ -641,6 +684,7 @@ export function createNotificationWorker(dependencies: {
         tripId: notification.tripId ?? null,
         messageId: notification.messageId ?? null,
         tripChangeId: notification.tripChangeId ?? null,
+        reportId: notification.reportId ?? null,
         uniqueKey: `${key}:${kind}:${recipientId}`,
         createdAt: now,
         updatedAt: now,
@@ -881,6 +925,27 @@ export function createNotificationWorker(dependencies: {
       const [user] = await tx.select({ id: users.id }).from(users).where(eq(users.id, userId));
       if (user === undefined) return;
       await add(tx, { kind: "data_export_ready", to: null, recipientId: userId }, key, now);
+      return;
+    }
+    if (type === "ReportFiled") {
+      // Every operator, at once (R9.9); a report closed or deleted since tells nobody.
+      const reportId = idIn(event.payload, "reportId");
+      if (reportId === undefined) return;
+      const [report] = await tx
+        .select({ urgent: reports.urgent })
+        .from(reports)
+        .where(and(eq(reports.id, reportId), eq(reports.status, "open")));
+      if (report === undefined) return;
+      const operators = await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(
+          and(eq(users.status, "active"), sql`${users.roles} @> array[${operatorRole}]::text[]`),
+        );
+      const kind = report.urgent ? "report_filed_urgent" : "report_filed";
+      for (const operator of operators) {
+        await add(tx, { kind, to: null, recipientId: operator.id, reportId }, key, now);
+      }
       return;
     }
     if (type === "MessageSent") {
@@ -1217,7 +1282,10 @@ export function createNotificationWorker(dependencies: {
       }
       case "sms": {
         if (sms === undefined) return { skipped: "sms_off" };
-        if (found.booking === null) throw new Error("An SMS is about a booking.");
+        // Booking news, and an operator's alert of a safety report.
+        if (!("phone" in found) || isAccountNotice(found.facts.kind)) {
+          throw new Error("An SMS is about a booking or a safety report.");
+        }
         if (found.phone === null) return { skipped: "no_phone" };
         try {
           await sms.send({ to: found.phone, text: smsText(found.facts, found.locale) });

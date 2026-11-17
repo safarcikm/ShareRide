@@ -5,8 +5,8 @@ import type { Transaction } from "../bookings/seats.ts";
 const { outboxEvents } = schema;
 
 /**
- * What happened, as booking, payment, chat and privacy code records it for
- * the worker. IDs only: the worker reads the rest when it sends (R7.9).
+ * What happened, as booking, payment, chat, privacy and safety code records
+ * it for the worker. IDs only: the worker reads the rest when it sends (R7.9).
  */
 export type OutboxEvent =
   | {
@@ -19,6 +19,7 @@ export type OutboxEvent =
         | "TripCancelled"
         | "MessageSent"
         | "DataExportReady"
+        | "ReportFiled"
       >;
       readonly bookingId: string;
     }
@@ -55,6 +56,11 @@ export type OutboxEvent =
       readonly type: "DataExportReady";
       readonly userId: string;
       readonly exportId: string;
+    }
+  | {
+      /** A new report: every operator is told, never who or what (spec 9, R9.9). */
+      readonly type: "ReportFiled";
+      readonly reportId: string;
     };
 
 /**

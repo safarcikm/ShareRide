@@ -508,6 +508,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   and the export. Blocking and reporting take a lighter row lock, so two
   people reporting or blocking each other at once cannot deadlock.
   `POST /v1/reports`, `GET /v1/me/reports`.
+- The operator's alert for a new report (milestone 9, PR 5b, spec 9,
+  R9.9): every active operator gets `report_filed` by push, or
+  `report_filed_urgent` for a safety report, by push and also by SMS from
+  07:00 to 23:00 Reykjavik time, push only at night (the domain's
+  `alertChannels`; no daily SMS limit, unlike a passenger's). The alert
+  says only "New report" or "New safety report", never who or what, and
+  one not yet sent is dropped once its report is closed. A new outbox
+  event `ReportFiled`; notifications gain `report_id`, in migration
+  `0024_reports`.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its

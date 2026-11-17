@@ -1046,6 +1046,10 @@ export const is = {
   /** Spec 11, 3.2: never a link, which only the signed-in app gives. */
   "notify.dataExportReady": "Gögnin þín eru tilbúin til niðurhals",
   "notify.dataExportReadyBody": "Sæktu skrána í ShareRide fyrir {until}. Eftir það er henni eytt.",
+  "notify.reportFiled": "Ný tilkynning",
+  "notify.reportFiledBody": "Skoðaðu hana í stjórnborðinu innan sólarhrings.",
+  "notify.reportFiledUrgent": "Ný öryggistilkynning",
+  "notify.reportFiledUrgentBody": "Skoðaðu hana strax í stjórnborðinu.",
   "notify.when": "{date} kl. {time}",
   "notify.part": "{seats} sæti · {from} – {to} · {when}",
   "notify.searchAgain": "{from} – {to} · {when}. Leitaðu að annarri ferð.",
@@ -1111,6 +1115,7 @@ export const is = {
   "sms.departureMoved":
     "ShareRide: Ný brottför: {date} kl. {time}. Haltu bókuninni eða afbókaðu með fullri endurgreiðslu í appinu.",
   "sms.departureMovedUnpaid": "ShareRide: Ný brottför: {date} kl. {time}. Nánar í appinu.",
+  "sms.reportFiledUrgent": "ShareRide: ný öryggistilkynning. Skoðaðu hana strax í stjórnborðinu.",
   /** "Download my data": the readable page in the ZIP (spec 11, 3.2.3). */
   "export.title": "ShareRide gögnin þín",
   "export.intro":
@@ -1284,6 +1289,8 @@ export const is = {
   "export.value.kind.reminder_hour_driver": "Áminning klukkustund áður, sem bílstjóri",
   "export.value.kind.payout_sent": "Útborgun send",
   "export.value.kind.data_export_ready": "Gögnin þín tilbúin til niðurhals",
+  "export.value.kind.report_filed": "Ný tilkynning",
+  "export.value.kind.report_filed_urgent": "Ný öryggistilkynning",
   "export.value.kind.departure": "Brottfarartími",
   "export.value.kind.seats": "Sæti",
   "export.value.kind.priceLevel": "Verð",

@@ -8,8 +8,11 @@ import {
   type ReportBody,
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
-import { eq } from "drizzle-orm";
+import { operatorRole } from "@shareride/domain";
+import { asc, eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { createFakePushSender, type FakePushSender } from "../../platform/push.ts";
+import { createDevSmsSender, type DevSmsSender } from "../../platform/sms.ts";
 import { startTestApi, type TestApi } from "../../testing.ts";
 import {
   bookingHelpers,
@@ -19,6 +22,7 @@ import {
   type Member,
 } from "../bookings/testing.ts";
 import { cleanUpConversations } from "../chat/clean-up.ts";
+import { createNotificationWorker } from "../notifications/worker.ts";
 
 // The sample trips at the test clock (Friday 13 November 2026, noon): Jón
 // drives Hlemmur to Keflavík Airport on Saturday at 05:30. A report names
@@ -436,5 +440,185 @@ describe("a reported conversation is kept (spec 9, section 7)", () => {
     await send(gunna, bookingId);
     await report(gunna, { about: { kind: "trip", tripId: airport }, category: "other" });
     expect(await cleanUpConversations(api.connection.db, new Date("2028-11-13T12:00:00Z"))).toBe(1);
+  });
+});
+
+describe("the operator's alert of a new report (spec 9, R9.9)", () => {
+  let push: FakePushSender;
+  let sms: DevSmsSender;
+
+  beforeEach(async () => {
+    const { db } = api.connection;
+    await db.execute(sql`delete from outbox_events`);
+    await db.execute(sql`delete from notifications`);
+    await db.execute(sql`delete from push_tokens`);
+    // Only this test's operators: others from earlier tests lose the role.
+    await db.update(schema.users).set({ roles: [] });
+    push = createFakePushSender();
+    sms = createDevSmsSender({ print: () => undefined });
+  });
+
+  function runWorker() {
+    return createNotificationWorker({
+      db: api.connection.db,
+      clock: () => api.now(),
+      push,
+      sms,
+    }).runOnce();
+  }
+
+  /** An operator with the app on their phone, so push reaches them. */
+  async function operator(firstName = "Ósk") {
+    const member = await newMember(firstName);
+    const { db } = api.connection;
+    await db
+      .update(schema.users)
+      .set({ roles: [operatorRole] })
+      .where(eq(schema.users.id, member.userId));
+    const [session] = await db
+      .select({ id: schema.sessions.id })
+      .from(schema.sessions)
+      .where(eq(schema.sessions.userId, member.userId));
+    if (session === undefined) throw new Error("No session.");
+    await db.insert(schema.pushTokens).values({
+      sessionId: session.id,
+      userId: member.userId,
+      platform: "ios",
+      token: `ExponentPushToken[${member.userId}]`,
+    });
+    return member;
+  }
+
+  async function logOf(member: Member) {
+    return api.connection.db
+      .select({
+        kind: schema.notifications.kind,
+        channel: schema.notificationDeliveries.channel,
+        status: schema.notificationDeliveries.status,
+        reason: schema.notificationDeliveries.reason,
+      })
+      .from(schema.notifications)
+      .innerJoin(
+        schema.notificationDeliveries,
+        eq(schema.notificationDeliveries.notificationId, schema.notifications.id),
+      )
+      .where(eq(schema.notifications.recipientId, member.userId))
+      .orderBy(asc(schema.notificationDeliveries.channel));
+  }
+
+  async function phoneOf(member: Member) {
+    const [user] = await api.connection.db
+      .select({ phone: schema.users.phoneE164 })
+      .from(schema.users)
+      .where(eq(schema.users.id, member.userId));
+    return user?.phone;
+  }
+
+  it("alerts every operator at once, by push and SMS, for a safety report by day", async () => {
+    const jon = await driverOf(airport, "Jón");
+    const gunna = await newMember("Gunna");
+    const osk = await operator("Ósk");
+    const pall = await operator("Páll");
+    await report(gunna, {
+      about: { kind: "trip", tripId: airport },
+      category: "safety",
+      description: "He drove after drinking.",
+    });
+    await runWorker();
+    for (const member of [osk, pall]) {
+      expect(await logOf(member)).toEqual([
+        { kind: "report_filed_urgent", channel: "push", status: "sent", reason: null },
+        { kind: "report_filed_urgent", channel: "sms", status: "sent", reason: null },
+      ]);
+    }
+    expect(push.sent).toHaveLength(2);
+    expect(push.sent[0]).toMatchObject({
+      title: "New safety report",
+      body: "Look at it in the console now.",
+    });
+    expect(sms.outbox.map((message) => message.to).sort()).toEqual(
+      [await phoneOf(osk), await phoneOf(pall)].sort(),
+    );
+    expect(sms.outbox[0]?.text).toBe(
+      "ShareRide: a new safety report. Look at it in the console now.",
+    );
+    // Never who or what (3.1.5): the console has the rest.
+    expect(JSON.stringify([push.sent, sms.outbox])).not.toMatch(/Jón|Gunna|drinking|Keflav/);
+    // Nobody else hears of it.
+    expect(await logOf(jon)).toEqual([]);
+    expect(await logOf(gunna)).toEqual([]);
+  });
+
+  it("alerts by push only at night, from 23:00 to 07:00", async () => {
+    await driverOf(airport, "Jón");
+    const gunna = await newMember("Gunna");
+    const osk = await operator();
+    await later(11 * 3600, gunna);
+    await report(gunna, { about: { kind: "trip", tripId: airport }, category: "safety" });
+    await runWorker();
+    expect(await logOf(osk)).toEqual([
+      { kind: "report_filed_urgent", channel: "push", status: "sent", reason: null },
+      {
+        kind: "report_filed_urgent",
+        channel: "sms",
+        status: "skipped",
+        reason: "outside_sms_window",
+      },
+    ]);
+    expect(sms.outbox).toEqual([]);
+  });
+
+  it("alerts by push only for a report that is not about safety", async () => {
+    await driverOf(airport, "Jón");
+    const gunna = await newMember("Gunna");
+    const osk = await operator();
+    await report(gunna, { about: { kind: "trip", tripId: airport }, category: "scam" });
+    await runWorker();
+    expect(await logOf(osk)).toEqual([
+      { kind: "report_filed", channel: "push", status: "sent", reason: null },
+    ]);
+    expect(push.sent[0]).toMatchObject({
+      title: "New report",
+      body: "Look at it in the console within 24 hours.",
+    });
+  });
+
+  it("alerts nobody whose account is suspended, and nobody for a report closed first", async () => {
+    await driverOf(airport, "Jón");
+    const gunna = await newMember("Gunna");
+    const osk = await operator();
+    await api.connection.db
+      .update(schema.users)
+      .set({ status: "suspended" })
+      .where(eq(schema.users.id, osk.userId));
+    await report(gunna, { about: { kind: "trip", tripId: airport }, category: "safety" });
+    await runWorker();
+    expect(await logOf(osk)).toEqual([]);
+
+    const pall = await operator("Páll");
+    await report(gunna, { about: { kind: "trip", tripId: airport }, category: "other" });
+    await api.connection.db
+      .update(schema.reports)
+      .set({ status: "closed", outcome: "no_breach", closedAt: api.now() });
+    await runWorker();
+    expect(await logOf(pall)).toEqual([]);
+  });
+
+  it("drops an alert not yet sent once its report is closed", async () => {
+    await driverOf(airport, "Jón");
+    const gunna = await newMember("Gunna");
+    const osk = await operator();
+    await report(gunna, { about: { kind: "trip", tripId: airport }, category: "other" });
+    push.failure = new Error("The push service is down.");
+    await runWorker();
+    push.failure = null;
+    await api.connection.db
+      .update(schema.reports)
+      .set({ status: "closed", outcome: "no_breach", closedAt: api.now() });
+    await later(3600);
+    await runWorker();
+    expect(await logOf(osk)).toEqual([
+      { kind: "report_filed", channel: "push", status: "skipped", reason: "no_longer_applies" },
+    ]);
   });
 });

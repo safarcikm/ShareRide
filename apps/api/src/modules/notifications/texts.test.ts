@@ -348,4 +348,24 @@ describe("notification texts", () => {
       path: "/drive/trips/trip-1",
     });
   });
+
+  it("tell an operator only that a report came in, and whether about safety (spec 9, R9.9)", () => {
+    const settings = defaultNotificationSettings;
+    expect(notificationText({ kind: "report_filed" }, "en", settings)).toEqual({
+      title: "New report",
+      body: "Look at it in the console within 24 hours.",
+      path: "/",
+    });
+    expect(notificationText({ kind: "report_filed_urgent" }, "is", settings)).toEqual({
+      title: "Ný öryggistilkynning",
+      body: "Skoðaðu hana strax í stjórnborðinu.",
+      path: "/",
+    });
+    expect(smsText({ kind: "report_filed_urgent" }, "en")).toBe(
+      "ShareRide: a new safety report. Look at it in the console now.",
+    );
+    expect(smsText({ kind: "report_filed_urgent" }, "is")).toBe(
+      "ShareRide: ný öryggistilkynning. Skoðaðu hana strax í stjórnborðinu.",
+    );
+  });
 });

@@ -1036,6 +1036,10 @@ export const en = {
   "notify.dataExportReady": "Your data is ready to download",
   "notify.dataExportReadyBody":
     "Download the file in ShareRide by {until}. After that it is deleted.",
+  "notify.reportFiled": "New report",
+  "notify.reportFiledBody": "Look at it in the console within 24 hours.",
+  "notify.reportFiledUrgent": "New safety report",
+  "notify.reportFiledUrgentBody": "Look at it in the console now.",
   "notify.when": "{date} at {time}",
   "notify.part": "{seats, plural, one {# seat} other {# seats}} · {from} – {to} · {when}",
   "notify.searchAgain": "{from} – {to} · {when}. Search for another ride.",
@@ -1106,6 +1110,7 @@ export const en = {
     "ShareRide: your trip on {date} now leaves at {time}. Keep it or cancel with a full refund in the app.",
   "sms.departureMovedUnpaid":
     "ShareRide: your trip on {date} now leaves at {time}. Details in the app.",
+  "sms.reportFiledUrgent": "ShareRide: a new safety report. Look at it in the console now.",
   /** "Download my data": the readable page in the ZIP (spec 11, 3.2.3). */
   "export.title": "Your ShareRide data",
   "export.intro":
@@ -1279,6 +1284,8 @@ export const en = {
   "export.value.kind.reminder_hour_driver": "Reminder an hour before, as the driver",
   "export.value.kind.payout_sent": "Payout sent",
   "export.value.kind.data_export_ready": "Your data ready to download",
+  "export.value.kind.report_filed": "New report",
+  "export.value.kind.report_filed_urgent": "New safety report",
   "export.value.kind.departure": "Departure time",
   "export.value.kind.seats": "Seats",
   "export.value.kind.priceLevel": "Price",

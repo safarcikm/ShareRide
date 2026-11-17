@@ -322,7 +322,8 @@ Built in two parts: 5a the reports themselves, 5b the operator's alert.
       booking page, a request and each passenger on the driver's trip
       page), and My reports in Settings; no name in any address; a person
       report from the chat raises Q22
-- [ ] 5b: `report_filed` to operators by push, and SMS from 07:00 to 23:00
+- [x] 5b: `report_filed` to operators by push, and SMS from 07:00 to 23:00
+      for a safety report (`report_filed_urgent`)
 - Verify: integration tests (each subject and refusal, the daily limit,
   the alert's channels by time, never the reporter's name to anyone); a
   browser journey reports a trip and sees it in My reports
