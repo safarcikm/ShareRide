@@ -115,6 +115,36 @@ describe("the audit log page's API (spec 9, 3.8)", () => {
     expect(new Set(ids).size).toBe(53);
   });
 
+  it("pages back past entries saved in one transaction, which share their time", async () => {
+    const subjectId = randomUUID();
+    // The database stamps both with the same microsecond, finer than a JavaScript date.
+    await api.connection.db.transaction(async (tx) => {
+      for (const action of ["test_record.paired_a", "test_record.paired_b"]) {
+        await recordAudit(tx, {
+          operator,
+          action,
+          subjectType: "test_record",
+          subjectId,
+          request: null,
+        });
+      }
+    });
+    await record(
+      subjectId,
+      Array.from({ length: 49 }, () => "test_record.later"),
+    );
+
+    const first = await auditLog({ subjectId });
+    expect(first.body.entries).toHaveLength(50);
+    const paired = (page: Page) =>
+      page.entries.filter((entry) => entry.action.startsWith("test_record.paired")).length;
+    expect(paired(first.body)).toBe(1);
+    const second = await auditLog({ subjectId, before: first.body.entries.at(-1)?.id ?? "" });
+    expect(second.body.entries).toHaveLength(1);
+    expect(paired(second.body)).toBe(1);
+    expect(second.body.hasMore).toBe(false);
+  });
+
   it("filters by the start of the action, the operator and the days", async () => {
     const subjectId = randomUUID();
     const other = await api.signInOperator();

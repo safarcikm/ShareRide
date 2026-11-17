@@ -82,14 +82,15 @@ export function registerAdminRoutes(
       until === undefined ? undefined : lt(log.createdAt, until),
     ];
     if (query.before !== undefined) {
-      const [before] = await db
-        .select({ at: log.createdAt, id: log.id })
-        .from(log)
-        .where(eq(log.id, query.before));
+      const [before] = await db.select({ id: log.id }).from(log).where(eq(log.id, query.before));
       if (before === undefined) {
         return c.json(errorBody("not_found", "No such audit log entry."), 404);
       }
-      conditions.push(sql`(${log.createdAt}, ${log.id}) < (${before.at}, ${before.id})`);
+      // Compared in the database: its times have microseconds, a JavaScript
+      // date only milliseconds, and entries of one transaction share a time.
+      conditions.push(
+        sql`(${log.createdAt}, ${log.id}) < (select created_at, id from audit_log where id = ${before.id})`,
+      );
     }
     const rows = await db
       .select({

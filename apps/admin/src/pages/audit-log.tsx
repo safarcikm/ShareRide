@@ -74,6 +74,9 @@ export function AuditLogPage() {
   const lastDay = useRef<HTMLInputElement>(null);
   const entriesHeading = useRef<HTMLHeadingElement>(null);
   const focusEntries = useRef(false);
+  const list = useRef<HTMLOListElement>(null);
+  // The first older entry takes the focus once shown, as its button may be gone.
+  const focusEntryAt = useRef<number | null>(null);
   // Only the newest request may show its answer.
   const request = useRef(0);
   const ids = {
@@ -116,6 +119,15 @@ export function AuditLogPage() {
     }
   }, [log.state]);
 
+  const shownCount = log.state === "ready" ? log.entries.length : 0;
+  useEffect(() => {
+    const index = focusEntryAt.current;
+    if (index === null || shownCount <= index) return;
+    focusEntryAt.current = null;
+    const entry = list.current?.children[index];
+    if (entry instanceof HTMLElement) entry.focus();
+  }, [shownCount]);
+
   async function loadOlder() {
     if (log.state !== "ready") return;
     const oldest = log.entries.at(-1);
@@ -124,6 +136,7 @@ export function AuditLogPage() {
     setLog({ ...log, older: "loading" });
     const result = await call(adminAuditLogRoute, { query: { ...filters, before: oldest.id } });
     if (mine !== request.current) return;
+    if (result.ok) focusEntryAt.current = log.entries.length;
     setLog(
       result.ok
         ? {
@@ -242,7 +255,7 @@ export function AuditLogPage() {
               type="button"
               className="button-quiet type-label"
               onClick={() => {
-                apply({});
+                apply({}, true);
               }}
             >
               {t("admin.auditLog.clear")}
@@ -281,7 +294,7 @@ export function AuditLogPage() {
               type="button"
               className="button-secondary type-label"
               onClick={() => {
-                apply({});
+                apply({}, true);
               }}
             >
               {t("admin.auditLog.clear")}
@@ -306,7 +319,7 @@ export function AuditLogPage() {
               type="button"
               className="button-secondary type-label"
               onClick={() => {
-                apply({});
+                apply({}, true);
               }}
             >
               {t("admin.auditLog.clear")}
@@ -315,7 +328,7 @@ export function AuditLogPage() {
         </div>
       ) : (
         <>
-          <ol className="cards" aria-labelledby={ids.entries}>
+          <ol ref={list} className="cards" aria-labelledby={ids.entries}>
             {log.entries.map((entry) => (
               <EntryCard
                 key={entry.id}
@@ -385,7 +398,7 @@ function EntryCard({ entry, showOperatorButton, onOnlyRecord, onOnlyOperator }: 
   const { subjectType, subjectId } = entry;
 
   return (
-    <li className="card entry">
+    <li className="card entry" tabIndex={-1}>
       <div className="card-text">
         <p className="type-body-strong">
           <code className="action-name">{entry.action}</code>

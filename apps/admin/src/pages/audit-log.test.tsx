@@ -1,6 +1,8 @@
 import {
   adminAuditLogRoute,
   adminMeRoute,
+  adminSignInOptionsRoute,
+  adminSignInRoute,
   type AdminMe,
   type AuditEntry,
 } from "@shareride/contracts";
@@ -123,8 +125,40 @@ describe("the audit log page", () => {
     fireEvent.click(screen.getByRole("button", { name: "Clear the filters" }));
     await cards();
     expect(queries().at(-1)).toEqual({});
+    expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Entries" }));
     expect(window.location.search).toBe("");
     expect(screen.getByLabelText<HTMLInputElement>("Record ID").value).toBe("");
+  });
+
+  it("keeps a shared link's filters through signing in", async () => {
+    window.history.replaceState(null, "", "/admin/audit-log?action=operator.");
+    const api = createFakeApi();
+    api.on(adminMeRoute, { status: 401, error: { code: "operator_unauthenticated" } });
+    api.on(adminSignInOptionsRoute, { status: 200, data: { options: { challenge: "sign-in" } } });
+    api.on(adminSignInRoute, { status: 200, data: anna });
+    api.on(adminAuditLogRoute, { status: 200, data: { entries: [entry("e1")], hasMore: false } });
+    render(<ConsoleApp client={api.client} passkeys={createFakePasskeys().passkeys} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Sign in with a passkey" }));
+    await cards();
+    expect(window.location.pathname).toBe("/admin/audit-log");
+    expect(window.location.search).toBe("?action=operator.");
+    expect(api.called(adminAuditLogRoute).map((call) => call.input["query"])).toEqual([
+      { action: "operator." },
+    ]);
+  });
+
+  it("starts afresh from the menu", async () => {
+    const { queries } = start("/admin/audit-log?action=operator.", () => ({
+      entries: [entry("e1")],
+      hasMore: false,
+    }));
+    await cards();
+    const menu = screen.getByRole("navigation", { name: "Console menu" });
+    fireEvent.click(within(menu).getByRole("link", { name: "Audit log" }));
+    await cards();
+    expect(queries().at(-1)).toEqual({});
+    expect(window.location.search).toBe("");
+    expect(screen.getByLabelText<HTMLInputElement>("Action starts with").value).toBe("");
   });
 
   it("asks for a last day on or after the first, in the field", async () => {
@@ -148,7 +182,7 @@ describe("the audit log page", () => {
     const [card] = await cards();
     fireEvent.click(
       within(card as HTMLElement).getByRole("button", {
-        name: "Show only entries about meeting_point point-7",
+        name: "Only this record: meeting_point point-7",
       }),
     );
     await cards();
@@ -158,7 +192,7 @@ describe("the audit log page", () => {
 
     const [again] = await cards();
     fireEvent.click(
-      within(again as HTMLElement).getByRole("button", { name: "Show only the actions of Anna" }),
+      within(again as HTMLElement).getByRole("button", { name: "Only this operator: Anna" }),
     );
     expect(await screen.findByText("Showing one operator's actions only.")).toBeTruthy();
     expect(queries().at(-1)).toMatchObject({ operatorUserId: anna.userId });
@@ -183,6 +217,8 @@ describe("the audit log page", () => {
     });
     expect(queries().at(-1)).toEqual({ action: "meeting_point.", before: "e2" });
     expect(screen.queryByRole("button", { name: "Show older entries" })).toBeNull();
+    // The first older entry takes the focus, as the button is gone.
+    expect(document.activeElement).toBe((await cards())[2]);
   });
 
   it("says when older entries could not be loaded, and keeps the ones shown", async () => {
