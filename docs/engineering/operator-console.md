@@ -155,6 +155,40 @@ all day. The date
 the operator confirmed the point (R2.3) is its `lastCheckedOn`, the "Last
 checked" date the app shows.
 
+## Disputes
+
+`apps/api/src/modules/trip-day/admin-routes.ts` holds the console's
+dispute routes (`registerDisputeAdminRoutes`), with the work in
+`admin.ts` (spec 8, 3.5):
+
+- `GET /admin/v1/disputes` lists the contested reports waiting for a
+  decision, oldest first; `?state=decided` the last 50 an operator
+  decided, newest first. A report nobody answered settles by itself
+  after its 24 hours, so it never waits for the operator.
+- `GET /admin/v1/disputes/{id}` gives one report with what the system
+  knows: both notes, the answer, every stop's planned time and the
+  driver's "I'm here" there, the passenger's "I'm here", and the
+  outcomes the operator can choose (`decidableOutcomes`), none once it is
+  decided or if nobody contested it.
+- `POST /admin/v1/disputes/{id}/decision` with `{ outcome, note }` calls
+  `decideDispute` (`decide.ts`), which applies the outcome, tells both
+  sides and writes `dispute.decided`, all in one transaction.
+- `GET /admin/v1/disputes/{id}/conversation` reads the booking's
+  conversation through `readConversationAsOperator` in
+  `apps/api/src/modules/chat/operator.ts`. It takes only the record that
+  covers the reading (`{ type: "dispute", id }`), finds the booking from
+  it and checks that it covers a reading: a dispute only once it was
+  contested (`operatorMayRead`), else `not_contested`. In the same
+  transaction it writes `conversation.opened` with that record as the
+  subject and only the booking's and conversation's IDs, never what was
+  said (R9.6); a refused reading writes nothing. Spec 9's reports add
+  their own type and rule there. Messages come oldest first, from the
+  driver, the passenger or the system, with system lines worded as for
+  the driver (`by: "me"` is the driver); a message whose sender was
+  erased comes as `erased`, without its text. The trip's changes (spec 8,
+  3.5) are those system lines, so the operator sees them in the
+  conversation.
+
 ## A console page
 
 The console is `apps/admin`: React for the web, built with Vite, served by

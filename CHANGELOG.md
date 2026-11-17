@@ -536,6 +536,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   tests' trip move also moves its "I'm here" and reports and lets a report
   nobody answered stand, and two journeys cover a no-show nobody contests
   and a driver absence that stands with a full refund.
+- The console's dispute routes (milestone 7, PR 5c, spec 8, 3.5): the
+  contested reports waiting for the operator (`GET /admin/v1/disputes`) and
+  the last ones decided, one report with its notes, answer, planned times
+  and "I'm here" times, and the decision, which tells both sides and is
+  recorded in the audit log. The booking's conversation opens only for a
+  contested report, through one function that checks this and that spec
+  9's reports reuse, and each opening goes in the audit log as
+  `conversation.opened`, without the text (R9.6). Martin chose this console page over the planned server
+  command (decision 1, changed on 2026-11-17); the page follows in 5d.
 - Ratings and reviews in the API (milestone 7, PR 6a, spec 8, 3.7): once a
   booking completes, the passenger rates the driver and the driver rates
   the passenger, 1 to 5 stars and an optional comment of up to 500
