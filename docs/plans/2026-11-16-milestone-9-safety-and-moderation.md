@@ -339,7 +339,7 @@ Built in two parts: 5a the reports themselves, 5b the operator's alert.
 In three parts, each its own pull request:
 
 - [x] 6a: `moderation_actions` and `suspended_until` (migration
-      `0027_moderation`); `suspend`, `warn` and `reinstate` with their
+      `0035_moderation`); `suspend`, `warn` and `reinstate` with their
       audit entries and notices; ShareRide's cancellation of a trip and of
       a booking (`trips.cancelled_by`); refusals while suspended, and a
       suspended person stays signed in; ends in the minute job
