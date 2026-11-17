@@ -1,5 +1,6 @@
 // Problem reports about a meeting point (spec 2, 3.5; rule R2.8): someone
 // signed in says what is wrong, and the operator's queue gets it.
+import { addIcelandMonths } from "../privacy/calendar.ts";
 import { err, ok, type Result } from "../result.ts";
 import { characterCount } from "../safety/settings.ts";
 import { isVisible, type MeetingPointStatus } from "./catalogue.ts";
@@ -22,6 +23,8 @@ export const meetingPointIssueLimits = {
   noteMax: 300,
   /** Months a resolved report is kept before it is deleted (spec 2, section 7). */
   keptMonths: 12,
+  /** The operator's note on what was done, in characters. */
+  resolutionMax: 1000,
 } as const;
 
 /** The operator's settings for problem reports (feature H4 reads them later). */
@@ -72,4 +75,21 @@ export function meetingPointIssueRetryAfter(
   if (today.length < settings.perDay) return null;
   const oldest = today[today.length - settings.perDay] ?? now.getTime();
   return Math.ceil((oldest + dayMs - now.getTime()) / 1000);
+}
+
+export type IssueResolutionProblem = { readonly code: "required" } | { readonly code: "too_long" };
+
+/** Resolving says what was done, so the queue keeps a record of it. */
+export function checkIssueResolution(note: string): Result<string, IssueResolutionProblem> {
+  const tidied = note.normalize("NFC").trim();
+  if (tidied === "") return err({ code: "required" });
+  if (characterCount(tidied) > meetingPointIssueLimits.resolutionMax) {
+    return err({ code: "too_long" });
+  }
+  return ok(tidied);
+}
+
+/** Reports resolved at or before this moment are deleted (spec 2, section 7). */
+export function meetingPointIssuesResolvedBy(now: Date): Date {
+  return addIcelandMonths(now, -meetingPointIssueLimits.keptMonths);
 }

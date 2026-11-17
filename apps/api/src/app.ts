@@ -64,6 +64,7 @@ import {
   createMeetingPointPhotoService,
   createMeetingPointService,
   registerMeetingPointPhotoAdminRoutes,
+  registerMeetingPointIssueAdminRoutes,
   registerMeetingPointRoutes,
   registerMeetingPointsAdminRoutes,
 } from "./modules/meeting-points/index.ts";
@@ -299,20 +300,26 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     registerDrivingRoutes(app, driving, requireAuth);
     registerLegalRoutes(app, legal);
     const photos = createMeetingPointPhotoService({ ...features, logger });
+    const issues = createMeetingPointIssueService({
+      ...features,
+      settings: defaultMeetingPointIssueSettings,
+    });
     registerMeetingPointRoutes(
       app,
       createMeetingPointService(features),
       photos,
-      createMeetingPointIssueService({ ...features, settings: defaultMeetingPointIssueSettings }),
+      issues,
       requireAuth,
     );
     const meetingPointsAdmin = {
       ...features,
       meetingPoints: createMeetingPointAdminService(features),
       photos,
+      issues,
       requireOperator,
     };
     registerMeetingPointsAdminRoutes(app, meetingPointsAdmin);
+    registerMeetingPointIssueAdminRoutes(app, meetingPointsAdmin);
     registerMeetingPointPhotoAdminRoutes(app, meetingPointsAdmin);
     const { photoFiles } = features;
     if (photoFiles !== undefined) {

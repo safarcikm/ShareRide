@@ -331,7 +331,7 @@ PR 8 is in two parts.
 
 - [x] 10a: `meeting_point_issues`; "Something wrong here?" in the app;
       the person's open reports in Download my data
-- [ ] 10b: the queue, resolving and the home count; open reports in the
+- [x] 10b: the queue, resolving and the home count; open reports in the
       list of points (a filter and a tag), as the mark that a point needs
       review; the 12-month deletion in the clean-up job; the browser
       journey for both parts
