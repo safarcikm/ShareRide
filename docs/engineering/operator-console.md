@@ -322,11 +322,15 @@ reliability routes (`registerReliabilityAdminRoutes`), with the work in
 
 The page is `apps/admin/src/pages/reliability/` at `/admin/reliability`:
 the cancellations first, each with who cancelled, in which role, the
-reason, their note, the times and the operator's note. "Overrule" or "Undo
-the overrule" opens a note on that card, needed before anything is sent,
-and the result takes the focus. A change someone else made meanwhile, or a
-cancellation that left the list, reloads the list and says so. The people
-below the watch level follow, with their figure and counts by role.
+reason, their note, the times with the year (the list goes back 12
+months) and the operator's note. "Overrule" or "Undo the overrule" opens a
+note on that card, needed before anything is sent; while it is sent no
+other card's note opens, and the result takes the focus. A problem with the
+note shows before the focus moves to it, so both are read together. A
+change someone else made meanwhile, or a cancellation that left the list,
+reloads the list and says so. Undoing replaces the note with the one given
+for the undo; the audit log records who made each change and when. The
+people below the watch level follow, with their figure and counts by role.
 
 ## A console page
 

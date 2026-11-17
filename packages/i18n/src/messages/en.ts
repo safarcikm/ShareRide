@@ -1958,7 +1958,7 @@ export const en = {
     "Cancellations for the weather or a closed road don't count on reliability. If a reason is clearly wrong, overrule it and the cancellation counts. Nothing here suspends anyone: you decide on a warning or a suspension yourself.",
   "admin.reliability.excused": "Cancelled for the weather or a closed road",
   "admin.reliability.excusedHint":
-    "A reason you overrule counts on the person's reliability, and you can undo it. Your notes are for operators only.",
+    "A cancellation whose reason you overrule counts on the person's reliability, and you can undo that. Your notes are for operators only.",
   "admin.reliability.excusedCount":
     "{count, plural, one {# cancellation in the last 12 months, newest first} other {# cancellations in the last 12 months, newest first}}",
   "admin.reliability.noneExcused":
@@ -1976,9 +1976,9 @@ export const en = {
   "admin.reliability.overruledOn": "Overruled {when}: it counts",
   "admin.reliability.operatorNote": "Operator's note: {note}",
   "admin.reliability.overrule": "Overrule",
-  "admin.reliability.overruleOf": "Overrule: {name}, {route}",
+  "admin.reliability.overruleOf": "Overrule: {name}, {route}, cancelled {when}",
   "admin.reliability.undo": "Undo the overrule",
-  "admin.reliability.undoOf": "Undo the overrule: {name}, {route}",
+  "admin.reliability.undoOf": "Undo the overrule: {name}, {route}, cancelled {when}",
   "admin.reliability.whyCounts": "Why it counts",
   "admin.reliability.whyNot": "Why it no longer counts",
   "admin.reliability.noteHint":
@@ -1986,19 +1986,18 @@ export const en = {
   "admin.reliability.noteMissing": "Say why in a note.",
   "admin.reliability.noteTooLong": "Keep the note to 500 characters or fewer.",
   "admin.reliability.makeCount": "Make it count",
-  "admin.reliability.stopCounting": "Stop it counting",
+  "admin.reliability.stopCounting": "Don't count it",
   "admin.reliability.goBack": "Go back",
   "admin.reliability.countsNow": "{name}: the cancellation now counts on their reliability.",
   "admin.reliability.notCountingNow":
     "{name}: the cancellation no longer counts on their reliability.",
-  "admin.reliability.changedMeanwhile":
-    "Another operator changed it meanwhile. The list shows it as it is now.",
-  "admin.reliability.gone":
-    "This cancellation can no longer be changed. The list shows it as it is now.",
+  "admin.reliability.changedMeanwhile": "Another operator changed it meanwhile.",
+  "admin.reliability.gone": "This cancellation can no longer be changed.",
+  "admin.reliability.listNow": "The list shows it as it is now.",
   "admin.reliability.saveFailed": "It could not be saved. Try again.",
   "admin.reliability.watch": "Below the watch level",
   "admin.reliability.watchHint":
-    "Whose figure is below {percent}% over the last 12 months, lowest first. Look at what happened and decide on a warning or a suspension yourself: nothing here suspends anyone.",
+    "People whose figure is below {percent}% over the last 12 months, lowest first. Look at what happened and decide on a warning or a suspension yourself: nothing here suspends anyone.",
   "admin.reliability.noneWatched": "Nobody is below {percent}%.",
   "admin.reliability.watchFailed": "The people below the watch level could not be loaded.",
   "admin.reliability.loadWatchAgain": "Load the people again",
