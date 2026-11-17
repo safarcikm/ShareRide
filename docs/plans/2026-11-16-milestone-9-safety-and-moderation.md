@@ -374,7 +374,7 @@ In four parts, each its own pull request:
       opens), and the suspended account screen in place of Find and
       Offer; `suspension` in `GET /v1/me`; a browser journey with a
       suspension made by the test API (`POST /e2e/suspend`)
-- [x] 6d: the `hidden_at` columns (migration `0039_hidden_content`);
+- [x] 6d: the `hidden_at` columns (migration `0040_hidden_content`);
       `hideContent` for a message, a trip's note and About you
       (reversing it on appeal shows the content again), and `cancelTrip`
       with the driver's notice; "Removed by ShareRide" in the chat.
