@@ -248,6 +248,12 @@ completed).
 - Requests from a suspended person to search, book, request, post, change
   a trip, send a message or review get 403 `account_suspended`. The
   minute job ends suspensions whose end has passed and tells the person.
+- Found while building (PR 6a, safety first, easy to undo): a trip under
+  way that a suspended person drives carries on but takes nobody new. It
+  leaves search, booking it is refused as `trip_not_bookable`, and its
+  driver can decline a request but not accept one. A suspended person
+  stays signed in, as spec 9, 3.6.2 needs; security.md said before that
+  their sessions end.
 - `GET /v1/me/notices` and `POST /v1/me/notices/{id}/appeal` (once, within
   14 days).
 - **Suspended account screen:** the reason, until when, the notice with
@@ -331,10 +337,18 @@ Built in two parts: 5a the reports themselves, 5b the operator's alert.
 
 ### PR 6: `feat(moderation)`: actions, suspension and appeals
 
-- [ ] `moderation_actions`, `operator_notes`, `suspended_until` and the
-      `hidden_at` columns; the action functions with their audit entries
-      and statements; refusals while suspended; ends in the minute job
-- [ ] Notices with Appeal, and the suspended account screen
+In three parts, each its own pull request:
+
+- [x] 6a: `moderation_actions` and `suspended_until` (migration
+      `0036_moderation`); `suspend`, `warn` and `reinstate` with their
+      audit entries and notices; ShareRide's cancellation of a trip and of
+      a booking (`trips.cancelled_by`); refusals while suspended, and a
+      suspended person stays signed in; ends in the minute job
+- [ ] 6b: `operator_notes` and the `hidden_at` columns; `hideContent`,
+      `cancelTripAsOperator`, `refundBooking`, `closeReport` (with
+      `report_closed` to the reporter) and `answerAppeal`;
+      `GET /v1/me/notices` and the appeal
+- [ ] 6c: Notices with Appeal, and the suspended account screen
 - Verify: integration tests (a suspension cancels upcoming trips and
   bookings with full refunds and tells the others without the reason; a
   suspended person can read but not act; an appeal once, within 14 days;

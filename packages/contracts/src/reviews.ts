@@ -1,7 +1,7 @@
 import { reviewMaxLength } from "@shareride/domain";
 import { z } from "zod";
 import { timestampSchema } from "./common.ts";
-import { errorResponseSchema } from "./errors.ts";
+import { accountSuspendedResponse, errorResponseSchema } from "./errors.ts";
 import { defineRoute } from "./route.ts";
 
 // Ratings and reviews (spec 8, 3.7): after a completed booking, the
@@ -68,6 +68,7 @@ export const reviewBookingRoute = defineRoute({
       ...errors,
     },
     401: { description: "unauthenticated", ...errors },
+    403: accountSuspendedResponse,
     404: { description: "not_found: no such booking of yours", ...errors },
     409: {
       description:

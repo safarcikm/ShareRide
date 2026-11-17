@@ -18,7 +18,7 @@ import { messages } from "./chat.ts";
 import { privacyRequests } from "./privacy.ts";
 import { at, id, oneOf, timestamps } from "./columns.ts";
 import { meetingPoints } from "./meeting-points.ts";
-import { reports } from "./safety.ts";
+import { moderationActions, reports } from "./safety.ts";
 import { tripChanges, trips } from "./trips.ts";
 import { users } from "./users.ts";
 
@@ -74,6 +74,8 @@ export const notifications = pgTable(
     tripChangeId: uuid().references(() => tripChanges.id, { onDelete: "cascade" }),
     /** For an operator's alert: the new report, never shown in it (spec 9, R9.9). */
     reportId: uuid().references(() => reports.id, { onDelete: "cascade" }),
+    /** For a notice: the operator's action it tells of (spec 9, R9.5). */
+    moderationActionId: uuid().references(() => moderationActions.id, { onDelete: "cascade" }),
     /** For an answer to "Ask about my data": the request, whose answer the email gives (spec 11, 3.6). */
     privacyRequestId: uuid().references(() => privacyRequests.id, { onDelete: "cascade" }),
     /**
@@ -93,6 +95,7 @@ export const notifications = pgTable(
     index("notifications_message_index").on(table.messageId),
     index("notifications_trip_change_index").on(table.tripChangeId),
     index("notifications_report_index").on(table.reportId),
+    index("notifications_moderation_action_index").on(table.moderationActionId),
     index("notifications_privacy_request_index").on(table.privacyRequestId),
     // The clean-up finds old ones.
     index("notifications_created_index").on(table.createdAt),

@@ -519,6 +519,33 @@ releases follow [Semantic Versioning](https://semver.org/).
   sent is dropped once its report is closed or the operator loses the
   role. A new outbox event `ReportFiled`; notifications gain `report_id`,
   in migration `0035_reports`.
+- Suspension, warnings and reinstating (milestone 9, PR 6a, spec 9, 3.4.3
+  and 3.6; R9.5, R9.7, R9.10): the operator's `suspend`, `warn` and
+  `reinstate` in `apps/api/src/modules/moderation/`, for the console to
+  call. A suspension has a rule, a reason written for the person and an
+  end, or none; it cancels at once the person's upcoming trips and every
+  booking or request they have not boarded, as ShareRide, with full
+  refunds of what was paid and nothing on anyone's reliability. The
+  others read only that ShareRide cancelled ("ShareRide cancelled the
+  trip", "Cancelled by ShareRide: Jón", and a line in the chat), never
+  why. A trip under way carries on, but takes nobody new: it leaves search,
+  booking it is refused (`trip_not_bookable`), and its driver cannot
+  accept a request, only decline it. While suspended, searching, booking,
+  requesting, publishing, changing a trip, accepting a request, sending
+  messages and reviewing answer 403 `account_suspended` with
+  `suspendedUntil`; the person stays signed in to read, download or delete
+  their data. Every minute the API ends the suspensions whose end has
+  passed. Each action writes one audit entry
+  (IDs and the names of the fields changed only) and sends the person
+  their notice: the push says what happened, the email adds the rule,
+  the reason and until when it can be appealed in the app (14 days).
+  Two suspensions at once lock their trips in the same order, so they
+  never deadlock. Migration `0036_moderation` adds `moderation_actions`,
+  `users.suspended_until`, `trips.cancelled_by` (earlier cancellations
+  are the driver's; empty from the version before, which only drivers
+  used) and `notifications.moderation_action_id`; "Download my data" has
+  Notices from ShareRide, the suspension's end, and who cancelled each
+  trip.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its
@@ -647,7 +674,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   person's first name, about, languages, badges, the month they joined,
   colour, rating and reliability figure, never their phone number, email, last name or
   user ID. A profile is reached by its own random reference: migration
-  `0036_profile_ids` adds `users.profile_id`. The rating is the average of
+  `0037_profile_ids` adds `users.profile_id`. The rating is the average of
   the reviews that show, to one decimal; `GET /v1/people/{profileId}/reviews`
   lists them newest first, 20 at a time, for one role or both, with the
   author's first name ("A former member" once erased) and the month. The
@@ -771,6 +798,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   bucket (`PHOTO_STORAGE=hetzner`, signed links that last at least an
   hour), a folder in development, or not at all. Migration
   `0034_meeting_point_photos` adds the `meeting_point_photos` table.
+- Meeting point photos in the console and the app (milestone 8, PR 8b):
+  a point's page has a Photos panel to add, describe in both languages,
+  order and remove up to five photos. The browser makes each photo at most
+  1 600 pixels and writes a new JPEG, and `stripPhotoMetadata` in the
+  domain keeps only the picture's own segments, so Safari's Exif segment
+  is gone before upload (ADR 0029). The app's meeting point details show
+  the photos above "Where to stand", described for screen readers, with a
+  note in place of a photo that does not load.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.
