@@ -384,6 +384,8 @@ What the spec implies and a person would meet first, each with its test:
 - **Milestone 7** adds check-ins, disputes and reviews: check-ins and
   disputes move to the former member, reviews about the person are erased
   and reviews they wrote move, and open disputes feed `mustSettle`.
+  Download my data has the disputes they raised or answered, with their
+  own note only (spec 8, section 7).
 - **Safety and moderation** adds reports, moderation actions, blocks and
   `users.suspended_until`: reports and actions are kept 3 years after
   closure and move, blocks are erased, and a suspended person must still
