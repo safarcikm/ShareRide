@@ -241,9 +241,11 @@ the rating.
   notification, the booking page and the driver's trip page while the
   window is open: stars, then an optional comment. It then says "Your
   review appears when the other person has reviewed too, or after 14 days."
-- `GET /users/{id}` (public profile) and `GET /users/{id}/reviews?role=`
-  (revealed reviews, newest first, paged). A deleted author shows "A
-  former member". `GET /users/{id}/reliability` returns the counts by role.
+- `GET /people/{profileId}` (public profile, with the rating and the
+  figure's counts by role) and `GET /people/{profileId}/reviews?role=`
+  (revealed reviews, newest first, paged). A profile is reached by its own
+  random reference, never the user ID (PR 7). A deleted author shows "A
+  former member".
 - **Reliability is worked out when read**, from the bookings and trips of
   the last 12 months and their `counts_on_reliability`. At the beta's size
   this is a small query per profile, so spec 8's `ReliabilityRecord` and
@@ -334,11 +336,21 @@ In two parts, as PR 5: the API (6a), then the screens and the journey (6b).
 
 ### PR 7: `feat(people)`: public profiles with rating, reviews and reliability
 
-- [ ] `GET /users/{id}`, its reviews and reliability; the profile screen;
-      the rating and figure on trip details, requests and passengers
-- [ ] My own profile and "See it as others do" show the same
+In three parts: 7a the API, 7b the screens and the journey, 7c the
+console pages.
+
+A profile is reached by its own random reference, `users.profile_id`, never
+the person's user ID, so that the ID other routes and records use is never
+handed to everyone signed in (spec 1, 3.5; the safety thread's suggestion).
+
+- [x] `GET /people/{profileId}` and its reviews, newest first a page at a
+      time; the rating; the reliability figure with its counts by role;
+      nobody leaving ShareRide, nor what they wrote (7a)
+- [ ] The profile screen; the rating and figure on trip details, requests
+      and passengers (7b)
+- [ ] My own profile and "See it as others do" show the same (7b)
 - [ ] In the console (decision 1, as changed): overrule a weather or
-      road-closure reason so it counts, and the people below 80%
+      road-closure reason so it counts, and the people below 80% (7c)
 - Verify: integration tests (never the phone number or email; hidden
   reviews never shown or counted); screen tests; a browser journey opens
   the driver's profile from trip details
