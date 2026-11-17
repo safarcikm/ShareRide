@@ -1,12 +1,16 @@
 import { personalData, schema, type Database } from "@shareride/db";
-import { blockedNumberUntil, type TripDaySettings } from "@shareride/domain";
+import {
+  blockedNumberUntil,
+  bookingStatuses,
+  holdsSeats,
+  type TripDaySettings,
+} from "@shareride/domain";
 import {
   and,
   asc,
   eq,
   getTableColumns,
   getTableName,
-  gt,
   inArray,
   is,
   lte,
@@ -23,6 +27,7 @@ import { lockDrivenTrips, openFor } from "./deletion.ts";
 const {
   blockedNumbers,
   bookings,
+  conversations,
   erasedAccounts,
   formerMemberId,
   messages,
@@ -37,7 +42,8 @@ const {
 // happens to each table: its rows about the person are deleted, moved to
 // the one shared former member with their free text emptied, or left as
 // they are. A few steps come first: what was the person's alone (drafts, a
-// trip nobody booked, cars no trip used, their reminders) goes.
+// trip nobody booked, cars no trip used, their reminders) goes, and their
+// free text kept where only a booking points at them is emptied.
 
 const tables = new Map(
   (Object.values(schema) as unknown[])
@@ -45,13 +51,47 @@ const tables = new Map(
     .map((table) => [getTableName(table), table]),
 );
 
-/** What an emptied column holds: nothing, or an empty text or list where it must hold one. */
-function emptyValue(column: PgColumn): unknown {
-  if (!column.notNull) return null;
-  if (column.columnType === "PgText") return "";
-  if (column.columnType === "PgArray") return [];
-  throw new Error(`No empty value for ${column.name}.`);
+function tableOf(name: string): PgTable {
+  const table = tables.get(name);
+  if (table === undefined) throw new Error(`The catalogue names ${name}, which does not exist.`);
+  return table;
 }
+
+/** The catalogue's tables that erasure changes, with a way to their columns. */
+function catalogued() {
+  return Object.entries(personalData).flatMap(([name, entry]) => {
+    const deletion = entry.onDeletion;
+    if (deletion === null || deletion.rows === "leave") return [];
+    const columns = getTableColumns(tableOf(name)) as Record<string, PgColumn>;
+    const column = (key: string) => {
+      const found = columns[key];
+      if (found === undefined) throw new Error(`Erasure needs ${name}.${key}.`);
+      return found;
+    };
+    return [{ name, entry, deletion, column }];
+  });
+}
+
+/** What emptied columns hold: nothing, or an empty text or list where they must hold one. */
+function emptiedOf(
+  keys: readonly string[],
+  column: (key: string) => PgColumn,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    keys.map((key): [string, unknown] => {
+      const found = column(key);
+      if (!found.notNull) return [key, null];
+      if (found.columnType === "PgText") return [key, ""];
+      if (found.columnType === "PgArray") return [key, []];
+      throw new Error(`No empty value for ${found.name}.`);
+    }),
+  );
+}
+
+/** Bookings someone rode on or still holds seats with: a trip with one is not cancelled. */
+const rodeOrHolding = bookingStatuses.filter(
+  (status) => holdsSeats(status) || status === "completed" || status === "no_show",
+);
 
 /** Erases one account inside `tx`, with its row locked. */
 async function eraseAccount(
@@ -62,8 +102,17 @@ async function eraseAccount(
 ): Promise<void> {
   const userId = user.id;
 
-  // What was theirs alone. Drafts go, with their stops; a trip to come that
-  // nobody holds a seat on is cancelled, telling nobody.
+  const theirTrips = () =>
+    tx.select({ id: trips.id }).from(trips).where(eq(trips.driverId, userId));
+  const theirBookings = () =>
+    tx
+      .select({ id: bookings.id })
+      .from(bookings)
+      .where(or(eq(bookings.passengerId, userId), inArray(bookings.tripId, theirTrips())));
+
+  // What was theirs alone. Drafts go, with their stops. A trip nobody rode
+  // or holds a seat on is cancelled, telling nobody, even one that has left
+  // its first stop and still takes bookings at later ones (A45).
   await tx.delete(trips).where(and(eq(trips.driverId, userId), eq(trips.status, "draft")));
   await tx
     .update(trips)
@@ -75,17 +124,23 @@ async function eraseAccount(
       updatedAt: now,
     })
     .where(
-      and(eq(trips.driverId, userId), eq(trips.status, "published"), gt(trips.departsAt, now)),
+      and(
+        eq(trips.driverId, userId),
+        inArray(trips.status, ["published", "departed"]),
+        notExists(
+          tx
+            .select({ id: bookings.id })
+            .from(bookings)
+            .where(and(eq(bookings.tripId, trips.id), inArray(bookings.status, rodeOrHolding))),
+        ),
+      ),
     );
   // Reminders of their trips and bookings, all over or cancelled by now.
   await tx
     .delete(scheduledNotifications)
     .where(
       or(
-        inArray(
-          scheduledNotifications.tripId,
-          tx.select({ id: trips.id }).from(trips).where(eq(trips.driverId, userId)),
-        ),
+        inArray(scheduledNotifications.tripId, theirTrips()),
         inArray(
           scheduledNotifications.bookingId,
           tx.select({ id: bookings.id }).from(bookings).where(eq(bookings.passengerId, userId)),
@@ -102,33 +157,56 @@ async function eraseAccount(
       ),
     );
 
-  // Then every table as the catalogue says.
-  for (const [name, entry] of Object.entries(personalData)) {
-    const deletion = entry.onDeletion;
-    if (deletion === null || deletion.rows === "leave" || entry.personColumns.length === 0) {
-      continue;
-    }
-    const table = tables.get(name);
-    if (table === undefined) throw new Error(`The catalogue names ${name}, which does not exist.`);
-    const columns = getTableColumns(table) as Record<string, PgColumn>;
-    const column = (key: string) => {
-      const found = columns[key];
-      if (found === undefined) throw new Error(`The catalogue names ${name}.${key}.`);
-      return found;
-    };
+  // A driver's cancel note is copied to each booking and its chat line
+  // (spec 6, 3.3): those go as the trip's own note does.
+  await tx
+    .update(bookings)
+    .set({ cancelNote: "" })
+    .where(and(inArray(bookings.tripId, theirTrips()), eq(bookings.cancelledBy, "driver")));
+  await tx
+    .update(messages)
+    .set({ params: sql`jsonb_set(${messages.params}, '{note}', '""')` })
+    .where(
+      and(
+        eq(messages.kind, "system"),
+        eq(messages.key, "cancelled"),
+        sql`${messages.params}->>'by' = 'driver'`,
+        sql`${messages.params}->'note' is not null`,
+        inArray(
+          messages.conversationId,
+          tx
+            .select({ id: conversations.id })
+            .from(conversations)
+            .innerJoin(bookings, eq(bookings.id, conversations.bookingId))
+            .where(inArray(bookings.tripId, theirTrips())),
+        ),
+      ),
+    );
+
+  // Then every table as the catalogue says. First the rows only a booking
+  // links to the person, such as a report about a ride, while their
+  // bookings and trips still name them: kept, with their free text emptied.
+  // Rows erased with no person column go with what they belong to.
+  for (const { name, deletion, column } of catalogued()) {
+    if (deletion.rows !== "keep" || deletion.emptied.length === 0) continue;
+    if (personalData[name]?.personColumns.length !== 0) continue;
+    await tx
+      .update(tableOf(name))
+      .set(emptiedOf(deletion.emptied, column))
+      .where(inArray(column("bookingId"), theirBookings()));
+  }
+  for (const { name, entry, deletion, column } of catalogued()) {
+    const table = tableOf(name);
     for (const person of entry.personColumns) {
       if (deletion.rows === "erase") {
         await tx.delete(table).where(eq(column(person), userId));
         continue;
       }
-      const emptied = Object.fromEntries(
-        deletion.emptied.map((key) => [key, emptyValue(column(key))]),
-      );
       // A message keeps when it was sent, and reads "Message deleted".
       const marked = table === messages ? { erasedAt: now } : {};
       await tx
         .update(table)
-        .set({ ...emptied, ...marked, [person]: formerMemberId })
+        .set({ ...emptiedOf(deletion.emptied, column), ...marked, [person]: formerMemberId })
         .where(eq(column(person), userId));
     }
   }
@@ -168,11 +246,13 @@ export interface Erasure {
   /** Erases one account if its wait has ended and nothing is open; whether it did. */
   eraseOne(userId: string): Promise<boolean>;
   /**
-   * After a restore (runbook, "Restore the database"): records here the
-   * erasures `previous` lists, read from the old database, then erases
-   * again each erased account that came back; how many.
+   * After a restore (runbook, "Restore the database"). With what the old
+   * database says: takes each deletion date changed there after this
+   * database's last change to the account, and records its erasures here.
+   * Then erases again each erased account that came back. A failure is
+   * logged and does not stop the others.
    */
-  reapply(previous?: readonly ErasedAccount[]): Promise<number>;
+  reapply(before?: BeforeRestore): Promise<ReapplyCounts>;
 }
 
 /** An erasure as `erased_accounts` keeps it. */
@@ -180,6 +260,26 @@ export interface ErasedAccount {
   readonly userId: string;
   readonly erasedAt: Date;
 }
+
+/** What the database in use before a restore says. */
+export interface BeforeRestore {
+  readonly erasures: readonly ErasedAccount[];
+  /** Every account there: its deletion date, and when the account last changed. */
+  readonly accounts: readonly {
+    readonly userId: string;
+    readonly deleteAfter: Date | null;
+    readonly updatedAt: Date;
+  }[];
+}
+
+export interface ReapplyCounts {
+  /** Deletion dates asked for, or undone, in the old database since the restore's point. */
+  readonly datesTaken: number;
+  readonly erased: number;
+  readonly failed: number;
+}
+
+const batch = 1000;
 
 export function createErasure(dependencies: ErasureDependencies): Erasure {
   const { db, clock, hasher, tripDaySettings, logger } = dependencies;
@@ -239,12 +339,30 @@ export function createErasure(dependencies: ErasureDependencies): Erasure {
       return erase(userId, { again: false });
     },
 
-    async reapply(previous = []) {
+    async reapply(before = { erasures: [], accounts: [] }) {
+      // "Delete my account" or "Keep my account" pressed after the
+      // restore's point: the later change wins, so running this again once
+      // the services use this database undoes nothing done here since.
+      let datesTaken = 0;
+      for (let start = 0; start < before.accounts.length; start += batch) {
+        const part = before.accounts.slice(start, start + batch);
+        const taken = await db.execute(sql`
+          update ${users} set delete_after = old.delete_after, updated_at = old.updated_at
+          from unnest(
+            ${sql.param(part.map((account) => account.userId))}::uuid[],
+            ${sql.param(part.map((account) => account.deleteAfter?.toISOString() ?? null))}::timestamptz[],
+            ${sql.param(part.map((account) => account.updatedAt.toISOString()))}::timestamptz[]
+          ) as old(id, delete_after, updated_at)
+          where ${users.id} = old.id
+            and old.updated_at > ${users.updatedAt}
+            and old.delete_after is distinct from ${users.deleteAfter}`);
+        datesTaken += taken.rowCount ?? 0;
+      }
       // Kept here too, so a later restore of this database repeats them.
-      for (let start = 0; start < previous.length; start += 1000) {
+      for (let start = 0; start < before.erasures.length; start += batch) {
         await db
           .insert(erasedAccounts)
-          .values(previous.slice(start, start + 1000))
+          .values(before.erasures.slice(start, start + batch))
           .onConflictDoNothing();
       }
       const back = await db
@@ -252,8 +370,16 @@ export function createErasure(dependencies: ErasureDependencies): Erasure {
         .from(users)
         .innerJoin(erasedAccounts, eq(erasedAccounts.userId, users.id));
       let erased = 0;
-      for (const { id } of back) if (await erase(id, { again: true })) erased += 1;
-      return erased;
+      let failed = 0;
+      for (const { id } of back) {
+        try {
+          if (await erase(id, { again: true })) erased += 1;
+        } catch (error) {
+          logger.error({ userId: id, err: error }, "account erasure failed");
+          failed += 1;
+        }
+      }
+      return { datesTaken, erased, failed };
     },
   };
 }

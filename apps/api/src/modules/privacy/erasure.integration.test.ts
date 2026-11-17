@@ -3,9 +3,14 @@ import { Writable } from "node:stream";
 import {
   acceptRequestRoute,
   bookingRoute,
+  bookTripRoute,
+  cancelTripRoute,
   conversationMessagesRoute,
   createTripRoute,
+  deletionCheckRoute,
   driverCheckInRoute,
+  messageAllPassengersRoute,
+  myConversationsRoute,
   passengerCheckInRoute,
   sendMessageRoute,
   tripDetailsRoute,
@@ -13,7 +18,7 @@ import {
 import { personalData, schema } from "@shareride/db";
 import { sampleId } from "@shareride/db/seed";
 import { blockedNumberUntil, defaultTripDaySettings } from "@shareride/domain";
-import { asc, eq, getTableColumns, getTableName, is, sql } from "drizzle-orm";
+import { asc, eq, getTableColumns, getTableName, inArray, is, sql } from "drizzle-orm";
 import { PgTable, type PgColumn } from "drizzle-orm/pg-core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createLogger } from "../../logger.ts";
@@ -27,7 +32,7 @@ import {
   seedForBookings,
   type Member,
 } from "../bookings/testing.ts";
-import { runPrivacyCommand, type PreviousErasures } from "./command.ts";
+import { runPrivacyCommand, type ReadBeforeRestore } from "./command.ts";
 import { createErasure } from "./erasure.ts";
 
 // Erasure after the 7 days (spec 11, 3.5; plan 4.6). The sample trips at the
@@ -48,6 +53,7 @@ beforeEach(async () => {
   // Members of earlier tests wait no longer.
   await api.connection.db.update(schema.users).set({ deleteAfter: null });
   await api.connection.db.delete(schema.blockedNumbers);
+  await api.connection.db.delete(schema.erasedAccounts);
   logLines = [];
 });
 
@@ -59,7 +65,7 @@ afterAll(async () => {
   await api.close();
 });
 
-const { newMember, later, rewind, driverOf, booked, paid } = bookingHelpers(() => api);
+const { newMember, later, rewind, driverOf, booked, paid, details } = bookingHelpers(() => api);
 const { formerMemberId } = schema;
 
 function erasure() {
@@ -130,6 +136,16 @@ async function rowsNaming(userId: string) {
     }
   }
   return left;
+}
+
+async function canWriteTo(accessToken: string, bookingId: string) {
+  const list = await api.client.call(myConversationsRoute, { accessToken });
+  if (!list.ok) throw new Error(list.error.code);
+  const found = list.data.conversations.find(
+    (conversation) => conversation.booking.id === bookingId,
+  );
+  if (found === undefined) throw new Error("No such conversation.");
+  return found.canWrite;
 }
 
 /** A confirmed booking for the member on Anna's trip, BSÍ to Akureyri. */
@@ -451,6 +467,163 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
     expect(audit).toHaveLength(1);
   });
 
+  it("keeps a conversation with a former member closed both ways", async () => {
+    // Anna erased: Gunna cannot write to the former member.
+    const { anna, gunna, bookingId } = await busyDriver();
+    await waitEnded(anna);
+    expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+    expect(await canWriteTo(gunna.accessToken, bookingId)).toBe(false);
+    expect(
+      await api.client.call(sendMessageRoute, {
+        accessToken: gunna.accessToken,
+        params: { id: bookingId },
+        body: { clientId: randomUUID(), text: "Thanks for the ride" },
+      }),
+    ).toMatchObject({ ok: false, status: 409, error: { code: "chat_closed" } });
+  });
+
+  it("leaves a former member out of a driver's message to all passengers", async () => {
+    const anna = await driverOf(sampleTrip.north, "Anna");
+    const gunna = await newMember("Gunna");
+    const bookingId = await confirmedOnNorth(anna, gunna);
+    // Saturday evening: the trip has completed, and its conversations are open.
+    await later(hours(32), anna, gunna);
+    await waitEnded(gunna);
+    expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+
+    expect(await canWriteTo(anna.accessToken, bookingId)).toBe(false);
+    expect(
+      await api.client.call(messageAllPassengersRoute, {
+        accessToken: anna.accessToken,
+        params: { id: sampleTrip.north },
+        body: { clientId: randomUUID(), text: "Thanks, everyone" },
+      }),
+    ).toMatchObject({ ok: true, data: { sent: 0 } });
+  });
+
+  it("ends a trip of theirs nobody holds a seat on, even once it has left its first stop", async () => {
+    // Sunday 10:01: Jón's trip to Vík has left Selfoss, and its later stops
+    // still take bookings.
+    const jon = await driverOf(sampleTrip.vik, "Jón");
+    await later(hours(46) + 60, jon);
+    await waitEnded(jon);
+
+    expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+    const [trip] = await api.connection.db
+      .select({ status: schema.trips.status })
+      .from(schema.trips)
+      .where(eq(schema.trips.id, sampleTrip.vik));
+    expect(trip?.status).toBe("cancelled");
+  });
+
+  it("books nobody on a trip left with the former member", async () => {
+    // As a trip under way with passengers is, until it completes.
+    const shown = await details(sampleTrip.vik, 0, 1);
+    await api.connection.db
+      .update(schema.trips)
+      .set({ driverId: formerMemberId })
+      .where(eq(schema.trips.id, sampleTrip.vik));
+    const palli = await newMember("Palli");
+    expect(
+      await api.client.call(bookTripRoute, {
+        accessToken: palli.accessToken,
+        params: { id: sampleTrip.vik },
+        body: {
+          fromStop: 0,
+          toStop: 1,
+          seats: 1,
+          total: shown.part.total,
+          message: "",
+          attemptKey: randomUUID(),
+        },
+      }),
+    ).toMatchObject({ ok: false, status: 404, error: { code: "not_found" } });
+  });
+
+  it("empties the driver's cancel note on the passengers' bookings and in their chat", async () => {
+    const anna = await driverOf(sampleTrip.north, "Anna");
+    const gunna = await newMember("Gunna");
+    const bookingId = await confirmedOnNorth(anna, gunna);
+    const cancelled = await api.client.call(cancelTripRoute, {
+      accessToken: anna.accessToken,
+      params: { id: sampleTrip.north },
+      body: { reason: "illness", note: "Sorry, my daughter is ill", countsOnReliability: true },
+    });
+    if (!cancelled.ok) throw new Error(cancelled.error.code);
+    await waitEnded(anna);
+
+    expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+    const { db } = api.connection;
+    const [booking] = await db
+      .select({ cancelNote: schema.bookings.cancelNote, reason: schema.bookings.cancelReason })
+      .from(schema.bookings)
+      .where(eq(schema.bookings.id, bookingId));
+    expect(booking).toEqual({ cancelNote: "", reason: "illness" });
+    const chat = await api.client.call(conversationMessagesRoute, {
+      accessToken: gunna.accessToken,
+      params: { id: bookingId },
+      query: {},
+    });
+    if (!chat.ok) throw new Error(chat.error.code);
+    expect(chat.data.messages.map((message) => message.system)).toContainEqual({
+      key: "cancelled",
+      by: "them",
+      reason: "illness",
+      note: "",
+      wholeTrip: true,
+    });
+    const notes = await db
+      .select({ params: schema.messages.params })
+      .from(schema.messages)
+      .where(sql`${schema.messages.params}::text like '%daughter%'`);
+    expect(notes).toEqual([]);
+  });
+
+  it("waits for an open report about a ride, then keeps how it ended without the notes", async () => {
+    const { anna, bookingId } = await busyDriver();
+    const { db } = api.connection;
+    // Anna said Gunna did not come; Gunna has not answered.
+    const [dispute] = await db
+      .insert(schema.disputes)
+      .values({ bookingId, kind: "no_show", raisedAt: api.now(), note: "Waited ten minutes" })
+      .returning({ id: schema.disputes.id });
+    if (dispute === undefined) throw new Error("No dispute.");
+    await waitEnded(anna);
+
+    expect(await erasure().eraseDue()).toEqual({ erased: 0, failed: 0 });
+    expect(await userExists(anna.userId)).toBe(true);
+    // And "Delete my account" shows it as something to settle first.
+    expect(
+      await api.client.call(deletionCheckRoute, { accessToken: anna.accessToken }),
+    ).toMatchObject({
+      ok: true,
+      data: { allowed: false, mustSettle: [{ kind: "dispute", id: dispute.id }] },
+    });
+
+    await db
+      .update(schema.disputes)
+      .set({ outcome: "stands", decidedBy: "system", decidedAt: api.now() })
+      .where(eq(schema.disputes.id, dispute.id));
+    expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+    const [after] = await db
+      .select({
+        kind: schema.disputes.kind,
+        outcome: schema.disputes.outcome,
+        note: schema.disputes.note,
+        answerNote: schema.disputes.answerNote,
+        decisionNote: schema.disputes.decisionNote,
+      })
+      .from(schema.disputes)
+      .where(eq(schema.disputes.id, dispute.id));
+    expect(after).toEqual({
+      kind: "no_show",
+      outcome: "stands",
+      note: "",
+      answerNote: "",
+      decisionNote: "",
+    });
+  });
+
   it("goes on with the others when one account fails, and reports it", async () => {
     const siggi = await newMember("Siggi");
     const palli = await newMember("Palli");
@@ -478,9 +651,9 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
       .insert(schema.erasedAccounts)
       .values({ userId: siggi.userId, erasedAt: api.now() });
 
-    expect(await erasure().reapply()).toBe(1);
+    expect(await erasure().reapply()).toEqual({ datesTaken: 0, erased: 1, failed: 0 });
     expect(await userExists(siggi.userId)).toBe(false);
-    expect(await erasure().reapply()).toBe(0);
+    expect(await erasure().reapply()).toEqual({ datesTaken: 0, erased: 0, failed: 0 });
   });
 
   it("takes the erasures made after the restore's point from the old database", async () => {
@@ -488,12 +661,15 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
     // and no record of it.
     const siggi = await newMember("Siggi");
     const erasedAt = new Date(api.now().getTime() - hours(1) * 1000);
-    const previous = [
-      { userId: siggi.userId, erasedAt },
-      { userId: randomUUID(), erasedAt },
-    ];
+    const before = {
+      erasures: [
+        { userId: siggi.userId, erasedAt },
+        { userId: randomUUID(), erasedAt },
+      ],
+      accounts: [],
+    };
 
-    expect(await erasure().reapply(previous)).toBe(1);
+    expect(await erasure().reapply(before)).toEqual({ datesTaken: 0, erased: 1, failed: 0 });
     expect(await userExists(siggi.userId)).toBe(false);
     // Kept with the first erasure's time, for a later restore.
     const kept = await api.connection.db
@@ -501,7 +677,71 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
       .from(schema.erasedAccounts)
       .where(eq(schema.erasedAccounts.userId, siggi.userId));
     expect(kept).toEqual([{ userId: siggi.userId, erasedAt }]);
-    expect(await erasure().reapply(previous)).toBe(0);
+    expect(await erasure().reapply(before)).toEqual({ datesTaken: 0, erased: 0, failed: 0 });
+  });
+
+  it("takes from the old database each deletion date changed there last", async () => {
+    const { db } = api.connection;
+    const at = (minutes: number) => new Date(api.now().getTime() + minutes * 60_000);
+    const dated = async (member: Member, deleteAfter: Date | null, updatedAt: Date) => {
+      await db
+        .update(schema.users)
+        .set({ deleteAfter, updatedAt })
+        .where(eq(schema.users.id, member.userId));
+    };
+    // In the restored database: Siggi's wait has ended, Palli has none,
+    // and Jón asked on the restored database after the move.
+    const siggi = await newMember("Siggi");
+    const palli = await newMember("Palli");
+    const jon = await newMember("Jón");
+    await dated(siggi, at(-60), at(-120));
+    await dated(palli, null, at(-120));
+    await dated(jon, at(7 * 24 * 60), at(-10));
+    const before = {
+      erasures: [],
+      accounts: [
+        // Siggi kept the account after the restore's point; Palli asked.
+        { userId: siggi.userId, deleteAfter: null, updatedAt: at(-30) },
+        { userId: palli.userId, deleteAfter: at(7 * 24 * 60 - 30), updatedAt: at(-30) },
+        // The old database's word on Jón is older than the restored one's.
+        { userId: jon.userId, deleteAfter: null, updatedAt: at(-60) },
+      ],
+    };
+
+    expect(await erasure().reapply(before)).toEqual({ datesTaken: 2, erased: 0, failed: 0 });
+    const dates = await db
+      .select({ id: schema.users.id, deleteAfter: schema.users.deleteAfter })
+      .from(schema.users)
+      .where(inArray(schema.users.id, [siggi.userId, palli.userId, jon.userId]));
+    expect(new Map(dates.map((row) => [row.id, row.deleteAfter]))).toEqual(
+      new Map([
+        [siggi.userId, null],
+        [palli.userId, at(7 * 24 * 60 - 30)],
+        [jon.userId, at(7 * 24 * 60)],
+      ]),
+    );
+    // So the next run does not erase the account Siggi kept.
+    expect(await erasure().eraseDue()).toEqual({ erased: 0, failed: 0 });
+    expect(await erasure().reapply(before)).toEqual({ datesTaken: 0, erased: 0, failed: 0 });
+  });
+
+  it("goes on erasing again when one account fails, and counts it", async () => {
+    const siggi = await newMember("Siggi");
+    const palli = await newMember("Palli");
+    const { db, pool } = api.connection;
+    await db.insert(schema.erasedAccounts).values([
+      { userId: siggi.userId, erasedAt: api.now() },
+      { userId: palli.userId, erasedAt: api.now() },
+    ]);
+    await pool.query(`CREATE TABLE erasure_test_hold (user_id uuid REFERENCES users (id))`);
+    try {
+      await pool.query(`INSERT INTO erasure_test_hold VALUES ($1)`, [siggi.userId]);
+      expect(await erasure().reapply()).toEqual({ datesTaken: 0, erased: 1, failed: 1 });
+      expect(await userExists(siggi.userId)).toBe(true);
+      expect(await userExists(palli.userId)).toBe(false);
+    } finally {
+      await pool.query(`DROP TABLE erasure_test_hold`);
+    }
   });
 });
 
@@ -510,11 +750,11 @@ describe("the privacy command", () => {
     return runFrom(undefined, ...args);
   }
 
-  async function runFrom(previous: PreviousErasures | undefined, ...args: string[]) {
+  async function runFrom(before: ReadBeforeRestore | undefined, ...args: string[]) {
     const lines: string[] = [];
     const exitCode = await runPrivacyCommand(args, {
       erasure: erasure(),
-      previous,
+      before,
       write: (line) => lines.push(line),
     });
     return { exitCode, output: lines.join("\n") };
@@ -537,18 +777,53 @@ describe("the privacy command", () => {
     });
   });
 
-  it("reads the erasures of the old database when it is given", async () => {
+  it("reads the old database when it is given", async () => {
     const siggi = await newMember("Siggi");
-    const previous = () => Promise.resolve([{ userId: siggi.userId, erasedAt: api.now() }]);
+    const palli = await newMember("Palli");
+    await api.connection.db
+      .update(schema.users)
+      .set({ updatedAt: api.now() })
+      .where(eq(schema.users.id, palli.userId));
+    const before = () =>
+      Promise.resolve({
+        erasures: [{ userId: siggi.userId, erasedAt: api.now() }],
+        accounts: [
+          {
+            userId: palli.userId,
+            deleteAfter: new Date(api.now().getTime() + hours(24) * 1000),
+            updatedAt: new Date(api.now().getTime() + 60_000),
+          },
+        ],
+      });
 
-    expect(await runFrom(previous, "reapply-erasures")).toEqual({
+    expect(await runFrom(before, "reapply-erasures")).toEqual({
       exitCode: 0,
       output: [
         "The old database lists 1 erased account.",
+        "Deletion dates taken from the old database: 1.",
         "Erased again: 1 account that came back with the restore.",
       ].join("\n"),
     });
     expect(await userExists(siggi.userId)).toBe(false);
+  });
+
+  it("fails when an account could not be erased again", async () => {
+    const siggi = await newMember("Siggi");
+    const { db, pool } = api.connection;
+    await db.insert(schema.erasedAccounts).values({ userId: siggi.userId, erasedAt: api.now() });
+    await pool.query(`CREATE TABLE erasure_test_hold (user_id uuid REFERENCES users (id))`);
+    try {
+      await pool.query(`INSERT INTO erasure_test_hold VALUES ($1)`, [siggi.userId]);
+      expect(await run("reapply-erasures")).toEqual({
+        exitCode: 1,
+        output: [
+          "No erased account came back with the restore.",
+          "Failed: 1 account, each in the log. Fix it and run this again before the services use this database.",
+        ].join("\n"),
+      });
+    } finally {
+      await pool.query(`DROP TABLE erasure_test_hold`);
+    }
   });
 
   it("shows how to use it", async () => {

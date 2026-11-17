@@ -4,7 +4,8 @@
 // (runbook, "Restore the database"). On a server, run it in the API's
 // shell. Needs DATABASE_URL (the restored database) and AUTH_SECRET, the
 // API's own; PREVIOUS_DATABASE_URL, the old database, when it can be
-// reached, for the erasures made after the restore's point.
+// reached, for the deletions asked for, undone and finished after the
+// restore's point.
 import { connectDatabase, schema } from "@shareride/db";
 import { defaultTripDaySettings } from "@shareride/domain";
 import { createLogger } from "./logger.ts";
@@ -38,7 +39,7 @@ try {
       tripDaySettings: defaultTripDaySettings,
       logger: createLogger({ level: "info" }),
     }),
-    previous:
+    before:
       previousUrl === undefined || previousUrl === ""
         ? undefined
         : async () => {
@@ -47,7 +48,17 @@ try {
               applicationName: "shareride-privacy",
             });
             try {
-              return await old.db.select().from(schema.erasedAccounts);
+              const { users } = schema;
+              return {
+                erasures: await old.db.select().from(schema.erasedAccounts),
+                accounts: await old.db
+                  .select({
+                    userId: users.id,
+                    deleteAfter: users.deleteAfter,
+                    updatedAt: users.updatedAt,
+                  })
+                  .from(users),
+              };
             } finally {
               await old.close();
             }
