@@ -1,11 +1,12 @@
 # Spec 17: A limit on what one trip brings the driver
 
-**Owner:** Martin · **Date:** 2026-11-17 · **Status:** Proposed (awaiting
-Martin)
+**Owner:** Martin · **Date:** 2026-11-17 · **Status:** Approved
+(2026-11-17); not built yet, see the
+[implementation plan](../plans/2026-11-17-trip-earnings-limit.md)
 
 Decision record: [ADR 0030](../decisions/0030-limit-what-a-whole-trip-brings-the-driver.md)
-(proposed). Open question Q25. Once approved, this spec amends rules P3 and
-P4 in [pricing and seats](../product/pricing-and-seats.md),
+(accepted). Open question Q25, answered as A48. This spec amends rules P3,
+P4 and M3 in [pricing and seats](../product/pricing-and-seats.md),
 [spec 3](2026-11-13-post-a-trip.md) 3.6 (price level),
 [spec 6](2026-11-13-changes-and-cancellations.md) 3.2 (changing seats and
 price) and [spec 13](2026-11-13-payments.md) 3.4 (payouts). Related:
@@ -268,12 +269,12 @@ L_max   = highest step L, at or below today's L_max for the capacity, with
 
 ## Decisions
 
-Decision 2 was decided by Martin on 2026-11-17. The others await him; their
-recommendations are the working assumption until he answers.
+Decided by Martin on 2026-11-17: decision 2 on a decision card, then "I
+accept the trip limit", which covers decisions 1, 3 and 4 as recommended.
 
-| # | Question | Recommendation or decision |
-| - | -------- | -------------------------- |
-| 1 | Close gaps 1 and 2 with a trip limit that counts money already booked (option C)? | Yes |
-| 2 | Keep counting the driver as one of the sharers, so a full car with 3 seats pays at most three quarters of 150 kr per km? | **Decided (Martin, 2026-11-17): yes, as recommended.** The driver keeps their own share. Letting passengers cover the whole 150 kr per km (option F) would give drivers a third more per seat, but the payment would then cover the driver's whole car, which reads as earning, and France asks drivers to keep a share |
-| 3 | Does money kept after a no-show or a late cancellation count towards the limit? | Yes |
-| 4 | Does the passenger service fee count towards the limit? | No, unless the lawyer says it must |
+| # | Question | Decision |
+| - | -------- | -------- |
+| 1 | Close gaps 1 and 2 with a trip limit that counts money already booked (option C)? | Yes, as recommended |
+| 2 | Keep counting the driver as one of the sharers, so a full car with 3 seats pays at most three quarters of 150 kr per km? | Yes, as recommended: the driver keeps their own share. Letting passengers cover the whole 150 kr per km (option F) would give drivers a third more per seat, but the payment would then cover the driver's whole car, which reads as earning, and France asks drivers to keep a share |
+| 3 | Does money kept after a no-show or a late cancellation count towards the limit? | Yes, as recommended |
+| 4 | Does the passenger service fee count towards the limit? | No, as recommended, unless the lawyer says it must |

@@ -1,14 +1,15 @@
 # 0030. Limit what a whole trip brings the driver, counting money already booked
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-17, decided by Martin; he chose to keep the
+  driver's own share on a decision card the same day)
 - **Date:** 2026-11-17
 - **Deciders:** Martin
 - **Related:** [spec 17](../specs/2026-11-17-trip-earnings-limit.md) (the
   analysis, numbers and proposed rules), rules P3 and P4 in
   [pricing and seats](../product/pricing-and-seats.md),
   [ADR 0012](0012-trip-price-level.md), [ADR 0013](0013-in-app-payments-only.md),
-  [ADR 0014](0014-passenger-service-fee-from-launch.md), open questions Q25
-  and A39, [legal and regulatory](../compliance/legal-and-regulatory.md)
+  [ADR 0014](0014-passenger-service-fee-from-launch.md), open questions A48
+  (Q25) and A39, [legal and regulatory](../compliance/legal-and-regulatory.md)
 
 ## Context
 
@@ -71,9 +72,10 @@ the cost.
   `fitPriceLevel` need the trip's bookings; the payout job gains a check.
 - If the lawyer says the fee counts as part of the ride's price, the limit
   can include it with one setting, lowering drivers' highest level.
-- Follow-up once accepted: update rules P3 and P4, specs 3, 6 and 13, an
-  implementation plan, and two new questions for the lawyer (section 8 of
-  spec 17).
+- Follow-up: rules P3, P4 and M3 and specs 3, 6 and 13 updated on
+  acceptance; the build follows the
+  [implementation plan](../plans/2026-11-17-trip-earnings-limit.md); two new
+  questions for the lawyer (section 8 of spec 17).
 
 ## Revisit when
 
