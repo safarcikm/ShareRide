@@ -139,13 +139,13 @@ async function card(name: string, index: number) {
 }
 
 describe("the Reliability page (spec 8, 3.8)", () => {
-  it("is in the menu after Disputes", async () => {
+  it("is in the menu after the safety pages", async () => {
     start(undefined, undefined, "/admin");
     const menu = await screen.findByRole("navigation", { name: "Console menu" });
     const links = within(menu)
       .getAllByRole("link")
       .map((link) => link.textContent);
-    expect(links.slice(0, 4)).toEqual(["Home", "Meeting points", "Disputes", "Reliability"]);
+    expect(links.slice(2, 6)).toEqual(["Disputes", "Reports", "Appeals", "Reliability"]);
     fireEvent.click(within(menu).getByRole("link", { name: "Reliability" }));
     expect(await screen.findByRole("heading", { name: "Reliability", level: 1 })).toBeTruthy();
     expect(window.location.pathname).toBe("/admin/reliability");

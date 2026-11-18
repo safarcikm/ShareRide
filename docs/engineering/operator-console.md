@@ -445,8 +445,8 @@ reliability routes (`registerReliabilityAdminRoutes`), with the work in
   decides on a warning or a suspension as a person (3.8.4); nothing here
   suspends anyone.
 
-The page is `apps/admin/src/pages/reliability/` at `/admin/reliability`:
-the cancellations first, each with who cancelled, in which role, the
+The page is `apps/admin/src/pages/reliability/` at `/admin/reliability`,
+after Appeals in the menu: the cancellations first, each with who cancelled, in which role, the
 reason, their note, the times with the year (the list goes back 12
 months) and the operator's note. "Overrule" or "Undo the overrule" opens a
 note on that card, needed before anything is sent; while it is sent no
@@ -493,6 +493,21 @@ safety routes (`registerModerationAdminRoutes`), with the work in
 
 Each action writes its audit entry and the person's notice in its own
 transaction, naming the fields it changed, never their values.
+
+The pages are `apps/admin/src/pages/reports/` at `/admin/reports` and
+`apps/admin/src/pages/appeals/` at `/admin/appeals`, after Disputes in the
+menu. The list shows each report's subject, category, the two people, when
+it is due and an Overdue or Safety tag; `?state=closed` the closed ones
+with their outcome. A report's page offers only the actions that fit it
+(`choicesOf` in `act.tsx`): hiding the trip's note or cancelling the trip
+only when the person reported drives it (the report's `trip.driverId`),
+suspending an open account and reinstating a suspended one. A refusal
+(someone acted meanwhile) loads the report again. Before an action is sent, the
+console shows the notice as the person reads it, in their language,
+built from the same texts as the app (`statementLines` in `texts.ts`).
+Closing a report and answering an appeal ask once more, naming the
+outcome, as neither can be undone. The conversation opens only when the
+operator presses "Show the conversation", as on a dispute.
 
 ## A console page
 

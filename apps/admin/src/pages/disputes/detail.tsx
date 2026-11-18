@@ -589,6 +589,9 @@ function Conversation({ report }: { readonly report: AdminDispute }) {
                 <time className="type-small muted" dateTime={one.sentAt}>
                   {atText(t, locale, one.sentAt)}
                 </time>
+                {one.removed ? (
+                  <span className="tag tag-warning type-small">{t("admin.reports.hiddenTag")}</span>
+                ) : null}
               </p>
               <p className="type-body">{messageText(t, locale, one, names)}</p>
             </li>
