@@ -689,6 +689,37 @@ version }` with the version the page loaded: it takes a lock on the
   local or unset) makes the code `BETA2345`, once; it is public, so the
   seed staging runs on each deploy never makes it.
 
+## Corridors and the search log
+
+Spec 10 (3.4.1 and 3.4.5), built in milestone 11 (PR 8). The weekly
+figures (PR 9) are counted from these.
+
+- `corridors` holds a name, its places in order (`place_ids`) and
+  `active`. `GET /admin/v1/corridors` lists them by name with every
+  place to pick from; `POST` adds one, `PATCH /admin/v1/corridors/{id}`
+  changes the name, the places or `active`, sending only what changes.
+  The rules are in `packages/domain/src/metrics/corridors.ts`: a name of
+  1 to 80 characters and 2 to 12 places, each once. Audit entries
+  `corridor.created` and `corridor.changed`. There is no delete: a
+  corridor left out of the counting keeps its past weeks.
+- `onCorridor` decides whether a search or a trip belongs to one: its two
+  ends are two different places of the corridor, where a meeting point
+  counts as each place that covers it.
+- `search_log` gets a row for each `GET /v1/trips/search` that answered
+  (`modules/metrics/search-log.ts`): the two ends, the day searched for,
+  the number of trips shown, the platform from the `X-Client-Platform`
+  header and the start of the hour. The write happens apart from the
+  answer; one that fails is logged as a warning and lost. Nothing in the
+  module takes a person, a session or an address, the key is random and
+  the table has no `created_at`: keep it so (R10.6). The hourly clean-up
+  deletes rows after 14 months (rule `search_log`).
+- The console's Corridors page (`apps/admin/src/pages/corridors/`) has a
+  card per corridor with Change and Stop counting, and a form for a new
+  one whose places are picked in order and can be moved up and down.
+- The seed for local development and staging adds the three launch
+  corridors from the sample places, once; in production the operator
+  adds them with the real places.
+
 ## Users, trips and decline rates
 
 `apps/api/src/modules/moderation/people-routes.ts` holds the console's

@@ -5,7 +5,12 @@ import {
   tripSearchAlternativesRoute,
   tripSearchRoute,
 } from "@shareride/contracts";
-import type { AccountSuspended, Result } from "@shareride/domain";
+import {
+  clientPlatformHeader,
+  searchLogPlatform,
+  type AccountSuspended,
+  type Result,
+} from "@shareride/domain";
 import type { Context, MiddlewareHandler } from "hono";
 import { every } from "hono/combine";
 import { createMiddleware } from "hono/factory";
@@ -85,7 +90,11 @@ export function registerSearchRoutes(
 
   app.openapi(toOpenApiRoute(tripSearchRoute, searching), async (c) => {
     const query = validated(c, "query", tripSearchRoute.request.query);
-    const found = await search.search(query, c.get("auth")?.userId ?? null);
+    const found = await search.search(
+      query,
+      c.get("auth")?.userId ?? null,
+      searchLogPlatform(c.req.header(clientPlatformHeader)),
+    );
     if (!found.ok) return searchError(c, found.error);
     return c.json({ results: found.value }, 200);
   });

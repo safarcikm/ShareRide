@@ -5,6 +5,7 @@ import type { Database } from "@shareride/db";
 import {
   defaultBookingSettings,
   defaultChatSettings,
+  clientPlatformHeader,
   defaultMeetingPointIssueSettings,
   defaultNotificationSettings,
   defaultReliabilitySettings,
@@ -98,6 +99,12 @@ import {
   registerMeetingPointsAdminRoutes,
 } from "./modules/meeting-points/index.ts";
 import {
+  createCorridorService,
+  createSearchLog,
+  registerMetricsAdminRoutes,
+  type SearchLog,
+} from "./modules/metrics/index.ts";
+import {
   createModerationConsoleService,
   createNoticeService,
   createPeopleConsoleService,
@@ -181,6 +188,8 @@ export interface FeatureDependencies {
   readonly photoFiles?: FolderPhotoStorage;
   /** Finds the legs between meeting points; our road file when left out (ADR 0031). */
   readonly router?: Router;
+  /** Where searches are noted, without the searcher; made here when left out. */
+  readonly searchLog?: SearchLog;
   /** Settings held whatever is stored: tests and the browser tests' server only. */
   readonly fixedSettings?: Partial<SettingValues>;
 }
@@ -235,7 +244,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     const allowWebOrigins = cors({
       origin: [...webOrigins],
       credentials: true,
-      allowHeaders: ["Content-Type", "Authorization"],
+      allowHeaders: ["Content-Type", "Authorization", clientPlatformHeader],
       exposeHeaders: ["X-Request-Id", "Retry-After"],
       maxAge: 600,
     });
@@ -398,7 +407,11 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     // Before the trip routes, so /v1/trips/search is never taken for a trip's ID.
     registerSearchRoutes(app, {
       // Operator settings (feature H4) replace the defaults later.
-      search: createSearchService({ ...features, settings: defaultSearchSettings }),
+      search: createSearchService({
+        ...features,
+        settings: defaultSearchSettings,
+        searchLog: features.searchLog ?? createSearchLog({ ...features, logger }),
+      }),
       details: createTripDetailsService({ ...features, settings: defaultSearchSettings }),
       optionalAuth: createOptionalAuth(auth),
       limiter: createMemoryRateLimiter({ rules: searchLimitsPerAddress, clock: features.clock }),
@@ -470,6 +483,11 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       clientKey: (c) => features.hasher("invite-check", addressBlock(features.clientAddress(c))),
     });
     registerInviteAdminRoutes(app, { ...features, invites, requireOperator });
+    registerMetricsAdminRoutes(app, {
+      ...features,
+      corridors: createCorridorService(features),
+      requireOperator,
+    });
     const feedback = createFeedbackService(features);
     registerFeedbackRoutes(app, { feedback, requireAuth });
     registerFeedbackAdminRoutes(app, { ...features, feedback, requireOperator });

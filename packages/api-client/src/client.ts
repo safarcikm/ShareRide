@@ -57,6 +57,8 @@ export interface ApiClientOptions {
   readonly fetch?: (input: string, init: RequestInit) => Promise<Response>;
   /** "include" on the web, so the browser sends and keeps the refresh cookie. */
   readonly credentials?: RequestCredentials;
+  /** Sent with every request, such as the app's platform; never anything of a person. */
+  readonly headers?: Readonly<Record<string, string>>;
 }
 
 export interface ApiClient {
@@ -104,7 +106,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
     input: CallInput<R>,
   ): Promise<CallResult<R>> {
     const values = input as Record<string, unknown>;
-    const headers = new Headers({ accept: "application/json" });
+    const headers = new Headers({ ...options.headers, accept: "application/json" });
     if (input.accessToken !== undefined)
       headers.set("authorization", `Bearer ${input.accessToken}`);
     const init: RequestInit = { method: route.method.toUpperCase(), headers };

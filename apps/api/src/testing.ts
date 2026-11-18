@@ -11,6 +11,7 @@ import { eq } from "drizzle-orm";
 import { createApp, type FeatureDependencies } from "./app.ts";
 import { createLogger } from "./logger.ts";
 import { createOperatorSessionService, operatorCookie } from "./modules/admin/index.ts";
+import { createSearchLog, type SearchLog } from "./modules/metrics/index.ts";
 import { exportCipherPurpose } from "./modules/privacy/index.ts";
 import { createFileCipher, createKeyedHasher } from "./platform/crypto.ts";
 import { createFakeEmailSender, type FakeEmailSender } from "./platform/email.ts";
@@ -29,6 +30,8 @@ export interface TestApi {
   readonly sms: DevSmsSender;
   /** The emails sent from requests, such as links to verify an address. */
   readonly email: FakeEmailSender;
+  /** The search log: `idle()` waits for the rows of the searches answered so far. */
+  readonly searchLog: SearchLog;
   /** Meeting point photos' files, kept in memory. */
   readonly photos: FakePhotoStorage;
   /** While set, sending fails with this error after the message reaches `sms.outbox`. */
@@ -105,8 +108,10 @@ export async function startTestApi(): Promise<TestApi> {
   const fixedSettings: Partial<Record<SettingKey, number>> = { invite_code_required: 0 };
   const email = createFakeEmailSender();
   const photos = createFakePhotoStorage();
+  const searchLog = createSearchLog({ db: connection.db, clock: () => now, logger });
   const features: FeatureDependencies = {
     db: connection.db,
+    searchLog,
     sms: sender,
     email: { sender: email, webAppUrl: testWebAppUrl },
     hasher: createKeyedHasher("integration-test-secret-of-32-characters"),
@@ -132,6 +137,7 @@ export async function startTestApi(): Promise<TestApi> {
     features,
     sms,
     email,
+    searchLog,
     photos,
     get smsFailure() {
       return failing.error;

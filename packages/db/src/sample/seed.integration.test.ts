@@ -1,10 +1,16 @@
 import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { DatabaseConnection } from "../index.ts";
-import { legs, meetingPoints, places } from "../schema/index.ts";
+import { corridors, legs, meetingPoints, places } from "../schema/index.ts";
 import { freshTestDatabase } from "../testing.ts";
 import { samplePlaces, samplePoints } from "./meeting-points.ts";
-import { sampleId, sampleLegSource, seedSampleMeetingPoints } from "./seed.ts";
+import {
+  sampleCorridors,
+  sampleId,
+  sampleLegSource,
+  seedSampleCorridors,
+  seedSampleMeetingPoints,
+} from "./seed.ts";
 
 describe("seedSampleMeetingPoints", () => {
   let connection: DatabaseConnection;
@@ -153,5 +159,42 @@ describe("seedSampleMeetingPoints", () => {
       .from(meetingPoints)
       .where(eq(meetingPoints.id, bsi));
     expect(point).toMatchObject({ status: "paused", pauseReasonEn: "Closed." });
+  });
+});
+
+describe("seedSampleCorridors", () => {
+  let connection: DatabaseConnection;
+  const now = new Date("2026-11-14T12:00:00Z");
+
+  beforeAll(async () => {
+    connection = await freshTestDatabase();
+    await seedSampleMeetingPoints(connection.db, now);
+    await seedSampleCorridors(connection.db, now);
+  });
+
+  afterAll(async () => {
+    await connection.close();
+  });
+
+  it("adds the three launch corridors, each of sample places that exist", async () => {
+    const rows = await connection.db.select().from(corridors);
+    expect(rows.map((row) => row.name).sort()).toEqual(
+      sampleCorridors.map((corridor) => corridor.name).sort(),
+    );
+    const known = new Set((await connection.db.select().from(places)).map((place) => place.id));
+    expect(rows.flatMap((row) => row.placeIds).filter((id) => !known.has(id))).toEqual([]);
+    expect(rows.every((row) => row.active)).toBe(true);
+  });
+
+  it("leaves a corridor the operator changed as it is", async () => {
+    const id = sampleId("corridor:west");
+    await connection.db
+      .update(corridors)
+      .set({ name: "Vesturland", active: false })
+      .where(eq(corridors.id, id));
+    await seedSampleCorridors(connection.db, new Date("2026-11-15T12:00:00Z"));
+    const rows = await connection.db.select().from(corridors);
+    expect(rows).toHaveLength(sampleCorridors.length);
+    expect(rows.find((row) => row.id === id)).toMatchObject({ name: "Vesturland", active: false });
   });
 });

@@ -9,6 +9,7 @@ import {
   type CoveredPoint,
   type Result,
   type SearchableTrip,
+  type SearchLogPlatform,
   type SearchSettings,
   type TimeOfDay,
   type TripMatch,
@@ -17,6 +18,7 @@ import {
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { occupancyNow } from "../bookings/seats.ts";
 import { searchableStatuses, toSummary } from "../meeting-points/service.ts";
+import type { SearchLog } from "../metrics/search-log.ts";
 import { notSuspended } from "../account/standing.ts";
 import { ratingsOf } from "../people/ratings.ts";
 import { newcomer } from "../people/standing.ts";
@@ -43,9 +45,14 @@ export type SearchError =
   | { readonly code: "same_place" };
 
 export interface SearchService {
+  /**
+   * The trips for a search. Each one answered is noted in the search log
+   * with `platform`, and with nothing of the searcher (spec 10, 3.4.5).
+   */
   search(
     request: SearchRequest,
     searcherId: string | null,
+    platform?: SearchLogPlatform,
   ): Promise<Result<TripSearchResult[], SearchError>>;
   /**
    * The rides leaving soonest, each for its whole route and one seat, for
@@ -98,8 +105,10 @@ export function createSearchService(dependencies: {
   readonly db: Database;
   readonly clock: () => Date;
   readonly settings: SearchSettings;
+  /** Where searches are noted, without the searcher; nowhere when left out. */
+  readonly searchLog?: SearchLog;
 }): SearchService {
-  const { db, clock, settings } = dependencies;
+  const { db, clock, settings, searchLog } = dependencies;
   const searchable = inArray(meetingPoints.status, searchableStatuses);
 
   /** The points a meeting point or a place covers, within `radiusM` when given. */
@@ -339,7 +348,7 @@ export function createSearchService(dependencies: {
   }
 
   return {
-    async search(request, searcherId) {
+    async search(request, searcherId, platform = "unknown") {
       const resolved = await resolve(request);
       if (!resolved.ok) return resolved;
       const { from, to } = resolved.value;
@@ -366,7 +375,19 @@ export function createSearchService(dependencies: {
         );
         return match === null ? [] : [toResult(candidate, match, shown)];
       });
-      return ok(await rated(sorted(matches, request.sort).slice(0, resultLimit)));
+      const results = await rated(sorted(matches, request.sort).slice(0, resultLimit));
+      const end = ({ centre }: Coverage) => ({
+        kind: centre.table === "places" ? ("place" as const) : ("meeting_point" as const),
+        id: centre.id,
+      });
+      searchLog?.record({
+        from: end(from),
+        to: end(to),
+        date: request.date,
+        results: results.length,
+        platform,
+      });
+      return ok(results);
     },
 
     async soonest(limit, searcherId) {

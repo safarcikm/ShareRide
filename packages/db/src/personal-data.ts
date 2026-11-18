@@ -384,6 +384,14 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
       note: "kept, so the count of a code's uses stays true; the erased account's own row, with the code it joined with, goes",
     },
   },
+  search_log: {
+    ...notAboutAPerson(
+      "what was searched for, never by whom: no person, session, device or address, and the time cut to the hour (spec 10, 3.4.5; R10.6)",
+    ),
+    // A place or a meeting point, never a person.
+    otherIds: ["fromId", "toId"],
+  },
+  corridors: notAboutAPerson("the operator's corridors: names and places (spec 10, 3.4.1)"),
   reports: {
     category: "moderation",
     // Only the reports the person filed, with their outcomes: never who reported them (3.1.6).

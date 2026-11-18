@@ -16,6 +16,7 @@ export * from "./health.ts";
 export * from "./legal.ts";
 export * from "./me.ts";
 export * from "./meeting-points.ts";
+export * from "./metrics.ts";
 export * from "./payments.ts";
 export * from "./people.ts";
 export * from "./privacy.ts";

@@ -35,6 +35,8 @@ export const retentionRules = [
   "meeting_point_issues",
   /** The beta's feedback, 12 months after the beta ended (spec 12, section 7). */
   "feedback",
+  /** The search log, which holds no person, after 14 months (spec 10, 3.4.5). */
+  "search_log",
   "holds",
   "retention_runs",
 ] as const;

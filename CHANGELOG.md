@@ -1194,6 +1194,17 @@ releases follow [Semantic Versioning](https://semver.org/).
   news is old by then. The app says what is paused on the booking
   screen, on Offer and on step 1 of signing in. A switch left off for an
   hour reminds the operators, and again each day.
+- The search log and corridors (spec 10, 3.4.1 and 3.4.5; R10.6;
+  milestone 11, PR 8; migration `0051_search_log_and_corridors`): each
+  search answered is noted with its two ends, the day searched for, how
+  many trips it showed, the platform and the hour, and with nothing of
+  the person: no account, session, device or address, a random key and no
+  exact time. The apps name their platform in an `X-Client-Platform`
+  header. Rows are deleted after 14 months. The console's new Corridors
+  page lists the roads the weekly figures will be counted for, each a
+  name and its places in order; a corridor can be added, changed, and
+  left out of the counting, never deleted. Local development and staging
+  start with the three launch corridors.
 
 ### Fixed
 

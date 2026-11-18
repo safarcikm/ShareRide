@@ -7,6 +7,7 @@ export * from "./bookings.ts";
 export * from "./chat.ts";
 export * from "./legal.ts";
 export * from "./meeting-points.ts";
+export * from "./metrics.ts";
 export * from "./notifications.ts";
 export * from "./payments.ts";
 export * from "./trip-day.ts";

@@ -3,7 +3,7 @@ import { legsFromRoadGraph, searchTextFor, type PlaceKind } from "@shareride/dom
 import { and, eq, inArray, notInArray, or } from "drizzle-orm";
 import type { Database } from "../index.ts";
 import { lockLegs } from "../legs.ts";
-import { legs, meetingPoints, places } from "../schema/index.ts";
+import { corridors, legs, meetingPoints, places } from "../schema/index.ts";
 import { samplePlaces, samplePoints, sampleRoads } from "./meeting-points.ts";
 
 /** Where the sample legs come from, as stored with each leg. */
@@ -166,4 +166,51 @@ export async function seedSampleMeetingPoints(db: Database, now: Date): Promise<
     });
     if (rows.length > 0) await tx.insert(legs).values(rows).onConflictDoNothing();
   });
+}
+
+/**
+ * The three launch corridors (meeting points guide, "Launch corridors";
+ * answer A35), as sample places in order. Reykjanesbær's place covers the
+ * airport's meeting point.
+ */
+export const sampleCorridors: readonly {
+  readonly key: string;
+  readonly name: string;
+  readonly places: readonly string[];
+}[] = [
+  {
+    key: "south",
+    name: "Reykjavík – Hveragerði – Selfoss",
+    places: ["capital-area", "hveragerdi-town", "selfoss-town"],
+  },
+  {
+    key: "airport",
+    name: "Reykjavík – Reykjanesbær – Keflavíkurflugvöllur",
+    places: ["capital-area", "reykjanesbaer"],
+  },
+  {
+    key: "west",
+    name: "Reykjavík – Akranes – Borgarnes",
+    places: ["capital-area", "akranes-town", "borgarnes-town"],
+  },
+];
+
+/**
+ * Adds the launch corridors once, after the sample places. One that is
+ * there is left alone, so a deploy never undoes the operator's change.
+ * In production the operator adds them in the console, with the real places.
+ */
+export async function seedSampleCorridors(db: Database, now: Date): Promise<void> {
+  await db
+    .insert(corridors)
+    .values(
+      sampleCorridors.map((corridor) => ({
+        id: sampleId(`corridor:${corridor.key}`),
+        name: corridor.name,
+        placeIds: corridor.places.map((key) => sampleId(`place:${key}`)),
+        createdAt: now,
+        updatedAt: now,
+      })),
+    )
+    .onConflictDoNothing({ target: corridors.id });
 }

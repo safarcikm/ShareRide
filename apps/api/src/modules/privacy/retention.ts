@@ -10,6 +10,7 @@ import type { Logger } from "../../logger.ts";
 import { cleanUpOperatorSessions, cleanUpOperatorSignIn } from "../admin/clean-up.ts";
 import { cleanUpSignInRecords } from "../auth/clean-up.ts";
 import { cleanUpConversations } from "../chat/clean-up.ts";
+import { cleanUpSearchLog } from "../metrics/search-log.ts";
 import { cleanUpNotifications } from "../notifications/clean-up.ts";
 import { cleanUpDrafts } from "../trips/clean-up.ts";
 import type { Erasure } from "./erasure.ts";
@@ -251,6 +252,11 @@ export function retentionSteps({
           .returning({ id: feedback.id });
         return { counts: { feedback: deleted(rows) } };
       },
+    },
+    {
+      rules: ["search_log"],
+      // Rows hold no person, so no hold applies.
+      run: async (now) => ({ counts: { search_log: await cleanUpSearchLog(db, now) } }),
     },
     {
       rules: ["meeting_point_issues"],

@@ -1,4 +1,5 @@
 import { createApiClient, type ApiClient } from "@shareride/api-client";
+import { clientPlatformHeader } from "@shareride/domain";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 import type { Device } from "./session-manager";
@@ -49,6 +50,8 @@ export function createClient(): ApiClient {
     baseUrl: apiBaseUrl(),
     // The browser sends and keeps the refresh cookie only with credentials.
     ...(Platform.OS === "web" ? { credentials: "include" as const } : {}),
+    // For the search log, which counts searches per platform and holds no person (spec 10, 3.4.5).
+    headers: { [clientPlatformHeader]: thisDevice().platform },
   });
 }
 

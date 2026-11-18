@@ -1,5 +1,5 @@
 import type { Database } from "./index.ts";
-import { seedSampleMeetingPoints } from "./sample/seed.ts";
+import { seedSampleCorridors, seedSampleMeetingPoints } from "./sample/seed.ts";
 import { seedSampleTrips } from "./sample/trips.ts";
 import { inviteCodes, legalDocuments, type LegalText } from "./schema/index.ts";
 
@@ -42,7 +42,13 @@ export async function seedDraftLegalDocuments(db: Database, now: Date): Promise<
 }
 
 export { samplePoints } from "./sample/meeting-points.ts";
-export { sampleId, sampleLegSource, seedSampleMeetingPoints } from "./sample/seed.ts";
+export {
+  sampleCorridors,
+  sampleId,
+  sampleLegSource,
+  seedSampleCorridors,
+  seedSampleMeetingPoints,
+} from "./sample/seed.ts";
 export { sampleTrips, seedSampleTrips } from "./sample/trips.ts";
 
 /**
@@ -71,11 +77,12 @@ export async function seedDevelopmentInviteCode(db: Database, now: Date): Promis
 
 /**
  * What local development and staging start with: the draft legal documents,
- * the sample meeting points, places and legs (milestone 3, decision 1) and
- * sample trips in the next days.
+ * the sample meeting points, places and legs (milestone 3, decision 1), the
+ * three launch corridors and sample trips in the next days.
  */
 export async function seedDevelopmentData(db: Database, now: Date): Promise<void> {
   await seedDraftLegalDocuments(db, now);
   await seedSampleMeetingPoints(db, now);
+  await seedSampleCorridors(db, now);
   await seedSampleTrips(db, now);
 }
