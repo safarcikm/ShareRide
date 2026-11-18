@@ -6,6 +6,7 @@ import { DisputesPage } from "./pages/disputes/page.tsx";
 import { HomePage } from "./pages/home.tsx";
 import { MeetingPointsPage } from "./pages/meeting-points/page.tsx";
 import { PasskeysPage } from "./pages/passkeys.tsx";
+import { ReliabilityPage } from "./pages/reliability/page.tsx";
 import { ReportsPage } from "./pages/reports/page.tsx";
 
 /**
@@ -28,6 +29,7 @@ export const sections: readonly Section[] = [
   { path: "/admin/disputes", title: "admin.disputes.title", Page: DisputesPage },
   { path: "/admin/reports", title: "admin.reports.title", Page: ReportsPage },
   { path: "/admin/appeals", title: "admin.appeals.title", Page: AppealsPage },
+  { path: "/admin/reliability", title: "admin.reliability.title", Page: ReliabilityPage },
   { path: "/admin/audit-log", title: "admin.auditLog.title", Page: AuditLogPage },
   { path: "/admin/passkeys", title: "admin.passkeys.title", Page: PasskeysPage },
 ];

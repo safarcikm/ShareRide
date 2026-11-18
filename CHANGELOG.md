@@ -783,6 +783,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   cancelled whether it counts and when ShareRide made it count; a booking
   the driver cancelled no longer shows this in the passenger's file. The
   operator's note goes when the account of whoever cancelled is erased.
+- The console's Reliability page (milestone 7, PR 7e, spec 8, 3.8): the
+  cancellations excused by a weather or road-closure reason, each made to
+  count or undone with a note on its card, and the people below 80% with
+  their counts by role. Texts in Icelandic and English.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
