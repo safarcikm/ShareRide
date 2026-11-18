@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useMe, useSession } from "@/auth/session";
 import { Button } from "@/components/button";
+import { BetaLabel } from "@/beta/config";
 import { Card } from "@/components/card";
 import { Columns } from "@/components/columns";
 import { Grid } from "@/components/grid";
@@ -135,6 +136,7 @@ function FrontPage() {
         <View style={styles.brand}>
           <Logo size={sizes.logoSmall} />
           <Text style={[typography.heading, { color: palette.text }]}>{t("app.name")}</Text>
+          <BetaLabel />
         </View>
         <LanguageSwitch onSwitch={saveLanguage} />
       </View>

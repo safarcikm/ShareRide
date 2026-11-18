@@ -59,7 +59,9 @@ language, and stay signed in securely on their devices.
    sign-up and then straight to Offer, the first step of posting a trip
    (spec 3; spec 16, 3.6), the way a booking
    chosen before sign-up continues afterwards (spec 5, 3.1).
-4. During the beta, sign-up asks for an invite code first (spec 12).
+4. During the beta, a number with no account is asked for an invite code
+   after its text-message code (spec 12, 3.2.3; decided 2026-11-18). A
+   member signing in is never asked.
 
 ### 3.2 Sign up or sign in with a phone number
 

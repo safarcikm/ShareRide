@@ -8,6 +8,7 @@ import {
   type GestureResponderEvent,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BetaLabel } from "@/beta/config";
 import { LanguageSwitch } from "@/components/language-switch";
 import { Logo } from "@/components/logo";
 import { evenGutterOnWeb } from "@/components/screen";
@@ -96,6 +97,7 @@ export function TopBar({
             <Logo size={sizes.logoSmall} />
             <Text style={[typography.heading, { color: palette.text }]}>{t("app.name")}</Text>
           </Pressable>
+          <BetaLabel />
         </View>
         <View {...role} style={styles.places}>
           {menuTabs.map((tab) => (
@@ -182,7 +184,7 @@ const styles = StyleSheet.create({
     maxWidth: pageMaxWidth,
   },
   // The link is only as wide as the logo and name, not the room beside them.
-  brandSide: { flex: 1, alignItems: "flex-start" },
+  brandSide: { flex: 1, flexDirection: "row", alignItems: "center", gap: spacing.sm },
   brand: {
     minHeight: minTouchTarget,
     flexDirection: "row",

@@ -402,9 +402,14 @@ before merging.
 
 ### PR 4: `feat(beta)`: the invite code step, the closed beta and the Beta label
 
-- [ ] The app's invite screen, `/invite/<code>`, the closed beta text and
+- [x] The app's invite screen, `/invite/<code>`, the closed beta text and
       the Beta label; the console's Invite codes page with places left
-- [ ] Specs 12 and 1 as choice 1 was decided
+- [x] Specs 12 and 1 as choice 1 was decided
+- As built: no browser journey. The browser tests' server is shared by
+  every journey and holds the gate off, so turning it on for one journey
+  would stop the others signing up. The screen tests cover the app's steps
+  and the console page, and the API's integration tests the gate itself.
+  The waitlist link in the closed beta text waits for milestone 12.
 - Verify: screen tests; a browser journey: the operator makes a code, a
   new person signs up with it, a second person without one is told about
   the closed beta

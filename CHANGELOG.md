@@ -1144,6 +1144,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   without a trip when there is none to show, and stays still between
   trips. The chips wrap instead of scrolling sideways. Phones are
   unchanged.
+- The invite code in the app and the console (spec 12, 3.2.3, 3.2.6 and
+  screen 5). A new number is asked for its invite code after the
+  text-message code, on a screen of its own in step 2; a code that does not
+  work is said in the field, a full beta under it, and when the
+  text-message code has run out the person is back at step 1 with the
+  invite code kept. A link `/invite/<code>` opens sign-up with the code
+  filled in. A small "Beta" label sits beside the name while the beta is
+  closed (`GET /v1/config`). The console's Invite codes page shows the
+  places left, makes a group code and ends one after asking.
 
 ### Fixed
 
