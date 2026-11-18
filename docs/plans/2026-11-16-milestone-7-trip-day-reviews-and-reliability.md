@@ -359,7 +359,9 @@ handed to everyone signed in (spec 1, 3.5; the safety thread's suggestion).
 - [x] The console's routes (decision 1, as changed): the cancellations
       excused by a weather or road-closure reason, overruling one so it
       counts or undoing that, with a note, and the people below 80% (7d)
-- [ ] The console's Reliability page (7e)
+- [x] The console's Reliability page: each cancellation with who, why
+      and when, the note to make it count or undo that, and the people
+      below 80% with their counts by role (7e)
 - Verify: integration tests (never the phone number or email; hidden
   reviews never shown or counted); screen tests; a browser journey opens
   the driver's profile from trip details
