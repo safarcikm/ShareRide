@@ -232,6 +232,11 @@ const resultsTexts = {
 /**
  * Searches from Borgarnes to Blönduós on Find, and gives the first trip
  * found: the sample trip from Reykjavík to Akureyri, which goes through both.
+ *
+ * The trip is looked for on the results page only. Find lists rides too,
+ * as the same cards, and it is still on show for a moment after its button
+ * is pressed: a click on one of its cards would wait for ever, as Find stays
+ * in the page, hidden, under the results.
  */
 async function searchNorth(page: Page, texts: (typeof resultsTexts)["en-GB" | "is-IS"]) {
   await page.goto("/");
@@ -243,7 +248,10 @@ async function searchNorth(page: Page, texts: (typeof resultsTexts)["en-GB" | "i
   await row.getByLabel(texts.toLabel, { exact: true }).fill("blön");
   await row.getByRole("button", { name: texts.blonduos }).click();
   await row.getByRole("button", { name: texts.find, exact: true }).click();
-  const trip = page.getByTestId("trip-result").filter({ visible: true }).first();
+  const results = page
+    .getByTestId("screen-scroll")
+    .filter({ has: page.getByTestId("results-heading") });
+  const trip = results.getByTestId("trip-result").first();
   await expect(trip).toBeVisible();
   return trip;
 }
@@ -320,7 +328,10 @@ for (const locale of ["en-GB", "is-IS"] as const) {
       }) => {
         await page.setViewportSize(laptop(width));
         await (await searchNorth(page, texts)).click();
-        await expect(page.getByRole("heading", { name: texts.trip }).filter(shown)).toBeVisible();
+        // `exact`: the results' heading names the same two places.
+        await expect(
+          page.getByRole("heading", { name: texts.trip, exact: true }).filter(shown),
+        ).toBeVisible();
 
         const main = page.getByTestId("columns-main").filter(shown);
         const side = page.getByTestId("columns-side").filter(shown);
