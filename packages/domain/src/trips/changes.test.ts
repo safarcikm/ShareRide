@@ -12,7 +12,14 @@ import {
   type ChangeableTrip,
   type TripChange,
 } from "./changes.ts";
-import { highestPriceLevel, isPriceLevel, priceCap, segmentPrice } from "./prices.ts";
+import { isLevelWithin, tripLimit } from "./limit.ts";
+import {
+  highestPriceLevel,
+  isPriceLevel,
+  priceCap,
+  segmentPrice,
+  segmentPrices,
+} from "./prices.ts";
 import type { LegLookup } from "./route.ts";
 import { defaultTripSettings } from "./settings.ts";
 import { checkTimes, plannedTimes } from "./times.ts";
@@ -41,6 +48,7 @@ const northTrip: ChangeableTrip = {
   occupancy: [0, 0, 0],
   seats: 3,
   priceLevel: 100,
+  takings: 0,
   vehicleId: "car-yaris",
   cars: ["car-yaris", "car-van"],
   bookingMode: "approval",
@@ -329,9 +337,35 @@ describe("the seats offered (rule S5)", () => {
       { price: kr(3300), cap: kr(3300) },
       { price: kr(2500), cap: kr(2500) },
     ]);
+    expect(eight.levelLimitedBy).toBe("seats");
     const four = effect(checkTripChange(dear, [], { kind: "seats", seats: 4 }, now, settings));
     expect(four.trip.priceLevel).toBe(200);
     expect(four.priceLevelLowered).toBe(false);
+    expect(four.levelLimitedBy).toBeNull();
+  });
+
+  it("lower the level to what the trip limit leaves once people have booked (spec 17, gap 1)", () => {
+    // Spec 17's trip: one seat, booked on the whole route at 500% for 29 100 kr.
+    const gap1: ChangeableTrip = {
+      ...northTrip,
+      distancesM: [74_000, 171_000, 143_000],
+      seats: 1,
+      priceLevel: 500,
+      occupancy: [1, 1, 1],
+      takings: 29_100,
+    };
+    const three = effect(checkTripChange(gap1, [], { kind: "seats", seats: 3 }, now, settings));
+    expect(three.trip.priceLevel).toBe(120);
+    expect(three.priceLevelLowered).toBe(true);
+    expect(three.levelLimitedBy).toBe("trip_limit");
+    expect(three.pricing?.map(({ price }) => price)).toEqual(
+      segmentPrices(gap1.distancesM, 120, 3, settings),
+    );
+    // Nothing booked: the seats alone lower it, as before spec 17.
+    const free = { ...gap1, occupancy: [0, 0, 0], takings: 0 };
+    const fresh = effect(checkTripChange(free, [], { kind: "seats", seats: 3 }, now, settings));
+    expect(fresh.trip.priceLevel).toBe(250);
+    expect(fresh.levelLimitedBy).toBe("seats");
   });
 });
 
@@ -353,6 +387,22 @@ describe("the price level (rule P4)", () => {
       { price: kr(6000), cap: kr(7500) },
       { price: kr(4500), cap: kr(5600) },
     ]);
+  });
+
+  it("goes no higher than what the trip limit leaves (spec 17)", () => {
+    // Spec 17's trip after gap 1: three seats, one booked for 29 100 kr.
+    const booked: ChangeableTrip = {
+      ...northTrip,
+      distancesM: [74_000, 171_000, 143_000],
+      priceLevel: 120,
+      occupancy: [1, 1, 1],
+      takings: 29_100,
+    };
+    const to = (priceLevel: number) =>
+      checkTripChange(booked, bookings, { kind: "priceLevel", priceLevel }, now, settings);
+    expect(problems(to(130))).toEqual(["price_level_invalid"]);
+    expect(to(120).ok).toBe(true);
+    expect(to(0).ok).toBe(true);
   });
 
   it("is a step of 10% from free to the highest for the seats", () => {
@@ -506,6 +556,34 @@ describe("adding a stop (spec 6, 3.2; milestone 6 plan, decision 2)", () => {
     expect(
       effect(checkTripChange(northTrip, [], addStop("mosfellsbaer"), now, settings)).told,
     ).toEqual([]);
+  });
+
+  it("lowers the level when the new stretches leave too little room for what is booked (spec 17)", () => {
+    // 15.5 and 45.5 km each round up at 110%: a full car would pay more than
+    // the 46 200 kr limit once 39 200 kr is booked.
+    const tight = { ...bookedTrip, priceLevel: 110, takings: 39_200 };
+    const result = effect(checkTripChange(tight, bookings, addStop("mosfellsbaer"), now, settings));
+    expect(result.trip.priceLevel).toBe(100);
+    expect(result.priceLevelLowered).toBe(true);
+    expect(result.levelLimitedBy).toBe("trip_limit");
+    const each = result.trip.distancesM.map((distanceM) => ({
+      price: segmentPrice(distanceM, 100, 3, settings),
+      cap: priceCap(distanceM, 3, settings),
+    }));
+    expect(result.pricing).toEqual(each);
+    expect(result.addedStop).toEqual({ position: 1, stretches: [each[0], each[1]] });
+    // With room to spare, the level stays and only the new stretches are priced.
+    const roomy = effect(
+      checkTripChange(
+        { ...tight, takings: 30_000 },
+        bookings,
+        addStop("mosfellsbaer"),
+        now,
+        settings,
+      ),
+    );
+    expect(roomy.trip.priceLevel).toBe(110);
+    expect(roomy.pricing).toBeNull();
   });
 
   it("is an active meeting point, in season, and not on the trip already (R3.2)", () => {
@@ -880,7 +958,8 @@ describe("any sequence of changes the rules allow", () => {
         return (
           change.priceLevel % 10 === 0 &&
           change.priceLevel >= 0 &&
-          change.priceLevel <= highestPriceLevel(trip.seats, settings)
+          change.priceLevel <= highestPriceLevel(trip.seats, settings) &&
+          isLevelWithin(change.priceLevel, trip, settings)
         );
       case "vehicle":
         return change.vehicleId === trip.vehicleId || trip.cars.includes(change.vehicleId);
@@ -900,6 +979,10 @@ describe("any sequence of changes the rules allow", () => {
         (typicalS, start, drawnBookings, drawnChanges) => {
           const departsAt = later(now, start);
           const occupancy = typicalS.map(() => 0);
+          // About 90 km/h; each booking paid at the trip's level of 100%.
+          const distancesM = typicalS.map((seconds) => seconds * 25);
+          const prices = segmentPrices(distancesM, northTrip.priceLevel, northTrip.seats, settings);
+          let takings = 0;
           const onTrip: BookingOnTrip[] = [];
           /** Where each booking gets in and out, by its stops (R5.1). */
           const parts: {
@@ -914,6 +997,7 @@ describe("any sequence of changes the rules allow", () => {
             if (part.some((taken) => taken + drawn.seats > northTrip.seats)) continue;
             for (let segment = board; segment < alight; segment += 1) {
               occupancy[segment] = (occupancy[segment] ?? 0) + drawn.seats;
+              takings += drawn.seats * (prices[segment]?.amount ?? 0);
             }
             onTrip.push({
               id: `booking-${String(index)}`,
@@ -942,9 +1026,9 @@ describe("any sequence of changes the rules allow", () => {
               season: allYear,
             })),
             typicalS,
-            // About 90 km/h.
-            distancesM: typicalS.map((seconds) => seconds * 25),
+            distancesM,
             occupancy,
+            takings,
           };
           for (const drawn of drawnChanges) {
             const present = trip.stops[0]?.plannedAt ?? departsAt;
@@ -1011,7 +1095,29 @@ describe("any sequence of changes the rules allow", () => {
               expect(Math.abs(fromBookedMs)).toBeLessThanOrEqual(maxMoveMinutes * minuteMs);
             }
 
-            const repriced = change.kind === "seats" || change.kind === "priceLevel";
+            // A full car never brings more than the trip limit (rule P3, spec 17).
+            const rest = segmentPrices(
+              trip.distancesM,
+              trip.priceLevel,
+              trip.seats,
+              settings,
+            ).reduce(
+              (total, price, segment) =>
+                total + (trip.seats - (trip.occupancy[segment] ?? 0)) * price.amount,
+              0,
+            );
+            expect(
+              trip.priceLevel === 0 ||
+                trip.takings + rest <= tripLimit(trip.distancesM, trip.seats, settings).amount,
+            ).toBe(true);
+            expect(trip.priceLevel).toBeLessThanOrEqual(
+              change.kind === "priceLevel" ? change.priceLevel : before.priceLevel,
+            );
+
+            const repriced =
+              change.kind === "seats" ||
+              change.kind === "priceLevel" ||
+              result.value.priceLevelLowered;
             expect(pricing === null).toBe(!repriced);
             const { addedStop, removedStop } = result.value;
             expect(addedStop === null).toBe(change.kind !== "addStop");

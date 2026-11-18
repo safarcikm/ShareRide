@@ -3,8 +3,14 @@
 // same transaction, and first stores the expiry of bookings past their
 // deadlines. Reads that cannot wait for that correct the stored occupancy.
 import { schema, type Database } from "@shareride/db";
-import { limitRoom, type BookingStatus, type Money } from "@shareride/domain";
-import { and, asc, eq, gte, inArray, isNull, lt, lte, ne, or, sql } from "drizzle-orm";
+import {
+  limitRoom,
+  takingsOf,
+  type BookingStatus,
+  type Money,
+  type TakingsBooking,
+} from "@shareride/domain";
+import { and, asc, eq, gte, inArray, isNull, lt, lte, ne, not, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { recordEvents } from "../notifications/outbox.ts";
 
@@ -89,19 +95,53 @@ export async function limitRoomOf(tx: Transaction, tripId: string): Promise<Mone
     .select({ capacity: segments.capacity, cap: segments.cap })
     .from(segments)
     .where(eq(segments.tripId, tripId));
-  const held = await tx
-    .select({
-      status: bookings.status,
-      totalPrice: bookings.totalPrice,
-      refundAmount: bookings.refundAmount,
-      confirmedAt: bookings.confirmedAt,
-    })
-    .from(bookings)
-    .where(eq(bookings.tripId, tripId));
-  return limitRoom(
-    stretches,
-    held.map((booking) => ({ ...booking, status: booking.status as BookingStatus })),
-  );
+  return limitRoom(stretches, (await takingsBookings(tx, [tripId], null)).get(tripId) ?? []);
+}
+
+/**
+ * What the trip's bookings pay or paid the driver (rule P3; the domain's
+ * `takingsOf`). Call it with the trip locked and its due expiries stored.
+ */
+export async function takingsOfTrip(tx: Transaction, tripId: string): Promise<Money> {
+  return takingsOf((await takingsBookings(tx, [tripId], null)).get(tripId) ?? []);
+}
+
+/**
+ * Each trip's bookings as the takings see them (rule P3). With `now`, a
+ * request or an unpaid booking whose deadline has passed reads as expired,
+ * as the trip shows it, though not yet stored.
+ */
+export async function takingsBookings(
+  q: Queryable,
+  tripIds: readonly string[],
+  now: Date | null,
+): Promise<Map<string, TakingsBooking[]>> {
+  const rows =
+    tripIds.length === 0
+      ? []
+      : await q
+          .select({
+            tripId: bookings.tripId,
+            status: bookings.status,
+            totalPrice: bookings.totalPrice,
+            refundAmount: bookings.refundAmount,
+            confirmedAt: bookings.confirmedAt,
+          })
+          .from(bookings)
+          .where(
+            and(
+              inArray(bookings.tripId, [...tripIds]),
+              now === null ? undefined : not(pastDeadline(now) ?? sql`false`),
+            ),
+          );
+  const byTrip = new Map<string, TakingsBooking[]>();
+  for (const { tripId, ...booking } of rows) {
+    byTrip.set(tripId, [
+      ...(byTrip.get(tripId) ?? []),
+      { ...booking, status: booking.status as BookingStatus },
+    ]);
+  }
+  return byTrip;
 }
 
 /**
