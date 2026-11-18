@@ -70,8 +70,8 @@ every main screen, as drawn, on 2026-11-18.
 | 1 | 3.2 to 3.4 | Groundwork: tokens, `Screen` page width, `Columns`, `Grid`, the top bar lined up, pointer looks | Merged (#155) |
 | 2 | 3.5 | Find: the search in one row, rides in a grid, the side column | Merged (#156) |
 | 3 | 3.6 | Search results: the map beside the list, chips that wrap | Merged (#160) |
-| 4 | 3.7, 3.8 | Trip details, Check and pay and a request in two columns | Built |
-| 5 | 3.11 | Messages as two panes | Built |
+| 4 | 3.7, 3.8 | Trip details, Check and pay and a request in two columns | Merged (#161) |
+| 5 | 3.11 | Messages as two panes | Merged (#170) |
 | 6 | 3.9, 3.10, 3.12 | A booking, My rides and Profile | Built |
 | 7 | 3.13, 3.14 | Offer a ride and the driver's trip | |
 
