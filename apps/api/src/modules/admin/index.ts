@@ -6,3 +6,4 @@ export * from "./passkeys.ts";
 export * from "./require-operator.ts";
 export * from "./routes.ts";
 export * from "./sessions.ts";
+export * from "./home.ts";

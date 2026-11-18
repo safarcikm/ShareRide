@@ -596,7 +596,13 @@ before merging.
 
 ### PR 14: `feat(console)`: the home page's counts
 
-- [ ] `GET /admin/v1/home` and the page
+- [x] `GET /admin/v1/home` and the page
+- As built: each count is the length of the list its module gives the
+  console, so the two cannot disagree; at the beta's size that costs
+  nothing worth a second query. "Reviews due" counts points past their
+  yearly review, as the meeting points list's filter does. Failed
+  notifications have no page to link to. The places left show only
+  while an invite code is needed.
 - Verify: integration tests (each count against records made in the
   test); the page's tests
 

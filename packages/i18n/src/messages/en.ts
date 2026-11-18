@@ -1847,7 +1847,27 @@ export const en = {
   "admin.home.title": "Home",
   "admin.home.welcome": "Welcome, {name}",
   "admin.home.welcomeNoName": "Welcome",
-  "admin.home.body": "Choose a section from the menu.",
+  "admin.home.today": "Today",
+  "admin.home.nothing": "Nothing is waiting for you.",
+  "admin.home.failed": "Today's counts could not be loaded.",
+  "admin.home.loadAgain": "Try again",
+  "admin.home.urgentReports": "{count, plural, one {# urgent report} other {# urgent reports}}",
+  "admin.home.reports": "{count, plural, one {# other open report} other {# other open reports}}",
+  "admin.home.appeals": "{count, plural, one {# appeal to answer} other {# appeals to answer}}",
+  "admin.home.disputes":
+    "{count, plural, one {# dispute waiting for a decision} other {# disputes waiting for a decision}}",
+  "admin.home.reviewsOverdue":
+    "{count, plural, one {# meeting point whose yearly review is overdue} other {# meeting points whose yearly review is overdue}}",
+  "admin.home.failedNotifications":
+    "{count, plural, one {# notification failed in the last 24 hours} other {# notifications failed in the last 24 hours}}",
+  "admin.home.watched":
+    "{count, plural, one {# person below the reliability watch level} other {# people below the reliability watch level}}",
+  "admin.home.newFeedback":
+    "{count, plural, one {# new piece of feedback} other {# new pieces of feedback}}",
+  "admin.home.placesLeft":
+    "{count, plural, =0 {The beta is full: no places left} one {# place left in the beta} other {# places left in the beta}}",
+  "admin.home.switchesOff":
+    "{count, plural, one {A switch is off: {names}} other {Switches are off: {names}}}",
   "admin.home.meetingPointProblems":
     "{count, plural, =0 {No open problem reports about meeting points} one {# open problem report about meeting points} other {# open problem reports about meeting points}}",
   "admin.passkeys.title": "Passkeys",

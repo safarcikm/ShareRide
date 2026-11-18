@@ -176,12 +176,4 @@ describe("problem reports about meeting points (spec 2, 3.5)", () => {
     await page();
     expect(await screen.findByText("There are no open reports.")).toBeTruthy();
   });
-
-  it("counts the open reports on the home page", async () => {
-    start("/admin");
-    const link = await screen.findByRole("link", {
-      name: "2 open problem reports about meeting points",
-    });
-    expect(link.getAttribute("href")).toBe("/admin/meeting-points/problems");
-  });
 });

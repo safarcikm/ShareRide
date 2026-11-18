@@ -13,6 +13,7 @@ import {
   operatorSignInLimitsPerAddress,
   searchLimitsPerAddress,
   type SettingValues,
+  switchKeys,
 } from "@shareride/domain";
 import type { Context } from "hono";
 import { cors } from "hono/cors";
@@ -32,6 +33,7 @@ import {
   operatorCookie,
   registerAdminAuthRoutes,
   registerAdminRoutes,
+  registerHomeAdminRoute,
 } from "./modules/admin/index.ts";
 import {
   createAccountService,
@@ -118,7 +120,10 @@ import {
   registerNoticeRoutes,
   registerPeopleAdminRoutes,
 } from "./modules/moderation/index.ts";
-import { registerNotificationRoutes } from "./modules/notifications/index.ts";
+import {
+  failedDeliveriesSince,
+  registerNotificationRoutes,
+} from "./modules/notifications/index.ts";
 import { createPaymentService, registerPaymentRoutes } from "./modules/payments/index.ts";
 import {
   createDeletionService,
@@ -476,17 +481,15 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       createReportService({ ...features, settings: tripDaySettings }),
       requireAuth,
     );
-    registerDisputeAdminRoutes(app, {
+    const disputes = createDisputeAdminService({ ...features, settings: tripDaySettings });
+    registerDisputeAdminRoutes(app, { ...features, disputes, requireOperator });
+    const reliability = createReliabilityAdminService({
       ...features,
-      disputes: createDisputeAdminService({ ...features, settings: tripDaySettings }),
-      requireOperator,
+      settings: reliabilitySettings,
     });
     registerReliabilityAdminRoutes(app, {
       ...features,
-      reliability: createReliabilityAdminService({
-        ...features,
-        settings: reliabilitySettings,
-      }),
+      reliability,
       settings: reliabilitySettings,
       requireOperator,
     });
@@ -533,13 +536,31 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       requireAuth,
     );
     registerNoticeRoutes(app, createNoticeService(features), requireAuth);
-    registerModerationAdminRoutes(app, {
+    const moderation = createModerationConsoleService({
       ...features,
-      moderation: createModerationConsoleService({
-        ...features,
-        reliability: reliabilitySettings,
-      }),
+      reliability: reliabilitySettings,
+    });
+    registerModerationAdminRoutes(app, { ...features, moderation, requireOperator });
+    // The console's home page: each count asked of its own module, as its list is.
+    registerHomeAdminRoute(app, {
+      clock: features.clock,
       requireOperator,
+      sources: {
+        openReports: () => moderation.reports("open"),
+        openAppeals: async () => (await moderation.appeals("open")).length,
+        disputesWaiting: async () => (await disputes.list("waiting")).length,
+        meetingPointProblems: async () => (await issues.queue()).length,
+        meetingPointReviewsOverdue: async () =>
+          (await meetingPointsAdmin.meetingPoints.list({ reviewOverdue: true })).length,
+        failedNotificationsSince: (since) => failedDeliveriesSince(features.db, since),
+        watched: async () => (await reliability.watched()).length,
+        newFeedback: async () => (await feedback.list({})).newCount,
+        beta: () => invites.overview(),
+        switchesOff: async () => {
+          const switches = await operatorSettings.switches();
+          return switchKeys.filter((key) => !switches[key].on);
+        },
+      },
     });
     registerPeopleAdminRoutes(app, {
       ...features,
