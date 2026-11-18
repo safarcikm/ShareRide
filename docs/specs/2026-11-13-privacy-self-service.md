@@ -73,7 +73,9 @@ reminders stay under Notifications (spec 7).
    - warnings, suspensions and their statements of reasons, and operator
      notes about them;
    - blocks they made;
-   - notifications sent to them in the last 90 days (kind, channel, time).
+   - notifications sent to them in the last 90 days (kind, channel, time);
+   - the feedback they sent during the beta and our replies, with each
+     screenshot as a file (spec 12).
 4. Never included: who reported them, or anything else that would reveal
    another person's report or personal data beyond a first name.
 

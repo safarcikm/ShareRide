@@ -416,9 +416,14 @@ before merging.
 
 ### PR 5: `feat(feedback)`: feedback, the API and the console routes
 
-- [ ] `beta/feedback.ts` with its tests; the migration; the two app
+- [x] `beta/feedback.ts` with its tests; the migration; the two app
       routes; the console routes; `FeedbackReplied` and `feedback_replied`;
       the catalogue, the export section and the retention rule
+- As built: the person who sent feedback sees the reply, never the
+  operator's status; the language is the account's; the screenshot route
+  gives the JPEG itself, since the console's content policy shows images
+  from its own origin only; feedback sent after the beta ended is kept
+  12 months from when it was sent
 - Verify: integration tests (a file that is not a JPEG, has metadata or
   is too large is refused; the eleventh of a day is refused; another
   person's feedback is never listed; a reply is sent once; the export

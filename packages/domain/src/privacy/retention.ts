@@ -33,6 +33,8 @@ export const retentionRules = [
   "privacy_requests",
   /** Problem reports about meeting points, 12 months after they were resolved (spec 2, section 7). */
   "meeting_point_issues",
+  /** The beta's feedback, 12 months after the beta ended (spec 12, section 7). */
+  "feedback",
   "holds",
   "retention_runs",
 ] as const;

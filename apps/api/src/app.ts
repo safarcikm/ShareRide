@@ -66,7 +66,10 @@ import {
   registerReliabilityAdminRoutes,
 } from "./modules/people/index.ts";
 import {
+  createFeedbackService,
   createInviteService,
+  registerFeedbackAdminRoutes,
+  registerFeedbackRoutes,
   registerInviteAdminRoutes,
   registerInviteRoutes,
 } from "./modules/beta/index.ts";
@@ -447,6 +450,9 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       clientKey: (c) => features.hasher("invite-check", addressBlock(features.clientAddress(c))),
     });
     registerInviteAdminRoutes(app, { ...features, invites, requireOperator });
+    const feedback = createFeedbackService(features);
+    registerFeedbackRoutes(app, { feedback, requireAuth });
+    registerFeedbackAdminRoutes(app, { ...features, feedback, requireOperator });
     registerReviewRoutes(
       app,
       createReviewService({ ...features, settings: defaultReviewSettings }),

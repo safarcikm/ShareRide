@@ -27,6 +27,8 @@ export const personalDataCategories = [
   "audit",
   "exports",
   "privacy_requests",
+  /** What the person sent as feedback during the beta, with its screenshots (spec 12). */
+  "feedback",
 ] as const;
 export type PersonalDataCategory = (typeof personalDataCategories)[number];
 
@@ -61,4 +63,5 @@ export const deletionEffects = {
   audit: "keep",
   exports: "erase",
   privacy_requests: "move",
+  feedback: "erase",
 } as const satisfies Record<PersonalDataCategory, DeletionEffect>;

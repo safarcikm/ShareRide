@@ -93,6 +93,9 @@ export const notificationRules = {
   account_deletion_scheduled: { push: false, email: "always", sms: false },
   // The answer to "Ask about my data" goes by email, which asking needs (spec 11, 3.6).
   privacy_request_answered: { push: false, email: "always", sms: false },
+  // The operator's reply to feedback (spec 12, 3.3.4): the push says only
+  // that there is a reply; the email carries it.
+  feedback_replied: { push: true, email: "always", sms: false },
 } as const satisfies Record<string, NotificationRule>;
 
 export type NotificationKind = keyof typeof notificationRules;
@@ -109,6 +112,7 @@ export const accountNoticeKinds = [
   "suspension_ended",
   "appeal_answered",
   "report_closed",
+  "feedback_replied",
 ] as const;
 export type AccountNoticeKind = (typeof accountNoticeKinds)[number];
 

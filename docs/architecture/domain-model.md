@@ -349,7 +349,13 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
   `Feedback`. As built: `invite_codes` holds group codes (personal codes
   come with the waitlist), `users.invite_code_id` the code an account
   joined with, and a tester is an account that has one; the rules are in
-  `packages/domain/src/beta/invites.ts`.
+  `packages/domain/src/beta/invites.ts`. `feedback` holds a tester's
+  message, kind (`problem`, `idea`, `other`), the app's details (version,
+  platform, system version, the screen's route, language), the operator's
+  status (`new`, `read`, `planned`, `done`, `wont_do`) and one reply;
+  `feedback_screenshots` the picture, apart from it, in the database
+  (milestone 11, choice 2). Both go with the account, and 12 months after
+  the beta ends; the rules are in `packages/domain/src/beta/feedback.ts`.
 - `NotificationPreference`, `PushToken`.
 - `Block`: blocker and blocked; hides both from each other, with the trips each drives ([spec 9](../specs/2026-11-13-safety-and-moderation.md#32-blocking-g2)). A trip someone else is booked on stays open: who is booked is private.
 - `Notification` and `NotificationDelivery`: who was told what kind of thing,
@@ -418,7 +424,7 @@ recorded change), `TripChanged` (a new car or stop, likewise), `TripCancelled`, 
 (a request nobody answered, or an accepted booking nobody paid for),
 `BookingWithdrawn`, `BookingCancelled`,
 `TripDeparted`, `CheckedIn`, `PassengerNoShow`, `DriverAbsentReported`,
-`DisputeAnswered`, `DisputeDecided`, `TripCompleted`, `MessageSent`, `ReviewSubmitted`, `ReviewsRevealed`, `ReportFiled`, `ReportClosed` (the reporter is told the outcome),
+`DisputeAnswered`, `DisputeDecided`, `TripCompleted`, `MessageSent`, `ReviewSubmitted`, `ReviewsRevealed`, `ReportFiled`, `ReportClosed` (the reporter is told the outcome), `FeedbackReplied` (the tester is told there is a reply),
 `UserBlocked`, `ModerationActionTaken` (a warning, content hidden, a suspension, reinstatement, trip cancelled or other operator action on a person), `SuspensionEnded`, `AppealAnswered`,
 `WomenOnlyAccessWithdrawn`, `WomenOnlyAccessRestored`,
 `WeatherWarningMatched`, `RoadClosureMatched`.
