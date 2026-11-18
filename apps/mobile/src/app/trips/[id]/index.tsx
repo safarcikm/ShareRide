@@ -1,6 +1,6 @@
 import type { CallResult } from "@shareride/api-client";
 import { tripDetailsRoute, type TripDetails } from "@shareride/contracts";
-import { capitalised, formatDay, formatMoney } from "@shareride/i18n";
+import { capitalised, formatDay, formatDuration, formatMoney } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { Share as ShareIcon, ShieldCheck } from "lucide-react-native";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
@@ -8,7 +8,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText, formatWait } from "@/auth/errors";
 import { signUpRoute } from "@/auth/next-route";
 import { useMe, useSession } from "@/auth/session";
-import { useMaxSeats } from "@/beta/config";
+import { useMaxSeats, useTimings } from "@/beta/config";
 import { bookingHref, keepPendingBooking } from "@/booking/pending-booking";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
@@ -182,6 +182,7 @@ function Trip({
   readonly pending: boolean;
 }) {
   const { locale, t } = useLanguage();
+  const { freeCancellationMinutes } = useTimings();
   const maxSeats = useMaxSeats();
   const palette = usePalette();
   const me = useMe();
@@ -336,7 +337,9 @@ function Trip({
       <View style={styles.row}>
         <Icon icon={ShieldCheck} color={palette.primary} />
         <Text style={[typography.small, styles.grow, { color: palette.text }]}>
-          {t("trip.freeCancellation")}
+          {t("trip.freeCancellation", {
+            time: formatDuration(freeCancellationMinutes * 60, locale),
+          })}
         </Text>
       </View>
     );

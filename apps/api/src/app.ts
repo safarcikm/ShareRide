@@ -3,14 +3,13 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { healthReadyRoute, healthRoute } from "@shareride/contracts";
 import type { Database } from "@shareride/db";
 import {
-  defaultBookingSettings,
+  bookingSettingsFrom,
   defaultChatSettings,
   clientPlatformHeader,
   defaultMeetingPointIssueSettings,
   defaultNotificationSettings,
   defaultReliabilitySettings,
   defaultReviewSettings,
-  defaultSearchSettings,
   defaultTripDaySettings,
   inviteCheckLimitsPerAddress,
   operatorSignInLimitsPerAddress,
@@ -88,6 +87,8 @@ import {
   tripSettingsSource,
   registerConfigRoutes,
   registerSettingsAdminRoutes,
+  ruleSettingsSource,
+  settingValuesIn,
 } from "./modules/settings/index.ts";
 import {
   createLegService,
@@ -343,7 +344,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       onChange: async (tx, change, now) => {
         if (change.key !== "bookings_open") return;
         await movePaymentDeadlines(tx, change.newValue === 0 ? "starts" : "ends", now, {
-          bookings: defaultBookingSettings,
+          bookings: bookingSettingsFrom(await settingValuesIn(tx)),
           notifications: defaultNotificationSettings,
         });
       },
@@ -408,15 +409,15 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
         return c.body(file, 200, { "Content-Type": "image/jpeg", "Cache-Control": "no-cache" });
       });
     }
+    const ruleSettings = ruleSettingsSource(operatorSettings);
     // Before the trip routes, so /v1/trips/search is never taken for a trip's ID.
     registerSearchRoutes(app, {
-      // Operator settings (feature H4) replace the defaults later.
       search: createSearchService({
         ...features,
-        settings: defaultSearchSettings,
+        settings: () => ruleSettings.search(),
         searchLog: features.searchLog ?? createSearchLog({ ...features, logger }),
       }),
-      details: createTripDetailsService({ ...features, settings: defaultSearchSettings }),
+      details: createTripDetailsService({ ...features, settings: () => ruleSettings.search() }),
       optionalAuth: createOptionalAuth(auth),
       limiter: createMemoryRateLimiter({ rules: searchLimitsPerAddress, clock: features.clock }),
       // A keyed hash, as for sign-in limits: no plain address is kept, even in memory.
@@ -437,7 +438,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       createTripChangeService({
         ...features,
         settings,
-        bookingSettings: defaultBookingSettings,
+        ruleSettings,
         notificationSettings: defaultNotificationSettings,
         bookingsPaused: () => paused("bookings"),
       }),
@@ -446,7 +447,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     const bookings = createBookingService({
       ...features,
       account,
-      settings: defaultBookingSettings,
+      settings: ruleSettings,
       tripDaySettings: defaultTripDaySettings,
       bookingsPaused: () => paused("bookings"),
     });

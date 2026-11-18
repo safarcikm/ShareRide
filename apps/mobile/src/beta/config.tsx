@@ -1,5 +1,9 @@
 import { configRoute, type Config } from "@shareride/contracts";
-import { defaultTripSettings } from "@shareride/domain";
+import {
+  defaultCancellationSettings,
+  defaultTripSettings,
+  maxMoveMinutes,
+} from "@shareride/domain";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useMe, useSession } from "@/auth/session";
@@ -11,9 +15,15 @@ import { useOpenFeedback } from "./feedback";
 
 /**
  * Until the API has answered, and if it cannot be reached: nothing special
- * to show, and the seat limit the rules start with.
+ * to show, and the values the rules start with.
  */
-const quiet: Config = { beta: false, paused: [], maxSeats: defaultTripSettings.maxSeats };
+const quiet: Config = {
+  beta: false,
+  paused: [],
+  maxSeats: defaultTripSettings.maxSeats,
+  freeCancellationMinutes: defaultCancellationSettings.refundCutoffMinutes,
+  maxMoveMinutes,
+};
 
 const ConfigContext = createContext<Config>(quiet);
 
@@ -60,6 +70,11 @@ export function ConfigProvider({ children }: { readonly children: ReactNode }) {
 }
 
 export function useConfig(): Config {
+  return useContext(ConfigContext);
+}
+
+/** What a text about cancelling or moving a trip says of the values as they are now. */
+export function useTimings(): Pick<Config, "freeCancellationMinutes" | "maxMoveMinutes"> {
   return useContext(ConfigContext);
 }
 

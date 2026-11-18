@@ -471,7 +471,15 @@ describe("The Beta label (spec 12, 3.2.6)", () => {
 
     await renderApp("/", {
       setUp: (client) => {
-        client.answer("/v1/config", () => ok(200, { beta: true, paused: [], maxSeats: 8 }));
+        client.answer("/v1/config", () =>
+          ok(200, {
+            beta: true,
+            paused: [],
+            maxSeats: 8,
+            freeCancellationMinutes: 15,
+            maxMoveMinutes: 120,
+          }),
+        );
       },
     });
     expect(await screen.findByText("Beta")).toBeVisible();

@@ -60,15 +60,40 @@ export type Canceller =
   | { readonly by: "driver"; readonly reason: DriverCancelReason };
 
 /**
- * A departure moved by more than this many minutes from when a booking was
- * made lets its passenger cancel with a full refund, without it counting
- * (R6.3), and is told by SMS close to boarding (spec 7, 3.4).
+ * The values of cancelling the operator sets (ADR 0032). A booking keeps
+ * the ones of the settings version it was made under, so its deal never
+ * changes after the fact (R10.3).
  */
-export const freeCancellationMoveMinutes = 30;
-/** Rule M2: a passenger cancelling this many minutes or more before boarding gets a full refund. */
-export const refundCutoffMinutes = 15;
-/** R6.8: a passenger's cancellation counts when made less than this many hours before boarding. */
-export const reliabilityWindowHours = 24;
+export interface CancellationSettings {
+  /**
+   * A departure moved by more than this many minutes from when a booking was
+   * made lets its passenger cancel with a full refund, without it counting
+   * (R6.3), and is told by SMS close to boarding (spec 7, 3.4)
+   * (`major_time_change`).
+   */
+  readonly freeCancellationMoveMinutes: number;
+  /**
+   * Rule M2: a passenger cancelling this many minutes or more before
+   * boarding gets a full refund (`free_cancellation_until`).
+   */
+  readonly refundCutoffMinutes: number;
+  /**
+   * R6.8: a passenger's cancellation counts when made less than this many
+   * hours before boarding (`reliability_cancellation_window`).
+   */
+  readonly reliabilityWindowHours: number;
+}
+
+/** The starting values (decided 2026-11-13, pricing and seats). */
+export const defaultCancellationSettings: CancellationSettings = {
+  freeCancellationMoveMinutes: 30,
+  refundCutoffMinutes: 15,
+  reliabilityWindowHours: 24,
+};
+
+/** The starting values, one by one, for texts and tests. */
+export const { freeCancellationMoveMinutes, refundCutoffMinutes, reliabilityWindowHours } =
+  defaultCancellationSettings;
 
 const minuteMs = 60_000;
 
@@ -79,11 +104,19 @@ const minuteMs = 60_000;
  */
 const excusedReasons: ReadonlySet<Canceller["reason"]> = new Set(["weather", "road_closed"]);
 
-/** Whether the departure has moved by more than 30 minutes, earlier or later, since booking (R6.3). */
-export function movedFar(departsAtWhenBooked: Date, departsAt: Date): boolean {
+/**
+ * Whether the departure has moved by more than the booking's
+ * `major_time_change` (30 minutes to start), earlier or later, since
+ * booking (R6.3).
+ */
+export function movedFar(
+  departsAtWhenBooked: Date,
+  departsAt: Date,
+  settings: Pick<CancellationSettings, "freeCancellationMoveMinutes"> = defaultCancellationSettings,
+): boolean {
   return (
     Math.abs(departsAt.getTime() - departsAtWhenBooked.getTime()) >
-    freeCancellationMoveMinutes * minuteMs
+    settings.freeCancellationMoveMinutes * minuteMs
   );
 }
 
@@ -130,11 +163,14 @@ export interface BoardingPassed {
  *   minutes before departure". It counts only less than 24 hours before
  *   boarding, and never for weather or after such a move.
  * - An accepted booking not yet paid has nothing to refund and never counts.
+ *
+ * The numbers are the starting values; `settings` are the booking's own.
  */
 export function cancellationTerms(
   booking: BookingToCancel,
   canceller: Canceller,
   now: Date,
+  settings: CancellationSettings = defaultCancellationSettings,
 ): Result<CancellationTerms, ChangeNotAllowed | BoardingPassed> {
   const allowed = nextStatus(booking.status, "cancel");
   if (!allowed.ok) return err(allowed.error);
@@ -147,9 +183,9 @@ export function cancellationTerms(
   if (canceller.by === "driver") {
     return ok({ refund: booking.total, countsOnReliability: !excused });
   }
-  const far = movedFar(booking.departsAtWhenBooked, booking.departsAt);
-  const refunded = untilBoardingMs >= refundCutoffMinutes * minuteMs || far;
-  const late = untilBoardingMs < reliabilityWindowHours * 60 * minuteMs;
+  const far = movedFar(booking.departsAtWhenBooked, booking.departsAt, settings);
+  const refunded = untilBoardingMs >= settings.refundCutoffMinutes * minuteMs || far;
+  const late = untilBoardingMs < settings.reliabilityWindowHours * 60 * minuteMs;
   return ok({
     refund: refunded ? booking.total : nothing,
     countsOnReliability: late && !excused && !far,
@@ -166,14 +202,16 @@ export function excusedByReason(
   booking: BookingToCancel,
   canceller: Canceller,
   now: Date,
+  settings: CancellationSettings = defaultCancellationSettings,
 ): boolean {
-  const asGiven = cancellationTerms(booking, canceller, now);
+  const asGiven = cancellationTerms(booking, canceller, now, settings);
   const without = cancellationTerms(
     booking,
     canceller.by === "driver"
       ? { by: "driver", reason: "other" }
       : { by: "passenger", reason: "other" },
     now,
+    settings,
   );
   return (
     asGiven.ok &&

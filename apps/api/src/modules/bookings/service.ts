@@ -30,7 +30,7 @@ import {
   type BookingEvent,
   type BookingMode,
   type BookingProblem,
-  type BookingSettings,
+  type CancellationSettings,
   type BookingStatus,
   type BookingToCancel,
   type CancellationTerms,
@@ -72,6 +72,7 @@ import {
 } from "../trip-day/check-ins.ts";
 import { reviewsOf, shownReview } from "../reviews/view.ts";
 import { disputesOf, shownDispute } from "../trip-day/disputes.ts";
+import { cancellationSettingsOf, type RuleSettingsSource } from "../settings/rule-settings.ts";
 import {
   changeOccupancy,
   expireDueBookings,
@@ -475,6 +476,8 @@ function present(
   now: Date,
   settings: TripDaySettings,
   reviewSettings: ReviewSettings,
+  /** The booking's own cancellation values (R10.3). */
+  cancellation: CancellationSettings,
 ): Booking {
   const { booking, trip, car } = row;
   const status = shownStatus(booking, now);
@@ -570,7 +573,11 @@ function present(
       }
     }),
     // Null only for a booking the previous version made during a deploy.
-    movedFar: movedFar(booking.departsAtWhenBooked ?? departsAt, departsAt),
+    movedFar: movedFar(booking.departsAtWhenBooked ?? departsAt, departsAt, cancellation),
+    cancellationRules: {
+      freeUntilMinutes: cancellation.refundCutoffMinutes,
+      farMoveMinutes: cancellation.freeCancellationMoveMinutes,
+    },
     problemReportable: bookingProblemReportable(
       { status, tripCompletedAt: trip.completedAt },
       now,
@@ -612,22 +619,52 @@ export function createBookingService(dependencies: {
   readonly db: Database;
   readonly clock: () => Date;
   readonly account: Pick<AccountService, "me">;
-  readonly settings: BookingSettings;
+  /**
+   * Booking's values as they are now, and each booking's own cancellation
+   * values (ADR 0032).
+   */
+  readonly settings: Pick<RuleSettingsSource, "booking" | "cancellationAt">;
   readonly tripDaySettings: TripDaySettings;
   /** The time to review (spec 8, 3.7). */
   readonly reviewSettings?: ReviewSettings;
   /** Whether the operator paused bookings and payments (spec 10, 3.3); never when left out. */
   readonly bookingsPaused?: () => Promise<boolean>;
 }): BookingService {
-  const { db, clock, account, settings, tripDaySettings } = dependencies;
+  const { db, clock, account, tripDaySettings } = dependencies;
+  const ruleSettings = dependencies.settings;
   const bookingsPaused = dependencies.bookingsPaused ?? (() => Promise.resolve(false));
   const reviewSettings = dependencies.reviewSettings ?? defaultReviewSettings;
+
+  /** Bookings as their viewer sees them, each by its own cancellation values. */
+  async function presentAll(rows: readonly BookingRow[], viewerId: string, now: Date) {
+    const cancellationOf = await cancellationSettingsOf(
+      ruleSettings,
+      rows.map((row) => row.booking.settingsVersion),
+    );
+    return rows.map((row) =>
+      present(
+        row,
+        viewerId,
+        now,
+        tripDaySettings,
+        reviewSettings,
+        cancellationOf(row.booking.settingsVersion),
+      ),
+    );
+  }
 
   async function readOne(q: Queryable, bookingId: string, viewerId: string, now: Date) {
     const [row] = await readBookings(q, eq(bookings.id, bookingId), now);
     if (row === undefined) return undefined;
     if (row.booking.passengerId !== viewerId && row.trip.driverId !== viewerId) return undefined;
-    return present(row, viewerId, now, tripDaySettings, reviewSettings);
+    return present(
+      row,
+      viewerId,
+      now,
+      tripDaySettings,
+      reviewSettings,
+      await ruleSettings.cancellationAt(row.booking.settingsVersion),
+    );
   }
 
   async function byAttemptKey(q: Queryable, passengerId: string, attemptKey: string) {
@@ -742,6 +779,8 @@ export function createBookingService(dependencies: {
       const me = await account.me(passengerId);
       if (me.missingSteps.length > 0) return err({ code: "account_incomplete" });
 
+      // The values now; the booking keeps their version (R10.3).
+      const { version: settingsVersion, settings } = await ruleSettings.booking();
       return db.transaction(async (tx) => {
         // One booking at a time per passenger, so two cannot overlap (R5.10)
         // or use the same attempt key; then the trip, for its seats (R5.2).
@@ -849,6 +888,7 @@ export function createBookingService(dependencies: {
             paymentDueAt: plan.paymentDueAt,
             confirmedAt: plan.status === "confirmed" ? now : null,
             departsAtWhenBooked: trip.departsAt,
+            settingsVersion,
             createdAt: now,
             updatedAt: now,
           })
@@ -890,7 +930,7 @@ export function createBookingService(dependencies: {
         when === "upcoming"
           ? rows.filter(upcoming).sort((a, b) => boardsAt(a) - boardsAt(b))
           : rows.filter((row) => !upcoming(row)).sort((a, b) => boardsAt(b) - boardsAt(a));
-      return chosen.map((row) => present(row, passengerId, now, tripDaySettings, reviewSettings));
+      return presentAll(chosen, passengerId, now);
     },
 
     async booking(viewerId, bookingId) {
@@ -901,9 +941,13 @@ export function createBookingService(dependencies: {
       if (bookingIds.length === 0) return [];
       const now = clock();
       const rows = await readBookings(db, inArray(bookings.id, [...bookingIds]), now);
-      return rows
-        .filter((row) => row.booking.passengerId === viewerId || row.trip.driverId === viewerId)
-        .map((row) => present(row, viewerId, now, tripDaySettings, reviewSettings));
+      return presentAll(
+        rows.filter(
+          (row) => row.booking.passengerId === viewerId || row.trip.driverId === viewerId,
+        ),
+        viewerId,
+        now,
+      );
     },
 
     withdraw(passengerId, bookingId) {
@@ -943,9 +987,10 @@ export function createBookingService(dependencies: {
         found.departsAt,
         plannedAt({ plannedAt: found.boardsAt }),
       );
+      const cancellation = await ruleSettings.cancellationAt(found.booking.settingsVersion);
       const reasons: CancellationPreview["reasons"] = [];
       for (const reason of cancelReasonsFor(by)) {
-        const terms = cancellationTerms(booking, { by, reason } as Canceller, now);
+        const terms = cancellationTerms(booking, { by, reason } as Canceller, now, cancellation);
         if (!terms.ok) return err({ code: "booking_not_cancellable" });
         reasons.push({ reason, ...terms.value });
       }
@@ -1004,7 +1049,8 @@ export function createBookingService(dependencies: {
           trip.departsAt,
           boardsAt,
         );
-        const terms = cancellationTerms(toBeCancelled, canceller, now);
+        const cancellation = await ruleSettings.cancellationAt(booking.settingsVersion);
+        const terms = cancellationTerms(toBeCancelled, canceller, now, cancellation);
         if (!terms.ok) return err({ code: "booking_not_cancellable" });
         if (!sameTerms(terms.value, input.terms)) {
           return err({ code: "terms_changed", terms: terms.value });
@@ -1022,7 +1068,7 @@ export function createBookingService(dependencies: {
             refundAmount: refund.amount,
             countsOnReliability,
             // Worked out now, as it depends on the time (R8.11).
-            excusedByReason: excusedByReason(toBeCancelled, canceller, now),
+            excusedByReason: excusedByReason(toBeCancelled, canceller, now, cancellation),
             updatedAt: now,
           })
           .where(eq(bookings.id, bookingId));
@@ -1088,6 +1134,7 @@ export function createBookingService(dependencies: {
       // Nobody can pay during a pause, so the booking waits as long as it
       // can; the pause's end gives it its window (movePaymentDeadlines).
       const paused = await bookingsPaused();
+      const { settings } = await ruleSettings.booking();
       return answer(
         driverId,
         bookingId,
@@ -1160,8 +1207,10 @@ export function createBookingService(dependencies: {
             a.row.alightStop.position - b.row.alightStop.position,
         );
       return {
-        bookings: [...requests, ...others].map(({ row }) =>
-          present(row, driverId, now, tripDaySettings, reviewSettings),
+        bookings: await presentAll(
+          [...requests, ...others].map(({ row }) => row),
+          driverId,
+          now,
         ),
         segments: occupancy,
         capacity: trip.capacity,

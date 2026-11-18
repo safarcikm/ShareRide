@@ -44,6 +44,28 @@ async function openTrip(
 }
 
 describe("Trip details (spec 4, 3.6)", () => {
+  it("says until when cancelling is free as the operator has it now", async () => {
+    await renderApp(`/trips/${id}?from=1&to=2`, {
+      setUp: (client) => {
+        client.answer("/v1/config", () =>
+          ok(200, {
+            beta: false,
+            paused: [],
+            maxSeats: 8,
+            freeCancellationMinutes: 45,
+            maxMoveMinutes: 120,
+          }),
+        );
+        tripDetailsApi(client);
+      },
+    });
+    expect(
+      await screen.findByText(
+        "Free cancellation, with a full refund, up to 45 min before you get in.",
+      ),
+    ).toBeVisible();
+  });
+
   it("opens from a search result for that part, without an account", async () => {
     const { client } = await renderApp(
       `/search/results?from=${borgarnes.id}&to=${blonduos.id}&fromName=Borgarnes&toName=Bl%C3%B6ndu%C3%B3s&seats=2`,
@@ -123,9 +145,7 @@ describe("Trip details (spec 4, 3.6)", () => {
       }),
     ).toBeVisible();
     expect(
-      screen.getByText(
-        "Free cancellation, with a full refund, up to 15 minutes before you get in.",
-      ),
+      screen.getByText("Free cancellation, with a full refund, up to 15 min before you get in."),
     ).toBeVisible();
     // Said once, in Your part, rather than again further down.
     expect(screen.queryByText("The driver approves each request")).toBeNull();

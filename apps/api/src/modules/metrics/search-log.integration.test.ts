@@ -145,7 +145,7 @@ describe("the search log", () => {
     const service = createSearchService({
       db: api.connection.db,
       clock: () => api.now(),
-      settings: defaultSearchSettings,
+      settings: () => Promise.resolve(defaultSearchSettings),
       searchLog: broken,
     });
     const found = await service.search(

@@ -19,7 +19,15 @@ jest.mock("@/lib/preferences", () => ({
 
 const pausedTo = (paused: readonly string[]) => ({
   setUp: (client: FakeClient) => {
-    client.answer("/v1/config", () => ok(200, { beta: false, paused, maxSeats: 8 }));
+    client.answer("/v1/config", () =>
+      ok(200, {
+        beta: false,
+        paused,
+        maxSeats: 8,
+        freeCancellationMinutes: 15,
+        maxMoveMinutes: 120,
+      }),
+    );
   },
 });
 

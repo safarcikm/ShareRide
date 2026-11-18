@@ -44,7 +44,7 @@ test("a driver moves the departure 45 minutes, and the passenger cancels with a 
   await expect(
     driver
       .getByText(
-        "With bookings, the departure can move by up to 2 hours from the time your passengers booked.",
+        "With bookings, the departure can move by up to 2 h from the time your passengers booked.",
         { exact: true },
       )
       .filter(visible),
@@ -66,7 +66,7 @@ test("a driver moves the departure 45 minutes, and the passenger cancels with a 
   await expect(
     driver
       .getByText(
-        "It moves more than 30 minutes from when they booked, so 1 passenger can cancel with a full refund, without it counting against them.",
+        "It moves far enough from when they booked that 1 passenger can cancel with a full refund, without it counting against them.",
         { exact: true },
       )
       .filter(visible),

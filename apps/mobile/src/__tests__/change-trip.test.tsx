@@ -110,7 +110,7 @@ describe("The driver moves the departure (spec 6, 3.2)", () => {
     expect(screen).toHavePathname(`${tripPage}/edit/time`);
     expect(
       screen.getByText(
-        "With bookings, the departure can move by up to 2 hours from the time your passengers booked.",
+        "With bookings, the departure can move by up to 2 h from the time your passengers booked.",
       ),
     ).toBeVisible();
     await chooseDeparture("09:45");
@@ -128,7 +128,7 @@ describe("The driver moves the departure (spec 6, 3.2)", () => {
     expect(screen.getByText("1 passenger is told the new time now.")).toBeVisible();
     expect(
       screen.getByText(
-        "It moves more than 30 minutes from when they booked, so 1 passenger can cancel with a full refund, without it counting against them.",
+        "It moves far enough from when they booked that 1 passenger can cancel with a full refund, without it counting against them.",
       ),
     ).toBeVisible();
     // Checked on the time step, and again here, as of now; nothing is saved yet.

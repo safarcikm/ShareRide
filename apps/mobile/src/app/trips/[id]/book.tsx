@@ -6,7 +6,7 @@ import {
   type TripDetails,
 } from "@shareride/contracts";
 import { contactDetailsIn, defaultBookingSettings, type Money } from "@shareride/domain";
-import { capitalised, formatDay, formatMoney } from "@shareride/i18n";
+import { capitalised, formatDay, formatDuration, formatMoney } from "@shareride/i18n";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { CircleCheck } from "lucide-react-native";
 import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
@@ -17,7 +17,7 @@ import { newAttemptKey } from "@/booking/attempt-key";
 import { keepPendingBooking } from "@/booking/pending-booking";
 import { PaymentSheet, usePayment } from "@/booking/payment";
 import { bookErrorText, heldUntilText } from "@/booking/texts";
-import { PausedBanner, useMaxSeats } from "@/beta/config";
+import { PausedBanner, useMaxSeats, useTimings } from "@/beta/config";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
@@ -206,6 +206,7 @@ function BookForm({
   readonly onReload: () => void;
 }) {
   const { locale, t } = useLanguage();
+  const { freeCancellationMinutes } = useTimings();
   const palette = usePalette();
   const session = useSession();
   const wide = useWideScreen();
@@ -399,7 +400,13 @@ function BookForm({
       : free
         ? t("booking.freeRide")
         : t("booking.payWhenYes", { driver }),
-    ...(free ? [] : [t("trip.freeCancellation")]),
+    ...(free
+      ? []
+      : [
+          t("trip.freeCancellation", {
+            time: formatDuration(freeCancellationMinutes * 60, locale),
+          }),
+        ]),
     t("booking.plateOnceConfirmed"),
   ];
 

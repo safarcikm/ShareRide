@@ -86,7 +86,13 @@ async function openBooking(
     setUp: (client) => {
       if (answers.paused !== undefined) {
         client.answer("/v1/config", () =>
-          ok(200, { beta: false, paused: answers.paused, maxSeats: 8 }),
+          ok(200, {
+            beta: false,
+            paused: answers.paused,
+            maxSeats: 8,
+            freeCancellationMinutes: 15,
+            maxMoveMinutes: 120,
+          }),
         );
       }
       tripDetailsApi(client, answers.trip);
@@ -160,7 +166,7 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
     expect(screen.getByText("5,800 ISK")).toBeVisible();
     for (const tick of [
       "Your seat is confirmed as soon as you pay.",
-      "Free cancellation, with a full refund, up to 15 minutes before you get in.",
+      "Free cancellation, with a full refund, up to 15 min before you get in.",
       "You'll see the number plate once your seat is confirmed.",
     ]) {
       expect(screen.getByText(tick)).toBeVisible();
@@ -1045,7 +1051,7 @@ describe("You're booked and Request sent (spec 16, 3.7, items 4 and 5)", () => {
     for (const step of [
       "Number plate AB 123",
       "Be at the meeting point a few minutes before 10:00.",
-      "Plans change? Cancelling is free up to 15 minutes before you get in.",
+      "Plans change? Cancelling is free up to 15 min before you get in.",
     ]) {
       expect(screen.getByText(step)).toBeVisible();
     }

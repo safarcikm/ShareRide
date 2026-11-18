@@ -16,6 +16,8 @@ export function registerConfigRoutes(app: OpenAPIHono<AppEnv>, settings: Setting
     return c.json(
       {
         maxSeats: values.max_capacity,
+        freeCancellationMinutes: values.free_cancellation_until,
+        maxMoveMinutes: values.max_time_change,
         beta: values.invite_code_required === 1,
         paused: pausedNow(values),
       },

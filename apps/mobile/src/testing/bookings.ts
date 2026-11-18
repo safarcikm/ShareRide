@@ -43,6 +43,7 @@ export function northBooking(changes: Partial<Booking> = {}): Booking {
     confirmed: null,
     changes: [],
     movedFar: false,
+    cancellationRules: { freeUntilMinutes: 15, farMoveMinutes: 30 },
     problemReportable: true,
     tripDay: null,
     dispute: null,

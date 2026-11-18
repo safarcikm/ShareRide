@@ -1,7 +1,10 @@
 // The operator's values as each module's rules take them (ADR 0032; plan
 // 4.8): the module's settings object with the operator's values laid over
 // the code's other defaults.
+import type { CancellationSettings } from "../bookings/cancellation.ts";
+import { defaultBookingSettings, type BookingSettings } from "../bookings/settings.ts";
 import type { Money } from "../money.ts";
+import { defaultSearchSettings, type SearchSettings } from "../trips/search.ts";
 import { highestPriceLevel, segmentPrice, suggestedPriceLevel } from "../trips/prices.ts";
 import type { PriceSettings } from "../trips/prices.ts";
 import { defaultTripSettings, type TripSettings } from "../trips/settings.ts";
@@ -27,6 +30,33 @@ export function tripSettingsFrom(now: SettingValues, published: SettingValues = 
     ...defaultTripSettings,
     ...priceSettingsFrom(published),
     maxSeats: now.max_capacity,
+  };
+}
+
+/**
+ * Booking's settings as they are now. A request made close to boarding
+ * keeps its own two numbers, which are not the operator's.
+ */
+export function bookingSettingsFrom(now: SettingValues): BookingSettings {
+  return {
+    ...defaultBookingSettings,
+    bookingCutoffMinutes: now.booking_cutoff,
+    requestExpiryMinutes: now.request_expiry * 60,
+    paymentWindowMinutes: now.payment_window,
+  };
+}
+
+/** Search's settings as they are now: the cut-off is the booking's. */
+export function searchSettingsFrom(now: SettingValues): SearchSettings {
+  return { ...defaultSearchSettings, bookingCutoffMinutes: now.booking_cutoff };
+}
+
+/** The cancellation values a booking keeps: those of the version it was made under (R10.3). */
+export function cancellationSettingsFrom(made: SettingValues): CancellationSettings {
+  return {
+    freeCancellationMoveMinutes: made.major_time_change,
+    refundCutoffMinutes: made.free_cancellation_until,
+    reliabilityWindowHours: made.reliability_cancellation_window,
   };
 }
 

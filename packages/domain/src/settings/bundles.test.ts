@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
+import { defaultCancellationSettings } from "../bookings/cancellation.ts";
+import { defaultBookingSettings } from "../bookings/settings.ts";
+import { maxMoveMinutes } from "../trips/changes.ts";
+import { defaultSearchSettings } from "../trips/search.ts";
 import { defaultTripSettings } from "../trips/settings.ts";
-import { pricePreview, priceSettingsFrom, tripSettingsFrom } from "./bundles.ts";
+import {
+  bookingSettingsFrom,
+  cancellationSettingsFrom,
+  pricePreview,
+  priceSettingsFrom,
+  searchSettingsFrom,
+  tripSettingsFrom,
+} from "./bundles.ts";
 import { defaultSettingValues } from "./values.ts";
 
 describe("tripSettingsFrom", () => {
@@ -55,6 +66,45 @@ describe("pricePreview", () => {
     expect(pricePreview({ ...defaultSettingValues, suggested_rate: 16 })).toEqual({
       price: { amount: 6200, currency: "ISK" },
       highestLevel: 230,
+    });
+  });
+});
+
+describe("the booking and cancellation values (ADR 0032)", () => {
+  it("start as the rules' own starting values", () => {
+    expect(bookingSettingsFrom(defaultSettingValues)).toEqual(defaultBookingSettings);
+    expect(cancellationSettingsFrom(defaultSettingValues)).toEqual(defaultCancellationSettings);
+    expect(searchSettingsFrom(defaultSettingValues)).toEqual(defaultSearchSettings);
+    expect(defaultSettingValues.max_time_change).toBe(maxMoveMinutes);
+  });
+
+  it("give booking its cut-off, the request's hours as minutes and the payment window", () => {
+    const now = {
+      ...defaultSettingValues,
+      booking_cutoff: 30,
+      request_expiry: 6,
+      payment_window: 45,
+    };
+    expect(bookingSettingsFrom(now)).toMatchObject({
+      bookingCutoffMinutes: 30,
+      requestExpiryMinutes: 360,
+      paymentWindowMinutes: 45,
+    });
+    expect(searchSettingsFrom(now).bookingCutoffMinutes).toBe(30);
+  });
+
+  it("give a booking the cancellation values of the version it was made under", () => {
+    expect(
+      cancellationSettingsFrom({
+        ...defaultSettingValues,
+        free_cancellation_until: 60,
+        major_time_change: 20,
+        reliability_cancellation_window: 12,
+      }),
+    ).toEqual({
+      refundCutoffMinutes: 60,
+      freeCancellationMoveMinutes: 20,
+      reliabilityWindowHours: 12,
     });
   });
 });

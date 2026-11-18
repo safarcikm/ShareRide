@@ -13,7 +13,15 @@ export const groupKeys = {
   switches: "admin.settings.group.switches",
   beta: "admin.settings.group.beta",
   prices: "admin.settings.group.prices",
+  booking: "admin.settings.group.booking",
+  changes: "admin.settings.group.changes",
 } as const satisfies Record<SettingGroup, MessageKey>;
+
+/** What to know before changing anything in a group. */
+export const groupNotes: Partial<Record<SettingGroup, MessageKey>> = {
+  booking: "admin.settings.groupNote.terms",
+  changes: "admin.settings.groupNote.terms",
+};
 
 interface SettingTexts {
   readonly name: MessageKey;
@@ -74,6 +82,34 @@ const settingTexts = {
     name: "admin.settings.name.max_capacity",
     help: "admin.settings.help.max_capacity",
   },
+  booking_cutoff: {
+    name: "admin.settings.name.booking_cutoff",
+    help: "admin.settings.help.booking_cutoff",
+  },
+  request_expiry: {
+    name: "admin.settings.name.request_expiry",
+    help: "admin.settings.help.request_expiry",
+  },
+  payment_window: {
+    name: "admin.settings.name.payment_window",
+    help: "admin.settings.help.payment_window",
+  },
+  free_cancellation_until: {
+    name: "admin.settings.name.free_cancellation_until",
+    help: "admin.settings.help.free_cancellation_until",
+  },
+  major_time_change: {
+    name: "admin.settings.name.major_time_change",
+    help: "admin.settings.help.major_time_change",
+  },
+  max_time_change: {
+    name: "admin.settings.name.max_time_change",
+    help: "admin.settings.help.max_time_change",
+  },
+  reliability_cancellation_window: {
+    name: "admin.settings.name.reliability_cancellation_window",
+    help: "admin.settings.help.reliability_cancellation_window",
+  },
 } as const satisfies Record<SettingKey, SettingTexts>;
 
 interface UnitTexts {
@@ -89,6 +125,8 @@ const unitTexts = {
   kr: { value: "admin.settings.unit.kr", field: "admin.settings.newValue.kr" },
   percent: { value: "admin.settings.unit.percent", field: "admin.settings.newValue.percent" },
   seats: { value: "admin.settings.unit.seats", field: "admin.settings.newValue.seats" },
+  minutes: { value: "admin.settings.unit.minutes", field: "admin.settings.newValue.minutes" },
+  hours: { value: "admin.settings.unit.hours", field: "admin.settings.newValue.hours" },
 } as const satisfies Record<SettingUnit, UnitTexts>;
 
 const isUnit = (unit: string | null): unit is SettingUnit =>

@@ -650,7 +650,7 @@ export const is = {
   "trip.timeAndStop": "{time}, {name}",
   "trip.whoYouRideWith": "Með hverjum þú ferð",
   "trip.freeCancellation":
-    "Ókeypis afbókun, með fullri endurgreiðslu, allt að 15 mínútum áður en þú ferð inn.",
+    "Ókeypis afbókun, með fullri endurgreiðslu, allt að {time} áður en þú ferð inn.",
   "trip.seatView.you": "Þú",
   "trip.seatView.taken": "Upptekið",
   "trip.seatView.free": "Laust",
@@ -718,7 +718,7 @@ export const is = {
   "trip.editTimeTitle": "Breyta brottför",
   "trip.editTimeIntro": "Allir viðkomustaðir færast með brottförinni.",
   "trip.editTimeBooked":
-    "Þegar bókanir eru komnar má færa brottförina um allt að 2 klukkustundir frá þeim tíma sem farþegarnir bókuðu.",
+    "Þegar bókanir eru komnar má færa brottförina um allt að {time} frá þeim tíma sem farþegarnir bókuðu.",
   "trip.editTimeSame": "Ferðin fer nú þegar á þessum tíma. Veldu annan tíma.",
   "trip.editCheck": "Skoða breytinguna",
   "trip.editReviewTitle": "Skoðaðu breytinguna",
@@ -727,7 +727,7 @@ export const is = {
   "trip.editTold":
     "{count, plural, one {# farþegi fær} other {# farþegar fá}} að vita af nýja tímanum strax.",
   "trip.editFreeCancel":
-    "Brottförin færist um meira en 30 mínútur frá því þeir bókuðu svo {count, plural, one {# farþegi getur} other {# farþegar geta}} afbókað með fullri endurgreiðslu án þess að það telji gegn þeim.",
+    "Brottförin færist það langt frá því þeir bókuðu að {count, plural, one {# farþegi getur} other {# farþegar geta}} afbókað með fullri endurgreiðslu án þess að það telji gegn þeim.",
   "trip.editNobody": "Enginn hefur bókað enn svo enginn þarf að fá að vita það.",
   "trip.editRequests":
     "{count, plural, one {# sem bað um sæti sér} other {# sem báðu um sæti sjá}} nýja tímann í appinu.",
@@ -962,7 +962,7 @@ export const is = {
   "booking.next.plateLater": "Bílnúmerið birtist í Ferðunum mínum fyrir brottför.",
   "booking.next.beThere": "Mættu á mótsstaðinn nokkrum mínútum fyrir kl. {time}.",
   "booking.next.cancel":
-    "Breytast plönin? Þú getur afbókað án kostnaðar allt að 15 mínútum áður en þú ferð inn.",
+    "Breytast plönin? Þú getur afbókað án kostnaðar allt að {time} áður en þú ferð inn.",
   "booking.next.answer": "Svarið birtist í Ferðunum mínum.",
   "booking.next.payWhenYes":
     "Þegar {driver} samþykkir greiðir þú í Ferðunum mínum, undir Bíður eftir þér, til að staðfesta sætið.",
@@ -1033,7 +1033,7 @@ export const is = {
   "booking.cancelWhy": "Af hverju afbókarðu?",
   "booking.cancelChooseReason": "Veldu ástæðu.",
   "booking.fullRefund": "Full endurgreiðsla, {amount}",
-  "booking.noRefund": "Engin endurgreiðsla: innan við 15 mínútur í brottför",
+  "booking.noRefund": "Engin endurgreiðsla: innan við {time} í brottför",
   "booking.nothingPaid": "Ekkert að endurgreiða: þú hefur ekki greitt enn.",
   "booking.nothingToRefund": "Farið er ókeypis svo það er ekkert að endurgreiða.",
   "booking.countsOnReliability": "Þessi afbókun sést á prófílnum þínum",
@@ -1054,9 +1054,9 @@ export const is = {
   "booking.driverNote": "Skilaboð frá bílstjóranum: {note}",
   "booking.changesTitle": "Breytingar frá því þú bókaðir",
   "booking.movedFar":
-    "Brottförin færðist um meira en 30 mínútur svo þú getur afbókað með fullri endurgreiðslu án þess að það telji gegn þér.",
+    "Brottförin færðist um meira en {time} svo þú getur afbókað með fullri endurgreiðslu án þess að það telji gegn þér.",
   "booking.movedFarFree":
-    "Brottförin færðist um meira en 30 mínútur svo þú getur afbókað án þess að það telji gegn þér.",
+    "Brottförin færðist um meira en {time} svo þú getur afbókað án þess að það telji gegn þér.",
   "booking.backToBooking": "Aftur í bókunina",
   "booking.termsChanged":
     "Eitthvað breyttist síðan þú opnaðir þetta. Athugaðu endurgreiðsluna aftur.",
@@ -2121,6 +2121,10 @@ export const is = {
     "Gildin sem reglurnar lesa. Hver breyting þarf ástæðu og er geymd í sögunni.",
   "admin.settings.group.beta": "Beta",
   "admin.settings.group.prices": "Verð og sæti",
+  "admin.settings.group.booking": "Bókun og greiðsla",
+  "admin.settings.group.changes": "Breytingar og afbókanir",
+  "admin.settings.groupNote.terms":
+    "Þessi gildi standa í notkunarskilmálunum. Birtu nýja skilmála með breytingu, annars ber skilmálunum og appinu ekki saman.",
   "admin.settings.group.switches": "Neyðarrofar",
   "admin.settings.name.signups_open": "Nýskráningar",
   "admin.settings.help.signups_open":
@@ -2160,6 +2164,27 @@ export const is = {
   "admin.settings.name.max_capacity": "Hámarksfjöldi sæta í ferð",
   "admin.settings.help.max_capacity":
     "Sætin sem bílstjóri getur boðið og farþegi getur bókað, að hámarki. Gildir strax, líka fyrir drög. Ferðir sem þegar hafa verið birtar halda sætum sínum.",
+  "admin.settings.name.booking_cutoff": "Bókun lokar",
+  "admin.settings.help.booking_cutoff":
+    "Hversu löngu fyrir viðkomustað farþegans bókun lokar. Gildir strax, fyrir allar ferðir.",
+  "admin.settings.name.request_expiry": "Tími til að svara beiðni",
+  "admin.settings.help.request_expiry":
+    "Beiðni sem bílstjóri hefur ekki svarað rennur út eftir þennan tíma, eða 2 klukkustundum fyrir viðkomustað farþegans ef það er fyrr. Gildir um beiðnir sem berast héðan í frá. Beiðnir sem þegar bíða halda fresti sínum.",
+  "admin.settings.name.payment_window": "Tími til að greiða",
+  "admin.settings.help.payment_window":
+    "Hversu langan tíma farþegi hefur til að greiða eftir að bílstjóri samþykkir, aldrei lengur en þar til bókun lokar. Gildir um beiðnir sem eru samþykktar héðan í frá. Bókanir sem þegar bíða greiðslu halda fresti sínum.",
+  "admin.settings.name.free_cancellation_until": "Ókeypis afbókun þar til",
+  "admin.settings.help.free_cancellation_until":
+    "Farþegi sem afbókar með þessum fyrirvara eða meiri fyrir viðkomustað sinn fær fulla endurgreiðslu. Gildir um bókanir sem eru gerðar héðan í frá. Bókanir sem þegar hafa verið gerðar halda reglunni sem gilti þegar þær voru gerðar.",
+  "admin.settings.name.major_time_change": "Mikil breyting á brottför",
+  "admin.settings.help.major_time_change":
+    "Þegar brottför færist um meira en þetta frá því farþegi bókaði getur hann afbókað með fullri endurgreiðslu án þess að það telji gegn honum. Gildir um bókanir sem eru gerðar héðan í frá. Bókanir sem þegar hafa verið gerðar halda reglunni sem gilti þegar þær voru gerðar.",
+  "admin.settings.name.max_time_change": "Mesta breyting á brottför",
+  "admin.settings.help.max_time_change":
+    "Þegar bókanir eru komnar getur bílstjóri fært brottförina mest um þetta frá því hver farþegi bókaði. Gildir strax, fyrir allar ferðir.",
+  "admin.settings.name.reliability_cancellation_window": "Sein afbókun",
+  "admin.settings.help.reliability_cancellation_window":
+    "Afbókun farþega telur gegn áreiðanleika hans þegar hún er gerð með minni fyrirvara en þetta fyrir viðkomustað hans. Gildir um bókanir sem eru gerðar héðan í frá. Bókanir sem þegar hafa verið gerðar halda reglunni sem gilti þegar þær voru gerðar.",
   "admin.settings.on": "Kveikt",
   "admin.settings.off": "Slökkt",
   "admin.settings.unit.people": "{count, plural, one {{value} manneskja} other {{value} manns}}",
@@ -2172,6 +2197,11 @@ export const is = {
   "admin.settings.newValue.percent": "Nýtt gildi, í prósentum",
   "admin.settings.unit.seats": "{count, plural, one {{value} sæti} other {{value} sæti}}",
   "admin.settings.newValue.seats": "Nýtt gildi, fjöldi sæta",
+  "admin.settings.unit.minutes": "{count, plural, one {{value} mínúta} other {{value} mínútur}}",
+  "admin.settings.newValue.minutes": "Nýtt gildi, í mínútum",
+  "admin.settings.unit.hours":
+    "{count, plural, one {{value} klukkustund} other {{value} klukkustundir}}",
+  "admin.settings.newValue.hours": "Nýtt gildi, í klukkustundum",
   "admin.settings.default": "Sjálfgefið: {value}. Frá {min} til {max}.",
   "admin.settings.defaultSwitch": "Sjálfgefið: {value}.",
   "admin.settings.change": "Breyta",
