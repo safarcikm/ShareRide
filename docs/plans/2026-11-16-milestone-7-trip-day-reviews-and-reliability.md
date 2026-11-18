@@ -1,7 +1,8 @@
 # Milestone 7 plan: trip day, reviews and reliability
 
-**Owner:** Martin · **Date:** 2026-11-16 · **Status:** In progress; the
-choices in section 3 accepted by Martin on 2026-11-16 as recommended
+**Owner:** Martin · **Date:** 2026-11-16 · **Status:** Merged 2026-11-18;
+the choices in section 3 accepted by Martin on 2026-11-16 as recommended;
+Martin's checks in section 9 to do
 
 Helps people find each other on the day, settle a passenger or driver who
 doesn't come, finish trips on their own, and show reviews and a
@@ -325,14 +326,15 @@ console's dispute routes, 5d the Disputes page (decision 1, as changed).
 ### PR 6: `feat(reviews)`: rate and review
 
 In two parts, as PR 5: the API (6a), then the screens and the journey (6b).
+"Did something go wrong?" came after, with spec 9's report screen (6c).
 
 - [x] `reviews` and `POST /bookings/{id}/review`; the reveal; "A review
       about you is now visible" (6a)
 - [x] "How was your trip?" on completion and its reminder after 3 days,
       skipped once reviewed (4.2) (6a)
 - [x] The rate screen, from the booking page and the driver's trip page (6b)
-- [ ] "Did something go wrong?" with a report after 1 or 2 stars (3.7.4):
-      with spec 9's report screen, from the safety thread
+- [x] "Did something go wrong?" with a report after 1 or 2 stars (3.7.4):
+      with spec 9's report screen, from the safety thread (6c)
 - Verify: integration tests (only completed bookings, one each, 14 days,
   hidden until both; the reminder is skipped after a review); a browser
   journey: both review and then see each other's review

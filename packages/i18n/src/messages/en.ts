@@ -1217,6 +1217,7 @@ export const en = {
   "review.noContactDetails": "Please don't share phone numbers, emails or links in a review.",
   "review.hiddenUntil":
     "Your review appears when the other person has reviewed too, or after 14 days.",
+  "review.lowRating": "Did something go wrong?",
   "review.send": "Send review",
   "review.sent": "Review sent. Thank you.",
   "review.bothShown": "You have both reviewed, so both reviews show now.",

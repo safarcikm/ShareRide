@@ -1236,6 +1236,7 @@ export const is = {
   "review.noContactDetails": "Vinsamlegast ekki deila símanúmerum, netföngum eða tenglum í umsögn.",
   "review.hiddenUntil":
     "Umsögnin birtist þegar hinn aðilinn hefur líka skrifað umsögn, eða eftir 14 daga.",
+  "review.lowRating": "Fór eitthvað úrskeiðis?",
   "review.send": "Senda umsögn",
   "review.sent": "Umsögnin var send. Takk fyrir.",
   "review.bothShown": "Þið hafið bæði skrifað umsögn, svo báðar birtast núna.",
