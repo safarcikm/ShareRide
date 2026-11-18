@@ -387,11 +387,18 @@ In four parts, each its own pull request:
 
 ### PR 7: `feat(console)`: reports queue, report page and appeals
 
-- [ ] `/admin/v1/reports` and its actions, the logged conversation, the
-      appeals; their console pages
+- [x] 7a: `/admin/v1/reports` and the report page, the logged
+      conversation, the actions (close, warn, suspend, reinstate, hide
+      content, cancel a trip) and the appeals
+- [ ] 7b: their console pages, with the statement shown before it goes
 - Verify: integration tests (only the operator; only a message report
   opens a conversation, and it is logged); a console browser journey:
   dismiss one report, suspend from another, the reporter sees each outcome
+- Found while building (7a): the report page names a reported message
+  without its words, which are read in the conversation, so every reading
+  is logged. Ratings and reliability join the page with milestone 7's
+  profiles. An appeal shows the action and links its report; what was
+  hidden is read there.
 
 ### PR 8: `feat(console)`: users, trips and bookings
 

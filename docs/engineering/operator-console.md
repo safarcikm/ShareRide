@@ -336,6 +336,42 @@ What people send with "Something wrong here?" in the app (spec 2, 3.5;
 - The hourly clean-up deletes a resolved report 12 months after it was
   resolved (rule `meeting_point_issues`).
 
+### Distances
+
+The legs between meeting points (spec 2, 3.7;
+`apps/api/src/modules/meeting-points/legs.ts`), found by the `Router` on
+our road file ([road file](road-file.md), ADR 0031):
+
+- Points in service, which keep legs with each other, are active, paused
+  and retiring ones (`keepsLegs`). Legs to a point out of service stay
+  until that point's own legs are computed again.
+- `GET /admin/v1/legs` says how many points are in service and how many
+  of their legs exist, when the newest was computed, on which map data
+  (`sources`, with `current` for the map data the API has now), the points
+  with no road within 1 km and the first 100 legs missing, by name. The
+  console's page is `/admin/meeting-points/distances`, linked from the
+  list of points, with the map data's attribution.
+- `POST /admin/v1/legs/recompute` (an empty JSON body) computes every leg
+  between points in service again, in the request: one search a point,
+  a few hundredths of a second each (about 10 seconds for 300 points),
+  with other requests let in between. It replaces their legs in one
+  transaction and answers with the new status. A point moved meanwhile
+  keeps the legs its move computed. A second request while one runs gets
+  the same answer. The audit entry is `legs.recomputed`, with the source
+  and how many points, legs and missing legs.
+- `computeFor` gives one point its legs both ways with every point in
+  service, replacing all its old ones, those to points out of service
+  too, as they were found from where it was. It is for activating and
+  moving a point (PR 12), and is called after the move is saved. It finds
+  them under the lock, so of two points moved at once, the second reads
+  where the first now is.
+- One writer of legs at a time: the leg service and the sample seed take
+  a transaction lock (`lockLegs` in `@shareride/db`) before they delete
+  and insert. The seed writes the sample road graph's legs again on each
+  deploy, but keeps road file legs, except a moved sample point's.
+- Joining a point to a road looks only at roads whose box is within
+  1 km, so 300 points join in about a third of a second.
+
 ## Disputes
 
 `apps/api/src/modules/trip-day/admin-routes.ts` holds the console's
@@ -408,6 +444,43 @@ reliability routes (`registerReliabilityAdminRoutes`), with the work in
   people below it, lowest first, with their counts by role. The operator
   decides on a warning or a suspension as a person (3.8.4); nothing here
   suspends anyone.
+
+## Reports, actions and appeals
+
+`apps/api/src/modules/moderation/admin-routes.ts` holds the console's
+safety routes (`registerModerationAdminRoutes`), with the work in
+`console.ts` and the actions themselves in `actions.ts` (spec 9, 3.4 to
+3.6):
+
+- `GET /admin/v1/reports` lists the open reports, safety first, then the
+  oldest (`queueOrder`), each with `dueAt`, 24 hours after it was filed
+  (R9.9); `?state=closed` the last 50 closed, newest first.
+- `GET /admin/v1/reports/{id}` gives one report with its records (the
+  trip with its driver, the booking, the reported message without its
+  words, About you for a report about a person), the actions taken under
+  it, and for each of the two people their other reports, by and about
+  them, the last 10 trips they drove or held a seat on, and the actions on
+  them.
+- `GET /admin/v1/reports/{id}/conversation` reads the conversation through
+  `readConversationAsOperator` with `{ type: "report", id }`: only a
+  report about a message covers it (R9.6), else `not_covered`. A message
+  ShareRide removed comes with its words, marked `removed`.
+- `POST /admin/v1/reports/{id}/close` with `{ outcome }` closes it and
+  tells the reporter in general terms.
+- `POST /admin/v1/users/{id}/warning`, `.../suspension` (with `until`,
+  null for no end) and `.../reinstatement` (with the `note` the person
+  reads); `POST /admin/v1/hidden-content` with the content's kind and ID;
+  `POST /admin/v1/trips/{id}/cancellation` with `countsOnReliability`.
+  Each takes the rule and the reason the person reads, and the report it
+  answers as `reportId`, and answers with the action as the console shows
+  it.
+- `GET /admin/v1/appeals` lists the appeals waiting, oldest first;
+  `?state=answered` the last 50 answered.
+  `POST /admin/v1/moderation-actions/{id}/appeal-answer` answers one,
+  once and finally; reversing a suspension or a hiding undoes it.
+
+Each action writes its audit entry and the person's notice in its own
+transaction, naming the fields it changed, never their values.
 
 ## A console page
 

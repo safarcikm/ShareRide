@@ -82,6 +82,7 @@ import {
   type Queryable,
   type Transaction,
 } from "./seats.ts";
+import { refitToTripLimit } from "../trips/limit.ts";
 
 const {
   bookings,
@@ -703,6 +704,9 @@ export function createBookingService(dependencies: {
       await tx.update(bookings).set(change).where(eq(bookings.id, bookingId));
       if (!holdsSeats(change.status as BookingStatus)) {
         await changeOccupancy(tx, found.tripId, part, -booking.seats);
+        // A request made before the level rose gives back less than its
+        // seats now cost (spec 17).
+        await refitToTripLimit(tx, found.tripId, now);
       }
       if (change.status === "confirmed") {
         await bookingConfirmed(tx, { id: bookingId, tripId: found.tripId }, now);
@@ -1022,6 +1026,10 @@ export function createBookingService(dependencies: {
         // so its stops are still on the trip.
         const part = partOf(await stopsOf(tx, found.tripId), booking);
         await changeOccupancy(tx, found.tripId, part, -booking.seats);
+        // Money kept after a late cancellation counts while the seat is free
+        // again, and a seat booked before the level rose comes back dearer
+        // (spec 17).
+        await refitToTripLimit(tx, found.tripId, now);
         if (refund.amount > 0) await oweRefund(tx, bookingId, refund, now);
         await addSystemLine(
           tx,

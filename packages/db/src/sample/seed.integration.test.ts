@@ -88,6 +88,59 @@ describe("seedSampleMeetingPoints", () => {
     expect(await connection.db.$count(legs)).toBe(samplePoints.length * (samplePoints.length - 1));
   });
 
+  it("keeps the legs the road file gave sample points, but not those of a point the list moves", async () => {
+    const bsi = sampleId("point:bsi");
+    const akureyri = sampleId("point:akureyri");
+    const borgarnes = sampleId("point:borgarnes");
+    const real = sampleId("test:real");
+    const roadFile = "road file 2026-11-16T21:22:36.000Z";
+    const between = (from: string, to: string) =>
+      sql`${legs.fromMeetingPointId} = ${from} and ${legs.toMeetingPointId} = ${to}`;
+    const leg = async (from: string, to: string) =>
+      (await connection.db.select().from(legs).where(between(from, to)))[0];
+    await connection.db.insert(meetingPoints).values({
+      id: real,
+      nameIs: "Raunverulegur staður",
+      searchText: "raunverulegur stadur",
+      location: { latitude: 64.1, longitude: -21.9 },
+      region: "capital",
+      municipality: "Reykjavík",
+      type: "other",
+      status: "active",
+    });
+    // "Recompute all" put road file legs on the sample points too.
+    await connection.db
+      .update(legs)
+      .set({ distanceM: 388_100, source: roadFile })
+      .where(
+        sql`${legs.fromMeetingPointId} in (${bsi}, ${borgarnes}) or ${legs.toMeetingPointId} = ${borgarnes}`,
+      );
+    await connection.db.insert(legs).values({
+      fromMeetingPointId: bsi,
+      toMeetingPointId: real,
+      distanceM: 3000,
+      durationS: 300,
+      computedAt: now,
+      source: roadFile,
+    });
+    // Borgarnes is somewhere else in the database than in the list, as when
+    // the list moves a point.
+    await connection.db
+      .update(meetingPoints)
+      .set({ location: { latitude: 64.6, longitude: -21.9 } })
+      .where(eq(meetingPoints.id, borgarnes));
+
+    await seedSampleMeetingPoints(connection.db, new Date("2026-11-17T12:00:00Z"));
+
+    expect(await leg(bsi, akureyri)).toMatchObject({ distanceM: 388_100, source: roadFile });
+    expect(await leg(bsi, real)).toMatchObject({ source: roadFile });
+    expect(await leg(bsi, borgarnes)).toMatchObject({ source: sampleLegSource });
+    expect(await leg(borgarnes, bsi)).toMatchObject({ source: sampleLegSource });
+    expect(await connection.db.$count(legs)).toBe(
+      samplePoints.length * (samplePoints.length - 1) + 1,
+    );
+  });
+
   it("keeps the status the console gave a sample point, so a deploy does not undo a pause", async () => {
     const bsi = sampleId("point:bsi");
     await connection.db

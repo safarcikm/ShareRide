@@ -168,7 +168,9 @@ stop):
     and to the minute otherwise; every other stop keeps its time. The
     check shows "New stop: Mosfellsbær at 09:20", the new times, the two
     new stretches' prices for new bookings (from the trip's price level,
-    capped as when posting), and who is told. It refuses, naming the
+    capped as when posting), and who is told. When the new stretches leave
+    the trip too little room under its limit, the level falls for every
+    stretch, and the check says so ([spec 17](2026-11-17-trip-earnings-limit.md)). It refuses, naming the
     stop: one already on the trip, one paused or out of season, one that
     makes the route more than 1.5 times the direct way (R3.4), or one too
     far out of the way to fit between its neighbours, which keep their
@@ -202,7 +204,9 @@ stop):
     must leave at least 90% of that time between its neighbours, which
     keep their times (`stretch_too_fast`, R3.6). The check shows "Stop
     removed: Borgarnes", the new times, the joined stretch's price for
-    new bookings, and who is told.
+    new bookings, and who is told. When the joined stretch leaves the trip
+    too little room under its limit, the level falls for every stretch,
+    and the check says so ([spec 17](2026-11-17-trip-earnings-limit.md)).
 19. Saving joins the two stretches into one, with the higher of their
     seats taken. Each booking over both keeps its stops and its total: its
     two prices are added into one (P1). Stretches and booking prices after
