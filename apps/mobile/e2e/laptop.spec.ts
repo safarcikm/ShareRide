@@ -272,13 +272,23 @@ test.describe("Find's search row", () => {
       return `The trip on a map of Iceland: ${from ?? "?"} → ${to ?? "?"}.`;
     };
     await expect(map).toHaveAccessibleName(await onMap(0));
-    await cards.nth(1).hover();
-    await expect(map).toHaveAccessibleName(await onMap(1));
+    // A ride that goes elsewhere than the first, so the map has to change.
+    const names = await Promise.all((await cards.all()).map((_, place) => onMap(place)));
+    const other = names.findIndex((name) => name !== names[0]);
+    expect(other).toBeGreaterThan(0);
+    const primary = "rgb(47, 107, 79)";
+    await expect(cards.nth(0)).toHaveCSS("border-bottom-color", primary);
+    await cards.nth(other).hover();
+    await expect(map).toHaveAccessibleName(names[other] ?? "");
     await page.getByRole("heading", { name: "Leaving soon" }).hover();
-    await expect(map).toHaveAccessibleName(await onMap(1));
+    await expect(map).toHaveAccessibleName(names[other] ?? "");
+    // Its card keeps the edge it had under the pointer, and the first lost it.
+    await expect(cards.nth(other)).toHaveCSS("border-bottom-color", primary);
+    await expect(cards.nth(0)).not.toHaveCSS("border-bottom-color", primary);
     // The keyboard does the same as the pointer.
     await cards.nth(0).focus();
-    await expect(map).toHaveAccessibleName(await onMap(0));
+    await expect(map).toHaveAccessibleName(names[0] ?? "");
+    await expect(cards.nth(0)).toHaveCSS("border-bottom-color", primary);
     // The map is whole in a window 720 high, with the link under it.
     await page.setViewportSize({ width: 1280, height: 720 });
     const link = await box(

@@ -1,6 +1,6 @@
 import { meetingPointsRoute, type TripSearchResult } from "@shareride/contracts";
-import { router } from "expo-router";
-import { useCallback } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useRef } from "react";
 import { StyleSheet, View } from "react-native";
 import { useSession } from "@/auth/session";
 import { Button } from "@/components/button";
@@ -20,14 +20,28 @@ import { spacing } from "@/theme/tokens";
  * It asks for the meeting points itself, so a phone, which has no map on
  * Find, never does. Until they come, and if they cannot be loaded, the map
  * shows the ride with its two ends, and says nothing of it: the cards have
- * all a ride needs, and the meeting points page says what went wrong.
+ * all a ride needs, and the meeting points page says what went wrong. Find
+ * stays open under the other screens, so a load that failed is tried again
+ * each time the person comes back to it.
  */
 export function FindMap({ shown }: { readonly shown: TripSearchResult | undefined }) {
   const { locale, t } = useLanguage();
   const session = useSession();
   const load = useCallback(() => session.call(meetingPointsRoute, {}), [session]);
-  const { value } = useLoaded(load);
+  const { value, refresh } = useLoaded(load);
   const points = value?.ok === true ? value.data.meetingPoints : [];
+
+  // Read when Find comes back into view, not when the failure arrives:
+  // that would ask again at once, and again, for as long as it failed.
+  const retry = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    retry.current = value?.ok === false ? refresh : null;
+  });
+  useFocusEffect(
+    useCallback(() => {
+      retry.current?.();
+    }, []),
+  );
   const ends = shown === undefined ? [] : [shown.board.meetingPoint, shown.alight.meetingPoint];
 
   const dots = new Map<string, MapDot>();

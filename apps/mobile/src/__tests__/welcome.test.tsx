@@ -929,17 +929,103 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
   });
 
   it("shows the ride on the map when the meeting points cannot be loaded", async () => {
-    await openFrontPage((fake) => {
+    const { client } = await openFrontPage((fake) => {
       soonestApi(fake, soonRides(1));
       fake.answer("/v1/meeting-points", () => failure(0, "network_error"));
     });
     await screen.findByTestId("trip-result");
+    // Once the failure is there, not only while the answer is on its way.
+    await waitFor(() => {
+      expect(meetingPointsCalls(client)).toHaveLength(1);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
     expect(map()).toHaveProp("accessibilityLabel", mapOf("BSÍ bus terminal → Hof, Akureyri"));
     expect(drawn("map-dot-chosen")).toHaveLength(2);
     expect(drawn("map-dot-muted")).toHaveLength(0);
     expect(drawn("map-line-part")).toHaveLength(1);
     // The page says nothing of it: the list has all a ride needs.
     expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  /** Leaves Find for Profile and comes back, as the top bar does it. */
+  const awayAndBack = async () => {
+    const bar = within(screen.getByTestId("top-bar"));
+    await fireEvent.press(bar.getByRole("tab", { name: "Profile" }));
+    expect(await screen.findByRole("header", { name: "Profile" })).toBeVisible();
+    await fireEvent.press(bar.getByRole("tab", { name: "Find" }));
+    expect(await screen.findByTestId("search-row")).toBeVisible();
+  };
+
+  it("asks for the meeting points again when Find comes back into view after they failed", async () => {
+    let tries = 0;
+    const { client } = await openFrontPage((fake) => {
+      soonestApi(fake, soonRides(1));
+      fake.answer("/v1/meeting-points", () => {
+        tries += 1;
+        return tries === 1 ? failure(0, "network_error") : ok(200, { meetingPoints });
+      });
+    });
+    await screen.findByTestId("trip-result");
+    await waitFor(() => {
+      expect(meetingPointsCalls(client)).toHaveLength(1);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    // Not at once, over and over: only when the person comes back.
+    expect(meetingPointsCalls(client)).toHaveLength(1);
+    expect(drawn("map-dot-muted")).toHaveLength(0);
+
+    await awayAndBack();
+    await waitFor(() => {
+      expect(drawn("map-dot-muted")).toHaveLength(2);
+    });
+    expect(meetingPointsCalls(client)).toHaveLength(2);
+    // Now that they are there, coming back asks for nothing.
+    await awayAndBack();
+    expect(meetingPointsCalls(client)).toHaveLength(2);
+  });
+
+  it("goes back to the first ride when the one shown is no longer among the rides", async () => {
+    let asked = 0;
+    await openFrontPage((fake) => {
+      fake.answer("/v1/trips/soonest", () => {
+        asked += 1;
+        const [north] = soonRides(1);
+        return ok(200, { results: asked === 1 ? [north, airportRide] : [north] });
+      });
+      fake.answer("/v1/meeting-points", () => ok(200, { meetingPoints }));
+    });
+    expect(await screen.findAllByTestId("trip-result")).toHaveLength(2);
+    await fireEvent(card(1), "focus");
+    expect(map()).toHaveProp("accessibilityLabel", mapOf("Keflavík Airport → BSÍ bus terminal"));
+
+    // A phone asks for five rides and a laptop for six, so the rides load anew.
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+    await act(() => {
+      Dimensions.set({ window: laptop });
+    });
+    await waitFor(() => {
+      expect(screen.getAllByTestId("trip-result")).toHaveLength(1);
+    });
+    expect(map()).toHaveProp("accessibilityLabel", mapOf("BSÍ bus terminal → Hof, Akureyri"));
+    expect(card(0)).toHaveStyle(marked);
+  });
+
+  it("shows the offer and the meeting points on the map when the rides cannot be loaded", async () => {
+    await openFrontPage(withRides("failure"));
+    const main = within(await screen.findByTestId("columns-main"));
+    expect(await main.findByRole("button", { name: "Offer a ride" })).toBeVisible();
+    expect(screen.queryByRole("header", { name: "Leaving soon" })).toBeNull();
+    await waitFor(() => {
+      expect(map()).toHaveProp("accessibilityLabel", "Map of Iceland with 4 meeting points.");
+    });
+    expect(drawn("map-line-part")).toHaveLength(0);
   });
 
   it("has the map there while the rides load, so it does not move when they come", async () => {
@@ -1013,10 +1099,18 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
   });
 
   it("is a plain map of Iceland with no rides and no meeting points", async () => {
-    await openFrontPage();
+    const { client } = await openFrontPage();
     expect(await screen.findByTestId("columns-side")).toBeVisible();
     await screen.findByRole("button", { name: "Offer a ride" });
+    // Once the answer with no meeting points is there.
+    await waitFor(() => {
+      expect(meetingPointsCalls(client)).toHaveLength(1);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
     expect(map()).toHaveProp("accessibilityLabel", "Map of Iceland");
+    expect(drawn("map-dot-muted")).toHaveLength(0);
   });
 
   it("asks for no meeting points on a phone, which has no map on Find", async () => {

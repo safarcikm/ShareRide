@@ -172,15 +172,18 @@ changes on a phone.
    under the pointer, as beside search results (3.6). The map's label for
    screen readers names the ride. The map is a picture: nothing on it is
    pressed, and the cards say everything it shows about a ride.
-5. With no rides leaving soon, the main column holds one card, "Driving
-   somewhere? Share the empty seats in your car." with "Offer a ride" as a
-   secondary button, and the map shows the meeting points alone. While the
-   rides load, the main column has "Leaving soon" and a sign that they are
-   on their way. The side column is there from the start in each case, so
-   the map does not move when the rides come.
+5. With no rides leaving soon, and when the rides cannot be loaded, the
+   main column holds one card, "Driving somewhere? Share the empty seats
+   in your car." with "Offer a ride" as a secondary button, and the map
+   shows the meeting points alone. While the rides load, the main column
+   has "Leaving soon" and a sign that they are on their way. The side
+   column is there from the start in each case, so the map does not move
+   when the rides come.
 6. The meeting points come from their own call. Until they are there, and
    if they cannot be loaded, the map still shows the ride, its two ends
-   and its road; nothing on the page waits for them.
+   and its road; nothing on the page waits for them, and nothing says they
+   are missing. A call that failed is made again each time the person
+   comes back to Find, which stays open under the other screens.
 
 ### 3.6 Search results
 
@@ -420,12 +423,12 @@ build follows spec 15 and this spec.
 
 ## 6. Data and API
 
-No new call, table or field. Every layout shows what the screens already
-load, with one addition: a wide Find also asks for the meeting points
-(`GET /v1/meeting-points`, the public call the meeting points page makes),
-for its map. The map beside the results draws from the meeting points in
-the search answer, and the road of a ride on Find from the two ends its
-card has.
+No new endpoint, table or field. Every layout shows what the screens
+already load, with one addition: a wide Find also asks for the meeting
+points (`GET /v1/meeting-points`, the public call the meeting points page
+makes), for its map. The map beside the results draws from the meeting
+points in the search answer, and the road of a ride on Find from the two
+ends its card has.
 
 ## 7. Privacy and safety
 

@@ -552,7 +552,11 @@ decisions 15 to 17). Phones stay as they are.
 
 ### Task 8.3: Finish
 
-- [x] `laptop.spec.ts`: the Find journey checks the map in the side
-  column, the road following the card under the pointer and the offer line
-  at 900, 1280 and 1440, in both languages. A picture before and now to
-  the project files; spec 15's "Search row" says the fields.
+- [x] `laptop.spec.ts`: at 900, 1280 and 1440, in both languages, the
+  fields are whole in the search card, the map is whole in the side column
+  with a ride on it and a dot for every meeting point, the link is under
+  it and the offer line under the rides. At 1280 in English, the map and
+  the card's mark follow the pointer and the keyboard to a ride that goes
+  elsewhere, and the map with its link is whole in a window 720 high. A
+  picture before and now to the project files; spec 15's "Search row" says
+  the fields.
