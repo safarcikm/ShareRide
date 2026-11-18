@@ -253,7 +253,9 @@ review board shows the trip details in Icelandic and dark mode.
   the part, and 2.9:1 against the tint inside.
 - From 900 wide, the trip details and request screens move the price and main
   action from the bottom bar into a panel 320 wide beside the column.
-- Search results put the map beside the list (spec 4).
+- From 900 wide, search results put the map beside the list, as meeting
+  points do, with the trip the pointer or the keyboard came to last; the
+  chips wrap instead of scrolling sideways (spec 18, 3.6).
 - From 900 wide, meeting points put the map beside the list, at most 640
   wide (spec 2, 3.1). On the web it stays in view while the list scrolls,
   and scrolls on its own when it is taller than the window.
@@ -343,7 +345,7 @@ Built when the screens that need them are built.
 
 | Part | What it is |
 | ---- | ---------- |
-| `Card` | `surface`, corner `card`, 3 `edge` bottom edge, `md` padding. Under the pointer, the edge of a card that can be pressed turns `primary`; its fill stays, so a tag or an avatar on a tint of its own keeps its shape (spec 18, 3.4). With `fill`, a card takes the height of its place, so cards side by side in a `Grid` end level |
+| `Card` | `surface`, corner `card`, 3 `edge` bottom edge, `md` padding. Under the pointer, the edge of a card that can be pressed turns `primary`; its fill stays, so a tag or an avatar on a tint of its own keeps its shape (spec 18, 3.4). With `fill`, a card takes the height of its place, so cards side by side in a `Grid` end level. A `marked` card keeps the `primary` edge: it is the one shown elsewhere, as on the map beside search results (spec 18, 3.6) |
 | `Columns` | On a page (section 4.8): a main column that takes the room left and a side column 400 wide (`sideColumnWidth`) with a `lg` gap, each with `md` between its parts. The side column sits at the right, or at the left (`sideAt="start"`), and on the web stays in view while the main column scrolls. Whichever side it is on, a screen reader and the keyboard come to the main column first. Under 900 wide the two stack, main first |
 | `Grid` | Cards in equal columns with `md` gaps: as many as fit at 320 wide or more each (`gridCardMinWidth`), by the room the grid has and not by the window or the text size; one column on a phone |
 | `Tag` | `caption` text on a tinted fill, corner `tag` (section 4.1) |
