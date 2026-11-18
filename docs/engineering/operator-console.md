@@ -441,6 +441,36 @@ operator presses "Show the conversation", so a report read without it
 logs nothing. The console names each system line's driver or passenger
 instead of "you".
 
+## Reliability
+
+`apps/api/src/modules/people/admin-routes.ts` holds the console's
+reliability routes (`registerReliabilityAdminRoutes`), with the work in
+`admin.ts` (spec 8, 3.8; R8.10 and R8.11):
+
+- `GET /admin/v1/reliability/cancellations` lists the trips and bookings
+  of the last 12 months whose cancellation does not count only because
+  its reason is the weather or a closed road (`excused_by_reason`, saved
+  when they are cancelled), newest first, with who cancelled, in which
+  role, the route and the time. Those already overruled stay, with
+  `overruledAt` and the operator's note. Nobody leaving ShareRide, nor the
+  former member.
+- `POST /admin/v1/reliability/cancellations/{kind}/{id}/counts`, with
+  `kind` `trip` or `booking` and `{ counts, note }`, changes whether it
+  counts (spec 8, section 6). `counts: true` overrules the reason, so it
+  counts (`canOverrule` in the domain) and sets `overruled_at`;
+  `counts: false` undoes that (`canUndoOverrule`), for a press by
+  mistake. The note is needed, up to 500 characters
+  (`checkOverruleNote`), and is the operator's only. It writes
+  `trip.reason_overruled` or `trip.overrule_undone` (or `booking.…`) with
+  the names of the fields changed, never the note. It answers
+  `not_found` for anything not on that list, so nobody leaving ShareRide
+  is changed, and `unchanged` when it already counts, or already
+  doesn't.
+- `GET /admin/v1/reliability/watch` gives the watch level (80%) and the
+  people below it, lowest first, with their counts by role. The operator
+  decides on a warning or a suspension as a person (3.8.4); nothing here
+  suspends anyone.
+
 ## Reports, actions and appeals
 
 `apps/api/src/modules/moderation/admin-routes.ts` holds the console's

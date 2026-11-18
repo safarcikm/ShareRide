@@ -1525,6 +1525,7 @@ export const en = {
   "export.field.note": "Note",
   "export.field.ourAnswer": "Our answer",
   "export.field.outcome": "Outcome",
+  "export.field.overruledAt": "ShareRide made it count",
   "export.field.passengers": "Passengers",
   "export.field.paymentDueAt": "Pay by",
   "export.field.person": "Person",

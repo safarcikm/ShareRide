@@ -1,6 +1,7 @@
 export * from "./admin.ts";
 export * from "./admin-disputes.ts";
 export * from "./admin-meeting-points.ts";
+export * from "./admin-reliability.ts";
 export * from "./admin-reports.ts";
 export * from "./auth.ts";
 export * from "./bookings.ts";

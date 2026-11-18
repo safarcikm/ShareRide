@@ -61,6 +61,20 @@ const reportedPeople = alias(users, "reported_people");
 type When = string | null;
 const when = (moment: Date | null): When => (moment === null ? null : moment.toISOString());
 
+/**
+ * Whether a cancellation counts on reliability, and when ShareRide made it
+ * count: part of the record of whoever cancelled (spec 8, 6), so a booking
+ * the driver cancelled has it in the driver's export, not the passenger's.
+ * The operator's reason for it is theirs only, as a report's decision note is.
+ */
+const countingOf = (row: {
+  readonly countsOnReliability: boolean;
+  readonly overruledAt: Date | null;
+}) => ({
+  countsOnReliability: row.countsOnReliability,
+  overruledAt: when(row.overruledAt),
+});
+
 /** The notification log in an export goes back this far (spec 11, 3.2.3). */
 const notificationDays = 90;
 
@@ -383,7 +397,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
       cancelledBy: trip.cancelledBy,
       cancelReason: trip.cancelReason,
       cancelNote: trip.cancelNote,
-      countsOnReliability: trip.countsOnReliability,
+      ...countingOf(trip),
       passengers: riders
         .filter((row) => row.booking.tripId === trip.id)
         .map(({ booking, firstName, from, to }) => ({
@@ -399,6 +413,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
           cancelledBy: booking.cancelledBy,
           cancelReason: booking.cancelReason,
           cancelNote: booking.cancelNote,
+          ...(booking.cancelledBy === "driver" ? countingOf(booking) : {}),
           dispute: reportOn(booking.id, "driver"),
           ...reviewsOn(booking.id),
         })),
@@ -483,7 +498,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     cancelReason: booking.cancelReason,
     cancelNote: booking.cancelNote,
     refund: booking.refundAmount,
-    countsOnReliability: booking.countsOnReliability,
+    ...(booking.cancelledBy === "driver" ? {} : countingOf(booking)),
   }));
 
   const paid = await q

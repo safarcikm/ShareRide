@@ -1,7 +1,10 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { err, ok } from "../result.ts";
 import {
   canOverrule,
+  canUndoOverrule,
+  checkOverruleNote,
   defaultReliabilitySettings as settings,
   driverBookingRecord,
   driverTripRecord,
@@ -100,6 +103,22 @@ describe("what counts on reliability (spec 8, 3.8)", () => {
     // Too early to count whatever the reason, or already counting.
     expect(canOverrule({ countsOnReliability: false, excusedByReason: false })).toBe(false);
     expect(canOverrule({ countsOnReliability: true, excusedByReason: false })).toBe(false);
+    // Overruled already.
+    expect(canOverrule({ countsOnReliability: true, excusedByReason: true })).toBe(false);
+  });
+
+  it("lets the operator undo an overrule, and only that", () => {
+    expect(canUndoOverrule({ countsOnReliability: true, excusedByReason: true })).toBe(true);
+    expect(canUndoOverrule({ countsOnReliability: false, excusedByReason: true })).toBe(false);
+    // It counts for another reason: not the operator's to undo.
+    expect(canUndoOverrule({ countsOnReliability: true, excusedByReason: false })).toBe(false);
+  });
+
+  it("needs a note of up to 500 characters for either", () => {
+    expect(checkOverruleNote("  Clear skies all day.  ")).toEqual(ok("Clear skies all day."));
+    expect(checkOverruleNote(" \n ")).toEqual(err({ code: "note_missing" }));
+    expect(checkOverruleNote("þ".repeat(500))).toEqual(ok("þ".repeat(500)));
+    expect(checkOverruleNote("þ".repeat(501))).toEqual(err({ code: "note_too_long" }));
   });
 });
 

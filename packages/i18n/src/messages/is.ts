@@ -1537,6 +1537,7 @@ export const is = {
   "export.field.note": "Athugasemd",
   "export.field.ourAnswer": "Svarið okkar",
   "export.field.outcome": "Niðurstaða",
+  "export.field.overruledAt": "ShareRide lét hana telja",
   "export.field.passengers": "Farþegar",
   "export.field.paymentDueAt": "Greiða fyrir",
   "export.field.person": "Manneskja",
