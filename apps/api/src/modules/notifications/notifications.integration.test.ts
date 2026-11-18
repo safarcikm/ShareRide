@@ -1260,6 +1260,44 @@ describe("the worker (plan 4.4)", () => {
     ]);
   });
 
+  it("never pushes what an erased sender wrote, though a report keeps it for the operator (A47)", async () => {
+    const { jon, passenger, bookingId } = await confirmedBooking();
+    await withDevice(jon);
+    await worker().runOnce();
+    push.sent.length = 0;
+    // One push fails and waits to be tried again; the worker has not reached the other.
+    await send(passenger, bookingId, { text: "Hvar á ég að bíða?" });
+    push.failure = new Error("The push service is down.");
+    await worker().runOnce();
+    push.failure = null;
+    await send(passenger, bookingId, { text: "Ég er í rauðri úlpu" });
+    // Then Gunna's account is erased, and a report keeps what she wrote.
+    await api.connection.db
+      .update(schema.messages)
+      .set({ erasedAt: api.now() })
+      .where(eq(schema.messages.senderId, passenger.userId));
+    await later(30);
+    await worker().runOnce();
+
+    expect(push.sent).toEqual([]);
+    expect((await logOf(jon)).filter((row) => row.kind === "new_message")).toEqual([
+      {
+        kind: "new_message",
+        channel: "push",
+        status: "skipped",
+        reason: "no_longer_applies",
+        attempts: 2,
+      },
+      {
+        kind: "new_message",
+        channel: "push",
+        status: "skipped",
+        reason: "no_longer_applies",
+        attempts: 1,
+      },
+    ]);
+  });
+
   it("gives one notification per person and channel when events are processed twice, or by two workers at once (R7.6)", async () => {
     const anna = await driverOf(north);
     await withDevice(anna);
