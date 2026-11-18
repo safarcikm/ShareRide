@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, waitFor, within } from "expo-router/testing-library";
-import { Linking } from "react-native";
+import { Dimensions, Linking } from "react-native";
 import { newAttemptKey } from "@/booking/attempt-key";
 import { readAppData, writeAppData } from "@/lib/app-data";
 import type { Me } from "@shareride/contracts";
@@ -845,6 +845,139 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     expect(
       await screen.findByText("Your account is suspended. Read why under Profile, Notices."),
     ).toBeVisible();
+  });
+});
+
+describe("Check and pay and a request on a laptop (spec 18, 3.8)", () => {
+  const phone = { width: 750, height: 1334, scale: 2, fontScale: 2 };
+  const laptop = { width: 1280, height: 800, scale: 1, fontScale: 1 };
+
+  beforeEach(() => {
+    Dimensions.set({ window: laptop });
+  });
+
+  afterEach(async () => {
+    // The screen is still on show here, so its update goes through act.
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+  });
+
+  const main = () => within(screen.getByTestId("columns-main"));
+  const side = () => within(screen.getByTestId("columns-side"));
+
+  it("puts what you read and fill in in the main column, with the ride, the total and Send request beside it", async () => {
+    await openBooking();
+    expect(await screen.findByRole("header", { name: "Request this ride" })).toBeVisible();
+    expect(screen.getByTestId("page")).toBeVisible();
+
+    expect(main().getByText("You pay when Anna says yes.")).toBeVisible();
+    expect(
+      main().getByText(
+        "Free cancellation, with a full refund, up to 15 minutes before you get in.",
+      ),
+    ).toBeVisible();
+    expect(
+      main().getByText("You'll see the number plate once your seat is confirmed."),
+    ).toBeVisible();
+    expect(main().getByLabelText("Message to the driver (optional)")).toBeVisible();
+    expect(main().getByText("0 of 300")).toBeVisible();
+    expect(main().getByText(/^If you can't make it, cancel as early as you can\./)).toBeVisible();
+
+    expect(side().getByText("Sunday 15 November")).toBeVisible();
+    expect(side().getByText("10:00")).toBeVisible();
+    expect(side().getByText("Borgarnes")).toBeVisible();
+    expect(side().getByText("12:05")).toBeVisible();
+    expect(side().getByText("Blönduós")).toBeVisible();
+    expect(side().getByText("Driver: Anna · White Toyota Yaris")).toBeVisible();
+    expect(side().getByText("1 seat × 2,900 ISK")).toBeVisible();
+    expect(side().getByText("Total")).toBeVisible();
+    expect(side().getByText("2,900 ISK")).toBeVisible();
+    expect(side().getByRole("button", { name: "Send request" })).toBeEnabled();
+
+    // The side column takes the bottom bar's place, and each thing is there once.
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+    expect(screen.getAllByRole("button", { name: "Send request" })).toHaveLength(1);
+    expect(screen.getAllByText("2,900 ISK")).toHaveLength(1);
+  });
+
+  it("sends the request with the message typed in the main column", async () => {
+    const { client } = await openBooking();
+    await fireEvent.changeText(
+      await main().findByLabelText("Message to the driver (optional)"),
+      "I have one big suitcase.",
+    );
+    await fireEvent.press(side().getByRole("button", { name: "Send request" }));
+    expect(await screen.findByRole("header", { name: "Request sent" })).toBeVisible();
+    expect(bookCalls(client)).toEqual([
+      expect.objectContaining({ message: "I have one big suitcase.", seats: 1 }),
+    ]);
+  });
+
+  it("opens the payment in the side column in place of Pay, with one booking for a double press", async () => {
+    const { client } = await openCheckAndPay();
+    expect(await screen.findByRole("header", { name: "Check and pay" })).toBeVisible();
+    expect(main().getByText("Your seat is confirmed as soon as you pay.")).toBeVisible();
+    expect(screen.queryByLabelText("Message to the driver (optional)")).toBeNull();
+    const pay = side().getByRole("button", { name: "Pay 2,900 ISK" });
+    await act(async () => {
+      await Promise.all([fireEvent.press(pay), fireEvent.press(pay)]);
+    });
+    expect(
+      await side().findByRole("header", { name: "Test payment: no money moves" }),
+    ).toBeVisible();
+    expect(bookCalls(client)).toHaveLength(1);
+    expect(paymentCalls(client)).toHaveLength(1);
+    // The sheet takes the place of the button pressed, under the ride.
+    expect(side().getByText("Driver: Anna · White Toyota Yaris")).toBeVisible();
+    expect(screen.getAllByRole("button", { name: "Pay 2,900 ISK" })).toHaveLength(1);
+    await fireEvent.press(side().getByRole("button", { name: "Pay 2,900 ISK" }));
+    expect(await screen.findByRole("header", { name: "You're booked!" })).toBeVisible();
+  });
+
+  it("says what went wrong in the main column, and in the side column that the part is full", async () => {
+    let free = 2;
+    await openBooking({
+      trip: (query) =>
+        ok(
+          200,
+          northTrip(
+            { board: 1, alight: 2, seats: Number(query["seats"]) },
+            {
+              part: {
+                freeSeats: free,
+                ...(Number(query["seats"]) > free ? { state: "full" } : {}),
+              },
+            },
+          ),
+        ),
+      book: () => {
+        free = 0;
+        return failure(409, "seats_taken", { freeSeats: 0 });
+      },
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
+    expect(await main().findByText("Sorry, those seats were just taken")).toBeVisible();
+    expect(main().getByRole("button", { name: "Back to the trip" })).toBeVisible();
+    expect(await side().findByText("Full on your part of the trip")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Send request" })).toBeNull();
+  });
+
+  it("keeps the message when the window turns narrow, with the button in the bottom bar again", async () => {
+    await openBooking();
+    await fireEvent.changeText(
+      await screen.findByLabelText("Message to the driver (optional)"),
+      "I have one big suitcase.",
+    );
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+    expect(screen.queryByTestId("columns-side")).toBeNull();
+    expect(screen.getByLabelText("Message to the driver (optional)")).toHaveDisplayValue(
+      "I have one big suitcase.",
+    );
+    const bar = within(screen.getByTestId("bottom-bar"));
+    expect(bar.getByRole("button", { name: "Send request" })).toBeEnabled();
   });
 });
 

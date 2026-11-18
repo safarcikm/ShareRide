@@ -25,9 +25,10 @@ import { bookErrorText, heldUntilText } from "@/booking/texts";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
+import { Columns } from "@/components/columns";
 import { Icon } from "@/components/icon";
 import { Notice } from "@/components/notice";
-import { Screen } from "@/components/screen";
+import { Screen, useWideScreen } from "@/components/screen";
 import { TakesFocus } from "@/components/takes-focus";
 import { TextField } from "@/components/text-field";
 import { Body, Title } from "@/components/text";
@@ -110,7 +111,8 @@ function Book() {
 
   if (answer === undefined) {
     return (
-      <Screen>
+      // A page, as the screen is once loaded, so Back does not move then.
+      <Screen width="page">
         {back}
         <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
       </Screen>
@@ -185,6 +187,11 @@ const finished = (booking: Booking) => {
  * payment that does not finish leaves the seats held until the deadline
  * (rule M1), and Pay starts it again for the same booking. A request is
  * sent with its optional message; a free ride is booked with Book.
+ *
+ * A wide screen (spec 18, 3.8) is a page of two columns. The main one has
+ * what the person reads and fills in: what went wrong, what happens next
+ * and the message. The side one has the ride, the total and under them the
+ * button, or the payment in its place. There is no bottom bar.
  */
 function BookForm({
   trip,
@@ -204,6 +211,7 @@ function BookForm({
   const { locale, t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
+  const wide = useWideScreen();
   const { part } = trip;
   const instant = trip.bookingMode === "instant";
   // One key for every try from this screen (R5.4).
@@ -398,7 +406,7 @@ function BookForm({
     t("booking.plateOnceConfirmed"),
   ];
 
-  const footer = (() => {
+  const action = (() => {
     if (status !== null) {
       return (
         <Text accessibilityLiveRegion="polite" style={[typography.label, { color: palette.text }]}>
@@ -406,7 +414,8 @@ function BookForm({
         </Text>
       );
     }
-    // The payment sheet opens in place of Pay, at the bottom of the screen.
+    // The payment sheet opens in place of Pay: at the bottom of the screen,
+    // or under the ride on a wide screen.
     if (payment.sheet !== null) return <PaymentSheet payment={payment} />;
     return (
       <Button
@@ -421,45 +430,46 @@ function BookForm({
     );
   })();
 
-  return (
-    <Screen footer={footer}>
-      {back}
-      <Title align="start">
-        {paysNow
-          ? t("booking.checkAndPay")
-          : instant
-            ? t("booking.titleInstant")
-            : t("booking.titleRequest")}
-      </Title>
-
-      <Card>
-        <Text style={[typography.small, { color: palette.textMuted }]}>
-          {capitalised(formatDay(new Date(boardStop.plannedAt), locale), locale)}
+  const title = (
+    <Title align="start">
+      {paysNow
+        ? t("booking.checkAndPay")
+        : instant
+          ? t("booking.titleInstant")
+          : t("booking.titleRequest")}
+    </Title>
+  );
+  const ride = (
+    <Card>
+      <Text style={[typography.small, { color: palette.textMuted }]}>
+        {capitalised(formatDay(new Date(boardStop.plannedAt), locale), locale)}
+      </Text>
+      <PartStop stop={boardStop} getIn />
+      <PartStop stop={alightStop} getIn={false} />
+      <Text style={[typography.small, { color: palette.text }]}>
+        {trip.car === null
+          ? t("booking.driver", { driver })
+          : t("booking.driverAndCar", { driver, car: carText(t, trip.car) })}
+      </Text>
+      <View style={[styles.divider, { backgroundColor: palette.border }]} />
+      <Text style={[typography.small, { color: palette.textMuted }]}>
+        {free
+          ? t("search.seatCount", { count: part.seats })
+          : t("booking.seatsTimesPrice", {
+              seats: t("search.seatCount", { count: part.seats }),
+              price: formatMoney(part.pricePerSeat, locale),
+            })}
+      </Text>
+      <View style={styles.total}>
+        <Text style={[typography.label, { color: palette.text }]}>{t("booking.total")}</Text>
+        <Text style={[typography.figure, { color: palette.text }]}>
+          {free ? t("results.free") : shownTotal}
         </Text>
-        <PartStop stop={boardStop} getIn />
-        <PartStop stop={alightStop} getIn={false} />
-        <Text style={[typography.small, { color: palette.text }]}>
-          {trip.car === null
-            ? t("booking.driver", { driver })
-            : t("booking.driverAndCar", { driver, car: carText(t, trip.car) })}
-        </Text>
-        <View style={[styles.divider, { backgroundColor: palette.border }]} />
-        <Text style={[typography.small, { color: palette.textMuted }]}>
-          {free
-            ? t("search.seatCount", { count: part.seats })
-            : t("booking.seatsTimesPrice", {
-                seats: t("search.seatCount", { count: part.seats }),
-                price: formatMoney(part.pricePerSeat, locale),
-              })}
-        </Text>
-        <View style={styles.total}>
-          <Text style={[typography.label, { color: palette.text }]}>{t("booking.total")}</Text>
-          <Text style={[typography.figure, { color: palette.text }]}>
-            {free ? t("results.free") : shownTotal}
-          </Text>
-        </View>
-      </Card>
-
+      </View>
+    </Card>
+  );
+  const notices = (
+    <>
       {/* Only once a payment did not go through: while it starts, the seat
           is on its way to being paid, not left waiting. */}
       {made !== null &&
@@ -518,7 +528,11 @@ function BookForm({
           <Notice message={problem.text} />
         </TakesFocus>
       ) : null}
-
+    </>
+  );
+  // What happens next, the message to the driver and what cancelling means.
+  const reading = (
+    <>
       <View style={styles.ticks}>
         {ticks.map((tick) => (
           <View key={tick} style={styles.row}>
@@ -549,6 +563,36 @@ function BookForm({
       )}
 
       <Body align="start">{t("booking.reliabilityNote")}</Body>
+    </>
+  );
+
+  if (wide) {
+    return (
+      <Screen width="page">
+        {back}
+        {title}
+        <Columns
+          side={
+            <>
+              {ride}
+              {action}
+            </>
+          }
+        >
+          {notices}
+          <Card>{reading}</Card>
+        </Columns>
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen footer={action}>
+      {back}
+      {title}
+      {ride}
+      {notices}
+      {reading}
     </Screen>
   );
 }
