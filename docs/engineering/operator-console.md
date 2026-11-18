@@ -120,12 +120,15 @@ meeting point routes (`registerMeetingPointsAdminRoutes`), with the work in
 - `GET /admin/v1/meeting-points/{id}/activation` gives a point's
   activation checklist (R2.3, the domain's `activationChecklist`): each
   item and whether it is done, from what is saved, and `ready`. The last
-  item, `legs`, asks for a road within 1 km (the `Router`'s `nearRoad`),
-  as activating computes the legs. `POST
+  item, `legs`, asks for a road within 1 km that reaches a point in
+  service, or none in service yet (the leg service's `connects`, one
+  search), as activating computes the legs. `POST
   /admin/v1/meeting-points/{id}/activate`, with the `updatedAt` the
   console loaded, makes a draft active with its review date, and refuses
   one whose checklist is not done with `activation_not_ready` and each
-  item in `details` (`issue: "not_done"`). In one transaction, it takes
+  item in `details` (`issue: "not_done"`). The console always asks, as
+  the list it shows can be older than what is saved. In one transaction,
+  it takes
   the legs lock, then the point's row, checks the checklist again,
   computes the point's legs both ways with every point in service
   (`computeFor`) and writes the audit entry `meeting_point.activated`,
@@ -175,10 +178,11 @@ checked" date the app shows.
 upcoming trips stop there, a paused point's reason and end date, and the
 buttons its status allows (`nextPointStatus`). A draft's panel has its
 activation checklist (`activation.tsx`), loaded again when the point is
-saved or the photos panel changes a photo (its `onChange`), as the API
-checks what is saved. Activate on a draft that is not ready says how many
-items are left, with the focus on it, and sends nothing; if the API finds
-something still to do, the list shows what it found. Pausing opens a short form
+saved or the photos panel finds a photo changed, by it or elsewhere (its
+`onChange`), as the API checks what is saved. Activate always asks the
+API: if something is still to do, the list shows what the API found
+(unless a newer list is on its way) and says how many items are left,
+with the focus on it. Pausing opens a short form
 (the reason in both languages, an optional end date) checked with
 `validatePause` before it is sent; retiring asks first and says whether the
 point retires at once or after its last trip. Bringing a point back needs

@@ -1,7 +1,8 @@
 // Activating a meeting point in the operator console (spec 2, 3.6.3): only
 // when every item of the activation checklist is done (rule R2.3).
-// Activation then computes the point's legs (3.7), so the checklist asks
-// only that it can have them: a road within 1 km.
+// Activation computes the point's legs (3.7) in the same step, so the
+// checklist asks that it can have them: a road within 1 km that reaches a
+// point in service.
 
 /** The checklist's items, in the order the console shows them. */
 export const activationItems = [
@@ -17,7 +18,10 @@ export const activationItems = [
   "season",
   /** The date the operator confirmed the point (decision 2). */
   "confirmed",
-  /** A road within 1 km, so activation can compute its legs. */
+  /**
+   * A road within 1 km that reaches a point in service, or no point in
+   * service yet, so activation computes its legs.
+   */
   "legs",
 ] as const;
 export type ActivationItem = (typeof activationItems)[number];
@@ -51,7 +55,7 @@ const written = (text: string | null) => text !== null && text.trim() !== "";
 export function activationChecklist(
   point: ActivationPoint,
   photos: readonly ActivationPhoto[],
-  legs: { readonly nearRoad: boolean },
+  legs: { readonly connected: boolean },
 ): ActivationCheck[] {
   const done: Record<ActivationItem, boolean> = {
     details: [point.nameIs, point.region, point.municipality, point.type].every(written),
@@ -60,7 +64,7 @@ export function activationChecklist(
     amenities: point.amenitiesReviewedOn !== null,
     season: point.seasonReviewedOn !== null,
     confirmed: point.lastCheckedOn !== null,
-    legs: legs.nearRoad,
+    legs: legs.connected,
   };
   return activationItems.map((item) => ({ item, done: done[item] }));
 }

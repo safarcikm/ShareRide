@@ -913,8 +913,9 @@ releases follow [Semantic Versioning](https://semver.org/).
 - Activating a meeting point (milestone 8, PR 12a; spec 2, 3.6.3): a
   draft's page in the console shows its activation checklist (R2.3), each
   item done or still to do, from what is saved; it is checked again when
-  the point or a photo is saved. Activate says how much is left instead
-  of sending a draft that is not ready. Activating makes the point active
+  the point or a photo is saved. Its last item asks for a road within
+  1 km that reaches a point in service. Activate says how much is left
+  when the API finds something still to do. Activating makes the point active
   with its yearly review date and computes its legs both ways with every
   point in service, in the same transaction, with an audit entry
   `meeting_point.activated`. The API refuses a draft whose checklist is
@@ -979,6 +980,10 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- The health check's 2-second statement timeout holds for its own
+  transaction only. It used to stay on the pool's connection, so a later
+  query on it, such as one waiting for the legs lock or writing every
+  leg, was cancelled after 2 seconds.
 - After signing up from a ride, the app opens that ride's booking again, and
   after "Offer a ride" it opens Ready to drive. The front page left open
   under the ride took the kept choice but could not show it, so people

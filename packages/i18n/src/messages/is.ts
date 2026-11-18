@@ -2136,13 +2136,14 @@ export const is = {
   "admin.activation.item.amenities": "Farið yfir aðstöðuna",
   "admin.activation.item.season": "Farið yfir tímabilið",
   "admin.activation.item.confirmed": "Dagurinn sem þú staðfestir staðinn síðast",
-  "admin.activation.item.legs": "Vegur innan 1 km, fyrir vegalengdirnar",
+  "admin.activation.item.legs": "Vegur innan 1 km sem nær til staða í notkun",
   "admin.activation.done": "Lokið",
   "admin.activation.toDo": "Eftir",
   "admin.activation.failed": "Ekki tókst að sækja gátlistann.",
   "admin.activation.activate": "Virkja {name}",
+  "admin.activation.activating": "Virkjar {name}…",
   "admin.activation.note":
-    "Bílstjórar geta valið hann í nýjar ferðir strax. Vegalengdir hans til allra staða í notkun eru reiknaðar núna, sem getur tekið nokkrar sekúndur.",
+    "Bílstjórar geta valið hann í nýjar ferðir innan 5 mínútna. Vegalengdir hans til allra staða í notkun eru reiknaðar núna, sem getur tekið nokkrar sekúndur.",
   "admin.activation.notReady":
     "{count, plural, one {# atriði er} other {# atriði eru}} eftir áður en hægt er að virkja {name}.",
   "admin.meetingPoint.reloadedStatus":

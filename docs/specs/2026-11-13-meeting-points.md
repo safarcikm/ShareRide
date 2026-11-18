@@ -128,7 +128,8 @@ the point for review, and the user sees a thank-you message.
    stand" in both languages, weekly shelter hours, season, aliases.
 3. **Activate:** allowed only when the activation checklist passes (rule
    R2.3). Activation computes the point's distances (3.7), in the same
-   step, so the checklist's item for legs asks for a road within 1 km.
+   step, so the checklist's item for legs asks for a road within 1 km
+   that reaches a point in service.
 4. **Pause** (temporarily unusable, for example road works): a reason in both
    languages and an optional end date. New trips cannot use it. Drivers and
    booked passengers of future trips that use it are notified, and drivers are

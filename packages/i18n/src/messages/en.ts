@@ -2120,13 +2120,14 @@ export const en = {
   "admin.activation.item.amenities": "The amenities checked",
   "admin.activation.item.season": "The season checked",
   "admin.activation.item.confirmed": "The day you last confirmed the point",
-  "admin.activation.item.legs": "A road within 1 km, for its distances",
+  "admin.activation.item.legs": "A road within 1 km that reaches the points in use",
   "admin.activation.done": "Done",
   "admin.activation.toDo": "To do",
   "admin.activation.failed": "The checklist could not be loaded.",
   "admin.activation.activate": "Activate {name}",
+  "admin.activation.activating": "Activating {name}…",
   "admin.activation.note":
-    "Drivers can choose it for new trips at once. Its distances to every point in use are computed now, which can take a few seconds.",
+    "Drivers can choose it for new trips within 5 minutes. Its distances to every point in use are computed now, which can take a few seconds.",
   "admin.activation.notReady":
     "{count, plural, one {# thing is} other {# things are}} still to do before {name} can be activated.",
   "admin.meetingPoint.reloadedStatus": "This is the newest copy. Check its status, then try again.",

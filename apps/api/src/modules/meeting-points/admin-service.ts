@@ -293,7 +293,9 @@ export function createMeetingPointAdminService(dependencies: {
       })
       .from(meetingPointPhotos)
       .where(eq(meetingPointPhotos.meetingPointId, row.id));
-    return activationChecklist(row, photos, { nearRoad: await legs.nearRoad(row.location) });
+    return activationChecklist(row, photos, {
+      connected: await legs.connects(row.id, row.location, q),
+    });
   }
 
   return {
@@ -571,7 +573,8 @@ export function createMeetingPointAdminService(dependencies: {
     id: string,
     input: Loaded,
     actor: ConsoleActor,
-    change: StatusChange,
+    // Activating has its checklist and legs: `activate`.
+    change: Exclude<StatusChange, "activate">,
     alongside: (
       tx: Transaction,
       futureTrips: readonly string[],
@@ -637,11 +640,10 @@ async function loadForChange(tx: Transaction, id: string, updatedAt: string) {
 }
 
 const auditActions = {
-  activate: "activated",
   pause: "paused",
   resume: "resumed",
   retire: "retired",
-} as const satisfies Record<StatusChange, string>;
+} as const satisfies Record<Exclude<StatusChange, "activate">, string>;
 
 /** What a status change's audit entry compares: the status, the pause and the review date. */
 function statusValuesOf(point: AdminMeetingPoint): Record<string, unknown> {

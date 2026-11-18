@@ -54,8 +54,12 @@ export interface LegService {
     pointId: string,
     tx?: Transaction,
   ): Promise<Result<LegsComputed, { readonly code: "not_found" }>>;
-  /** Whether a place is within 1 km of a road, so it can have legs (R2.3). */
-  nearRoad(position: Position): Promise<boolean>;
+  /**
+   * Whether a point at `position` can have legs (R2.3): within 1 km of a
+   * road that reaches a point in service other than `pointId`, or there is
+   * none yet. One search, written nowhere. In `on` when given.
+   */
+  connects(pointId: string, position: Position, on?: Queryable): Promise<boolean>;
 }
 
 interface Point {
@@ -242,7 +246,16 @@ export function createLegService(dependencies: {
       return running;
     },
 
-    nearRoad: (position) => router.nearRoad(position),
+    async connects(pointId, position, on = db) {
+      if (!(await router.nearRoad(position))) return false;
+      const others = (await pointsInService(on)).filter((other) => other.id !== pointId);
+      if (others.length === 0) return true;
+      const found = await router.legsFrom(
+        position,
+        others.map((other) => other.location),
+      );
+      return found.some((leg) => leg !== null);
+    },
 
     computeFor(pointId, within) {
       // Found and written under the lock: one point's legs take a few

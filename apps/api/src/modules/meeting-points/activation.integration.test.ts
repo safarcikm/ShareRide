@@ -7,7 +7,10 @@ import { schema } from "@shareride/db";
 import { sampleId, samplePoints, seedSampleMeetingPoints } from "@shareride/db/seed";
 import { and, eq, or } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { createStraightLineRouter, type Router } from "../../platform/router.ts";
 import { startTestApi, type TestApi } from "../../testing.ts";
+import { createMeetingPointAdminService, type ConsoleActor } from "./admin-service.ts";
+import { createLegService } from "./legs.ts";
 
 // Activating a draft (spec 2, 3.6.3): only when its checklist passes
 // (R2.3), and its legs come with it. The tests' router finds no road south
@@ -20,6 +23,7 @@ let cookie: string;
 const ready = sampleId("test:ready");
 const bare = sampleId("test:bare");
 const atSea = sampleId("test:at-sea");
+const apart = sampleId("test:apart");
 const nowhere = sampleId("test:nowhere");
 
 /** A made-up draft with only what saving one needs. */
@@ -67,6 +71,14 @@ beforeAll(async () => {
       searchText: "ut i hafi",
       location: { latitude: 63.0, longitude: -20.0 },
     },
+    {
+      ...draft,
+      ...complete,
+      id: apart,
+      nameIs: "Afskekkt",
+      searchText: "afskekkt",
+      location: { latitude: 64.1, longitude: -21.5 },
+    },
   ]);
   const photo = {
     descriptionIs: "Skiltið.",
@@ -79,6 +91,7 @@ beforeAll(async () => {
   await db.insert(meetingPointPhotos).values([
     { ...photo, meetingPointId: ready, storageKey: "test-ready" },
     { ...photo, meetingPointId: atSea, storageKey: "test-at-sea" },
+    { ...photo, meetingPointId: apart, storageKey: "test-apart" },
   ]);
   cookie = (await api.signInOperator()).cookie;
 });
@@ -210,5 +223,63 @@ describe("POST /admin/v1/meeting-points/{id}/activate", () => {
 
   it("knows no such point", async () => {
     expect((await activate(nowhere, "2026-11-01T00:00:00.000Z")).status).toBe(404);
+  });
+});
+
+describe("activating with another router", () => {
+  let operator: ConsoleActor["operator"];
+  beforeAll(async () => {
+    const { userId, sessionId } = await api.signInOperator();
+    operator = { userId, sessionId };
+  });
+
+  const serviceWith = (router: Router) =>
+    createMeetingPointAdminService({
+      db: api.connection.db,
+      clock: () => api.now(),
+      legs: createLegService({ db: api.connection.db, router, clock: () => api.now() }),
+    });
+  const actor = () => ({ operator, request: { ipAddress: "192.0.2.1", userAgent: null } });
+  const straight = createStraightLineRouter();
+
+  it("needs a road that reaches a point in service, not only a road nearby", async () => {
+    // Near a road that reaches nowhere, as on an island the road file has no ferry to.
+    const island: Router = {
+      ...straight,
+      legsFrom: (_, ends) => Promise.resolve(ends.map(() => null)),
+    };
+    const service = serviceWith(island);
+    expect((await service.activationChecklist(apart))?.items.at(-1)).toEqual({
+      item: "legs",
+      done: false,
+    });
+    const result = await service.activate(apart, { updatedAt: await loaded(apart) }, actor());
+    expect(result).toEqual({
+      ok: false,
+      error: { code: "activation_not_ready", missing: ["legs"] },
+    });
+    expect((await serviceWith(straight).activationChecklist(apart))?.ready).toBe(true);
+  });
+
+  it("leaves the draft as it was when its legs cannot be computed", async () => {
+    const broken: Router = {
+      ...straight,
+      legsTo: () => Promise.reject(new Error("The road file could not be read.")),
+    };
+    await expect(
+      serviceWith(broken).activate(apart, { updatedAt: await loaded(apart) }, actor()),
+    ).rejects.toThrow("The road file could not be read.");
+    const [point] = await api.connection.db
+      .select({ status: meetingPoints.status, reviewDueOn: meetingPoints.reviewDueOn })
+      .from(meetingPoints)
+      .where(eq(meetingPoints.id, apart));
+    expect(point).toEqual({ status: "draft", reviewDueOn: null });
+    expect(await legsOf(apart)).toHaveLength(0);
+    expect(
+      await api.connection.db.$count(
+        auditLog,
+        and(eq(auditLog.action, "meeting_point.activated"), eq(auditLog.subjectId, apart)),
+      ),
+    ).toBe(0);
   });
 });

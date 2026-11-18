@@ -841,8 +841,18 @@ describe("activating a draft (spec 2, 3.6.3)", () => {
     return api;
   }
 
-  it("shows what a draft still needs, and says so instead of sending", async () => {
+  it("shows what a draft still needs, and what the API found on Activate", async () => {
     const api = open(checklistWith("photos", "confirmed"));
+    api.on(adminActivateMeetingPointRoute, {
+      status: 409,
+      error: {
+        code: "activation_not_ready",
+        details: [
+          { path: "photos", issue: "not_done" },
+          { path: "confirmed", issue: "not_done" },
+        ],
+      },
+    });
     const list = await checklist();
     expect(
       within(list)
@@ -855,7 +865,7 @@ describe("activating a draft (spec 2, 3.6.3)", () => {
       "The amenities checked Done",
       "The season checked Done",
       "The day you last confirmed the point To do",
-      "A road within 1 km, for its distances Done",
+      "A road within 1 km that reaches the points in use Done",
     ]);
     expect(panel().textContent).toContain(
       "The checklist is of what is saved. Save your changes first.",
@@ -869,7 +879,10 @@ describe("activating a draft (spec 2, 3.6.3)", () => {
     await waitFor(() => {
       expect(document.activeElement).toBe(alert);
     });
-    expect(api.called(adminActivateMeetingPointRoute)).toHaveLength(0);
+    // The API checks again, as the list shown can be older than what is saved.
+    expect(api.called(adminActivateMeetingPointRoute)[0]?.input["body"]).toEqual({
+      updatedAt: draft.updatedAt,
+    });
   });
 
   it("activates a draft whose checklist is done, which computes its distances", async () => {
@@ -892,7 +905,7 @@ describe("activating a draft (spec 2, 3.6.3)", () => {
       within(panel()).getByRole("button", {
         name: "Activate N1 Borgarnesi",
         description:
-          "Drivers can choose it for new trips at once. Its distances to every point in use are computed now, which can take a few seconds.",
+          "Drivers can choose it for new trips within 5 minutes. Its distances to every point in use are computed now, which can take a few seconds.",
       }),
     );
 
@@ -989,5 +1002,37 @@ describe("activating a draft (spec 2, 3.6.3)", () => {
     api.on(adminActivationChecklistRoute, { status: 200, data: checklistWith() });
     fireEvent.click(within(panel()).getByRole("button", { name: "Try again" }));
     expect(await checklist()).toBeTruthy();
+    await waitFor(() => {
+      expect(document.activeElement).toBe(
+        within(panel()).getByRole("heading", { name: "Activation checklist" }),
+      );
+    });
+  });
+
+  it("checks again when a photo was changed elsewhere", async () => {
+    const api = open(checklistWith("photos"));
+    const photo: AdminMeetingPointPhoto = {
+      id: "0196f000-0000-7000-8000-000000000101",
+      url: "https://photos.test/meeting-points/0196f000-0000-7000-8000-000000000201.jpg",
+      descriptionIs: "Inngangurinn.",
+      descriptionEn: "",
+      width: 1600,
+      height: 1200,
+      updatedAt: "2026-11-16T11:00:00.000Z",
+    };
+    api.on(adminMeetingPointPhotosRoute, { status: 200, data: { photos: [photo] } });
+    api.on(adminDescribeMeetingPointPhotoRoute, { status: 409, error: { code: "photo_changed" } });
+    await checklist();
+    const first = within(screen.getByRole("region", { name: "Photos" })).getByRole("listitem", {
+      name: "Photo 1",
+    });
+    fireEvent.change(within(first).getByLabelText("Description for screen readers, in English"), {
+      target: { value: "The entrance." },
+    });
+    api.on(adminActivationChecklistRoute, { status: 200, data: checklistWith() });
+    fireEvent.click(within(first).getByRole("button", { name: "Save descriptions" }));
+    await waitFor(async () => {
+      expect(row(await checklist(), "A photo")?.textContent).toContain("Done");
+    });
   });
 });

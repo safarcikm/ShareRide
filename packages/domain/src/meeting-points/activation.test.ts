@@ -15,14 +15,14 @@ const ready: ActivationPoint = {
 };
 const photo = { descriptionIs: "Skiltið.", descriptionEn: "The sign." };
 
-const missing = (point: ActivationPoint, photos = [photo], nearRoad = true) =>
-  activationChecklist(point, photos, { nearRoad })
+const missing = (point: ActivationPoint, photos = [photo], connected = true) =>
+  activationChecklist(point, photos, { connected })
     .filter((check) => !check.done)
     .map((check) => check.item);
 
 describe("activationChecklist (R2.3)", () => {
   it("lists every item, each done for a point that has it all", () => {
-    const list = activationChecklist(ready, [photo], { nearRoad: true });
+    const list = activationChecklist(ready, [photo], { connected: true });
     expect(list.map((check) => check.item)).toEqual([
       "details",
       "whereToStand",
@@ -53,13 +53,13 @@ describe("activationChecklist (R2.3)", () => {
     ).toEqual(["amenities", "season", "confirmed"]);
   });
 
-  it("needs a road within 1 km, so its legs can be computed", () => {
+  it("needs a road that reaches a point in service, so its legs can be computed", () => {
     expect(missing(ready, [photo], false)).toEqual(["legs"]);
   });
 
   it("needs the name, type, region and municipality", () => {
     expect(missing({ ...ready, nameIs: "", municipality: "" })).toEqual(["details"]);
-    const list = activationChecklist({ ...ready, nameIs: "" }, [photo], { nearRoad: true });
+    const list = activationChecklist({ ...ready, nameIs: "" }, [photo], { connected: true });
     expect(readyToActivate(list)).toBe(false);
   });
 });
