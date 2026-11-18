@@ -109,6 +109,7 @@ export function Stepper({
   label,
   hint,
   beside = false,
+  caption = false,
   value,
   min,
   max,
@@ -122,6 +123,8 @@ export function Stepper({
   readonly hint?: string;
   /** The label on the left and the buttons on the right, in one row. */
   readonly beside?: boolean;
+  /** In a row of fields: the label as a caption close over the buttons. */
+  readonly caption?: boolean;
   readonly value: number;
   readonly min: number;
   readonly max: number;
@@ -138,9 +141,17 @@ export function Stepper({
     onChange(Math.min(max, value + 1));
   };
   return (
-    <View style={beside ? styles.beside : styles.stepper}>
+    <View style={beside ? styles.beside : caption ? styles.captioned : styles.stepper}>
       <View style={beside ? styles.grow : undefined}>
-        <Text style={[typography.label, { color: palette.text }]}>{label}</Text>
+        <Text
+          style={
+            caption
+              ? [typography.caption, { color: palette.textMuted }]
+              : [typography.label, { color: palette.text }]
+          }
+        >
+          {label}
+        </Text>
         {hint === undefined ? null : (
           <Text style={[typography.small, { color: palette.textMuted }]}>{hint}</Text>
         )}
@@ -173,6 +184,7 @@ export function Stepper({
 
 const styles = StyleSheet.create({
   stepper: { gap: spacing.sm },
+  captioned: { gap: spacing.xs },
   beside: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   grow: { flex: 1 },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.md },

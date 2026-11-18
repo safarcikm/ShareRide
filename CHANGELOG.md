@@ -1122,6 +1122,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   prints a code for the first account of a new server, and the local
   seed command makes `BETA2345`, never on staging. The app asks for the code in the next change;
   until then the app's browser tests run with the requirement off.
+- Find on a laptop (spec 18, 3.5): the search is one row in a card, with
+  From, To, the date, the seats and "Find a ride" on one line from 1280
+  wide; the place list and the calendar open downwards in their own part.
+  Under it are the rides leaving soon, six of them, in two columns from
+  about 1140 wide and in one under that, with your next ride and the offer
+  to drive beside them. Phones are unchanged.
 
 ### Fixed
 

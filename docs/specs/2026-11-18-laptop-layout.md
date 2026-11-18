@@ -126,18 +126,26 @@ changes on a phone.
 
 ### 3.5 Find
 
-1. The title, then the search in **one row** across the page: From, the swap
-   button, To, the date, the seats and "Find a ride". From, To and the date
-   open their choices under the row (the place list, the calendar), as they
-   do today.
+1. The title, then the search in **one row** across the page, in one card:
+   From, the swap button, To, the date, the seats and "Find a ride". Each
+   is a small label over its control, and the controls stand on one line.
+   From, To and the date open their choices downwards in their own part of
+   the row (the place list, the calendar), so nothing beside them moves.
+   From 1280 wide it is one line in both languages. In a narrower window
+   the date, the seats and the button move together to a second line, at
+   the right; From and To never share a line with only some of them.
 2. Under it, two columns:
    - **Main:** "Leaving soon" with "See all rides" at its right, and the
-     rides as a grid.
+     rides as a grid: two columns from about 1140 wide, one column under
+     that, beside the side column. Six rides where a phone shows five, so
+     two columns end level, and cards in one row are equally tall.
    - **Side:** "Your next ride" when signed in and one is coming up, then a
      card "Driving somewhere? Share the empty seats in your car." with
      "Offer a ride" and "See the meeting points".
 3. With no rides leaving soon, the side column's cards sit in the middle
-   under the search.
+   under the search. While the rides load, the two columns are there, with
+   "Leaving soon" and a sign that they are on their way, so the side
+   column does not move when they come.
 
 ### 3.6 Search results
 
