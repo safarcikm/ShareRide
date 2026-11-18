@@ -418,7 +418,7 @@ Split in two, as PR 7 was: 8a the API, 8b the pages.
 
 - [x] 8a: `POST /admin/v1/users/search` (first name, phone number, email
       or ID), a person's page, `POST /admin/v1/users/{id}/notes`
-      (`operator_notes`, migration `0044_operator_notes`), trips by day,
+      (`operator_notes`, migration `0045_operator_notes`), trips by day,
       place, driver or a trip's or booking's ID, a trip's page with its
       bookings and requests, and `GET /admin/v1/decline-rates`;
       `checkOperatorNote`, `requestAnswer` and `declineRates` in the domain

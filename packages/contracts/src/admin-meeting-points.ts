@@ -32,6 +32,8 @@ export const adminMeetingPointErrorCodes = [
   "status_change_not_allowed",
   /** An item of the activation checklist is not done (R2.3); `details` names each one. */
   "activation_not_ready",
+  /** Only a point in service moves with its own step: a draft's spot is edited, a retired point stays. */
+  "move_not_allowed",
   /** A point has at most `photoLimits.maxPerPoint` photos. */
   "too_many_photos",
   /** Someone changed the photo's descriptions since the console loaded them. */
@@ -348,6 +350,47 @@ export const adminActivateMeetingPointRoute = defineRoute({
     409: {
       description:
         "meeting_point_changed: saved by someone else since; status_change_not_allowed: not a draft; activation_not_ready: with each item not done in `details`",
+      ...errors,
+    },
+  },
+});
+
+// Moving a point in service (spec 2, 3.6.6; R2.10; milestone 8, PR 12b):
+// its legs are computed again in the same transaction, and when it moved
+// more than 50 m (`pointMovedFar`), the drivers and passengers of the trips
+// still to stop there are told.
+
+export const adminMeetingPointMovedSchema = z.object({
+  meetingPoint: adminMeetingPointSchema,
+  /** How far it moved, in whole metres. */
+  metres: z.int().min(0),
+  /** The trips still to stop there whose drivers and passengers are told; 0 within 50 m. */
+  tripsTold: z.int().min(0),
+});
+export type AdminMeetingPointMoved = z.infer<typeof adminMeetingPointMovedSchema>;
+
+export const adminMoveMeetingPointRoute = defineRoute({
+  method: "post",
+  path: "/admin/v1/meeting-points/{id}/move",
+  summary: "Move a point in service, computing its legs and telling the trips that stop there",
+  tags: ["admin", "meeting-points"],
+  auth: "operator",
+  request: {
+    params: z.object({ id: z.uuid() }),
+    body: loadedSchema.extend({ position: positionSchema }),
+  },
+  responses: {
+    200: { description: "The point at its new spot", schema: adminMeetingPointMovedSchema },
+    400: {
+      description:
+        "validation_failed, with `position` and its problem in `details`: outside_iceland, same_place, or no_road (no road within 1 km reaches a point in service)",
+      ...errors,
+    },
+    401: { description: "operator_unauthenticated", ...errors },
+    404: { description: "not_found", ...errors },
+    409: {
+      description:
+        "meeting_point_changed: saved by someone else since; move_not_allowed: a draft or a retired point",
       ...errors,
     },
   },
