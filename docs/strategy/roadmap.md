@@ -97,7 +97,8 @@ Walking skeleton, milestone 2: hosted and connected
 
 - [x] API deployed to staging in the EEA (Render in Frankfurt, live at
       `https://staging.skinnar.is` since 2026-11-18)
-- [ ] Real SMS provider for sign-in codes
+- [x] Real SMS provider for sign-in codes (Vonage, ADR 0023; Martin's own
+      sign-up on staging brought a real SMS, 2026-11-18)
 - [ ] Error tracking and uptime checks connected
 - [ ] Meeting points shown on a map and in a list
 - [ ] Apple and Google sign-in; profile photo
@@ -271,7 +272,8 @@ Martin's steps, in the order of what they unblock:
    itself, the price cap, women-only trips, payments and the company form.
 2. Talk to Rapyd, Teya and Straumur: milestone 15.
 3. Set up staging ([runbook](../operations/staging.md)): every check on the
-   web, and the console on a server.
+   web, and the console on a server. Done 2026-11-18, with Martin's console
+   passkey; the client address check is left.
 4. A domain and a Mailjet account: milestone 12 and email. Martin's
    `skinnar.is` serves for now (2026-11-18): staging is at
    `staging.skinnar.is` and sends its email from the domain.
