@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from "expo-router/testing-library";
+import { fireEvent, screen } from "expo-router/testing-library";
 import type { Booking, MyReport, FileReportBody } from "@shareride/contracts";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -124,20 +124,16 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
     expect(screen.queryByRole("button", { name: "Report this trip" })).toBeNull();
   });
 
-  it("says to call 112 first for a safety report, with no button for it (3.1.3)", async () => {
+  it("says nothing of 112 on a safety report: people dial it themselves (decision 5)", async () => {
     await openTrip();
     await fireEvent.press(screen.getByRole("button", { name: "Report this trip" }));
-    expect(screen.queryByText("If you are in danger, call 112 now.")).toBeNull();
 
     await fireEvent.press(
       await screen.findByRole("radio", { name: "Safety: dangerous driving, threats or violence" }),
     );
-    // Read out at once, as an alert, above what happened (3.1.3).
-    expect(
-      within(screen.getByRole("alert")).getByText("If you are in danger, call 112 now."),
-    ).toBeVisible();
-    // People dial it themselves (Martin, 2026-11-18).
-    expect(screen.queryByRole("button", { name: /112/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Send report" })).toBeVisible();
+    expect(screen.queryByText(/112/)).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("asks for a shorter description over 1 000 characters, and sends nothing", async () => {
@@ -151,11 +147,7 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
   });
 
   it.each([
-    [
-      "too_many_reports",
-      429,
-      "You've sent many reports in the last 24 hours. Try again later, or call 112 if you are in danger.",
-    ],
+    ["too_many_reports", 429, "You've sent many reports in the last 24 hours. Try again later."],
     ["not_found", 404, "This can no longer be reported."],
     ["internal_error", 500, "Something went wrong on our side. Try again."],
   ] as const)("says so when the server answers %s", async (code, status, text) => {

@@ -122,8 +122,8 @@ These are the things a generic ride-share clone would get wrong.
 - **Time.** Iceland is on UTC all year with no daylight saving. We still store
   UTC and show Iceland time explicitly, because visitors' phones are often set
   to another zone.
-- **Emergency.** 112 is the emergency number, which people dial themselves;
-  a safety report says to call it first, and trip screens link to
+- **Emergency.** 112 is the emergency number, which people dial themselves
+  (the app says nothing of it; the terms do); trip screens link to
   SafeTravel information for remote routes.
 - **Seasonality.** Summer brings tourists and highland (F-road) traffic; winter
   brings storms and darkness. Meeting points and vehicle requirements (4x4 for

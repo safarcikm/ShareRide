@@ -783,7 +783,6 @@ export const en = {
   "report.personHint":
     "This report doesn't let us read your conversation. To show us something they wrote, report that message in the chat instead.",
   "report.what": "What happened?",
-  "report.emergency": "If you are in danger, call 112 now.",
   "report.category.safety": "Safety: dangerous driving, threats or violence",
   "report.category.harassment": "Harassment or unwanted contact",
   "report.category.discrimination": "Discrimination",
@@ -804,8 +803,7 @@ export const en = {
   "report.blockToo": "Block {name} too",
   "report.gone": "This can no longer be reported.",
   "report.windowClosed": "A problem with a booking can be reported until 24 hours after the trip.",
-  "report.tooMany":
-    "You've sent many reports in the last 24 hours. Try again later, or call 112 if you are in danger.",
+  "report.tooMany": "You've sent many reports in the last 24 hours. Try again later.",
   "report.outcomeAction": "We've looked into your report and taken action.",
   "report.outcomeNone": "We've looked into your report and found no breach of our rules.",
   "report.open": "We look at every report within 24 hours.",

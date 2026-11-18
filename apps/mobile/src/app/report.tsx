@@ -55,8 +55,8 @@ const maxLength = defaultSafetySettings.textMaxLength;
 
 /**
  * Reporting (spec 9, 3.1): what is reported comes from where the report
- * started, then what happened; for safety, "call 112" first. Nothing is sent
- * until "Send report". Thanks, and for a person, Block them too. The
+ * started, then what happened. Nothing is sent until "Send report".
+ * Thanks, and for a person, Block them too. The
  * address names only what is reported, never a person's user ID: their
  * first name comes from the booking the two share, or from the profile.
  * A review names nobody: its author has no profile reference on it.
@@ -264,11 +264,6 @@ function Report({
     <Screen>
       <BackButton fallback="/" />
       <Title>{t(titles[about.kind], { name: person?.name ?? "" })}</Title>
-      {/*
-       * In danger, 112 comes before anything else (3.1.3), read out at once.
-       * People dial it themselves: no button for it (Martin, 2026-11-18).
-       */}
-      <Notice message={category === "safety" ? t("report.emergency") : null} />
       {about.kind === "user" ? <Body align="start">{t("report.personHint")}</Body> : null}
       <View style={styles.group}>
         <Text style={[typography.label, { color: palette.text }]}>{t("report.what")}</Text>

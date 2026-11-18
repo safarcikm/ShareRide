@@ -530,12 +530,13 @@ PRs 7 and 8 were: 9a the API, 9b the screens.
     page lists; changing whether a cancellation counts stays on the
     Reliability page.
 
-- [x] 9d: `feat(safety)`: no 112 button (Martin, 2026-11-18: people dial
-      it themselves; spec 9, decision 5)
+- [x] 9d: `feat(safety)`: nothing about 112 in the app (Martin,
+      2026-11-18: people dial it themselves, and he chose "Remove every
+      mention" on the card; spec 9, decision 5)
   - App: the "Emergency: 112" buttons go from trip safety and the safety
-    report. A safety report still says "If you are in danger, call 112
-    now", read out at once. Trip safety shows nothing when there is
-    neither "Before you go" nor anything to share.
+    report, and so do the report's "If you are in danger, call 112 now"
+    and the 112 hint in the report limit's message. Trip safety shows
+    nothing when there is neither "Before you go" nor anything to share.
   - Docs: spec 9 (3.1.3, 3.3.1, texts, manual tests, decision 5), G4 in
     the features, the roadmap, this plan's steps for Martin.
 
