@@ -615,6 +615,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   waiting with the action and its report, and the answer asks once more as
   it is final. A browser journey closes one report and suspends from
   another.
+- The console's Users and Trips pages (milestone 9, PR 8b, spec 9, 3.5 and
+  3.4.5): find a person by first name, phone number, email or ID without
+  it entering the address, and each driver's request decline rate with the
+  reasons; a person's page with their account, cars, trips, bookings,
+  reports, actions and notes, where the operator warns, suspends or
+  reinstates them and adds a note; the trips from today on, found by day,
+  stop or ID, and a trip's page with every booking and request and why
+  one was declined. A report's page links to each person's page. A
+  browser journey finds a person, adds a note and reinstates them.
 - The console's users and trips API (milestone 9, PR 8a, spec 9, 3.5 and
   3.4.5): find people by first name, phone number, email or ID, and trips
   by day, place, driver or a trip's or booking's ID; a person's page with

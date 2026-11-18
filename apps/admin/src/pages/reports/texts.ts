@@ -25,6 +25,8 @@ import {
 
 export const reportsPath = "/admin/reports";
 export const appealsPath = "/admin/appeals";
+export const usersPath = "/admin/users";
+export const tripsPath = "/admin/trips";
 
 export const subjectKeys = {
   user: "admin.reports.subject.user",

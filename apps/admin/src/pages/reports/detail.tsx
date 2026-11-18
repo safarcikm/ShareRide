@@ -2,18 +2,16 @@ import {
   adminReportConversationRoute,
   adminReportRoute,
   type AdminConversationMessage,
-  type AdminModerationAction,
   type AdminReport,
-  type AdminReportListItem,
 } from "@shareride/contracts";
 import { reportCategoryText } from "@shareride/i18n";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ConsoleLink } from "../../components/console-link.tsx";
 import { useConsole } from "../../console.tsx";
 import { messageText } from "../disputes/texts.ts";
-import { ActPanel, ClosePanel } from "./act.tsx";
+import { ActPanel, choicesOf, ClosePanel } from "./act.tsx";
+import { ActionList, ReportLinks } from "./history.tsx";
 import {
-  actionLine,
   atText,
   bookingStatusKeys,
   outcomeKeys,
@@ -23,6 +21,7 @@ import {
   standingText,
   subjectKeys,
   tripStatusKeys,
+  usersPath,
 } from "./texts.ts";
 
 type Loaded =
@@ -200,10 +199,15 @@ export function ReportDetail({ id }: { readonly id: string }) {
         <h2 id={ids.taken} className="type-heading">
           {t("admin.reports.actionsTaken")}
         </h2>
-        <Actions actions={report.actions} />
+        <ActionList actions={report.actions} />
       </section>
 
-      <ActPanel report={report} onActed={() => void load()} />
+      <ActPanel
+        person={report.reported}
+        choices={choicesOf(report)}
+        reportId={report.id}
+        onActed={() => void load()}
+      />
       <ClosePanel report={report} onClosed={show} />
 
       {report.reportedSide === null ? null : (
@@ -228,33 +232,6 @@ function HiddenTag({ removed }: { readonly removed: boolean }) {
   );
 }
 
-/** Actions on a person or a report, each with its reason and appeal. */
-function Actions({ actions }: { readonly actions: readonly AdminModerationAction[] }) {
-  const { t, locale } = useConsole();
-  if (actions.length === 0) return <p className="type-body muted">{t("admin.reports.none")}</p>;
-  return (
-    <ul className="cards">
-      {actions.map((action) => (
-        <li key={action.id} className="card entry">
-          <p className="type-label">{actionLine(t, locale, action)}</p>
-          <p className="type-body">{t("admin.reports.reason", { reason: action.reason })}</p>
-          {action.appeal === null ? null : (
-            <p className="type-small muted">
-              {action.appeal.outcome === null || action.appeal.answeredAt === null
-                ? t("admin.reports.appealWaiting", {
-                    when: atText(t, locale, action.appeal.sentAt),
-                  })
-                : t(`admin.reports.appealAnswered.${action.appeal.outcome}`, {
-                    when: atText(t, locale, action.appeal.answeredAt),
-                  })}
-            </p>
-          )}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 /** What the console knows of one person on the report (3.4.2). */
 function Side({
   heading,
@@ -265,27 +242,6 @@ function Side({
 }) {
   const { t, locale } = useConsole();
   const headingId = useId();
-  const reportList = (reports: readonly AdminReportListItem[]) =>
-    reports.length === 0 ? (
-      <p className="type-body muted">{t("admin.reports.none")}</p>
-    ) : (
-      <ul className="cards">
-        {reports.map((one) => (
-          <li key={one.id} className="card entry">
-            <ConsoleLink to={`${reportsPath}/${one.id}`} className="type-label">
-              {t("admin.reports.cardTitle", {
-                subject: t(subjectKeys[one.subject]),
-                category: reportCategoryText(t, one.category),
-              })}
-            </ConsoleLink>
-            <p className="type-small muted">
-              {`${t("admin.reports.filed", { when: atText(t, locale, one.filedAt) })} · `}
-              {one.outcome === null ? t("admin.reports.open") : t(outcomeKeys[one.outcome])}
-            </p>
-          </li>
-        ))}
-      </ul>
-    );
   return (
     <section className="panel stack" aria-labelledby={headingId}>
       <h2 id={headingId} className="type-heading">
@@ -297,12 +253,17 @@ function Side({
         <dt>{t("admin.reports.language")}</dt>
         <dd>{t(`admin.reports.language.${side.person.locale}`)}</dd>
       </dl>
+      {side.person.status === "deleted" ? null : (
+        <ConsoleLink to={`${usersPath}/${side.person.userId}`} className="type-label">
+          {t("admin.reports.personPage", { name: personName(t, side.person) })}
+        </ConsoleLink>
+      )}
       <h3 className="type-label">{t("admin.reports.reportsAbout")}</h3>
-      {reportList(side.reportsAbout)}
+      <ReportLinks reports={side.reportsAbout} />
       <h3 className="type-label">{t("admin.reports.reportsBy")}</h3>
-      {reportList(side.reportsBy)}
+      <ReportLinks reports={side.reportsBy} />
       <h3 className="type-label">{t("admin.reports.personActions")}</h3>
-      <Actions actions={side.actions} />
+      <ActionList actions={side.actions} />
       <h3 className="type-label">{t("admin.reports.recentTrips")}</h3>
       {side.recentTrips.length === 0 ? (
         <p className="type-body muted">{t("admin.reports.none")}</p>

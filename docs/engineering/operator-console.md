@@ -608,6 +608,23 @@ them the same way.
 Suspending and reinstating from a person's page use the moderation routes
 above, without a `reportId`.
 
+The pages are `apps/admin/src/pages/users/` at `/admin/users` and
+`apps/admin/src/pages/trips/` at `/admin/trips`, after Reliability in the menu.
+What the operator types to find a person stays in the page's state, never
+in the address. Below the search, each driver's decline rate. A person's
+page shows their account, the actions that fit them (`personChoices`:
+warn, hide About you, suspend an open account, reinstate a suspended one)
+with the same panel as a report's page (`ActPanel` in
+`reports/act.tsx`), their notes with a form to add one, and their history.
+A note's form says the person gets their notes in Download my data. The
+trips page lists the trips from today on until the operator filters them;
+a person's page links to all the trips they drive (`?driverId=`, the only
+filter read from the address), and a trip's page links to the driver and
+each passenger. A list cut short says so. Only the newest search shows
+its answer, and a person's page that fails to load again after an action
+keeps what it showed, with what the action said, and offers to try
+again.
+
 ## A console page
 
 The console is `apps/admin`: React for the web, built with Vite, served by
