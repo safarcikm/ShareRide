@@ -269,10 +269,12 @@ it counts and why not) and `UserStats` (rating and reliability totals).
 
 ### Report
 
-`reporter_id`, `subject` (trip, message, booking, user, later review),
-`subject_user_id` (the person reported, or the driver of a trip), the
-records it links (`trip_id`, `booking_id`, `message_id`,
-`conversation_id`), `category`, `description` (up to 1 000 characters),
+`reporter_id`, `subject` (trip, message, booking, user or review; a
+person reported from their profile is a user report with no booking),
+`subject_user_id` (the person reported, the driver of a trip, or a
+review's author; the former member once their account is erased), the records
+it links (`trip_id`, `booking_id`, `message_id`, `conversation_id`,
+`review_id`), `category`, `description` (up to 1 000 characters),
 `urgent` (safety reports), `status` (open or closed), `outcome`,
 `closed_at`, `closed_by_id`, timestamps. Every action on a report is
 written to the audit log. A conversation a report links is kept past chat

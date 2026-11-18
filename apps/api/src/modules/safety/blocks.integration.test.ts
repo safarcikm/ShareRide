@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import {
   blockFromBookingRoute,
+  blockFromProfileRoute,
   conversationMessagesRoute,
   messageAllPassengersRoute,
   myBlocksRoute,
@@ -261,6 +262,84 @@ describe("POST /v1/bookings/{id}/block and GET /v1/me/blocks (spec 9, 3.2)", () 
     const { bookingId } = await gunnaOnVik();
     const result = await api.client.call(blockFromBookingRoute, {
       params: { id: bookingId },
+      body: {},
+    });
+    expect(result).toMatchObject({ status: 401 });
+  });
+});
+
+/** The reference of a member's public profile, never their ID. */
+async function profileIdOf(member: Member) {
+  const [row] = await api.connection.db
+    .select({ profileId: schema.users.profileId })
+    .from(schema.users)
+    .where(eq(schema.users.id, member.userId));
+  if (row === undefined) throw new Error("No such member.");
+  return row.profileId;
+}
+
+function blockFromProfile(member: Member, profileId: string) {
+  return api.client.call(blockFromProfileRoute, {
+    accessToken: member.accessToken,
+    params: { profileId },
+    body: {},
+  });
+}
+
+describe("POST /v1/people/{profileId}/block (spec 9, 3.2.1)", () => {
+  it("blocks a person from their profile, with nothing between us", async () => {
+    const jon = await jonDrives();
+    const sigga = await newMember("Sigga");
+    const result = await blockFromProfile(sigga, await profileIdOf(jon));
+    expect(result).toMatchObject({ status: 200, data: { together: [] } });
+    expect(await blocked(sigga)).toEqual([expect.objectContaining({ firstName: "Jón" })]);
+    // The trips he drives are closed to her (R9.4).
+    expect(await findsAirport(sigga)).toEqual({ search: false, soonest: false, days: 0 });
+  });
+
+  it("gives the bookings and requests we still have together, as from a booking", async () => {
+    const { jon, gunna, bookingId } = await gunnaOnVik();
+    const result = await blockFromProfile(gunna, await profileIdOf(jon));
+    expect(result).toMatchObject({ status: 200 });
+    expect(result.ok && result.data.together.map((booking) => booking.id)).toEqual([bookingId]);
+  });
+
+  it("is safe to repeat, and keeps the first time", async () => {
+    const jon = await jonDrives();
+    const sigga = await newMember("Sigga");
+    const profileId = await profileIdOf(jon);
+    await blockFromProfile(sigga, profileId);
+    const first = await blocked(sigga);
+    api.advance(60);
+    try {
+      expect(await blockFromProfile(sigga, profileId)).toMatchObject({ status: 200 });
+      expect(await blocked(sigga)).toEqual(first);
+    } finally {
+      api.advance(-60);
+    }
+  });
+
+  it("finds no profile of mine to block, of someone leaving ShareRide, or unknown", async () => {
+    const jon = await jonDrives();
+    const sigga = await newMember("Sigga");
+    expect(await blockFromProfile(jon, await profileIdOf(jon))).toMatchObject({
+      status: 404,
+      error: { code: "not_found" },
+    });
+    await api.connection.db
+      .update(schema.users)
+      .set({ deleteAfter: new Date(api.now().getTime() + 30 * 24 * 3_600_000) })
+      .where(eq(schema.users.id, jon.userId));
+    expect(await blockFromProfile(sigga, await profileIdOf(jon))).toMatchObject({ status: 404 });
+    expect(await blockFromProfile(sigga, randomUUID())).toMatchObject({ status: 404 });
+    expect(await blocked(sigga)).toEqual([]);
+    expect(await blocked(jon)).toEqual([]);
+  });
+
+  it("needs an account", async () => {
+    const jon = await jonDrives();
+    const result = await api.client.call(blockFromProfileRoute, {
+      params: { profileId: await profileIdOf(jon) },
       body: {},
     });
     expect(result).toMatchObject({ status: 401 });

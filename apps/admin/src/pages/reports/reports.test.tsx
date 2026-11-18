@@ -90,6 +90,7 @@ const report: AdminReport = {
   },
   booking: { id: "0196f000-0000-7000-8000-0000000000b1", status: "confirmed", seats: 1 },
   message: { id: messageId, sentAt: "2099-11-15T09:50:00.000Z", removed: false },
+  review: null,
   about: null,
   conversation: true,
   actions: [],

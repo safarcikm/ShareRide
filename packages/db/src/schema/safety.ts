@@ -13,6 +13,7 @@ import { boolean, check, index, pgTable, text, unique, uuid } from "drizzle-orm/
 import { bookings } from "./bookings.ts";
 import { conversations, messages } from "./chat.ts";
 import { at, id, oneOf, timestamps } from "./columns.ts";
+import { reviews } from "./reviews.ts";
 import { trips } from "./trips.ts";
 import { users } from "./users.ts";
 
@@ -63,6 +64,8 @@ export const reports = pgTable(
     messageId: uuid().references(() => messages.id, { onDelete: "set null" }),
     /** The conversation a report about a message lets the operator read (R9.6). */
     conversationId: uuid().references(() => conversations.id, { onDelete: "set null" }),
+    /** The review reported, from the profile it shows on (3.1.1). */
+    reviewId: uuid().references(() => reviews.id, { onDelete: "set null" }),
     category: text().notNull(),
     /** Up to 1 000 characters, as the reporter wrote it; may be empty. */
     description: text().notNull().default(""),
@@ -96,10 +99,11 @@ export const reports = pgTable(
       .on(table.urgent, table.createdAt)
       .where(sql`${table.status} = 'open'`),
     index("reports_conversation_index").on(table.conversationId),
-    // Deleting a trip, booking or message sets these to null: found by index.
+    // Deleting a trip, booking, message or review sets these to null: found by index.
     index("reports_trip_index").on(table.tripId),
     index("reports_booking_index").on(table.bookingId),
     index("reports_message_index").on(table.messageId),
+    index("reports_review_index").on(table.reviewId),
   ],
 );
 

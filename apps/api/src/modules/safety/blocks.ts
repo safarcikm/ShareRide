@@ -12,9 +12,10 @@ import {
   type Block,
   type Result,
 } from "@shareride/domain";
-import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, or } from "drizzle-orm";
 import type { BookingService } from "../bookings/index.ts";
 import type { Queryable } from "../bookings/seats.ts";
+import { shown } from "../privacy/hidden.ts";
 
 const { blocks, bookings, trips, users } = schema;
 
@@ -79,6 +80,11 @@ export interface BlockService {
    * withdraw or decline them under the usual rules (spec 9, decision 1).
    */
   blockFromBooking(me: string, bookingId: string): Promise<Result<Booking[], BlockError>>;
+  /**
+   * Blocks the person a profile shows (3.2.1), as `blockFromBooking` does;
+   * not found for my own profile, or for someone no profile shows.
+   */
+  blockFromProfile(me: string, profileId: string): Promise<Result<Booking[], BlockError>>;
   /** Lifts a block I made, never one made against me; safe to repeat. */
   unblock(me: string, blockId: string): Promise<void>;
   /** The people I blocked, the latest first. */
@@ -91,6 +97,58 @@ export function createBlockService(dependencies: {
   readonly bookings: Pick<BookingService, "bookingsOf">;
 }): BlockService {
   const { db, clock } = dependencies;
+
+  /** Blocks `other` for `me`, giving the bookings we still have together (`blockFromBooking`). */
+  async function blockPerson(me: string, other: string): Promise<Result<Booking[], BlockError>> {
+    const checked = checkBlock(me, other);
+    if (!checked.ok) return err({ code: "not_found" });
+
+    const shared = await db.transaction(async (tx) => {
+      // Both people, in ID order: booking and sending a message lock the
+      // passenger or sender first, so a booking made at the same moment
+      // is either refused by the block or listed below. Not a full update
+      // lock: a report filed at the same moment checks its key on one of
+      // us and must not wait on this, or the two would deadlock.
+      await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(inArray(users.id, [me, other]))
+        .orderBy(asc(users.id))
+        .for("no key update");
+      const now = clock();
+      await tx
+        .insert(blocks)
+        .values({ blockerId: me, blockedId: other, createdAt: now, updatedAt: now })
+        .onConflictDoNothing();
+      // Either of us the passenger, the other the driver.
+      return tx
+        .select({ id: bookings.id })
+        .from(bookings)
+        .innerJoin(trips, eq(trips.id, bookings.tripId))
+        .where(
+          and(
+            inArray(bookings.status, holding),
+            or(
+              and(eq(bookings.passengerId, me), eq(trips.driverId, other)),
+              and(eq(bookings.passengerId, other), eq(trips.driverId, me)),
+            ),
+          ),
+        );
+    });
+    const now = clock();
+    const together = await dependencies.bookings.bookingsOf(
+      me,
+      shared.map((row) => row.id),
+    );
+    return ok(
+      together
+        .filter(
+          (found) => holdsSeats(found.status) && Date.parse(found.board.plannedAt) > now.getTime(),
+        )
+        .sort((a, b) => Date.parse(a.board.plannedAt) - Date.parse(b.board.plannedAt)),
+    );
+  }
+
   return {
     async blockFromBooking(me, bookingId) {
       const [booking] = await db
@@ -102,54 +160,16 @@ export function createBlockService(dependencies: {
         return err({ code: "not_found" });
       }
       const other = booking.passengerId === me ? booking.driverId : booking.passengerId;
-      const checked = checkBlock(me, other);
-      if (!checked.ok) return err({ code: "not_found" });
+      return blockPerson(me, other);
+    },
 
-      const shared = await db.transaction(async (tx) => {
-        // Both people, in ID order: booking and sending a message lock the
-        // passenger or sender first, so a booking made at the same moment
-        // is either refused by the block or listed below. Not a full update
-        // lock: a report filed at the same moment checks its key on one of
-        // us and must not wait on this, or the two would deadlock.
-        await tx
-          .select({ id: users.id })
-          .from(users)
-          .where(inArray(users.id, [me, other]))
-          .orderBy(asc(users.id))
-          .for("no key update");
-        const now = clock();
-        await tx
-          .insert(blocks)
-          .values({ blockerId: me, blockedId: other, createdAt: now, updatedAt: now })
-          .onConflictDoNothing();
-        // Either of us the passenger, the other the driver.
-        return tx
-          .select({ id: bookings.id })
-          .from(bookings)
-          .innerJoin(trips, eq(trips.id, bookings.tripId))
-          .where(
-            and(
-              inArray(bookings.status, holding),
-              or(
-                and(eq(bookings.passengerId, me), eq(trips.driverId, other)),
-                and(eq(bookings.passengerId, other), eq(trips.driverId, me)),
-              ),
-            ),
-          );
-      });
-      const now = clock();
-      const together = await dependencies.bookings.bookingsOf(
-        me,
-        shared.map((row) => row.id),
-      );
-      return ok(
-        together
-          .filter(
-            (found) =>
-              holdsSeats(found.status) && Date.parse(found.board.plannedAt) > now.getTime(),
-          )
-          .sort((a, b) => Date.parse(a.board.plannedAt) - Date.parse(b.board.plannedAt)),
-      );
+    async blockFromProfile(me, profileId) {
+      const [person] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(and(eq(users.profileId, profileId), shown(users), isNotNull(users.firstName)));
+      if (person === undefined) return err({ code: "not_found" });
+      return blockPerson(me, person.id);
     },
 
     async unblock(me, blockId) {
