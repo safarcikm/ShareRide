@@ -1205,6 +1205,20 @@ releases follow [Semantic Versioning](https://semver.org/).
   name and its places in order; a corridor can be added, changed, and
   left out of the counting, never deleted. Local development and staging
   start with the three launch corridors.
+- Weekly metrics and the beta's exit criteria (spec 10, 3.4; decision 2;
+  milestone 11, PR 9; migration `0052_weekly_metrics`): every night after
+  03:00 the API counts the current week and the two before it, for
+  everything and for each corridor: searches and how many showed a trip,
+  requests per search with a result, trips and seats offered, bookings
+  and seats confirmed, seat fill by kilometre, drivers' cancellations
+  that count, passengers' late cancellations and no-shows, repeat
+  passengers, reports and the time to answer them, money paid and
+  refunded, and active drivers and passengers. The console's new Metrics
+  page shows the six exit criteria as met, not met or without data over
+  the last four complete weeks, the figures week by week for everything
+  or one corridor, bars per week for one figure, and a CSV file in which
+  a figure about fewer than 5 people reads "<5". `pnpm --filter
+  @shareride/api metrics recompute <weeks>` counts more weeks again.
 
 ### Fixed
 

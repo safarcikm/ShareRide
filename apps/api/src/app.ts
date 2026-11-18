@@ -101,6 +101,7 @@ import {
 import {
   createCorridorService,
   createSearchLog,
+  createWeeklyMetricsService,
   registerMetricsAdminRoutes,
   type SearchLog,
 } from "./modules/metrics/index.ts";
@@ -486,6 +487,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     registerMetricsAdminRoutes(app, {
       ...features,
       corridors: createCorridorService(features),
+      metrics: createWeeklyMetricsService(features),
       requireOperator,
     });
     const feedback = createFeedbackService(features);

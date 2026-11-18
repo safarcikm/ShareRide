@@ -392,6 +392,9 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     otherIds: ["fromId", "toId"],
   },
   corridors: notAboutAPerson("the operator's corridors: names and places (spec 10, 3.4.1)"),
+  weekly_metrics: notAboutAPerson(
+    "weekly counts and sums per corridor, about nobody in particular (spec 10, 3.4.2 and section 7)",
+  ),
   reports: {
     category: "moderation",
     // Only the reports the person filed, with their outcomes: never who reported them (3.1.6).

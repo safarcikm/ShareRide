@@ -720,6 +720,37 @@ figures (PR 9) are counted from these.
   corridors from the sample places, once; in production the operator
   adds them with the real places.
 
+## Metrics
+
+Spec 10 (3.4), built in milestone 11 (PR 9).
+
+- The rules are in `packages/domain/src/metrics/`: `weeks.ts` (ISO weeks
+  in Iceland time), `weekly.ts` (`metricKeys`, `weekMetrics`, the exit
+  criteria and `fewerThanFive`) and `csv.ts`. A figure is a numerator
+  and, for a share or a rate, a denominator; the page divides. To add a
+  metric, add its key, count it in `weekMetrics`, name it in both
+  languages under `admin.metrics.metric.*`, say how it reads in the
+  page's `kindOf`, and generate the migration for the table's check.
+- `modules/metrics/weekly.ts` reads the records, splits them by corridor
+  with `onCorridor`, and replaces the weeks' rows in `weekly_metrics`
+  (one per corridor or none, week and metric). A corridor that is not
+  counted keeps the rows it had.
+- The API counts the current week and the two before it once a night
+  after 03:00 (`computeIfDue`, asked every 10 minutes in `server.ts`).
+  `pnpm --filter @shareride/api metrics recompute <weeks>` counts up to
+  53 weeks again, such as after a corridor is added or changed; on a
+  server, `node apps/api/src/metrics-cli.ts recompute <weeks>` in the
+  API's shell.
+- `GET /admin/v1/metrics?from=2026-W40&to=2026-W47&corridor=<id>` gives
+  the stored weeks (the last 8 without a range, at most 53; `metrics`
+  is null for a week not counted) and the exit criteria over the last 4
+  complete weeks on the active corridors. `GET /admin/v1/metrics.csv`
+  takes the same query and gives a file, where a figure about fewer than
+  5 people reads `<5`.
+- The Metrics page (`apps/admin/src/pages/metrics/`) shows the exit
+  criteria, a corridor and week picker, bars per week for one figure in
+  the page's own SVG, the table of every figure, and Download CSV.
+
 ## Users, trips and decline rates
 
 `apps/api/src/modules/moderation/people-routes.ts` holds the console's
