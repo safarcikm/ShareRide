@@ -55,6 +55,7 @@ import {
   type SQL,
 } from "drizzle-orm";
 import { recordAudit } from "../admin/audit.ts";
+import { authors } from "../people/ratings.ts";
 import { figuresOf } from "../people/standing.ts";
 import { createConsoleReads, iso, type ConsoleStop } from "./console-reads.ts";
 import type { ConsoleActor } from "./console.ts";
@@ -361,15 +362,18 @@ export function createPeopleConsoleService(dependencies: {
       const [declines] = await requestRows(id);
       const reviewsWhere = (side: "authorId" | "subjectId") =>
         db
-          .select()
+          .select({ review: reviews, authorDeleteAfter: authors.deleteAfter })
           .from(reviews)
+          .innerJoin(authors, eq(authors.id, reviews.authorId))
           .where(eq(reviews[side], id))
           .orderBy(desc(reviews.createdAt), desc(reviews.id))
           .limit(historyShown);
       const about = await reviewsWhere("subjectId");
       const by = await reviewsWhere("authorId");
-      const reviewer = await peopleFor([...about, ...by].flatMap((r) => [r.authorId, r.subjectId]));
-      const reviewOf = (review: (typeof about)[number]): AdminReview => ({
+      const reviewer = await peopleFor(
+        [...about, ...by].flatMap(({ review }) => [review.authorId, review.subjectId]),
+      );
+      const reviewOf = ({ review, authorDeleteAfter }: (typeof about)[number]): AdminReview => ({
         id: review.id,
         rating: review.rating,
         comment: review.comment,
@@ -379,6 +383,7 @@ export function createPeopleConsoleService(dependencies: {
         writtenAt: review.createdAt.toISOString(),
         revealed: review.revealedAt !== null,
         hidden: review.hiddenAt !== null,
+        authorLeaving: authorDeleteAfter !== null,
       });
 
       return {

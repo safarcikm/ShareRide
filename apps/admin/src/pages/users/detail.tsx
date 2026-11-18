@@ -378,8 +378,9 @@ const historyShown = 20;
 
 /**
  * Reviews by or about the person, the latest first: every one, with its
- * words, whether it shows yet and whether ShareRide hid it, each naming the
- * other person (`other`) with a link to their page.
+ * words, and tagged when it does not show (not yet, hidden by ShareRide, or
+ * by someone deleting their account), each naming the other person
+ * (`other`) with a link to their page.
  */
 function Reviews({
   reviews,
@@ -418,11 +419,14 @@ function Reviews({
                 )}
               </p>
               {review.comment === "" ? null : <p className="type-body">{review.comment}</p>}
-              {review.revealed && !review.hidden ? null : (
+              {review.revealed && !review.hidden && !review.authorLeaving ? null : (
                 <p className="tags">
                   {review.revealed ? null : (
                     <span className="tag type-small">{t("admin.users.notRevealed")}</span>
                   )}
+                  {review.authorLeaving ? (
+                    <span className="tag type-small">{t("admin.users.authorLeaving")}</span>
+                  ) : null}
                   {review.hidden ? (
                     <span className="tag tag-warning type-small">
                       {t("admin.reports.hiddenByTag")}

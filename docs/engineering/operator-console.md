@@ -625,9 +625,10 @@ them the same way.
   whether the figure is below the watch level), cars, the 20 latest trips
   they drive and bookings they made (a declined request with its reason,
   R5.7), the 20 latest reports by and about them, reviews about them and
-  reviews they wrote (every one, with its words, whether it shows yet and
-  whether ShareRide hid it, and the other person), and actions on them,
-  every note, and their decline rate.
+  reviews they wrote (every one, with its words, whether it shows yet,
+  whether ShareRide hid it and whether its author is deleting their
+  account, and the other person), and actions on them, every note, and
+  their decline rate.
 - `POST /admin/v1/users/{id}/notes` with `{ text }` adds a note about the
   person, at most 1 000 characters (`checkOperatorNote`). Only operators
   see notes in the console, but the person gets each note's text and date

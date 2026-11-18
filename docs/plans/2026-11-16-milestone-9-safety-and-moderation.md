@@ -508,18 +508,27 @@ PRs 7 and 8 were: 9a the API, 9b the screens.
     counts them (`figuresOf` in `people/standing.ts`, used by profiles
     too), the reliability with `belowWatchLevel`, and `reviewsAbout` and
     `reviewsBy` (latest first, at most 20 each, every review, with whether
-    it is shown yet and whether ShareRide hid it, and both people); each
-    side of a report has the rating and the figure too.
+    it is shown yet, whether ShareRide hid it and whether its author is
+    deleting their account, and both people); each side of a report has
+    the rating and the figure too.
   - Console: a person's page shows the rating, the reliability figure
     with its counts by role, and both lists of reviews, each linking to
     the other person's page; each side of a report shows the rating and
     the figure (`Figures`). The member texts for them are reused.
   - Verify: integration tests for the figures (as a profile counts them)
-    and the reviews (hidden and not yet shown included, the former
-    member as author, at most 20); console tests for both pages.
+    and the reviews (hidden, not yet shown and by someone leaving
+    included, the former member as author, at most 20); console tests for
+    both pages.
   - Found while building: the former member stands for everyone who left,
     so their records are no one's figure. A report's side gives them no
-    rating or reliability (null), and the console shows none.
+    rating or reliability (null), and the console shows none. A review by
+    someone deleting their account shows nowhere and does not count, so
+    the console tags it.
+  - Later: a former member's side of a report still lists the reports,
+    trips and actions of everyone who left; it could show none of them.
+    The records behind a person's figure are the trips and bookings their
+    page lists; changing whether a cancellation counts stays on the
+    Reliability page.
 
 ## 6. Review focus
 

@@ -619,9 +619,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   spec 9, 3.4.2 and 3.5.2): a person's page shows their rating and
   reliability figure as their profile counts them, with the counts by
   role and whether the figure is below the watch level, and the 20 latest
-  reviews about them and by them: every one, with its words, whether it
-  shows yet and whether ShareRide hid it, each linking to the other
-  person's page. Each side of a report shows the rating and the figure
+  reviews about them and by them: every one, with its words, and whether
+  it shows yet, ShareRide hid it or its author is deleting their account,
+  each linking to the other person's page. Each side of a report shows the rating and the figure
   too, but none for the former member. Profiles and the console count
   them with the same code (`figuresOf`).
 - Report and Block on a profile (milestone 9, PR 9b, spec 9, 3.1.1, 3.2.1

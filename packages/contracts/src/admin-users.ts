@@ -128,7 +128,7 @@ const carSchema = z.object({
 
 /**
  * A review by or about a person (3.5.2): every one, including those not
- * shown yet and those ShareRide hid, with its words.
+ * shown yet, those ShareRide hid and those by someone leaving, with its words.
  */
 export const adminReviewSchema = z.object({
   id: z.uuid(),
@@ -144,6 +144,11 @@ export const adminReviewSchema = z.object({
   /** False until both have written or 14 days have passed (R8.9): nobody else reads it until then. */
   revealed: z.boolean(),
   hidden: z.boolean(),
+  /**
+   * Its author is leaving ShareRide: it shows nowhere and does not count
+   * until their account is erased, then as by a former member (spec 11, 3.4.3).
+   */
+  authorLeaving: z.boolean(),
 });
 
 export type AdminReview = z.infer<typeof adminReviewSchema>;

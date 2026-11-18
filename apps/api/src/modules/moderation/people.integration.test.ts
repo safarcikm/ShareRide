@@ -398,8 +398,13 @@ describe("a person's page (spec 9, 3.5.2)", () => {
 describe("a person's rating, reliability and reviews (spec 9, 3.5.2)", () => {
   it("counts the rating and reliability as their profile does, and lists every review", async () => {
     const { jon, gunna, bookingId } = await afterTheTrip();
+    const siggi = await newMember("Siggi");
     const ago = (hours: number) => new Date(api.now().getTime() - hours * hourMs);
-    const [written, waiting, gone] = [ago(3), ago(2), ago(1)];
+    const [written, waiting, leaving, gone] = [ago(3), ago(2), ago(1.5), ago(1)];
+    await api.connection.db
+      .update(schema.users)
+      .set({ deleteAfter: new Date(api.now().getTime() + 30 * 24 * hourMs) })
+      .where(eq(schema.users.id, siggi.userId));
     const reviews = await api.connection.db
       .insert(schema.reviews)
       .values([
@@ -434,6 +439,16 @@ describe("a person's rating, reliability and reviews (spec 9, 3.5.2)", () => {
           revealedAt: gone,
           hiddenAt: gone,
           createdAt: gone,
+        },
+        // By someone leaving ShareRide: it shows nowhere until they are erased.
+        {
+          bookingId,
+          authorId: siggi.userId,
+          subjectId: jon.userId,
+          authorRole: "passenger",
+          rating: 2,
+          revealedAt: leaving,
+          createdAt: leaving,
         },
       ])
       .returning({ id: schema.reviews.id });
@@ -470,6 +485,19 @@ describe("a person's rating, reliability and reviews (spec 9, 3.5.2)", () => {
         writtenAt: gone.toISOString(),
         revealed: true,
         hidden: true,
+        authorLeaving: false,
+      },
+      {
+        id: reviews[3]?.id,
+        rating: 2,
+        comment: "",
+        authorRole: "passenger",
+        author: person(siggi, "Siggi"),
+        subject: person(jon, "Jón"),
+        writtenAt: leaving.toISOString(),
+        revealed: true,
+        hidden: false,
+        authorLeaving: true,
       },
       {
         id: reviews[0]?.id,
@@ -481,6 +509,7 @@ describe("a person's rating, reliability and reviews (spec 9, 3.5.2)", () => {
         writtenAt: written.toISOString(),
         revealed: true,
         hidden: false,
+        authorLeaving: false,
       },
     ]);
     const waitingReview = {
@@ -493,6 +522,7 @@ describe("a person's rating, reliability and reviews (spec 9, 3.5.2)", () => {
       writtenAt: waiting.toISOString(),
       revealed: false,
       hidden: false,
+      authorLeaving: false,
     };
     expect(page.reviewsBy).toEqual([waitingReview]);
 
@@ -504,7 +534,8 @@ describe("a person's rating, reliability and reviews (spec 9, 3.5.2)", () => {
     expect(passenger.reviewsBy.map((review) => review.id)).toEqual([reviews[0]?.id]);
   });
 
-  it("lists the latest 20 reviews of each kind", async () => {
+  // Reviews they wrote are read the same way, by author instead of subject.
+  it("lists the latest 20 reviews about them", async () => {
     const jon = await driverOf(airport, "Jón");
     const now = api.now().getTime();
     const ago = (hours: number) => new Date(now - hours * hourMs);

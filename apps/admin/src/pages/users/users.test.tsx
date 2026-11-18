@@ -64,6 +64,7 @@ const reviewsAbout: AdminReview[] = [
     writtenAt: "2099-11-12T18:00:00.000Z",
     revealed: true,
     hidden: false,
+    authorLeaving: false,
   },
   {
     id: "0196f000-0000-7000-8000-0000000000b2",
@@ -75,6 +76,7 @@ const reviewsAbout: AdminReview[] = [
     writtenAt: "2099-11-10T18:00:00.000Z",
     revealed: true,
     hidden: true,
+    authorLeaving: false,
   },
 ];
 
@@ -89,6 +91,7 @@ const reviewsBy: AdminReview[] = [
     writtenAt: "2099-11-13T18:00:00.000Z",
     revealed: false,
     hidden: false,
+    authorLeaving: false,
   },
 ];
 
@@ -289,6 +292,20 @@ describe("a person's page (spec 9, 3.5.2)", () => {
     expect(within(waiting).getByRole("link", { name: "About: Gunna" })).toBeTruthy();
     expect(waiting.textContent).toContain("Not shown yet");
     expect(kind.textContent).not.toContain("Not shown yet");
+    expect(document.body.textContent).not.toContain("Author deleting their account");
+  });
+
+  it("tags a review whose author is deleting their account, which does not count", async () => {
+    start(`/admin/users/${dora.userId}`, {
+      ...user,
+      reviewsAbout: reviewsAbout.map((review) => ({ ...review, authorLeaving: true })),
+    });
+
+    expect(await screen.findByRole("list", { name: "Reviews about them" })).toBeTruthy();
+    expect(itemOf("Reviews about them", 0).textContent).toContain("Author deleting their account");
+    expect(screen.getByRole("region", { name: "Rating and reliability" }).textContent).toContain(
+      "or by someone deleting their account don't count.",
+    );
   });
 
   it("says when nobody has reviewed them, and when the figure is below the watch level", async () => {
