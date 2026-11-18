@@ -343,12 +343,12 @@ Built when the screens that need them are built.
 
 | Part | What it is |
 | ---- | ---------- |
-| `Card` | `surface`, corner `card`, 3 `edge` bottom edge, `md` padding. Under the pointer, the edge of a card that can be pressed turns `primary`; its fill stays, so a tag or an avatar on a tint of its own keeps its shape (spec 18, 3.4) |
+| `Card` | `surface`, corner `card`, 3 `edge` bottom edge, `md` padding. Under the pointer, the edge of a card that can be pressed turns `primary`; its fill stays, so a tag or an avatar on a tint of its own keeps its shape (spec 18, 3.4). With `fill`, a card takes the height of its place, so cards side by side in a `Grid` end level |
 | `Columns` | On a page (section 4.8): a main column that takes the room left and a side column 400 wide (`sideColumnWidth`) with a `lg` gap, each with `md` between its parts. The side column sits at the right, or at the left (`sideAt="start"`), and on the web stays in view while the main column scrolls. Whichever side it is on, a screen reader and the keyboard come to the main column first. Under 900 wide the two stack, main first |
 | `Grid` | Cards in equal columns with `md` gaps: as many as fit at 320 wide or more each (`gridCardMinWidth`), by the room the grid has and not by the window or the text size; one column on a phone |
 | `Tag` | `caption` text on a tinted fill, corner `tag` (section 4.1) |
 | `IconButton` | 44 round, like `BackButton`, for share and more; `primarySoft` under the pointer unless it is disabled |
-| `Stepper` | Minus and plus as 48 square secondary buttons, the value in `figure` between them; accessible names "One seat fewer" and "One seat more"; adjustable role with a value |
+| `Stepper` | Minus and plus as 48 square secondary buttons, the value in `figure` between them; accessible names "One seat fewer" and "One seat more"; adjustable role with a value. In the search row its label is a line in `caption` `textMuted` (`caption`) |
 | `Switch` | Off: `control` track outline; on: `primary` track; label to the left |
 | `RadioCard` | A card with a radio, a title and a line of help; selected: `primary` 2 outline |
 | `TickList` | Rows with a tick box: done is a filled `primary` box with a tick, not done is an empty `control` box with an action button |
@@ -361,6 +361,7 @@ Built when the screens that need them are built.
 | `Avatar` | The real profile photo, round; without a photo, the first letter on a people colour. Never a shape person |
 | `Row` | A row that opens a screen, in a `Card`: the title on the left in `bodyStrong`, a value such as "Confirmed" in `small` `textMuted`, then a chevron in `textMuted`; at least `row` 56 high; tinted `primarySoft` while pressed (spec 16, 3.4) and under the pointer |
 | `PlaceDropdown` | From or To while it is being chosen: its caption and dot stay, a text field with a 2 `primary` outline takes the place of the value, with Close as a small X (18) in `textMuted` inside its end, 44 square to press; what the search finds is listed under it in a box with a 2 `border` outline and corner `control`, as rows with the name in `bodyStrong` and the type and place in `small`, tinted `primarySoft` while pressed or under the pointer. Towns and areas come first, then meeting points, each under a heading in `caption` `textMuted`; a sample point has no tag on its row, and one "Sample meeting points" tag sits under the list (spec 16, 3.8). The swap button waits until it closes |
+| Search row | The search on a page (spec 18, 3.5), in one `Card`: From, the swap button and To side by side, then the date, the seats `Stepper` and the main button. Each part is a line in `caption` `textMuted` (From and To with their dot) over a control 48 high, so the values, the buttons and the main button stand on one line; a value under the pointer is tinted `primarySoft`. From and To take the room left and never go under 240 each; the date, the seats and the button keep their size, stay together and move as one to a second line, at the right, when the row is too narrow. From or To being chosen is the `PlaceDropdown` in its own part of the row, and the date opens "Any day" and the `Calendar` under its button; the card grows downwards and nothing else moves. The date button reads "Date: Any day" and says whether it is open; Escape closes the calendar, and focus goes back to the button |
 
 ### 5.3 Shape people and the seat view
 

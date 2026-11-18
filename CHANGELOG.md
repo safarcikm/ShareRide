@@ -1089,6 +1089,11 @@ releases follow [Semantic Versioning](https://semver.org/).
   secondary button are tinted, a primary button turns a step darker. The
   top bar's logo and language line up with the page's edges, and the logo
   and name open Find. Phones are unchanged.
+- Find on a laptop (spec 18, 3.5): the search is one row in a card, with
+  From, To, the date, the seats and "Find a ride" on one line from 1280
+  wide; the place list and the calendar open downwards in their own part.
+  Under it, the rides leaving soon stand in two columns, six of them, with
+  your next ride and the offer to drive beside them. Phones are unchanged.
 
 ### Fixed
 
