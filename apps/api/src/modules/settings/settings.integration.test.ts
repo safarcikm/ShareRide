@@ -12,10 +12,14 @@ import { createSettingsService } from "./service.ts";
 
 let api: TestApi;
 let operator: { userId: string; cookie: string };
+let member: { accessToken: string };
 
 beforeAll(async () => {
   api = await startTestApi();
   operator = await api.signInOperator();
+  member = await api.signIn(api.newPhoneNumber());
+  // From here the closed beta's setting is the stored one, as on a server.
+  api.useStoredInviteSetting();
 });
 
 afterAll(async () => {
@@ -39,7 +43,6 @@ const codeOf = (body: unknown) => (body as { error: { code: string } }).error.co
 
 describe("the console's settings", () => {
   it("are closed to everyone but a signed-in operator", async () => {
-    const member = await api.signIn(api.newPhoneNumber());
     for (const [method, path] of [
       ["GET", "/admin/v1/settings"],
       ["PATCH", "/admin/v1/settings/beta_max_testers"],

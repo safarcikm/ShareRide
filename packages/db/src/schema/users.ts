@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
-import { check, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { check, index, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { inviteCodes } from "./beta.ts";
 import { at, id, timestamps } from "./columns.ts";
 
 /**
@@ -53,9 +54,17 @@ export const users = pgTable(
     profileId: uuid().notNull().defaultRandom().unique("users_profile_id_unique"),
     /** The end of a suspension (spec 9, 3.6); empty while suspended means for good. */
     suspendedUntil: at(),
+    /**
+     * The invite code the account was made with (spec 12, 3.2.3); empty for
+     * accounts made while no code was needed. An account with one is a
+     * tester, counted against `beta_max_testers` (R12.3).
+     */
+    inviteCodeId: uuid().references(() => inviteCodes.id),
     ...timestamps,
   },
   (table) => [
+    // Counting the testers, and the accounts of one code.
+    index("users_invite_code_id_index").on(table.inviteCodeId),
     check("users_locale_check", sql`${table.locale} in ('is', 'en')`),
     // "deleted" is the former member's alone (formerMemberId).
     check("users_status_check", sql`${table.status} in ('active', 'suspended', 'deleted')`),

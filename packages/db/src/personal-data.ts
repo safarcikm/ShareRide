@@ -359,6 +359,18 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
       note: "kept as they are: the database refuses changes and deletes (R10.2)",
     },
   },
+  invite_codes: {
+    category: "audit",
+    export: {
+      leftOut:
+        "the operator's invite codes of the closed beta; a member's own account says nothing of the code beyond its ID (spec 12, section 7)",
+    },
+    personColumns: ["createdBy"],
+    onDeletion: {
+      rows: "leave",
+      note: "kept, so the count of a code's uses stays true; the erased account's own row, with the code it joined with, goes",
+    },
+  },
   reports: {
     category: "moderation",
     // Only the reports the person filed, with their outcomes: never who reported them (3.1.6).

@@ -83,7 +83,8 @@ jobs:
   app:
     name: App bundles (iOS, Android, web) and web tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # The bundles take about 8 minutes and the 140 web tests about 13.
+    timeout-minutes: 35
     # The web tests sign up against the API with a test database (e2e-server.ts).
     services:
       postgres:
