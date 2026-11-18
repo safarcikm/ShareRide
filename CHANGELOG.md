@@ -1042,6 +1042,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   stop screens say when what passengers booked sets the highest level,
   down to free. On a trip under way, the stretches already driven still
   count (A50).
+- Spec 18 (approved) and its plan: the web app on a laptop. From 900 wide,
+  every main screen gets two columns or a grid in a page 1144 wide, under
+  the top bar; phones keep their layouts.
 
 ### Fixed
 
