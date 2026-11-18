@@ -270,6 +270,22 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     };
     return { yourReview: shown(true), theirReview: shown(false) };
   };
+  // Those about the person from trips made anonymous: by nobody and on no
+  // ride, so only how the author travelled (A51).
+  const earlierReviews = await q
+    .select({
+      authorRole: reviews.authorRole,
+      rating: reviews.rating,
+      comment: reviews.comment,
+      sentAt: reviews.createdAt,
+      shownAt: reviews.revealedAt,
+      hiddenAt: reviews.hiddenAt,
+    })
+    .from(reviews)
+    .where(
+      and(eq(reviews.subjectId, userId), isNull(reviews.bookingId), isNotNull(reviews.revealedAt)),
+    )
+    .orderBy(asc(reviews.createdAt), asc(reviews.id));
 
   // Trips the person posted, with what passengers booked on them.
   const posted = await q
@@ -691,6 +707,12 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
       })),
       trips_posted: tripsPosted,
       bookings: bookingsSection,
+      earlier_reviews: earlierReviews.map((row) => ({
+        ...row,
+        sentAt: when(row.sentAt),
+        shownAt: when(row.shownAt),
+        hiddenAt: when(row.hiddenAt),
+      })),
       payments: paymentsSection,
       conversations: conversationsSection,
       reports: filed.map((row) => ({

@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import { check, index, integer, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { bookings } from "./bookings.ts";
 import { at, id, oneOf, timestamps } from "./columns.ts";
-import { users } from "./users.ts";
+import { formerMemberId, users } from "./users.ts";
 
 /**
  * A rating and review after a completed booking (spec 8, 3.7; R8.8 and
@@ -12,15 +12,16 @@ import { users } from "./users.ts";
  * `revealed_at`: once both have reviewed, or 14 days after completion. A
  * driver absence that stands, or a passenger found absent, deletes the
  * booking's reviews (3.4). `hidden_at` is the operator's, for a review that
- * breaks the community rules (spec 9).
+ * breaks the community rules (spec 9). 3 years after the trip, when the
+ * trip is made anonymous, a review keeps its stars, comment and dates for
+ * the person it is about, but is by the former member, on no booking (A51).
  */
 export const reviews = pgTable(
   "reviews",
   {
     id: id(),
-    bookingId: uuid()
-      .notNull()
-      .references(() => bookings.id, { onDelete: "cascade" }),
+    /** Null once its trip is made anonymous; it is then by the former member. */
+    bookingId: uuid().references(() => bookings.id, { onDelete: "cascade" }),
     authorId: uuid()
       .notNull()
       .references(() => users.id),
@@ -46,6 +47,10 @@ export const reviews = pgTable(
       sql`char_length(${table.comment}) <= ${sql.raw(String(reviewMaxLength))}`,
     ),
     check("reviews_people_check", sql`${table.authorId} <> ${table.subjectId}`),
+    check(
+      "reviews_ride_check",
+      sql`${table.bookingId} is not null or ${table.authorId} = ${sql.raw(`'${formerMemberId}'`)}`,
+    ),
     // A profile lists the reviews about a person that show, newest first (PR 7).
     index("reviews_subject_index").on(table.subjectId, table.revealedAt),
     index("reviews_author_index").on(table.authorId),
