@@ -257,8 +257,9 @@ the rating.
 - Profiles show the rating ("4.8 (12 ratings)"), "Reliability: 96%" or
   "Not enough trips yet", and the reviews with "As a driver" or "As a
   passenger". Tapping the figure shows "Kept 24 of 25 trips and bookings"
-  by role. Trip details, the driver's requests and passengers show the
-  rating and the figure, and open the profile.
+  by role. Search results show the driver's rating; trip details, the
+  driver's requests and the passenger's booking show the rating and the
+  figure. Each, and each passenger on the driver's trip, opens the profile.
 
 ## 5. Pull requests and tasks
 
@@ -349,8 +350,9 @@ handed to everyone signed in (spec 1, 3.5; the safety thread's suggestion).
 - [x] The profile screen, opened from the driver on trip details by
       members signed in (7b)
 - [x] My own profile and "See it as others do" show the same (7b)
-- [ ] The rating and figure on trip details, requests and passengers,
-      each opening the profile (7c)
+- [x] The rating in search results; the rating and figure on trip details,
+      requests and the booking's driver; each person's profile from there
+      and from the passengers on the driver's trip (7c)
 - [ ] In the console (decision 1, as changed): overrule a weather or
       road-closure reason so it counts, and the people below 80% (7d)
 - Verify: integration tests (never the phone number or email; hidden

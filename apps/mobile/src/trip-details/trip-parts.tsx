@@ -1,4 +1,4 @@
-import type { TripDetails } from "@shareride/contracts";
+import type { Standing, TripDetails } from "@shareride/contracts";
 import { formatClock } from "@shareride/i18n";
 import {
   Baby,
@@ -14,9 +14,9 @@ import { Avatar, avatarSize } from "@/components/avatar";
 import { Icon } from "@/components/icon";
 import { NeedBubble } from "@/components/need-bubble";
 import { Tag } from "@/components/tag";
-import { TextLink } from "@/components/text-link";
 import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
+import { StandingLines } from "@/people/standing";
 import { people, radii, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { carText, childSeatNeedKey, needKeys } from "./texts";
@@ -59,11 +59,13 @@ export function DriverAndCar({
   note = "",
   luggageFirst = false,
 }: {
-  /** With `profileId`, a link to their profile, for members signed in (spec 1, 3.5). */
   readonly driver: {
     readonly firstName: string;
     readonly colour: number;
-    readonly profileId?: string | null;
+    /** A link to their profile, for members signed in (spec 1, 3.5). */
+    readonly profileId: string | null;
+    /** Their rating and figure; null for someone nobody sees any more. */
+    readonly standing: Standing | null;
   };
   readonly car: TripDetails["car"];
   /** What the passenger learns about the number plate, if anything. */
@@ -108,14 +110,12 @@ export function DriverAndCar({
         <Avatar firstName={driver.firstName} colour={driver.colour} />
         <View style={styles.grow}>
           <Text style={[typography.bodyStrong, { color: palette.text }]}>{driver.firstName}</Text>
-          <View style={styles.row}>
-            <Tag kind="warning" label={t("results.newDriver")} />
-          </View>
-          {driver.profileId === undefined || driver.profileId === null ? null : (
-            <TextLink
-              label={t("people.open")}
-              href={{ pathname: "/people/[profileId]", params: { profileId: driver.profileId } }}
-              align="start"
+          {driver.standing === null ? null : (
+            <StandingLines
+              standing={driver.standing}
+              profileId={driver.profileId}
+              name={driver.firstName}
+              newLabel={t("results.newDriver")}
             />
           )}
         </View>
@@ -152,7 +152,6 @@ export function DriverAndCar({
 
 const styles = StyleSheet.create({
   partStop: { flexDirection: "row", alignItems: "center", gap: spacing.ms },
-  row: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   grow: { flex: 1 },
   person: { flexDirection: "row", alignItems: "center", gap: spacing.ms },
   avatar: {

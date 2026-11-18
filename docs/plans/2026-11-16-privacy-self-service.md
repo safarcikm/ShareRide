@@ -419,10 +419,14 @@ Added once milestone 9 built reports (#119). Martin chose this on
       once the report's time is over. Migration
       `0040_messages_kept_for_reports` adds `sent_as` and lets an erased
       message keep its text, key and params.
+- [x] A chat push still waiting (to be tried again, or not yet reached)
+      when its sender is erased is skipped, so the kept text never goes
+      out (found by a security review after the merge).
 - Verify: integration tests (open, closed a millisecond inside the 3
   years, and closed 3 years ago, which empties as before; another
   conversation of the person's nobody reported is emptied; Download my
-  data; both people erased, then read by the operator)
+  data; both people erased, then read by the operator; a chat push
+  waiting when the sender is erased is skipped)
 
 ## 6. Review focus
 

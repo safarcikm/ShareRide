@@ -112,7 +112,9 @@ for (const journey of journeys) {
       // The search is kept on this device for one-tap repeat.
       await page.goBack();
       await expect(page.getByRole("heading", { name: journey.recent })).toBeVisible();
-      await page.reload();
+      // Opened afresh rather than reloaded: in CI a reload straight after Back
+      // once opened the results again, the address not yet back at the form.
+      await page.goto("/search");
       await expect(page.getByRole("heading", { name: journey.recent })).toBeVisible();
     });
   });

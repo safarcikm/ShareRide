@@ -32,6 +32,18 @@ export const ratingSchema = z.object({
 
 export type Rating = z.infer<typeof ratingSchema>;
 
+/**
+ * How a person stands, beside their name on a trip, a request or a booking
+ * (spec 4, 3.6.3; spec 5, 3.3.2): their rating, and the reliability figure's
+ * share kept, null until 5 count. The counts behind it are on the profile.
+ */
+export const standingSchema = z.object({
+  rating: ratingSchema,
+  reliabilityPercent: z.int().min(0).max(100).nullable(),
+});
+
+export type Standing = z.infer<typeof standingSchema>;
+
 /** A person's colour, from their ID (spec 15): the same everywhere they appear. */
 export const peopleColourSchema = z
   .int()

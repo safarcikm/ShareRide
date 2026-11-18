@@ -6,6 +6,7 @@ import type * as TestApp from "@/testing/app";
 import { driverApi, northBooking, northMyTrip, northSegments, northStop } from "@/testing/bookings";
 import { failure, type FakeClient } from "@/testing/fake-client";
 import { tripsApi } from "@/testing/trips";
+import { aProfileId, newcomer } from "@/testing/people";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -30,7 +31,13 @@ const jon = northBooking({
   alight: northStop(2),
   total: { amount: 4000, currency: "ISK" },
   requestExpiresAt: null,
-  passenger: { firstName: "Jón", colour: 3, memberSince: "2026-10" },
+  passenger: {
+    firstName: "Jón",
+    colour: 3,
+    memberSince: "2026-10",
+    profileId: aProfileId(11),
+    ...newcomer,
+  },
   confirmed: { registration: "AB 123", whereToStand: null },
 });
 

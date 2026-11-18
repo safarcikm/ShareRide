@@ -4,6 +4,7 @@ import type { TripDetails, TripSearchResult } from "@shareride/contracts";
 import { failure, ok, type FakeClient } from "./fake-client";
 import { bsi, hof, thorlakshofn } from "./meeting-points";
 import { blonduos, borgarnes, tripPoints } from "./trips";
+import { newcomer } from "./people";
 
 /** Reykjavík to Akureyri on Sunday 15 November, for Borgarnes to Blönduós. */
 export const northResult: TripSearchResult = {
@@ -25,7 +26,7 @@ export const northResult: TripSearchResult = {
   pricePerSeat: { amount: 2900, currency: "ISK" },
   total: { amount: 2900, currency: "ISK" },
   freeSeats: 3,
-  driver: { firstName: "Anna" },
+  driver: { firstName: "Anna", rating: newcomer.rating },
   bookingMode: "approval",
 };
 
@@ -114,7 +115,7 @@ export function northTrip(
     },
     seatsOffered: 3,
     // As a visitor not signed in sees it: no profile reference.
-    driver: { firstName: "Anna", colour: 1, profileId: null },
+    driver: { firstName: "Anna", colour: 1, profileId: null, ...newcomer },
     car: { make: "Toyota", model: "Yaris", colour: "white" },
     preferences: {
       luggage: "suitcase",
