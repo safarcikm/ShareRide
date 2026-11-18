@@ -144,6 +144,11 @@ describe("the passenger's trip day on a laptop (spec 18, 3.9)", () => {
     expect(main.getByText("By the petrol pumps")).toBeVisible();
     expect(main.getByText("Number plate AB 123")).toBeVisible();
     expect(main.getByRole("button", imHere)).toBeVisible();
+    // Where to stand comes before the driver on the day, in one row.
+    const [stand, driver] = within(main.getByTestId("grid")).getAllByTestId("grid-cell");
+    if (stand === undefined || driver === undefined) throw new Error("Two cells expected");
+    expect(within(stand).getByText("By the petrol pumps")).toBeVisible();
+    expect(within(driver).getByText("Number plate AB 123")).toBeVisible();
     expect(side.getByText("Blönduós")).toBeVisible();
     expect(side.getByRole("button", { name: "Message Anna" })).toBeVisible();
     const texts = textsInOrder();

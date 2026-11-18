@@ -19,12 +19,13 @@ import {
 import { PaymentSheet, usePayment } from "@/booking/payment";
 import { cancellationTexts, payByText, requestSentText } from "@/booking/texts";
 import { TripChanges, useMoveChoice } from "@/booking/trip-changes";
-import { WhereToStand } from "@/booking/where-to-stand";
+import { showsWhereToStand, WhereToStand } from "@/booking/where-to-stand";
 import { BackButton } from "@/components/back-button";
 import { otherPerson } from "@/chat/texts";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Columns, PageColumn } from "@/components/columns";
+import { Grid } from "@/components/grid";
 import { Icon } from "@/components/icon";
 import { Notice } from "@/components/notice";
 import { Screen, useWideScreen } from "@/components/screen";
@@ -43,7 +44,7 @@ import { ReportStatus } from "@/trip-day/report-status";
 import { offersDriverAbsent, reportState } from "@/trip-day/reports";
 import { useTripDayRefresh } from "@/trip-day/use-refresh";
 import { DriverAndCar, PartStop } from "@/trip-details/trip-parts";
-import { controlOutline, spacing, typography } from "@/theme/tokens";
+import { controlOutline, maxContentWidth, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { firstNameOf } from "@/people/texts";
 
@@ -213,6 +214,34 @@ function BookingDetails({
     </Card>
   );
 
+  const driver = (
+    <Card key="driver" fill={wide}>
+      <DriverAndCar
+        driver={{
+          firstName: firstNameOf(t, booking.driver),
+          colour: booking.driver.colour,
+          profileId: booking.driver.profileId,
+          // Someone leaving, or a former member, has no profile, and shows no standing.
+          standing: booking.driver.profileId === null ? null : booking.driver,
+        }}
+        car={booking.car}
+        carNote={
+          confirmed !== null
+            ? confirmed.registration === null
+              ? t("booking.plateLater")
+              : t("booking.plate", { plate: confirmed.registration })
+            : booking.status === "requested" || booking.status === "accepted"
+              ? t("trip.plateLater")
+              : undefined
+        }
+      />
+    </Card>
+  );
+  // Left out, not empty, where there is nothing to show: no gap in a
+  // column and no empty cell in a row.
+  const stand = showsWhereToStand(booking) ? (
+    <WhereToStand key="stand" booking={booking} fill={wide} />
+  ) : null;
   const message =
     confirmed === null ? null : (
       <Button
@@ -316,36 +345,21 @@ function BookingDetails({
         {/* Not on the trip day, when time and place come first. */}
         {occasion === null || tripDay ? null : <NotificationsPrompt occasion={occasion} />}
 
-        {tripDay ? (
-          <>
-            <TripDayHeading booking={booking} />
-            <WhereToStand booking={booking} />
-          </>
-        ) : wide ? null : (
-          part
-        )}
+        {tripDay ? <TripDayHeading booking={booking} /> : wide ? null : part}
 
-        <Card>
-          <DriverAndCar
-            driver={{
-              firstName: firstNameOf(t, booking.driver),
-              colour: booking.driver.colour,
-              profileId: booking.driver.profileId,
-              // Someone leaving, or a former member, has no profile, and shows no standing.
-              standing: booking.driver.profileId === null ? null : booking.driver,
-            }}
-            car={booking.car}
-            carNote={
-              confirmed !== null
-                ? confirmed.registration === null
-                  ? t("booking.plateLater")
-                  : t("booking.plate", { plate: confirmed.registration })
-                : booking.status === "requested" || booking.status === "accepted"
-                  ? t("trip.plateLater")
-                  : undefined
-            }
-          />
-        </Card>
+        {tripDay && !wide ? stand : null}
+
+        {/* Side by side where the column has room for both; where to stand
+            comes first on the trip day, as on a phone. */}
+        {wide ? (
+          <Grid>
+            {tripDay ? stand : null}
+            {driver}
+            {tripDay ? null : stand}
+          </Grid>
+        ) : (
+          driver
+        )}
 
         {tripDay ? <PassengerImHere booking={booking} onSaid={onReload} onStale={onStale} /> : null}
 
@@ -364,7 +378,7 @@ function BookingDetails({
           />
         ) : null}
 
-        {tripDay ? null : <WhereToStand booking={booking} />}
+        {tripDay || wide ? null : stand}
 
         {wide ? null : safety}
 
@@ -644,6 +658,8 @@ const styles = StyleSheet.create({
   grow: { flex: 1 },
   divider: { height: controlOutline / 2 },
   spread: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  pay: { gap: spacing.sm },
-  status: { gap: spacing.sm },
+  // No wider than a column, also in the main column of a wide page: a
+  // notice to read and a button to press, not a banner.
+  pay: { gap: spacing.sm, maxWidth: maxContentWidth },
+  status: { gap: spacing.sm, maxWidth: maxContentWidth },
 });

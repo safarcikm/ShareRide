@@ -1362,6 +1362,16 @@ describe("A booking on a laptop (spec 18, 3.9)", () => {
     expect(main().getByText("Number plate AB 123")).toBeVisible();
     expect(main().getByRole("header", { name: "Where to stand" })).toBeVisible();
     expect(main().getByText("By the petrol pumps")).toBeVisible();
+    // The driver and where to stand share a row where there is room, as
+    // cards of one height.
+    const [driver, stand, ...more] = within(main().getByTestId("grid")).getAllByTestId("grid-cell");
+    if (driver === undefined || stand === undefined) throw new Error("Two cells expected");
+    expect(more).toHaveLength(0);
+    expect(within(driver).getByText("Number plate AB 123")).toBeVisible();
+    expect(within(stand).getByRole("header", { name: "Where to stand" })).toBeVisible();
+    for (const cell of [driver, stand]) {
+      expect(within(cell).getByTestId("card")).toHaveStyle({ flexGrow: 1 });
+    }
 
     // The ride and its price first, then what can be done about it.
     const [ride] = side().getAllByTestId("card");
@@ -1439,6 +1449,8 @@ describe("A booking on a laptop (spec 18, 3.9)", () => {
     });
     await fireEvent.press(await main().findByRole("button", { name: "Withdraw request" }));
     expect(main().getByRole("button", { name: "Keep my request" })).toBeVisible();
+    // Nowhere to stand yet: the driver's card has the row to itself.
+    expect(within(main().getByTestId("grid")).getAllByTestId("grid-cell")).toHaveLength(1);
     // No chat and no plate before the seat is confirmed; the ride is beside.
     expect(side().getByText("2,900 ISK")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Message Anna" })).toBeNull();
@@ -1499,6 +1511,10 @@ describe("A booking on a laptop (spec 18, 3.9)", () => {
     expect(await screen.findByText("Your seat is confirmed")).toBeVisible();
     expect(screen.queryByTestId("page")).toBeNull();
     expect(screen.queryByTestId("columns-side")).toBeNull();
+    expect(screen.queryByTestId("grid")).toBeNull();
+    for (const card of screen.getAllByTestId("card")) {
+      expect(card).not.toHaveStyle({ flexGrow: 1 });
+    }
     const texts = textsInOrder();
     const at = (text: string) => {
       const index = texts.indexOf(text);
