@@ -71,7 +71,7 @@ every main screen, as drawn, on 2026-11-18.
 | 2 | 3.5 | Find: the search in one row, rides in a grid, the side column | Merged (#156) |
 | 3 | 3.6 | Search results: the map beside the list, chips that wrap | Built |
 | 4 | 3.7, 3.8 | Trip details, Check and pay and a request in two columns | Built |
-| 5 | 3.11 | Messages as two panes | |
+| 5 | 3.11 | Messages as two panes | Built |
 | 6 | 3.9, 3.10, 3.12 | A booking, My rides and Profile | |
 | 7 | 3.13, 3.14 | Offer a ride and the driver's trip | |
 
@@ -387,29 +387,35 @@ bar `primary`. A disabled or busy part shows none.
   of `(tabs)/messages.tsx`), `apps/mobile/src/chat/panes.tsx`
 - Modify: `apps/mobile/src/app/(tabs)/messages.tsx`,
   `apps/mobile/src/app/messages/[bookingId].tsx`,
-  `apps/mobile/src/chat/composer.tsx`, `en.ts`, `is.ts` (`chat.choose`),
-  `e2e/laptop.spec.ts`
-- Test: `apps/mobile/src/__tests__/messages-tab.test.tsx`, `chat.test.tsx`
+  `apps/mobile/src/chat/composer.tsx` (what is written can live in the
+  screen), `chat/unread.tsx` (keeps the conversations the count came
+  with), `components/screen.tsx` (`useStickToEnd`, `useScreenEdges`),
+  `components/text.tsx` (`Title part`), `en.ts`, `is.ts` (`chat.choose`),
+  `e2e/laptop.spec.ts`, `e2e/chat.spec.ts`, `testing/chat.ts`
+- Test: `apps/mobile/src/__tests__/chat.test.tsx`
 
 **Interfaces:**
 
-- Produces: `ConversationList({ openId?: string })`: loads and shows my
-  conversations as `(tabs)/messages.tsx` does today; the row of `openId` is
-  tinted and has `aria-current`; on a wide screen a row replaces the
-  address (`router.replace`) when a conversation is already open, and
-  pushes otherwise.
+- Produces: `useConversations()` and `ConversationList({ state, pane,
+  openId })`: loads and shows my conversations as `(tabs)/messages.tsx`
+  does today; in a pane the row of `openId` is tinted and has
+  `aria-current`; a row replaces the address (`router.setParams`) when a
+  conversation is already open, and pushes otherwise.
 - Produces: `Panes({ list, children })`: one card across the page; `list`
   in a pane `listPaneWidth` wide with its own scroll, `children` in the
-  other, which holds its own scroll and the composer at its bottom.
+  other. `Pane({ header, footer, endKey, children })` there holds its own
+  scroll and the composer at its bottom.
 
-- [ ] **Step 1: Failing tests** at 1280: Messages shows the list and
+- [x] **Step 1: Failing tests** at 1280: Messages shows the list and
   "Choose a conversation", and asks the API for no conversation's messages
   (Review Focus 4); a row opens `/messages/{id}` with the list still
   showing and that row current; a new message sent there shows in the
   right pane and the list's preview after its next load; Back from a
   conversation opened from a booking returns to the booking. At 390 the
   existing tests pass.
-- [ ] **Step 2 to 5:** Run, implement, run, commit `feat(mobile): Messages in two panes`.
+- [x] **Step 2 to 5:** Run, implement, run, commit `feat(mobile): Messages in two panes`.
+  Another row of the list changes the conversation with `router.setParams`,
+  which replaces the address and keeps the screen, and so the list.
 
 ## PR 6: A booking, My rides and Profile
 

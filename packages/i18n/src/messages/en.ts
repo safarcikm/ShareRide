@@ -1171,6 +1171,7 @@ export const en = {
     "Chats open once a booking is confirmed. Then you can message your driver or passengers here.",
   "chat.failed": "The messages could not be loaded.",
   "chat.notOpenYet": "The chat opens once the booking is confirmed.",
+  "chat.choose": "Choose a conversation",
   "chat.sentTo": "{count, plural, one {Sent to # passenger.} other {Sent to # passengers.}}",
   "chat.noPassengers":
     "There's no one to message: no passenger is confirmed, or their chat is closed.",

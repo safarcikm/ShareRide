@@ -1,7 +1,7 @@
 // Conversations as the API returns them, and a fake chat server, for screen
 // tests. Not used by the app itself.
 import type { Booking, ChatMessage, Conversation, SendMessageBody } from "@shareride/contracts";
-import { ok, type FakeClient } from "./fake-client";
+import { ok, type FakeAnswer, type FakeClient } from "./fake-client";
 import { paidBooking } from "./bookings";
 
 /** A message ID; `n` orders them. */
@@ -167,6 +167,69 @@ export function chatServer(
     return ok(204);
   });
   return server;
+}
+
+/**
+ * A conversation for each of `bookings` on the fake server, each as
+ * `chatServer` makes it, and my conversations from them: the newest first,
+ * with its last message and how many of the other person's are unread.
+ */
+export function chatServers(client: FakeClient, bookings: readonly Booking[]) {
+  // Each route once, answered by the server of the booking asked for.
+  const routes = new Map<
+    string,
+    { path: string; method?: string; byId: Map<string, FakeAnswer> }
+  >();
+  const servers = bookings.map((booking) =>
+    chatServer(
+      {
+        ...client,
+        answer(path, answer, method) {
+          const key = `${method ?? ""} ${path}`;
+          const route = routes.get(key) ?? {
+            path,
+            ...(method === undefined ? {} : { method }),
+            byId: new Map<string, FakeAnswer>(),
+          };
+          route.byId.set(booking.id, answer);
+          routes.set(key, route);
+        },
+      },
+      { booking },
+    ),
+  );
+  for (const { path, method, byId } of routes.values()) {
+    client.answer(
+      path,
+      (input) => {
+        const { id } = input["params"] as { id: string };
+        const answer = byId.get(id);
+        if (answer === undefined) throw new Error(`No fake conversation for booking ${id}`);
+        return answer(input);
+      },
+      method,
+    );
+  }
+  client.answer("/v1/me/conversations", () => {
+    const conversations = bookings
+      .map((booking, index) => {
+        const messages = [...(servers[index]?.messages ?? [])].sort(order);
+        return conversationOf(booking, {
+          unread: messages.filter((m) => m.from === "them" && m.readAt === null).length,
+          lastMessage: messages.findLast((m) => m.kind !== "system") ?? null,
+        });
+      })
+      .sort(
+        (a, b) =>
+          Date.parse(b.lastMessage?.sentAt ?? "2026-01-01T00:00:00.000Z") -
+          Date.parse(a.lastMessage?.sentAt ?? "2026-01-01T00:00:00.000Z"),
+      );
+    return ok(200, {
+      conversations,
+      unread: conversations.reduce((sum, conversation) => sum + conversation.unread, 0),
+    });
+  });
+  return servers;
 }
 
 /** The calls made to one route, by method and path, with their input. */

@@ -63,8 +63,11 @@ test("the driver and passenger of a confirmed booking message each other", async
       .getByText("Pay only in the app. ShareRide never asks for card details in a chat.")
       .filter(visible),
   ).toBeVisible();
+  // On a laptop the list beside the conversation shows this line too, as
+  // the conversation's last (spec 18, 3.11).
+  const conversation = isMobile === true ? passenger : passenger.getByTestId("panes-open");
   await expect(
-    passenger.getByText("Booking confirmed. You can message each other here.").filter(visible),
+    conversation.getByText("Booking confirmed. You can message each other here.").filter(visible),
   ).toBeVisible();
   await expect(passenger.getByLabel("You, Sent with the request: A small rucksack.")).toBeVisible();
   await passenger.getByLabel("Write a message").fill("Where shall I wait?");

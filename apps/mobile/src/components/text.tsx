@@ -4,34 +4,39 @@ import { typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
+ * On the web a heading without a level is an h1, like the title; section
+ * headings are h2, so screen readers can move through a screen's parts.
+ * React Native's types do not know aria-level; react-native-web reads it.
+ */
+export const sectionLevel: object = Platform.OS === "web" ? { "aria-level": 2 } : {};
+
+/**
  * A screen's title, centred, read out as a heading. A title that heads a
  * block of facts about a trip, with its date and status, starts at the left
- * like them (`align="start"`), as on trip details.
+ * like them (`align="start"`), as on trip details. A title of a `part` of
+ * a screen that has its own title, such as the open conversation beside
+ * Messages on a wide screen, looks the same and is an h2 on the web.
  */
 export function Title({
   children,
   align = "center",
+  part = false,
 }: {
   readonly children: ReactNode;
   readonly align?: "center" | "start";
+  readonly part?: boolean;
 }) {
   const palette = usePalette();
   return (
     <Text
       accessibilityRole="header"
+      {...(part ? sectionLevel : {})}
       style={[typography.title, align === "center" && styles.centre, { color: palette.text }]}
     >
       {children}
     </Text>
   );
 }
-
-/**
- * On the web a heading without a level is an h1, like the title; section
- * headings are h2, so screen readers can move through a screen's parts.
- * React Native's types do not know aria-level; react-native-web reads it.
- */
-export const sectionLevel: object = Platform.OS === "web" ? { "aria-level": 2 } : {};
 
 /** A section or card heading, at the left, read out as a heading. */
 export function Heading({ children }: { readonly children: ReactNode }) {

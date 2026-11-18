@@ -1184,6 +1184,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   320 wide beside trip details is gone (`Screen footerBeside`). Both are
   pages also while they load and when the trip cannot be loaded, so Back
   stays in its place. Phones are unchanged.
+- Messages on a laptop (spec 18, 3.11): one card with two panes. My
+  conversations are at the left and the open one at the right, with the
+  field to write in at its bottom; each pane scrolls on its own. Messages
+  in the menu asks to choose a conversation and opens none by itself.
+  Another row shows its conversation in the same place, and the list
+  follows what is read and sent. A chat opened from a booking has the two
+  panes too. Phones are unchanged.
 - Send feedback in the app and the console (spec 12, 3.3; milestone 11,
   PR 6): the form opens from the Beta label, Profile and Settings, and on
   phones from a shake, which a switch in Settings turns off. Phones take a

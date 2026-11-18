@@ -1,4 +1,4 @@
-import { myConversationsRoute } from "@shareride/contracts";
+import { myConversationsRoute, type Conversation } from "@shareride/contracts";
 import {
   createContext,
   useCallback,
@@ -15,26 +15,39 @@ import { reportError } from "@/lib/error-reporting";
 /** How often the web app asks again while its page is on show. */
 const webEveryMs = 60_000;
 
+/** My conversations as the server last answered: the list and the unread total. */
+interface Answered {
+  readonly unread: number;
+  readonly conversations: readonly Conversation[];
+}
+
 interface Unread {
   /** Messages not yet read, across my conversations: the Messages badge. */
   readonly total: number;
+  /**
+   * My conversations as last answered, or null before the first answer.
+   * The list shows them at once where it opens, such as beside a
+   * conversation on a wide screen, and follows each later answer.
+   */
+  readonly conversations: readonly Conversation[] | null;
   /** Asks the server again, as when a push arrives or a chat was read. */
   readonly refresh: () => void;
-  /** The total from an answer already in hand, such as the conversations list's. */
-  readonly show: (total: number) => void;
+  /** An answer already in hand, such as the conversations list's own. */
+  readonly show: (answer: Answered) => void;
 }
 
 const UnreadContext = createContext<Unread>({
   total: 0,
+  conversations: null,
   refresh: () => undefined,
   show: () => undefined,
 });
 
 /**
- * The unread total for the Messages badge (spec 7, 3.1, item 9; plan 4.3).
- * Fetched once signed in, when the app comes to the front, when a push
- * arrives, and on the web every minute while the page is on show. Nothing
- * when signed out.
+ * The unread total for the Messages badge (spec 7, 3.1, item 9; plan 4.3),
+ * with the conversations the same answer lists. Fetched once signed in,
+ * when the app comes to the front, when a push arrives, and on the web
+ * every minute while the page is on show. Nothing when signed out.
  */
 export function UnreadProvider({ children }: { readonly children: ReactNode }) {
   const state = useSessionState();
@@ -42,12 +55,14 @@ export function UnreadProvider({ children }: { readonly children: ReactNode }) {
   const userId = state.status === "signedIn" ? state.me.id : null;
   // Kept with whose it is, so an answer for someone who has signed out
   // since never shows.
-  const [known, setKnown] = useState<{ userId: string; total: number } | null>(null);
-  const total = known !== null && known.userId === userId ? known.total : 0;
+  const [known, setKnown] = useState<{ userId: string; answer: Answered } | null>(null);
+  const mine = known !== null && known.userId === userId ? known.answer : null;
+  const total = mine?.unread ?? 0;
+  const conversations = mine?.conversations ?? null;
 
   const show = useCallback(
-    (count: number) => {
-      if (userId !== null) setKnown({ userId, total: count });
+    (answer: Answered) => {
+      if (userId !== null) setKnown({ userId, answer });
     },
     [userId],
   );
@@ -57,7 +72,7 @@ export function UnreadProvider({ children }: { readonly children: ReactNode }) {
       .call(myConversationsRoute, {})
       .then((answer) => {
         // A failed answer keeps the count shown; the next refresh tries again.
-        if (answer.ok) setKnown({ userId, total: answer.data.unread });
+        if (answer.ok) setKnown({ userId, answer: answer.data });
       })
       .catch(reportError);
   }, [session, userId]);
@@ -83,7 +98,10 @@ export function UnreadProvider({ children }: { readonly children: ReactNode }) {
     };
   }, [refresh, userId]);
 
-  const value = useMemo(() => ({ total, refresh, show }), [total, refresh, show]);
+  const value = useMemo(
+    () => ({ total, conversations, refresh, show }),
+    [total, conversations, refresh, show],
+  );
   return <UnreadContext value={value}>{children}</UnreadContext>;
 }
 

@@ -26,18 +26,23 @@ const fieldMaxHeight = 5 * typography.body.lineHeight + 2 * spacing.ms;
  * conversation or for all passengers. "I'm running late" asks how many
  * minutes first. `onSend` says whether what was written can be cleared: a
  * conversation clears it at once and keeps a failed message in the list;
- * message all keeps it until it went.
+ * message all keeps it until it went. A screen that lays itself out anew,
+ * as a conversation does when the window turns wide, keeps what is being
+ * written itself and passes it as `draft`.
  */
 export function Composer({
   onSend,
   busy = false,
+  draft,
 }: {
   readonly onSend: (outgoing: Outgoing) => boolean | Promise<boolean>;
   readonly busy?: boolean;
+  readonly draft?: readonly [text: string, setText: (text: string) => void];
 }) {
   const { t } = useLanguage();
   const palette = usePalette();
-  const [text, setText] = useState("");
+  const own = useState("");
+  const [text, setText] = draft ?? own;
   const [late, setLate] = useState(false);
   const [focused, setFocused] = useState(false);
 

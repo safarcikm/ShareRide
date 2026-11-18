@@ -1,6 +1,6 @@
 import type { ChatMessage, SendMessageBody } from "@shareride/contracts";
-import { act, fireEvent, screen } from "expo-router/testing-library";
-import { AccessibilityInfo, ScrollView } from "react-native";
+import { act, fireEvent, screen, waitFor, within } from "expo-router/testing-library";
+import { AccessibilityInfo, Dimensions, ScrollView } from "react-native";
 import { readPreference } from "@/lib/preferences";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -17,6 +17,7 @@ import {
   chatBooking,
   chatMessage,
   chatServer,
+  chatServers,
   conversationOf,
   messageId,
   openedLine,
@@ -897,5 +898,261 @@ describe("Where a chat starts (spec 7, 3.1 and 3.2)", () => {
     const [text, quick, again] = bodies();
     expect(again).toEqual(text);
     expect(quick?.clientId).not.toBe(text?.clientId);
+  });
+});
+
+describe("Messages on a laptop (spec 18, 3.11)", () => {
+  const jon = northBooking({
+    id: "0190a1d6-0000-7000-8000-0000000000b7",
+    viewer: "driver",
+    status: "confirmed",
+    board: northStop(0),
+    alight: northStop(1),
+    requestExpiresAt: null,
+    passenger: {
+      firstName: "Jón",
+      colour: 3,
+      memberSince: "2026-10",
+      profileId: aProfileId(12),
+      ...newcomer,
+    },
+    confirmed: { registration: "AB 123", whereToStand: null },
+  });
+  const jonPage = `/messages/${jon.id}`;
+  const fromAnna = chatMessage({
+    id: messageId(2),
+    text: "By the pumps.",
+    sentAt: "2026-11-14T11:55:00.000Z",
+  });
+  const fromJon = chatMessage({
+    id: messageId(3),
+    text: "One bag, is that fine?",
+    sentAt: "2026-11-14T11:40:00.000Z",
+  });
+
+  /** Anna's conversation and Jón's, each with one message not yet read. */
+  async function openApp(path: string, more: (client: FakeClient) => void = () => undefined) {
+    let servers: ReturnType<typeof chatServers> | undefined;
+    const app = await renderApp(path, {
+      me: completeMe,
+      setUp: (client) => {
+        servers = chatServers(client, [chatBooking, jon]);
+        servers[0]?.messages.push(fromAnna);
+        servers[1]?.messages.push(fromJon);
+        more(client);
+      },
+    });
+    if (servers === undefined) throw new Error("The fake chat servers were not set up.");
+    return { ...app, servers };
+  }
+
+  const pages = (client: FakeClient) =>
+    callsTo(client, "/v1/bookings/{id}/messages", (input) => !("body" in input)).map(
+      (call) => (call.input["params"] as { id: string }).id,
+    );
+  const annaRow = /^Anna, Sunday 15 November, Borgarnes to Blönduós, /;
+  const jonRow = /^Jón, Sunday 15 November, BSÍ bus terminal to Borgarnes, /;
+  const wide = { width: 1280, height: 800, scale: 1, fontScale: 1 };
+  const phone = { width: 750, height: 1334, scale: 2, fontScale: 2 };
+  const turn = (window: typeof wide) =>
+    act(() => {
+      Dimensions.set({ window });
+    });
+
+  beforeEach(() => {
+    Dimensions.set({ window: wide });
+  });
+
+  afterEach(async () => {
+    await turn(phone);
+  });
+
+  it("lists my conversations beside a pane that asks to choose one, and opens none by itself", async () => {
+    const { client } = await openApp("/messages");
+    const list = await screen.findByTestId("panes-list");
+    expect(within(list).getByRole("header", { name: "Messages" })).toBeVisible();
+    expect(await within(list).findByRole("button", { name: annaRow })).toBeVisible();
+    expect(within(list).getByRole("button", { name: jonRow })).toBeVisible();
+    expect(within(list).getAllByText("1 unread")).toHaveLength(2);
+    expect(
+      within(screen.getByTestId("panes-open")).getByText("Choose a conversation"),
+    ).toBeVisible();
+    // Opening one tells the other person their messages were seen (Review Focus 4).
+    expect(pages(client)).toEqual([]);
+    expect(reads(client)).toEqual([]);
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+  });
+
+  it("opens a conversation beside the list, whose row is the current one, and reads only that one", async () => {
+    const { client } = await openApp("/messages");
+    const list = await screen.findByTestId("panes-list");
+    await fireEvent.press(await within(list).findByRole("button", { name: annaRow }));
+    const open = screen.getByTestId("panes-open");
+    expect(await within(open).findByRole("header", { name: "Anna" })).toBeVisible();
+    expect(screen).toHavePathname(conversationPage);
+    expect(within(open).getByText("Sunday 15 November · Borgarnes → Blönduós")).toBeVisible();
+    expect(within(open).getByRole("button", { name: "Report Anna" })).toBeVisible();
+    expect(within(open).getByRole("button", { name: "Block Anna" })).toBeVisible();
+    expect(within(open).getByText("By the pumps.")).toBeVisible();
+    expect(within(open).getByLabelText("Write a message")).toBeVisible();
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+
+    // The list is still there, with Anna's row the current one.
+    const shown = screen.getByTestId("panes-list");
+    expect(within(shown).getByRole("header", { name: "Messages" })).toBeVisible();
+    expect(
+      await within(shown).findByRole("button", { name: annaRow, selected: true }),
+    ).toBeVisible();
+    expect(within(shown).getByRole("button", { name: jonRow, selected: false })).toBeVisible();
+    // Anna's messages are read, and the list follows; Jón's stay unread.
+    await waitFor(() => {
+      expect(reads(client)).toEqual([fromAnna.id]);
+    });
+    await waitFor(() => {
+      expect(within(shown).getAllByText("1 unread")).toHaveLength(1);
+    });
+    expect(pages(client)).toEqual([bookingId]);
+    expect(within(shown).getByRole("button", { name: /^Jón, .*, 1 unread$/ })).toBeVisible();
+  });
+
+  it("changes the conversation in place: Back leaves to the list, and nothing written goes along", async () => {
+    await openApp("/messages");
+    const list = await screen.findByTestId("panes-list");
+    await fireEvent.press(await within(list).findByRole("button", { name: annaRow }));
+    await fireEvent.changeText(await screen.findByLabelText("Write a message"), "For Anna only");
+    await fireEvent.press(
+      within(screen.getByTestId("panes-list")).getByRole("button", { name: jonRow }),
+    );
+    const open = screen.getByTestId("panes-open");
+    expect(await within(open).findByRole("header", { name: "Jón" })).toBeVisible();
+    expect(screen).toHavePathname(jonPage);
+    expect(within(open).getByText("One bag, is that fine?")).toBeVisible();
+    expect(within(open).queryByText("By the pumps.")).toBeNull();
+    expect(within(open).getByLabelText("Write a message").props.value).toBe("");
+    expect(
+      within(screen.getByTestId("panes-list")).getByRole("button", {
+        name: jonRow,
+        selected: true,
+      }),
+    ).toBeVisible();
+
+    await fireEvent.press(within(open).getByRole("button", { name: "Back" }));
+    expect(await screen.findByText("Choose a conversation")).toBeVisible();
+    expect(screen).toHavePathname("/messages");
+  });
+
+  it("shows a message I send in the list too", async () => {
+    await openApp(conversationPage);
+    await write("See you there");
+    const open = screen.getByTestId("panes-open");
+    expect(await within(open).findByLabelText(/^You, .*: See you there/)).toBeVisible();
+    const list = screen.getByTestId("panes-list");
+    expect(await within(list).findByText("You: See you there")).toBeVisible();
+  });
+
+  it("opens at the end of the conversation, in its own pane", async () => {
+    const scrollToEnd = (ScrollView.prototype as unknown as { scrollToEnd: jest.Mock }).scrollToEnd;
+    await openApp(conversationPage);
+    const open = await screen.findByTestId("panes-open");
+    expect(await within(open).findByLabelText("Anna, 11:55: By the pumps.")).toBeVisible();
+    scrollToEnd.mockClear();
+    await act(async () => {
+      await fireEvent(screen.getByTestId("pane-scroll"), "contentSizeChange", 700, 5000);
+    });
+    expect(scrollToEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the two panes for a chat opened from a booking, and Back returns to the booking", async () => {
+    await openApp(`/bookings/${bookingId}`, (client) => {
+      bookingApi(client, () => paidBooking);
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Message Anna" }));
+    const open = await screen.findByTestId("panes-open");
+    expect(await within(open).findByRole("header", { name: "Anna" })).toBeVisible();
+    expect(
+      await within(screen.getByTestId("panes-list")).findByRole("button", {
+        name: annaRow,
+        selected: true,
+      }),
+    ).toBeVisible();
+    await fireEvent.press(within(open).getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("button", { name: "Message Anna" })).toBeVisible();
+    expect(screen).toHavePathname(`/bookings/${bookingId}`);
+  });
+
+  it("says across the card that chats open once a booking is confirmed, and when the list could not be loaded", async () => {
+    const server = { down: true };
+    await renderApp("/messages", {
+      me: completeMe,
+      setUp: (client) => {
+        client.answer("/v1/me/conversations", () =>
+          server.down ? failure(500, "internal_error") : ok(200, { conversations: [], unread: 0 }),
+        );
+      },
+    });
+    expect(await screen.findByText("The messages could not be loaded.")).toBeVisible();
+    expect(screen.getByRole("header", { name: "Messages" })).toBeVisible();
+    expect(screen.queryByText("Choose a conversation")).toBeNull();
+    server.down = false;
+    await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
+    expect(
+      await screen.findByText(
+        "Chats open once a booking is confirmed. Then you can message your driver or passengers here.",
+      ),
+    ).toBeVisible();
+    // No pane to choose in: there is nothing to choose.
+    expect(screen.queryByTestId("panes-open")).toBeNull();
+    expect(screen.queryByText("Choose a conversation")).toBeNull();
+  });
+
+  it("keeps the list beside a chat that has not opened yet", async () => {
+    await openApp(conversationPage, (client) => {
+      client.answer("/v1/bookings/{id}/messages", () => failure(409, "not_confirmed"), "get");
+    });
+    const open = await screen.findByTestId("panes-open");
+    expect(
+      await within(open).findByText("The chat opens once the booking is confirmed."),
+    ).toBeVisible();
+    expect(within(open).getByRole("button", { name: "Back" })).toBeVisible();
+    expect(
+      await within(screen.getByTestId("panes-list")).findByRole("button", { name: jonRow }),
+    ).toBeVisible();
+  });
+
+  it("keeps the conversation and what I am writing when the window turns narrow, and wide again", async () => {
+    const { client } = await openApp(conversationPage);
+    await fireEvent.changeText(await screen.findByLabelText("Write a message"), "Half written");
+    expect(screen.getByTestId("panes-list")).toBeVisible();
+
+    await turn(phone);
+    expect(screen.queryByTestId("panes-list")).toBeNull();
+    expect(screen.getByRole("header", { name: "Anna" })).toBeVisible();
+    expect(screen.getByText("By the pumps.")).toBeVisible();
+    expect(screen.getByLabelText("Write a message").props.value).toBe("Half written");
+    expect(screen.getByTestId("bottom-bar")).toBeVisible();
+
+    await turn(wide);
+    const open = screen.getByTestId("panes-open");
+    expect(within(open).getByText("By the pumps.")).toBeVisible();
+    expect(within(open).getByLabelText("Write a message").props.value).toBe("Half written");
+    expect(
+      await within(screen.getByTestId("panes-list")).findByRole("button", { name: annaRow }),
+    ).toBeVisible();
+    // Loaded once: turning the window asks for nothing again. And opened
+    // from its address, only this conversation was read (Review Focus 4).
+    expect(pages(client)).toEqual([bookingId]);
+    expect(reads(client)).toEqual([fromAnna.id]);
+  });
+
+  it("is one screen at a time on a phone: the list, then the conversation with its bar", async () => {
+    await turn(phone);
+    await openApp("/messages");
+    await fireEvent.press(await screen.findByRole("button", { name: annaRow }));
+    expect(await screen.findByRole("header", { name: "Anna" })).toBeVisible();
+    expect(screen.queryByTestId("panes-list")).toBeNull();
+    expect(screen.queryByRole("button", { name: jonRow })).toBeNull();
+    expect(
+      within(screen.getByTestId("bottom-bar")).getByLabelText("Write a message"),
+    ).toBeVisible();
   });
 });

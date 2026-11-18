@@ -68,13 +68,7 @@ export function Screen({
   const safeEdges = useContext(ScreenEdgesContext);
   // The height the screen scrolls in: the window less any bar above it.
   const [viewHeight, setViewHeight] = useState<number | null>(null);
-  // With `stickToEnd`: whether the reader is at the end, and whether to go
-  // there at the next change in size whatever they read.
-  const atEnd = useRef(true);
-  const toEnd = useRef(false);
-  useLayoutEffect(() => {
-    if (endKey !== undefined) toEnd.current = true;
-  }, [endKey]);
+  const sticking = useStickToEnd(scrollRef, stickToEnd, endKey);
   return (
     <SafeAreaView
       edges={safeEdges}
@@ -96,22 +90,7 @@ export function Screen({
         style={wide ? evenGutterOnWeb : undefined}
         contentContainerStyle={[styles.scroll, { paddingBottom: spacing.md + keyboardRoom }]}
         keyboardShouldPersistTaps="handled"
-        {...(stickToEnd
-          ? {
-              scrollEventThrottle: 100,
-              onScroll: ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
-                const { contentOffset, layoutMeasurement, contentSize } = nativeEvent;
-                atEnd.current =
-                  contentOffset.y + layoutMeasurement.height >= contentSize.height - spacing.xxl;
-              },
-              onContentSizeChange: () => {
-                if (!atEnd.current && !toEnd.current) return;
-                toEnd.current = false;
-                atEnd.current = true;
-                scrollRef.current?.scrollToEnd({ animated: false });
-              },
-            }
-          : {})}
+        {...sticking}
       >
         <ScreenScrollContext.Provider value={scroll}>
           <ScreenViewHeightContext.Provider value={viewHeight}>
@@ -146,6 +125,46 @@ export function Screen({
 
 type ViewRef = ComponentRef<typeof View>;
 
+/**
+ * What a scroll takes to open at its end and stay there as it grows, as a
+ * conversation does (`on`): it follows only while the reader is at the
+ * end, not while they read further up, and a new `endKey`, such as my own
+ * message on its way, brings it back to the end whatever they read.
+ */
+export function useStickToEnd(
+  scrollRef: RefObject<ComponentRef<typeof ScrollView> | null>,
+  on: boolean,
+  endKey: string | undefined,
+) {
+  // Whether the reader is at the end, and whether to go there at the next
+  // change in size whatever they read.
+  const atEnd = useRef(true);
+  const toEnd = useRef(false);
+  useLayoutEffect(() => {
+    if (endKey !== undefined) toEnd.current = true;
+  }, [endKey]);
+  return useMemo(
+    () =>
+      on
+        ? {
+            scrollEventThrottle: 100,
+            onScroll: ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
+              const { contentOffset, layoutMeasurement, contentSize } = nativeEvent;
+              atEnd.current =
+                contentOffset.y + layoutMeasurement.height >= contentSize.height - spacing.xxl;
+            },
+            onContentSizeChange: () => {
+              if (!atEnd.current && !toEnd.current) return;
+              toEnd.current = false;
+              atEnd.current = true;
+              scrollRef.current?.scrollToEnd({ animated: false });
+            },
+          }
+        : {},
+    [on, scrollRef],
+  );
+}
+
 const allEdges: readonly Edge[] = ["top", "right", "bottom", "left"];
 const ScreenEdgesContext = createContext<readonly Edge[]>(allEdges);
 
@@ -154,6 +173,11 @@ const ScreenEdgesContext = createContext<readonly Edge[]>(allEdges);
  * itself, such as the tab bar at the bottom, leaves it out.
  */
 export const ScreenEdges = ScreenEdgesContext.Provider;
+
+/** The edges a part that stands in for a `Screen` pads, as a `Screen` does. */
+export function useScreenEdges(): readonly Edge[] {
+  return useContext(ScreenEdgesContext);
+}
 
 /** Lets a part of the screen ask to be scrolled up to the top, above the keyboard. */
 export interface ScreenScroll {
