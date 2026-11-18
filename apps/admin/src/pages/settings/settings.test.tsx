@@ -67,6 +67,22 @@ const freeUntil = price("free_cancellation_until", {
   min: 0,
   max: 120,
 });
+const period = price("reliability_period", {
+  group: "trip_day",
+  unit: "months",
+  value: 12,
+  default: 12,
+  min: 3,
+  max: 24,
+});
+const shownFrom = price("reliability_min_count", {
+  group: "trip_day",
+  unit: "records",
+  value: 5,
+  default: 5,
+  min: 1,
+  max: 20,
+});
 const answerIn = price("request_expiry", {
   group: "booking",
   unit: "hours",
@@ -92,7 +108,7 @@ function start(path = "/admin/settings") {
   const api = createFakeApi();
   const state = {
     version: 1,
-    settings: [required, testers, rate, cost, seats, answerIn, freeUntil],
+    settings: [required, testers, rate, cost, seats, answerIn, freeUntil, period, shownFrom],
     history: [changeOf()],
   };
   api.on(adminMeRoute, { status: 200, data: anna });
@@ -321,7 +337,7 @@ describe("the Settings page", () => {
     expect(
       screen.getByRole("heading", { name: "Changes and cancellations", level: 2 }),
     ).toBeTruthy();
-    expect(screen.getAllByText(/^The terms of service state these values\./)).toHaveLength(2);
+    expect(screen.getAllByText(/^The terms of service state these values\./)).toHaveLength(3);
     const free = await card("Free cancellation until");
     expect(free.getByText("15 minutes")).toBeTruthy();
     expect(free.getByText("Default: 15 minutes. From 0 to 120.")).toBeTruthy();
@@ -332,5 +348,22 @@ describe("the Settings page", () => {
     fireEvent.change(free.getByLabelText("New value, in minutes"), { target: { value: "60" } });
     expect(free.getByText("Changes from 15 minutes to 60 minutes.")).toBeTruthy();
     expect(api.called(adminPreviewSettingRoute)).toHaveLength(0);
+  });
+
+  it("shows the trip day and reliability values in months and in trips and bookings", async () => {
+    start();
+    expect(
+      await screen.findByRole("heading", { name: "Trip day and reliability", level: 2 }),
+    ).toBeTruthy();
+    const months = await card("Reliability period");
+    expect(months.getByText("12 months")).toBeTruthy();
+    expect(months.getByText("Default: 12 months. From 3 to 24.")).toBeTruthy();
+    const from = await card("Shown from");
+    expect(from.getByText("5 trips and bookings")).toBeTruthy();
+    fireEvent.click(from.getByRole("button", { name: "Change Shown from" }));
+    fireEvent.change(from.getByLabelText("New value, in trips and bookings"), {
+      target: { value: "1" },
+    });
+    expect(from.getByText("Changes from 5 trips and bookings to 1 trip or booking.")).toBeTruthy();
   });
 });

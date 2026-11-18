@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { defaultCancellationSettings } from "../bookings/cancellation.ts";
 import { defaultBookingSettings } from "../bookings/settings.ts";
+import { defaultReliabilitySettings } from "../people/reliability.ts";
 import { maxMoveMinutes } from "../trips/changes.ts";
+import { defaultTripDaySettings } from "../trips/day.ts";
 import { defaultSearchSettings } from "../trips/search.ts";
 import { defaultTripSettings } from "../trips/settings.ts";
 import {
@@ -9,7 +11,9 @@ import {
   cancellationSettingsFrom,
   pricePreview,
   priceSettingsFrom,
+  reliabilitySettingsFrom,
   searchSettingsFrom,
+  tripDaySettingsFrom,
   tripSettingsFrom,
 } from "./bundles.ts";
 import { defaultSettingValues } from "./values.ts";
@@ -105,6 +109,34 @@ describe("the booking and cancellation values (ADR 0032)", () => {
       refundCutoffMinutes: 60,
       freeCancellationMoveMinutes: 20,
       reliabilityWindowHours: 12,
+    });
+  });
+});
+
+describe("the trip day and reliability values", () => {
+  it("are the code's defaults while nothing was changed", () => {
+    expect(tripDaySettingsFrom(defaultSettingValues)).toEqual(defaultTripDaySettings);
+    expect(reliabilitySettingsFrom(defaultSettingValues)).toEqual(defaultReliabilitySettings);
+  });
+
+  it("lay the operator's values over the defaults, the completion delay in minutes", () => {
+    const now = {
+      ...defaultSettingValues,
+      no_show_wait: 15,
+      trip_completion_delay: 3,
+      reliability_period: 6,
+      reliability_min_count: 3,
+      reliability_watch_level: 70,
+    };
+    expect(tripDaySettingsFrom(now)).toEqual({
+      ...defaultTripDaySettings,
+      noShowWaitMinutes: 15,
+      completionDelayMinutes: 180,
+    });
+    expect(reliabilitySettingsFrom(now)).toEqual({
+      periodMonths: 6,
+      minCount: 3,
+      watchPercent: 70,
     });
   });
 });

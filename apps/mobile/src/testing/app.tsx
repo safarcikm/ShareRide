@@ -50,6 +50,7 @@ export async function renderApp(
       maxSeats: 8,
       freeCancellationMinutes: 15,
       maxMoveMinutes: 120,
+      reliabilityMonths: 12,
     }),
   );
   // The front page's rides leaving soon: none, unless a test says otherwise.

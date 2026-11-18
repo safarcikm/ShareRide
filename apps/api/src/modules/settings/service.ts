@@ -1,6 +1,7 @@
 import { schema, type Database } from "@shareride/db";
 import {
   checkSettingChange,
+  defaultSettingValues,
   err,
   isSwitchKey,
   ok,
@@ -78,6 +79,12 @@ export interface SettingsService {
   current(): Promise<SettingsSnapshot>;
   /** The values now, read from the database whatever is cached. */
   latest(): Promise<SettingsSnapshot>;
+  /**
+   * The values as `current()` last gave them, without waiting: the
+   * defaults until it was first asked. For rules that take their settings
+   * as plain values (`liveRuleSettings`).
+   */
+  lastRead(): SettingsSnapshot;
   /** The switches now, as old as `current()` at most. */
   switches(): Promise<SwitchStates>;
   /** The values as they were at a version (R10.3); a version never changes. */
@@ -169,6 +176,8 @@ export function createSettingsService({
     current: async () => fixed((await recent()).snapshot),
 
     latest: async () => remember(await read(db)).snapshot,
+
+    lastRead: () => fixed(cached?.snapshot ?? { version: 0, values: defaultSettingValues }),
 
     async switches() {
       const { snapshot, switchedAt } = await recent();

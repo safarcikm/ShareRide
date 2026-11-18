@@ -3,7 +3,7 @@
 import { serve } from "@hono/node-server";
 import { getConnInfo } from "@hono/node-server/conninfo";
 import { connectDatabase, pingDatabase } from "@shareride/db";
-import { defaultReviewSettings, defaultTripDaySettings } from "@shareride/domain";
+import { defaultReviewSettings, tripDaySettingsFrom } from "@shareride/domain";
 import { createApp } from "./app.ts";
 import { ConfigError, loadConfig, type Config } from "./config.ts";
 import { createLogger } from "./logger.ts";
@@ -12,7 +12,7 @@ import { createWeeklyMetricsService } from "./modules/metrics/index.ts";
 import { endDueSuspensions } from "./modules/moderation/index.ts";
 import { moveMeetingPointsOn } from "./modules/meeting-points/index.ts";
 import { createNotificationWorker } from "./modules/notifications/index.ts";
-import { createSettingsService } from "./modules/settings/index.ts";
+import { createSettingsService, settingValuesIn } from "./modules/settings/index.ts";
 import { createPaymentService } from "./modules/payments/index.ts";
 import { revealDueReviews } from "./modules/reviews/index.ts";
 import { settleUnansweredReports } from "./modules/trip-day/index.ts";
@@ -127,9 +127,11 @@ const jobs = [
   // answered within 24 hours stand (R8.6), and reviews nobody answered show
   // 14 days after completion (R8.9).
   every(60_000, "trip-day", async () => {
-    const moved = await moveTripsOn(database.db, new Date(), defaultTripDaySettings);
+    // The no-show wait and the completion delay as they are now (ADR 0032).
+    const tripDaySettings = tripDaySettingsFrom(await settingValuesIn(database.db));
+    const moved = await moveTripsOn(database.db, new Date(), tripDaySettings);
     if (moved.departed + moved.completed > 0) logger.info(moved, "trips moved on");
-    const settled = await settleUnansweredReports(database.db, new Date(), defaultTripDaySettings);
+    const settled = await settleUnansweredReports(database.db, new Date(), tripDaySettings);
     if (settled > 0) logger.info({ settled }, "reports settled");
     const revealed = await revealDueReviews(database.db, new Date(), defaultReviewSettings);
     if (revealed > 0) logger.info({ revealed }, "reviews revealed");

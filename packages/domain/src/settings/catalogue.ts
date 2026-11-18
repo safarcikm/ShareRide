@@ -3,10 +3,18 @@
 // the ranges are ADR 0032's; changing a range or adding a setting needs an
 // ADR (R10.4).
 
-export const settingGroups = ["switches", "beta", "prices", "booking", "changes"] as const;
+export const settingGroups = [
+  "switches",
+  "beta",
+  "prices",
+  "booking",
+  "changes",
+  "trip_day",
+] as const;
 export type SettingGroup = (typeof settingGroups)[number];
 
-export type SettingUnit = "people" | "kr_per_km" | "kr" | "percent" | "seats" | "minutes" | "hours";
+export type SettingUnit =
+  "people" | "kr_per_km" | "kr" | "percent" | "seats" | "minutes" | "hours" | "months" | "records";
 
 export interface SettingDefinition {
   readonly group: SettingGroup;
@@ -176,6 +184,58 @@ export const settingDefinitions = {
     default: 24,
     min: 0,
     max: 72,
+    step: 1,
+  },
+
+  // Trip day and reliability (spec 8; ADR 0032): all read as they are now.
+  /** The wait after boarding before a no-show or the driver's absence (R8.4, R8.5). */
+  no_show_wait: {
+    group: "trip_day",
+    kind: "number",
+    unit: "minutes",
+    default: 10,
+    min: 5,
+    max: 30,
+    step: 1,
+  },
+  /** A trip completes this long after the planned time of its last stop (R8.1). */
+  trip_completion_delay: {
+    group: "trip_day",
+    kind: "number",
+    unit: "hours",
+    default: 2,
+    min: 1,
+    max: 12,
+    step: 1,
+  },
+  /** Trips and bookings count on the reliability figure for this long (R8.10). */
+  reliability_period: {
+    group: "trip_day",
+    kind: "number",
+    unit: "months",
+    default: 12,
+    min: 3,
+    max: 24,
+    step: 1,
+  },
+  /** The reliability figure is shown once this many count (R8.10). */
+  reliability_min_count: {
+    group: "trip_day",
+    kind: "number",
+    unit: "records",
+    default: 5,
+    min: 1,
+    max: 20,
+    step: 1,
+  },
+  /** Below this, the operator sees the person on the watch list (spec 8, 3.8). */
+  reliability_watch_level: {
+    group: "trip_day",
+    kind: "number",
+    unit: "percent",
+    default: 80,
+    min: 50,
+    max: 95,
     step: 1,
   },
 } as const satisfies Record<string, SettingDefinition>;

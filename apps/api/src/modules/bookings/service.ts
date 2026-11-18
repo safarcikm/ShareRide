@@ -10,6 +10,7 @@ import {
   checkBooking,
   checkNote,
   dayPhase,
+  defaultReliabilitySettings,
   defaultReviewSettings,
   driverAbsentWindow,
   err,
@@ -41,6 +42,7 @@ import {
   type Money,
   type NoteProblem,
   type Result,
+  type ReliabilitySettings,
   type ReviewSettings,
   type TripCancelReason,
   type TripDaySettings,
@@ -269,7 +271,12 @@ const passengerOf = (row: Row) => ({
  * its report, if any (3.3 to 3.5), and both people's profile and standing
  * (spec 5, 3.3.2).
  */
-async function readBookings(q: Queryable, where: SQL | undefined, now: Date) {
+async function readBookings(
+  q: Queryable,
+  where: SQL | undefined,
+  now: Date,
+  reliability: ReliabilitySettings,
+) {
   const rows = await bookingRows(q, where);
   const tripIds = [...new Set(rows.map((row) => row.trip.id))];
   const people = rows.flatMap((row) => [driverOf(row), passengerOf(row)]);
@@ -299,6 +306,7 @@ async function readBookings(q: Queryable, where: SQL | undefined, now: Date) {
       q,
       people.filter((person) => !isHidden(person)).map((person) => person.id),
       now,
+      reliability,
     ),
   ]);
   // Nobody sees the profile or standing of someone leaving, or of the former
@@ -629,11 +637,14 @@ export function createBookingService(dependencies: {
   readonly reviewSettings?: ReviewSettings;
   /** Whether the operator paused bookings and payments (spec 10, 3.3); never when left out. */
   readonly bookingsPausedIn?: (tx: Transaction) => Promise<boolean>;
+  /** The reliability figure's values beside each person; the defaults when left out. */
+  readonly reliabilitySettings?: ReliabilitySettings;
 }): BookingService {
   const { db, clock, account, tripDaySettings } = dependencies;
   const ruleSettings = dependencies.settings;
   const bookingsPausedIn = dependencies.bookingsPausedIn ?? (() => Promise.resolve(false));
   const reviewSettings = dependencies.reviewSettings ?? defaultReviewSettings;
+  const reliability = dependencies.reliabilitySettings ?? defaultReliabilitySettings;
 
   /** Bookings as their viewer sees them, each by its own cancellation values. */
   async function presentAll(rows: readonly BookingRow[], viewerId: string, now: Date) {
@@ -654,7 +665,7 @@ export function createBookingService(dependencies: {
   }
 
   async function readOne(q: Queryable, bookingId: string, viewerId: string, now: Date) {
-    const [row] = await readBookings(q, eq(bookings.id, bookingId), now);
+    const [row] = await readBookings(q, eq(bookings.id, bookingId), now, reliability);
     if (row === undefined) return undefined;
     if (row.booking.passengerId !== viewerId && row.trip.driverId !== viewerId) return undefined;
     return present(
@@ -921,7 +932,7 @@ export function createBookingService(dependencies: {
 
     async myBookings(passengerId, when) {
       const now = clock();
-      const rows = await readBookings(db, eq(bookings.passengerId, passengerId), now);
+      const rows = await readBookings(db, eq(bookings.passengerId, passengerId), now, reliability);
       const upcoming = (row: BookingRow) =>
         holdsSeats(shownStatus(row.booking, now)) &&
         plannedAt(row.alightStop).getTime() > now.getTime();
@@ -940,7 +951,7 @@ export function createBookingService(dependencies: {
     async bookingsOf(viewerId, bookingIds) {
       if (bookingIds.length === 0) return [];
       const now = clock();
-      const rows = await readBookings(db, inArray(bookings.id, [...bookingIds]), now);
+      const rows = await readBookings(db, inArray(bookings.id, [...bookingIds]), now, reliability);
       return presentAll(
         rows.filter(
           (row) => row.booking.passengerId === viewerId || row.trip.driverId === viewerId,
@@ -1185,6 +1196,7 @@ export function createBookingService(dependencies: {
           db,
           and(eq(bookings.tripId, tripId), inArray(bookings.status, onTripStatuses)),
           now,
+          reliability,
         ),
         db
           .select({ position: segments.position, occupancy: segments.occupancy })

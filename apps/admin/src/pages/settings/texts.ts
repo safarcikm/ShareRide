@@ -15,12 +15,14 @@ export const groupKeys = {
   prices: "admin.settings.group.prices",
   booking: "admin.settings.group.booking",
   changes: "admin.settings.group.changes",
+  trip_day: "admin.settings.group.trip_day",
 } as const satisfies Record<SettingGroup, MessageKey>;
 
 /** What to know before changing anything in a group. */
 export const groupNotes: Partial<Record<SettingGroup, MessageKey>> = {
   booking: "admin.settings.groupNote.terms",
   changes: "admin.settings.groupNote.terms",
+  trip_day: "admin.settings.groupNote.terms",
 };
 
 interface SettingTexts {
@@ -110,6 +112,26 @@ const settingTexts = {
     name: "admin.settings.name.reliability_cancellation_window",
     help: "admin.settings.help.reliability_cancellation_window",
   },
+  no_show_wait: {
+    name: "admin.settings.name.no_show_wait",
+    help: "admin.settings.help.no_show_wait",
+  },
+  trip_completion_delay: {
+    name: "admin.settings.name.trip_completion_delay",
+    help: "admin.settings.help.trip_completion_delay",
+  },
+  reliability_period: {
+    name: "admin.settings.name.reliability_period",
+    help: "admin.settings.help.reliability_period",
+  },
+  reliability_min_count: {
+    name: "admin.settings.name.reliability_min_count",
+    help: "admin.settings.help.reliability_min_count",
+  },
+  reliability_watch_level: {
+    name: "admin.settings.name.reliability_watch_level",
+    help: "admin.settings.help.reliability_watch_level",
+  },
 } as const satisfies Record<SettingKey, SettingTexts>;
 
 interface UnitTexts {
@@ -127,6 +149,8 @@ const unitTexts = {
   seats: { value: "admin.settings.unit.seats", field: "admin.settings.newValue.seats" },
   minutes: { value: "admin.settings.unit.minutes", field: "admin.settings.newValue.minutes" },
   hours: { value: "admin.settings.unit.hours", field: "admin.settings.newValue.hours" },
+  months: { value: "admin.settings.unit.months", field: "admin.settings.newValue.months" },
+  records: { value: "admin.settings.unit.records", field: "admin.settings.newValue.records" },
 } as const satisfies Record<SettingUnit, UnitTexts>;
 
 const isUnit = (unit: string | null): unit is SettingUnit =>

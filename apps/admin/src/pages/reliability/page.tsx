@@ -5,7 +5,7 @@ import {
   type AdminExcusedCancellation,
   type AdminWatchedPerson,
 } from "@shareride/contracts";
-import { checkOverruleNote, inIceland } from "@shareride/domain";
+import { checkOverruleNote, defaultReliabilitySettings, inIceland } from "@shareride/domain";
 import {
   cancelReasonText,
   formatClock,
@@ -84,6 +84,8 @@ function ExcusedCancellations() {
   const [list, setList] = useState<Loaded<readonly AdminExcusedCancellation[]>>({
     state: "loading",
   });
+  // The reliability period the list is of, as the operator has set it.
+  const [months, setMonths] = useState(defaultReliabilitySettings.periodMonths);
   // The cancellation whose note is being written, by `keyOf`.
   const [open, setOpen] = useState<string | null>(null);
   // While a change is sent, no other card's form opens.
@@ -99,6 +101,7 @@ function ExcusedCancellations() {
   const load = useCallback(async () => {
     const result = await call(adminExcusedCancellationsRoute, {});
     setList(result.ok ? { state: "ready", value: result.data.cancellations } : { state: "failed" });
+    if (result.ok) setMonths(result.data.periodMonths);
     return result.ok;
   }, [call]);
 
@@ -190,11 +193,14 @@ function ExcusedCancellations() {
           </button>
         </div>
       ) : list.value.length === 0 ? (
-        <p className="type-body muted">{t("admin.reliability.noneExcused")}</p>
+        <p className="type-body muted">{t("admin.reliability.noneExcused", { months })}</p>
       ) : (
         <>
           <p className="type-body" role="status">
-            {t("admin.reliability.excusedCount", { count: list.value.length })}
+            {t("admin.reliability.excusedCount", {
+              count: list.value.length,
+              period: t("admin.reliability.period", { months }),
+            })}
           </p>
           <ul className="cards" aria-labelledby={heading}>
             {list.value.map((cancellation) => {
@@ -424,7 +430,11 @@ function CountingForm({
 function WatchList() {
   const { t, call } = useConsole();
   const [list, setList] = useState<
-    Loaded<{ readonly watchPercent: number; readonly people: readonly AdminWatchedPerson[] }>
+    Loaded<{
+      readonly watchPercent: number;
+      readonly periodMonths: number;
+      readonly people: readonly AdminWatchedPerson[];
+    }>
   >({ state: "loading" });
   const heading = useId();
 
@@ -465,7 +475,10 @@ function WatchList() {
       ) : (
         <>
           <p className="type-body muted">
-            {t("admin.reliability.watchHint", { percent: list.value.watchPercent })}
+            {t("admin.reliability.watchHint", {
+              percent: list.value.watchPercent,
+              months: list.value.periodMonths,
+            })}
           </p>
           {list.value.people.length === 0 ? (
             <p className="type-body muted">

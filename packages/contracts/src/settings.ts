@@ -20,6 +20,8 @@ export const configSchema = z.object({
   freeCancellationMinutes: z.int().min(0),
   /** With bookings, a departure moves at most this many minutes from when each was made (R6.4). */
   maxMoveMinutes: z.int().min(0),
+  /** The reliability figure counts trips and bookings over this many months (spec 8, 3.8). */
+  reliabilityMonths: z.int().min(1),
   /** Whether creating an account needs an invite code (spec 12, R12.1). */
   beta: z.boolean(),
   /** What is paused for a short while, for the app's banners (spec 10, 3.3). */

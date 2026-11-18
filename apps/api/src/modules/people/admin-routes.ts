@@ -27,7 +27,12 @@ export function registerReliabilityAdminRoutes(
   const { reliability, settings, requireOperator, clientAddress } = dependencies;
 
   app.openapi(toOpenApiRoute(adminExcusedCancellationsRoute, requireOperator), async (c) => {
-    return c.json({ cancellations: [...(await reliability.excusedCancellations())] }, 200);
+    // Read before the list: the list is of this period.
+    const { periodMonths } = settings;
+    return c.json(
+      { periodMonths, cancellations: [...(await reliability.excusedCancellations())] },
+      200,
+    );
   });
 
   app.openapi(toOpenApiRoute(adminChangeCountingRoute, requireOperator), async (c) => {
@@ -67,6 +72,13 @@ export function registerReliabilityAdminRoutes(
 
   app.openapi(toOpenApiRoute(adminReliabilityWatchRoute, requireOperator), async (c) => {
     const people = await reliability.watched();
-    return c.json({ watchPercent: settings.watchPercent, people: [...people] }, 200);
+    return c.json(
+      {
+        watchPercent: settings.watchPercent,
+        periodMonths: settings.periodMonths,
+        people: [...people],
+      },
+      200,
+    );
   });
 }

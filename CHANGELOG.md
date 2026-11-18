@@ -1279,6 +1279,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   cannot carry is refused. A published trip keeps the price values it was
   published under through every later change; the seat limit applies at
   once, and the app reads it from `GET /v1/config`.
+- Trip day and reliability values from the operator's settings (spec 10,
+  3.2; ADR 0032; milestone 11, PR 13): the Settings page's last group has
+  the wait before a no-show, when a trip completes, and the reliability
+  figure's period, the count it is shown from and the watch level. All
+  five apply at once. The profile and the console's Reliability page name
+  the period as it is set.
 - Booking and cancellation values from the operator's settings (spec 10,
   3.2; R10.3; ADR 0032; milestone 11, PR 12; migration
   `0055_booking_settings_version`): the Settings page has two more groups,

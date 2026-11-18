@@ -4,6 +4,8 @@
 import type { CancellationSettings } from "../bookings/cancellation.ts";
 import { defaultBookingSettings, type BookingSettings } from "../bookings/settings.ts";
 import type { Money } from "../money.ts";
+import type { ReliabilitySettings } from "../people/reliability.ts";
+import { defaultTripDaySettings, type TripDaySettings } from "../trips/day.ts";
 import { defaultSearchSettings, type SearchSettings } from "../trips/search.ts";
 import { highestPriceLevel, segmentPrice, suggestedPriceLevel } from "../trips/prices.ts";
 import type { PriceSettings } from "../trips/prices.ts";
@@ -57,6 +59,28 @@ export function cancellationSettingsFrom(made: SettingValues): CancellationSetti
     freeCancellationMoveMinutes: made.major_time_change,
     refundCutoffMinutes: made.free_cancellation_until,
     reliabilityWindowHours: made.reliability_cancellation_window,
+  };
+}
+
+/**
+ * The trip day's settings as they are now. When the pages become the trip
+ * day, when "I'm here" opens and the time to answer a report are not the
+ * operator's.
+ */
+export function tripDaySettingsFrom(now: SettingValues): TripDaySettings {
+  return {
+    ...defaultTripDaySettings,
+    noShowWaitMinutes: now.no_show_wait,
+    completionDelayMinutes: now.trip_completion_delay * 60,
+  };
+}
+
+/** The reliability figure's settings as they are now. */
+export function reliabilitySettingsFrom(now: SettingValues): ReliabilitySettings {
+  return {
+    periodMonths: now.reliability_period,
+    minCount: now.reliability_min_count,
+    watchPercent: now.reliability_watch_level,
   };
 }
 

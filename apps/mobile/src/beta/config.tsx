@@ -1,6 +1,7 @@
 import { configRoute, type Config } from "@shareride/contracts";
 import {
   defaultCancellationSettings,
+  defaultReliabilitySettings,
   defaultTripSettings,
   maxMoveMinutes,
 } from "@shareride/domain";
@@ -23,6 +24,7 @@ const quiet: Config = {
   maxSeats: defaultTripSettings.maxSeats,
   freeCancellationMinutes: defaultCancellationSettings.refundCutoffMinutes,
   maxMoveMinutes,
+  reliabilityMonths: defaultReliabilitySettings.periodMonths,
 };
 
 const ConfigContext = createContext<Config>(quiet);
@@ -76,6 +78,11 @@ export function useConfig(): Config {
 /** What a text about cancelling or moving a trip says of the values as they are now. */
 export function useTimings(): Pick<Config, "freeCancellationMinutes" | "maxMoveMinutes"> {
   return useContext(ConfigContext);
+}
+
+/** The months the reliability figure counts over, as the operator has it. */
+export function useReliabilityMonths(): number {
+  return useContext(ConfigContext).reliabilityMonths;
 }
 
 /** The seats a trip can offer and a booking can take, at most (rule S1), as the operator has it. */

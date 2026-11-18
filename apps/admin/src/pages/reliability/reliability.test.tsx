@@ -80,6 +80,7 @@ function start(
   people: readonly AdminWatchedPerson[] | null = [dora],
   path = "/admin/reliability",
   locale: AdminMe["locale"] = "en",
+  periodMonths = 12,
 ) {
   window.history.replaceState(null, "", path);
   const api = createFakeApi();
@@ -87,11 +88,11 @@ function start(
   api.on(adminMeRoute, { status: 200, data: { ...anna, locale } });
   api.on(
     adminExcusedCancellationsRoute,
-    cancellations === null ? failed : { status: 200, data: { cancellations } },
+    cancellations === null ? failed : { status: 200, data: { periodMonths, cancellations } },
   );
   api.on(
     adminReliabilityWatchRoute,
-    people === null ? failed : { status: 200, data: { watchPercent: 80, people } },
+    people === null ? failed : { status: 200, data: { watchPercent: 80, periodMonths, people } },
   );
   render(<ConsoleApp client={api.client} passkeys={createFakePasskeys().passkeys} />);
   return api;
@@ -314,7 +315,7 @@ describe("the Reliability page (spec 8, 3.8)", () => {
     fireEvent.change(within(trip).getByRole("textbox"), { target: { value: why } });
     api.on(adminExcusedCancellationsRoute, {
       status: 200,
-      data: { cancellations: [overruled, gunnasBooking] },
+      data: { periodMonths: 12, cancellations: [overruled, gunnasBooking] },
     });
     fireEvent.click(within(trip).getByRole("button", { name: "Make it count" }));
     expect((await screen.findByRole("alert")).textContent).toBe(
@@ -340,7 +341,10 @@ describe("the Reliability page (spec 8, 3.8)", () => {
     expect(within(trip).getByRole<HTMLTextAreaElement>("textbox").value).toBe(why);
 
     api.on(adminChangeCountingRoute, { status: 404, error: { code: "not_found" } });
-    api.on(adminExcusedCancellationsRoute, { status: 200, data: { cancellations: [] } });
+    api.on(adminExcusedCancellationsRoute, {
+      status: 200,
+      data: { periodMonths: 12, cancellations: [] },
+    });
     fireEvent.click(within(trip).getByRole("button", { name: "Make it count" }));
     expect(
       await screen.findByText(
@@ -405,7 +409,10 @@ describe("the Reliability page (spec 8, 3.8)", () => {
   it("says when the list could not be loaded, and tries again", async () => {
     const api = start(null);
     expect(await screen.findByText("The cancellations could not be loaded.")).toBeTruthy();
-    api.on(adminExcusedCancellationsRoute, { status: 200, data: { cancellations: [jonsTrip] } });
+    api.on(adminExcusedCancellationsRoute, {
+      status: 200,
+      data: { periodMonths: 12, cancellations: [jonsTrip] },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Load the cancellations again" }));
     expect(await cards(excused)).toHaveLength(1);
   });
@@ -425,6 +432,16 @@ describe("the people below the watch level (spec 8, 3.8.4)", () => {
     ).toBeTruthy();
   });
 
+  it("names the period as the operator has set it", async () => {
+    start([jonsTrip], [dora], "/admin/reliability", "en", 6);
+    expect(
+      await screen.findByText(/^People whose figure is below 80% over the last 6 months,/),
+    ).toBeTruthy();
+    expect(
+      await screen.findByText("1 cancellation in the last 6 months, newest first"),
+    ).toBeTruthy();
+  });
+
   it("says when nobody is below it", async () => {
     start([], []);
     expect(await screen.findByText("Nobody is below 80%.")).toBeTruthy();
@@ -437,7 +454,7 @@ describe("the people below the watch level (spec 8, 3.8.4)", () => {
     ).toBeTruthy();
     api.on(adminReliabilityWatchRoute, {
       status: 200,
-      data: { watchPercent: 80, people: [dora] },
+      data: { watchPercent: 80, periodMonths: 12, people: [dora] },
     });
     fireEvent.click(screen.getByRole("button", { name: "Load the people again" }));
     expect(await cards(below)).toHaveLength(1);

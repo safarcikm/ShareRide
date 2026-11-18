@@ -405,7 +405,10 @@ page has `booking_cutoff`, `request_expiry`, `payment_window`,
 `free_cancellation_until`, `major_time_change`, `max_time_change` and
 `reliability_cancellation_window`: a booking keeps the cancellation values
 it was made under, and the others apply from the change on. The terms of
-service state these numbers, so new terms go out with a change.
+service state these numbers, so new terms go out with a change. The last
+five, `no_show_wait`, `trip_completion_delay`, `reliability_period`,
+`reliability_min_count` and `reliability_watch_level`, apply at once to
+every trip and every person's figure.
 
 | Setting | Default | Notes |
 | ------- | ------- | ----- |

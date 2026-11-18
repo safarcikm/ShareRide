@@ -1134,7 +1134,8 @@ export const is = {
   "people.noRatings": "Engar einkunnir enn",
   "people.reliability": "Áreiðanleiki: {percent}%",
   "people.reliabilityNew": "Áreiðanleiki: ekki nógu margar ferðir enn",
-  "people.reliabilityCounts": "Staðið við {kept} af {total} ferðum og bókunum síðustu 12 mánuði.",
+  "people.reliabilityCounts":
+    "Staðið við {kept} af {total} ferðum og bókunum síðustu {months, plural, one {# mánuð} other {# mánuði}}.",
   "people.reliabilityAsDriver": "Sem bílstjóri: staðið við {kept} af {total}",
   "people.reliabilityAsPassenger": "Sem farþegi: staðið við {kept} af {total}",
   "people.reviews": "Umsagnir",
@@ -2127,6 +2128,7 @@ export const is = {
   "admin.settings.group.prices": "Verð og sæti",
   "admin.settings.group.booking": "Bókun og greiðsla",
   "admin.settings.group.changes": "Breytingar og afbókanir",
+  "admin.settings.group.trip_day": "Ferðadagur og áreiðanleiki",
   "admin.settings.groupNote.terms":
     "Þessi gildi standa í notkunarskilmálunum. Birtu nýja skilmála með breytingu, annars ber skilmálunum og appinu ekki saman.",
   "admin.settings.group.switches": "Neyðarrofar",
@@ -2189,6 +2191,21 @@ export const is = {
   "admin.settings.name.reliability_cancellation_window": "Sein afbókun",
   "admin.settings.help.reliability_cancellation_window":
     "Afbókun farþega telur gegn áreiðanleika hans þegar hún er gerð með minni fyrirvara en þetta fyrir viðkomustað hans. Gildir um bókanir sem eru gerðar héðan í frá. Bókanir sem þegar hafa verið gerðar halda reglunni sem gilti þegar þær voru gerðar.",
+  "admin.settings.name.no_show_wait": "Bið áður en skráð er að einhver mætti ekki",
+  "admin.settings.help.no_show_wait":
+    "Hve lengi eftir áætlaðan tíma á viðkomustað ökumaður þarf að bíða áður en hann skráir að farþegi hafi ekki mætt, og farþegi áður en hann segir að ökumaðurinn hafi ekki komið. Breyting tekur gildi strax, líka fyrir ferðir sem eru hafnar.",
+  "admin.settings.name.trip_completion_delay": "Ferð lýkur eftir",
+  "admin.settings.help.trip_completion_delay":
+    "Ferð lýkur þetta löngu eftir áætlaðan tíma á síðasta viðkomustað. Þá opnast umsagnir. Breyting tekur strax gildi fyrir allar ferðir sem er ekki lokið.",
+  "admin.settings.name.reliability_period": "Tímabil áreiðanleika",
+  "admin.settings.help.reliability_period":
+    "Ferðir og bókanir telja í áreiðanleika fólks þetta lengi. Við breytingu er áreiðanleiki allra reiknaður upp á nýtt strax.",
+  "admin.settings.name.reliability_min_count": "Sýndur frá",
+  "admin.settings.help.reliability_min_count":
+    "Áreiðanleiki er sýndur þegar þetta margar ferðir og bókanir telja. Þangað til sér fólk „Ekki nógu margar ferðir enn“.",
+  "admin.settings.name.reliability_watch_level": "Eftirlitsmörk",
+  "admin.settings.help.reliability_watch_level":
+    "Fólk með áreiðanleika undir þessu er talið upp fyrir þig á síðunni Áreiðanleiki. Enginn er settur í bann sjálfkrafa.",
   "admin.settings.on": "Kveikt",
   "admin.settings.off": "Slökkt",
   "admin.settings.unit.people": "{count, plural, one {{value} manneskja} other {{value} manns}}",
@@ -2199,6 +2216,11 @@ export const is = {
   "admin.settings.newValue.kr": "Nýtt gildi, í kr.",
   "admin.settings.unit.percent": "{value}%",
   "admin.settings.newValue.percent": "Nýtt gildi, í prósentum",
+  "admin.settings.unit.months": "{count, plural, one {{value} mánuður} other {{value} mánuðir}}",
+  "admin.settings.newValue.months": "Nýtt gildi, í mánuðum",
+  "admin.settings.unit.records":
+    "{count, plural, one {{value} ferð eða bókun} other {{value} ferðir og bókanir}}",
+  "admin.settings.newValue.records": "Nýtt gildi, fjöldi ferða og bókana",
   "admin.settings.unit.seats": "{count, plural, one {{value} sæti} other {{value} sæti}}",
   "admin.settings.newValue.seats": "Nýtt gildi, fjöldi sæta",
   "admin.settings.unit.minutes": "{count, plural, one {{value} mínúta} other {{value} mínútur}}",
@@ -2563,10 +2585,13 @@ export const is = {
   "admin.reliability.excused": "Aflýst eða afbókað vegna veðurs eða lokaðs vegar",
   "admin.reliability.excusedHint":
     "Ef þú hnekkir ástæðu telst það með í áreiðanleika viðkomandi og þú getur dregið það til baka. Athugasemdir þínar sjá aðeins stjórnendur.",
+  "admin.reliability.counts":
+    "Staðið við {kept} af {total} ferðum og bókunum á áreiðanleikatímabilinu.",
+  "admin.reliability.period": "{months, plural, one {# mánuð} other {# mánuði}}",
   "admin.reliability.excusedCount":
-    "{count, plural, one {# tilvik síðustu 12 mánuði, nýjast fyrst} other {# tilvik síðustu 12 mánuði, nýjust fyrst}}",
+    "{count, plural, one {# tilvik síðustu {period}, nýjast fyrst} other {# tilvik síðustu {period}, nýjust fyrst}}",
   "admin.reliability.noneExcused":
-    "Enginn hætti við vegna veðurs eða lokaðs vegar síðustu 12 mánuði.",
+    "Enginn hætti við vegna veðurs eða lokaðs vegar síðustu {months, plural, one {# mánuð} other {# mánuði}}.",
   "admin.reliability.excusedFailed": "Ekki tókst að sækja listann.",
   "admin.reliability.loadExcusedAgain": "Sækja listann aftur",
   "admin.reliability.route": "{from} – {to}",
@@ -2600,7 +2625,7 @@ export const is = {
   "admin.reliability.saveFailed": "Ekki tókst að vista. Reyndu aftur.",
   "admin.reliability.watch": "Undir viðmiðunarmörkum",
   "admin.reliability.watchHint":
-    "Fólk með áreiðanleika undir {percent}% síðustu 12 mánuði, lægst fyrst. Skoðaðu hvað gerðist og ákveddu sjálf(ur) hvort það fær viðvörun eða bann: hér er enginn settur í bann.",
+    "Fólk með áreiðanleika undir {percent}% síðustu {months, plural, one {# mánuð} other {# mánuði}}, lægst fyrst. Skoðaðu hvað gerðist og ákveddu sjálf(ur) hvort það fær viðvörun eða bann: hér er enginn settur í bann.",
   "admin.reliability.noneWatched": "Enginn er undir {percent}%.",
   "admin.reliability.watchFailed": "Ekki tókst að sækja fólk undir viðmiðunarmörkum.",
   "admin.reliability.loadWatchAgain": "Sækja fólkið aftur",

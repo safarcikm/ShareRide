@@ -60,13 +60,16 @@ export const adminExcusedCancellationsRoute = defineRoute({
   method: "get",
   path: "/admin/v1/reliability/cancellations",
   summary:
-    "Cancellations over the last 12 months that do not count only because of a weather or road-closure reason, newest first",
+    "Cancellations over the reliability period that do not count only because of a weather or road-closure reason, newest first",
   tags: ["admin", "reliability"],
   auth: "operator",
   responses: {
     200: {
-      description: "The cancellations, overruled ones included",
-      schema: z.object({ cancellations: z.array(adminExcusedCancellationSchema) }),
+      description: "The cancellations, overruled ones included, and the period in months",
+      schema: z.object({
+        periodMonths: z.int().min(1),
+        cancellations: z.array(adminExcusedCancellationSchema),
+      }),
     },
     401: { description: "operator_unauthenticated", ...errors },
   },
@@ -113,9 +116,10 @@ export const adminReliabilityWatchRoute = defineRoute({
   auth: "operator",
   responses: {
     200: {
-      description: "The people, and the watch level in percent",
+      description: "The people, the watch level in percent and the period in months",
       schema: z.object({
         watchPercent: z.int().min(0).max(100),
+        periodMonths: z.int().min(1),
         people: z.array(adminWatchedPersonSchema),
       }),
     },
