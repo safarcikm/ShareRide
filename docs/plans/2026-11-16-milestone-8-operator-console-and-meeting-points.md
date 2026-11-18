@@ -361,7 +361,7 @@ notification kinds).
       page in the console
 - [x] 12b: `pointMovedFar` (`movedFar` was taken by booking changes);
       moving a point in use with its legs, and the notifications of a
-      move (migration 0042); Move in the console's "In use" panel
+      move (migration 0043); Move in the console's "In use" panel
 - Verify: domain tests; integration tests (activating a draft that is
   not ready and one that is; a move under and over 50 m); a browser
   journey for each

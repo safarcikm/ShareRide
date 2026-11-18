@@ -1,5 +1,5 @@
 {
-  "id": "7c3a6314-0035-4d80-9d7d-2d163f5d50a3",
+  "id": "45eb4c8c-77cb-4ff2-a20a-07457dfb73f7",
   "prevId": "144bd486-dca4-4bb2-b4cc-8cd200280969",
   "version": "7",
   "dialect": "postgresql",
@@ -3272,7 +3272,7 @@
       "checkConstraints": {
         "notifications_kind_check": {
           "name": "notifications_kind_check",
-          "value": "\"notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'booking_cancelled_by_shareride', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'meeting_point_moved', 'meeting_point_moved_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'no_show_marked', 'driver_absent_reported', 'dispute_decided', 'dispute_decided_driver', 'rate_trip', 'rate_trip_driver', 'review_visible', 'data_export_ready', 'moderation_action', 'suspension_ended', 'appeal_answered', 'report_closed', 'report_filed', 'report_filed_urgent', 'account_deletion_scheduled', 'privacy_request_answered')"
+          "value": "\"notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'booking_cancelled_by_shareride', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'no_show_marked', 'driver_absent_reported', 'dispute_decided', 'dispute_decided_driver', 'rate_trip', 'rate_trip_driver', 'review_visible', 'data_export_ready', 'moderation_action', 'suspension_ended', 'appeal_answered', 'report_closed', 'report_filed', 'report_filed_urgent', 'account_deletion_scheduled', 'privacy_request_answered')"
         }
       },
       "isRLSEnabled": false
@@ -3359,7 +3359,7 @@
       "checkConstraints": {
         "outbox_events_kind_check": {
           "name": "outbox_events_kind_check",
-          "value": "\"outbox_events\".\"kind\" in ('BookingRequested', 'BookingAccepted', 'BookingConfirmed', 'BookingDeclined', 'BookingExpired', 'BookingWithdrawn', 'BookingCancelled', 'DepartureMoved', 'TripChanged', 'TripCancelled', 'RefundIssued', 'MessageSent', 'CheckedIn', 'NoShowMarked', 'DriverAbsentReported', 'DisputeDecided', 'BookingCompleted', 'ReviewRevealed', 'MeetingPointChanged', 'MeetingPointMoved', 'DataExportReady', 'ReportFiled', 'AccountDeletionScheduled', 'PrivacyRequestAnswered', 'ModerationActionTaken', 'SuspensionEnded', 'AppealAnswered', 'ReportClosed')"
+          "value": "\"outbox_events\".\"kind\" in ('BookingRequested', 'BookingAccepted', 'BookingConfirmed', 'BookingDeclined', 'BookingExpired', 'BookingWithdrawn', 'BookingCancelled', 'DepartureMoved', 'TripChanged', 'TripCancelled', 'RefundIssued', 'MessageSent', 'CheckedIn', 'NoShowMarked', 'DriverAbsentReported', 'DisputeDecided', 'BookingCompleted', 'ReviewRevealed', 'MeetingPointChanged', 'DataExportReady', 'ReportFiled', 'AccountDeletionScheduled', 'PrivacyRequestAnswered', 'ModerationActionTaken', 'SuspensionEnded', 'AppealAnswered', 'ReportClosed')"
         }
       },
       "isRLSEnabled": false
@@ -3684,7 +3684,7 @@
       "checkConstraints": {
         "scheduled_notifications_kind_check": {
           "name": "scheduled_notifications_kind_check",
-          "value": "\"scheduled_notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'booking_cancelled_by_shareride', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'meeting_point_moved', 'meeting_point_moved_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'no_show_marked', 'driver_absent_reported', 'dispute_decided', 'dispute_decided_driver', 'rate_trip', 'rate_trip_driver', 'review_visible', 'data_export_ready', 'moderation_action', 'suspension_ended', 'appeal_answered', 'report_closed', 'report_filed', 'report_filed_urgent', 'account_deletion_scheduled', 'privacy_request_answered')"
+          "value": "\"scheduled_notifications\".\"kind\" in ('request_new', 'request_halfway', 'pay_now', 'pay_reminder', 'booking_confirmed', 'booking_confirmed_driver', 'request_declined', 'request_expired', 'request_expired_driver', 'request_withdrawn', 'payment_window_ended', 'payment_window_ended_driver', 'departure_moved', 'departure_moved_far', 'trip_changed', 'trip_cancelled', 'booking_cancelled_by_driver', 'booking_cancelled_by_passenger', 'booking_cancelled_by_shareride', 'refund_issued', 'meeting_point_changed', 'meeting_point_changed_driver', 'new_message', 'unread_messages', 'reminder_evening', 'reminder_evening_driver', 'reminder_hour', 'reminder_hour_driver', 'payout_sent', 'checked_in', 'checked_in_driver', 'no_show_marked', 'driver_absent_reported', 'dispute_decided', 'dispute_decided_driver', 'rate_trip', 'rate_trip_driver', 'review_visible', 'data_export_ready', 'moderation_action', 'suspension_ended', 'appeal_answered', 'report_closed', 'report_filed', 'report_filed_urgent', 'account_deletion_scheduled', 'privacy_request_answered')"
         },
         "scheduled_notifications_recipient_check": {
           "name": "scheduled_notifications_recipient_check",
@@ -4636,7 +4636,7 @@
           "name": "booking_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "author_id": {
           "name": "author_id",
@@ -4819,6 +4819,10 @@
         "reviews_people_check": {
           "name": "reviews_people_check",
           "value": "\"reviews\".\"author_id\" <> \"reviews\".\"subject_id\""
+        },
+        "reviews_ride_check": {
+          "name": "reviews_ride_check",
+          "value": "\"reviews\".\"booking_id\" is not null or \"reviews\".\"author_id\" = '00000000-0000-4000-8000-000000000001'"
         }
       },
       "isRLSEnabled": false

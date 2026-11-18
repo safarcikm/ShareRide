@@ -961,7 +961,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   Moved more than 50 m (R2.10), the driver of each trip still to stop
   there and each passenger who gets in or out there are told "Meeting
   point moved", passengers by SMS within 24 hours of boarding. Migration
-  0042 adds the notification kinds `meeting_point_moved` and
+  0043 adds the notification kinds `meeting_point_moved` and
   `meeting_point_moved_driver` and the event `MeetingPointMoved`.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
@@ -994,6 +994,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   the trip a car of the same make, model and colour without a plate.
   Stops, prices and payments stay. A hold on the trip, a booking, the
   driver or a passenger keeps it until the hold ends.
+- Reviews of a trip made anonymous no longer name who wrote them or the
+  ride (Martin's answer A51): they keep their stars, comment and dates for
+  the person they are about, so ratings stay the same. A profile shows
+  them as by "A former member", as it shows those of people who left, and
+  Download my data lists those about the person from such trips in their
+  own section. A hold on anyone they name keeps them as they are.
+  Migration `0042_reviews_of_old_trips` makes a review's booking optional.
 - Erasure keeps a conversation a report covers (spec 9, section 7;
   Martin's answer A47): the erased person's messages read "Message deleted" to
   the other person, but the operator can still read them until the
