@@ -139,6 +139,14 @@ the point for review, and the user sees a thank-you message.
    automatically after its last future trip.
 6. **Move:** moving an active point by more than 50 m recomputes its distances
    and tells participants of future trips that use it about the new location.
+   As built (milestone 8, PR 12b): a point in service (active, paused or
+   retiring) moves with its own step, to a spot in Iceland with a road
+   within 1 km that reaches a point in service. Its distances are
+   recomputed on every move; only beyond 50 m is anyone told (spec 7).
+   Each move counts on its own: small moves do not add up
+   ([A52](../strategy/open-questions.md)).
+   A draft's spot is edited in its form, and a retired point stays where
+   it was.
 7. **Problem reports:** a queue of reports with the point, reason and note.
    Resolve a report with a note, which can update the point's last checked
    date, or pause the point at once.

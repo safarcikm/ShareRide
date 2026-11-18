@@ -30,8 +30,10 @@ import {
   baseField,
   emptyValues,
   inputOf,
+  osmLink,
   problemFieldsOf,
   readSpot,
+  spotText,
   valuesOf,
   type DayHours,
   type FieldProblem,
@@ -61,6 +63,13 @@ type Outcome =
   | { readonly kind: "failed" }
   /** A status changed: what it came to, naming the point. */
   | { readonly kind: "status"; readonly text: MessageKey; readonly name: string }
+  /** Moved: how far, and on how many trips people are told. */
+  | {
+      readonly kind: "moved";
+      readonly name: string;
+      readonly metres: number;
+      readonly tripsTold: number;
+    }
   | { readonly kind: "statusFailed" };
 
 /** The fields typed as text. */
@@ -75,9 +84,6 @@ type TextField =
   | "shelterNoteEn";
 
 const months = Array.from({ length: 12 }, (_, index) => index + 1);
-
-const osmLink = (latitude: number, longitude: number) =>
-  `https://www.openstreetmap.org/?mlat=${String(latitude)}&mlon=${String(longitude)}#map=17/${String(latitude)}/${String(longitude)}`;
 
 /** Create a meeting point, or edit one (spec 2, 3.6.2). `id` is undefined for a new one. */
 export function MeetingPointForm({ id }: { readonly id: string | undefined }) {
@@ -387,9 +393,17 @@ export function MeetingPointForm({ id }: { readonly id: string | undefined }) {
     set({ hours: values.hours.map((day, at) => (at === index ? { ...day, ...change } : day)) });
   };
 
-  /** A status changed: the newest copy, and the form keeps what was typed in it. */
+  /**
+   * A status changed or the point moved: the newest copy, and the form
+   * keeps what was typed in it, with the new spot after a move.
+   */
   const statusChanged = (result: StatusResult) => {
-    if (result.kind === "changed") {
+    if (result.kind === "moved") {
+      const { meetingPoint, metres, tripsTold } = result.moved;
+      setLoaded({ state: "ready", point: meetingPoint });
+      setValues((typed) => ({ ...typed, spot: spotText(meetingPoint.position) }));
+      setOutcome({ kind: "moved", name: meetingPoint.nameIs, metres, tripsTold });
+    } else if (result.kind === "changed") {
       setOutcome({ kind: "changed", on: "status" });
     } else if (result.kind === "failed") {
       setOutcome({ kind: "statusFailed" });
@@ -493,6 +507,14 @@ export function MeetingPointForm({ id }: { readonly id: string | undefined }) {
         ) : outcome.kind === "status" ? (
           <p className="notice type-body" role="status" tabIndex={-1}>
             {t(outcome.text, { name: outcome.name })}
+          </p>
+        ) : outcome.kind === "moved" ? (
+          <p className="notice type-body" role="status" tabIndex={-1}>
+            {t("admin.meetingPoint.moved", {
+              name: outcome.name,
+              metres: outcome.metres,
+              count: outcome.tripsTold,
+            })}
           </p>
         ) : outcome.kind === "statusFailed" ? (
           <p className="problem type-body" role="alert" tabIndex={-1}>

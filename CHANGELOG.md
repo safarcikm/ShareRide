@@ -783,6 +783,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   cancelled whether it counts and when ShareRide made it count; a booking
   the driver cancelled no longer shows this in the passenger's file. The
   operator's note goes when the account of whoever cancelled is erased.
+- The console's Reliability page (milestone 7, PR 7e, spec 8, 3.8): the
+  cancellations excused by a weather or road-closure reason, each made to
+  count or undone with a note on its card, and the people below 80% with
+  their counts by role. Texts in Icelandic and English.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
@@ -962,6 +966,17 @@ releases follow [Semantic Versioning](https://semver.org/).
   point in service, in the same transaction, with an audit entry
   `meeting_point.activated`. The API refuses a draft whose checklist is
   not done (`activation_not_ready`, naming each item).
+- Moving a meeting point in use (milestone 8, PR 12b; spec 2, 3.6.6):
+  Move in the console's "In use" panel takes a new spot, pasted as for a
+  draft, and says how far it is from the point and who is told. The API
+  checks the spot is in Iceland, is not where the point is and has a road
+  that reaches a point in service, then saves it and computes its legs
+  again in one transaction, with an audit entry `meeting_point.moved`.
+  Moved more than 50 m (R2.10), the driver of each trip still to stop
+  there and each passenger who gets in or out there are told "Meeting
+  point moved", passengers by SMS within 24 hours of boarding. Migration
+  0044 adds the notification kinds `meeting_point_moved` and
+  `meeting_point_moved_driver` and the event `MeetingPointMoved`.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.
