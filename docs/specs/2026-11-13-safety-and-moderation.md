@@ -20,8 +20,9 @@ don't want to meet again, and report bad behaviour knowing it will be looked
 at. Martin runs the platform alone, so moderation must be quick to do and
 leave a clear record.
 
-Goal: one-tap reporting from anywhere it matters, silent blocking, emergency
-and road safety information on every trip, trip sharing with a contact, and a
+Goal: one-tap reporting from anywhere it matters, silent blocking, road
+safety information on trips that leave the capital area and "call 112"
+first on a safety report, trip sharing with a contact, and a
 console where one person can handle a report, act on it and explain the
 decision, with every operator action logged.
 
@@ -107,8 +108,8 @@ decision, with every operator action logged.
 1. **Queue:** open reports, safety first, then oldest first, with the time
    left to the response target: every report is answered within 24 hours.
    A safety report alerts the operator at once by push and SMS from 07:00 to
-   23:00, and by push only at night (decision 4). The app always tells people
-   to call 112 in an emergency.
+   23:00, and by push only at night (decision 4). A safety report tells
+   people to call 112 first (3.1.3).
 2. **A report shows** the category, description, reporter and subject; the
    related trip, booking, message or review; earlier reports by and about
    both people; ratings, reliability and recent trips; and, when the report
@@ -189,7 +190,8 @@ from the console.
 1. Report: what, category, 112 notice for safety, description
 2. My reports and their outcomes (Settings)
 3. Block confirmation, and the booking question when one exists
-4. Emergency and "Before you go" on trip, booking and trip day screens
+4. "Before you go" on trip, booking and trip day screens, for a trip that
+   leaves the capital area
 5. Share trip
 6. Console: report queue and report detail with actions
 7. Console: user, trip and booking search and detail

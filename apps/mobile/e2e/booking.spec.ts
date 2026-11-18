@@ -189,9 +189,9 @@ for (const journey of journeys) {
       // Safety on the confirmed booking (spec 9, 3.3): the links for a trip
       // out of the capital area, and sharing its details. No 112 button:
       // people dial it themselves.
-      await expect(page.getByRole("button", { name: /112/ })).toHaveCount(0);
       await expect(page.getByRole("link", { name: journey.weather })).toBeVisible();
       await expect(page.getByRole("button", { name: journey.share })).toBeVisible();
+      await expect(page.getByRole("button", { name: /112/ })).toHaveCount(0);
     });
   });
 }
