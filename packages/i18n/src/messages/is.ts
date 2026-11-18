@@ -2121,6 +2121,25 @@ export const is = {
   "admin.meetingPoint.retiring": "{name} hættir eftir síðustu ferðina.",
   "admin.meetingPoint.retired": "{name} er hættur.",
   "admin.meetingPoint.statusFailed": "Ekki tókst að breyta stöðunni. Reyndu aftur.",
+  "admin.meetingPoint.activated": "{name} er virkur. Bílstjórar geta valið hann í nýjar ferðir.",
+  "admin.activation.title": "Gátlisti fyrir virkjun",
+  "admin.activation.fromSaved":
+    "Gátlistinn miðast við það sem er vistað. Vistaðu breytingarnar fyrst.",
+  "admin.activation.item.details": "Heiti, staðsetning, tegund, landshluti og sveitarfélag",
+  "admin.activation.item.whereToStand": "Hvar á að bíða, á íslensku og ensku",
+  "admin.activation.item.photos": "Mynd með lýsingu á báðum tungumálum",
+  "admin.activation.item.amenities": "Farið yfir aðstöðuna",
+  "admin.activation.item.season": "Farið yfir tímabilið",
+  "admin.activation.item.confirmed": "Dagurinn sem þú staðfestir staðinn síðast",
+  "admin.activation.item.legs": "Vegur innan 1 km, fyrir vegalengdirnar",
+  "admin.activation.done": "Lokið",
+  "admin.activation.toDo": "Eftir",
+  "admin.activation.failed": "Ekki tókst að sækja gátlistann.",
+  "admin.activation.activate": "Virkja {name}",
+  "admin.activation.note":
+    "Bílstjórar geta valið hann í nýjar ferðir strax. Vegalengdir hans til allra staða í notkun eru reiknaðar núna, sem getur tekið nokkrar sekúndur.",
+  "admin.activation.notReady":
+    "{count, plural, one {# atriði er} other {# atriði eru}} eftir áður en hægt er að virkja {name}.",
   "admin.meetingPoint.reloadedStatus":
     "Þetta er nýjasta afritið. Athugaðu stöðuna og reyndu svo aftur.",
   "admin.meetingPoint.issue.notAfterToday": "Veldu dag eftir daginn í dag.",

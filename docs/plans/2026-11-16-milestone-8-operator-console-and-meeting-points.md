@@ -353,10 +353,17 @@ PR 11 is in two parts.
 
 ### PR 12: `feat(meeting-points)`: activate and move
 
-- [ ] `activationChecklist`, `movedFar`; activate and move with their
-      legs, and the notifications of a move
-- Verify: domain tests; integration tests (a move under and over 50 m);
-  a browser journey
+PR 12 is in two parts, as only moving needs a migration (its
+notification kinds).
+
+- [x] 12a: `activationChecklist`; the checklist and activating a draft
+      with its legs in the API; the checklist and Activate on a draft's
+      page in the console
+- [ ] 12b: `movedFar`; moving a point in use with its legs, and the
+      notifications of a move
+- Verify: domain tests; integration tests (activating a draft that is
+  not ready and one that is; a move under and over 50 m); a browser
+  journey for each
 
 ## 6. Review focus
 

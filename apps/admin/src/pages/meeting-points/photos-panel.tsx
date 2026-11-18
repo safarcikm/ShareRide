@@ -74,7 +74,14 @@ const draftOf = (photo: AdminMeetingPointPhoto): Draft => ({
  * (`PhotoBrowser`) and the domain's `checkPhotoFile` checks it before it is
  * sent. A retired point's photos are shown as they are.
  */
-export function PhotosPanel({ point }: { readonly point: AdminMeetingPoint }) {
+export function PhotosPanel({
+  point,
+  onChange,
+}: {
+  readonly point: AdminMeetingPoint;
+  /** Called after a photo is added, described, moved or removed here. */
+  readonly onChange?: () => void;
+}) {
   const { t, locale, call, photos: browser } = useConsole();
   const base = useId();
   const [photos, setPhotos] = useState<readonly AdminMeetingPointPhoto[] | "loading" | "failed">(
@@ -194,6 +201,7 @@ export function PhotosPanel({ point }: { readonly point: AdminMeetingPoint }) {
   function done(next: readonly AdminMeetingPointPhoto[], text: MessageKey, focus = true) {
     setBusy(false);
     show(next);
+    onChange?.();
     setMessage({ kind: "status", text, focus });
   }
 

@@ -1,5 +1,8 @@
 import {
+  adminActivateMeetingPointRoute,
+  adminActivationChecklistRoute,
   adminCreateMeetingPointRoute,
+  adminDescribeMeetingPointPhotoRoute,
   adminMeetingPointPhotosRoute,
   adminMeetingPointRoute,
   adminMeetingPointsRoute,
@@ -8,11 +11,13 @@ import {
   adminResumeMeetingPointRoute,
   adminRetireMeetingPointRoute,
   adminUpdateMeetingPointRoute,
+  type AdminActivationChecklist,
   type AdminMe,
   type AdminMeetingPoint,
   type AdminMeetingPointListItem,
+  type AdminMeetingPointPhoto,
 } from "@shareride/contracts";
-import { icelandDate } from "@shareride/domain";
+import { activationItems, icelandDate, type ActivationItem } from "@shareride/domain";
 import { formatDate } from "@shareride/i18n";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -89,6 +94,12 @@ const bsi: AdminMeetingPointListItem = {
   openIssues: 2,
 };
 
+/** A checklist with these items still to do. */
+const checklistWith = (...toDo: readonly ActivationItem[]): AdminActivationChecklist => ({
+  items: activationItems.map((item) => ({ item, done: !toDo.includes(item) })),
+  ready: toDo.length === 0,
+});
+
 function start(path: string) {
   window.history.replaceState(null, "", path);
   const api = createFakeApi();
@@ -96,6 +107,10 @@ function start(path: string) {
   api.on(adminMeetingPointsRoute, { status: 200, data: { meetingPoints: [bsi, listItem(draft)] } });
   api.on(adminMeetingPointRoute, { status: 200, data: draft });
   api.on(adminMeetingPointPhotosRoute, { status: 200, data: { photos: [] } });
+  api.on(adminActivationChecklistRoute, {
+    status: 200,
+    data: checklistWith("photos", "amenities", "season", "confirmed"),
+  });
   render(<ConsoleApp client={api.client} passkeys={createFakePasskeys().passkeys} />);
   return api;
 }
@@ -807,5 +822,172 @@ describe("pausing, bringing back and retiring a point (spec 2, 3.6.4 and 3.6.5)"
       expect(document.activeElement).toBe(alert);
     });
     expect(screen.getByText("Status: Paused")).toBeTruthy();
+  });
+});
+
+describe("activating a draft (spec 2, 3.6.3)", () => {
+  const panel = () => screen.getByRole("region", { name: "In use" });
+  const checklist = () => screen.findByRole("list", { name: "Activation checklist" });
+  const row = (list: HTMLElement, text: string) =>
+    within(list)
+      .getAllByRole("listitem")
+      .find((item) => item.textContent.startsWith(text));
+  const activateButton = () =>
+    within(panel()).getByRole("button", { name: "Activate N1 Borgarnesi" });
+
+  function open(list: AdminActivationChecklist) {
+    const api = start(`/admin/meeting-points/${pointId}`);
+    api.on(adminActivationChecklistRoute, { status: 200, data: list });
+    return api;
+  }
+
+  it("shows what a draft still needs, and says so instead of sending", async () => {
+    const api = open(checklistWith("photos", "confirmed"));
+    const list = await checklist();
+    expect(
+      within(list)
+        .getAllByRole("listitem")
+        .map((item) => item.textContent),
+    ).toEqual([
+      "Name, place, type, region and municipality Done",
+      "Where to stand, in Icelandic and English Done",
+      "A photo described in both languages To do",
+      "The amenities checked Done",
+      "The season checked Done",
+      "The day you last confirmed the point To do",
+      "A road within 1 km, for its distances Done",
+    ]);
+    expect(panel().textContent).toContain(
+      "The checklist is of what is saved. Save your changes first.",
+    );
+    fireEvent.click(activateButton());
+
+    const alert = await within(panel()).findByRole("alert");
+    expect(alert.textContent).toBe(
+      "2 things are still to do before N1 Borgarnesi can be activated.",
+    );
+    await waitFor(() => {
+      expect(document.activeElement).toBe(alert);
+    });
+    expect(api.called(adminActivateMeetingPointRoute)).toHaveLength(0);
+  });
+
+  it("activates a draft whose checklist is done, which computes its distances", async () => {
+    const api = open(checklistWith());
+    const active: AdminMeetingPoint = {
+      ...draft,
+      status: "active",
+      lastCheckedOn: "2026-11-16",
+      reviewDueOn: "2027-11-16",
+      updatedAt: "2026-11-16T12:00:00.000Z",
+    };
+    let sent: Record<string, unknown> = {};
+    api.on(adminActivateMeetingPointRoute, (input) => {
+      sent = input["body"] as Record<string, unknown>;
+      return { status: 200, data: active };
+    });
+    await checklist();
+    // The button is read with what activating does.
+    fireEvent.click(
+      within(panel()).getByRole("button", {
+        name: "Activate N1 Borgarnesi",
+        description:
+          "Drivers can choose it for new trips at once. Its distances to every point in use are computed now, which can take a few seconds.",
+      }),
+    );
+
+    const notice = await screen.findByText(
+      "N1 Borgarnesi is active. Drivers can choose it for new trips.",
+    );
+    await waitFor(() => {
+      expect(document.activeElement).toBe(notice);
+    });
+    expect(sent).toEqual({ updatedAt: draft.updatedAt });
+    expect(api.called(adminActivateMeetingPointRoute)).toHaveLength(1);
+    expect(screen.getByText("Status: Active")).toBeTruthy();
+    expect(within(panel()).queryByRole("list", { name: "Activation checklist" })).toBeNull();
+    expect(within(panel()).getByRole("button", { name: "Pause" })).toBeTruthy();
+  });
+
+  it("checks again once the point or a photo is saved", async () => {
+    const api = open(checklistWith("whereToStand", "photos"));
+    const photo: AdminMeetingPointPhoto = {
+      id: "0196f000-0000-7000-8000-000000000101",
+      url: "https://photos.test/meeting-points/0196f000-0000-7000-8000-000000000201.jpg",
+      descriptionIs: "Inngangurinn.",
+      descriptionEn: "",
+      width: 1600,
+      height: 1200,
+      updatedAt: "2026-11-16T11:00:00.000Z",
+    };
+    api.on(adminMeetingPointPhotosRoute, { status: 200, data: { photos: [photo] } });
+    await checklist();
+
+    api.on(adminActivationChecklistRoute, { status: 200, data: checklistWith("photos") });
+    api.on(adminUpdateMeetingPointRoute, {
+      status: 200,
+      data: { ...draft, updatedAt: "2026-11-16T12:00:00.000Z" },
+    });
+    type("Where to stand, in English", "By the pumps.");
+    fireEvent.click(screen.getByRole("button", { name: "Save the changes" }));
+    await waitFor(async () => {
+      expect(row(await checklist(), "Where to stand")?.textContent).toContain("Done");
+    });
+
+    api.on(adminActivationChecklistRoute, { status: 200, data: checklistWith() });
+    api.on(adminDescribeMeetingPointPhotoRoute, {
+      status: 200,
+      data: { photos: [{ ...photo, descriptionEn: "The entrance." }] },
+    });
+    const first = within(screen.getByRole("region", { name: "Photos" })).getByRole("listitem", {
+      name: "Photo 1",
+    });
+    fireEvent.change(within(first).getByLabelText("Description for screen readers, in English"), {
+      target: { value: "The entrance." },
+    });
+    fireEvent.click(within(first).getByRole("button", { name: "Save descriptions" }));
+    await waitFor(async () => {
+      expect(row(await checklist(), "A photo")?.textContent).toContain("Done");
+    });
+    expect(api.called(adminActivationChecklistRoute)).toHaveLength(3);
+  });
+
+  it("shows what the API found still to do", async () => {
+    const api = open(checklistWith());
+    api.on(adminActivateMeetingPointRoute, {
+      status: 409,
+      error: {
+        code: "activation_not_ready",
+        details: [{ path: "legs", issue: "not_done" }],
+      },
+    });
+    await checklist();
+    fireEvent.click(activateButton());
+    const alert = await within(panel()).findByRole("alert");
+    expect(alert.textContent).toBe("1 thing is still to do before N1 Borgarnesi can be activated.");
+    expect(row(await checklist(), "A road")?.textContent).toContain("To do");
+    expect(screen.getByText("Status: Draft")).toBeTruthy();
+  });
+
+  it("says when the point changed elsewhere", async () => {
+    const api = open(checklistWith());
+    api.on(adminActivateMeetingPointRoute, {
+      status: 409,
+      error: { code: "meeting_point_changed" },
+    });
+    await checklist();
+    fireEvent.click(activateButton());
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "This meeting point was saved somewhere else after you opened it.",
+    );
+  });
+
+  it("says when the checklist could not be loaded, and loads it again", async () => {
+    const api = open(checklistWith());
+    api.on(adminActivationChecklistRoute, { status: 500, error: { code: "internal" } });
+    expect(await screen.findByText("The checklist could not be loaded.")).toBeTruthy();
+    api.on(adminActivationChecklistRoute, { status: 200, data: checklistWith() });
+    fireEvent.click(within(panel()).getByRole("button", { name: "Try again" }));
+    expect(await checklist()).toBeTruthy();
   });
 });

@@ -18,6 +18,7 @@ import {
 import { formatDate, type MessageKey } from "@shareride/i18n";
 import { useEffect, useId, useRef, useState } from "react";
 import { useConsole } from "../../console.tsx";
+import { ActivationChecklist } from "./activation.tsx";
 
 /** What a status change came to, for the page to show. */
 export type StatusResult =
@@ -44,19 +45,23 @@ const issueKeys: Record<PauseIssue, MessageKey> = {
 const tomorrow = () => icelandDate(new Date(Date.now() + 24 * 3600_000));
 
 /**
- * Whether a point is in use, and pausing, bringing back and retiring it
- * (spec 2, 3.6.4 and 3.6.5). What each status allows is the domain's
- * `nextPointStatus`. Nothing for a retired point, which stays as it was.
+ * Whether a point is in use: a draft's activation checklist, and pausing,
+ * bringing back and retiring a point (spec 2, 3.6.3 to 3.6.5). What each
+ * status allows is the domain's `nextPointStatus`. Nothing for a retired
+ * point, which stays as it was.
  */
 export function StatusPanel({
   point,
   onResult,
   startPausing = false,
+  photosVersion = 0,
 }: {
   readonly point: AdminMeetingPoint;
   readonly onResult: (result: StatusResult) => void;
   /** Opens with the pause asked for, as from a problem report (spec 2, 3.6.7). */
   readonly startPausing?: boolean;
+  /** Changes when the point's photos are saved, so a draft's checklist is checked again. */
+  readonly photosVersion?: number;
 }) {
   const { t, locale, call } = useConsole();
   const [step, setStep] = useState<Step>(() =>
@@ -208,7 +213,10 @@ export function StatusPanel({
         {t("admin.meetingPoint.inUse")}
       </h2>
       {status === "draft" ? (
-        <p className="type-body">{t("admin.meetingPoint.draftNotOffered")}</p>
+        <>
+          <p className="type-body">{t("admin.meetingPoint.draftNotOffered")}</p>
+          <ActivationChecklist point={point} version={photosVersion} onResult={onResult} />
+        </>
       ) : (
         <p className="type-body">
           {t("admin.meetingPoint.upcomingTrips", { count: point.futureTrips })}

@@ -372,6 +372,29 @@ code {
   background: var(--color-border);
 }
 
+/* A draft's activation checklist: each item, and whether it is done in a column beside it. */
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  max-width: var(--narrow-width);
+}
+
+.checklist-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: var(--space-sm);
+}
+
+.checklist-item .tag {
+  margin-left: 0;
+}
+
+.checklist-title {
+  margin: 0;
+}
+
 /* Check boxes and radio buttons with their text, a touch target high. */
 .checks {
   display: flex;
