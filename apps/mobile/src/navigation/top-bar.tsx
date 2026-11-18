@@ -12,6 +12,7 @@ import { LanguageSwitch } from "@/components/language-switch";
 import { Logo } from "@/components/logo";
 import { useUnread } from "@/chat/unread";
 import { useLanguage } from "@/i18n/language";
+import { useHover } from "@/theme/hover";
 import { controlOutline, minTouchTarget, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { CountBadge } from "./count-badge";
@@ -40,7 +41,8 @@ function opensElsewhere(event: GestureResponderEvent): boolean {
  * The menu on wide screens (spec 16, 3.1): the logo and name, the places
  * and the language, in a bar at the top of every screen. The place the
  * screen belongs to is chosen: `primary` and underlined. Messages shows its
- * unread count after its name.
+ * unread count after its name. A place under the pointer turns `primary`
+ * (spec 18, 3.4).
  */
 export function TopBar({
   onSwitchLanguage,
@@ -74,47 +76,66 @@ export function TopBar({
         <Text style={[typography.heading, { color: palette.text }]}>{t("app.name")}</Text>
       </View>
       <View {...role} style={styles.places}>
-        {menuTabs.map((tab) => {
-          const chosen = tab.name === current;
-          const label = t(tab.label);
-          const count = tab.name === "messages" ? total : 0;
-          const spoken = count > 0 ? `${label}, ${t("chat.unread", { count })}` : label;
-          const a11y = onWeb
-            ? ({
-                role: "link",
-                href: tab.href,
-                "aria-current": chosen ? "page" : undefined,
-              } as const)
-            : ({ accessibilityRole: "tab", accessibilityState: { selected: chosen } } as const);
-          return (
-            <Pressable
-              key={tab.name}
-              {...a11y}
-              accessibilityLabel={spoken}
-              onPress={(event) => {
-                if (opensElsewhere(event)) return;
-                // A link on the web: the app moves, the page does not reload.
-                event.preventDefault();
-                openPlace(tab.href);
-              }}
-              style={styles.place}
-            >
-              <Text
-                style={[
-                  typography.label,
-                  { color: chosen ? palette.primary : palette.text },
-                  chosen && styles.chosen,
-                ]}
-              >
-                {label}
-              </Text>
-              <CountBadge count={count} />
-            </Pressable>
-          );
-        })}
+        {menuTabs.map((tab) => (
+          <Place
+            key={tab.name}
+            tab={tab}
+            chosen={tab.name === current}
+            unread={tab.name === "messages" ? total : 0}
+          />
+        ))}
       </View>
       <LanguageSwitch onSwitch={onSwitchLanguage} />
     </View>
+  );
+}
+
+/** One place in the bar: a link on the web, a tab elsewhere. */
+function Place({
+  tab,
+  chosen,
+  unread,
+}: {
+  readonly tab: (typeof menuTabs)[number];
+  readonly chosen: boolean;
+  readonly unread: number;
+}) {
+  const palette = usePalette();
+  const { t } = useLanguage();
+  const [hovered, hover] = useHover();
+  const label = t(tab.label);
+  const spoken = unread > 0 ? `${label}, ${t("chat.unread", { count: unread })}` : label;
+  const a11y = onWeb
+    ? ({
+        role: "link",
+        href: tab.href,
+        "aria-current": chosen ? "page" : undefined,
+      } as const)
+    : ({ accessibilityRole: "tab", accessibilityState: { selected: chosen } } as const);
+  return (
+    <Pressable
+      {...a11y}
+      accessibilityLabel={spoken}
+      onPress={(event) => {
+        if (opensElsewhere(event)) return;
+        // A link on the web: the app moves, the page does not reload.
+        event.preventDefault();
+        openPlace(tab.href);
+      }}
+      {...hover}
+      style={styles.place}
+    >
+      <Text
+        style={[
+          typography.label,
+          { color: chosen || hovered ? palette.primary : palette.text },
+          chosen && styles.chosen,
+        ]}
+      >
+        {label}
+      </Text>
+      <CountBadge count={unread} />
+    </Pressable>
   );
 }
 

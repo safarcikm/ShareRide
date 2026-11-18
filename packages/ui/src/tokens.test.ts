@@ -22,6 +22,9 @@ const textPairs = [
   // A primary button under the pointer (spec 18, 3.4).
   ["onPrimary", "primaryHover"],
   ["primary", "primarySoft"],
+  // A card or a row under the pointer is tinted, and keeps its text (spec 18, 3.4).
+  ["text", "primarySoft"],
+  ["textMuted", "primarySoft"],
   ["error", "background"],
   ["error", "surface"],
   ["onError", "error"],

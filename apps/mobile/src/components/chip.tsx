@@ -1,5 +1,6 @@
 import { Check, ChevronDown, ChevronUp } from "lucide-react-native";
 import { Platform, Pressable, StyleSheet, Text } from "react-native";
+import { useHover } from "@/theme/hover";
 import {
   controlOutline,
   iconSizes,
@@ -21,7 +22,8 @@ const hitSlop = { top: slop, bottom: slop, left: 0, right: 0 } as const;
  * A choice that can be turned on and off, such as a spoken language
  * (`checkbox`, the default), one choice of several, such as a car's colour
  * (`radio`), or a suggestion that fills a field (`button`). A selected chip
- * shows a tick as well as its colour. A `button` chip with `expanded` opens
+ * shows a tick as well as its colour; under the pointer, a chip that is not
+ * selected is tinted and keeps its outline (spec 18, 3.4). A `button` chip with `expanded` opens
  * choices under it, such as the order of search results, and shows a chevron.
  * `lang` is the language of a label that is not in the app's, such as
  * "Íslenska" in English, so screen readers read it in that language.
@@ -44,6 +46,7 @@ export function Chip({
   readonly lang?: string;
 }) {
   const palette = usePalette();
+  const [hovered, hover] = useHover();
   return (
     <Pressable
       accessibilityRole={role}
@@ -57,11 +60,15 @@ export function Chip({
       onPress={onToggle}
       {...(role === "button" ? {} : spaceKeyPresses(onToggle))}
       hitSlop={hitSlop}
+      {...hover}
       style={[
         styles.chip,
         selected
           ? { backgroundColor: palette.primarySoft, borderColor: palette.primary }
-          : { backgroundColor: palette.surface, borderColor: palette.control },
+          : {
+              backgroundColor: hovered ? palette.primarySoft : palette.surface,
+              borderColor: palette.control,
+            },
       ]}
     >
       {selected ? (

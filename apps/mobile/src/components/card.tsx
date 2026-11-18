@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
+import { useHover } from "@/theme/hover";
 import { chunky } from "@/theme/pressable";
 import { edges, radii, spacing } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -10,20 +11,28 @@ interface CardProps {
   readonly onPress?: () => void;
   /** The button's name: what the card shows, in one line. */
   readonly accessibilityLabel?: string;
+  /**
+   * For a card that can be pressed: the pointer or the keyboard came to it,
+   * for a screen that shows more about it elsewhere, such as on a map.
+   */
+  readonly onHoverIn?: () => void;
+  readonly onFocus?: () => void;
 }
 
 /**
  * A surface with rounded corners and a chunky bottom edge (spec 15, section
- * 5.2). A card that can be pressed sinks over its edge, like a button.
+ * 5.2). A card that can be pressed sinks over its edge, like a button, and
+ * is tinted `primarySoft` under the pointer (spec 18, 3.4).
  */
-export function Card({ children, onPress, accessibilityLabel }: CardProps) {
+export function Card({ children, onPress, accessibilityLabel, onHoverIn, onFocus }: CardProps) {
   const palette = usePalette();
+  const [hovered, hover] = useHover();
   const face = (pressed: boolean) => (
     <View
       testID="card-face"
       style={[
         styles.face,
-        { backgroundColor: palette.surface },
+        { backgroundColor: hovered ? palette.primarySoft : palette.surface },
         chunky(edges.card, palette.edge, pressed).face,
       ]}
     >
@@ -43,6 +52,12 @@ export function Card({ children, onPress, accessibilityLabel }: CardProps) {
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
+      onHoverIn={() => {
+        hover.onHoverIn();
+        onHoverIn?.();
+      }}
+      onHoverOut={hover.onHoverOut}
+      onFocus={onFocus}
       style={({ pressed }) => [styles.outer, chunky(edges.card, palette.edge, pressed).outer]}
     >
       {({ pressed }) => face(pressed)}
