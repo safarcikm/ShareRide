@@ -10,6 +10,7 @@ import {
   type Result,
   type TripCancellation,
   type TripCancelReason,
+  tripExcusedByReason,
 } from "@shareride/domain";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { addSystemLine } from "../chat/conversations.ts";
@@ -84,6 +85,9 @@ export async function applyTripCancellation(
       cancelReason: reason,
       cancelNote: note,
       countsOnReliability: outcome.countsOnReliability,
+      // The one the operator can overrule (R8.11); ShareRide's never is.
+      excusedByReason:
+        canceller.by === "driver" && tripExcusedByReason(toCancelWithTrip(held), canceller.reason),
       updatedAt: now,
     })
     .where(eq(trips.id, tripId));

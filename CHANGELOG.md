@@ -622,7 +622,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   rate; a trip's page with every booking and request, and why a request
   was declined. Searching for a person is a POST, so a phone number or an
   email never sits in an address. Operators add notes about a person
-  (migration `0043_operator_notes`), each in the audit log without its
+  (migration `0044_operator_notes`), each in the audit log without its
   words; the person gets them in Download my data, never who wrote them
   (Martin's answer A49). Erasing the person erases the notes about them;
   erasing an operator keeps the notes they wrote, by the former member.
@@ -786,6 +786,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   Someone leaving ShareRide, or a former member, shows neither. Search
   results, trip details and bookings give `rating` (and `reliabilityPercent`
   and, on bookings, `profileId`) for these people.
+- The console's reliability routes (milestone 7, PR 7d, spec 8, 3.8; R8.10
+  and R8.11): the cancellations that do not count only because of a
+  weather or road-closure reason, making one count or undoing that, with
+  the operator's note and an audit entry, and the people below 80%. Trips
+  and bookings save whether their cancellation was excused by its reason,
+  and when and why the operator overruled it (migration
+  `0043_reliability_overrules`). "Download my data" tells whoever
+  cancelled whether it counts and when ShareRide made it count; a booking
+  the driver cancelled no longer shows this in the passenger's file. The
+  operator's note goes when the account of whoever cancelled is erased.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
