@@ -85,7 +85,9 @@ async function openBooking(
     me: completeMe,
     setUp: (client) => {
       if (answers.paused !== undefined) {
-        client.answer("/v1/config", () => ok(200, { beta: false, paused: answers.paused }));
+        client.answer("/v1/config", () =>
+          ok(200, { beta: false, paused: answers.paused, maxSeats: 8 }),
+        );
       }
       tripDetailsApi(client, answers.trip);
       client.answer(

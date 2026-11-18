@@ -33,6 +33,23 @@ export function valuesAt(version: number, changes: readonly StoredSettingChange[
   return values;
 }
 
+type CapValues = Pick<SettingValues, "suggested_rate" | "max_capacity" | "reference_cost_per_km">;
+
+/** The highest suggested rate the largest car's cap takes, in whole krónur per km. */
+export function highestSuggestedRate(values: CapValues): number {
+  return Math.floor(values.reference_cost_per_km / (values.max_capacity + 1));
+}
+
+/**
+ * The one check across values (ADR 0032): the suggested price always fits
+ * under the cap of the largest car, so 100% is a level every trip has
+ * (rules P3 and P4): `suggested_rate` × (`max_capacity` + 1) is at most
+ * `reference_cost_per_km`.
+ */
+export function suggestedFitsCap(values: CapValues): boolean {
+  return values.suggested_rate * (values.max_capacity + 1) <= values.reference_cost_per_km;
+}
+
 /** A reason for a change, in characters (R10.2). */
 export const settingReasonMaxLength = 500;
 
@@ -48,20 +65,25 @@ export type SettingChangeProblem =
   | { readonly code: "not_a_step"; readonly step: number }
   | { readonly code: "out_of_range"; readonly min: number; readonly max: number }
   | { readonly code: "unchanged" }
+  | { readonly code: "suggested_over_cap"; readonly highestRate: number }
   | { readonly code: "reason_missing" }
   | { readonly code: "reason_too_long"; readonly max: number };
 
+export type SettingValueProblem = Exclude<
+  SettingChangeProblem,
+  { readonly code: "reason_missing" | "reason_too_long" }
+>;
+
 /**
- * Whether the operator may set a value (R10.1, R10.2): a known setting, a
- * whole number on its step and inside its range, not the value it has, and
- * with a reason.
+ * Whether a setting can take a value (R10.1): a known setting, a whole
+ * number on its step and inside its range, not the value it has, and one
+ * that keeps the suggested price under the cap. Gives the values with it.
  */
-export function checkSettingChange(
+export function checkSettingValue(
   key: string,
   value: number,
-  reason: string,
   current: SettingValues,
-): Result<SettingChangeToMake, SettingChangeProblem> {
+): Result<{ readonly key: SettingKey; readonly values: SettingValues }, SettingValueProblem> {
   if (!isSettingKey(key)) return err({ code: "unknown_setting" });
   const { min, max, step } = settingDefinitions[key];
   if (!Number.isInteger(value) || (value - min) % step !== 0) {
@@ -69,10 +91,31 @@ export function checkSettingChange(
   }
   if (value < min || value > max) return err({ code: "out_of_range", min, max });
   if (value === current[key]) return err({ code: "unchanged" });
+  const values = { ...current, [key]: value };
+  if (!suggestedFitsCap(values)) {
+    return err({ code: "suggested_over_cap", highestRate: highestSuggestedRate(values) });
+  }
+  return ok({ key, values });
+}
+
+/** Whether the operator may set a value (R10.1, R10.2): one the setting can take, with a reason. */
+export function checkSettingChange(
+  key: string,
+  value: number,
+  reason: string,
+  current: SettingValues,
+): Result<SettingChangeToMake, SettingChangeProblem> {
+  const checked = checkSettingValue(key, value, current);
+  if (!checked.ok) return checked;
   const why = reason.trim();
   if (why === "") return err({ code: "reason_missing" });
   if (why.length > settingReasonMaxLength) {
     return err({ code: "reason_too_long", max: settingReasonMaxLength });
   }
-  return ok({ key, oldValue: current[key], newValue: value, reason: why });
+  return ok({
+    key: checked.value.key,
+    oldValue: current[checked.value.key],
+    newValue: value,
+    reason: why,
+  });
 }

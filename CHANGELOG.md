@@ -1249,6 +1249,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   Beta news page that lists the announcements sent to the person in the
   last 90 days. Accounts that are suspended or waiting to be deleted get
   none.
+- Prices and the seat limit from the operator's settings (spec 10, 3.2;
+  R10.1, R10.3; ADR 0032; milestone 11, PR 11; migration
+  `0054_trip_settings_version`): the console's Settings page has a new
+  group, Prices and seats, with the suggested rate, the reference cost of
+  driving, the price step, the price level step and the most seats on a
+  trip. A price value shows what it does to Reykjavík to Akureyri with 3
+  seats before it is saved, and a suggested rate the largest car's cap
+  cannot carry is refused. A published trip keeps the price values it was
+  published under through every later change; the seat limit applies at
+  once, and the app reads it from `GET /v1/config`.
 
 ### Fixed
 

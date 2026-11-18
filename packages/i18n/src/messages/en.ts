@@ -2097,6 +2097,7 @@ export const en = {
   "admin.settings.intro":
     "The values the rules read. Each change needs a reason and is kept in the history.",
   "admin.settings.group.beta": "Beta",
+  "admin.settings.group.prices": "Prices and seats",
   "admin.settings.group.switches": "Switches for emergencies",
   "admin.settings.name.signups_open": "New sign-ups",
   "admin.settings.help.signups_open":
@@ -2122,16 +2123,45 @@ export const en = {
   "admin.settings.name.beta_max_testers": "Most testers",
   "admin.settings.help.beta_max_testers":
     "No invite code works once this many accounts have joined with one.",
+  "admin.settings.name.suggested_rate": "Suggested rate",
+  "admin.settings.help.suggested_rate":
+    "What one passenger pays per km at 100%. Trips already published keep the rate they were published with.",
+  "admin.settings.name.reference_cost_per_km": "Reference cost of driving",
+  "admin.settings.help.reference_cost_per_km":
+    "What a full car shares per km, at most. It caps how high a driver can set the price. It cannot go above the state mileage allowance.",
+  "admin.settings.name.price_step": "Price step",
+  "admin.settings.help.price_step": "Every price is rounded to a whole step of this.",
+  "admin.settings.name.price_level_step": "Price level step",
+  "admin.settings.help.price_level_step":
+    "How far apart the price levels a driver chooses between are.",
+  "admin.settings.name.max_capacity": "Most seats on a trip",
+  "admin.settings.help.max_capacity":
+    "The seats a driver can offer and a passenger can book, at most. It applies at once, to drafts too. Trips already published keep their seats.",
   "admin.settings.on": "On",
   "admin.settings.off": "Off",
   "admin.settings.unit.people": "{count, plural, one {{value} person} other {{value} people}}",
   "admin.settings.newValue.people": "New value, in people",
+  "admin.settings.unit.kr_per_km": "{value} kr per km",
+  "admin.settings.newValue.kr_per_km": "New value, in kr per km",
+  "admin.settings.unit.kr": "{value} kr",
+  "admin.settings.newValue.kr": "New value, in kr",
+  "admin.settings.unit.percent": "{value}%",
+  "admin.settings.newValue.percent": "New value, in percent",
+  "admin.settings.unit.seats": "{count, plural, one {{value} seat} other {{value} seats}}",
+  "admin.settings.newValue.seats": "New value, in seats",
   "admin.settings.default": "Default: {value}. From {min} to {max}.",
   "admin.settings.defaultSwitch": "Default: {value}.",
   "admin.settings.change": "Change",
   "admin.settings.changeLabel": "Change {name}",
   "admin.settings.reason": "Why",
   "admin.settings.effect": "Changes from {before} to {after}.",
+  "admin.settings.priceEffect":
+    "Reykjavík to Akureyri ({distance} km) with {seats} seats: a seat at 100% costs {before} now and would cost {after}. The highest price level is {beforeLevel}% now and would be {afterLevel}%.",
+  "admin.settings.priceEffectNew":
+    "It applies to trips published from now on. Trips already published keep their prices.",
+  "admin.settings.effectFailed": "The example price could not be worked out. You can still save.",
+  "admin.settings.suggestedOverCap":
+    "This would put the suggested price above the cap of the largest car. With these values the suggested rate can be {rate} kr per km at most: the rate times the seats and the driver must not be more than the reference cost.",
   "admin.settings.save": "Save",
   "admin.settings.valueWrong": "Choose a whole number from {min} to {max}.",
   "admin.settings.reasonMissing": "Say why, so the history explains the change.",

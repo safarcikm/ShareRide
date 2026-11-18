@@ -603,6 +603,36 @@ version }` with the version the page loaded: it takes a lock on the
 - The console's Settings page (`apps/admin/src/pages/settings/`) shows a
   setting by the texts in its `texts.ts`: add a name, a help sentence and,
   for a new unit, the unit's two texts with each new setting.
+- Prices and seats (milestone 11, PR 11): `suggested_rate`,
+  `reference_cost_per_km`, `price_step`, `price_level_step` and
+  `max_capacity`. One check runs across values (`suggestedFitsCap`):
+  `suggested_rate` × (`max_capacity` + 1) is at most
+  `reference_cost_per_km`, so 100% is a level even the largest car has; a
+  change that breaks it is refused with `suggested_over_cap`, and the page
+  says the highest rate the other values allow.
+- A published trip keeps the four price values it was published under
+  (R10.3): publishing stores the settings version in
+  `trips.settings_version`, and every later change to the trip (price
+  level, seats, a stop added or removed, the refit to the trip limit)
+  prices with that version's values. A draft, a quote and a trip posted
+  again use the values as they are now. `max_capacity` is always read as
+  it is now; lowering it leaves published trips their seats. A module
+  takes its numbers from `packages/domain/src/settings/bundles.ts`
+  (`tripSettingsFrom`) through `TripSettingsSource`
+  (`modules/settings/trip-settings.ts`), never from
+  `defaultTripSettings`; a test that needs fixed numbers passes
+  `fixedTripSettings()`.
+- `POST /admin/v1/settings/{key}/preview` with `{ value }` checks a value
+  as a change would and stores nothing. For the four price values it
+  answers what one seat from Reykjavík to Akureyri (388 km, 3 seats)
+  costs at 100% and the highest level, as it is and as it would be
+  (`pricePreview`); for any other setting `price` is null and the page
+  says the effect in words. The page asks 300 ms after the last
+  keystroke.
+- `GET /v1/config` gives `maxSeats`; the app's steppers and its "at most"
+  texts read it (`useMaxSeats`), with the domain's default until the API
+  has answered. A trip the driver sees (`MyTrip`) carries its
+  `priceSettings`, which the Edit trip screens price with.
 
 ## Invite codes
 

@@ -4,14 +4,10 @@
 // than its seats now cost, so the level for new bookings falls to what
 // still fits.
 import { schema } from "@shareride/db";
-import {
-  defaultTripSettings,
-  fitLevelWithin,
-  segmentPrice,
-  type PriceSettings,
-} from "@shareride/domain";
+import { fitLevelWithin, segmentPrice } from "@shareride/domain";
 import { and, asc, eq } from "drizzle-orm";
 import { takingsOfTrip, type Transaction } from "../bookings/seats.ts";
+import { priceSettingsAt } from "../settings/trip-settings.ts";
 
 const { segments, tripChanges, trips } = schema;
 
@@ -22,21 +18,22 @@ const { segments, tripChanges, trips } = schema;
  * price level change with its reason; nobody is told, as for any price
  * change (spec 7, 3.3); the driver sees the new level on the trip. Call it
  * with the trip locked, after the booking's status, refund and seats are
- * stored. Settings are the defaults until operators can change them
- * (feature H4).
+ * stored. The prices follow the price values the trip was published under
+ * (spec 10, R10.3).
  */
-export async function refitToTripLimit(
-  tx: Transaction,
-  tripId: string,
-  now: Date,
-  settings: PriceSettings = defaultTripSettings,
-): Promise<void> {
+export async function refitToTripLimit(tx: Transaction, tripId: string, now: Date): Promise<void> {
   const [trip] = await tx
-    .select({ status: trips.status, seats: trips.capacity, priceLevel: trips.priceLevel })
+    .select({
+      status: trips.status,
+      seats: trips.capacity,
+      priceLevel: trips.priceLevel,
+      settingsVersion: trips.settingsVersion,
+    })
     .from(trips)
     .where(eq(trips.id, tripId));
   // A trip not open for bookings has no level for new ones to fit.
   if (trip === undefined || ["draft", "completed", "cancelled"].includes(trip.status)) return;
+  const settings = await priceSettingsAt(tx, trip.settingsVersion);
   const stretches = await tx
     .select({
       position: segments.position,

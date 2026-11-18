@@ -13,6 +13,13 @@ export function registerConfigRoutes(app: OpenAPIHono<AppEnv>, settings: Setting
   app.openapi(toOpenApiRoute(configRoute), async (c) => {
     const { values } = await settings.current();
     c.header("Cache-Control", `public, max-age=${String(configMaxAgeSeconds)}`);
-    return c.json({ beta: values.invite_code_required === 1, paused: pausedNow(values) }, 200);
+    return c.json(
+      {
+        maxSeats: values.max_capacity,
+        beta: values.invite_code_required === 1,
+        paused: pausedNow(values),
+      },
+      200,
+    );
   });
 }

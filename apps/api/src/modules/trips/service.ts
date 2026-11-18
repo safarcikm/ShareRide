@@ -21,10 +21,10 @@ import {
   suggestedPrice,
   type DistancesMissing,
   type Result,
-  type TripSettings,
 } from "@shareride/domain";
 import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { offeredStatuses, toSummary } from "../meeting-points/service.ts";
+import type { TripSettingsSource } from "../settings/trip-settings.ts";
 
 const { meetingPoints, legs } = schema;
 
@@ -57,9 +57,10 @@ export interface RouteService {
 export function createRouteService(dependencies: {
   readonly db: Database;
   readonly clock: () => Date;
-  readonly settings: TripSettings;
+  /** A route being planned is priced by the values now. */
+  readonly settings: TripSettingsSource;
 }): RouteService {
-  const { db, clock, settings } = dependencies;
+  const { db, clock } = dependencies;
   const offered = inArray(meetingPoints.status, offeredStatuses);
 
   /** The offered points among `ids`, by ID. */
@@ -97,6 +98,7 @@ export function createRouteService(dependencies: {
 
   return {
     async stopsAlong(from, to, date) {
+      const { settings } = await dependencies.settings.current();
       const ends = await offeredPoints([from, to]);
       const unavailable = [from, to].flatMap((id, index) => (ends.has(id) ? [] : [index]));
       if (unavailable.length > 0) return err({ code: "stop_unavailable", stops: unavailable });
@@ -135,6 +137,7 @@ export function createRouteService(dependencies: {
     },
 
     async quote(request) {
+      const { settings } = await dependencies.settings.current();
       const { seats, add } = request;
       const asked = request.priceLevel ?? 100;
       if (asked % settings.priceLevelStep !== 0) return err({ code: "price_level_invalid" });

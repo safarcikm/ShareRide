@@ -63,6 +63,12 @@ export const trips = pgTable(
     departsAt: at(),
     arrivesAt: at(),
     publishedAt: at(),
+    /**
+     * The settings version it was published under (spec 10, R10.3; ADR
+     * 0032): later price work on it uses that version's four price values.
+     * 0, the defaults, for a draft and for a trip from before.
+     */
+    settingsVersion: integer().notNull().default(0),
     cancelledAt: at(),
     /** Two hours after its last stop's planned time (spec 8, R8.1), as the job stored it. */
     completedAt: at(),

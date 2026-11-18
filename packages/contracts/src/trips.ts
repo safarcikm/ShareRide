@@ -272,6 +272,17 @@ export const myTripSchema = z.object({
    * sets the highest price level within the trip limit.
    */
   takings: moneySchema,
+  /**
+   * The price values its prices follow (rules P2 to P4): a published
+   * trip's are those of the day it was published (spec 10, R10.3), a
+   * draft's those of now.
+   */
+  priceSettings: z.object({
+    suggestedRatePerKm: z.int().positive(),
+    referenceCostPerKm: z.int().positive(),
+    priceStep: z.int().positive(),
+    priceLevelStep: z.int().positive(),
+  }),
   /** Requests waiting for the driver's answer, their deadline still to come (spec 5, 3.3). */
   openRequests: z.int().nonnegative(),
   /** The first deadline among those requests, for "Answer by" (spec 16, 3.3); null for none. */

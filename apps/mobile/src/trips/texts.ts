@@ -1,5 +1,6 @@
 import type { MyTrip, Quote } from "@shareride/contracts";
-import { defaultTripSettings, noteMaxLength } from "@shareride/domain";
+import { noteMaxLength } from "@shareride/domain";
+import { maxSeatsLastRead } from "@/beta/config";
 import type { Locale, MessageKey, Translate } from "@shareride/i18n";
 
 export const luggageKeys = {
@@ -114,9 +115,7 @@ const isIn = <T extends object>(code: string, keys: T): code is Extract<keyof T,
 export function problemText(t: Translate, code: string, name: string): string {
   if (isIn(code, plainProblems)) return t(plainProblems[code]);
   if (isIn(code, stopProblems)) return t(stopProblems[code], { name });
-  if (code === "seats_invalid") {
-    return t("trip.problem.seats_invalid", { max: defaultTripSettings.maxSeats });
-  }
+  if (code === "seats_invalid") return t("trip.problem.seats_invalid", { max: maxSeatsLastRead() });
   if (code === "note_too_long") return t("trip.note.tooLong", { max: noteMaxLength });
   return t("error.generic");
 }

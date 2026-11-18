@@ -545,10 +545,19 @@ before merging.
 
 ### PR 11: `feat(settings)`: prices from the settings, with versions
 
-- [ ] The price values and `max_capacity` in the catalogue with the
+- [x] The price values and `max_capacity` in the catalogue with the
       cross-check; `bundles.ts`; `trips.settings_version`; the preview
       route and the page's effect; `GET /v1/config` values and the app
       reading them
+- As built: `GET /v1/config` gains only `maxSeats`. The app already
+  takes the level step and the prices of a draft from the quote, and a
+  trip the driver sees now carries its own four price values
+  (`priceSettings`), so no other price value is needed there. A trip
+  posted again is a new trip and takes the values as they are now. No
+  browser journey changes the rate: the browser tests share one server,
+  and a changed rate would move the prices under the journeys running at
+  the same time; the integration tests and the app's and the console's
+  tests cover it instead.
 - Verify: integration tests (a trip published before a rate change keeps
   its prices through a level change, and a trip published after uses the
   new rate; the cross-check refuses a rate the largest car cannot carry);

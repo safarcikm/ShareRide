@@ -1,19 +1,25 @@
 import {
   adminChangeSettingRoute,
+  adminPreviewSettingRoute,
   adminSettingsHistoryRoute,
   adminSettingsRoute,
   type AdminSetting,
   type AdminSettingChange,
+  type AdminSettingPreview,
   type AdminSettings,
 } from "@shareride/contracts";
 import {
+  checkSettingValue,
+  defaultSettingValues,
   icelandDate,
+  isPriceSettingKey,
   isSettingKey,
   settingDefinitions,
   settingGroups,
   settingReasonMaxLength,
+  type SettingValues,
 } from "@shareride/domain";
-import { formatClock, formatCount, formatDate } from "@shareride/i18n";
+import { formatClock, formatCount, formatDate, formatMoney } from "@shareride/i18n";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useConsole } from "../../console.tsx";
 import { groupKeys, settingHelp, settingName, valueFieldLabel, valueText } from "./texts.ts";
@@ -22,6 +28,17 @@ type Loaded =
   | { readonly state: "loading" }
   | { readonly state: "failed" }
   | { readonly state: "ready"; readonly settings: AdminSettings };
+
+/** Every value as the page loaded it, for the check across values. */
+const valuesOf = (settings: AdminSettings): SettingValues => ({
+  ...defaultSettingValues,
+  ...Object.fromEntries(
+    settings.settings.filter(({ key }) => isSettingKey(key)).map(({ key, value }) => [key, value]),
+  ),
+});
+
+/** How long the page waits after a keystroke before it asks for the example price. */
+const previewDelayMs = 300;
 
 type History =
   | { readonly state: "loading" }
@@ -118,7 +135,7 @@ export function SettingsPage() {
         </div>
       ) : (
         settingGroups.map((group) => {
-          // One group today; the others join it in later pull requests.
+          // A group with no settings yet has no heading.
           const inGroup = loaded.settings.settings.filter(
             (setting) => (setting.group as string) === group,
           );
@@ -129,6 +146,7 @@ export function SettingsPage() {
               title={t(groupKeys[group])}
               settings={inGroup}
               version={loaded.settings.version}
+              values={valuesOf(loaded.settings)}
               editing={editing}
               onEdit={(key) => {
                 setEditing(key);
@@ -209,6 +227,7 @@ interface GroupProps {
   readonly title: string;
   readonly settings: readonly AdminSetting[];
   readonly version: number;
+  readonly values: SettingValues;
   readonly editing: string | null;
   readonly onEdit: (key: string | null) => void;
   readonly onSaved: (key: string, settings: AdminSettings) => void;
@@ -239,7 +258,10 @@ function Group({ title, settings, editing, onEdit, ...rest }: GroupProps) {
   );
 }
 
-interface SettingCardProps extends Pick<GroupProps, "version" | "onSaved" | "onChangedMeanwhile"> {
+interface SettingCardProps extends Pick<
+  GroupProps,
+  "version" | "values" | "onSaved" | "onChangedMeanwhile"
+> {
   readonly setting: AdminSetting;
   readonly open: boolean;
   readonly onOpen: (open: boolean) => void;
@@ -290,14 +312,28 @@ function SettingCard({ setting, open, onOpen, ...rest }: SettingCardProps) {
   );
 }
 
-interface ChangeFormProps extends Pick<GroupProps, "version" | "onSaved" | "onChangedMeanwhile"> {
+interface ChangeFormProps extends Pick<
+  GroupProps,
+  "version" | "values" | "onSaved" | "onChangedMeanwhile"
+> {
   readonly setting: AdminSetting;
   readonly onCancel: () => void;
 }
 
 type FormProblem = "save_failed" | "unchanged" | null;
 
-function ChangeForm({ setting, version, onSaved, onChangedMeanwhile, onCancel }: ChangeFormProps) {
+type PriceEffect =
+  | { readonly state: "ready"; readonly price: NonNullable<AdminSettingPreview["price"]> }
+  | { readonly state: "failed" };
+
+function ChangeForm({
+  setting,
+  version,
+  values,
+  onSaved,
+  onChangedMeanwhile,
+  onCancel,
+}: ChangeFormProps) {
   const { t, locale, call } = useConsole();
   const isSwitch = setting.kind === "switch";
   const [typed, setTyped] = useState(String(setting.value));
@@ -318,6 +354,15 @@ function ChangeForm({ setting, version, onSaved, onChangedMeanwhile, onCancel }:
       value >= setting.min &&
       value <= setting.max &&
       (value - setting.min) % setting.step === 0);
+  const changed = valueFits && value !== setting.value;
+  // The one check across values (ADR 0032), before anything is sent.
+  const across = changed ? checkSettingValue(setting.key, value, values) : null;
+  const highestRate =
+    across !== null && !across.ok && across.error.code === "suggested_over_cap"
+      ? across.error.highestRate
+      : null;
+  const previewed = changed && highestRate === null && isPriceSettingKey(setting.key);
+  const [effect, setEffect] = useState<{ readonly of: number; readonly effect: PriceEffect }>();
   const why = reason.trim();
   const reasonProblem =
     why === ""
@@ -332,10 +377,37 @@ function ChangeForm({ setting, version, onSaved, onChangedMeanwhile, onCancel }:
     (isSwitch ? reasonInput.current : valueInput.current)?.focus();
   }, [isSwitch]);
 
+  // A price value's effect is the example's price, as it is and as it would be (spec 10, 3.2.2).
+  useEffect(() => {
+    if (!previewed) return;
+    let stale = false;
+    const timer = setTimeout(() => {
+      void call(adminPreviewSettingRoute, {
+        params: { key: setting.key },
+        body: { value },
+      }).then((result) => {
+        if (stale) return;
+        setEffect({
+          of: value,
+          effect:
+            result.ok && result.data.price !== null
+              ? { state: "ready", price: result.data.price }
+              : { state: "failed" },
+        });
+      });
+    }, previewDelayMs);
+    return () => {
+      stale = true;
+      clearTimeout(timer);
+    };
+  }, [previewed, value, setting.key, call]);
+  const priceEffect = previewed && effect?.of === value ? effect.effect : null;
+  const money = (amount: number) => formatMoney({ amount, currency: "ISK" }, locale);
+
   async function save() {
     setChecked(true);
     setProblem(null);
-    if (!valueFits) {
+    if (!valueFits || highestRate !== null) {
       valueInput.current?.focus();
       return;
     }
@@ -382,8 +454,10 @@ function ChangeForm({ setting, version, onSaved, onChangedMeanwhile, onCancel }:
             max={setting.max}
             step={setting.step}
             value={typed}
-            aria-invalid={checked && !valueFits}
-            aria-describedby={checked && !valueFits ? ids.valueError : undefined}
+            aria-invalid={(checked && !valueFits) || highestRate !== null}
+            aria-describedby={
+              (checked && !valueFits) || highestRate !== null ? ids.valueError : undefined
+            }
             onChange={(event) => {
               setTyped(event.target.value);
             }}
@@ -395,13 +469,36 @@ function ChangeForm({ setting, version, onSaved, onChangedMeanwhile, onCancel }:
                 max: formatCount(setting.max, locale),
               })}
             </p>
+          ) : highestRate !== null ? (
+            <p id={ids.valueError} className="field-error type-small" role="alert">
+              {t("admin.settings.suggestedOverCap", { rate: formatCount(highestRate, locale) })}
+            </p>
           ) : null}
         </div>
       )}
-      {valueFits && value !== setting.value ? (
-        <p className="notice type-body">
-          {t("admin.settings.effect", { before: shown(setting.value), after: shown(value) })}
-        </p>
+      {changed && highestRate === null ? (
+        <div className="notice stack" aria-live="polite">
+          <p className="type-body">
+            {t("admin.settings.effect", { before: shown(setting.value), after: shown(value) })}
+          </p>
+          {priceEffect === null ? null : priceEffect.state === "failed" ? (
+            <p className="type-body">{t("admin.settings.effectFailed")}</p>
+          ) : (
+            <>
+              <p className="type-body">
+                {t("admin.settings.priceEffect", {
+                  distance: formatCount(priceEffect.price.distanceKm, locale),
+                  seats: priceEffect.price.seats,
+                  before: money(priceEffect.price.before.price),
+                  after: money(priceEffect.price.after.price),
+                  beforeLevel: priceEffect.price.before.highestLevel,
+                  afterLevel: priceEffect.price.after.highestLevel,
+                })}
+              </p>
+              <p className="type-body">{t("admin.settings.priceEffectNew")}</p>
+            </>
+          )}
+        </div>
       ) : null}
       <div className="field">
         <label htmlFor={ids.reason} className="type-label">

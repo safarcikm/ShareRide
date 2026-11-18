@@ -4,12 +4,13 @@ import {
   tripSearchRoute,
   type TripSearchResult,
 } from "@shareride/contracts";
-import { defaultTripSettings, timesOfDay, type TimeOfDay } from "@shareride/domain";
+import { timesOfDay, type TimeOfDay } from "@shareride/domain";
 import { capitalised, formatDay, formatShortDay } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSession, useSessionState } from "@/auth/session";
+import { useMaxSeats } from "@/beta/config";
 import { offerRide } from "@/drive/offer-ride";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
@@ -56,6 +57,7 @@ const timeKeys = {
  */
 export default function SearchResults() {
   const { locale, t } = useLanguage();
+  const maxSeats = useMaxSeats();
   const palette = usePalette();
   const session = useSession();
   const wide = useWideScreen();
@@ -70,7 +72,7 @@ export default function SearchResults() {
   const { from, to } = params;
   // A link cut short or changed by hand searches any day.
   const date = /^\d{4}-\d{2}-\d{2}$/.test(params.date ?? "") ? params.date : undefined;
-  const seats = Math.min(Math.max(Number(params.seats) || 1, 1), defaultTripSettings.maxSeats);
+  const seats = Math.min(Math.max(Number(params.seats) || 1, 1), maxSeats);
   const searched: SearchedNames = { from: params.fromName ?? "", to: params.toName ?? "" };
   const [sort, setSort] = useState<Sort>("departure");
   const [instant, setInstant] = useState(false);

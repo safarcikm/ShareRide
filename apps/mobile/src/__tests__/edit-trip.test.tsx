@@ -137,6 +137,36 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     expect(changes(client)).toEqual([]);
   });
 
+  it("prices with the values the trip was published under, whatever they are now (R10.3)", async () => {
+    await openPart("Change the price", {
+      ...north,
+      priceSettings: { ...north.priceSettings, suggestedRatePerKm: 20, priceLevelStep: 20 },
+    });
+    // 100 km a stretch at 20 kr per km: 2,000 ISK a stretch, 6,000 for the three.
+    expect(screen.getByTestId("whole-route-price")).toHaveTextContent("6,000 ISK");
+    await fireEvent.press(screen.getByRole("button", { name: "Raise the price" }));
+    // One level step of 20%: 2,400 ISK a stretch.
+    expect(screen.getByTestId("whole-route-price")).toHaveTextContent("7,200 ISK");
+  });
+
+  it("offers no more seats than the operator's limit, read from the settings (rule S1)", async () => {
+    const app = await renderApp(tripPage, {
+      me: completeMe,
+      setUp: (client) => {
+        client.answer("/v1/config", () => ok(200, { beta: false, paused: [], maxSeats: 4 }));
+        tripsApi(client, [north]);
+        driverApi(client, []);
+        searchApi(client);
+      },
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Edit trip" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "Change the seats" }));
+    expect(await screen.findByRole("header", { name: "Change the seats" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "One seat more" }));
+    expect(screen.getByRole("button", { name: "One seat more" })).toBeDisabled();
+    expect(app.client.calls.filter((call) => call.path === "/v1/config")).not.toHaveLength(0);
+  });
+
   it("offers no fewer seats than are taken, and says when more seats lower the price level (rules S5, P4)", async () => {
     const { client } = await openPart("Change the seats", {
       ...north,

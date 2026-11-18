@@ -4,18 +4,13 @@ import {
   type MyTrip,
   type Vehicle,
 } from "@shareride/contracts";
-import {
-  bookingModes,
-  checkNote,
-  defaultTripSettings,
-  type BookingMode,
-  type TripPreferences,
-} from "@shareride/domain";
+import { bookingModes, checkNote, type BookingMode, type TripPreferences } from "@shareride/domain";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
+import { useMaxSeats } from "@/beta/config";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
 import { RadioCard } from "@/components/radio-card";
@@ -76,6 +71,7 @@ function SeatsStep({
   readonly fromReview: boolean;
 }) {
   const { t } = useLanguage();
+  const maxSeats = useMaxSeats();
   const session = useSession();
   const [seats, setSeats] = useState(trip.seats);
   const [bookingMode, setBookingMode] = useState<BookingMode>(trip.bookingMode);
@@ -138,7 +134,7 @@ function SeatsStep({
         label={t("trip.seatsOffered")}
         value={seats}
         min={1}
-        max={defaultTripSettings.maxSeats}
+        max={maxSeats}
         onChange={setSeats}
         valueText={t("trip.seats.count", { count: seats })}
         fewerLabel={t("trip.seats.fewer")}

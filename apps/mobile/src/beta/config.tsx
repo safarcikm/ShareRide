@@ -1,4 +1,5 @@
 import { configRoute, type Config } from "@shareride/contracts";
+import { defaultTripSettings } from "@shareride/domain";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useMe, useSession } from "@/auth/session";
@@ -8,10 +9,19 @@ import { useLanguage } from "@/i18n/language";
 import { minTouchTarget } from "@/theme/tokens";
 import { useOpenFeedback } from "./feedback";
 
-/** Until the API has answered, and if it cannot be reached: nothing special to show. */
-const quiet: Config = { beta: false, paused: [] };
+/**
+ * Until the API has answered, and if it cannot be reached: nothing special
+ * to show, and the seat limit the rules start with.
+ */
+const quiet: Config = { beta: false, paused: [], maxSeats: defaultTripSettings.maxSeats };
 
 const ConfigContext = createContext<Config>(quiet);
+
+// For a text made outside a component, such as a refusal's.
+let lastMaxSeats = quiet.maxSeats;
+
+/** The seat limit as the app last read it. In a component, use `useMaxSeats`. */
+export const maxSeatsLastRead = (): number => lastMaxSeats;
 
 /** How often the settings are read again. */
 export const configEveryMs = 5 * 60_000;
@@ -30,7 +40,9 @@ export function ConfigProvider({ children }: { readonly children: ReactNode }) {
       session
         .call(configRoute, {})
         .then((result) => {
-          if (current && result.ok) setConfig(result.data);
+          if (!current || !result.ok) return;
+          lastMaxSeats = result.data.maxSeats;
+          setConfig(result.data);
         })
         // Not reached: the app shows what it last knew, or nothing special.
         .catch(() => undefined);
@@ -49,6 +61,11 @@ export function ConfigProvider({ children }: { readonly children: ReactNode }) {
 
 export function useConfig(): Config {
   return useContext(ConfigContext);
+}
+
+/** The seats a trip can offer and a booking can take, at most (rule S1), as the operator has it. */
+export function useMaxSeats(): number {
+  return useContext(ConfigContext).maxSeats;
 }
 
 /**

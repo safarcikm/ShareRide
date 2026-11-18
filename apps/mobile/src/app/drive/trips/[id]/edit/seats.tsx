@@ -1,5 +1,6 @@
-import { defaultTripSettings, fitLevelWithin } from "@shareride/domain";
+import { fitLevelWithin } from "@shareride/domain";
 import { useState } from "react";
+import { useMaxSeats } from "@/beta/config";
 import { Notice } from "@/components/notice";
 import { Stepper } from "@/components/stepper";
 import { Body } from "@/components/text";
@@ -24,10 +25,11 @@ export default function EditSeatsScreen() {
 
 function EditSeats({ trip }: { readonly trip: TripToChange }) {
   const { t } = useLanguage();
+  const maxSeats = useMaxSeats();
   const [seats, setSeats] = useState(trip.seats);
   // Requests hold seats too (rule S1).
   const taken = Math.max(0, ...trip.segments.map((segment) => segment.seatsTaken));
-  const fitted = fitLevelWithin(trip.priceLevel, tripLoad(trip, seats), defaultTripSettings);
+  const fitted = fitLevelWithin(trip.priceLevel, tripLoad(trip, seats), trip.priceSettings);
   return (
     <ChangePartScreen
       trip={trip}
@@ -38,7 +40,7 @@ function EditSeats({ trip }: { readonly trip: TripToChange }) {
         label={t("trip.seatsOffered")}
         value={seats}
         min={Math.max(1, taken)}
-        max={defaultTripSettings.maxSeats}
+        max={Math.max(maxSeats, trip.seats)}
         onChange={setSeats}
         valueText={t("trip.seats.count", { count: seats })}
         fewerLabel={t("trip.seats.fewer")}

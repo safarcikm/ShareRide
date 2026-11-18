@@ -19,6 +19,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useMaxSeats } from "@/beta/config";
 import { Calendar } from "@/components/calendar";
 import { Card } from "@/components/card";
 import { Chip } from "@/components/chip";
@@ -75,6 +76,7 @@ export function useRouteSearch(
   initial?: SearchQuery,
 ): RouteSearch {
   const { locale, t } = useLanguage();
+  const maxSeats = useMaxSeats();
   const today = dayOf(now());
   const [from, setFrom] = useState<SearchEnd | null>(initial?.from ?? null);
   const [to, setTo] = useState<SearchEnd | null>(initial?.to ?? null);
@@ -175,7 +177,7 @@ export function useRouteSearch(
       label={t("search.seats")}
       value={seats}
       min={1}
-      max={defaultTripSettings.maxSeats}
+      max={maxSeats}
       onChange={setSeats}
       valueText={t("search.seatCount", { count: seats })}
       fewerLabel={t("search.fewerSeats")}

@@ -12,6 +12,7 @@ export const settingsPath = "/admin/settings";
 export const groupKeys = {
   switches: "admin.settings.group.switches",
   beta: "admin.settings.group.beta",
+  prices: "admin.settings.group.prices",
 } as const satisfies Record<SettingGroup, MessageKey>;
 
 interface SettingTexts {
@@ -53,6 +54,26 @@ const settingTexts = {
     name: "admin.settings.name.beta_max_testers",
     help: "admin.settings.help.beta_max_testers",
   },
+  suggested_rate: {
+    name: "admin.settings.name.suggested_rate",
+    help: "admin.settings.help.suggested_rate",
+  },
+  reference_cost_per_km: {
+    name: "admin.settings.name.reference_cost_per_km",
+    help: "admin.settings.help.reference_cost_per_km",
+  },
+  price_step: {
+    name: "admin.settings.name.price_step",
+    help: "admin.settings.help.price_step",
+  },
+  price_level_step: {
+    name: "admin.settings.name.price_level_step",
+    help: "admin.settings.help.price_level_step",
+  },
+  max_capacity: {
+    name: "admin.settings.name.max_capacity",
+    help: "admin.settings.help.max_capacity",
+  },
 } as const satisfies Record<SettingKey, SettingTexts>;
 
 interface UnitTexts {
@@ -64,6 +85,10 @@ interface UnitTexts {
 
 const unitTexts = {
   people: { value: "admin.settings.unit.people", field: "admin.settings.newValue.people" },
+  kr_per_km: { value: "admin.settings.unit.kr_per_km", field: "admin.settings.newValue.kr_per_km" },
+  kr: { value: "admin.settings.unit.kr", field: "admin.settings.newValue.kr" },
+  percent: { value: "admin.settings.unit.percent", field: "admin.settings.newValue.percent" },
+  seats: { value: "admin.settings.unit.seats", field: "admin.settings.newValue.seats" },
 } as const satisfies Record<SettingUnit, UnitTexts>;
 
 const isUnit = (unit: string | null): unit is SettingUnit =>

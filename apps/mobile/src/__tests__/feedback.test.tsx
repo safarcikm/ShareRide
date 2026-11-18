@@ -81,7 +81,7 @@ function start(
     setUp: (client: FakeClient) => {
       client.answer("/v1/feedback", answer, "post");
       client.answer("/v1/me/feedback", () => ok(200, { feedback: mine }));
-      client.answer("/v1/config", () => ok(200, { beta, paused: [] }));
+      client.answer("/v1/config", () => ok(200, { beta, paused: [], maxSeats: 8 }));
     },
   });
 }

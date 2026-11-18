@@ -1,6 +1,7 @@
 import {
   adminChangeSettingRoute,
   adminMeRoute,
+  adminPreviewSettingRoute,
   adminSettingsHistoryRoute,
   adminSettingsRoute,
   type AdminMe,
@@ -42,6 +43,22 @@ const testers: AdminSetting = {
   step: 1,
 };
 
+const price = (key: string, more: Partial<AdminSetting>): AdminSetting => ({
+  key,
+  group: "prices",
+  kind: "number",
+  unit: "kr_per_km",
+  value: 15,
+  default: 15,
+  min: 5,
+  max: 30,
+  step: 1,
+  ...more,
+});
+const rate = price("suggested_rate", {});
+const cost = price("reference_cost_per_km", { value: 150, default: 150, min: 50, max: 150 });
+const seats = price("max_capacity", { unit: "seats", value: 8, default: 8, min: 1, max: 8 });
+
 const changeOf = (more: Partial<AdminSettingChange> = {}): AdminSettingChange => ({
   version: 1,
   key: "beta_max_testers",
@@ -56,7 +73,11 @@ const changeOf = (more: Partial<AdminSettingChange> = {}): AdminSettingChange =>
 function start(path = "/admin/settings") {
   window.history.replaceState(null, "", path);
   const api = createFakeApi();
-  const state = { version: 1, settings: [required, testers], history: [changeOf()] };
+  const state = {
+    version: 1,
+    settings: [required, testers, rate, cost, seats],
+    history: [changeOf()],
+  };
   api.on(adminMeRoute, { status: 200, data: anna });
   api.on(adminSettingsRoute, () => ({
     status: 200,
@@ -217,5 +238,60 @@ describe("the Settings page", () => {
       expect(list.getAllByRole("listitem")).toHaveLength(3);
     });
     expect(screen.queryByRole("button", { name: "Show older changes" })).toBeNull();
+  });
+
+  it("shows what a price value does to the example trip before it is saved", async () => {
+    const { api } = start();
+    expect(await screen.findByRole("heading", { name: "Prices and seats", level: 2 })).toBeTruthy();
+    const card_ = await card("Suggested rate");
+    expect(card_.getByText("15 kr per km")).toBeTruthy();
+    api.on(adminPreviewSettingRoute, {
+      status: 200,
+      data: {
+        price: {
+          distanceKm: 388,
+          seats: 3,
+          before: { price: 5800, highestLevel: 250 },
+          after: { price: 4700, highestLevel: 310 },
+        },
+      },
+    });
+    fireEvent.click(card_.getByRole("button", { name: "Change Suggested rate" }));
+    fireEvent.change(card_.getByLabelText("New value, in kr per km"), { target: { value: "12" } });
+    expect(card_.getByText("Changes from 15 kr per km to 12 kr per km.")).toBeTruthy();
+    expect(
+      await card_.findByText(
+        "Reykjavík to Akureyri (388 km) with 3 seats: a seat at 100% costs 5,800 ISK now and would cost 4,700 ISK. The highest price level is 250% now and would be 310%.",
+      ),
+    ).toBeTruthy();
+    expect(card_.getByText(/Trips already published keep their prices/)).toBeTruthy();
+    expect(api.called(adminPreviewSettingRoute).map((call) => call.input)).toEqual([
+      { params: { key: "suggested_rate" }, body: { value: 12 } },
+    ]);
+  });
+
+  it("refuses a suggested rate the largest car's cap cannot carry, and sends nothing", async () => {
+    const { api } = start();
+    const card_ = await card("Suggested rate");
+    fireEvent.click(card_.getByRole("button", { name: "Change Suggested rate" }));
+    fireEvent.change(card_.getByLabelText("New value, in kr per km"), { target: { value: "17" } });
+    fireEvent.change(card_.getByLabelText("Why"), { target: { value: "Fuel went up" } });
+    expect(card_.getByRole("alert").textContent).toContain(
+      "the suggested rate can be 16 kr per km at most",
+    );
+    expect(card_.queryByText(/Changes from/)).toBeNull();
+    fireEvent.click(card_.getByRole("button", { name: "Save" }));
+    expect(api.called(adminChangeSettingRoute)).toHaveLength(0);
+    expect(api.called(adminPreviewSettingRoute)).toHaveLength(0);
+  });
+
+  it("says a value's effect in words when it has no example price", async () => {
+    const { api } = start();
+    const card_ = await card("Most seats on a trip");
+    expect(card_.getByText("8 seats")).toBeTruthy();
+    fireEvent.click(card_.getByRole("button", { name: "Change Most seats on a trip" }));
+    fireEvent.change(card_.getByLabelText("New value, in seats"), { target: { value: "7" } });
+    expect(card_.getByText("Changes from 8 seats to 7 seats.")).toBeTruthy();
+    expect(api.called(adminPreviewSettingRoute)).toHaveLength(0);
   });
 });

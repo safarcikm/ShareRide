@@ -379,6 +379,13 @@
       "when": 1795001344689,
       "tag": "0053_announcements",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1795002948615,
+      "tag": "0054_trip_settings_version",
+      "breakpoints": true
     }
   ]
 }

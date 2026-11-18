@@ -12,7 +12,6 @@ import {
   defaultReviewSettings,
   defaultSearchSettings,
   defaultTripDaySettings,
-  defaultTripSettings,
   inviteCheckLimitsPerAddress,
   operatorSignInLimitsPerAddress,
   searchLimitsPerAddress,
@@ -86,6 +85,7 @@ import { createLegalService, registerLegalRoutes } from "./modules/legal/index.t
 import {
   createPausedCheck,
   createSettingsService,
+  tripSettingsSource,
   registerConfigRoutes,
   registerSettingsAdminRoutes,
 } from "./modules/settings/index.ts";
@@ -423,7 +423,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       clientKey: (c) => features.hasher("search-address", addressBlock(features.clientAddress(c))),
       standing: (userId) => checkStanding(features.db, userId, features.clock()),
     });
-    const settings = defaultTripSettings;
+    const settings = tripSettingsSource(operatorSettings);
     registerTripRoutes(app, createRouteService({ ...features, settings }), requireAuth);
     const trips = createTripService({
       ...features,

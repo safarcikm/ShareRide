@@ -10,6 +10,8 @@ import { defineRoute } from "./route.ts";
 const errors = { schema: errorResponseSchema } as const;
 
 export const configSchema = z.object({
+  /** The seats a trip can offer and a booking can take, at most (rule S1). */
+  maxSeats: z.int().min(1),
   /** Whether creating an account needs an invite code (spec 12, R12.1). */
   beta: z.boolean(),
   /** What is paused for a short while, for the app's banners (spec 10, 3.3). */
@@ -85,7 +87,7 @@ export const adminChangeSettingRoute = defineRoute({
     200: { description: "The settings after the change", schema: adminSettingsSchema },
     400: {
       description:
-        "validation_failed: a value out of its range or off its step, or a reason missing or too long",
+        "validation_failed: a value out of its range or off its step, a suggested rate the largest car's cap cannot carry, or a reason missing or too long",
       ...errors,
     },
     401: { description: "operator_unauthenticated", ...errors },
@@ -95,6 +97,53 @@ export const adminChangeSettingRoute = defineRoute({
         "settings_changed: a setting was changed since the console loaded them; unchanged: it has this value already",
       ...errors,
     },
+  },
+});
+
+const pricePreviewSchema = z.object({
+  /** One seat for the whole example route at 100%, in krónur. */
+  price: z.int(),
+  /** The highest price level a driver offering the example's seats can choose, in percent. */
+  highestLevel: z.int(),
+});
+
+export const adminSettingPreviewSchema = z.object({
+  /**
+   * For a price value: Reykjavík to Akureyri with 3 seats, as it is and as
+   * it would be. Null for a setting whose effect the console says in words.
+   */
+  price: z
+    .object({
+      distanceKm: z.int(),
+      seats: z.int(),
+      before: pricePreviewSchema,
+      after: pricePreviewSchema,
+    })
+    .nullable(),
+});
+
+export type AdminSettingPreview = z.infer<typeof adminSettingPreviewSchema>;
+
+export const adminPreviewSettingRoute = defineRoute({
+  method: "post",
+  path: "/admin/v1/settings/{key}/preview",
+  summary: "The effect of a new value, before it is saved; nothing changes",
+  tags: ["admin", "settings"],
+  auth: "operator",
+  request: {
+    params: z.object({ key: z.string().max(100) }),
+    body: z.object({ value: z.number() }),
+  },
+  responses: {
+    200: { description: "The effect", schema: adminSettingPreviewSchema },
+    400: {
+      description:
+        "validation_failed: a value out of its range or off its step, or a suggested rate the largest car's cap cannot carry",
+      ...errors,
+    },
+    401: { description: "operator_unauthenticated", ...errors },
+    404: { description: "not_found: no such setting", ...errors },
+    409: { description: "unchanged: it has this value already", ...errors },
   },
 });
 
