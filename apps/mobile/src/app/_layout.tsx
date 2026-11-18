@@ -88,6 +88,7 @@ function Navigation() {
         <Stack.Screen name="settings" />
         <Stack.Screen name="settings/email" />
         <Stack.Screen name="settings/feedback" />
+        <Stack.Screen name="settings/beta-news" />
         <Stack.Screen name="feedback" />
         <Stack.Screen name="settings/privacy/index" />
         <Stack.Screen name="settings/privacy/download" />

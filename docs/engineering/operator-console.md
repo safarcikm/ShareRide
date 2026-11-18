@@ -751,6 +751,47 @@ Spec 10 (3.4), built in milestone 11 (PR 9).
   criteria, a corridor and week picker, bars per week for one figure in
   the page's own SVG, the table of every figure, and Download CSV.
 
+## Announcements
+
+Spec 10 (3.5; R10.7), built in milestone 11 (PR 10).
+
+- The rules are in `packages/domain/src/beta/announcements.ts`: the
+  audiences, `checkAnnouncement` (a title of 1 to 80 and a message of 1
+  to 1 000 characters in both languages; a corridor for that audience),
+  `receivesAnnouncement` and `announcementPreview` (a push's 140
+  characters).
+- `modules/beta/announcements.ts` is the service. `announcementReaders`
+  asks the database who an audience is now: accounts that are active,
+  not waiting to be deleted and without "Beta news" off; for a corridor,
+  those with a published trip or a booking whose two ends are two
+  different places of it, as the weekly figures count. The reach and the
+  worker both use it.
+- Routes: `GET` and `POST /admin/v1/announcements`, `PUT .../{id}` (a
+  draft only; `already_sent` after), `GET .../{id}/reach`, `POST
+  .../{id}/test` and `POST .../{id}/send`. Send sets `sent_at` and
+  `reach` and writes `AnnouncementSent` in one transaction; a second
+  Send answers 409 `already_sent`. Audit entries: `announcement.created`,
+  `.changed`, `.tested` and `.sent`, with the audience and the reach,
+  never the texts.
+- The worker makes one `announcement` notification per person, keyed
+  `announcement:<id>` and the person, so nobody is told twice whatever
+  runs twice. It goes by push (the title and the start of the message)
+  and by email to a verified address (the whole message, then spec 10's
+  footer), in the person's language, and is dropped if they turned
+  "Beta news" off before it went out. "Send to me" writes
+  `AnnouncementTested`: the operator gets `announcement_test`, marked
+  "Test:", with both languages in the email.
+- The list shows a sent announcement's stored reach and, from the
+  delivery log, how many pushes and emails were delivered; the log is
+  kept 90 days, after which the counts read as gone.
+- In the app, `GET /v1/me/announcements` gives the announcements sent to
+  the person (from their notifications, so also 90 days) for the Beta
+  news page (`/settings/beta-news`), which a push opens. `PATCH
+  /v1/me/notification-settings` takes `reminders`, `betaNews` or both,
+  and leaves alone what is not sent.
+- The Announcements page (`apps/admin/src/pages/announcements/`) has the
+  drafts with their reach, the form, and what was sent.
+
 ## Users, trips and decline rates
 
 `apps/api/src/modules/moderation/people-routes.ts` holds the console's

@@ -1,3 +1,8 @@
+export {
+  registerAnnouncementAdminRoutes,
+  registerAnnouncementRoutes,
+} from "./announcement-routes.ts";
+export { createAnnouncementService, type AnnouncementService } from "./announcements.ts";
 export { createFeedbackService, type FeedbackService } from "./feedback.ts";
 export { registerFeedbackAdminRoutes, registerFeedbackRoutes } from "./feedback-routes.ts";
 export { registerInviteAdminRoutes } from "./admin-routes.ts";

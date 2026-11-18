@@ -71,8 +71,11 @@ import {
   registerReliabilityAdminRoutes,
 } from "./modules/people/index.ts";
 import {
+  createAnnouncementService,
   createFeedbackService,
   createInviteService,
+  registerAnnouncementAdminRoutes,
+  registerAnnouncementRoutes,
   registerFeedbackAdminRoutes,
   registerFeedbackRoutes,
   registerInviteAdminRoutes,
@@ -493,6 +496,9 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     const feedback = createFeedbackService(features);
     registerFeedbackRoutes(app, { feedback, requireAuth });
     registerFeedbackAdminRoutes(app, { ...features, feedback, requireOperator });
+    const announcements = createAnnouncementService(features);
+    registerAnnouncementRoutes(app, { announcements, requireAuth });
+    registerAnnouncementAdminRoutes(app, { ...features, announcements, requireOperator });
     registerReviewRoutes(
       app,
       createReviewService({ ...features, settings: defaultReviewSettings }),

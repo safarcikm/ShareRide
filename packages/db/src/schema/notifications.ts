@@ -15,7 +15,7 @@ import {
 import { sessions } from "./auth.ts";
 import { bookings } from "./bookings.ts";
 import { messages } from "./chat.ts";
-import { feedback } from "./beta.ts";
+import { announcements, feedback } from "./beta.ts";
 import { privacyRequests } from "./privacy.ts";
 import { at, id, oneOf, timestamps } from "./columns.ts";
 import { meetingPoints } from "./meeting-points.ts";
@@ -84,6 +84,8 @@ export const notifications = pgTable(
     privacyRequestId: uuid().references(() => privacyRequests.id, { onDelete: "cascade" }),
     /** For a reply to feedback: the feedback, whose reply the email gives (spec 12, 3.3.4). */
     feedbackId: uuid().references(() => feedback.id, { onDelete: "cascade" }),
+    /** For an announcement: the one whose texts are sent (spec 10, 3.5). */
+    announcementId: uuid().references(() => announcements.id, { onDelete: "cascade" }),
     /**
      * For a paused meeting point: the point, which the text names with its
      * reason (spec 2, 3.6.4). Points are never deleted (R2.2).
@@ -104,6 +106,8 @@ export const notifications = pgTable(
     index("notifications_moderation_action_index").on(table.moderationActionId),
     index("notifications_privacy_request_index").on(table.privacyRequestId),
     index("notifications_feedback_index").on(table.feedbackId),
+    // The announcements sent to a person, and an announcement's deliveries.
+    index("notifications_announcement_index").on(table.announcementId, table.recipientId),
     // The clean-up finds old ones.
     index("notifications_created_index").on(table.createdAt),
   ],

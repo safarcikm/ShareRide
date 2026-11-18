@@ -19,7 +19,7 @@ import { Body, sectionLevel, Title } from "@/components/text";
 import { TextLink } from "@/components/text-link";
 import { useLanguage } from "@/i18n/language";
 import { BackToMenu } from "@/navigation/back-to-menu";
-import { TripReminders } from "@/notifications/trip-reminders";
+import { NotificationSwitches } from "@/notifications/notification-switches";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
@@ -135,7 +135,7 @@ function Settings({ me }: { readonly me: Me }) {
       </View>
       <View style={styles.section}>
         {heading(t("settings.notifications"))}
-        <TripReminders />
+        <NotificationSwitches />
       </View>
       <View style={styles.section}>
         {heading(t("safety.title"))}

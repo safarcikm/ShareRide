@@ -285,7 +285,7 @@ Endpoints (`/v1`, shapes defined in `packages/contracts`):
 | `POST /bookings/{id}/messages/read` | Mark messages read up to a given one |
 | `POST /trips/{id}/messages` | Driver: the same message to every confirmed passenger |
 | `PUT /me/sessions/current/push-token` | Register, refresh or remove (`null`) the push token of the signed-in device making the request (signed-in devices are sessions in the API) |
-| `GET /me/notification-settings`, `PATCH /me/notification-settings` | Read or change the reminders switch |
+| `GET /me/notification-settings`, `PATCH /me/notification-settings` | Read or change the reminders and beta news switches |
 
 Domain functions in `packages/domain`: the notification catalogue (event to
 recipients and channels, including the SMS window), reminder times for a

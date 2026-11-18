@@ -4,6 +4,7 @@ export * from "./admin-meeting-points.ts";
 export * from "./admin-reliability.ts";
 export * from "./admin-reports.ts";
 export * from "./admin-users.ts";
+export * from "./announcements.ts";
 export * from "./auth.ts";
 export * from "./beta.ts";
 export * from "./bookings.ts";

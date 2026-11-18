@@ -1,4 +1,5 @@
 import {
+  announcementPreview,
   appealDueAt,
   isAccountNotice,
   isAppealable,
@@ -186,6 +187,15 @@ interface AccountNoticeFactsByKind {
   readonly privacy_request_answered: { readonly receivedAt: Date; readonly answer: string };
   /** The reply as the operator wrote it, and the day the feedback was sent. */
   readonly feedback_replied: { readonly sentAt: Date; readonly reply: string };
+  /** The operator's news, as they wrote it in the person's language (spec 10, 3.5.3). */
+  readonly announcement: { readonly title: string; readonly message: string };
+  /** The operator's own copy before sending: both languages (3.5.2). */
+  readonly announcement_test: {
+    readonly titleIs: string;
+    readonly titleEn: string;
+    readonly messageIs: string;
+    readonly messageEn: string;
+  };
 }
 
 /**
@@ -338,6 +348,15 @@ export const noticesPath = "/notices";
 /** "My feedback" under Settings, where a reply shows (spec 12, 3.3.5). */
 export const myFeedbackPath = "/settings/feedback";
 
+/** "Beta news" under Settings, where the announcements sent to the person are (plan 4.7). */
+export const betaNewsPath = "/settings/beta-news";
+
+/** An announcement's email: the message, then why they get it and how to stop it (spec 10, 7). */
+function announcementEmail(message: string, locale: Locale): string {
+  const t = createTranslator(locale);
+  return [message, "", `${t("announcement.footer")} ${t("announcement.turnOff")}`].join("\n");
+}
+
 /**
  * What is ready, or what will be deleted, and when; never a link to the file
  * (spec 11, 7). No weekday: Icelandic would have to decline it after "fyrir".
@@ -401,6 +420,38 @@ function accountText(facts: AccountNoticeFacts, locale: Locale): NotificationTex
         path: myFeedbackPath,
         emailBody: [about, "", facts.reply].join("\n"),
         open: t("notify.feedbackOpen"),
+      };
+    }
+    case "announcement":
+      // The push shows the start of the message; the email carries all of it.
+      return {
+        title: facts.title,
+        body: announcementPreview(facts.message),
+        path: betaNewsPath,
+        emailBody: announcementEmail(facts.message, locale),
+        open: t("announcement.open"),
+      };
+    case "announcement_test": {
+      // Marked as a test, with both languages one after the other, each as
+      // its readers will get it.
+      const [title, message] =
+        locale === "is" ? [facts.titleIs, facts.messageIs] : [facts.titleEn, facts.messageEn];
+      return {
+        title: t("announcement.test", { title }),
+        body: announcementPreview(message),
+        path: betaNewsPath,
+        emailBody: [
+          facts.titleIs,
+          "",
+          announcementEmail(facts.messageIs, "is"),
+          "",
+          "----",
+          "",
+          facts.titleEn,
+          "",
+          announcementEmail(facts.messageEn, "en"),
+        ].join("\n"),
+        open: t("announcement.open"),
       };
     }
     case "report_closed":

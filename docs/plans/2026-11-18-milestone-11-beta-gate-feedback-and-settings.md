@@ -527,9 +527,18 @@ before merging.
 
 ### PR 10: `feat(announcements)`: announcements and Beta news
 
-- [ ] `beta/announcements.ts` with its tests; the migration; the console
+- [x] `beta/announcements.ts` with its tests; the migration; the console
       routes and page; the worker's fan-out; the `announcement` texts; the
       "Beta news" switch and page in the app
+- As built: the audience is asked of the database twice, when Send
+  stores the reach and when the worker makes the notifications a moment
+  later, so someone who turns "Beta news" off in between is counted and
+  not told. The Beta news page and the delivery counts read the
+  notification log, which is kept 90 days; the announcement and its
+  stored reach stay. "Send to me" is its own kind (`announcement_test`),
+  so a test never shows on the operator's Beta news page. An
+  announcement's push shows its title and the start of its message on a
+  lock screen, as it is news for every tester and about nobody.
 - Verify: integration tests (both languages required; each audience
   reaches the right people; Beta news off reaches nobody; Send twice
   reaches each person once; the reach matches what is sent)

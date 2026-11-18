@@ -270,11 +270,37 @@ describe("Settings", () => {
     expect(changes.map((call) => call.input["body"])).toEqual([{ reminders: false }]);
   });
 
+  it("has beta news on, turns it off on its own, and opens the news (spec 10, 3.5.4)", async () => {
+    const app = await openSettings();
+    const news = await screen.findByRole("switch", {
+      name: "Beta news. News from ShareRide about the beta, by notification and email.",
+    });
+    await waitFor(() => {
+      expect(news).toBeChecked();
+    });
+    await fireEvent.press(news);
+    expect(news).not.toBeChecked();
+    // Only this switch is sent, and the other stays on.
+    const changes = app.client.calls.filter(
+      (call) => call.path === "/v1/me/notification-settings" && call.input["body"] !== undefined,
+    );
+    expect(changes.map((call) => call.input["body"])).toEqual([{ betaNews: false }]);
+    expect(screen.getByRole("switch", { name: reminderSwitch })).toBeChecked();
+
+    await fireEvent.press(screen.getByRole("button", { name: "Beta news" }));
+    expect(await screen.findByRole("header", { name: "Beta news" })).toBeVisible();
+    expect(await screen.findByText("No news yet.")).toBeVisible();
+  });
+
   it("turns the switch back and says so when the change fails", async () => {
     await renderApp("/settings", {
       me: completeMe,
       setUp: (client) => {
-        client.answer("/v1/me/notification-settings", () => ok(200, { reminders: true }), "get");
+        client.answer(
+          "/v1/me/notification-settings",
+          () => ok(200, { reminders: true, betaNews: true }),
+          "get",
+        );
         client.answer("/v1/me/notification-settings", () => failure(0, "network_error"), "patch");
       },
     });
@@ -295,12 +321,16 @@ describe("Settings", () => {
     await renderApp("/settings", {
       me: completeMe,
       setUp: (client) => {
-        client.answer("/v1/me/notification-settings", () => ok(200, { reminders: true }), "get");
+        client.answer(
+          "/v1/me/notification-settings",
+          () => ok(200, { reminders: true, betaNews: true }),
+          "get",
+        );
         client.answer(
           "/v1/me/notification-settings",
           (input) => {
             changes.push(input["body"]);
-            if (changes.length > 1) return ok(200, input["body"]);
+            if (changes.length > 1) return ok(200, { reminders: true, betaNews: true });
             return new Promise((resolve) => {
               answerFirst = resolve;
             });
@@ -319,7 +349,7 @@ describe("Settings", () => {
     // The second waits for the first, so the last one is what is kept.
     expect(changes).toEqual([{ reminders: false }]);
     await act(async () => {
-      answerFirst(ok(200, { reminders: false }));
+      answerFirst(ok(200, { reminders: false, betaNews: true }));
       await Promise.resolve();
     });
     await waitFor(() => {
@@ -337,7 +367,9 @@ describe("Settings", () => {
           "/v1/me/notification-settings",
           () => {
             loads += 1;
-            return loads === 1 ? failure(0, "network_error") : ok(200, { reminders: false });
+            return loads === 1
+              ? failure(0, "network_error")
+              : ok(200, { reminders: false, betaNews: true });
           },
           "get",
         );

@@ -213,7 +213,8 @@ Endpoints:
 | `GET /admin/v1/settings/history` | Change history |
 | `GET /admin/v1/metrics?from=&to=&corridor=` | Weekly figures; `.csv` for export |
 | `GET`, `POST`, `PATCH /admin/v1/corridors` | Corridors |
-| `POST /admin/v1/announcements`, `POST /admin/v1/announcements/{id}/test`, `POST /admin/v1/announcements/{id}/send` | Draft, test and send |
+| `GET`, `POST /admin/v1/announcements`, `PUT /admin/v1/announcements/{id}`, `GET /admin/v1/announcements/{id}/reach`, `POST /admin/v1/announcements/{id}/test`, `POST /admin/v1/announcements/{id}/send` | List, draft, change a draft, count the reach, test and send |
+| `GET /v1/me/announcements` | The announcements sent to me, for the app's Beta news page |
 
 Domain functions in `packages/domain`: setting ranges and validation, the
 price preview (rules P2 to P4), which settings version applies to a trip or

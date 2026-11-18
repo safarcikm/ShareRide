@@ -1,7 +1,13 @@
-import { feedbackKinds, feedbackPlatforms, feedbackStatuses } from "@shareride/domain";
+import {
+  announcementAudiences,
+  feedbackKinds,
+  feedbackPlatforms,
+  feedbackStatuses,
+} from "@shareride/domain";
 import { sql } from "drizzle-orm";
 import { check, index, integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { at, bytes, id, oneOf, timestamps } from "./columns.ts";
+import { corridors } from "./metrics.ts";
 import { users } from "./users.ts";
 
 /**
@@ -102,5 +108,46 @@ export const feedbackScreenshots = pgTable(
   },
   (table) => [
     check("feedback_screenshots_size_check", sql`octet_length(${table.file}) <= 1048576`),
+  ],
+);
+
+/**
+ * The operator's announcements about the beta (spec 10, 3.5; R10.7): a
+ * title and a message in both languages, for an audience. A draft until
+ * `sent_at` is set, which happens once; never deleted, so the list of
+ * what was sent stays whole.
+ */
+export const announcements = pgTable(
+  "announcements",
+  {
+    id: id(),
+    audience: text().notNull(),
+    /** For the audience `corridor`. Corridors are never deleted. */
+    corridorId: uuid().references(() => corridors.id),
+    titleIs: text().notNull(),
+    titleEn: text().notNull(),
+    messageIs: text().notNull(),
+    messageEn: text().notNull(),
+    /** The operator who wrote it, without a foreign key, as in the audit log. */
+    createdBy: uuid().notNull(),
+    /** When "Send to me" was last used. */
+    testSentAt: at(),
+    sentAt: at(),
+    /** How many people it went to, counted as it was sent. */
+    reach: integer(),
+    ...timestamps,
+  },
+  (table) => [
+    index("announcements_sent_index").on(table.sentAt),
+    check("announcements_audience_check", oneOf(table.audience, announcementAudiences)),
+    check(
+      "announcements_corridor_check",
+      sql`(${table.audience} = 'corridor') = (${table.corridorId} is not null)`,
+    ),
+    check(
+      "announcements_texts_check",
+      sql`char_length(${table.titleIs}) between 1 and 80 and char_length(${table.titleEn}) between 1 and 80 and char_length(${table.messageIs}) between 1 and 1000 and char_length(${table.messageEn}) between 1 and 1000`,
+    ),
+    check("announcements_sent_check", sql`(${table.sentAt} is null) = (${table.reach} is null)`),
   ],
 );

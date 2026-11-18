@@ -1236,6 +1236,19 @@ releases follow [Semantic Versioning](https://semver.org/).
   or one corridor, bars per week for one figure, and a CSV file in which
   a figure about fewer than 5 people reads "<5". `pnpm --filter
   @shareride/api metrics recompute <weeks>` counts more weeks again.
+- Announcements and Beta news (spec 10, 3.5; R10.7; milestone 11, PR 10;
+  migration `0053_announcements`): on the console's new Announcements
+  page the operator writes news about the beta in Icelandic and English
+  (both required) for everyone, drivers, passengers or the people with a
+  trip or a booking on a corridor, sees how many it would reach by
+  notification and by email, sends it to themselves in both languages,
+  and sends it once, after a second button. Each person gets it in their
+  language by push and, with a verified address, by email, which ends
+  with why they get it and how to turn it off. Settings in the app has a
+  "Beta news" switch beside "Trip reminders", on until turned off, and a
+  Beta news page that lists the announcements sent to the person in the
+  last 90 days. Accounts that are suspended or waiting to be deleted get
+  none.
 
 ### Fixed
 

@@ -30,6 +30,8 @@ export type OutboxEvent =
         | "AppealAnswered"
         | "ReportClosed"
         | "FeedbackReplied"
+        | "AnnouncementSent"
+        | "AnnouncementTested"
       >;
       readonly bookingId: string;
     }
@@ -132,6 +134,17 @@ export type OutboxEvent =
       /** The operator replied to a tester's feedback: they are told (spec 12, 3.3.4). */
       readonly type: "FeedbackReplied";
       readonly feedbackId: string;
+    }
+  | {
+      /** An announcement was sent: each person it is for is told (spec 10, 3.5.3). */
+      readonly type: "AnnouncementSent";
+      readonly announcementId: string;
+    }
+  | {
+      /** "Send to me": the operator gets their own copy, in both languages (3.5.2). */
+      readonly type: "AnnouncementTested";
+      readonly announcementId: string;
+      readonly operatorId: string;
     };
 
 /**

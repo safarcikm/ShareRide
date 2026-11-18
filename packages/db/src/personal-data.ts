@@ -395,6 +395,18 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
   weekly_metrics: notAboutAPerson(
     "weekly counts and sums per corridor, about nobody in particular (spec 10, 3.4.2 and section 7)",
   ),
+  announcements: {
+    category: "audit",
+    export: {
+      leftOut:
+        "the operator's news about the beta, the same for everyone it went to; which ones reached a person is in their notifications (spec 10, 3.5)",
+    },
+    personColumns: ["createdBy"],
+    onDeletion: {
+      rows: "leave",
+      note: "kept, so the list of what was sent stays whole; the operator's ID then points at nothing",
+    },
+  },
   reports: {
     category: "moderation",
     // Only the reports the person filed, with their outcomes: never who reported them (3.1.6).

@@ -197,6 +197,8 @@ describe("the channels of each kind (spec 7, 3.3 and 3.4)", () => {
     ["privacy_request_answered", false, "always", false],
     // The reply to feedback: a push, and the reply itself by email (spec 12, 3.3.4).
     ["feedback_replied", true, "always", false],
+    ["announcement", true, "always", false],
+    ["announcement_test", true, "always", false],
   ] as const)("%s: push %s, email %s, SMS %s", (kind, push, email, sms) => {
     expect(notificationRules[kind]).toEqual({ push, email, sms });
   });
@@ -424,6 +426,7 @@ describe("the operator's alert of a new report (spec 9, 3.4.1; R9.9)", () => {
     expect(isAccountNotice("moderation_action")).toBe(true);
     expect(isAccountNotice("suspension_ended")).toBe(true);
     expect(isAccountNotice("appeal_answered")).toBe(true);
+    expect(isAccountNotice("announcement")).toBe(true);
     expect(isAccountNotice("report_closed")).toBe(true);
     expect(isAccountNotice("feedback_replied")).toBe(true);
     expect(operatorNoticeKinds.every(isOperatorNotice)).toBe(true);

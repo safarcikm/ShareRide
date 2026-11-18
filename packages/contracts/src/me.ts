@@ -86,8 +86,15 @@ export const pushTokenBodySchema = z.object({
 
 export type PushTokenBody = z.infer<typeof pushTokenBodySchema>;
 
-/** What a person can turn off (spec 7, 3.6, item 1): for now, trip reminders. */
-export const notificationSettingsSchema = z.object({ reminders: z.boolean() });
+/** What a person can turn off (spec 7, 3.6, item 1; R7.8): trip reminders and beta news. */
+export const notificationSettingsSchema = z.object({
+  reminders: z.boolean(),
+  /** The operator's announcements about the beta (spec 10, 3.5.4). */
+  betaNews: z.boolean(),
+});
+
+/** What changes; what is left out stays as it is. */
+export const notificationSettingsBodySchema = notificationSettingsSchema.partial();
 
 export const legalAcceptancesBodySchema = z.object({
   /** "I am 18 or older" (rule R1.7). */
@@ -250,10 +257,10 @@ export const getNotificationSettingsRoute = defineRoute({
 export const updateNotificationSettingsRoute = defineRoute({
   method: "patch",
   path: "/v1/me/notification-settings",
-  summary: "Turn trip reminders on or off",
+  summary: "Turn trip reminders or beta news on or off",
   tags: ["me"],
   auth: true,
-  request: { body: notificationSettingsSchema },
+  request: { body: notificationSettingsBodySchema },
   responses: {
     200: {
       description: "My notification settings after the change",
