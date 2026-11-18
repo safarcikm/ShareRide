@@ -114,6 +114,12 @@ describe("Posting a trip (spec 3)", () => {
     expect(await screen.findByText("3,000 ISK")).toBeVisible();
     expect(screen.getByText("Suggested price")).toBeVisible();
     expect(screen.getByLabelText("BSÍ bus terminal to Borgarnes, 1,500 ISK")).toBeVisible();
+    // Why there is a limit, and that it is for the whole trip (spec 17, section 9).
+    expect(
+      screen.getByText(
+        "The limit is for the whole trip, so what passengers have already booked counts towards it.",
+      ),
+    ).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Raise the price" }));
     expect(await screen.findByText("3,400 ISK")).toBeVisible();
     expect(screen.queryByText("Suggested price")).toBeNull();

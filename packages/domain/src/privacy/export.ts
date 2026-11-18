@@ -38,7 +38,7 @@ export const exportSections = [
   "vehicles",
   "trips_posted",
   "bookings",
-  /** Reviews about the person from trips made anonymous, by nobody and on no ride (A49). */
+  /** Reviews about the person from trips made anonymous, by nobody and on no ride (A51). */
   "earlier_reviews",
   "payments",
   "conversations",

@@ -220,7 +220,7 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     // former member" (spec 8, 3.7.5). Those about them go (reviews_received):
     // the erasure deletes them by subject before it moves the rest. 3 years
     // after the trip they move to the former member too, on no booking, and
-    // Download my data lists those about the person apart (A49).
+    // Download my data lists those about the person apart (A51).
     onDeletion: keep(
       ["authorRole", "comment"],
       [],

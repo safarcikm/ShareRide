@@ -4,12 +4,14 @@ import {
   adminCreateMeetingPointRoute,
   adminDescribeMeetingPointPhotoRoute,
   adminImportMeetingPointsRoute,
+  adminLegsStatusRoute,
   adminMeetingPointIssuesRoute,
   adminMeetingPointPhotosRoute,
   adminMeetingPointRoute,
   adminMeetingPointsRoute,
   adminOrderMeetingPointPhotosRoute,
   adminPauseMeetingPointRoute,
+  adminRecomputeLegsRoute,
   adminRemoveMeetingPointPhotoRoute,
   adminResolveMeetingPointIssueRoute,
   adminResumeMeetingPointRoute,
@@ -25,12 +27,14 @@ import { toOpenApiRoute, validated } from "../../openapi.ts";
 import { auditRequestOf } from "../admin/audit.ts";
 import type { ConsoleActor, MeetingPointAdminService, StatusProblem } from "./admin-service.ts";
 import type { MeetingPointIssueService } from "./issues.ts";
+import type { LegService } from "./legs.ts";
 import type { MeetingPointPhotoService, PhotoFieldProblem, PhotoProblem } from "./photos.ts";
 
 export interface MeetingPointsAdminRoutesDependencies {
   readonly meetingPoints: MeetingPointAdminService;
   readonly photos: MeetingPointPhotoService;
   readonly issues: MeetingPointIssueService;
+  readonly legs: LegService;
   readonly requireOperator: MiddlewareHandler<AppEnv>;
   readonly clientAddress: (c: Context) => string;
 }
@@ -344,5 +348,27 @@ export function registerMeetingPointPhotoAdminRoutes(
   app.openapi(toOpenApiRoute(adminRemoveMeetingPointPhotoRoute, requireOperator), async (c) => {
     const { id, photoId } = validated(c, "param", adminRemoveMeetingPointPhotoRoute.request.params);
     return answer(c, await photos.remove(id, photoId, actorOf(c)));
+  });
+}
+
+/** The legs between meeting points under /admin/v1 (spec 2, 3.7). */
+export function registerLegAdminRoutes(
+  app: OpenAPIHono<AppEnv>,
+  dependencies: MeetingPointsAdminRoutesDependencies,
+): void {
+  const { legs, requireOperator, clientAddress } = dependencies;
+
+  app.openapi(toOpenApiRoute(adminLegsStatusRoute, requireOperator), async (c) =>
+    c.json(await legs.status(), 200),
+  );
+
+  app.openapi(toOpenApiRoute(adminRecomputeLegsRoute, requireOperator), async (c) => {
+    validated(c, "json", adminRecomputeLegsRoute.request.body);
+    const { userId, sessionId } = operatorOf(c);
+    const status = await legs.recomputeAll({
+      operator: { userId, sessionId },
+      request: auditRequestOf(c, clientAddress),
+    });
+    return c.json(status, 200);
   });
 }

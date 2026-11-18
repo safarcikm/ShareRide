@@ -123,10 +123,11 @@ rules are in `packages/domain/src/meeting-points/issues.ts`.
 ### Leg
 
 `from_meeting_point_id`, `to_meeting_point_id`, `distance_m`, `duration_s`,
-`computed_at`, `source` (routing engine and data version, or the sample road
-graph for the sample points). Directional:
-A→B and B→A are separate legs because routes can differ. Computed for every
-ordered pair of active meeting points connected by road.
+`computed_at`, `source` ("road file " and the map data's date, from our
+own road file, ADR 0031; or the sample road graph for the sample points).
+Directional: A→B and B→A are separate legs because routes can differ.
+Computed for every ordered pair of meeting points in service (active,
+paused or retiring) connected by road.
 
 ### Trip
 
@@ -250,7 +251,7 @@ passenger found absent, deletes the booking's reviews
 ([spec 8, 3.7](../specs/2026-11-13-trip-day-reviews-and-reliability.md#37-ratings-and-reviews-g1)).
 3 years after the trip, when the trip is made anonymous, a review is by the
 former member and `booking_id` is null; only the former member's reviews may
-have none (A49).
+have none (A51).
 
 ### Trip day and reliability records
 
@@ -366,14 +367,17 @@ Enforced in the domain package and, where possible, in the database too.
    snapshot.
 7. A user cannot book their own trip.
 8. Reviews exist only for completed bookings, one per author per booking
-   (3 years on, by the former member and on no booking, A49).
+   (3 years on, by the former member and on no booking, A51).
 9. A trip with active bookings cannot be deleted, only cancelled.
 10. Only users who have opted in, and whose access is not withdrawn, can
     publish, request or book a women-only trip.
 11. A booking never takes a trip past its limit: what its bookings pay or
     paid the driver, less refunds, stays within the sum over its segments
     of capacity times cap (rule P3, spec 17). The limit and the takings are
-    computed from segments and bookings, not stored.
+    computed from segments and bookings, not stored. Seats added, a stop
+    added or removed, a no-show or a late cancellation lower the trip's
+    price level when what is booked would otherwise leave a full car over
+    it.
 
 ## Trip lifecycle
 

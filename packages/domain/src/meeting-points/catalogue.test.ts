@@ -5,6 +5,7 @@ import {
   isInSeason,
   isOfferedForNewTrips,
   isVisible,
+  keepsLegs,
   meetingPointStatuses,
   monthInIceland,
 } from "./catalogue.ts";
@@ -73,5 +74,9 @@ describe("meeting point status (spec 2, sections 3.1 and 3.6)", () => {
 
   it("finds active and retiring points in search, whose trips still stop there (spec 4, 3.2)", () => {
     expect(meetingPointStatuses.filter(isFoundBySearch)).toEqual(["active", "retiring"]);
+  });
+
+  it("keeps legs between points trips may stop at: active, paused and retiring (R2.11)", () => {
+    expect(meetingPointStatuses.filter(keepsLegs)).toEqual(["active", "paused", "retiring"]);
   });
 });

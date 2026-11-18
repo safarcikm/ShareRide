@@ -38,7 +38,19 @@ A meeting point joins the nearest road within 1 km (`joinRoad`). From there,
 their way, and gives its distance and time. A point that joins a road
 within a metre of a junction counts as at the junction, so it may set off
 or arrive from any road there. A point with no road near it, or a pair
-with no road between them, gets no leg.
+with no road between them, gets no leg. `legsTo` finds the legs from every
+other point to one point in a single search, on the roads reversed.
+
+In the API, the `Router` port (`apps/api/src/platform/router.ts`) reads
+the file on first use and keeps it in memory, about 50 MB; API tests use
+straight lines instead. Each leg stores its source, "road file " and the
+map date, so the console can tell legs on older map data. Legs are
+computed for every pair when the operator chooses **Recompute all** on the console's **Distances** page
+(`/admin/meeting-points/distances`), which also lists the points with no
+road within 1 km and the legs missing. From PR 12 of milestone 8, a
+point's own legs are computed when it is activated or moved. A trip
+copies its segments' distances when it is posted, so new legs never
+change a trip.
 
 ## Updating the map data
 
@@ -54,6 +66,9 @@ At least every three months, or when roads change:
    `packages/db/src/roads/`, on a branch.
 3. Run `pnpm --filter @shareride/db test`: the known distances must still
    hold. Open a pull request with the file.
+4. Once it is deployed, open **Distances** in the console and choose
+   **Recompute all**. The page says how many legs are still on older map
+   data until then.
 
 Claude's cloud cannot reach Geofabrik, which is why the job does the
 download. A pull request that changes the builder, the file format or the

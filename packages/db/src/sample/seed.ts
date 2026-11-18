@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { legsFromRoadGraph, searchTextFor, type PlaceKind } from "@shareride/domain";
 import { and, eq, inArray, notInArray, or } from "drizzle-orm";
 import type { Database } from "../index.ts";
+import { lockLegs } from "../legs.ts";
 import { legs, meetingPoints, places } from "../schema/index.ts";
 import { samplePlaces, samplePoints, sampleRoads } from "./meeting-points.ts";
 
@@ -42,6 +43,17 @@ export async function seedSampleMeetingPoints(db: Database, now: Date): Promise<
     samplePoints.map((point) => [point.key, sampleId(`point:${point.key}`)]),
   );
   await db.transaction(async (tx) => {
+    await lockLegs(tx);
+    // Where the sample points were, to tell which ones the list moves.
+    const before = new Map(
+      (
+        await tx
+          .select({ id: meetingPoints.id, location: meetingPoints.location })
+          .from(meetingPoints)
+          .where(eq(meetingPoints.sample, true))
+      ).map((point) => [point.id, point.location]),
+    );
+    const moved: string[] = [];
     for (const point of samplePoints) {
       const row = {
         id: pointIds.get(point.key) ?? "",
@@ -60,6 +72,13 @@ export async function seedSampleMeetingPoints(db: Database, now: Date): Promise<
         sample: true,
         searchText: searchTextFor([point.nameIs, point.nameEn, ...(point.aliases ?? [])]),
       };
+      const was = before.get(row.id);
+      if (
+        was !== undefined &&
+        (was.latitude !== point.position.latitude || was.longitude !== point.position.longitude)
+      ) {
+        moved.push(row.id);
+      }
       // A new sample point starts active; one already there keeps the
       // status the console gave it, so a deploy does not undo a pause.
       await tx
@@ -98,8 +117,10 @@ export async function seedSampleMeetingPoints(db: Database, now: Date): Promise<
     }
     await tx.delete(places).where(and(eq(places.sample, true), notInArray(places.id, placeIds)));
 
-    // Legs touching any sample point, listed or retired, are recomputed from
-    // the road graph each time; retired points get none.
+    // The road graph's legs touching any sample point, listed or retired,
+    // are written again each time; retired points get none. Legs from our
+    // road file ("Recompute all") stay, but not those of a point the list
+    // moves: they were found from where it was.
     const samplePointIds = tx
       .select({ id: meetingPoints.id })
       .from(meetingPoints)
@@ -108,8 +129,16 @@ export async function seedSampleMeetingPoints(db: Database, now: Date): Promise<
       .delete(legs)
       .where(
         or(
-          inArray(legs.fromMeetingPointId, samplePointIds),
-          inArray(legs.toMeetingPointId, samplePointIds),
+          and(
+            eq(legs.source, sampleLegSource),
+            or(
+              inArray(legs.fromMeetingPointId, samplePointIds),
+              inArray(legs.toMeetingPointId, samplePointIds),
+            ),
+          ),
+          ...(moved.length === 0
+            ? []
+            : [inArray(legs.fromMeetingPointId, moved), inArray(legs.toMeetingPointId, moved)]),
         ),
       );
     const graph = legsFromRoadGraph(
@@ -135,6 +164,6 @@ export async function seedSampleMeetingPoints(db: Database, now: Date): Promise<
         },
       ];
     });
-    if (rows.length > 0) await tx.insert(legs).values(rows);
+    if (rows.length > 0) await tx.insert(legs).values(rows).onConflictDoNothing();
   });
 }

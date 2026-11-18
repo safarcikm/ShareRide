@@ -556,3 +556,70 @@ export const adminResolveMeetingPointIssueRoute = defineRoute({
     409: { description: "issue_resolved: resolved by someone else since", ...errors },
   },
 });
+
+// Distances between meeting points (spec 2, 3.7; milestone 8, PR 11b): how
+// complete the legs between points in service are, and "Recompute all".
+// Legs come from our own road file (ADR 0031).
+
+const legPointSchema = z.object({ id: z.uuid(), nameIs: z.string() });
+
+export const adminLegsStatusSchema = z.object({
+  /** The road file the API has now. */
+  mapData: z.object({
+    /** When the map data was taken; null for a stand-in such as tests'. */
+    mapDate: timestampSchema.nullable(),
+    /** "© OpenStreetMap contributors", which the data's licence asks the console to show. */
+    attribution: z.string(),
+  }),
+  /** Active, paused and retiring points, which keep legs with each other (R2.11). */
+  points: z.int().nonnegative(),
+  /** The legs they need: one each way between every two of them. */
+  pairs: z.int().nonnegative(),
+  /** The legs among them that exist. */
+  withLegs: z.int().nonnegative(),
+  /** When the newest of those legs was computed. */
+  lastComputedAt: timestampSchema.nullable(),
+  /** Those legs by the map data they were computed on, the most first. */
+  sources: z.array(
+    z.object({
+      source: z.string(),
+      /** The map data's date, for legs from a road file. */
+      mapDate: timestampSchema.nullable(),
+      /** Computed on the map data the API has now. */
+      current: z.boolean(),
+      legs: z.int().nonnegative(),
+    }),
+  ),
+  /** Points with no road within 1 km, which get no legs: their position needs a look. */
+  offRoad: z.array(legPointSchema),
+  /** The first 100 legs missing, by the names of their points. */
+  missing: z.array(z.object({ from: legPointSchema, to: legPointSchema })),
+});
+export type AdminLegsStatus = z.infer<typeof adminLegsStatusSchema>;
+
+export const adminLegsStatusRoute = defineRoute({
+  method: "get",
+  path: "/admin/v1/legs",
+  summary: "How complete the legs between meeting points in service are, and on which map data",
+  tags: ["admin", "meeting-points"],
+  auth: "operator",
+  responses: {
+    200: { description: "The legs' status", schema: adminLegsStatusSchema },
+    401: { description: "operator_unauthenticated", ...errors },
+  },
+});
+
+export const adminRecomputeLegsRoute = defineRoute({
+  method: "post",
+  path: "/admin/v1/legs/recompute",
+  summary:
+    "Compute the legs between every two meeting points in service again, on the map data the API has now; gives the new status",
+  tags: ["admin", "meeting-points"],
+  auth: "operator",
+  // An empty JSON body: the API takes no other kind of POST (cross-site requests).
+  request: { body: z.object({}) },
+  responses: {
+    200: { description: "Recomputed", schema: adminLegsStatusSchema },
+    401: { description: "operator_unauthenticated", ...errors },
+  },
+});

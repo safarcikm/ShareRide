@@ -6,17 +6,17 @@ import { recordAudit, type AuditEntry } from "../admin/audit.ts";
 import { asRule } from "../trip-day/disputes.ts";
 import { quickOf, systemLineOf } from "./service.ts";
 
-const { bookings, conversations, disputes, messages, trips } = schema;
+const { bookings, conversations, disputes, messages, reports, trips } = schema;
 
 type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 
 /**
  * What the operator opens a booking's conversation for, which names the
- * booking: a contested report on the trip day (spec 8, 3.5). Spec 9's
- * reports add `{ type: "report", id }` with their own rule in `coveredBooking`.
+ * booking: a contested report on the trip day (spec 8, 3.5), or a report of
+ * a message (spec 9, 3.4.2).
  */
 export interface ConversationSubject {
-  readonly type: "dispute";
+  readonly type: "dispute" | "report";
   readonly id: string;
 }
 
@@ -34,7 +34,18 @@ async function coveredBooking(
   tx: Transaction,
   subject: ConversationSubject,
 ): Promise<Result<string, ReadingRefused>> {
-  // A dispute, for now; reports add their branch on `subject.type`.
+  if (subject.type === "report") {
+    // Only a report about a message covers its conversation (R9.6); a
+    // booking deleted since leaves nothing to read.
+    const [row] = await tx
+      .select({ subject: reports.subject, bookingId: reports.bookingId })
+      .from(reports)
+      .where(eq(reports.id, subject.id));
+    if (row === undefined) return err({ code: "not_found" });
+    if (row.subject !== "message") return err({ code: "not_covered" });
+    if (row.bookingId === null) return err({ code: "not_found" });
+    return ok(row.bookingId);
+  }
   const [row] = await tx.select().from(disputes).where(eq(disputes.id, subject.id));
   if (row === undefined) return err({ code: "not_found" });
   if (!operatorMayRead(asRule(row))) return err({ code: "not_covered" });
@@ -51,9 +62,8 @@ async function coveredBooking(
  * erasure kept what it said, for the operator only (spec 9, section 7).
  * Once the conversation is deleted, 12 months after the trip or when the
  * report's time is over, there are no messages, and the opening is still
- * logged. A
- * message ShareRide hid (spec 9) is to show as hidden, not be left out,
- * once messages have `hidden_at`.
+ * logged. A message ShareRide removed (spec 9, 3.4.3) keeps its words here,
+ * marked `removed`, so the operator can weigh an appeal.
  */
 export async function readConversationAsOperator(
   db: Database,
@@ -96,7 +106,12 @@ export async function readConversationAsOperator(
               : row.senderId === found.driverId
                 ? "driver"
                 : "passenger";
-        const said = { id: row.id, from, sentAt: row.sentAt.toISOString() };
+        const said = {
+          id: row.id,
+          from,
+          sentAt: row.sentAt.toISOString(),
+          removed: row.hiddenAt !== null,
+        };
         // An erased sender's message says nothing, unless a report kept what it said.
         if (row.erasedAt !== null && row.body === null && row.key === null) {
           return { ...said, kind: "erased", text: null, quick: null, system: null };

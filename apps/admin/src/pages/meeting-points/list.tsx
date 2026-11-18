@@ -165,6 +165,12 @@ export function MeetingPointList() {
         >
           {t("admin.meetingPoints.problems")}
         </ConsoleLink>
+        <ConsoleLink
+          to={`${meetingPointsPath}/distances`}
+          className="button-secondary link-button type-label"
+        >
+          {t("admin.meetingPoints.distances")}
+        </ConsoleLink>
       </div>
       <form
         className="stack panel"

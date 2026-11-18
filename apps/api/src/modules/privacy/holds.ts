@@ -60,7 +60,7 @@ export function notHeld(
 /**
  * For a rule that changes a whole trip, in a query over trips: no hold in
  * force covers the trip, a booking on it, its driver, any passenger, or
- * anyone a review of one of its bookings names (A49).
+ * anyone a review of one of its bookings names (A51).
  */
 export function tripNotHeld(db: Executor, now: Date): SQL {
   const onTrip = () => eq(bookings.tripId, trips.id);

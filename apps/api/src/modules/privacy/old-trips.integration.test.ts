@@ -390,7 +390,7 @@ describe("trips and bookings 3 years after the trip (spec 11, 3.7; plan 4.7)", (
     ).toEqual(payments);
   });
 
-  it("keeps the trip's reviews for the people they are about, by nobody and on no ride (A49)", async () => {
+  it("keeps the trip's reviews for the people they are about, by nobody and on no ride (A51)", async () => {
     const { jon, gunna, bookingId } = await rideWithEverything();
     const written = await reviewedEachOther(jon.userId, gunna.userId, bookingId);
     const ratings = await ratingsOf(api.connection.db, [jon.userId, gunna.userId]);
@@ -410,7 +410,7 @@ describe("trips and bookings 3 years after the trip (spec 11, 3.7; plan 4.7)", (
     expect(await ratingsOf(api.connection.db, [jon.userId, gunna.userId])).toEqual(ratings);
   });
 
-  it("unlinks the reviews of a trip made anonymous before reviews were (A49)", async () => {
+  it("unlinks the reviews of a trip made anonymous before reviews were (A51)", async () => {
     const { jon, gunna, bookingId } = await rideWithEverything();
     const written = await reviewedEachOther(jon.userId, gunna.userId, bookingId);
     const due = await threeYearsAfter(airport);

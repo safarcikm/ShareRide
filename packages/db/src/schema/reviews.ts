@@ -14,7 +14,7 @@ import { formerMemberId, users } from "./users.ts";
  * booking's reviews (3.4). `hidden_at` is the operator's, for a review that
  * breaks the community rules (spec 9). 3 years after the trip, when the
  * trip is made anonymous, a review keeps its stars, comment and dates for
- * the person it is about, but is by the former member, on no booking (A49).
+ * the person it is about, but is by the former member, on no booking (A51).
  */
 export const reviews = pgTable(
   "reviews",

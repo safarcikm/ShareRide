@@ -266,6 +266,12 @@ export const myTripSchema = z.object({
       seatsTaken: z.int().nonnegative(),
     }),
   ),
+  /**
+   * What the trip's bookings pay or paid the driver, less refunds, without
+   * the service fee (rule P3, spec 17): with the stretches' seats taken, it
+   * sets the highest price level within the trip limit.
+   */
+  takings: moneySchema,
   /** Requests waiting for the driver's answer, their deadline still to come (spec 5, 3.3). */
   openRequests: z.int().nonnegative(),
   /** The first deadline among those requests, for "Answer by" (spec 16, 3.3); null for none. */
@@ -512,10 +518,15 @@ export const tripChangeEffectSchema = z.object({
   expiring: z.int().nonnegative(),
   /** The seats offered as they will be. */
   seats: z.int().positive(),
-  /** The price level as it will be: more seats may lower it (rule P4). */
+  /** The price level as it will be: more seats, or what is booked, may lower it (rule P4). */
   priceLevel: z.int().nonnegative(),
-  /** More seats lowered the price level to the highest they allow (spec 3, 3.6.4). */
+  /** The price level fell to the highest that fits (spec 3, 3.6.4; spec 17). */
   priceLevelLowered: z.boolean(),
+  /**
+   * What set the level it fell to: the seats alone, or the trip limit once
+   * passengers have paid (spec 17); null when it did not fall.
+   */
+  levelLimitedBy: z.enum(["seats", "trip_limit"]).nullable(),
   /**
    * Each stretch's price per seat for new bookings, as it will be; bookings
    * keep the prices they booked at (rule P1).

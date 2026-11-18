@@ -257,7 +257,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     return { yourReview: shown(true), theirReview: shown(false) };
   };
   // Those about the person from trips made anonymous: by nobody and on no
-  // ride, so only how the author travelled (A49).
+  // ride, so only how the author travelled (A51).
   const earlierReviews = await q
     .select({
       authorRole: reviews.authorRole,

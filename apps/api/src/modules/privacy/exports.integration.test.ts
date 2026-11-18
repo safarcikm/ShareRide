@@ -633,7 +633,7 @@ describe("download my data (spec 11, 3.2)", () => {
     expect(unlabelledFields(annas.data)).toEqual([]);
   });
 
-  it("has the reviews about the person from trips over 3 years ago, by nobody (A49)", async () => {
+  it("has the reviews about the person from trips over 3 years ago, by nobody (A51)", async () => {
     const gunna = await newMember("Gunna");
     const sentAt = api.now();
     const shownAt = new Date(sentAt.getTime() + hours(1) * 1000);

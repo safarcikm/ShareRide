@@ -373,7 +373,7 @@ journeys, and gets a code review before it opens.
       with the people on it locked as a new hold locks them, and one that
       fails is logged without stopping the others. Rows moved to the former
       member get new retry keys, here and in erasure, so two people's never
-      collide. Reviews keep to their own rule until PR 13 (A49)
+      collide. Reviews keep to their own rule until PR 13 (A51)
 - Verify: integration tests (at the edge of the period; the drivers' and
   passengers' other trips unchanged; a hold keeps them, also one being set
   as the rule runs; twice safe)
@@ -419,14 +419,18 @@ Added once milestone 9 built reports (#119). Martin chose this on
       once the report's time is over. Migration
       `0040_messages_kept_for_reports` adds `sent_as` and lets an erased
       message keep its text, key and params.
+- [x] A chat push still waiting (to be tried again, or not yet reached)
+      when its sender is erased is skipped, so the kept text never goes
+      out (found by a security review after the merge).
 - Verify: integration tests (open, closed a millisecond inside the 3
   years, and closed 3 years ago, which empties as before; another
   conversation of the person's nobody reported is emptied; Download my
-  data; both people erased, then read by the operator)
+  data; both people erased, then read by the operator; a chat push
+  waiting when the sender is erased is skipped)
 
 ### PR 13: `feat(privacy)`: reviews of old trips no longer name who or which ride
 
-Martin chose this on 2026-11-17 (open question Q23, answer A49).
+Martin chose this on 2026-11-17 (open question Q23, answer A51).
 
 - [x] When the 3-year rule makes a trip anonymous, its reviews move to the
       former member with no booking, keeping stars, comment and dates for

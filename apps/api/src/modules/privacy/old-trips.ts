@@ -46,7 +46,7 @@ type Executor = Database | Transaction;
 // while a hold covers it, a booking on it, its driver or a passenger.
 // Its reviews stay for the people they are about, with their stars,
 // comment and dates, but no longer say who wrote them or on which ride
-// (A49): they move to the former member, on no booking.
+// (A51): they move to the former member, on no booking.
 
 /** How each table of a trip's records reaches the trip. */
 const reaches: Readonly<Record<string, (tripId: string, db: Executor) => SQL>> = {
@@ -233,7 +233,7 @@ async function anonymiseTrip(
       .where(and(eq(bookings.tripId, tripId), ne(bookings.passengerId, formerMemberId)));
     // Its reviews stay for the people they are about, with their stars,
     // comment and dates, but no longer say who wrote them or on which ride
-    // (A49), so the ratings stay as they were.
+    // (A51), so the ratings stay as they were.
     const unlinked = await tx
       .update(reviews)
       .set({ authorId: formerMemberId, bookingId: null, updatedAt: now })
