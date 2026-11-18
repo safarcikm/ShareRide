@@ -378,6 +378,13 @@ export const is = {
   "trip.price.whyBody":
     "ShareRide er til að deila kostnaði við ferð sem þú ferð hvort sem er. Fullur bíll má ekki skila meiru en ferðin kostar, svo verðin hafa þak.",
   "trip.price.rules": "Lesa samfélagsreglurnar",
+  "trip.price.limitUsed":
+    "Það sem farþegar hafa þegar bókað telst upp í hámark ferðarinnar, svo sætin sem eftir eru mega kosta mest {level}%.",
+  "trip.price.limitUsedFree":
+    "Það sem farþegar hafa þegar bókað fyllir hámark ferðarinnar, svo sætin sem eftir eru kosta ekkert.",
+  "trip.price.whyLimit.trip":
+    "Hámarkið gildir fyrir alla ferðina, svo það sem farþegar hafa þegar bókað telst með.",
+  "trip.price.stopLowersAll": "Við vistun lækkar verð allra leggja fyrir nýjar bókanir.",
   "trip.price.lowered":
     "Með {seats, plural, one {# sæti} other {# sætum}} er hæsta verðstigið {level}%, svo við lækkuðum þitt niður í það.",
   "trip.price.next": "Velja sæti",
