@@ -95,7 +95,8 @@ Walking skeleton, milestone 2: hosted and connected
 ([plan](../plans/2026-11-13-milestone-2-hosted-and-connected.md), approved
 2026-11-13; providers in ADRs 0018 to 0022)
 
-- [ ] API deployed to staging in the EEA
+- [x] API deployed to staging in the EEA (Render in Frankfurt, live at
+      `https://staging.skinnar.is` since 2026-11-18)
 - [ ] Real SMS provider for sign-in codes
 - [ ] Error tracking and uptime checks connected
 - [ ] Meeting points shown on a map and in a list
