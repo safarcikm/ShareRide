@@ -15,8 +15,13 @@ interface CardProps {
    * For a card that can be pressed: the pointer or the keyboard came to it,
    * for a screen that shows more about it elsewhere, such as on a map.
    */
-  readonly onHoverIn?: () => void;
-  readonly onFocus?: () => void;
+  readonly onHoverIn?: (() => void) | undefined;
+  readonly onFocus?: (() => void) | undefined;
+  /**
+   * For a card that can be pressed: it is the one shown elsewhere, such as
+   * on a map, and keeps the edge it has under the pointer.
+   */
+  readonly marked?: boolean;
   /**
    * Takes the height it is given, as in a `Grid`, where the cards of a row
    * are as tall as the tallest; what it holds decides where the room goes.
@@ -29,6 +34,7 @@ interface CardProps {
  * 5.2). A card that can be pressed sinks over its edge, like a button.
  * Under the pointer its edge turns `primary`; the face stays `surface`, so
  * a tag or an avatar on a tint of its own keeps its shape (spec 18, 3.4).
+ * A `marked` card keeps that edge.
  */
 export function Card({
   children,
@@ -36,11 +42,12 @@ export function Card({
   accessibilityLabel,
   onHoverIn,
   onFocus,
+  marked = false,
   fill = false,
 }: CardProps) {
   const palette = usePalette();
   const [hovered, hover] = useHover();
-  const edgeColor = hovered ? palette.primary : palette.edge;
+  const edgeColor = hovered || marked ? palette.primary : palette.edge;
   const face = (pressed: boolean) => (
     <View
       testID="card-face"

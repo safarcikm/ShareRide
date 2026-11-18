@@ -615,6 +615,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   waiting with the action and its report, and the answer asks once more as
   it is final. A browser journey closes one report and suspends from
   another.
+- Report and Block on a profile (milestone 9, PR 9b, spec 9, 3.1.1, 3.2.1
+  and 3.3.4): someone else's profile offers Report and Block, each asking
+  first on its own screen, and the community rules. Each review I did not
+  write offers Report review, read out with its author and month, also on
+  my own profile, so a review about me can be reported; a profile's
+  reviews now say which are mine (`mine`). Blocking from a profile lists
+  the bookings still shared, as from a conversation, and goes back to the
+  profile; a person who left meanwhile is said to be gone. The console's report page shows a reported
+  review's stars, words, author and date, and offers Hide the review while
+  it is shown.
 - Reporting and blocking from a profile, API (milestone 9, PR 9a, spec 9,
   3.1.1 and 3.2.1): a report can be about a review a profile shows, by
   anyone who reads it, linked to the review (migration
@@ -1128,6 +1138,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   Under it are the rides leaving soon, six of them, in two columns from
   about 1140 wide and in one under that, with your next ride and the offer
   to drive beside them. Phones are unchanged.
+- Search results on a laptop (spec 18, 3.6): our map beside the list, with
+  the stretch of the first trip found, or of the trip the pointer or the
+  keyboard came to last, whose card is marked. The map is always there,
+  without a trip when there is none to show, and stays still between
+  trips. The chips wrap instead of scrolling sideways. Phones are
+  unchanged.
 
 ### Fixed
 
