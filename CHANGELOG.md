@@ -1291,6 +1291,11 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- A request accepted, or a departure moved, in the seconds after bookings
+  and payments are paused or opened again gets the payment deadline that
+  goes with the switch as it is. The pause was read from a value up to 5
+  seconds old, so such a booking could keep a 30-minute window nobody
+  could pay in, or wait until the cut-off after the pause had ended.
 - The health check's 2-second statement timeout holds for its own
   transaction only. It used to stay on the pool's connection, so a later
   query on it, such as one waiting for the legs lock or writing every

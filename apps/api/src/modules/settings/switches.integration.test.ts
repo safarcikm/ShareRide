@@ -1,6 +1,7 @@
 import {
   acceptRequestRoute,
   bookingRoute,
+  changeTripRoute,
   configRoute,
   sendConfirmCodeRoute,
   startPaymentRoute,
@@ -8,10 +9,11 @@ import {
   verifyPhoneCodeRoute,
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, max } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
 import { createOperatorSessionService, operatorCookie } from "../admin/index.ts";
+import { pausedHeldIn } from "./index.ts";
 import { expireAllDueBookings } from "../bookings/index.ts";
 import {
   bookingHelpers,
@@ -299,5 +301,95 @@ describe("new bookings and payments paused", () => {
       .from(schema.bookings)
       .where(and(eq(schema.bookings.tripId, north), eq(schema.bookings.status, "expired")));
     expect(expired).toEqual([]);
+  });
+
+  // Another server turned the switch: this one's answer is up to 5 seconds
+  // old, and a deadline stored by it would be one the pause never moved.
+  describe("turned on another server a moment ago", () => {
+    async function turnedOffElsewhere() {
+      const { settingChanges } = schema;
+      const [last] = await api.connection.db
+        .select({ version: max(settingChanges.version) })
+        .from(settingChanges);
+      await api.connection.db.insert(settingChanges).values({
+        version: (last?.version ?? 0) + 1,
+        key: "bookings_open",
+        oldValue: 1,
+        newValue: 0,
+        reason: "For a test",
+        changedBy: operatorId,
+        createdAt: api.now(),
+        updatedAt: api.now(),
+      });
+    }
+
+    const cutOffOf = async (bookingId: string) => {
+      const [boards] = await api.connection.db
+        .select({ plannedAt: schema.tripStops.plannedAt })
+        .from(schema.tripStops)
+        .innerJoin(schema.bookings, eq(schema.bookings.fromStopId, schema.tripStops.id))
+        .where(eq(schema.bookings.id, bookingId));
+      return new Date((boards?.plannedAt?.getTime() ?? 0) - minutes(15) * 1000);
+    };
+
+    it("gives a request accepted then the deadline of the pause", async () => {
+      const anna = await driverOf(north);
+      const jon = await newMember("Jón");
+      const request = await booked(jon.accessToken, north, { fromStop: 1, toStop: 3 });
+      await turnedOffElsewhere();
+      // This server has not read it yet.
+      expect(await paused()).toEqual([]);
+
+      expect(await accept(anna.accessToken, request.id)).toMatchObject({ ok: true });
+      expect((await stored(request.id)).paymentDueAt).toEqual(await cutOffOf(request.id));
+      await turn("bookings_open", "on");
+    });
+
+    it("gives a booking whose trip's departure moves then the deadline of the pause", async () => {
+      const anna = await driverOf(north);
+      const jon = await newMember("Jón");
+      const request = await booked(jon.accessToken, north, { fromStop: 1, toStop: 3 });
+      expect(await accept(anna.accessToken, request.id)).toMatchObject({ ok: true });
+      const [trip] = await api.connection.db
+        .select({ departsAt: schema.trips.departsAt })
+        .from(schema.trips)
+        .where(eq(schema.trips.id, north));
+      await turnedOffElsewhere();
+      expect(await paused()).toEqual([]);
+
+      const moved = await api.client.call(changeTripRoute, {
+        accessToken: anna.accessToken,
+        params: { id: north },
+        query: { preview: false },
+        body: {
+          kind: "departure",
+          departsAt: new Date((trip?.departsAt?.getTime() ?? 0) + minutes(10) * 1000).toISOString(),
+        },
+      });
+      expect(moved).toMatchObject({ ok: true });
+      expect((await stored(request.id)).paymentDueAt).toEqual(await cutOffOf(request.id));
+      await turn("bookings_open", "on");
+    });
+
+    it("makes a turn of the switch wait for a transaction that read it", async () => {
+      let turned = false;
+      let release = () => {};
+      const reading = api.connection.db.transaction(async (tx) => {
+        expect(await pausedHeldIn(tx, "bookings")).toBe(false);
+        await new Promise<void>((resolve) => {
+          release = resolve;
+        });
+      });
+      const turning = turn("bookings_open", "off").then(() => {
+        turned = true;
+      });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      expect(turned).toBe(false);
+      release();
+      await reading;
+      await turning;
+      expect(turned).toBe(true);
+      await turn("bookings_open", "on");
+    });
   });
 });
