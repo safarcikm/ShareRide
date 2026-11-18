@@ -670,3 +670,13 @@ legend + * {
   height: auto;
   border-radius: var(--radius-card);
 }
+
+/* A tester's screenshot of a phone's screen: tall, so held to a phone's width. */
+.screenshot {
+  display: block;
+  width: 100%;
+  max-width: var(--aside-width);
+  height: auto;
+  border: var(--control-outline) solid var(--color-border);
+  border-radius: var(--radius-card);
+}

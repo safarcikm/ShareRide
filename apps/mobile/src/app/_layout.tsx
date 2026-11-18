@@ -4,6 +4,7 @@ import { StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { SessionProvider, useSession, useSessionState } from "@/auth/session";
 import { ConfigProvider } from "@/beta/config";
+import { ShakeForFeedback } from "@/beta/shake";
 import { UnreadProvider } from "@/chat/unread";
 import { Button } from "@/components/button";
 import { Loading } from "@/components/loading";
@@ -30,6 +31,7 @@ export default function RootLayout() {
             <UnreadProvider>
               <Navigation />
               <PushNotifications />
+              <ShakeForFeedback />
             </UnreadProvider>
           </ConfigProvider>
         </SessionProvider>
@@ -85,6 +87,8 @@ function Navigation() {
       <Stack.Protected guard={!deleting}>
         <Stack.Screen name="settings" />
         <Stack.Screen name="settings/email" />
+        <Stack.Screen name="settings/feedback" />
+        <Stack.Screen name="feedback" />
         <Stack.Screen name="settings/privacy/index" />
         <Stack.Screen name="settings/privacy/download" />
         <Stack.Screen name="settings/privacy/delete" />

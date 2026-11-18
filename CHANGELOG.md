@@ -1174,6 +1174,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   with the screenshots as files, deleting the account deletes both, and
   the clean-up deletes feedback 12 months after "Invite code required"
   was last turned off.
+- Send feedback in the app and the console (spec 12, 3.3; milestone 11,
+  PR 6): the form opens from the Beta label, Profile and Settings, and on
+  phones from a shake, which a switch in Settings turns off. Phones take a
+  picture of the screen the person came from, shown before sending and
+  removable; the web sends none. "My feedback" in Settings shows what was
+  sent and ShareRide's replies. The console's Feedback page lists it by
+  status and kind, shows the screenshot on request, sets the status and
+  sends the one reply. New in the app: `react-native-view-shot` and
+  `expo-sensors`.
 
 ### Fixed
 

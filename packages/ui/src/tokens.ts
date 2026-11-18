@@ -212,6 +212,9 @@ export const sizes = {
   logoSmall: 36,
   /** The height, and narrowest width, of the unread count on Messages in the menu. */
   badge: 20,
+  /** The picture of the screen on Send feedback: small, in a phone's shape. */
+  screenshotWidth: 144,
+  screenshotHeight: 312,
 } as const;
 
 /** Width of the outline on inputs, tick boxes and chips. */

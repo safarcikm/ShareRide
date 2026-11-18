@@ -431,10 +431,20 @@ before merging.
 
 ### PR 6: `feat(feedback)`: Send feedback in the app and the console's page
 
-- [ ] Send feedback from the Beta label and Profile; the screenshot and
+- [x] Send feedback from the Beta label and Profile; the screenshot and
       the shake on phones (`react-native-view-shot`, `expo-sensors`); the
       switch; My feedback; the console's Feedback page with the
       screenshot, status and reply
+- As built: Settings has a "Feedback" section with Send feedback, My
+  feedback and, on phones, the shake's switch. A shake is three swings
+  past 2.3 g within a second, and then nothing counts for three seconds
+  (`shake-rule.ts`); it opens the form only for a signed-in person who is
+  not already on it. The picture is taken at lower quality until it fits
+  1 MB; if it cannot be taken or does not pass the check, the form opens
+  without one. The console shows the picture only after "Show the
+  screenshot", since each look is in the audit log. The browser journey's
+  reply comes from the test API's `/e2e/feedback-reply`, which does what
+  the console's reply does
 - Verify: screen tests; a browser journey: send feedback on the web, the
   operator replies, the reply shows under My feedback. Shaking is
   checked by hand on a phone

@@ -211,7 +211,7 @@ describe("Settings", () => {
     return app;
   }
 
-  it("groups the rows: Language, Your account, Notifications, Safety, Legal documents, then signing out (spec 16, 3.8)", async () => {
+  it("groups the rows: Language, Your account, Notifications, Safety, Feedback, Legal documents, then signing out (spec 16, 3.8)", async () => {
     await openSettings();
     const headings = screen.getAllByRole("header").map((heading) => String(heading.props.children));
     expect(headings).toEqual([
@@ -220,6 +220,7 @@ describe("Settings", () => {
       "Your account",
       "Notifications",
       "Safety",
+      "Feedback",
       "Legal documents",
     ]);
     // The language is two choices side by side, the current one ticked.
