@@ -779,7 +779,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   the operator's note and an audit entry, and the people below 80%. Trips
   and bookings save whether their cancellation was excused by its reason,
   and when and why the operator overruled it (migration
-  `0042_reliability_overrules`). "Download my data" tells whoever
+  `0043_reliability_overrules`). "Download my data" tells whoever
   cancelled whether it counts and when ShareRide made it count; a booking
   the driver cancelled no longer shows this in the passenger's file. The
   operator's note goes when the account of whoever cancelled is erased.
@@ -987,6 +987,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   the trip a car of the same make, model and colour without a plate.
   Stops, prices and payments stay. A hold on the trip, a booking, the
   driver or a passenger keeps it until the hold ends.
+- Reviews of a trip made anonymous no longer name who wrote them or the
+  ride (Martin's answer A51): they keep their stars, comment and dates for
+  the person they are about, so ratings stay the same. A profile shows
+  them as by "A former member", as it shows those of people who left, and
+  Download my data lists those about the person from such trips in their
+  own section. A hold on anyone they name keeps them as they are.
+  Migration `0042_reviews_of_old_trips` makes a review's booking optional.
 - Erasure keeps a conversation a report covers (spec 9, section 7;
   Martin's answer A47): the erased person's messages read "Message deleted" to
   the other person, but the operator can still read them until the

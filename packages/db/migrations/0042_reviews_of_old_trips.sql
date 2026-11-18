@@ -1,0 +1,2 @@
+ALTER TABLE "reviews" ALTER COLUMN "booking_id" DROP NOT NULL;--> statement-breakpoint
+ALTER TABLE "reviews" ADD CONSTRAINT "reviews_ride_check" CHECK ("reviews"."booking_id" is not null or "reviews"."author_id" = '00000000-0000-4000-8000-000000000001');
