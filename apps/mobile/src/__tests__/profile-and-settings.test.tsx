@@ -1,5 +1,6 @@
 import { act, fireEvent, screen, waitFor, within } from "expo-router/testing-library";
 import type { DriverReadiness, Me } from "@shareride/contracts";
+import { Dimensions } from "react-native";
 import { failure, ok, tokens, type FakeClient } from "@/testing/fake-client";
 import { completeMe, legalDocument, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -198,6 +199,101 @@ describe("My profile (spec 16, 3.4)", () => {
   it("asks a signed-out person to sign in", async () => {
     await renderApp("/profile");
     expect(await screen.findByRole("button", { name: "Sign in" })).toBeVisible();
+  });
+});
+
+describe("My profile on a laptop (spec 18, 3.12)", () => {
+  const phone = { width: 750, height: 1334, scale: 2, fontScale: 2 };
+  const laptop = { width: 1280, height: 800, scale: 1, fontScale: 1 };
+
+  beforeEach(() => {
+    Dimensions.set({ window: laptop });
+  });
+
+  afterEach(async () => {
+    // The screen is still on show here, so its update goes through act.
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+  });
+
+  it("has who I am at the left, in a card, and the rows beside it", async () => {
+    await openProfile();
+    expect(screen.getByTestId("page")).toBeVisible();
+    expect(screen.getByRole("header", { name: "My profile" })).not.toHaveStyle({
+      textAlign: "center",
+    });
+    // The side column is drawn at the left; a reader still gets the rows first.
+    expect(screen.getByTestId("columns")).toHaveStyle({ flexDirection: "row-reverse" });
+
+    const side = within(screen.getByTestId("columns-side"));
+    expect(side.getByTestId("card")).toBeVisible();
+    expect(side.getByText("Anna")).toBeVisible();
+    expect(side.getByText("Speaks Icelandic, English · Member since November 2026")).toBeVisible();
+    expect(side.getByRole("button", { name: "Edit profile" })).toBeVisible();
+    expect(side.getByRole("link", { name: "See it as others do" })).toBeVisible();
+
+    const main = within(screen.getByTestId("columns-main"));
+    expect(await main.findByRole("button", { name: "Driving licence, Confirmed" })).toBeVisible();
+    for (const row of [
+      "My cars",
+      "Meeting points",
+      "Settings",
+      "Terms, rules and privacy",
+      "Notices",
+    ]) {
+      expect(main.getByRole("button", { name: row })).toBeVisible();
+    }
+    expect(main.getAllByTestId("card")).toHaveLength(2);
+    expect(main.getByText("Phone number, language and signing out are in Settings.")).toBeVisible();
+    // Each once.
+    expect(screen.getAllByRole("button", { name: "Edit profile" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "My cars" })).toHaveLength(1);
+  });
+
+  it("opens Edit profile and a row from their columns", async () => {
+    await openProfile();
+    await fireEvent.press(
+      within(screen.getByTestId("columns-side")).getByRole("button", { name: "Edit profile" }),
+    );
+    expect(screen).toHavePathname("/profile/edit");
+  });
+
+  it("is the phone's one column when the window turns narrow, and loads nothing again", async () => {
+    const { client } = await openProfile();
+    const asked = () =>
+      client.calls.filter((call) => call.path === "/v1/me/driver-readiness").length;
+    expect(await screen.findByRole("button", { name: "Driving licence, Confirmed" })).toBeVisible();
+    expect(asked()).toBe(1);
+
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+    expect(screen.queryByTestId("page")).toBeNull();
+    expect(screen.queryByTestId("columns")).toBeNull();
+    expect(screen.getByText("Anna")).toBeVisible();
+    expect(screen.getByRole("header", { name: "My profile" })).toHaveStyle({
+      textAlign: "center",
+    });
+    expect(screen.getByRole("button", { name: "Driving licence, Confirmed" })).toBeVisible();
+
+    await act(() => {
+      Dimensions.set({ window: laptop });
+    });
+    expect(
+      within(screen.getByTestId("columns-main")).getByRole("button", {
+        name: "Driving licence, Confirmed",
+      }),
+    ).toBeVisible();
+    expect(asked()).toBe(1);
+  });
+
+  it("stays one centred column signed out", async () => {
+    await renderApp("/profile");
+    expect(await screen.findByRole("button", { name: "Sign in" })).toBeVisible();
+    expect(screen.queryByTestId("page")).toBeNull();
+    expect(screen.queryByTestId("columns")).toBeNull();
+    expect(screen.getByRole("header", { name: "Profile" })).toHaveStyle({ textAlign: "center" });
   });
 });
 

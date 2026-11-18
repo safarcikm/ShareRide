@@ -8,9 +8,10 @@ import { Avatar } from "@/components/avatar";
 import { useOpenFeedback } from "@/beta/feedback";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
+import { Columns } from "@/components/columns";
 import { LanguageSwitch } from "@/components/language-switch";
 import { Row } from "@/components/row";
-import { Screen } from "@/components/screen";
+import { Screen, useWideScreen } from "@/components/screen";
 import { Title } from "@/components/text";
 import { TextLink } from "@/components/text-link";
 import { useLanguage } from "@/i18n/language";
@@ -27,7 +28,8 @@ import { usePalette } from "@/theme/use-palette";
  * Profile, a place of the menu (spec 16, 3.1). Signed in, my profile
  * (spec 16, 3.4): who I am, then rows for my cars, my licence, the meeting
  * points, Settings and the legal documents. Signed out: Sign in, the
- * language, the meeting points and the legal documents.
+ * language, the meeting points and the legal documents, in one column on
+ * any screen.
  */
 export default function ProfileScreen() {
   const me = useMe();
@@ -62,14 +64,14 @@ function MyProfile({ me }: { readonly me: Me }) {
   const openFeedback = useOpenFeedback();
   const load = useCallback(() => session.call(driverReadinessRoute, {}), [session]);
   const { value: readiness } = useLoadedOnFocus(load);
+  const wide = useWideScreen();
   // Without an answer the row just leaves the value out.
   const licence =
     readiness?.ok === true
       ? readiness.data.items.find((item) => item.item === "licence")?.done
       : undefined;
-  return (
-    <Screen>
-      <Title>{t("profile.title")}</Title>
+  const person = (
+    <>
       <Person me={me} />
       <Button
         variant="secondary"
@@ -79,6 +81,10 @@ function MyProfile({ me }: { readonly me: Me }) {
         }}
       />
       <TextLink label={t("profile.preview")} href="/profile/preview" />
+    </>
+  );
+  const rows = (
+    <>
       <Card>
         <Row
           title={t("profile.myCars")}
@@ -126,6 +132,25 @@ function MyProfile({ me }: { readonly me: Me }) {
         />
       </Card>
       <Small>{t("profile.inSettings")}</Small>
+    </>
+  );
+  // A wide screen (spec 18, 3.12): who I am in a card at the left, which
+  // stays while the rows scroll, and the rows in the room beside it.
+  if (wide) {
+    return (
+      <Screen width="page">
+        <Title align="start">{t("profile.title")}</Title>
+        <Columns sideAt="start" side={<Card>{person}</Card>}>
+          {rows}
+        </Columns>
+      </Screen>
+    );
+  }
+  return (
+    <Screen>
+      <Title>{t("profile.title")}</Title>
+      {person}
+      {rows}
     </Screen>
   );
 }
