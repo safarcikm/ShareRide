@@ -70,7 +70,7 @@ every main screen, as drawn, on 2026-11-18.
 | 1 | 3.2 to 3.4 | Groundwork: tokens, `Screen` page width, `Columns`, `Grid`, the top bar lined up, pointer looks | Merged (#155) |
 | 2 | 3.5 | Find: the search in one row, rides in a grid, the side column | Merged (#156) |
 | 3 | 3.6 | Search results: the map beside the list, chips that wrap | Built |
-| 4 | 3.7, 3.8 | Trip details, Check and pay and a request in two columns | |
+| 4 | 3.7, 3.8 | Trip details, Check and pay and a request in two columns | Built |
 | 5 | 3.11 | Messages as two panes | |
 | 6 | 3.9, 3.10, 3.12 | A booking, My rides and Profile | |
 | 7 | 3.13, 3.14 | Offer a ride and the driver's trip | |
@@ -345,21 +345,24 @@ bar `primary`. A disabled or busy part shows none.
 
 **Files:**
 
-- Modify: `apps/mobile/src/app/trips/[id]/index.tsx`,
-  `apps/mobile/src/trip-details/trip-parts.tsx`, `components/screen.tsx`
-  (remove `footerBeside`), `packages/ui/src/tokens.ts` (remove
-  `sidePanelWidth`), `e2e/laptop.spec.ts`
-- Test: `apps/mobile/src/__tests__/trip-details.test.tsx`
+- Create: `apps/mobile/src/components/halves.tsx` (two halves of a card)
+- Modify: `apps/mobile/src/app/trips/[id]/index.tsx`, `components/screen.tsx`
+  (remove `footerBeside`), `packages/ui/src/tokens.ts` (`halfMinWidth`;
+  `sidePanelWidth` stays, as the operator console's menu uses it),
+  `e2e/laptop.spec.ts`
+- Test: `apps/mobile/src/__tests__/trip-details.test.tsx`,
+  `components/wide-parts.test.tsx`
 
-- [ ] **Step 1: Failing tests** at 1280: `columns-main` holds "Your part",
+- [x] **Step 1: Failing tests** at 1280: `columns-main` holds "Your part",
   "Who you ride with" (the seat view beside the driver) and Safety;
   `columns-side` holds the price, the seats stepper, the main button and
   its lines, then "Route" with the map and the stops; there is no
   `bottom-bar` and no stepper in "Your part". Changing the seats in the
   side column changes the price there. At 390 every existing test passes.
-- [ ] **Step 2 to 4:** Run, implement with `Screen width="page"` and
-  `Columns`, run.
-- [ ] **Step 5:** Commit `feat(mobile): trip details in two columns`.
+- [x] **Step 2 to 4:** Run, implement with `Screen width="page"` and
+  `Columns`, run. `laptop.spec.ts` gains trip details in both languages at
+  900, 1280 and 1440.
+- [x] **Step 5:** Commit `feat(mobile): trip details in two columns`.
 
 ### Task 4.2: Check and pay and a request
 
@@ -368,11 +371,11 @@ bar `primary`. A disabled or busy part shows none.
 - Modify: `apps/mobile/src/app/trips/[id]/book.tsx`, `e2e/laptop.spec.ts`
 - Test: `apps/mobile/src/__tests__/booking.test.tsx`
 
-- [ ] **Step 1: Failing tests** at 1280: the ride, the total and "Pay
+- [x] **Step 1: Failing tests** at 1280: the ride, the total and "Pay
   1,500 ISK" (or "Send request") are in `columns-side`; the message field
   and the tick list in `columns-main`; no `bottom-bar`. A double press on
   Pay still makes one booking.
-- [ ] **Step 2 to 5:** Run, implement, run, commit `feat(mobile): Check and pay in two columns`.
+- [x] **Step 2 to 5:** Run, implement, run, commit `feat(mobile): Check and pay in two columns`.
 
 ## PR 5: Messages
 

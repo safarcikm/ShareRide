@@ -1130,6 +1130,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   without a trip when there is none to show, and stays still between
   trips. The chips wrap instead of scrolling sideways. Phones are
   unchanged.
+- Trip details, Check and pay and a request on a laptop (spec 18, 3.7 and
+  3.8): pages of two columns with no bottom bar. On trip details, your
+  part (Get in beside Get out), who you ride with (the seat view beside
+  the driver) and safety are in the main column; booking, with the seats
+  beside the price they change, and the route are in the side column. On
+  Check and pay and a request, what you read and fill in is in the main
+  column, and the ride, the total and the button are beside it. The panel
+  320 wide beside trip details is gone (`Screen footerBeside`). Phones are
+  unchanged.
 
 ### Fixed
 

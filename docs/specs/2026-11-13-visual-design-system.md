@@ -194,7 +194,7 @@ Two free fonts (SIL Open Font License), both with every Icelandic letter
 | Spacing | `xs` 4, `sm` 8, `ms` 12, `md` 16, `lg` 24, `xl` 32, `xxl` 48 |
 | Corners | `seat` 4 (seat legend), `checkbox` 9, `tag` 12, `control` 16 (buttons, inputs, notices), `card` 22, `pill` 999 (chips, need bubbles, icon buttons) |
 | Bottom edges | `card` 3 (`edge` colour), `buttonPrimary` 4 (`primaryEdge`), `buttonSecondary` 3 (`edge`) |
-| Sizes | `minTouchTarget` 44, `buttonHeight` 48, `mainButtonHeight` 56, `inputHeight` 52, `chipHeight` 40, `iconButton` 44, `checkbox` 26, `row` 56, `maxContentWidth` 480; `controlOutline` 2 (inputs, tick boxes, chips); on wide screens `pageMaxWidth` 1144, `sideColumnWidth` 400, `gridCardMinWidth` 320, `listPaneWidth` 360 (section 4.8) |
+| Sizes | `minTouchTarget` 44, `buttonHeight` 48, `mainButtonHeight` 56, `inputHeight` 52, `chipHeight` 40, `iconButton` 44, `checkbox` 26, `row` 56, `maxContentWidth` 480; `controlOutline` 2 (inputs, tick boxes, chips); on wide screens `pageMaxWidth` 1144, `sideColumnWidth` 400, `gridCardMinWidth` 320, `halfMinWidth` 280, `listPaneWidth` 360 (section 4.8) |
 
 - `ms` 12 is new; the other spacing names are unchanged.
 - Screen padding is `md`; gaps between cards are `md`; inside a card, `ms`
@@ -251,8 +251,10 @@ review board shows the trip details in Icelandic and dark mode.
   pointing. A chip or a secondary button tinted `primarySoft` keeps its
   `control` outline: 3:1 or more against the surface around it, which marks
   the part, and 2.9:1 against the tint inside.
-- From 900 wide, the trip details and request screens move the price and main
-  action from the bottom bar into a panel 320 wide beside the column.
+- From 900 wide, trip details, Check and pay and a request are pages of two
+  columns: the price and the main action are at the top of the side column,
+  and there is no bottom bar (spec 18, 3.7 and 3.8). The panel 320 wide
+  beside the column, which trip details had before, is gone.
 - From 900 wide, search results put the map beside the list, as meeting
   points do, with the trip the pointer or the keyboard came to last; the
   chips wrap instead of scrolling sideways (spec 18, 3.6).
@@ -348,6 +350,7 @@ Built when the screens that need them are built.
 | `Card` | `surface`, corner `card`, 3 `edge` bottom edge, `md` padding. Under the pointer, the edge of a card that can be pressed turns `primary`; its fill stays, so a tag or an avatar on a tint of its own keeps its shape (spec 18, 3.4). With `fill`, a card takes the height of its place, so cards side by side in a `Grid` end level. A `marked` card keeps the `primary` edge: it is the one shown elsewhere, as on the map beside search results (spec 18, 3.6) |
 | `Columns` | On a page (section 4.8): a main column that takes the room left and a side column 400 wide (`sideColumnWidth`) with a `lg` gap, each with `md` between its parts. The side column sits at the right, or at the left (`sideAt="start"`), and on the web stays in view while the main column scrolls. Whichever side it is on, a screen reader and the keyboard come to the main column first. Under 900 wide the two stack, main first |
 | `Grid` | Cards in equal columns with `md` gaps: as many as fit at 320 wide or more each (`gridCardMinWidth`), by the room the grid has and not by the window or the text size; one column on a phone |
+| `Halves` | Two parts of one card side by side, as wide as each other, with a `lg` gap, such as Get in and Get out on trip details. Where the card has no room for two parts 280 wide (`halfMinWidth`), the second goes under the first, `ms` apart. The room decides, not the window |
 | `Tag` | `caption` text on a tinted fill, corner `tag` (section 4.1) |
 | `IconButton` | 44 round, like `BackButton`, for share and more; `primarySoft` under the pointer unless it is disabled |
 | `Stepper` | Minus and plus as 48 square secondary buttons, the value in `figure` between them; accessible names "One seat fewer" and "One seat more"; adjustable role with a value. With the `caption` prop, as in the search row, its label is a line in `caption` `textMuted` |

@@ -35,8 +35,9 @@ On a laptop the app is a phone screen in the middle of the window:
   the same under it.
 
 What already works and stays: the top bar with the five places (spec 16,
-3.1), the booking panel beside trip details and the map beside the meeting
-points (spec 15, 4.8).
+3.1) and the map beside the meeting points (spec 15, 4.8). The booking
+panel beside trip details becomes the first card of that screen's side
+column (3.7).
 
 Goal: on a laptop the app uses the width to show what belongs together side
 by side, so that finding, comparing and booking a ride takes less scrolling
@@ -178,18 +179,33 @@ changes on a phone.
 1. Back, the day and the title across the top, with Share at the right.
 2. **Main column:** "Your part" with Get in and Get out side by side; "Who
    you ride with" with the driver, car and preferences at the left and the
-   seat view at the right; Safety; reporting.
-3. **Side column:** the booking panel (price, seats, the main button, the
-   lines under it), then "Route" with the map and the list of stops.
+   seat view at the right; Safety; reporting. Each pair is two halves of
+   its card (`Halves`, spec 15): where the main column has no room for
+   two halves 280 wide, as in a window 900 wide, the second goes under the
+   first. Change opens the stops under its own half.
+3. **Side column:** the booking panel, then "Route" with the map and the
+   list of stops. The panel is a card with the price and, beside it, the
+   seats under a small "Seats"; under the two, how many are free and the
+   price per seat; then the main button as wide as the card, with its
+   lines, and the free cancellation line. A part that cannot be booked, or
+   a booking already made, shows there in the button's place.
 4. The seats stepper moves from "Your part" into the booking panel, next to
    the price it changes.
+5. There is no bottom bar. While the trip loads the screen is already a
+   page, so Back does not move when it comes.
 
 ### 3.8 Check and pay, and a request
 
-1. **Main column:** what the person fills in or reads: the message to the
-   driver, the tick list, the cancellation lines.
-2. **Side column:** the ride (day, times, places, driver and car), the total
-   and the main button ("Pay 5,800 ISK", "Send request").
+1. **Main column:** what the person reads and fills in. What went wrong
+   comes first (seats just taken, a changed price, a payment that did not
+   go through). Under it one card has the tick list, the message to the
+   driver (a request only) and what cancelling late means.
+2. **Side column:** a card with the ride (day, times, places, driver and
+   car) and the total, and under the card the main button ("Pay 5,800
+   ISK", "Send request"). The payment opens in the button's place; a part
+   that can no longer be booked says so there.
+3. There is no bottom bar. What was typed stays when the window turns
+   narrow or wide.
 
 ### 3.9 A booking
 
