@@ -231,7 +231,9 @@ describe("the passkeys page", () => {
       target: { value: "Tablet" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Add the passkey" }));
-    expect((await screen.findByRole("status")).textContent).toBe("Tablet was added.");
+    // "Loading" is a status too while the steps run: wait for the message itself.
+    const added = await screen.findByText("Tablet was added.");
+    expect(added.closest('[role="status"]')).not.toBeNull();
     expect(browser.state.prompts).toEqual(["get confirm", "create add"]);
   });
 
