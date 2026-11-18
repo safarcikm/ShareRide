@@ -565,6 +565,49 @@ Closing a report and answering an appeal ask once more, naming the
 outcome, as neither can be undone. The conversation opens only when the
 operator presses "Show the conversation", as on a dispute.
 
+## Users, trips and decline rates
+
+`apps/api/src/modules/moderation/people-routes.ts` holds the console's
+users and trips routes (`registerPeopleAdminRoutes`), with the work in
+`people.ts` (spec 9, 3.5 and 3.4.5). Both it and `console.ts` read people,
+reports, actions and stops through `console-reads.ts`, so every page names
+them the same way.
+
+- `POST /admin/v1/users/search` with `{ q }` finds people: an ID, an
+  email in any case, a phone number (Icelandic without +354 too, as
+  `normalisePhoneNumber` reads it) or part of a first name, where `%` and
+  `_` match themselves. A POST, so a number or an email never sits in an
+  address or a log. At most 50, by first name in Icelandic order, with
+  `more` when there were more; never the former member.
+- `GET /admin/v1/users/{id}` gives a person's page: the profile with when
+  each thing was verified or declared, About you and whether ShareRide hid
+  it, cars, the 20 latest trips they drive and bookings they made (a
+  declined request with its reason, R5.7), the 20 latest reports by and
+  about them and actions on them, every note, and their decline rate.
+- `POST /admin/v1/users/{id}/notes` with `{ text }` adds a note about the
+  person, at most 1 000 characters (`checkOperatorNote`). Only operators
+  see notes in the console, but the person gets each note's text and date
+  in Download my data, never who wrote it (Martin's answer A49), so a note
+  keeps to facts. Its audit entry, `user.note_added`, names the note's ID,
+  never its words. Erasing the person erases the notes about them; erasing
+  an operator keeps the notes they wrote, by the former member.
+- `GET /admin/v1/trips` finds trips by `date` (the day they leave in
+  Iceland), `place` (part of a stop's name in either language),
+  `driverId`, or `id` (a trip's, or a booking's, which finds its trip);
+  the latest departure first. With no filter, the trips from today on, the
+  soonest first. At most 50, with `more` when there were more. Drafts
+  never show, here or on a trip's page.
+- `GET /admin/v1/trips/{id}` gives a trip with every stop (removed ones
+  marked), the car, and every booking and request on it.
+- `GET /admin/v1/decline-rates` lists each driver who answered a request
+  made in the last 90 days (`declineRateDays`), the highest share of
+  declines first, with the reasons they gave. `requestAnswer` in the
+  domain decides what counts: a request accepted or declined by the
+  driver; one declined because its trip was cancelled is not an answer.
+
+Suspending and reinstating from a person's page use the moderation routes
+above, without a `reportId`.
+
 ## A console page
 
 The console is `apps/admin`: React for the web, built with Vite, served by

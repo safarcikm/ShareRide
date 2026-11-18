@@ -20,6 +20,7 @@ import { quickOf, systemLineOf } from "../chat/service.ts";
 const {
   blocks,
   moderationActions,
+  operatorNotes,
   bookingSegmentPrices,
   bookings,
   checkIns,
@@ -630,6 +631,14 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     .where(eq(blocks.blockerId, userId))
     .orderBy(asc(blocks.createdAt), asc(blocks.id));
 
+  // What operators wrote down about the person, never who wrote it (spec 9,
+  // 3.5.3; A49).
+  const noted = await q
+    .select({ text: operatorNotes.text, addedAt: operatorNotes.createdAt })
+    .from(operatorNotes)
+    .where(eq(operatorNotes.userId, userId))
+    .orderBy(asc(operatorNotes.createdAt), asc(operatorNotes.id));
+
   // What ShareRide did about the person and why, with their appeals (spec 9,
   // R9.5); never which operator, nor the report it came from.
   const noticed = await q
@@ -734,6 +743,7 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
         appealedAt: when(row.appealedAt),
         answeredAt: when(row.answeredAt),
       })),
+      notes: noted.map((row) => ({ text: row.text, addedAt: when(row.addedAt) })),
       notifications: told.map((row) => ({
         kind: row.kind,
         channel: row.channel,

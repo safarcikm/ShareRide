@@ -1,7 +1,7 @@
 import { randomInt } from "node:crypto";
-import { readFileSync } from "node:fs";
 import { expect } from "@playwright/test";
 import { smsOutbox } from "../../playwright.config";
+import { readOutbox } from "./outbox";
 
 interface SmsMessage {
   readonly to: string;
@@ -9,11 +9,7 @@ interface SmsMessage {
 }
 
 function messagesTo(phoneNumber: string): SmsMessage[] {
-  return readFileSync(smsOutbox, "utf8")
-    .split("\n")
-    .filter((line) => line !== "")
-    .map((line) => JSON.parse(line) as SmsMessage)
-    .filter((message) => message.to === phoneNumber);
+  return readOutbox<SmsMessage>(smsOutbox).filter((message) => message.to === phoneNumber);
 }
 
 /** How many text messages were sent to `phoneNumber` so far. */

@@ -165,3 +165,29 @@ export const moderationActions = pgTable(
     index("moderation_actions_report_index").on(table.reportId),
   ],
 );
+
+/**
+ * What an operator wrote down about a person (spec 9, 3.5.3), read in the
+ * console. The person gets their own in Download my data, never who wrote
+ * them (A49). Erased with the person; kept, by the former member, when the
+ * operator who wrote them is erased.
+ */
+export const operatorNotes = pgTable(
+  "operator_notes",
+  {
+    id: id(),
+    userId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Trimmed, at most 1 000 characters as chat counts them (`checkOperatorNote`). */
+    text: text().notNull(),
+    byId: uuid().references(() => users.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (table) => [
+    // The domain counts characters; this is a ceiling that holds without it.
+    check("operator_notes_text_check", sql`char_length(${table.text}) between 1 and 4000`),
+    // A person's notes, the latest first.
+    index("operator_notes_user_index").on(table.userId, table.createdAt),
+  ],
+);

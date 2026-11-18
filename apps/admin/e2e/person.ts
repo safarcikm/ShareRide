@@ -12,7 +12,11 @@ async function codeSentTo(phoneNumber: string): Promise<string> {
   let code = "";
   await expect
     .poll(() => {
-      const messages = readFileSync(smsOutbox, "utf8")
+      const written = readFileSync(smsOutbox, "utf8");
+      // A line still being written has no newline yet: read the complete
+      // lines only, and the next poll reads the rest.
+      const messages = written
+        .slice(0, written.lastIndexOf("\n") + 1)
         .split("\n")
         .filter((line) => line !== "")
         .map((line) => JSON.parse(line) as { to: string; text: string })

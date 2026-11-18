@@ -21,6 +21,7 @@ const {
   erasedAccounts,
   formerMemberId,
   messages,
+  operatorNotes,
   reviews,
   scheduledNotifications,
   trips,
@@ -143,6 +144,9 @@ async function eraseAccount(
   // wrote move to the former member below. Done first, a review between two
   // people who both leave never ends up by and about the former member.
   await tx.delete(reviews).where(eq(reviews.subjectId, userId));
+  // So do the notes operators wrote about them (spec 9, 3.5.3); those an
+  // operator wrote about others stay, by the former member, below.
+  await tx.delete(operatorNotes).where(eq(operatorNotes.userId, userId));
 
   // What they said in a conversation a report covers stays for the operator
   // until the report's own time is over, then goes with the conversation
