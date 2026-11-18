@@ -5,6 +5,7 @@ import { useCallback } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useMe, useSession } from "@/auth/session";
 import { Avatar } from "@/components/avatar";
+import { useOpenFeedback } from "@/beta/feedback";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { LanguageSwitch } from "@/components/language-switch";
@@ -58,6 +59,7 @@ function SignedOut() {
 function MyProfile({ me }: { readonly me: Me }) {
   const { t } = useLanguage();
   const session = useSession();
+  const openFeedback = useOpenFeedback();
   const load = useCallback(() => session.call(driverReadinessRoute, {}), [session]);
   const { value: readiness } = useLoadedOnFocus(load);
   // Without an answer the row just leaves the value out.
@@ -115,6 +117,7 @@ function MyProfile({ me }: { readonly me: Me }) {
             router.push("/legal");
           }}
         />
+        <Row title={t("feedback.title")} onPress={openFeedback} />
         <Row
           title={t("notices.title")}
           onPress={() => {

@@ -19,7 +19,9 @@
 // `POST /e2e/report` with `{ "by": "Jón", "tripOf": "Anna", "category":
 // "safety", "description": "…" }` files a report about a sample driver's
 // trip as another sample driver, for the console's reports journey.
-// Never use either for anything else.
+// `POST /e2e/feedback-reply` with `{ "phone": "+354…", "reply": "…" }`
+// replies to the newest feedback that person sent, as the console does, for
+// the feedback journey. Never use any of them for anything else.
 import { randomBytes } from "node:crypto";
 import { appendFileSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -29,7 +31,7 @@ import { pingDatabase, schema } from "@shareride/db";
 import { seedDevelopmentData } from "@shareride/db/seed";
 import { freshTestDatabase } from "@shareride/db/testing";
 import { operatorRole, reportCategories, type ReportCategory } from "@shareride/domain";
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { createApp } from "./app.ts";
 import { createLogger } from "./logger.ts";
 import { selectPhotoStorage } from "./platform/select-photo-storage.ts";
@@ -38,6 +40,7 @@ import {
   createPasskeyService,
   runOperatorCommand,
 } from "./modules/admin/index.ts";
+import { createFeedbackService } from "./modules/beta/index.ts";
 import { createModerationService } from "./modules/moderation/index.ts";
 import { createNotificationWorker } from "./modules/notifications/index.ts";
 import { createExportBuilder, exportCipherPurpose } from "./modules/privacy/index.ts";
@@ -173,6 +176,16 @@ app.post("/e2e/trips/:id/move", async (c) => {
 // made for these tests.
 const moderation = createModerationService({ db: connection.db, clock });
 let operatorId: string | undefined;
+async function testOperator(): Promise<string | undefined> {
+  if (operatorId === undefined) {
+    const [operator] = await connection.db
+      .insert(schema.users)
+      .values({ locale: "en", firstName: "Operator", roles: [operatorRole] })
+      .returning({ id: schema.users.id });
+    operatorId = operator?.id;
+  }
+  return operatorId;
+}
 app.post("/e2e/suspend", async (c) => {
   const body: unknown = await c.req.json();
   const field = (name: string) =>
@@ -190,16 +203,10 @@ app.post("/e2e/suspend", async (c) => {
     .from(users)
     .where(eq(users.phoneE164, phone));
   if (person === undefined) return c.json({ error: "No such person." }, 404);
-  if (operatorId === undefined) {
-    const [operator] = await connection.db
-      .insert(users)
-      .values({ locale: "en", firstName: "Operator", roles: [operatorRole] })
-      .returning({ id: users.id });
-    operatorId = operator?.id;
-  }
-  if (operatorId === undefined) return c.json({ error: "No operator." }, 500);
+  const operator = await testOperator();
+  if (operator === undefined) return c.json({ error: "No operator." }, 500);
   const result = await moderation.suspend(
-    { userId: operatorId, sessionId: null },
+    { userId: operator, sessionId: null },
     { userId: person.id, rule: "harassment", reason, until: null },
     null,
   );
@@ -247,6 +254,38 @@ app.post("/e2e/report", async (c) => {
     description,
   });
   return result.ok ? c.json(result.value, 201) : c.json({ error: result.error.code }, 409);
+});
+
+// ShareRide's one reply to a person's newest feedback, as the console sends
+// it (spec 12, 3.3).
+const feedbackService = createFeedbackService({ db: connection.db, clock });
+app.post("/e2e/feedback-reply", async (c) => {
+  const body: unknown = await c.req.json();
+  const field = (name: string) =>
+    typeof body === "object" && body !== null && name in body
+      ? (body as Record<string, unknown>)[name]
+      : undefined;
+  const phone = field("phone");
+  const reply = field("reply");
+  if (typeof phone !== "string" || typeof reply !== "string") {
+    return c.json({ error: "Send { phone, reply }." }, 400);
+  }
+  const { users, feedback } = schema;
+  const [newest] = await connection.db
+    .select({ id: feedback.id })
+    .from(feedback)
+    .innerJoin(users, eq(users.id, feedback.userId))
+    .where(eq(users.phoneE164, phone))
+    .orderBy(desc(feedback.createdAt))
+    .limit(1);
+  if (newest === undefined) return c.json({ error: "No feedback." }, 404);
+  const operator = await testOperator();
+  if (operator === undefined) return c.json({ error: "No operator." }, 500);
+  const result = await feedbackService.reply(newest.id, reply, {
+    operator: { userId: operator, sessionId: null },
+    request: null,
+  });
+  return result.ok ? c.body(null, 204) : c.json({ error: result.error.code }, 409);
 });
 
 // A browser registers no push token, so nothing is pushed.
