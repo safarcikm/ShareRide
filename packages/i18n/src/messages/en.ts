@@ -1307,6 +1307,10 @@ export const en = {
   "notify.pointBack": "Back in use: {date}",
   "notify.pointPausedBody": "{from} – {to} · {when}. The driver is asked to choose another stop.",
   "notify.pointPausedDriverBody": "Choose another stop for your trip: {when}.",
+  "notify.pointMoved": "Meeting point moved: {point}",
+  "notify.pointMovedBody": "{from} – {to} · {when}. See where it is now before you go.",
+  "notify.pointMovedDriverBody":
+    "Your trip stops there: {when}. See where it is now before you go.",
   "notify.unpaid": "Seat not paid for in time",
   "notify.unpaidDriver": "Not paid for in time: {name}",
   "notify.cancelledByDriver": "The driver cancelled: {reason}",

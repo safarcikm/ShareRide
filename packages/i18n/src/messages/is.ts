@@ -1325,6 +1325,11 @@ export const is = {
   "notify.pointPausedBody":
     "{from} – {to} · {when}. Bílstjórinn er beðinn um að velja annan viðkomustað.",
   "notify.pointPausedDriverBody": "Veldu annan viðkomustað fyrir ferðina: {when}.",
+  "notify.pointMoved": "Mótsstaður færður: {point}",
+  "notify.pointMovedBody":
+    "{from} – {to} · {when}. Sjáðu hvar hann er núna áður en þú leggur af stað.",
+  "notify.pointMovedDriverBody":
+    "Ferðin þín stoppar þar: {when}. Sjáðu hvar hann er núna áður en þú leggur af stað.",
   "notify.unpaid": "Sætið var ekki greitt í tæka tíð",
   "notify.unpaidDriver": "Ekki greitt í tæka tíð: {name}",
   "notify.cancelledByDriver": "Bílstjórinn afbókaði: {reason}",

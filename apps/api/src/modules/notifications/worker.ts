@@ -65,6 +65,8 @@ import {
   type NotificationFacts,
   type OperatorNoticeFacts,
   type PausedPoint,
+  type MovedPoint,
+  type PointMovedFacts,
   type PointPausedFacts,
   type TripReminderFacts,
 } from "./texts.ts";
@@ -278,10 +280,18 @@ function reminderOf(
     | NotificationFacts
     | TripReminderFacts
     | PointPausedFacts
+    | PointMovedFacts
     | AccountNoticeFacts
     | OperatorNoticeFacts,
 ) {
-  if (isAccountNotice(facts.kind) || isOperatorFacts(facts) || "point" in facts) return null;
+  if (
+    isAccountNotice(facts.kind) ||
+    isOperatorFacts(facts) ||
+    "point" in facts ||
+    facts.kind === "meeting_point_moved_driver"
+  ) {
+    return null;
+  }
   if ("passengers" in facts) {
     return { which: driverReminders[facts.kind], startsAt: facts.departsAt };
   }
@@ -390,17 +400,37 @@ async function pausedPointOf(
   };
 }
 
+/** A moved meeting point as its news names it, in the recipient's language (spec 2, 3.6.6). */
+async function movedPointOf(
+  q: Queryable,
+  pointId: string | null,
+  locale: "is" | "en",
+): Promise<MovedPoint | null> {
+  if (pointId === null) return null;
+  const [point] = await q
+    .select({ nameIs: meetingPoints.nameIs, nameEn: meetingPoints.nameEn })
+    .from(meetingPoints)
+    .where(eq(meetingPoints.id, pointId));
+  return point === undefined
+    ? null
+    : { name: named(locale, { is: point.nameIs, en: point.nameEn }) };
+}
+
 /**
  * A pause told to the driver of a trip still to stop at the point, with
  * the trip's time there. `current` is false once the point is back in use,
  * or the trip no longer stops there or has passed it.
  */
-async function pausedForDriverOf(
+async function pointNewsForDriverOf(
   q: Queryable,
   notification: typeof notifications.$inferSelect,
   now: Date,
 ) {
-  if (notification.tripId === null || notification.kind !== "meeting_point_changed_driver") {
+  if (
+    notification.tripId === null ||
+    (notification.kind !== "meeting_point_changed_driver" &&
+      notification.kind !== "meeting_point_moved_driver")
+  ) {
     return undefined;
   }
   const [row] = await q
@@ -426,9 +456,28 @@ async function pausedForDriverOf(
     .where(eq(trips.id, notification.tripId));
   if (row === undefined) return undefined;
   const locale = row.locale === "is" ? "is" : "en";
-  const point = await pausedPointOf(q, notification.meetingPointId, locale);
   const running = row.tripStatus === "published" || row.tripStatus === "departed";
   const stopsAt = row.stopsAt ?? new Date(0);
+  const ahead = running && row.stopsAt !== null && row.stopsAt > now;
+  const to = {
+    locale,
+    recipientId: notification.recipientId,
+    email: row.emailVerifiedAt === null ? null : row.email,
+    phone: null,
+    booking: null,
+  } as const;
+  if (notification.kind === "meeting_point_moved_driver") {
+    const moved = await movedPointOf(q, notification.meetingPointId, locale);
+    const facts: PointMovedFacts = {
+      kind: "meeting_point_moved_driver",
+      role: "driver",
+      tripId: notification.tripId,
+      stopsAt,
+      movedPoint: moved ?? { name: "" },
+    };
+    return { facts, current: moved !== null && ahead, ...to };
+  }
+  const point = await pausedPointOf(q, notification.meetingPointId, locale);
   const facts: PointPausedFacts = {
     kind: "meeting_point_changed_driver",
     role: "driver",
@@ -436,15 +485,7 @@ async function pausedForDriverOf(
     stopsAt,
     point: point ?? { name: "", reason: "", until: null, retired: false },
   };
-  return {
-    facts,
-    current: point !== null && running && row.stopsAt !== null && row.stopsAt > now,
-    locale,
-    recipientId: notification.recipientId,
-    email: row.emailVerifiedAt === null ? null : row.email,
-    phone: null,
-    booking: null,
-  } as const;
+  return { facts, current: point !== null && ahead, ...to };
 }
 
 /** News about the person's account: their data or its deletion (spec 11), or a notice (spec 9). */
@@ -695,7 +736,12 @@ async function factsOf(q: Queryable, notificationId: string, now: Date) {
   if (found === undefined) return undefined;
   if (isAccountNotice(found.kind as NotificationKind)) return accountFactsOf(q, found, now);
   if (isOperatorNotice(found.kind as NotificationKind)) return operatorFactsOf(q, found);
-  if (found.kind === "meeting_point_changed_driver") return pausedForDriverOf(q, found, now);
+  if (
+    found.kind === "meeting_point_changed_driver" ||
+    found.kind === "meeting_point_moved_driver"
+  ) {
+    return pointNewsForDriverOf(q, found, now);
+  }
   if (found.bookingId === null) return tripFactsOf(q, found);
   const [row] = await q
     .select({
@@ -757,6 +803,11 @@ async function factsOf(q: Queryable, notificationId: string, now: Date) {
       : await removedStopOf(q, notification.tripChangeId);
   // A report asks the other side to answer by its deadline (spec 8, R8.6).
   const [report] = answerKinds.has(notification.kind) ? await disputesOf(q, [booking.id]) : [];
+  // The booking still gets in or out at the point a meeting point's news is about.
+  const stopsThere =
+    notification.meetingPointId !== null &&
+    ((row.boardPointId === notification.meetingPointId && row.boardRemovedAt === null) ||
+      (row.alightPointId === notification.meetingPointId && row.alightRemovedAt === null));
   const facts: NotificationFacts = {
     kind: notification.kind as NotificationFacts["kind"],
     role,
@@ -795,10 +846,12 @@ async function factsOf(q: Queryable, notificationId: string, now: Date) {
     // Only while the booking still gets in or out there: after the driver
     // chose another stop, the news names a point the passenger no longer uses.
     pausedPoint:
-      notification.meetingPointId !== null &&
-      ((row.boardPointId === notification.meetingPointId && row.boardRemovedAt === null) ||
-        (row.alightPointId === notification.meetingPointId && row.alightRemovedAt === null))
+      notification.kind === "meeting_point_changed" && stopsThere
         ? await pausedPointOf(q, notification.meetingPointId, locale)
+        : null,
+    movedPoint:
+      notification.kind === "meeting_point_moved" && stopsThere
+        ? await movedPointOf(q, notification.meetingPointId, locale)
         : null,
   };
   return {
@@ -1244,9 +1297,12 @@ export function createNotificationWorker(dependencies: {
    * whose accepted or confirmed booking gets in or out there is told, once
    * each. Back in use since, or the trip over or the stop gone: nobody.
    * Retired while paused: told all the same, as the trip needs another stop.
+   * A point moved more than 50 m (3.6.6) is told to the same people, while
+   * the trip is still to stop there.
    */
-  async function tellOfPause(
+  async function tellOfPointNews(
     tx: Transaction,
+    news: "paused" | "moved",
     payload: Readonly<Record<string, string>>,
     key: string,
     now: Date,
@@ -1274,14 +1330,19 @@ export function createNotificationWorker(dependencies: {
       );
     if (
       stop === undefined ||
-      !pauseStillApplies(stop.status as MeetingPointStatus, stop.reasonIs !== null)
+      (news === "paused" &&
+        !pauseStillApplies(stop.status as MeetingPointStatus, stop.reasonIs !== null))
     ) {
       return;
     }
+    const kinds =
+      news === "paused"
+        ? ({ driver: "meeting_point_changed_driver", passenger: "meeting_point_changed" } as const)
+        : ({ driver: "meeting_point_moved_driver", passenger: "meeting_point_moved" } as const);
     await add(
       tx,
       {
-        kind: "meeting_point_changed_driver",
+        kind: kinds.driver,
         to: "driver",
         recipientId: stop.driverId,
         tripId,
@@ -1308,7 +1369,7 @@ export function createNotificationWorker(dependencies: {
       await add(
         tx,
         {
-          kind: "meeting_point_changed",
+          kind: kinds.passenger,
           to: "passenger",
           recipientId: booking.passengerId,
           bookingId: booking.id,
@@ -1580,8 +1641,14 @@ export function createNotificationWorker(dependencies: {
       );
       return;
     }
-    if (type === "MeetingPointChanged") {
-      await tellOfPause(tx, event.payload, key, now);
+    if (type === "MeetingPointChanged" || type === "MeetingPointMoved") {
+      await tellOfPointNews(
+        tx,
+        type === "MeetingPointChanged" ? "paused" : "moved",
+        event.payload,
+        key,
+        now,
+      );
       return;
     }
     if (type === "MessageSent") {
@@ -1905,6 +1972,10 @@ export function createNotificationWorker(dependencies: {
     // A point back in use since it was paused, or a booking that no longer
     // stops there (spec 2, 3.6.4).
     if (found.facts.kind === "meeting_point_changed" && found.facts.pausedPoint === null) {
+      return { skipped: "no_longer_applies" };
+    }
+    // A moved point's news, once the booking no longer stops there (3.6.6).
+    if (found.facts.kind === "meeting_point_moved" && found.facts.movedPoint === null) {
       return { skipped: "no_longer_applies" };
     }
     const text = () => notificationText(found.facts, found.locale, settings);

@@ -48,6 +48,9 @@ export const notificationRules = {
   refund_issued: { push: false, email: "always", sms: false },
   meeting_point_changed: { push: true, email: "always", sms: true },
   meeting_point_changed_driver: { push: true, email: "always", sms: false },
+  // Moved more than 50 m (spec 2, R2.10), told like a pause.
+  meeting_point_moved: { push: true, email: "always", sms: true },
+  meeting_point_moved_driver: { push: true, email: "always", sms: false },
   new_message: { push: true, email: "never", sms: false },
   unread_messages: { push: false, email: "fallback", sms: false },
   reminder_evening: { push: true, email: "fallback", sms: false },
@@ -144,6 +147,7 @@ export type NotificationEvent =
   | { readonly type: "BookingCancelled"; readonly by: TripRole | "operator" }
   | { readonly type: "RefundIssued" }
   | { readonly type: "MeetingPointChanged" }
+  | { readonly type: "MeetingPointMoved" }
   | { readonly type: "MessageSent"; readonly to: TripRole }
   | { readonly type: "UnreadMessages"; readonly to: TripRole }
   | { readonly type: "ReminderDue"; readonly which: "evening" | "hour"; readonly to: TripRole }
@@ -224,6 +228,11 @@ export function notificationsFor(event: NotificationEvent): readonly Addressed[]
       return [
         { kind: "meeting_point_changed_driver", to: "driver" },
         { kind: "meeting_point_changed", to: "passenger" },
+      ];
+    case "MeetingPointMoved":
+      return [
+        { kind: "meeting_point_moved_driver", to: "driver" },
+        { kind: "meeting_point_moved", to: "passenger" },
       ];
     case "MessageSent":
       return [{ kind: "new_message", to: event.to }];
@@ -307,9 +316,10 @@ export function stillApplies(kind: NotificationKind, status: BookingStatus): boo
     case "checked_in":
     case "checked_in_driver":
       return status === "confirmed";
-    // A paused meeting point matters to a booking that will get in or out
-    // there: accepted or confirmed (spec 2, 3.6.4).
+    // A paused or moved meeting point matters to a booking that will get
+    // in or out there: accepted or confirmed (spec 2, 3.6.4 and 3.6.6).
     case "meeting_point_changed":
+    case "meeting_point_moved":
       return status === "accepted" || status === "confirmed";
     // A report asks for an answer while the booking is as the report left
     // it (spec 8, 3.3 and 3.4); once decided otherwise, it would ask too late.

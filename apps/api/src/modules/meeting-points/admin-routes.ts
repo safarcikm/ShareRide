@@ -11,6 +11,7 @@ import {
   adminMeetingPointPhotosRoute,
   adminMeetingPointRoute,
   adminMeetingPointsRoute,
+  adminMoveMeetingPointRoute,
   adminOrderMeetingPointPhotosRoute,
   adminPauseMeetingPointRoute,
   adminRecomputeLegsRoute,
@@ -27,7 +28,13 @@ import { operatorOf, type AppEnv } from "../../context.ts";
 import { errorBody, errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
 import { auditRequestOf } from "../admin/audit.ts";
-import type { ConsoleActor, MeetingPointAdminService, StatusProblem } from "./admin-service.ts";
+import type {
+  ConsoleActor,
+  MeetingPointAdminService,
+  MoveFieldProblem,
+  MoveProblem,
+  StatusProblem,
+} from "./admin-service.ts";
 import type { MeetingPointIssueService } from "./issues.ts";
 import type { LegService } from "./legs.ts";
 import type { MeetingPointPhotoService, PhotoFieldProblem, PhotoProblem } from "./photos.ts";
@@ -61,7 +68,9 @@ const fileProblemDetail = ({ issue, column, position, line }: ImportFileProblem)
 });
 
 /** Each field and its problem, so the form can show them by the fields. */
-const invalid = (problems: readonly (DraftProblem | PauseProblem | PhotoFieldProblem)[]) =>
+const invalid = (
+  problems: readonly (DraftProblem | PauseProblem | PhotoFieldProblem | MoveFieldProblem)[],
+) =>
   errorBody(
     "validation_failed",
     "The request is not valid.",
@@ -212,6 +221,37 @@ export function registerMeetingPointsAdminRoutes(
     const body = validated(c, "json", adminPauseMeetingPointRoute.request.body);
     const result = await meetingPoints.pause(id, body, actorOf(c));
     return result.ok ? c.json(result.value, 200) : refused(c, result.error);
+  });
+
+  /** The answer to a refused move. */
+  const moveRefused = (c: Context<AppEnv>, problem: MoveProblem) => {
+    switch (problem.code) {
+      case "validation_failed":
+        return c.json(invalid(problem.problems), 400);
+      case "not_found":
+        return errorResponse(c, 404, "not_found", "There is no such meeting point.");
+      case "meeting_point_changed":
+        return errorResponse(
+          c,
+          409,
+          "meeting_point_changed",
+          "The meeting point was saved since this copy was loaded.",
+        );
+      case "move_not_allowed":
+        return errorResponse(
+          c,
+          409,
+          "move_not_allowed",
+          "Only a point in service is moved: a draft's spot is edited in its form.",
+        );
+    }
+  };
+
+  app.openapi(toOpenApiRoute(adminMoveMeetingPointRoute, requireOperator), async (c) => {
+    const { id } = validated(c, "param", adminMoveMeetingPointRoute.request.params);
+    const body = validated(c, "json", adminMoveMeetingPointRoute.request.body);
+    const result = await meetingPoints.move(id, body, actorOf(c));
+    return result.ok ? c.json(result.value, 200) : moveRefused(c, result.error);
   });
 
   app.openapi(toOpenApiRoute(adminResumeMeetingPointRoute, requireOperator), async (c) => {
