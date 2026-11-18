@@ -101,6 +101,7 @@ export function Screen({
               }
             : undefined
         }
+        style={wide ? evenGutterOnWeb : undefined}
         contentContainerStyle={[styles.scroll, { paddingBottom: spacing.md + keyboardRoom }]}
         keyboardShouldPersistTaps="handled"
         {...(stickToEnd
@@ -260,6 +261,15 @@ function useRevealing() {
 export function useWideScreen() {
   return useWindowDimensions().width >= sidePanelFrom;
 }
+
+/**
+ * On the web, a wide screen keeps room for its scrollbar at both sides,
+ * where the browser's scrollbar takes room at all. So the page stays in the
+ * middle of the window, under the top bar's content (spec 18, 3.3), and
+ * does not move when it grows long enough to scroll.
+ */
+const evenGutterOnWeb: object =
+  Platform.OS === "web" ? { scrollbarGutter: "stable both-edges" } : {};
 
 const ScreenViewHeightContext = createContext<number | null>(null);
 

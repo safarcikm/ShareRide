@@ -21,19 +21,21 @@ interface CardProps {
 
 /**
  * A surface with rounded corners and a chunky bottom edge (spec 15, section
- * 5.2). A card that can be pressed sinks over its edge, like a button, and
- * is tinted `primarySoft` under the pointer (spec 18, 3.4).
+ * 5.2). A card that can be pressed sinks over its edge, like a button.
+ * Under the pointer its edge turns `primary`; the face stays `surface`, so
+ * a tag or an avatar on a tint of its own keeps its shape (spec 18, 3.4).
  */
 export function Card({ children, onPress, accessibilityLabel, onHoverIn, onFocus }: CardProps) {
   const palette = usePalette();
   const [hovered, hover] = useHover();
+  const edgeColor = hovered ? palette.primary : palette.edge;
   const face = (pressed: boolean) => (
     <View
       testID="card-face"
       style={[
         styles.face,
-        { backgroundColor: hovered ? palette.primarySoft : palette.surface },
-        chunky(edges.card, palette.edge, pressed).face,
+        { backgroundColor: palette.surface },
+        chunky(edges.card, edgeColor, pressed).face,
       ]}
     >
       {children}
@@ -58,7 +60,7 @@ export function Card({ children, onPress, accessibilityLabel, onHoverIn, onFocus
       }}
       onHoverOut={hover.onHoverOut}
       onFocus={onFocus}
-      style={({ pressed }) => [styles.outer, chunky(edges.card, palette.edge, pressed).outer]}
+      style={({ pressed }) => [styles.outer, chunky(edges.card, edgeColor, pressed).outer]}
     >
       {({ pressed }) => face(pressed)}
     </Pressable>

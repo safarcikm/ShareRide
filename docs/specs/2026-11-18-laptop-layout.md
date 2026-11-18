@@ -100,16 +100,22 @@ changes on a phone.
 2. The logo and name are a link to Find.
 3. Nothing else changes: five places, the chosen one `primary` and
    underlined, the unread count on Messages.
+4. A browser whose scrollbar takes room (Windows, Linux) would push a page
+   that scrolls a little to the left of the bar. A wide screen keeps the
+   same room at both sides, so the page stays under the bar's content.
 
 ### 3.4 Pointer and keyboard
 
-1. Under the pointer, a part that can be pressed shows it: a card or a row
-   that opens something is tinted `primarySoft`; a primary button turns
-   `primaryHover`, a new colour one step from `primary` (darker in light
-   mode, lighter in dark mode), with the same label contrast; a secondary
-   button and a chip are tinted `primarySoft`; a
-   place in the top bar turns `primary`. Only on devices with a pointer; a
-   touch shows the pressed look as before.
+1. Under the pointer, a part that can be pressed shows it: the bottom edge
+   of a card that opens something turns `primary` (its fill stays, because
+   tags and avatars on it sit on `primarySoft` themselves and would lose
+   their shape on a tinted card); a row is tinted `primarySoft`; a primary
+   button turns `primaryHover`, a new colour one step from `primary`
+   (darker in light mode, lighter in dark mode), with the same label
+   contrast; a secondary button, a chip and an icon button are tinted
+   `primarySoft`; a text button is underlined; a place in the top bar turns
+   `primary`. Only on devices with a pointer; a touch shows the pressed
+   look as before. A disabled or busy part shows nothing.
 2. Nothing is reachable only by pointing: every action is on the screen
    without hovering.
 3. The keyboard focus ring stays as it is (spec 15, 5.1).
@@ -298,3 +304,4 @@ Every other text is one the app has.
 | 7 | Settings and forms | Stay one column 480 wide; a form gains nothing from being stretched (my call) |
 | 8 | Does Messages open the newest conversation by itself? | No: opening marks its messages as seen, which only the person should do (my call) |
 | 9 | A colour for a primary button under the pointer | New token `primaryHover` (#285C44 light, #8FD0AC dark), added to spec 15, 4.1 with its contrast check (my call) |
+| 10 | How does a card show the pointer? | Its bottom edge turns `primary`. A tint was tried first and dropped: tags and avatars on the card sit on the same tint and lost their shape (my call, 2026-11-18) |

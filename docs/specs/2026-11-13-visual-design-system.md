@@ -95,7 +95,8 @@ WCAG 2.2 formula; text needs 4.5:1, control edges and focus rings 3:1.
 | `primary` | `#2F6B4F` moss | `#7CC49E` | Main buttons, selected states, links | 5.6, 6.3 / 8.6, 7.6 |
 | `onPrimary` | `#FFFFFF` | `#0C2117` | Text and icons on `primary` | 6.3 / 8.2 |
 | `primaryEdge` | `#1F4A36` | `#4E8E6C` | Bottom edge of primary buttons, checked boxes | decorative |
-| `primarySoft` | `#E2EFE7` | `#203A2D` | Selected chips, "Get in" tags, your seat | `primary` on it 5.3 / 6.0 |
+| `primaryHover` | `#285C44` | `#8FD0AC` | A primary button under the pointer (spec 18, 3.4) | `onPrimary` on it 7.8 / 9.5 |
+| `primarySoft` | `#E2EFE7` | `#203A2D` | Selected chips, "Get in" tags, your seat; a row, a chip or a secondary button under the pointer | `primary` on it 5.3 / 6.0; `text` 12.4 / 10.9; `textMuted` 5.2 / 5.8 |
 | `border` | `#DCE5E8` | `#2C3940` | Dividers and decorative lines only | decorative |
 | `control` | `#7F8C93` | `#6E7D85` | Edges of inputs, checkboxes, radios, switches when off, seat outlines | 3.5 on surface, 3.1 on background / 3.7, 4.1 |
 | `edge` | `#D2DDE1` | `#0B1013` | Solid bottom edge of cards and secondary buttons | decorative |
@@ -193,7 +194,7 @@ Two free fonts (SIL Open Font License), both with every Icelandic letter
 | Spacing | `xs` 4, `sm` 8, `ms` 12, `md` 16, `lg` 24, `xl` 32, `xxl` 48 |
 | Corners | `seat` 4 (seat legend), `checkbox` 9, `tag` 12, `control` 16 (buttons, inputs, notices), `card` 22, `pill` 999 (chips, need bubbles, icon buttons) |
 | Bottom edges | `card` 3 (`edge` colour), `buttonPrimary` 4 (`primaryEdge`), `buttonSecondary` 3 (`edge`) |
-| Sizes | `minTouchTarget` 44, `buttonHeight` 48, `mainButtonHeight` 56, `inputHeight` 52, `chipHeight` 40, `iconButton` 44, `checkbox` 26, `row` 56, `maxContentWidth` 480; `controlOutline` 2 (inputs, tick boxes, chips) |
+| Sizes | `minTouchTarget` 44, `buttonHeight` 48, `mainButtonHeight` 56, `inputHeight` 52, `chipHeight` 40, `iconButton` 44, `checkbox` 26, `row` 56, `maxContentWidth` 480; `controlOutline` 2 (inputs, tick boxes, chips); on wide screens `pageMaxWidth` 1144, `sideColumnWidth` 400, `gridCardMinWidth` 320, `listPaneWidth` 360 (section 4.8) |
 
 - `ms` 12 is new; the other spacing names are unchanged.
 - Screen padding is `md`; gaps between cards are `md`; inside a card, `ms`
@@ -214,6 +215,8 @@ name. Shape people and the car are our own drawings.
 ### 4.6 Motion
 
 - Press feedback is instant: the part moves down by its edge.
+- Under a pointer a part changes colour at once and nothing moves (spec 18,
+  3.4).
 - Choosing a seat count "pops" the seat in the seat view (scale 0.9 to 1,
   150 ms). Screens otherwise use the platform's own transitions.
 - With reduce motion turned on, the pop is skipped and nothing else moves.
@@ -231,7 +234,20 @@ review board shows the trip details in Icelandic and dark mode.
 
 - Content sits in one column at most 480 wide, centred.
 - From 900 wide, the menu is the `TopBar` above every screen instead of the
-  `TabBar` (spec 16, 3.1).
+  `TabBar` (spec 16, 3.1). What the bar holds is at most 1144 wide in the
+  middle, so the logo and the language line up with the edges of a page
+  (spec 18, 3.3).
+- From 900 wide, a screen with more to show than one column holds is a
+  **page** at most 1144 wide (`pageMaxWidth`: the column, a `lg` gap and the
+  640 of a map beside it), laid out with `Columns` or a `Grid` (section 5.2;
+  spec 18, 3.2). There is one breakpoint, 900; under it every screen is the
+  column.
+- On the web, a wide screen keeps room for its scrollbar at both sides
+  (`scrollbar-gutter: stable both-edges`), so the page stays in the middle
+  of the window, under the bar, whether or not it scrolls.
+- Under a pointer, parts that can be pressed show it (sections 5.1 and 5.2;
+  spec 18, 3.4). Phones have no pointer, and nothing is reached only by
+  pointing.
 - From 900 wide, the trip details and request screens move the price and main
   action from the bottom bar into a panel 320 wide beside the column.
 - Search results put the map beside the list (spec 4).
@@ -287,25 +303,25 @@ and tests need no edits. Only the look changes.
 
 | Part | Look |
 | ---- | ---- |
-| `Button` `primary` | `primary` fill, `onPrimary` label in `button`, corner `control`, 4 bottom edge in `primaryEdge`, height 48 (56 for the main action in a bottom bar). Every button fits its label, with `lg` padding each side, and sits in the middle of the column |
-| `Button` `secondary` | `surface` fill, 2 `control` outline, `text` label, 3 bottom edge in `edge` |
-| `Button` `text` | No fill, `primary` label in `label`, at least 44 high |
+| `Button` `primary` | `primary` fill, `onPrimary` label in `button`, corner `control`, 4 bottom edge in `primaryEdge`, height 48 (56 for the main action in a bottom bar). Every button fits its label, with `lg` padding each side, and sits in the middle of the column. Under the pointer the fill is `primaryHover` |
+| `Button` `secondary` | `surface` fill, 2 `control` outline, `text` label, 3 bottom edge in `edge`. Under the pointer the fill is `primarySoft` |
+| `Button` `text` | No fill, `primary` label in `label`, at least 44 high. Under the pointer the label is underlined |
 | `Button` `busy` | A small spinner before the label, which stays; it can't be pressed again; `accessibilityState.busy` |
-| `Button` `disabled` | `border` fill, `textMuted` label, no edge; never shown with opacity alone |
+| `Button` `disabled` | `border` fill, `textMuted` label, no edge; never shown with opacity alone. A disabled or busy button shows nothing under the pointer |
 | `TextField` | `label` above in `text`; input height 52, `surface`, 2 `control` outline, corner `control`; the outline turns `primary` while you type in it; `help` below in `small` `textMuted`; with `error`, the outline and message turn `error` and the message starts with an alert icon |
 | `TimeField` | A time of day, chosen and not typed: looks like `TextField`, with the time in `bodyStrong` (or "Choose a time" in `textMuted`) and a chevron at the end; pressing it opens a wheel under it and turns the outline `primary`. The wheel sits in a box with a 2 `border` outline and corner `control`: hours 00 to 23 and minutes in 5-minute steps, side by side with a colon, in `figure`, rows 44 high (taller, and the wheels wider, as the phone's text size grows), five rows showing, the chosen row in `text` on a `primarySoft` band across both wheels and the others in `textMuted`, then a `secondary` Done button. The wheels stop on a row; tapping a row chooses it; they do not go round. Phones read each wheel as one adjustable element (swipe up or down), the web as a spin button (arrow keys, Home, End). Done, a second press on the field, Escape and Android's back close it; one wheel is open at a time |
 | `Checkbox` | 26 square, corner 9, 2 `control` outline; checked: `primary` fill, `onPrimary` tick, 2 `primaryEdge` bottom edge; the whole row is pressable |
-| `Chip` | 40 high, corner `pill`, `surface`, 2 `control` outline, `label` text; selected: `primarySoft` fill, `primary` outline and a tick before the label; one that opens choices under it, such as "Sort: Earliest", has a chevron after the label, down or up (spec 16, 3.8); a label in another language, such as "Íslenska", carries its language (`lang`) |
+| `Chip` | 40 high, corner `pill`, `surface`, 2 `control` outline, `label` text; selected: `primarySoft` fill, `primary` outline and a tick before the label; one that opens choices under it, such as "Sort: Earliest", has a chevron after the label, down or up (spec 16, 3.8); a label in another language, such as "Íslenska", carries its language (`lang`). Under the pointer a chip that is not selected is filled `primarySoft` and keeps its `control` outline |
 | `Notice` | Corner `control`, an icon then the message in `body`; `error` on `errorSoft` with an alert icon, `info` on `infoSoft` with an info icon |
 | `TextLink` | `primary`, Nunito 700, always underlined (moss on basalt text is only 2.3:1, so the underline is what marks a link), centred; in a settings row it starts at the left with the row's text (`align="start"`) |
-| `BackButton` | 44 round, `surface`, 3 `edge` bottom edge, chevron icon; accessible name "Back" |
+| `BackButton` | 44 round, `surface`, 3 `edge` bottom edge, chevron icon; accessible name "Back"; `primarySoft` under the pointer, as every `IconButton` |
 | `Loading` | A `primary` spinner centred on `background` |
-| `Screen` | `background`, safe area, `md` padding, column at most 480 wide |
+| `Screen` | `background`, safe area, `md` padding, column at most 480 wide. With `width="page"`, from 900 wide the content is a page at most 1144 wide instead (section 4.8); a bottom bar keeps the column |
 | `Title` | `title`, `text`, role header, centred |
 | `Body` | `body`, `textMuted` (the intro or help line under a title), centred; long text such as a legal document starts at the left |
 | `LanguageSwitch` | A `text` button with the other language's name |
 | `TabBar` | The menu on a phone's main screens (spec 16): `surface`, a 2 `border` line on top, room for the home indicator; five places, each an icon (22) over its name in `caption`, at least 56 high; the chosen one in `primary` with a `primarySoft` pill (56 wide) behind its icon, the others in `textMuted`. Phones read it as tabs with the chosen one selected; the web as the main navigation, with links and the current page marked |
-| `TopBar` | The menu from 900 wide, above every screen: `surface`, a 2 `border` line under it; the `Logo` (36) and "ShareRide" in `heading` at the left, the five places in `label` (the chosen one `primary` and underlined, at least 44 high), then the `LanguageSwitch` |
+| `TopBar` | The menu from 900 wide, above every screen: `surface`, a 2 `border` line under it; the `Logo` (36) and "ShareRide" in `heading` at the left, together a link to Find named "ShareRide, to the front page"; the five places in `label` (the chosen one `primary` and underlined, at least 44 high; one under the pointer `primary`), then the `LanguageSwitch`. All of it in a row at most 1144 wide in the middle, with `md` padding at each side, as a page has (spec 18, 3.3) |
 | `CountBadge` | The unread count on Messages (spec 7, 3.1, item 9): `onPrimary` figures in `caption` on a `primary` pill, at least 20 (`sizes.badge`) wide and high, with a 2 `surface` ring; up to 9, then "9+"; nothing at zero. On the tab bar it sits on the icon's top corner, in the top bar after the name. Screen readers skip it: the place's name says the count ("Messages, 3 unread") |
 | `Logo` | The app icon in small: logo A on `primary`, corners rounded like an app icon, the same in both modes; hidden from screen readers, since the name sits beside it |
 
@@ -324,9 +340,11 @@ Built when the screens that need them are built.
 
 | Part | What it is |
 | ---- | ---------- |
-| `Card` | `surface`, corner `card`, 3 `edge` bottom edge, `md` padding |
+| `Card` | `surface`, corner `card`, 3 `edge` bottom edge, `md` padding. Under the pointer, the edge of a card that can be pressed turns `primary`; its fill stays, so a tag or an avatar on a tint of its own keeps its shape (spec 18, 3.4) |
+| `Columns` | On a page (section 4.8): a main column that takes the room left and a side column 400 wide (`sideColumnWidth`) with a `lg` gap, each with `md` between its parts. The side column sits at the right, or at the left (`sideAt="start"`), and on the web stays in view while the main column scrolls. Whichever side it is on, a screen reader and the keyboard come to the main column first. Under 900 wide the two stack, main first |
+| `Grid` | Cards in equal columns with `md` gaps: as many as fit at 320 wide or more each (`gridCardMinWidth`), by the room the grid has and not by the window or the text size; one column on a phone |
 | `Tag` | `caption` text on a tinted fill, corner `tag` (section 4.1) |
-| `IconButton` | 44 round, like `BackButton`, for share and more |
+| `IconButton` | 44 round, like `BackButton`, for share and more; `primarySoft` under the pointer unless it is disabled |
 | `Stepper` | Minus and plus as 48 square secondary buttons, the value in `figure` between them; accessible names "One seat fewer" and "One seat more"; adjustable role with a value |
 | `Switch` | Off: `control` track outline; on: `primary` track; label to the left |
 | `RadioCard` | A card with a radio, a title and a line of help; selected: `primary` 2 outline |
@@ -338,7 +356,7 @@ Built when the screens that need them are built.
 | `PriceLevel` | The price level control of spec 3, as on the price step below: a track in 10% steps with the suggested level marked, a shape person as the handle, and minus and plus buttons; adjustable role whose value reads the level and the whole-route price |
 | `SeatView` | The top-down car (section 5.3) |
 | `Avatar` | The real profile photo, round; without a photo, the first letter on a people colour. Never a shape person |
-| `Row` | A row that opens a screen, in a `Card`: the title on the left in `bodyStrong`, a value such as "Confirmed" in `small` `textMuted`, then a chevron in `textMuted`; at least `row` 56 high; tinted `primarySoft` while pressed (spec 16, 3.4) |
+| `Row` | A row that opens a screen, in a `Card`: the title on the left in `bodyStrong`, a value such as "Confirmed" in `small` `textMuted`, then a chevron in `textMuted`; at least `row` 56 high; tinted `primarySoft` while pressed (spec 16, 3.4) and under the pointer |
 | `PlaceDropdown` | From or To while it is being chosen: its caption and dot stay, a text field with a 2 `primary` outline takes the place of the value, with Close as a small X (18) in `textMuted` inside its end, 44 square to press; what the search finds is listed under it in a box with a 2 `border` outline and corner `control`, as rows with the name in `bodyStrong` and the type and place in `small`, tinted `primarySoft` while pressed or under the pointer. Towns and areas come first, then meeting points, each under a heading in `caption` `textMuted`; a sample point has no tag on its row, and one "Sample meeting points" tag sits under the list (spec 16, 3.8). The swap button waits until it closes |
 
 ### 5.3 Shape people and the seat view

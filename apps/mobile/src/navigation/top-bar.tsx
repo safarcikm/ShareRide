@@ -13,7 +13,14 @@ import { Logo } from "@/components/logo";
 import { useUnread } from "@/chat/unread";
 import { useLanguage } from "@/i18n/language";
 import { useHover } from "@/theme/hover";
-import { controlOutline, minTouchTarget, sizes, spacing, typography } from "@/theme/tokens";
+import {
+  controlOutline,
+  minTouchTarget,
+  pageMaxWidth,
+  sizes,
+  spacing,
+  typography,
+} from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { CountBadge } from "./count-badge";
 import { menuTabOf, menuTabs } from "./menu";
@@ -39,10 +46,11 @@ function opensElsewhere(event: GestureResponderEvent): boolean {
 
 /**
  * The menu on wide screens (spec 16, 3.1): the logo and name, the places
- * and the language, in a bar at the top of every screen. The place the
- * screen belongs to is chosen: `primary` and underlined. Messages shows its
- * unread count after its name. A place under the pointer turns `primary`
- * (spec 18, 3.4).
+ * and the language, in a bar at the top of every screen. The bar spans the
+ * window; what it holds lines up with the page under it, and the logo and
+ * name open Find (spec 18, 3.3). The place the screen belongs to is chosen:
+ * `primary` and underlined. Messages shows its unread count after its name.
+ * A place under the pointer turns `primary` (spec 18, 3.4).
  */
 export function TopBar({
   onSwitchLanguage,
@@ -66,26 +74,41 @@ export function TopBar({
           backgroundColor: palette.surface,
           borderBottomColor: palette.border,
           paddingTop: insets.top + spacing.sm,
-          paddingLeft: insets.left + spacing.lg,
-          paddingRight: insets.right + spacing.lg,
+          paddingLeft: insets.left + spacing.md,
+          paddingRight: insets.right + spacing.md,
         },
       ]}
     >
-      <View style={styles.brand}>
-        <Logo size={sizes.logoSmall} />
-        <Text style={[typography.heading, { color: palette.text }]}>{t("app.name")}</Text>
+      <View testID="top-bar-content" style={styles.content}>
+        <View style={styles.brandSide}>
+          <Pressable
+            {...(onWeb ? ({ role: "link", href: "/" } as const) : { accessibilityRole: "link" })}
+            accessibilityLabel={t("nav.home")}
+            onPress={(event) => {
+              if (opensElsewhere(event)) return;
+              event.preventDefault();
+              openPlace("/");
+            }}
+            style={styles.brand}
+          >
+            <Logo size={sizes.logoSmall} />
+            <Text style={[typography.heading, { color: palette.text }]}>{t("app.name")}</Text>
+          </Pressable>
+        </View>
+        <View {...role} style={styles.places}>
+          {menuTabs.map((tab) => (
+            <Place
+              key={tab.name}
+              tab={tab}
+              chosen={tab.name === current}
+              unread={tab.name === "messages" ? total : 0}
+            />
+          ))}
+        </View>
+        <View style={styles.language}>
+          <LanguageSwitch onSwitch={onSwitchLanguage} />
+        </View>
       </View>
-      <View {...role} style={styles.places}>
-        {menuTabs.map((tab) => (
-          <Place
-            key={tab.name}
-            tab={tab}
-            chosen={tab.name === current}
-            unread={tab.name === "messages" ? total : 0}
-          />
-        ))}
-      </View>
-      <LanguageSwitch onSwitch={onSwitchLanguage} />
     </View>
   );
 }
@@ -140,14 +163,25 @@ function Place({
 }
 
 const styles = StyleSheet.create({
-  bar: {
+  bar: { alignItems: "center", paddingBottom: spacing.sm, borderBottomWidth: controlOutline },
+  // As wide as a page (`Screen`), whose padding the bar's own matches.
+  content: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.lg,
-    paddingBottom: spacing.sm,
-    borderBottomWidth: controlOutline,
+    width: "100%",
+    maxWidth: pageMaxWidth,
   },
-  brand: { flexDirection: "row", alignItems: "center", gap: spacing.sm, flex: 1 },
+  // The link is only as wide as the logo and name, not the room beside them.
+  brandSide: { flex: 1, alignItems: "flex-start" },
+  brand: {
+    minHeight: minTouchTarget,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  // A text button pads its label; this ends the label at the page's edge.
+  language: { marginRight: -spacing.sm },
   places: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
   place: {
     minHeight: minTouchTarget,

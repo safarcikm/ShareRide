@@ -11,6 +11,7 @@ export const en = {
   "language.english": "English",
   "language.icelandic": "Íslenska",
   "nav.main": "Main menu",
+  "nav.home": "ShareRide, to the front page",
   "nav.find": "Find",
   "nav.myRides": "My rides",
   "nav.offer": "Offer",

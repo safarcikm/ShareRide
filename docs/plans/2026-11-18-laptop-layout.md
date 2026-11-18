@@ -185,32 +185,37 @@ bar `primary`. A disabled or busy part shows none.
 **Files:**
 
 - Modify: `apps/mobile/src/navigation/top-bar.tsx`,
+  `apps/mobile/src/components/screen.tsx` (the scrollbar's room),
   `packages/i18n/src/messages/en.ts`, `is.ts` (`nav.home`)
-- Create: `apps/mobile/e2e/laptop.spec.ts`
-- Modify: `apps/mobile/e2e/look.spec.ts` (the language switch's place)
-- Test: `apps/mobile/src/components/navigation-parts.test.tsx`
+- Create: `apps/mobile/e2e/laptop.spec.ts`, `apps/mobile/e2e/support/laptop.ts`
+- Test: `apps/mobile/src/__tests__/menu.test.tsx`
 
 **Interfaces:**
 
 - Produces: the bar's content in a row at most `pageMaxWidth` wide in the
   middle (test ID `top-bar-content`), with `md` padding at each side as the
   page has; the logo and name as one link to `/` named `nav.home`.
-- Produces: in `laptop.spec.ts`, `expectNoSidewaysScroll(page)` (the
-  document and the screen's scroll are no wider than the window) and
-  `widths = [900, 1280, 1440]`, for the later PRs to add their screens to.
+- Produces: on the web, a wide `Screen` scrolls with
+  `scrollbar-gutter: stable both-edges`, so a page stays under the bar's
+  content where the scrollbar takes room.
+- Produces: in `e2e/support/laptop.ts`, `expectNoSidewaysScroll(page)` (the
+  document and the screen's scroll are no wider than the window),
+  `widths = [900, 1280, 1440]` and `laptop(width)`, a viewport; the later
+  PRs add their screens to `laptop.spec.ts`. (A journey may not import
+  from another journey's file, so the helpers have their own.)
 
-- [ ] **Step 1: Failing tests:** in `navigation-parts.test.tsx`, the bar's
-  content has `maxWidth` 1144 and the link "ShareRide, to the front page"
-  opens `/`. In `laptop.spec.ts`, at each width: Find, `/meeting-points`
-  and `/profile` do not scroll sideways; at 1440 the logo's left edge is
-  within 1 of 148 (the page's edge); clicking the logo from `/profile`
-  opens Find.
-- [ ] **Step 2:** Run the Jest test; expect failures.
-- [ ] **Step 3:** Implement; fix `look.spec.ts`'s check of where the
-  language switch sits.
-- [ ] **Step 4:** Jest, then
+- [x] **Step 1: Failing tests:** in `menu.test.tsx`, the bar's content has
+  `maxWidth` 1144 and the link "ShareRide, to the front page" opens `/`.
+  In `laptop.spec.ts`, at each width: Find, `/meeting-points` and
+  `/profile` do not scroll sideways; at 1440 the logo's left edge is at 148
+  and the language ends at 1292 (the page's edges); clicking the logo from
+  `/profile` opens Find.
+- [x] **Step 2:** Run the Jest test; expect failures.
+- [x] **Step 3:** Implement. (`look.spec.ts` only checks that the language
+  switch is in the bar, so it needs no change.)
+- [x] **Step 4:** Jest, then
   `npx playwright test e2e/laptop.spec.ts e2e/look.spec.ts --trace off`; expect pass.
-- [ ] **Step 5:** Spec 15 rows for `Screen`, `Columns`, `Grid`, `TopBar`
+- [x] **Step 5:** Spec 15 rows for `Screen`, `Columns`, `Grid`, `TopBar`
   and the pointer looks; `CHANGELOG.md`. Commit `feat(mobile): the top bar lines up with the page`.
 
 ## PR 2: Find

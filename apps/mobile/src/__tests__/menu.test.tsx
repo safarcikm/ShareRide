@@ -284,6 +284,21 @@ describe("The top bar on wide screens", () => {
     expect(screen.queryByTestId("tab-bar")).toBeNull();
   });
 
+  it("lines its content up with the page (spec 18, 3.3)", async () => {
+    await renderApp("/");
+    await screen.findByTestId("top-bar");
+    expect(screen.getByTestId("top-bar-content")).toHaveStyle({ maxWidth: 1144, width: "100%" });
+  });
+
+  it("opens Find from the logo and name", async () => {
+    const app = await renderApp("/profile");
+    const bar = within(await screen.findByTestId("top-bar"));
+    await fireEvent.press(bar.getByRole("link", { name: "ShareRide, to the front page" }));
+    expect(await screen.findByRole("button", { name: "Find a ride" })).toBeVisible();
+    expect(screen).toHavePathname("/");
+    expect(menuCopies(app.getRouterState())).toBe(1);
+  });
+
   it("turns a place primary under the pointer, underlined only when chosen", async () => {
     await renderApp("/");
     const bar = within(await screen.findByTestId("top-bar"));

@@ -54,18 +54,21 @@ describe("Card", () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
-  it("is tinted under the pointer when it can be pressed (spec 18, 3.4)", async () => {
+  it("turns its edge primary under the pointer when it can be pressed (spec 18, 3.4)", async () => {
     await render(
       <Card onPress={jest.fn()} accessibilityLabel="BSÍ, Bus hub">
         <Text>BSÍ</Text>
       </Card>,
     );
     await fireEvent(screen.getByRole("button"), "hoverIn");
-    expect(screen.getByTestId("card-face")).toHaveStyle({
-      backgroundColor: colors.light.primarySoft,
+    expect(screen.getByTestId("card")).toHaveStyle({
+      borderBottomWidth: 3,
+      borderBottomColor: colors.light.primary,
     });
-    await fireEvent(screen.getByRole("button"), "hoverOut");
+    // What sits on tints of its own, such as a tag, keeps the surface under it.
     expect(screen.getByTestId("card-face")).toHaveStyle({ backgroundColor: colors.light.surface });
+    await fireEvent(screen.getByRole("button"), "hoverOut");
+    expect(screen.getByTestId("card")).toHaveStyle({ borderBottomColor: colors.light.edge });
   });
 
   it("tells when the pointer or the keyboard comes to it", async () => {
@@ -78,9 +81,7 @@ describe("Card", () => {
     );
     await fireEvent(screen.getByRole("button"), "hoverIn");
     expect(onHoverIn).toHaveBeenCalledTimes(1);
-    expect(screen.getByTestId("card-face")).toHaveStyle({
-      backgroundColor: colors.light.primarySoft,
-    });
+    expect(screen.getByTestId("card")).toHaveStyle({ borderBottomColor: colors.light.primary });
     await fireEvent(screen.getByRole("button"), "focus");
     expect(onFocus).toHaveBeenCalledTimes(1);
   });
