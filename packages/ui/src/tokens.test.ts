@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { contrastRatio } from "./contrast.ts";
-import { colors, typeScale } from "./tokens.ts";
+import {
+  asideMaxWidth,
+  colors,
+  maxContentWidth,
+  pageMaxWidth,
+  sideColumnWidth,
+  spacing,
+  typeScale,
+} from "./tokens.ts";
 
 // Every pair spec 15 (section 4.1) promises, in both colour schemes.
 const textPairs = [
@@ -11,6 +19,8 @@ const textPairs = [
   ["primary", "background"],
   ["primary", "surface"],
   ["onPrimary", "primary"],
+  // A primary button under the pointer (spec 18, 3.4).
+  ["onPrimary", "primaryHover"],
   ["primary", "primarySoft"],
   ["error", "background"],
   ["error", "surface"],
@@ -55,6 +65,13 @@ describe("tokens", () => {
     expect(contrastRatio("#FFFFFF", "#000000")).toBeCloseTo(21, 5);
     expect(contrastRatio("#000000", "#FFFFFF")).toBeCloseTo(21, 5);
     expect(contrastRatio("#1F2A30", "#EEF3F4")).toBeCloseTo(13.1, 1);
+  });
+
+  it("makes a wide page as wide as the column, a gap and the map beside it", () => {
+    expect(pageMaxWidth).toBe(maxContentWidth + spacing.lg + asideMaxWidth);
+    expect(pageMaxWidth).toBe(1144);
+    // A main column beside the side column stays wider than it at 900 wide.
+    expect(sideColumnWidth).toBe(400);
   });
 
   it("sets weights through the font face only", () => {
