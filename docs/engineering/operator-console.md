@@ -648,7 +648,10 @@ version }` with the version the page loaded: it takes a lock on the
   gets `feedback_replied` by push (only that there is a reply) and email
   (the reply). Audit entries `feedback.screenshot_viewed`,
   `feedback.status_changed` and `feedback.replied` (when, not what). The
-  console's page comes with the app's form (milestone 11, PR 6).
+  console's Feedback page (`apps/admin/src/pages/feedback/`) lists it by
+  status and kind with how many are new, links to the account, shows the
+  picture only after "Show the screenshot" (each look is audited), sets
+  the status and sends the one reply.
 - The console's Invite codes page (`apps/admin/src/pages/invite-codes/`)
   shows the places left, a form for a new group code (it works through the
   end of the chosen day) and each code with its uses; ending one asks

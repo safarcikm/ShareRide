@@ -19,6 +19,9 @@ export default {
     "^@sentry/react-native$": "<rootDir>/src/testing/sentry.ts",
     // Native only; tests set the permission, the token and taps themselves.
     "^expo-notifications$": "<rootDir>/src/testing/notifications.ts",
+    // Native only; tests set the screen's picture and shake the phone themselves.
+    "^react-native-view-shot$": "<rootDir>/src/testing/view-shot.ts",
+    "^expo-sensors$": "<rootDir>/src/testing/sensors.ts",
   },
   transformIgnorePatterns: [
     nodeModulesPattern.replace("(.pnpm|", "(.pnpm|intl-messageformat|@formatjs|"),

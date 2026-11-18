@@ -6,6 +6,8 @@ import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
+import { useOpenFeedback } from "@/beta/feedback";
+import { ShakeSwitch } from "@/beta/shake";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
@@ -26,7 +28,8 @@ import { usePalette } from "@/theme/use-palette";
  * side by side, Your account with the private phone number (spec 16, 3.4),
  * the email (plan 4.6) and Privacy and your data (spec 11), Notifications
  * with the Trip reminders switch (spec 7, 3.6), Safety with Blocked people
- * (spec 9, 3.2), legal documents, and signing out here or on every device.
+ * (spec 9, 3.2), Feedback (spec 12, 3.3), legal documents, and signing out
+ * here or on every device.
  * Rows start at the left. Signed out, it closes back to the menu.
  */
 export default function SettingsScreen() {
@@ -39,6 +42,7 @@ function Settings({ me }: { readonly me: Me }) {
   const { locale, setLocale, t } = useLanguage();
   const session = useSession();
   const palette = usePalette();
+  const openFeedback = useOpenFeedback();
   const [signingOut, setSigningOut] = useState<"one" | "all" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -149,6 +153,19 @@ function Settings({ me }: { readonly me: Me }) {
             }}
           />
         </Card>
+      </View>
+      <View style={styles.section}>
+        {heading(t("feedback.heading"))}
+        <Card>
+          <Row title={t("feedback.title")} onPress={openFeedback} />
+          <Row
+            title={t("feedback.mine")}
+            onPress={() => {
+              router.push("/settings/feedback");
+            }}
+          />
+        </Card>
+        <ShakeSwitch />
       </View>
       <View style={styles.section}>
         {heading(t("settings.legal"))}
