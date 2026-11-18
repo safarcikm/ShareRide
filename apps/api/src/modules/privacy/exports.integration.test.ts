@@ -633,6 +633,68 @@ describe("download my data (spec 11, 3.2)", () => {
     expect(unlabelledFields(annas.data)).toEqual([]);
   });
 
+  it("has the reviews about the person from trips over 3 years ago, by nobody (A51)", async () => {
+    const gunna = await newMember("Gunna");
+    const sentAt = api.now();
+    const shownAt = new Date(sentAt.getTime() + hours(1) * 1000);
+    // As the 3-year clean-up leaves them: by the former member, on no ride.
+    // The last one about her never showed.
+    await api.connection.db.insert(schema.reviews).values([
+      {
+        bookingId: null,
+        authorId: schema.formerMemberId,
+        subjectId: gunna.userId,
+        authorRole: "driver",
+        rating: 4,
+        comment: "On time",
+        revealedAt: shownAt,
+        createdAt: sentAt,
+      },
+      {
+        bookingId: null,
+        authorId: schema.formerMemberId,
+        subjectId: gunna.userId,
+        authorRole: "passenger",
+        rating: 3,
+        comment: "Quiet company",
+        revealedAt: shownAt,
+        hiddenAt: shownAt,
+        createdAt: sentAt,
+      },
+      {
+        bookingId: null,
+        authorId: schema.formerMemberId,
+        subjectId: gunna.userId,
+        authorRole: "driver",
+        rating: 1,
+        comment: "Never shown",
+        createdAt: sentAt,
+      },
+    ]);
+
+    const { data, text } = await exportOf(gunna);
+    expect(data.sections.earlier_reviews).toEqual([
+      {
+        authorRole: "driver",
+        rating: 4,
+        comment: "On time",
+        sentAt: sentAt.toISOString(),
+        shownAt: shownAt.toISOString(),
+        hiddenAt: null,
+      },
+      {
+        authorRole: "passenger",
+        rating: 3,
+        comment: "Quiet company",
+        sentAt: sentAt.toISOString(),
+        shownAt: shownAt.toISOString(),
+        hiddenAt: shownAt.toISOString(),
+      },
+    ]);
+    expect(text).not.toContain("Never shown");
+    expect(unlabelledFields(data)).toEqual([]);
+  });
+
   it("labels every field of the readable page in both languages", async () => {
     const { passengers, anna } = await busyTrip();
     for (const member of [anna, ...passengers]) {

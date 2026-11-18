@@ -23,7 +23,7 @@ export async function revealDueReviews(
 ): Promise<number> {
   return db.transaction(async (tx) => {
     const due = await tx
-      .select({ id: reviews.id, bookingId: reviews.bookingId, completedAt: bookings.completedAt })
+      .select({ id: reviews.id, bookingId: bookings.id, completedAt: bookings.completedAt })
       .from(reviews)
       .innerJoin(bookings, eq(bookings.id, reviews.bookingId))
       .leftJoin(disputes, and(eq(disputes.bookingId, reviews.bookingId), isNull(disputes.outcome)))

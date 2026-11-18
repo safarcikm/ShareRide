@@ -249,6 +249,9 @@ or 14 days after the booking completed), `hidden_at` (moderation, spec 9).
 One per author per completed booking; a driver absence that stands, or a
 passenger found absent, deletes the booking's reviews
 ([spec 8, 3.7](../specs/2026-11-13-trip-day-reviews-and-reliability.md#37-ratings-and-reviews-g1)).
+3 years after the trip, when the trip is made anonymous, a review is by the
+former member and `booking_id` is null; only the former member's reviews may
+have none (A51).
 
 ### Trip day and reliability records
 
@@ -363,7 +366,8 @@ Enforced in the domain package and, where possible, in the database too.
 6. A booking's total price equals seats times the sum of its segment price
    snapshot.
 7. A user cannot book their own trip.
-8. Reviews exist only for completed bookings, one per author per booking.
+8. Reviews exist only for completed bookings, one per author per booking
+   (3 years on, by the former member and on no booking, A51).
 9. A trip with active bookings cannot be deleted, only cancelled.
 10. Only users who have opted in, and whose access is not withdrawn, can
     publish, request or book a women-only trip.
