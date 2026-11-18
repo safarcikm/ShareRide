@@ -374,6 +374,10 @@ export const is = {
   "trip.post": "Setja inn ferð",
   "trip.myTrips": "Ferðirnar mínar",
   "trip.step": "Skref {step} af {total}",
+  "trip.soFar": "Ferðin þín hingað til",
+  "trip.soFarLater": "Skref {step}",
+  "trip.soFarStops":
+    "{count, plural, one {# viðkomustaður á leiðinni} other {# viðkomustaðir á leiðinni}}",
   "trip.saveChanges": "Vista breytingar",
   "trip.distancesPending":
     "Við erum enn að reikna vegalengdir á þessari leið. Reyndu aftur eftir smá stund.",

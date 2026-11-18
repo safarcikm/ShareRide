@@ -365,6 +365,9 @@ export const en = {
   "trip.post": "Post a trip",
   "trip.myTrips": "My trips",
   "trip.step": "Step {step} of {total}",
+  "trip.soFar": "Your trip so far",
+  "trip.soFarLater": "Step {step}",
+  "trip.soFarStops": "{count, plural, one {# stop on the way} other {# stops on the way}}",
   "trip.saveChanges": "Save changes",
   "trip.distancesPending":
     "We're still working out the distances for this route. Try again in a moment.",
