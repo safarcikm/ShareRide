@@ -3,10 +3,11 @@ import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import {
-  aProfileReview,
   annaProfile,
   annaProfileId,
   annaReviews,
+  aProfileReview,
+  newcomer,
   profileApi,
   reviewsAnswer,
 } from "@/testing/people";
@@ -58,14 +59,14 @@ describe("a public profile (spec 1, 3.5)", () => {
             200,
             northTrip(
               { board: 1, alight: 2 },
-              { driver: { firstName: "Anna", colour: 1, profileId: annaProfileId } },
+              { driver: { firstName: "Anna", colour: 1, profileId: annaProfileId, ...newcomer } },
             ),
           ),
         );
         profileApi(client);
       },
     });
-    await fireEvent.press(await screen.findByRole("link", { name: "See profile" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "See profile: Anna" }));
     expect(await screen.findByRole("header", { name: "Anna" })).toBeVisible();
     expect(screen).toHavePathname(`/people/${annaProfileId}`);
   });
@@ -77,7 +78,7 @@ describe("a public profile (spec 1, 3.5)", () => {
       },
     });
     expect(await screen.findByText("Anna")).toBeVisible();
-    expect(screen.queryByRole("link", { name: "See profile" })).toBeNull();
+    expect(screen.queryByRole("link", { name: /^See profile/ })).toBeNull();
   });
 
   it("shows the first name, about, languages, since when and the badges", async () => {

@@ -12,6 +12,7 @@ import {
 } from "@/testing/bookings";
 import { failure, type FakeClient } from "@/testing/fake-client";
 import { tripsApi } from "@/testing/trips";
+import { aProfileId, newcomer } from "@/testing/people";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -37,7 +38,13 @@ const jon = northBooking({
   seats: 2,
   total: { amount: 8000, currency: "ISK" },
   requestExpiresAt: null,
-  passenger: { firstName: "Jón", colour: 3, memberSince: "2026-10" },
+  passenger: {
+    firstName: "Jón",
+    colour: 3,
+    memberSince: "2026-10",
+    profileId: aProfileId(14),
+    ...newcomer,
+  },
   confirmed: { registration: "AB 123", whereToStand: null },
 });
 
@@ -85,7 +92,13 @@ describe("The driver cancels one booking (spec 6, 3.4)", () => {
       ...jon,
       id: "0190a1d6-0000-7000-8000-0000000000b7",
       board: { ...northStop(0), plannedAt: "2026-11-14T12:00:00.000Z" },
-      passenger: { firstName: "Siggi", colour: 4, memberSince: "2026-09" },
+      passenger: {
+        firstName: "Siggi",
+        colour: 4,
+        memberSince: "2026-09",
+        profileId: aProfileId(15),
+        ...newcomer,
+      },
     });
     await openTrip([jon, gunna, aboard]);
     const cancel = await screen.findByRole("button", { name: "Cancel booking: Jón" });

@@ -12,6 +12,7 @@ import {
 } from "@/testing/bookings";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { tripsApi } from "@/testing/trips";
+import { aProfileId, newcomer } from "@/testing/people";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -37,7 +38,13 @@ const jon = northBooking({
   seats: 2,
   total: { amount: 8000, currency: "ISK" },
   requestExpiresAt: null,
-  passenger: { firstName: "Jón", colour: 3, memberSince: "2026-10" },
+  passenger: {
+    firstName: "Jón",
+    colour: 3,
+    memberSince: "2026-10",
+    profileId: aProfileId(18),
+    ...newcomer,
+  },
   confirmed: { registration: "AB 123", whereToStand: null },
 });
 
@@ -48,7 +55,13 @@ const jonRequest = northBooking({
   board: northStop(0),
   alight: northStop(1),
   total: { amount: 1100, currency: "ISK" },
-  passenger: { firstName: "Jón", colour: 3, memberSince: "2026-10" },
+  passenger: {
+    firstName: "Jón",
+    colour: 3,
+    memberSince: "2026-10",
+    profileId: aProfileId(18),
+    ...newcomer,
+  },
 });
 
 async function openAsDriver(

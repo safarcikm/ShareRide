@@ -776,6 +776,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   API. `GET /v1/me` gives `profileId`, and trip details gives the driver's
   to members signed in only. The reviews journey ends on the driver's
   profile.
+- Ratings and reliability beside people (milestone 7, PR 7c, spec 4, 3.4
+  and 3.6; spec 5, 3.3.2): search results and the rides leaving soon show the driver's rating with the
+  number of ratings, or "New driver"; trip details show the driver's rating
+  to anyone, and their reliability figure to members; a request shows the
+  passenger's rating, or "No reviews yet", and figure; a booking shows the
+  driver's. Each opens the person's profile for members, and so does each
+  passenger on the driver's trip.
+  Someone leaving ShareRide, or a former member, shows neither. Search
+  results, trip details and bookings give `rating` (and `reliabilityPercent`
+  and, on bookings, `profileId`) for these people.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

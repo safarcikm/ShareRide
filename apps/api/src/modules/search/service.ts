@@ -18,6 +18,8 @@ import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { occupancyNow } from "../bookings/seats.ts";
 import { searchableStatuses, toSummary } from "../meeting-points/service.ts";
 import { notSuspended } from "../account/standing.ts";
+import { ratingsOf } from "../people/ratings.ts";
+import { newcomer } from "../people/standing.ts";
 import { shown } from "../privacy/hidden.ts";
 import { closedTrips } from "../safety/blocks.ts";
 
@@ -262,11 +264,22 @@ export function createSearchService(dependencies: {
 
   type Candidate = Awaited<ReturnType<typeof candidates>>[number];
 
+  /** A result before its driver's rating, which is read only for those shown. */
+  type Unrated = Omit<TripSearchResult, "driver"> & {
+    readonly driver: Omit<TripSearchResult["driver"], "rating">;
+  };
+
+  interface Found {
+    readonly result: Unrated;
+    readonly boardsAt: Date;
+    readonly driverId: string;
+  }
+
   function toResult(
     candidate: Candidate,
     found: TripMatch,
     shown: { from: (distanceM: number, id: string) => number | null; to: typeof shown.from },
-  ): TripSearchResult {
+  ): Found {
     const { searchable, points } = candidate;
     const stopAt = (
       position: number,
@@ -283,7 +296,7 @@ export function createSearchService(dependencies: {
     };
     const first = points[0] as MeetingPointRow;
     const last = points.at(-1) as MeetingPointRow;
-    return {
+    const result = {
       tripId: searchable.id,
       board: stopAt(found.board, found.boardDistanceM, shown.from),
       alight: stopAt(found.alight, found.alightDistanceM, shown.to),
@@ -295,25 +308,34 @@ export function createSearchService(dependencies: {
       driver: { firstName: candidate.firstName },
       bookingMode: candidate.bookingMode,
     };
+    const boardsAt = searchable.stops[found.board]?.plannedAt ?? new Date(0);
+    return { result, boardsAt, driverId: searchable.driverId };
+  }
+
+  /** The results shown, with their drivers' ratings. */
+  async function rated(found: readonly Found[]): Promise<TripSearchResult[]> {
+    const ratings = await ratingsOf(
+      db,
+      found.map(({ driverId }) => driverId),
+    );
+    return found.map(({ result, driverId }) => ({
+      ...result,
+      driver: { ...result.driver, rating: ratings.get(driverId) ?? newcomer.rating },
+    }));
   }
 
   /** A nearby distance shows for points other than the meeting point searched (spec 4, 3.2). */
   const nearbyOf = (coverage: Coverage) => (distanceM: number) =>
     coverage.fromPoint && distanceM > 0 ? distanceM : null;
 
-  function sorted(
-    found: { result: TripSearchResult; boardsAt: Date }[],
-    sort: SearchRequest["sort"],
-  ) {
-    return found
-      .sort(
-        (a, b) =>
-          (sort === "price" ? a.result.pricePerSeat.amount - b.result.pricePerSeat.amount : 0) ||
-          a.boardsAt.getTime() - b.boardsAt.getTime() ||
-          // The same order every time for trips leaving together.
-          (a.result.tripId < b.result.tripId ? -1 : a.result.tripId > b.result.tripId ? 1 : 0),
-      )
-      .map(({ result }) => result);
+  function sorted(found: Found[], sort: SearchRequest["sort"]) {
+    return found.sort(
+      (a, b) =>
+        (sort === "price" ? a.result.pricePerSeat.amount - b.result.pricePerSeat.amount : 0) ||
+        a.boardsAt.getTime() - b.boardsAt.getTime() ||
+        // The same order every time for trips leaving together.
+        (a.result.tripId < b.result.tripId ? -1 : a.result.tripId > b.result.tripId ? 1 : 0),
+    );
   }
 
   return {
@@ -342,11 +364,9 @@ export function createSearchService(dependencies: {
           now,
           settings,
         );
-        if (match === null) return [];
-        const boardsAt = candidate.searchable.stops[match.board]?.plannedAt ?? new Date(0);
-        return [{ result: toResult(candidate, match, shown), boardsAt }];
+        return match === null ? [] : [toResult(candidate, match, shown)];
       });
-      return ok(sorted(matches, request.sort).slice(0, resultLimit));
+      return ok(await rated(sorted(matches, request.sort).slice(0, resultLimit)));
     },
 
     async soonest(limit, searcherId) {
@@ -377,14 +397,14 @@ export function createSearchService(dependencies: {
         );
         // Listed only for the whole route, from the first stop to the last.
         if (match?.board !== 0 || match.alight !== stops.length - 1) return [];
-        return [{ result: toResult(candidate, match, whole), boardsAt: first.plannedAt }];
+        return [toResult(candidate, match, whole)];
       };
 
       // The SQL only narrows: some trips are full on a stretch or the
       // searcher's own, which the domain decides. So it reads the trips
       // soonest first in batches, until enough match or none are left.
       const batch = Math.min(limit * soonestOverfetch, soonestMaxBatch);
-      const found: { result: TripSearchResult; boardsAt: Date }[] = [];
+      const found: Found[] = [];
       let after: { plannedAt: string; id: string } | null = null;
       for (let round = 0; round < soonestMaxRounds && found.length < limit; round += 1) {
         const page: { rows: { id: string; planned_at: string }[] } = await db.execute(sql`
@@ -416,7 +436,7 @@ export function createSearchService(dependencies: {
         if (page.rows.length < batch || last === undefined) break;
         after = { plannedAt: last.planned_at, id: last.id };
       }
-      return sorted(found, "departure").slice(0, limit);
+      return rated(sorted(found, "departure").slice(0, limit));
     },
 
     async alternatives(request, searcherId) {
@@ -470,11 +490,10 @@ export function createSearchService(dependencies: {
         const alight = candidate.points[match.alight]?.id ?? "";
         // A trip the search itself finds is not an alternative.
         if (covers(from, board) && covers(to, alight)) return [];
-        const boardsAt = candidate.searchable.stops[match.board]?.plannedAt ?? new Date(0);
         const shown = { from: outside(from), to: outside(to) };
-        return [{ result: toResult(candidate, match, shown), boardsAt }];
+        return [toResult(candidate, match, shown)];
       });
-      return ok({ days, nearby: sorted(nearby, "departure").slice(0, nearbyLimit) });
+      return ok({ days, nearby: await rated(sorted(nearby, "departure").slice(0, nearbyLimit)) });
     },
   };
 }
