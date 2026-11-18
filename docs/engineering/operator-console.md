@@ -579,7 +579,7 @@ Suspending and reinstating from a person's page use the moderation routes
 above, without a `reportId`.
 
 The pages are `apps/admin/src/pages/users/` at `/admin/users` and
-`apps/admin/src/pages/trips/` at `/admin/trips`, after Appeals in the menu.
+`apps/admin/src/pages/trips/` at `/admin/trips`, after Reliability in the menu.
 What the operator types to find a person stays in the page's state, never
 in the address. Below the search, each driver's decline rate. A person's
 page shows their account, the actions that fit them (`personChoices`:

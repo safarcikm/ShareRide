@@ -112,13 +112,13 @@ function start(path: string, shown: AdminTrip | null = trip) {
 }
 
 describe("finding trips (spec 9, 3.5.1)", () => {
-  it("is in the menu after Users, which follows Appeals", async () => {
+  it("is in the menu after Users, which follows the safety pages and Reliability", async () => {
     start("/admin");
     const menu = await screen.findByRole("navigation", { name: "Console menu" });
     const links = within(menu)
       .getAllByRole("link")
       .map((link) => link.textContent);
-    expect(links.slice(4, 7)).toEqual(["Appeals", "Users", "Trips"]);
+    expect(links.slice(4, 8)).toEqual(["Appeals", "Reliability", "Users", "Trips"]);
   });
 
   it("shows the trips from today on, each linking to its page", async () => {
