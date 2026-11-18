@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, within } from "expo-router/testing-library";
+import { act, fireEvent, screen, waitFor, within } from "expo-router/testing-library";
 import { AccessibilityInfo, Dimensions } from "react-native";
 import type { Booking, MyTrip } from "@shareride/contracts";
 import { renderApp, completeMe } from "@/testing/app";
@@ -136,7 +136,11 @@ describe("the passenger's trip day on a laptop (spec 18, 3.9)", () => {
   });
 
   it("has when and where, the driver and I'm here in the main column, the ride and the chat beside them", async () => {
-    const { client } = await openBooking(onTheDay());
+    // The booking the page loads again does not say I'm here: what was
+    // said shows only for as long as the part that said it is kept.
+    const { client } = await openBooking(onTheDay(), () =>
+      ok(200, { checkedInAt: mockNow.toISOString() }),
+    );
     expect(await screen.findByRole("header", { name: "Trip day" })).toBeVisible();
     const main = within(screen.getByTestId("columns-main"));
     const side = within(screen.getByTestId("columns-side"));
@@ -164,16 +168,25 @@ describe("the passenger's trip day on a laptop (spec 18, 3.9)", () => {
     expect(at("Blönduós")).toBeLessThan(at("Message Anna"));
 
     // Saying I'm here works from the main column, and stays said when the
-    // window turns narrow: nothing is loaded again for that.
+    // window turns narrow and wide again: the part keeps its place, and
+    // nothing is loaded again for that.
     await fireEvent.press(main.getByRole("button", imHere));
-    expect(await screen.findByText("We've told the driver you're here.")).toBeVisible();
-    const loaded = loadsOf(client, "/v1/bookings/{id}");
+    const told = "We've told the driver you're here.";
+    expect(await screen.findByText(told)).toBeVisible();
+    // Saying it loads the booking again, once.
+    await waitFor(() => {
+      expect(loadsOf(client, "/v1/bookings/{id}")).toBe(2);
+    });
     await act(() => {
       Dimensions.set({ window: phone });
     });
-    expect(screen.getByText("We've told the driver you're here.")).toBeVisible();
+    expect(screen.getByText(told)).toBeVisible();
     expect(screen.queryByTestId("columns-side")).toBeNull();
-    expect(loadsOf(client, "/v1/bookings/{id}")).toBe(loaded);
+    await act(() => {
+      Dimensions.set({ window: laptop });
+    });
+    expect(within(screen.getByTestId("columns-main")).getByText(told)).toBeVisible();
+    expect(loadsOf(client, "/v1/bookings/{id}")).toBe(2);
   });
 });
 

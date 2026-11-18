@@ -287,21 +287,22 @@ function BookingDetails({
   ) : null;
   // A wide screen (spec 18, 3.9): the ride with its price, then what can be
   // done about the booking, stand beside where it is at and what to do now.
+  // Safety is not among them: with "Before you go" it is tall, and the
+  // side column should be whole in a laptop's window.
   const side = wide ? (
     <>
       {part}
       {message}
-      {safety}
       {cancel}
       {report}
     </>
   ) : null;
 
   // One tree for a phone and a wide screen: each part of the main column
-  // keeps its place among the others, so a payment that is open, a review
-  // being written or a question asked stays when the window crosses the
-  // breakpoint. What a wide screen shows in the side column is left out
-  // of the main column there, and stands in its phone place otherwise.
+  // keeps its place among the others, so a payment that is open, a
+  // question asked or "I'm here" just said stays when the window crosses
+  // the breakpoint. What a wide screen shows in the side column is left
+  // out of the main column there, and stands in its phone place otherwise.
   return (
     <Screen width="page">
       <BackButton fallback={{ pathname: "/trips/[id]", params: { id: booking.trip.id } }} />
@@ -380,7 +381,7 @@ function BookingDetails({
 
         {tripDay || wide ? null : stand}
 
-        {wide ? null : safety}
+        {safety}
 
         {tripDay && !wide ? part : null}
 

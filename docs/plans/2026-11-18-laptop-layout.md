@@ -446,9 +446,9 @@ bar `primary`. A disabled or busy part shows none.
   in `columns-main`; the ride, the price and the actions in `columns-side`.
   Commit `feat(mobile): a booking in two columns`.
   The main column is one tree for a phone and a wide screen, so an open
-  payment, a question and a review stay when the window crosses 900; the
-  driver and where to stand share a `Grid` row (a second commit, after
-  looking at the built page). `laptop.spec.ts` gains a journey through the
+  payment, a question being answered and "I'm here" just said stay when
+  the window crosses 900; the driver and where to stand share a `Grid` row
+  (a second commit, after looking at the built page). `laptop.spec.ts` gains a journey through the
   three screens.
 
 ## PR 7: Offer a ride and the driver's trip

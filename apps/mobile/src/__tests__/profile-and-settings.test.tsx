@@ -251,12 +251,20 @@ describe("My profile on a laptop (spec 18, 3.12)", () => {
     expect(screen.getAllByRole("button", { name: "My cars" })).toHaveLength(1);
   });
 
-  it("opens Edit profile and a row from their columns", async () => {
+  it("opens Edit profile from the card", async () => {
     await openProfile();
     await fireEvent.press(
       within(screen.getByTestId("columns-side")).getByRole("button", { name: "Edit profile" }),
     );
     expect(screen).toHavePathname("/profile/edit");
+  });
+
+  it("opens a row from the main column", async () => {
+    await openProfile();
+    await fireEvent.press(
+      within(screen.getByTestId("columns-main")).getByRole("button", { name: "Settings" }),
+    );
+    expect(screen).toHavePathname("/settings");
   });
 
   it("is the phone's one column when the window turns narrow, and loads nothing again", async () => {

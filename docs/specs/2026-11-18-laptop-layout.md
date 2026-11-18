@@ -225,21 +225,26 @@ changes on a phone.
    order a phone has: a report about it, the status with Pay, Withdraw
    request or Search again, changes to the trip, the review, and the
    prompt to turn on notifications or add an email; on the trip day the
-   time and place to be at, and "I'm here". Then the driver with the car,
-   and where to stand once the seat is confirmed. These two share a row,
-   as tall as each other, where the column has room for two cards 320
-   wide, and where to stand comes first on the trip day; in a window 900
-   wide one goes under the other. My own status and Pay keep the 480 of a
-   phone's column, so the button is not stretched across the page.
+   time and place to be at. Then the driver with the car, and where to
+   stand once the seat is confirmed. These two share a row, as tall as
+   each other, where the column has room for two cards 320 wide, and where
+   to stand comes first on the trip day; in a window 900 wide one goes
+   under the other. Under them on the trip day: "I'm here" and, after the
+   wait, "The driver didn't come". Safety ends the column, as on trip
+   details. My own status and Pay keep the 480 of a phone's column, so the
+   button is not stretched across the page.
 3. **Side column:** the ride (Get in, Get out, the seats and the price),
-   then what can be done about it: Message, Safety with "Share trip
-   details", Cancel booking and "Report a problem with this trip".
+   then what can be done about it: Message, Cancel booking and "Report a
+   problem with this trip". It is whole in a small laptop's window (1280
+   by 720), so none of them is reached only by scrolling the column;
+   that is why Safety, which is tall on a trip out of the capital area, is
+   not in it.
 4. There is no bottom bar. A payment that is open, a question being
-   answered (withdraw the request?) and a review being written stay when
-   the window turns narrow or wide (3.2, 7): the main column is one tree
-   at every width, and what a wide screen shows in the side column stands
-   in its phone place otherwise. While the booking loads, and when it
-   cannot be loaded, the screen is a page (3.2, 8).
+   answered (withdraw the request?) and "I'm here" just said stay when the
+   window turns narrow or wide (3.2, 7): the main column is one tree at
+   every width, and what a wide screen shows in the side column stands in
+   its phone place otherwise. While the booking loads, and when it cannot
+   be loaded, the screen is a page (3.2, 8).
 
 ### 3.10 My rides
 

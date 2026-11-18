@@ -1345,7 +1345,7 @@ describe("A booking on a laptop (spec 18, 3.9)", () => {
     return texts;
   }
 
-  it("has the status, the driver and where to stand in the main column, with the ride and the actions beside them", async () => {
+  it("has the status, the driver, where to stand and safety in the main column, with the ride and the actions beside them", async () => {
     await renderApp(`/bookings/${bookingId}`, {
       me: completeMe,
       setUp: (client) => {
@@ -1378,7 +1378,10 @@ describe("A booking on a laptop (spec 18, 3.9)", () => {
     if (ride === undefined) throw new Error("No card in the side column");
     expect(within(ride).getByText("1 seat")).toBeVisible();
     expect(within(ride).getByText("2,900 ISK")).toBeVisible();
-    expect(side().getByRole("header", { name: "Safety" })).toBeVisible();
+    // Safety ends the main column, as on trip details: the side column
+    // stays short enough to be whole in a laptop's window.
+    expect(main().getByRole("header", { name: "Safety" })).toBeVisible();
+    expect(side().queryByRole("header", { name: "Safety" })).toBeNull();
     const texts = textsInOrder();
     const at = (text: string) => {
       const index = texts.indexOf(text);
@@ -1388,10 +1391,10 @@ describe("A booking on a laptop (spec 18, 3.9)", () => {
     // The main column is read first, then the side column, top to bottom.
     expect(at("Your seat is confirmed")).toBeLessThan(at("Number plate AB 123"));
     expect(at("Number plate AB 123")).toBeLessThan(at("Where to stand"));
-    expect(at("Where to stand")).toBeLessThan(at("2,900 ISK"));
+    expect(at("Where to stand")).toBeLessThan(at("Safety"));
+    expect(at("Safety")).toBeLessThan(at("2,900 ISK"));
     expect(at("2,900 ISK")).toBeLessThan(at("Message Anna"));
-    expect(at("Message Anna")).toBeLessThan(at("Safety"));
-    expect(at("Safety")).toBeLessThan(at("Cancel booking"));
+    expect(at("Message Anna")).toBeLessThan(at("Cancel booking"));
     // Each once.
     for (const name of ["Message Anna", "Cancel booking"]) {
       expect(side().getByRole("button", { name })).toBeVisible();
@@ -1463,6 +1466,25 @@ describe("A booking on a laptop (spec 18, 3.9)", () => {
       Dimensions.set({ window: laptop });
     });
     expect(main().getByRole("button", { name: "Keep my request" })).toBeVisible();
+  });
+
+  it("shows the driver a passenger's booking in the two columns, with no status or cancelling of the passenger's", async () => {
+    await renderApp(`/bookings/${bookingId}`, {
+      me: completeMe,
+      setUp: (client) => {
+        bookingApi(client, () => ({ ...paidBooking, viewer: "driver" }));
+      },
+    });
+    expect(await side().findByRole("button", { name: "Message Gunna" })).toBeVisible();
+    expect(side().getByText("2,900 ISK")).toBeVisible();
+    expect(main().getByRole("header", { name: "Safety" })).toBeVisible();
+    expect(main().getByText("Number plate AB 123")).toBeVisible();
+    // The status, Pay and "Cancel booking" are the passenger's.
+    expect(screen.queryByText("Your seat is confirmed")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Cancel booking" })).toBeNull();
+    // Nothing stands in both columns.
+    expect(screen.getAllByText("2,900 ISK")).toHaveLength(1);
+    expect(screen.getAllByText("Number plate AB 123")).toHaveLength(1);
   });
 
   it("is a page while it loads and when it cannot be loaded, the notice in a column at its left", async () => {
