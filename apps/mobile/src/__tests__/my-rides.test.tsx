@@ -56,6 +56,7 @@ const drivingLater: MyTrip = {
   departsAt: "2026-11-17T09:00:00.000Z",
   arrivesAt: "2026-11-17T14:00:00.000Z",
   segments: northSegments([1, 1, 1]),
+  takings: { amount: 0, currency: "ISK" },
   openRequests: 0,
   requestsCloseAt: null,
 };

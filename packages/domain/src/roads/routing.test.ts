@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { metresBetween, readRoadFile, type RoadFile } from "./road-file.ts";
-import { joinRoad, legsFrom } from "./routing.ts";
+import { metresBetween, readRoadFile, type RoadFile, type RoadGraph } from "./road-file.ts";
+import { joinRoad, legsFrom, legsTo, type RoadPosition } from "./routing.ts";
 
 // A made-up corner of roads, in 1e-5 degrees: A and B on a fast road, B on to
 // C one way only, B up to D, and a slow gravel road straight from A to D.
@@ -48,6 +48,27 @@ const file: RoadFile = {
 };
 
 const graph = readRoadFile(file);
+
+// P to Q one way only, Q and R both ways, R and P both ways, and a loop
+// road that leaves Q and comes back to it.
+//
+//        R
+//       / \
+//      P--->Q
+//           O  (the loop)
+const triangle = readRoadFile({
+  format: 1,
+  mapDate: "2026-11-16T21:21:02Z",
+  source: "© OpenStreetMap contributors",
+  // P, Q and R, each the difference from the one before.
+  nodes: [-2_190_000, 6_410_000, 10_000, 0, -5000, 5000],
+  edges: [
+    [0, 1, 5000, 50, 1, []],
+    [1, 2, 4000, 50, 0, []],
+    [2, 0, 4000, 50, 0, []],
+    [1, 1, 3000, 50, 0, [0, -2000, 1000, 0]],
+  ],
+});
 
 describe("readRoadFile", () => {
   it("reads the nodes, the roads' shapes and their driving times", () => {
@@ -101,6 +122,23 @@ describe("joinRoad", () => {
   it("joins no road more than a kilometre away", () => {
     expect(joinRoad(graph, { latitude: 64.12, longitude: -21.5 })).toBeNull();
   });
+
+  it("joins a road up to a kilometre away, across or beyond its end", () => {
+    const metresPerDegree = (6_371_008.8 * Math.PI) / 180;
+    // East of the straight road from D up to G, and north of where it ends.
+    const east = (metres: number) => ({
+      latitude: 64.225,
+      longitude: -21.8 + metres / (metresPerDegree * Math.cos((64.225 * Math.PI) / 180)),
+    });
+    const north = (metres: number) => ({
+      latitude: 64.25 + metres / metresPerDegree,
+      longitude: -21.8,
+    });
+    expect(joinRoad(graph, east(990))?.metresFromRoad).toBeCloseTo(990, 0);
+    expect(joinRoad(graph, east(1010))).toBeNull();
+    expect(joinRoad(graph, north(990))?.metresFromRoad).toBeCloseTo(990, 0);
+    expect(joinRoad(graph, north(1010))).toBeNull();
+  });
 });
 
 describe("legsFrom", () => {
@@ -151,26 +189,6 @@ describe("legsFrom", () => {
 });
 
 describe("legsFrom at a junction", () => {
-  // P to Q one way only, Q and R both ways, R and P both ways, and a loop
-  // road that leaves Q and comes back to it.
-  //
-  //        R
-  //       / \
-  //      P--->Q
-  //           O  (the loop)
-  const triangle = readRoadFile({
-    format: 1,
-    mapDate: "2026-11-16T21:21:02Z",
-    source: "© OpenStreetMap contributors",
-    // P, Q and R, each the difference from the one before.
-    nodes: [-2_190_000, 6_410_000, 10_000, 0, -5000, 5000],
-    edges: [
-      [0, 1, 5000, 50, 1, []],
-      [1, 2, 4000, 50, 0, []],
-      [2, 0, 4000, 50, 0, []],
-      [1, 1, 3000, 50, 0, [0, -2000, 1000, 0]],
-    ],
-  });
   const p = { edge: 0, along: 0, metresFromRoad: 0 };
   const q = { edge: 0, along: 1, metresFromRoad: 0 };
   const r = { edge: 1, along: 1, metresFromRoad: 0 };
@@ -189,5 +207,25 @@ describe("legsFrom at a junction", () => {
     const halfway = { edge: 3, along: 0.5, metresFromRoad: 0 };
     expect(legsFrom(triangle, halfway, [r])).toEqual([{ distanceM: 5500, durationS: 396 }]);
     expect(legsFrom(triangle, r, [halfway])).toEqual([{ distanceM: 5500, durationS: 396 }]);
+  });
+});
+
+describe("legsTo", () => {
+  /** Points along every road of a graph, at its ends, near them and between. */
+  const pointsOn = (roads: RoadGraph): RoadPosition[] =>
+    roads.edges.flatMap((_, edge) =>
+      [0, 0.00001, 0.3, 0.5, 0.99999, 1].map((along) => ({ edge, along, metresFromRoad: 0 })),
+    );
+
+  it.each([
+    ["the corner of roads", graph],
+    ["the triangle with a loop", triangle],
+  ])("agrees with legsFrom on %s, for every pair of points", (_, roads) => {
+    const points = pointsOn(roads);
+    for (const end of points) {
+      const to = legsTo(roads, end, points);
+      const from = points.map((start) => legsFrom(roads, start, [end])[0]);
+      expect(to).toEqual(from);
+    }
   });
 });
