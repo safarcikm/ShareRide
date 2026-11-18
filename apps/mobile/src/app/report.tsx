@@ -34,7 +34,9 @@ import { firstNameOf } from "@/people/texts";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
-type Kind = ReportAbout["kind"];
+/** What a report starts from here: not yet a review or a profile (milestone 9, PR 9b). */
+type About = Exclude<ReportAbout, { readonly kind: "review" | "profile" }>;
+type Kind = About["kind"];
 
 const titles = {
   trip: "report.trip",
@@ -64,7 +66,7 @@ export default function ReportScreen() {
   return <ThroughBooking about={about} bookingId={bookingId} />;
 }
 
-function aboutOf(kind: string, id: string): ReportAbout | null {
+function aboutOf(kind: string, id: string): About | null {
   switch (kind) {
     case "trip":
       return { kind, tripId: id };
@@ -83,7 +85,7 @@ function ThroughBooking({
   about,
   bookingId,
 }: {
-  readonly about: ReportAbout;
+  readonly about: About;
   readonly bookingId: string;
 }) {
   const { t } = useLanguage();
@@ -118,7 +120,7 @@ function Report({
   about,
   booking,
 }: {
-  readonly about: ReportAbout;
+  readonly about: About;
   /** The booking the two share; none for a trip. */
   readonly booking: Booking | null;
 }) {

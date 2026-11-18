@@ -1,6 +1,7 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import {
   blockFromBookingRoute,
+  blockFromProfileRoute,
   fileReportRoute,
   myBlocksRoute,
   myReportsRoute,
@@ -25,6 +26,14 @@ export function registerSafetyRoutes(
     const result = await blocks.blockFromBooking(authOf(c).userId, id);
     if (result.ok) return c.json({ together: result.value }, 200);
     return errorResponse(c, 404, "not_found", "There is no such booking of yours.");
+  });
+
+  app.openapi(toOpenApiRoute(blockFromProfileRoute, requireAuth), async (c) => {
+    const { profileId } = validated(c, "param", blockFromProfileRoute.request.params);
+    validated(c, "json", blockFromProfileRoute.request.body);
+    const result = await blocks.blockFromProfile(authOf(c).userId, profileId);
+    if (result.ok) return c.json({ together: result.value }, 200);
+    return errorResponse(c, 404, "not_found", "There is no such person.");
   });
 
   app.openapi(toOpenApiRoute(unblockRoute, requireAuth), async (c) => {

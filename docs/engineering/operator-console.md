@@ -525,7 +525,8 @@ safety routes (`registerModerationAdminRoutes`), with the work in
   (R9.9); `?state=closed` the last 50 closed, newest first.
 - `GET /admin/v1/reports/{id}` gives one report with its records (the
   trip with its driver, the booking, the reported message without its
-  words, About you for a report about a person), the actions taken under
+  words, the reported review with its words, About you for a report about
+  a person), the actions taken under
   it, and for each of the two people their other reports, by and about
   them, the last 10 trips they drove or held a seat on, and the actions on
   them.

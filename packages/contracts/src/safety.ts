@@ -54,6 +54,25 @@ export const blockFromBookingRoute = defineRoute({
   },
 });
 
+export const blockFromProfileRoute = defineRoute({
+  method: "post",
+  path: "/v1/people/{profileId}/block",
+  summary:
+    "Block a person from their profile, silently: neither of us sees or books the other's trips, and our chats become read-only (spec 9, 3.2.1)",
+  tags: ["safety"],
+  auth: true,
+  request: { params: z.object({ profileId: z.uuid() }), body: z.object({}) },
+  responses: {
+    200: {
+      description:
+        "Blocked, or already blocked; with the bookings and requests we still have together, before boarding, so I can cancel, withdraw or decline them (spec 9, decision 1)",
+      schema: z.object({ together: z.array(bookingSchema) }),
+    },
+    401: unauthenticated,
+    404: { description: "not_found: no such person, or it is my own profile", ...errors },
+  },
+});
+
 export const unblockRoute = defineRoute({
   method: "delete",
   path: "/v1/me/blocks/{id}",
@@ -85,13 +104,16 @@ export const myBlocksRoute = defineRoute({
 /**
  * What a report is about (3.1.1), named by what the reporter can see: a
  * trip; a message in my conversation; a problem with my booking, or on my
- * trip; or the other person of such a booking ("Report this person").
+ * trip; the other person of such a booking ("Report this person"); a review
+ * on a profile; or the person a profile shows, which files a `user` report.
  */
 export const reportAboutSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("trip"), tripId: z.uuid() }),
   z.object({ kind: z.literal("message"), messageId: z.uuid() }),
   z.object({ kind: z.literal("booking"), bookingId: z.uuid() }),
   z.object({ kind: z.literal("user"), bookingId: z.uuid() }),
+  z.object({ kind: z.literal("review"), reviewId: z.uuid() }),
+  z.object({ kind: z.literal("profile"), profileId: z.uuid() }),
 ]);
 
 export type ReportAbout = z.infer<typeof reportAboutSchema>;
@@ -125,7 +147,7 @@ export const fileReportRoute = defineRoute({
   method: "post",
   path: "/v1/reports",
   summary:
-    "Report a trip, a message, a problem with a booking or a person; the person reported is never told who (R9.1, R9.2)",
+    "Report a trip, a message, a problem with a booking, a person or a review; the person reported is never told who (R9.1, R9.2)",
   tags: ["safety"],
   auth: true,
   request: { body: fileReportBodySchema },
@@ -138,7 +160,8 @@ export const fileReportRoute = defineRoute({
     },
     401: unauthenticated,
     404: {
-      description: "not_found: no such trip, message or booking that I can see or am part of",
+      description:
+        "not_found: no such trip, message or booking that I can see or am part of, or no such person or review on a profile",
       ...errors,
     },
     409: {

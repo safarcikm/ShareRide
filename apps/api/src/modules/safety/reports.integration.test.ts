@@ -415,6 +415,183 @@ describe("POST /v1/reports and GET /v1/me/reports (spec 9, 3.1)", () => {
   });
 });
 
+/** The reference of a member's public profile, never their ID. */
+async function profileIdOf(member: Member) {
+  const [row] = await api.connection.db
+    .select({ profileId: schema.users.profileId })
+    .from(schema.users)
+    .where(eq(schema.users.id, member.userId));
+  if (row === undefined) throw new Error("No such member.");
+  return row.profileId;
+}
+
+describe("reporting from a profile (spec 9, 3.1.1)", () => {
+  /** Gunna's review of Jón on her airport booking, shown on his profile unless said. */
+  async function reviewed(shown: { readonly revealed?: boolean; readonly hidden?: boolean } = {}) {
+    const { jon, gunna, bookingId } = await confirmed();
+    const [row] = await api.connection.db
+      .insert(schema.reviews)
+      .values({
+        bookingId,
+        authorId: gunna.userId,
+        subjectId: jon.userId,
+        authorRole: "passenger",
+        rating: 1,
+        comment: "Unkind words",
+        revealedAt: shown.revealed === false ? null : api.now(),
+        hiddenAt: shown.hidden === true ? api.now() : null,
+      })
+      .returning({ id: schema.reviews.id });
+    if (row === undefined) throw new Error("No review.");
+    return { jon, gunna, bookingId, reviewId: row.id };
+  }
+
+  it("reports a review about me, about its author, linking the review and its ride", async () => {
+    const { jon, gunna, bookingId, reviewId } = await reviewed();
+    const filed = await report(jon, {
+      about: { kind: "review", reviewId },
+      category: "offensive",
+      description: "Not true.",
+    });
+    expect(filed).toMatchObject({
+      status: 201,
+      data: { kind: "review", category: "offensive", firstName: "Gunna", status: "open" },
+    });
+    const [row] = await stored();
+    expect(row).toMatchObject({
+      subject: "review",
+      subjectUserId: gunna.userId,
+      reviewId,
+      bookingId,
+      tripId: airport,
+      messageId: null,
+      conversationId: null,
+    });
+  });
+
+  it("reports a review anyone can read on a profile, as someone who was not on the ride", async () => {
+    const { reviewId } = await reviewed();
+    const sigga = await newMember("Sigga");
+    expect(
+      await report(sigga, { about: { kind: "review", reviewId }, category: "discrimination" }),
+    ).toMatchObject({ status: 201, data: { kind: "review", firstName: "Gunna" } });
+  });
+
+  it("refuses my own review", async () => {
+    const { gunna, reviewId } = await reviewed();
+    expect(
+      await report(gunna, { about: { kind: "review", reviewId }, category: "other" }),
+    ).toMatchObject({ status: 409, error: { code: "cannot_report_own" } });
+  });
+
+  it.each([
+    ["not yet shown", { revealed: false }],
+    ["hidden by ShareRide", { hidden: true }],
+  ] as const)("finds no review %s", async (_, shown) => {
+    const { jon, reviewId } = await reviewed(shown);
+    expect(
+      await report(jon, { about: { kind: "review", reviewId }, category: "other" }),
+    ).toMatchObject({ status: 404, error: { code: "not_found" } });
+    expect(
+      await report(jon, { about: { kind: "review", reviewId: randomUUID() }, category: "other" }),
+    ).toMatchObject({ status: 404 });
+    expect(await stored()).toEqual([]);
+  });
+
+  it("finds no review by someone leaving ShareRide, which no profile shows", async () => {
+    const { jon, gunna, reviewId } = await reviewed();
+    await api.connection.db
+      .update(schema.users)
+      .set({ deleteAfter: new Date(api.now().getTime() + 30 * 24 * 3_600_000) })
+      .where(eq(schema.users.id, gunna.userId));
+    expect(
+      await report(jon, { about: { kind: "review", reviewId }, category: "offensive" }),
+    ).toMatchObject({ status: 404, error: { code: "not_found" } });
+  });
+
+  it("reports a review by the former member, as an erased account's report stays (A51)", async () => {
+    const { jon, reviewId } = await reviewed();
+    // As the 3-year clean-up leaves it: by the former member, on no booking.
+    await api.connection.db
+      .update(schema.reviews)
+      .set({ bookingId: null, authorId: schema.formerMemberId })
+      .where(eq(schema.reviews.id, reviewId));
+    const filed = await report(jon, {
+      about: { kind: "review", reviewId },
+      category: "offensive",
+    });
+    expect(filed).toMatchObject({ status: 201, data: { kind: "review", firstName: null } });
+    const [row] = await stored();
+    expect(row).toMatchObject({
+      subject: "review",
+      subjectUserId: schema.formerMemberId,
+      reviewId,
+      bookingId: null,
+      tripId: null,
+    });
+  });
+
+  it("finds no review about someone leaving ShareRide, whose profile is gone", async () => {
+    const { jon, reviewId } = await reviewed();
+    const sigga = await newMember("Sigga");
+    await api.connection.db
+      .update(schema.users)
+      .set({ deleteAfter: new Date(api.now().getTime() + 30 * 24 * 3_600_000) })
+      .where(eq(schema.users.id, jon.userId));
+    expect(
+      await report(sigga, { about: { kind: "review", reviewId }, category: "offensive" }),
+    ).toMatchObject({ status: 404, error: { code: "not_found" } });
+    expect(await stored()).toEqual([]);
+  });
+
+  it("reports a person from their profile, with no booking between us", async () => {
+    const jon = await driverOf(airport, "Jón");
+    const sigga = await newMember("Sigga");
+    const filed = await report(sigga, {
+      about: { kind: "profile", profileId: await profileIdOf(jon) },
+      category: "false_info",
+    });
+    expect(filed).toMatchObject({ status: 201, data: { kind: "user", firstName: "Jón" } });
+    const [row] = await stored();
+    expect(row).toMatchObject({
+      subject: "user",
+      subjectUserId: jon.userId,
+      tripId: null,
+      bookingId: null,
+      reviewId: null,
+    });
+  });
+
+  it("refuses my own profile, and finds none for someone leaving ShareRide", async () => {
+    const jon = await driverOf(airport, "Jón");
+    const gunna = await newMember("Gunna");
+    expect(
+      await report(jon, {
+        about: { kind: "profile", profileId: await profileIdOf(jon) },
+        category: "other",
+      }),
+    ).toMatchObject({ status: 409, error: { code: "cannot_report_own" } });
+
+    await api.connection.db
+      .update(schema.users)
+      .set({ deleteAfter: new Date(api.now().getTime() + 30 * 24 * 3_600_000) })
+      .where(eq(schema.users.id, jon.userId));
+    expect(
+      await report(gunna, {
+        about: { kind: "profile", profileId: await profileIdOf(jon) },
+        category: "other",
+      }),
+    ).toMatchObject({ status: 404, error: { code: "not_found" } });
+    expect(
+      await report(gunna, {
+        about: { kind: "profile", profileId: randomUUID() },
+        category: "other",
+      }),
+    ).toMatchObject({ status: 404 });
+    expect(await stored()).toEqual([]);
+  });
+});
+
 describe("a reported conversation is kept (spec 9, section 7)", () => {
   it("outlives the 12 months of chats until 3 years after its report is closed", async () => {
     const { jon, gunna, bookingId } = await confirmed();
