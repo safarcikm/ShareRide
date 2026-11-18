@@ -647,6 +647,19 @@ version }` with the version the page loaded: it takes a lock on the
   (`modules/settings/rule-settings.ts`); the notification worker, which
   has no settings service, reads a booking's version with
   `cancellationSettingsIn`.
+- Trip day and reliability (milestone 11, PR 13): `no_show_wait`,
+  `trip_completion_delay`, `reliability_period`, `reliability_min_count`
+  and `reliability_watch_level`, all read as they are now. The modules
+  that use them take `TripDaySettings` and `ReliabilitySettings` as plain
+  objects, so the API gives them objects whose fields are the values as
+  last read (`liveRuleSettings` in `modules/settings/live.ts`), and reads
+  the settings at the start of every request (`readSettingsFirst`, from
+  the 5-second cache). The server's trip day job and the clean-up and
+  privacy commands read the values from the database when they run.
+  `GET /v1/config` gives `reliabilityMonths` for the profile's sentence;
+  the console's two reliability lists carry `periodMonths`. The terms of
+  service state the wait, the completion delay, the period and the count
+  too, so this group has the same note.
 - The apps' texts no longer state these numbers: `GET /v1/config` gives
   `freeCancellationMinutes` and `maxMoveMinutes` as they are now, and a
   booking carries its own `cancellationRules`. The terms of service do

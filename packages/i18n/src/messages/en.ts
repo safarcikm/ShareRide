@@ -1115,7 +1115,8 @@ export const en = {
   "people.noRatings": "No ratings yet",
   "people.reliability": "Reliability: {percent}%",
   "people.reliabilityNew": "Reliability: not enough trips yet",
-  "people.reliabilityCounts": "Kept {kept} of {total} trips and bookings in the last 12 months.",
+  "people.reliabilityCounts":
+    "Kept {kept} of {total} trips and bookings in the last {months, plural, one {# month} other {# months}}.",
   "people.reliabilityAsDriver": "As a driver: kept {kept} of {total}",
   "people.reliabilityAsPassenger": "As a passenger: kept {kept} of {total}",
   "people.reviews": "Reviews",
@@ -2102,6 +2103,7 @@ export const en = {
   "admin.settings.group.prices": "Prices and seats",
   "admin.settings.group.booking": "Booking and paying",
   "admin.settings.group.changes": "Changes and cancellations",
+  "admin.settings.group.trip_day": "Trip day and reliability",
   "admin.settings.groupNote.terms":
     "The terms of service state these values. Publish new terms with a change, or the terms and the app will disagree.",
   "admin.settings.group.switches": "Switches for emergencies",
@@ -2164,6 +2166,21 @@ export const en = {
   "admin.settings.name.reliability_cancellation_window": "Late cancellation",
   "admin.settings.help.reliability_cancellation_window":
     "A passenger's cancellation counts against their reliability when made less than this long before their stop. It applies to bookings made from now on. Bookings already made keep the rule they were made under.",
+  "admin.settings.name.no_show_wait": "Wait before a no-show",
+  "admin.settings.help.no_show_wait":
+    "How long after the planned time at a stop the driver must wait before marking a passenger as not there, and a passenger before saying the driver didn't come. A change applies at once, to trips already under way too.",
+  "admin.settings.name.trip_completion_delay": "Trip completes after",
+  "admin.settings.help.trip_completion_delay":
+    "A trip completes this long after the planned time at its last stop. Reviews open then. A change applies at once to every trip not yet completed.",
+  "admin.settings.name.reliability_period": "Reliability period",
+  "admin.settings.help.reliability_period":
+    "Trips and bookings count on a person's reliability figure for this long. A change counts everyone's figure again at once.",
+  "admin.settings.name.reliability_min_count": "Shown from",
+  "admin.settings.help.reliability_min_count":
+    'A person\'s reliability figure is shown once this many trips and bookings count. Until then people see "Not enough trips yet".',
+  "admin.settings.name.reliability_watch_level": "Watch level",
+  "admin.settings.help.reliability_watch_level":
+    "People whose figure is below this are listed for you on the Reliability page. Nothing suspends anyone on its own.",
   "admin.settings.on": "On",
   "admin.settings.off": "Off",
   "admin.settings.unit.people": "{count, plural, one {{value} person} other {{value} people}}",
@@ -2174,6 +2191,11 @@ export const en = {
   "admin.settings.newValue.kr": "New value, in kr",
   "admin.settings.unit.percent": "{value}%",
   "admin.settings.newValue.percent": "New value, in percent",
+  "admin.settings.unit.months": "{count, plural, one {{value} month} other {{value} months}}",
+  "admin.settings.newValue.months": "New value, in months",
+  "admin.settings.unit.records":
+    "{count, plural, one {{value} trip or booking} other {{value} trips and bookings}}",
+  "admin.settings.newValue.records": "New value, in trips and bookings",
   "admin.settings.unit.seats": "{count, plural, one {{value} seat} other {{value} seats}}",
   "admin.settings.newValue.seats": "New value, in seats",
   "admin.settings.unit.minutes": "{count, plural, one {{value} minute} other {{value} minutes}}",
@@ -2537,10 +2559,13 @@ export const en = {
   "admin.reliability.excused": "Cancelled for the weather or a closed road",
   "admin.reliability.excusedHint":
     "A cancellation whose reason you overrule counts on the person's reliability, and you can undo that. Your notes are for operators only.",
+  "admin.reliability.counts":
+    "Kept {kept} of {total} trips and bookings in the reliability period.",
+  "admin.reliability.period": "{months, plural, one {# month} other {# months}}",
   "admin.reliability.excusedCount":
-    "{count, plural, one {# cancellation in the last 12 months, newest first} other {# cancellations in the last 12 months, newest first}}",
+    "{count, plural, one {# cancellation in the last {period}, newest first} other {# cancellations in the last {period}, newest first}}",
   "admin.reliability.noneExcused":
-    "Nobody cancelled for the weather or a closed road in the last 12 months.",
+    "Nobody cancelled for the weather or a closed road in the last {months, plural, one {# month} other {# months}}.",
   "admin.reliability.excusedFailed": "The cancellations could not be loaded.",
   "admin.reliability.loadExcusedAgain": "Load the cancellations again",
   "admin.reliability.route": "{from} – {to}",
@@ -2575,7 +2600,7 @@ export const en = {
   "admin.reliability.saveFailed": "It could not be saved. Try again.",
   "admin.reliability.watch": "Below the watch level",
   "admin.reliability.watchHint":
-    "People whose figure is below {percent}% over the last 12 months, lowest first. Look at what happened and decide on a warning or a suspension yourself: nothing here suspends anyone.",
+    "People whose figure is below {percent}% over the last {months, plural, one {# month} other {# months}}, lowest first. Look at what happened and decide on a warning or a suspension yourself: nothing here suspends anyone.",
   "admin.reliability.noneWatched": "Nobody is below {percent}%.",
   "admin.reliability.watchFailed": "The people below the watch level could not be loaded.",
   "admin.reliability.loadWatchAgain": "Load the people again",

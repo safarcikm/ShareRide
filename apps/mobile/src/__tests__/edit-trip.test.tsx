@@ -160,6 +160,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
             maxSeats: 4,
             freeCancellationMinutes: 15,
             maxMoveMinutes: 120,
+            reliabilityMonths: 12,
           }),
         );
         tripsApi(client, [north]);

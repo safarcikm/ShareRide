@@ -12,6 +12,7 @@ export {
   settingValuesIn,
   type RuleSettingsSource,
 } from "./rule-settings.ts";
+export { liveRuleSettings, readSettingsFirst, type LiveRuleSettings } from "./live.ts";
 export { registerSettingsAdminRoutes } from "./admin-routes.ts";
 export { registerConfigRoutes } from "./routes.ts";
 export {

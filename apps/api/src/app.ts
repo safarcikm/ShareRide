@@ -8,9 +8,7 @@ import {
   clientPlatformHeader,
   defaultMeetingPointIssueSettings,
   defaultNotificationSettings,
-  defaultReliabilitySettings,
   defaultReviewSettings,
-  defaultTripDaySettings,
   inviteCheckLimitsPerAddress,
   operatorSignInLimitsPerAddress,
   searchLimitsPerAddress,
@@ -83,7 +81,9 @@ import { createDrivingService, registerDrivingRoutes } from "./modules/driving/i
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
   createPausedCheck,
+  liveRuleSettings,
   pausedHeldIn,
+  readSettingsFirst,
   createSettingsService,
   tripSettingsSource,
   registerConfigRoutes,
@@ -351,6 +351,13 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       },
     });
     const paused = createPausedCheck(operatorSettings);
+    // The trip day's and reliability's values as they are now, for every
+    // module that takes them as plain settings.
+    const { tripDay: tripDaySettings, reliability: reliabilitySettings } = liveRuleSettings(
+      () => operatorSettings.lastRead().values,
+    );
+    app.use("/v1/*", readSettingsFirst(operatorSettings));
+    app.use("/admin/v1/*", readSettingsFirst(operatorSettings));
     const secureRandomInt = features.randomInt ?? ((max: number) => randomInt(max));
     const invites = createInviteService({
       ...features,
@@ -418,7 +425,11 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
         settings: () => ruleSettings.search(),
         searchLog: features.searchLog ?? createSearchLog({ ...features, logger }),
       }),
-      details: createTripDetailsService({ ...features, settings: () => ruleSettings.search() }),
+      details: createTripDetailsService({
+        ...features,
+        settings: () => ruleSettings.search(),
+        reliabilitySettings,
+      }),
       optionalAuth: createOptionalAuth(auth),
       limiter: createMemoryRateLimiter({ rules: searchLimitsPerAddress, clock: features.clock }),
       // A keyed hash, as for sign-in limits: no plain address is kept, even in memory.
@@ -430,7 +441,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     const trips = createTripService({
       ...features,
       settings,
-      tripDaySettings: defaultTripDaySettings,
+      tripDaySettings,
       driving,
     });
     registerDraftRoutes(app, trips, requireAuth, paused);
@@ -449,7 +460,8 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       ...features,
       account,
       settings: ruleSettings,
-      tripDaySettings: defaultTripDaySettings,
+      tripDaySettings,
+      reliabilitySettings,
       bookingsPausedIn: (tx) => pausedHeldIn(tx, "bookings"),
     });
     registerBookingRoutes(app, bookings, requireAuth, trips, paused);
@@ -460,22 +472,22 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     );
     registerTripDayRoutes(
       app,
-      createTripDayService({ ...features, settings: defaultTripDaySettings }),
-      createReportService({ ...features, settings: defaultTripDaySettings }),
+      createTripDayService({ ...features, settings: tripDaySettings }),
+      createReportService({ ...features, settings: tripDaySettings }),
       requireAuth,
     );
     registerDisputeAdminRoutes(app, {
       ...features,
-      disputes: createDisputeAdminService({ ...features, settings: defaultTripDaySettings }),
+      disputes: createDisputeAdminService({ ...features, settings: tripDaySettings }),
       requireOperator,
     });
     registerReliabilityAdminRoutes(app, {
       ...features,
       reliability: createReliabilityAdminService({
         ...features,
-        settings: defaultReliabilitySettings,
+        settings: reliabilitySettings,
       }),
-      settings: defaultReliabilitySettings,
+      settings: reliabilitySettings,
       requireOperator,
     });
     registerConfigRoutes(app, operatorSettings);
@@ -508,7 +520,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     );
     registerPeopleRoutes(
       app,
-      createPeopleService({ ...features, settings: defaultReliabilitySettings }),
+      createPeopleService({ ...features, settings: reliabilitySettings }),
       requireAuth,
     );
     registerNotificationRoutes(app, { ...features, requireAuth });
@@ -525,13 +537,13 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       ...features,
       moderation: createModerationConsoleService({
         ...features,
-        reliability: defaultReliabilitySettings,
+        reliability: reliabilitySettings,
       }),
       requireOperator,
     });
     registerPeopleAdminRoutes(app, {
       ...features,
-      people: createPeopleConsoleService({ ...features, reliability: defaultReliabilitySettings }),
+      people: createPeopleConsoleService({ ...features, reliability: reliabilitySettings }),
       requireOperator,
     });
     registerPaymentRoutes(app, {
@@ -546,7 +558,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       deletion: createDeletionService({
         ...features,
         auth,
-        tripDaySettings: defaultTripDaySettings,
+        tripDaySettings,
         logger,
       }),
       account,

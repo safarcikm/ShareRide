@@ -8,10 +8,11 @@
 // PREVIOUS_DATABASE_URL, the old database, when it can be reached, for the
 // deletions asked for, undone and finished after the restore's point.
 import { connectDatabase, schema } from "@shareride/db";
-import { defaultTripDaySettings } from "@shareride/domain";
+import { tripDaySettingsFrom } from "@shareride/domain";
 import { createLogger } from "./logger.ts";
 import { runPrivacyCommand } from "./modules/privacy/command.ts";
 import { createErasure } from "./modules/privacy/erasure.ts";
+import { settingValuesIn } from "./modules/settings/index.ts";
 import { createKeyedHasher } from "./platform/crypto.ts";
 
 const url = process.env["DATABASE_URL"];
@@ -39,7 +40,8 @@ try {
       db: connection.db,
       clock: () => new Date(),
       hasher: createKeyedHasher(authSecret),
-      tripDaySettings: defaultTripDaySettings,
+      // The completion delay as it is now (ADR 0032).
+      tripDaySettings: tripDaySettingsFrom(await settingValuesIn(connection.db)),
       logger: createLogger({ level: "info" }),
     }),
     before:

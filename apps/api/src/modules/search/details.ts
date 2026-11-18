@@ -1,6 +1,7 @@
 import type { Standing, TripDetails } from "@shareride/contracts";
 import { schema, type Database } from "@shareride/db";
 import {
+  defaultReliabilitySettings,
   err,
   holdsSeats,
   ok,
@@ -12,6 +13,7 @@ import {
   type InvalidPart,
   type PartChoice,
   type BookingStatus,
+  type ReliabilitySettings,
   type Result,
   type SearchSettings,
   type TripStatus,
@@ -48,8 +50,11 @@ export function createTripDetailsService(dependencies: {
   readonly settings: () => Promise<
     Pick<SearchSettings, "bookingCutoffMinutes" | "tripPageDaysAfter">
   >;
+  /** The reliability figure's values beside the driver; the defaults when left out. */
+  readonly reliabilitySettings?: ReliabilitySettings;
 }): TripDetailsService {
   const { db, clock } = dependencies;
+  const reliability = dependencies.reliabilitySettings ?? defaultReliabilitySettings;
 
   return {
     async details(id, choice, viewerId) {
@@ -83,7 +88,8 @@ export function createTripDetailsService(dependencies: {
       // The rating is on the trip page for anyone (spec 4, 3.6.3 and section
       // 7); the figure, like the profile, is for members (spec 1, 3.5).
       const driverStanding = async (): Promise<Standing> => {
-        if (viewerId !== null) return (await standingsOf(db, [trip.driverId], now))(trip.driverId);
+        if (viewerId !== null)
+          return (await standingsOf(db, [trip.driverId], now, reliability))(trip.driverId);
         const ratings = await ratingsOf(db, [trip.driverId]);
         return { ...newcomer, rating: ratings.get(trip.driverId) ?? newcomer.rating };
       };

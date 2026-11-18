@@ -141,6 +141,11 @@ describe("the console's settings", () => {
         max: 72,
         step: 1,
       },
+      { key: "no_show_wait", unit: "minutes", value: 10, min: 5, max: 30, step: 1 },
+      { key: "trip_completion_delay", unit: "hours", value: 2, min: 1, max: 12, step: 1 },
+      { key: "reliability_period", unit: "months", value: 12, min: 3, max: 24, step: 1 },
+      { key: "reliability_min_count", unit: "records", value: 5, min: 1, max: 20, step: 1 },
+      { key: "reliability_watch_level", unit: "percent", value: 80, min: 50, max: 95, step: 1 },
     ]);
   });
 
@@ -304,6 +309,7 @@ describe("GET /v1/config", () => {
       maxSeats: 8,
       freeCancellationMinutes: 15,
       maxMoveMinutes: 120,
+      reliabilityMonths: 12,
     });
 
     await change("invite_code_required", {
@@ -317,6 +323,7 @@ describe("GET /v1/config", () => {
       maxSeats: 8,
       freeCancellationMinutes: 15,
       maxMoveMinutes: 120,
+      reliabilityMonths: 12,
     });
   });
 });

@@ -54,6 +54,7 @@ describe("Trip details (spec 4, 3.6)", () => {
             maxSeats: 8,
             freeCancellationMinutes: 45,
             maxMoveMinutes: 120,
+            reliabilityMonths: 12,
           }),
         );
         tripDetailsApi(client);

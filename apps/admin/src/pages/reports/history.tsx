@@ -99,7 +99,7 @@ export function Figures({
         ) : null}
       </p>
       <p className="type-small muted">
-        {`${t("people.reliabilityCounts", { kept: reliability.kept, total: reliability.counted })} `}
+        {`${t("admin.reliability.counts", { kept: reliability.kept, total: reliability.counted })} `}
         {`${t("people.reliabilityAsDriver", { kept: driver.kept, total: driver.counted })} · `}
         {t("people.reliabilityAsPassenger", { kept: passenger.kept, total: passenger.counted })}
       </p>

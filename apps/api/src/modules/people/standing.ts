@@ -2,11 +2,7 @@
 // 3.4 and 3.6; spec 5, 3.3.2): their rating and the reliability figure's
 // share kept, as on their profile.
 import type { Rating, Standing } from "@shareride/contracts";
-import {
-  defaultReliabilitySettings,
-  type Reliability,
-  type ReliabilitySettings,
-} from "@shareride/domain";
+import { type Reliability, type ReliabilitySettings } from "@shareride/domain";
 import type { Queryable } from "../bookings/seats.ts";
 import { ratingsOf } from "./ratings.ts";
 import { reliabilityOfPeople } from "./reliability.ts";
@@ -22,7 +18,7 @@ export async function standingsOf(
   q: Queryable,
   userIds: readonly string[],
   now: Date,
-  settings: ReliabilitySettings = defaultReliabilitySettings,
+  settings: ReliabilitySettings,
 ): Promise<(userId: string) => Standing> {
   const [ratings, figures] = await Promise.all([
     ratingsOf(q, userIds),

@@ -11,6 +11,7 @@ import { ShieldCheck } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSession } from "@/auth/session";
+import { useReliabilityMonths } from "@/beta/config";
 import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
@@ -181,6 +182,7 @@ function ReliabilityFigure({
   const { t } = useLanguage();
   const palette = usePalette();
   const [open, setOpen] = useState(false);
+  const months = useReliabilityMonths();
   const label = reliabilityText(t, reliability.percent);
   const { driver, passenger } = reliability.byRole;
   return (
@@ -205,6 +207,7 @@ function ReliabilityFigure({
             {t("people.reliabilityCounts", {
               kept: reliability.kept,
               total: reliability.counted,
+              months,
             })}
           </Text>
           <Text style={[typography.small, { color: palette.textMuted }]}>

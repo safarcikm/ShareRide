@@ -583,7 +583,14 @@ before merging.
 
 ### PR 13: `feat(settings)`: trip day and reliability values
 
-- [ ] The five values of that group; spec 10 as choice 3 was decided
+- [x] The five values of that group; spec 10 as choice 3 was decided
+- As built: none of the five has a version, so a change reaches trips
+  already booked and every figure at once. About twenty places take
+  these settings as a plain object; they get one whose fields are read
+  from the settings as last read, and each request reads the settings
+  first, in place of a source threaded through every module. The
+  server's job and the two commands read the database themselves. The
+  period is named in three sentences, which now take it.
 - Verify: integration tests (the no-show wait and the completion delay
   follow a change at once; the watch list follows the watch level)
 

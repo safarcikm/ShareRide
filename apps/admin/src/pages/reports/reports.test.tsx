@@ -297,7 +297,9 @@ describe("a report's page (spec 9, 3.4.2)", () => {
     expect(reported.textContent).toContain("3.5 (2 ratings)");
     expect(reported.textContent).toContain("Reliability: 66%");
     expect(within(reported).getByText("Below the watch level")).toBeTruthy();
-    expect(reported.textContent).toContain("Kept 4 of 6 trips and bookings in the last 12 months.");
+    expect(reported.textContent).toContain(
+      "Kept 4 of 6 trips and bookings in the reliability period.",
+    );
     expect(reported.textContent).toContain("As a driver: kept 3 of 5");
     expect(reported.textContent).toContain("As a passenger: kept 1 of 1");
     const reporter = screen.getByRole("region", { name: "The person who reported: Bára" });

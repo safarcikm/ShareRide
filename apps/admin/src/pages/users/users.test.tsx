@@ -273,7 +273,9 @@ describe("a person's page (spec 9, 3.5.2)", () => {
     const figures = await screen.findByRole("region", { name: "Rating and reliability" });
     expect(figures.textContent).toContain("4.5 (2 ratings)");
     expect(figures.textContent).toContain("Reliability: 90%");
-    expect(figures.textContent).toContain("Kept 9 of 10 trips and bookings in the last 12 months.");
+    expect(figures.textContent).toContain(
+      "Kept 9 of 10 trips and bookings in the reliability period.",
+    );
     expect(figures.textContent).toContain("As a driver: kept 8 of 9");
     expect(figures.textContent).toContain("As a passenger: kept 1 of 1");
     expect(within(figures).queryByText("Below the watch level")).toBeNull();

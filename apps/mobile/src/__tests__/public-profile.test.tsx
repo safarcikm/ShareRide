@@ -153,6 +153,26 @@ describe("a public profile (spec 1, 3.5)", () => {
 });
 
 describe("the reliability figure (spec 8, 3.8)", () => {
+  it("names the period as the operator has set it", async () => {
+    await openProfile((client) => {
+      profileApi(client);
+      client.answer("/v1/config", () =>
+        ok(200, {
+          beta: false,
+          paused: [],
+          maxSeats: 8,
+          freeCancellationMinutes: 15,
+          maxMoveMinutes: 120,
+          reliabilityMonths: 6,
+        }),
+      );
+    });
+    await fireEvent.press(screen.getByRole("button", { name: "Reliability: 91%" }));
+    expect(
+      await screen.findByText("Kept 11 of 12 trips and bookings in the last 6 months."),
+    ).toBeVisible();
+  });
+
   it("shows the share kept, and the counts by role once tapped", async () => {
     await openProfile();
     const figure = screen.getByRole("button", { name: "Reliability: 91%" });

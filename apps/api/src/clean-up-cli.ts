@@ -8,10 +8,11 @@
 // when SENTRY_DSN is set.
 import * as Sentry from "@sentry/node";
 import { connectDatabase } from "@shareride/db";
-import { defaultTripDaySettings } from "@shareride/domain";
+import { tripDaySettingsFrom } from "@shareride/domain";
 import { ConfigError, loadErrorReportingConfig } from "./config.ts";
 import { createLogger } from "./logger.ts";
 import { createErasure } from "./modules/privacy/erasure.ts";
+import { settingValuesIn } from "./modules/settings/index.ts";
 import { retentionSteps, runRetention } from "./modules/privacy/retention.ts";
 import { createKeyedHasher } from "./platform/crypto.ts";
 import { captureError, startErrorReporting } from "./platform/error-reporting.ts";
@@ -44,7 +45,8 @@ try {
     db: connection.db,
     clock: () => new Date(),
     hasher: createKeyedHasher(authSecret),
-    tripDaySettings: defaultTripDaySettings,
+    // The completion delay as it is now (ADR 0032).
+    tripDaySettings: tripDaySettingsFrom(await settingValuesIn(connection.db)),
     logger,
   });
   const result = await runRetention({

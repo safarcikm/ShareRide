@@ -88,6 +88,7 @@ function start(
           maxSeats: 8,
           freeCancellationMinutes: 15,
           maxMoveMinutes: 120,
+          reliabilityMonths: 12,
         }),
       );
     },
