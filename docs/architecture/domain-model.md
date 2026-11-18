@@ -370,7 +370,10 @@ Enforced in the domain package and, where possible, in the database too.
 11. A booking never takes a trip past its limit: what its bookings pay or
     paid the driver, less refunds, stays within the sum over its segments
     of capacity times cap (rule P3, spec 17). The limit and the takings are
-    computed from segments and bookings, not stored.
+    computed from segments and bookings, not stored. Seats added, a stop
+    added or removed, a no-show or a late cancellation lower the trip's
+    price level when what is booked would otherwise leave a full car over
+    it.
 
 ## Trip lifecycle
 

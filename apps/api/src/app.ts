@@ -72,7 +72,12 @@ import {
   registerMeetingPointRoutes,
   registerMeetingPointsAdminRoutes,
 } from "./modules/meeting-points/index.ts";
-import { createNoticeService, registerNoticeRoutes } from "./modules/moderation/index.ts";
+import {
+  createModerationConsoleService,
+  createNoticeService,
+  registerModerationAdminRoutes,
+  registerNoticeRoutes,
+} from "./modules/moderation/index.ts";
 import { registerNotificationRoutes } from "./modules/notifications/index.ts";
 import { createPaymentService, registerPaymentRoutes } from "./modules/payments/index.ts";
 import {
@@ -413,6 +418,11 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       requireAuth,
     );
     registerNoticeRoutes(app, createNoticeService(features), requireAuth);
+    registerModerationAdminRoutes(app, {
+      ...features,
+      moderation: createModerationConsoleService(features),
+      requireOperator,
+    });
     registerPaymentRoutes(app, {
       payments: createPaymentService({ ...features, provider: features.payments }),
       bookings,

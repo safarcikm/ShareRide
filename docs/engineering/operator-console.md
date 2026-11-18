@@ -441,6 +441,43 @@ operator presses "Show the conversation", so a report read without it
 logs nothing. The console names each system line's driver or passenger
 instead of "you".
 
+## Reports, actions and appeals
+
+`apps/api/src/modules/moderation/admin-routes.ts` holds the console's
+safety routes (`registerModerationAdminRoutes`), with the work in
+`console.ts` and the actions themselves in `actions.ts` (spec 9, 3.4 to
+3.6):
+
+- `GET /admin/v1/reports` lists the open reports, safety first, then the
+  oldest (`queueOrder`), each with `dueAt`, 24 hours after it was filed
+  (R9.9); `?state=closed` the last 50 closed, newest first.
+- `GET /admin/v1/reports/{id}` gives one report with its records (the
+  trip with its driver, the booking, the reported message without its
+  words, About you for a report about a person), the actions taken under
+  it, and for each of the two people their other reports, by and about
+  them, the last 10 trips they drove or held a seat on, and the actions on
+  them.
+- `GET /admin/v1/reports/{id}/conversation` reads the conversation through
+  `readConversationAsOperator` with `{ type: "report", id }`: only a
+  report about a message covers it (R9.6), else `not_covered`. A message
+  ShareRide removed comes with its words, marked `removed`.
+- `POST /admin/v1/reports/{id}/close` with `{ outcome }` closes it and
+  tells the reporter in general terms.
+- `POST /admin/v1/users/{id}/warning`, `.../suspension` (with `until`,
+  null for no end) and `.../reinstatement` (with the `note` the person
+  reads); `POST /admin/v1/hidden-content` with the content's kind and ID;
+  `POST /admin/v1/trips/{id}/cancellation` with `countsOnReliability`.
+  Each takes the rule and the reason the person reads, and the report it
+  answers as `reportId`, and answers with the action as the console shows
+  it.
+- `GET /admin/v1/appeals` lists the appeals waiting, oldest first;
+  `?state=answered` the last 50 answered.
+  `POST /admin/v1/moderation-actions/{id}/appeal-answer` answers one,
+  once and finally; reversing a suspension or a hiding undoes it.
+
+Each action writes its audit entry and the person's notice in its own
+transaction, naming the fields it changed, never their values.
+
 ## A console page
 
 The console is `apps/admin`: React for the web, built with Vite, served by

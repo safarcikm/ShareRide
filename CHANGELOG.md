@@ -593,6 +593,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   `0041_hidden_content` adds `messages.hidden_at`,
   `trips.note_hidden_at` and `users.about_hidden_at`, which "Download my
   data" includes.
+- The console's reports API (milestone 9, PR 7a, spec 9, 3.4 to 3.6):
+  `/admin/v1/reports` lists open reports, safety first, then the oldest,
+  each due 24 hours after it was filed, or the last 50 closed; a report's
+  page has its records, both people's other reports, recent trips and
+  actions, and the actions taken under it. It names the reported message
+  without its words: `/admin/v1/reports/{id}/conversation` opens the
+  conversation only for a message report, each opening logged (R9.6), with
+  a message ShareRide removed marked `removed` (for disputes too). The
+  operator closes a report, warns, suspends or reinstates a person, hides
+  content and cancels a trip as ShareRide, each with the rule and the
+  reason the person reads; `/admin/v1/appeals` lists open and answered
+  appeals, and the answer is final. Only operators reach any of it.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its
@@ -977,6 +989,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   `trip_limit_reached`, and the app says fewer seats or a shorter part may
   fit and leads back to the trip; the domain gains `tripLimit`, `takingsOf`,
   `limitRoom` and the highest price level within the limit.
+- The trip limit, part 2 (spec 17, ADR 0030): the price level follows the
+  limit. More seats after people booked, a stop whose new stretches leave
+  too little room, a no-show (the driver's or the operator's decision), a
+  cancellation, or a request declined after the level was raised lower the
+  level for new bookings to the highest that keeps a full car within the
+  limit, recorded as a price level change with its reason; a higher level
+  is refused. The driver's trip shows its takings, and the price, seats and
+  stop screens say when what passengers booked sets the highest level,
+  down to free. On a trip under way, the stretches already driven still
+  count (A50).
 
 ### Fixed
 
