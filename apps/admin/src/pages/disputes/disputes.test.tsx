@@ -96,6 +96,7 @@ const message = (
   quick: null,
   system: null,
   sentAt: "2026-11-15T09:50:00.000Z",
+  removed: false,
   ...changes,
 });
 
