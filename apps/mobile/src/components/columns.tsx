@@ -10,6 +10,12 @@ import { stickyOnWeb, useScreenViewHeight, useWideScreen } from "./screen";
  * while the main column scrolls. Phones stack the two, main first. The
  * main column always comes first for a reader and the keyboard, also with
  * the side column drawn at the left (`sideAt="start"`).
+ *
+ * The main column keeps its place in the tree at any width, so what its
+ * parts hold, such as an open payment, stays when a window crosses the
+ * breakpoint. A screen whose phone layout mixes the two columns' parts
+ * gives a `side` on wide screens only, and null on a phone, where the
+ * stack is then the main column alone.
  */
 export function Columns({
   children,
@@ -30,9 +36,11 @@ export function Columns({
         <View testID="columns-main" style={styles.part}>
           {children}
         </View>
-        <View testID="columns-side" style={styles.part}>
-          {side}
-        </View>
+        {side === null || side === undefined ? null : (
+          <View testID="columns-side" style={styles.part}>
+            {side}
+          </View>
+        )}
       </View>
     );
   }

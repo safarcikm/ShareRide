@@ -1,5 +1,5 @@
-import { act, fireEvent, screen } from "expo-router/testing-library";
-import { AccessibilityInfo } from "react-native";
+import { act, fireEvent, screen, within } from "expo-router/testing-library";
+import { AccessibilityInfo, Dimensions } from "react-native";
 import type { Booking, MyTrip } from "@shareride/contracts";
 import { renderApp, completeMe } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -117,6 +117,58 @@ describe("the passenger's trip day (spec 8, 3.1)", () => {
     await openBooking(onTheDay({}, { status: "completed" }));
     expect(await screen.findByText("Borgarnes")).toBeVisible();
     expect(screen.queryByRole("header", { name: "Trip day" })).toBeNull();
+  });
+});
+
+describe("the passenger's trip day on a laptop (spec 18, 3.9)", () => {
+  const phone = { width: 750, height: 1334, scale: 2, fontScale: 2 };
+  const laptop = { width: 1280, height: 800, scale: 1, fontScale: 1 };
+
+  beforeEach(() => {
+    Dimensions.set({ window: laptop });
+  });
+
+  afterEach(async () => {
+    // The screen is still on show here, so its update goes through act.
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+  });
+
+  it("has when and where, the driver and I'm here in the main column, the ride and the chat beside them", async () => {
+    const { client } = await openBooking(onTheDay());
+    expect(await screen.findByRole("header", { name: "Trip day" })).toBeVisible();
+    const main = within(screen.getByTestId("columns-main"));
+    const side = within(screen.getByTestId("columns-side"));
+    expect(main.getByRole("header", { name: "Trip day" })).toBeVisible();
+    expect(main.getByText("By the petrol pumps")).toBeVisible();
+    expect(main.getByText("Number plate AB 123")).toBeVisible();
+    expect(main.getByRole("button", imHere)).toBeVisible();
+    expect(side.getByText("Blönduós")).toBeVisible();
+    expect(side.getByRole("button", { name: "Message Anna" })).toBeVisible();
+    const texts = textsInOrder();
+    const at = (text: string) => {
+      const index = texts.indexOf(text);
+      expect(index).toBeGreaterThanOrEqual(0);
+      return index;
+    };
+    expect(at("Trip day")).toBeLessThan(at("By the petrol pumps"));
+    expect(at("By the petrol pumps")).toBeLessThan(at("Number plate AB 123"));
+    expect(at("Number plate AB 123")).toBeLessThan(at("I'm here"));
+    expect(at("I'm here")).toBeLessThan(at("Blönduós"));
+    expect(at("Blönduós")).toBeLessThan(at("Message Anna"));
+
+    // Saying I'm here works from the main column, and stays said when the
+    // window turns narrow: nothing is loaded again for that.
+    await fireEvent.press(main.getByRole("button", imHere));
+    expect(await screen.findByText("We've told the driver you're here.")).toBeVisible();
+    const loaded = loadsOf(client, "/v1/bookings/{id}");
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+    expect(screen.getByText("We've told the driver you're here.")).toBeVisible();
+    expect(screen.queryByTestId("columns-side")).toBeNull();
+    expect(loadsOf(client, "/v1/bookings/{id}")).toBe(loaded);
   });
 });
 
