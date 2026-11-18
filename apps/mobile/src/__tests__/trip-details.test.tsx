@@ -608,6 +608,23 @@ describe("Trip details on a laptop (spec 18, 3.7)", () => {
     expect(bar.getByText("2,900 ISK")).toBeVisible();
     expect(bar.getByRole("button", { name: "Send request" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "One seat more" })).toBeEnabled();
+    // And two columns again when it turns wide, for the same part.
+    await act(() => {
+      Dimensions.set({ window: laptop });
+    });
+    expect(screen.getByRole("header", { name: "Borgarnes → Blönduós" })).toBeVisible();
+    expect(side().getByRole("button", { name: "Send request" })).toBeEnabled();
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+  });
+
+  it("keeps the page, with Back in its place, when the trip cannot be loaded", async () => {
+    await openTrip(undefined, () => failure(500, "internal_error"));
+    expect(await screen.findByText("The trip could not be loaded.")).toBeVisible();
+    expect(screen.getByTestId("page")).toBeVisible();
+    // What went wrong keeps the width of a column, at the page's left.
+    const column = screen.getByTestId("page-column");
+    expect(column).toHaveStyle({ maxWidth: 480 });
+    expect(within(column).getByRole("button", { name: "Try again" })).toBeVisible();
   });
 });
 

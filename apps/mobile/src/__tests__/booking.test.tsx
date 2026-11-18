@@ -978,6 +978,39 @@ describe("Check and pay and a request on a laptop (spec 18, 3.8)", () => {
     );
     const bar = within(screen.getByTestId("bottom-bar"));
     expect(bar.getByRole("button", { name: "Send request" })).toBeEnabled();
+    // And when it turns wide again.
+    await act(() => {
+      Dimensions.set({ window: laptop });
+    });
+    expect(main().getByLabelText("Message to the driver (optional)")).toHaveDisplayValue(
+      "I have one big suitcase.",
+    );
+    expect(side().getByRole("button", { name: "Send request" })).toBeEnabled();
+  });
+
+  it("keeps the payment open, for the booking made, when the window turns narrow", async () => {
+    const { client } = await openCheckAndPay();
+    await fireEvent.press(await side().findByRole("button", { name: "Pay 2,900 ISK" }));
+    expect(
+      await side().findByRole("header", { name: "Test payment: no money moves" }),
+    ).toBeVisible();
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+    const bar = within(screen.getByTestId("bottom-bar"));
+    expect(bar.getByRole("header", { name: "Test payment: no money moves" })).toBeVisible();
+    await fireEvent.press(bar.getByRole("button", { name: "Pay 2,900 ISK" }));
+    expect(await screen.findByRole("header", { name: "You're booked!" })).toBeVisible();
+    expect(bookCalls(client)).toHaveLength(1);
+    expect(paymentCalls(client)).toHaveLength(1);
+  });
+
+  it("keeps the page, with Back in its place, when the trip cannot be loaded", async () => {
+    await openBooking({ trip: () => failure(500, "internal_error") });
+    expect(await screen.findByText("The trip could not be loaded.")).toBeVisible();
+    expect(screen.getByTestId("page")).toBeVisible();
+    const column = within(screen.getByTestId("page-column"));
+    expect(column.getByRole("button", { name: "Try again" })).toBeVisible();
   });
 });
 

@@ -25,7 +25,7 @@ import { bookErrorText, heldUntilText } from "@/booking/texts";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
-import { Columns } from "@/components/columns";
+import { Columns, PageColumn } from "@/components/columns";
 import { Icon } from "@/components/icon";
 import { Notice } from "@/components/notice";
 import { Screen, useWideScreen } from "@/components/screen";
@@ -109,9 +109,10 @@ function Book() {
     />
   );
 
+  // A page while it loads and when it fails, as it is once loaded, so Back
+  // does not move on a wide screen.
   if (answer === undefined) {
     return (
-      // A page, as the screen is once loaded, so Back does not move then.
       <Screen width="page">
         {back}
         <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
@@ -120,22 +121,24 @@ function Book() {
   }
   if (!answer.ok) {
     return (
-      <Screen>
+      <Screen width="page">
         {back}
-        <Notice
-          message={
-            answer.status === 404 || answer.status === 400
-              ? t("trip.notFound")
-              : answer.error.code === "rate_limited"
-                ? t("trip.rateLimited", {
-                    wait: formatWait(t, answer.error.retryAfterSeconds ?? 60),
-                  })
-                : answer.error.code === "network_error"
-                  ? errorText(t, answer)
-                  : t("trip.failed")
-          }
-        />
-        <Button variant="secondary" label={t("common.retry")} onPress={reload} />
+        <PageColumn>
+          <Notice
+            message={
+              answer.status === 404 || answer.status === 400
+                ? t("trip.notFound")
+                : answer.error.code === "rate_limited"
+                  ? t("trip.rateLimited", {
+                      wait: formatWait(t, answer.error.retryAfterSeconds ?? 60),
+                    })
+                  : answer.error.code === "network_error"
+                    ? errorText(t, answer)
+                    : t("trip.failed")
+            }
+          />
+          <Button variant="secondary" label={t("common.retry")} onPress={reload} />
+        </PageColumn>
       </Screen>
     );
   }

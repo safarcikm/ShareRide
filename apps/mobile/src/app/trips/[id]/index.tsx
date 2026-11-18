@@ -13,7 +13,7 @@ import { bookingHref, keepPendingBooking } from "@/booking/pending-booking";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
-import { Columns } from "@/components/columns";
+import { Columns, PageColumn } from "@/components/columns";
 import { Halves } from "@/components/halves";
 import { Icon } from "@/components/icon";
 import { IconButton } from "@/components/icon-button";
@@ -89,9 +89,10 @@ export default function TripScreen() {
   const answer: Answer | undefined = loaded?.id === id ? loaded.answer : undefined;
   const current = loaded?.id === id && loaded.query === query;
 
+  // A page while it loads and when it fails, as it is once loaded, so Back
+  // does not move on a wide screen.
   if (answer === undefined || (!current && !answer.ok)) {
     return (
-      // A page, as the screen is once loaded, so Back does not move then.
       <Screen width="page">
         <NoIndex />
         <BackButton fallback="/" />
@@ -101,10 +102,12 @@ export default function TripScreen() {
   }
   if (!answer.ok) {
     return (
-      <Screen>
+      <Screen width="page">
         <NoIndex />
         <BackButton fallback="/" />
-        <Failure answer={answer} onRetry={reload} />
+        <PageColumn>
+          <Failure answer={answer} onRetry={reload} />
+        </PageColumn>
       </Screen>
     );
   }

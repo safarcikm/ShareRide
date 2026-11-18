@@ -93,6 +93,13 @@ changes on a phone.
 6. On a screen with two columns, the title starts at the left, above the
    main column. Screens of one column keep their centred title (spec 15,
    5.1, alignment).
+7. A window that crosses 900, as when its edge is dragged, lays the screen
+   out anew. What the person typed, chose or opened to pay stays, and
+   nothing loads again. Where the focus is, and a list opened in place
+   (the stops under Change), may not stay (decision 11).
+8. A two-column screen is a page from the start: while it loads, and when
+   it cannot be loaded, Back is where it will be once loaded. The notice
+   and Try again keep the 480 column, at the left (`PageColumn`, spec 15).
 
 ### 3.3 The top bar
 
@@ -191,8 +198,8 @@ changes on a phone.
    a booking already made, shows there in the button's place.
 4. The seats stepper moves from "Your part" into the booking panel, next to
    the price it changes.
-5. There is no bottom bar. While the trip loads the screen is already a
-   page, so Back does not move when it comes.
+5. There is no bottom bar. While the trip loads, and when it cannot be
+   loaded, the screen is already a page (3.2, 8).
 
 ### 3.8 Check and pay, and a request
 
@@ -204,8 +211,10 @@ changes on a phone.
    car) and the total, and under the card the main button ("Pay 5,800
    ISK", "Send request"). The payment opens in the button's place; a part
    that can no longer be booked says so there.
-3. There is no bottom bar. What was typed stays when the window turns
-   narrow or wide.
+3. There is no bottom bar. What was typed and ticked stays when the
+   window turns narrow or wide, and so does a payment that is open (3.2,
+   7). When the trip cannot be loaded the screen is a page all the same
+   (3.2, 8).
 
 ### 3.9 A booking
 
@@ -344,3 +353,4 @@ Every other text is one the app has.
 | 8 | Does Messages open the newest conversation by itself? | No: opening marks its messages as seen, which only the person should do (my call) |
 | 9 | A colour for a primary button under the pointer | New token `primaryHover` (#285C44 light, #8FD0AC dark), added to spec 15, 4.1 with its contrast check (my call) |
 | 10 | How does a card show the pointer? | Its bottom edge turns `primary`. A tint was tried first and dropped: tags and avatars on the card sit on the same tint and lost their shape (my call, 2026-11-18) |
+| 11 | What stays when a window crosses 900? | What the person typed, chose or opened to pay: that state lives above the layout, and nothing loads again. The focus and a list opened in place do not: the wide and the phone layout are different trees, and keeping those too would mean drawing every phone screen as a wide one folded up. Dragging a window across 900 in the middle of a booking is rare, and nothing is lost (my call, 2026-11-18, after the code review) |
