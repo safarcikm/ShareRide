@@ -200,14 +200,19 @@ async function anonymiseTrip(
   now: Date,
 ): Promise<{ readonly bookings: number; readonly reviews: number; readonly cars: number } | null> {
   return db.transaction(async (tx) => {
-    // The people on it, locked as an erasure and a new hold lock them: a
-    // hold set meanwhile is seen below, and one set after finds the trip done.
+    // The people on it, and those its reviews name, locked as an erasure
+    // and a new hold lock them: a hold set meanwhile is seen below, and one
+    // set after finds the trip done.
+    const reviewed = (person: typeof reviews.authorId | typeof reviews.subjectId) =>
+      tx.select({ id: person }).from(reviews).where(reviewsOn(tripId, tx));
     const onIt = or(
       inArray(
         users.id,
         tx.select({ id: bookings.passengerId }).from(bookings).where(eq(bookings.tripId, tripId)),
       ),
       inArray(users.id, tx.select({ id: trips.driverId }).from(trips).where(eq(trips.id, tripId))),
+      inArray(users.id, reviewed(reviews.authorId)),
+      inArray(users.id, reviewed(reviews.subjectId)),
     );
     await tx
       .select({ id: users.id })

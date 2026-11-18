@@ -1064,8 +1064,6 @@ export const is = {
   "people.reviewsAsPassenger": "Sem farþegi",
   "people.reviewBy.driver": "{name}, bílstjóri · {month} {year}",
   "people.reviewBy.passenger": "{name}, farþegi · {month} {year}",
-  "people.reviewByNobody.driver": "Bílstjóri · {month} {year}",
-  "people.reviewByNobody.passenger": "Farþegi · {month} {year}",
   "people.noReviews": "Engar umsagnir enn.",
   "people.noReviewsAsDriver": "Engar umsagnir sem bílstjóri enn.",
   "people.noReviewsAsPassenger": "Engar umsagnir sem farþegi enn.",

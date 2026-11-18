@@ -437,6 +437,30 @@ describe("trips and bookings 3 years after the trip (spec 11, 3.7; plan 4.7)", (
     ]);
   });
 
+  it("keeps such a trip's reviews while a hold covers a person they name", async () => {
+    const { jon, gunna, bookingId } = await rideWithEverything();
+    const written = await reviewedEachOther(jon.userId, gunna.userId, bookingId);
+    const due = await threeYearsAfter(airport);
+    await run(due);
+    for (const review of written) {
+      await api.connection.db
+        .update(schema.reviews)
+        .set({ authorId: review.authorId, bookingId })
+        .where(eq(schema.reviews.id, review.id));
+    }
+    // The trip and booking name only the former member now; the reviews name Gunna.
+    await hold("user", gunna.userId, new Date(due.getTime() + 30 * day));
+
+    expect(await run(due)).toEqual({ erased: 0, anonymised: 0 });
+
+    expect(
+      (await reviewsAbout(jon.userId, gunna.userId)).map(({ authorId, bookingId: ride }) => ({
+        authorId,
+        ride,
+      })),
+    ).toEqual(written.map((review) => ({ authorId: review.authorId, ride: bookingId })));
+  });
+
   it("leaves the driver's and passengers' later trips as they were", async () => {
     const { gunna } = await rideWithEverything();
     const later = await booked(gunna.accessToken, north, { fromStop: 0, toStop: 1 });

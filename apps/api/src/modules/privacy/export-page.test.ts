@@ -165,6 +165,7 @@ describe("codeText", () => {
       "account_deleted",
     ],
     roles: ["driver", "passenger"],
+    authorRole: ["driver", "passenger"],
     cancelledBy: ["passenger", "driver", "operator"],
     reportedBy: ["passenger", "driver"],
     answer: disputeAnswers,

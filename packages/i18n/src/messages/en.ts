@@ -1051,8 +1051,6 @@ export const en = {
   "people.reviewsAsPassenger": "As a passenger",
   "people.reviewBy.driver": "{name}, driver · {month} {year}",
   "people.reviewBy.passenger": "{name}, passenger · {month} {year}",
-  "people.reviewByNobody.driver": "A driver · {month} {year}",
-  "people.reviewByNobody.passenger": "A passenger · {month} {year}",
   "people.noReviews": "No reviews yet.",
   "people.noReviewsAsDriver": "No reviews as a driver yet.",
   "people.noReviewsAsPassenger": "No reviews as a passenger yet.",

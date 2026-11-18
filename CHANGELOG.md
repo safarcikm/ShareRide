@@ -933,9 +933,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   driver or a passenger keeps it until the hold ends.
 - Reviews of a trip made anonymous no longer name who wrote them or the
   ride (Martin's answer A49): they keep their stars, comment and dates for
-  the person they are about, so ratings stay the same. A profile shows a
-  review with no name as by "A driver" or "A passenger", and Download my
-  data lists those about the person from such trips in their own section.
+  the person they are about, so ratings stay the same. A profile shows
+  them as by "A former member", as it shows those of people who left, and
+  Download my data lists those about the person from such trips in their
+  own section. A hold on anyone they name keeps them as they are.
   Migration `0042_reviews_of_old_trips` makes a review's booking optional.
 - Erasure keeps a conversation a report covers (spec 9, section 7;
   Martin's answer A47): the erased person's messages read "Message deleted" to

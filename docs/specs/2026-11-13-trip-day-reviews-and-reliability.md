@@ -142,10 +142,8 @@ complain further.
    (spec 9).
 5. **On the profile:** the average rating with one decimal and the number of
    ratings, and the reviews, newest first, each with the author's first name,
-   month and year, and whether they rode as driver or passenger. A review
-   with no name, by an author whose account was deleted or from a trip over
-   3 years ago (A49), shows only how they travelled: "A driver" or "A
-   passenger".
+   month and year, and whether they rode as driver or passenger. Reviews of a
+   deleted account's author show "A former member".
 6. People are reminded to review when the trip completes and once more after 3
    days, using the trip reminders switch (spec 7).
 
@@ -307,7 +305,7 @@ Settings: `no_show_wait` 10 minutes, `trip_completion_delay` 2 hours,
 | `review.lowRating` | Did something go wrong? | Fór eitthvað úrskeiðis? |
 | `review.asDriver` | As a driver | Sem bílstjóri |
 | `review.asPassenger` | As a passenger | Sem farþegi |
-| `review.byNobody` | A driver · {month} {year} / A passenger · {month} {year} | Bílstjóri · {month} {year} / Farþegi · {month} {year} |
+| `review.formerMember` | A former member | Fyrrverandi notandi |
 | `profile.rating` | {rating} ({count, plural, one {# rating} other {# ratings}}) | {rating} ({count, plural, one {# einkunn} other {# einkunnir}}) |
 | `profile.reliability` | Reliability: {percent} | Áreiðanleiki: {percent} |
 | `profile.reliabilityNew` | Not enough trips yet | Ekki nógu margar ferðir enn |

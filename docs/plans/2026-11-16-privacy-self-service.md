@@ -436,11 +436,12 @@ Martin chose this on 2026-11-17 (open question Q23, answer A49).
       booking optional, for the former member's alone.
 - [x] Download my data lists the reviews about the person from such trips
       in their own section, once shown, with only how the author travelled.
-- [x] A profile shows a review with no name as by "A driver" or "A
-      passenger" (spec 8, 3.7.5), for an author who left too.
+- [x] A profile shows them as by "A former member" (spec 8, 3.7.5), as it
+      shows those of people who left. A hold on a review's author or
+      subject keeps the trip as it is, also one made anonymous before.
 - Verify: integration tests (reviews unlinked with the ratings unchanged;
-  a trip made anonymous before; the export section); the profile screen
-  test.
+  a trip made anonymous before; a hold on a review's person; the export
+  section).
 
 ## 6. Review focus
 

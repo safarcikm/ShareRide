@@ -33,9 +33,7 @@ const reviewCalls = (client: FakeClient) =>
 
 /** Who wrote each review shown, and how they travelled, in order. */
 const bylines = () =>
-  screen
-    .getAllByText(/^(.+, (driver|passenger)|A (driver|passenger)) · /)
-    .map((line) => String(line.props.children));
+  screen.getAllByText(/, (driver|passenger) · /).map((line) => String(line.props.children));
 const label = (element: { props: { accessibilityLabel?: unknown } }) =>
   String(element.props.accessibilityLabel);
 
@@ -196,7 +194,7 @@ describe("the reviews on a profile (spec 8, 3.7.5)", () => {
     expect(await screen.findByText("On time and careful.")).toBeVisible();
     expect(bylines()).toEqual([
       "Gunna, passenger · November 2026",
-      "A driver · October 2026",
+      "A former member, driver · October 2026",
       "Jón, passenger · October 2026",
     ]);
     expect(screen.getAllByRole("image", { name: /stars out of 5$/ }).map(label)).toEqual([
@@ -252,11 +250,11 @@ describe("the reviews on a profile (spec 8, 3.7.5)", () => {
     await screen.findByText("Easy company.");
     await fireEvent.press(screen.getByRole("button", { name: "Show more reviews" }));
     await fireEvent.press(screen.getByRole("radio", { name: "As a passenger" }));
-    expect(await screen.findByText("A driver · October 2026")).toBeVisible();
+    expect(await screen.findByText("A former member, driver · October 2026")).toBeVisible();
     await act(() => {
       release();
     });
-    expect(bylines()).toEqual(["A driver · October 2026"]);
+    expect(bylines()).toEqual(["A former member, driver · October 2026"]);
     expect(screen.queryByRole("button", { name: "Show more reviews" })).toBeNull();
   });
 
