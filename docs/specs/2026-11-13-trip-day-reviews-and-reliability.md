@@ -238,7 +238,7 @@ Endpoints (`/v1`, shapes defined in `packages/contracts`):
 | `POST /bookings/{id}/driver-absent` | Passenger: the driver didn't come |
 | `POST /disputes/{id}/answer` | The other side agrees or contests |
 | `POST /bookings/{id}/review` | Rate and review |
-| `GET /people/{profileId}/reviews?role=` | Visible reviews of a person, paged |
+| `GET /people/{profileId}/reviews?role=` | Visible reviews of a person, paged; each says whether I wrote it (`mine`), as I cannot report my own ([spec 9](2026-11-13-safety-and-moderation.md)) |
 | `GET /people/{profileId}` | The profile, with the rating and the counts behind the figure (spec 1) |
 
 Console endpoints under `/admin/v1`: list and decide disputes; list weather

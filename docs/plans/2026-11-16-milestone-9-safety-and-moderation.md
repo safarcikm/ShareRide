@@ -481,7 +481,7 @@ PRs 7 and 8 were: 9a the API, 9b the screens.
     do, and the console offers no action on it. The rule for which
     reviews a profile shows is one helper (`readable` in
     `people/ratings.ts`), shared by profiles, ratings and reports.
-- [ ] 9b: `feat(safety)`: Report and Block on the public profile, and
+- [x] 9b: `feat(safety)`: Report and Block on the public profile, and
       Report review, in the app; the review on the console's report page
   - On another person's profile, never one's own or "See it as others
     do": Report and Block; on each review, Report review. The report
@@ -492,6 +492,16 @@ PRs 7 and 8 were: 9a the API, 9b the screens.
     review while it is shown.
   - Verify: screen tests for both entries and the hidden ones; a console
     test for the review record and Hide review.
+  - Found while building (9b): the profile also links the community rules
+    (spec 9, 3.3.4). Report review is read out with its author and month,
+    as a list has many. It is on every review I did not write, my own
+    profile and "See it as others do" included, so the person a review is
+    about can report it; for that, a profile's reviews say which are mine
+    (`mine`), as the API refuses my own. A review's author has no profile reference on it,
+    so its report offers no "Block too". A report about a review by the
+    former member names the former member, on whom the console offers no
+    action, so hiding such a review from the console waits for a later
+    change; the API already allows it.
 - [ ] Afterwards: ratings, reliability and reviews on the console's person
       and report pages (spec 3.5.2), now that milestone 7 has them
 

@@ -272,6 +272,8 @@ describe("the rating and reviews on a profile (spec 8, 3.7; R8.9)", () => {
           author: { firstName: "Gunna" },
           authorRole: "passenger",
           writtenIn: "2026-11",
+          // Gunna reads her own review.
+          mine: true,
         },
       ],
       more: false,
@@ -344,6 +346,21 @@ describe("the rating and reviews on a profile (spec 8, 3.7; R8.9)", () => {
     expect(asPassenger.reviews.map((one) => one.comment)).toEqual(["Easy company."]);
     const asDriver = await shownReviews(gunna, jon, { role: "driver" });
     expect(asDriver.reviews.map((one) => one.rating)).toEqual([5, 4]);
+  });
+
+  it("marks the reviews I wrote, which I cannot report (spec 9, 3.1.1)", async () => {
+    const { jon, gunna, bookingId } = await afterTheTrip();
+    await storedReview({
+      bookingId,
+      authorId: gunna.userId,
+      subjectId: jon.userId,
+      authorRole: "passenger",
+      rating: 4,
+    });
+    const sigga = await newMember("Sigga");
+    expect((await shownReviews(gunna, jon)).reviews.map((one) => one.mine)).toEqual([true]);
+    expect((await shownReviews(sigga, jon)).reviews.map((one) => one.mine)).toEqual([false]);
+    expect((await shownReviews(jon, jon)).reviews.map((one) => one.mine)).toEqual([false]);
   });
 
   it("comes in pages, newest first", async () => {

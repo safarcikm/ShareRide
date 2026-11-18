@@ -57,6 +57,9 @@ export function choicesOf(report: AdminReport): readonly Choice[] {
     ...(drives && report.trip !== null && report.trip.note !== "" && !report.trip.noteHidden
       ? [{ kind: "hide", content: "trip_note", id: report.trip.id } as const]
       : []),
+    ...(report.review !== null && !report.review.hidden
+      ? [{ kind: "hide", content: "review", id: report.review.id } as const]
+      : []),
     ...(report.about !== null && !report.about.hidden
       ? [{ kind: "hide", content: "about", id: reported.userId } as const]
       : []),

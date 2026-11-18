@@ -41,6 +41,7 @@ export function aProfileReview(n: number, changes: Partial<ProfileReview> = {}):
     author: { firstName: "Gunna" },
     authorRole: "passenger",
     writtenIn: "2026-10",
+    mine: false,
     ...changes,
   };
 }
