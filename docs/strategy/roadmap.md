@@ -159,13 +159,14 @@ accepted 2026-11-16)
 
 Milestone 8: the operator console and meeting points
 ([plan](../plans/2026-11-16-milestone-8-operator-console-and-meeting-points.md),
-accepted 2026-11-16; built alongside milestones 7, 9 and 10)
+accepted 2026-11-16; built alongside milestones 7, 9 and 10; all merged
+2026-11-18, Martin's passkey check and a screen reader pass to do)
 
-- [ ] The operator role, passkey sign-in and the audit log
-- [ ] The console app, its home and the audit log page
-- [ ] Meeting points: create, edit, activate, pause, retire and move
-- [ ] Photos, import and problem reports
-- [ ] Distances for real meeting points
+- [x] The operator role, passkey sign-in and the audit log
+- [x] The console app, its home and the audit log page
+- [x] Meeting points: create, edit, activate, pause, retire and move
+- [x] Photos, import and problem reports
+- [x] Distances for real meeting points
 
 Milestone 9: safety and moderation
 ([plan](../plans/2026-11-16-milestone-9-safety-and-moderation.md), choices
