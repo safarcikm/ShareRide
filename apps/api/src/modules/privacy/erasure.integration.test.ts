@@ -385,6 +385,46 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
     ).toMatchObject({ ok: false, status: 404 });
   });
 
+  it("erases the feedback the person sent, with its screenshot (spec 12, section 7)", async () => {
+    const gunna = await newMember("Gunna");
+    const sigga = await newMember("Sigga");
+    const { db } = api.connection;
+    const details = {
+      kind: "problem",
+      appVersion: "1.4.0",
+      platform: "ios",
+      osVersion: "19.1",
+      screen: "/trips/[id]",
+      language: "en",
+    };
+    const [gone, kept] = await db
+      .insert(schema.feedback)
+      .values([
+        { userId: gunna.userId, message: "Gunna's", ...details },
+        { userId: sigga.userId, message: "Sigga's", ...details },
+      ])
+      .returning({ id: schema.feedback.id });
+    if (gone === undefined || kept === undefined) throw new Error("No feedback.");
+    await db.insert(schema.feedbackScreenshots).values(
+      [gone, kept].map(({ id }) => ({
+        feedbackId: id,
+        file: Buffer.from([0xff, 0xd8, 0xff, 0xd9]),
+        width: 390,
+        height: 844,
+      })),
+    );
+
+    await waitEnded(gunna);
+    expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+
+    expect((await db.select().from(schema.feedback)).map((row) => row.id)).toEqual([kept.id]);
+    expect(
+      (await db.select().from(schema.feedbackScreenshots)).map((row) => row.feedbackId),
+    ).toEqual([kept.id]);
+    expect(await rowsNaming(gunna.userId)).toEqual([]);
+    await db.delete(schema.feedback);
+  });
+
   it("changes nothing the second time", async () => {
     const { anna, bookingId } = await busyDriver();
     await waitEnded(anna);

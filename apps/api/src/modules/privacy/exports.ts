@@ -15,7 +15,7 @@ import { hashToken, newToken, type FileCipher } from "../../platform/crypto.ts";
 import { zip } from "../../platform/zip.ts";
 import type { AuthService, ConfirmError } from "../auth/service.ts";
 import { recordEvents } from "../notifications/outbox.ts";
-import { collectExport } from "./export-data.ts";
+import { collectExport, collectExportFiles } from "./export-data.ts";
 import { renderExportPage } from "./export-page.ts";
 
 // "Download my data" (spec 11, 3.2; plan 4.4): asked for with a fresh code,
@@ -285,14 +285,18 @@ export function createExportBuilder(dependencies: ExportBuilderDependencies): Ex
   async function build(row: ExportRow): Promise<boolean> {
     const now = clock();
     // One snapshot, so the sections agree with each other.
-    const data = await db.transaction((tx) => collectExport(tx, row.userId, now), {
-      isolationLevel: "repeatable read",
-      accessMode: "read only",
-    });
+    const { data, files } = await db.transaction(
+      async (tx) => ({
+        data: await collectExport(tx, row.userId, now),
+        files: await collectExportFiles(tx, row.userId),
+      }),
+      { isolationLevel: "repeatable read", accessMode: "read only" },
+    );
     const archive = zip(
       [
         { name: "shareride-data.json", data: Buffer.from(`${JSON.stringify(data, null, 2)}\n`) },
         { name: "shareride-data.html", data: Buffer.from(renderExportPage(data)) },
+        ...files,
       ],
       now,
     );

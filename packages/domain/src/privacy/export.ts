@@ -54,5 +54,7 @@ export const exportSections = [
   "notes",
   "notifications",
   "privacy_requests",
+  /** The feedback the person sent and the replies, with the screenshots as files (spec 12, 3.3). */
+  "feedback",
 ] as const;
 export type ExportSection = (typeof exportSections)[number];

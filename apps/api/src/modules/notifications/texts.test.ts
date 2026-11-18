@@ -603,6 +603,30 @@ describe("notification texts", () => {
     });
   });
 
+  it("tell a tester there is a reply to their feedback; only the email carries it (spec 12, 3.3.4)", () => {
+    const settings = defaultNotificationSettings;
+    const reply = {
+      kind: "feedback_replied",
+      sentAt: new Date("2027-03-10T12:00:00Z"),
+      reply: "Thanks, fixed in the next version.",
+    } as const;
+    expect(notificationText(reply, "en", settings)).toEqual({
+      title: "ShareRide replied to your feedback",
+      body: "Open ShareRide to read the reply.",
+      path: "/settings/feedback",
+      open: "Open your feedback in ShareRide",
+      emailBody: [
+        "Thank you for the feedback you sent on 10 March. Our reply:",
+        "",
+        "Thanks, fixed in the next version.",
+      ].join("\n"),
+    });
+    expect(notificationText(reply, "is", settings)).toMatchObject({
+      title: "ShareRide svaraði ábendingunni þinni",
+      body: "Opnaðu ShareRide til að lesa svarið.",
+    });
+  });
+
   it("tell the person ShareRide's answer to their appeal, the email with its words (spec 9, 3.4.4)", () => {
     const settings = defaultNotificationSettings;
     const answer = {

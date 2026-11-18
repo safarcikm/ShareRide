@@ -87,16 +87,20 @@ analytics are needed at all.
 1. "Send feedback" is in the menu on every screen. On phones, shaking the
    phone opens it too; this can be turned off in Settings.
 2. The form: what kind (something isn't working, an idea, something else); a
-   message of up to 2 000 characters; and, on by default, a screenshot of the
-   screen they came from, shown before sending with a reminder to check it
-   shows nothing they don't want to share. They can remove it.
+   message of up to 2 000 characters; and, on phones, on by default, a
+   screenshot of the screen they came from, shown before sending with a
+   reminder to check it shows nothing they don't want to share. They can
+   remove it. The web form sends no picture (milestone 11, choice 2). One
+   person can send 10 a day.
 3. Sent with it, automatically: app version, platform and OS version, screen
    name, language and time. Nothing else from the device.
 4. **In the console:** a list of feedback, newest first, with the screenshot
    and details, and a status: new, read, planned, done or won't do. The
-   operator can send a short reply, which reaches the tester by push and
-   email (spec 7).
-5. Testers can see what they sent and any replies under Settings.
+   operator can send one short reply of up to 1 000 characters, which
+   reaches the tester by push and email (spec 7): the push says only that
+   there is a reply, the email carries it.
+5. Testers can see what they sent and any replies under Settings; the
+   operator's status is not shown to them.
 
 ### 3.4 Usage analytics (J3)
 

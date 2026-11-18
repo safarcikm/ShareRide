@@ -8,7 +8,7 @@ import {
   type HoldSubjectKind,
   type RetentionRule,
 } from "@shareride/domain";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createLogger } from "../../logger.ts";
 import { startTestApi, type TestApi } from "../../testing.ts";
@@ -286,6 +286,85 @@ describe("the rules this feature adds (plan 4.7)", () => {
 
     const left = await api.connection.db.select().from(schema.blockedNumbers);
     expect(left.map((row) => row.phoneHash)).toEqual(["until-later"]);
+  });
+
+  it('deletes the beta\'s feedback 12 months after "Invite code required" was last turned off (spec 12, section 7)', async () => {
+    const { db } = api.connection;
+    const now = api.now();
+    const monthsAgo = (months: number) => new Date(now.getTime() - months * 30.5 * day);
+    const gunna = await newMember("Gunna");
+    const held = await newMember("Sigga");
+    const details = {
+      kind: "idea",
+      appVersion: "1.4.0",
+      platform: "web",
+      osVersion: "",
+      screen: "/",
+      language: "is",
+    };
+    const sentAt = (userId: string, message: string, createdAt: Date) => ({
+      userId,
+      message,
+      createdAt,
+      ...details,
+    });
+    await db
+      .insert(schema.feedback)
+      .values([
+        sentAt(gunna.userId, "during the beta", monthsAgo(20)),
+        sentAt(gunna.userId, "after the beta", monthsAgo(6)),
+        sentAt(held.userId, "held", monthsAgo(20)),
+      ]);
+    const [old] = await db
+      .select({ id: schema.feedback.id })
+      .from(schema.feedback)
+      .where(eq(schema.feedback.message, "during the beta"));
+    if (old === undefined) throw new Error("No feedback.");
+    await db.insert(schema.feedbackScreenshots).values({
+      feedbackId: old.id,
+      file: Buffer.from([0xff, 0xd8, 0xff, 0xd9]),
+      width: 1,
+      height: 1,
+    });
+    const left = async () =>
+      (await db.select().from(schema.feedback).orderBy(asc(schema.feedback.createdAt))).map(
+        (row) => row.message,
+      );
+    const [last] = await db
+      .select({ version: schema.settingChanges.version })
+      .from(schema.settingChanges)
+      .orderBy(desc(schema.settingChanges.version))
+      .limit(1);
+    const change = (step: number, newValue: 0 | 1, createdAt: Date) =>
+      db.insert(schema.settingChanges).values({
+        version: (last?.version ?? 0) + step,
+        key: "invite_code_required",
+        oldValue: 1 - newValue,
+        newValue,
+        reason: "Test",
+        createdAt,
+      });
+
+    // While the requirement is on, however old the feedback: nothing.
+    expect((await run(now)).counts.feedback).toEqual({ erased: 0, anonymised: 0 });
+    // Turned off 11 months ago: not yet.
+    await change(1, 0, monthsAgo(11));
+    await run(now);
+    expect(await left()).toEqual(["during the beta", "held", "after the beta"]);
+    // Turned on again and off 13 months ago is not the last change; off 12 months ago is.
+    await change(2, 1, monthsAgo(10));
+    await run(now);
+    expect(await left()).toHaveLength(3);
+    await change(3, 0, new Date(now.getTime() - 366 * day));
+    const holdId = await hold("user", held.userId, new Date(now.getTime() + day));
+
+    const result = await run(now);
+
+    expect(result.counts.feedback).toEqual({ erased: 1, anonymised: 0 });
+    expect(await left()).toEqual(["held", "after the beta"]);
+    expect(await db.select().from(schema.feedbackScreenshots)).toEqual([]);
+    await endHold(holdId, now);
+    await db.delete(schema.feedback);
   });
 
   it("deletes the record of an erased account after 30 days", async () => {

@@ -359,6 +359,19 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
       note: "kept as they are: the database refuses changes and deletes (R10.2)",
     },
   },
+  feedback: {
+    category: "feedback",
+    export: { section: "feedback" },
+    personColumns: ["userId"],
+    onDeletion: erase,
+  },
+  feedback_screenshots: {
+    category: "feedback",
+    // The pictures are files in the export's ZIP (spec 12, section 7).
+    export: { section: "feedback" },
+    personColumns: [],
+    onDeletion: { rows: "erase", note: "with the feedback they came with" },
+  },
   invite_codes: {
     category: "audit",
     export: {
