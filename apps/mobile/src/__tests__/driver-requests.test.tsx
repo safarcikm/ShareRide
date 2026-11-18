@@ -1,6 +1,6 @@
 import type { Booking } from "@shareride/contracts";
-import { AccessibilityInfo } from "react-native";
-import { act, fireEvent, screen, waitFor } from "expo-router/testing-library";
+import { AccessibilityInfo, Dimensions } from "react-native";
+import { act, fireEvent, screen, waitFor, within } from "expo-router/testing-library";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import {
@@ -390,5 +390,168 @@ describe("The driver's trip page (spec 5, 3.3 and 3.7)", () => {
     ).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByText("No requests or bookings yet.")).toBeVisible();
+  });
+});
+
+describe("The driver's trip on a laptop (spec 18, 3.14)", () => {
+  const phone = { width: 750, height: 1334, scale: 2, fontScale: 2 };
+  const laptop = { width: 1280, height: 800, scale: 1, fontScale: 1 };
+
+  beforeEach(() => {
+    Dimensions.set({ window: laptop });
+  });
+
+  afterEach(async () => {
+    // The screen is still on show here, so its update goes through act.
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+  });
+
+  const main = () => within(screen.getByTestId("columns-main"));
+  const side = () => within(screen.getByTestId("columns-side"));
+
+  /** Where each of `marks` first stands among the spoken labels and texts on screen. */
+  function placesOf(marks: readonly string[]): number[] {
+    const found: string[] = [];
+    const walk = (node: unknown) => {
+      if (typeof node === "string") found.push(node);
+      else if (Array.isArray(node)) node.forEach(walk);
+      else if (typeof node === "object" && node !== null) {
+        if ("props" in node && typeof node.props === "object" && node.props !== null) {
+          const props = node.props as { accessibilityLabel?: unknown };
+          if (typeof props.accessibilityLabel === "string") found.push(props.accessibilityLabel);
+        }
+        if ("children" in node) walk(node.children);
+      }
+    };
+    walk(screen.toJSON());
+    return marks.map((mark) => {
+      const place = found.indexOf(mark);
+      if (place < 0) throw new Error(`"${mark}" is not on screen.`);
+      return place;
+    });
+  }
+  const inOrder = (places: readonly number[]) => [...places].sort((a, b) => a - b);
+
+  it("has the requests and the passengers in the main column, with the actions and the seats on each stretch beside them", async () => {
+    await openAsDriver(tripPage, [requestToDrive, jon]);
+    expect(await main().findByRole("header", { name: "Requests" })).toBeVisible();
+    expect(screen.getByTestId("page")).toBeVisible();
+    expect(screen.getByRole("header", { name: "BSÍ bus terminal → Hof, Akureyri" })).toBeVisible();
+
+    expect(main().getByText("Gunna")).toBeVisible();
+    expect(main().getByRole("button", { name: "Accept" })).toBeVisible();
+    expect(main().getByRole("header", { name: "Passengers" })).toBeVisible();
+    expect(main().getByLabelText("Jón, 2 seats, Confirmed")).toBeVisible();
+    expect(main().getByRole("header", { name: "Safety" })).toBeVisible();
+    expect(main().getByRole("button", { name: "Post again" })).toBeVisible();
+    expect(main().getByRole("button", { name: "Post the return trip" })).toBeVisible();
+
+    expect(side().getByRole("button", { name: "Message all passengers" })).toBeVisible();
+    expect(side().getByRole("button", { name: "Edit trip" })).toBeVisible();
+    expect(side().getByRole("button", { name: "Cancel trip" })).toBeVisible();
+    expect(side().getByRole("header", { name: "Seats on each stretch" })).toBeVisible();
+    expect(side().getByLabelText("Blönduós to Hof, Akureyri, 0 of 3 seats taken")).toBeVisible();
+
+    // Each thing is there once.
+    for (const name of ["Message all passengers", "Edit trip", "Cancel trip", "Post again"]) {
+      expect(screen.getAllByRole("button", { name })).toHaveLength(1);
+    }
+    expect(screen.getAllByRole("header", { name: "Seats on each stretch" })).toHaveLength(1);
+    // What to press comes first beside the lists, whole in a small window
+    // however many stretches the trip has.
+    const places = placesOf([
+      "Passengers",
+      "Safety",
+      "Post again",
+      "Message all passengers",
+      "Edit trip",
+      "Cancel trip",
+      "Seats on each stretch",
+    ]);
+    expect(places).toEqual(inOrder(places));
+  });
+
+  it("keeps a question that is open when the window turns narrow and wide again", async () => {
+    await openAsDriver(tripPage);
+    await fireEvent.press(await main().findByRole("button", { name: "Decline" }));
+    await fireEvent.press(main().getByRole("radio", { name: "The luggage won't fit" }));
+
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+    expect(screen.queryByTestId("columns-side")).toBeNull();
+    expect(screen.queryByTestId("page")).toBeNull();
+    expect(screen.getByRole("radio", { name: "The luggage won't fit" })).toBeChecked();
+    expect(screen.getAllByRole("button", { name: "Edit trip" })).toHaveLength(1);
+
+    await act(() => {
+      Dimensions.set({ window: laptop });
+    });
+    expect(main().getByRole("radio", { name: "The luggage won't fit" })).toBeChecked();
+    expect(side().getByRole("button", { name: "Edit trip" })).toBeVisible();
+    expect(screen.getAllByRole("button", { name: "Edit trip" })).toHaveLength(1);
+  });
+
+  it("says at the left that nobody has asked yet, with no way to message nobody", async () => {
+    await openAsDriver(tripPage, []);
+    const none = await main().findByText("No requests or bookings yet.");
+    expect(none).toBeVisible();
+    expect(none).not.toHaveStyle({ textAlign: "center" });
+    expect(screen.queryByRole("button", { name: "Message all passengers" })).toBeNull();
+    expect(side().getByRole("button", { name: "Edit trip" })).toBeVisible();
+    expect(side().getByRole("header", { name: "Seats on each stretch" })).toBeVisible();
+  });
+
+  it("is a page from the start, also when the trip cannot be loaded", async () => {
+    await renderApp(tripPage, {
+      me: completeMe,
+      setUp: (client) => {
+        tripsApi(client, [northMyTrip]);
+        driverApi(client, []);
+        client.answer("/v1/me/trips/{id}/bookings", () => failure(500, "internal_error"));
+      },
+    });
+    const column = within(await screen.findByTestId("page-column"));
+    expect(column.getByText("The trip's requests and bookings could not be loaded.")).toBeVisible();
+    expect(column.getByRole("button", { name: "Try again" })).toBeVisible();
+    expect(screen.getByTestId("page")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Back" })).toBeVisible();
+    expect(screen.queryByTestId("columns")).toBeNull();
+  });
+
+  it("keeps a cancelled trip in a column at the page's left", async () => {
+    await renderApp(tripPage, {
+      me: completeMe,
+      setUp: (client) => {
+        tripsApi(client, [{ ...northMyTrip, status: "cancelled", cancellation: null }]);
+        driverApi(client, []);
+      },
+    });
+    const column = within(await screen.findByTestId("page-column"));
+    expect(column.getByText("This trip was cancelled.")).toBeVisible();
+    expect(column.getByRole("button", { name: "Post again" })).toBeVisible();
+    expect(screen.getByTestId("page")).toBeVisible();
+    expect(screen.getByRole("header", { name: "BSÍ bus terminal → Hof, Akureyri" })).toBeVisible();
+    expect(screen.queryByTestId("columns")).toBeNull();
+  });
+
+  it("leaves a phone as it was: one column, in the order it had", async () => {
+    Dimensions.set({ window: phone });
+    await openAsDriver(tripPage, [requestToDrive, jon]);
+    expect(await screen.findByRole("header", { name: "Requests" })).toBeVisible();
+    expect(screen.queryByTestId("page")).toBeNull();
+    expect(screen.queryByTestId("columns-side")).toBeNull();
+    const places = placesOf([
+      "Passengers",
+      "Message all passengers",
+      "Seats on each stretch",
+      "Edit trip",
+      "Cancel trip",
+      "Safety",
+      "Post again",
+    ]);
+    expect(places).toEqual(inOrder(places));
   });
 });
