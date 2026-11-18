@@ -146,6 +146,7 @@ paused or retiring) connected by road.
 | `published_at` | |
 | `completed_at` | Two hours after its last stop's planned time, when it completed on its own ([spec 8, R8.1](../specs/2026-11-13-trip-day-reviews-and-reliability.md#36-trip-completion-e4)), however late the job ran |
 | `cancelled_at`, `cancelled_by`, `cancel_reason`, `cancel_note`, `counts_on_reliability` | When the trip was cancelled and by whom (`driver`, or `operator` for ShareRide, spec 9, 3.4.3 and 3.6), why (a fixed list, the driver's only), the driver's note to everyone on it (up to 500 characters, without contact details), and whether it counts on their reliability, once for the trip ([spec 6, 3.3](../specs/2026-11-13-changes-and-cancellations.md#33-cancelling-a-trip-driver)); ShareRide's never counts unless the operator says so |
+| `excused_by_reason`, `overruled_at`, `overrule_note` | Whether the cancellation does not count only because its reason is the weather or a closed road, saved when it is made; when the operator overruled that reason so that it counts (null again if they undo it); and their note on the last change, theirs only, up to 500 characters ([spec 8, R8.11](../specs/2026-11-13-trip-day-reviews-and-reliability.md#4-rules)). Who did is in the audit log |
 | `sample` | Sample data made by the seed for local development and staging |
 
 ### TripStop
@@ -210,6 +211,7 @@ car or stop.
 | `message`, `decline_reason`, `attempt_key` | Request note, reason seen only by the operator, idempotency key ([spec 5](../specs/2026-11-13-booking-and-requests.md#6-data-and-api)) |
 | `cancelled_by`, `cancel_reason`, `cancel_note`, `cancelled_at` | Reasons from a fixed list, including `weather`, `road_closed` and `plans_changed`; the note, up to 500 characters without contact details, only from a driver. A request declined because the driver cancelled the trip keeps `driver`, the trip's reason and its note |
 | `refund_amount`, `counts_on_reliability` | Worked out by the domain when the booking is cancelled ([spec 6](../specs/2026-11-13-changes-and-cancellations.md#4-rules)); the refund is at most the total, and is the payment once one comes through after cancelling |
+| `excused_by_reason`, `overruled_at`, `overrule_note` | As on the trip: whether only a weather or road-closure reason keeps the cancellation from counting, when the operator overruled it, and their note (R8.11) |
 | `departs_at_when_booked` | The trip's departure when the booking was made: moved more than 30 minutes from it, the passenger may cancel for free (R6.3) |
 
 ### BookingSegmentPrice

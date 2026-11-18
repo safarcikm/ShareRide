@@ -1,5 +1,5 @@
 {
-  "id": "c878a571-610c-4ba3-aeb5-c360e890dc14",
+  "id": "300379b8-b76b-4bec-9044-3be24fa44896",
   "prevId": "45eb4c8c-77cb-4ff2-a20a-07457dfb73f7",
   "version": "7",
   "dialect": "postgresql",
@@ -1328,6 +1328,26 @@
           "notNull": true,
           "default": false
         },
+        "excused_by_reason": {
+          "name": "excused_by_reason",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "overruled_at": {
+          "name": "overruled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "overrule_note": {
+          "name": "overrule_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
         "departs_at_when_booked": {
           "name": "departs_at_when_booked",
           "type": "timestamp with time zone",
@@ -1504,6 +1524,10 @@
         "bookings_cancel_note_check": {
           "name": "bookings_cancel_note_check",
           "value": "char_length(\"bookings\".\"cancel_note\") <= 500"
+        },
+        "bookings_overrule_note_check": {
+          "name": "bookings_overrule_note_check",
+          "value": "char_length(\"bookings\".\"overrule_note\") <= 500"
         },
         "bookings_refund_check": {
           "name": "bookings_refund_check",
@@ -5142,104 +5166,6 @@
       },
       "isRLSEnabled": false
     },
-    "public.operator_notes": {
-      "name": "operator_notes",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "uuidv7()"
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "text": {
-          "name": "text",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "by_id": {
-          "name": "by_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "operator_notes_user_index": {
-          "name": "operator_notes_user_index",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "operator_notes_user_id_users_id_fk": {
-          "name": "operator_notes_user_id_users_id_fk",
-          "tableFrom": "operator_notes",
-          "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "operator_notes_by_id_users_id_fk": {
-          "name": "operator_notes_by_id_users_id_fk",
-          "tableFrom": "operator_notes",
-          "tableTo": "users",
-          "columnsFrom": ["by_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "operator_notes_text_check": {
-          "name": "operator_notes_text_check",
-          "value": "char_length(\"operator_notes\".\"text\") between 1 and 4000"
-        }
-      },
-      "isRLSEnabled": false
-    },
     "public.reports": {
       "name": "reports",
       "schema": "",
@@ -6089,6 +6015,26 @@
           "notNull": true,
           "default": false
         },
+        "excused_by_reason": {
+          "name": "excused_by_reason",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "overruled_at": {
+          "name": "overruled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "overrule_note": {
+          "name": "overrule_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
         "sample": {
           "name": "sample",
           "type": "boolean",
@@ -6226,6 +6172,10 @@
         "trips_cancel_note_check": {
           "name": "trips_cancel_note_check",
           "value": "char_length(\"trips\".\"cancel_note\") <= 500"
+        },
+        "trips_overrule_note_check": {
+          "name": "trips_overrule_note_check",
+          "value": "char_length(\"trips\".\"overrule_note\") <= 500"
         },
         "trips_times_check": {
           "name": "trips_times_check",
