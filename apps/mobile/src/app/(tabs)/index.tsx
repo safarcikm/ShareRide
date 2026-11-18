@@ -1,7 +1,7 @@
 import { soonestTripsRoute, type TripSearchResult } from "@shareride/contracts";
 import { router } from "expo-router";
 import { useCallback } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useMe, useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
@@ -27,7 +27,8 @@ import { usePalette } from "@/theme/use-palette";
 
 /**
  * Rides on the front page; one more is asked for, to know whether there are
- * others. A wide page shows six, which fill its grid of two columns.
+ * others. A wide page shows six, which fill the two columns its grid has
+ * where they fit, from about 1140 wide; under that they are one column.
  */
 const shownRides = 5;
 const shownRidesWide = 6;
@@ -40,7 +41,8 @@ const shownRidesWide = 6;
  *
  * A wide screen (spec 18, 3.5) has the search in one row across the page,
  * then the rides in a grid with Your next ride and the offer in a column
- * beside them; with no rides, those two sit in the middle under the search.
+ * beside them, there from the start so nothing moves when the rides come;
+ * with no rides, those two sit in the middle under the search.
  */
 export default function FindScreen() {
   const suspension = suspensionNow(useMe());
@@ -115,9 +117,9 @@ function FrontPage() {
       <Screen width="page">
         {title}
         {route.row(findRide)}
-        {rides.length > 0 ? (
+        {value === undefined || rides.length > 0 ? (
           <Columns side={side}>
-            <LeavingSoon rides={rides} shown={shown} grid />
+            <LeavingSoon rides={rides} shown={shown} grid loading={value === undefined} />
           </Columns>
         ) : (
           <View testID="find-middle" style={styles.middle}>
@@ -189,19 +191,33 @@ function NextRide({ beside = false }: { readonly beside?: boolean }) {
  * The rides leaving soonest, each for its whole route (spec 4, 3.8): five,
  * or six in a `grid` on a wide page, with "See all rides" when there are
  * more, under the rides or, in a grid, at the right of the heading. Left
- * out while loading, when there are none and when they can't be loaded:
- * the page works without them.
+ * out when there are none and when they can't be loaded: the page works
+ * without them. While `loading`, a wide page shows the heading and that
+ * they are on their way; a phone leaves them out until they are there.
  */
 function LeavingSoon({
   rides,
   shown,
   grid = false,
+  loading = false,
 }: {
   readonly rides: readonly TripSearchResult[];
   readonly shown: number;
   readonly grid?: boolean;
+  readonly loading?: boolean;
 }) {
   const { t } = useLanguage();
+  const palette = usePalette();
+  if (loading) {
+    return (
+      <View style={styles.rides}>
+        <View style={styles.head}>
+          <Heading>{t("welcome.soon")}</Heading>
+        </View>
+        <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
+      </View>
+    );
+  }
   if (rides.length === 0) return null;
   const cards = rides
     .slice(0, shown)

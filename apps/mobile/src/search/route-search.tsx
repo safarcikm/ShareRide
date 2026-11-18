@@ -10,7 +10,15 @@ import {
   type ReactElement,
   type RefObject,
 } from "react";
-import { AccessibilityInfo, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  AccessibilityInfo,
+  BackHandler,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { Calendar } from "@/components/calendar";
 import { Card } from "@/components/card";
 import { Chip } from "@/components/chip";
@@ -22,6 +30,7 @@ import { Body, Heading } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { addDays, dayOf, isoDay, noonOf, type Day } from "@/lib/days";
+import { escapeOnWeb } from "@/lib/escape-on-web";
 import { PlaceDropdown } from "@/meeting-points/place-dropdown";
 import { searchEndOf } from "./search-end";
 import { saveRecentSearch, type SearchEnd, type SearchQuery } from "./recent-searches";
@@ -86,6 +95,21 @@ export function useRouteSearch(
     if (!closed || field === null) return;
     if (Platform.OS === "web") (field as unknown as { focus: () => void }).focus();
     else AccessibilityInfo.sendAccessibilityEvent(field, "focus");
+  }, [choosingDay]);
+
+  // In the row, Android's back closes the calendar, as it does a list of
+  // places, rather than leaving the screen. In `fields` the calendar is a
+  // part of the form and stays.
+  useEffect(() => {
+    if (!choosingDay) return undefined;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (dateField.current === null) return false;
+      setChoosingDay(false);
+      return true;
+    });
+    return () => {
+      subscription.remove();
+    };
   }, [choosingDay]);
 
   const search =
@@ -220,8 +244,9 @@ export function useRouteSearch(
             </View>
             {choosingDay ? (
               <View style={styles.day}>
+                {/* One choice with the days of the calendar, so a radio like them. */}
                 <Chip
-                  role="button"
+                  role="radio"
                   label={t("search.anyDay")}
                   selected={date === null}
                   onToggle={() => {
@@ -293,16 +318,6 @@ function DateField({
       </View>
     </Pressable>
   );
-}
-
-/** On the web, Escape closes what is open under a field, wherever focus is in it. */
-function escapeOnWeb(onClose: () => void): object {
-  if (Platform.OS !== "web") return {};
-  return {
-    onKeyDown: (event: { key: string }) => {
-      if (event.key === "Escape") onClose();
-    },
-  };
 }
 
 /** "2026-11-15" as a day, or null. */

@@ -283,7 +283,8 @@ bar `primary`. A disabled or busy part shows none.
   "Your next ride" (signed in, one coming up) and the card "Driving
   somewhere?" with "Offer a ride" and "See the meeting points" in
   `columns-side`. With no rides, no `columns-main`, and the side cards in
-  a column 480 wide in the middle (`find-middle`).
+  a column 480 wide in the middle (`find-middle`). While the rides load,
+  the columns with "Leaving soon" and "Loading".
 - [x] **Step 2 to 4:** Run, implement with `Screen width="page"`, run.
   `laptop.spec.ts` gains Find in both languages at 900, 1280 and 1440: the
   search stays in its card with no cut text, the calendar opens under the

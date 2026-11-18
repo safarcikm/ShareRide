@@ -145,6 +145,8 @@ test.describe("Find's search row", () => {
     await expect(date).toHaveAccessibleName("Date: Any day");
     await date.click();
     await expect(date).toHaveAttribute("aria-expanded", "true");
+    // Any day is a choice like the days, and the one chosen so far.
+    await expect(row.getByRole("radio", { name: "Any day" })).toBeChecked();
     const days = row.getByRole("radio", { disabled: false });
     await expect(days.first()).toBeVisible();
     // The calendar opens under the date, inside the card.
@@ -174,9 +176,17 @@ test.describe("Find's search row", () => {
     const second = await box(rides.nth(1));
     expect(second.y).toBeCloseTo(first.y, 0);
     expect(second.x).toBeGreaterThan(first.x + first.width);
-    // The cards of a row are as tall as each other.
+    // The cards of a row are as tall as each other, whatever they hold: a
+    // name on two lines in one of them makes both of them taller.
     const cards = page.getByTestId("columns-main").getByTestId("card");
-    expect((await box(cards.nth(1))).height).toBeCloseTo((await box(cards.nth(0))).height, 0);
+    const heights = await Promise.all(
+      (await cards.all()).map(async (card) => (await box(card)).height),
+    );
+    expect(heights.length).toBeGreaterThanOrEqual(4);
+    for (let left = 0; left + 1 < heights.length; left += 2) {
+      expect(heights[left + 1]).toBeCloseTo(heights[left] ?? 0, 0);
+    }
+    expect(new Set(heights.map(Math.round)).size).toBeGreaterThan(1);
     const offer = await box(
       page.getByTestId("columns-side").getByRole("button", { name: "Offer a ride" }),
     );
