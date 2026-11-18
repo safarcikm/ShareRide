@@ -2219,7 +2219,7 @@ export const en = {
   "admin.reports.bookingStatus.no_show": "No-show",
   "admin.reports.message": "Message",
   "admin.reports.messageSent": "Sent {when}. Its words are in the conversation below.",
-  "admin.reports.review": "Review",
+  "admin.reports.reviewRecord": "Review",
   "admin.reports.reviewFacts.driver": "{rating} of 5 stars, by the driver, written {when}",
   "admin.reports.reviewFacts.passenger": "{rating} of 5 stars, by the passenger, written {when}",
   "admin.reports.reviewWords": "The review's words",

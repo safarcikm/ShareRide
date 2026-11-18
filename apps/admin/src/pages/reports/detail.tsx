@@ -177,7 +177,7 @@ export function ReportDetail({ id }: { readonly id: string }) {
           )}
           {report.review === null ? null : (
             <>
-              <dt>{t("admin.reports.review")}</dt>
+              <dt>{t("admin.reports.reviewRecord")}</dt>
               <dd>
                 {t(
                   report.review.authorRole === "driver"

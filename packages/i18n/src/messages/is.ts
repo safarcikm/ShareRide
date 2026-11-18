@@ -2233,7 +2233,7 @@ export const is = {
   "admin.reports.bookingStatus.no_show": "Mætti ekki",
   "admin.reports.message": "Skilaboð",
   "admin.reports.messageSent": "Send {when}. Orðin eru í samtalinu hér fyrir neðan.",
-  "admin.reports.review": "Umsögn",
+  "admin.reports.reviewRecord": "Umsögn",
   "admin.reports.reviewFacts.driver": "{rating} af 5 stjörnum, frá bílstjóranum, skrifuð {when}",
   "admin.reports.reviewFacts.passenger": "{rating} af 5 stjörnum, frá farþeganum, skrifuð {when}",
   "admin.reports.reviewWords": "Orð umsagnarinnar",
