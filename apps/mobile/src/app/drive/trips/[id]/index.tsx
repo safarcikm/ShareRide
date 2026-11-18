@@ -2,7 +2,7 @@ import type { CallFailure } from "@shareride/api-client";
 import { myTripRoute, tripBookingsRoute, type Booking } from "@shareride/contracts";
 import { cancelReasonText, capitalised, formatClock, formatDay } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
@@ -44,15 +44,14 @@ import { firstNameOf } from "@/people/texts";
  * and `changed`, which changes once each change is saved, with `told`, how
  * many passengers were told. A cancelled trip says why, and nothing more.
  *
- * On a wide screen (spec 18, 3.14) it is a page of two columns: the
- * requests, the passengers, safety and posting again in the main column,
- * and beside them what to press for this trip (Message all passengers,
- * Edit trip, Cancel trip) and then the seats on each stretch, so the
- * buttons are whole in a small window however many stretches there are.
- * The main column is one tree for a phone and a wide screen: every part
- * keeps its place among the others, so a question that is open stays when
- * the window crosses the breakpoint. What a wide screen shows in the side
- * column is left out of the main column there.
+ * On a wide screen (spec 18, 3.14) it is a page: Back, the day and the
+ * route across the top with "Edit trip" and "Cancel trip" at its end,
+ * whole in any window; under it the requests, the passengers, safety and
+ * posting again in the main column, and the seats on each stretch beside
+ * them. The main column is one tree for a phone and a wide screen: every
+ * part keeps its place among the others, so a question that is open stays
+ * when the window crosses the breakpoint. What a wide screen shows
+ * elsewhere is left out of the main column there.
  */
 export default function DriverTripScreen() {
   const { locale, t } = useLanguage();
@@ -125,31 +124,42 @@ export default function DriverTripScreen() {
   }
 
   const departure = trip.data.departsAt === null ? null : new Date(trip.data.departsAt);
-  const head = (
-    <>
-      <BackButton fallback="/drive/trips" />
-      <View>
-        {departure === null ? null : (
-          <Text style={[typography.small, { color: palette.textMuted }]}>
-            {capitalised(
-              t("trip.mine.when", {
-                day: formatDay(departure, locale),
-                time: formatClock(departure),
-              }),
-              locale,
-            )}
-          </Text>
-        )}
-        <Title align="start">{routeText(t, locale, trip.data)}</Title>
-      </View>
-    </>
+  const name = (
+    <View style={wide ? styles.grow : null}>
+      {departure === null ? null : (
+        <Text style={[typography.small, { color: palette.textMuted }]}>
+          {capitalised(
+            t("trip.mine.when", {
+              day: formatDay(departure, locale),
+              time: formatClock(departure),
+            }),
+            locale,
+          )}
+        </Text>
+      )}
+      <Title align="start">{routeText(t, locale, trip.data)}</Title>
+    </View>
   );
+  /** Back and the trip's name; on a wide screen in one row, with `actions` at its end. */
+  const head = (actions: ReactNode = null) =>
+    wide ? (
+      <View testID="page-head" style={styles.wideHead}>
+        <BackButton fallback="/drive/trips" />
+        {name}
+        {actions === null ? null : <View style={styles.headActions}>{actions}</View>}
+      </View>
+    ) : (
+      <>
+        <BackButton fallback="/drive/trips" />
+        {name}
+      </>
+    );
 
   if (trip.data.status === "cancelled") {
     const { cancellation } = trip.data;
     return (
       <Screen width="page">
-        {head}
+        {head()}
         <PageColumn>
           <TakesFocus when={tripCancelled !== undefined}>
             <Notice
@@ -200,16 +210,7 @@ export default function DriverTripScreen() {
         ? null
         : { text: t("driverTrip.cancelledBooking"), key: cancelled };
 
-  // On a wide screen these stand beside the lists; on a phone, among them.
-  const messageAll = riding.some((booking) => booking.confirmed !== null) ? (
-    <Button
-      variant="secondary"
-      label={t("chat.messageAll")}
-      onPress={() => {
-        router.push({ pathname: "/drive/trips/[id]/message", params: { id } });
-      }}
-    />
-  ) : null;
+  // On a wide screen these stand beside the trip's name; on a phone, after the lists.
   const editAndCancel = open ? (
     <>
       <Button
@@ -240,18 +241,11 @@ export default function DriverTripScreen() {
       </Card>
     </>
   );
-  const side = wide ? (
-    <>
-      {messageAll}
-      {editAndCancel}
-      {stretches}
-    </>
-  ) : null;
 
   return (
     <Screen width="page">
-      {head}
-      <Columns side={side}>
+      {head(editAndCancel)}
+      <Columns side={wide ? stretches : null}>
         {said === null ? null : (
           <TakesFocus key={said.key}>
             <Notice kind="info" message={said.text} />
@@ -318,7 +312,15 @@ export default function DriverTripScreen() {
           <>
             <Heading>{t("driverTrip.passengers")}</Heading>
             <PassengersByPart bookings={riding} />
-            {wide ? null : messageAll}
+            {riding.some((booking) => booking.confirmed !== null) ? (
+              <Button
+                variant="secondary"
+                label={t("chat.messageAll")}
+                onPress={() => {
+                  router.push({ pathname: "/drive/trips/[id]/message", params: { id } });
+                }}
+              />
+            ) : null}
           </>
         )}
         {bookings.length === 0 ? (
@@ -387,4 +389,8 @@ function Reports({
 
 const styles = StyleSheet.create({
   report: { gap: spacing.xs },
+  wideHead: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  // `minWidth`: a long route wraps, and does not push the buttons out.
+  grow: { flex: 1, minWidth: 0 },
+  headActions: { flexDirection: "row", gap: spacing.sm },
 });

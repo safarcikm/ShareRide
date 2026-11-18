@@ -434,7 +434,7 @@ describe("The driver's trip on a laptop (spec 18, 3.14)", () => {
   }
   const inOrder = (places: readonly number[]) => [...places].sort((a, b) => a - b);
 
-  it("has the requests and the passengers in the main column, with the actions and the seats on each stretch beside them", async () => {
+  it("has Edit trip and Cancel trip beside the title, the requests and passengers under it, and the seats on each stretch beside them", async () => {
     await openAsDriver(tripPage, [requestToDrive, jon]);
     expect(await main().findByRole("header", { name: "Requests" })).toBeVisible();
     expect(screen.getByTestId("page")).toBeVisible();
@@ -444,13 +444,20 @@ describe("The driver's trip on a laptop (spec 18, 3.14)", () => {
     expect(main().getByRole("button", { name: "Accept" })).toBeVisible();
     expect(main().getByRole("header", { name: "Passengers" })).toBeVisible();
     expect(main().getByLabelText("Jón, 2 seats, Confirmed")).toBeVisible();
+    expect(main().getByRole("button", { name: "Message all passengers" })).toBeVisible();
     expect(main().getByRole("header", { name: "Safety" })).toBeVisible();
     expect(main().getByRole("button", { name: "Post again" })).toBeVisible();
     expect(main().getByRole("button", { name: "Post the return trip" })).toBeVisible();
 
-    expect(side().getByRole("button", { name: "Message all passengers" })).toBeVisible();
-    expect(side().getByRole("button", { name: "Edit trip" })).toBeVisible();
-    expect(side().getByRole("button", { name: "Cancel trip" })).toBeVisible();
+    // What changes the trip stands across the top, beside its name: whole
+    // in any window, however many stretches the trip has.
+    const top = within(screen.getByTestId("page-head"));
+    expect(top.getByRole("button", { name: "Back" })).toBeVisible();
+    expect(top.getByText("Sunday 15 November at 09:00")).toBeVisible();
+    expect(top.getByRole("header", { name: "BSÍ bus terminal → Hof, Akureyri" })).toBeVisible();
+    expect(top.getByRole("button", { name: "Edit trip" })).toBeVisible();
+    expect(top.getByRole("button", { name: "Cancel trip" })).toBeVisible();
+
     expect(side().getByRole("header", { name: "Seats on each stretch" })).toBeVisible();
     expect(side().getByLabelText("Blönduós to Hof, Akureyri, 0 of 3 seats taken")).toBeVisible();
 
@@ -459,15 +466,14 @@ describe("The driver's trip on a laptop (spec 18, 3.14)", () => {
       expect(screen.getAllByRole("button", { name })).toHaveLength(1);
     }
     expect(screen.getAllByRole("header", { name: "Seats on each stretch" })).toHaveLength(1);
-    // What to press comes first beside the lists, whole in a small window
-    // however many stretches the trip has.
     const places = placesOf([
-      "Passengers",
-      "Safety",
-      "Post again",
-      "Message all passengers",
       "Edit trip",
       "Cancel trip",
+      "Requests",
+      "Passengers",
+      "Message all passengers",
+      "Safety",
+      "Post again",
       "Seats on each stretch",
     ]);
     expect(places).toEqual(inOrder(places));
@@ -490,7 +496,7 @@ describe("The driver's trip on a laptop (spec 18, 3.14)", () => {
       Dimensions.set({ window: laptop });
     });
     expect(main().getByRole("radio", { name: "The luggage won't fit" })).toBeChecked();
-    expect(side().getByRole("button", { name: "Edit trip" })).toBeVisible();
+    expect(side().getByRole("header", { name: "Seats on each stretch" })).toBeVisible();
     expect(screen.getAllByRole("button", { name: "Edit trip" })).toHaveLength(1);
   });
 
@@ -500,7 +506,7 @@ describe("The driver's trip on a laptop (spec 18, 3.14)", () => {
     expect(none).toBeVisible();
     expect(none).not.toHaveStyle({ textAlign: "center" });
     expect(screen.queryByRole("button", { name: "Message all passengers" })).toBeNull();
-    expect(side().getByRole("button", { name: "Edit trip" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Edit trip" })).toBeVisible();
     expect(side().getByRole("header", { name: "Seats on each stretch" })).toBeVisible();
   });
 
@@ -534,6 +540,7 @@ describe("The driver's trip on a laptop (spec 18, 3.14)", () => {
     expect(column.getByRole("button", { name: "Post again" })).toBeVisible();
     expect(screen.getByTestId("page")).toBeVisible();
     expect(screen.getByRole("header", { name: "BSÍ bus terminal → Hof, Akureyri" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Edit trip" })).toBeNull();
     expect(screen.queryByTestId("columns")).toBeNull();
   });
 
@@ -542,6 +549,7 @@ describe("The driver's trip on a laptop (spec 18, 3.14)", () => {
     await openAsDriver(tripPage, [requestToDrive, jon]);
     expect(await screen.findByRole("header", { name: "Requests" })).toBeVisible();
     expect(screen.queryByTestId("page")).toBeNull();
+    expect(screen.queryByTestId("page-head")).toBeNull();
     expect(screen.queryByTestId("columns-side")).toBeNull();
     const places = placesOf([
       "Passengers",
