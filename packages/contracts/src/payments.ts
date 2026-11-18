@@ -40,7 +40,11 @@ export const startPaymentRoute = defineRoute({
         "booking_not_payable: not waiting for payment (requested, paid, expired or cancelled)",
       ...errors,
     },
-    503: { description: "payments_unavailable: no payment provider is set up", ...errors },
+    503: {
+      description:
+        "payments_unavailable: no payment provider is set up; bookings_paused: booking and paying are paused for a short while (spec 10, 3.3)",
+      ...errors,
+    },
   },
 });
 

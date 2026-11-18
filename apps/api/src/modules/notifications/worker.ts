@@ -43,6 +43,10 @@ import {
   type ReportOutcome,
   type ReviewSettings,
   type TripRole,
+  channelSwitches,
+  switchKeys,
+  switchReminderNumber,
+  type SwitchKey,
 } from "@shareride/domain";
 import type { CarFacts } from "@shareride/i18n";
 import { and, asc, desc, eq, gt, inArray, isNull, lte, ne, notInArray, or, sql } from "drizzle-orm";
@@ -132,6 +136,17 @@ export interface NotificationWorker {
 }
 
 type Delivery = typeof notificationDeliveries.$inferSelect;
+
+/** The switches for emergencies that are off now (spec 10, 3.3). */
+type SwitchesOff = () => Promise<readonly SwitchKey[]>;
+
+/**
+ * Each switch for emergencies: on or off, and since when, as the settings
+ * service gives them.
+ */
+export type WorkerSwitches = Readonly<
+  Record<SwitchKey, { readonly on: boolean; readonly since: Date | null }>
+>;
 type Parties = NonNullable<Awaited<ReturnType<typeof partiesOf>>>;
 
 /** A booking's driver, passenger and deadlines. */
@@ -690,34 +705,55 @@ async function exportFactsOf(
 /**
  * A new report, to an operator (spec 9, R9.9): only whether it is about
  * safety. `current` is false once the report is closed, or the operator no
- * longer holds the role.
+ * longer holds the role. A switch left off (spec 10, 3.3): the switches
+ * that are off now, and nothing once all are on again.
  */
-async function operatorFactsOf(q: Queryable, notification: typeof notifications.$inferSelect) {
+async function operatorFactsOf(
+  q: Queryable,
+  notification: typeof notifications.$inferSelect,
+  switchesOff: SwitchesOff,
+) {
   const kind = notification.kind as NotificationKind;
-  if (!isOperatorNotice(kind) || notification.reportId === null) return undefined;
+  if (!isOperatorNotice(kind)) return undefined;
+  if (kind !== "switch_still_off" && notification.reportId === null) return undefined;
   const [row] = await q
     .select({
       locale: recipients.locale,
       phone: recipients.phoneE164,
       phoneVerifiedAt: recipients.phoneVerifiedAt,
+      email: recipients.email,
+      emailVerifiedAt: recipients.emailVerifiedAt,
       roles: recipients.roles,
       status: recipients.status,
       deleteAfter: recipients.deleteAfter,
       reportStatus: reports.status,
     })
     .from(recipients)
-    .leftJoin(reports, eq(reports.id, notification.reportId))
+    .leftJoin(reports, eq(reports.id, sql`${notification.reportId}::uuid`))
     .where(eq(recipients.id, notification.recipientId));
   if (row === undefined) return undefined;
-  const facts: OperatorNoticeFacts = { kind };
-  return {
-    facts,
-    current: row.reportStatus === "open" && canUseConsole(row),
+  const common = {
     locale: row.locale === "is" ? "is" : "en",
     recipientId: notification.recipientId,
-    email: null,
     phone: row.phoneVerifiedAt === null ? null : row.phone,
     booking: null,
+  } as const;
+  if (kind === "switch_still_off") {
+    const off = await switchesOff();
+    const facts: OperatorNoticeFacts = { kind, off };
+    return {
+      ...common,
+      facts,
+      current: off.length > 0 && canUseConsole(row),
+      email: row.emailVerifiedAt === null ? null : row.email,
+    } as const;
+  }
+  const facts: OperatorNoticeFacts = { kind };
+  return {
+    ...common,
+    facts,
+    current: row.reportStatus === "open" && canUseConsole(row),
+    email: null,
   } as const;
 }
 
@@ -767,11 +803,13 @@ const answerKinds: ReadonlySet<string> = new Set<NotificationKind>([
 ]);
 
 /** What a notification's text is made from, and where it goes, as of now. */
-async function factsOf(q: Queryable, notificationId: string, now: Date) {
+async function factsOf(q: Queryable, notificationId: string, now: Date, switchesOff: SwitchesOff) {
   const [found] = await q.select().from(notifications).where(eq(notifications.id, notificationId));
   if (found === undefined) return undefined;
   if (isAccountNotice(found.kind as NotificationKind)) return accountFactsOf(q, found, now);
-  if (isOperatorNotice(found.kind as NotificationKind)) return operatorFactsOf(q, found);
+  if (isOperatorNotice(found.kind as NotificationKind)) {
+    return operatorFactsOf(q, found, switchesOff);
+  }
   if (
     found.kind === "meeting_point_changed_driver" ||
     found.kind === "meeting_point_moved_driver"
@@ -954,8 +992,22 @@ export function createNotificationWorker(dependencies: {
     error: unknown,
     event: { id: string; kind: string; givenUp: boolean },
   ) => void;
+  /**
+   * The operator's switches (spec 10, 3.3): a channel that is off leaves
+   * its messages waiting, and a switch left off reminds the operators.
+   * Without it, every switch is on.
+   */
+  readonly switches?: () => Promise<WorkerSwitches>;
 }): NotificationWorker {
   const { db, clock, push, email, sms, onSendError, onEventError } = dependencies;
+  const switchesNow = async (): Promise<Partial<WorkerSwitches>> =>
+    (await dependencies.switches?.()) ?? {};
+  const switchesOff: SwitchesOff = async () => {
+    const now = await switchesNow();
+    return switchKeys.filter((key) => now[key]?.on === false);
+  };
+  /** The sending channels with their switches, as the deliveries name them. */
+  const channels = Object.entries(channelSwitches) as [keyof typeof channelSwitches, SwitchKey][];
   const settings = dependencies.settings ?? defaultNotificationSettings;
   const reviewSettings = dependencies.reviewSettings ?? defaultReviewSettings;
 
@@ -1939,8 +1991,8 @@ export function createNotificationWorker(dependencies: {
     });
   }
 
-  /** Takes the next delivery that is due, with a lease, or none. */
-  async function claim(): Promise<Delivery | undefined> {
+  /** Takes the next delivery that is due on a channel that is not paused, with a lease, or none. */
+  async function claim(paused: readonly string[]): Promise<Delivery | undefined> {
     const now = clock();
     const next = db
       .select({ id: notificationDeliveries.id })
@@ -1949,6 +2001,8 @@ export function createNotificationWorker(dependencies: {
         and(
           eq(notificationDeliveries.status, "queued"),
           lte(notificationDeliveries.nextAttemptAt, now),
+          // A paused channel's messages wait where they are (spec 10, 3.3).
+          paused.length === 0 ? undefined : notInArray(notificationDeliveries.channel, [...paused]),
         ),
       )
       .orderBy(asc(notificationDeliveries.nextAttemptAt))
@@ -1999,7 +2053,7 @@ export function createNotificationWorker(dependencies: {
   }
 
   async function sendOn(delivery: Delivery): Promise<SendResult | undefined> {
-    const found = await factsOf(db, delivery.notificationId, clock());
+    const found = await factsOf(db, delivery.notificationId, clock(), switchesOff);
     if (found === undefined) return undefined;
     // Looked at again on every try: a retry after the booking moved on, after
     // the messages were read, after everyone's booking ended, or after
@@ -2208,16 +2262,70 @@ export function createNotificationWorker(dependencies: {
           lte(notificationDeliveries.nextAttemptAt, now),
         ),
       );
+    const switches = await switchesNow();
+    const paused = channels.flatMap(([channel, key]) =>
+      switches[key]?.on === false ? [channel] : [],
+    );
+    // A channel back on sends what waited, but not old news: a message
+    // queued before it came back, longer ago than a failed send is tried
+    // again for, is skipped (spec 10, 3.3).
+    const tooOld = new Date(now.getTime() - settings.retryForMinutes * 60_000);
+    for (const [channel, key] of channels) {
+      const state = switches[key];
+      if (state?.on !== true || state.since === null) continue;
+      await db
+        .update(notificationDeliveries)
+        .set({ status: "skipped", reason: "paused_too_long", nextAttemptAt: null, updatedAt: now })
+        .where(
+          and(
+            eq(notificationDeliveries.status, "queued"),
+            eq(notificationDeliveries.channel, channel),
+            lte(notificationDeliveries.createdAt, state.since),
+            lte(notificationDeliveries.createdAt, tooOld),
+          ),
+        );
+    }
     let sent = 0;
     let failed = 0;
     for (let count = 0; count < batchSize; count++) {
-      const delivery = await claim();
+      const delivery = await claim(paused);
       if (delivery === undefined) break;
       const outcome = await deliver(delivery);
       if (outcome === "sent") sent += 1;
       if (outcome === "failed") failed += 1;
     }
     return { sent, failed };
+  }
+
+  /**
+   * A switch for emergencies left off (spec 10, 3.3): every operator is
+   * told after an hour, and once a day after that, with all that is off at
+   * the time. Counted from the switch that has been off longest, so two
+   * switches turned off together give one reminder.
+   */
+  async function remindOfSwitches(): Promise<void> {
+    const switches = await switchesNow();
+    const offSince = switchKeys.flatMap((key) => {
+      const state = switches[key];
+      return state?.on === false && state.since !== null ? [state.since.getTime()] : [];
+    });
+    if (offSince.length === 0) return;
+    const now = clock();
+    const longest = new Date(Math.min(...offSince));
+    const reminder = switchReminderNumber(longest, now);
+    if (reminder === null) return;
+    const key = `switch_still_off:${longest.toISOString()}:${String(reminder)}`;
+    await db.transaction(async (tx) => {
+      const operators = await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(
+          and(eq(users.status, "active"), sql`${users.roles} @> array[${operatorRole}]::text[]`),
+        );
+      for (const operator of operators) {
+        await add(tx, { kind: "switch_still_off", to: null, recipientId: operator.id }, key, now);
+      }
+    });
   }
 
   /**
@@ -2286,6 +2394,7 @@ export function createNotificationWorker(dependencies: {
       };
       const events = await step(takeEvents, 0);
       const scheduled = await step(takeSchedules, 0);
+      await step(remindOfSwitches, undefined);
       const { sent, failed } = await step(sendDue, { sent: 0, failed: 0 });
       const receipts = await step(checkReceipts, 0);
       if (failures.length > 0) throw failures[0];

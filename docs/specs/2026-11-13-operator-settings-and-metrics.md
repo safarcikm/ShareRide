@@ -93,7 +93,15 @@ release, with a reason:
 
 Pausing shows a short banner in the app where it matters, and never cancels
 or changes existing trips and bookings. A switch that stays off for more than
-an hour reminds the operator.
+an hour reminds the operator, and again each day.
+
+The beta has six switches: new sign-ups, new trips, new bookings and
+payments, and SMS, email and push sending; a switch for a later integration
+comes with its milestone. While bookings and payments are paused no booking
+runs out for lack of payment: each unpaid booking gets its payment window
+again when they open, never past the booking cut-off. Messages that waited
+go out when their channel is back on, unless the news is more than an hour
+old by then.
 
 ### 3.4 Metrics (H5)
 

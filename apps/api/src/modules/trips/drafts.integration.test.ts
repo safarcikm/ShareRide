@@ -506,6 +506,37 @@ describe("post again and post the return (spec 6, 3.6)", () => {
       body: {},
     });
 
+  it("publishes and posts again nothing while new trips are paused, and keeps drafts (spec 10, 3.3)", async () => {
+    const { accessToken } = await newDriver();
+    const trip = await publishedTrip(accessToken);
+    api.fixSetting("trips_open", 0);
+    try {
+      // A draft is still started and saved.
+      const waiting = await draft(accessToken, { departure: tomorrowAt("14:00") });
+      expect(await publish(accessToken, waiting.id)).toMatchObject({
+        ok: false,
+        status: 503,
+        error: { code: "trips_paused" },
+      });
+      for (const reverse of [false, true]) {
+        expect(await copy(accessToken, trip.id, reverse)).toMatchObject({
+          ok: false,
+          status: 503,
+          error: { code: "trips_paused" },
+        });
+      }
+      const [stored] = await api.connection.db
+        .select({ status: schema.trips.status })
+        .from(schema.trips)
+        .where(eq(schema.trips.id, waiting.id));
+      expect(stored?.status).toBe("draft");
+      api.fixSetting("trips_open", undefined);
+      expect(await publish(accessToken, waiting.id)).toMatchObject({ ok: true });
+    } finally {
+      api.fixSetting("trips_open", undefined);
+    }
+  });
+
   it("posts a trip again: a draft with its stops, car, seats, price level, booking mode, preferences and note, without a date", async () => {
     const { accessToken, carId } = await newDriver();
     const trip = await publishedTrip(accessToken);

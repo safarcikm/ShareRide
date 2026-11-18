@@ -76,12 +76,17 @@ async function openBooking(
     booking?: () => ReturnType<typeof northBooking>;
     pay?: () => unknown;
     settle?: (outcome: string) => unknown;
+    /** What the operator has paused (spec 10, 3.3). */
+    paused?: readonly string[];
   } = {},
   path = `/trips/${id}/book?from=1&to=2&seats=1`,
 ) {
   return renderApp(path, {
     me: completeMe,
     setUp: (client) => {
+      if (answers.paused !== undefined) {
+        client.answer("/v1/config", () => ok(200, { beta: false, paused: answers.paused }));
+      }
       tripDetailsApi(client, answers.trip);
       client.answer(
         "/v1/trips/{id}/bookings",
@@ -1105,5 +1110,27 @@ describe("Paying (spec 5, 3.5; rule M1)", () => {
     });
     expect(await screen.findByText("A former member")).toBeVisible();
     expect(screen.queryByText("Anna")).toBeNull();
+  });
+});
+
+describe("Booking while bookings are paused (spec 10, 3.3)", () => {
+  const banner =
+    "Booking and paying are paused for a short while. Your bookings are safe, and none runs out while you can't pay. Try again later.";
+
+  it("says so on the booking screen, and not otherwise", async () => {
+    await openBooking({ paused: ["bookings"] });
+    expect(await screen.findByRole("header", { name: "Request this ride" })).toBeVisible();
+    expect(await screen.findByText(banner)).toBeVisible();
+
+    await openBooking({ paused: ["trips"] });
+    expect(await screen.findByRole("header", { name: "Request this ride" })).toBeVisible();
+    expect(screen.queryByText(banner)).toBeNull();
+  });
+
+  it("says so when the API refuses a request sent just as the pause began", async () => {
+    await openBooking({ book: () => failure(503, "bookings_paused") });
+    await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
+    expect(await screen.findByText(banner)).toBeVisible();
+    expect(screen.getByRole("header", { name: "Request this ride" })).toBeVisible();
   });
 });

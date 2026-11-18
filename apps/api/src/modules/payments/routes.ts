@@ -5,6 +5,7 @@ import { authOf, type AppEnv } from "../../context.ts";
 import { errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
 import type { BookingService } from "../bookings/service.ts";
+import { neverPaused, pausedResponse, type PausedCheck } from "../settings/paused.ts";
 import type { PaymentService, StartPaymentError } from "./service.ts";
 
 function startError(c: Context, error: StartPaymentError) {
@@ -31,13 +32,16 @@ export function registerPaymentRoutes(
     /** Only the test provider takes its outcome from the app. */
     readonly testProvider: boolean;
     readonly requireAuth: MiddlewareHandler;
+    /** Whether the operator paused new bookings and payments (spec 10, 3.3). */
+    readonly paused?: PausedCheck;
   },
 ): void {
-  const { payments, bookings, requireAuth } = dependencies;
+  const { payments, bookings, requireAuth, paused = neverPaused } = dependencies;
 
   app.openapi(toOpenApiRoute(startPaymentRoute, requireAuth), async (c) => {
     const { id } = validated(c, "param", startPaymentRoute.request.params);
     validated(c, "json", startPaymentRoute.request.body);
+    if (await paused("bookings")) return pausedResponse(c, "bookings");
     const result = await payments.start(authOf(c).userId, id);
     return result.ok ? c.json(result.value, 200) : startError(c, result.error);
   });

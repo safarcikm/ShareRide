@@ -299,5 +299,6 @@ export const sendConfirmCodeRoute = defineRoute({
     401: unauthenticated,
     429: { description: "rate_limited, with retryAfterSeconds", schema: errorResponseSchema },
     502: { description: "sms_failed", schema: errorResponseSchema },
+    503: { description: "sms_paused", schema: errorResponseSchema },
   },
 });

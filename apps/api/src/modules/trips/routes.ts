@@ -18,6 +18,7 @@ import { authOf, type AppEnv } from "../../context.ts";
 import { errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
 import { accountSuspended } from "../account/standing.ts";
+import { neverPaused, pausedResponse, type PausedCheck } from "../settings/paused.ts";
 import type { ChangeNotAllowed, TripChangeService } from "./changes.ts";
 import type { DraftInvalid, TripService } from "./drafts.ts";
 import type { RouteService, StopUnavailable } from "./service.ts";
@@ -147,6 +148,8 @@ export function registerDraftRoutes(
   app: OpenAPIHono<AppEnv>,
   drafts: TripService,
   requireAuth: MiddlewareHandler,
+  /** Whether the operator paused new trips (spec 10, 3.3). */
+  paused: PausedCheck = neverPaused,
 ): void {
   app.openapi(toOpenApiRoute(myTripsRoute, requireAuth), async (c) => {
     const { when } = validated(c, "query", myTripsRoute.request.query);
@@ -194,6 +197,7 @@ export function registerDraftRoutes(
     const { id } = validated(c, "param", copyTripRoute.request.params);
     const { reverse } = validated(c, "query", copyTripRoute.request.query);
     validated(c, "json", copyTripRoute.request.body);
+    if (await paused("trips")) return pausedResponse(c, "trips");
     const result = await drafts.copy(authOf(c).userId, id, { reverse });
     if (result.ok) return c.json(result.value, 201);
     return result.error.code === "not_found"
@@ -209,6 +213,8 @@ export function registerDraftRoutes(
   app.openapi(toOpenApiRoute(publishTripRoute, requireAuth), async (c) => {
     const { id } = validated(c, "param", publishTripRoute.request.params);
     validated(c, "json", publishTripRoute.request.body);
+    // Drafts and changes to published trips go on; only a new trip waits.
+    if (await paused("trips")) return pausedResponse(c, "trips");
     const result = await drafts.publish(authOf(c).userId, id);
     if (result.ok) return c.json(result.value, 200);
     switch (result.error.code) {

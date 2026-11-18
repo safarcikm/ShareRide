@@ -16,6 +16,7 @@ import { authOf, type AppEnv } from "../../context.ts";
 import { errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
 import { accountSuspended } from "../account/standing.ts";
+import { neverPaused, pausedResponse, type PausedCheck } from "../settings/paused.ts";
 import type { TripService } from "../trips/drafts.ts";
 import type {
   AcceptError,
@@ -174,6 +175,8 @@ export function registerBookingRoutes(
   service: BookingService,
   requireAuth: MiddlewareHandler,
   trips: Pick<TripService, "myTrip">,
+  /** Whether the operator paused new bookings and payments (spec 10, 3.3). */
+  paused: PausedCheck = neverPaused,
 ): void {
   app.openapi(toOpenApiRoute(cancelTripRoute, requireAuth), async (c) => {
     const { id } = validated(c, "param", cancelTripRoute.request.params);
@@ -189,6 +192,8 @@ export function registerBookingRoutes(
   app.openapi(toOpenApiRoute(bookTripRoute, requireAuth), async (c) => {
     const { id } = validated(c, "param", bookTripRoute.request.params);
     const body = validated(c, "json", bookTripRoute.request.body);
+    // Answering and cancelling go on; only a new booking or request waits.
+    if (await paused("bookings")) return pausedResponse(c, "bookings");
     const result = await service.book(authOf(c).userId, id, body);
     if (!result.ok) return bookError(c, result.error);
     return c.json(result.value.booking, result.value.created ? 201 : 200);

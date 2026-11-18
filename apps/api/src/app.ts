@@ -49,7 +49,11 @@ import {
   createRequireAuth,
   registerAuthRoutes,
 } from "./modules/auth/index.ts";
-import { createBookingService, registerBookingRoutes } from "./modules/bookings/index.ts";
+import {
+  createBookingService,
+  movePaymentDeadlines,
+  registerBookingRoutes,
+} from "./modules/bookings/index.ts";
 import { createChatService, registerChatRoutes } from "./modules/chat/index.ts";
 import {
   createDisputeAdminService,
@@ -76,6 +80,7 @@ import {
 import { createDrivingService, registerDrivingRoutes } from "./modules/driving/index.ts";
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
+  createPausedCheck,
   createSettingsService,
   registerConfigRoutes,
   registerSettingsAdminRoutes,
@@ -318,7 +323,19 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     }
     const legal = createLegalService(features);
     const account = createAccountService({ ...features, legal });
-    const operatorSettings = createSettingsService(features);
+    const operatorSettings = createSettingsService({
+      ...features,
+      // Nobody can pay while bookings are paused, so the payment deadlines
+      // move with the switch (spec 10, 3.3).
+      onChange: async (tx, change, now) => {
+        if (change.key !== "bookings_open") return;
+        await movePaymentDeadlines(tx, change.newValue === 0 ? "starts" : "ends", now, {
+          bookings: defaultBookingSettings,
+          notifications: defaultNotificationSettings,
+        });
+      },
+    });
+    const paused = createPausedCheck(operatorSettings);
     const secureRandomInt = features.randomInt ?? ((max: number) => randomInt(max));
     const invites = createInviteService({
       ...features,
@@ -330,6 +347,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       logger,
       randomInt: secureRandomInt,
       signUpGate: invites.gate,
+      smsPaused: () => paused("sms"),
     });
     const requireAuth = createRequireAuth(auth);
     registerAuthRoutes(app, { ...features, auth, account, requireAuth });
@@ -396,7 +414,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       tripDaySettings: defaultTripDaySettings,
       driving,
     });
-    registerDraftRoutes(app, trips, requireAuth);
+    registerDraftRoutes(app, trips, requireAuth, paused);
     registerTripChangeRoutes(
       app,
       createTripChangeService({
@@ -404,6 +422,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
         settings,
         bookingSettings: defaultBookingSettings,
         notificationSettings: defaultNotificationSettings,
+        bookingsPaused: () => paused("bookings"),
       }),
       requireAuth,
     );
@@ -412,8 +431,9 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       account,
       settings: defaultBookingSettings,
       tripDaySettings: defaultTripDaySettings,
+      bookingsPaused: () => paused("bookings"),
     });
-    registerBookingRoutes(app, bookings, requireAuth, trips);
+    registerBookingRoutes(app, bookings, requireAuth, trips, paused);
     registerChatRoutes(
       app,
       createChatService({ ...features, bookings, settings: defaultChatSettings }),
@@ -491,6 +511,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       bookings,
       testProvider: features.payments?.name === "test",
       requireAuth,
+      paused,
     });
     registerPrivacyRoutes(app, {
       exports: createExportService({ ...features, auth, cipher: features.exportCipher, logger }),

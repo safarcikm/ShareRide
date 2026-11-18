@@ -1,3 +1,16 @@
 export { registerSettingsAdminRoutes } from "./admin-routes.ts";
 export { registerConfigRoutes } from "./routes.ts";
-export { createSettingsService, type SettingsService, type SettingsSnapshot } from "./service.ts";
+export {
+  createPausedCheck,
+  neverPaused,
+  pausedMessages,
+  pausedResponse,
+  type PausedCheck,
+} from "./paused.ts";
+export {
+  createSettingsService,
+  type SettingChanged,
+  type SettingsService,
+  type SettingsSnapshot,
+  type SwitchStates,
+} from "./service.ts";

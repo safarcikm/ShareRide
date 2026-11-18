@@ -1,4 +1,4 @@
-import { settingGroups, settingReasonMaxLength } from "@shareride/domain";
+import { pausedParts, settingGroups, settingReasonMaxLength } from "@shareride/domain";
 import { z } from "zod";
 import { timestampSchema } from "./common.ts";
 import { errorResponseSchema } from "./errors.ts";
@@ -9,13 +9,10 @@ import { defineRoute } from "./route.ts";
 
 const errors = { schema: errorResponseSchema } as const;
 
-/** What the apps can show as paused (spec 10, 3.3); none can be yet. */
-export const pausedParts = ["signups", "trips", "bookings", "sms"] as const;
-
 export const configSchema = z.object({
   /** Whether creating an account needs an invite code (spec 12, R12.1). */
   beta: z.boolean(),
-  /** What is paused for a short while, for the app's banner. */
+  /** What is paused for a short while, for the app's banners (spec 10, 3.3). */
   paused: z.array(z.enum(pausedParts)),
 });
 

@@ -3,7 +3,7 @@
 // the ranges are ADR 0032's; changing a range or adding a setting needs an
 // ADR (R10.4).
 
-export const settingGroups = ["beta"] as const;
+export const settingGroups = ["switches", "beta"] as const;
 export type SettingGroup = (typeof settingGroups)[number];
 
 export type SettingUnit = "people";
@@ -23,6 +23,20 @@ export interface SettingDefinition {
 const onByDefault = { kind: "switch", unit: null, default: 1, min: 0, max: 1, step: 1 } as const;
 
 export const settingDefinitions = {
+  // The switches for emergencies (spec 10, 3.3; R10.5): off pauses only
+  // what is new, and never cancels or changes a trip or a booking.
+  /** Off: a number with no account cannot sign up; members sign in. */
+  signups_open: { group: "switches", ...onByDefault },
+  /** Off: no trip is published, posted again or posted as a return. */
+  trips_open: { group: "switches", ...onByDefault },
+  /** Off: no new booking, request or payment; answering and cancelling go on. */
+  bookings_open: { group: "switches", ...onByDefault },
+  /** Off: no text message is sent, so nobody can ask for a sign-in code. */
+  sms_sending: { group: "switches", ...onByDefault },
+  /** Off: emails wait. */
+  email_sending: { group: "switches", ...onByDefault },
+  /** Off: push notifications wait. */
+  push_sending: { group: "switches", ...onByDefault },
   /** Creating an account needs an invite code (spec 12, R12.1). */
   invite_code_required: { group: "beta", ...onByDefault },
   /** No code works once this many accounts joined with one (R12.3). */

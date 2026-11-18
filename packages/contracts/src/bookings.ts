@@ -269,6 +269,11 @@ export const bookTripRoute = defineRoute({
         "seats_taken (with `freeSeats`), price_changed (with the current `total`), trip_limit_reached (the booking would take the trip past its limit, rule P3; fewer seats or a shorter part may fit), stops_changed (`fromPoint` or `toPoint` is no longer at its position), overlapping_booking, booking_closed or trip_not_bookable (also while its driver is suspended)",
       ...errors,
     },
+    503: {
+      description:
+        "bookings_paused: booking and paying are paused for a short while (spec 10, 3.3)",
+      ...errors,
+    },
   },
 });
 

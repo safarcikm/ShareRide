@@ -54,17 +54,23 @@ describe("valuesAt", () => {
 
   it("is the defaults at version 0", () => {
     expect(valuesAt(0, changes)).toEqual(defaultSettingValues);
-    expect(defaultSettingValues).toEqual({ invite_code_required: 1, beta_max_testers: 150 });
+    expect(defaultSettingValues).toMatchObject({ invite_code_required: 1, beta_max_testers: 150 });
   });
 
   it("lays each change up to the version over the defaults", () => {
-    expect(valuesAt(1, changes)).toEqual({ invite_code_required: 1, beta_max_testers: 100 });
-    expect(valuesAt(2, changes)).toEqual({ invite_code_required: 0, beta_max_testers: 100 });
-    expect(valuesAt(3, changes)).toEqual({ invite_code_required: 0, beta_max_testers: 120 });
+    const changedTo = (changed: object) => ({ ...defaultSettingValues, ...changed });
+    expect(valuesAt(1, changes)).toEqual(changedTo({ beta_max_testers: 100 }));
+    expect(valuesAt(2, changes)).toEqual(
+      changedTo({ invite_code_required: 0, beta_max_testers: 100 }),
+    );
+    expect(valuesAt(3, changes)).toEqual(
+      changedTo({ invite_code_required: 0, beta_max_testers: 120 }),
+    );
   });
 
   it("is the newest values past the last version, in whatever order the changes come", () => {
     expect(valuesAt(9, [...changes].reverse())).toEqual({
+      ...defaultSettingValues,
       invite_code_required: 0,
       beta_max_testers: 120,
     });

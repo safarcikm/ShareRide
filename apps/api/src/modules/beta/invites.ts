@@ -27,7 +27,11 @@ const { inviteCodes, users } = schema;
 type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 type Executor = Database | Transaction;
 
-export type SignUpRefusal = { readonly code: "invite_required" } | InviteCodeProblem;
+export type SignUpRefusal =
+  | { readonly code: "invite_required" }
+  /** The operator paused new accounts (spec 10, 3.3). */
+  | { readonly code: "signups_paused" }
+  | InviteCodeProblem;
 
 /**
  * Decides, inside the sign-up's transaction, whether a new account can be
@@ -126,6 +130,8 @@ export function createInviteService(dependencies: InviteServiceDependencies): In
   return {
     async gate(tx, inviteCode, now) {
       const { values } = await settings.current();
+      // Paused: nobody new, with a code or without; nothing is counted or used.
+      if (values.signups_open === 0) return err({ code: "signups_paused" });
       if (values.invite_code_required === 0) return ok({ inviteCodeId: null });
       if (inviteCode === undefined) return err({ code: "invite_required" });
       const code = normaliseInviteCode(inviteCode);

@@ -20,6 +20,10 @@ export function errorText(t: Translate, failure: CallFailure): string {
     case "invite_required":
     case "invite_invalid":
     case "beta_full":
+    case "signups_paused":
+    case "sms_paused":
+    case "trips_paused":
+    case "bookings_paused":
     case "network_error":
     case "legal_version_outdated":
     case "account_suspended":

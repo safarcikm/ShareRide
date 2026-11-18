@@ -1183,6 +1183,17 @@ releases follow [Semantic Versioning](https://semver.org/).
   status and kind, shows the screenshot on request, sets the status and
   sends the one reply. New in the app: `react-native-view-shot` and
   `expo-sensors`.
+- Switches for emergencies (spec 10, 3.3; R10.5; milestone 11, PR 7;
+  migration `0050_switch_reminder`): the operator can pause new sign-ups,
+  new trips, new bookings and payments, and text messages, emails and
+  push notifications, each with a reason on the console's Settings page.
+  A pause refuses only what is new and never cancels or changes a trip
+  or a booking; while bookings are paused no booking runs out for lack
+  of payment, and each gets its payment window again afterwards. Paused
+  messages wait and go out when their channel is back on, unless the
+  news is old by then. The app says what is paused on the booking
+  screen, on Offer and on step 1 of signing in. A switch left off for an
+  hour reminds the operators, and again each day.
 
 ### Fixed
 
