@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { inviteCodeInputSchema } from "./beta.ts";
 import { localeSchema, platformSchema, timestampSchema } from "./common.ts";
 import { errorResponseSchema } from "./errors.ts";
 import { meSchema } from "./me.ts";
@@ -14,6 +15,9 @@ export const authErrorCodes = [
   "code_expired",
   "code_attempts_exceeded",
   "account_unavailable",
+  "invite_required",
+  "invite_invalid",
+  "beta_full",
   "unauthenticated",
   "refresh_invalid",
   "session_ended",
@@ -47,6 +51,11 @@ export const verifyPhoneCodeBodySchema = z.object({
   /** The app language, kept for a new account. */
   locale: localeSchema,
   device: deviceSchema,
+  /**
+   * The invite code, for a number with no account while the beta is closed
+   * (spec 12, R12.1). Ignored for a member.
+   */
+  inviteCode: inviteCodeInputSchema.optional(),
 });
 
 /**
@@ -104,10 +113,16 @@ export const verifyPhoneCodeRoute = defineRoute({
   responses: {
     200: { description: "Signed in", schema: signedInSchema },
     400: {
-      description: "code_invalid (with attemptsLeft), code_expired, phone_invalid",
+      description:
+        "code_invalid (with attemptsLeft), code_expired, phone_invalid; invite_invalid: the invite code does not work, and counts as a wrong code",
       ...errors,
     },
-    403: { description: "account_unavailable", ...errors },
+    403: {
+      description:
+        "account_unavailable; invite_required: the number has no account and the beta is closed, send the same code again with inviteCode",
+      ...errors,
+    },
+    409: { description: "beta_full: the beta has no places left", ...errors },
     429: { description: "code_attempts_exceeded, with retryAfterSeconds", ...errors },
   },
 });

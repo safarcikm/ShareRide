@@ -1098,6 +1098,20 @@ releases follow [Semantic Versioning](https://semver.org/).
   secondary button are tinted, a primary button turns a step darker. The
   top bar's logo and language line up with the page's edges, and the logo
   and name open Find. Phones are unchanged.
+- Invite codes and the closed beta's gate in the API (spec 12, 3.2; R12.1
+  to R12.3). While "Invite code required" is on, a number with no account
+  is answered `invite_required` after its text-message code, which is kept:
+  sent again with `inviteCode`, the account is made, records its code and
+  counts as a tester. A wrong invite code counts as a wrong try; no code
+  works once the testers reach the cap (`beta_full`), also when two
+  sign-ups come at once. A member signing in is never asked.
+  `POST /v1/invites/check` says whether a code would work (10 a minute per
+  address). The console's routes list the codes with the places left, make
+  a group code (a name, 1 to 500 uses, an end at most 12 months ahead) and
+  end one, each in the audit log. `pnpm --filter @shareride/api invite add`
+  prints a code for the first account of a new server, and the local
+  seed command makes `BETA2345`, never on staging. The app asks for the code in the next change;
+  until then the app's browser tests run with the requirement off.
 
 ### Fixed
 

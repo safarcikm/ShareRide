@@ -330,6 +330,13 @@
       "when": 1794977332604,
       "tag": "0046_setting_changes",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1794977629071,
+      "tag": "0047_invite_codes",
+      "breakpoints": true
     }
   ]
 }

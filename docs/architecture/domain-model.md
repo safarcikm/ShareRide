@@ -344,7 +344,10 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
   `RetentionRun`, `Hold`.
 - Beta records ([spec 12](../specs/2026-11-13-beta-access-and-feedback.md#6-data-and-api)):
   `WaitlistEntry`, `InviteCode` (users record the code they joined with),
-  `Feedback`.
+  `Feedback`. As built: `invite_codes` holds group codes (personal codes
+  come with the waitlist), `users.invite_code_id` the code an account
+  joined with, and a tester is an account that has one; the rules are in
+  `packages/domain/src/beta/invites.ts`.
 - `NotificationPreference`, `PushToken`.
 - `Block`: blocker and blocked; hides both from each other, with the trips each drives ([spec 9](../specs/2026-11-13-safety-and-moderation.md#32-blocking-g2)). A trip someone else is booked on stays open: who is booked is private.
 - `Notification` and `NotificationDelivery`: who was told what kind of thing,

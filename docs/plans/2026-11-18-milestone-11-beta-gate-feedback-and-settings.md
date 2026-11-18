@@ -385,12 +385,15 @@ before merging.
 
 ### PR 3: `feat(beta)`: invite codes and the gate, the API
 
-- [ ] `beta/invites.ts` with its tests (a code at its last use and one
+- [x] `beta/invites.ts` with its tests (a code at its last use and one
       past it; a second before and after its end; the cap at 149, 150 and
       151)
-- [ ] The migration (`invite_codes`, `users.invite_code_id`); sign-up
+- [x] The migration (`invite_codes`, `users.invite_code_id`); sign-up
       through `verify`; `POST /v1/invites/check`; the console routes; the
       `invite` command; the seed's code; the catalogue entry
+- As built: tests and the browser tests' server hold the requirement off
+  through `fixedSettings`, which no real server sets; the app's journeys
+  about the closed beta come with PR 4.
 - Verify: integration tests (a new number without a code is refused and
   no account is made; the text-message code still works afterwards with
   a good invite code; a member signs in without one; a one-use code used
