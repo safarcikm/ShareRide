@@ -83,6 +83,7 @@ function codeWords(t: Translate, locale: Locale): Readonly<Record<string, Say>> 
     platform: keyed("export.value.platform"),
     endReason: keyed("export.value.endReason"),
     roles: keyed("export.value.role"),
+    authorRole: keyed("export.value.role"),
     cancelledBy: keyed("export.value.role"),
     reportedBy: keyed("export.value.role"),
     answer: keyed("export.value.answer"),

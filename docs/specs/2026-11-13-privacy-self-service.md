@@ -63,7 +63,9 @@ reminders stay under Notifications (spec 7).
      card numbers, which ShareRide never has);
    - conversations they took part in, with the other person shown by first
      name only;
-   - reviews written and received, with authors by first name;
+   - reviews written and received, with authors by first name, and those
+     received from trips over 3 years ago, with only how the author
+     travelled (A49);
    - check-ins, disputes they raised or answered, and reliability records;
    - reports they filed and their outcomes;
    - problem reports about meeting points they sent, while still open (once
@@ -134,7 +136,8 @@ date appear on the console home (spec 10).
 1. A daily job enforces every retention period in the privacy register, for
    example: messages 12 months after the trip; notification log 90 days;
    search log 14 months; technical logs 30 days; exports 7 days; trips and
-   bookings anonymised after their period; reports 3 years after closure.
+   bookings anonymised after their period, their reviews then by nobody
+   and on no ride (A49); reports 3 years after closure.
 2. Each run records, per rule, how many records it erased or anonymised and
    when, but no content. The console shows the last run of each rule.
 3. A **hold** keeps specific records past their date while a dispute,

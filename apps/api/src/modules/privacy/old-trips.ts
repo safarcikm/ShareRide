@@ -27,6 +27,7 @@ const {
   checkIns,
   disputes,
   formerMemberId,
+  reviews,
   tripChanges,
   tripStops,
   trips,
@@ -43,8 +44,9 @@ type Executor = Database | Transaction;
 // catalogue says; the car becomes one of the same make, model and colour
 // with no plate. Stops, prices and payments stay as they are. A trip waits
 // while a hold covers it, a booking on it, its driver or a passenger.
-// Reviews keep to their own rule, while the person they are about has an
-// account (spec 8, 3.7).
+// Its reviews stay for the people they are about, with their stars,
+// comment and dates, but no longer say who wrote them or on which ride
+// (A49): they move to the former member, on no booking.
 
 /** How each table of a trip's records reaches the trip. */
 const reaches: Readonly<Record<string, (tripId: string, db: Executor) => SQL>> = {
@@ -96,7 +98,18 @@ function tripRecords(): readonly TripRecords[] {
   });
 }
 
-/** A trip someone is still named on: as driver, passenger, "I'm here" or by their car. */
+/** The reviews of the bookings on a trip: `tripId`, or the trip a query is at. */
+function reviewsOn(tripId: string | PgColumn, db: Executor): SQL {
+  return inArray(
+    reviews.bookingId,
+    db.select({ id: bookings.id }).from(bookings).where(eq(bookings.tripId, tripId)),
+  );
+}
+
+/**
+ * A trip someone is still named on: as driver, passenger, "I'm here", by
+ * their car, or by a review of one of its bookings.
+ */
 function stillNamed(db: Executor): SQL {
   return or(
     ne(trips.driverId, formerMemberId),
@@ -119,6 +132,7 @@ function stillNamed(db: Executor): SQL {
         .from(vehicles)
         .where(and(eq(vehicles.id, trips.vehicleId), ne(vehicles.ownerId, formerMemberId))),
     ),
+    exists(db.select({ id: reviews.id }).from(reviews).where(reviewsOn(trips.id, db))),
   ) as SQL;
 }
 
@@ -171,6 +185,8 @@ export interface OldTripCounts {
   readonly trips: number;
   /** Bookings on them that still named a passenger. */
   readonly bookings: number;
+  /** Reviews of those bookings, now by nobody and on no ride. */
+  readonly reviews: number;
   /** Removed cars deleted, kept until now only for these trips. */
   readonly cars: number;
   /** Trips that failed, each logged; tried again next hour. */
@@ -182,7 +198,7 @@ async function anonymiseTrip(
   db: Database,
   tripId: string,
   now: Date,
-): Promise<{ readonly bookings: number; readonly cars: number } | null> {
+): Promise<{ readonly bookings: number; readonly reviews: number; readonly cars: number } | null> {
   return db.transaction(async (tx) => {
     // The people on it, locked as an erasure and a new hold lock them: a
     // hold set meanwhile is seen below, and one set after finds the trip done.
@@ -210,6 +226,14 @@ async function anonymiseTrip(
       .select({ count: count() })
       .from(bookings)
       .where(and(eq(bookings.tripId, tripId), ne(bookings.passengerId, formerMemberId)));
+    // Its reviews stay for the people they are about, with their stars,
+    // comment and dates, but no longer say who wrote them or on which ride
+    // (A49), so the ratings stay as they were.
+    const unlinked = await tx
+      .update(reviews)
+      .set({ authorId: formerMemberId, bookingId: null, updatedAt: now })
+      .where(reviewsOn(tripId, tx))
+      .returning({ id: reviews.id });
     for (const { table, people: persons, emptied, otherIds, column, reach } of tripRecords()) {
       const moved = Object.fromEntries(persons.map((person) => [person, formerMemberId]));
       const changed = "updatedAt" in table ? { updatedAt: now } : {};
@@ -250,7 +274,7 @@ async function anonymiseTrip(
         cars = deleted.length;
       }
     }
-    return { bookings: named?.count ?? 0, cars };
+    return { bookings: named?.count ?? 0, reviews: unlinked.length, cars };
   });
 }
 
@@ -276,13 +300,14 @@ export async function anonymiseOldTrips(
       ),
     )
     .orderBy(asc(trips.arrivesAt), asc(trips.id));
-  const counts = { trips: 0, bookings: 0, cars: 0, failed: 0 };
+  const counts = { trips: 0, bookings: 0, reviews: 0, cars: 0, failed: 0 };
   for (const { id } of due) {
     try {
       const done = await anonymiseTrip(db, id, now);
       if (done === null) continue;
       counts.trips += 1;
       counts.bookings += done.bookings;
+      counts.reviews += done.reviews;
       counts.cars += done.cars;
     } catch (error) {
       // Rolled back; tried again next hour.

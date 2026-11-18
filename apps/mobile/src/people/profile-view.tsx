@@ -22,7 +22,7 @@ import { Body, Heading, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { languagesText } from "@/people/languages";
-import { firstNameOf, memberSinceText, monthOf } from "@/people/texts";
+import { memberSinceText, monthOf } from "@/people/texts";
 import { Stars } from "@/reviews/stars";
 import { iconSizes, minTouchTarget, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -369,22 +369,20 @@ function ReviewItem({
   const { locale, t } = useLanguage();
   const palette = usePalette();
   const written = monthOf(review.writtenIn);
-  const by = {
-    name: firstNameOf(t, review.author),
-    month: formatMonth(written.month, locale),
-    year: String(written.year),
-  };
+  const when = { month: formatMonth(written.month, locale), year: String(written.year) };
+  // No name: an author who left, or a trip over 3 years ago (A49).
+  const { firstName } = review.author;
+  const byline =
+    firstName === null
+      ? t(`people.reviewByNobody.${review.authorRole}`, when)
+      : t(`people.reviewBy.${review.authorRole}`, { ...when, name: firstName });
   return (
     <View role="listitem">
       {/* Mounted with the page that brought it, so it takes focus then. */}
       <TakesFocus when={takesFocus}>
         <Card>
           <Stars rating={review.rating} />
-          <Text style={[typography.small, { color: palette.textMuted }]}>
-            {review.authorRole === "driver"
-              ? t("people.reviewBy.driver", by)
-              : t("people.reviewBy.passenger", by)}
-          </Text>
+          <Text style={[typography.small, { color: palette.textMuted }]}>{byline}</Text>
           {review.comment === "" ? null : <Body align="start">{review.comment}</Body>}
         </Card>
       </TakesFocus>
