@@ -726,16 +726,14 @@ test.describe("My rides, a booking and Profile", () => {
       const ride = await box(side.getByText("Get in", { exact: true }));
       for (const name of [
         "Message Bára",
-        "Emergency: 112",
         "Share trip details",
         "Cancel booking",
         "Report a problem with this trip",
       ]) {
-        // By the start of its name: 112's says what pressing it does.
-        const button = await box(side.getByRole("button", { name: new RegExp(`^${name}`) }));
+        const button = await box(side.getByRole("button", { name, exact: true }));
         expect(button.y).toBeGreaterThan(ride.y);
       }
-      await expectButtonsInside(side, 5);
+      await expectButtonsInside(side, 4);
       await expectButtonsInside(main, 3);
       await expectNoSidewaysScroll(dora);
     }
@@ -778,7 +776,7 @@ test.describe("My rides, a booking and Profile", () => {
     await expectNoSidewaysScroll(dora);
     await dora.goto(booking);
     await expect(side.getByText("Inn", { exact: true })).toBeVisible();
-    await expectButtonsInside(side, 5);
+    await expectButtonsInside(side, 4);
     await expectButtonsInside(main, 3);
     await expectNoSidewaysScroll(dora);
     await dora.goto("/my-rides");

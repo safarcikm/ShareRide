@@ -69,10 +69,10 @@ every main screen, as drawn, on 2026-11-18.
 | 0 | all | Spec 18 and this plan | Merged (#150) |
 | 1 | 3.2 to 3.4 | Groundwork: tokens, `Screen` page width, `Columns`, `Grid`, the top bar lined up, pointer looks | Merged (#155) |
 | 2 | 3.5 | Find: the search in one row, rides in a grid, the side column | Merged (#156) |
-| 3 | 3.6 | Search results: the map beside the list, chips that wrap | Built |
+| 3 | 3.6 | Search results: the map beside the list, chips that wrap | Merged (#160) |
 | 4 | 3.7, 3.8 | Trip details, Check and pay and a request in two columns | Built |
 | 5 | 3.11 | Messages as two panes | Built |
-| 6 | 3.9, 3.10, 3.12 | A booking, My rides and Profile | |
+| 6 | 3.9, 3.10, 3.12 | A booking, My rides and Profile | Built |
 | 7 | 3.13, 3.14 | Offer a ride and the driver's trip | |
 
 ---
@@ -423,14 +423,16 @@ bar `primary`. A disabled or busy part shows none.
 ### Task 6.1: My rides as a grid
 
 - Modify: `apps/mobile/src/app/(tabs)/my-rides.tsx`; test `my-rides.test.tsx`.
-- [ ] At 1280 the rides sit in a `Grid` under a title at the left; the
+- [x] At 1280 the rides sit in a `Grid` under a title at the left; the
   order is unchanged. Commit `feat(mobile): My rides as a grid`.
+  "Needs you" and "Coming up" are each a grid; the empty and failed states
+  keep a `PageColumn`.
 
 ### Task 6.2: Profile
 
 - Modify: `apps/mobile/src/app/(tabs)/profile.tsx`; test
   `profile-and-settings.test.tsx`.
-- [ ] At 1280, signed in: the person (photo or initial, name, languages,
+- [x] At 1280, signed in: the person (photo or initial, name, languages,
   "Edit profile", "See it as others do") in `columns-side` with
   `sideAt="start"`; the two groups of rows in `columns-main`. Signed out:
   one column. Commit `feat(mobile): Profile in two columns`.
@@ -440,9 +442,14 @@ bar `primary`. A disabled or busy part shows none.
 - Modify: `apps/mobile/src/app/bookings/[id]/index.tsx` (wrap its parts;
   the trip-day thread's parts keep their logic); test `booking.test.tsx`,
   `trip-day.test.tsx`.
-- [ ] At 1280: status, the trip day's parts, where to stand and the driver
+- [x] At 1280: status, the trip day's parts, where to stand and the driver
   in `columns-main`; the ride, the price and the actions in `columns-side`.
   Commit `feat(mobile): a booking in two columns`.
+  The main column is one tree for a phone and a wide screen, so an open
+  payment, a question and a review stay when the window crosses 900; the
+  driver and where to stand share a `Grid` row (a second commit, after
+  looking at the built page). `laptop.spec.ts` gains a journey through the
+  three screens.
 
 ## PR 7: Offer a ride and the driver's trip
 

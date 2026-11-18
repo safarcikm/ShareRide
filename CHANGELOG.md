@@ -1191,6 +1191,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   Another row shows its conversation in the same place, and the list
   follows what is read and sent. A chat opened from a booking has the two
   panes too. Phones are unchanged.
+- A booking, My rides and Profile on a laptop (spec 18, 3.9, 3.10 and
+  3.12). A booking is a page of two columns: where it stands and what to
+  do now (Pay, Withdraw request, "I'm here") in the main column, with the
+  driver and where to stand side by side under them; the ride with its
+  price, Message, Safety, Cancel booking and reporting beside them. An
+  open payment stays when the window turns narrow or wide. My rides shows
+  the rides as a grid of two or three columns in the same order. My
+  profile has who I am in a card at the left and its rows beside it.
+  Phones are unchanged.
 - Send feedback in the app and the console (spec 12, 3.3; milestone 11,
   PR 6): the form opens from the Beta label, Profile and Settings, and on
   phones from a shake, which a switch in Settings turns off. Phones take a
