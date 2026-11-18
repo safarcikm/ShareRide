@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, waitFor, within } from "expo-router/testing-library";
-import { AccessibilityInfo, BackHandler } from "react-native";
+import { AccessibilityInfo, BackHandler, Dimensions } from "react-native";
 import { getLocales } from "expo-localization";
 import type { Booking, DriverReadiness, MyTrip } from "@shareride/contracts";
 import { readAppData, writeAppData } from "@/lib/app-data";
@@ -550,5 +550,304 @@ describe("Your next ride (spec 16, 3.2 item 2)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("header", { name: "Your next ride" })).toBeVisible();
     expect(screen.queryByText("Your next ride could not be loaded.")).toBeNull();
+  });
+});
+
+describe("Find on a laptop (spec 18, 3.5)", () => {
+  const phone = { width: 750, height: 1334, scale: 2, fontScale: 2 };
+  const laptop = { width: 1280, height: 800, scale: 1, fontScale: 1 };
+
+  beforeEach(() => {
+    Dimensions.set({ window: laptop });
+  });
+
+  afterEach(async () => {
+    // The screen is still on show here, so its update goes through act.
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+  });
+
+  const row = async () => within(await screen.findByTestId("search-row"));
+
+  it("puts From, To, the date, the seats and Find a ride in one row", async () => {
+    await openFrontPage();
+    const search = await row();
+    expect(
+      search.getByRole("button", { name: "From: Choose a town or meeting point" }),
+    ).toBeVisible();
+    expect(
+      search.getByRole("button", { name: "To: Choose a town or meeting point" }),
+    ).toBeVisible();
+    expect(search.getByRole("button", { name: "Swap from and to" })).toBeVisible();
+    expect(search.getByRole("button", { name: "Date: Any day" })).toBeVisible();
+    expect(search.getByRole("adjustable", { name: "Seats" })).toBeVisible();
+    expect(search.getByRole("button", { name: "Find a ride" })).toBeVisible();
+    // One search, not a second one under it.
+    expect(screen.getAllByRole("button", { name: "Find a ride" })).toHaveLength(1);
+    expect(screen.queryByRole("radio", { name: "Choose a day" })).toBeNull();
+  });
+
+  it("opens the place search in From's own part of the row", async () => {
+    await openFrontPage((fake) => {
+      searchApi(fake);
+    });
+    const search = await row();
+    await fireEvent.press(search.getByRole("button", { name: /^From: / }));
+    await fireEvent.changeText(await search.findByLabelText("From"), "borg");
+    // To, the date and the button stay in the row beside it.
+    expect(search.getByRole("button", { name: /^To: / })).toBeVisible();
+    expect(search.getByRole("button", { name: "Date: Any day" })).toBeVisible();
+    expect(search.getByRole("button", { name: "Find a ride" })).toBeVisible();
+    await fireEvent.press(await search.findByRole("button", { name: /^Borgarnes/ }));
+    expect(search.getByRole("button", { name: "From: Borgarnes" })).toBeVisible();
+  });
+
+  it("opens the calendar under the date, and closes it once a day is chosen", async () => {
+    await openFrontPage();
+    const search = await row();
+    const date = search.getByRole("button", { name: "Date: Any day" });
+    expect(date).toBeCollapsed();
+    await fireEvent.press(date);
+    expect(search.getByRole("button", { name: "Date: Any day" })).toBeExpanded();
+    // Any day is one of the choices, and says that it is the one chosen.
+    expect(search.getByRole("radio", { name: "Any day" })).toBeChecked();
+    await fireEvent.press(await search.findByRole("radio", { name: "Friday 20 November" }));
+    expect(search.getByRole("button", { name: "Date: Fri 20 Nov" })).toBeCollapsed();
+    expect(search.queryByRole("radio", { name: "Friday 20 November" })).toBeNull();
+
+    // Any day is one press away, beside the calendar.
+    await fireEvent.press(search.getByRole("button", { name: "Date: Fri 20 Nov" }));
+    expect(search.getByRole("radio", { name: "Friday 20 November" })).toBeChecked();
+    expect(search.getByRole("radio", { name: "Any day" })).not.toBeChecked();
+    await fireEvent.press(search.getByRole("radio", { name: "Any day" }));
+    expect(search.getByRole("button", { name: "Date: Any day" })).toBeCollapsed();
+  });
+
+  it("gives focus back to the date once the calendar closes", async () => {
+    const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    try {
+      await openFrontPage();
+      const search = await row();
+      focusMoves.mockClear();
+      await fireEvent.press(search.getByRole("button", { name: "Date: Any day" }));
+      // Opening moves nothing: the calendar is the next thing after the date.
+      expect(focusMoves).not.toHaveBeenCalled();
+      await fireEvent.press(await search.findByRole("radio", { name: "Friday 20 November" }));
+      expect(focusMoves).toHaveBeenCalledTimes(1);
+      expect(focusMoves).toHaveBeenCalledWith(
+        expect.objectContaining({
+          props: expect.objectContaining({
+            accessibilityLabel: expect.stringMatching(/^Date: /) as unknown,
+          }) as unknown,
+        }),
+        "focus",
+      );
+    } finally {
+      focusMoves.mockRestore();
+    }
+  });
+
+  it("closes the calendar with Android's back, staying on the front page", async () => {
+    const listen = jest.spyOn(BackHandler, "addEventListener");
+    try {
+      await openFrontPage();
+      const search = await row();
+      await fireEvent.press(search.getByRole("button", { name: "Date: Any day" }));
+      expect(await search.findByRole("radio", { name: "Friday 20 November" })).toBeVisible();
+      // The listener added last is asked first, as on a phone.
+      const [, back] = listen.mock.calls.at(-1) ?? [];
+      let handled: boolean | undefined;
+      await act(() => {
+        handled = back?.({ type: "hardwareBackPress", timeStamp: 0 });
+      });
+      expect(handled).toBe(true);
+      expect(search.queryByRole("radio", { name: "Friday 20 November" })).toBeNull();
+      expect(search.getByRole("button", { name: "Date: Any day" })).toBeCollapsed();
+    } finally {
+      listen.mockRestore();
+    }
+  });
+
+  it("leaves Android's back alone on a phone, where the calendar is part of the form", async () => {
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+    const listen = jest.spyOn(BackHandler, "addEventListener");
+    try {
+      await openFrontPage();
+      await fireEvent.press(await screen.findByRole("radio", { name: "Choose a day" }));
+      expect(await screen.findByRole("radio", { name: "Friday 20 November" })).toBeVisible();
+      for (const [, back] of listen.mock.calls) {
+        expect(back({ type: "hardwareBackPress", timeStamp: 0 })).not.toBe(true);
+      }
+      expect(screen.getByRole("radio", { name: "Friday 20 November" })).toBeVisible();
+    } finally {
+      listen.mockRestore();
+    }
+  });
+
+  it("says under the row what is missing, and searches once it is there", async () => {
+    const { client } = await openFrontPage((fake) => {
+      searchApi(fake);
+    });
+    const search = await row();
+    await fireEvent.press(search.getByRole("button", { name: "Find a ride" }));
+    expect(
+      await screen.findByText("Choose where you're leaving from and where you're going."),
+    ).toBeVisible();
+    await choose("From", "borg", "Borgarnes");
+    await choose("To", "blön", "Blönduós");
+    await fireEvent.press(search.getByRole("button", { name: "Date: Any day" }));
+    await fireEvent.press(await search.findByRole("radio", { name: "Friday 20 November" }));
+    await fireEvent.press(search.getByRole("button", { name: "One seat more" }));
+    await fireEvent.press(search.getByRole("button", { name: "Find a ride" }));
+    expect(
+      await screen.findByRole("button", {
+        name: "Change search: Borgarnes → Blönduós, Fri 20 Nov, 2 seats",
+      }),
+    ).toBeVisible();
+    expect(searchesOf(client)).toEqual([
+      { from: borgarnes.id, to: blonduos.id, date: "2026-11-20", seats: 2, sort: "departure" },
+    ]);
+  });
+
+  it("keeps the places, the day, the seats and the message when the window turns narrow and wide again", async () => {
+    await openFrontPage((fake) => {
+      searchApi(fake);
+    });
+    const missing = "Choose where you're leaving from and where you're going.";
+    await fireEvent.press((await row()).getByRole("button", { name: "Find a ride" }));
+    expect(await screen.findByText(missing)).toBeVisible();
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+    expect(screen.getByText(missing)).toBeVisible();
+    await act(() => {
+      Dimensions.set({ window: laptop });
+    });
+    expect(screen.getByText(missing)).toBeVisible();
+
+    // The row is a new one each time the window turns wide.
+    const search = await row();
+    await choose("From", "borg", "Borgarnes");
+    await fireEvent.press(search.getByRole("button", { name: "Date: Any day" }));
+    await fireEvent.press(await search.findByRole("radio", { name: "Friday 20 November" }));
+    await fireEvent.press(search.getByRole("button", { name: "One seat more" }));
+
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+    expect(screen.queryByTestId("search-row")).toBeNull();
+    expect(screen.getByRole("button", { name: "From: Borgarnes" })).toBeVisible();
+    expect(screen.getByRole("radio", { name: "Fri 20 Nov" })).toBeChecked();
+    expect(screen.getByRole("adjustable", { name: "Seats" })).toHaveAccessibilityValue({
+      text: "2 seats",
+    });
+
+    await act(() => {
+      Dimensions.set({ window: laptop });
+    });
+    const again = await row();
+    expect(again.getByRole("button", { name: "From: Borgarnes" })).toBeVisible();
+    expect(again.getByRole("button", { name: "Date: Fri 20 Nov" })).toBeVisible();
+    expect(again.getByRole("adjustable", { name: "Seats" })).toHaveAccessibilityValue({
+      text: "2 seats",
+    });
+  });
+
+  it("shows the rides leaving soon in a grid, beside Your next ride and the offer", async () => {
+    deviceLanguage("en-GB");
+    const { client } = await renderApp("/", {
+      me: completeMe,
+      setUp: (fake) => {
+        soonestApi(fake, soonRides(8));
+        fake.answer("/v1/me/bookings", () => ok(200, { bookings: [northBooking()] }));
+        fake.answer("/v1/me/trips", () => ok(200, { trips: [] }));
+      },
+    });
+    expect(await screen.findByRole("header", { name: "Your next ride" })).toBeVisible();
+    expect(screen.getByTestId("page")).toBeVisible();
+
+    // Six fill a grid of two columns; a seventh is asked for, to know of more.
+    const main = within(screen.getByTestId("columns-main"));
+    expect(main.getByRole("header", { name: "Leaving soon" })).toBeVisible();
+    expect(main.getAllByTestId("trip-result")).toHaveLength(6);
+    expect(main.getAllByTestId("grid-cell")).toHaveLength(6);
+    // The cards of a row are as tall as the tallest, their drivers level.
+    for (const card of main.getAllByTestId("card")) expect(card).toHaveStyle({ flexGrow: 1 });
+    expect(main.getByRole("button", { name: "See all rides" })).toBeVisible();
+    expect(searchesOf(client, "/v1/trips/soonest")).toEqual([{ limit: 7 }]);
+
+    const side = within(screen.getByTestId("columns-side"));
+    expect(side.getByRole("header", { name: "Your next ride" })).toBeVisible();
+    expect(side.getByRole("button", { name: /^Passenger, Sunday 15 November/ })).toBeVisible();
+    expect(side.getByText("Driving somewhere? Share the empty seats in your car.")).toBeVisible();
+    expect(side.getByRole("button", { name: "Offer a ride" })).toBeVisible();
+    expect(side.getByRole("button", { name: "See the meeting points" })).toBeVisible();
+    // Each once: the side column takes the place of the page's last part.
+    expect(screen.getAllByRole("button", { name: "Offer a ride" })).toHaveLength(1);
+    expect(screen.getAllByRole("header", { name: "Your next ride" })).toHaveLength(1);
+  });
+
+  it("has the two columns while the rides load, so the offer does not move when they come", async () => {
+    let answer: (value: unknown) => void = () => undefined;
+    await openFrontPage((fake) => {
+      fake.answer(
+        "/v1/trips/soonest",
+        () =>
+          new Promise((resolve) => {
+            answer = resolve;
+          }),
+      );
+    });
+    const side = within(await screen.findByTestId("columns-side"));
+    expect(side.getByRole("button", { name: "Offer a ride" })).toBeVisible();
+    expect(screen.queryByTestId("find-middle")).toBeNull();
+    const main = within(screen.getByTestId("columns-main"));
+    expect(main.getByRole("header", { name: "Leaving soon" })).toBeVisible();
+    expect(main.getByLabelText("Loading")).toBeVisible();
+
+    await act(() => {
+      answer(ok(200, { results: soonRides(2) }));
+    });
+    expect(await main.findAllByTestId("trip-result")).toHaveLength(2);
+    expect(main.queryByLabelText("Loading")).toBeNull();
+    expect(
+      within(screen.getByTestId("columns-side")).getByRole("button", { name: "Offer a ride" }),
+    ).toBeVisible();
+  });
+
+  it("shows no See all rides with six rides or fewer, and only the offer when signed out", async () => {
+    await openFrontPage((fake) => {
+      soonestApi(fake, soonRides(6));
+    });
+    const main = within(await screen.findByTestId("columns-main"));
+    expect(main.getAllByTestId("trip-result")).toHaveLength(6);
+    expect(screen.queryByRole("button", { name: "See all rides" })).toBeNull();
+    const side = within(screen.getByTestId("columns-side"));
+    expect(side.getByRole("button", { name: "Offer a ride" })).toBeVisible();
+    expect(screen.queryByRole("header", { name: "Your next ride" })).toBeNull();
+  });
+
+  it("puts the offer in the middle under the search when no rides leave soon", async () => {
+    await openFrontPage();
+    expect(await screen.findByRole("button", { name: "Offer a ride" })).toBeVisible();
+    expect(await screen.findByTestId("search-row")).toBeVisible();
+    expect(screen.queryByTestId("columns")).toBeNull();
+    expect(screen.queryByRole("header", { name: "Leaving soon" })).toBeNull();
+    expect(screen.getByTestId("find-middle")).toHaveStyle({ maxWidth: 480, alignSelf: "center" });
+    expect(screen.getByRole("button", { name: "See the meeting points" })).toBeVisible();
+  });
+
+  it("names every part of the row in Icelandic", async () => {
+    deviceLanguage("is-IS");
+    await renderApp("/");
+    const search = await row();
+    expect(search.getByRole("button", { name: "Frá: Veldu bæ eða mótsstað" })).toBeVisible();
+    expect(search.getByRole("button", { name: "Til: Veldu bæ eða mótsstað" })).toBeVisible();
+    expect(search.getByRole("button", { name: "Dagsetning: Hvaða dag sem er" })).toBeVisible();
+    expect(search.getByRole("adjustable", { name: "Sæti" })).toBeVisible();
+    expect(search.getByRole("button", { name: "Finna far" })).toBeVisible();
   });
 });

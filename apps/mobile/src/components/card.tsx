@@ -17,6 +17,11 @@ interface CardProps {
    */
   readonly onHoverIn?: () => void;
   readonly onFocus?: () => void;
+  /**
+   * Takes the height it is given, as in a `Grid`, where the cards of a row
+   * are as tall as the tallest; what it holds decides where the room goes.
+   */
+  readonly fill?: boolean;
 }
 
 /**
@@ -25,7 +30,14 @@ interface CardProps {
  * Under the pointer its edge turns `primary`; the face stays `surface`, so
  * a tag or an avatar on a tint of its own keeps its shape (spec 18, 3.4).
  */
-export function Card({ children, onPress, accessibilityLabel, onHoverIn, onFocus }: CardProps) {
+export function Card({
+  children,
+  onPress,
+  accessibilityLabel,
+  onHoverIn,
+  onFocus,
+  fill = false,
+}: CardProps) {
   const palette = usePalette();
   const [hovered, hover] = useHover();
   const edgeColor = hovered ? palette.primary : palette.edge;
@@ -34,6 +46,7 @@ export function Card({ children, onPress, accessibilityLabel, onHoverIn, onFocus
       testID="card-face"
       style={[
         styles.face,
+        fill && styles.fill,
         { backgroundColor: palette.surface },
         chunky(edges.card, edgeColor, pressed).face,
       ]}
@@ -43,7 +56,10 @@ export function Card({ children, onPress, accessibilityLabel, onHoverIn, onFocus
   );
   if (onPress === undefined) {
     return (
-      <View testID="card" style={[styles.outer, chunky(edges.card, palette.edge, false).outer]}>
+      <View
+        testID="card"
+        style={[styles.outer, fill && styles.fill, chunky(edges.card, palette.edge, false).outer]}
+      >
         {face(false)}
       </View>
     );
@@ -60,7 +76,11 @@ export function Card({ children, onPress, accessibilityLabel, onHoverIn, onFocus
       }}
       onHoverOut={hover.onHoverOut}
       onFocus={onFocus}
-      style={({ pressed }) => [styles.outer, chunky(edges.card, edgeColor, pressed).outer]}
+      style={({ pressed }) => [
+        styles.outer,
+        fill && styles.fill,
+        chunky(edges.card, edgeColor, pressed).outer,
+      ]}
     >
       {({ pressed }) => face(pressed)}
     </Pressable>
@@ -69,5 +89,6 @@ export function Card({ children, onPress, accessibilityLabel, onHoverIn, onFocus
 
 const styles = StyleSheet.create({
   outer: { borderRadius: radii.card },
+  fill: { flexGrow: 1 },
   face: { borderRadius: radii.card, padding: spacing.md, gap: spacing.ms },
 });

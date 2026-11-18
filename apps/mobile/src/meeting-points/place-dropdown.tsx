@@ -14,6 +14,7 @@ import { Icon } from "@/components/icon";
 import { Notice } from "@/components/notice";
 import { useScreenScroll } from "@/components/screen";
 import { useLanguage } from "@/i18n/language";
+import { escapeOnWeb } from "@/lib/escape-on-web";
 import {
   controlOutline,
   iconSizes,
@@ -137,20 +138,6 @@ export function PlaceDropdown({
       ) : null}
     </View>
   );
-}
-
-/**
- * On the web, Escape closes the dropdown wherever focus is in it, such as on
- * Close or a result; the field handles its own Escape, as the web's text
- * field keeps its keys to itself.
- */
-function escapeOnWeb(onClose: () => void): object {
-  if (Platform.OS !== "web") return {};
-  return {
-    onKeyDown: (event: { key: string }) => {
-      if (event.key === "Escape") onClose();
-    },
-  };
 }
 
 const styles = StyleSheet.create({

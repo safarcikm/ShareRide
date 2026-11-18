@@ -66,9 +66,9 @@ every main screen, as drawn, on 2026-11-18.
 
 | PR | Spec | What | Status |
 | -- | ---- | ---- | ------ |
-| 0 | all | Spec 18 and this plan | |
-| 1 | 3.2 to 3.4 | Groundwork: tokens, `Screen` page width, `Columns`, `Grid`, the top bar lined up, pointer looks | |
-| 2 | 3.5 | Find: the search in one row, rides in a grid, the side column | |
+| 0 | all | Spec 18 and this plan | Merged (#150) |
+| 1 | 3.2 to 3.4 | Groundwork: tokens, `Screen` page width, `Columns`, `Grid`, the top bar lined up, pointer looks | Merged (#155) |
+| 2 | 3.5 | Find: the search in one row, rides in a grid, the side column | Built |
 | 3 | 3.6 | Search results: the map beside the list, chips that wrap | |
 | 4 | 3.7, 3.8 | Trip details, Check and pay and a request in two columns | |
 | 5 | 3.11 | Messages as two panes | |
@@ -228,50 +228,70 @@ bar `primary`. A disabled or busy part shows none.
 **Files:**
 
 - Modify: `apps/mobile/src/search/route-search.tsx`,
-  `apps/mobile/src/components/route-ends.tsx`
-- Test: `apps/mobile/src/__tests__/welcome.test.tsx`, `search.test.tsx`
+  `apps/mobile/src/components/route-ends.tsx`,
+  `apps/mobile/src/components/stepper.tsx`
+- Test: `apps/mobile/src/__tests__/welcome.test.tsx`
 
 **Interfaces:**
 
 - Produces: `RouteSearch.row: (action: ReactElement) => ReactElement`,
-  beside `fields` and `submit`: one `Card` (test ID `search-row`) with a
-  wrapping row: From, the swap button, To (each at least 220 wide,
-  growing), a Date button (caption "Date", then "Any day" or the short day,
-  with a chevron), the seats stepper under its caption, and `action`. From
-  and To open their place list in their own part of the row, which grows
-  downwards; the Date button opens, under the row, the "Any day" chip and
-  the calendar. `fields` and `row` read the same state, so changing between
-  them keeps what was chosen.
+  beside `fields` and `submit`: one `Card` holding a wrapping row (test ID
+  `search-row`) of two groups that wrap as wholes. The first, which takes
+  the room left: From, the swap button, To. The second: a Date button
+  ("Any day" or the short day, with a chevron), the seats stepper and
+  `action`. Each part is a caption line over a control 48 high. From and
+  To open their place list in their own part of the row, and the Date
+  button opens, under itself, the "Any day" chip and the calendar; the
+  card grows downwards. `fields` and `row` read the same state, so
+  changing between them keeps what was chosen.
 - Produces: `RouteEnds` prop `direction?: "column" | "row"`; in `"row"` the
   two ends sit side by side with the swap button between them and no card
-  of their own.
+  of their own, each a caption over its value.
+- Produces: `Stepper` prop `caption?: boolean`: the label as a caption
+  line.
 
-- [ ] **Step 1: Failing tests** at 1280 wide on Find: From, To, "Date: Any
-  day", Seats and "Find a ride" share one card (`search-row`); choosing
-  From, then setting the window to 390 wide and back keeps it (Review Focus
-  1); "Find a ride" with nothing chosen shows "Choose where from and where
-  to" under the row; in Icelandic every label of the row is whole (Review
-  Focus 3). At 390 wide the existing tests pass unchanged.
-- [ ] **Step 2 to 4:** Run, implement, run.
-- [ ] **Step 5:** Commit `feat(mobile): the search in one row on wide screens`.
+- [x] **Step 1: Failing tests** at 1280 wide on Find: From, To, "Date: Any
+  day", Seats and "Find a ride" share one card (`search-row`); the place
+  search opens in From's part; the calendar opens and closes; choosing
+  From, then setting the window to a phone's and back keeps it (Review
+  Focus 1); "Find a ride" with nothing chosen shows "Choose where from and
+  where to" under the row, and with both chosen searches with the date and
+  seats; in Icelandic every label of the row is there (Review Focus 3). On
+  a phone the existing tests pass unchanged.
+- [x] **Step 2 to 4:** Run, implement, run.
+- [x] **Step 5:** Committed with Task 2.2 as one commit.
 
 ### Task 2.2: The page
 
 **Files:**
 
-- Modify: `apps/mobile/src/app/(tabs)/index.tsx`, `e2e/laptop.spec.ts`,
+- Modify: `apps/mobile/src/app/(tabs)/index.tsx`,
+  `apps/mobile/src/components/card.tsx`,
+  `apps/mobile/src/search/result-card.tsx`, `e2e/laptop.spec.ts`,
   `e2e/look.spec.ts`
-- Test: `apps/mobile/src/__tests__/welcome.test.tsx`
+- Test: `apps/mobile/src/__tests__/welcome.test.tsx`,
+  `apps/mobile/src/components/display-parts.test.tsx`
 
-- [ ] **Step 1: Failing tests** at 1280: the title, the search row, then
-  `Columns`: "Leaving soon" with "See all rides" and the rides in a `Grid`
-  in `columns-main`; "Your next ride" (signed in, one coming up) and the
-  card "Driving somewhere?" with "Offer a ride" and "See the meeting
-  points" in `columns-side`. With no rides, no `columns-main`, and the side
-  cards in a column 480 wide in the middle.
-- [ ] **Step 2 to 4:** Run, implement with `Screen width="page"`, run.
-  `laptop.spec.ts` gains Find signed in; `look.spec.ts` its screenshot.
-- [ ] **Step 5:** Commit `feat(mobile): Find on a laptop`.
+**Interfaces:**
+
+- Produces: `Card` and `ResultCard` prop `fill?: boolean`: the card takes
+  the height of its place, so the cards of one row of a `Grid` end level.
+
+- [x] **Step 1: Failing tests** at 1280: the title, the search row, then
+  `Columns`: "Leaving soon" with "See all rides" and six rides in a `Grid`
+  in `columns-main` (it asks for seven, to know whether there are more);
+  "Your next ride" (signed in, one coming up) and the card "Driving
+  somewhere?" with "Offer a ride" and "See the meeting points" in
+  `columns-side`. With no rides, no `columns-main`, and the side cards in
+  a column 480 wide in the middle (`find-middle`). While the rides load,
+  the columns with "Leaving soon" and "Loading".
+- [x] **Step 2 to 4:** Run, implement with `Screen width="page"`, run.
+  `laptop.spec.ts` gains Find in both languages at 900, 1280 and 1440: the
+  search stays in its card with no cut text, the calendar opens under the
+  date and gives focus back, and the rides stand in two columns of equal
+  cards beside the offer. `look.spec.ts` checks that "Find a ride" ends the
+  row. Find signed in is covered by jest; the journey signs nobody in.
+- [x] **Step 5:** Commit `feat(mobile): Find on a laptop`.
 
 ## PR 3: Search results
 

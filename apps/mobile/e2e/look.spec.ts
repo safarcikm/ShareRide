@@ -110,21 +110,29 @@ for (const scheme of schemes) {
       await screenshot(page, testInfo.project, "welcome");
 
       // On phones the language switch sits at the right of the column; wide
-      // screens have it in the top bar. The buttons fit their labels and sit
-      // in the middle, under the centred title.
+      // screens have it in the top bar. The buttons fit their labels. On
+      // phones they sit in the middle, under the centred title; a wide page
+      // has Find a ride at the end of the search row and Offer a ride in
+      // the side column (spec 18, 3.5).
+      const wide = (page.viewportSize()?.width ?? 0) >= 900;
       const column = await box(title);
       const languageBox = await box(language);
-      if ((page.viewportSize()?.width ?? 0) < 900) {
-        expect(languageBox.x + languageBox.width).toBeCloseTo(column.x + column.width, 0);
-      } else {
+      if (wide) {
         await expect(
           page.getByTestId("top-bar").getByRole("button", { name: scheme.language }),
         ).toBeVisible();
+      } else {
+        expect(languageBox.x + languageBox.width).toBeCloseTo(column.x + column.width, 0);
       }
       for (const button of [findRide, offerRide]) {
         const found = await box(button);
         expect(found.width).toBeLessThan(column.width);
-        expect(middle(found)).toBeCloseTo(middle(column), 0);
+        if (!wide) expect(middle(found)).toBeCloseTo(middle(column), 0);
+      }
+      if (wide) {
+        const row = await box(page.getByTestId("search-row"));
+        const found = await box(findRide);
+        expect(found.x + found.width).toBeCloseTo(row.x + row.width, 0);
       }
       await expect(title).toHaveCSS("text-align", "center");
 

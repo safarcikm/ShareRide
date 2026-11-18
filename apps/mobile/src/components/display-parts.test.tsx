@@ -71,6 +71,22 @@ describe("Card", () => {
     expect(screen.getByTestId("card")).toHaveStyle({ borderBottomColor: colors.light.edge });
   });
 
+  it("fills the room it is given when asked, as in a grid's row", async () => {
+    await render(
+      <Card fill onPress={jest.fn()} accessibilityLabel="BSÍ">
+        <Text>BSÍ</Text>
+      </Card>,
+    );
+    expect(screen.getByTestId("card")).toHaveStyle({ flexGrow: 1 });
+    expect(screen.getByTestId("card-face")).toHaveStyle({ flexGrow: 1 });
+    await screen.rerender(
+      <Card>
+        <Text>BSÍ</Text>
+      </Card>,
+    );
+    expect(screen.getByTestId("card")).not.toHaveStyle({ flexGrow: 1 });
+  });
+
   it("tells when the pointer or the keyboard comes to it", async () => {
     const onHoverIn = jest.fn();
     const onFocus = jest.fn();
