@@ -157,7 +157,8 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
         "cancelledBy",
         "cancelReason",
       ],
-      ["note", "cancelNote"],
+      // The operator's note on whether its cancellation counts was theirs only.
+      ["note", "cancelNote", "overruleNote"],
       "drafts are deleted, and trips not yet departed are cancelled first",
     ),
   },
@@ -187,7 +188,7 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     personColumns: ["passengerId"],
     onDeletion: keep(
       ["status", "currency", "declineReason", "cancelledBy", "cancelReason"],
-      ["message", "cancelNote"],
+      ["message", "cancelNote", "overruleNote"],
     ),
     otherIds: ["attemptKey"],
   },

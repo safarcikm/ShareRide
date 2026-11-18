@@ -5,6 +5,7 @@
 // decides, as a person, on a warning or a suspension.
 import type { DisputeOutcome } from "../bookings/disputes.ts";
 import type { BookingStatus } from "../bookings/lifecycle.ts";
+import { err, ok, type Result } from "../result.ts";
 import type { TripStatus } from "../trips/trip.ts";
 
 /** The values the operator will set (spec 8, section 6; feature H4). */
@@ -142,6 +143,35 @@ export function canOverrule(cancellation: {
   readonly excusedByReason: boolean;
 }): boolean {
   return cancellation.excusedByReason && !cancellation.countsOnReliability;
+}
+
+/**
+ * The operator changes their mind, or pressed by mistake: an overruled
+ * reason stands again, and the cancellation no longer counts (spec 8,
+ * section 6: the operator "can change whether it counts").
+ */
+export function canUndoOverrule(cancellation: {
+  readonly countsOnReliability: boolean;
+  readonly excusedByReason: boolean;
+}): boolean {
+  return cancellation.excusedByReason && cancellation.countsOnReliability;
+}
+
+export const overruleNoteMaxLength = 500;
+
+/**
+ * The operator's note on why a cancellation counts, or no longer does
+ * (spec 8, section 6: "with a note"), for a warning or a complaint later.
+ * It is needed, trimmed, and up to 500 characters.
+ */
+export function checkOverruleNote(
+  note: string,
+): Result<string, { readonly code: "note_missing" } | { readonly code: "note_too_long" }> {
+  const tidy = note.trim().normalize("NFC");
+  if (tidy === "") return err({ code: "note_missing" });
+  // Characters as the database counts them (code points).
+  if (Array.from(tidy).length > overruleNoteMaxLength) return err({ code: "note_too_long" });
+  return ok(tidy);
 }
 
 export interface Reliability {
