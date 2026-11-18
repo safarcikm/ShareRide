@@ -124,6 +124,7 @@ async function exportOf(member: Member) {
     text: json.data.toString("utf8"),
     data: JSON.parse(json.data.toString("utf8")) as ExportData,
     html: html.data.toString("utf8"),
+    entries,
   };
 }
 
@@ -741,6 +742,77 @@ describe("download my data (spec 11, 3.2)", () => {
     ]);
     expect(text).not.toContain("Never shown");
     expect(unlabelledFields(data)).toEqual([]);
+  });
+
+  it("has the feedback I sent with our reply, and its screenshot as a file (spec 12, section 7)", async () => {
+    const gunna = await newMember("Gunna");
+    const jon = await newMember("Jón");
+    const { db } = api.connection;
+    const sentAt = api.now();
+    const details = {
+      appVersion: "1.4.0",
+      platform: "ios",
+      osVersion: "19.1",
+      screen: "/trips/[id]",
+      language: "en",
+    };
+    const [mine, other] = await db
+      .insert(schema.feedback)
+      .values([
+        {
+          userId: gunna.userId,
+          kind: "problem",
+          message: "The map does not move.",
+          ...details,
+          status: "planned",
+          reply: "Thanks, we are on it.",
+          repliedAt: sentAt,
+          createdAt: sentAt,
+        },
+        { userId: jon.userId, kind: "idea", message: "Jón's own idea", ...details },
+      ])
+      .returning({ id: schema.feedback.id });
+    if (mine === undefined || other === undefined) throw new Error("No feedback.");
+    const picture = Buffer.from([0xff, 0xd8, 0x01, 0x02, 0xff, 0xd9]);
+    await db.insert(schema.feedbackScreenshots).values([
+      { feedbackId: mine.id, file: picture, width: 390, height: 844 },
+      {
+        feedbackId: other.id,
+        file: Buffer.from([0xff, 0xd8, 0x09, 0xff, 0xd9]),
+        width: 1,
+        height: 1,
+      },
+    ]);
+
+    const { data, html, text, entries } = await exportOf(gunna);
+    expect(data.sections.feedback).toEqual([
+      {
+        kind: "problem",
+        message: "The map does not move.",
+        appVersion: "1.4.0",
+        platform: "ios",
+        osVersion: "19.1",
+        screen: "/trips/[id]",
+        locale: "en",
+        sentAt: sentAt.toISOString(),
+        screenshot: `feedback/${mine.id}.jpg`,
+        ourReply: "Thanks, we are on it.",
+        repliedAt: sentAt.toISOString(),
+      },
+    ]);
+    // The picture is a file of the ZIP; nobody else's is, and the operator's status is theirs.
+    expect(entries.map((entry) => entry.name)).toEqual([
+      "shareride-data.json",
+      "shareride-data.html",
+      `feedback/${mine.id}.jpg`,
+    ]);
+    expect(entries[2]?.data.equals(picture)).toBe(true);
+    expect(text).not.toContain("Jón's own idea");
+    expect(text).not.toContain("planned");
+    expect(html).toContain("<h2>Feedback you sent</h2>");
+    expect(html).toContain("Something isn&#39;t working");
+    expect(unlabelledFields(data)).toEqual([]);
+    await db.delete(schema.feedback);
   });
 
   it("labels every field of the readable page in both languages", async () => {

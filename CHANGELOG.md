@@ -1153,6 +1153,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   filled in. A small "Beta" label sits beside the name while the beta is
   closed (`GET /v1/config`). The console's Invite codes page shows the
   places left, makes a group code and ends one after asking.
+- Feedback in the API (spec 12, 3.3; R12.5; milestone 11, PR 5; migration
+  `0049_feedback`): a signed-in person sends a message of up to 2 000
+  characters with its kind and the app's details, and from phones a
+  screenshot (a JPEG without metadata of at most 1 MB, kept in the
+  database), 10 a day, and reads back what they sent with the replies.
+  Console routes list feedback by status and kind, show the screenshot,
+  set the status and send one reply, which reaches the tester by push
+  ("ShareRide replied to your feedback") and email (the reply itself);
+  each is in the audit log. "Download my data" has a feedback section
+  with the screenshots as files, deleting the account deletes both, and
+  the clean-up deletes feedback 12 months after "Invite code required"
+  was last turned off.
 
 ### Fixed
 

@@ -16,6 +16,7 @@ describe("what deletion does to each kind of data (spec 11, 3.5; R11.4)", () => 
       "exports",
       "reviews_received",
       "blocks",
+      "feedback",
     ] as const) {
       expect(deletionEffects[category]).toBe("erase");
     }

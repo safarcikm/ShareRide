@@ -86,6 +86,7 @@ const {
   notificationDeliveries,
   notifications,
   outboxEvents,
+  feedback,
   privacyRequests,
   pushTickets,
   pushTokens,
@@ -504,6 +505,8 @@ async function accountFactsOf(
       return answerFactsOf(q, notification);
     case "report_closed":
       return reportOutcomeFactsOf(q, notification);
+    case "feedback_replied":
+      return feedbackReplyFactsOf(q, notification);
     default:
       return noticeFactsOf(q, notification, kind);
   }
@@ -564,6 +567,39 @@ async function noticeFactsOf(
   return {
     facts,
     current: kind !== "suspension_ended" || row.status === "active",
+    locale: row.locale === "is" ? "is" : "en",
+    recipientId: notification.recipientId,
+    email: row.emailVerifiedAt === null ? null : row.email,
+    phone: null,
+    booking: null,
+  } as const;
+}
+
+/** The operator's reply to the person's feedback (spec 12, 3.3.4). */
+async function feedbackReplyFactsOf(q: Queryable, notification: typeof notifications.$inferSelect) {
+  if (notification.feedbackId === null) return undefined;
+  const [row] = await q
+    .select({
+      locale: recipients.locale,
+      email: recipients.email,
+      emailVerifiedAt: recipients.emailVerifiedAt,
+      reply: feedback.reply,
+      sentAt: feedback.createdAt,
+    })
+    .from(feedback)
+    .innerJoin(recipients, eq(recipients.id, feedback.userId))
+    .where(
+      and(eq(feedback.id, notification.feedbackId), eq(feedback.userId, notification.recipientId)),
+    );
+  if (row === undefined || row.reply === null) return undefined;
+  const facts: AccountNoticeFacts = {
+    kind: "feedback_replied",
+    sentAt: row.sentAt,
+    reply: row.reply,
+  };
+  return {
+    facts,
+    current: true,
     locale: row.locale === "is" ? "is" : "en",
     recipientId: notification.recipientId,
     email: row.emailVerifiedAt === null ? null : row.email,
@@ -1058,6 +1094,7 @@ export function createNotificationWorker(dependencies: {
       readonly reportId?: string;
       readonly moderationActionId?: string;
       readonly privacyRequestId?: string;
+      readonly feedbackId?: string;
       readonly meetingPointId?: string;
     },
     key: string,
@@ -1076,6 +1113,7 @@ export function createNotificationWorker(dependencies: {
         reportId: notification.reportId ?? null,
         moderationActionId: notification.moderationActionId ?? null,
         privacyRequestId: notification.privacyRequestId ?? null,
+        feedbackId: notification.feedbackId ?? null,
         meetingPointId: notification.meetingPointId ?? null,
         uniqueKey: `${key}:${kind}:${recipientId}`,
         createdAt: now,
@@ -1604,6 +1642,23 @@ export function createNotificationWorker(dependencies: {
       await add(
         tx,
         { kind: "report_closed", to: null, recipientId: report.reporterId, reportId },
+        key,
+        now,
+      );
+      return;
+    }
+    if (type === "FeedbackReplied") {
+      // The tester, with the reply (spec 12, 3.3.4); nobody, once the feedback is gone.
+      const feedbackId = idIn(event.payload, "feedbackId");
+      if (feedbackId === undefined) return;
+      const [sent] = await tx
+        .select({ userId: feedback.userId })
+        .from(feedback)
+        .where(eq(feedback.id, feedbackId));
+      if (sent === undefined) return;
+      await add(
+        tx,
+        { kind: "feedback_replied", to: null, recipientId: sent.userId, feedbackId },
         key,
         now,
       );

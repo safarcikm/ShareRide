@@ -29,6 +29,7 @@ export type OutboxEvent =
         | "AccountDeletionScheduled"
         | "AppealAnswered"
         | "ReportClosed"
+        | "FeedbackReplied"
       >;
       readonly bookingId: string;
     }
@@ -126,6 +127,11 @@ export type OutboxEvent =
       /** A report was closed: the reporter is told the outcome (spec 9, 3.1.6). */
       readonly type: "ReportClosed";
       readonly reportId: string;
+    }
+  | {
+      /** The operator replied to a tester's feedback: they are told (spec 12, 3.3.4). */
+      readonly type: "FeedbackReplied";
+      readonly feedbackId: string;
     };
 
 /**

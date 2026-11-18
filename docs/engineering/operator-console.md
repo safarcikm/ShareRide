@@ -632,6 +632,21 @@ version }` with the version the page loaded: it takes a lock on the
   uses and an end at most 12 months ahead; the API picks the code.
   `POST /admin/v1/invite-codes/{id}/end` ends one; accounts made with it
   stay. Audit entries `invite_code.created` and `invite_code.ended`.
+- Feedback (spec 12, 3.3; `beta/feedback.ts`): `POST /v1/feedback` takes
+  a signed-in person's message, kind and the app's details, with a
+  screenshot in base64 from phones (a JPEG without metadata of at most
+  1 MB, checked as meeting point photos are), 10 a day; `GET
+  /v1/me/feedback` gives back what they sent and the replies, never the
+  operator's status. `GET /admin/v1/feedback` lists the newest 100 by
+  `status` and `kind` with how many are new; `GET
+  /admin/v1/feedback/{id}` is one; `GET
+  /admin/v1/feedback/{id}/screenshot` is the picture itself, for an
+  `<img>`, never cached; `POST .../status` sets the status and `POST
+  .../reply` the one reply, which writes `FeedbackReplied`: the tester
+  gets `feedback_replied` by push (only that there is a reply) and email
+  (the reply). Audit entries `feedback.screenshot_viewed`,
+  `feedback.status_changed` and `feedback.replied` (when, not what). The
+  console's page comes with the app's form (milestone 11, PR 6).
 - The console's Invite codes page (`apps/admin/src/pages/invite-codes/`)
   shows the places left, a form for a new group code (it works through the
   end of the chosen day) and each code with its uses; ending one asks

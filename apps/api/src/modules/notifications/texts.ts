@@ -182,6 +182,8 @@ interface AccountNoticeFactsByKind {
   /** In general terms only, never what was done to whom (spec 9, 3.1.6). */
   readonly report_closed: { readonly outcome: ReportOutcome };
   readonly privacy_request_answered: { readonly receivedAt: Date; readonly answer: string };
+  /** The reply as the operator wrote it, and the day the feedback was sent. */
+  readonly feedback_replied: { readonly sentAt: Date; readonly reply: string };
 }
 
 /**
@@ -307,6 +309,9 @@ function operatorText(kind: OperatorNoticeKind, locale: Locale): NotificationTex
 /** The app's screen of the person's notices, where they read and appeal them (spec 9, R9.5). */
 export const noticesPath = "/notices";
 
+/** "My feedback" under Settings, where a reply shows (spec 12, 3.3.5). */
+export const myFeedbackPath = "/settings/feedback";
+
 /**
  * What is ready, or what will be deleted, and when; never a link to the file
  * (spec 11, 7). No weekday: Icelandic would have to decline it after "fyrir".
@@ -354,6 +359,22 @@ function accountText(facts: AccountNoticeFacts, locale: Locale): NotificationTex
         path: noticesPath,
         emailBody: [title, "", body, "", t("notice.answer", { answer: facts.answer })].join("\n"),
         open: t("notice.open"),
+      };
+    }
+    case "feedback_replied": {
+      // The push says only that there is a reply, as others may see a lock
+      // screen; the email carries the reply itself.
+      const title = t("notify.feedbackReplied");
+      const body = t("notify.feedbackRepliedBody");
+      const about = t("notify.feedbackRepliedEmail", {
+        date: formatDayAndMonth(facts.sentAt, locale),
+      });
+      return {
+        title,
+        body,
+        path: myFeedbackPath,
+        emailBody: [about, "", facts.reply].join("\n"),
+        open: t("notify.feedbackOpen"),
       };
     }
     case "report_closed":

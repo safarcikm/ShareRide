@@ -36,6 +36,8 @@ const {
   notificationPreferences,
   notifications,
   payments,
+  feedback,
+  feedbackScreenshots,
   privacyRequests,
   pushTokens,
   reports,
@@ -85,6 +87,27 @@ export interface ExportData {
   readonly createdAt: string;
   readonly locale: Locale;
   readonly sections: { readonly [Section in ExportSection]: unknown };
+}
+
+/** Where a feedback's screenshot is in the export's ZIP. */
+export const screenshotFileName = (feedbackId: string) => `feedback/${feedbackId}.jpg`;
+
+/**
+ * The files an export holds besides its data: the screenshots the person
+ * sent with feedback (spec 12, section 7). Read in the snapshot that
+ * `collectExport` reads, so each file the data names is there.
+ */
+export async function collectExportFiles(
+  q: Queryable,
+  userId: string,
+): Promise<readonly { readonly name: string; readonly data: Buffer }[]> {
+  const rows = await q
+    .select({ id: feedback.id, file: feedbackScreenshots.file })
+    .from(feedbackScreenshots)
+    .innerJoin(feedback, eq(feedback.id, feedbackScreenshots.feedbackId))
+    .where(eq(feedback.userId, userId))
+    .orderBy(asc(feedback.createdAt), asc(feedback.id));
+  return rows.map((row) => ({ name: screenshotFileName(row.id), data: row.file }));
 }
 
 interface Named {
@@ -686,6 +709,26 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     .where(eq(privacyRequests.userId, userId))
     .orderBy(asc(privacyRequests.receivedAt), asc(privacyRequests.id));
 
+  const sent = await q
+    .select({
+      id: feedback.id,
+      kind: feedback.kind,
+      message: feedback.message,
+      appVersion: feedback.appVersion,
+      platform: feedback.platform,
+      osVersion: feedback.osVersion,
+      screen: feedback.screen,
+      locale: feedback.language,
+      sentAt: feedback.createdAt,
+      reply: feedback.reply,
+      repliedAt: feedback.repliedAt,
+      picture: feedbackScreenshots.feedbackId,
+    })
+    .from(feedback)
+    .leftJoin(feedbackScreenshots, eq(feedbackScreenshots.feedbackId, feedback.id))
+    .where(eq(feedback.userId, userId))
+    .orderBy(asc(feedback.createdAt), asc(feedback.id));
+
   return {
     format: "shareride-export",
     version: 1,
@@ -759,6 +802,15 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
         dueAt: when(row.dueAt),
         answeredAt: when(row.answeredAt),
         ourAnswer: row.answer,
+      })),
+      // The operator's status is theirs, not the person's data. `screenshot`
+      // names the picture's file in the ZIP.
+      feedback: sent.map(({ id, picture, reply, ...row }) => ({
+        ...row,
+        sentAt: when(row.sentAt),
+        screenshot: picture === null ? null : screenshotFileName(id),
+        ourReply: reply,
+        repliedAt: when(row.repliedAt),
       })),
     },
   };

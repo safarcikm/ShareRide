@@ -51,6 +51,10 @@ describe("the retention rules this feature adds (spec 11, 3.7)", () => {
     );
   });
 
+  it("names the beta's feedback, deleted 12 months after the beta ended", () => {
+    expect(retentionRules).toContain("feedback");
+  });
+
   it("names the privacy requests, deleted 3 years after the answer", () => {
     expect(retentionRules).toContain("privacy_requests");
   });

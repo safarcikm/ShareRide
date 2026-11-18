@@ -1,5 +1,6 @@
 import { schema, type Database } from "@shareride/db";
 import {
+  feedbackDeletedUpTo,
   meetingPointIssuesResolvedBy,
   privacyCutoffs,
   type RetentionRule,
@@ -19,10 +20,12 @@ import { anonymiseOldTrips } from "./old-trips.ts";
 const {
   blockedNumbers,
   erasedAccounts,
+  feedback,
   holds,
   meetingPointIssues,
   privacyRequests,
   retentionRuns,
+  settingChanges,
 } = schema;
 
 // The hourly clean-up's retention rules (spec 11, 3.7; R11.5; plan 4.7):
@@ -226,6 +229,27 @@ export function retentionSteps({
           )
           .returning({ id: privacyRequests.id });
         return { counts: { privacy_requests: deleted(rows) } };
+      },
+    },
+    {
+      rules: ["feedback"],
+      async run(now) {
+        // The beta ended when "Invite code required" was last turned off;
+        // while it is on, or was never changed, nothing is deleted.
+        const [last] = await db
+          .select({ value: settingChanges.newValue, at: settingChanges.createdAt })
+          .from(settingChanges)
+          .where(eq(settingChanges.key, "invite_code_required"))
+          .orderBy(desc(settingChanges.version))
+          .limit(1);
+        const upTo = feedbackDeletedUpTo(last?.value === 0 ? last.at : null, now);
+        if (upTo === null) return { counts: { feedback: 0 } };
+        // The screenshots go with their feedback.
+        const rows = await db
+          .delete(feedback)
+          .where(and(lte(feedback.createdAt, upTo), notHeld(db, now, [["user", feedback.userId]])))
+          .returning({ id: feedback.id });
+        return { counts: { feedback: deleted(rows) } };
       },
     },
     {
