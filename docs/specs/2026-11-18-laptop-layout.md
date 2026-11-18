@@ -154,13 +154,22 @@ changes on a phone.
 2. The list is as today: the search summary with Change, the chips, the days
    and their trips. The chips wrap onto a second line instead of scrolling
    sideways.
-3. The map shows Iceland with the stretch of one trip drawn along the roads
-   and its two meeting points: the first trip found, or the trip under the
-   pointer or with keyboard focus. Its label for screen readers names that
-   stretch. The list says everything the map shows.
-4. When nothing matches, there is no map, and the column sits in the middle.
-5. Changing the search opens the form in the list column, where the summary
-   was.
+3. The map shows the part of Iceland the trips found are in, with the
+   stretch of one trip drawn along the roads and its two meeting points
+   standing out: the first trip found, or the trip the pointer or the
+   keyboard came to last. That trip's card keeps the edge a card has under
+   the pointer, so the list shows which trip the map shows. Its label for
+   screen readers names that stretch. The list says everything the map
+   shows.
+4. The stretches and meeting points of the other trips found are on the
+   map too, muted. So the map shows the same part of Iceland whichever trip
+   is shown, and stays still as the pointer moves down the list.
+5. While the trips load, the map is there already, without a trip, so the
+   list does not move when they come. When nothing matches or the search
+   fails, there is no map, and the column sits in the middle. When only
+   trips from nearby meeting points match, the map shows those.
+6. Changing the search opens the form in the list column, where the summary
+   was, with the map still beside it.
 
 ### 3.7 Trip details
 
@@ -312,7 +321,7 @@ Every other text is one the app has.
 | 3 | How wide is a page? | 1144, the width meeting points already use (my call) |
 | 4 | Where does the main button go on two-column screens? | Into the side column, with the summary it acts on, as on trip details today; no bottom bar there (my call) |
 | 5 | Titles on two-column screens | At the left, as on trip details today; one-column screens keep the centred title Martin chose on 2026-11-14 (my call) |
-| 6 | What does the results map show? | One trip's stretch at a time: the first, or the one pointed at or focused (my call) |
+| 6 | What does the results map show? | One trip's stretch at a time: the first, or the one pointed at or focused last, whose card is marked. The other trips' stretches are there muted, so the map does not move between trips (my call) |
 | 7 | Settings and forms | Stay one column 480 wide; a form gains nothing from being stretched (my call) |
 | 8 | Does Messages open the newest conversation by itself? | No: opening marks its messages as seen, which only the person should do (my call) |
 | 9 | A colour for a primary button under the pointer | New token `primaryHover` (#285C44 light, #8FD0AC dark), added to spec 15, 4.1 with its contrast check (my call) |

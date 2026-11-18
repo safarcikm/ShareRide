@@ -567,6 +567,8 @@ export const is = {
   "results.change": "Breyta",
   "results.failed": "Ekki tókst að sækja ferðirnar.",
   "results.rateLimited": "Of margar leitir á stuttum tíma. Reyndu aftur eftir {wait}.",
+  "results.map": "Kort af Íslandi",
+  "results.mapOf": "Ferðin á korti af Íslandi: {route}.",
   "search.tripCount": "{count, plural, =0 {Engar ferðir} one {# ferð} other {# ferðir}}",
   "trip.wholeTrip": "Öll ferðin",
   "trip.yourPart": "Þinn hluti",

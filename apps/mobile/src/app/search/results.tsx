@@ -16,7 +16,7 @@ import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Chip } from "@/components/chip";
 import { Notice } from "@/components/notice";
-import { Screen } from "@/components/screen";
+import { Screen, useWideScreen } from "@/components/screen";
 import { TakesFocus } from "@/components/takes-focus";
 import { Body, Heading, sectionLevel } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
@@ -28,6 +28,7 @@ import type { SearchQuery } from "@/search/recent-searches";
 import { resultsParams } from "@/search/results-href";
 import { useRouteSearch } from "@/search/route-search";
 import { ResultCard, type SearchedNames } from "@/search/result-card";
+import { ResultsMap } from "@/search/results-map";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
@@ -48,11 +49,16 @@ const timeKeys = {
  * grouped by day. When nothing matches, the days around the date and trips
  * from meeting points nearby. The header is one button that opens the search
  * in place, filled in, and the order is one chip (spec 16, 3.8).
+ *
+ * A wide screen (spec 18, 3.6) has our map beside the list, with the trip
+ * the pointer or the keyboard came to last, or the first one; that trip's
+ * card is marked. The chips wrap instead of scrolling sideways.
  */
 export default function SearchResults() {
   const { locale, t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
+  const wide = useWideScreen();
   const params = useLocalSearchParams<{
     from: string;
     to: string;
@@ -76,6 +82,8 @@ export default function SearchResults() {
   const [choosingOrder, setChoosingOrder] = useState(false);
   // Counts the orders chosen, to give focus back to the Sort chip.
   const [orderChosen, setOrderChosen] = useState(0);
+  // The trip the pointer or the keyboard came to last, for the map.
+  const [shownId, setShownId] = useState<string | null>(null);
 
   const query = useMemo(
     () => ({
@@ -170,14 +178,34 @@ export default function SearchResults() {
       </View>
     );
 
-  let body: ReactNode;
   // An old answer stays while a changed search loads only when it has trips
   // for the same route and seats: "nothing matches" and failures speak about
   // the search they answered.
-  if (
-    result === undefined ||
-    (!current && (!sameRoute || found === undefined || found.length === 0))
-  ) {
+  const loading =
+    result === undefined || (!current && (!sameRoute || found === undefined || found.length === 0));
+
+  // The trips the list shows: those found, or those from nearby points when
+  // nothing matches. A wide screen marks the one its map shows.
+  const listed: readonly TripSearchResult[] =
+    loading || found === undefined
+      ? []
+      : found.length > 0
+        ? found
+        : !filtered && alternatives?.ok === true
+          ? alternatives.data.nearby
+          : [];
+  const shown = listed.find((one) => one.tripId === shownId) ?? listed[0];
+  const onMap: OnMap | undefined = wide ? { shown: shown?.tripId, onShow: setShownId } : undefined;
+  // The map is there while the trips load, so the list does not move when
+  // they come; there is none when there is no trip to show.
+  const map = !wide ? undefined : loading ? (
+    <ResultsMap results={[]} shown={undefined} />
+  ) : shown === undefined ? undefined : (
+    <ResultsMap results={listed} shown={shown} />
+  );
+
+  let body: ReactNode;
+  if (loading) {
     body = <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />;
   } else if (!result.ok) {
     body = (
@@ -189,7 +217,13 @@ export default function SearchResults() {
   } else if (found !== undefined && found.length > 0) {
     body = (
       <>
-        <Found results={found} searched={searched} seats={seats} grouped={sort === "departure"} />
+        <Found
+          results={found}
+          searched={searched}
+          seats={seats}
+          grouped={sort === "departure"}
+          onMap={onMap}
+        />
         <Body>
           {found.length >= resultLimit
             ? t("results.firstOnly", { count: found.length })
@@ -226,6 +260,7 @@ export default function SearchResults() {
         otherDayChips={otherDayChips}
         searched={searched}
         seats={seats}
+        onMap={onMap}
       />
     );
   }
@@ -237,7 +272,7 @@ export default function SearchResults() {
 
   if (changing) {
     return (
-      <Screen>
+      <Screen aside={map}>
         <ChangeSearch
           initial={{
             from: { id: from, name: { is: searched.from, en: searched.from } },
@@ -257,8 +292,40 @@ export default function SearchResults() {
   }
 
   const sortLabel = sort === "departure" ? t("results.sortEarliest") : t("results.sortCheapest");
+  const chips = (
+    <>
+      <TakesFocus key={orderChosen} when={orderChosen > 0}>
+        <Chip
+          role="button"
+          label={t("results.sort", { order: sortLabel })}
+          selected={false}
+          expanded={choosingOrder}
+          onToggle={() => {
+            setChoosingOrder(!choosingOrder);
+          }}
+        />
+      </TakesFocus>
+      <Chip
+        label={t("results.instantOnly")}
+        selected={instant}
+        onToggle={() => {
+          setInstant(!instant);
+        }}
+      />
+      {timesOfDay.map((time) => (
+        <Chip
+          key={time}
+          label={t(timeKeys[time])}
+          selected={timeOfDay === time}
+          onToggle={() => {
+            setTimeOfDay(timeOfDay === time ? null : time);
+          }}
+        />
+      ))}
+    </>
+  );
   return (
-    <Screen>
+    <Screen aside={map}>
       <View style={styles.header}>
         <BackButton fallback="/" />
         {/* The screen's heading, with the button inside it as in an
@@ -285,38 +352,20 @@ export default function SearchResults() {
           </TakesFocus>
         </View>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
-        <View style={styles.chips}>
-          <TakesFocus key={orderChosen} when={orderChosen > 0}>
-            <Chip
-              role="button"
-              label={t("results.sort", { order: sortLabel })}
-              selected={false}
-              expanded={choosingOrder}
-              onToggle={() => {
-                setChoosingOrder(!choosingOrder);
-              }}
-            />
-          </TakesFocus>
-          <Chip
-            label={t("results.instantOnly")}
-            selected={instant}
-            onToggle={() => {
-              setInstant(!instant);
-            }}
-          />
-          {timesOfDay.map((time) => (
-            <Chip
-              key={time}
-              label={t(timeKeys[time])}
-              selected={timeOfDay === time}
-              onToggle={() => {
-                setTimeOfDay(timeOfDay === time ? null : time);
-              }}
-            />
-          ))}
+      {wide ? (
+        <View testID="chips-wrap" style={styles.wrap}>
+          {chips}
         </View>
-      </ScrollView>
+      ) : (
+        <ScrollView
+          testID="chips-scroll"
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.chipRow}
+        >
+          <View style={styles.chips}>{chips}</View>
+        </ScrollView>
+      )}
       {choosingOrder ? (
         <View accessibilityRole="radiogroup" aria-label={t("results.sortBy")} style={styles.chips}>
           {(["departure", "price"] as const).map((order) => (
@@ -367,23 +416,52 @@ function ChangeSearch({
   );
 }
 
+/**
+ * On a wide screen, the map beside the list: the trip it shows, and how a
+ * card says that the pointer or the keyboard came to it.
+ */
+interface OnMap {
+  readonly shown: string | undefined;
+  readonly onShow: (tripId: string) => void;
+}
+
+/** What a trip's card needs for the map: its mark, and to say it is looked at. */
+function mapProps(onMap: OnMap | undefined, result: TripSearchResult) {
+  if (onMap === undefined) return {};
+  return {
+    marked: onMap.shown === result.tripId,
+    onShow: () => {
+      onMap.onShow(result.tripId);
+    },
+  };
+}
+
 /** The trips found: by day when sorted by time, in one list when by price. */
 function Found({
   results,
   searched,
   seats,
   grouped,
+  onMap,
 }: {
   readonly results: readonly TripSearchResult[];
   readonly searched: SearchedNames;
   readonly seats: number;
   readonly grouped: boolean;
+  readonly onMap: OnMap | undefined;
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
   if (!grouped) {
     return results.map((result) => (
-      <ResultCard key={result.tripId} result={result} searched={searched} seats={seats} showDay />
+      <ResultCard
+        key={result.tripId}
+        result={result}
+        searched={searched}
+        seats={seats}
+        showDay
+        {...mapProps(onMap, result)}
+      />
     ));
   }
   const days = new Map<string, TripSearchResult[]>();
@@ -406,7 +484,13 @@ function Found({
         </Text>
       </View>
       {onDay.map((result) => (
-        <ResultCard key={result.tripId} result={result} searched={searched} seats={seats} />
+        <ResultCard
+          key={result.tripId}
+          result={result}
+          searched={searched}
+          seats={seats}
+          {...mapProps(onMap, result)}
+        />
       ))}
     </View>
   ));
@@ -420,6 +504,7 @@ function NothingMatches({
   otherDayChips,
   searched,
   seats,
+  onMap,
 }: {
   readonly date: string | undefined;
   readonly alternatives: CallResult<typeof tripSearchAlternativesRoute> | undefined;
@@ -427,6 +512,7 @@ function NothingMatches({
   readonly otherDayChips: ReactNode;
   readonly searched: SearchedNames;
   readonly seats: number;
+  readonly onMap: OnMap | undefined;
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
@@ -488,6 +574,7 @@ function NothingMatches({
               searched={searched}
               seats={seats}
               showDay
+              {...mapProps(onMap, result)}
             />
           ))}
         </>

@@ -1114,6 +1114,11 @@ releases follow [Semantic Versioning](https://semver.org/).
   Under it are the rides leaving soon, six of them, in two columns from
   about 1140 wide and in one under that, with your next ride and the offer
   to drive beside them. Phones are unchanged.
+- Search results on a laptop (spec 18, 3.6): our map beside the list, with
+  the stretch of the first trip found, or of the trip the pointer or the
+  keyboard came to last, whose card is marked. The map is there while the
+  trips load and stays still between trips. The chips wrap instead of
+  scrolling sideways. Phones are unchanged.
 
 ### Fixed
 

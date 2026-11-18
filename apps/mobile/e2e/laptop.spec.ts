@@ -206,3 +206,76 @@ test.describe("Find's search row", () => {
     expect(offer.x).toBeGreaterThan(second.x + second.width);
   });
 });
+
+const resultsTexts = {
+  "en-GB": {
+    ...findTexts["en-GB"],
+    to: /^To: /,
+    fromLabel: "From",
+    toLabel: "To",
+    borgarnes: /^N1 Borgarnes,/,
+    blonduos: /^Olís Blönduós,/,
+    map: "The trip on a map of Iceland: N1 Borgarnes → Olís Blönduós.",
+  },
+  "is-IS": {
+    ...findTexts["is-IS"],
+    to: /^Til: /,
+    fromLabel: "Frá",
+    toLabel: "Til",
+    borgarnes: /^N1 Borgarnesi,/,
+    blonduos: /^Olís Blönduósi,/,
+    map: "Ferðin á korti af Íslandi: N1 Borgarnesi → Olís Blönduósi.",
+  },
+} as const;
+
+// Search results (spec 18, 3.6): the trip on our map beside the list, and
+// chips that wrap. The sample trip goes from Reykjavík to Akureyri through
+// Borgarnes and Blönduós.
+for (const locale of ["en-GB", "is-IS"] as const) {
+  const texts = resultsTexts[locale];
+
+  test.describe(`search results, ${locale}`, () => {
+    test.use({ locale });
+
+    for (const width of widths) {
+      test(`shows the trip on the map beside the list, ${String(width)} wide`, async ({ page }) => {
+        await page.setViewportSize(laptop(width));
+        await page.goto("/");
+        const row = page.getByTestId("search-row");
+        await row.getByRole("button", { name: texts.from }).click();
+        await row.getByLabel(texts.fromLabel, { exact: true }).fill("borg");
+        await row.getByRole("button", { name: texts.borgarnes }).click();
+        await row.getByRole("button", { name: texts.to }).click();
+        await row.getByLabel(texts.toLabel, { exact: true }).fill("blön");
+        await row.getByRole("button", { name: texts.blonduos }).click();
+        await row.getByRole("button", { name: texts.find, exact: true }).click();
+
+        const trip = page.getByTestId("trip-result").filter({ visible: true }).first();
+        await expect(trip).toBeVisible();
+        const map = page.getByTestId("aside").getByTestId("iceland-map");
+        await expect(map).toHaveAccessibleName(texts.map);
+        // The map stands beside the list, level with its top.
+        const list = await box(trip);
+        const drawn = await box(map);
+        const back = await box(page.getByTestId("results-heading").filter({ visible: true }));
+        expect(drawn.x).toBeGreaterThan(list.x + list.width);
+        expect(drawn.y).toBeCloseTo(back.y, 0);
+        expect(drawn.width).toBeGreaterThan(300);
+
+        // Every chip is whole and inside the list's column: none is reached
+        // by scrolling sideways.
+        const chips = page.getByTestId("chips-wrap");
+        const within = await box(chips);
+        const all = await chips.locator('[role="button"], [role="checkbox"]').all();
+        expect(all).toHaveLength(5);
+        for (const chip of all) {
+          const one = await box(chip);
+          expect(one.x).toBeGreaterThanOrEqual(within.x);
+          expect(one.x + one.width).toBeLessThanOrEqual(within.x + within.width + 1);
+        }
+        expect(within.x + within.width).toBeLessThan(drawn.x);
+        await expectNoSidewaysScroll(page);
+      });
+    }
+  });
+}
