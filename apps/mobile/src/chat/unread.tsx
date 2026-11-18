@@ -1,10 +1,12 @@
-import { myConversationsRoute } from "@shareride/contracts";
+import { myConversationsRoute, type Conversation } from "@shareride/contracts";
+import type { CallResult } from "@shareride/api-client";
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -15,26 +17,47 @@ import { reportError } from "@/lib/error-reporting";
 /** How often the web app asks again while its page is on show. */
 const webEveryMs = 60_000;
 
+/** My conversations as the server last answered: the list and the unread total. */
+interface Answered {
+  readonly unread: number;
+  readonly conversations: readonly Conversation[];
+}
+
+type ConversationsAnswer = CallResult<typeof myConversationsRoute>;
+
 interface Unread {
   /** Messages not yet read, across my conversations: the Messages badge. */
   readonly total: number;
+  /**
+   * My conversations as last answered, or null before the first answer.
+   * A list beside an open conversation shows them at once and follows
+   * each later answer (spec 18, 3.11).
+   */
+  readonly conversations: readonly Conversation[] | null;
   /** Asks the server again, as when a push arrives or a chat was read. */
   readonly refresh: () => void;
-  /** The total from an answer already in hand, such as the conversations list's. */
-  readonly show: (total: number) => void;
+  /**
+   * Asks the server, keeps the answer as `refresh` does, and returns it:
+   * for the conversations list, which shows why when it could not be
+   * loaded.
+   */
+  readonly load: () => Promise<ConversationsAnswer>;
 }
 
 const UnreadContext = createContext<Unread>({
   total: 0,
+  conversations: null,
   refresh: () => undefined,
-  show: () => undefined,
+  load: () => {
+    throw new Error("The conversations list needs an UnreadProvider above it.");
+  },
 });
 
 /**
- * The unread total for the Messages badge (spec 7, 3.1, item 9; plan 4.3).
- * Fetched once signed in, when the app comes to the front, when a push
- * arrives, and on the web every minute while the page is on show. Nothing
- * when signed out.
+ * The unread total for the Messages badge (spec 7, 3.1, item 9; plan 4.3),
+ * with the conversations the same answer lists. Fetched once signed in,
+ * when the app comes to the front, when a push arrives, and on the web
+ * every minute while the page is on show. Nothing when signed out.
  */
 export function UnreadProvider({ children }: { readonly children: ReactNode }) {
   const state = useSessionState();
@@ -42,25 +65,29 @@ export function UnreadProvider({ children }: { readonly children: ReactNode }) {
   const userId = state.status === "signedIn" ? state.me.id : null;
   // Kept with whose it is, so an answer for someone who has signed out
   // since never shows.
-  const [known, setKnown] = useState<{ userId: string; total: number } | null>(null);
-  const total = known !== null && known.userId === userId ? known.total : 0;
+  const [known, setKnown] = useState<{ userId: string; answer: Answered } | null>(null);
+  const mine = known !== null && known.userId === userId ? known.answer : null;
+  const total = mine?.unread ?? 0;
+  const conversations = mine?.conversations ?? null;
 
-  const show = useCallback(
-    (count: number) => {
-      if (userId !== null) setKnown({ userId, total: count });
-    },
-    [userId],
-  );
-  const refresh = useCallback(() => {
-    if (userId === null) return;
-    session
-      .call(myConversationsRoute, {})
-      .then((answer) => {
-        // A failed answer keeps the count shown; the next refresh tries again.
-        if (answer.ok) setKnown({ userId, total: answer.data.unread });
-      })
-      .catch(reportError);
+  // Answers come back in any order: one asked for before the answer now
+  // shown is older than it, and is not kept.
+  const asked = useRef(0);
+  const kept = useRef(0);
+  const load = useCallback(async () => {
+    asked.current += 1;
+    const turn = asked.current;
+    const answer = await session.call(myConversationsRoute, {});
+    // A failed answer keeps what is shown; the next one tries again.
+    if (answer.ok && userId !== null && turn > kept.current) {
+      kept.current = turn;
+      setKnown({ userId, answer: answer.data });
+    }
+    return answer;
   }, [session, userId]);
+  const refresh = useCallback(() => {
+    if (userId !== null) load().catch(reportError);
+  }, [load, userId]);
 
   useEffect(refresh, [refresh]);
 
@@ -83,7 +110,10 @@ export function UnreadProvider({ children }: { readonly children: ReactNode }) {
     };
   }, [refresh, userId]);
 
-  const value = useMemo(() => ({ total, refresh, show }), [total, refresh, show]);
+  const value = useMemo(
+    () => ({ total, conversations, refresh, load }),
+    [total, conversations, refresh, load],
+  );
   return <UnreadContext value={value}>{children}</UnreadContext>;
 }
 

@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { english, signUp } from "./support/account";
+import { openConversation } from "./support/laptop";
 import { postTripToSelfoss } from "./support/trips";
 
 // Spec 7's chat on the web build, in two browsers: a driver posts Mjódd to
@@ -63,8 +64,11 @@ test("the driver and passenger of a confirmed booking message each other", async
       .getByText("Pay only in the app. ShareRide never asks for card details in a chat.")
       .filter(visible),
   ).toBeVisible();
+  // On a laptop the list beside the conversation shows this line too, as
+  // the conversation's last (spec 18, 3.11).
+  const conversation = openConversation(passenger, testInfo);
   await expect(
-    passenger.getByText("Booking confirmed. You can message each other here.").filter(visible),
+    conversation.getByText("Booking confirmed. You can message each other here.").filter(visible),
   ).toBeVisible();
   await expect(passenger.getByLabel("You, Sent with the request: A small rucksack.")).toBeVisible();
   await passenger.getByLabel("Write a message").fill("Where shall I wait?");

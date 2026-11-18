@@ -1187,6 +1187,8 @@ export const is = {
     "Spjall opnast þegar bókun er staðfest. Þá getur þú skrifast á við bílstjórann eða farþegana hér.",
   "chat.failed": "Ekki tókst að sækja skilaboðin.",
   "chat.notOpenYet": "Spjallið opnast þegar bókunin er staðfest.",
+  "chat.choose": "Veldu spjall",
+  "chat.nowOpen": "Spjall: {name}",
   "chat.sentTo": "{count, plural, one {Sent til # farþega.} other {Sent til # farþega.}}",
   "chat.noPassengers":
     "Enginn fær skilaboðin: enginn farþegi er staðfestur eða spjallið við hann er lokað.",

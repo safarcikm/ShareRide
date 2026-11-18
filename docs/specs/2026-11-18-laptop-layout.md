@@ -234,17 +234,37 @@ changes on a phone.
 ### 3.11 Messages
 
 1. One card across the page with two panes. **Left**, 360 wide: "Messages"
-   and the conversations, the open one tinted `primarySoft`. **Right:** the
-   open conversation: the other person's name, the day and the stretch, then
-   Report and Block, the messages, and at the bottom the quick messages and
-   the field with Send.
+   and the conversations, the open one tinted `primarySoft` with a
+   `primary` edge at its left. **Right:** the open conversation: Back, the
+   other person's name, the day and the stretch, then Report and Block, the
+   messages, and at the bottom the quick messages and the field with Send.
+   Where the pane has no room for both, Report and Block go under the
+   name.
 2. Messages in the menu opens the list with "Choose a conversation" in the
    right pane. No conversation opens by itself, because opening one tells
-   the other person their messages were seen. With no conversations, the
-   card shows the empty text across both panes.
+   the other person their messages were seen. With no conversations, or
+   when they could not be loaded, the card shows that across both panes.
 3. Choosing a conversation changes the right pane and the address
    (`/messages/{booking}`), so Back and a shared link work as on a phone.
+   From one conversation to another, the list stays as it is and the
+   address is replaced: Back leaves the conversations, to the list or to
+   the booking the chat was opened from, and does not walk through each
+   one read (decision 12).
 4. A chat opened from a booking or a trip shows the same two panes.
+5. The card is as tall as the window allows. Each pane scrolls on its own
+   and the page does not. The conversation opens at its end and follows
+   it, as on a phone.
+6. The list is there at once, as the menu's count last fetched it, and
+   follows the open conversation: a message read there is no longer
+   counted in its row, and a message sent shows as its last. An answer
+   that comes back after a newer one is not kept. Like the count, the list
+   keeps what it knows when asking again fails; it says the conversations
+   could not be loaded only when it has none to show.
+7. "Messages" is the page's title; the open person's name heads a part of
+   it (an h2 on the web). Another row leaves the keyboard's focus on the
+   row, so a screen reader is told what opened: "Conversation with Jón".
+8. A window that turns narrow shows the conversation alone, as on a phone,
+   with what it had loaded and what was being written (3.2, 7).
 
 ### 3.12 Profile
 
@@ -314,7 +334,8 @@ in the app") keep their place in the reading order.
 | --- | ------- | --------- |
 | `post.soFar` | Your trip so far | Ferðin þín hingað til |
 | `post.soFarLater` | Step {step} | Skref {step} |
-| `chat.choose` | Choose a conversation | Veldu samtal |
+| `chat.choose` | Choose a conversation | Veldu spjall |
+| `chat.nowOpen` | Conversation with {name} | Spjall: {name} |
 | `results.mapOf` | Map of Iceland with the trip {from} → {to} | Kort af Íslandi með ferðinni {from} → {to} |
 | `nav.home` | ShareRide, to the front page | ShareRide, á forsíðu |
 
@@ -356,3 +377,4 @@ Every other text is one the app has.
 | 9 | A colour for a primary button under the pointer | New token `primaryHover` (#285C44 light, #8FD0AC dark), added to spec 15, 4.1 with its contrast check (my call) |
 | 10 | How does a card show the pointer? | Its bottom edge turns `primary`. A tint was tried first and dropped: tags and avatars on the card sit on the same tint and lost their shape (my call, 2026-11-18) |
 | 11 | What stays when a window crosses 900? | What the person typed, chose or opened to pay: that state lives above the layout, and nothing loads again. The focus and a list opened in place do not: the wide and the phone layout are different trees, and keeping those too would mean drawing every phone screen as a wide one folded up. Dragging a window across 900 in the middle of a booking is rare, and nothing is lost (my call, 2026-11-18, after the code review) |
+| 12 | How does another conversation open beside the list? | In the same place. The list keeps its scroll and the keyboard's focus on the row, the address is replaced, and Back leaves the conversations. A new entry for each one would make Back walk through every conversation read (my call, 2026-11-18) |

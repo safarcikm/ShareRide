@@ -1,4 +1,5 @@
 import { act, render, screen } from "@testing-library/react-native";
+import { useEffect } from "react";
 import { Platform, Text } from "react-native";
 import { UnreadProvider, useUnread } from "./unread";
 
@@ -20,8 +21,15 @@ jest.mock("@/auth/session", () => ({
 /** Stands in for the browser's page, which may be on show or hidden. */
 const page = { visibilityState: "visible" as DocumentVisibilityState };
 
+/** The store as the badge last read it, for a test to ask through. */
+let store: ReturnType<typeof useUnread> | undefined;
+
 function Badge() {
-  return <Text testID="total">{useUnread().total}</Text>;
+  const unread = useUnread();
+  useEffect(() => {
+    store = unread;
+  }, [unread]);
+  return <Text testID="total">{unread.total}</Text>;
 }
 
 // A new element each time, so a rerender reads the session again.
@@ -93,6 +101,36 @@ describe("The Messages count on the web", () => {
     await rerender(app());
     await act(async () => {
       answer({ ok: true, data: { conversations: [], unread: 5 } });
+      await Promise.resolve();
+    });
+    expect(screen.getByTestId("total")).toHaveTextContent("0");
+  });
+
+  it("keeps the newest answer when an older one comes back after it", async () => {
+    await render(app());
+    expect(await screen.findByText("2")).toBeTruthy();
+    const answers: ((value: unknown) => void)[] = [];
+    mockSession.manager.call.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          answers.push(resolve);
+        }),
+    );
+    // Asked twice, as by the list and then once a chat was read.
+    await act(async () => {
+      void store?.load();
+      store?.refresh();
+      await Promise.resolve();
+    });
+    expect(answers).toHaveLength(2);
+    await act(async () => {
+      answers[1]?.({ ok: true, data: { conversations: [], unread: 0 } });
+      await Promise.resolve();
+    });
+    expect(screen.getByTestId("total")).toHaveTextContent("0");
+    // The first, from before the chat was read, still counts its message.
+    await act(async () => {
+      answers[0]?.({ ok: true, data: { conversations: [], unread: 1 } });
       await Promise.resolve();
     });
     expect(screen.getByTestId("total")).toHaveTextContent("0");

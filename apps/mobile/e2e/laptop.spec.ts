@@ -1,6 +1,7 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
 import { english, signUp } from "./support/account";
 import { expectNoSidewaysScroll, laptop, widths } from "./support/laptop";
+import { postTripToSelfoss } from "./support/trips";
 
 // The web app on a laptop (spec 18): the top bar's content lines up with the
 // page, the logo opens Find, and no screen scrolls sideways at the widths a
@@ -409,5 +410,164 @@ test.describe("trip details and a request", () => {
     }
     // What was typed stays as the window changes.
     await expect(message).toHaveValue("One small bag.");
+  });
+});
+
+/**
+ * A passenger in a browser of their own signs up, asks for a seat on the
+ * driver's trip and pays once the driver has accepted, then writes to the
+ * driver from the booking.
+ */
+async function bookAndWrite(
+  browser: Browser,
+  baseURL: string | undefined,
+  driver: Page,
+  tripId: string,
+  name: string,
+  text: string,
+) {
+  const context = await browser.newContext({ viewport: laptop(1280), baseURL, locale: "en-GB" });
+  const passenger = await context.newPage();
+  await signUp(passenger, english, name);
+  await passenger.goto(`/trips/${tripId}?from=0&to=1`);
+  await passenger.getByRole("button", { name: "Send request", exact: true }).click();
+  await expect(passenger.getByRole("heading", { name: "Request this ride" })).toBeVisible();
+  await passenger
+    .getByTestId("columns-side")
+    .filter(shown)
+    .getByRole("button", { name: "Send request", exact: true })
+    .click();
+  await expect(passenger).toHaveURL(/\/bookings\/[0-9a-f-]+\/booked$/);
+  await driver.goto(`/drive/trips/${tripId}`);
+  await driver.getByRole("button", { name: "Accept", exact: true }).click();
+  await expect(driver.getByLabel(`${name}, 1 seat, Waiting for payment`)).toBeVisible();
+  await passenger.reload();
+  await passenger.getByRole("button", { name: /^Pay [\d,]+ ISK$/ }).click();
+  await passenger.getByRole("button", { name: /^Pay [\d,]+ ISK$/ }).click();
+  await expect(
+    passenger.getByText("Your seat is confirmed", { exact: true }).filter(shown),
+  ).toBeVisible();
+  await passenger.getByRole("button", { name: "Message Bára" }).click();
+  const open = passenger.getByTestId("panes-open");
+  await open.getByLabel("Write a message").fill(text);
+  await open.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(open.getByLabel(/^You, \d\d:\d\d: /)).toBeVisible();
+  return passenger;
+}
+
+// Messages (spec 18, 3.11): my conversations and the open one in two panes
+// of one card, which is as tall as the window allows.
+test.describe("Messages", () => {
+  test.use({ viewport: laptop(1280), locale: "en-GB" });
+
+  test("has my conversations beside the open one, and changes it in place", async ({
+    page: driver,
+    browser,
+  }, testInfo) => {
+    // Three people sign up, two of them book and pay.
+    test.setTimeout(120_000);
+    const { baseURL } = testInfo.project.use;
+    await signUp(driver, english, "Bára");
+    const tripId = await postTripToSelfoss(driver, "18:15");
+    const dora = await bookAndWrite(
+      browser,
+      baseURL,
+      driver,
+      tripId,
+      "Dóra",
+      "Where shall I wait?",
+    );
+
+    // A chat opened from a booking has the two panes too, with its row the
+    // current one, and the list shows what was just sent.
+    const hers = dora.getByTestId("panes-list");
+    await expect(
+      dora.getByTestId("panes-open").getByRole("heading", { name: "Bára" }),
+    ).toBeVisible();
+    await expect(hers.getByRole("button", { name: /^Bára, / })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    await expect(hers.getByText("You: Where shall I wait?")).toBeVisible();
+    const einar = await bookAndWrite(browser, baseURL, driver, tripId, "Einar", "Room for skis?");
+
+    // Messages in the menu: the list, and nothing opened by itself.
+    await driver.goto("/messages");
+    // The one on show: Messages in the menu stays under a conversation.
+    const list = driver.getByTestId("panes-list").filter(shown);
+    const open = driver.getByTestId("panes-open").filter(shown);
+    await expect(open.getByText("Choose a conversation")).toBeVisible();
+    await expect(list.getByRole("button", { name: /^Einar, .*, 1 unread$/ })).toBeVisible();
+    await list.getByRole("button", { name: /^Dóra, .*, 1 unread$/ }).click();
+    await expect(driver).toHaveURL(/\/messages\/[0-9a-f-]+$/);
+    const doras = driver.url();
+    await expect(open.getByRole("heading", { name: "Dóra" })).toBeVisible();
+    await expect(open.getByLabel(/^Dóra, \d\d:\d\d: Where shall I wait\?$/)).toBeVisible();
+    await expect(list.getByRole("button", { name: /^Dóra, / })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    // Read, so no longer counted; Einar's still is.
+    await expect(list.getByText("1 unread")).toHaveCount(1);
+
+    for (const width of widths) {
+      await driver.setViewportSize(laptop(width));
+      const card = await box(driver.getByTestId("panes").filter(shown));
+      const listBox = await box(list);
+      const openBox = await box(open);
+      expect(listBox.width).toBeCloseTo(360, 0);
+      expect(openBox.x).toBeGreaterThanOrEqual(listBox.x + listBox.width - 1);
+      expect(openBox.y).toBeCloseTo(listBox.y, 0);
+      // The card ends inside the window: the panes scroll, not the page.
+      expect(card.y + card.height).toBeLessThanOrEqual(laptop(width).height);
+      // Everything to press or write in is whole inside the open pane's
+      // width, and the field and Send are at its bottom, inside the card.
+      const parts = await open.locator('[role="button"], textarea').all();
+      expect(parts.length).toBeGreaterThan(8);
+      for (const part of parts) {
+        const one = await box(part);
+        expect(one.x).toBeGreaterThanOrEqual(openBox.x);
+        expect(one.x + one.width).toBeLessThanOrEqual(openBox.x + openBox.width + 1);
+      }
+      for (const part of [
+        open.getByLabel("Write a message"),
+        open.getByRole("button", { name: "Send", exact: true }),
+      ]) {
+        const one = await box(part);
+        expect(one.y).toBeGreaterThan(card.y + card.height / 2);
+        expect(one.y + one.height).toBeLessThanOrEqual(card.y + card.height);
+      }
+      await expectNoSidewaysScroll(driver);
+    }
+
+    // Another row shows its conversation in the same place, at its own
+    // address; the browser's Back then leaves the conversations.
+    await list.getByRole("button", { name: /^Einar, / }).click();
+    await expect(open.getByRole("heading", { name: "Einar" })).toBeVisible();
+    await expect(open.getByLabel(/^Einar, \d\d:\d\d: Room for skis\?$/)).toBeVisible();
+    await expect(driver).toHaveURL(/\/messages\/[0-9a-f-]+$/);
+    expect(driver.url()).not.toBe(doras);
+    await expect(list.getByRole("button", { name: /^Einar, / })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    await driver.goBack();
+    await expect(driver).toHaveURL(/\/messages$/);
+    await expect(driver.getByText("Choose a conversation").filter(shown)).toBeVisible();
+
+    // In Icelandic, with its longer words, at the narrowest wide window.
+    await driver.setViewportSize(laptop(widths[0]));
+    await driver.getByRole("button", { name: "Change the language to Icelandic" }).click();
+    await list.getByRole("button", { name: /^Dóra, / }).click();
+    await expect(open.getByRole("heading", { name: "Dóra" })).toBeVisible();
+    const paneBox = await box(open);
+    for (const part of await open.locator('[role="button"], textarea').all()) {
+      const one = await box(part);
+      expect(one.x).toBeGreaterThanOrEqual(paneBox.x);
+      expect(one.x + one.width).toBeLessThanOrEqual(paneBox.x + paneBox.width + 1);
+    }
+    await expectNoSidewaysScroll(driver);
+    await dora.context().close();
+    await einar.context().close();
   });
 });
