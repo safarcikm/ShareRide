@@ -56,6 +56,7 @@ export default function BlockScreen() {
       name={firstNameOf(t, otherPerson(answer.data))}
       back={back}
       block={block}
+      gone={t("booking.notFound")}
       done={{
         label: t("block.backToChat"),
         go: () => {

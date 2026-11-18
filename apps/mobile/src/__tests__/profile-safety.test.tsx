@@ -5,7 +5,13 @@ import type * as TestApp from "@/testing/app";
 import { paidBooking } from "@/testing/bookings";
 import { callsTo } from "@/testing/chat";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
-import { annaProfile, annaProfileId, annaReviews, profileApi } from "@/testing/people";
+import {
+  annaProfile,
+  annaProfileId,
+  annaReviews,
+  aProfileReview,
+  profileApi,
+} from "@/testing/people";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -92,7 +98,7 @@ describe("Report and Block on a profile (spec 9, 3.1.1 and 3.2.1)", () => {
     expect(screen).toHavePathname("/legal/community-rules");
   });
 
-  it("offers none of it on my own profile, nor when I see it as others do", async () => {
+  it("offers no Report or Block on my own profile, nor when I see it as others do", async () => {
     await renderApp(`/people/${completeMe.profileId}`, {
       me: completeMe,
       setUp: (client) => {
@@ -101,8 +107,8 @@ describe("Report and Block on a profile (spec 9, 3.1.1 and 3.2.1)", () => {
     });
     expect(await screen.findByRole("header", { name: "Sigga" })).toBeVisible();
     expect(await screen.findByText("On time and careful.")).toBeVisible();
-    expect(screen.queryByRole("button", { name: /^Report / })).toBeNull();
-    expect(screen.queryByRole("button", { name: /^Block / })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Report Sigga" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Block Sigga" })).toBeNull();
 
     await renderApp("/profile/preview", {
       me: completeMe,
@@ -111,8 +117,54 @@ describe("Report and Block on a profile (spec 9, 3.1.1 and 3.2.1)", () => {
       },
     });
     expect(await screen.findByText("On time and careful.")).toBeVisible();
-    expect(screen.queryByRole("button", { name: /^Report / })).toBeNull();
-    expect(screen.queryByRole("button", { name: /^Block / })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Report Sigga" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Block Sigga" })).toBeNull();
+  });
+
+  it("lets me report a review about me from my own profile", async () => {
+    const { client } = await renderApp(`/people/${completeMe.profileId}`, {
+      me: completeMe,
+      setUp: (fake) => {
+        profileApi(fake, [myProfile]);
+        fake.answer("/v1/reports", () => failure(500, "internal"), "post");
+      },
+    });
+    await fireEvent.press(
+      await screen.findByRole("button", { name: "Report review: Gunna, November 2026" }),
+    );
+    expect(await screen.findByRole("header", { name: "Report review" })).toBeVisible();
+    await sendReport("Offensive content");
+    expect(reportsSent(client)).toEqual([
+      { about: { kind: "review", reviewId }, category: "offensive", description: "" },
+    ]);
+  });
+
+  it("offers no Report review on a review I wrote", async () => {
+    await renderApp(`/people/${annaProfileId}`, {
+      me: completeMe,
+      setUp: (client) => {
+        profileApi(
+          client,
+          [annaProfile],
+          [
+            aProfileReview(1, { comment: "Mine.", author: { firstName: "Sigga" }, mine: true }),
+            aProfileReview(2, { comment: "Not mine.", writtenIn: "2026-09" }),
+          ],
+        );
+      },
+    });
+    expect(await screen.findByText("Mine.")).toBeVisible();
+    expect(screen.queryByRole("button", { name: /^Report review: Sigga/ })).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Report review: Gunna, September 2026" }),
+    ).toBeVisible();
+  });
+
+  it("names a former member's review as such", async () => {
+    await openProfile();
+    expect(
+      await screen.findByRole("button", { name: "Report review: A former member, October 2026" }),
+    ).toBeVisible();
   });
 
   it("reports a person from their profile, then offers to block them too", async () => {
@@ -155,7 +207,7 @@ describe("Report and Block on a profile (spec 9, 3.1.1 and 3.2.1)", () => {
   it("reports a review, named by who wrote it and when", async () => {
     const { client } = await openProfile();
     await fireEvent.press(
-      await screen.findByRole("button", { name: "Report review by Gunna, November 2026" }),
+      await screen.findByRole("button", { name: "Report review: Gunna, November 2026" }),
     );
     expect(await screen.findByRole("header", { name: "Report review" })).toBeVisible();
     expect(screen).toHaveSearchParams({ kind: "review", id: reviewId });
@@ -176,7 +228,7 @@ describe("Report and Block on a profile (spec 9, 3.1.1 and 3.2.1)", () => {
   it("says when the review can no longer be reported", async () => {
     await openProfile({ report: () => failure(404, "not_found") });
     await fireEvent.press(
-      await screen.findByRole("button", { name: "Report review by Gunna, November 2026" }),
+      await screen.findByRole("button", { name: "Report review: Gunna, November 2026" }),
     );
     await sendReport("Something else");
     expect(await screen.findByText("This can no longer be reported.")).toBeVisible();
@@ -212,6 +264,15 @@ describe("Report and Block on a profile (spec 9, 3.1.1 and 3.2.1)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Block Anna" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Block Anna" }));
     expect(await screen.findByText("We couldn't block this person. Try again.")).toBeVisible();
+
+    // Left between opening the screen and pressing: trying again would not help.
+    await openProfile({ block: () => failure(404, "not_found") });
+    await fireEvent.press(screen.getByRole("button", { name: "Block Anna" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Block Anna" }));
+    expect(
+      await screen.findByText("This profile isn't available. The person may have left ShareRide."),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Block Anna" })).toBeNull();
 
     await renderApp(`/people/${annaProfileId}/block`, {
       me: completeMe,

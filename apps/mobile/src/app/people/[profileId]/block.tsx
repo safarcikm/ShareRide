@@ -57,6 +57,7 @@ export default function BlockFromProfileScreen() {
       name={answer.data.firstName}
       back={back}
       block={block}
+      gone={t("people.notFound")}
       done={{
         label: t("block.backToProfile"),
         go: () => {

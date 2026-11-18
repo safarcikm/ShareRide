@@ -85,6 +85,8 @@ export const profileReviewSchema = z.object({
   authorRole: roleSchema,
   /** The month it was written. */
   writtenIn: yearMonthSchema,
+  /** Whether I wrote it: I cannot report my own review (spec 9, 3.1.1). */
+  mine: z.boolean(),
 });
 
 export type ProfileReview = z.infer<typeof profileReviewSchema>;

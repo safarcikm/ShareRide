@@ -39,22 +39,25 @@ export function BlockPerson({
   name,
   back,
   block,
+  gone,
   done,
 }: {
   readonly name: string;
   readonly back: ReactNode;
   readonly block: () => Promise<Blocked>;
+  /** What a "not found" means here: trying again would not help. */
+  readonly gone: string;
   readonly done: { readonly label: string; readonly go: () => void };
 }) {
   const { t } = useLanguage();
-  const [state, setState] = useState<"asking" | "blocking" | "failed">("asking");
+  const [state, setState] = useState<"asking" | "blocking" | "failed" | "gone">("asking");
   const [together, setTogether] = useState<readonly Booking[] | null>(null);
 
   async function confirm() {
     setState("blocking");
     const result = await block();
     if (result.ok) setTogether(result.data.together);
-    else setState("failed");
+    else setState(result.status === 404 ? "gone" : "failed");
   }
 
   if (together !== null) {
@@ -81,12 +84,15 @@ export function BlockPerson({
       {back}
       <Title>{t("block.title", { name })}</Title>
       <Body>{t("block.confirm")}</Body>
-      <Button
-        label={t("block.action", { name })}
-        busy={state === "blocking"}
-        onPress={() => void confirm()}
-      />
-      <Notice message={state === "failed" ? t("block.failed") : null} />
+      {/* Gone: pressing again would not help. */}
+      {state === "gone" ? null : (
+        <Button
+          label={t("block.action", { name })}
+          busy={state === "blocking"}
+          onPress={() => void confirm()}
+        />
+      )}
+      <Notice message={state === "failed" ? t("block.failed") : state === "gone" ? gone : null} />
     </Screen>
   );
 }

@@ -31,10 +31,11 @@ export type PeopleError =
 
 export interface PeopleService {
   profile(profileId: string): Promise<Result<PublicProfile, PeopleError>>;
-  /** The reviews the person was given, newest first, a page at a time. */
+  /** The reviews the person was given, newest first, a page at a time, as `viewer` reads them. */
   reviews(
     profileId: string,
     query: { readonly role?: Role | undefined; readonly before?: string | undefined },
+    viewer: string,
   ): Promise<Result<{ reviews: ProfileReview[]; more: boolean }, PeopleError>>;
 }
 
@@ -98,7 +99,7 @@ export function createPeopleService(dependencies: {
       });
     },
 
-    async reviews(profileId, query) {
+    async reviews(profileId, query, viewer) {
       const person = await personOf(profileId);
       if (person === undefined) return err({ code: "not_found" });
       const shownToAll = and(
@@ -125,6 +126,7 @@ export function createPeopleService(dependencies: {
           comment: reviews.comment,
           authorRole: reviews.authorRole,
           createdAt: reviews.createdAt,
+          authorId: reviews.authorId,
           firstName: authors.firstName,
         })
         .from(reviews)
@@ -140,6 +142,7 @@ export function createPeopleService(dependencies: {
           author: { firstName: row.firstName },
           authorRole: row.authorRole as Role,
           writtenIn: icelandDate(row.createdAt).slice(0, 7),
+          mine: row.authorId === viewer,
         })),
         more: rows.length > profileReviewsPageSize,
       });

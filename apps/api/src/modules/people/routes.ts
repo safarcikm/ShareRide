@@ -1,7 +1,7 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import { profileReviewsRoute, publicProfileRoute } from "@shareride/contracts";
 import type { Context, MiddlewareHandler } from "hono";
-import type { AppEnv } from "../../context.ts";
+import { authOf, type AppEnv } from "../../context.ts";
 import { errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
 import type { PeopleError, PeopleService } from "./service.ts";
@@ -32,7 +32,7 @@ export function registerPeopleRoutes(
   app.openapi(toOpenApiRoute(profileReviewsRoute, requireAuth), async (c) => {
     const { profileId } = validated(c, "param", profileReviewsRoute.request.params);
     const query = validated(c, "query", profileReviewsRoute.request.query);
-    const result = await service.reviews(profileId, query);
+    const result = await service.reviews(profileId, query, authOf(c).userId);
     return result.ok ? c.json(result.value, 200) : peopleError(c, result.error);
   });
 }

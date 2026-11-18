@@ -763,7 +763,7 @@ export const en = {
   "report.person": "Report {name}",
   "report.trip": "Report this trip",
   "report.review": "Report review",
-  "report.reviewLabel": "Report review by {name}, {month} {year}",
+  "report.reviewLabel": "Report review: {name}, {month} {year}",
   "report.message": "Report message",
   "report.problem": "Report a problem with this trip",
   "report.short": "Report",

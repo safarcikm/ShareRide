@@ -617,10 +617,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   another.
 - Report and Block on a profile (milestone 9, PR 9b, spec 9, 3.1.1, 3.2.1
   and 3.3.4): someone else's profile offers Report and Block, each asking
-  first on its own screen, and the community rules; each review on it
-  offers Report review, read out with its author and month. Blocking from
-  a profile lists the bookings still shared, as from a conversation, and
-  goes back to the profile. The console's report page shows a reported
+  first on its own screen, and the community rules. Each review I did not
+  write offers Report review, read out with its author and month, also on
+  my own profile, so a review about me can be reported; a profile's
+  reviews now say which are mine (`mine`). Blocking from a profile lists
+  the bookings still shared, as from a conversation, and goes back to the
+  profile; a person who left meanwhile is said to be gone. The console's report page shows a reported
   review's stars, words, author and date, and offers Hide the review while
   it is shown.
 - Reporting and blocking from a profile, API (milestone 9, PR 9a, spec 9,

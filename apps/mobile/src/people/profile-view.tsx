@@ -36,9 +36,11 @@ type Role = "driver" | "passenger";
  * A person's public profile (spec 1, 3.5; spec 8, screen 7), as anyone
  * signed in sees it: who they are, their rating and reliability figure,
  * and the reviews they were given. "See it as others do" shows the same,
- * under its own title, so the name is a heading there (`nameAs`). Someone
- * else's (`others`) also offers Report and Block, Report review on each
- * review, and the community rules (spec 9, 3.1.1, 3.2.1 and 3.3.4).
+ * under its own title, so the name is a heading there (`nameAs`). Each
+ * review I did not write offers Report review, so a review about me can
+ * be reported from my own profile too. Someone else's (`others`) also
+ * offers Report and Block, and the community rules (spec 9, 3.1.1, 3.2.1
+ * and 3.3.4).
  */
 export function ProfileView({
   profileId,
@@ -81,7 +83,7 @@ export function ProfileView({
         <RatingLine rating={profile.rating} strong />
         <ReliabilityFigure reliability={profile.reliability} />
       </Card>
-      <ProfileReviews key={profileId} profileId={profileId} reportable={others} />
+      <ProfileReviews key={profileId} profileId={profileId} />
     </>
   );
 }
@@ -232,14 +234,7 @@ type Focus = { readonly review: string } | "failure" | null;
  * The reviews the person was given, newest first, for both roles or one,
  * a page at a time (3.7.5).
  */
-function ProfileReviews({
-  profileId,
-  reportable,
-}: {
-  readonly profileId: string;
-  /** Each review offers Report review: on someone else's profile. */
-  readonly reportable: boolean;
-}) {
+function ProfileReviews({ profileId }: { readonly profileId: string }) {
   const { t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
@@ -354,7 +349,6 @@ function ProfileReviews({
             <ReviewItem
               key={review.id}
               review={review}
-              reportable={reportable}
               takesFocus={focus !== null && focus !== "failure" && focus.review === review.id}
             />
           ))}
@@ -385,11 +379,9 @@ function ProfileReviews({
 
 function ReviewItem({
   review,
-  reportable,
   takesFocus,
 }: {
   readonly review: ProfileReview;
-  readonly reportable: boolean;
   readonly takesFocus: boolean;
 }) {
   const { locale, t } = useLanguage();
@@ -412,7 +404,8 @@ function ReviewItem({
               : t("people.reviewBy.passenger", by)}
           </Text>
           {review.comment === "" ? null : <Body align="start">{review.comment}</Body>}
-          {reportable ? (
+          {/* My own review I cannot report (spec 9, 3.1.1). */}
+          {review.mine ? null : (
             <Button
               variant="text"
               label={t("report.review")}
@@ -422,7 +415,7 @@ function ReviewItem({
                 router.push({ pathname: "/report", params: { kind: "review", id: review.id } });
               }}
             />
-          ) : null}
+          )}
         </Card>
       </TakesFocus>
     </View>
