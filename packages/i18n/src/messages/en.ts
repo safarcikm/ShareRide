@@ -1309,6 +1309,10 @@ export const en = {
   "notify.pointBack": "Back in use: {date}",
   "notify.pointPausedBody": "{from} – {to} · {when}. The driver is asked to choose another stop.",
   "notify.pointPausedDriverBody": "Choose another stop for your trip: {when}.",
+  "notify.pointMoved": "Meeting point moved: {point}",
+  "notify.pointMovedBody": "{from} – {to} · {when}. See where it is now before you go.",
+  "notify.pointMovedDriverBody":
+    "Your trip stops there: {when}. See where it is now before you go.",
   "notify.unpaid": "Seat not paid for in time",
   "notify.unpaidDriver": "Not paid for in time: {name}",
   "notify.cancelledByDriver": "The driver cancelled: {reason}",
@@ -1638,6 +1642,8 @@ export const en = {
   "export.value.kind.refund_issued": "Refund",
   "export.value.kind.meeting_point_changed": "Meeting point changed",
   "export.value.kind.meeting_point_changed_driver": "Meeting point changed, as the driver",
+  "export.value.kind.meeting_point_moved": "Meeting point moved",
+  "export.value.kind.meeting_point_moved_driver": "Meeting point moved, as the driver",
   "export.value.kind.new_message": "New message",
   "export.value.kind.unread_messages": "Unread messages",
   "export.value.kind.reminder_evening": "Reminder the evening before",
@@ -1916,7 +1922,7 @@ export const en = {
     "Paste them from Google Maps, Apple Maps or OpenStreetMap, such as 64.1371, -21.9337.",
   "admin.meetingPoint.spotReads": "Reads as {latitude}, {longitude}",
   "admin.meetingPoint.spotLocked":
-    "Only a draft's spot is changed here. Moving a meeting point in use is its own step.",
+    "Only a draft's spot is changed here. To move a point in use, choose Move under In use.",
   "admin.meetingPoint.openInMaps": "Check it on OpenStreetMap",
   "admin.meetingPoint.municipality": "Municipality",
   "admin.meetingPoint.choose": "Choose",
@@ -1972,7 +1978,7 @@ export const en = {
   "admin.meetingPoint.issue.inFuture": "This day has not come yet.",
   "admin.meetingPoint.issue.needsShelter": "Tick Shelter under the amenities first.",
   "admin.meetingPoint.issue.moveNeeded":
-    "Only a draft's spot is changed here. Moving a meeting point in use is its own step.",
+    "Only a draft's spot is changed here. To move a point in use, choose Move under In use.",
   "admin.disputes.title": "Disputes",
   "admin.disputes.intro":
     "Trip-day reports that the other side said weren't right. Read what the system knows, then decide. Both sides are told, and the decision is final in the app.",
@@ -2409,6 +2415,23 @@ export const en = {
   "admin.meetingPoint.retired": "{name} is retired.",
   "admin.meetingPoint.statusFailed": "The status could not be changed. Try again.",
   "admin.meetingPoint.activated": "{name} is active. Drivers can choose it for new trips.",
+  "admin.meetingPoint.move": "Move",
+  "admin.meetingPoint.newSpot": "New spot: coordinates or a map link",
+  "admin.meetingPoint.moveIntro":
+    "Its distances to every point in use are computed again, which can take a few seconds. If it moves more than 50 m, the drivers of its upcoming trips, and the passengers who get in or out here, are told.",
+  "admin.meetingPoint.moveFar":
+    "{metres} m from where it is now, so those on {count, plural, one {# upcoming trip} other {# upcoming trips}} are told.",
+  "admin.meetingPoint.moveFarNoTrips":
+    "{metres} m from where it is now. No upcoming trip stops here, so nobody is told.",
+  "admin.meetingPoint.moveNear": "{metres} m from where it is now: within 50 m, so nobody is told.",
+  "admin.meetingPoint.moveConfirm": "Move {name}",
+  "admin.meetingPoint.moving": "Moving {name}…",
+  "admin.meetingPoint.keepWhereItIs": "Keep it where it is",
+  "admin.meetingPoint.moved":
+    "{name} is moved {metres} m, and its distances are computed again. {count, plural, =0 {Nobody is told.} one {The driver of # trip, and its passengers who get in or out here, are told.} other {The drivers of # trips, and their passengers who get in or out here, are told.}}",
+  "admin.meetingPoint.moveFailed": "The point could not be moved. Try again.",
+  "admin.meetingPoint.issue.samePlace": "The point is here already.",
+  "admin.meetingPoint.issue.noRoad": "No road within 1 km of this spot reaches the points in use.",
   "admin.activation.title": "Activation checklist",
   "admin.activation.fromSaved": "The checklist is of what is saved. Save your changes first.",
   "admin.activation.item.details": "Name, place, type, region and municipality",

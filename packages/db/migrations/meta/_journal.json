@@ -309,6 +309,13 @@
       "when": 1794963720585,
       "tag": "0043_reliability_overrules",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1794965090635,
+      "tag": "0044_meeting_point_moved",
+      "breakpoints": true
     }
   ]
 }

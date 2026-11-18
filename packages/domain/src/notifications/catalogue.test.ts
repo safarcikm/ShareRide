@@ -75,6 +75,14 @@ describe("who is told about each event (spec 7, 3.3)", () => {
         { kind: "meeting_point_changed", to: "passenger" },
       ],
     ],
+    // Moved more than 50 m (spec 2, R2.10): the same people as a pause.
+    [
+      { type: "MeetingPointMoved" },
+      [
+        { kind: "meeting_point_moved_driver", to: "driver" },
+        { kind: "meeting_point_moved", to: "passenger" },
+      ],
+    ],
     [{ type: "MessageSent", to: "driver" }, [{ kind: "new_message", to: "driver" }]],
     [{ type: "MessageSent", to: "passenger" }, [{ kind: "new_message", to: "passenger" }]],
     [{ type: "UnreadMessages", to: "passenger" }, [{ kind: "unread_messages", to: "passenger" }]],
@@ -153,6 +161,8 @@ describe("the channels of each kind (spec 7, 3.3 and 3.4)", () => {
     ["refund_issued", false, "always", false],
     ["meeting_point_changed", true, "always", true],
     ["meeting_point_changed_driver", true, "always", false],
+    ["meeting_point_moved", true, "always", true],
+    ["meeting_point_moved_driver", true, "always", false],
     ["new_message", true, "never", false],
     ["unread_messages", false, "fallback", false],
     ["reminder_evening", true, "fallback", false],
@@ -277,7 +287,12 @@ describe("how one person is reached (spec 7, 3.3, 3.4 and 3.7)", () => {
   });
 
   it("never sends a driver an SMS (R7.10), even for a kind that has one", () => {
-    for (const kind of ["meeting_point_changed", "meeting_point_changed_driver"] as const) {
+    for (const kind of [
+      "meeting_point_changed",
+      "meeting_point_changed_driver",
+      "meeting_point_moved",
+      "meeting_point_moved_driver",
+    ] as const) {
       const driver = channels(kind, { role: "driver" }, hoursBefore(2));
       expect(driver.map((decision) => decision.channel)).toEqual(["push", "email"]);
     }
@@ -363,11 +378,13 @@ describe("stillApplies", () => {
   });
 
   it("tells a passenger about their meeting point only while the booking holds a seat (spec 2, 3.6.4)", () => {
-    for (const status of ["accepted", "confirmed"] as const) {
-      expect(stillApplies("meeting_point_changed", status)).toBe(true);
-    }
-    for (const status of ["requested", "cancelled", "expired", "completed"] as const) {
-      expect(stillApplies("meeting_point_changed", status)).toBe(false);
+    for (const kind of ["meeting_point_changed", "meeting_point_moved"] as const) {
+      for (const status of ["accepted", "confirmed"] as const) {
+        expect(stillApplies(kind, status)).toBe(true);
+      }
+      for (const status of ["requested", "cancelled", "expired", "completed"] as const) {
+        expect(stillApplies(kind, status)).toBe(false);
+      }
     }
   });
 

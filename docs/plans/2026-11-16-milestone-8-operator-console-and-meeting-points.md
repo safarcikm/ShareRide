@@ -359,8 +359,9 @@ notification kinds).
 - [x] 12a: `activationChecklist`; the checklist and activating a draft
       with its legs in the API; the checklist and Activate on a draft's
       page in the console
-- [ ] 12b: `movedFar`; moving a point in use with its legs, and the
-      notifications of a move
+- [x] 12b: `pointMovedFar` (`movedFar` was taken by booking changes);
+      moving a point in use with its legs, and the notifications of a
+      move (migration 0044); Move in the console's "In use" panel
 - Verify: domain tests; integration tests (activating a draft that is
   not ready and one that is; a move under and over 50 m); a browser
   journey for each

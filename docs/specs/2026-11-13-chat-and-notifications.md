@@ -145,6 +145,17 @@ or once the booking no longer stops there. A point retired while paused
 is told as "Meeting point no longer in use: N1 Fitjar", without a day it
 is back.
 
+As built for a moved meeting point (milestone 8, PR 12b): moved more than
+50 m (spec 2, R2.10), "Meeting point moved: N1 Fitjar", with "See where it
+is now before you go." The driver of each trip still to stop there is
+told once per trip, with the trip's time there, by push and email. Each
+passenger whose accepted or confirmed booking gets in or out there is
+told once, with their part and boarding time, and by SMS within 24 hours
+of boarding, the same SMS as a pause. The trip itself is not changed: the
+stop is the same point, in its new place. Nothing goes after the trip has
+passed the point, or once the booking no longer stops there. A move
+within 50 m tells nobody.
+
 ### 3.4 SMS for last-minute news
 
 SMS is only for sign-in codes (spec 1) and for news that could leave someone

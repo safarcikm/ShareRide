@@ -9,3 +9,4 @@ export * from "./photos.ts";
 export * from "./import.ts";
 export * from "./issues.ts";
 export * from "./activation.ts";
+export * from "./move.ts";
