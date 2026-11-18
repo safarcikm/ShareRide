@@ -14,6 +14,7 @@ import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { editHref, type TripToChange } from "./change-screen";
 import { TripHeading } from "./changes";
+import { limitUsedText } from "./limit";
 
 export function Lines({ lines }: { readonly lines: readonly string[] }) {
   const palette = usePalette();
@@ -57,6 +58,25 @@ export function ForPassengers({
         </>
       )}
     </Card>
+  );
+}
+
+/**
+ * When the stop leaves the trip less room under its limit, the check says
+ * the level falls and every stretch's price with it (spec 17, section 7).
+ */
+export function LevelLowered({
+  effect,
+}: {
+  readonly effect: Pick<TripChangeEffect, "priceLevel" | "priceLevelLowered">;
+}) {
+  const { t } = useLanguage();
+  if (!effect.priceLevelLowered) return null;
+  return (
+    <>
+      <Notice kind="info" message={limitUsedText(t, effect.priceLevel)} />
+      <Body align="start">{t("trip.price.stopLowersAll")}</Body>
+    </>
   );
 }
 

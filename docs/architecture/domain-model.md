@@ -123,10 +123,11 @@ rules are in `packages/domain/src/meeting-points/issues.ts`.
 ### Leg
 
 `from_meeting_point_id`, `to_meeting_point_id`, `distance_m`, `duration_s`,
-`computed_at`, `source` (routing engine and data version, or the sample road
-graph for the sample points). Directional:
-A→B and B→A are separate legs because routes can differ. Computed for every
-ordered pair of active meeting points connected by road.
+`computed_at`, `source` ("road file " and the map data's date, from our
+own road file, ADR 0031; or the sample road graph for the sample points).
+Directional: A→B and B→A are separate legs because routes can differ.
+Computed for every ordered pair of meeting points in service (active,
+paused or retiring) connected by road.
 
 ### Trip
 
@@ -369,7 +370,10 @@ Enforced in the domain package and, where possible, in the database too.
 11. A booking never takes a trip past its limit: what its bookings pay or
     paid the driver, less refunds, stays within the sum over its segments
     of capacity times cap (rule P3, spec 17). The limit and the takings are
-    computed from segments and bookings, not stored.
+    computed from segments and bookings, not stored. Seats added, a stop
+    added or removed, a no-show or a late cancellation lower the trip's
+    price level when what is booked would otherwise leave a full car over
+    it.
 
 ## Trip lifecycle
 

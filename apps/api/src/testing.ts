@@ -16,6 +16,7 @@ import { createFileCipher, createKeyedHasher } from "./platform/crypto.ts";
 import { createFakeEmailSender, type FakeEmailSender } from "./platform/email.ts";
 import { createTestPaymentProvider } from "./platform/payments.ts";
 import { createFakePhotoStorage, type FakePhotoStorage } from "./platform/photo-storage.ts";
+import { createStraightLineRouter } from "./platform/router.ts";
 import { createDevSmsSender, type DevSmsSender, type SmsSender } from "./platform/sms.ts";
 
 export interface TestApi {
@@ -102,6 +103,8 @@ export async function startTestApi(): Promise<TestApi> {
     payments: createTestPaymentProvider(),
     adminOrigin: testAdminOrigin,
     photos,
+    // Legs on straight lines; south of 63.3° N, at sea off the south coast, there is no road.
+    router: createStraightLineRouter({ offRoad: (position) => position.latitude < 63.3 }),
   };
   const app = createApp({
     logger,

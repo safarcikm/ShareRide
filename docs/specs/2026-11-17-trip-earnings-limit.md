@@ -1,8 +1,8 @@
 # Spec 17: A limit on what one trip brings the driver
 
-**Owner:** Martin · **Date:** 2026-11-17 · **Status:** Approved
-(2026-11-17); being built: the booking check is in, the price level
-follows next, see the
+**Owner:** Martin · **Date:** 2026-11-17 · **Status:** Approved and
+built (2026-11-17), except the payout hold, which comes with payouts in
+milestone 15; see the
 [implementation plan](../plans/2026-11-17-trip-earnings-limit.md)
 
 Decision record: [ADR 0030](../decisions/0030-limit-what-a-whole-trip-brings-the-driver.md)
@@ -146,6 +146,10 @@ The same examples with the rule:
   freed seats can still be offered, but only free (0%).
 - A driver at the suggested level is hardly ever touched: with 3 seats, 1
   booking at 100% and a no-show, the highest level is still 210%.
+- On a trip under way, the free seats on stretches already driven count
+  too, although nobody can book them any more. That leaves the seats ahead
+  a little cheaper than the limit needs, and never lets the trip past it
+  (A50).
 
 Why C over the others: it keeps the price a passenger sees fixed when they
 book, it needs no refunds, it builds on the price level drivers already
@@ -186,9 +190,15 @@ L_max   = highest step L, at or below today's L_max for the capacity, with
 
 - With no bookings, `L_max` is exactly today's.
 - When something lowers `L_max` below the trip's level (more seats, a
-  no-show, a late cancellation, a stop added), the level is lowered to it
-  for new bookings and the driver is told, as more seats do today. If
-  nothing fits, `L_max` is 0%: the free seats can still be booked, free.
+  no-show, a late cancellation, a stop added or removed), the level is
+  lowered to it for new bookings. A change the driver makes says so on its
+  check, before saving, as more seats do today; after a no-show or a
+  cancellation the driver sees the new level on the trip, with no message
+  yet. If nothing fits, `L_max` is 0%: the free seats can still be booked,
+  free.
+- A booking made before the driver raised the level gives back less than
+  its seats now cost, so a refund, a decline or a withdrawal can lower
+  `L_max` too, and is refitted the same way.
 - Taking money back never happens: bookings keep their price whatever
   changes.
 
@@ -219,12 +229,15 @@ L_max   = highest step L, at or below today's L_max for the capacity, with
 
 ## 9. Screens
 
-- **Price screen (spec 3, 3.6) and Edit trip, price (spec 6):** when the
-  trip limit, not the seats, sets the highest level, the screen says why:
-  "Passengers have already paid most of this trip's limit, so the seats
-  left can cost at most 120%."
+- **Price screen (spec 3, 3.6) and Edit trip, price and seats (spec 6):**
+  when the trip limit, not the seats, sets the highest level, the screen
+  says why: "What passengers have already booked counts towards this
+  trip's limit, so the seats left can cost at most 120%."
+- **Edit trip, a stop added or removed (spec 6):** when the stop lowers the
+  level, its check says so with the same sentence, and that saving lowers
+  the price of every stretch for new bookings.
 - **"Why is there a limit?"** adds one sentence: the limit is for the whole
-  trip, so money already paid counts.
+  trip, so what passengers have already booked counts.
 - **Passengers:** their price is fixed when they book. A booking the limit
   refuses says so and leads back to the trip; once the level follows the
   limit this only happens in a race with a change, as a seat taken does.
@@ -249,8 +262,10 @@ L_max   = highest step L, at or below today's L_max for the capacity, with
 
 | Key | English | Íslenska |
 | --- | ------- | -------- |
-| `trip.price.limitUsed` | Passengers have already paid most of this trip's limit, so the seats left can cost at most {level}. | Farþegar hafa þegar greitt stóran hluta af hámarki ferðarinnar, svo sætin sem eftir eru mega kosta mest {level}. |
-| `trip.price.whyLimit.trip` | The limit is for the whole trip, so what passengers have already paid counts towards it. | Hámarkið gildir fyrir alla ferðina, svo það sem farþegar hafa þegar greitt telst með. |
+| `trip.price.limitUsed` | What passengers have already booked counts towards this trip's limit, so the seats left can cost at most {level}%. | Það sem farþegar hafa þegar bókað telst upp í hámark ferðarinnar, svo sætin sem eftir eru mega kosta mest {level}%. |
+| `trip.price.limitUsedFree` | What passengers have already booked uses up this trip's limit, so the seats left are free. | Það sem farþegar hafa þegar bókað fyllir hámark ferðarinnar, svo sætin sem eftir eru kosta ekkert. |
+| `trip.price.whyLimit.trip` | The limit is for the whole trip, so what passengers have already booked counts towards it. | Hámarkið gildir fyrir alla ferðina, svo það sem farþegar hafa þegar bókað telst með. |
+| `trip.price.stopLowersAll` | Saving lowers the price of every stretch for new bookings. | Við vistun lækkar verð allra leggja fyrir nýjar bókanir. |
 | `booking.tripLimitReached` | This trip can't take this booking right now. Go back and try fewer seats or a shorter part of the trip. | Þessi ferð getur ekki tekið við þessari bókun núna. Farðu til baka og prófaðu færri sæti eða styttri hluta ferðarinnar. |
 
 ## 12. Testing

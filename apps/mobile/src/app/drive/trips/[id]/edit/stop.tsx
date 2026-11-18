@@ -14,7 +14,7 @@ import { TakesFocus } from "@/components/takes-focus";
 import { Heading } from "@/components/text";
 import { editHref, WithTripToChange, type TripToChange } from "@/driver-trip/change-screen";
 import { refusalText, timeLines, TripHeading, tripHref } from "@/driver-trip/changes";
-import { ForPassengers, Lines, Refused } from "@/driver-trip/stop-parts";
+import { ForPassengers, LevelLowered, Lines, Refused } from "@/driver-trip/stop-parts";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { typography } from "@/theme/tokens";
@@ -219,6 +219,7 @@ function Preview({
           )}
         />
       </Card>
+      <LevelLowered effect={effect.data} />
       <ForPassengers told={told} requests={requests} stop="added" />
       {notice === null ? null : (
         <TakesFocus key={notice}>
