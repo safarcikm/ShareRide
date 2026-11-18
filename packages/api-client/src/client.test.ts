@@ -58,6 +58,41 @@ describe("createApiClient().call", () => {
     expect(headers.get("content-type")).toBe("application/json");
   });
 
+  // The API takes a POST, PUT or PATCH only as JSON, so that no form on
+  // another page can send one with the person's cookies.
+  it("sends an empty JSON body with a change that has none, so the API takes it", async () => {
+    const endRoute = defineRoute({
+      method: "post",
+      path: "/v1/items/{id}/end",
+      summary: "End an item",
+      tags: ["test"],
+      auth: true,
+      request: { params: z.object({ id: z.string() }) },
+      responses: { 204: { description: "Ended" } },
+    });
+    const { fetch, sent } = fakeFetch(() => new Response(null, { status: 204 }));
+    const client = createApiClient({ baseUrl: "http://api.test", fetch });
+    await client.call(endRoute, { params: { id: "1" } });
+    expect(sent[0]?.init.method).toBe("POST");
+    expect(sent[0]?.init.body).toBe("{}");
+    expect(new Headers(sent[0]?.init.headers).get("content-type")).toBe("application/json");
+  });
+
+  it("sends no body with a read", async () => {
+    const readRoute = defineRoute({
+      method: "get",
+      path: "/v1/items",
+      summary: "The items",
+      tags: ["test"],
+      responses: { 204: { description: "None" } },
+    });
+    const { fetch, sent } = fakeFetch(() => new Response(null, { status: 204 }));
+    const client = createApiClient({ baseUrl: "http://api.test", fetch });
+    await client.call(readRoute, {});
+    expect(sent[0]?.init.body).toBeUndefined();
+    expect(new Headers(sent[0]?.init.headers).get("content-type")).toBeNull();
+  });
+
   it("leaves out empty query parameters", async () => {
     const { fetch, sent } = fakeFetch(() => new Response(null, { status: 204 }));
     const client = createApiClient({ baseUrl: "http://api.test", fetch });

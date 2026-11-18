@@ -1303,6 +1303,12 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Ending an invite code, sending an announcement to yourself and sending
+  it to everyone work in the operator console. The API takes a change
+  only as JSON, and the API client sent no JSON body for a change that
+  has nothing to say, so the real console got "unsupported media type"
+  for these three. The client now sends an empty JSON body with every
+  change.
 - A request accepted, or a departure moved, in the seconds after bookings
   and payments are paused or opened again gets the payment deadline that
   goes with the switch as it is. The pause was read from a value up to 5

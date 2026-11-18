@@ -93,6 +93,9 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
+/** The methods the API takes only with a JSON body. */
+const changingMethods: ReadonlySet<string> = new Set(["post", "put", "patch"]);
+
 /**
  * A client for the API whose requests and replies are typed from the
  * contracts in `@shareride/contracts`, and whose replies are checked against
@@ -110,7 +113,10 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
     if (input.accessToken !== undefined)
       headers.set("authorization", `Bearer ${input.accessToken}`);
     const init: RequestInit = { method: route.method.toUpperCase(), headers };
-    if (route.request?.body !== undefined) {
+    // The API takes a change only as JSON (it refuses anything else with
+    // 415, so no form on another page can send one), also when the route
+    // has nothing to say in the body.
+    if (route.request?.body !== undefined || changingMethods.has(route.method)) {
       headers.set("content-type", "application/json");
       init.body = JSON.stringify(values["body"] ?? {});
     }
