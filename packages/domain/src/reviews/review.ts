@@ -147,3 +147,11 @@ export function ratingOf(reviews: readonly RatedReview[]): {
   const sum = shown.reduce((total, review) => total + review.rating, 0);
   return { average: Math.round((sum / shown.length) * 10) / 10, count: shown.length };
 }
+
+/**
+ * A rating of 1 or 2 asks "Did something go wrong?" and offers a report
+ * (spec 8, 3.7.4; spec 9).
+ */
+export function asksWhatWentWrong(rating: number): boolean {
+  return rating <= 2;
+}

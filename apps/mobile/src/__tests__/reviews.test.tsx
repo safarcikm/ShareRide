@@ -304,6 +304,90 @@ describe("the rate screen (spec 8, screen 6; R8.8)", () => {
   });
 });
 
+describe("a low rating (spec 8, 3.7.4)", () => {
+  const wentWrong = "Did something go wrong?";
+  const reportProblem = { name: "Report a problem with this trip" } as const;
+  // Monday morning, within 24 hours of the trip, when a problem with it can
+  // still be reported (R9.1); by Tuesday noon it can't.
+  const nextMorning = new Date("2026-11-16T09:00:00Z");
+
+  it("asks whether something went wrong after 1 or 2 stars, and offers a report on the trip", async () => {
+    mockNow = nextMorning;
+    const booking = completedBooking();
+    const { client } = await open(booking, ratePage(booking));
+    await fireEvent.press(await screen.findByRole("radio", { name: "3 stars" }));
+    expect(screen.queryByText(wentWrong)).toBeNull();
+    await fireEvent.press(screen.getByRole("radio", { name: "2 stars" }));
+    expect(screen.getByText(wentWrong)).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", reportProblem));
+    expect(screen).toHavePathname("/report");
+    expect(screen).toHaveSearchParams({ kind: "booking", id: booking.id });
+    expect(bodiesOf(client)).toEqual([]);
+  });
+
+  it("offers to report the person once a problem with the trip can no longer be reported", async () => {
+    const booking = { ...completedBooking(), problemReportable: false };
+    await open(booking, ratePage(booking));
+    await fireEvent.press(await screen.findByRole("radio", { name: "1 star" }));
+    expect(screen.getByText(wentWrong)).toBeVisible();
+    expect(screen.queryByRole("button", reportProblem)).toBeNull();
+    await fireEvent.press(screen.getByRole("button", { name: "Report Anna" }));
+    expect(screen).toHavePathname("/report");
+    expect(screen).toHaveSearchParams({ kind: "user", id: booking.id });
+  });
+
+  it("keeps a review not yet sent on coming back from the report", async () => {
+    mockNow = nextMorning;
+    await open(completedBooking(), ratePage(completedBooking()));
+    await fireEvent.press(await screen.findByRole("radio", { name: "2 stars" }));
+    const comment = "Late and in a hurry.";
+    await fireEvent.changeText(
+      screen.getByLabelText("Tell others what it was like (optional)"),
+      comment,
+    );
+    await fireEvent.press(screen.getByRole("button", reportProblem));
+    expect(await screen.findByRole("header", reportProblem)).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("radio", { name: "2 stars" })).toBeChecked();
+    expect(screen.getByLabelText("Tell others what it was like (optional)")).toHaveProp(
+      "value",
+      comment,
+    );
+    expect(screen.getByText(wentWrong)).toBeVisible();
+  });
+
+  it("offers the driver a report on a passenger they rate low", async () => {
+    const gunna = {
+      ...completedRider("0190a1d6-0000-7000-8000-0000000000c1", "Gunna"),
+      problemReportable: false,
+    };
+    await open(gunna, ratePage(gunna));
+    await fireEvent.press(await screen.findByRole("radio", { name: "1 star" }));
+    expect(screen.getByText(wentWrong)).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Report Gunna" }));
+    expect(screen).toHavePathname("/report");
+    expect(screen).toHaveSearchParams({ kind: "user", id: gunna.id });
+  });
+
+  it("asks again once a low review is sent", async () => {
+    mockNow = nextMorning;
+    await open(completedBooking(), ratePage(completedBooking()));
+    await fireEvent.press(await screen.findByRole("radio", { name: "1 star" }));
+    await fireEvent.press(screen.getByRole("button", send));
+    expect(await screen.findByText("Review sent. Thank you.")).toBeVisible();
+    expect(screen.getByText(wentWrong)).toBeVisible();
+    expect(screen.getByRole("button", reportProblem)).toBeVisible();
+  });
+
+  it("does not ask once a review of 3 stars or more is sent", async () => {
+    await open(completedBooking(), ratePage(completedBooking()));
+    await fireEvent.press(await screen.findByRole("radio", { name: "3 stars" }));
+    await fireEvent.press(screen.getByRole("button", send));
+    expect(await screen.findByText("Review sent. Thank you.")).toBeVisible();
+    expect(screen.queryByText(wentWrong)).toBeNull();
+  });
+});
+
 describe("the driver rates each passenger (spec 8, 3.7)", () => {
   const tripId = completedRider("x", "Gunna").trip.id;
   const completedTrip: MyTrip = {

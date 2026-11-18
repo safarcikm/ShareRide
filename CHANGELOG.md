@@ -615,6 +615,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   waiting with the action and its report, and the answer asks once more as
   it is final. A browser journey closes one report and suspends from
   another.
+- The console's Users and Trips pages (milestone 9, PR 8b, spec 9, 3.5 and
+  3.4.5): find a person by first name, phone number, email or ID without
+  it entering the address, and each driver's request decline rate with the
+  reasons; a person's page with their account, cars, trips, bookings,
+  reports, actions and notes, where the operator warns, suspends or
+  reinstates them and adds a note; the trips from today on, found by day,
+  stop or ID, and a trip's page with every booking and request and why
+  one was declined. A report's page links to each person's page. A
+  browser journey finds a person, adds a note and reinstates them.
 - The console's users and trips API (milestone 9, PR 8a, spec 9, 3.5 and
   3.4.5): find people by first name, phone number, email or ID, and trips
   by day, place, driver or a trip's or booking's ID; a person's page with
@@ -800,6 +809,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   cancellations excused by a weather or road-closure reason, each made to
   count or undone with a note on its card, and the people below 80% with
   their counts by role. Texts in Icelandic and English.
+- "Did something go wrong?" after a low rating (milestone 7, PR 6c, spec 8,
+  3.7.4): a rating of 1 or 2 on the rate screen, before and after it is
+  sent, offers a report: a problem with the trip until 24 hours after it,
+  then the person. Texts in Icelandic and English.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and
@@ -1075,6 +1088,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   and the most testers; the console's Settings page, where a change needs
   a reason, shows what it does first and lands in the history; and
   `GET /v1/config` for the apps.
+- Spec 18 (approved) and its plan: the web app on a laptop. From 900 wide,
+  every main screen gets two columns or a grid in a page 1144 wide, under
+  the top bar; phones keep their layouts.
 
 ### Fixed
 

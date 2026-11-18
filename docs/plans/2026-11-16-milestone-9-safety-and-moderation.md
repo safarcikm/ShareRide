@@ -1,7 +1,9 @@
 # Milestone 9 plan: safety and moderation
 
-**Owner:** Martin · **Date:** 2026-11-16 · **Status:** In progress; the
-choices in section 3 accepted by Martin on 2026-11-16 as recommended
+**Owner:** Martin · **Date:** 2026-11-16 · **Status:** Built; the
+choices in section 3 accepted by Martin on 2026-11-16 as recommended; every
+PR merged (#93 to #144, and 8b, on 2026-11-18); a screen reader pass and
+Martin's steps in [section 7](#7-martins-steps) to do
 
 Lets people get help fast, tell someone where they are going, keep away
 from someone, and report bad behaviour knowing it will be looked at. Gives
@@ -422,7 +424,7 @@ Split in two, as PR 7 was: 8a the API, 8b the pages.
       place, driver or a trip's or booking's ID, a trip's page with its
       bookings and requests, and `GET /admin/v1/decline-rates`;
       `checkOperatorNote`, `requestAnswer` and `declineRates` in the domain
-- [ ] 8b: Users and Trips pages in the console: search, a person's page
+- [x] 8b: Users and Trips pages in the console: search, a person's page
       with Suspend, Reinstate and Add note, a trip's page, and the decline
       rates
 - Verify: integration tests (search by name, phone, email and ID; every
@@ -440,6 +442,12 @@ Split in two, as PR 7 was: 8a the API, 8b the pages.
   ratings, reliability and payments on a person's page: reviews, ratings
   and reliability join it with milestone 7's profiles, and payments with
   the payments milestone (spec 13).
+- Found while building (8b): a person's page acts through the report
+  page's panel, without a report; it offers hiding About you only while
+  they have one shown. A report's page links to each person's page. Trips
+  by driver (3.5.1) are reached from a person's page, "All trips they
+  drive". A failed reload after an action keeps the page and what the
+  action said, so the operator never sends it twice.
 
 ### Afterwards, with milestone 7
 

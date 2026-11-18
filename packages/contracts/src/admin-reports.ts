@@ -69,6 +69,8 @@ export const adminStopSchema = z.object({
   plannedAt: timestampSchema.nullable(),
 });
 
+export type AdminStop = z.infer<typeof adminStopSchema>;
+
 /** A trip one of the people drove or booked, latest first. */
 export const adminRecentTripSchema = z.object({
   tripId: z.uuid(),

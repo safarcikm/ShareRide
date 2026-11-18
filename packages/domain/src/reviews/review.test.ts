@@ -1,6 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
+  asksWhatWentWrong,
   checkReview,
   defaultReviewSettings as settings,
   isRevealed,
@@ -189,5 +190,11 @@ describe("the rating on a profile (spec 8, 3.7.5)", () => {
         expect(ratingOf([...reviews, { ...extra, hidden: true }])).toEqual(rating);
       }),
     );
+  });
+});
+
+describe("a low rating (spec 8, 3.7.4)", () => {
+  it("asks whether something went wrong after 1 or 2 stars only", () => {
+    expect([1, 2, 3, 4, 5].map(asksWhatWentWrong)).toEqual([true, true, false, false, false]);
   });
 });
