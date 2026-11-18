@@ -411,7 +411,11 @@ export const publishTripRoute = defineRoute({
     404: notMine,
     409: notDraft,
     422: { description: "trip_not_publishable: what to fix, in details", ...errors },
-    503: distancesPending,
+    503: {
+      description:
+        "distances_pending: the distances are being worked out, try again soon; trips_paused: posting trips is paused for a short while (spec 10, 3.3)",
+      ...errors,
+    },
   },
 });
 
@@ -604,6 +608,10 @@ export const copyTripRoute = defineRoute({
     404: notMine,
     422: {
       description: "too_few_stops: fewer than two of the trip's meeting points are still in use",
+      ...errors,
+    },
+    503: {
+      description: "trips_paused: posting trips is paused for a short while (spec 10, 3.3)",
       ...errors,
     },
   },

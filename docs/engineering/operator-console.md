@@ -652,6 +652,24 @@ version }` with the version the page loaded: it takes a lock on the
   status and kind with how many are new, links to the account, shows the
   picture only after "Show the screenshot" (each look is audited), sets
   the status and sends the one reply.
+- Switches for emergencies (spec 10, 3.3; R10.5): six settings of the
+  group `switches`, first on the Settings page, each changed with a
+  reason like any other, with the audit entry `switch.changed`. Off
+  refuses only what is new, with 503: `signups_open` a number with no
+  account (`signups_paused`; the text-message code is kept),
+  `trips_open` publishing and posting again (`trips_paused`),
+  `bookings_open` a new booking, request or payment (`bookings_paused`),
+  `sms_sending` a sign-in or confirm code (`sms_paused`). `GET
+  /v1/config` lists them in `paused` for the app's banners. Turning
+  `bookings_open` moves the payment deadlines in the same transaction
+  (`bookings/pause.ts`): to the booking cut-off as the pause starts, and
+  to the payment window from its end, so no booking runs out while
+  nobody can pay. The notification worker leaves a paused channel's
+  deliveries queued, sends them when it is back on, and skips as
+  `paused_too_long` what was queued before that and is more than 60
+  minutes old. A switch off for an hour sends every operator
+  `switch_still_off` by push and email, naming all that are off, and
+  again each day.
 - The console's Invite codes page (`apps/admin/src/pages/invite-codes/`)
   shows the places left, a form for a new group code (it works through the
   end of the chosen day) and each code with its uses; ending one asks

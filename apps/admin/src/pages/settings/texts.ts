@@ -10,6 +10,7 @@ import { formatCount, type Locale, type MessageKey, type Translate } from "@shar
 export const settingsPath = "/admin/settings";
 
 export const groupKeys = {
+  switches: "admin.settings.group.switches",
   beta: "admin.settings.group.beta",
 } as const satisfies Record<SettingGroup, MessageKey>;
 
@@ -20,6 +21,30 @@ interface SettingTexts {
 }
 
 const settingTexts = {
+  signups_open: {
+    name: "admin.settings.name.signups_open",
+    help: "admin.settings.help.signups_open",
+  },
+  trips_open: {
+    name: "admin.settings.name.trips_open",
+    help: "admin.settings.help.trips_open",
+  },
+  bookings_open: {
+    name: "admin.settings.name.bookings_open",
+    help: "admin.settings.help.bookings_open",
+  },
+  sms_sending: {
+    name: "admin.settings.name.sms_sending",
+    help: "admin.settings.help.sms_sending",
+  },
+  email_sending: {
+    name: "admin.settings.name.email_sending",
+    help: "admin.settings.help.email_sending",
+  },
+  push_sending: {
+    name: "admin.settings.name.push_sending",
+    help: "admin.settings.help.push_sending",
+  },
   invite_code_required: {
     name: "admin.settings.name.invite_code_required",
     help: "admin.settings.help.invite_code_required",

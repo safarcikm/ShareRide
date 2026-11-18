@@ -351,6 +351,13 @@
       "when": 1794997110260,
       "tag": "0049_feedback",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1794997945099,
+      "tag": "0050_switch_reminder",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { useCallback, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useMe, useSession } from "@/auth/session";
+import { PausedBanner } from "@/beta/config";
 import { Card } from "@/components/card";
 import { TextLink } from "@/components/text-link";
 import { offerRide } from "@/drive/offer-ride";
@@ -67,7 +68,12 @@ function OfferForm() {
       onStarted={() => {
         setStarted((count) => count + 1);
       }}
-      top={<ContinueDraft drafts={drafts} />}
+      top={
+        <>
+          <PausedBanner part="trips" />
+          <ContinueDraft drafts={drafts} />
+        </>
+      }
     />
   );
 }

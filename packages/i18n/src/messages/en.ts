@@ -118,6 +118,14 @@ export const en = {
   "error.invite_required": "You need an invite code to create an account.",
   "error.invite_invalid": "This code isn't valid or has expired.",
   "error.beta_full": "The beta is full for now. Try again later.",
+  "error.signups_paused":
+    "New accounts are paused for a short while. If you already have an account, you can sign in.",
+  "error.sms_paused":
+    "We can't send text messages right now, so signing in is paused for a short while. Try again later.",
+  "error.trips_paused":
+    "Posting new trips is paused for a short while. Your trips and drafts are safe. Try again later.",
+  "error.bookings_paused":
+    "Booking and paying are paused for a short while. Your bookings are safe, and none runs out while you can't pay. Try again later.",
   "error.network_error": "We couldn't reach ShareRide. Check your connection and try again.",
   "error.legal_version_outdated": "The terms have just changed. Read them again.",
   "error.account_suspended": "Your account is suspended. Read why under Profile, Notices.",
@@ -1333,6 +1341,9 @@ export const en = {
   "notify.feedbackRepliedBody": "Open ShareRide to read the reply.",
   "notify.feedbackRepliedEmail": "Thank you for the feedback you sent on {date}. Our reply:",
   "notify.feedbackOpen": "Open your feedback in ShareRide",
+  "notify.switchStillOff": "A switch is still off",
+  "notify.switchStillOffBody":
+    "Off now: {names}. Turn it back on in the console's Settings once the trouble is over.",
   "notify.privacyRequestAnswered": "The answer to your question about your data",
   "notify.privacyRequestAnsweredBody":
     "You asked us about your data on {date}. Here is our answer:",
@@ -1734,6 +1745,7 @@ export const en = {
   "export.value.kind.appeal_answered": "Answer to your appeal",
   "export.value.kind.report_closed": "Outcome of your report",
   "export.value.kind.feedback_replied": "Reply to your feedback",
+  "export.value.kind.switch_still_off": "A switch is still off",
   "export.value.kind.warning": "Warning",
   "export.value.kind.content_hidden": "Content removed",
   "export.value.kind.suspension": "Suspension",
@@ -1926,6 +1938,25 @@ export const en = {
   "admin.settings.intro":
     "The values the rules read. Each change needs a reason and is kept in the history.",
   "admin.settings.group.beta": "Beta",
+  "admin.settings.group.switches": "Switches for emergencies",
+  "admin.settings.name.signups_open": "New sign-ups",
+  "admin.settings.help.signups_open":
+    "Off: a phone number with no account can't sign up. Members sign in as usual.",
+  "admin.settings.name.trips_open": "New trips",
+  "admin.settings.help.trips_open":
+    "Off: no trip can be published or posted again. Drafts and changes to published trips go on.",
+  "admin.settings.name.bookings_open": "New bookings and payments",
+  "admin.settings.help.bookings_open":
+    "Off: no new booking, request or payment. Drivers still answer requests, everyone can cancel, and no booking runs out for lack of payment until this is back on.",
+  "admin.settings.name.sms_sending": "Text messages",
+  "admin.settings.help.sms_sending":
+    "Off: no text message is sent, so nobody can ask for a sign-in code. People who are signed in stay signed in.",
+  "admin.settings.name.email_sending": "Emails",
+  "admin.settings.help.email_sending":
+    "Off: emails wait, and go out when this is back on unless their news is old by then.",
+  "admin.settings.name.push_sending": "Push notifications",
+  "admin.settings.help.push_sending":
+    "Off: push notifications wait, and go out when this is back on unless their news is old by then.",
   "admin.settings.name.invite_code_required": "Invite code required",
   "admin.settings.help.invite_code_required":
     "Creating an account needs an invite code. People who have an account sign in as before.",

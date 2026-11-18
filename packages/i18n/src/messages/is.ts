@@ -123,6 +123,14 @@ export const is = {
   "error.invite_required": "Þú þarft boðskóða til að stofna aðgang.",
   "error.invite_invalid": "Þessi kóði er ekki gildur eða er útrunninn.",
   "error.beta_full": "Beta-prófunin er full í bili. Reyndu aftur síðar.",
+  "error.signups_paused":
+    "Nýskráningar eru í bið um stund. Ef þú átt þegar aðgang geturðu skráð þig inn.",
+  "error.sms_paused":
+    "Við getum ekki sent SMS eins og er, svo innskráning er í bið um stund. Reyndu aftur síðar.",
+  "error.trips_paused":
+    "Ekki er hægt að birta nýjar ferðir um stund. Ferðirnar þínar og drögin eru óhult. Reyndu aftur síðar.",
+  "error.bookings_paused":
+    "Bókanir og greiðslur eru í bið um stund. Bókanirnar þínar eru óhultar og engin rennur út á meðan ekki er hægt að greiða. Reyndu aftur síðar.",
   "error.network_error": "Ekki náðist samband við ShareRide. Athugaðu tenginguna og reyndu aftur.",
   "error.legal_version_outdated": "Skilmálarnir voru að breytast. Lestu þá aftur.",
   "error.account_suspended":
@@ -1352,6 +1360,9 @@ export const is = {
   "notify.feedbackRepliedBody": "Opnaðu ShareRide til að lesa svarið.",
   "notify.feedbackRepliedEmail": "Takk fyrir ábendinguna sem þú sendir {date}. Svar okkar:",
   "notify.feedbackOpen": "Opna ábendingarnar þínar í ShareRide",
+  "notify.switchStillOff": "Rofi er enn óvirkur",
+  "notify.switchStillOffBody":
+    "Óvirkt núna: {names}. Kveiktu aftur í stillingum stjórnborðsins þegar vandinn er leystur.",
   "notify.privacyRequestAnswered": "Svar við spurningu þinni um gögnin þín",
   "notify.privacyRequestAnsweredBody":
     "Þú spurðir okkur um gögnin þín þann {date}. Hér er svarið okkar:",
@@ -1749,6 +1760,7 @@ export const is = {
   "export.value.kind.appeal_answered": "Svar við andmælum",
   "export.value.kind.report_closed": "Niðurstaða tilkynningar",
   "export.value.kind.feedback_replied": "Svar við ábendingu",
+  "export.value.kind.switch_still_off": "Rofi er enn óvirkur",
   "export.value.kind.warning": "Viðvörun",
   "export.value.kind.content_hidden": "Efni fjarlægt",
   "export.value.kind.suspension": "Lokun aðgangs",
@@ -1945,6 +1957,25 @@ export const is = {
   "admin.settings.intro":
     "Gildin sem reglurnar lesa. Hver breyting þarf ástæðu og er geymd í sögunni.",
   "admin.settings.group.beta": "Beta",
+  "admin.settings.group.switches": "Neyðarrofar",
+  "admin.settings.name.signups_open": "Nýskráningar",
+  "admin.settings.help.signups_open":
+    "Slökkt: símanúmer án aðgangs getur ekki skráð sig. Notendur skrá sig inn eins og venjulega.",
+  "admin.settings.name.trips_open": "Nýjar ferðir",
+  "admin.settings.help.trips_open":
+    "Slökkt: ekki er hægt að birta ferð eða birta hana aftur. Drög og breytingar á birtum ferðum halda áfram.",
+  "admin.settings.name.bookings_open": "Nýjar bókanir og greiðslur",
+  "admin.settings.help.bookings_open":
+    "Slökkt: engar nýjar bókanir, beiðnir eða greiðslur. Bílstjórar svara áfram beiðnum, allir geta afbókað og engin bókun rennur út vegna ógreiddrar greiðslu fyrr en kveikt er aftur.",
+  "admin.settings.name.sms_sending": "SMS-skilaboð",
+  "admin.settings.help.sms_sending":
+    "Slökkt: engin SMS eru send, svo enginn getur beðið um innskráningarkóða. Þeir sem eru skráðir inn haldast skráðir inn.",
+  "admin.settings.name.email_sending": "Tölvupóstur",
+  "admin.settings.help.email_sending":
+    "Slökkt: tölvupóstur bíður og fer út þegar kveikt er aftur, nema fréttirnar séu þá orðnar gamlar.",
+  "admin.settings.name.push_sending": "Tilkynningar í síma",
+  "admin.settings.help.push_sending":
+    "Slökkt: tilkynningar bíða og fara út þegar kveikt er aftur, nema fréttirnar séu þá orðnar gamlar.",
   "admin.settings.name.invite_code_required": "Boðskóði nauðsynlegur",
   "admin.settings.help.invite_code_required":
     "Til að stofna aðgang þarf boðskóða. Fólk sem á aðgang skráir sig inn eins og áður.",

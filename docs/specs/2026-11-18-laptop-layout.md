@@ -207,6 +207,8 @@ changes on a phone.
    comes first (seats just taken, a changed price, a payment that did not
    go through). Under it one card has the tick list, the message to the
    driver (a request only) and what cancelling late means.
+   While the operator has paused booking (spec 10, 3.3), the banner that
+   says so comes before all of it; on a phone it stands above the title.
 2. **Side column:** a card with the ride (day, times, places, driver and
    car) and the total, and under the card the main button ("Pay 5,800
    ISK", "Send request"). The payment opens in the button's place; a part

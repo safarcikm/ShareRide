@@ -1,5 +1,6 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import { configRoute } from "@shareride/contracts";
+import { pausedNow } from "@shareride/domain";
 import type { AppEnv } from "../../context.ts";
 import { toOpenApiRoute } from "../../openapi.ts";
 import type { SettingsService } from "./service.ts";
@@ -12,6 +13,6 @@ export function registerConfigRoutes(app: OpenAPIHono<AppEnv>, settings: Setting
   app.openapi(toOpenApiRoute(configRoute), async (c) => {
     const { values } = await settings.current();
     c.header("Cache-Control", `public, max-age=${String(configMaxAgeSeconds)}`);
-    return c.json({ beta: values.invite_code_required === 1, paused: [] }, 200);
+    return c.json({ beta: values.invite_code_required === 1, paused: pausedNow(values) }, 200);
   });
 }

@@ -18,6 +18,8 @@ export const authErrorCodes = [
   "invite_required",
   "invite_invalid",
   "beta_full",
+  "signups_paused",
+  "sms_paused",
   "unauthenticated",
   "refresh_invalid",
   "session_ended",
@@ -101,6 +103,7 @@ export const startPhoneSignInRoute = defineRoute({
     400: { description: "phone_invalid, phone_country_unsupported, validation_failed", ...errors },
     429: { description: "rate_limited, with retryAfterSeconds", ...errors },
     502: { description: "sms_failed", ...errors },
+    503: { description: "sms_paused: text messages are paused for a short while", ...errors },
   },
 });
 
@@ -124,6 +127,11 @@ export const verifyPhoneCodeRoute = defineRoute({
     },
     409: { description: "beta_full: the beta has no places left", ...errors },
     429: { description: "code_attempts_exceeded, with retryAfterSeconds", ...errors },
+    503: {
+      description:
+        "signups_paused: new accounts are paused for a short while; the code is kept and members sign in",
+      ...errors,
+    },
   },
 });
 

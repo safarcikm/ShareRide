@@ -11,6 +11,7 @@ import { expireAllDueBookings } from "./modules/bookings/index.ts";
 import { endDueSuspensions } from "./modules/moderation/index.ts";
 import { moveMeetingPointsOn } from "./modules/meeting-points/index.ts";
 import { createNotificationWorker } from "./modules/notifications/index.ts";
+import { createSettingsService } from "./modules/settings/index.ts";
 import { createPaymentService } from "./modules/payments/index.ts";
 import { revealDueReviews } from "./modules/reviews/index.ts";
 import { settleUnansweredReports } from "./modules/trip-day/index.ts";
@@ -169,6 +170,7 @@ if (payments !== undefined) {
 // goes through Expo's push service to the devices that registered a token;
 // email is skipped as `email_off` when EMAIL_PROVIDER is none.
 if (config.worker) {
+  const workerSettings = createSettingsService({ db: database.db, clock: () => new Date() });
   const worker = createNotificationWorker({
     db: database.db,
     clock: () => new Date(),
@@ -178,6 +180,8 @@ if (config.worker) {
     ...(email === undefined ? {} : { email }),
     // Last-minute news by SMS (spec 7, 3.4), through the same sender as codes.
     sms,
+    // The operator's switches for the channels, and the reminder of one left off (spec 10, 3.3).
+    switches: () => workerSettings.switches(),
     onSendError: (error, delivery) => {
       logger.warn({ err: error, delivery: delivery.id, channel: delivery.channel }, "not sent");
     },

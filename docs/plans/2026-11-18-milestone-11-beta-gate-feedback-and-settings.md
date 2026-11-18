@@ -451,10 +451,24 @@ before merging.
 
 ### PR 7: `feat(settings)`: switches
 
-- [ ] The six switches in the catalogue; the refusals; the worker's
+- [x] The six switches in the catalogue; the refusals; the worker's
       waiting and skipping; payment deadlines across a pause;
       `switch_still_off`; `paused` in `GET /v1/config`; the app's banners;
       the console's switches card
+- As built: a refusal is 503 with `signups_paused`, `trips_paused`,
+  `bookings_paused` or `sms_paused`. A deadline is a stored time that
+  every reader compares with now, so a pause of bookings moves the times
+  in the transaction that turns the switch: as it starts, every unpaid
+  booking waits until its booking cut-off; as it ends, each gets the
+  payment window from then, or its own deadline back when that is still
+  ahead, and the "10 minutes left to pay" reminder moves with it. A
+  waiting message is skipped as `paused_too_long` when it was queued
+  before its channel came back and is older than a failed send is tried
+  again for (60 minutes). The reminder counts from the switch that has
+  been off longest and names all that are off, so two switches turned off
+  together give one reminder; it needs migration `0050_switch_reminder`
+  (the new kind in the notification tables' checks). The app reads
+  `GET /v1/config` at start and every 5 minutes
 - Verify: integration tests (each switch refuses only what is new; a
   booking waiting for payment survives a pause and gets its window
   again; waiting messages go out once after the switch is back on; the

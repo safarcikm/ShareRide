@@ -20,6 +20,7 @@ import {
   nextStatus,
   noShowWindow,
   ok,
+  latestPaymentDeadline,
   paymentDeadline,
   peopleColourOf,
   statusAt,
@@ -615,8 +616,11 @@ export function createBookingService(dependencies: {
   readonly tripDaySettings: TripDaySettings;
   /** The time to review (spec 8, 3.7). */
   readonly reviewSettings?: ReviewSettings;
+  /** Whether the operator paused bookings and payments (spec 10, 3.3); never when left out. */
+  readonly bookingsPaused?: () => Promise<boolean>;
 }): BookingService {
   const { db, clock, account, settings, tripDaySettings } = dependencies;
+  const bookingsPaused = dependencies.bookingsPaused ?? (() => Promise.resolve(false));
   const reviewSettings = dependencies.reviewSettings ?? defaultReviewSettings;
 
   async function readOne(q: Queryable, bookingId: string, viewerId: string, now: Date) {
@@ -1080,7 +1084,10 @@ export function createBookingService(dependencies: {
       });
     },
 
-    accept(driverId, bookingId) {
+    async accept(driverId, bookingId) {
+      // Nobody can pay during a pause, so the booking waits as long as it
+      // can; the pause's end gives it its window (movePaymentDeadlines).
+      const paused = await bookingsPaused();
       return answer(
         driverId,
         bookingId,
@@ -1092,7 +1099,12 @@ export function createBookingService(dependencies: {
           return {
             status,
             decidedAt: now,
-            paymentDueAt: status === "accepted" ? paymentDeadline(now, boardsAt, settings) : null,
+            paymentDueAt:
+              status !== "accepted"
+                ? null
+                : paused
+                  ? latestPaymentDeadline(boardsAt, settings)
+                  : paymentDeadline(now, boardsAt, settings),
             confirmedAt: status === "confirmed" ? now : null,
           };
         },
