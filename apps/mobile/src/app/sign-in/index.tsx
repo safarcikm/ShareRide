@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
+import { PausedBanner } from "@/beta/config";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
@@ -60,6 +61,8 @@ export default function PhoneNumberScreen() {
       <KeptRideCard kept={flow.keptRide} />
       <Title>{t("signIn.title")}</Title>
       <Body>{t("signIn.help", { length: codeRules.length })}</Body>
+      <PausedBanner part="sms" />
+      <PausedBanner part="signups" />
       <View style={styles.form}>
         <Button
           variant="secondary"

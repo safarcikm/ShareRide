@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { paymentDeadline, requestDeadline, statusAt } from "./deadlines.ts";
+import {
+  latestPaymentDeadline,
+  paymentDeadline,
+  paymentDeadlineAfterPause,
+  requestDeadline,
+  statusAt,
+} from "./deadlines.ts";
 import { defaultBookingSettings } from "./settings.ts";
 
 const settings = defaultBookingSettings;
@@ -42,6 +48,39 @@ describe("the payment deadline (rule M1)", () => {
     expect(iso(paymentDeadline(before(40), boardsAt, settings))).toBe("2026-11-15T09:45:00.000Z");
     expect(iso(paymentDeadline(before(45), boardsAt, settings))).toBe("2026-11-15T09:45:00.000Z");
     expect(iso(paymentDeadline(before(46), boardsAt, settings))).toBe("2026-11-15T09:44:00.000Z");
+  });
+});
+
+describe("the payment deadline across a pause (spec 10, 3.3)", () => {
+  // Accepted 5 hours before boarding: to pay by 4 h 30 min before.
+  const acceptedAt = before(5 * 60);
+
+  it("waits until the cut-off at the latest while paying is paused", () => {
+    expect(iso(latestPaymentDeadline(boardsAt, settings))).toBe("2026-11-15T09:45:00.000Z");
+  });
+
+  it("is the payment window after the pause's end when it came inside the pause", () => {
+    expect(iso(paymentDeadlineAfterPause(acceptedAt, boardsAt, before(3 * 60), settings))).toBe(
+      "2026-11-15T07:30:00.000Z",
+    );
+  });
+
+  it("is the window after the pause's end when it came at that very moment", () => {
+    expect(iso(paymentDeadlineAfterPause(acceptedAt, boardsAt, before(270), settings))).toBe(
+      "2026-11-15T06:00:00.000Z",
+    );
+  });
+
+  it("stays when it is still ahead as the pause ends", () => {
+    expect(iso(paymentDeadlineAfterPause(acceptedAt, boardsAt, before(271), settings))).toBe(
+      "2026-11-15T05:30:00.000Z",
+    );
+  });
+
+  it("is never later than the booking cut-off", () => {
+    expect(iso(paymentDeadlineAfterPause(acceptedAt, boardsAt, before(20), settings))).toBe(
+      "2026-11-15T09:45:00.000Z",
+    );
   });
 });
 

@@ -22,6 +22,7 @@ import { newAttemptKey } from "@/booking/attempt-key";
 import { keepPendingBooking } from "@/booking/pending-booking";
 import { PaymentSheet, usePayment } from "@/booking/payment";
 import { bookErrorText, heldUntilText } from "@/booking/texts";
+import { PausedBanner } from "@/beta/config";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
@@ -424,6 +425,7 @@ function BookForm({
   return (
     <Screen footer={footer}>
       {back}
+      <PausedBanner part="bookings" />
       <Title align="start">
         {paysNow
           ? t("booking.checkAndPay")

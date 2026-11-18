@@ -7,6 +7,7 @@ import {
   isOfferedForNewTrips,
   lookUpLegs,
   ok,
+  latestPaymentDeadline,
   paymentDeadline,
   removeStopLegPairs,
   requestDeadline,
@@ -201,8 +202,11 @@ export function createTripChangeService(dependencies: {
   readonly settings: TripSettings;
   readonly bookingSettings: BookingSettings;
   readonly notificationSettings: NotificationSettings;
+  /** Whether the operator paused bookings and payments (spec 10, 3.3); never when left out. */
+  readonly bookingsPaused?: () => Promise<boolean>;
 }): TripChangeService {
   const { db, clock, settings, bookingSettings, notificationSettings } = dependencies;
+  const bookingsPaused = dependencies.bookingsPaused ?? (() => Promise.resolve(false));
 
   /** Each stretch's typical driving time now (R3.6), or the one it was published with. */
   async function typicalTimes(
@@ -796,6 +800,8 @@ export function createTripChangeService(dependencies: {
       .from(bookings)
       .innerJoin(tripStops, eq(tripStops.id, bookings.fromStopId))
       .where(and(eq(bookings.tripId, tripId), inArray(bookings.status, heldStatuses)));
+    // During a pause of payments an unpaid booking waits until the cut-off.
+    const paused = await bookingsPaused();
     for (const { booking, boardsAt } of held) {
       if (boardsAt === null) continue;
       if (booking.status === "requested" && booking.requestedAt !== null) {
@@ -807,7 +813,11 @@ export function createTripChangeService(dependencies: {
       if (booking.status === "accepted" && booking.decidedAt !== null) {
         await tx
           .update(bookings)
-          .set({ paymentDueAt: paymentDeadline(booking.decidedAt, boardsAt, bookingSettings) })
+          .set({
+            paymentDueAt: paused
+              ? latestPaymentDeadline(boardsAt, bookingSettings)
+              : paymentDeadline(booking.decidedAt, boardsAt, bookingSettings),
+          })
           .where(eq(bookings.id, booking.id));
       }
     }

@@ -6,7 +6,7 @@ import { startPhoneSignInRoute, verifyPhoneCodeRoute } from "@shareride/contract
 import { pingDatabase, schema, type DatabaseConnection } from "@shareride/db";
 import { seedDraftLegalDocuments } from "@shareride/db/seed";
 import { freshTestDatabase } from "@shareride/db/testing";
-import { operatorRole } from "@shareride/domain";
+import { operatorRole, type SettingKey } from "@shareride/domain";
 import { eq } from "drizzle-orm";
 import { createApp, type FeatureDependencies } from "./app.ts";
 import { createLogger } from "./logger.ts";
@@ -61,6 +61,12 @@ export interface TestApi {
    * closed beta. Until then tests sign up without one.
    */
   useStoredInviteSetting(): void;
+  /**
+   * Holds one of the operator's settings at a value whatever is stored, or
+   * lets it go again with `undefined`: for a test of one module's refusal
+   * while a switch is off. Nothing that follows a real change happens.
+   */
+  fixSetting(key: SettingKey, value: number | undefined): void;
   close(): Promise<void>;
 }
 
@@ -96,7 +102,7 @@ export async function startTestApi(): Promise<TestApi> {
   });
 
   // The closed beta's gate is off, so tests sign up without an invite code.
-  const fixedSettings: { invite_code_required?: number } = { invite_code_required: 0 };
+  const fixedSettings: Partial<Record<SettingKey, number>> = { invite_code_required: 0 };
   const email = createFakeEmailSender();
   const photos = createFakePhotoStorage();
   const features: FeatureDependencies = {
@@ -196,6 +202,10 @@ export async function startTestApi(): Promise<TestApi> {
     },
     useStoredInviteSetting() {
       delete fixedSettings.invite_code_required;
+    },
+    fixSetting(key, value) {
+      if (value === undefined) Reflect.deleteProperty(fixedSettings, key);
+      else fixedSettings[key] = value;
     },
     close: () => connection.close(),
   };

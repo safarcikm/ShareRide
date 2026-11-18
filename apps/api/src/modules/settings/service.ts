@@ -2,12 +2,16 @@ import { schema, type Database } from "@shareride/db";
 import {
   checkSettingChange,
   err,
+  isSwitchKey,
   ok,
+  switchKeys,
   valuesAt,
   type Result,
   type SettingChangeProblem,
+  type SettingKey,
   type SettingValues,
   type StoredSettingChange,
+  type SwitchKey,
 } from "@shareride/domain";
 import { desc, eq, lt, sql } from "drizzle-orm";
 import { recordAudit, type AuditEntry } from "../admin/audit.ts";
@@ -25,6 +29,18 @@ export interface SettingsSnapshot {
   /** 0 is the defaults; each change is the next. */
   readonly version: number;
   readonly values: SettingValues;
+}
+
+/** Each switch for emergencies (spec 10, 3.3): on or off, and since when; null when never changed. */
+export type SwitchStates = Readonly<
+  Record<SwitchKey, { readonly on: boolean; readonly since: Date | null }>
+>;
+
+/** One setting changed, as the code that must follow it in the same transaction sees it. */
+export interface SettingChanged {
+  readonly key: SettingKey;
+  readonly oldValue: number;
+  readonly newValue: number;
 }
 
 export interface SettingChangeInput {
@@ -62,6 +78,8 @@ export interface SettingsService {
   current(): Promise<SettingsSnapshot>;
   /** The values now, read from the database whatever is cached. */
   latest(): Promise<SettingsSnapshot>;
+  /** The switches now, as old as `current()` at most. */
+  switches(): Promise<SwitchStates>;
   /** The values as they were at a version (R10.3); a version never changes. */
   at(version: number): Promise<SettingValues>;
   /** Changes one setting, as the next version, with its audit entry (R10.2, R10.8). */
@@ -85,35 +103,62 @@ export interface SettingsServiceDependencies {
    * a real server. The console still shows and changes the stored values.
    */
   readonly fixedSettings?: Partial<SettingValues>;
+  /**
+   * What must happen with a change, in its transaction: when bookings are
+   * paused or open again, the payment deadlines move (spec 10, 3.3).
+   */
+  readonly onChange?: (tx: Transaction, change: SettingChanged, now: Date) => Promise<void>;
 }
 
 const stored = {
   version: settingChanges.version,
   key: settingChanges.key,
   newValue: settingChanges.newValue,
+  createdAt: settingChanges.createdAt,
 };
 
-const snapshotOf = (changes: readonly StoredSettingChange[]): SettingsSnapshot => {
+type StoredChange = StoredSettingChange & { readonly createdAt: Date };
+
+interface Read {
+  readonly snapshot: SettingsSnapshot;
+  /** When each switch was last changed. */
+  readonly switchedAt: ReadonlyMap<SwitchKey, Date>;
+}
+
+const readOf = (changes: readonly StoredChange[]): Read => {
   const version = Math.max(0, ...changes.map((change) => change.version));
-  return { version, values: valuesAt(version, changes) };
+  const switchedAt = new Map<SwitchKey, Date>();
+  for (const change of [...changes].sort((a, b) => a.version - b.version)) {
+    if (isSwitchKey(change.key)) switchedAt.set(change.key, change.createdAt);
+  }
+  return { snapshot: { version, values: valuesAt(version, changes) }, switchedAt };
 };
 
 export function createSettingsService({
   db,
   clock,
   fixedSettings,
+  onChange,
 }: SettingsServiceDependencies): SettingsService {
-  let cached: { readonly snapshot: SettingsSnapshot; readonly readAt: number } | undefined;
+  let cached: (Read & { readonly readAt: number }) | undefined;
   const versions = new Map<number, SettingValues>();
 
-  const remember = (snapshot: SettingsSnapshot) => {
-    cached = { snapshot, readAt: clock().getTime() };
-    versions.set(snapshot.version, snapshot.values);
-    return snapshot;
+  const remember = (read: Read) => {
+    cached = { ...read, readAt: clock().getTime() };
+    versions.set(read.snapshot.version, read.snapshot.values);
+    return read;
   };
 
   const read = async (q: Database | Transaction) =>
-    snapshotOf(await q.select(stored).from(settingChanges));
+    readOf(await q.select(stored).from(settingChanges));
+
+  /** What is cached, or read again once it is 5 seconds old. */
+  const recent = async (): Promise<Read> => {
+    const age = cached === undefined ? Infinity : clock().getTime() - cached.readAt;
+    // A clock moved back, as tests do, reads again too.
+    if (cached !== undefined && age >= 0 && age < settingsCacheMs) return cached;
+    return remember(await read(db));
+  };
 
   const fixed = (snapshot: SettingsSnapshot): SettingsSnapshot =>
     fixedSettings === undefined
@@ -121,14 +166,23 @@ export function createSettingsService({
       : { ...snapshot, values: { ...snapshot.values, ...fixedSettings } };
 
   return {
-    async current() {
-      const age = cached === undefined ? Infinity : clock().getTime() - cached.readAt;
-      // A clock moved back, as tests do, reads again too.
-      if (cached !== undefined && age >= 0 && age < settingsCacheMs) return fixed(cached.snapshot);
-      return fixed(remember(await read(db)));
-    },
+    current: async () => fixed((await recent()).snapshot),
 
-    latest: async () => remember(await read(db)),
+    latest: async () => remember(await read(db)).snapshot,
+
+    async switches() {
+      const { snapshot, switchedAt } = await recent();
+      const { values } = fixed(snapshot);
+      return Object.fromEntries(
+        switchKeys.map((key) => [
+          key,
+          // A fixed value was never changed by anyone.
+          fixedSettings?.[key] === undefined
+            ? { on: values[key] === 1, since: switchedAt.get(key) ?? null }
+            : { on: values[key] === 1, since: null },
+        ]),
+      ) as SwitchStates;
+    },
 
     async at(version) {
       const known = versions.get(version);
@@ -147,39 +201,42 @@ export function createSettingsService({
 
     async change(input, by) {
       const now = clock();
-      const result = await db.transaction(
-        async (tx): Promise<Result<SettingsSnapshot, SettingChangeError>> => {
-          // One change at a time, so versions never repeat or skip.
-          await tx.execute(sql`lock table ${settingChanges} in exclusive mode`);
-          const before = await read(tx);
-          if (before.version !== input.version) return err({ code: "settings_changed" });
-          const checked = checkSettingChange(input.key, input.value, input.reason, before.values);
-          if (!checked.ok) return checked;
-          const { key, oldValue, newValue, reason } = checked.value;
-          const version = before.version + 1;
-          await tx.insert(settingChanges).values({
-            version,
-            key,
-            oldValue,
-            newValue,
-            reason,
-            changedBy: by.operator.userId,
-            createdAt: now,
-            updatedAt: now,
-          });
-          await recordAudit(tx, {
-            ...by,
-            action: "setting.changed",
-            subjectType: "setting",
-            subjectId: key,
-            before: { value: oldValue },
-            after: { value: newValue, version, reason },
-          });
-          return ok({ version, values: { ...before.values, [key]: newValue } });
-        },
-      );
-      if (result.ok) remember(result.value);
-      return result;
+      const result = await db.transaction(async (tx): Promise<Result<Read, SettingChangeError>> => {
+        // One change at a time, so versions never repeat or skip.
+        await tx.execute(sql`lock table ${settingChanges} in exclusive mode`);
+        const before = await read(tx);
+        if (before.snapshot.version !== input.version) return err({ code: "settings_changed" });
+        const { values } = before.snapshot;
+        const checked = checkSettingChange(input.key, input.value, input.reason, values);
+        if (!checked.ok) return checked;
+        const { key, oldValue, newValue, reason } = checked.value;
+        const version = before.snapshot.version + 1;
+        await tx.insert(settingChanges).values({
+          version,
+          key,
+          oldValue,
+          newValue,
+          reason,
+          changedBy: by.operator.userId,
+          createdAt: now,
+          updatedAt: now,
+        });
+        await recordAudit(tx, {
+          ...by,
+          // A switch for emergencies has its own name in the log (spec 10, 3.3).
+          action: isSwitchKey(key) ? "switch.changed" : "setting.changed",
+          subjectType: "setting",
+          subjectId: key,
+          before: { value: oldValue },
+          after: { value: newValue, version, reason },
+        });
+        await onChange?.(tx, { key, oldValue, newValue }, now);
+        const switchedAt = new Map(before.switchedAt);
+        if (isSwitchKey(key)) switchedAt.set(key, now);
+        return ok({ snapshot: { version, values: { ...values, [key]: newValue } }, switchedAt });
+      });
+      if (!result.ok) return result;
+      return ok(remember(result.value).snapshot);
     },
 
     async history(before) {

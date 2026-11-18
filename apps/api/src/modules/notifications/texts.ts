@@ -16,6 +16,7 @@ import {
   type OperatorNoticeKind,
   type QuickMessage,
   type ReportOutcome,
+  type SwitchKey,
   type TripRole,
 } from "@shareride/domain";
 import {
@@ -35,6 +36,7 @@ import {
   reportOutcomeText,
   stopAddedText,
   type Locale,
+  type MessageKey,
 } from "@shareride/i18n";
 
 // The words of a notification, made when it is sent, in the recipient's
@@ -204,10 +206,13 @@ export function isAccountFacts(facts: {
   return isAccountNotice(facts.kind);
 }
 
-/** A new report, to the operator: only whether it is about safety (spec 9, R9.9). */
-export interface OperatorNoticeFacts {
-  readonly kind: OperatorNoticeKind;
-}
+/**
+ * To the operator: a new report, only whether it is about safety (spec 9,
+ * R9.9); or the switches for emergencies that are off now (spec 10, 3.3).
+ */
+export type OperatorNoticeFacts =
+  | { readonly kind: Exclude<OperatorNoticeKind, "switch_still_off"> }
+  | { readonly kind: "switch_still_off"; readonly off: readonly SwitchKey[] };
 
 export function isOperatorFacts(facts: {
   readonly kind: NotificationKind;
@@ -290,7 +295,7 @@ export function notificationText(
   settings: NotificationSettings,
 ): NotificationText {
   if (isAccountFacts(facts)) return accountText(facts, locale);
-  if (isOperatorFacts(facts)) return operatorText(facts.kind, locale);
+  if (isOperatorFacts(facts)) return operatorText(facts, locale);
   if (facts.kind === "meeting_point_moved_driver") return pointMovedText(facts, locale);
   if ("point" in facts) return pointPausedText(facts, locale);
   return "passengers" in facts
@@ -298,10 +303,31 @@ export function notificationText(
     : bookingText(facts, locale, settings);
 }
 
-/** Only that a report came in, and whether about safety, never who or what (R9.9). */
-function operatorText(kind: OperatorNoticeKind, locale: Locale): NotificationText {
+/** The switches' names, as the console's Settings page has them. */
+const switchNames = {
+  signups_open: "admin.settings.name.signups_open",
+  trips_open: "admin.settings.name.trips_open",
+  bookings_open: "admin.settings.name.bookings_open",
+  sms_sending: "admin.settings.name.sms_sending",
+  email_sending: "admin.settings.name.email_sending",
+  push_sending: "admin.settings.name.push_sending",
+} as const satisfies Record<SwitchKey, MessageKey>;
+
+/**
+ * Only that a report came in, and whether about safety, never who or what
+ * (R9.9); or which switches are off, by name.
+ */
+function operatorText(facts: OperatorNoticeFacts, locale: Locale): NotificationText {
   const t = createTranslator(locale);
-  return kind === "report_filed_urgent"
+  if (facts.kind === "switch_still_off") {
+    const names = facts.off.map((key) => t(switchNames[key])).join(", ");
+    return {
+      title: t("notify.switchStillOff"),
+      body: t("notify.switchStillOffBody", { names }),
+      path: "/",
+    };
+  }
+  return facts.kind === "report_filed_urgent"
     ? { title: t("notify.reportFiledUrgent"), body: t("notify.reportFiledUrgentBody"), path: "/" }
     : { title: t("notify.reportFiled"), body: t("notify.reportFiledBody"), path: "/" };
 }

@@ -20,6 +20,7 @@ import {
   type SendMessageBody,
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
+import { operatorRole, switchKeys } from "@shareride/domain";
 import { sampleId } from "@shareride/db/seed";
 import { formatClock, formatMoney } from "@shareride/i18n";
 import { and, asc, desc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
@@ -55,7 +56,7 @@ import { expireAllDueBookings } from "../bookings/index.ts";
 import { createPaymentService } from "../payments/service.ts";
 import { cleanUpNotifications } from "./clean-up.ts";
 import { setPreferences } from "./preferences.ts";
-import { createNotificationWorker } from "./worker.ts";
+import { createNotificationWorker, type WorkerSwitches } from "./worker.ts";
 
 // The sample trips at the test clock (Friday 13 November 2026, noon): Jón
 // drives Hlemmur to Keflavík Airport on Saturday at 05:30 (instant, paid)
@@ -104,6 +105,7 @@ function worker(
     push?: PushSender;
     sms?: SmsSender | null;
     onEventError?: (error: unknown, event: { id: string; givenUp: boolean }) => void;
+    switches?: WorkerSwitches;
   } = {},
 ) {
   const sender = options.email === undefined ? email : options.email;
@@ -114,8 +116,18 @@ function worker(
     ...(sender === null ? {} : { email: { sender, webAppUrl } }),
     ...(options.sms === null ? {} : { sms: options.sms ?? sms }),
     ...(options.onEventError === undefined ? {} : { onEventError: options.onEventError }),
+    ...(options.switches === undefined
+      ? {}
+      : { switches: () => Promise.resolve(options.switches ?? allOn) }),
   });
 }
+
+/** Every switch for emergencies on, never changed (spec 10, 3.3). */
+const allOn = Object.fromEntries(
+  switchKeys.map((key) => [key, { on: true, since: null }]),
+) as WorkerSwitches;
+
+const minutesAgo = (count: number) => new Date(api.now().getTime() - count * 60_000);
 
 /**
  * Makes the database refuse to write rows of the table matching `when`
@@ -2381,5 +2393,149 @@ describe("clean-up (privacy register: notification log)", () => {
         .from(notificationDeliveries)
         .where(eq(notificationDeliveries.channel, "push")),
     ).toEqual([]);
+  });
+});
+
+describe("the operator's switches for sending (spec 10, 3.3)", () => {
+  it("leaves a paused channel's messages waiting, and sends them once when it is back on", async () => {
+    const anna = await driverOf(north);
+    await withDevice(anna);
+    const jon = await newMember("Jón");
+    await booked(jon.accessToken, north, { fromStop: 0, toStop: 2 });
+
+    const pushOff = { ...allOn, push_sending: { on: false, since: minutesAgo(1) } };
+    expect(await worker({ switches: pushOff }).runOnce()).toMatchObject({ events: 1, sent: 0 });
+    expect(await worker({ switches: pushOff }).runOnce()).toMatchObject({ sent: 0, failed: 0 });
+    expect(push.sent).toEqual([]);
+    expect(await logOf(anna)).toEqual([
+      { kind: "request_new", channel: "email", status: "skipped", reason: "has_push", attempts: 0 },
+      { kind: "request_new", channel: "push", status: "queued", reason: null, attempts: 0 },
+    ]);
+
+    api.advance(10 * 60);
+    const backOn = { ...allOn, push_sending: { on: true, since: api.now() } };
+    expect(await worker({ switches: backOn }).runOnce()).toMatchObject({ sent: 1 });
+    expect(await worker({ switches: backOn }).runOnce()).toMatchObject({ sent: 0 });
+    expect(push.sent).toHaveLength(1);
+    api.advance(-10 * 60);
+  });
+
+  it("sends on the other channels while one is paused", async () => {
+    const anna = await driverOf(north);
+    await withEmail(anna, "anna-other-channel@example.com");
+    const jon = await newMember("Jón");
+    await booked(jon.accessToken, north, { fromStop: 0, toStop: 2 });
+    const pushOff = { ...allOn, push_sending: { on: false, since: minutesAgo(1) } };
+    expect(await worker({ switches: pushOff }).runOnce()).toMatchObject({ sent: 1 });
+    expect(email.sent).toHaveLength(1);
+  });
+
+  it("skips news that is old by the time its channel is back on", async () => {
+    const anna = await driverOf(north);
+    await withEmail(anna, "anna-waits@example.com");
+    const jon = await newMember("Jón");
+    await booked(jon.accessToken, north, { fromStop: 0, toStop: 2 });
+    const emailOff = { ...allOn, email_sending: { on: false, since: minutesAgo(1) } };
+    expect(await worker({ switches: emailOff }).runOnce()).toMatchObject({ events: 1, sent: 0 });
+
+    // Two hours on: longer than a failed send is tried again for.
+    api.advance(2 * 3600);
+    const backOn = { ...allOn, email_sending: { on: true, since: api.now() } };
+    expect(await worker({ switches: backOn }).runOnce()).toMatchObject({ sent: 0 });
+    expect(email.sent).toEqual([]);
+    expect(await logOf(anna)).toEqual([
+      {
+        kind: "request_new",
+        channel: "email",
+        status: "skipped",
+        reason: "paused_too_long",
+        attempts: 0,
+      },
+      { kind: "request_new", channel: "push", status: "skipped", reason: "no_device", attempts: 0 },
+    ]);
+    api.advance(-2 * 3600);
+  });
+
+  describe("a switch left off", () => {
+    async function operator() {
+      const member = await newMember("Olga");
+      await api.connection.db
+        .update(schema.users)
+        .set({ roles: [operatorRole] })
+        .where(eq(schema.users.id, member.userId));
+      await withDevice(member);
+      await withEmail(member, `${member.userId}@example.com`);
+      return member;
+    }
+    const reminders = async (member: Member) =>
+      (await logOf(member)).filter((row) => row.kind === "switch_still_off");
+
+    it("reminds every operator after an hour by push and email, and once a day after that", async () => {
+      const olga = await operator();
+      const since = api.now();
+      const off = {
+        ...allOn,
+        bookings_open: { on: false, since },
+        sms_sending: { on: false, since: minutesAgo(-20) },
+      };
+
+      api.advance(59 * 60);
+      await worker({ switches: off }).runOnce();
+      expect(await reminders(olga)).toEqual([]);
+
+      api.advance(60);
+      await worker({ switches: off }).runOnce();
+      await worker({ switches: off }).runOnce();
+      expect(await reminders(olga)).toEqual([
+        { kind: "switch_still_off", channel: "email", status: "sent", reason: null, attempts: 1 },
+        { kind: "switch_still_off", channel: "push", status: "sent", reason: null, attempts: 1 },
+      ]);
+      expect(push.sent.at(-1)).toMatchObject({
+        title: "A switch is still off",
+        body: "Off now: New bookings and payments, Text messages. Turn it back on in the console's Settings once the trouble is over.",
+      });
+      expect(email.sent.at(-1)).toMatchObject({ subject: "A switch is still off" });
+      // A member who is no operator hears nothing.
+      const jon = await newMember("Jón");
+      expect(await reminders(jon)).toEqual([]);
+
+      api.advance(23 * 3600);
+      await worker({ switches: off }).runOnce();
+      expect(await reminders(olga)).toHaveLength(2);
+      api.advance(3600);
+      await worker({ switches: off }).runOnce();
+      expect(await reminders(olga)).toHaveLength(4);
+      api.advance(-25 * 3600);
+    });
+
+    it("says nothing once everything is back on", async () => {
+      const olga = await operator();
+      const off = { ...allOn, trips_open: { on: false, since: minutesAgo(90) } };
+      // Made while off, with push paused too, so it waits.
+      const waiting = { ...off, push_sending: { on: false, since: minutesAgo(5) } };
+      await worker({ switches: waiting }).runOnce();
+      // To her, and to any operator an earlier test left.
+      expect(email.sent.at(-1)?.text).toContain("Off now: New trips, Push notifications.");
+      await worker({ switches: allOn }).runOnce();
+      expect(await reminders(olga)).toEqual([
+        { kind: "switch_still_off", channel: "email", status: "sent", reason: null, attempts: 1 },
+        {
+          kind: "switch_still_off",
+          channel: "push",
+          status: "skipped",
+          reason: "no_longer_applies",
+          attempts: 1,
+        },
+      ]);
+    });
+
+    it("reminds nobody of a switch that was never turned", async () => {
+      const olga = await operator();
+      api.advance(2 * 3600);
+      await worker({ switches: allOn }).runOnce();
+      await worker().runOnce();
+      expect(await reminders(olga)).toEqual([]);
+      api.advance(-2 * 3600);
+    });
   });
 });

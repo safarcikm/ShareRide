@@ -37,6 +37,29 @@ export function paymentDeadline(acceptedAt: Date, boardsAt: Date, settings: Book
   );
 }
 
+/** The latest an unpaid booking can wait: the booking cut-off before boarding. */
+export function latestPaymentDeadline(boardsAt: Date, settings: BookingSettings): Date {
+  return new Date(boardsAt.getTime() - minutes(settings.bookingCutoffMinutes));
+}
+
+/**
+ * An unpaid booking's deadline once bookings and payments are open again
+ * after a pause (spec 10, 3.3): nobody could pay during the pause, so a
+ * deadline that came inside it is the payment window after the pause's end;
+ * one still ahead stays. Never later than the booking cut-off.
+ */
+export function paymentDeadlineAfterPause(
+  acceptedAt: Date,
+  boardsAt: Date,
+  reopenedAt: Date,
+  settings: BookingSettings,
+): Date {
+  const asAccepted = paymentDeadline(acceptedAt, boardsAt, settings);
+  return asAccepted.getTime() > reopenedAt.getTime()
+    ? asAccepted
+    : paymentDeadline(reopenedAt, boardsAt, settings);
+}
+
 /**
  * A booking's status at `now`: a request or an unpaid booking whose deadline
  * has come is expired, even before the expiry job has stored it, so a late

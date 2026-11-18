@@ -65,7 +65,12 @@ export interface Refreshed {
   readonly tokens: IssuedTokens;
 }
 
-export type StartError = PhoneNumberError | RateLimited | { readonly code: "sms_failed" };
+export type StartError =
+  | PhoneNumberError
+  | RateLimited
+  | { readonly code: "sms_failed" }
+  /** The operator paused text messages (spec 10, 3.3): no code can be sent. */
+  | { readonly code: "sms_paused" };
 
 export type VerifyError =
   | PhoneNumberError
@@ -152,6 +157,8 @@ export interface AuthServiceDependencies {
   readonly randomInt: (max: number) => number;
   /** Whether a new account can be made (the closed beta's invite codes); open when left out. */
   readonly signUpGate?: SignUpGate;
+  /** Whether the operator paused text messages (spec 10, 3.3); never when left out. */
+  readonly smsPaused?: () => Promise<boolean>;
 }
 
 const addSeconds = (date: Date, seconds: number) => new Date(date.getTime() + seconds * 1000);
@@ -212,6 +219,7 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
   const { db, sms, hasher, clock, logger, randomInt } = dependencies;
   const signUpGate: SignUpGate =
     dependencies.signUpGate ?? (() => Promise.resolve(ok({ inviteCodeId: null })));
+  const smsPaused = dependencies.smsPaused ?? (() => Promise.resolve(false));
   const translators = { is: createTranslator("is"), en: createTranslator("en") };
 
   async function sendTimes(
@@ -292,6 +300,9 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
     readonly ipAddress: string;
   }): Promise<Result<{ readonly resendAfterSeconds: number }, StartError>> {
     const { e164, callingCode, purpose } = input;
+    // Before anything is counted or stored: a code that cannot be sent is
+    // not made, and the earlier one keeps working.
+    if (await smsPaused()) return err({ code: "sms_paused" });
     const now = clock();
     const phoneHash = hasher("phone", e164);
     const limits = [

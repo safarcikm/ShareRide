@@ -66,7 +66,28 @@ describe("the console's settings", () => {
   it("start as the defaults, at version 0", async () => {
     const all = await settings();
     expect(all.version).toBe(0);
-    expect(all.settings).toEqual([
+    // The six switches for emergencies come first (spec 10, 3.3).
+    expect(all.settings.slice(0, 6)).toEqual(
+      [
+        "signups_open",
+        "trips_open",
+        "bookings_open",
+        "sms_sending",
+        "email_sending",
+        "push_sending",
+      ].map((key) => ({
+        key,
+        group: "switches",
+        kind: "switch",
+        unit: null,
+        value: 1,
+        default: 1,
+        min: 0,
+        max: 1,
+        step: 1,
+      })),
+    );
+    expect(all.settings.slice(6)).toEqual([
       {
         key: "invite_code_required",
         group: "beta",

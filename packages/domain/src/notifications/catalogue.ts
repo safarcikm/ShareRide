@@ -96,6 +96,9 @@ export const notificationRules = {
   // The operator's reply to feedback (spec 12, 3.3.4): the push says only
   // that there is a reply; the email carries it.
   feedback_replied: { push: true, email: "always", sms: false },
+  // To every operator when a switch for emergencies has been off for an
+  // hour, and once a day after that (spec 10, 3.3).
+  switch_still_off: { push: true, email: "always", sms: false },
 } as const satisfies Record<string, NotificationRule>;
 
 export type NotificationKind = keyof typeof notificationRules;
@@ -120,8 +123,12 @@ export function isAccountNotice(kind: NotificationKind): kind is AccountNoticeKi
   return (accountNoticeKinds as readonly NotificationKind[]).includes(kind);
 }
 
-/** The kinds that tell the operator, about no trip of theirs (spec 9). */
-export const operatorNoticeKinds = ["report_filed", "report_filed_urgent"] as const;
+/** The kinds that tell the operator, about no trip of theirs (spec 9; spec 10, 3.3). */
+export const operatorNoticeKinds = [
+  "report_filed",
+  "report_filed_urgent",
+  "switch_still_off",
+] as const;
 export type OperatorNoticeKind = (typeof operatorNoticeKinds)[number];
 
 export function isOperatorNotice(kind: NotificationKind): kind is OperatorNoticeKind {
@@ -350,7 +357,9 @@ export type Channel = (typeof channels)[number];
  * the person has push. The worker's own reasons: `email_off`, no email
  * provider is set up; `sms_off`, SMS is not sent yet (spec 6);
  * `no_longer_applies`, the booking moved on before it was sent
- * (`stillApplies`), or the unread messages were read.
+ * (`stillApplies`), or the unread messages were read; `paused_too_long`,
+ * the operator paused the channel and it came back when the news was old
+ * (spec 10, 3.3).
  */
 export const skipReasons = [
   "no_device",
@@ -362,6 +371,7 @@ export const skipReasons = [
   "email_off",
   "sms_off",
   "no_longer_applies",
+  "paused_too_long",
 ] as const;
 export type SkipReason = (typeof skipReasons)[number];
 
