@@ -36,12 +36,18 @@ export function ResultCard({
   searched,
   seats,
   showDay = false,
+  fill = false,
 }: {
   readonly result: TripSearchResult;
   readonly searched: SearchedNames;
   readonly seats: number;
   /** In a list not grouped by day, such as one sorted by price. */
   readonly showDay?: boolean;
+  /**
+   * In a grid: as tall as the tallest card of its row, with the room above
+   * the booking mode, so the drivers of a row are level.
+   */
+  readonly fill?: boolean;
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
@@ -101,6 +107,7 @@ export function ResultCard({
   const muted = { color: palette.textMuted };
   return (
     <Card
+      fill={fill}
       accessibilityLabel={label}
       onPress={() => {
         router.push(
@@ -112,9 +119,9 @@ export function ResultCard({
         );
       }}
     >
-      <View style={styles.content} testID="trip-result">
+      <View style={[styles.content, fill && styles.fill]} testID="trip-result">
         {day === null ? null : <Text style={[typography.caption, muted]}>{day}</Text>}
-        <View style={styles.top}>
+        <View style={[styles.top, fill && styles.fill]}>
           <View style={styles.stops}>
             <Stop
               time={formatClock(boardsAt)}
@@ -215,6 +222,7 @@ const avatarSize = spacing.xl;
 const styles = StyleSheet.create({
   content: { gap: spacing.ms },
   top: { flexDirection: "row", gap: spacing.sm },
+  fill: { flexGrow: 1 },
   stops: { flex: 1 },
   stop: { flexDirection: "row", gap: spacing.sm },
   // Room between the stops, which the line runs through.
