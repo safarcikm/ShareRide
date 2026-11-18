@@ -2,7 +2,7 @@ import type { CallFailure } from "@shareride/api-client";
 import { myTripRoute, tripBookingsRoute, type Booking } from "@shareride/contracts";
 import { cancelReasonText, capitalised, formatClock, formatDay } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
@@ -10,8 +10,9 @@ import { acceptedText } from "@/booking/texts";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
+import { Columns, PageColumn } from "@/components/columns";
 import { Notice } from "@/components/notice";
-import { Screen } from "@/components/screen";
+import { Screen, useWideScreen } from "@/components/screen";
 import { TakesFocus } from "@/components/takes-focus";
 import { Body, Heading, Title } from "@/components/text";
 import { isChangeable } from "@/driver-trip/changes";
@@ -42,11 +43,21 @@ import { firstNameOf } from "@/people/texts";
  * cancelled, says so with focus; so does `tripCancelled`, once the trip is,
  * and `changed`, which changes once each change is saved, with `told`, how
  * many passengers were told. A cancelled trip says why, and nothing more.
+ *
+ * On a wide screen (spec 18, 3.14) it is a page: Back, the day and the
+ * route across the top with "Edit trip" and "Cancel trip" at its end,
+ * whole in any window; under it the requests, the passengers, safety and
+ * posting again in the main column, and the seats on each stretch beside
+ * them. The main column is one tree for a phone and a wide screen: every
+ * part keeps its place among the others, so a question that is open stays
+ * when the window crosses the breakpoint. What a wide screen shows
+ * elsewhere is left out of the main column there.
  */
 export default function DriverTripScreen() {
   const { locale, t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
+  const wide = useWideScreen();
   const { id, cancelled, tripCancelled, changed, told, report } = useLocalSearchParams<{
     id: string;
     cancelled?: string;
@@ -82,9 +93,11 @@ export default function DriverTripScreen() {
 
   if (loaded === undefined) {
     return (
-      <Screen>
+      <Screen width="page">
         <BackButton fallback="/drive/trips" />
-        <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
+        <PageColumn>
+          <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
+        </PageColumn>
       </Screen>
     );
   }
@@ -92,64 +105,79 @@ export default function DriverTripScreen() {
   if (!trip.ok || !onTrip.ok) {
     const failure: CallFailure = trip.ok ? (onTrip as CallFailure) : trip;
     return (
-      <Screen>
+      <Screen width="page">
         <BackButton fallback="/drive/trips" />
-        <Notice
-          message={
-            failure.status === 404
-              ? t("trip.notFound")
-              : failure.error.code === "network_error"
-                ? errorText(t, failure)
-                : t("driverTrip.failed")
-          }
-        />
-        <Button variant="secondary" label={t("common.retry")} onPress={reload} />
+        <PageColumn>
+          <Notice
+            message={
+              failure.status === 404
+                ? t("trip.notFound")
+                : failure.error.code === "network_error"
+                  ? errorText(t, failure)
+                  : t("driverTrip.failed")
+            }
+          />
+          <Button variant="secondary" label={t("common.retry")} onPress={reload} />
+        </PageColumn>
       </Screen>
     );
   }
 
   const departure = trip.data.departsAt === null ? null : new Date(trip.data.departsAt);
-  const head = (
-    <>
-      <BackButton fallback="/drive/trips" />
-      <View>
-        {departure === null ? null : (
-          <Text style={[typography.small, { color: palette.textMuted }]}>
-            {capitalised(
-              t("trip.mine.when", {
-                day: formatDay(departure, locale),
-                time: formatClock(departure),
-              }),
-              locale,
-            )}
-          </Text>
-        )}
-        <Title align="start">{routeText(t, locale, trip.data)}</Title>
-      </View>
-    </>
+  const name = (
+    <View style={wide ? styles.grow : null}>
+      {departure === null ? null : (
+        <Text style={[typography.small, { color: palette.textMuted }]}>
+          {capitalised(
+            t("trip.mine.when", {
+              day: formatDay(departure, locale),
+              time: formatClock(departure),
+            }),
+            locale,
+          )}
+        </Text>
+      )}
+      <Title align="start">{routeText(t, locale, trip.data)}</Title>
+    </View>
   );
+  /** Back and the trip's name; on a wide screen in one row, with `actions` at its end. */
+  const head = (actions: ReactNode = null) =>
+    wide ? (
+      <View testID="page-head" style={styles.wideHead}>
+        <BackButton fallback="/drive/trips" />
+        {name}
+        {actions === null ? null : <View style={styles.headActions}>{actions}</View>}
+      </View>
+    ) : (
+      <>
+        <BackButton fallback="/drive/trips" />
+        {name}
+      </>
+    );
 
   if (trip.data.status === "cancelled") {
     const { cancellation } = trip.data;
     return (
-      <Screen>
-        {head}
-        <TakesFocus when={tripCancelled !== undefined}>
-          <Notice
-            kind="info"
-            message={
-              cancellation === null
-                ? t("trip.cancelled")
-                : t("driverTrip.cancelledTrip", {
-                    reason: cancelReasonText(t, cancellation.reason),
-                  })
-            }
-          />
-        </TakesFocus>
-        {cancellation === null || cancellation.note === "" ? null : (
-          <Body align="start">{t("driverTrip.yourNote", { note: cancellation.note })}</Body>
-        )}
-        <PostAgain tripId={id} />
+      <Screen width="page">
+        {head()}
+        <PageColumn>
+          <TakesFocus when={tripCancelled !== undefined}>
+            <Notice
+              kind="info"
+              message={
+                cancellation === null
+                  ? t("trip.cancelled")
+                  : t("driverTrip.cancelledTrip", {
+                      reason: cancelReasonText(t, cancellation.reason),
+                    })
+              }
+            />
+          </TakesFocus>
+          {cancellation === null || cancellation.note === "" ? null : (
+            <Body align="start">{t("driverTrip.yourNote", { note: cancellation.note })}</Body>
+          )}
+          <PostAgain tripId={id} />
+        </PageColumn>
       </Screen>
     );
   }
@@ -182,87 +210,27 @@ export default function DriverTripScreen() {
         ? null
         : { text: t("driverTrip.cancelledBooking"), key: cancelled };
 
-  return (
-    <Screen>
-      {head}
-      {said === null ? null : (
-        <TakesFocus key={said.key}>
-          <Notice kind="info" message={said.text} />
-        </TakesFocus>
-      )}
-      {changed === undefined ? null : (
-        <TakesFocus key={changed}>
-          <Notice
-            kind="info"
-            message={t(told === "0" ? "driverTrip.changedNobody" : "driverTrip.changed")}
-          />
-        </TakesFocus>
-      )}
-      <Reports
-        riding={riding}
-        report={report}
-        announce={report === reportAnnounced ? undefined : report}
-        onAnnounced={() => {
-          setReportAnnounced(report ?? null);
+  // On a wide screen these stand beside the trip's name; on a phone, after the lists.
+  const editAndCancel = open ? (
+    <>
+      <Button
+        variant="secondary"
+        label={t("trip.edit")}
+        onPress={() => {
+          router.push({ pathname: "/drive/trips/[id]/edit", params: { id } });
         }}
       />
-      {onTripDay(trip.data) ? (
-        <DriverTripDay
-          trip={trip.data}
-          bookings={riding}
-          onSaid={refresh}
-          onStale={() => {
-            setOutcome((last) => ({
-              text: t("tripDay.tripChanged"),
-              count: (last?.count ?? 0) + 1,
-              cancelled,
-            }));
-            refresh();
-          }}
-        />
-      ) : null}
-      {requests.length === 0 ? null : (
-        <>
-          <Heading>{t("driverTrip.requests")}</Heading>
-          {requests.map((booking) => (
-            <RequestCard
-              key={booking.id}
-              booking={booking}
-              trip={trip.data}
-              segments={onTrip.data.segments}
-              capacity={onTrip.data.capacity}
-              onAnswered={(answer) => {
-                change(
-                  booking.id,
-                  answer,
-                  answer.status === "declined"
-                    ? t("request.declined")
-                    : acceptedText(t, answer, now()),
-                );
-              }}
-              onGone={() => {
-                change(booking.id, null, t("request.gone"));
-              }}
-            />
-          ))}
-        </>
-      )}
-      {riding.length === 0 ? null : (
-        <>
-          <Heading>{t("driverTrip.passengers")}</Heading>
-          <PassengersByPart bookings={riding} />
-          {riding.some((booking) => booking.confirmed !== null) ? (
-            <Button
-              variant="secondary"
-              label={t("chat.messageAll")}
-              onPress={() => {
-                router.push({ pathname: "/drive/trips/[id]/message", params: { id } });
-              }}
-            />
-          ) : null}
-        </>
-      )}
-      {bookings.length === 0 ? <Body>{t("driverTrip.none")}</Body> : null}
+      <Button
+        variant="secondary"
+        label={t("trip.cancel")}
+        onPress={() => {
+          router.push({ pathname: "/drive/trips/[id]/cancel", params: { id } });
+        }}
+      />
+    </>
+  ) : null;
+  const stretches = (
+    <>
       <Heading>{t("driverTrip.stretches")}</Heading>
       <Card>
         <Stretches
@@ -271,31 +239,103 @@ export default function DriverTripScreen() {
           capacity={onTrip.data.capacity}
         />
       </Card>
-      {open ? (
-        <>
-          <Button
-            variant="secondary"
-            label={t("trip.edit")}
-            onPress={() => {
-              router.push({ pathname: "/drive/trips/[id]/edit", params: { id } });
-            }}
-          />
-          <Button
-            variant="secondary"
-            label={t("trip.cancel")}
-            onPress={() => {
-              router.push({ pathname: "/drive/trips/[id]/cancel", params: { id } });
-            }}
-          />
-        </>
-      ) : null}
-      {arrived ? null : (
-        <TripSafety
-          regions={trip.data.stops.map((stop) => stop.meetingPoint.region)}
-          share={tripShareText(t, locale, trip.data)}
+    </>
+  );
+
+  return (
+    <Screen width="page">
+      {head(editAndCancel)}
+      <Columns side={wide ? stretches : null}>
+        {said === null ? null : (
+          <TakesFocus key={said.key}>
+            <Notice kind="info" message={said.text} />
+          </TakesFocus>
+        )}
+        {changed === undefined ? null : (
+          <TakesFocus key={changed}>
+            <Notice
+              kind="info"
+              message={t(told === "0" ? "driverTrip.changedNobody" : "driverTrip.changed")}
+            />
+          </TakesFocus>
+        )}
+        <Reports
+          riding={riding}
+          report={report}
+          announce={report === reportAnnounced ? undefined : report}
+          onAnnounced={() => {
+            setReportAnnounced(report ?? null);
+          }}
         />
-      )}
-      <PostAgain tripId={id} />
+        {onTripDay(trip.data) ? (
+          <DriverTripDay
+            trip={trip.data}
+            bookings={riding}
+            onSaid={refresh}
+            onStale={() => {
+              setOutcome((last) => ({
+                text: t("tripDay.tripChanged"),
+                count: (last?.count ?? 0) + 1,
+                cancelled,
+              }));
+              refresh();
+            }}
+          />
+        ) : null}
+        {requests.length === 0 ? null : (
+          <>
+            <Heading>{t("driverTrip.requests")}</Heading>
+            {requests.map((booking) => (
+              <RequestCard
+                key={booking.id}
+                booking={booking}
+                trip={trip.data}
+                segments={onTrip.data.segments}
+                capacity={onTrip.data.capacity}
+                onAnswered={(answer) => {
+                  change(
+                    booking.id,
+                    answer,
+                    answer.status === "declined"
+                      ? t("request.declined")
+                      : acceptedText(t, answer, now()),
+                  );
+                }}
+                onGone={() => {
+                  change(booking.id, null, t("request.gone"));
+                }}
+              />
+            ))}
+          </>
+        )}
+        {riding.length === 0 ? null : (
+          <>
+            <Heading>{t("driverTrip.passengers")}</Heading>
+            <PassengersByPart bookings={riding} />
+            {riding.some((booking) => booking.confirmed !== null) ? (
+              <Button
+                variant="secondary"
+                label={t("chat.messageAll")}
+                onPress={() => {
+                  router.push({ pathname: "/drive/trips/[id]/message", params: { id } });
+                }}
+              />
+            ) : null}
+          </>
+        )}
+        {bookings.length === 0 ? (
+          <Body align={wide ? "start" : "center"}>{t("driverTrip.none")}</Body>
+        ) : null}
+        {wide ? null : stretches}
+        {wide ? null : editAndCancel}
+        {arrived ? null : (
+          <TripSafety
+            regions={trip.data.stops.map((stop) => stop.meetingPoint.region)}
+            share={tripShareText(t, locale, trip.data)}
+          />
+        )}
+        <PostAgain tripId={id} />
+      </Columns>
     </Screen>
   );
 }
@@ -349,4 +389,8 @@ function Reports({
 
 const styles = StyleSheet.create({
   report: { gap: spacing.xs },
+  wideHead: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  // `minWidth`: a long route wraps, and does not push the buttons out.
+  grow: { flex: 1, minWidth: 0 },
+  headActions: { flexDirection: "row", gap: spacing.sm },
 });

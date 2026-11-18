@@ -1,4 +1,5 @@
-import { fireEvent, screen, within } from "expo-router/testing-library";
+import { act, fireEvent, screen, within } from "expo-router/testing-library";
+import { Dimensions } from "react-native";
 import { shareLink } from "@/lib/share";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -838,5 +839,308 @@ describe("Offer opens the form (spec 16, 3.6)", () => {
     expect(await screen.findByRole("button", { name: continueDraft })).toBeVisible();
     expect(screen).toHavePathname("/offer");
     expect(screen.getByRole("button", { name: "From: Choose a meeting point" })).toBeVisible();
+  });
+});
+
+describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
+  const phone = { width: 750, height: 1334, scale: 2, fontScale: 2 };
+  const laptop = { width: 1280, height: 800, scale: 1, fontScale: 1 };
+  const map = "Your route on a map of Iceland: BSÍ bus terminal → Hof, Akureyri.";
+
+  beforeEach(() => {
+    Dimensions.set({ window: laptop });
+  });
+
+  afterEach(async () => {
+    // The screen is still on show here, so its update goes through act.
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+  });
+
+  /** The step on show: the steps before it stay under it. */
+  const onShow = (testID: string) => {
+    const found = screen.getAllByTestId(testID).at(-1);
+    if (found === undefined) throw new Error(`No ${testID} on screen.`);
+    return found;
+  };
+  const main = () => within(onShow("columns-main"));
+  const side = () => within(onShow("columns-side"));
+  const soFar = () => within(onShow("trip-so-far"));
+
+  /** The test IDs, spoken labels and texts on screen, in reading order. */
+  function marksInOrder(): string[] {
+    const marks: string[] = [];
+    const walk = (node: unknown) => {
+      if (typeof node === "string") marks.push(node);
+      else if (Array.isArray(node)) node.forEach(walk);
+      else if (typeof node === "object" && node !== null) {
+        if ("props" in node && typeof node.props === "object" && node.props !== null) {
+          const props = node.props as { testID?: unknown; accessibilityLabel?: unknown };
+          if (typeof props.testID === "string") marks.push(props.testID);
+          if (typeof props.accessibilityLabel === "string") marks.push(props.accessibilityLabel);
+        }
+        if ("children" in node) walk(node.children);
+      }
+    };
+    walk(screen.toJSON());
+    return marks;
+  }
+
+  /** A draft with a route and nothing else chosen yet. */
+  const unplanned = () =>
+    plannedDraft({
+      stops: plannedDraft().stops.map((stop) => ({ ...stop, plannedAt: null })),
+      departsAt: null,
+      arrivesAt: null,
+    });
+
+  it("puts the step in the main column, with the trip so far and the button beside it", async () => {
+    await open("/drive/trips/new");
+    expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
+    expect(screen.getByTestId("page")).toBeVisible();
+    expect(main().getByRole("button", { name: "Back" })).toBeVisible();
+    expect(main().getByText("Step 1 of 5")).toBeVisible();
+    expect(main().getByRole("header", { name: "Where are you driving?" })).not.toHaveStyle({
+      textAlign: "center",
+    });
+    expect(main().getByRole("button", { name: "From: Choose a meeting point" })).toBeVisible();
+
+    expect(soFar().getByRole("header", { name: "Your trip so far" })).toBeVisible();
+    expect(soFar().getByLabelText("Route: Step 1")).toBeVisible();
+    expect(soFar().getByLabelText("Date and times: Step 2")).toBeVisible();
+    expect(soFar().getByLabelText("Price: Step 3")).toBeVisible();
+    expect(soFar().getByLabelText("Seats and booking: Step 4")).toBeVisible();
+    expect(side().getByRole("button", { name: "Choose date and time" })).toBeVisible();
+
+    // The side column takes the bottom bar's place, and each thing is there once.
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+    expect(screen.getAllByRole("button", { name: "Choose date and time" })).toHaveLength(1);
+    expect(screen.queryByRole("image", { name: map })).toBeNull();
+  });
+
+  it("shows the route as it is chosen, with its map under the button", async () => {
+    await open("/drive/trips/new");
+    await choosePoint("From", "bs", "BSÍ bus terminal");
+    await choosePoint("To", "hof", "Hof, Akureyri");
+    const blonduosSwitch = await main().findByRole("switch", { name: "Blönduós" });
+    expect(
+      soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri, 2 stops on the way"),
+    ).toBeVisible();
+    // Shown with an arrow, read out as "to".
+    expect(soFar().getByText("BSÍ bus terminal → Hof, Akureyri")).toBeVisible();
+    expect(side().getByRole("image", { name: map })).toBeVisible();
+    expect(screen.getAllByRole("image", { name: map })).toHaveLength(1);
+    // The button keeps its place when the map comes: the map goes under it.
+    const marks = marksInOrder();
+    expect(marks.indexOf("trip-so-far")).toBeLessThan(marks.indexOf("Choose date and time"));
+    expect(marks.indexOf("Choose date and time")).toBeLessThan(marks.indexOf(map));
+
+    await fireEvent.press(blonduosSwitch);
+    expect(
+      soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri, 1 stop on the way"),
+    ).toBeVisible();
+    expect(await main().findByText("200 km · about 2 h")).toBeVisible();
+    expect(soFar().getByLabelText("Date and times: Step 2")).toBeVisible();
+    // With no stop on the way, the ends alone.
+    await fireEvent.press(main().getByRole("switch", { name: "Borgarnes" }));
+    expect(soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri")).toBeVisible();
+  });
+
+  it("keeps what is typed and switched off when the window turns narrow and wide again", async () => {
+    await open("/drive/trips/new");
+    await choosePoint("From", "bs", "BSÍ bus terminal");
+    await choosePoint("To", "hof", "Hof, Akureyri");
+    await fireEvent.press(await screen.findByRole("switch", { name: "Blönduós" }));
+    // A search under To, still open.
+    await fireEvent.press(screen.getByRole("button", { name: /^To: / }));
+    await fireEvent.changeText(await screen.findByLabelText("To"), "bor");
+
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+    expect(screen.queryByTestId("columns-side")).toBeNull();
+    expect(screen.queryByTestId("trip-so-far")).toBeNull();
+    expect(screen.getByLabelText("To")).toHaveDisplayValue("bor");
+    expect(screen.getByRole("switch", { name: "Blönduós" })).not.toBeChecked();
+    expect(
+      within(screen.getByTestId("bottom-bar")).getByRole("button", {
+        name: "Choose date and time",
+      }),
+    ).toBeVisible();
+    expect(screen.getAllByRole("image", { name: map })).toHaveLength(1);
+
+    await act(() => {
+      Dimensions.set({ window: laptop });
+    });
+    expect(main().getByLabelText("To")).toHaveDisplayValue("bor");
+    expect(main().getByRole("switch", { name: "Blönduós" })).not.toBeChecked();
+    expect(side().getByRole("button", { name: "Choose date and time" })).toBeVisible();
+    expect(side().getByRole("image", { name: map })).toBeVisible();
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+  });
+
+  it("shows the day and times as they are chosen", async () => {
+    const draft = unplanned();
+    await open(`/drive/trips/${draft.id}/time`, [draft]);
+    expect(await soFar().findByLabelText("Date and times: Step 2")).toBeVisible();
+    expect(
+      soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri, 1 stop on the way"),
+    ).toBeVisible();
+    await fireEvent.press(main().getByRole("radio", { name: "Sunday 15 November" }));
+    await chooseTime("Leaving BSÍ bus terminal at", "09:00");
+    expect(
+      soFar().getByLabelText("Date and times: Sunday 15 November, 09:00 to 11:00"),
+    ).toBeVisible();
+    expect(soFar().getByLabelText("Price: Step 3")).toBeVisible();
+    expect(soFar().getByLabelText("Seats and booking: Step 4")).toBeVisible();
+    expect(side().getByRole("button", { name: "Set your price" })).toBeVisible();
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+  });
+
+  it("shows what earlier steps set, and the price and seats as they are chosen", async () => {
+    const draft = plannedDraft();
+    await open(`/drive/trips/${draft.id}/price`, [draft]);
+    expect(await main().findByText("3,000 ISK")).toBeVisible();
+    expect(
+      soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri, 1 stop on the way"),
+    ).toBeVisible();
+    expect(
+      soFar().getByLabelText("Date and times: Sunday 15 November, 09:00 to 11:00"),
+    ).toBeVisible();
+    expect(soFar().getByLabelText("Price: 100% · the whole route 3,000 ISK")).toBeVisible();
+    expect(soFar().getByLabelText("Seats and booking: Step 4")).toBeVisible();
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+
+    await fireEvent.press(main().getByRole("button", { name: "Raise the price" }));
+    expect(await soFar().findByLabelText("Price: 110% · the whole route 3,400 ISK")).toBeVisible();
+    await fireEvent.press(side().getByRole("button", { name: "Choose seats" }));
+    expect(await screen.findByRole("header", { name: "Seats and preferences" })).toBeVisible();
+    expect(await soFar().findByLabelText("Price: 110% · the whole route 3,400 ISK")).toBeVisible();
+    expect(
+      soFar().getByLabelText("Seats and booking: 3 seats, I approve each passenger"),
+    ).toBeVisible();
+    await fireEvent.press(main().getByRole("button", { name: "One seat more" }));
+    await fireEvent.press(main().getByRole("radio", { name: /^Instant booking/ }));
+    expect(soFar().getByLabelText("Seats and booking: 4 seats, Instant booking")).toBeVisible();
+    expect(side().getByRole("button", { name: "Review your trip" })).toBeVisible();
+  });
+
+  it("shows everything the trip has when a step is opened from the review", async () => {
+    await open(`/drive/trips/${plannedDraft().id}/review`, [plannedDraft()]);
+    await fireEvent.press(await screen.findByRole("link", { name: "Edit: Route" }));
+    expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
+    expect(
+      soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri, 1 stop on the way"),
+    ).toBeVisible();
+    expect(
+      soFar().getByLabelText("Date and times: Sunday 15 November, 09:00 to 11:00"),
+    ).toBeVisible();
+    expect(await soFar().findByLabelText("Price: 100% · the whole route 3,000 ISK")).toBeVisible();
+    expect(
+      soFar().getByLabelText("Seats and booking: 3 seats, I approve each passenger"),
+    ).toBeVisible();
+    expect(soFar().getByText("09:00 → 11:00")).toBeVisible();
+    expect(side().getByRole("button", { name: "Save changes" })).toBeVisible();
+  });
+
+  it("names the times' step again while the route is not the saved one", async () => {
+    await open(`/drive/trips/${plannedDraft().id}/review`, [plannedDraft()]);
+    await fireEvent.press(await screen.findByRole("link", { name: "Edit: Route" }));
+    expect(
+      await soFar().findByLabelText("Date and times: Sunday 15 November, 09:00 to 11:00"),
+    ).toBeVisible();
+    // The saved times are the saved route's: with other stops they are counted anew.
+    await fireEvent.press(main().getByRole("switch", { name: "Borgarnes" }));
+    expect(soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri")).toBeVisible();
+    expect(soFar().getByLabelText("Date and times: Step 2")).toBeVisible();
+    expect(soFar().queryByText("09:00 → 11:00")).toBeNull();
+    // Back on the saved route, they are its times again.
+    await fireEvent.press(main().getByRole("switch", { name: "Borgarnes" }));
+    expect(
+      soFar().getByLabelText("Date and times: Sunday 15 November, 09:00 to 11:00"),
+    ).toBeVisible();
+  });
+
+  it("has Publish and what it waits for beside the summary, with no trip so far", async () => {
+    const draft = plannedDraft();
+    await renderApp(`/drive/trips/${draft.id}/review`, {
+      me: completeMe,
+      setUp: (client) => {
+        tripsApi(client, [draft]);
+        client.answer("/v1/me/driver-readiness", () =>
+          ok(200, {
+            ready: false,
+            items: [
+              { item: "photo", done: false, blocking: false },
+              { item: "car", done: true, blocking: true },
+              { item: "licence", done: false, blocking: true },
+            ],
+            licenceDeclaredAt: null,
+          }),
+        );
+      },
+    });
+    expect(
+      await main().findByRole("header", { name: "One thing before you publish" }),
+    ).toBeVisible();
+    expect(screen.getByTestId("page")).toBeVisible();
+    expect(main().getByText("Step 5 of 5")).toBeVisible();
+    expect(main().getByRole("link", { name: "Edit: Route" })).toBeVisible();
+    expect(main().getByRole("button", { name: "Delete draft" })).toBeVisible();
+    expect(side().getByRole("button", { name: "Publish trip" })).toBeDisabled();
+    expect(
+      side().getByText(
+        "Confirm your licence to publish. Your trip is saved as a draft until then.",
+      ),
+    ).toBeVisible();
+    // The review is the trip so far.
+    expect(screen.queryByTestId("trip-so-far")).toBeNull();
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+  });
+
+  it("keeps the draft to continue above the form on Offer", async () => {
+    await open("/offer", [plannedDraft()]);
+    expect(
+      await main().findByRole("button", {
+        name: "Continue your draft: BSÍ bus terminal → Hof, Akureyri",
+      }),
+    ).toBeVisible();
+    expect(main().getByText("Step 1 of 5")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
+    expect(soFar().getByLabelText("Route: Step 1")).toBeVisible();
+    expect(side().getByRole("button", { name: "Choose date and time" })).toBeVisible();
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+  });
+
+  it("is a page from the start, also when the draft cannot be loaded", async () => {
+    await open("/drive/trips/0190a1d6-0000-7000-8000-000000000999/price");
+    expect(await main().findByRole("button", { name: "Try again" })).toBeVisible();
+    expect(screen.getByTestId("page")).toBeVisible();
+    expect(main().getByRole("button", { name: "Back" })).toBeVisible();
+    expect(main().getByText("Step 3 of 5")).toBeVisible();
+    expect(screen.queryByTestId("trip-so-far")).toBeNull();
+  });
+
+  it("leaves a phone as it was: one column, the map under the ends, the button in the bottom bar", async () => {
+    Dimensions.set({ window: phone });
+    await open("/drive/trips/new");
+    await choosePoint("From", "bs", "BSÍ bus terminal");
+    await choosePoint("To", "hof", "Hof, Akureyri");
+    expect(await screen.findByRole("switch", { name: "Blönduós" })).toBeChecked();
+    expect(screen.queryByTestId("page")).toBeNull();
+    expect(screen.queryByTestId("columns-side")).toBeNull();
+    expect(screen.queryByTestId("trip-so-far")).toBeNull();
+    expect(screen.getByRole("header", { name: "Where are you driving?" })).toHaveStyle({
+      textAlign: "center",
+    });
+    expect(
+      within(screen.getByTestId("bottom-bar")).getByRole("button", {
+        name: "Choose date and time",
+      }),
+    ).toBeVisible();
+    const marks = marksInOrder();
+    expect(marks.indexOf("From: BSÍ bus terminal")).toBeLessThan(marks.indexOf(map));
+    expect(marks.indexOf(map)).toBeLessThan(marks.indexOf("Stops on the way"));
   });
 });

@@ -1201,6 +1201,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   rides as a grid of two or three columns in the same order. My profile
   has who I am in a card at the left and its rows beside it. Phones are
   unchanged.
+- Offer a ride and the driver's trip on a laptop (spec 18, 3.13 and
+  3.14), the last of the laptop layouts. Each step of posting a trip is
+  two columns: the step at the left, and beside it "Your trip so far",
+  which fills in as the route, the day and times, the price and the seats
+  are chosen, then the step's button, and on the first step the map of the
+  route. The button keeps its place when the map comes and is whole in a
+  small laptop's window. What is typed or chosen on a step stays when the
+  window turns narrow or wide. The driver's trip has "Edit trip" and
+  "Cancel trip" beside its name, requests and passengers in the main
+  column and the seats on each stretch beside them. Phones are unchanged.
 - Send feedback in the app and the console (spec 12, 3.3; milestone 11,
   PR 6): the form opens from the Beta label, Profile and Settings, and on
   phones from a shake, which a switch in Settings turns off. Phones take a

@@ -18,6 +18,7 @@ import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { RouteEnds } from "@/components/route-ends";
 import { Notice } from "@/components/notice";
+import { useWideScreen } from "@/components/screen";
 import { Switch } from "@/components/switch";
 import { Tag } from "@/components/tag";
 import { Body, Heading } from "@/components/text";
@@ -27,6 +28,7 @@ import { RouteMap } from "@/maps/route-map";
 import { PointDropdown, PointPicker } from "./point-picker";
 import { StepScreen } from "./step-screen";
 import { goOn, stepHref } from "./steps";
+import { routeSoFar, savedSoFar } from "./trip-so-far";
 import { useQuote } from "./use-quote";
 
 interface Stop {
@@ -75,6 +77,7 @@ export function RouteStep({
 }) {
   const { locale, t } = useLanguage();
   const session = useSession();
+  const wide = useWideScreen();
   const [from, setFrom] = useState(trip?.stops[0]?.meetingPoint ?? null);
   const [to, setTo] = useState(trip?.stops.at(-1)?.meetingPoint ?? null);
   const [between, setBetween] = useState<readonly Stop[]>(
@@ -239,11 +242,44 @@ export function RouteStep({
     return warning?.code === "stop_adds_distance" ? warning.addedM : null;
   };
 
+  const chosen = from !== null && to !== null && from.id !== to.id;
+  const saved = trip === undefined ? {} : savedSoFar(t, locale, trip, "route", fromReview, quote);
+  // The saved times are the saved route's: with other stops only the
+  // departure stays, and the rest are counted anew when the route is saved.
+  const savedRoute =
+    trip !== undefined &&
+    trip.stops.length === ids.length &&
+    trip.stops.every((stop, index) => stop.meetingPoint.id === ids[index]);
+  // Once the stops on the way are known. A wide screen has it beside the step.
+  const map =
+    chosen && alongFor === null ? (
+      <RouteMap
+        label={t("trip.route.map", {
+          route: t("search.route", { from: from.name[locale], to: to.name[locale] }),
+        })}
+        stops={[from, ...between.filter((stop) => stop.on).map((stop) => stop.point), to].map(
+          (point) => point.position,
+        )}
+      />
+    ) : null;
+
   return (
     <StepScreen
       step="route"
       title={t("trip.route.title")}
       onOffer={onOffer}
+      map={map}
+      soFar={{
+        ...saved,
+        time: savedRoute ? saved.time : undefined,
+        // The route as it is chosen here.
+        route: chosen
+          ? routeSoFar(
+              t,
+              stops.flatMap((point) => (point === null ? [] : [point.name[locale]])),
+            )
+          : undefined,
+      }}
       footer={
         <Button
           main
@@ -294,18 +330,9 @@ export function RouteStep({
         }}
       />
       <Notice message={message} />
-      {from === null || to === null || from.id === to.id ? null : (
+      {!chosen ? null : (
         <>
-          {alongFor === null ? (
-            <RouteMap
-              label={t("trip.route.map", {
-                route: t("search.route", { from: from.name[locale], to: to.name[locale] }),
-              })}
-              stops={[from, ...between.filter((stop) => stop.on).map((stop) => stop.point), to].map(
-                (point) => point.position,
-              )}
-            />
-          ) : null}
+          {wide ? null : map}
           <Heading>{t("trip.route.stopsTitle")}</Heading>
           {alongFailure !== null ? (
             <>

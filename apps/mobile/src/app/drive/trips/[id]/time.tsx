@@ -30,6 +30,7 @@ import { at, clockOf, earliestDeparture, onOrAfter, type Clock } from "@/trips/c
 import { droppedFrom } from "@/trips/copied";
 import { StepScreen } from "@/trips/step-screen";
 import { goOn } from "@/trips/steps";
+import { savedSoFar, timesSoFar } from "@/trips/trip-so-far";
 import { Loading, useDraftOnFocus } from "@/trips/use-draft";
 import { useQuote } from "@/trips/use-quote";
 
@@ -100,8 +101,8 @@ function TimeStep({
     seats: trip.seats,
     priceLevel: trip.priceLevel,
   });
-  const durations =
-    quoted.result?.ok === true ? quoted.result.data.segments.map((s) => s.durationS) : null;
+  const quote = quoted.result?.ok === true ? quoted.result.data : null;
+  const durations = quote === null ? null : quote.segments.map((s) => s.durationS);
 
   /** The times at the other stops from the typical driving times. */
   const planFrom = (
@@ -250,6 +251,11 @@ function TimeStep({
     <StepScreen
       step="time"
       title={t("trip.time.title")}
+      soFar={{
+        ...savedSoFar(t, locale, trip, "time", fromReview, quote),
+        // The day and times as they are chosen here.
+        time: complete ? timesSoFar(t, locale, moments) : undefined,
+      }}
       footer={
         <Button
           main

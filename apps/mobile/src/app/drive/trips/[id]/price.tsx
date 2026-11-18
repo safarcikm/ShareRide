@@ -11,6 +11,7 @@ import { useLanguage } from "@/i18n/language";
 import { PriceCard } from "@/trips/price-card";
 import { StepScreen } from "@/trips/step-screen";
 import { goOn } from "@/trips/steps";
+import { priceSoFar, savedSoFar } from "@/trips/trip-so-far";
 import { Loading, useDraftOnFocus } from "@/trips/use-draft";
 import { useQuote } from "@/trips/use-quote";
 
@@ -67,6 +68,11 @@ function PriceStep({ trip, fromReview }: { readonly trip: MyTrip; readonly fromR
     <StepScreen
       step="price"
       title={t("trip.price.title")}
+      soFar={{
+        ...savedSoFar(t, locale, trip, "price", fromReview, quote),
+        // The price as it is chosen here.
+        price: priceSoFar(t, locale, quote, level),
+      }}
       footer={
         <Button
           main

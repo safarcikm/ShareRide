@@ -24,6 +24,7 @@ import { NoteField, PreferenceChoices } from "@/trips/preference-fields";
 import { StepScreen } from "@/trips/step-screen";
 import { goOn } from "@/trips/steps";
 import { bookingModeKeys } from "@/trips/texts";
+import { savedSoFar, seatsSoFar } from "@/trips/trip-so-far";
 import { Loading, useDraftOnFocus } from "@/trips/use-draft";
 import { useQuote } from "@/trips/use-quote";
 
@@ -70,7 +71,7 @@ function SeatsStep({
   readonly cars: readonly Vehicle[];
   readonly fromReview: boolean;
 }) {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   const maxSeats = useMaxSeats();
   const session = useSession();
   const [seats, setSeats] = useState(trip.seats);
@@ -119,6 +120,11 @@ function SeatsStep({
     <StepScreen
       step="seats"
       title={t("trip.seats.title")}
+      soFar={{
+        ...savedSoFar(t, locale, trip, "seats", fromReview, quote),
+        // The seats and how people book, as they are chosen here.
+        seats: seatsSoFar(t, seats, bookingMode),
+      }}
       footer={
         <Button
           main

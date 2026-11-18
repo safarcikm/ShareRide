@@ -1,7 +1,7 @@
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
 import { english, signUp } from "./support/account";
 import { expectNoSidewaysScroll, laptop, widths } from "./support/laptop";
-import { postTripToSelfoss } from "./support/trips";
+import { chooseTime, postTripToSelfoss, tomorrow } from "./support/trips";
 
 // The web app on a laptop (spec 18): the top bar's content lines up with the
 // page, the logo opens Find, and no screen scrolls sideways at the widths a
@@ -620,9 +620,13 @@ async function expectSideBySide(first: Locator, second: Locator) {
 }
 
 /** Everything to press in the part is whole inside its width. */
-async function expectButtonsInside(part: Locator, atLeast: number) {
+async function expectButtonsInside(
+  part: Locator,
+  atLeast: number,
+  toPress = '[role="button"], [role="link"]',
+) {
   const partBox = await box(part);
-  const buttons = await part.locator('[role="button"], [role="link"]').all();
+  const buttons = await part.locator(toPress).all();
   expect(buttons.length).toBeGreaterThanOrEqual(atLeast);
   for (const button of buttons) {
     const one = await box(button);
@@ -791,6 +795,216 @@ test.describe("My rides, a booking and Profile", () => {
     await dora.goto("/my-rides");
     await expect(hers).toHaveCount(1);
     await expectNoSidewaysScroll(dora);
+    await dora.context().close();
+  });
+});
+
+// Offer a ride and the driver's trip (spec 18, 3.13 and 3.14): each step in
+// a column with "Your trip so far" and its button beside it, and the
+// driver's trip with the seats on each stretch beside its lists.
+test.describe("Offer a ride and the driver's trip", () => {
+  test.use({ viewport: laptop(1280), locale: "en-GB" });
+
+  test("post a trip step by step in two columns, then answer a request beside the seats on each stretch", async ({
+    page: driver,
+    browser,
+  }, testInfo) => {
+    // A driver posts a trip with a car and a licence added on the way, and
+    // a passenger asks for a seat.
+    test.setTimeout(150_000);
+    const { baseURL } = testInfo.project.use;
+    await signUp(driver, english, "Bára");
+    const main = driver.getByTestId("columns-main").filter(shown);
+    const side = driver.getByTestId("columns-side").filter(shown);
+    const soFar = side.getByTestId("trip-so-far");
+    /** The step's two columns stand side by side, the step no wider than a phone's column. */
+    const expectTwoColumns = async () => {
+      const mainBox = await box(main);
+      const sideBox = await box(side);
+      expect(sideBox.x).toBeGreaterThan(mainBox.x + mainBox.width);
+      expect(sideBox.y).toBeCloseTo(mainBox.y, 0);
+      expect(mainBox.width).toBeLessThanOrEqual(480);
+      await expect(driver.getByTestId("bottom-bar").filter(shown)).toHaveCount(0);
+      await expectNoSidewaysScroll(driver);
+    };
+    /** The button is whole in the window, wherever the step is scrolled to. */
+    const expectInWindow = async (button: Locator) => {
+      const { height } = driver.viewportSize() ?? { height: 0 };
+      const one = await box(button);
+      expect(one.y).toBeGreaterThanOrEqual(0);
+      expect(one.y + one.height).toBeLessThanOrEqual(height);
+    };
+
+    // Step 1 on Offer: every row of the trip so far names its step.
+    await driver.goto("/offer");
+    await expect(main.getByRole("heading", { name: "Where are you driving?" })).toBeVisible();
+    await expect(soFar.getByLabel("Route: Step 1")).toBeVisible();
+    await expect(soFar.getByLabel("Seats and booking: Step 4")).toBeVisible();
+    const toTimes = side.getByRole("button", { name: "Choose date and time" });
+    const before = await box(toTimes);
+    await expectTwoColumns();
+
+    // The route as it is chosen, in two lines however many stops it has,
+    // and its map under the button, which stays where it was.
+    for (const [end, typed, card] of [
+      ["From", "mjódd", /^Mjódd bus terminal,/],
+      ["To", "selfo", /^N1 Selfoss,/],
+    ] as const) {
+      await main.getByRole("button", { name: new RegExp(`^${end}: `) }).click();
+      await main.getByLabel(end, { exact: true }).fill(typed);
+      await main.getByRole("button", { name: card }).click();
+    }
+    await expect(
+      soFar.getByLabel("Route: Mjódd bus terminal to N1 Selfoss, 2 stops on the way"),
+    ).toBeVisible();
+    const map = side.getByTestId("iceland-map");
+    await expect(map).toBeVisible();
+    await expect(driver.getByTestId("iceland-map").filter(shown)).toHaveCount(1);
+    for (const width of widths) {
+      await driver.setViewportSize(laptop(width));
+      await expectTwoColumns();
+      const button = await box(toTimes);
+      expect((await box(soFar)).y).toBeLessThan(button.y);
+      expect((await box(map)).y).toBeGreaterThan(button.y + button.height);
+      await expectButtonsInside(main, 4);
+      await expectButtonsInside(side, 1);
+    }
+    // One line more in the trip so far, and no more, moved the button.
+    await driver.setViewportSize(laptop(1280));
+    expect((await box(toTimes)).y - before.y).toBeLessThan(40);
+    await main.getByRole("switch", { name: "Olís Norðlingaholt" }).click();
+    await expect(
+      soFar.getByLabel("Route: Mjódd bus terminal to N1 Selfoss, 1 stop on the way"),
+    ).toBeVisible();
+    // In a small laptop's window the button is whole, above the map.
+    await driver.setViewportSize({ width: 1280, height: 720 });
+    await expectInWindow(toTimes);
+    await driver.setViewportSize(laptop(1280));
+    await toTimes.click();
+
+    // Step 2: the day and the times as they are chosen.
+    await expect(main.getByRole("heading", { name: "When are you leaving?" })).toBeVisible();
+    await expect(soFar.getByLabel("Date and times: Step 2")).toBeVisible();
+    const day = tomorrow("en");
+    if (day.nextMonth) await main.getByRole("button", { name: "Next month" }).click();
+    await main.getByRole("radio", { name: day.name }).click();
+    await chooseTime(driver, "Leaving Mjódd bus terminal at", "17:45");
+    await expect(soFar.getByLabel(/^Date and times: .+, 17:45 to \d\d:\d\d$/)).toBeVisible();
+    await expect(soFar.getByLabel("Price: Step 3")).toBeVisible();
+    await expectTwoColumns();
+    await side.getByRole("button", { name: "Set your price" }).click();
+
+    // Step 3: the price as it is chosen.
+    await expect(main.getByRole("heading", { name: "Set your price" })).toBeVisible();
+    await expect(soFar.getByLabel(/^Price: 100% · the whole route [\d,]+ ISK$/)).toBeVisible();
+    await main.getByRole("button", { name: "Raise the price" }).click();
+    await expect(soFar.getByLabel(/^Price: 110% · the whole route [\d,]+ ISK$/)).toBeVisible();
+    await expectTwoColumns();
+    await side.getByRole("button", { name: "Choose seats" }).click();
+
+    // Step 4, the longest: its button stays in the window while the step
+    // scrolls, also in a small laptop's window and in Icelandic.
+    await expect(main.getByRole("heading", { name: "Seats and preferences" })).toBeVisible();
+    await expect(
+      soFar.getByLabel("Seats and booking: 3 seats, I approve each passenger"),
+    ).toBeVisible();
+    const toReview = side.getByRole("button", { name: "Review your trip" });
+    const choices = '[role="button"], [role="radio"], [role="checkbox"], [role="switch"]';
+    for (const width of widths) {
+      await driver.setViewportSize(laptop(width));
+      await expectTwoColumns();
+      await expectButtonsInside(main, 10, choices);
+    }
+    await driver.setViewportSize(laptop(widths[0]));
+    await driver.getByRole("button", { name: "Change the language to Icelandic" }).click();
+    await expect(soFar.getByLabel(/^Sæti og bókun: 3 sæti, /)).toBeVisible();
+    await expectTwoColumns();
+    await expectButtonsInside(main, 10, choices);
+    await driver.getByRole("button", { name: "Skipta yfir í ensku" }).click();
+    await driver.setViewportSize({ width: 1280, height: 720 });
+    await driver
+      .getByTestId("screen-scroll")
+      .filter(shown)
+      .evaluate((scroll) => {
+        // Not scrollTo: on the web a ScrollView's node carries React Native's own.
+        scroll.scrollTop = scroll.scrollHeight;
+      });
+    await expect(main.getByLabel("Note to passengers (optional)")).toBeInViewport();
+    await expectInWindow(toReview);
+    await toReview.click();
+
+    // Step 5: Publish and what it waits for beside the summary.
+    await expect(main.getByRole("heading", { name: "Check and publish" })).toBeVisible();
+    const publish = side.getByRole("button", { name: "Publish trip" });
+    await expect(publish).toBeDisabled();
+    await expect(
+      side.getByText(/^Add your car and confirm your licence to publish\./),
+    ).toBeVisible();
+    await expect(side.getByTestId("trip-so-far")).toHaveCount(0);
+    await expectTwoColumns();
+    await main.getByRole("button", { name: "Add a car" }).click();
+    await driver.getByLabel("Make").fill("Toyota");
+    await driver.getByLabel("Model").fill("Yaris");
+    await driver.getByRole("radio", { name: "White" }).click();
+    await driver.getByRole("button", { name: "Save car" }).click();
+    await main.getByRole("button", { name: "Confirm your licence" }).click();
+    await driver
+      .getByRole("checkbox", {
+        name: "I declare that I hold a valid driving licence for the cars I drive on ShareRide",
+      })
+      .click();
+    await driver.getByRole("button", { name: "Confirm", exact: true }).click();
+    await expect(publish).toBeEnabled();
+    await publish.click();
+    await expect(driver.getByRole("heading", { name: "Your trip is published" })).toBeVisible();
+    const [, tripId = ""] = /\/drive\/trips\/([0-9a-f-]+)\/published/.exec(driver.url()) ?? [];
+
+    // The driver's trip: Edit trip and Cancel trip beside its name, the
+    // request in the main column and the seats on each stretch beside it.
+    const dora = await askForSeat(browser, baseURL, tripId, "Dóra");
+    await driver.goto(`/drive/trips/${tripId}`);
+    const head = driver.getByTestId("page-head").filter(shown);
+    await expect(main.getByRole("heading", { name: "Requests" })).toBeVisible();
+    await expect(side.getByRole("heading", { name: "Seats on each stretch" })).toBeVisible();
+    await expect(
+      side.getByLabel("Mjódd bus terminal to N1 Hveragerði, 1 of 3 seats taken"),
+    ).toBeVisible();
+    const edit = head.getByRole("button", { name: "Edit trip" });
+    const cancel = head.getByRole("button", { name: "Cancel trip" });
+    for (const width of widths) {
+      await driver.setViewportSize(laptop(width));
+      const mainBox = await box(main);
+      const sideBox = await box(side);
+      expect(sideBox.x).toBeGreaterThan(mainBox.x + mainBox.width);
+      expect(sideBox.y).toBeCloseTo(mainBox.y, 0);
+      // The two buttons end the row of the trip's name, at the page's edge.
+      const headBox = await box(head);
+      const editBox = await box(edit);
+      const cancelBox = await box(cancel);
+      expect(cancelBox.x).toBeGreaterThan(editBox.x + editBox.width);
+      expect(cancelBox.y).toBeCloseTo(editBox.y, 0);
+      expect(cancelBox.x + cancelBox.width).toBeCloseTo(sideBox.x + sideBox.width, 0);
+      const title = await box(
+        head.getByRole("heading", { name: "Mjódd bus terminal → N1 Selfoss" }),
+      );
+      expect(title.x + title.width).toBeLessThanOrEqual(editBox.x);
+      expect(editBox.y).toBeGreaterThanOrEqual(headBox.y);
+      await expectButtonsInside(head, 3);
+      await expectButtonsInside(main, 3);
+      await expectNoSidewaysScroll(driver);
+    }
+    await driver.setViewportSize(laptop(1280));
+    await main.getByRole("button", { name: "Accept", exact: true }).click();
+    await expect(main.getByLabel("Dóra, 1 seat, Waiting for payment")).toBeVisible();
+    await expect(side.getByRole("heading", { name: "Seats on each stretch" })).toBeVisible();
+
+    // In Icelandic at the narrowest wide window.
+    await driver.setViewportSize(laptop(widths[0]));
+    await driver.getByRole("button", { name: "Change the language to Icelandic" }).click();
+    await expect(head.getByRole("button", { name: "Breyta ferð" })).toBeVisible();
+    await expectButtonsInside(head, 3);
+    await expectButtonsInside(main, 3);
+    await expectNoSidewaysScroll(driver);
     await dora.context().close();
   });
 });
