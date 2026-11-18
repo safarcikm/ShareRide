@@ -35,6 +35,7 @@ export const outboxEventTypes = [
   "BookingCompleted",
   "ReviewRevealed",
   "MeetingPointChanged",
+  "MeetingPointMoved",
   "DataExportReady",
   "ReportFiled",
   "AccountDeletionScheduled",

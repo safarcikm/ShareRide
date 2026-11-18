@@ -21,6 +21,7 @@ export type OutboxEvent =
         | "MessageSent"
         | "ReviewRevealed"
         | "MeetingPointChanged"
+        | "MeetingPointMoved"
         | "DataExportReady"
         | "ReportFiled"
         | "ModerationActionTaken"
@@ -76,11 +77,11 @@ export type OutboxEvent =
     }
   | {
       /**
-       * A meeting point paused, one for each trip still to stop there: its
-       * driver, and each passenger who gets in or out there, are told
-       * (spec 2, 3.6.4).
+       * A meeting point paused (spec 2, 3.6.4) or moved more than 50 m
+       * (3.6.6), one for each trip still to stop there: its driver, and each
+       * passenger who gets in or out there, are told.
        */
-      readonly type: "MeetingPointChanged";
+      readonly type: "MeetingPointChanged" | "MeetingPointMoved";
       readonly tripId: string;
       readonly meetingPointId: string;
     }

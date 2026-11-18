@@ -1,7 +1,9 @@
 # Milestone 8 plan: the operator console and meeting points
 
-**Owner:** Martin · **Date:** 2026-11-16 · **Status:** In progress; the
-choices in section 3 accepted by Martin on 2026-11-16 as recommended
+**Owner:** Martin · **Date:** 2026-11-16 · **Status:** Built; the
+choices in section 3 accepted by Martin on 2026-11-16 as recommended; every
+PR merged (#83 to #148, the last on 2026-11-18); a screen reader pass and
+Martin's check in [section 9](#9-definition-of-done) to do
 
 Gives Martin his own web console, open only to the operator, signed in
 with a passkey, where every action is written to an audit log. Its first
@@ -260,7 +262,7 @@ parallel.
 
 ### PR 2: `feat(admin)`: the operator role, sessions, guard and audit log
 
-- [ ] `operator_sessions`, `audit_log` with its trigger, `requireOperator`,
+- [x] `operator_sessions`, `audit_log` with its trigger, `requireOperator`,
       `recordAudit`, `GET /admin/v1/me`, sign-out; a test helper that
       signs in an operator without a passkey, for other modules' tests
 - Verify: integration tests (no session, an ended session, a session
@@ -269,7 +271,7 @@ parallel.
 
 ### PR 3: `feat(admin)`: passkey sign-in and the operator command
 
-- [ ] `operator_passkeys`, `operator_setup_links`; the `operator` command
+- [x] `operator_passkeys`, `operator_setup_links`; the `operator` command
       (add, remove, list); setup, sign-in, add and remove a passkey;
       limits; audit entries
 - Verify: integration tests with a software authenticator (a used or
@@ -278,7 +280,7 @@ parallel.
 
 ### PR 4: `feat(admin)`: the console app
 
-- [ ] `packages/ui` with the tokens and map data; `apps/admin` with
+- [x] `packages/ui` with the tokens and map data; `apps/admin` with
       setup, sign-in, the layout, the sections list, home, passkeys and
       sign-out; served at `/admin` with its own security headers; texts
 - Verify: component tests; a browser journey with Playwright's virtual
@@ -287,12 +289,12 @@ parallel.
 
 ### PR 5: `feat(admin)`: the audit log page
 
-- [ ] `GET /admin/v1/audit-log` and its page with filters
+- [x] `GET /admin/v1/audit-log` and its page with filters
 - Verify: integration test for the filters and the cursor; component test
 
 ### PR 6: `feat(meeting-points)`: list, create and edit in the console
 
-- [ ] Migration; `parseCoordinates`; the list with filters and the map;
+- [x] Migration; `parseCoordinates`; the list with filters and the map;
       create and edit drafts with every field; audit entries
 - Verify: domain tests for each coordinate form; integration tests; a
   browser journey creates a draft and edits it
@@ -359,8 +361,9 @@ notification kinds).
 - [x] 12a: `activationChecklist`; the checklist and activating a draft
       with its legs in the API; the checklist and Activate on a draft's
       page in the console
-- [ ] 12b: `movedFar`; moving a point in use with its legs, and the
-      notifications of a move
+- [x] 12b: `pointMovedFar` (`movedFar` was taken by booking changes);
+      moving a point in use with its legs, and the notifications of a
+      move (migration 0044); Move in the console's "In use" panel
 - Verify: domain tests; integration tests (activating a draft that is
   not ready and one that is; a move under and over 50 m); a browser
   journey for each

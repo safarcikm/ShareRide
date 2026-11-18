@@ -7,6 +7,7 @@ import {
   adminMeetingPointRoute,
   adminMeetingPointsRoute,
   adminMeRoute,
+  adminMoveMeetingPointRoute,
   adminPauseMeetingPointRoute,
   adminResumeMeetingPointRoute,
   adminRetireMeetingPointRoute,
@@ -19,7 +20,7 @@ import {
 } from "@shareride/contracts";
 import { activationItems, icelandDate, type ActivationItem } from "@shareride/domain";
 import { formatDate } from "@shareride/i18n";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ConsoleApp } from "../../app.tsx";
 import { createFakeApi, createFakePasskeys } from "../../testing/fake-api.ts";
@@ -567,7 +568,7 @@ describe("the meeting point form (spec 2, 3.6.2)", () => {
     expect(field("Coordinates or a map link").readOnly).toBe(true);
     expect(
       screen.getByText(
-        "Only a draft's spot is changed here. Moving a meeting point in use is its own step.",
+        "Only a draft's spot is changed here. To move a point in use, choose Move under In use.",
       ),
     ).toBeTruthy();
   });
@@ -735,7 +736,12 @@ describe("pausing, bringing back and retiring a point (spec 2, 3.6.4 and 3.6.5)"
     expect(await screen.findByText("N1 Borgarnesi retires after its last trip.")).toBeTruthy();
     expect(sent).toEqual({ updatedAt: active.updatedAt });
     expect(screen.getByText("Status: Retiring")).toBeTruthy();
-    expect(within(panel()).queryAllByRole("button")).toHaveLength(0);
+    // Its trips still stop there, so it can still be moved, and nothing else.
+    expect(
+      within(panel())
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["Move"]);
   });
 
   it("retires a point without trips to come at once, or keeps it", async () => {
@@ -822,6 +828,179 @@ describe("pausing, bringing back and retiring a point (spec 2, 3.6.4 and 3.6.5)"
       expect(document.activeElement).toBe(alert);
     });
     expect(screen.getByText("Status: Paused")).toBeTruthy();
+  });
+});
+
+describe("moving a point in use (spec 2, 3.6.6)", () => {
+  const active: AdminMeetingPoint = { ...draft, status: "active", futureTrips: 2 };
+  // 300 m north of the point.
+  const farSpot = { latitude: 64.541, longitude: -21.9206 };
+  const panel = () => screen.getByRole("region", { name: "In use" });
+  const newSpot = "New spot: coordinates or a map link";
+
+  function open(point: AdminMeetingPoint) {
+    const api = start(`/admin/meeting-points/${pointId}`);
+    api.on(adminMeetingPointRoute, { status: 200, data: point });
+    return api;
+  }
+
+  it("moves an active point to a pasted spot, saying how far it is and who is told", async () => {
+    const api = open(active);
+    const moved: AdminMeetingPoint = {
+      ...active,
+      position: farSpot,
+      updatedAt: "2026-11-16T12:00:00.000Z",
+    };
+    let sent: Record<string, unknown> = {};
+    api.on(adminMoveMeetingPointRoute, (input) => {
+      sent = input["body"] as Record<string, unknown>;
+      return { status: 200, data: { meetingPoint: moved, metres: 300, tripsTold: 2 } };
+    });
+    await screen.findByRole("heading", { name: "N1 Borgarnesi", level: 1 });
+    // Typed before the move, and not saved yet.
+    type("Where to stand, in English", "By the pumps.");
+    fireEvent.click(within(panel()).getByRole("button", { name: "Move" }));
+    expect(document.activeElement).toBe(field(newSpot));
+    expect(panel().textContent).toContain(
+      "If it moves more than 50 m, the drivers of its upcoming trips, and the passengers who get in or out here, are told.",
+    );
+    type(newSpot, "https://www.google.com/maps/@64.541,-21.9206,17z");
+    expect(panel().textContent).toContain(
+      "300 m from where it is now, so those on 2 upcoming trips are told.",
+    );
+    expect(
+      within(panel()).getByRole("link", { name: "Check it on OpenStreetMap" }).getAttribute("href"),
+    ).toBe("https://www.openstreetmap.org/?mlat=64.541&mlon=-21.9206#map=17/64.541/-21.9206");
+    // The button is read with what the move does.
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Move N1 Borgarnesi",
+        description: "300 m from where it is now, so those on 2 upcoming trips are told.",
+      }),
+    );
+
+    const notice = await screen.findByText(
+      "N1 Borgarnesi is moved 300 m, and its distances are computed again. The drivers of 2 trips, and their passengers who get in or out here, are told.",
+    );
+    await waitFor(() => {
+      expect(document.activeElement).toBe(notice);
+    });
+    expect(sent).toEqual({ position: farSpot, updatedAt: active.updatedAt });
+    expect(screen.queryByLabelText(newSpot)).toBeNull();
+    // The form shows the new spot and keeps what was typed, to save with the moved copy.
+    expect(field("Coordinates or a map link").value).toBe("64.541, -21.9206");
+    expect(field("Where to stand, in English").value).toBe("By the pumps.");
+    api.on(adminUpdateMeetingPointRoute, { status: 200, data: moved });
+    fireEvent.click(screen.getByRole("button", { name: "Save the changes" }));
+    await waitFor(() => {
+      expect(api.called(adminUpdateMeetingPointRoute).at(-1)?.input["body"]).toMatchObject({
+        position: farSpot,
+        whereToStandEn: "By the pumps.",
+        updatedAt: moved.updatedAt,
+      });
+    });
+  });
+
+  it("says nobody is told within 50 m, or when no trip stops there", async () => {
+    open(active);
+    await screen.findByRole("heading", { name: "N1 Borgarnesi", level: 1 });
+    fireEvent.click(within(panel()).getByRole("button", { name: "Move" }));
+    type(newSpot, "64.5385, -21.9206");
+    expect(panel().textContent).toContain(
+      "22 m from where it is now: within 50 m, so nobody is told.",
+    );
+    cleanup();
+
+    open({ ...active, status: "paused", futureTrips: 0 });
+    await screen.findByRole("heading", { name: "N1 Borgarnesi", level: 1 });
+    fireEvent.click(within(panel()).getByRole("button", { name: "Move" }));
+    type(newSpot, "64.541, -21.9206");
+    expect(panel().textContent).toContain(
+      "300 m from where it is now. No upcoming trip stops here, so nobody is told.",
+    );
+  });
+
+  it("checks the spot before sending it, and can be put away", async () => {
+    const api = open(active);
+    await screen.findByRole("heading", { name: "N1 Borgarnesi", level: 1 });
+    fireEvent.click(within(panel()).getByRole("button", { name: "Move" }));
+    const checks: [string, string][] = [
+      ["", "Fill this in."],
+      [
+        "by the old church",
+        "Coordinates could not be read from this. Paste them as 64.1371, -21.9337 or a map link.",
+      ],
+      ["60.0, -21.9", "This spot is outside Iceland."],
+      ["64.5383, -21.9206", "The point is here already."],
+    ];
+    for (const [typed, said] of checks) {
+      type(newSpot, typed);
+      fireEvent.click(screen.getByRole("button", { name: "Move N1 Borgarnesi" }));
+      expect(await screen.findByText(said)).toBeTruthy();
+      expect(field(newSpot).getAttribute("aria-invalid")).toBe("true");
+      expect(document.activeElement).toBe(field(newSpot));
+    }
+    expect(api.called(adminMoveMeetingPointRoute)).toHaveLength(0);
+    // Typing takes the error away until the next try.
+    type(newSpot, "64.541");
+    expect(screen.queryByText("The point is here already.")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Keep it where it is" }));
+    expect(screen.queryByLabelText(newSpot)).toBeNull();
+    expect(document.activeElement).toBe(within(panel()).getByRole("button", { name: "Move" }));
+  });
+
+  it("shows the API's problem with the spot under the field", async () => {
+    const api = open(active);
+    api.on(adminMoveMeetingPointRoute, {
+      status: 400,
+      error: { code: "validation_failed", details: [{ path: "position", issue: "no_road" }] },
+    });
+    await screen.findByRole("heading", { name: "N1 Borgarnesi", level: 1 });
+    fireEvent.click(within(panel()).getByRole("button", { name: "Move" }));
+    type(newSpot, "64.541, -21.9206");
+    fireEvent.click(screen.getByRole("button", { name: "Move N1 Borgarnesi" }));
+    expect(
+      await screen.findByText("No road within 1 km of this spot reaches the points in use."),
+    ).toBeTruthy();
+    expect(field(newSpot).getAttribute("aria-invalid")).toBe("true");
+    expect(document.activeElement).toBe(field(newSpot));
+  });
+
+  it("says when the point changed elsewhere, and loads the newest copy", async () => {
+    const api = open(active);
+    api.on(adminMoveMeetingPointRoute, { status: 409, error: { code: "move_not_allowed" } });
+    await screen.findByRole("heading", { name: "N1 Borgarnesi", level: 1 });
+    fireEvent.click(within(panel()).getByRole("button", { name: "Move" }));
+    type(newSpot, "64.541, -21.9206");
+    fireEvent.click(screen.getByRole("button", { name: "Move N1 Borgarnesi" }));
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "This meeting point was saved somewhere else after you opened it.",
+    );
+    expect(screen.queryByLabelText(newSpot)).toBeNull();
+    api.on(adminMeetingPointRoute, { status: 200, data: { ...active, status: "retired" } });
+    fireEvent.click(screen.getByRole("button", { name: "Load the newest copy" }));
+    expect(await screen.findByText("Status: Retired")).toBeTruthy();
+  });
+
+  it("says when the move could not be made, keeping the spot typed", async () => {
+    const api = open(active);
+    api.on(adminMoveMeetingPointRoute, { status: 500, error: { code: "internal" } });
+    await screen.findByRole("heading", { name: "N1 Borgarnesi", level: 1 });
+    fireEvent.click(within(panel()).getByRole("button", { name: "Move" }));
+    type(newSpot, "64.541, -21.9206");
+    fireEvent.click(screen.getByRole("button", { name: "Move N1 Borgarnesi" }));
+    const alert = await within(panel()).findByRole("alert");
+    expect(alert.textContent).toBe("The point could not be moved. Try again.");
+    expect(field(newSpot).value).toBe("64.541, -21.9206");
+    expect(screen.getByText("Status: Active")).toBeTruthy();
+  });
+
+  it("offers no move for a draft, whose spot is edited in its form", async () => {
+    start(`/admin/meeting-points/${pointId}`);
+    await screen.findByRole("heading", { name: "N1 Borgarnesi", level: 1 });
+    await screen.findByRole("list", { name: "Activation checklist" });
+    expect(within(panel()).queryByRole("button", { name: "Move" })).toBeNull();
   });
 });
 
