@@ -319,7 +319,7 @@ describe("The top bar on wide screens", () => {
       },
     });
     await fireEvent.press(await screen.findByTestId("trip-result"));
-    expect(await screen.findByTestId("side-panel")).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Share" })).toBeVisible();
     const bar = screen.getByTestId("top-bar");
     expect(within(bar).getByRole("tab", { name: "Find", selected: true })).toBeVisible();
     await fireEvent.press(within(bar).getByRole("tab", { name: "Profile" }));
@@ -329,7 +329,7 @@ describe("The top bar on wide screens", () => {
     expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
     await fireEvent.press(within(bar).getByRole("tab", { name: "Find" }));
     expect(await screen.findByRole("button", { name: "Find a ride" })).toBeVisible();
-    expect(screen.queryByTestId("side-panel")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Share" })).toBeNull();
   });
 
   it("keeps Find's search when the window turns narrow and wide again", async () => {
@@ -354,7 +354,7 @@ describe("The top bar on wide screens", () => {
         searchApi(fake);
       },
     });
-    expect(await screen.findByTestId("side-panel")).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Share" })).toBeVisible();
     const bar = () => within(screen.getByTestId("top-bar"));
     await fireEvent.press(bar().getByRole("tab", { name: "Find" }));
     await chooseFrom();
