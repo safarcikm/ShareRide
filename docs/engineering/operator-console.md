@@ -558,7 +558,9 @@ it is due and an Overdue or Safety tag; `?state=closed` the closed ones
 with their outcome. A report's page offers only the actions that fit it
 (`choicesOf` in `act.tsx`): hiding the trip's note or cancelling the trip
 only when the person reported drives it (the report's `trip.driverId`),
-suspending an open account and reinstating a suspended one. A refusal
+hiding the reported message, review or About you while it is shown,
+suspending an open account and reinstating a suspended one. A report
+naming nobody (a review by the former member) offers none. A refusal
 (someone acted meanwhile) loads the report again. Before an action is sent, the
 console shows the notice as the person reads it, in their language,
 built from the same texts as the app (`statementLines` in `texts.ts`).

@@ -480,7 +480,7 @@ PRs 7 and 8 were: 9a the API, 9b the screens.
     since the former member is no one to act on. Any report naming the
     former member names nobody, so an operator never warns or suspends
     it.
-- [ ] 9b: `feat(safety)`: Report and Block on the public profile, and
+- [x] 9b: `feat(safety)`: Report and Block on the public profile, and
       Report review, in the app; the review on the console's report page
   - On another person's profile, never one's own or "See it as others
     do": Report and Block; on each review, Report review. The report
@@ -491,6 +491,13 @@ PRs 7 and 8 were: 9a the API, 9b the screens.
     review while it is shown.
   - Verify: screen tests for both entries and the hidden ones; a console
     test for the review record and Hide review.
+  - Found while building (9b): the profile also links the community rules
+    (spec 9, 3.3.4). Report review is read out with its author and month,
+    as a list has many. A review's author has no profile reference on it,
+    so its report offers no "Block too". A report naming nobody (a review
+    by the former member) shows no actions on its page, so hiding such a
+    review from the console waits for a later change; the API already
+    allows it.
 - [ ] Afterwards: ratings, reliability and reviews on the console's person
       and report pages (spec 3.5.2), now that milestone 7 has them
 

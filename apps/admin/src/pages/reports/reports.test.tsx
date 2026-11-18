@@ -16,7 +16,7 @@ import {
   type AdminReport,
   type AdminReportListItem,
 } from "@shareride/contracts";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ConsoleApp } from "../../app.tsx";
 import { createFakeApi, createFakePasskeys } from "../../testing/fake-api.ts";
@@ -90,6 +90,7 @@ const report: AdminReport = {
   },
   booking: { id: "0196f000-0000-7000-8000-0000000000b1", status: "confirmed", seats: 1 },
   message: { id: messageId, sentAt: "2099-11-15T09:50:00.000Z", removed: false },
+  review: null,
   about: null,
   conversation: true,
   actions: [],
@@ -123,6 +124,29 @@ const report: AdminReport = {
     ],
     actions: [],
   },
+};
+
+const reviewId = "0196f000-0000-7000-8000-0000000000f9";
+
+const reportedReview = {
+  id: reviewId,
+  rating: 1,
+  comment: "Unkind words",
+  authorRole: "passenger",
+  writtenAt: "2099-11-14T18:00:00.000Z",
+  hidden: false,
+} as const;
+
+/** Bára reported a review Dóra wrote of her, as a passenger, on a ride now gone. */
+const reviewReport: AdminReport = {
+  ...report,
+  subject: "review",
+  category: "offensive",
+  trip: null,
+  booking: null,
+  message: null,
+  review: reportedReview,
+  conversation: false,
 };
 
 const warning: AdminModerationAction = {
@@ -262,6 +286,24 @@ describe("a report's page (spec 9, 3.4.2)", () => {
     expect(reportedLine?.textContent).toContain("Something unkind");
     expect(removedLine?.textContent).toContain("Removed by ShareRide");
     expect(api.called(adminReportConversationRoute)).toHaveLength(1);
+  });
+
+  it("shows a reported review with its stars, words, author and when, and whether it is hidden", async () => {
+    start(detailPath, reviewReport);
+    expect(
+      await screen.findByRole("heading", { name: "A review: Offensive content", level: 1 }),
+    ).toBeTruthy();
+    const records = screen.getByRole("region", { name: "What it is about" });
+    expect(records.textContent).toContain("1 of 5 stars, by the passenger, written");
+    expect(records.textContent).toContain("Unkind words");
+    expect(records.textContent).not.toContain("Hidden by ShareRide");
+    expect(records.textContent).not.toContain("What it was about no longer exists.");
+    expect(screen.queryByRole("button", { name: "Show the conversation" })).toBeNull();
+
+    cleanup();
+    start(detailPath, { ...reviewReport, review: { ...reportedReview, hidden: true } });
+    const hidden = await screen.findByRole("region", { name: "What it is about" });
+    expect(hidden.textContent).toContain("Hidden by ShareRide");
   });
 
   it("says when the report does not exist", async () => {
@@ -485,6 +527,40 @@ describe("acting on a report (spec 9, 3.4.3)", () => {
     });
     // Read once: the mark comes from the report, not from opening it again.
     expect(api.called(adminReportConversationRoute)).toHaveLength(1);
+  });
+
+  it("hides the review reported while it is shown, and not once it is hidden", async () => {
+    const api = start(detailPath, reviewReport);
+    api.on(adminHideContentRoute, {
+      status: 201,
+      data: { action: { ...warning, kind: "content_hidden" } },
+    });
+    const act = await screen.findByRole("region", { name: "Act on it" });
+    const choices = within(act)
+      .getAllByRole("radio")
+      .map((radio) => radio.closest("label")?.textContent);
+    expect(choices).toEqual(["Warn Dóra", "Hide the review", "Suspend Dóra"]);
+    fireEvent.click(within(act).getByRole("radio", { name: "Hide the review" }));
+    fireEvent.change(within(act).getByRole("combobox", { name: "Community rule" }), {
+      target: { value: "offensive" },
+    });
+    fireEvent.change(within(act).getByRole("textbox", { name: "Reason, written for Dóra" }), {
+      target: { value: "Rude words." },
+    });
+    fireEvent.click(within(act).getByRole("button", { name: "Review the notice" }));
+    const hidden = { ...reviewReport, review: { ...reportedReview, hidden: true } };
+    api.on(adminReportRoute, { status: 200, data: hidden });
+    fireEvent.click(within(act).getByRole("button", { name: "Send" }));
+    expect((await within(act).findByRole("status")).textContent).toBe("Done. Dóra is told why.");
+    expect(api.called(adminHideContentRoute)[0]?.input["body"]).toEqual({
+      rule: "offensive",
+      reason: "Rude words.",
+      reportId,
+      content: { kind: "review", id: reviewId },
+    });
+    await waitFor(() => {
+      expect(within(act).queryByRole("radio", { name: "Hide the review" })).toBeNull();
+    });
   });
 
   it("cancels the trip, counting it on her reliability when asked", async () => {

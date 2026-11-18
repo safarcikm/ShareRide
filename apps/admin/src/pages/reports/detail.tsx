@@ -175,6 +175,24 @@ export function ReportDetail({ id }: { readonly id: string }) {
               </dd>
             </>
           )}
+          {report.review === null ? null : (
+            <>
+              <dt>{t("admin.reports.review")}</dt>
+              <dd>
+                {t(
+                  report.review.authorRole === "driver"
+                    ? "admin.reports.reviewFacts.driver"
+                    : "admin.reports.reviewFacts.passenger",
+                  { rating: report.review.rating, when: at(report.review.writtenAt) },
+                )}
+                {report.review.hidden ? <HiddenTag removed={false} /> : null}
+              </dd>
+              <dt>{t("admin.reports.reviewWords")}</dt>
+              <dd>
+                {report.review.comment === "" ? t("admin.reports.none") : report.review.comment}
+              </dd>
+            </>
+          )}
           {report.about === null ? null : (
             <>
               <dt>{t("admin.reports.about")}</dt>
@@ -188,6 +206,7 @@ export function ReportDetail({ id }: { readonly id: string }) {
         {report.trip === null &&
         report.booking === null &&
         report.message === null &&
+        report.review === null &&
         report.about === null ? (
           <p className="type-body">{t("admin.reports.recordsGone")}</p>
         ) : null}

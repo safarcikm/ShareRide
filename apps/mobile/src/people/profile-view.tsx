@@ -6,6 +6,7 @@ import {
   type PublicProfile,
 } from "@shareride/contracts";
 import { formatMonth } from "@shareride/i18n";
+import { router } from "expo-router";
 import { ShieldCheck } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
@@ -18,6 +19,7 @@ import { Icon } from "@/components/icon";
 import { Notice } from "@/components/notice";
 import { TakesFocus } from "@/components/takes-focus";
 import { Tag } from "@/components/tag";
+import { TextLink } from "@/components/text-link";
 import { Body, Heading, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
@@ -34,14 +36,18 @@ type Role = "driver" | "passenger";
  * A person's public profile (spec 1, 3.5; spec 8, screen 7), as anyone
  * signed in sees it: who they are, their rating and reliability figure,
  * and the reviews they were given. "See it as others do" shows the same,
- * under its own title, so the name is a heading there (`nameAs`).
+ * under its own title, so the name is a heading there (`nameAs`). Someone
+ * else's (`others`) also offers Report and Block, Report review on each
+ * review, and the community rules (spec 9, 3.1.1, 3.2.1 and 3.3.4).
  */
 export function ProfileView({
   profileId,
   nameAs = "title",
+  others = false,
 }: {
   readonly profileId: string;
   readonly nameAs?: "title" | "heading";
+  readonly others?: boolean;
 }) {
   const { t } = useLanguage();
   const palette = usePalette();
@@ -70,11 +76,12 @@ export function ProfileView({
   return (
     <>
       <Person profile={profile} nameAs={nameAs} />
+      {others ? <Safety profile={profile} /> : null}
       <Card>
         <RatingLine rating={profile.rating} strong />
         <ReliabilityFigure reliability={profile.reliability} />
       </Card>
-      <ProfileReviews key={profileId} profileId={profileId} />
+      <ProfileReviews key={profileId} profileId={profileId} reportable={others} />
     </>
   );
 }
@@ -120,6 +127,43 @@ function Person({
       ) : null}
       {profile.about === null ? null : <Body align="start">{profile.about}</Body>}
     </Card>
+  );
+}
+
+/**
+ * Report and Block, each asking first on its own screen (spec 9, 3.1 and
+ * 3.2), and the community rules one tap away (3.3.4). The addresses name
+ * the profile, as its own does: never the person's user ID.
+ */
+function Safety({ profile }: { readonly profile: PublicProfile }) {
+  const { t } = useLanguage();
+  const name = profile.firstName;
+  return (
+    <View style={styles.safety}>
+      <View style={styles.actions}>
+        <Button
+          variant="text"
+          label={t("report.person", { name })}
+          onPress={() => {
+            router.push({
+              pathname: "/report",
+              params: { kind: "profile", id: profile.profileId },
+            });
+          }}
+        />
+        <Button
+          variant="text"
+          label={t("block.action", { name })}
+          onPress={() => {
+            router.push({
+              pathname: "/people/[profileId]/block",
+              params: { profileId: profile.profileId },
+            });
+          }}
+        />
+      </View>
+      <TextLink label={t("report.rules")} href="/legal/community-rules" align="start" />
+    </View>
   );
 }
 
@@ -188,7 +232,14 @@ type Focus = { readonly review: string } | "failure" | null;
  * The reviews the person was given, newest first, for both roles or one,
  * a page at a time (3.7.5).
  */
-function ProfileReviews({ profileId }: { readonly profileId: string }) {
+function ProfileReviews({
+  profileId,
+  reportable,
+}: {
+  readonly profileId: string;
+  /** Each review offers Report review: on someone else's profile. */
+  readonly reportable: boolean;
+}) {
   const { t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
@@ -303,6 +354,7 @@ function ProfileReviews({ profileId }: { readonly profileId: string }) {
             <ReviewItem
               key={review.id}
               review={review}
+              reportable={reportable}
               takesFocus={focus !== null && focus !== "failure" && focus.review === review.id}
             />
           ))}
@@ -333,9 +385,11 @@ function ProfileReviews({ profileId }: { readonly profileId: string }) {
 
 function ReviewItem({
   review,
+  reportable,
   takesFocus,
 }: {
   readonly review: ProfileReview;
+  readonly reportable: boolean;
   readonly takesFocus: boolean;
 }) {
   const { locale, t } = useLanguage();
@@ -358,6 +412,17 @@ function ReviewItem({
               : t("people.reviewBy.passenger", by)}
           </Text>
           {review.comment === "" ? null : <Body align="start">{review.comment}</Body>}
+          {reportable ? (
+            <Button
+              variant="text"
+              label={t("report.review")}
+              // Each review's button says whose and when, as the list reads out many.
+              accessibilityLabel={t("report.reviewLabel", by)}
+              onPress={() => {
+                router.push({ pathname: "/report", params: { kind: "review", id: review.id } });
+              }}
+            />
+          ) : null}
         </Card>
       </TakesFocus>
     </View>
@@ -374,4 +439,6 @@ const styles = StyleSheet.create({
   counts: { gap: spacing.xs },
   section: { gap: spacing.ms },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  safety: { gap: spacing.xs },
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
 });

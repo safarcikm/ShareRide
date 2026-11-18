@@ -615,6 +615,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   waiting with the action and its report, and the answer asks once more as
   it is final. A browser journey closes one report and suspends from
   another.
+- Report and Block on a profile (milestone 9, PR 9b, spec 9, 3.1.1, 3.2.1
+  and 3.3.4): someone else's profile offers Report and Block, each asking
+  first on its own screen, and the community rules; each review on it
+  offers Report review, read out with its author and month. Blocking from
+  a profile lists the bookings still shared, as from a conversation, and
+  goes back to the profile. The console's report page shows a reported
+  review's stars, words, author and date, and offers Hide the review while
+  it is shown.
 - Reporting and blocking from a profile, API (milestone 9, PR 9a, spec 9,
   3.1.1 and 3.2.1): a report can be about a review a profile shows, by
   anyone who reads it, linked to the review (migration
