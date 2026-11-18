@@ -1,6 +1,6 @@
 import { capitalised, formatDay } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -42,19 +42,33 @@ import { usePalette } from "@/theme/use-palette";
  * the list shows its conversation in the same place.
  */
 export default function ConversationScreen() {
+  const { t } = useLanguage();
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
   const wide = useWideScreen();
+  // Another row of the list changes what is open and leaves the focus on
+  // the row, so a screen reader is told whose conversation it now is. The
+  // one the screen opened with needs no telling: its title says it.
+  const [opened, setOpened] = useState({ id: bookingId, changed: false });
+  if (opened.id !== bookingId) setOpened({ id: bookingId, changed: true });
+  const [said, setSaid] = useState<{ text: string; count: number } | null>(null);
+  const say = useCallback(
+    (name: string) => {
+      setSaid((last) => ({ text: t("chat.nowOpen", { name }), count: (last?.count ?? 0) + 1 }));
+    },
+    [t],
+  );
   return (
     <Panes list={wide ? <Listed openId={bookingId} /> : null}>
       {/* Each conversation starts clean: nothing loaded or written goes along to another. */}
-      <Open key={bookingId} bookingId={bookingId} />
+      <Open key={bookingId} bookingId={bookingId} onShown={opened.changed ? say : undefined} />
+      <Announcer message={said} />
     </Panes>
   );
 }
 
 /** My conversations beside the open one. Only a wide screen asks for them. */
 function Listed({ openId }: { readonly openId: string }) {
-  return <ConversationList state={useConversations()} pane openId={openId} />;
+  return <ConversationList state={useConversations(true)} pane openId={openId} />;
 }
 
 /**
@@ -62,7 +76,14 @@ function Listed({ openId }: { readonly openId: string }) {
  * here, above the layout, so they stay when the window turns narrow or wide
  * (spec 18, 3.2, item 7).
  */
-function Open({ bookingId }: { readonly bookingId: string }) {
+function Open({
+  bookingId,
+  onShown,
+}: {
+  readonly bookingId: string;
+  /** Called with the other person's name once the conversation shows. */
+  readonly onShown: ((name: string) => void) | undefined;
+}) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
   const wide = useWideScreen();
@@ -85,6 +106,11 @@ function Open({ bookingId }: { readonly bookingId: string }) {
     listedUpTo.current = newestMine;
     if (wide && before !== undefined && before !== newestMine) refreshList();
   }, [isShown, newestMine, wide, refreshList]);
+
+  const shownName = shown === null ? null : firstNameOf(t, otherPerson(shown.conversation.booking));
+  useEffect(() => {
+    if (shownName !== null) onShown?.(shownName);
+  }, [shownName, onShown]);
 
   const back = <BackButton fallback="/messages" />;
   if (loaded === undefined) {

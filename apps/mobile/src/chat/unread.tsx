@@ -1,10 +1,12 @@
 import { myConversationsRoute, type Conversation } from "@shareride/contracts";
+import type { CallResult } from "@shareride/api-client";
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -21,26 +23,34 @@ interface Answered {
   readonly conversations: readonly Conversation[];
 }
 
+type ConversationsAnswer = CallResult<typeof myConversationsRoute>;
+
 interface Unread {
   /** Messages not yet read, across my conversations: the Messages badge. */
   readonly total: number;
   /**
    * My conversations as last answered, or null before the first answer.
-   * The list shows them at once where it opens, such as beside a
-   * conversation on a wide screen, and follows each later answer.
+   * A list beside an open conversation shows them at once and follows
+   * each later answer (spec 18, 3.11).
    */
   readonly conversations: readonly Conversation[] | null;
   /** Asks the server again, as when a push arrives or a chat was read. */
   readonly refresh: () => void;
-  /** An answer already in hand, such as the conversations list's own. */
-  readonly show: (answer: Answered) => void;
+  /**
+   * Asks the server, keeps the answer as `refresh` does, and returns it:
+   * for the conversations list, which shows why when it could not be
+   * loaded.
+   */
+  readonly load: () => Promise<ConversationsAnswer>;
 }
 
 const UnreadContext = createContext<Unread>({
   total: 0,
   conversations: null,
   refresh: () => undefined,
-  show: () => undefined,
+  load: () => {
+    throw new Error("The conversations list needs an UnreadProvider above it.");
+  },
 });
 
 /**
@@ -60,22 +70,24 @@ export function UnreadProvider({ children }: { readonly children: ReactNode }) {
   const total = mine?.unread ?? 0;
   const conversations = mine?.conversations ?? null;
 
-  const show = useCallback(
-    (answer: Answered) => {
-      if (userId !== null) setKnown({ userId, answer });
-    },
-    [userId],
-  );
-  const refresh = useCallback(() => {
-    if (userId === null) return;
-    session
-      .call(myConversationsRoute, {})
-      .then((answer) => {
-        // A failed answer keeps the count shown; the next refresh tries again.
-        if (answer.ok) setKnown({ userId, answer: answer.data });
-      })
-      .catch(reportError);
+  // Answers come back in any order: one asked for before the answer now
+  // shown is older than it, and is not kept.
+  const asked = useRef(0);
+  const kept = useRef(0);
+  const load = useCallback(async () => {
+    asked.current += 1;
+    const turn = asked.current;
+    const answer = await session.call(myConversationsRoute, {});
+    // A failed answer keeps what is shown; the next one tries again.
+    if (answer.ok && userId !== null && turn > kept.current) {
+      kept.current = turn;
+      setKnown({ userId, answer: answer.data });
+    }
+    return answer;
   }, [session, userId]);
+  const refresh = useCallback(() => {
+    if (userId !== null) load().catch(reportError);
+  }, [load, userId]);
 
   useEffect(refresh, [refresh]);
 
@@ -99,8 +111,8 @@ export function UnreadProvider({ children }: { readonly children: ReactNode }) {
   }, [refresh, userId]);
 
   const value = useMemo(
-    () => ({ total, conversations, refresh, show }),
-    [total, conversations, refresh, show],
+    () => ({ total, conversations, refresh, load }),
+    [total, conversations, refresh, load],
   );
   return <UnreadContext value={value}>{children}</UnreadContext>;
 }

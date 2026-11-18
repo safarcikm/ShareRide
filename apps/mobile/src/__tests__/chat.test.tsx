@@ -1016,7 +1016,8 @@ describe("Messages on a laptop (spec 18, 3.11)", () => {
   });
 
   it("changes the conversation in place: Back leaves to the list, and nothing written goes along", async () => {
-    await openApp("/messages");
+    const announce = jest.spyOn(AccessibilityInfo, "announceForAccessibility");
+    const { client } = await openApp("/messages");
     const list = await screen.findByTestId("panes-list");
     await fireEvent.press(await within(list).findByRole("button", { name: annaRow }));
     await fireEvent.changeText(await screen.findByLabelText("Write a message"), "For Anna only");
@@ -1028,6 +1029,15 @@ describe("Messages on a laptop (spec 18, 3.11)", () => {
     expect(screen).toHavePathname(jonPage);
     expect(within(open).getByText("One bag, is that fine?")).toBeVisible();
     expect(within(open).queryByText("By the pumps.")).toBeNull();
+    // The focus stays on the row, so a screen reader is told what opened.
+    // Anna's, opened from the list as a screen of its own, needed no telling.
+    expect(announce).toHaveBeenCalledWith("Conversation with Jón");
+    expect(announce).not.toHaveBeenCalledWith("Conversation with Anna");
+    // Each was fetched and read once, when it was opened.
+    expect(pages(client)).toEqual([bookingId, jon.id]);
+    await waitFor(() => {
+      expect(reads(client)).toEqual([fromAnna.id, fromJon.id]);
+    });
     expect(within(open).getByLabelText("Write a message").props.value).toBe("");
     expect(
       within(screen.getByTestId("panes-list")).getByRole("button", {
@@ -1146,11 +1156,19 @@ describe("Messages on a laptop (spec 18, 3.11)", () => {
 
   it("is one screen at a time on a phone: the list, then the conversation with its bar", async () => {
     await turn(phone);
-    await openApp("/messages");
+    const { client } = await openApp("/messages");
     await fireEvent.press(await screen.findByRole("button", { name: annaRow }));
     expect(await screen.findByRole("header", { name: "Anna" })).toBeVisible();
     expect(screen.queryByTestId("panes-list")).toBeNull();
     expect(screen.queryByRole("button", { name: jonRow })).toBeNull();
+    // My conversations were asked for by the badge, by the list, and once
+    // Anna's messages were read: the conversation itself asks for no list.
+    await waitFor(() => {
+      expect(reads(client)).toEqual([fromAnna.id]);
+    });
+    await waitFor(() => {
+      expect(callsTo(client, "/v1/me/conversations", () => true)).toHaveLength(3);
+    });
     expect(
       within(screen.getByTestId("bottom-bar")).getByLabelText("Write a message"),
     ).toBeVisible();

@@ -390,9 +390,10 @@ bar `primary`. A disabled or busy part shows none.
   `apps/mobile/src/chat/composer.tsx` (what is written can live in the
   screen), `chat/unread.tsx` (keeps the conversations the count came
   with), `components/screen.tsx` (`useStickToEnd`, `useScreenEdges`),
-  `components/text.tsx` (`Title part`), `en.ts`, `is.ts` (`chat.choose`),
+  `components/text.tsx` (`Title part`), `en.ts`, `is.ts` (`chat.choose`,
+  `chat.nowOpen`),
   `e2e/laptop.spec.ts`, `e2e/chat.spec.ts`, `testing/chat.ts`
-- Test: `apps/mobile/src/__tests__/chat.test.tsx`
+- Test: `apps/mobile/src/__tests__/chat.test.tsx`, `chat/unread.test.tsx`
 
 **Interfaces:**
 

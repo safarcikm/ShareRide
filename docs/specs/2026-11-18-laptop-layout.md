@@ -256,9 +256,13 @@ changes on a phone.
    it, as on a phone.
 6. The list is there at once, as the menu's count last fetched it, and
    follows the open conversation: a message read there is no longer
-   counted in its row, and a message sent shows as its last.
+   counted in its row, and a message sent shows as its last. An answer
+   that comes back after a newer one is not kept. Like the count, the list
+   keeps what it knows when asking again fails; it says the conversations
+   could not be loaded only when it has none to show.
 7. "Messages" is the page's title; the open person's name heads a part of
-   it (an h2 on the web).
+   it (an h2 on the web). Another row leaves the keyboard's focus on the
+   row, so a screen reader is told what opened: "Conversation with Jón".
 8. A window that turns narrow shows the conversation alone, as on a phone,
    with what it had loaded and what was being written (3.2, 7).
 
@@ -331,6 +335,7 @@ in the app") keep their place in the reading order.
 | `post.soFar` | Your trip so far | Ferðin þín hingað til |
 | `post.soFarLater` | Step {step} | Skref {step} |
 | `chat.choose` | Choose a conversation | Veldu spjall |
+| `chat.nowOpen` | Conversation with {name} | Spjall: {name} |
 | `results.mapOf` | Map of Iceland with the trip {from} → {to} | Kort af Íslandi með ferðinni {from} → {to} |
 | `nav.home` | ShareRide, to the front page | ShareRide, á forsíðu |
 

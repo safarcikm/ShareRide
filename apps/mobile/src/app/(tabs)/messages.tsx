@@ -29,7 +29,7 @@ export default function MessagesScreen() {
 function Conversations() {
   const { t } = useLanguage();
   const wide = useWideScreen();
-  const state = useConversations();
+  const state = useConversations(wide);
   if (wide) {
     // With nothing to choose from, the list's words have the whole card.
     const some = state.rows !== null && state.rows.length > 0;

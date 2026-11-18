@@ -520,14 +520,21 @@ test.describe("Messages", () => {
       expect(openBox.y).toBeCloseTo(listBox.y, 0);
       // The card ends inside the window: the panes scroll, not the page.
       expect(card.y + card.height).toBeLessThanOrEqual(laptop(width).height);
-      // Everything to press or write in is whole inside the open pane, with
-      // the field at its bottom.
+      // Everything to press or write in is whole inside the open pane's
+      // width, and the field and Send are at its bottom, inside the card.
       const parts = await open.locator('[role="button"], textarea').all();
       expect(parts.length).toBeGreaterThan(8);
       for (const part of parts) {
         const one = await box(part);
         expect(one.x).toBeGreaterThanOrEqual(openBox.x);
         expect(one.x + one.width).toBeLessThanOrEqual(openBox.x + openBox.width + 1);
+      }
+      for (const part of [
+        open.getByLabel("Write a message"),
+        open.getByRole("button", { name: "Send", exact: true }),
+      ]) {
+        const one = await box(part);
+        expect(one.y).toBeGreaterThan(card.y + card.height / 2);
         expect(one.y + one.height).toBeLessThanOrEqual(card.y + card.height);
       }
       await expectNoSidewaysScroll(driver);

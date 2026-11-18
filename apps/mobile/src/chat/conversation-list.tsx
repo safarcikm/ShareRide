@@ -1,11 +1,10 @@
 import type { CallFailure } from "@shareride/api-client";
-import { myConversationsRoute, type Conversation } from "@shareride/contracts";
+import type { Conversation } from "@shareride/contracts";
 import { capitalised, formatDay } from "@shareride/i18n";
 import { router } from "expo-router";
-import { useCallback, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
-import { useSession } from "@/auth/session";
 import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
@@ -25,36 +24,29 @@ import { useUnread } from "./unread";
 export interface Conversations {
   /** The latest first. Null while the first answer is on its way, and after a failure. */
   readonly rows: readonly Conversation[] | null;
-  /** The answer that failed, until `reload`. */
+  /** The answer that failed, when there is nothing to show, until `reload`. */
   readonly failed: CallFailure | null;
   readonly reload: () => void;
 }
 
 /**
  * My conversations (spec 7, 3.1, item 9), loaded again each time the screen
- * comes into view, with the badge set from the same answer. The list the
- * badge last fetched shows meanwhile, and each later answer shows too, such
- * as the one asked for once an open conversation was read: so a list beside
- * a conversation follows it (spec 18, 3.11).
+ * comes into view, with the badge set from the same answer.
+ *
+ * A list that `follows`, as the one beside a conversation on a wide screen
+ * does (spec 18, 3.11), shows what the badge last fetched at once, and each
+ * later answer too, such as the one asked for once the open conversation
+ * was read. It says the conversations could not be loaded only when it has
+ * none to show: like the badge, it keeps what it knows and tries again.
+ * Without `follows`, as on a phone, the list shows its own answer only.
  */
-export function useConversations(): Conversations {
-  const session = useSession();
-  const { conversations, show } = useUnread();
-  const load = useCallback(
-    () =>
-      session.call(myConversationsRoute, {}).then((answer) => {
-        if (answer.ok) show(answer.data);
-        return answer;
-      }),
-    [session, show],
-  );
+export function useConversations(follows: boolean): Conversations {
+  const { conversations, load } = useUnread();
   const { value: answer, reload } = useLoadedOnFocus(load);
-  if (answer !== undefined && !answer.ok) return { rows: null, failed: answer, reload };
-  return {
-    rows: conversations ?? (answer === undefined ? null : answer.data.conversations),
-    failed: null,
-    reload,
-  };
+  const own = answer?.ok === true ? answer.data.conversations : null;
+  const rows = follows ? (conversations ?? own) : own;
+  const failed = rows === null && answer !== undefined && !answer.ok ? answer : null;
+  return { rows, failed, reload };
 }
 
 /**
