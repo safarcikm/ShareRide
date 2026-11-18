@@ -1,7 +1,8 @@
 # Spec 18: The web app on a laptop
 
 **Owner:** Martin · **Date:** 2026-11-18 · **Status:** Approved
-(2026-11-18): Martin chose every main screen, as drawn (decision 1)
+(2026-11-18): Martin chose every main screen, as drawn (decision 1). Built
+(2026-11-18); where the build differs from a drawing, the section says so
 
 Amends: [spec 15](2026-11-13-visual-design-system.md) (section 4.8, wide
 screens, and the `Screen`, `TopBar`, `Card`, `Row`, `Button` and `Chip`
@@ -305,26 +306,69 @@ changes on a phone.
 
 ### 3.13 Offer a ride
 
-1. **Main column,** 480 wide: the step's progress, title and fields.
-2. **Side column:** on the route step, the map of the route; on every step,
-   "Your trip so far" with what earlier steps set (route and stops, day and
-   times, price, seats), each with the step that sets it greyed until then;
-   and under it the step's main button with the lines that belong to it. On
-   wide screens there is no bottom bar on these steps.
-3. The same for changing a published trip, where it has steps.
+1. A step is two columns, centred as a pair: a **main column** 480 wide,
+   as a phone's, with Back, the step's progress, the title at the left and
+   the fields; and the **side column** beside it. The pair is 904 wide, so
+   in a window 900 wide the main column gives way a little.
+2. **Side column,** from the top: "Your trip so far"; the step's main
+   button with the lines that belong to it; and on the route step the map
+   of the route, once both ends are chosen. The button stands over the
+   map, not under it as drawn: it keeps its place when a route is chosen
+   and is whole in a small laptop's window (1280 by 720) on every step
+   (decision 13). On wide screens these steps have no bottom bar.
+3. "Your trip so far" has a row each for the route, the day and times, the
+   price, and the seats and booking. The open step's row shows what is
+   being chosen, as it is chosen. The steps before it show what the draft
+   holds, and so do the day and times whenever they are set. The price and
+   the seats, while their steps are still to come, show "Step N", greyed
+   (`textMuted`): a draft has a price and seats from the start, which the
+   driver has not chosen yet. When the driver came back from the review to
+   change a step, every row shows what the draft holds. The rows are short
+   whatever the trip: the route is
+   its two ends and "2 stops on the way", the times are the day and the
+   first and the last time, the price is the level and the whole route's
+   price, the seats are their number and how people book. So the card is
+   as tall on a route of ten stops as on one of two, and the button under
+   it does not move. Each row is one thing to a screen reader: "Route:
+   Mjódd bus terminal → N1 Selfoss, 2 stops on the way".
+4. The last step, Check and publish, has the whole trip in its main
+   column, so its side column holds Publish and what it waits for, and no
+   "Your trip so far".
+5. Offer, the place in the menu, is step 1, with "Continue your draft" in
+   its main column. A draft that cannot be loaded is a page too (3.2, 8).
+6. What is typed, chosen or switched off on a step stays when the window
+   turns narrow or wide: a step is one tree at every width, as a booking
+   is (3.9, 4). The map and the button stand in their phone places
+   otherwise.
+7. Changing a published trip has no steps: it is a list of parts, each
+   with a screen of its own. Those stay one column (3.15).
 
 ### 3.14 The driver's trip
 
-1. **Main column:** requests, then passengers.
-2. **Side column:** seats on each stretch, then the actions (Message all
-   passengers, Edit trip, Post again, Cancel trip).
+1. **Across the top:** Back, the day and time, and the route as the title,
+   at the left; "Edit trip" and "Cancel trip" end the same row, at the
+   page's right edge, while the trip can still be changed. They are not in
+   the side column as first planned: under the seats on each stretch they
+   fell out of the window on a long route, and over them they stood in the
+   middle of nothing (decision 14).
+2. **Main column:** what was just said or changed, reports, the trip day's
+   parts, requests, then passengers with "Message all passengers" under
+   them, Safety and "Post again". "No requests or bookings yet." starts at
+   the left.
+3. **Side column:** the seats on each stretch, and nothing else, so it
+   reads as the trip's state beside the people in it.
+4. A question that is open (why a request is declined) stays when the
+   window turns narrow or wide: one tree at every width, as a booking (3.9,
+   4). A trip that is cancelled, or cannot be loaded, is a page with one
+   column at its left (3.2, 8).
 
 ### 3.15 What stays one column
 
 Sign-in and sign-up, the search form at `/search`, meeting points (already
 two columns), a meeting point, a public profile, cars, the licence, edit
-profile, settings and privacy pages, cancel, report, block and rating
-screens, notices and legal documents. They gain the lined-up top bar and
+profile, settings and privacy pages, the screens for changing a published
+trip, cancel, report, block and rating screens, notices and legal
+documents. They gain the lined-up top bar and
 the pointer states.
 
 ## 4. Rules
@@ -361,8 +405,9 @@ in the app") keep their place in the reading order.
 
 | Key | English | Icelandic |
 | --- | ------- | --------- |
-| `post.soFar` | Your trip so far | Ferðin þín hingað til |
-| `post.soFarLater` | Step {step} | Skref {step} |
+| `trip.soFar` | Your trip so far | Ferðin þín hingað til |
+| `trip.soFarLater` | Step {step} | Skref {step} |
+| `trip.soFarStops` | {count} stop on the way / {count} stops on the way | {count} viðkomustaður á leiðinni / {count} viðkomustaðir á leiðinni |
 | `chat.choose` | Choose a conversation | Veldu spjall |
 | `chat.nowOpen` | Conversation with {name} | Spjall: {name} |
 | `results.mapOf` | Map of Iceland with the trip {from} → {to} | Kort af Íslandi með ferðinni {from} → {to} |
@@ -374,12 +419,19 @@ Every other text is one the app has.
 
 - Screen tests (Jest) render each changed screen at 1280 wide and check
   what sits in which column, and at a phone's width that nothing changed.
-- Browser journeys (Playwright) already run at desktop size; they keep
-  passing. A new journey checks, at 900, 1280 and 1440 wide, that no page
-  scrolls sideways and that each two-column screen has its two columns.
-- The look journey's screenshots gain the laptop screens, in English light
-  and Icelandic dark.
-- By hand: a keyboard-only pass through Find, results, a trip and Messages.
+  Screens that hold something being typed, chosen or paid are taken across
+  900 and back, and must keep it.
+- Browser journeys (Playwright) run at desktop size as well as a phone's,
+  and keep passing. `laptop.spec.ts` walks every laptop layout at 900, 1280
+  and 1440 wide, in English and in Icelandic: the two columns or panes
+  level, everything to press whole inside its column, no page scrolling
+  sideways, and what must be pressed whole in a window 1280 by 720.
+- The look journey photographs Find at desktop size, light in English and
+  dark in Icelandic. Pictures of every changed screen, before and now at
+  1440 wide, are in the project files under `laptop-web/built`.
+- By hand, still to do (Martin): a look at the main screens in a laptop's
+  browser, and a keyboard-only pass through Find, results, a trip and
+  Messages.
 
 ## 10. Out of scope
 
@@ -407,3 +459,5 @@ Every other text is one the app has.
 | 10 | How does a card show the pointer? | Its bottom edge turns `primary`. A tint was tried first and dropped: tags and avatars on the card sit on the same tint and lost their shape (my call, 2026-11-18) |
 | 11 | What stays when a window crosses 900? | What the person typed, chose or opened to pay: that state lives above the layout, and nothing loads again. The focus and a list opened in place do not: the wide and the phone layout are different trees, and keeping those too would mean drawing every phone screen as a wide one folded up. Dragging a window across 900 in the middle of a booking is rare, and nothing is lost (my call, 2026-11-18, after the code review) |
 | 12 | How does another conversation open beside the list? | In the same place. The list keeps its scroll and the keyboard's focus on the row, the address is replaced, and Back leaves the conversations. A new entry for each one would make Back walk through every conversation read (my call, 2026-11-18) |
+| 13 | Where does a posting step's button go, with a map in the side column? | Under "Your trip so far" and over the map. As drawn, under the map, it moved down when a route was chosen and fell out of a window 720 high. The trip so far is kept short for the same reason: the route as its two ends and the number of stops between (my call, 2026-11-18, after looking at the built steps) |
+| 14 | Where do "Edit trip" and "Cancel trip" go on the driver's trip? | Into the row of the trip's name, at its right end. The side column then holds only the seats on each stretch; "Message all passengers" stays under the passengers it writes to and "Post again" ends the main column (my call, 2026-11-18, after looking at the built page) |

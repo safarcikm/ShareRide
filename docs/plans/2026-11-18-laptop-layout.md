@@ -72,8 +72,8 @@ every main screen, as drawn, on 2026-11-18.
 | 3 | 3.6 | Search results: the map beside the list, chips that wrap | Merged (#160) |
 | 4 | 3.7, 3.8 | Trip details, Check and pay and a request in two columns | Merged (#161) |
 | 5 | 3.11 | Messages as two panes | Merged (#170) |
-| 6 | 3.9, 3.10, 3.12 | A booking, My rides and Profile | Built |
-| 7 | 3.13, 3.14 | Offer a ride and the driver's trip | |
+| 6 | 3.9, 3.10, 3.12 | A booking, My rides and Profile | Merged (#173) |
+| 7 | 3.13, 3.14 | Offer a ride and the driver's trip | Built |
 
 ---
 
@@ -459,35 +459,45 @@ bar `primary`. A disabled or busy part shows none.
 
 - Create: `apps/mobile/src/trips/trip-so-far.tsx`
 - Modify: `apps/mobile/src/trips/step-screen.tsx`, `trips/route-step.tsx`,
-  the five step screens under `app/drive/trips/[id]/` and `(tabs)/offer.tsx`,
-  `en.ts`, `is.ts` (`post.soFar`, `post.soFarLater`), `e2e/laptop.spec.ts`
+  the time, price and seats steps under `app/drive/trips/[id]/`, `en.ts`,
+  `is.ts` (`trip.soFar`, `trip.soFarLater`, `trip.soFarStops`),
+  `e2e/laptop.spec.ts`
 - Test: `apps/mobile/src/__tests__/post-a-trip.test.tsx`
 
 **Interfaces:**
 
-- Produces: `TripSoFar({ draft, step })`: a card "Your trip so far" with a
-  line each for the route, the day and times, the price and the seats: the
-  draft's value once its step is done, else "Step N" in `textMuted`.
-- Produces: `StepScreen` prop `map?: ReactNode`. Wide: `Screen
-  width="page"` with `Columns`; the side column holds `map`, `TripSoFar`
-  and `footer`; no bottom bar. Not wide: as today.
+- Produces: `TripSoFar({ soFar })`: a card "Your trip so far" with a row
+  each for the route, the day and times, the price and the seats: the
+  lines a step gives it, else "Step N" in `textMuted`. `savedSoFar` reads
+  the rows from a draft; a step adds its own row as it is being chosen.
+- Produces: `StepScreen` props `soFar?: SoFar` and `map?: ReactNode`. Wide:
+  `Screen width="page"` with `Columns`, the pair centred; the side column
+  holds `TripSoFar`, `footer` and `map`, in that order; no bottom bar. Not
+  wide: as before, in the same tree.
 
-- [ ] **Step 1: Failing tests** at 1280: on step 1 the route map is in
+- [x] **Step 1: Failing tests** at 1280: on step 1 the route map is in
   `columns-side`, not under the fields; "Your trip so far" shows the route
   once chosen and "Step 3" for the price; the main button is in
   `columns-side` and there is no `bottom-bar`; stops switched off on step
-  1 stay off after the window goes to 390 and back (Review Focus 1).
-- [ ] **Step 2 to 5:** Run, implement, run, commit `feat(mobile): posting a trip in two columns`.
+  1 stay off after the window goes to a phone's width and back.
+- [x] **Step 2 to 5:** Run, implement, run, commit `feat(mobile): posting a trip in two columns`.
+  The button stands over the map, and the route in the trip so far is its
+  two ends and the number of stops between, so the button keeps its place
+  and is whole in a window 720 high (spec 18, decision 13).
 
 ### Task 7.2: The driver's trip
 
 - Modify: `apps/mobile/src/app/drive/trips/[id]/index.tsx`; test
   `driver-requests.test.tsx`.
-- [ ] At 1280: requests and passengers in `columns-main`; seats on each
-  stretch and the actions in `columns-side`. Commit `feat(mobile): the driver's trip in two columns`.
+- [x] At 1280: requests and passengers in `columns-main`; seats on each
+  stretch in `columns-side`. Commit `feat(mobile): the driver's trip in two columns`.
+  "Edit trip" and "Cancel trip" end the row of the trip's name (a second
+  commit, after looking at the built page; spec 18, decision 14).
+  `laptop.spec.ts` gains a journey through the five steps and the driver's
+  trip.
 
 ### Task 7.3: Finish
 
-- [ ] Before and after screenshots of every changed screen at 1440 wide to
+- [x] Before and after screenshots of every changed screen at 1440 wide to
   the project files; spec 18's status line says built; the plans index row
-  says merged.
+  says built.
