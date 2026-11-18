@@ -1638,6 +1638,8 @@ export const en = {
   "export.value.kind.refund_issued": "Refund",
   "export.value.kind.meeting_point_changed": "Meeting point changed",
   "export.value.kind.meeting_point_changed_driver": "Meeting point changed, as the driver",
+  "export.value.kind.meeting_point_moved": "Meeting point moved",
+  "export.value.kind.meeting_point_moved_driver": "Meeting point moved, as the driver",
   "export.value.kind.new_message": "New message",
   "export.value.kind.unread_messages": "Unread messages",
   "export.value.kind.reminder_evening": "Reminder the evening before",

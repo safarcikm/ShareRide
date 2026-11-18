@@ -754,6 +754,7 @@ async function factsOf(q: Queryable, notificationId: string, now: Date) {
       boardRemovedAt: boards.removedAt,
       alightPointId: alights.meetingPointId,
       alightRemovedAt: alights.removedAt,
+      alightsAt: alights.plannedAt,
       car: { make: vehicles.make, model: vehicles.model, colour: vehicles.colour },
       board: { is: boardPoint.nameIs, en: boardPoint.nameEn },
       alight: { is: alightPoint.nameIs, en: alightPoint.nameEn },
@@ -808,11 +809,17 @@ async function factsOf(q: Queryable, notificationId: string, now: Date) {
       : await removedStopOf(q, notification.tripChangeId);
   // A report asks the other side to answer by its deadline (spec 8, R8.6).
   const [report] = answerKinds.has(notification.kind) ? await disputesOf(q, [booking.id]) : [];
-  // The booking still gets in or out at the point a meeting point's news is about.
+  // The booking still gets in or out at the point a meeting point's news is
+  // about, and the trip has not got there yet: a retry after that says nothing.
   const stopsThere =
     notification.meetingPointId !== null &&
-    ((row.boardPointId === notification.meetingPointId && row.boardRemovedAt === null) ||
-      (row.alightPointId === notification.meetingPointId && row.alightRemovedAt === null));
+    ((row.boardPointId === notification.meetingPointId &&
+      row.boardRemovedAt === null &&
+      row.boardsAt > now) ||
+      (row.alightPointId === notification.meetingPointId &&
+        row.alightRemovedAt === null &&
+        row.alightsAt !== null &&
+        row.alightsAt > now));
   const facts: NotificationFacts = {
     kind: notification.kind as NotificationFacts["kind"],
     role,
@@ -1983,7 +1990,8 @@ export function createNotificationWorker(dependencies: {
     if (found.facts.kind === "meeting_point_changed" && found.facts.pausedPoint === null) {
       return { skipped: "no_longer_applies" };
     }
-    // A moved point's news, once the booking no longer stops there (3.6.6).
+    // A moved point's news, once the booking no longer stops there or the
+    // trip has passed it (3.6.6).
     if (found.facts.kind === "meeting_point_moved" && found.facts.movedPoint === null) {
       return { skipped: "no_longer_applies" };
     }

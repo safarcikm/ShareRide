@@ -266,32 +266,50 @@ describe("POST /admin/v1/meeting-points/{id}/move", () => {
     expect(entry?.after).toMatchObject({ tripsTold: 1 });
   });
 
-  it("drops the driver's news once the trip has passed the point", async () => {
+  it("drops the news once the trip has passed the point, for the driver and the passengers", async () => {
     const jon = await driverOf(airport, "Jón");
-    await api.client.call(setPushTokenRoute, {
-      accessToken: jon.accessToken,
-      body: { token: "ExponentPushToken[jon]" },
-    });
+    const anna = await newMember("Anna");
+    // Anna gets out at Fitjar and has paid.
+    const annas = await booked(anna.accessToken, airport, { fromStop: 0, toStop: 2 });
+    await paid(anna.accessToken, annas.id);
+    for (const [who, token] of [
+      [jon, "ExponentPushToken[jon]"],
+      [anna, "ExponentPushToken[anna]"],
+    ] as const) {
+      await api.client.call(setPushTokenRoute, {
+        accessToken: who.accessToken,
+        body: { token },
+      });
+    }
     await move(fitjar, north(sampleSpot("fitjar"), 300));
     const push = createFakePushSender();
     push.failure = new Error("The push service is down.");
+    await worker({ push }).runOnce();
     await worker({ push }).runOnce();
     // Saturday at noon: the trip passed Fitjar in the morning.
     await later(hours(24));
     push.failure = null;
     await worker({ push }).runOnce();
-    expect(push.sent).toEqual([]);
+    expect(push.sent.filter((message) => message.title.startsWith("Meeting point"))).toEqual([]);
     const tries = await api.connection.db
-      .select({ status: notificationDeliveries.status, reason: notificationDeliveries.reason })
+      .select({
+        kind: notifications.kind,
+        status: notificationDeliveries.status,
+        reason: notificationDeliveries.reason,
+      })
       .from(notificationDeliveries)
       .innerJoin(notifications, eq(notifications.id, notificationDeliveries.notificationId))
       .where(
         and(
-          eq(notifications.kind, "meeting_point_moved_driver"),
+          like(notifications.kind, "meeting_point_moved%"),
           eq(notificationDeliveries.channel, "push"),
         ),
-      );
-    expect(tries).toEqual([{ status: "skipped", reason: "no_longer_applies" }]);
+      )
+      .orderBy(asc(notifications.kind));
+    expect(tries).toEqual([
+      { kind: "meeting_point_moved", status: "skipped", reason: "no_longer_applies" },
+      { kind: "meeting_point_moved_driver", status: "skipped", reason: "no_longer_applies" },
+    ]);
   });
 
   it("moves a paused point too, and its legs stay with the points in service", async () => {

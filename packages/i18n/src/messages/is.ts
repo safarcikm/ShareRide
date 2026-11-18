@@ -1651,6 +1651,8 @@ export const is = {
   "export.value.kind.refund_issued": "Endurgreiðsla",
   "export.value.kind.meeting_point_changed": "Mótsstað breytt",
   "export.value.kind.meeting_point_changed_driver": "Mótsstað breytt, sem bílstjóri",
+  "export.value.kind.meeting_point_moved": "Mótsstaður færður",
+  "export.value.kind.meeting_point_moved_driver": "Mótsstaður færður, sem bílstjóri",
   "export.value.kind.new_message": "Ný skilaboð",
   "export.value.kind.unread_messages": "Ólesin skilaboð",
   "export.value.kind.reminder_evening": "Áminning kvöldið áður",
@@ -2367,7 +2369,7 @@ export const is = {
   "admin.meetingPoint.retire": "Hætta notkun",
   "admin.meetingPoint.retireQuestion": "Hætta notkun {name}?",
   "admin.meetingPoint.retireLater":
-    "Nýjar ferðir geta ekki notað hann héðan í frá. {count, plural, one {# væntanleg ferð stoppar hér, svo hann hættir eftir þá ferð.} other {# væntanlegar ferðir stoppa hér, svo hann hættir eftir þá síðustu.}} Það er endanlegt.",
+    "Nýjar ferðir geta ekki notað hann héðan í frá. {count, plural, =1 {# væntanleg ferð stoppar hér, svo hann hættir eftir þá ferð.} one {# væntanleg ferð stoppar hér, svo hann hættir eftir þá síðustu.} other {# væntanlegar ferðir stoppa hér, svo hann hættir eftir þá síðustu.}} Það er endanlegt.",
   "admin.meetingPoint.retireNow": "Hann hættir strax. Það er endanlegt.",
   "admin.meetingPoint.retireConfirm": "Hætta notkun {name}",
   "admin.meetingPoint.keep": "Halda honum",
@@ -2391,7 +2393,7 @@ export const is = {
   "admin.meetingPoint.moving": "Færir {name}…",
   "admin.meetingPoint.keepWhereItIs": "Hafa hann áfram á sama stað",
   "admin.meetingPoint.moved":
-    "{name} var færður um {metres} m og vegalengdir hans reiknaðar aftur. {count, plural, =0 {Enginn fær að vita það.} one {Bílstjóri # ferðar, og farþegar hennar sem fara inn eða út hér, fá að vita það.} other {Bílstjórar # ferða, og farþegar þeirra sem fara inn eða út hér, fá að vita það.}}",
+    "{name} var færður um {metres} m og vegalengdir hans reiknaðar aftur. {count, plural, =0 {Enginn fær að vita það.} =1 {Bílstjóri # ferðar, og farþegar hennar sem fara inn eða út hér, fá að vita það.} one {Bílstjórar # ferðar, og farþegar þeirra sem fara inn eða út hér, fá að vita það.} other {Bílstjórar # ferða, og farþegar þeirra sem fara inn eða út hér, fá að vita það.}}",
   "admin.meetingPoint.moveFailed": "Ekki tókst að færa staðinn. Reyndu aftur.",
   "admin.meetingPoint.issue.samePlace": "Staðurinn er hér nú þegar.",
   "admin.meetingPoint.issue.noRoad":
