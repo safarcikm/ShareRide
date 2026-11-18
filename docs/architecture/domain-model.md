@@ -272,7 +272,7 @@ it counts and why not) and `UserStats` (rating and reliability totals).
 `reporter_id`, `subject` (trip, message, booking, user or review; a
 person reported from their profile is a user report with no booking),
 `subject_user_id` (the person reported, the driver of a trip, or a
-review's author; empty for a review by the former member), the records
+review's author; the former member once their account is erased), the records
 it links (`trip_id`, `booking_id`, `message_id`, `conversation_id`,
 `review_id`), `category`, `description` (up to 1 000 characters),
 `urgent` (safety reports), `status` (open or closed), `outcome`,
@@ -335,6 +335,10 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
 - `Setting`: operator configuration (rates, timeouts, switches) with a range,
   a `SettingChange` history and a `SettingsVersion` that trips and bookings
   record ([spec 10](../specs/2026-11-13-operator-settings-and-metrics.md#6-data-and-api)).
+  As built ([ADR 0032](../decisions/0032-operator-settings-list-ranges-and-versions.md)):
+  the list and ranges are in the domain package, only the changes are
+  stored (`setting_changes`), and a version's values are the defaults with
+  the changes up to it laid over them.
 - `SearchLog` (anonymous: places, date, result count, time, platform),
   `Corridor`, `WeeklyMetric`, `Announcement`.
 - Privacy records ([spec 11](../specs/2026-11-13-privacy-self-service.md#6-data-and-api)):

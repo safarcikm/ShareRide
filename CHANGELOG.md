@@ -626,10 +626,10 @@ releases follow [Semantic Versioning](https://semver.org/).
 - Reporting and blocking from a profile, API (milestone 9, PR 9a, spec 9,
   3.1.1 and 3.2.1): a report can be about a review a profile shows, by
   anyone who reads it, linked to the review (migration
-  `0046_review_reports`), or about the person a profile shows, filed as a
+  `0047_review_reports`), or about the person a profile shows, filed as a
   report about a person with no booking. A review not shown yet, hidden,
-  or by someone leaving ShareRide cannot be reported; a review by the
-  former member can, naming nobody to act on.
+  or by or about someone leaving ShareRide cannot be reported; a review by
+  the former member can.
   `POST /v1/people/{profileId}/block` blocks the person a profile shows,
   as blocking from a booking does. The console's report page shows the
   review reported, with its words and whether it is hidden.
@@ -1097,9 +1097,25 @@ releases follow [Semantic Versioning](https://semver.org/).
   stop screens say when what passengers booked sets the highest level,
   down to free. On a trip under way, the stretches already driven still
   count (A50).
+- Milestone 11 plan (the beta gate, feedback and operator settings) and
+  ADR 0032: which values the operator can change, their ranges, and which
+  rules read a trip's or a booking's settings version.
+- The settings store (spec 10, 3.2; ADR 0032): `setting_changes`, a history
+  the database lets nobody edit, from which the values of every settings
+  version are worked out; the first two settings, "Invite code required"
+  and the most testers; the console's Settings page, where a change needs
+  a reason, shows what it does first and lands in the history; and
+  `GET /v1/config` for the apps.
 - Spec 18 (approved) and its plan: the web app on a laptop. From 900 wide,
   every main screen gets two columns or a grid in a page 1144 wide, under
   the top bar; phones keep their layouts.
+- The laptop layout's groundwork (spec 18, 3.2 to 3.4): a `Screen` can be a
+  page 1144 wide, with `Columns` (a main column and a side column that
+  stays in view) and a `Grid` of cards for the screens to come. On the web,
+  parts show the pointer: a card's edge turns moss, a row, a chip and a
+  secondary button are tinted, a primary button turns a step darker. The
+  top bar's logo and language line up with the page's edges, and the logo
+  and name open Find. Phones are unchanged.
 
 ### Fixed
 

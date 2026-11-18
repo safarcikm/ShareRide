@@ -20,6 +20,15 @@ export function aboutThem(userIds: readonly string[]): SQL | undefined {
   return and(inArray(reviews.subjectId, [...userIds]), isNull(authors.deleteAfter));
 }
 
+/**
+ * The reviews a profile shows, joined with their `authors`: revealed, not
+ * hidden, and not by someone leaving ShareRide (spec 8, 3.7.5; spec 11,
+ * 3.4.3). The person they are about must be shown too.
+ */
+export function readable(): SQL | undefined {
+  return and(isNull(authors.deleteAfter), isNotNull(reviews.revealedAt), isNull(reviews.hiddenAt));
+}
+
 /** The rating of each of these people. */
 export async function ratingsOf(
   q: Queryable,
@@ -39,7 +48,7 @@ export async function ratingsOf(
       .innerJoin(authors, eq(authors.id, reviews.authorId))
       // Only those that may count, so that a page of results reads few
       // rows; `ratingOf` still decides.
-      .where(and(aboutThem(ids), isNotNull(reviews.revealedAt), isNull(reviews.hiddenAt)));
+      .where(and(aboutThem(ids), readable()));
     for (const row of rows) {
       rated.get(row.subjectId)?.push({
         rating: row.rating,

@@ -456,7 +456,7 @@ PRs 7 and 8 were: 9a the API, 9b the screens.
 
 - [x] 9a: `feat(safety)`: report a review, and report or block a person
       from their profile, in the API
-  - `reports.review_id` (migration `0046_review_reports`, the next free
+  - `reports.review_id` (migration `0047_review_reports`, the next free
     number when it merges), set to null if the review is deleted.
   - `POST /reports` also takes `{ kind: "review", reviewId }` for a review
     shown on a profile (revealed and not hidden), and
@@ -474,12 +474,13 @@ PRs 7 and 8 were: 9a the API, 9b the screens.
     a person from their profile, myself refused, a person who left not
     found; blocking from a profile, myself and a left person not found,
     the bookings still shared listed; the console's review record.
-  - Found while building (9a): a review by someone leaving ShareRide is
-    not found, as no profile shows it; a review by the former member (a
-    trip made anonymous after 3 years) can be reported, but names nobody,
-    since the former member is no one to act on. Any report naming the
-    former member names nobody, so an operator never warns or suspends
-    it.
+  - Found while building (9a): a review by someone leaving ShareRide, or
+    about them, is not found, as no profile shows it. A review by the
+    former member (a trip made anonymous after 3 years) can be reported:
+    the report names the former member, as an erased account's reports
+    do, and the console offers no action on it. The rule for which
+    reviews a profile shows is one helper (`readable` in
+    `people/ratings.ts`), shared by profiles, ratings and reports.
 - [x] 9b: `feat(safety)`: Report and Block on the public profile, and
       Report review, in the app; the review on the console's report page
   - On another person's profile, never one's own or "See it as others
@@ -494,10 +495,10 @@ PRs 7 and 8 were: 9a the API, 9b the screens.
   - Found while building (9b): the profile also links the community rules
     (spec 9, 3.3.4). Report review is read out with its author and month,
     as a list has many. A review's author has no profile reference on it,
-    so its report offers no "Block too". A report naming nobody (a review
-    by the former member) shows no actions on its page, so hiding such a
-    review from the console waits for a later change; the API already
-    allows it.
+    so its report offers no "Block too". A report about a review by the
+    former member names the former member, on whom the console offers no
+    action, so hiding such a review from the console waits for a later
+    change; the API already allows it.
 - [ ] Afterwards: ratings, reliability and reviews on the console's person
       and report pages (spec 3.5.2), now that milestone 7 has them
 

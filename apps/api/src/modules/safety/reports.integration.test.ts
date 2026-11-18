@@ -509,7 +509,7 @@ describe("reporting from a profile (spec 9, 3.1.1)", () => {
     ).toMatchObject({ status: 404, error: { code: "not_found" } });
   });
 
-  it("reports a review by the former member, naming nobody to act on (A51)", async () => {
+  it("reports a review by the former member, as an erased account's report stays (A51)", async () => {
     const { jon, reviewId } = await reviewed();
     // As the 3-year clean-up leaves it: by the former member, on no booking.
     await api.connection.db
@@ -524,11 +524,24 @@ describe("reporting from a profile (spec 9, 3.1.1)", () => {
     const [row] = await stored();
     expect(row).toMatchObject({
       subject: "review",
-      subjectUserId: null,
+      subjectUserId: schema.formerMemberId,
       reviewId,
       bookingId: null,
       tripId: null,
     });
+  });
+
+  it("finds no review about someone leaving ShareRide, whose profile is gone", async () => {
+    const { jon, reviewId } = await reviewed();
+    const sigga = await newMember("Sigga");
+    await api.connection.db
+      .update(schema.users)
+      .set({ deleteAfter: new Date(api.now().getTime() + 30 * 24 * 3_600_000) })
+      .where(eq(schema.users.id, jon.userId));
+    expect(
+      await report(sigga, { about: { kind: "review", reviewId }, category: "offensive" }),
+    ).toMatchObject({ status: 404, error: { code: "not_found" } });
+    expect(await stored()).toEqual([]);
   });
 
   it("reports a person from their profile, with no booking between us", async () => {

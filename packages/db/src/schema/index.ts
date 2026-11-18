@@ -12,6 +12,7 @@ export * from "./trip-day.ts";
 export * from "./privacy.ts";
 export * from "./reviews.ts";
 export * from "./safety.ts";
+export * from "./settings.ts";
 export * from "./trips.ts";
 export * from "./users.ts";
 export * from "./vehicles.ts";

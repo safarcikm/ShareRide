@@ -284,6 +284,32 @@ describe("The top bar on wide screens", () => {
     expect(screen.queryByTestId("tab-bar")).toBeNull();
   });
 
+  it("lines its content up with the page (spec 18, 3.3)", async () => {
+    await renderApp("/");
+    await screen.findByTestId("top-bar");
+    expect(screen.getByTestId("top-bar-content")).toHaveStyle({ maxWidth: 1144, width: "100%" });
+  });
+
+  it("opens Find from the logo and name", async () => {
+    const app = await renderApp("/profile");
+    const bar = within(await screen.findByTestId("top-bar"));
+    await fireEvent.press(bar.getByRole("link", { name: "ShareRide, to the front page" }));
+    expect(await screen.findByRole("button", { name: "Find a ride" })).toBeVisible();
+    expect(screen).toHavePathname("/");
+    expect(menuCopies(app.getRouterState())).toBe(1);
+  });
+
+  it("turns a place primary under the pointer, underlined only when chosen", async () => {
+    await renderApp("/");
+    const bar = within(await screen.findByTestId("top-bar"));
+    expect(bar.getByText("Profile")).toHaveStyle({ color: colors.light.text });
+    await fireEvent(bar.getByRole("tab", { name: "Profile" }), "hoverIn");
+    expect(bar.getByText("Profile")).toHaveStyle({ color: colors.light.primary });
+    expect(bar.getByText("Profile")).not.toHaveStyle({ textDecorationLine: "underline" });
+    await fireEvent(bar.getByRole("tab", { name: "Profile" }), "hoverOut");
+    expect(bar.getByText("Profile")).toHaveStyle({ color: colors.light.text });
+  });
+
   it("stays on a ride, showing the place it was found from, and goes back there", async () => {
     const ride = soonRide("2026-11-15", 0, { tripId: northResult.tripId });
     await renderApp("/", {

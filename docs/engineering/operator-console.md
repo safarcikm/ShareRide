@@ -12,7 +12,7 @@ section works the same way. Security details are in
 
 1. Define the route in `packages/contracts` with `auth: "operator"` and a
    path under `/admin/v1/<area>`. Its errors include `401
-   operator_unauthenticated`.
+operator_unauthenticated`.
 2. Put the handlers in the module that owns the records, in
    `apps/api/src/modules/<area>/admin-routes.ts`, exporting
    `register<Area>AdminRoutes(app, dependencies)`. Pass
@@ -33,8 +33,8 @@ section works the same way. Security details are in
      records the operator curates. For a person's record, list the field
      names that changed, not their values (spec 9, section 7);
    - `request`: `auditRequestOf(c, clientAddress)`.
-   Opening something sensitive, such as a conversation or payment details,
-   is an action too.
+     Opening something sensitive, such as a conversation or payment details,
+     is an action too.
 5. Integration tests sign in with `api.signInOperator()` from
    `apps/api/src/testing.ts` and send its `cookie`. Test that the route
    refuses a request without it and that each action writes its entry.
@@ -96,7 +96,7 @@ meeting point routes (`registerMeetingPointsAdminRoutes`), with the work in
   its count of open reports (`openIssues`). There are a few hundred points
   at most, so it filters them all in the API.
 - `POST /admin/v1/meeting-points` adds a draft; `PUT
-  /admin/v1/meeting-points/{id}` saves its fields. Both check the fields
+/admin/v1/meeting-points/{id}` saves its fields. Both check the fields
   with `validateMeetingPointDraft` and answer `validation_failed` with each
   field and its problem in `details`, which the form shows by its field.
 - An edit sends back the `updatedAt` it loaded. If the point was saved
@@ -123,7 +123,7 @@ meeting point routes (`registerMeetingPointsAdminRoutes`), with the work in
   item, `legs`, asks for a road within 1 km that reaches a point in
   service, or none in service yet (the leg service's `connects`, one
   search), as activating computes the legs. `POST
-  /admin/v1/meeting-points/{id}/activate`, with the `updatedAt` the
+/admin/v1/meeting-points/{id}/activate`, with the `updatedAt` the
   console loaded, makes a draft active with its review date, and refuses
   one whose checklist is not done with `activation_not_ready` and each
   item in `details` (`issue: "not_done"`). The console always asks, as
@@ -233,7 +233,7 @@ A point's photos (spec 2, 3.6.3) are in
   with a link, its descriptions in both languages, its size and its
   `updatedAt`. `POST` the same path adds one last: the descriptions and
   `file`, the JPEG in base64, as the API takes only JSON. `PUT
-  .../photos/{photoId}` changes its descriptions with the `updatedAt` it
+.../photos/{photoId}` changes its descriptions with the `updatedAt` it
   loaded (`photo_changed` if it was changed since), `PUT .../photo-order`
   takes every photo's ID once in the new order (`photos_changed` if one
   was added or removed since), and `DELETE .../photos/{photoId}` removes
@@ -560,13 +560,47 @@ with their outcome. A report's page offers only the actions that fit it
 only when the person reported drives it (the report's `trip.driverId`),
 hiding the reported message, review or About you while it is shown,
 suspending an open account and reinstating a suspended one. A report
-naming nobody (a review by the former member) offers none. A refusal
+about a deleted account or the former member offers none. A refusal
 (someone acted meanwhile) loads the report again. Before an action is sent, the
 console shows the notice as the person reads it, in their language,
 built from the same texts as the app (`statementLines` in `texts.ts`).
 Closing a report and answering an appeal ask once more, naming the
 outcome, as neither can be undone. The conversation opens only when the
 operator presses "Show the conversation", as on a dispute.
+
+## Settings
+
+`apps/api/src/modules/settings/` holds the operator's settings
+([ADR 0032](../decisions/0032-operator-settings-list-ranges-and-versions.md);
+spec 10, 3.2). The list, with each setting's default and range, is
+`settingDefinitions` in `packages/domain/src/settings/catalogue.ts`; adding
+one or changing a range needs an ADR (R10.4).
+
+- The values are not stored on their own: they are the defaults with the
+  rows of `setting_changes` laid over them (`valuesAt`). Each row is the
+  next settings version; version 0 is the defaults. Triggers written by
+  hand in the migration refuse updates, deletes and `TRUNCATE`, so the
+  history cannot be edited (R10.2). Keep them when a later migration
+  changes the table.
+- `createSettingsService` gives `current()`, read from the database at
+  most every 5 seconds and at once after a change made through it, so
+  another process sees a change within 5 seconds; `latest()`, which
+  always reads; and `at(version)`, kept in memory, as a version never
+  changes. A rule about something new reads `current()`.
+- `GET /admin/v1/settings` lists every setting with its value and the
+  version. `PATCH /admin/v1/settings/{key}` takes `{ value, reason,
+version }` with the version the page loaded: it takes a lock on the
+  table, refuses with `settings_changed` if another change came since,
+  checks the value and the reason (`checkSettingChange`), writes the next
+  version and the audit entry `setting.changed` (the value before; the
+  value, the version and the reason after). `GET
+/admin/v1/settings/history` pages through the changes, newest first.
+- `GET /v1/config` is open to everyone and cached for 5 minutes: what the
+  apps need of the settings. Add a value there only when an app shows or
+  checks it.
+- The console's Settings page (`apps/admin/src/pages/settings/`) shows a
+  setting by the texts in its `texts.ts`: add a name, a help sentence and,
+  for a new unit, the unit's two texts with each new setting.
 
 ## Users, trips and decline rates
 

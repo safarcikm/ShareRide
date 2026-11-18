@@ -94,11 +94,11 @@ every main screen, as drawn, on 2026-11-18.
   `listPaneWidth = 360`, and `colors.light.primaryHover = "#285C44"`,
   `colors.dark.primaryHover = "#8FD0AC"`.
 
-- [ ] **Step 1: Failing tests** in `tokens.test.ts`: `["onPrimary",
+- [x] **Step 1: Failing tests** in `tokens.test.ts`: `["onPrimary",
   "primaryHover"]` joins `textPairs`; `pageMaxWidth` is 1144.
-- [ ] **Step 2:** `pnpm --filter @shareride/ui test`; expect failures.
-- [ ] **Step 3:** Add the tokens.
-- [ ] **Step 4:** Run again; expect pass. Commit `feat(ui): tokens for wide pages`.
+- [x] **Step 2:** `pnpm --filter @shareride/ui test`; expect failures.
+- [x] **Step 3:** Add the tokens.
+- [x] **Step 4:** Run again; expect pass. Commit `feat(ui): tokens for wide pages`.
 
 ### Task 1.2: `Screen` page width, `Columns` and `Grid`
 
@@ -128,7 +128,7 @@ every main screen, as drawn, on 2026-11-18.
   equal columns with gap `md`, one column until measured; each child in a
   cell with test ID `grid-cell`.
 
-- [ ] **Step 1: Failing tests** in `wide-parts.test.tsx`:
+- [x] **Step 1: Failing tests** in `wide-parts.test.tsx`:
   - `Screen width="page"` at 1280 wide has `page` with `maxWidth` 1144; at
     390 wide there is no `page`;
   - `Columns` at 1280: `columns-side` has width 400 and comes after
@@ -137,76 +137,88 @@ every main screen, as drawn, on 2026-11-18.
   - `Grid` laid out 704 wide puts 3 children in cells 344 wide; laid out 500
     wide in cells 500 wide; with `fontScale` 2 the cells keep their width
     (Review Focus 5).
-- [ ] **Step 2:** `pnpm --filter @shareride/mobile test wide-parts`; expect failures.
-- [ ] **Step 3:** Implement the three.
-- [ ] **Step 4:** Run again and `pnpm --filter @shareride/mobile typecheck`; expect pass.
-- [ ] **Step 5:** Commit `feat(mobile): page width, columns and grid for wide screens`.
+- [x] **Step 2:** `pnpm --filter @shareride/mobile test wide-parts`; expect failures.
+- [x] **Step 3:** Implement the three.
+- [x] **Step 4:** Run again and `pnpm --filter @shareride/mobile typecheck`; expect pass.
+- [x] **Step 5:** Commit `feat(mobile): page width, columns and grid for wide screens`.
 
 ### Task 1.3: Pointer looks
 
 **Files:**
 
-- Create: `apps/mobile/src/theme/hover.ts`, `apps/mobile/src/theme/hover.test.ts`
+- Create: `apps/mobile/src/theme/hover.ts`, `apps/mobile/src/theme/hover.test.tsx`
 - Modify: `components/card.tsx`, `components/row.tsx`, `components/button.tsx`,
   `components/chip.tsx`, `components/icon-button.tsx`,
-  `components/back-button.tsx`, `navigation/top-bar.tsx`
+  `navigation/top-bar.tsx`
 
 **Interfaces:**
 
-- Produces: `isHovered(state: { readonly pressed: boolean }): boolean`,
-  true when react-native-web's `hovered` is set on a `Pressable`'s state
-  (React Native's types do not know it), false on phones.
+- Produces: `useHover(off = false): readonly [boolean, HoverProps]`: whether
+  the pointer is over a part, and the `onHoverIn` and `onHoverOut` to give
+  its `Pressable`. A part that is `off` (disabled, busy) is never hovered
+  and forgets the pointer. Phones never call the two, so nothing changes
+  there. (Its own state, not react-native-web's `hovered`, so a test can
+  show the look with `fireEvent(part, "hoverIn")`.)
 - Produces: `Card` props `onHoverIn?: () => void` and `onFocus?: () => void`,
   passed to its `Pressable` (the results map uses them in PR 3).
 
 Looks under the pointer (spec 18, 3.4): a pressable `Card`'s face and a
 `Row` `primarySoft`; `Button` primary face `primaryHover`, secondary face
 `primarySoft`, text label underlined; `Chip` not selected `primarySoft`;
-`IconButton` and `BackButton` face `primarySoft`; a place in the top bar
-`primary`. A disabled or busy part shows none.
+`IconButton` (and so `BackButton`) face `primarySoft`; a place in the top
+bar `primary`. A disabled or busy part shows none.
 
-- [ ] **Step 1: Failing tests** in `hover.test.ts`: `isHovered({ pressed:
-  false })` is false; with `hovered: true` true. In `button.test.tsx` and
-  `display-parts.test.tsx`: the face of a primary `Button`, a pressable
-  `Card` and a `Row` rendered with a hovered state (call the part's style
-  function with `{ pressed: false, hovered: true }`) carry the colours
-  above; a disabled `Button` does not.
-- [ ] **Step 2:** Run them; expect failures.
-- [ ] **Step 3:** Implement.
-- [ ] **Step 4:** Run the app's tests; expect pass.
-- [ ] **Step 5:** Commit `feat(mobile): parts react to the pointer`.
+- [x] **Step 1: Failing tests** in `hover.test.tsx` for the hook. In
+  `button.test.tsx`, `display-parts.test.tsx`, `form-parts.test.tsx` and
+  `menu.test.tsx`: after `hoverIn`, the face of a primary and a secondary
+  `Button`, a pressable `Card`, a `Row`, a `Chip`, an `IconButton` and a
+  place in the top bar carry the colours above; a disabled or busy `Button`
+  does not. In `tokens.test.ts`: `text` and `textMuted` on `primarySoft`
+  are at least 4.5:1.
+- [x] **Step 2:** Run them; expect failures.
+- [x] **Step 3:** Implement.
+- [x] **Step 4:** Run the app's tests; expect pass.
+- [x] **Step 5:** Commit `feat(mobile): parts react to the pointer`.
 
 ### Task 1.4: The top bar lined up, and the laptop journey
 
 **Files:**
 
 - Modify: `apps/mobile/src/navigation/top-bar.tsx`,
+  `apps/mobile/src/components/screen.tsx` (the scrollbar's room),
   `packages/i18n/src/messages/en.ts`, `is.ts` (`nav.home`)
-- Create: `apps/mobile/e2e/laptop.spec.ts`
-- Modify: `apps/mobile/e2e/look.spec.ts` (the language switch's place)
-- Test: `apps/mobile/src/components/navigation-parts.test.tsx`
+- Create: `apps/mobile/e2e/laptop.spec.ts`, `apps/mobile/e2e/support/laptop.ts`,
+  `apps/mobile/e2e/laptop-scrollbar.spec.ts` (the bar over the page with
+  the browser's scrollbars showing, 1000 and 1440 wide)
+- Test: `apps/mobile/src/__tests__/menu.test.tsx`
 
 **Interfaces:**
 
 - Produces: the bar's content in a row at most `pageMaxWidth` wide in the
   middle (test ID `top-bar-content`), with `md` padding at each side as the
   page has; the logo and name as one link to `/` named `nav.home`.
-- Produces: in `laptop.spec.ts`, `expectNoSidewaysScroll(page)` (the
-  document and the screen's scroll are no wider than the window) and
-  `widths = [900, 1280, 1440]`, for the later PRs to add their screens to.
+- Produces: on the web, a wide `Screen` scrolls with
+  `scrollbar-gutter: stable both-edges`, and the bar keeps the same room
+  (`evenGutterOnWeb`), so a page stays under the bar's content where the
+  scrollbar takes room.
+- Produces: in `e2e/support/laptop.ts`, `expectNoSidewaysScroll(page)` (the
+  document and the screen's scroll are no wider than the window),
+  `widths = [900, 1280, 1440]` and `laptop(width)`, a viewport; the later
+  PRs add their screens to `laptop.spec.ts`. (A journey may not import
+  from another journey's file, so the helpers have their own.)
 
-- [ ] **Step 1: Failing tests:** in `navigation-parts.test.tsx`, the bar's
-  content has `maxWidth` 1144 and the link "ShareRide, to the front page"
-  opens `/`. In `laptop.spec.ts`, at each width: Find, `/meeting-points`
-  and `/profile` do not scroll sideways; at 1440 the logo's left edge is
-  within 1 of 148 (the page's edge); clicking the logo from `/profile`
-  opens Find.
-- [ ] **Step 2:** Run the Jest test; expect failures.
-- [ ] **Step 3:** Implement; fix `look.spec.ts`'s check of where the
-  language switch sits.
-- [ ] **Step 4:** Jest, then
+- [x] **Step 1: Failing tests:** in `menu.test.tsx`, the bar's content has
+  `maxWidth` 1144 and the link "ShareRide, to the front page" opens `/`.
+  In `laptop.spec.ts`, at each width: Find, `/meeting-points` and
+  `/profile` do not scroll sideways; at 1440 the logo's left edge is at 148
+  and the language ends at 1292 (the page's edges); clicking the logo from
+  `/profile` opens Find.
+- [x] **Step 2:** Run the Jest test; expect failures.
+- [x] **Step 3:** Implement. (`look.spec.ts` only checks that the language
+  switch is in the bar, so it needs no change.)
+- [x] **Step 4:** Jest, then
   `npx playwright test e2e/laptop.spec.ts e2e/look.spec.ts --trace off`; expect pass.
-- [ ] **Step 5:** Spec 15 rows for `Screen`, `Columns`, `Grid`, `TopBar`
+- [x] **Step 5:** Spec 15 rows for `Screen`, `Columns`, `Grid`, `TopBar`
   and the pointer looks; `CHANGELOG.md`. Commit `feat(mobile): the top bar lines up with the page`.
 
 ## PR 2: Find
