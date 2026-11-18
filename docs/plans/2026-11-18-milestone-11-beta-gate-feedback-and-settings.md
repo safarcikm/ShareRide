@@ -608,9 +608,17 @@ before merging.
 
 ### PR 15: `docs`: wrap-up
 
-- [ ] The roadmap ticked, the runbook's "the first account on a new
+- [x] The roadmap ticked, the runbook's "the first account on a new
       server" step, the glossary, and a browser journey through the whole
       of section 1
+
+As built: the journey is the operator's side, in the console's browser
+journeys (a group code, a price value with its effect, a pause the home
+page shows, an announcement, the exit criteria, the audit log). The
+tester's side (the gate, feedback) has its journeys from PRs 3 to 5. The
+journey found two faults, fixed with it: the API client sent no JSON body
+for a change without one, so three console buttons got 415; and the
+metrics filters ran past a phone's width.
 
 ## 6. Review focus
 

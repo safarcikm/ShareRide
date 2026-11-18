@@ -28,6 +28,15 @@ to be confirmed by a native speaker before they appear in the app.
 | Price level (`priceLevel`) | Verðstig | The one percentage of the suggested prices a driver chooses for a whole trip, from 0% (free) up to the cap |
 | Cost-sharing | Kostnaðarskipting | Passengers contribute to the cost of a trip the driver makes anyway, without profit |
 | Reliability | Áreiðanleiki | Share of trips and bookings a user completed rather than cancelled |
+| Tester | Prófari | An account made with an invite code while the beta is closed; the settings cap how many there can be |
+| Invite code (`InviteCode`) | Boðskóði | A group code that lets a set number of new accounts in while the beta is closed, until a date |
+| Feedback (`Feedback`) | Ábending | What a tester sends from the app about a problem or an idea; the operator can reply once |
+| Setting (`SettingKey`) | Stilling | A value the operator can change in the console within a fixed range, with a reason; each change is a new settings version |
+| Settings version | Útgáfa stillinga | The number of the last change to the settings. A published trip keeps its version's price values, and a booking its version's cancellation values |
+| Switch | Rofi | A setting that is on or off, for emergencies: off pauses what is new (sign-ups, trips, bookings, a notification channel) and changes nothing that exists |
+| Corridor (`Corridor`) | Leið | A named, ordered list of places the beta opens on; the weekly figures are counted for each |
+| Weekly figures | Vikutölur | Searches, requests, bookings, seat fill and cancellations per corridor and week, and the beta's exit criteria built on them |
+| Announcement (`Announcement`) | Tilkynning | News about the beta the operator writes in both languages and sends once to an audience; people can turn it off with "Beta news" |
 | Kennitala | Kennitala | Icelandic national identification number; never required to use the app |
 | Auðkenni | Auðkenni | Icelandic electronic ID (rafræn skilríki) provider, used for optional verification |
 | Vegagerðin | Vegagerðin | Icelandic Road and Coastal Administration; source of road conditions and closures |

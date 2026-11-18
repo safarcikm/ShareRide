@@ -1300,9 +1300,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   cancellation). A booking keeps the cancellation values it was made
   under; the others apply from the change on. The app's texts take the
   values in place of fixed numbers.
+- Milestone 11 closed: the roadmap ticked, the glossary's beta and
+  settings terms (tester, invite code, setting, settings version, switch,
+  corridor, weekly figures, announcement), and a browser journey through
+  the operator's side of the beta in the console.
 
 ### Fixed
 
+- The filters above the weekly figures in the operator console fit a
+  phone's width. A card whose parts stack let them grow past its edge.
 - Ending an invite code, sending an announcement to yourself and sending
   it to everyone work in the operator console. The API takes a change
   only as JSON, and the API client sent no JSON body for a change that
