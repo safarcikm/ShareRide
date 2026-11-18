@@ -13,6 +13,7 @@ import {
   routeLegPairs,
   runsOrRan,
   stopsToCopy,
+  takingsOf,
   type AccountSuspended,
   type DistancesMissing,
   type MeetingPointStatus,
@@ -26,7 +27,7 @@ import {
 import { and, asc, count, desc, eq, gt, inArray, isNull, lte, min, ne, or, sql } from "drizzle-orm";
 import { lockActive } from "../account/standing.ts";
 import type { DrivingService } from "../driving/index.ts";
-import { seatsTakenNow } from "../bookings/seats.ts";
+import { seatsTakenNow, takingsBookings } from "../bookings/seats.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import { checkInsAt, driverCheckedInAt, shownWindow } from "../trip-day/check-ins.ts";
 
@@ -166,7 +167,7 @@ export function createTripService(dependencies: {
     const ids = rows.map((row) => row.id);
     if (ids.length === 0) return [];
     const now = clock();
-    const [stopRows, segmentRows, requestRows, occupancy] = await Promise.all([
+    const [stopRows, segmentRows, requestRows, occupancy, takings] = await Promise.all([
       q
         .select({ stop: tripStops, point: meetingPoints })
         .from(tripStops)
@@ -192,6 +193,7 @@ export function createTripService(dependencies: {
         )
         .groupBy(bookings.tripId),
       seatsTakenNow(q, ids, now),
+      takingsBookings(q, ids, now),
     ]);
     const checkIns = await checkInsAt(
       q,
@@ -240,6 +242,7 @@ export function createTripService(dependencies: {
             price: { amount: segment.price, currency: "ISK" as const },
             seatsTaken: occupancy(row.id, segment.position, segment.occupancy),
           })),
+        takings: takingsOf(takings.get(row.id) ?? []),
         openRequests: requestRows.find((requests) => requests.tripId === row.id)?.count ?? 0,
         requestsCloseAt:
           requestRows.find((requests) => requests.tripId === row.id)?.closesAt?.toISOString() ??
@@ -704,7 +707,8 @@ export function createTripService(dependencies: {
         priceLevel,
         bookingMode,
         preferences,
-        note: row.note,
+        // A note ShareRide hid stays behind: the driver writes a new one (spec 9, 3.4.3).
+        note: row.noteHiddenAt === null ? row.note : "",
         // A car removed since: the driver's other car, as for a new draft.
         ...(carStays ? { vehicleId: row.vehicleId } : {}),
       });

@@ -33,6 +33,7 @@ import {
   stopsOf,
   type Transaction,
 } from "../bookings/seats.ts";
+import { refitToTripLimit } from "../trips/limit.ts";
 import { recordEvents } from "../notifications/outbox.ts";
 import { asRule, disputesOf, shownDispute, type DisputeRow } from "./disputes.ts";
 import { applyOutcome } from "./outcome.ts";
@@ -184,6 +185,8 @@ export function createReportService(dependencies: {
           .where(eq(bookings.id, bookingId));
         const part = partOf(await stopsOf(tx, trip.id), booking);
         await changeOccupancy(tx, trip.id, part, -booking.seats);
+        // The driver keeps the money while the seat is free again (spec 17).
+        await refitToTripLimit(tx, trip.id, now);
         await recordEvents(tx, [{ type: "NoShowMarked", bookingId }], now);
         return ok(raised.value.dispute);
       });

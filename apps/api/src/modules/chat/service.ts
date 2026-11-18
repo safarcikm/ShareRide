@@ -161,18 +161,22 @@ function present(row: MessageRow, viewerId: string, viewer: TripRole): ChatMessa
       clientId: null,
       sentAt: row.sentAt.toISOString(),
       readAt: null,
+      removed: false,
     };
   }
+  // What ShareRide removed is gone for both, the sender too (spec 9, 3.4.3).
+  const removed = row.hiddenAt !== null;
   return {
     id: row.id,
     from,
     kind: row.kind as ChatMessage["kind"],
-    text: row.kind === "text" ? row.body : null,
-    quick: row.kind === "quick" ? quickOf(row) : null,
+    text: row.kind === "text" && !removed ? row.body : null,
+    quick: row.kind === "quick" && !removed ? quickOf(row) : null,
     system: row.kind === "system" ? systemLineOf(row, viewer) : null,
     clientId: mine ? row.clientId : null,
     sentAt: row.sentAt.toISOString(),
     readAt: mine ? (row.readAt?.toISOString() ?? null) : null,
+    removed,
   };
 }
 

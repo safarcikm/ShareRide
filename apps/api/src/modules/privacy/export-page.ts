@@ -2,11 +2,13 @@ import {
   cancelReasons,
   exportSections,
   meetingPointIssueReasons,
+  moderatedContent,
   moderationRules,
   reportCategories,
   reportOutcomes,
   type CancelReason,
   type MeetingPointIssueReason,
+  type ModeratedContent,
   type ModerationRule,
   type ReportCategory,
   type ReportOutcome,
@@ -19,6 +21,7 @@ import {
   isMessageKey,
   issueReasonKeys,
   languageNames,
+  moderatedContentName,
   moderationRuleText,
   reportCategoryText,
   reportOutcomeText,
@@ -58,6 +61,8 @@ const isIssueReason = (code: string): code is MeetingPointIssueReason =>
   (meetingPointIssueReasons as readonly string[]).includes(code);
 const isModerationRule = (code: string): code is ModerationRule =>
   (moderationRules as readonly string[]).includes(code);
+const isModeratedContent = (code: string): code is ModeratedContent =>
+  (moderatedContent as readonly string[]).includes(code);
 
 /**
  * Fields that hold a stored code, and how to say each code in the person's
@@ -100,6 +105,7 @@ function codeWords(t: Translate, locale: Locale): Readonly<Record<string, Say>> 
       (isReportOutcome(code) ? reportOutcomeText(t, code) : undefined),
     problem: (code) => (isIssueReason(code) ? t(issueReasonKeys[code]) : undefined),
     rule: (code) => (isModerationRule(code) ? moderationRuleText(t, code) : undefined),
+    content: (code) => (isModeratedContent(code) ? moderatedContentName(t, code) : undefined),
     appealOutcome: keyed("export.value.appealOutcome"),
     document: (code) => {
       const key = legalDocumentKeys[code];

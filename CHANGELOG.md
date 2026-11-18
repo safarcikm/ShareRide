@@ -575,6 +575,36 @@ releases follow [Semantic Versioning](https://semver.org/).
   API can suspend a person (`POST /e2e/suspend`), as the console will. In
   Icelandic, Notices are "Orðsendingar frá ShareRide", apart from
   Messages ("Skilaboð").
+- Hidden content and ShareRide's trip cancel (milestone 9, PR 6d, spec 9,
+  3.4.3): for the console, the operator's `hideContent` hides a message,
+  a review, a trip's note or About you, and `cancelTrip` cancels an upcoming trip
+  with full refunds, on the driver's reliability only when the operator
+  says so. A hidden message reads "Removed by ShareRide" to both people
+  (in every conversation a message to all passengers went to), the app
+  offers no Report on it, and it sends no push if it had not gone yet; a
+  hidden note is not shown to passengers, nor copied by "Post again",
+  until the driver writes a different one, and About you likewise, also
+  on the public profile; a hidden review no longer shows to the person it
+  is about. The
+  person gets the notice with what it concerned, also in the email and in
+  "Download my data"; the passengers of a cancelled trip only that
+  ShareRide cancelled it. Reversing a hiding on appeal shows the
+  content again. Each writes one audit entry. Migration
+  `0041_hidden_content` adds `messages.hidden_at`,
+  `trips.note_hidden_at` and `users.about_hidden_at`, which "Download my
+  data" includes.
+- The console's reports API (milestone 9, PR 7a, spec 9, 3.4 to 3.6):
+  `/admin/v1/reports` lists open reports, safety first, then the oldest,
+  each due 24 hours after it was filed, or the last 50 closed; a report's
+  page has its records, both people's other reports, recent trips and
+  actions, and the actions taken under it. It names the reported message
+  without its words: `/admin/v1/reports/{id}/conversation` opens the
+  conversation only for a message report, each opening logged (R9.6), with
+  a message ShareRide removed marked `removed` (for disputes too). The
+  operator closes a report, warns, suspends or reinstates a person, hides
+  content and cancels a trip as ShareRide, each with the rule and the
+  reason the person reads; `/admin/v1/appeals` lists open and answered
+  appeals, and the answer is final. Only operators reach any of it.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its
@@ -882,6 +912,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   16 November 2026 (19 474 km of road, 0.9 MB); a test checks known
   distances and that every sample meeting point reaches every other. How
   to update the map data: `docs/engineering/road-file.md`.
+- Distances for real meeting points (milestone 8, PR 11b): the API finds
+  legs on the road file through the `Router` port, which reads it on
+  first use (straight lines in API tests). "Recompute all" computes every
+  leg between points in service again, with an audit entry, and
+  activating or moving a point will compute its own (PR 12). The
+  console's Distances page, under meeting points, shows how many legs
+  there are, when they were computed and on which map data, the points
+  with no road within 1 km and the legs missing; a browser journey
+  recomputes them on the real road file. Joining a point to a road is
+  about eight times faster, and the sample seed keeps road file legs.
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.
@@ -941,6 +981,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   `trip_limit_reached`, and the app says fewer seats or a shorter part may
   fit and leads back to the trip; the domain gains `tripLimit`, `takingsOf`,
   `limitRoom` and the highest price level within the limit.
+- The trip limit, part 2 (spec 17, ADR 0030): the price level follows the
+  limit. More seats after people booked, a stop whose new stretches leave
+  too little room, a no-show (the driver's or the operator's decision), a
+  cancellation, or a request declined after the level was raised lower the
+  level for new bookings to the highest that keeps a full car within the
+  limit, recorded as a price level change with its reason; a higher level
+  is refused. The driver's trip shows its takings, and the price, seats and
+  stop screens say when what passengers booked sets the highest level,
+  down to free. On a trip under way, the stretches already driven still
+  count (A50).
 
 ### Fixed
 

@@ -234,7 +234,7 @@ completed).
   `hidden_at` on messages, on the trip note (`trips.note_hidden_at`) and
   on the bio (`users.about_hidden_at`). A hidden message reads "Removed by
   ShareRide" to both people; a hidden note or bio is simply not shown.
-- `operator_notes`: person, text, by, when.
+- `operator_notes`: person, text, by, when (PR 8, with Add note).
 - Each action is one function in `apps/api/src/modules/moderation/`, run
   in one transaction with its `recordAudit` entry (R9.7) and its
   `moderation_action` notification (the statement of reasons by email and
@@ -243,8 +243,10 @@ completed).
     bookings of `suspensionEffects` through milestone 6's cancellation
     code as the operator, with full refunds. The other people get the
     usual "cancelled" notification, never why (R9.10).
-  - `reinstate`, `warn`, `hideContent`, `cancelTripAsOperator`,
-    `refundBooking`, `closeReport` and `answerAppeal`.
+  - `reinstate`, `warn`, `hideContent`, `cancelTrip` (through
+    `cancelTripAsOperator`), `closeReport` and `answerAppeal`;
+    `refundBooking` comes with payouts (spec 13), which own refunds
+    outside a cancellation.
 - Requests from a suspended person to search, book, request, post, change
   a trip, send a message or review get 403 `account_suspended`. The
   minute job ends suspensions whose end has passed and tells the person.
@@ -254,6 +256,24 @@ completed).
   driver can decline a request but not accept one. A suspended person
   stays signed in, as spec 9, 3.6.2 needs; security.md said before that
   their sessions end.
+- Found while building (PR 6d): a different note or About you is new
+  content, shown again until the operator hides it too; the same text
+  saved again stays hidden, and "Post again" leaves a hidden note out. A
+  reversed appeal shows hidden content again only if it is still the one
+  hidden. A message to all passengers is one message: hiding it hides
+  every copy, with one notice. A message removed before its push went out
+  sends none. In "Download my data", the sender keeps their own words,
+  marked removed, and the other person reads "Removed by ShareRide".
+  A review is hidden the same way (`reviews.hidden_at`, from milestone
+  7): it no longer shows to the person it is about, nor counts in their
+  rating. A review whose author's account was erased stays under the
+  former member and can still be hidden, with no notice. Reversing an appeal on a cancelled trip leaves
+  the cancellation, and whether it counts on reliability is changed on
+  the trip (3.5.3, PR 8). Left for later: a notice names the kind of
+  content, not which trip or message, so the operator's reason says
+  which; the driver's own trip and profile do not yet show that a note or
+  About you is hidden; the API still takes a report of a removed message,
+  which the app does not offer.
 - `GET /v1/me/notices` and `POST /v1/me/notices/{id}/appeal` (once, within
   14 days).
 - **Suspended account screen**, in place of Find and Offer: until when,
@@ -354,9 +374,11 @@ In four parts, each its own pull request:
       opens), and the suspended account screen in place of Find and
       Offer; `suspension` in `GET /v1/me`; a browser journey with a
       suspension made by the test API (`POST /e2e/suspend`)
-- [ ] 6d: `operator_notes` and the `hidden_at` columns; `hideContent`
-      (reversing it on appeal shows the content again),
-      `cancelTripAsOperator` and `refundBooking`
+- [x] 6d: the `hidden_at` columns (migration `0041_hidden_content`);
+      `hideContent` for a message, a trip's note and About you
+      (reversing it on appeal shows the content again), and `cancelTrip`
+      with the driver's notice; "Removed by ShareRide" in the chat.
+      `operator_notes` moves to PR 8 and `refundBooking` to payouts
 - Verify: integration tests (a suspension cancels upcoming trips and
   bookings with full refunds and tells the others without the reason; a
   suspended person can read but not act; an appeal once, within 14 days;
@@ -365,23 +387,30 @@ In four parts, each its own pull request:
 
 ### PR 7: `feat(console)`: reports queue, report page and appeals
 
-- [ ] `/admin/v1/reports` and its actions, the logged conversation, the
-      appeals; their console pages
+- [x] 7a: `/admin/v1/reports` and the report page, the logged
+      conversation, the actions (close, warn, suspend, reinstate, hide
+      content, cancel a trip) and the appeals
+- [ ] 7b: their console pages, with the statement shown before it goes
 - Verify: integration tests (only the operator; only a message report
   opens a conversation, and it is logged); a console browser journey:
   dismiss one report, suspend from another, the reporter sees each outcome
+- Found while building (7a): the report page names a reported message
+  without its words, which are read in the conversation, so every reading
+  is logged. Ratings and reliability join the page with milestone 7's
+  profiles. An appeal shows the action and links its report; what was
+  hidden is read there.
 
 ### PR 8: `feat(console)`: users, trips and bookings
 
-- [ ] Search and detail pages (3.5); Suspend, Reinstate and Add note;
-      decline rates
+- [ ] Search and detail pages (3.5); Suspend, Reinstate and Add note
+      (`operator_notes`); decline rates
 - Verify: integration tests (search by name, phone, email and ID; every
   action audited); a console browser journey: find a user and reinstate
   them
 
 ### Afterwards, with milestone 7
 
-- [ ] Report and hide a review; Block and Report on the public profile
+- [ ] Report a review (hiding one is in PR 6d); Block and Report on the public profile
 
 ## 6. Review focus
 

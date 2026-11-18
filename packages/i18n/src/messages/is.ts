@@ -378,6 +378,13 @@ export const is = {
   "trip.price.whyBody":
     "ShareRide er til að deila kostnaði við ferð sem þú ferð hvort sem er. Fullur bíll má ekki skila meiru en ferðin kostar, svo verðin hafa þak.",
   "trip.price.rules": "Lesa samfélagsreglurnar",
+  "trip.price.limitUsed":
+    "Það sem farþegar hafa þegar bókað telst upp í hámark ferðarinnar, svo sætin sem eftir eru mega kosta mest {level}%.",
+  "trip.price.limitUsedFree":
+    "Það sem farþegar hafa þegar bókað fyllir hámark ferðarinnar, svo sætin sem eftir eru kosta ekkert.",
+  "trip.price.whyLimit.trip":
+    "Hámarkið gildir fyrir alla ferðina, svo það sem farþegar hafa þegar bókað telst með.",
+  "trip.price.stopLowersAll": "Við vistun lækkar verð allra leggja fyrir nýjar bókanir.",
   "trip.price.lowered":
     "Með {seats, plural, one {# sæti} other {# sætum}} er hæsta verðstigið {level}%, svo við lækkuðum þitt niður í það.",
   "trip.price.next": "Velja sæti",
@@ -1133,6 +1140,7 @@ export const is = {
   "chat.tripCancelledByThem": "{name} hætti við ferðina: {reason}",
   "chat.cancelledByShareRide": "ShareRide afbókaði.",
   "chat.tripCancelledByShareRide": "ShareRide aflýsti ferðinni.",
+  "chat.removed": "ShareRide fjarlægði þessi skilaboð",
   "quick.late": "Mér seinkar um {minutes} mínútur",
   "quick.atPoint": "Ég er á mótsstaðnum",
   "quick.onMyWay": "Ég er á leiðinni",
@@ -1579,6 +1587,10 @@ export const is = {
   "export.field.appealedAt": "Andmælt",
   "export.field.appealAnswer": "Svar ShareRide",
   "export.field.appealOutcome": "Niðurstaða andmæla",
+  "export.field.aboutHiddenAt": "„Um þig“ falið",
+  "export.field.noteHiddenAt": "Athugasemd falin",
+  "export.field.removedByShareRide": "Fjarlægt",
+  "export.field.content": "Varðar",
   "export.field.with": "Við",
   "export.field.yourNote": "Athugasemd þín",
   "export.field.yourReview": "Umsögnin þín",
@@ -1814,6 +1826,7 @@ export const is = {
   "admin.meetingPoints.add": "Bæta við mótsstað",
   "admin.meetingPoints.import": "Flytja inn úr skrá",
   "admin.meetingPoints.problems": "Tilkynningar um vandamál",
+  "admin.meetingPoints.distances": "Vegalengdir",
   "admin.meetingPointIssues.title": "Tilkynningar um vandamál",
   "admin.meetingPointIssues.intro":
     "Það sem fólk tilkynnti um mótsstaði í appinu, elst fyrst. Þegar tilkynning er leyst er tengingin við sendandann fjarlægð og tilkynningunni eytt 12 mánuðum síðar.",
@@ -1832,6 +1845,35 @@ export const is = {
   "admin.meetingPointIssues.resolved": "Leyst: {name}.",
   "admin.meetingPointIssues.alreadyResolved": "Einhver hefur þegar leyst þessa tilkynningu.",
   "admin.meetingPointIssues.resolveFailed": "Ekki tókst að leysa tilkynninguna. Reyndu aftur.",
+  "admin.legs.title": "Vegalengdir milli mótsstaða",
+  "admin.legs.intro":
+    "Vegalengd og aksturstími á vegum í hvora átt milli hverra tveggja mótsstaða í notkun. Ferðir afrita þau þegar þær eru birtar, svo að endurreikningur breytir aldrei ferð.",
+  "admin.legs.loadFailed": "Ekki tókst að sækja vegalengdirnar.",
+  "admin.legs.points": "Mótsstaðir í notkun",
+  "admin.legs.legs": "Leggir",
+  "admin.legs.legsOf": "{legs} af {pairs}",
+  "admin.legs.computed": "Síðast reiknað",
+  "admin.legs.computedAt": "{date} kl. {time}",
+  "admin.legs.never": "Aldrei",
+  "admin.legs.mapData": "Kortagögn",
+  "admin.legs.olderData":
+    "{count, plural, one {# leggur er} other {# leggir eru}} á eldri kortagögnum. Reiknaðu allt aftur til að nota núverandi kortagögn.",
+  "admin.legs.recompute": "Reikna allt aftur",
+  "admin.legs.recomputing": "Reiknar…",
+  "admin.legs.recomputeHint":
+    "Finnur alla leggi aftur á núverandi kortagögnum. Með nokkur hundruð mótsstöðum tekur það um tíu sekúndur.",
+  "admin.legs.recomputed":
+    "Reiknað aftur. Nú {count, plural, one {er # leggur} other {eru # leggir}} milli mótsstaða í notkun.",
+  "admin.legs.recomputeFailed": "Ekki tókst að reikna vegalengdirnar aftur. Reyndu aftur.",
+  "admin.legs.complete": "Allir leggir milli mótsstaða í notkun eru komnir.",
+  "admin.legs.offRoad": "Enginn vegur innan 1 km",
+  "admin.legs.offRoadIntro": "Þessir mótsstaðir fá enga leggi fyrr en þeir eru færðir nær bílvegi.",
+  "admin.legs.missing": "{count, plural, one {# legg vantar} other {# leggi vantar}}",
+  "admin.legs.missingIntro":
+    "Enginn bílvegur tengir þessa staði í þessa átt. Ferjur og fjallvegir (F-vegir) eru ekki tekin með.",
+  "admin.legs.from": "Frá",
+  "admin.legs.to": "Til",
+  "admin.legs.more": "Og {count} í viðbót.",
   "admin.meetingPoints.filters": "Síur",
   "admin.meetingPoints.name": "Heiti",
   "admin.meetingPoints.status": "Staða",

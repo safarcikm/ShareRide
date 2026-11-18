@@ -15,6 +15,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { changeOccupancy, partOf, stopsOf, type Transaction } from "../bookings/seats.ts";
 import { recordEvents } from "../notifications/outbox.ts";
 import { oweRefund } from "../payments/refunds.ts";
+import { refitToTripLimit } from "../trips/limit.ts";
 import type { DisputeRow } from "./disputes.ts";
 
 const { bookings, disputes, reviews, trips } = schema;
@@ -96,6 +97,9 @@ export async function applyOutcome(
   if (holdsSeats(status)) {
     const part = partOf(await stopsOf(tx, booking.tripId), booking);
     await changeOccupancy(tx, booking.tripId, part, -booking.seats);
+    // A no-show decided while the trip still has stops ahead keeps its
+    // money while its seats are free again (spec 17).
+    await refitToTripLimit(tx, booking.tripId, now);
   }
   if (refund > 0) await oweRefund(tx, booking.id, { amount: refund, currency: "ISK" }, now);
   if (next.value === "completed") {

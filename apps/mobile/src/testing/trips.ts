@@ -14,7 +14,7 @@ import type {
 import {
   defaultTripSettings,
   firstTripChoices,
-  fitPriceLevel,
+  fitLevelWithin,
   segmentPrice,
 } from "@shareride/domain";
 import { failure, ok, type FakeClient } from "./fake-client";
@@ -193,6 +193,10 @@ export function tripsApi(
     cancel?: () => unknown;
     change?: (preview: boolean) => unknown;
     told?: Partial<Pick<TripChangeEffect, "told" | "freeCancellations" | "requests" | "expiring">>;
+    /** What adding or removing a stop does to the level, when not left as it is. */
+    stopEffect?: Partial<
+      Pick<TripChangeEffect, "priceLevel" | "priceLevelLowered" | "levelLimitedBy">
+    >;
     /** Meeting points a copy of a trip leaves out, as no longer in use. */
     dropped?: readonly MeetingPointSummary[];
     /** Answers copying a trip instead, when it gives anything. */
@@ -250,6 +254,7 @@ export function tripsApi(
       publishedAt: null,
       updatedAt: "2026-11-14T12:00:00.000Z",
       segments: [],
+      takings: { amount: 0, currency: "ISK" },
       openRequests: 0,
       requestsCloseAt: null,
       cancellation: null,
@@ -321,6 +326,7 @@ export function tripsApi(
       publishedAt: null,
       updatedAt: stamp(),
       segments: [],
+      takings: { amount: 0, currency: "ISK" },
       openRequests: 0,
       requestsCloseAt: null,
       cancellation: null,
@@ -401,8 +407,10 @@ export function tripsApi(
       seats: trip.seats,
       priceLevel: trip.priceLevel,
       priceLevelLowered: false,
+      levelLimitedBy: null,
       prices: segments.map((segment) => segment.price),
       ...answers.told,
+      ...answers.stopEffect,
     } satisfies TripChangeEffect);
   }
 
@@ -448,8 +456,10 @@ export function tripsApi(
       seats: trip.seats,
       priceLevel: trip.priceLevel,
       priceLevelLowered: false,
+      levelLimitedBy: null,
       prices: segments.map((segment) => segment.price),
       ...answers.told,
+      ...answers.stopEffect,
     } satisfies TripChangeEffect);
   }
 
@@ -471,10 +481,20 @@ export function tripsApi(
     );
     // As the rules work out seats and price levels (P3, P4).
     const seats = body.kind === "seats" ? body.seats : trip.seats;
+    // What is booked counts too (rule P4, spec 17).
     const fitted =
       body.kind === "priceLevel"
-        ? { level: body.priceLevel, lowered: false }
-        : fitPriceLevel(trip.priceLevel, seats, defaultTripSettings);
+        ? { level: body.priceLevel, lowered: false, limitedBy: null }
+        : fitLevelWithin(
+            trip.priceLevel,
+            {
+              distancesM: trip.segments.map((segment) => segment.distanceM),
+              occupancy: trip.segments.map((segment) => segment.seatsTaken),
+              seats,
+              takings: trip.takings.amount,
+            },
+            defaultTripSettings,
+          );
     const repriced = body.kind === "seats" || body.kind === "priceLevel";
     const prices = trip.segments.map((segment) =>
       repriced
@@ -493,6 +513,7 @@ export function tripsApi(
       seats,
       priceLevel: fitted.level,
       priceLevelLowered: fitted.lowered,
+      levelLimitedBy: fitted.lowered ? fitted.limitedBy : null,
       prices,
       ...answers.told,
     };
@@ -548,6 +569,7 @@ export function plannedDraft(changes: Partial<MyTrip> = {}): MyTrip {
     publishedAt: null,
     updatedAt: "2026-11-14T12:00:00.000Z",
     segments: [],
+    takings: { amount: 0, currency: "ISK" },
     openRequests: 0,
     requestsCloseAt: null,
     cancellation: null,
