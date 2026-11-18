@@ -787,6 +787,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   cancellations excused by a weather or road-closure reason, each made to
   count or undone with a note on its card, and the people below 80% with
   their counts by role. Texts in Icelandic and English.
+- "Did something go wrong?" after a low rating (milestone 7, PR 6c, spec 8,
+  3.7.4): a rating of 1 or 2 on the rate screen, before and after it is
+  sent, offers a report: a problem with the trip until 24 hours after it,
+  then the person. Texts in Icelandic and English.
 
 - Visual design system (spec 15) with the first screen designs, and ADR 0017
   (accepted): our own parts on React Native primitives, the fonts Fredoka and

@@ -152,10 +152,11 @@ accepted 2026-11-16)
 
 - [x] Trip day, dispute, review and reliability rules in the domain
 - [x] Trips depart and complete on their own
-- [ ] The trip day and "I'm here"
-- [ ] No-shows, the driver didn't come, and the operator's decision
-- [ ] Rate and review
-- [ ] Public profiles with rating, reviews and reliability
+- [x] The trip day and "I'm here"
+- [x] No-shows, the driver didn't come, and the operator's decision
+- [x] Rate and review
+- [x] Public profiles with rating, reviews and reliability (built; Martin's
+      screen reader pass and a trip day walked locally to do)
 
 Milestone 8: the operator console and meeting points
 ([plan](../plans/2026-11-16-milestone-8-operator-console-and-meeting-points.md),

@@ -1,7 +1,13 @@
 import type { CallFailure } from "@shareride/api-client";
 import { reviewBookingRoute, type Booking, type BookingReview } from "@shareride/contracts";
-import { reviewCommentProblem, reviewMaxLength, tidyReviewComment } from "@shareride/domain";
+import {
+  asksWhatWentWrong,
+  reviewCommentProblem,
+  reviewMaxLength,
+  tidyReviewComment,
+} from "@shareride/domain";
 import type { Translate } from "@shareride/i18n";
+import { router } from "expo-router";
 import { useState, type ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
@@ -37,6 +43,8 @@ import { StarPicker } from "./stars";
  * characters without contact details, checked as typed. Sent, it says the
  * review shows once the other person has reviewed too or after 14 days, or
  * that both show now; it cannot be changed, so it is not offered again.
+ * A rating of 1 or 2 asks "Did something go wrong?" and offers a report,
+ * before and after it is sent (3.7.4).
  */
 export function RateScreen() {
   const { t } = useLanguage();
@@ -203,6 +211,9 @@ function RateForm({ booking }: { readonly booking: Booking }) {
             <Body align="start">
               {sent.mine?.revealed === true ? t("review.bothShown") : t("review.hiddenUntil")}
             </Body>
+            {sent.mine !== null && asksWhatWentWrong(sent.mine.rating) ? (
+              <WentWrong booking={booking} />
+            ) : null}
           </>
         )}
         <BackTo booking={booking} />
@@ -243,6 +254,7 @@ function RateForm({ booking }: { readonly booking: Booking }) {
           setRating(chosen);
         }}
       />
+      {rating !== null && asksWhatWentWrong(rating) ? <WentWrong booking={booking} /> : null}
       <TextField
         label={t("review.comment")}
         value={comment}
@@ -265,7 +277,35 @@ function RateForm({ booking }: { readonly booking: Booking }) {
   );
 }
 
+/**
+ * "Did something go wrong?" with a report (3.7.4; spec 9, 3.1): a problem
+ * with the trip while it can still be reported, until 24 hours after the
+ * trip (R9.1), and the person after that. The report opens over this
+ * screen, so a review not yet sent is still here on coming back.
+ */
+function WentWrong({ booking }: { readonly booking: Booking }) {
+  const { t } = useLanguage();
+  const kind = booking.problemReportable ? "booking" : "user";
+  return (
+    <View style={styles.wentWrong}>
+      <Body align="start">{t("review.lowRating")}</Body>
+      <Button
+        variant="secondary"
+        label={
+          kind === "booking"
+            ? t("report.problem")
+            : t("report.person", { name: firstNameOf(t, otherPerson(booking)) })
+        }
+        onPress={() => {
+          router.push({ pathname: "/report", params: { kind, id: booking.id } });
+        }}
+      />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   person: { flexDirection: "row", alignItems: "center", gap: spacing.ms },
   grow: { flex: 1 },
+  wentWrong: { gap: spacing.sm },
 });
