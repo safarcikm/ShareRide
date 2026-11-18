@@ -17,6 +17,7 @@ export { registerConfigRoutes } from "./routes.ts";
 export {
   createPausedCheck,
   neverPaused,
+  pausedHeldIn,
   pausedMessages,
   pausedResponse,
   type PausedCheck,

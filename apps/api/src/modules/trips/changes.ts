@@ -213,13 +213,13 @@ export function createTripChangeService(dependencies: {
   readonly ruleSettings: RuleSettingsSource;
   readonly notificationSettings: NotificationSettings;
   /** Whether the operator paused bookings and payments (spec 10, 3.3); never when left out. */
-  readonly bookingsPaused?: () => Promise<boolean>;
+  readonly bookingsPausedIn?: (tx: Transaction) => Promise<boolean>;
 }): TripChangeService {
   const { db, clock, ruleSettings, notificationSettings } = dependencies;
   // As last read: each change reads the values first, and they are the
   // same for every trip, so a change running beside it sees them no older.
   let bookingSettings: BookingSettings = defaultBookingSettings;
-  const bookingsPaused = dependencies.bookingsPaused ?? (() => Promise.resolve(false));
+  const bookingsPausedIn = dependencies.bookingsPausedIn ?? (() => Promise.resolve(false));
 
   /** Each stretch's typical driving time now (R3.6), or the one it was published with. */
   async function typicalTimes(
@@ -792,6 +792,7 @@ export function createTripChangeService(dependencies: {
     effect: ChangeEffect,
     stops: readonly { readonly id: string; readonly plannedAt: Date | null }[],
     now: Date,
+    paused: boolean,
   ): Promise<void> {
     const before = stops[0]?.plannedAt;
     const after = effect.trip.stops[0]?.plannedAt;
@@ -816,7 +817,6 @@ export function createTripChangeService(dependencies: {
       .innerJoin(tripStops, eq(tripStops.id, bookings.fromStopId))
       .where(and(eq(bookings.tripId, tripId), inArray(bookings.status, heldStatuses)));
     // During a pause of payments an unpaid booking waits until the cut-off.
-    const paused = await bookingsPaused();
     for (const { booking, boardsAt } of held) {
       if (boardsAt === null) continue;
       if (booking.status === "requested" && booking.requestedAt !== null) {
@@ -879,6 +879,9 @@ export function createTripChangeService(dependencies: {
   return {
     async change(driverId, tripId, change, { preview }) {
       return db.transaction(async (tx) => {
+        // First, and held to the end: a payment deadline moved here must
+        // agree with the switch, which moves the deadlines when it turns.
+        const paused = await bookingsPausedIn(tx);
         // As publishing: one at a time per driver, so two trips cannot overlap
         // (R3.7), and none while suspended (spec 9, 3.6.2).
         const active = await lockActive(tx, driverId, clock());
@@ -1013,6 +1016,7 @@ export function createTripChangeService(dependencies: {
               checked.value,
               stopRows.map(({ stop }) => stop),
               now,
+              paused,
             );
           }
         } else if (read.kind === "vehicle") {

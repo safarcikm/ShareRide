@@ -713,7 +713,12 @@ version }` with the version the page loaded: it takes a lock on the
   `bookings_open` moves the payment deadlines in the same transaction
   (`bookings/pause.ts`): to the booking cut-off as the pause starts, and
   to the payment window from its end, so no booking runs out while
-  nobody can pay. The notification worker leaves a paused channel's
+  nobody can pay. What stores a payment deadline itself, accepting a
+  request and moving a departure, reads the switch inside its
+  transaction with `pausedHeldIn`, which holds the settings as they are
+  until it ends (a row share lock on `setting_changes`, taken first):
+  the cached value could be 5 seconds old, and a deadline stored by it
+  would be one the turn never moved. The notification worker leaves a paused channel's
   deliveries queued, sends them when it is back on, and skips as
   `paused_too_long` what was queued before that and is more than 60
   minutes old. A switch off for an hour sends every operator

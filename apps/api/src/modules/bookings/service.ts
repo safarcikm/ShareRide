@@ -628,11 +628,11 @@ export function createBookingService(dependencies: {
   /** The time to review (spec 8, 3.7). */
   readonly reviewSettings?: ReviewSettings;
   /** Whether the operator paused bookings and payments (spec 10, 3.3); never when left out. */
-  readonly bookingsPaused?: () => Promise<boolean>;
+  readonly bookingsPausedIn?: (tx: Transaction) => Promise<boolean>;
 }): BookingService {
   const { db, clock, account, tripDaySettings } = dependencies;
   const ruleSettings = dependencies.settings;
-  const bookingsPaused = dependencies.bookingsPaused ?? (() => Promise.resolve(false));
+  const bookingsPausedIn = dependencies.bookingsPausedIn ?? (() => Promise.resolve(false));
   const reviewSettings = dependencies.reviewSettings ?? defaultReviewSettings;
 
   /** Bookings as their viewer sees them, each by its own cancellation values. */
@@ -1133,7 +1133,9 @@ export function createBookingService(dependencies: {
     async accept(driverId, bookingId) {
       // Nobody can pay during a pause, so the booking waits as long as it
       // can; the pause's end gives it its window (movePaymentDeadlines).
-      const paused = await bookingsPaused();
+      // Read in the transaction, first, and held: the switch turns either
+      // before it, and is seen, or after it, and moves this deadline itself.
+      let paused = false;
       const { settings } = await ruleSettings.booking();
       return answer(
         driverId,
@@ -1157,7 +1159,10 @@ export function createBookingService(dependencies: {
         },
         // Accepting takes a passenger on, which a suspension stops; the
         // driver's row first, as in booking, then the trip.
-        (tx) => lockActive(tx, driverId, clock()),
+        async (tx) => {
+          paused = await bookingsPausedIn(tx);
+          return lockActive(tx, driverId, clock());
+        },
       );
     },
 

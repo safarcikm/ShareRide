@@ -83,6 +83,7 @@ import { createDrivingService, registerDrivingRoutes } from "./modules/driving/i
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
   createPausedCheck,
+  pausedHeldIn,
   createSettingsService,
   tripSettingsSource,
   registerConfigRoutes,
@@ -440,7 +441,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
         settings,
         ruleSettings,
         notificationSettings: defaultNotificationSettings,
-        bookingsPaused: () => paused("bookings"),
+        bookingsPausedIn: (tx) => pausedHeldIn(tx, "bookings"),
       }),
       requireAuth,
     );
@@ -449,7 +450,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       account,
       settings: ruleSettings,
       tripDaySettings: defaultTripDaySettings,
-      bookingsPaused: () => paused("bookings"),
+      bookingsPausedIn: (tx) => pausedHeldIn(tx, "bookings"),
     });
     registerBookingRoutes(app, bookings, requireAuth, trips, paused);
     registerChatRoutes(
