@@ -348,6 +348,17 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     },
     otherIds: ["operatorSessionId"],
   },
+  setting_changes: {
+    category: "audit",
+    export: {
+      leftOut: "the operator's changes of settings, kept as the rules' history (spec 10, 3.2.5)",
+    },
+    personColumns: ["changedBy"],
+    onDeletion: {
+      rows: "leave",
+      note: "kept as they are: the database refuses changes and deletes (R10.2)",
+    },
+  },
   reports: {
     category: "moderation",
     // Only the reports the person filed, with their outcomes: never who reported them (3.1.6).

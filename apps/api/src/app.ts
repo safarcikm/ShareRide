@@ -66,6 +66,11 @@ import {
 import { createDrivingService, registerDrivingRoutes } from "./modules/driving/index.ts";
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
+  createSettingsService,
+  registerConfigRoutes,
+  registerSettingsAdminRoutes,
+} from "./modules/settings/index.ts";
+import {
   createLegService,
   createMeetingPointAdminService,
   createMeetingPointIssueService,
@@ -412,6 +417,9 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       settings: defaultReliabilitySettings,
       requireOperator,
     });
+    const operatorSettings = createSettingsService(features);
+    registerConfigRoutes(app, operatorSettings);
+    registerSettingsAdminRoutes(app, { ...features, settings: operatorSettings, requireOperator });
     registerReviewRoutes(
       app,
       createReviewService({ ...features, settings: defaultReviewSettings }),

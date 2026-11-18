@@ -8,6 +8,7 @@ import { MeetingPointsPage } from "./pages/meeting-points/page.tsx";
 import { PasskeysPage } from "./pages/passkeys.tsx";
 import { ReliabilityPage } from "./pages/reliability/page.tsx";
 import { ReportsPage } from "./pages/reports/page.tsx";
+import { SettingsPage } from "./pages/settings/page.tsx";
 
 /**
  * The console's sections, in menu order. A spec adds its pages with one
@@ -30,6 +31,7 @@ export const sections: readonly Section[] = [
   { path: "/admin/reports", title: "admin.reports.title", Page: ReportsPage },
   { path: "/admin/appeals", title: "admin.appeals.title", Page: AppealsPage },
   { path: "/admin/reliability", title: "admin.reliability.title", Page: ReliabilityPage },
+  { path: "/admin/settings", title: "admin.settings.title", Page: SettingsPage },
   { path: "/admin/audit-log", title: "admin.auditLog.title", Page: AuditLogPage },
   { path: "/admin/passkeys", title: "admin.passkeys.title", Page: PasskeysPage },
 ];

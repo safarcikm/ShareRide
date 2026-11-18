@@ -565,6 +565,40 @@ Closing a report and answering an appeal ask once more, naming the
 outcome, as neither can be undone. The conversation opens only when the
 operator presses "Show the conversation", as on a dispute.
 
+## Settings
+
+`apps/api/src/modules/settings/` holds the operator's settings
+([ADR 0032](../decisions/0032-operator-settings-list-ranges-and-versions.md);
+spec 10, 3.2). The list, with each setting's default and range, is
+`settingDefinitions` in `packages/domain/src/settings/catalogue.ts`; adding
+one or changing a range needs an ADR (R10.4).
+
+- The values are not stored on their own: they are the defaults with the
+  rows of `setting_changes` laid over them (`valuesAt`). Each row is the
+  next settings version; version 0 is the defaults. Triggers written by
+  hand in the migration refuse updates, deletes and `TRUNCATE`, so the
+  history cannot be edited (R10.2). Keep them when a later migration
+  changes the table.
+- `createSettingsService` gives `current()`, read from the database at
+  most every 5 seconds and at once after a change made through it, so
+  another process sees a change within 5 seconds; `latest()`, which
+  always reads; and `at(version)`, kept in memory, as a version never
+  changes. A rule about something new reads `current()`.
+- `GET /admin/v1/settings` lists every setting with its value and the
+  version. `PATCH /admin/v1/settings/{key}` takes `{ value, reason,
+  version }` with the version the page loaded: it takes a lock on the
+  table, refuses with `settings_changed` if another change came since,
+  checks the value and the reason (`checkSettingChange`), writes the next
+  version and the audit entry `setting.changed` (the value before; the
+  value, the version and the reason after). `GET
+  /admin/v1/settings/history` pages through the changes, newest first.
+- `GET /v1/config` is open to everyone and cached for 5 minutes: what the
+  apps need of the settings. Add a value there only when an app shows or
+  checks it.
+- The console's Settings page (`apps/admin/src/pages/settings/`) shows a
+  setting by the texts in its `texts.ts`: add a name, a help sentence and,
+  for a new unit, the unit's two texts with each new setting.
+
 ## A console page
 
 The console is `apps/admin`: React for the web, built with Vite, served by

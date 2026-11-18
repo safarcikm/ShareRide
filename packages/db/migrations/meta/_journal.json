@@ -316,6 +316,13 @@
       "when": 1794965090635,
       "tag": "0044_meeting_point_moved",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1794975819135,
+      "tag": "0045_setting_changes",
+      "breakpoints": true
     }
   ]
 }

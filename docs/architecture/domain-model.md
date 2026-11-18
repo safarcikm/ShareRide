@@ -333,6 +333,10 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
 - `Setting`: operator configuration (rates, timeouts, switches) with a range,
   a `SettingChange` history and a `SettingsVersion` that trips and bookings
   record ([spec 10](../specs/2026-11-13-operator-settings-and-metrics.md#6-data-and-api)).
+  As built ([ADR 0032](../decisions/0032-operator-settings-list-ranges-and-versions.md)):
+  the list and ranges are in the domain package, only the changes are
+  stored (`setting_changes`), and a version's values are the defaults with
+  the changes up to it laid over them.
 - `SearchLog` (anonymous: places, date, result count, time, platform),
   `Corridor`, `WeeklyMetric`, `Announcement`.
 - Privacy records ([spec 11](../specs/2026-11-13-privacy-self-service.md#6-data-and-api)):
