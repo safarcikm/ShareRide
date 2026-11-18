@@ -2,7 +2,9 @@
 
 **Owner:** Martin · **Date:** 2026-11-18 · **Status:** Approved
 (2026-11-18): Martin chose every main screen, as drawn (decision 1). Built
-(2026-11-18); where the build differs from a drawing, the section says so
+(2026-11-18); where the build differs from a drawing, the section says so.
+Find changed after Martin looked at it the same day (section 3.5,
+decisions 15 to 17)
 
 Amends: [spec 15](2026-11-13-visual-design-system.md) (section 4.8, wide
 screens, and the `Screen`, `TopBar`, `Card`, `Row`, `Button` and `Chip`
@@ -143,18 +145,42 @@ changes on a phone.
    From 1280 wide it is one line in both languages. In a narrower window
    the date, the seats and the button move together to a second line, at
    the right; From and To never share a line with only some of them.
-2. Under it, two columns:
+2. From, To and the date each show their value in a **field**: a box 48
+   high in the page's colour (`background`), a shade off the card's white,
+   so it is plain where to press before the pointer is there (decision
+   15). Under the pointer the field turns `primarySoft`. The place search
+   takes the place of its field, and the calendar opens under the date's.
+3. Under the row, two columns:
    - **Main:** "Leaving soon" with "See all rides" at its right, and the
      rides as a grid: two columns from about 1140 wide, one column under
      that, beside the side column. Six rides where a phone shows five, so
-     two columns end level, and cards in one row are equally tall.
-   - **Side:** "Your next ride" when signed in and one is coming up, then a
-     card "Driving somewhere? Share the empty seats in your car." with
-     "Offer a ride" and "See the meeting points".
-3. With no rides leaving soon, the side column's cards sit in the middle
-   under the search. While the rides load, the two columns are there, with
-   "Leaving soon" and a sign that they are on their way, so the side
-   column does not move when they come.
+     two columns end level, and cards in one row are equally tall. One
+     line closes the column, as it closes a phone's page: "Driving
+     somewhere? Share the empty seats in your car." with "Offer a ride" as
+     a text button (decision 17). The top bar has Offer too.
+   - **Side:** "Your next ride" when signed in and one is coming up, then
+     our **map** of the whole of Iceland with every meeting point as a
+     muted dot, and "See the meeting points" under it (decision 16). The
+     person's own ride comes first; in a window 720 high the map is then
+     partly under the window's edge until the page is scrolled, and stays
+     in view from there.
+4. The map always shows one of the rides leaving soon: the way along the
+   roads between its first and its last meeting point, with the two
+   standing out. A ride's card has only those two, so the stops between
+   are not marked. It is the first ride, or the one the pointer or the
+   keyboard came to last, and that ride's card keeps the edge a card has
+   under the pointer, as beside search results (3.6). The map's label for
+   screen readers names the ride. The map is a picture: nothing on it is
+   pressed, and the cards say everything it shows about a ride.
+5. With no rides leaving soon, the main column holds one card, "Driving
+   somewhere? Share the empty seats in your car." with "Offer a ride" as a
+   secondary button, and the map shows the meeting points alone. While the
+   rides load, the main column has "Leaving soon" and a sign that they are
+   on their way. The side column is there from the start in each case, so
+   the map does not move when the rides come.
+6. The meeting points come from their own call. Until they are there, and
+   if they cannot be loaded, the map still shows the ride, its two ends
+   and its road; nothing on the page waits for them.
 
 ### 3.6 Search results
 
@@ -394,8 +420,12 @@ build follows spec 15 and this spec.
 
 ## 6. Data and API
 
-None. Every layout shows what the screens already load. The map beside the
-results draws from the meeting points in the search answer.
+No new call, table or field. Every layout shows what the screens already
+load, with one addition: a wide Find also asks for the meeting points
+(`GET /v1/meeting-points`, the public call the meeting points page makes),
+for its map. The map beside the results draws from the meeting points in
+the search answer, and the road of a ride on Find from the two ends its
+card has.
 
 ## 7. Privacy and safety
 
@@ -415,6 +445,7 @@ in the app") keep their place in the reading order.
 | `chat.nowOpen` | Conversation with {name} | Spjall: {name} |
 | `results.mapOf` | Map of Iceland with the trip {from} → {to} | Kort af Íslandi með ferðinni {from} → {to} |
 | `nav.home` | ShareRide, to the front page | ShareRide, á forsíðu |
+| `home.map` | Map of Iceland with {count} meeting point. / … {count} meeting points. | Kort af Íslandi með {count} mótsstað. / … {count} mótsstöðum. |
 
 Every other text is one the app has.
 
@@ -431,7 +462,9 @@ Every other text is one the app has.
   sideways, and what must be pressed whole in a window 1280 by 720.
 - The look journey photographs Find at desktop size, light in English and
   dark in Icelandic. Pictures of every changed screen, before and now at
-  1440 wide, are in the project files under `laptop-web/built`.
+  1440 wide, are in the project files under `laptop-web/built`. On Find
+  the journey also points at a ride and looks for it on the map, and
+  checks the map and the link under it are whole in a window 720 high.
 - By hand, still to do (Martin): a look at the main screens in a laptop's
   browser, and a keyboard-only pass through Find, results, a trip and
   Messages.
@@ -464,3 +497,6 @@ Every other text is one the app has.
 | 12 | How does another conversation open beside the list? | In the same place. The list keeps its scroll and the keyboard's focus on the row, the address is replaced, and Back leaves the conversations. A new entry for each one would make Back walk through every conversation read (my call, 2026-11-18) |
 | 13 | Where does a posting step's button go, with a map in the side column? | Under "Your trip so far" and over the map. As drawn, under the map, it moved down when a route was chosen and fell out of a window 720 high. The trip so far is kept short for the same reason: the route as its two ends and the number of stops between (my call, 2026-11-18, after looking at the built steps) |
 | 14 | Where do "Edit trip" and "Cancel trip" go on the driver's trip? | Into the row of the trip's name, at its right end. The side column then holds only the seats on each stretch; "Message all passengers" stays under the passengers it writes to and "Post again" ends the main column (my call, 2026-11-18, after looking at the built page) |
+| 15 | How do From, To and the date show that they are fields? | Each value sits in a box in the page's colour, `background`, on the card's white: a fill, no outline, so the row stays calm beside the seats' two outlined buttons. The fill is a hint (1.1:1 against the card); the caption and the value say what the part is, as they did alone before. `textMuted` on it is 5.5:1 (8.3:1 in dark). The row's gaps went from `lg` to `md`, and to `sm` around the swap button, so the row with its fields is still one line at 1280 in both languages. Martin, 2026-11-18, after looking at the built page: "the text field could have a very slight background to make it more visible"; the date got the same box so the three read as one kind of part (my call) |
+| 16 | What stands beside the rides on Find? | Our map of the whole of Iceland, with every meeting point and the road of one ride leaving soon: the first, or the one pointed at or focused last. Martin, 2026-11-18: "show the map there instead with all the stops and always show the hover/selected road". The whole country and not the part the rides are in, so the map stays still; the other rides' roads are left out, so one road is plain among the dots (my call) |
+| 17 | Where does "Offer a ride" go on Find? | To the end of the main column, as one line with a text button, where a phone has it; Martin found the card in the side column out of place. With no rides it stays a card with a secondary button, in the main column: then it is the most useful thing on the page (my call) |

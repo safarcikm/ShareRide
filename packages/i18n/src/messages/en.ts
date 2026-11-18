@@ -24,6 +24,8 @@ export const en = {
   "home.title": "Where are you going?",
   "home.nextRide": "Your next ride",
   "home.nextRideFailed": "Your next ride could not be loaded.",
+  "home.map":
+    "Map of Iceland with {count, plural, one {# meeting point} other {# meeting points}}.",
   "welcome.signIn": "Sign in",
   "welcome.findRide": "Find a ride",
   "welcome.soon": "Leaving soon",

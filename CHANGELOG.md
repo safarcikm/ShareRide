@@ -1211,6 +1211,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   window turns narrow or wide. The driver's trip has "Edit trip" and
   "Cancel trip" beside its name, requests and passengers in the main
   column and the seats on each stretch beside them. Phones are unchanged.
+- Find on a laptop, after Martin's look at it (spec 18, 3.5, decisions 15
+  to 17). From, To and the date show their value in a field a shade off
+  the card, so it is plain where to press. Beside the rides leaving soon
+  stands our map of Iceland with every meeting point, and on it the road
+  of one ride: the first, or the one the pointer or the keyboard came to
+  last, whose card is marked. "Offer a ride" is a line under the rides,
+  and a card where they would be when none leave soon; "See the meeting
+  points" is under the map. A wide Find now also asks for the meeting
+  points. Phones are unchanged.
 - Send feedback in the app and the console (spec 12, 3.3; milestone 11,
   PR 6): the form opens from the Beta label, Profile and Settings, and on
   phones from a shake, which a switch in Settings turns off. Phones take a

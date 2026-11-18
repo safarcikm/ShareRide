@@ -1,6 +1,6 @@
 import { soonestTripsRoute, type TripSearchResult } from "@shareride/contracts";
 import { router } from "expo-router";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useMe, useSession } from "@/auth/session";
 import { Button } from "@/components/button";
@@ -21,9 +21,10 @@ import { useLoaded } from "@/lib/use-loaded";
 import { RideItem } from "@/my-rides/ride-row";
 import { SuspendedAccount, suspensionNow } from "@/safety/suspended-account";
 import { useRides } from "@/my-rides/use-rides";
+import { FindMap } from "@/search/find-map";
 import { ResultCard } from "@/search/result-card";
 import { openSearch, useRouteSearch } from "@/search/route-search";
-import { maxContentWidth, minTouchTarget, sizes, spacing, typography } from "@/theme/tokens";
+import { minTouchTarget, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
@@ -41,9 +42,12 @@ const shownRidesWide = 6;
  * ride". Signing in is in the menu.
  *
  * A wide screen (spec 18, 3.5) has the search in one row across the page,
- * then the rides in a grid with Your next ride and the offer in a column
- * beside them, there from the start so nothing moves when the rides come;
- * with no rides, those two sit in the middle under the search.
+ * then the rides in a grid, closed by the offer as one line, with Your
+ * next ride and our map in a column beside them. The map shows the meeting
+ * points and one ride's road: the first ride, or the one the pointer or
+ * the keyboard came to last. The column is there from the start, so
+ * nothing moves when the rides come; with no rides the offer is a card
+ * where they would be.
  */
 export default function FindScreen() {
   const suspension = suspensionNow(useMe());
@@ -66,6 +70,8 @@ function FrontPage() {
   );
   const { value } = useLoaded(load);
   const rides = value?.ok === true ? value.data.results : [];
+  // The ride the pointer or the keyboard came to last, for the map.
+  const [shownId, setShownId] = useState<string | null>(null);
   const route = useRouteSearch((query) => {
     void openSearch(query, locale);
   });
@@ -101,32 +107,53 @@ function FrontPage() {
     />
   );
   if (wide) {
-    const side = (
-      <>
-        {me === null ? null : <NextRide beside />}
-        <Card>
-          <Body align="start">{t("nav.offerSignedOut")}</Body>
-          {/* In a row, so the buttons start at the left with the text. */}
-          <View style={styles.offerActions}>
-            {offer}
-            {meetingPoints}
-          </View>
-        </Card>
-      </>
-    );
+    const listed = rides.slice(0, shown);
+    const onMap = listed.find((ride) => ride.tripId === shownId) ?? listed[0];
     return (
       <Screen width="page">
         {title}
         {route.row(findRide)}
-        {value === undefined || rides.length > 0 ? (
-          <Columns side={side}>
-            <LeavingSoon rides={rides} shown={shown} grid loading={value === undefined} />
-          </Columns>
-        ) : (
-          <View testID="find-middle" style={styles.middle}>
-            {side}
-          </View>
-        )}
+        <Columns
+          side={
+            <>
+              {me === null ? null : <NextRide beside />}
+              <FindMap shown={onMap} />
+            </>
+          }
+        >
+          {value === undefined || rides.length > 0 ? (
+            <>
+              <LeavingSoon
+                rides={rides}
+                shown={shown}
+                grid
+                loading={value === undefined}
+                onMap={{ shown: onMap?.tripId, onShow: setShownId }}
+              />
+              {/* Once the rides are there, so it does not move when they come. */}
+              {value === undefined ? null : (
+                <View testID="offer-line" style={styles.offerLine}>
+                  <View style={styles.offerText}>
+                    <Body align="start">{t("nav.offerSignedOut")}</Body>
+                  </View>
+                  <Button
+                    variant="text"
+                    label={t("driver.offerRide")}
+                    onPress={() => {
+                      offerRide(me);
+                    }}
+                  />
+                </View>
+              )}
+            </>
+          ) : (
+            <Card>
+              <Body align="start">{t("nav.offerSignedOut")}</Body>
+              {/* In a row, so the button starts at the left with the text. */}
+              <View style={styles.offerAction}>{offer}</View>
+            </Card>
+          )}
+        </Columns>
       </Screen>
     );
   }
@@ -196,17 +223,26 @@ function NextRide({ beside = false }: { readonly beside?: boolean }) {
  * out when there are none and when they can't be loaded: the page works
  * without them. While `loading`, a wide page shows the heading and that
  * they are on their way; a phone leaves them out until they are there.
+ * With `onMap`, beside the map of a wide page, a card tells when the
+ * pointer or the keyboard comes to it, and the one whose ride the map
+ * shows is marked.
  */
 function LeavingSoon({
   rides,
   shown,
   grid = false,
   loading = false,
+  onMap,
 }: {
   readonly rides: readonly TripSearchResult[];
   readonly shown: number;
   readonly grid?: boolean;
   readonly loading?: boolean;
+  readonly onMap?: {
+    /** The ride the map shows. */
+    readonly shown: string | undefined;
+    readonly onShow: (tripId: string) => void;
+  };
 }) {
   const { t } = useLanguage();
   const palette = usePalette();
@@ -221,18 +257,24 @@ function LeavingSoon({
     );
   }
   if (rides.length === 0) return null;
-  const cards = rides
-    .slice(0, shown)
-    .map((ride) => (
-      <ResultCard
-        key={ride.tripId}
-        result={ride}
-        searched={{ from: "", to: "" }}
-        seats={1}
-        showDay
-        fill={grid}
-      />
-    ));
+  const cards = rides.slice(0, shown).map((ride) => (
+    <ResultCard
+      key={ride.tripId}
+      result={ride}
+      searched={{ from: "", to: "" }}
+      seats={1}
+      showDay
+      fill={grid}
+      marked={onMap?.shown === ride.tripId}
+      onShow={
+        onMap === undefined
+          ? undefined
+          : () => {
+              onMap.onShow(ride.tripId);
+            }
+      }
+    />
+  ));
   const all =
     rides.length > shown ? (
       <Button
@@ -274,6 +316,15 @@ const styles = StyleSheet.create({
   head: { minHeight: minTouchTarget, justifyContent: "center" },
   headWithLink: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   actions: { gap: spacing.sm, paddingTop: spacing.lg },
-  offerActions: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: spacing.sm },
-  middle: { width: "100%", maxWidth: maxContentWidth, alignSelf: "center", gap: spacing.md },
+  offerAction: { flexDirection: "row" },
+  // The sentence, then the link right after it; a narrow column puts the
+  // link under it, its label starting where the sentence does. A text
+  // button has room around its label, so the line starts that much earlier.
+  offerLine: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    marginLeft: -spacing.sm,
+  },
+  offerText: { flexShrink: 1, paddingHorizontal: spacing.sm },
 });

@@ -87,17 +87,28 @@ async function box(target: Locator) {
 }
 
 const findTexts = {
-  "en-GB": { title: "Where are you going?", from: /^From: /, date: /^Date: /, find: "Find a ride" },
+  "en-GB": {
+    title: "Where are you going?",
+    from: /^From: /,
+    date: /^Date: /,
+    find: "Find a ride",
+    rideOnMap: /^The trip on a map of Iceland: .+ → .+\.$/,
+    meetingPoints: "See the meeting points",
+    offer: "Offer a ride",
+  },
   "is-IS": {
     title: "Hvert ertu að fara?",
     from: /^Frá: /,
     date: /^Dagsetning: /,
     find: "Finna far",
+    rideOnMap: /^Ferðin á korti af Íslandi: .+ → .+\.$/,
+    meetingPoints: "Skoða mótsstaði",
+    offer: "Bjóða far",
   },
 } as const;
 
 // Find (spec 18, 3.5): the search in one row across the page, the rides in a
-// grid and the offer beside them.
+// grid closed by the offer, and the map beside them.
 for (const locale of ["en-GB", "is-IS"] as const) {
   const texts = findTexts[locale];
 
@@ -129,6 +140,52 @@ for (const locale of ["en-GB", "is-IS"] as const) {
             .map((text) => text.textContent),
         );
         expect(cut).toEqual([]);
+        // From, To and the date are fields: each value in a box of its own.
+        const fields = row.getByTestId("search-field");
+        await expect(fields).toHaveCount(3);
+        for (const field of await fields.all()) {
+          const one = await box(field);
+          expect(one.x).toBeGreaterThanOrEqual(card.x);
+          expect(one.x + one.width).toBeLessThanOrEqual(card.x + card.width);
+        }
+        await expectNoSidewaysScroll(page);
+      });
+
+      test(`has the map beside the rides and the offer under them, ${String(width)} wide`, async ({
+        page,
+      }) => {
+        await page.setViewportSize(laptop(width));
+        await page.goto("/");
+        const main = page.getByTestId("columns-main");
+        const side = page.getByTestId("columns-side");
+        await expect(main.getByTestId("trip-result").first()).toBeVisible();
+        // The map shows a ride from the start, whole in its column, which
+        // starts level with the rides'.
+        const map = side.getByTestId("iceland-map");
+        await expect(map).toHaveAccessibleName(texts.rideOnMap);
+        const rides = await box(main);
+        const column = await box(side);
+        const drawn = await box(map);
+        expect(column.x).toBeGreaterThan(rides.x + rides.width);
+        expect(column.y).toBeCloseTo(rides.y, 0);
+        expect(drawn.x).toBeGreaterThanOrEqual(column.x);
+        expect(drawn.x + drawn.width).toBeLessThanOrEqual(column.x + column.width + 1);
+        expect(drawn.width).toBeGreaterThan(300);
+        // Every meeting point is a dot on it: far more than a ride's two ends.
+        await expect.poll(() => map.locator("circle").count()).toBeGreaterThan(10);
+        const points = await box(side.getByRole("button", { name: texts.meetingPoints }));
+        expect(points.y).toBeGreaterThan(drawn.y + drawn.height - 1);
+        expect(points.x + points.width).toBeLessThanOrEqual(column.x + column.width);
+
+        // The offer closes the rides, in their column; none stands beside them.
+        const offer = main.getByRole("button", { name: texts.offer, exact: true });
+        await offer.scrollIntoViewIfNeeded();
+        const line = await box(offer);
+        const last = await box(main.getByTestId("trip-result").last());
+        expect(line.y).toBeGreaterThan(last.y + last.height);
+        expect(line.x).toBeGreaterThanOrEqual(rides.x - 8);
+        expect(line.x + line.width).toBeLessThanOrEqual(rides.x + rides.width);
+        await expect(side.getByRole("button", { name: texts.offer, exact: true })).toHaveCount(0);
         await expectNoSidewaysScroll(page);
       });
     }
@@ -168,7 +225,7 @@ test.describe("Find's search row", () => {
     await expect(date).toBeFocused();
   });
 
-  test("shows the rides leaving soon in two columns, with the offer beside them", async ({
+  test("shows the rides leaving soon in two columns, and the one under the pointer on the map", async ({
     page,
   }) => {
     await page.goto("/");
@@ -202,10 +259,32 @@ test.describe("Find's search row", () => {
       .poll(async () => (await box(cards.nth(1))).height)
       .toBeGreaterThan((heights[1] ?? 0) + 100);
     expect((await box(cards.nth(1))).height).toBeCloseTo((await box(cards.nth(0))).height, 0);
-    const offer = await box(
-      page.getByTestId("columns-side").getByRole("button", { name: "Offer a ride" }),
+
+    // The map beside them shows the first ride, and then the one the
+    // pointer comes to, and keeps it once the pointer has left.
+    const map = page.getByTestId("columns-side").getByTestId("iceland-map");
+    expect((await box(map)).x).toBeGreaterThan(second.x + second.width);
+    /** The ride of a card as the map names it, from the stops the card shows. */
+    const onMap = async (place: number) => {
+      const name = (await cards.nth(place).getAttribute("aria-label")) ?? "";
+      const [, from, to] =
+        /Leaves (.+) at \d\d:\d\d, arrives at (.+) at \d\d:\d\d,/.exec(name) ?? [];
+      return `The trip on a map of Iceland: ${from ?? "?"} → ${to ?? "?"}.`;
+    };
+    await expect(map).toHaveAccessibleName(await onMap(0));
+    await cards.nth(1).hover();
+    await expect(map).toHaveAccessibleName(await onMap(1));
+    await page.getByRole("heading", { name: "Leaving soon" }).hover();
+    await expect(map).toHaveAccessibleName(await onMap(1));
+    // The keyboard does the same as the pointer.
+    await cards.nth(0).focus();
+    await expect(map).toHaveAccessibleName(await onMap(0));
+    // The map is whole in a window 720 high, with the link under it.
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const link = await box(
+      page.getByTestId("columns-side").getByRole("button", { name: "See the meeting points" }),
     );
-    expect(offer.x).toBeGreaterThan(second.x + second.width);
+    expect(link.y + link.height).toBeLessThanOrEqual(720);
   });
 });
 

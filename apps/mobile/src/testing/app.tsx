@@ -55,6 +55,8 @@ export async function renderApp(
   );
   // The front page's rides leaving soon: none, unless a test says otherwise.
   currentClient.answer("/v1/trips/soonest", () => ok(200, { results: [] }));
+  // The meeting points for the map on a wide front page: none, likewise.
+  currentClient.answer("/v1/meeting-points", () => ok(200, { meetingPoints: [] }));
   if (me !== undefined) {
     store.value = "sr_rt_stored";
     currentClient.answer("/v1/auth/refresh", () => ok(200, tokens(1)));

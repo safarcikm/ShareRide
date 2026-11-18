@@ -26,6 +26,7 @@ import { Chip } from "@/components/chip";
 import { Icon } from "@/components/icon";
 import { Notice } from "@/components/notice";
 import { RouteEnds, type RouteEnd } from "@/components/route-ends";
+import { SearchField } from "@/components/search-field";
 import { Stepper } from "@/components/stepper";
 import { Body, Heading } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
@@ -37,7 +38,7 @@ import { searchEndOf } from "./search-end";
 import { saveRecentSearch, type SearchEnd, type SearchQuery } from "./recent-searches";
 import { resultsHref } from "./results-href";
 import { useHover } from "@/theme/hover";
-import { iconSizes, radii, sizes, spacing, typography } from "@/theme/tokens";
+import { iconSizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /** Keeps a search among the recent ones and opens its results; resolves to the recent searches. */
@@ -275,8 +276,9 @@ export function useRouteSearch(
 type DateFieldRef = ComponentRef<typeof View>;
 
 /**
- * The date in the search row: its caption over the day, or "Any day", with
- * a chevron. Pressing it opens and closes the calendar under it.
+ * The date in the search row: its caption over a `SearchField` with the
+ * day, or "Any day", and a chevron. Pressing it opens and closes the
+ * calendar under it.
  */
 function DateField({
   fieldRef,
@@ -305,10 +307,10 @@ function DateField({
       aria-expanded={open}
       onPress={onPress}
       {...hover}
-      style={[styles.dateField, hovered && { backgroundColor: palette.primarySoft }]}
+      style={styles.dateField}
     >
       <Text style={[typography.caption, { color: palette.textMuted }]}>{label}</Text>
-      <View style={styles.dateValue}>
+      <SearchField hovered={hovered}>
         <Text style={[chosen ? typography.bodyStrong : typography.body, { color: palette.text }]}>
           {value}
         </Text>
@@ -317,7 +319,7 @@ function DateField({
           color={palette.textMuted}
           size={iconSizes.inline}
         />
-      </View>
+      </SearchField>
     </Pressable>
   );
 }
@@ -334,30 +336,19 @@ const styles = StyleSheet.create({
   // The two ends grow; the date, the seats and the button keep their size
   // and, where the row is too narrow for all, go to a second line together,
   // at the right. A part that opens grows downwards and the rest stay put.
+  // The gaps leave a page room for the whole row in both languages, with
+  // the fields' own padding.
   row: {
     flexDirection: "row",
     flexWrap: "wrap",
     alignItems: "flex-start",
     justifyContent: "flex-end",
-    columnGap: spacing.lg,
-    rowGap: spacing.md,
+    gap: spacing.md,
   },
   rest: { gap: spacing.md },
-  restRow: { flexDirection: "row", alignItems: "flex-start", gap: spacing.lg },
+  restRow: { flexDirection: "row", alignItems: "flex-start", gap: spacing.md },
   // Beside the values, under the captions.
   action: { marginTop: typography.caption.lineHeight + spacing.xs },
-  // The tint under the pointer reaches a little past the text, as a `Row`'s does.
-  dateField: {
-    gap: spacing.xs,
-    borderRadius: radii.control,
-    paddingHorizontal: spacing.sm,
-    marginHorizontal: -spacing.sm,
-  },
-  dateValue: {
-    minHeight: sizes.buttonHeight,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-  },
+  dateField: { gap: spacing.xs },
   day: { gap: spacing.md },
 });

@@ -73,7 +73,8 @@ every main screen, as drawn, on 2026-11-18.
 | 4 | 3.7, 3.8 | Trip details, Check and pay and a request in two columns | Merged (#161) |
 | 5 | 3.11 | Messages as two panes | Merged (#170) |
 | 6 | 3.9, 3.10, 3.12 | A booking, My rides and Profile | Merged (#173) |
-| 7 | 3.13, 3.14 | Offer a ride and the driver's trip | Built |
+| 7 | 3.13, 3.14 | Offer a ride and the driver's trip | Merged (#175) |
+| 8 | 3.5 | Find again, after Martin's look: fields in the search row, the map beside the rides, a quieter "Offer a ride" | Built |
 
 ---
 
@@ -501,3 +502,57 @@ bar `primary`. A disabled or busy part shows none.
 - [x] Before and after screenshots of every changed screen at 1440 wide to
   the project files; spec 18's status line says built; the plans index row
   says built.
+
+## PR 8: Find again, after Martin's look
+
+Martin looked at the built Find on 2026-11-18 and asked for three things:
+a very slight background for the From and To fields, the map in place of
+the offer card, with every meeting point and the road of the ride pointed
+at or chosen, and a less prominent place for "Offer a ride" (spec 18, 3.5,
+decisions 15 to 17). Phones stay as they are.
+
+### Task 8.1: Fields in the search row
+
+- Modify: `apps/mobile/src/components/route-ends.tsx`,
+  `apps/mobile/src/search/route-search.tsx`
+- Test: `apps/mobile/src/__tests__/welcome.test.tsx`
+
+- [x] **Step 1: Failing test** at 1280: the values of From, To and the
+  date each sit in a `search-field` filled with `background`; on a phone
+  there is none.
+- [x] **Step 2 to 4:** Run, implement, run. The row's gaps go from `lg`
+  to `md`, and to `sm` around the swap button: with the fields' padding
+  the Icelandic row no longer fitted one line at 1280.
+
+### Task 8.2: The map beside the rides
+
+- Create: `apps/mobile/src/search/find-map.tsx`
+- Modify: `apps/mobile/src/app/(tabs)/index.tsx`,
+  `apps/mobile/src/testing/app.tsx` (the fake API answers the meeting
+  points), `packages/i18n/src/messages/en.ts` and `is.ts` (`home.map`)
+- Test: `apps/mobile/src/__tests__/welcome.test.tsx`
+
+**Interfaces:**
+
+- Produces: `FindMap({ shown })`: loads the meeting points itself and
+  draws `IcelandMap` whole, every point a `muted` dot; with `shown`, a ride
+  leaving soon, its two ends `chosen`, its road a `part` line and the label
+  `results.mapOf`; without, the label `home.map` with the number of points.
+  "See the meeting points" stands under it.
+
+- [x] **Step 1: Failing tests** at 1280: the map is in `columns-side` with
+  a dot for every meeting point and the first ride's road, and its card is
+  marked; the map and the mark follow `focus` and `hoverIn` on another
+  card; the map is there while the rides load and with none; it shows the
+  ride when the meeting points fail; "Offer a ride" is a line at the end
+  of `columns-main`, and a card there with no rides; a phone asks for no
+  meeting points and looks as before.
+- [x] **Step 2 to 5:** Run, implement, run, commit with task 8.1 as
+  `feat(mobile): the map beside the rides on Find, and fields in its search row`.
+
+### Task 8.3: Finish
+
+- [x] `laptop.spec.ts`: the Find journey checks the map in the side
+  column, the road following the card under the pointer and the offer line
+  at 900, 1280 and 1440, in both languages. A picture before and now to
+  the project files; spec 15's "Search row" says the fields.
