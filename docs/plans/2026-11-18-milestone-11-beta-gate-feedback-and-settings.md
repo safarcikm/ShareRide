@@ -365,16 +365,23 @@ before merging.
 
 ### PR 2: `feat(settings)`: the settings store, the Settings page and `GET /v1/config`
 
-- [ ] `settings/catalogue.ts` and `values.ts` with `invite_code_required`
+- [x] `settings/catalogue.ts` and `values.ts` with `invite_code_required`
       and `beta_max_testers`, and their tests (every refusal at its edge;
       `valuesAt` at versions 0, 1 and one past the last)
-- [ ] The migration (`setting_changes` with its triggers); the service;
+- [x] The migration (`setting_changes` with its triggers); the service;
       the three console routes; `GET /v1/config` with `beta`
-- [ ] The console's Settings page with History
+- [x] The console's Settings page with History
 - Verify: integration tests (only an operator; refused without a reason,
   out of range and on an old version; two changes at once get two
   versions; every change audited; updates and deletes of history
   refused); the console's page tests
+- As built: the page reads past the 5-second cache (`latest()`), so it
+  always shows what is saved. Two changes sent on the same version at the
+  same moment end as one saved and one refused with `settings_changed`,
+  as the second no longer saw the values it changed. A reason is refused
+  when missing (`reason_missing`) or over 500 characters
+  (`reason_too_long`). The app starts reading `GET /v1/config` in PR 4,
+  with the Beta label.
 
 ### PR 3: `feat(beta)`: invite codes and the gate, the API
 

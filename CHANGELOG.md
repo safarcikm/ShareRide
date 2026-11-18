@@ -1079,6 +1079,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   stop screens say when what passengers booked sets the highest level,
   down to free. On a trip under way, the stretches already driven still
   count (A50).
+- Milestone 11 plan (the beta gate, feedback and operator settings) and
+  ADR 0032: which values the operator can change, their ranges, and which
+  rules read a trip's or a booking's settings version.
+- The settings store (spec 10, 3.2; ADR 0032): `setting_changes`, a history
+  the database lets nobody edit, from which the values of every settings
+  version are worked out; the first two settings, "Invite code required"
+  and the most testers; the console's Settings page, where a change needs
+  a reason, shows what it does first and lands in the history; and
+  `GET /v1/config` for the apps.
 - Spec 18 (approved) and its plan: the web app on a laptop. From 900 wide,
   every main screen gets two columns or a grid in a page 1144 wide, under
   the top bar; phones keep their layouts.
