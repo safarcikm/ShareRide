@@ -171,6 +171,9 @@ for (const locale of ["en-GB", "is-IS"] as const) {
         expect(drawn.x).toBeGreaterThanOrEqual(column.x);
         expect(drawn.x + drawn.width).toBeLessThanOrEqual(column.x + column.width + 1);
         expect(drawn.width).toBeGreaterThan(300);
+        // It starts where the first row of cards does, under the headings' row.
+        const firstCard = await box(main.getByTestId("card").first());
+        expect(drawn.y).toBeCloseTo(firstCard.y, 0);
         // Every meeting point is a dot on it: far more than a ride's two ends.
         await expect.poll(() => map.locator("circle").count()).toBeGreaterThan(10);
         const points = await box(side.getByRole("button", { name: texts.meetingPoints }));

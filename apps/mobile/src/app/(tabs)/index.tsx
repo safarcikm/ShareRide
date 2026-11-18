@@ -1,6 +1,6 @@
 import { soonestTripsRoute, type TripSearchResult } from "@shareride/contracts";
 import { router } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useMe, useSession } from "@/auth/session";
 import { Button } from "@/components/button";
@@ -109,6 +109,11 @@ function FrontPage() {
   if (wide) {
     const listed = rides.slice(0, shown);
     const onMap = listed.find((ride) => ride.tripId === shownId) ?? listed[0];
+    const headed = value === undefined || rides.length > 0;
+    // Beside "Leaving soon", a row as high: the map then starts where the
+    // cards do, as the ride under "Your next ride" does. Without the
+    // heading, the map starts with the offer card.
+    const level = headed ? <View testID="map-level" style={styles.head} /> : null;
     return (
       <Screen width="page">
         {title}
@@ -116,12 +121,12 @@ function FrontPage() {
         <Columns
           side={
             <>
-              {me === null ? null : <NextRide beside />}
+              {me === null ? level : <NextRide beside otherwise={level} />}
               <FindMap shown={onMap} />
             </>
           }
         >
-          {value === undefined || rides.length > 0 ? (
+          {headed ? (
             <>
               <LeavingSoon
                 rides={rides}
@@ -186,12 +191,19 @@ function FrontPage() {
  * coming up, a ride under way included, as My rides shows it. Left out when
  * nothing is coming up; one notice with a retry when it can't be loaded.
  * `beside`: in the side column of a wide page, its heading level with
- * "Leaving soon" in the main column.
+ * "Leaving soon" in the main column. `otherwise` stands in its place while
+ * it has no ride to show, so what follows keeps its level.
  */
-function NextRide({ beside = false }: { readonly beside?: boolean }) {
+function NextRide({
+  beside = false,
+  otherwise = null,
+}: {
+  readonly beside?: boolean;
+  readonly otherwise?: ReactNode;
+}) {
   const { t } = useLanguage();
   const { loaded, reload } = useRides("upcoming");
-  if (loaded === undefined) return null;
+  if (loaded === undefined) return otherwise;
   if ("failure" in loaded) {
     return (
       <View style={beside ? styles.nextBeside : styles.next}>
@@ -201,7 +213,7 @@ function NextRide({ beside = false }: { readonly beside?: boolean }) {
     );
   }
   const [next] = loaded.rides;
-  if (next === undefined) return null;
+  if (next === undefined) return otherwise;
   return (
     <View style={beside ? styles.nextBeside : styles.next}>
       {beside ? (

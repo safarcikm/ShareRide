@@ -560,3 +560,7 @@ decisions 15 to 17). Phones stay as they are.
   elsewhere, and the map with its link is whole in a window 720 high. A
   picture before and now to the project files; spec 15's "Search row" says
   the fields.
+- [x] After Martin saw the picture: the map starts level with the first
+  row of cards, not with the heading (spec 18, decision 18). Tests first
+  at 1280 for each state of the side column; the journey compares the
+  map's top with the first card's at every width.

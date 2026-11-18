@@ -161,9 +161,11 @@ changes on a phone.
    - **Side:** "Your next ride" when signed in and one is coming up, then
      our **map** of the whole of Iceland with every meeting point as a
      muted dot, and "See the meeting points" under it (decision 16). The
-     person's own ride comes first; in a window 720 high the map is then
-     partly under the window's edge until the page is scrolled, and stays
-     in view from there.
+     map starts level with the first row of rides: beside "Leaving soon"
+     the side column has "Your next ride" or, without one, an empty row as
+     high (decision 18). The person's own ride comes first; in a window
+     720 high the map is then partly under the window's edge until the
+     page is scrolled, and stays in view from there.
 4. The map always shows one of the rides leaving soon: the way along the
    roads between its first and its last meeting point, with the two
    standing out. A ride's card has only those two, so the stops between
@@ -175,10 +177,11 @@ changes on a phone.
 5. With no rides leaving soon, and when the rides cannot be loaded, the
    main column holds one card, "Driving somewhere? Share the empty seats
    in your car." with "Offer a ride" as a secondary button, and the map
-   shows the meeting points alone. While the rides load, the main column
-   has "Leaving soon" and a sign that they are on their way. The side
-   column is there from the start in each case, so the map does not move
-   when the rides come.
+   shows the meeting points alone, level with the card. While the rides
+   load, the main column has "Leaving soon" and a sign that they are on
+   their way. The side column is there from the start in each case, so
+   the map does not move when the rides come; it moves up once, by the
+   heading's row, when it turns out there are none.
 6. The meeting points come from their own call. Until they are there, and
    if they cannot be loaded, the map still shows the ride, its two ends
    and its road; nothing on the page waits for them, and nothing says they
@@ -503,3 +506,4 @@ Every other text is one the app has.
 | 15 | How do From, To and the date show that they are fields? | Each value sits in a box in the page's colour, `background`, on the card's white: a fill, no outline, so the row stays calm beside the seats' two outlined buttons. The fill is a hint (1.1:1 against the card); the caption and the value say what the part is, as they did alone before. `textMuted` on it is 5.5:1 (8.3:1 in dark). The row's gaps went from `lg` to `md`, and to `sm` around the swap button, so the row with its fields is still one line at 1280 in both languages. Martin, 2026-11-18, after looking at the built page: "the text field could have a very slight background to make it more visible"; the date got the same box so the three read as one kind of part (my call) |
 | 16 | What stands beside the rides on Find? | Our map of the whole of Iceland, with every meeting point and the road of one ride leaving soon: the first, or the one pointed at or focused last. Martin, 2026-11-18: "show the map there instead with all the stops and always show the hover/selected road". The whole country and not the part the rides are in, so the map stays still; the other rides' roads are left out, so one road is plain among the dots (my call) |
 | 17 | Where does "Offer a ride" go on Find? | To the end of the main column, as one line with a text button, where a phone has it; Martin found the card in the side column out of place. With no rides it stays a card with a secondary button, in the main column: then it is the most useful thing on the page (my call) |
+| 18 | Where does the map start? | Level with the first row of cards, under a row as high as "Leaving soon". Martin, 2026-11-18, on the first picture, where it started at the heading: "the map needs to be aligned with the cards (push it down a little)". With no rides there is no heading, and the map starts with the offer card (my call) |

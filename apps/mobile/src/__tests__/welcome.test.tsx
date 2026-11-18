@@ -900,6 +900,66 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     expect(meetingPointsCalls(client)).toHaveLength(1);
   });
 
+  /** The side column's parts that place the map, from the top. */
+  const mapParts = () =>
+    within(screen.getByTestId("columns-side"))
+      .getAllByTestId(/^(map-level|find-map)$/)
+      .map((part) => part.props.testID as string);
+
+  it("starts the map level with the first row of rides, beside their heading's row", async () => {
+    let answer: (value: unknown) => void = () => undefined;
+    await openFrontPage((fake) => {
+      fake.answer(
+        "/v1/trips/soonest",
+        () =>
+          new Promise((resolve) => {
+            answer = resolve;
+          }),
+      );
+    });
+    // From the start, so the map does not move when the rides come: a row
+    // as high as "Leaving soon", then the map where the cards will start.
+    await screen.findByTestId("columns-side");
+    expect(mapParts()).toEqual(["map-level", "find-map"]);
+    expect(screen.getByTestId("map-level")).toHaveStyle({ minHeight: 44 });
+    await act(() => {
+      answer(ok(200, { results: soonRides(2) }));
+    });
+    expect(await screen.findAllByTestId("trip-result")).toHaveLength(2);
+    expect(mapParts()).toEqual(["map-level", "find-map"]);
+  });
+
+  it("starts the map level with the offer card when no rides leave soon", async () => {
+    await openFrontPage(withRides([]));
+    await screen.findByRole("button", { name: "Offer a ride" });
+    // No heading in the main column, so none of its room beside it.
+    expect(mapParts()).toEqual(["find-map"]);
+  });
+
+  it("puts the map under Your next ride, whose heading is the row beside Leaving soon", async () => {
+    deviceLanguage("en-GB");
+    await renderApp("/", {
+      me: completeMe,
+      setUp: (fake) => {
+        withRides(soonRides(2))(fake);
+        fake.answer("/v1/me/bookings", () => ok(200, { bookings: [northBooking()] }));
+      },
+    });
+    expect(await screen.findByRole("header", { name: "Your next ride" })).toBeVisible();
+    await screen.findAllByTestId("trip-result");
+    expect(mapParts()).toEqual(["find-map"]);
+  });
+
+  it("keeps the map level with the rides for someone signed in with no ride coming up", async () => {
+    deviceLanguage("en-GB");
+    await renderApp("/", { me: completeMe, setUp: withRides(soonRides(2)) });
+    await screen.findAllByTestId("trip-result");
+    await waitFor(() => {
+      expect(screen.queryByRole("header", { name: "Your next ride" })).toBeNull();
+    });
+    expect(mapParts()).toEqual(["map-level", "find-map"]);
+  });
+
   it("shows the ride the pointer or the keyboard comes to, on a map that stays still", async () => {
     await openFrontPage(withRides([...soonRides(1), airportRide]));
     expect(await screen.findAllByTestId("trip-result")).toHaveLength(2);
