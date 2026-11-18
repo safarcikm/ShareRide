@@ -4,23 +4,28 @@ import type {
   AdminMeetingPoint,
   AdminMeetingPointInput,
   AdminMeetingPointListItem,
+  AdminMeetingPointMoved,
 } from "@shareride/contracts";
 import { lockLegs, schema, type Database } from "@shareride/db";
 import {
   activationChecklist,
+  canMove,
   changedFields,
   err,
   icelandDate,
   matchesConsoleFilters,
+  metresMoved,
   monthInIceland,
   nextPointStatus,
   ok,
+  pointMovedFar,
   readMeetingPointImport,
   readyToActivate,
   reviewDueOn,
   reviewedOn,
   searchTextFor,
   validateMeetingPointDraft,
+  validateMove,
   validatePause,
   type ActivationItem,
   type ConsoleFilters,
@@ -28,8 +33,10 @@ import {
   type ImportFileProblem,
   type ImportRow,
   type MeetingPointStatus,
+  type MoveIssue,
   type PauseProblem,
   type PauseRequest,
+  type Position,
   type Result,
   type StatusChange,
   type ValidMeetingPointDraft,
@@ -60,6 +67,16 @@ export type StatusProblem =
   | { readonly code: "validation_failed"; readonly problems: readonly PauseProblem[] }
   | { readonly code: "not_found" | "meeting_point_changed" | "status_change_not_allowed" }
   | { readonly code: "activation_not_ready"; readonly missing: readonly ActivationItem[] };
+
+/** Why the new spot cannot be used: as `validateMove` says, or no road reaches it. */
+export interface MoveFieldProblem {
+  readonly field: "position";
+  readonly issue: MoveIssue | "no_road";
+}
+
+export type MoveProblem =
+  | { readonly code: "validation_failed"; readonly problems: readonly MoveFieldProblem[] }
+  | { readonly code: "not_found" | "meeting_point_changed" | "move_not_allowed" };
 
 /** A file's rows as the console shows them, and how many became drafts. */
 export interface ImportResult {
@@ -105,6 +122,16 @@ export interface MeetingPointAdminService {
     input: PauseRequest & Loaded,
     actor: ConsoleActor,
   ): Promise<Result<AdminMeetingPoint, StatusProblem>>;
+  /**
+   * Moves a point in service (spec 2, 3.6.6): its legs are computed again
+   * in the same transaction, and when it moved more than 50 m, the trips
+   * still to stop there are told (R2.10).
+   */
+  move(
+    id: string,
+    input: { readonly position: Position } & Loaded,
+    actor: ConsoleActor,
+  ): Promise<Result<AdminMeetingPointMoved, MoveProblem>>;
   /** Brings a paused point back into use before its end date, or without one. */
   resume(
     id: string,
@@ -522,6 +549,74 @@ export function createMeetingPointAdminService(dependencies: {
       });
     },
 
+    move(id, input, actor) {
+      return db.transaction(async (tx): Promise<Result<AdminMeetingPointMoved, MoveProblem>> => {
+        // The legs lock first, as in `activate`.
+        await lockLegs(tx);
+        const found = await loadForChange(tx, id, input.updatedAt);
+        if (found === undefined) return err({ code: "not_found" });
+        if (!found.loaded) return err({ code: "meeting_point_changed" });
+        const { row } = found;
+        if (!canMove(row.status as MeetingPointStatus)) return err({ code: "move_not_allowed" });
+        const checked = validateMove(row.location, input.position);
+        if (!checked.ok) {
+          return err({
+            code: "validation_failed",
+            problems: [{ field: "position", issue: checked.error }],
+          });
+        }
+        const position = checked.value;
+        if (!(await legs.connects(id, position, tx))) {
+          return err({
+            code: "validation_failed",
+            problems: [{ field: "position", issue: "no_road" }],
+          });
+        }
+
+        const now = clock();
+        const futureTrips = await futureTripsAt(tx, id, now);
+        // Within 50 m nobody is told: the stop is where they expect it (R2.10).
+        const told = pointMovedFar(row.location, position) ? futureTrips : [];
+        const [saved] = await tx
+          .update(meetingPoints)
+          .set({ location: position, updatedAt: changedNow })
+          .where(eq(meetingPoints.id, id))
+          .returning();
+        if (saved === undefined) throw new Error("The meeting point was not saved.");
+        const computed = await legs.computeFor(id, tx);
+        if (!computed.ok) throw new Error("The meeting point was not found for its legs.");
+        // One event per trip, as for a pause: the worker tells its driver
+        // once, and each passenger who gets in or out here once.
+        await recordEvents(
+          tx,
+          told.map((tripId) => ({ type: "MeetingPointMoved", tripId, meetingPointId: id })),
+          now,
+        );
+        const metres = metresMoved(row.location, position);
+        await recordAudit(tx, {
+          operator: actor.operator,
+          action: "meeting_point.moved",
+          subjectType: "meeting_point",
+          subjectId: id,
+          before: { position: row.location },
+          // Its legs, those no road connects (3.7.4), and the trips told.
+          after: {
+            position,
+            metres,
+            legs: computed.value.legs,
+            missing: computed.value.missing,
+            tripsTold: told.length,
+          },
+          request: actor.request,
+        });
+        return ok({
+          meetingPoint: toAdminMeetingPoint(saved, futureTrips.length),
+          metres,
+          tripsTold: told.length,
+        });
+      });
+    },
+
     pause(id, input, actor) {
       const checked = validatePause(input, icelandDate(clock()));
       if (!checked.ok) {
@@ -619,7 +714,6 @@ export function createMeetingPointAdminService(dependencies: {
   }
 }
 
-/** Later than the copy the console loaded, even within one millisecond. */
 /** Later than any copy the console loaded, so an edit from one is refused. */
 export const changedNow = sql`greatest(now(), ${meetingPoints.updatedAt} + interval '1 millisecond')`;
 

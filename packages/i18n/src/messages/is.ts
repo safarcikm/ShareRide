@@ -1326,6 +1326,11 @@ export const is = {
   "notify.pointPausedBody":
     "{from} – {to} · {when}. Bílstjórinn er beðinn um að velja annan viðkomustað.",
   "notify.pointPausedDriverBody": "Veldu annan viðkomustað fyrir ferðina: {when}.",
+  "notify.pointMoved": "Mótsstaður færður: {point}",
+  "notify.pointMovedBody":
+    "{from} – {to} · {when}. Sjáðu hvar hann er núna áður en þú leggur af stað.",
+  "notify.pointMovedDriverBody":
+    "Ferðin þín stoppar þar: {when}. Sjáðu hvar hann er núna áður en þú leggur af stað.",
   "notify.unpaid": "Sætið var ekki greitt í tæka tíð",
   "notify.unpaidDriver": "Ekki greitt í tæka tíð: {name}",
   "notify.cancelledByDriver": "Bílstjórinn afbókaði: {reason}",
@@ -1649,6 +1654,8 @@ export const is = {
   "export.value.kind.refund_issued": "Endurgreiðsla",
   "export.value.kind.meeting_point_changed": "Mótsstað breytt",
   "export.value.kind.meeting_point_changed_driver": "Mótsstað breytt, sem bílstjóri",
+  "export.value.kind.meeting_point_moved": "Mótsstaður færður",
+  "export.value.kind.meeting_point_moved_driver": "Mótsstaður færður, sem bílstjóri",
   "export.value.kind.new_message": "Ný skilaboð",
   "export.value.kind.unread_messages": "Ólesin skilaboð",
   "export.value.kind.reminder_evening": "Áminning kvöldið áður",
@@ -1929,7 +1936,7 @@ export const is = {
     "Límdu þau inn úr Google Maps, Apple Maps eða OpenStreetMap, til dæmis 64.1371, -21.9337.",
   "admin.meetingPoint.spotReads": "Lesið sem {latitude}, {longitude}",
   "admin.meetingPoint.spotLocked":
-    "Hér er aðeins staðsetningu draga breytt. Að færa mótsstað í notkun er sérstakt skref.",
+    "Hér er aðeins staðsetningu draga breytt. Til að færa mótsstað í notkun skaltu velja Færa undir Í notkun.",
   "admin.meetingPoint.openInMaps": "Skoða á OpenStreetMap",
   "admin.meetingPoint.municipality": "Sveitarfélag",
   "admin.meetingPoint.choose": "Veldu",
@@ -1985,7 +1992,7 @@ export const is = {
   "admin.meetingPoint.issue.inFuture": "Þessi dagur er ekki kominn.",
   "admin.meetingPoint.issue.needsShelter": "Merktu fyrst við Skjól undir aðstöðu.",
   "admin.meetingPoint.issue.moveNeeded":
-    "Hér er aðeins staðsetningu draga breytt. Að færa mótsstað í notkun er sérstakt skref.",
+    "Hér er aðeins staðsetningu draga breytt. Til að færa mótsstað í notkun skaltu velja Færa undir Í notkun.",
   "admin.disputes.title": "Ágreiningsmál",
   "admin.disputes.intro":
     "Tilkynningar frá ferðadegi sem hinn aðilinn sagði ekki réttar. Lestu það sem kerfið veit og taktu svo ákvörðun. Báðum aðilum er sagt frá henni og hún er endanleg í appinu.",
@@ -2416,7 +2423,7 @@ export const is = {
   "admin.meetingPoint.retire": "Hætta notkun",
   "admin.meetingPoint.retireQuestion": "Hætta notkun {name}?",
   "admin.meetingPoint.retireLater":
-    "Nýjar ferðir geta ekki notað hann héðan í frá. {count, plural, one {# væntanleg ferð stoppar hér, svo hann hættir eftir þá ferð.} other {# væntanlegar ferðir stoppa hér, svo hann hættir eftir þá síðustu.}} Það er endanlegt.",
+    "Nýjar ferðir geta ekki notað hann héðan í frá. {count, plural, =1 {# væntanleg ferð stoppar hér, svo hann hættir eftir þá ferð.} one {# væntanleg ferð stoppar hér, svo hann hættir eftir þá síðustu.} other {# væntanlegar ferðir stoppa hér, svo hann hættir eftir þá síðustu.}} Það er endanlegt.",
   "admin.meetingPoint.retireNow": "Hann hættir strax. Það er endanlegt.",
   "admin.meetingPoint.retireConfirm": "Hætta notkun {name}",
   "admin.meetingPoint.keep": "Halda honum",
@@ -2426,6 +2433,25 @@ export const is = {
   "admin.meetingPoint.retired": "{name} er hættur.",
   "admin.meetingPoint.statusFailed": "Ekki tókst að breyta stöðunni. Reyndu aftur.",
   "admin.meetingPoint.activated": "{name} er virkur. Bílstjórar geta valið hann í nýjar ferðir.",
+  "admin.meetingPoint.move": "Færa",
+  "admin.meetingPoint.newSpot": "Nýr staður: hnit eða kortahlekkur",
+  "admin.meetingPoint.moveIntro":
+    "Vegalengdir hans til allra staða í notkun eru reiknaðar aftur, sem getur tekið nokkrar sekúndur. Ef hann færist meira en 50 m fá bílstjórar væntanlegra ferða hans, og farþegar sem fara inn eða út hér, að vita það.",
+  "admin.meetingPoint.moveFar":
+    "{metres} m frá núverandi stað, svo fólk í {count, plural, one {# væntanlegri ferð} other {# væntanlegum ferðum}} fær að vita það.",
+  "admin.meetingPoint.moveFarNoTrips":
+    "{metres} m frá núverandi stað. Engar væntanlegar ferðir stoppa hér, svo enginn fær að vita það.",
+  "admin.meetingPoint.moveNear":
+    "{metres} m frá núverandi stað: innan 50 m, svo enginn fær að vita það.",
+  "admin.meetingPoint.moveConfirm": "Færa {name}",
+  "admin.meetingPoint.moving": "Færir {name}…",
+  "admin.meetingPoint.keepWhereItIs": "Hafa hann áfram á sama stað",
+  "admin.meetingPoint.moved":
+    "{name} var færður um {metres} m og vegalengdir hans reiknaðar aftur. {count, plural, =0 {Enginn fær að vita það.} =1 {Bílstjóri # ferðar, og farþegar hennar sem fara inn eða út hér, fá að vita það.} one {Bílstjórar # ferðar, og farþegar þeirra sem fara inn eða út hér, fá að vita það.} other {Bílstjórar # ferða, og farþegar þeirra sem fara inn eða út hér, fá að vita það.}}",
+  "admin.meetingPoint.moveFailed": "Ekki tókst að færa staðinn. Reyndu aftur.",
+  "admin.meetingPoint.issue.samePlace": "Staðurinn er hér nú þegar.",
+  "admin.meetingPoint.issue.noRoad":
+    "Enginn vegur innan 1 km frá þessum stað nær til staða í notkun.",
   "admin.activation.title": "Gátlisti fyrir virkjun",
   "admin.activation.fromSaved":
     "Gátlistinn miðast við það sem er vistað. Vistaðu breytingarnar fyrst.",
