@@ -354,6 +354,52 @@ describe("a report's page (spec 9, 3.4.2)", () => {
       review: { id: review.id, hidden: true },
     });
   });
+
+  it("gives each side's rating and reliability as their profile counts them, none for a former member", async () => {
+    const { jon, gunna, bookingId, reportId } = await reportedMessage();
+    const { db } = api.connection;
+    await db.insert(schema.reviews).values({
+      bookingId,
+      authorId: gunna.userId,
+      subjectId: jon.userId,
+      authorRole: "passenger",
+      rating: 4,
+      revealedAt: api.now(),
+    });
+    const { cookie } = await api.signInOperator();
+
+    const report = (await send(cookie, "GET", `/admin/v1/reports/${reportId}`)).body as AdminReport;
+
+    // The trip has not happened yet, so nothing counts on either side.
+    const none = { kept: 0, counted: 0 };
+    const nothingYet = {
+      ...none,
+      percent: null,
+      byRole: { driver: none, passenger: none },
+      belowWatchLevel: false,
+    };
+    expect(report.reportedSide).toMatchObject({
+      rating: { average: 4, count: 1 },
+      reliability: nothingYet,
+    });
+    expect(report.reporterSide).toMatchObject({
+      rating: { average: null, count: 0 },
+      reliability: nothingYet,
+    });
+
+    // Once Gunna's account is erased, her report is by the former member,
+    // whose records are everyone's who left.
+    await db
+      .update(schema.reports)
+      .set({ reporterId: schema.formerMemberId })
+      .where(eq(schema.reports.id, reportId));
+    const erased = (await send(cookie, "GET", `/admin/v1/reports/${reportId}`)).body as AdminReport;
+    expect(erased.reporterSide).toMatchObject({
+      person: { userId: schema.formerMemberId, status: "deleted" },
+      rating: null,
+      reliability: null,
+    });
+  });
 });
 
 describe("the conversation a message report covers (R9.6)", () => {

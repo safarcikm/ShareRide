@@ -4,6 +4,7 @@ import {
   cancelTripRoute,
   declineRequestRoute,
   fileReportRoute,
+  publicProfileRoute,
   type AdminDeclineRate,
   type AdminOperatorNote,
   type AdminTrip,
@@ -13,11 +14,12 @@ import {
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
 import { sampleId } from "@shareride/db/seed";
-import { icelandDate } from "@shareride/domain";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { defaultTripDaySettings, icelandDate } from "@shareride/domain";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
 import { collectExport } from "../privacy/export-data.ts";
+import { moveTripsOn } from "../trips/completion.ts";
 import {
   bookingHelpers,
   freshSampleTrips,
@@ -45,6 +47,8 @@ beforeEach(async () => {
   await db.execute(sql`delete from operator_notes`);
   await db.execute(sql`delete from moderation_actions`);
   await db.execute(sql`delete from reports`);
+  // The former member's reviews belong to no booking, so they outlive the trips.
+  await db.execute(sql`delete from reviews`);
 });
 
 afterEach(() => {
@@ -55,7 +59,8 @@ afterAll(async () => {
   await api.close();
 });
 
-const { newMember, later, rewind, driverOf, booked, book } = bookingHelpers(() => api);
+const { newMember, later, rewind, driverOf, booked, book, paid } = bookingHelpers(() => api);
+const hourMs = 3_600_000;
 
 async function send(cookie: string, method: string, path: string, body?: unknown) {
   const response = await api.request(path, {
@@ -242,6 +247,41 @@ describe("finding people (spec 9, 3.5.1)", () => {
   });
 });
 
+/** Jón drove Gunna to the airport; the trip completed half an hour ago (spec 8, 3.8). */
+async function afterTheTrip() {
+  const jon = await driverOf(airport, "Jón");
+  const gunna = await newMember("Gunna");
+  const booking = await booked(gunna.accessToken, airport, { fromStop: 0, toStop: 1 });
+  await paid(gunna.accessToken, booking.id);
+  const [last] = await api.connection.db
+    .select({ plannedAt: schema.tripStops.plannedAt })
+    .from(schema.tripStops)
+    .where(eq(schema.tripStops.tripId, airport))
+    .orderBy(desc(schema.tripStops.position))
+    .limit(1);
+  if (last === undefined || last.plannedAt === null) {
+    throw new Error("A published trip's stop has its time.");
+  }
+  const completesAt = last.plannedAt.getTime() + 150 * 60_000;
+  await later(Math.round((completesAt - api.now().getTime()) / 1000), jon, gunna);
+  await moveTripsOn(api.connection.db, api.now(), defaultTripDaySettings);
+  return { jon, gunna, bookingId: booking.id };
+}
+
+async function profileOf(viewer: Member, member: Member) {
+  const [row] = await api.connection.db
+    .select({ profileId: schema.users.profileId })
+    .from(schema.users)
+    .where(eq(schema.users.id, member.userId));
+  if (row === undefined) throw new Error("No such member.");
+  const result = await api.client.call(publicProfileRoute, {
+    accessToken: viewer.accessToken,
+    params: { profileId: row.profileId },
+  });
+  if (!result.ok) throw new Error(result.error.code);
+  return result.data;
+}
+
 describe("a person's page (spec 9, 3.5.2)", () => {
   it("shows their profile, cars, trips, bookings, reports, actions, notes and declines", async () => {
     const { anna, gunna, siggi, acceptedId, declinedId } = await answeredRequests();
@@ -352,6 +392,140 @@ describe("a person's page (spec 9, 3.5.2)", () => {
     const { status } = await send(cookie, "GET", `/admin/v1/users/${randomUUID()}`);
 
     expect(status).toBe(404);
+  });
+});
+
+describe("a person's rating, reliability and reviews (spec 9, 3.5.2)", () => {
+  it("counts the rating and reliability as their profile does, and lists every review", async () => {
+    const { jon, gunna, bookingId } = await afterTheTrip();
+    const ago = (hours: number) => new Date(api.now().getTime() - hours * hourMs);
+    const [written, waiting, gone] = [ago(3), ago(2), ago(1)];
+    const reviews = await api.connection.db
+      .insert(schema.reviews)
+      .values([
+        {
+          bookingId,
+          authorId: gunna.userId,
+          subjectId: jon.userId,
+          authorRole: "passenger",
+          rating: 4,
+          comment: "On time and careful.",
+          revealedAt: written,
+          createdAt: written,
+        },
+        // Not shown yet: nobody else reads it, and it does not count.
+        {
+          bookingId,
+          authorId: jon.userId,
+          subjectId: gunna.userId,
+          authorRole: "driver",
+          rating: 5,
+          revealedAt: null,
+          createdAt: waiting,
+        },
+        // By someone since erased, and hidden by ShareRide: it does not count either.
+        {
+          bookingId: null,
+          authorId: schema.formerMemberId,
+          subjectId: jon.userId,
+          authorRole: "passenger",
+          rating: 1,
+          comment: "Unkind words",
+          revealedAt: gone,
+          hiddenAt: gone,
+          createdAt: gone,
+        },
+      ])
+      .returning({ id: schema.reviews.id });
+    const { cookie } = await api.signInOperator();
+
+    const { status, body } = await send(cookie, "GET", `/admin/v1/users/${jon.userId}`);
+
+    expect(status).toBe(200);
+    const page = body as AdminUser;
+    const profile = await profileOf(gunna, jon);
+    expect(page.rating).toEqual({ average: 4, count: 1 });
+    expect(page.rating).toEqual(profile.rating);
+    expect(page.reliability).toEqual({
+      kept: 1,
+      counted: 1,
+      percent: null,
+      byRole: { driver: { kept: 1, counted: 1 }, passenger: { kept: 0, counted: 0 } },
+      belowWatchLevel: false,
+    });
+    expect(page.reliability).toMatchObject(profile.reliability);
+    const formerMember = expect.objectContaining({
+      userId: schema.formerMemberId,
+      firstName: null,
+      status: "deleted",
+    }) as unknown;
+    expect(page.reviewsAbout).toEqual([
+      {
+        id: reviews[2]?.id,
+        rating: 1,
+        comment: "Unkind words",
+        authorRole: "passenger",
+        author: formerMember,
+        subject: person(jon, "Jón"),
+        writtenAt: gone.toISOString(),
+        revealed: true,
+        hidden: true,
+      },
+      {
+        id: reviews[0]?.id,
+        rating: 4,
+        comment: "On time and careful.",
+        authorRole: "passenger",
+        author: person(gunna, "Gunna"),
+        subject: person(jon, "Jón"),
+        writtenAt: written.toISOString(),
+        revealed: true,
+        hidden: false,
+      },
+    ]);
+    const waitingReview = {
+      id: reviews[1]?.id,
+      rating: 5,
+      comment: "",
+      authorRole: "driver",
+      author: person(jon, "Jón"),
+      subject: person(gunna, "Gunna"),
+      writtenAt: waiting.toISOString(),
+      revealed: false,
+      hidden: false,
+    };
+    expect(page.reviewsBy).toEqual([waitingReview]);
+
+    const passenger = (await send(cookie, "GET", `/admin/v1/users/${gunna.userId}`))
+      .body as AdminUser;
+    expect(passenger.rating).toEqual({ average: null, count: 0 });
+    expect(passenger.reliability).toMatchObject({ kept: 1, counted: 1, percent: null });
+    expect(passenger.reviewsAbout).toEqual([waitingReview]);
+    expect(passenger.reviewsBy.map((review) => review.id)).toEqual([reviews[0]?.id]);
+  });
+
+  it("lists the latest 20 reviews of each kind", async () => {
+    const jon = await driverOf(airport, "Jón");
+    const now = api.now().getTime();
+    const ago = (hours: number) => new Date(now - hours * hourMs);
+    await api.connection.db.insert(schema.reviews).values(
+      Array.from({ length: 21 }, (_, hours) => ({
+        bookingId: null,
+        authorId: schema.formerMemberId,
+        subjectId: jon.userId,
+        authorRole: "passenger",
+        rating: 5,
+        revealedAt: ago(hours),
+        createdAt: ago(hours),
+      })),
+    );
+    const { cookie } = await api.signInOperator();
+
+    const page = (await send(cookie, "GET", `/admin/v1/users/${jon.userId}`)).body as AdminUser;
+
+    expect(page.rating.count).toBe(21);
+    expect(page.reviewsAbout).toHaveLength(20);
+    expect(page.reviewsAbout.at(-1)?.writtenAt).toBe(ago(19).toISOString());
   });
 });
 

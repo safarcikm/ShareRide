@@ -527,9 +527,11 @@ safety routes (`registerModerationAdminRoutes`), with the work in
   trip with its driver, the booking, the reported message without its
   words, the reported review with its words, About you for a report about
   a person), the actions taken under
-  it, and for each of the two people their other reports, by and about
-  them, the last 10 trips they drove or held a seat on, and the actions on
-  them.
+  it, and for each of the two people their rating and reliability figure
+  (as their profile counts them, with whether the figure is below the
+  watch level; none for the former member, whose records are those of
+  everyone who left), their other reports, by and about them, the last 10
+  trips they drove or held a seat on, and the actions on them.
 - `GET /admin/v1/reports/{id}/conversation` reads the conversation through
   `readConversationAsOperator` with `{ type: "report", id }`: only a
   report about a message covers it (R9.6), else `not_covered`. A message
@@ -618,9 +620,14 @@ them the same way.
   `more` when there were more; never the former member.
 - `GET /admin/v1/users/{id}` gives a person's page: the profile with when
   each thing was verified or declared, About you and whether ShareRide hid
-  it, cars, the 20 latest trips they drive and bookings they made (a
-  declined request with its reason, R5.7), the 20 latest reports by and
-  about them and actions on them, every note, and their decline rate.
+  it, their rating and reliability figure as their profile counts them
+  (`figuresOf` in `people/standing.ts`, which the profile uses too, with
+  whether the figure is below the watch level), cars, the 20 latest trips
+  they drive and bookings they made (a declined request with its reason,
+  R5.7), the 20 latest reports by and about them, reviews about them and
+  reviews they wrote (every one, with its words, whether it shows yet and
+  whether ShareRide hid it, and the other person), and actions on them,
+  every note, and their decline rate.
 - `POST /admin/v1/users/{id}/notes` with `{ text }` adds a note about the
   person, at most 1 000 characters (`checkOperatorNote`). Only operators
   see notes in the console, but the person gets each note's text and date
@@ -649,10 +656,13 @@ The pages are `apps/admin/src/pages/users/` at `/admin/users` and
 `apps/admin/src/pages/trips/` at `/admin/trips`, after Reliability in the menu.
 What the operator types to find a person stays in the page's state, never
 in the address. Below the search, each driver's decline rate. A person's
-page shows their account, the actions that fit them (`personChoices`:
+page shows their account, their rating and reliability in the members'
+own words (`Figures` in `reports/history.tsx`, which a report's page shows
+for each side too), the actions that fit them (`personChoices`:
 warn, hide About you, suspend an open account, reinstate a suspended one)
 with the same panel as a report's page (`ActPanel` in
-`reports/act.tsx`), their notes with a form to add one, and their history.
+`reports/act.tsx`), their notes with a form to add one, and their history,
+reviews included, each linking to the other person's page.
 A note's form says the person gets their notes in Download my data. The
 trips page lists the trips from today on until the operator filters them;
 a person's page links to all the trips they drive (`?driverId=`, the only

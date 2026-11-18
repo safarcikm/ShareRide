@@ -19,9 +19,11 @@ import type {
 } from "@shareride/contracts";
 import { schema, type Database } from "@shareride/db";
 import {
+  defaultReliabilitySettings,
   defaultSafetySettings,
   ok,
   type BookingStatus,
+  type ReliabilitySettings,
   type ReportOutcome,
   type Result,
   type Role,
@@ -31,6 +33,7 @@ import {
 import { and, asc, desc, eq, inArray, isNotNull, isNull, ne } from "drizzle-orm";
 import type { AuditEntry } from "../admin/audit.ts";
 import { readConversationAsOperator, type ReadingRefused } from "../chat/operator.ts";
+import { figuresOf } from "../people/standing.ts";
 import {
   createModerationService,
   type AnswerAppealError,
@@ -43,7 +46,8 @@ import {
 } from "./actions.ts";
 import { createConsoleReads } from "./console-reads.ts";
 
-const { bookings, messages, moderationActions, reports, reviews, trips, users } = schema;
+const { bookings, formerMemberId, messages, moderationActions, reports, reviews, trips, users } =
+  schema;
 
 /** The last closed reports and answered appeals the lists show. */
 const closedShown = 50;
@@ -117,9 +121,11 @@ export function createModerationConsoleService(dependencies: {
   readonly db: Database;
   readonly clock: () => Date;
   readonly settings?: SafetySettings;
+  readonly reliability?: ReliabilitySettings;
 }): ModerationConsoleService {
-  const { db } = dependencies;
+  const { db, clock } = dependencies;
   const settings = dependencies.settings ?? defaultSafetySettings;
+  const reliability = dependencies.reliability ?? defaultReliabilitySettings;
   const moderation = createModerationService({ ...dependencies, settings });
   const { listItems, actionsOf, actionsWhere, stopsOf, shownStop, routeOf } = createConsoleReads({
     db,
@@ -190,8 +196,14 @@ export function createModerationConsoleService(dependencies: {
         .where(and(eq(reports[side], person.userId), ne(reports.id, reportId)))
         .orderBy(desc(reports.createdAt), desc(reports.id))
         .limit(historyShown);
+    // The former member's records are those of everyone who left.
+    const figures =
+      person.userId === formerMemberId
+        ? { rating: null, reliability: null }
+        : await figuresOf(db, person.userId, clock(), reliability);
     return {
       person,
+      ...figures,
       reportsBy: await listItems(await others("reporterId")),
       reportsAbout: await listItems(await others("subjectUserId")),
       recentTrips: await recentTrips(person.userId),

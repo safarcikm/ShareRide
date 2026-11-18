@@ -2304,6 +2304,7 @@ export const en = {
   "admin.reports.personActions": "Actions on them",
   "admin.reports.personPage": "Account page: {name}",
   "admin.reports.recentTrips": "Recent trips",
+  "admin.reports.figures": "Rating and reliability",
   "admin.reports.tripRole.driver": "As driver: {from} – {to}",
   "admin.reports.tripRole.passenger": "As passenger: {from} – {to}",
   "admin.reports.act": "Act on it",
@@ -2510,6 +2511,14 @@ export const en = {
   "admin.users.reasonsLine":
     "Plans changed: {plansChanged} · Luggage: {luggage} · Something else: {other} · No reason given: {none}",
   "admin.users.noDeclines": "They answered no request in the last 90 days.",
+  "admin.users.figuresHint":
+    "As their profile counts them: reviews not shown yet or hidden by ShareRide don't count.",
+  "admin.users.reviews": "Reviews",
+  "admin.users.reviewsAbout": "Reviews about them",
+  "admin.users.reviewsBy": "Reviews they wrote",
+  "admin.users.reviewBy": "By: {name}",
+  "admin.users.reviewAbout": "About: {name}",
+  "admin.users.notRevealed": "Not shown yet",
   "admin.users.back": "All users",
   "admin.users.notFound": "There is no such person.",
   "admin.users.loadOneFailed": "The person could not be loaded.",

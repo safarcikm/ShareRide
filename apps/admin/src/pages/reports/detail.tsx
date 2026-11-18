@@ -10,7 +10,7 @@ import { ConsoleLink } from "../../components/console-link.tsx";
 import { useConsole } from "../../console.tsx";
 import { messageText } from "../disputes/texts.ts";
 import { ActPanel, choicesOf, ClosePanel } from "./act.tsx";
-import { ActionList, ReportLinks } from "./history.tsx";
+import { ActionList, Figures, ReportLinks } from "./history.tsx";
 import {
   atText,
   bookingStatusKeys,
@@ -272,6 +272,12 @@ function Side({
         <dt>{t("admin.reports.language")}</dt>
         <dd>{t(`admin.reports.language.${side.person.locale}`)}</dd>
       </dl>
+      {side.rating === null || side.reliability === null ? null : (
+        <>
+          <h3 className="type-label">{t("admin.reports.figures")}</h3>
+          <Figures rating={side.rating} reliability={side.reliability} />
+        </>
+      )}
       {side.person.status === "deleted" ? null : (
         <ConsoleLink to={`${usersPath}/${side.person.userId}`} className="type-label">
           {t("admin.reports.personPage", { name: personName(t, side.person) })}

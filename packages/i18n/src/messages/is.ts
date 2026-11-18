@@ -2318,6 +2318,7 @@ export const is = {
   "admin.reports.personActions": "Aðgerðir gagnvart viðkomandi",
   "admin.reports.personPage": "Aðgangssíða: {name}",
   "admin.reports.recentTrips": "Nýlegar ferðir",
+  "admin.reports.figures": "Einkunn og áreiðanleiki",
   "admin.reports.tripRole.driver": "Sem bílstjóri: {from} – {to}",
   "admin.reports.tripRole.passenger": "Sem farþegi: {from} – {to}",
   "admin.reports.act": "Grípa til aðgerða",
@@ -2530,6 +2531,14 @@ export const is = {
   "admin.users.reasonsLine":
     "Áætlanir breyttust: {plansChanged} · Farangur: {luggage} · Eitthvað annað: {other} · Engin ástæða: {none}",
   "admin.users.noDeclines": "Svaraði engri beiðni síðustu 90 daga.",
+  "admin.users.figuresHint":
+    "Eins og prófíllinn telur þær: umsagnir sem eru ekki birtar enn eða sem ShareRide faldi teljast ekki með.",
+  "admin.users.reviews": "Umsagnir",
+  "admin.users.reviewsAbout": "Umsagnir um viðkomandi",
+  "admin.users.reviewsBy": "Umsagnir frá viðkomandi",
+  "admin.users.reviewBy": "Frá: {name}",
+  "admin.users.reviewAbout": "Um: {name}",
+  "admin.users.notRevealed": "Ekki birt enn",
   "admin.users.back": "Allir notendur",
   "admin.users.notFound": "Þessi notandi fannst ekki.",
   "admin.users.loadOneFailed": "Ekki tókst að sækja notandann.",
