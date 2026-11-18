@@ -17,9 +17,9 @@ import {
   type Result,
   type Role,
 } from "@shareride/domain";
-import { and, desc, eq, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, isNotNull, sql, type SQL } from "drizzle-orm";
 import { shown } from "../privacy/hidden.ts";
-import { aboutThem, authors, ratingsOf } from "./ratings.ts";
+import { aboutThem, authors, ratingsOf, readable } from "./ratings.ts";
 import { reliabilityOfPeople } from "./reliability.ts";
 
 const { reviews, users } = schema;
@@ -103,8 +103,7 @@ export function createPeopleService(dependencies: {
       if (person === undefined) return err({ code: "not_found" });
       const shownToAll = and(
         aboutThem([person.id]),
-        isNotNull(reviews.revealedAt),
-        isNull(reviews.hiddenAt),
+        readable(),
         query.role === undefined ? undefined : eq(reviews.authorRole, theOther[query.role]),
       );
       let after: SQL | undefined;

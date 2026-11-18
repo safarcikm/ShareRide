@@ -474,12 +474,13 @@ PRs 7 and 8 were: 9a the API, 9b the screens.
     a person from their profile, myself refused, a person who left not
     found; blocking from a profile, myself and a left person not found,
     the bookings still shared listed; the console's review record.
-  - Found while building (9a): a review by someone leaving ShareRide is
-    not found, as no profile shows it; a review by the former member (a
-    trip made anonymous after 3 years) can be reported, but names nobody,
-    since the former member is no one to act on. Any report naming the
-    former member names nobody, so an operator never warns or suspends
-    it.
+  - Found while building (9a): a review by someone leaving ShareRide, or
+    about them, is not found, as no profile shows it. A review by the
+    former member (a trip made anonymous after 3 years) can be reported:
+    the report names the former member, as an erased account's reports
+    do, and the console offers no action on it. The rule for which
+    reviews a profile shows is one helper (`readable` in
+    `people/ratings.ts`), shared by profiles, ratings and reports.
 - [ ] 9b: `feat(safety)`: Report and Block on the public profile, and
       Report review, in the app; the review on the console's report page
   - On another person's profile, never one's own or "See it as others

@@ -272,7 +272,7 @@ it counts and why not) and `UserStats` (rating and reliability totals).
 `reporter_id`, `subject` (trip, message, booking, user or review; a
 person reported from their profile is a user report with no booking),
 `subject_user_id` (the person reported, the driver of a trip, or a
-review's author; empty for a review by the former member), the records
+review's author; the former member once their account is erased), the records
 it links (`trip_id`, `booking_id`, `message_id`, `conversation_id`,
 `review_id`), `category`, `description` (up to 1 000 characters),
 `urgent` (safety reports), `status` (open or closed), `outcome`,

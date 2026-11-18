@@ -13,15 +13,14 @@ import {
   type Result,
   type SafetySettings,
 } from "@shareride/domain";
-import { and, asc, desc, eq, gt, isNotNull, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNotNull } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { recordEvents } from "../notifications/outbox.ts";
-import { authors } from "../people/ratings.ts";
+import { authors, readable } from "../people/ratings.ts";
 import { shown as everyoneSees } from "../privacy/hidden.ts";
 import { closedTrips } from "./blocks.ts";
 
-const { bookings, conversations, formerMemberId, messages, reports, reviews, trips, users } =
-  schema;
+const { bookings, conversations, messages, reports, reviews, trips, users } = schema;
 
 export type ReportError =
   | { readonly code: "not_found" }
@@ -152,8 +151,7 @@ export function createReportService(dependencies: {
         };
       }
       case "review": {
-        // As a profile shows it (3.1.1): revealed, not hidden, about a person
-        // everyone sees, and not by someone leaving ShareRide.
+        // As a profile shows it (3.1.1), on the profile of someone everyone sees.
         const [review] = await db
           .select({
             authorId: reviews.authorId,
@@ -167,10 +165,7 @@ export function createReportService(dependencies: {
           .where(
             and(
               eq(reviews.id, about.reviewId),
-              // Hidden with its author until they are erased (spec 11, 3.4.3).
-              isNull(authors.deleteAfter),
-              isNotNull(reviews.revealedAt),
-              isNull(reviews.hiddenAt),
+              readable(),
               everyoneSees(subjects),
               isNotNull(subjects.firstName),
             ),
@@ -267,9 +262,7 @@ export function createReportService(dependencies: {
           .insert(reports)
           .values({
             reporterId: me,
-            // The former member stands for erased accounts: nobody to act on.
-            subjectUserId:
-              checked.value.subjectUserId === formerMemberId ? null : checked.value.subjectUserId,
+            subjectUserId: checked.value.subjectUserId,
             subject: found.context.kind,
             ...found.links,
             category: input.category,

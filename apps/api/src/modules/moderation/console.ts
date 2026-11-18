@@ -233,7 +233,7 @@ export function createModerationConsoleService(dependencies: {
             .select({ id: messages.id, sentAt: messages.sentAt, hiddenAt: messages.hiddenAt })
             .from(messages)
             .where(eq(messages.id, row.messageId));
-    // The review's words are shown: it is on a profile anyone can read.
+    // The review's words are shown, so that the operator can judge them.
     const [review] =
       row.reviewId === null
         ? []

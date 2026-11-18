@@ -620,8 +620,8 @@ releases follow [Semantic Versioning](https://semver.org/).
   anyone who reads it, linked to the review (migration
   `0046_review_reports`), or about the person a profile shows, filed as a
   report about a person with no booking. A review not shown yet, hidden,
-  or by someone leaving ShareRide cannot be reported; a review by the
-  former member can, naming nobody to act on.
+  or by or about someone leaving ShareRide cannot be reported; a review by
+  the former member can.
   `POST /v1/people/{profileId}/block` blocks the person a profile shows,
   as blocking from a booking does. The console's report page shows the
   review reported, with its words and whether it is hidden.
