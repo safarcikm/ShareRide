@@ -1,6 +1,6 @@
 # Staging runbook
 
-**Owner:** Martin · **Last reviewed:** 2026-11-13
+**Owner:** Martin · **Last reviewed:** 2026-11-18
 
 Staging runs on Render in Frankfurt ([ADR 0018](../decisions/0018-hosting-on-render-frankfurt.md)),
 described by the blueprint
@@ -15,13 +15,22 @@ edge ([privacy providers](../compliance/privacy-gdpr.md#providers)).
 | ---- | ----------- | ---------- |
 | API and web app | `shareride-staging-api` | Web service built from `apps/api/Dockerfile`; serves `/v1` and the web app on one origin |
 | Clean-up | `shareride-staging-clean-up` | Cron job, every hour at minute 17 (UTC): deletes sign-in records past their retention (with the push tokens of sessions ended for being idle), old trip drafts, conversations 12 months after their trip (unless a report covers them: then until 3 years after it closes), makes trips and bookings anonymous 3 years after the trip, the notification log after 90 days, operator console sessions 30 days after they end, passkey challenges and setup links once they expire, and data export files once expired (their dates 30 days later); then erases the accounts whose 7 days after "Delete my account" have ended (spec 11). It takes `AUTH_SECRET` from the API |
+| Domain | `staging.skinnar.is` | The web service's own domain; its DNS record is in ISNIC DNS Hosting ([Point the domain](#point-the-domain)) and Render issues its certificate |
 | Database | `shareride-staging-db` | PostgreSQL 18 with PostGIS, private network only |
 | Settings | `shareride-staging` | Environment group: `NODE_ENV=production`, `APP_ENV=staging`, `LOG_LEVEL`. `PAYMENT_PROVIDER` is unset, so staging pays with the test provider: no card, no money moves. `WORKER` is unset, so the API runs the notification worker: it pushes through Expo to the phones that registered, with `EXPO_ACCESS_TOKEN` once it is set ([app builds](app-builds.md#android-build-with-push)); `EMAIL_PROVIDER` is unset, so it sends no email and records who would have been emailed, until email is turned on (below) |
 
-The address is the one Render shows for `shareride-staging-api`, usually
-`https://shareride-staging-api.onrender.com`. The web app and the API share
-it, because `onrender.com` is a public suffix and the refresh cookie must
-stay on one site.
+Staging's address is **`https://staging.skinnar.is`**, on Martin's domain
+`skinnar.is`, which serves ShareRide for now (2026-11-18). The web app and
+the API share it, so the refresh cookie stays on one site, and the operator
+console is at `/admin` on it. Render's own address for
+`shareride-staging-api`, usually `https://shareride-staging-api.onrender.com`,
+keeps working too: the domain's DNS record points at it. The web app works
+there as well, with a cookie of its own (`onrender.com` is a public suffix),
+but the console signs in only on `staging.skinnar.is`.
+
+The domain's DNS is ISNIC DNS Hosting, on ISNIC's own site, where the domain
+is registered. ISNIC lists no fee for it beyond the domain's own, and it
+holds no personal data.
 
 ## Set it up (once)
 
@@ -47,18 +56,46 @@ Add credit to it: a trial account only sends to the numbers verified on it.
    instead: set `SMS_PROVIDER` to `vonage` and add `VONAGE_API_KEY` and
    `VONAGE_API_SECRET`. Render only asks when a blueprint is first applied.
 5. Choose **Apply**. The first build takes a few minutes.
-6. Check: the address shows the welcome screen, `/v1/health/ready` answers
-   `{"status":"ok"}`, and signing up with your own phone brings a real SMS.
-7. Check once that the per-address limit uses the real client address
+6. Point the domain at staging ([below](#point-the-domain)).
+7. Check: `https://staging.skinnar.is` shows the welcome screen,
+   `https://staging.skinnar.is/v1/health/ready` answers `{"status":"ok"}`,
+   and signing up with your own phone brings a real SMS.
+8. Check once that the per-address limit uses the real client address
    ([below](#check-client-addresses)).
+
+### Point the domain
+
+Once, after the blueprint is applied. ISNIC's steps work on a phone;
+Render's dashboard is easier on a computer.
+
+1. At [isnic.is](https://www.isnic.is), log in and open **My page**, then
+   the domain `skinnar.is`. Under **Nameservers**, choose **Redelegate**,
+   pick **ISNIC DNS Hosting** and **Submit**. Within about 10 minutes the
+   domain's page lets you add DNS records. (Skip this if the domain already
+   has a DNS host and add the record there instead. On Cloudflare, set the
+   record to **DNS only**: a proxy of our own would add a third entry to
+   `X-Forwarded-For`, see [below](#check-client-addresses).)
+2. In Render, open `shareride-staging-api`. Its own address is at the top
+   of the page, such as `shareride-staging-api.onrender.com` (Render adds a
+   few letters when the name was taken). Under **Settings**, **Custom
+   Domains**, `staging.skinnar.is` is listed from the blueprint.
+3. At ISNIC, add a record: type **CNAME**, name `staging`, and as its value
+   the service's own address from step 2, without `https://`. Add no
+   `AAAA` record: Render answers on IPv4 only.
+4. In Render, choose **Verify** next to `staging.skinnar.is`. If it fails,
+   wait a few minutes and try again. Once the certificate shows as issued,
+   `https://staging.skinnar.is` answers; Render renews the certificate by
+   itself.
 
 ### Check client addresses
 
 The API takes the client's address from `X-Forwarded-For`, counting back
 two entries (`TRUST_PROXY=2`): Cloudflare appends the client, then Render's
 proxy appends the Cloudflare edge. Anything a client sends itself comes
-earlier and is ignored. Check it after the first deploy, and again if
-Render changes its network:
+earlier and is ignored. Render serves `staging.skinnar.is` through the same
+network, so this holds for both addresses as long as nothing of ours sits in
+front (the DNS record is a plain CNAME). Check it after the first deploy,
+and again if Render changes its network or the domain's DNS:
 
 1. Set `SMS_PAUSED` to `true` (see [Pause SMS](#pause-sms)), so nothing is
    sent. The requests below still count against the limits.
@@ -66,7 +103,7 @@ Render changes its network:
    a different address in every header a client could forge:
 
    ```sh
-   STAGING=https://shareride-staging-api.onrender.com
+   STAGING=https://staging.skinnar.is
    for i in $(seq 1 11); do
      curl -s -o /dev/null -w '%{http_code}\n' -X POST "$STAGING/v1/auth/phone/start" \
        -H 'Content-Type: application/json' \
@@ -88,34 +125,31 @@ Render changes its network:
 ## Sign in to the console
 
 The operator console signs in with passkeys only, bound to one address
-([ADR 0028](../decisions/0028-operator-console-web-app-and-passkeys.md)).
-Its sign-in is off until that address is set. Once:
+([ADR 0028](../decisions/0028-operator-console-web-app-and-passkeys.md)):
+the blueprint sets `ADMIN_ORIGIN` to `https://staging.skinnar.is`, so the
+domain must answer first ([Point the domain](#point-the-domain)). Once:
 
-1. Open `shareride-staging-api`, **Environment**, and add `ADMIN_ORIGIN`
-   set to the staging address above, such as
-   `https://shareride-staging-api.onrender.com` (no path, no slash at the
-   end), then save. Render deploys the service again.
-2. Sign up in the app with your own phone, if you have not yet. While the
+1. Sign up in the app with your own phone, if you have not yet. While the
    beta is closed a new account needs an invite code: open the API's
    **Shell** in Render and run
    `node apps/api/src/invite-cli.ts add "First testers" 20`, which prints
    a group code for 20 accounts that works for 30 days (a third number
    sets the days). Later codes are made in the console.
-3. Open the API's **Shell** in Render and run
+2. Open the API's **Shell** in Render and run
    `node apps/api/src/operator-cli.ts add <your phone number>`. It gives
    your account the operator role and prints a link that works once, for
    30 minutes.
-4. Open the link on the laptop or phone you will use, and save a passkey
+3. Open the link on the laptop or phone you will use, and save a passkey
    there (Touch ID, Face ID, Windows Hello or a security key). Add your
    other devices from inside the console.
-5. From then on, sign in at the staging address with `/admin` after it,
-   such as `https://shareride-staging-api.onrender.com/admin`.
+4. From then on, sign in at `https://staging.skinnar.is/admin`.
 
-Lost every passkey: run step 3 again for a new link. To take the role
+Lost every passkey: run step 2 again for a new link. To take the role
 away: `node apps/api/src/operator-cli.ts remove <phone number or user
 ID>`, which also ends that account's console sessions and deletes its
 passkeys; `list` shows the operators. Changing `ADMIN_ORIGIN` (for example
-to a domain, milestone 12) means saving passkeys again with a new link.
+when the console moves to a host name of its own, milestone 12) means
+saving passkeys again with a new link.
 
 ## Deploy
 
@@ -286,27 +320,37 @@ sent. Set it back to
 
 ## Turn on email
 
-Staging sends no email until ShareRide has a domain (ADR 0027). Then:
+Staging sends no email until Mailjet sends for `skinnar.is` (ADR 0027).
+The blueprint already sets the sender, `EMAIL_FROM` = `hello@skinnar.is`,
+and `WEB_APP_URL` = `https://staging.skinnar.is`, where the emails' links
+lead. Martin's steps, after [Point the domain](#point-the-domain):
 
 1. In Mailjet, **Account settings**, **Domains and senders**: add the
-   domain and a sender on it, such as `hello@` the domain, and add the
-   SPF, DKIM and DMARC records it shows at the domain's DNS host. Wait
-   until Mailjet shows the domain as validated. Sign Mailjet's data
-   processing agreement.
+   domain `skinnar.is`. Mailjet shows TXT records: one that proves the
+   domain is ours, then SPF and DKIM. Add each in ISNIC DNS Hosting as
+   type **TXT**, with the name Mailjet shows without `.skinnar.is` (empty
+   for the domain itself) and its value. If the domain already has an SPF
+   record (`v=spf1 …`), add `include:spf.mailjet.com` to it instead of a
+   second one. Add DMARC too: type **TXT**, name `_dmarc`, value
+   `v=DMARC1; p=none`. Wait until Mailjet shows the domain as validated,
+   with SPF and DKIM in order. Sign Mailjet's data processing agreement.
 2. **Account settings**, **API key management**: copy the API key and the
    secret key into Render, never anywhere else.
 3. Open `shareride-staging-api`, **Environment**, and add
-   `MAILJET_API_KEY` and `MAILJET_SECRET_KEY` (as secrets), `EMAIL_FROM`
-   (the sender), `WEB_APP_URL` (the staging address above, where the
-   emails' links lead) and `EMAIL_PROVIDER` set to `mailjet`, then save.
-   Render deploys the service again; a missing one stops the API from
-   starting, and the running version stays.
+   `MAILJET_API_KEY` and `MAILJET_SECRET_KEY` (as secrets) and
+   `EMAIL_PROVIDER` set to `mailjet`, then save. Render deploys the service
+   again; a missing one stops the API from starting, and the running
+   version stays.
 4. Check, once people can add an email (milestone 5, PR 7b): someone
    with a verified email and no push device who has a booking request
    accepted gets the "Pay now" email. Mailjet's
    **Statistics** list it, and show no opens or clicks, as tracking is off.
 
 To stop email again, set `EMAIL_PROVIDER` to `none`.
+
+`skinnar.is` has no mailbox, so a reply to `hello@skinnar.is` is lost. Add
+one (its MX records go in ISNIC DNS Hosting too) if replies should reach
+someone.
 
 ## Turn on photos
 
