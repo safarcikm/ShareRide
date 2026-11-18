@@ -105,8 +105,10 @@ a {
   color: var(--color-on-error);
 }
 
-/* Disabled: the border fill and a muted label, no edge; never opacity alone. */
-button:disabled {
+/* Disabled: the border fill and a muted label, no edge; never opacity alone.
+   A busy button keeps its focus with aria-disabled and looks the same. */
+button:disabled,
+button[aria-disabled="true"] {
   cursor: progress;
   background: var(--color-border);
   border-color: var(--color-border);

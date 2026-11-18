@@ -150,7 +150,8 @@ the point for review, and the user sees a thank-you message.
 
 1. A leg is computed for every ordered pair of active meeting points that are
    connected by road: road distance and typical driving time. A→B and B→A are
-   separate legs.
+   separate legs. Paused and retiring points keep theirs and are recomputed
+   with the rest, so a point back in use has its legs.
 2. Legs are computed on our own road file, built from the Iceland
    OpenStreetMap extract (ADR 0031, which replaces the routing engine of
    ADR 0009). It leaves out
@@ -159,7 +160,8 @@ the point for review, and the user sees a thank-you message.
    map data is updated (at least every three months) or when the operator
    chooses "Recompute all".
 4. The console shows when legs were last computed, the map data version, and
-   any pairs with no road connection.
+   any pairs with no road connection, and the points with no road within
+   1 km.
 5. Whether a trip's stop order is sensible is checked from leg distances when a
    trip is posted (spec 3), not by limiting which legs exist.
 

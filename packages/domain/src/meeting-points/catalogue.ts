@@ -59,6 +59,15 @@ export function isFoundBySearch(status: MeetingPointStatus): boolean {
   return status === "active" || status === "retiring";
 }
 
+/**
+ * Keeps legs with every other such point (R2.11; spec 2, 3.7): active
+ * points, and paused and retiring ones, which trips may still stop at and
+ * whose stops a driver may still change.
+ */
+export function keepsLegs(status: MeetingPointStatus): boolean {
+  return status === "active" || status === "paused" || status === "retiring";
+}
+
 export interface Season {
   /** 1 to 12, or null for all year. */
   readonly seasonStartMonth: number | null;

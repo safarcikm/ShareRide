@@ -98,6 +98,7 @@ function PriceStep({ trip, fromReview }: { readonly trip: MyTrip; readonly fromR
           <Notice message={failure} />
           <Heading>{t("trip.whyLimit")}</Heading>
           <Body align="start">{t("trip.price.whyBody")}</Body>
+          <Body align="start">{t("trip.price.whyLimit.trip")}</Body>
           <TextLink label={t("trip.price.rules")} href="/legal/community-rules" />
         </>
       )}

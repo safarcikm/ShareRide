@@ -427,6 +427,37 @@ test("the operator resolves a problem report about a meeting point", async () =>
   ).toContainText("meeting_point_issue.resolved");
 });
 
+// Distances (spec 2, 3.7): the sample points' legs come from the sample
+// road graph. "Recompute all" finds every leg again on our road file of
+// Iceland (ADR 0031), which this API reads, and writes an audit entry.
+test("the operator recomputes the distances between meeting points on the road file", async () => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/admin/meeting-points");
+  await page.getByRole("link", { name: "Distances" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Distances between meeting points", level: 1 }),
+  ).toBeVisible();
+  await expect(page.getByText(/legs are on older map data/)).toBeVisible();
+  await expect(page.getByText(/© OpenStreetMap contributors/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Recompute all" }).click();
+  const said = page.getByRole("status");
+  await expect(said).toHaveText(
+    /^Recomputed\. There are \d+ legs between meeting points in service now\.$/,
+    { timeout: 30_000 },
+  );
+  await expect(said).toBeFocused();
+  await expect(page.getByText(/older map data/)).toHaveCount(0);
+  await expect(
+    page.getByText("Every leg between meeting points in service is there."),
+  ).toBeVisible();
+
+  await page.goto("/admin/audit-log?action=legs.");
+  await expect(
+    page.getByRole("list", { name: "Entries" }).getByRole("listitem").first(),
+  ).toContainText("legs.recomputed");
+});
+
 // Reports (spec 9, 3.4): two sample drivers' trips are reported. The
 // operator closes one without action, suspends the other driver from their
 // report after reading the notice as the driver will, and closes that one
