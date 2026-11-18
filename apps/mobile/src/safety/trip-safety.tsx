@@ -26,18 +26,19 @@ export const beforeYouGoLinks: readonly {
   },
 ];
 
-type Problem = "call" | "link" | ShareOutcome;
+type Problem = "link" | ShareOutcome;
 
 const problemKeys: Partial<Record<Problem, MessageKey>> = {
-  call: "safety.callFailed",
   link: "safety.linkFailed",
   copied: "share.copied",
 };
 
 /**
- * Safety on a trip (spec 9, 3.3): "Emergency: 112", "Before you go" when
- * the trip leaves the capital area, and "Share trip details" when there is
- * something to share. Milestone 7's trip day places it on its own layout.
+ * Safety on a trip (spec 9, 3.3): "Before you go" when the trip leaves the
+ * capital area, and "Share trip details" when there is something to share;
+ * nothing when neither applies. People dial 112 themselves: the app has no
+ * button for it (Martin, 2026-11-18). Milestone 7's trip day places it on
+ * its own layout.
  */
 export function TripSafety({
   regions,
@@ -51,25 +52,19 @@ export function TripSafety({
   const { locale, t } = useLanguage();
   const [problem, setProblem] = useState<Problem | null>(null);
   const key = problem === null ? undefined : problemKeys[problem];
-  const open = (url: string, failure: Problem) => {
+  const open = (url: string) => {
     setProblem(null);
     Linking.openURL(url).catch(() => {
-      setProblem(failure);
+      setProblem("link");
     });
   };
+  const beforeYouGo = leavesCapitalArea(regions);
+  if (!beforeYouGo && share === null) return null;
 
   return (
     <Card>
       <Heading>{t("safety.title")}</Heading>
-      <Button
-        variant="secondary"
-        label={t("safety.call112")}
-        accessibilityLabel={t("safety.call112Label")}
-        onPress={() => {
-          open("tel:112", "call");
-        }}
-      />
-      {leavesCapitalArea(regions) ? (
+      {beforeYouGo ? (
         <>
           <Body align="start">{t("safety.beforeYouGo")}</Body>
           {beforeYouGoLinks.map((link) => (
@@ -78,7 +73,7 @@ export function TripSafety({
               align="start"
               label={t(link.label)}
               onPress={() => {
-                open(link.url[locale], "link");
+                open(link.url[locale]);
               }}
             />
           ))}

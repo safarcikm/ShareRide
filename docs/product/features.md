@@ -232,9 +232,11 @@ than cancelled late or missed, over the last 12 months, on every profile once
 5 count. Weather and road-closure cancellations, and passenger cancellations
 made more than 24 hours before boarding, are excluded.
 
-**G4. Safety information and trip sharing (Must).** A 112 link on trip
-screens, SafeTravel information for remote routes, and "share trip details"
-that sends the route, time, driver's first name and vehicle to a contact.
+**G4. Safety information and trip sharing (Must).** SafeTravel information
+for remote routes, "share trip details" that sends the route, time,
+driver's first name and vehicle to a contact, and "call 112 now" on a
+safety report. No button calls 112: people dial it themselves (Martin,
+2026-11-18).
 
 **G5. Women-only trips (Must, subject to the legal opinion).** A woman driver
 can offer a trip that only women can book. Everyone can see these trips,

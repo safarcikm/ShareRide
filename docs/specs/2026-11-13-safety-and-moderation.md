@@ -54,7 +54,8 @@ decision, with every operator action logged.
    listed; misuse of a women-only trip ([spec 14](2026-11-13-women-only-trips.md)); something else. A no-show or a missing driver is not a report but
    spec 8's flow, which the report screen points to.
 3. For the safety category, the screen first says "If you are in danger, call
-   112 now", with a call button. ShareRide is not an emergency service.
+   112 now", with no call button: people dial it themselves (decision 5).
+   ShareRide is not an emergency service.
 4. The reporter can add a description of up to 1 000 characters. The report
    links the related records: the trip, the booking, the message or the
    review. A report about a message lets the operator read that conversation
@@ -83,9 +84,11 @@ decision, with every operator action logged.
 
 ### 3.3 Safety information and trip sharing (G4)
 
-1. **Emergency:** "Emergency: 112" with a call button on the trip page, the
-   booking and the trip day screen (spec 8), always visible without
-   scrolling on the trip day screen.
+1. **Emergency:** no "Emergency: 112" button: people dial 112 themselves
+   (decision 5, which removed the button milestone 9 built on the trip
+   page, the booking and the trip day screen). A safety report still says
+   to call 112 first (3.1.3), and the terms say ShareRide is not an
+   emergency service.
 2. **Before you go:** every trip that leaves the capital area shows links to
    the weather forecast and warnings (vedur.is), road conditions
    (umferdin.is) and SafeTravel (safetravel.is), in the user's language where
@@ -281,7 +284,6 @@ spec 7: the reporter on the outcome (push), the affected user on an action
 | `block.action` | Block | Loka á |
 | `block.confirm` | Block this person? You won't see each other's trips, and they won't be told. | Loka á þennan notanda? Þið sjáið ekki ferðir hvors annars og viðkomandi fær ekki að vita af því. |
 | `block.cancelBooking` | You have a booking together. Cancel it too? | Þið eigið bókun saman. Viltu líka afbóka hana? |
-| `safety.call112` | Emergency: 112 | Neyðarnúmer: 112 |
 | `safety.beforeYouGo` | Before you go: check the weather, road conditions and SafeTravel. | Áður en lagt er af stað: kannaðu veður, færð og SafeTravel. |
 | `share.title` | Share trip details | Deila upplýsingum um ferðina |
 | `share.text` | My trip: {date} at {time} · {from} – {to} · Meeting point: {point} · Driver: {driver} · Car: {car}, {plate} · Booked on ShareRide | Ferðin mín: {date} kl. {time} · {from} – {to} · Mótsstaður: {point} · Bílstjóri: {driver} · Bíll: {car}, {plate} · Bókað á ShareRide |
@@ -304,9 +306,8 @@ spec 7: the reporter on the outcome (push), the affected user on an action
   each other's trips; operator suspends a driver with upcoming bookings and
   the passengers are refunded and told; share trip details opens the share
   sheet with the right text.
-- **Manual:** the 112 button calls on real iOS and Android phones; screen
-  reader pass on the report and block screens; the statement of reasons
-  email in both languages.
+- **Manual:** screen reader pass on the report and block screens; the
+  statement of reasons email in both languages.
 
 ## 10. Out of scope
 
@@ -325,3 +326,4 @@ Accepted by Martin on 2026-11-13 as recommended.
 | 2 | What does a suspension do? | The person can still sign in to see their data, download it or delete the account, but cannot search, book, post or chat. Their upcoming trips and bookings are cancelled at once with full refunds to the other people. Payouts for trips already done are still paid unless you hold them |
 | 3 | Do you check new profiles, photos, trips or reviews before they appear? | No. Everything appears at once and is handled through reports, plus the automatic contact-detail checks we already have. Checking everything first would not scale for one person |
 | 4 | How fast are reports answered, and how are you alerted? | Every report within 24 hours. Safety reports alert you at once by push and SMS from 07:00 to 23:00, and by push only at night. The app always tells people to call 112 in an emergency |
+| 5 | Does the app have a button that calls 112? (Martin, 2026-11-18) | No: people dial 112 themselves. The buttons on trip screens and the safety report were removed; a safety report still says "If you are in danger, call 112 now" |

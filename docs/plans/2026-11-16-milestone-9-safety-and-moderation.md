@@ -530,6 +530,15 @@ PRs 7 and 8 were: 9a the API, 9b the screens.
     page lists; changing whether a cancellation counts stays on the
     Reliability page.
 
+- [x] 9d: `feat(safety)`: no 112 button (Martin, 2026-11-18: people dial
+      it themselves; spec 9, decision 5)
+  - App: the "Emergency: 112" buttons go from trip safety and the safety
+    report. A safety report still says "If you are in danger, call 112
+    now", read out at once. Trip safety shows nothing when there is
+    neither "Before you go" nor anything to share.
+  - Docs: spec 9 (3.1.3, 3.3.1, texts, manual tests, decision 5), G4 in
+    the features, the roadmap, this plan's steps for Martin.
+
 ## 6. Review focus
 
 What the spec implies and a person would meet first, each with its test:
@@ -554,8 +563,8 @@ What the spec implies and a person would meet first, each with its test:
 1. Accept or change the choices in section 3.
 2. Give his own account the operator role (milestone 8's command) and turn
    on push on his phone, so report alerts reach him.
-3. Call 112 from the button once on a real iPhone and Android phone, and
-   hang up before it connects (spec 9, section 9).
+3. ~~Call 112 from the button on real phones~~: not needed, the button
+   was removed (9d).
 4. Read one statement of reasons in each language.
 
 ## 8. Risks
@@ -577,5 +586,5 @@ What the spec implies and a person would meet first, each with its test:
 ## 9. Definition of done
 
 All eight PRs merged with green CI; a screen reader pass on the report and
-block screens; the 112 button checked on real phones; docs, roadmap and
-CHANGELOG updated.
+block screens; docs, roadmap and CHANGELOG updated. (The 112 button
+check on real phones fell away with the button, 9d.)

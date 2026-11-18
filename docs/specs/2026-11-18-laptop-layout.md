@@ -278,8 +278,8 @@ results draws from the meeting points in the search answer.
 
 No personal data is added, moved or shown to anyone new. The Messages list
 beside an open chat shows the same first names and previews as the list
-does today, to the same person. Safety parts (Emergency 112, "Pay only in
-the app") keep their place in the reading order.
+does today, to the same person. Safety parts ("Before you go", "Pay only
+in the app") keep their place in the reading order.
 
 ## 8. Texts
 

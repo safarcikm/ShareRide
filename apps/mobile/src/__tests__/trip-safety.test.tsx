@@ -84,42 +84,33 @@ afterEach(() => {
   (getLocales as jest.Mock).mockReturnValue([{ languageTag: "en-GB" }]);
 });
 
-describe("Emergency: 112 (spec 9, 3.3.1)", () => {
-  it("calls 112 from the booking", async () => {
-    await openBooking(paidBooking);
-    await fireEvent.press(
-      await screen.findByRole("button", { name: "Emergency: 112. Calls the emergency number" }),
-    );
-    expect(open).toHaveBeenCalledWith("tel:112");
-  });
+describe("Safety on a trip (spec 9, 3.3)", () => {
+  // People dial 112 themselves: the app has no button for it (Martin, 2026-11-18).
+  const call = /112/;
 
-  it("says so when the device cannot call", async () => {
-    open.mockRejectedValueOnce(new Error("No phone"));
+  it("has no 112 button on the booking, trip details or the driver's trip page", async () => {
     await openBooking(paidBooking);
-    await fireEvent.press(
-      await screen.findByRole("button", { name: "Emergency: 112. Calls the emergency number" }),
-    );
-    expect(
-      await screen.findByText("This device can't make calls. Call 112 from a phone."),
-    ).toBeVisible();
-  });
+    expect(await screen.findByRole("button", { name: "Share trip details" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: call })).toBeNull();
 
-  it("shows on trip details", async () => {
     await renderApp(`/trips/${northResult.tripId}?from=1&to=2`, {
       setUp: (client) => {
         tripDetailsApi(client);
       },
     });
-    expect(
-      await screen.findByRole("button", { name: "Emergency: 112. Calls the emergency number" }),
-    ).toBeVisible();
+    expect(await screen.findByRole("link", { name: "Weather (vedur.is)" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: call })).toBeNull();
+
+    await openDriverTrip();
+    expect(await screen.findByRole("button", { name: "Share trip details" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: call })).toBeNull();
   });
 
-  it("shows on the driver's trip page", async () => {
-    await openDriverTrip();
-    expect(
-      await screen.findByRole("button", { name: "Emergency: 112. Calls the emergency number" }),
-    ).toBeVisible();
+  it("shows nothing when there is nothing to check or share", async () => {
+    // Within the capital area, and a request has no trip details to share yet.
+    await openBooking({ ...inTown, status: "requested" });
+    expect(await screen.findByText("Request sent")).toBeVisible();
+    expect(screen.queryByRole("header", { name: "Safety" })).toBeNull();
   });
 
   it("leaves the booking once the passenger has got out", async () => {
@@ -127,18 +118,14 @@ describe("Emergency: 112 (spec 9, 3.3.1)", () => {
     mockNow = new Date("2026-11-16T12:00:00Z");
     await openBooking(paidBooking);
     expect(await screen.findByText("Your seat is confirmed")).toBeVisible();
-    expect(
-      screen.queryByRole("button", { name: "Emergency: 112. Calls the emergency number" }),
-    ).toBeNull();
+    expect(screen.queryByRole("header", { name: "Safety" })).toBeNull();
   });
 
   it("leaves the driver's trip page once the trip has arrived", async () => {
     mockNow = new Date("2026-11-16T12:00:00Z");
     await openDriverTrip();
     expect(await screen.findByText("BSÍ bus terminal → Hof, Akureyri")).toBeVisible();
-    expect(
-      screen.queryByRole("button", { name: "Emergency: 112. Calls the emergency number" }),
-    ).toBeNull();
+    expect(screen.queryByRole("header", { name: "Safety" })).toBeNull();
   });
 });
 
@@ -181,9 +168,7 @@ describe("Before you go (spec 9, 3.3.2)", () => {
 
   it("leaves them out of a trip within the capital area", async () => {
     await openBooking(inTown);
-    expect(
-      await screen.findByRole("button", { name: "Emergency: 112. Calls the emergency number" }),
-    ).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Share trip details" })).toBeVisible();
     expect(screen.queryByRole("link", { name: "Weather (vedur.is)" })).toBeNull();
   });
 });
@@ -224,9 +209,7 @@ describe("Share trip details (spec 9, 3.3.3, R9.8)", () => {
 
   it("waits for the booking to be confirmed", async () => {
     await openBooking(northBooking());
-    expect(
-      await screen.findByRole("button", { name: "Emergency: 112. Calls the emergency number" }),
-    ).toBeVisible();
+    expect(await screen.findByRole("link", { name: "Weather (vedur.is)" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Share trip details" })).toBeNull();
   });
 

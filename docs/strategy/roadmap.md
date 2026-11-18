@@ -172,10 +172,12 @@ accepted 2026-11-16; built alongside milestones 7, 9 and 10; all merged
 Milestone 9: safety and moderation
 ([plan](../plans/2026-11-16-milestone-9-safety-and-moderation.md), choices
 accepted 2026-11-16; built alongside milestones 7 and 8; all merged
-2026-11-18, Martin's 112 check on real phones and a screen reader pass to do)
+2026-11-18, a screen reader pass to do; the 112 button was removed on
+Martin's word the same day: people dial it themselves)
 
 - [x] Safety rules in the domain
-- [x] Emergency 112, "Before you go" and sharing trip details
+- [x] "Before you go" and sharing trip details (the 112 button, built
+  too, was removed on 2026-11-18)
 - [x] Block and unblock
 - [x] Reports and My reports
 - [x] The operator's alert for new reports

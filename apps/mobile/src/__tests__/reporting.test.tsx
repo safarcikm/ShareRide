@@ -1,6 +1,5 @@
 import { fireEvent, screen, within } from "expo-router/testing-library";
 import type { Booking, MyReport, FileReportBody } from "@shareride/contracts";
-import { Linking } from "react-native";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import {
@@ -125,8 +124,7 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
     expect(screen.queryByRole("button", { name: "Report this trip" })).toBeNull();
   });
 
-  it("puts 112 first for a safety report (3.1.3)", async () => {
-    const open = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
+  it("says to call 112 first for a safety report, with no button for it (3.1.3)", async () => {
     await openTrip();
     await fireEvent.press(screen.getByRole("button", { name: "Report this trip" }));
     expect(screen.queryByText("If you are in danger, call 112 now.")).toBeNull();
@@ -138,11 +136,8 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
     expect(
       within(screen.getByRole("alert")).getByText("If you are in danger, call 112 now."),
     ).toBeVisible();
-    await fireEvent.press(
-      screen.getByRole("button", { name: "Emergency: 112. Calls the emergency number" }),
-    );
-    expect(open).toHaveBeenCalledWith("tel:112");
-    open.mockRestore();
+    // People dial it themselves (Martin, 2026-11-18).
+    expect(screen.queryByRole("button", { name: /112/ })).toBeNull();
   });
 
   it("asks for a shorter description over 1 000 characters, and sends nothing", async () => {
