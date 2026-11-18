@@ -527,9 +527,11 @@ safety routes (`registerModerationAdminRoutes`), with the work in
   trip with its driver, the booking, the reported message without its
   words, the reported review with its words, About you for a report about
   a person), the actions taken under
-  it, and for each of the two people their other reports, by and about
-  them, the last 10 trips they drove or held a seat on, and the actions on
-  them.
+  it, and for each of the two people their rating and reliability figure
+  (as their profile counts them, with whether the figure is below the
+  watch level; none for the former member, whose records are those of
+  everyone who left), their other reports, by and about them, the last 10
+  trips they drove or held a seat on, and the actions on them.
 - `GET /admin/v1/reports/{id}/conversation` reads the conversation through
   `readConversationAsOperator` with `{ type: "report", id }`: only a
   report about a message covers it (R9.6), else `not_covered`. A message
@@ -602,6 +604,55 @@ version }` with the version the page loaded: it takes a lock on the
   setting by the texts in its `texts.ts`: add a name, a help sentence and,
   for a new unit, the unit's two texts with each new setting.
 
+## Invite codes
+
+`apps/api/src/modules/beta/` holds the closed beta's invite codes (spec 12,
+3.2; R12.1 to R12.3); the rules are in
+`packages/domain/src/beta/invites.ts`.
+
+- A code is 8 characters without I, L, O, 0 and 1. What a person types is
+  tidied first (`normaliseInviteCode`), so "abcd-2345" works.
+- The gate is in sign-in's `verify`, for a number with no account, while
+  the setting `invite_code_required` is on. The text-message code is
+  checked first. Then, without `inviteCode` the answer is
+  `invite_required` (403) and the text-message code is kept, with no try
+  counted, so the app can ask for the invite code and send both. A code
+  that is unknown, ended, expired or used up is `invite_invalid` (400),
+  one answer for all four, and counts as a wrong try on the text-message
+  code: guessing is held to sign-in's 5 tries a code and 5 codes an hour.
+  A full beta is `beta_full` (409) and counts no try.
+- A good code is used up in the transaction that makes the account, with
+  the code's row locked and one advisory lock for every sign-up through
+  the gate, so a one-use code makes one account and the cap
+  (`beta_max_testers`) is never passed. A tester is an account with
+  `users.invite_code_id`; an erased account's place is free again.
+- `POST /v1/invites/check` says whether a code would work now, without
+  using it, 10 a minute per address block.
+- `GET /admin/v1/invite-codes` lists the codes, newest first, with whether
+  a code is needed, the testers, the cap and the places left.
+  `POST /admin/v1/invite-codes` makes a group code from a name, 1 to 500
+  uses and an end at most 12 months ahead; the API picks the code.
+  `POST /admin/v1/invite-codes/{id}/end` ends one; accounts made with it
+  stay. Audit entries `invite_code.created` and `invite_code.ended`.
+- The console's Invite codes page (`apps/admin/src/pages/invite-codes/`)
+  shows the places left, a form for a new group code (it works through the
+  end of the chosen day) and each code with its uses; ending one asks
+  first.
+- In the app, `/sign-in/invite` asks a new number for the code after the
+  text-message code, which the sign-in flow keeps and sends again with it;
+  `/invite/<code>` opens sign-in with the code filled in; `BetaLabel`
+  (`apps/mobile/src/beta/config.tsx`) shows while `GET /v1/config` says
+  `beta`.
+- `pnpm --filter @shareride/api invite add "<name>" <uses> [days]` makes a
+  group code on the server, for the first account of a new environment.
+  It writes no audit entry and the code has no maker.
+- Integration tests and the browser tests' server run with the gate off
+  (`fixedSettings`, which only they set); a test about the gate calls
+  `api.useStoredInviteSetting()` once its first accounts exist. The
+  local seed command (`pnpm --filter @shareride/db seed`, with `APP_ENV`
+  local or unset) makes the code `BETA2345`, once; it is public, so the
+  seed staging runs on each deploy never makes it.
+
 ## Users, trips and decline rates
 
 `apps/api/src/modules/moderation/people-routes.ts` holds the console's
@@ -618,9 +669,15 @@ them the same way.
   `more` when there were more; never the former member.
 - `GET /admin/v1/users/{id}` gives a person's page: the profile with when
   each thing was verified or declared, About you and whether ShareRide hid
-  it, cars, the 20 latest trips they drive and bookings they made (a
-  declined request with its reason, R5.7), the 20 latest reports by and
-  about them and actions on them, every note, and their decline rate.
+  it, their rating and reliability figure as their profile counts them
+  (`figuresOf` in `people/standing.ts`, which the profile uses too, with
+  whether the figure is below the watch level), cars, the 20 latest trips
+  they drive and bookings they made (a declined request with its reason,
+  R5.7), the 20 latest reports by and about them, reviews about them and
+  reviews they wrote (every one, with its words, whether it shows yet,
+  whether ShareRide hid it and whether its author is deleting their
+  account, and the other person), and actions on them, every note, and
+  their decline rate.
 - `POST /admin/v1/users/{id}/notes` with `{ text }` adds a note about the
   person, at most 1 000 characters (`checkOperatorNote`). Only operators
   see notes in the console, but the person gets each note's text and date
@@ -649,10 +706,13 @@ The pages are `apps/admin/src/pages/users/` at `/admin/users` and
 `apps/admin/src/pages/trips/` at `/admin/trips`, after Reliability in the menu.
 What the operator types to find a person stays in the page's state, never
 in the address. Below the search, each driver's decline rate. A person's
-page shows their account, the actions that fit them (`personChoices`:
+page shows their account, their rating and reliability in the members'
+own words (`Figures` in `reports/history.tsx`, which a report's page shows
+for each side too), the actions that fit them (`personChoices`:
 warn, hide About you, suspend an open account, reinstate a suspended one)
 with the same panel as a report's page (`ActPanel` in
-`reports/act.tsx`), their notes with a form to add one, and their history.
+`reports/act.tsx`), their notes with a form to add one, and their history,
+reviews included, each linking to the other person's page.
 A note's form says the person gets their notes in Download my data. The
 trips page lists the trips from today on until the operator filters them;
 a person's page links to all the trips they drive (`?driverId=`, the only

@@ -346,3 +346,134 @@ describe("Signing in with a ride kept (spec 16, 3.5)", () => {
     expect(screen).toHaveSearchParams({ id: northResult.tripId, from: "1", to: "2", seats: "2" });
   });
 });
+
+describe("Signing up while the beta is closed (spec 12, 3.2.3)", () => {
+  const inviteRequired = () => failure(403, "invite_required");
+  /** The last check of a code the app sent. */
+  const lastVerify = (app: { client: FakeClient }) =>
+    app.client.calls.findLast((call) => call.path === "/v1/auth/phone/verify");
+
+  /** A new number, its text-message code right: the API asks for the invite code. */
+  async function reachInviteScreen() {
+    const app = await openPhoneScreen();
+    app.client.answer("/v1/auth/phone/verify", inviteRequired);
+    await sendCodeTo("690 0000");
+    await enterCode("123456");
+    expect(await screen.findByRole("header", { name: "Enter your invite code" })).toBeVisible();
+    return app;
+  }
+
+  it("asks a new number for the invite code after the code, and sends both", async () => {
+    const app = await reachInviteScreen();
+    expect(screen.getByText("Step 2 of 3")).toBeVisible();
+    expect(
+      screen.getByText(
+        "ShareRide is in a closed beta. To create an account you need an invite code.",
+      ),
+    ).toBeVisible();
+    expect(screen).toHavePathname("/sign-in/invite");
+
+    app.client.answer("/v1/auth/phone/verify", () => ok(200, signedIn));
+    await fireEvent.changeText(screen.getByLabelText("Invite code"), "abcd-2345");
+    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+
+    expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
+    expect(lastVerify(app)).toMatchObject({
+      path: "/v1/auth/phone/verify",
+      input: { body: { phoneNumber: "+3546900000", code: "123456", inviteCode: "abcd-2345" } },
+    });
+  });
+
+  it("asks for a code before sending, and says when one does not work or the beta is full", async () => {
+    const app = await reachInviteScreen();
+    const calls = app.client.calls.length;
+    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+    expect(await screen.findByText("Enter your invite code.")).toBeVisible();
+    expect(app.client.calls).toHaveLength(calls);
+
+    app.client.answer("/v1/auth/phone/verify", () => failure(400, "invite_invalid"));
+    await fireEvent.changeText(screen.getByLabelText("Invite code"), "ZZZZ9999");
+    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+    expect(await screen.findByText("This code isn't valid or has expired.")).toBeVisible();
+    expect(screen).toHavePathname("/sign-in/invite");
+
+    app.client.answer("/v1/auth/phone/verify", () => failure(409, "beta_full"));
+    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+    expect(await screen.findByText("The beta is full for now. Try again later.")).toBeVisible();
+  });
+
+  it("goes back to step 1 when the text-message code has run out, keeping the invite code", async () => {
+    const app = await reachInviteScreen();
+    app.client.answer("/v1/auth/phone/verify", () => failure(400, "code_expired"));
+    await fireEvent.changeText(screen.getByLabelText("Invite code"), "ABCD2345");
+    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+
+    expect(
+      await screen.findByText(
+        "The code from the text message no longer works. Send a new one. Your invite code is kept.",
+      ),
+    ).toBeVisible();
+    expect(screen).toHavePathname("/sign-in");
+
+    // The new code goes with the invite code at once: no second question.
+    app.client.answer("/v1/auth/phone/verify", () => ok(200, signedIn));
+    await fireEvent.press(screen.getByRole("button", { name: "Send code" }));
+    await enterCode("654321");
+    expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
+    expect(lastVerify(app)).toMatchObject({
+      input: { body: { code: "654321", inviteCode: "ABCD2345" } },
+    });
+  });
+
+  it("takes the code of an invite link along, and a member's sign-in sends none", async () => {
+    const app = await renderApp("/invite/abcd2345");
+    app.client.answer("/v1/auth/phone/start", () => ok(202, { resendAfterSeconds: 30 }));
+    app.client.answer("/v1/auth/phone/verify", () => ok(200, signedIn));
+    expect(
+      await screen.findByRole("header", { name: "Sign in or create an account" }),
+    ).toBeVisible();
+    await sendCodeTo("690 0000");
+    await enterCode("123456");
+    expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
+    expect(lastVerify(app)).toMatchObject({
+      input: { body: { code: "123456", inviteCode: "abcd2345" } },
+    });
+  });
+
+  it("shows where a link's code did not work, with the code to correct", async () => {
+    const app = await renderApp("/invite/zzzz9999");
+    app.client.answer("/v1/auth/phone/start", () => ok(202, { resendAfterSeconds: 30 }));
+    app.client.answer("/v1/auth/phone/verify", () => failure(400, "invite_invalid"));
+    await screen.findByRole("header", { name: "Sign in or create an account" });
+    await sendCodeTo("690 0000");
+    await enterCode("123456");
+    expect(await screen.findByRole("header", { name: "Enter your invite code" })).toBeVisible();
+    expect(screen.getByText("This code isn't valid or has expired.")).toBeVisible();
+    expect(screen.getByLabelText("Invite code")).toHaveProp("value", "zzzz9999");
+  });
+
+  it("sends no invite code when none was typed", async () => {
+    const app = await openPhoneScreen();
+    app.client.answer("/v1/auth/phone/verify", () => ok(200, signedIn));
+    await sendCodeTo("690 0000");
+    await enterCode("123456");
+    await screen.findByRole("header", { name: "Last step: about you" });
+    const { body } = lastVerify(app)?.input as { body: Record<string, unknown> };
+    expect(body).not.toHaveProperty("inviteCode");
+  });
+});
+
+describe("The Beta label (spec 12, 3.2.6)", () => {
+  it("sits beside the name while the beta is closed, and not otherwise", async () => {
+    await renderApp("/");
+    expect(await screen.findByText("ShareRide")).toBeVisible();
+    expect(screen.queryByText("Beta")).toBeNull();
+
+    await renderApp("/", {
+      setUp: (client) => {
+        client.answer("/v1/config", () => ok(200, { beta: true, paused: [] }));
+      },
+    });
+    expect(await screen.findByText("Beta")).toBeVisible();
+  });
+});

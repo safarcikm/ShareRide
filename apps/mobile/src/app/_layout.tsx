@@ -3,6 +3,7 @@ import { useEffect, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { SessionProvider, useSession, useSessionState } from "@/auth/session";
+import { ConfigProvider } from "@/beta/config";
 import { UnreadProvider } from "@/chat/unread";
 import { Button } from "@/components/button";
 import { Loading } from "@/components/loading";
@@ -25,10 +26,12 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <LanguageProvider>
         <SessionProvider>
-          <UnreadProvider>
-            <Navigation />
-            <PushNotifications />
-          </UnreadProvider>
+          <ConfigProvider>
+            <UnreadProvider>
+              <Navigation />
+              <PushNotifications />
+            </UnreadProvider>
+          </ConfigProvider>
         </SessionProvider>
       </LanguageProvider>
     </SafeAreaProvider>
@@ -76,6 +79,8 @@ function Navigation() {
       <Stack.Screen name="trips/[id]/index" />
       {/* Sign-in and Settings close themselves when the session changes (BackToMenu). */}
       <Stack.Screen name="sign-in" />
+      {/* An invite link: on to sign-in with its code. */}
+      <Stack.Screen name="invite/[code]" />
       {/* Open signed in or out, but not while an account waits to be deleted. */}
       <Stack.Protected guard={!deleting}>
         <Stack.Screen name="settings" />

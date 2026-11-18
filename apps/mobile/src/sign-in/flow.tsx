@@ -22,15 +22,40 @@ export interface SignInFlow {
   readonly waitBeforeResend: (seconds: number) => void;
   /** Looked at once for both steps; undefined while it loads. */
   readonly keptRide: KeptRide | undefined;
+  /**
+   * The invite code, as typed or from an invite link, kept through the
+   * steps: sent with the text-message code, and ignored for a member.
+   */
+  readonly inviteCode: string;
+  readonly setInviteCode: (inviteCode: string) => void;
+  /**
+   * The text-message code that was right for a number with no account,
+   * kept while the app asks for the invite code (spec 12, 3.2.3).
+   */
+  readonly rightCode: string | null;
+  readonly setRightCode: (code: string | null) => void;
+  /** Said once on step 1, such as why the person is back there. */
+  readonly notice: string | null;
+  readonly setNotice: (notice: string | null) => void;
 }
 
 const SignInFlowContext = createContext<SignInFlow | null>(null);
 
-export function SignInFlowProvider({ children }: { readonly children: ReactNode }) {
+export function SignInFlowProvider({
+  children,
+  inviteCode: fromLink = "",
+}: {
+  readonly children: ReactNode;
+  /** The code of an invite link. */
+  readonly inviteCode?: string;
+}) {
   const [country, setCountry] = useState<SupportedCountry>("IS");
   const [typed, setTyped] = useState("");
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [resendAt, setResendAt] = useState(0);
+  const [inviteCode, setInviteCode] = useState(fromLink);
+  const [rightCode, setRightCode] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const keptRide = useKeptRide();
   const value = useMemo<SignInFlow>(
     () => ({
@@ -48,8 +73,14 @@ export function SignInFlowProvider({ children }: { readonly children: ReactNode 
         setResendAt(Date.now() + seconds * 1000);
       },
       keptRide,
+      inviteCode,
+      setInviteCode,
+      rightCode,
+      setRightCode,
+      notice,
+      setNotice,
     }),
-    [country, typed, sentTo, resendAt, keptRide],
+    [country, typed, sentTo, resendAt, keptRide, inviteCode, rightCode, notice],
   );
   return <SignInFlowContext value={value}>{children}</SignInFlowContext>;
 }

@@ -615,6 +615,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   waiting with the action and its report, and the answer asks once more as
   it is final. A browser journey closes one report and suspends from
   another.
+- Ratings, reliability and reviews in the console (milestone 9, PR 9c,
+  spec 9, 3.4.2 and 3.5.2): a person's page shows their rating and
+  reliability figure as their profile counts them, with the counts by
+  role and whether the figure is below the watch level, and the 20 latest
+  reviews about them and by them: every one, with its words, and whether
+  it shows yet, ShareRide hid it or its author is deleting their account,
+  each linking to the other person's page. Each side of a report shows the rating and the figure
+  too, but none for the former member. Profiles and the console count
+  them with the same code (`figuresOf`).
 - Report and Block on a profile (milestone 9, PR 9b, spec 9, 3.1.1, 3.2.1
   and 3.3.4): someone else's profile offers Report and Block, each asking
   first on its own screen, and the community rules. Each review I did not
@@ -1118,6 +1127,20 @@ releases follow [Semantic Versioning](https://semver.org/).
   secondary button are tinted, a primary button turns a step darker. The
   top bar's logo and language line up with the page's edges, and the logo
   and name open Find. Phones are unchanged.
+- Invite codes and the closed beta's gate in the API (spec 12, 3.2; R12.1
+  to R12.3). While "Invite code required" is on, a number with no account
+  is answered `invite_required` after its text-message code, which is kept:
+  sent again with `inviteCode`, the account is made, records its code and
+  counts as a tester. A wrong invite code counts as a wrong try; no code
+  works once the testers reach the cap (`beta_full`), also when two
+  sign-ups come at once. A member signing in is never asked.
+  `POST /v1/invites/check` says whether a code would work (10 a minute per
+  address). The console's routes list the codes with the places left, make
+  a group code (a name, 1 to 500 uses, an end at most 12 months ahead) and
+  end one, each in the audit log. `pnpm --filter @shareride/api invite add`
+  prints a code for the first account of a new server, and the local
+  seed command makes `BETA2345`, never on staging. The app asks for the code in the next change;
+  until then the app's browser tests run with the requirement off.
 - Find on a laptop (spec 18, 3.5): the search is one row in a card, with
   From, To, the date, the seats and "Find a ride" on one line from 1280
   wide; the place list and the calendar open downwards in their own part.
@@ -1130,6 +1153,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   without a trip when there is none to show, and stays still between
   trips. The chips wrap instead of scrolling sideways. Phones are
   unchanged.
+- The invite code in the app and the console (spec 12, 3.2.3, 3.2.6 and
+  screen 5). A new number is asked for its invite code after the
+  text-message code, on a screen of its own in step 2; a code that does not
+  work is said in the field, a full beta under it, and when the
+  text-message code has run out the person is back at step 1 with the
+  invite code kept. A link `/invite/<code>` opens sign-up with the code
+  filled in. A small "Beta" label sits beside the name while the beta is
+  closed (`GET /v1/config`). The console's Invite codes page shows the
+  places left, makes a group code and ends one after asking.
 - Trip details, Check and pay and a request on a laptop (spec 18, 3.7 and
   3.8): pages of two columns with no bottom bar. On trip details, your
   part (Get in beside Get out), who you ride with (the seat view beside

@@ -144,6 +144,9 @@ const app = createApp({
     exportCipher: createFileCipher(secret, exportCipherPurpose),
     clock,
     clientAddress: () => `e2e-${String((requests += 1))}`,
+    // The journeys sign up without an invite code: the closed beta's gate
+    // is held off here, whatever the console's Settings say.
+    fixedSettings: { invite_code_required: 0 },
     secureCookies: false,
     payments: createTestPaymentProvider(),
     adminOrigin,

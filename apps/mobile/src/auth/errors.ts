@@ -17,6 +17,9 @@ export function errorText(t: Translate, failure: CallFailure): string {
     case "sms_failed":
     case "code_expired":
     case "account_unavailable":
+    case "invite_required":
+    case "invite_invalid":
+    case "beta_full":
     case "network_error":
     case "legal_version_outdated":
     case "account_suspended":

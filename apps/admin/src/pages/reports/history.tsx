@@ -1,5 +1,10 @@
-import type { AdminModerationAction, AdminReportListItem } from "@shareride/contracts";
-import { reportCategoryText } from "@shareride/i18n";
+import type {
+  AdminModerationAction,
+  AdminReliability,
+  AdminReportListItem,
+  Rating,
+} from "@shareride/contracts";
+import { formatRating, reportCategoryText } from "@shareride/i18n";
 import { ConsoleLink } from "../../components/console-link.tsx";
 import { useConsole } from "../../console.tsx";
 import { actionLine, atText, outcomeKeys, reportsPath, subjectKeys } from "./texts.ts";
@@ -55,5 +60,49 @@ export function ActionList({ actions }: { readonly actions: readonly AdminModera
         </li>
       ))}
     </ul>
+  );
+}
+
+/**
+ * A person's rating and reliability figure as their profile counts them,
+ * in the members' own words, with the counts by role and whether the
+ * figure is below the watch level (spec 8, 3.8.4).
+ */
+export function Figures({
+  rating,
+  reliability,
+}: {
+  readonly rating: Rating;
+  readonly reliability: AdminReliability;
+}) {
+  const { t, locale } = useConsole();
+  const { driver, passenger } = reliability.byRole;
+  return (
+    <>
+      <p className="type-body">
+        {rating.average === null
+          ? t("people.noRatings")
+          : t("people.rating", {
+              rating: formatRating(rating.average, locale),
+              count: rating.count,
+            })}
+      </p>
+      <p className="type-body">
+        {reliability.percent === null
+          ? t("people.reliabilityNew")
+          : t("people.reliability", { percent: reliability.percent })}
+        {reliability.belowWatchLevel ? (
+          <>
+            {" "}
+            <span className="tag tag-warning type-small">{t("admin.reliability.watch")}</span>
+          </>
+        ) : null}
+      </p>
+      <p className="type-small muted">
+        {`${t("people.reliabilityCounts", { kept: reliability.kept, total: reliability.counted })} `}
+        {`${t("people.reliabilityAsDriver", { kept: driver.kept, total: driver.counted })} · `}
+        {t("people.reliabilityAsPassenger", { kept: passenger.kept, total: passenger.counted })}
+      </p>
+    </>
   );
 }

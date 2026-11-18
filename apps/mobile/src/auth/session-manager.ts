@@ -44,6 +44,8 @@ export interface SessionManager {
     phoneNumber: string,
     code: string,
     locale: Locale,
+    /** For a new account while the beta is closed; a member's is ignored. */
+    inviteCode?: string,
   ): Promise<CallResult<typeof verifyPhoneCodeRoute>>;
   /** A call as the signed-in person; refreshes the tokens once if they have expired. */
   call<R extends RouteDefinition>(route: R, input: CallInput<R>): Promise<CallResult<R>>;
@@ -212,9 +214,15 @@ export function createSessionManager(options: {
     start: (phoneNumber, locale) =>
       client.call(startPhoneSignInRoute, { body: { phoneNumber, locale } }),
 
-    async verify(phoneNumber, code, locale) {
+    async verify(phoneNumber, code, locale, inviteCode) {
       const result = await client.call(verifyPhoneCodeRoute, {
-        body: { phoneNumber, code, locale, device },
+        body: {
+          phoneNumber,
+          code,
+          locale,
+          device,
+          ...(inviteCode === undefined || inviteCode === "" ? {} : { inviteCode }),
+        },
       });
       if (result.ok) {
         await keep(result.data);

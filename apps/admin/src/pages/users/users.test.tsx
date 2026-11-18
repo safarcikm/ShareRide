@@ -12,6 +12,7 @@ import {
   type AdminMe,
   type AdminModerationAction,
   type AdminPerson,
+  type AdminReview,
   type AdminUser,
   type AdminUserListItem,
 } from "@shareride/contracts";
@@ -37,6 +38,63 @@ const dora: AdminPerson = {
   locale: "is",
 };
 
+const gunna: AdminPerson = {
+  ...dora,
+  userId: "0196f000-0000-7000-8000-0000000000c2",
+  firstName: "Gunna",
+  locale: "en",
+};
+
+const formerMember: AdminPerson = {
+  ...dora,
+  userId: "00000000-0000-4000-8000-000000000001",
+  firstName: null,
+  status: "deleted",
+};
+
+/** Gunna rode with Dóra and wrote of her; Dóra's own review is not shown yet. */
+const reviewsAbout: AdminReview[] = [
+  {
+    id: "0196f000-0000-7000-8000-0000000000b1",
+    rating: 5,
+    comment: "Kind and on time.",
+    authorRole: "passenger",
+    author: gunna,
+    subject: dora,
+    writtenAt: "2099-11-12T18:00:00.000Z",
+    revealed: true,
+    hidden: false,
+    authorLeaving: false,
+  },
+  {
+    id: "0196f000-0000-7000-8000-0000000000b2",
+    rating: 1,
+    comment: "Unkind words",
+    authorRole: "passenger",
+    author: formerMember,
+    subject: dora,
+    writtenAt: "2099-11-10T18:00:00.000Z",
+    revealed: true,
+    hidden: true,
+    authorLeaving: false,
+  },
+];
+
+const reviewsBy: AdminReview[] = [
+  {
+    id: "0196f000-0000-7000-8000-0000000000b3",
+    rating: 4,
+    comment: "",
+    authorRole: "driver",
+    author: dora,
+    subject: gunna,
+    writtenAt: "2099-11-13T18:00:00.000Z",
+    revealed: false,
+    hidden: false,
+    authorLeaving: false,
+  },
+];
+
 const found: AdminUserListItem = {
   person: dora,
   phone: "+3546900001",
@@ -59,6 +117,16 @@ const user: AdminUser = {
   languages: ["is", "en"],
   about: { text: "I like quiet drives.", hidden: false },
   deleteAfter: null,
+  rating: { average: 4.5, count: 2 },
+  reliability: {
+    kept: 9,
+    counted: 10,
+    percent: 90,
+    byRole: { driver: { kept: 8, counted: 9 }, passenger: { kept: 1, counted: 1 } },
+    belowWatchLevel: false,
+  },
+  reviewsAbout,
+  reviewsBy,
   vehicles: [
     {
       id: "0196f000-0000-7000-8000-0000000000e1",
@@ -113,6 +181,13 @@ function start(path: string, shown: AdminUser | null = user) {
   );
   render(<ConsoleApp client={api.client} passkeys={createFakePasskeys().passkeys} />);
   return api;
+}
+
+/** The item at `index` of the list named so. */
+function itemOf(name: string, index: number): HTMLElement {
+  const item = within(screen.getByRole("list", { name })).getAllByRole("listitem")[index];
+  if (item === undefined) throw new Error(`No item ${String(index)} in ${name}.`);
+  return item;
 }
 
 describe("finding people (spec 9, 3.5.1)", () => {
@@ -190,6 +265,63 @@ describe("a person's page (spec 9, 3.5.2)", () => {
       expect.stringContaining("Hide their About you"),
       expect.stringContaining("Suspend Dóra"),
     ]);
+  });
+
+  it("shows their rating, reliability and every review, linking to the other person", async () => {
+    start(`/admin/users/${dora.userId}`);
+
+    const figures = await screen.findByRole("region", { name: "Rating and reliability" });
+    expect(figures.textContent).toContain("4.5 (2 ratings)");
+    expect(figures.textContent).toContain("Reliability: 90%");
+    expect(figures.textContent).toContain("Kept 9 of 10 trips and bookings in the last 12 months.");
+    expect(figures.textContent).toContain("As a driver: kept 8 of 9");
+    expect(figures.textContent).toContain("As a passenger: kept 1 of 1");
+    expect(within(figures).queryByText("Below the watch level")).toBeNull();
+    const kind = itemOf("Reviews about them", 0);
+    const unkind = itemOf("Reviews about them", 1);
+    expect(kind.textContent).toContain("5 of 5 stars, by the passenger, written");
+    expect(kind.textContent).toContain("Kind and on time.");
+    expect(within(kind).getByRole("link", { name: "By: Gunna" }).getAttribute("href")).toBe(
+      `/admin/users/${gunna.userId}`,
+    );
+    expect(unkind.textContent).toContain("By: A former member");
+    expect(within(unkind).queryByRole("link")).toBeNull();
+    expect(unkind.textContent).toContain("Hidden by ShareRide");
+    const waiting = itemOf("Reviews they wrote", 0);
+    expect(waiting.textContent).toContain("4 of 5 stars, by the driver, written");
+    expect(within(waiting).getByRole("link", { name: "About: Gunna" })).toBeTruthy();
+    expect(waiting.textContent).toContain("Not shown yet");
+    expect(kind.textContent).not.toContain("Not shown yet");
+    expect(document.body.textContent).not.toContain("Author deleting their account");
+  });
+
+  it("tags a review whose author is deleting their account, which does not count", async () => {
+    start(`/admin/users/${dora.userId}`, {
+      ...user,
+      reviewsAbout: reviewsAbout.map((review) => ({ ...review, authorLeaving: true })),
+    });
+
+    expect(await screen.findByRole("list", { name: "Reviews about them" })).toBeTruthy();
+    expect(itemOf("Reviews about them", 0).textContent).toContain("Author deleting their account");
+    expect(screen.getByRole("region", { name: "Rating and reliability" }).textContent).toContain(
+      "or by someone deleting their account don't count.",
+    );
+  });
+
+  it("says when nobody has reviewed them, and when the figure is below the watch level", async () => {
+    start(`/admin/users/${dora.userId}`, {
+      ...user,
+      rating: { average: null, count: 0 },
+      reliability: { ...user.reliability, kept: 3, counted: 6, percent: 50, belowWatchLevel: true },
+      reviewsAbout: [],
+      reviewsBy: [],
+    });
+
+    const figures = await screen.findByRole("region", { name: "Rating and reliability" });
+    expect(figures.textContent).toContain("No ratings yet");
+    expect(within(figures).getByText("Below the watch level")).toBeTruthy();
+    const reviews = screen.getByRole("region", { name: "Reviews" });
+    expect(within(reviews).getAllByText("None")).toHaveLength(2);
   });
 
   it("adds a note, after asking for one that says something", async () => {

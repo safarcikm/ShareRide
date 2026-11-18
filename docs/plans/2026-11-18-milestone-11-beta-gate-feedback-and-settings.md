@@ -385,12 +385,15 @@ before merging.
 
 ### PR 3: `feat(beta)`: invite codes and the gate, the API
 
-- [ ] `beta/invites.ts` with its tests (a code at its last use and one
+- [x] `beta/invites.ts` with its tests (a code at its last use and one
       past it; a second before and after its end; the cap at 149, 150 and
       151)
-- [ ] The migration (`invite_codes`, `users.invite_code_id`); sign-up
+- [x] The migration (`invite_codes`, `users.invite_code_id`); sign-up
       through `verify`; `POST /v1/invites/check`; the console routes; the
       `invite` command; the seed's code; the catalogue entry
+- As built: tests and the browser tests' server hold the requirement off
+  through `fixedSettings`, which no real server sets; the app's journeys
+  about the closed beta come with PR 4.
 - Verify: integration tests (a new number without a code is refused and
   no account is made; the text-message code still works afterwards with
   a good invite code; a member signs in without one; a one-use code used
@@ -399,9 +402,14 @@ before merging.
 
 ### PR 4: `feat(beta)`: the invite code step, the closed beta and the Beta label
 
-- [ ] The app's invite screen, `/invite/<code>`, the closed beta text and
+- [x] The app's invite screen, `/invite/<code>`, the closed beta text and
       the Beta label; the console's Invite codes page with places left
-- [ ] Specs 12 and 1 as choice 1 was decided
+- [x] Specs 12 and 1 as choice 1 was decided
+- As built: no browser journey. The browser tests' server is shared by
+  every journey and holds the gate off, so turning it on for one journey
+  would stop the others signing up. The screen tests cover the app's steps
+  and the console page, and the API's integration tests the gate itself.
+  The waitlist link in the closed beta text waits for milestone 12.
 - Verify: screen tests; a browser journey: the operator makes a code, a
   new person signs up with it, a second person without one is told about
   the closed beta

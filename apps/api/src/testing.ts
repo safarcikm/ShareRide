@@ -55,6 +55,12 @@ export interface TestApi {
    * `cookie` as the request's Cookie header.
    */
   signInOperator(): Promise<{ userId: string; sessionId: string; cookie: string }>;
+  /**
+   * From here on the setting `invite_code_required` is as stored (on by
+   * default), so a new account needs an invite code: for tests about the
+   * closed beta. Until then tests sign up without one.
+   */
+  useStoredInviteSetting(): void;
   close(): Promise<void>;
 }
 
@@ -89,6 +95,8 @@ export async function startTestApi(): Promise<TestApi> {
     }),
   });
 
+  // The closed beta's gate is off, so tests sign up without an invite code.
+  const fixedSettings: { invite_code_required?: number } = { invite_code_required: 0 };
   const email = createFakeEmailSender();
   const photos = createFakePhotoStorage();
   const features: FeatureDependencies = {
@@ -105,6 +113,7 @@ export async function startTestApi(): Promise<TestApi> {
     photos,
     // Legs on straight lines; south of 63.3° N, at sea off the south coast, there is no road.
     router: createStraightLineRouter({ offRoad: (position) => position.latitude < 63.3 }),
+    fixedSettings,
   };
   const app = createApp({
     logger,
@@ -184,6 +193,9 @@ export async function startTestApi(): Promise<TestApi> {
         sessionId: session.sessionId,
         cookie: `${operatorCookie.name}=${session.token}`,
       };
+    },
+    useStoredInviteSetting() {
+      delete fixedSettings.invite_code_required;
     },
     close: () => connection.close(),
   };

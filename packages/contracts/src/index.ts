@@ -5,6 +5,7 @@ export * from "./admin-reliability.ts";
 export * from "./admin-reports.ts";
 export * from "./admin-users.ts";
 export * from "./auth.ts";
+export * from "./beta.ts";
 export * from "./bookings.ts";
 export * from "./chat.ts";
 export * from "./common.ts";

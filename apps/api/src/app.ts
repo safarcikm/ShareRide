@@ -12,8 +12,10 @@ import {
   defaultSearchSettings,
   defaultTripDaySettings,
   defaultTripSettings,
+  inviteCheckLimitsPerAddress,
   operatorSignInLimitsPerAddress,
   searchLimitsPerAddress,
+  type SettingValues,
 } from "@shareride/domain";
 import type { Context } from "hono";
 import { cors } from "hono/cors";
@@ -63,6 +65,11 @@ import {
   registerPeopleRoutes,
   registerReliabilityAdminRoutes,
 } from "./modules/people/index.ts";
+import {
+  createInviteService,
+  registerInviteAdminRoutes,
+  registerInviteRoutes,
+} from "./modules/beta/index.ts";
 import { createDrivingService, registerDrivingRoutes } from "./modules/driving/index.ts";
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
@@ -166,6 +173,8 @@ export interface FeatureDependencies {
   readonly photoFiles?: FolderPhotoStorage;
   /** Finds the legs between meeting points; our road file when left out (ADR 0031). */
   readonly router?: Router;
+  /** Settings held whatever is stored: tests and the browser tests' server only. */
+  readonly fixedSettings?: Partial<SettingValues>;
 }
 
 /** Where the request was when an unexpected error happened. No personal data. */
@@ -306,10 +315,18 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     }
     const legal = createLegalService(features);
     const account = createAccountService({ ...features, legal });
+    const operatorSettings = createSettingsService(features);
+    const secureRandomInt = features.randomInt ?? ((max: number) => randomInt(max));
+    const invites = createInviteService({
+      ...features,
+      settings: operatorSettings,
+      randomInt: secureRandomInt,
+    });
     const auth = createAuthService({
       ...features,
       logger,
-      randomInt: features.randomInt ?? ((max) => randomInt(max)),
+      randomInt: secureRandomInt,
+      signUpGate: invites.gate,
     });
     const requireAuth = createRequireAuth(auth);
     registerAuthRoutes(app, { ...features, auth, account, requireAuth });
@@ -419,9 +436,17 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       settings: defaultReliabilitySettings,
       requireOperator,
     });
-    const operatorSettings = createSettingsService(features);
     registerConfigRoutes(app, operatorSettings);
     registerSettingsAdminRoutes(app, { ...features, settings: operatorSettings, requireOperator });
+    registerInviteRoutes(app, {
+      invites,
+      limiter: createMemoryRateLimiter({
+        rules: inviteCheckLimitsPerAddress,
+        clock: features.clock,
+      }),
+      clientKey: (c) => features.hasher("invite-check", addressBlock(features.clientAddress(c))),
+    });
+    registerInviteAdminRoutes(app, { ...features, invites, requireOperator });
     registerReviewRoutes(
       app,
       createReviewService({ ...features, settings: defaultReviewSettings }),
@@ -444,12 +469,15 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     registerNoticeRoutes(app, createNoticeService(features), requireAuth);
     registerModerationAdminRoutes(app, {
       ...features,
-      moderation: createModerationConsoleService(features),
+      moderation: createModerationConsoleService({
+        ...features,
+        reliability: defaultReliabilitySettings,
+      }),
       requireOperator,
     });
     registerPeopleAdminRoutes(app, {
       ...features,
-      people: createPeopleConsoleService(features),
+      people: createPeopleConsoleService({ ...features, reliability: defaultReliabilitySettings }),
       requireOperator,
     });
     registerPaymentRoutes(app, {
