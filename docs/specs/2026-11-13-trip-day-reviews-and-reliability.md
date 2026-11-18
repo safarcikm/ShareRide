@@ -54,7 +54,7 @@ view. It is built to be used while parked: large buttons and no typing needed.
   gets in and out, with seats and a status: not here yet, here, or no-show; "I'm
   here" for the next stop; "Mark as no-show" after the wait time (3.3); a chat
   button per passenger and "Message all passengers" (spec 7).
-- The 112 emergency link and "share trip details" are spec 9.
+- "Before you go" and "share trip details" are spec 9.
 
 ### 3.2 "I'm here" (E2)
 
@@ -337,7 +337,7 @@ Settings: `no_show_wait` 10 minutes, `trip_completion_delay` 2 hours,
 
 Live location sharing; public replies to reviews; editing reviews; automatic
 weather and road-closure checks (Phase 4, [integrations](../architecture/integrations.md));
-reporting, blocking, the 112 link and sharing trip details (spec 9); the
+reporting, blocking and sharing trip details (spec 9); the
 console's layout (spec 10).
 
 ## Decisions

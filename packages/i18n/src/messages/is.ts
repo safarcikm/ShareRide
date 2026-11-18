@@ -794,9 +794,6 @@ export const is = {
   "trip.share": "Deila",
   "trip.shareText": "{route} á ShareRide",
   "safety.title": "Öryggi",
-  "safety.call112": "Neyðarnúmer: 112",
-  "safety.call112Label": "Neyðarnúmer: 112. Hringir í neyðarnúmerið",
-  "safety.callFailed": "Þetta tæki getur ekki hringt. Hringdu í 112 úr síma.",
   "safety.beforeYouGo": "Áður en lagt er af stað: kannaðu veður, færð og SafeTravel.",
   "safety.weather": "Veður (vedur.is)",
   "safety.roads": "Færð á vegum (umferdin.is)",
@@ -839,7 +836,6 @@ export const is = {
   "report.personHint":
     "Með þessari tilkynningu lesum við ekki spjallið ykkar. Til að sýna okkur eitthvað sem viðkomandi skrifaði skaltu frekar tilkynna þau skilaboð í spjallinu.",
   "report.what": "Hvað gerðist?",
-  "report.emergency": "Ef þú ert í hættu, hringdu strax í 112.",
   "report.category.safety": "Öryggi: hættulegur akstur, hótanir eða ofbeldi",
   "report.category.harassment": "Áreitni eða óæskileg samskipti",
   "report.category.discrimination": "Mismunun",
@@ -861,8 +857,7 @@ export const is = {
   "report.gone": "Ekki er lengur hægt að tilkynna þetta.",
   "report.windowClosed":
     "Hægt er að tilkynna vandamál með bókun í allt að sólarhring eftir ferðina.",
-  "report.tooMany":
-    "Þú hefur sent margar tilkynningar síðasta sólarhring. Reyndu aftur síðar, eða hringdu í 112 ef þú ert í hættu.",
+  "report.tooMany": "Þú hefur sent margar tilkynningar síðasta sólarhring. Reyndu aftur síðar.",
   "report.outcomeAction": "Við höfum skoðað tilkynninguna og gripið til aðgerða.",
   "report.outcomeNone": "Við höfum skoðað tilkynninguna og fundum ekki brot á reglunum.",
   "report.open": "Við förum yfir allar tilkynningar innan sólarhrings.",

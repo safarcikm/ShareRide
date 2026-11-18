@@ -213,8 +213,8 @@ is built, in `apps/api/src/modules/admin` with the rules in
 - Meeting points only at public, lit places.
 - Exact vehicle details visible to booked passengers only.
 - Share trip details with a contact (Phase 5: live location).
-- 112 and SafeTravel links on trip screens; reporting from every profile,
-  trip and chat.
+- SafeTravel links on trip screens; reporting from every profile, trip
+  and chat.
 - Reviews revealed only after both sides have reviewed, to reduce retaliation.
 
 ## Process

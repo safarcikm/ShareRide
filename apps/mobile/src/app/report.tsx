@@ -13,13 +13,12 @@ import {
 import { reportCategoryText, type MessageKey } from "@shareride/i18n";
 import { router, useLocalSearchParams, type Href } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Linking, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
 import { otherPerson } from "@/chat/texts";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
-import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
 import { RadioCard } from "@/components/radio-card";
 import { Screen } from "@/components/screen";
@@ -56,8 +55,8 @@ const maxLength = defaultSafetySettings.textMaxLength;
 
 /**
  * Reporting (spec 9, 3.1): what is reported comes from where the report
- * started, then what happened; for safety, 112 first. Nothing is sent
- * until "Send report". Thanks, and for a person, Block them too. The
+ * started, then what happened. Nothing is sent until "Send report".
+ * Thanks, and for a person, Block them too. The
  * address names only what is reported, never a person's user ID: their
  * first name comes from the booking the two share, or from the profile.
  * A review names nobody: its author has no profile reference on it.
@@ -203,7 +202,6 @@ function Report({
   const [missing, setMissing] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
-  const [callFailed, setCallFailed] = useState(false);
   const tooLong = characterCount(description.trim()) > maxLength;
 
   async function send() {
@@ -266,23 +264,6 @@ function Report({
     <Screen>
       <BackButton fallback="/" />
       <Title>{t(titles[about.kind], { name: person?.name ?? "" })}</Title>
-      {category === "safety" ? (
-        // In danger, 112 comes before anything else (3.1.3), read out at once.
-        <Card>
-          <Notice message={t("report.emergency")} />
-          <Button
-            label={t("safety.call112")}
-            accessibilityLabel={t("safety.call112Label")}
-            onPress={() => {
-              setCallFailed(false);
-              Linking.openURL("tel:112").catch(() => {
-                setCallFailed(true);
-              });
-            }}
-          />
-          <Notice message={callFailed ? t("safety.callFailed") : null} />
-        </Card>
-      ) : null}
       {about.kind === "user" ? <Body align="start">{t("report.personHint")}</Body> : null}
       <View style={styles.group}>
         <Text style={[typography.label, { color: palette.text }]}>{t("report.what")}</Text>

@@ -1215,6 +1215,13 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Nothing about 112 in the app (milestone 9, PR 9d; spec 9, decision 5):
+  on Martin's word, people dial 112 themselves, so the "Emergency: 112"
+  buttons are gone from trip safety and the safety report, and so are
+  "If you are in danger, call 112 now" and the 112 hint when someone has
+  sent too many reports. Trip safety shows nothing when there is nothing
+  to check or share. The terms and community rules still say ShareRide is
+  not an emergency service.
 - One menu that never moves (spec 16): Find, My rides, Offer and Profile, as
   a tab bar on a phone's four main screens and as a top bar on every screen
   of a wide one. Signed out, My rides, Offer and Profile each say what they
