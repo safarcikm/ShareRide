@@ -7,6 +7,7 @@ import {
   visible,
   withinADay,
 } from "./support/cancelling";
+import { openConversation } from "./support/laptop";
 import { chooseTime, focused, postTripToSelfoss, timeField } from "./support/trips";
 
 // Spec 6, 3.2, on the web build: a driver posts Mjódd to N1 Selfoss for
@@ -206,7 +207,9 @@ test("a driver changes the car, and the passenger reads it on the booking and in
   await expect(dora.getByText(newCar, { exact: true }).filter(visible)).toBeVisible();
   const [, bookingId = ""] = /\/bookings\/([0-9a-f-]+)$/.exec(booking) ?? [];
   await dora.goto(`/messages/${bookingId}`);
-  await expect(dora.getByText(newCar, { exact: true }).filter(visible)).toBeVisible();
+  await expect(
+    openConversation(dora, testInfo).getByText(newCar, { exact: true }).filter(visible),
+  ).toBeVisible();
   await close();
 });
 
@@ -256,7 +259,7 @@ test("a driver adds a stop on the way, and the passenger reads it on the booking
   await expect(dora.getByText(newStop).filter(visible)).toBeVisible();
   const [, bookingId = ""] = /\/bookings\/([0-9a-f-]+)$/.exec(booking) ?? [];
   await dora.goto(`/messages/${bookingId}`);
-  await expect(dora.getByText(newStop).filter(visible)).toBeVisible();
+  await expect(openConversation(dora, testInfo).getByText(newStop).filter(visible)).toBeVisible();
   await close();
 });
 
@@ -318,6 +321,8 @@ test("a driver removes a stop nobody uses, and the passenger reads it on the boo
   await expect(dora.getByText(removed, { exact: true }).filter(visible)).toBeVisible();
   const [, bookingId = ""] = /\/bookings\/([0-9a-f-]+)$/.exec(booking) ?? [];
   await dora.goto(`/messages/${bookingId}`);
-  await expect(dora.getByText(removed, { exact: true }).filter(visible)).toBeVisible();
+  await expect(
+    openConversation(dora, testInfo).getByText(removed, { exact: true }).filter(visible),
+  ).toBeVisible();
   await close();
 });

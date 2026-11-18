@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { english, signUp } from "./support/account";
+import { openConversation } from "./support/laptop";
 import { postTripToSelfoss } from "./support/trips";
 
 // Spec 7's chat on the web build, in two browsers: a driver posts Mjódd to
@@ -65,7 +66,7 @@ test("the driver and passenger of a confirmed booking message each other", async
   ).toBeVisible();
   // On a laptop the list beside the conversation shows this line too, as
   // the conversation's last (spec 18, 3.11).
-  const conversation = isMobile === true ? passenger : passenger.getByTestId("panes-open");
+  const conversation = openConversation(passenger, testInfo);
   await expect(
     conversation.getByText("Booking confirmed. You can message each other here.").filter(visible),
   ).toBeVisible();
