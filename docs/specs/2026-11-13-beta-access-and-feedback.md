@@ -84,8 +84,10 @@ analytics are needed at all.
 
 ### 3.3 In-app feedback (J2)
 
-1. "Send feedback" is in the menu on every screen. On phones, shaking the
-   phone opens it too; this can be turned off in Settings.
+1. "Send feedback" opens from the Beta label beside the name (on Find,
+   and in the top bar on wide screens), from Profile and from Settings,
+   for a signed-in person. On phones, shaking the phone opens it from any
+   screen too; this can be turned off in Settings.
 2. The form: what kind (something isn't working, an idea, something else); a
    message of up to 2 000 characters; and, on phones, on by default, a
    screenshot of the screen they came from, shown before sending with a

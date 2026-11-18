@@ -3,6 +3,7 @@ import type { ComponentType } from "react";
 import { AppealsPage } from "./pages/appeals/page.tsx";
 import { AuditLogPage } from "./pages/audit-log.tsx";
 import { DisputesPage } from "./pages/disputes/page.tsx";
+import { FeedbackPage } from "./pages/feedback/page.tsx";
 import { HomePage } from "./pages/home.tsx";
 import { InviteCodesPage } from "./pages/invite-codes/page.tsx";
 import { MeetingPointsPage } from "./pages/meeting-points/page.tsx";
@@ -37,6 +38,7 @@ export const sections: readonly Section[] = [
   { path: "/admin/users", title: "admin.users.title", Page: UsersPage },
   { path: "/admin/trips", title: "admin.trips.title", Page: TripsPage },
   { path: "/admin/invite-codes", title: "admin.inviteCodes.title", Page: InviteCodesPage },
+  { path: "/admin/feedback", title: "admin.feedback.title", Page: FeedbackPage },
   { path: "/admin/settings", title: "admin.settings.title", Page: SettingsPage },
   { path: "/admin/audit-log", title: "admin.auditLog.title", Page: AuditLogPage },
   { path: "/admin/passkeys", title: "admin.passkeys.title", Page: PasskeysPage },
