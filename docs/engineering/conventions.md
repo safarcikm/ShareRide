@@ -89,6 +89,9 @@ imports end in `.ts`.
 - Routes that need a signed-in person take `Authorization: Bearer <access
   token>` and are marked `auth: true` in the contract.
 - Every state-changing endpoint accepts an `Idempotency-Key` header.
+- The apps send `X-Client-Platform` (`ios`, `android` or `web`) with every
+  request. Only the search log reads it, to count searches per platform;
+  it never identifies a device.
 
 ## Database
 

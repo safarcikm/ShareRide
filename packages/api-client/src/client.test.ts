@@ -122,4 +122,23 @@ describe("createApiClient().call", () => {
     await client.call(itemRoute, { params: { id: "1" }, query: {}, body: { name: "x" } });
     expect(sent[0]?.init.credentials).toBe("include");
   });
+
+  it("sends the headers it was made with on every request, under the access token", async () => {
+    const { fetch, sent } = fakeFetch(() => new Response(null, { status: 204 }));
+    const client = createApiClient({
+      baseUrl: "http://api.test",
+      fetch,
+      headers: { "X-Client-Platform": "ios", accept: "text/plain" },
+    });
+    await client.call(itemRoute, {
+      params: { id: "1" },
+      query: {},
+      body: { name: "x" },
+      accessToken: "token",
+    });
+    const headers = new Headers(sent[0]?.init.headers);
+    expect(headers.get("x-client-platform")).toBe("ios");
+    expect(headers.get("accept")).toBe("application/json");
+    expect(headers.get("authorization")).toBe("Bearer token");
+  });
 });

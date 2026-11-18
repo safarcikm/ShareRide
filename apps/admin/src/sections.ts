@@ -2,6 +2,7 @@ import type { MessageKey } from "@shareride/i18n";
 import type { ComponentType } from "react";
 import { AppealsPage } from "./pages/appeals/page.tsx";
 import { AuditLogPage } from "./pages/audit-log.tsx";
+import { CorridorsPage } from "./pages/corridors/page.tsx";
 import { DisputesPage } from "./pages/disputes/page.tsx";
 import { FeedbackPage } from "./pages/feedback/page.tsx";
 import { HomePage } from "./pages/home.tsx";
@@ -39,6 +40,7 @@ export const sections: readonly Section[] = [
   { path: "/admin/trips", title: "admin.trips.title", Page: TripsPage },
   { path: "/admin/invite-codes", title: "admin.inviteCodes.title", Page: InviteCodesPage },
   { path: "/admin/feedback", title: "admin.feedback.title", Page: FeedbackPage },
+  { path: "/admin/corridors", title: "admin.corridors.title", Page: CorridorsPage },
   { path: "/admin/settings", title: "admin.settings.title", Page: SettingsPage },
   { path: "/admin/audit-log", title: "admin.auditLog.title", Page: AuditLogPage },
   { path: "/admin/passkeys", title: "admin.passkeys.title", Page: PasskeysPage },

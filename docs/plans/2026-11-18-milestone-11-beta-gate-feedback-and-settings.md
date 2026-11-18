@@ -476,9 +476,21 @@ before merging.
 
 ### PR 8: `feat(metrics)`: the search log and corridors
 
-- [ ] `metrics/corridors.ts` with its tests; the migration (`search_log`,
+- [x] `metrics/corridors.ts` with its tests; the migration (`search_log`,
       `corridors`); writing the log; the clean-up rule; the header in the
       apps; the console's Corridors page; the catalogue entries
+- As built: only `GET /v1/trips/search` is noted, once it has answered:
+  not a refused search, the days around a date, or the front page's
+  rides. A change of filter or order in the app is a new search and a new
+  row. The row's key is a random UUID, since the other tables' keys hold
+  the moment they were made, and the table has no `created_at`. An end
+  is stored as a place or a meeting point with its ID and no foreign
+  key. `corridors.place_ids` is an ordered array; a corridor's two ends
+  must be two different places of it, so a trip inside one town is on
+  none. A corridor is never deleted, only left out of the counting, so
+  past weeks keep their figures. `GET /admin/v1/corridors` also lists
+  every place, for the form. The web app's CORS answer allows the new
+  header. Migration `0051_search_log_and_corridors`
 - Verify: integration tests (a signed-in search writes a row that holds
   no person, session or address; the search answers when the log cannot
   be written; rows go after 14 months)

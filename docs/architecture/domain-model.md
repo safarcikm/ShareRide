@@ -340,7 +340,13 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
   stored (`setting_changes`), and a version's values are the defaults with
   the changes up to it laid over them.
 - `SearchLog` (anonymous: places, date, result count, time, platform),
-  `Corridor`, `WeeklyMetric`, `Announcement`.
+  `Corridor`, `WeeklyMetric`, `Announcement`. As built: `search_log` holds
+  each end as a place or a meeting point, the day searched for, the
+  number of trips shown, the platform and the start of the hour, under a
+  random key; `corridors` a name, its places in order (`place_ids`) and
+  whether it is counted. A search or a trip is on a corridor when its
+  two ends are two different places of it, a meeting point counting as
+  each place that covers it (`packages/domain/src/metrics/`).
 - Privacy records ([spec 11](../specs/2026-11-13-privacy-self-service.md#6-data-and-api)):
   `DataExport`, `ErasedAccount`, `BlockedNumber`, `PrivacyRequest`,
   `RetentionRun`, `Hold`.
