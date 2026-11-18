@@ -1,5 +1,7 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import {
+  adminActivateMeetingPointRoute,
+  adminActivationChecklistRoute,
   adminAddMeetingPointPhotoRoute,
   adminCreateMeetingPointRoute,
   adminDescribeMeetingPointPhotoRoute,
@@ -179,8 +181,31 @@ export function registerMeetingPointsAdminRoutes(
           "status_change_not_allowed",
           "The meeting point's status does not allow this change.",
         );
+      case "activation_not_ready":
+        return errorResponse(
+          c,
+          409,
+          "activation_not_ready",
+          "The activation checklist is not done.",
+          { details: problem.missing.map((item) => ({ path: item, issue: "not_done" })) },
+        );
     }
   };
+
+  app.openapi(toOpenApiRoute(adminActivationChecklistRoute, requireOperator), async (c) => {
+    const { id } = validated(c, "param", adminActivationChecklistRoute.request.params);
+    const checklist = await meetingPoints.activationChecklist(id);
+    return checklist === undefined
+      ? errorResponse(c, 404, "not_found", "There is no such meeting point.")
+      : c.json(checklist, 200);
+  });
+
+  app.openapi(toOpenApiRoute(adminActivateMeetingPointRoute, requireOperator), async (c) => {
+    const { id } = validated(c, "param", adminActivateMeetingPointRoute.request.params);
+    const body = validated(c, "json", adminActivateMeetingPointRoute.request.body);
+    const result = await meetingPoints.activate(id, body, actorOf(c));
+    return result.ok ? c.json(result.value, 200) : refused(c, result.error);
+  });
 
   app.openapi(toOpenApiRoute(adminPauseMeetingPointRoute, requireOperator), async (c) => {
     const { id } = validated(c, "param", adminPauseMeetingPointRoute.request.params);

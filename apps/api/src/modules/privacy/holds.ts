@@ -24,7 +24,7 @@ import {
 import { recordAudit } from "../admin/audit.ts";
 import type { Transaction } from "../bookings/seats.ts";
 
-const { bookings, holds, trips, users } = schema;
+const { bookings, holds, reviews, trips, users } = schema;
 
 type Executor = Database | Transaction;
 
@@ -59,10 +59,17 @@ export function notHeld(
 
 /**
  * For a rule that changes a whole trip, in a query over trips: no hold in
- * force covers the trip, a booking on it, its driver or any passenger.
+ * force covers the trip, a booking on it, its driver, any passenger, or
+ * anyone a review of one of its bookings names (A51).
  */
 export function tripNotHeld(db: Executor, now: Date): SQL {
   const onTrip = () => eq(bookings.tripId, trips.id);
+  const reviewed = (person: typeof reviews.authorId | typeof reviews.subjectId) =>
+    db
+      .select({ id: person })
+      .from(reviews)
+      .innerJoin(bookings, eq(bookings.id, reviews.bookingId))
+      .where(onTrip());
   return notExists(
     db
       .select({ id: holds.id })
@@ -80,6 +87,8 @@ export function tripNotHeld(db: Executor, now: Date): SQL {
                   holds.subjectId,
                   db.select({ id: bookings.passengerId }).from(bookings).where(onTrip()),
                 ),
+                inArray(holds.subjectId, reviewed(reviews.authorId)),
+                inArray(holds.subjectId, reviewed(reviews.subjectId)),
               ),
             ),
             and(

@@ -631,7 +631,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   rate; a trip's page with every booking and request, and why a request
   was declined. Searching for a person is a POST, so a phone number or an
   email never sits in an address. Operators add notes about a person
-  (migration `0042_operator_notes`), each in the audit log without its
+  (migration `0043_operator_notes`), each in the audit log without its
   words; the person gets them in Download my data, never who wrote them
   (Martin's answer A49). Erasing the person erases the notes about them;
   erasing an operator keeps the notes they wrote, by the former member.
@@ -964,6 +964,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   with no road within 1 km and the legs missing; a browser journey
   recomputes them on the real road file. Joining a point to a road is
   about eight times faster, and the sample seed keeps road file legs.
+- Activating a meeting point (milestone 8, PR 12a; spec 2, 3.6.3): a
+  draft's page in the console shows its activation checklist (R2.3), each
+  item done or still to do, from what is saved; it is checked again when
+  the point or a photo is saved. Its last item asks for a road within
+  1 km that reaches a point in service. Activate says how much is left
+  when the API finds something still to do. Activating makes the point active
+  with its yearly review date and computes its legs both ways with every
+  point in service, in the same transaction, with an audit entry
+  `meeting_point.activated`. The API refuses a draft whose checklist is
+  not done (`activation_not_ready`, naming each item).
 - Delete my account in the app (spec 11, 3.4): under Privacy in Settings,
   what is still open, each opened where it is cancelled under the normal
   rules and looked at again on coming back, and what is erased and kept.
@@ -995,6 +1005,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   the trip a car of the same make, model and colour without a plate.
   Stops, prices and payments stay. A hold on the trip, a booking, the
   driver or a passenger keeps it until the hold ends.
+- Reviews of a trip made anonymous no longer name who wrote them or the
+  ride (Martin's answer A51): they keep their stars, comment and dates for
+  the person they are about, so ratings stay the same. A profile shows
+  them as by "A former member", as it shows those of people who left, and
+  Download my data lists those about the person from such trips in their
+  own section. A hold on anyone they name keeps them as they are.
+  Migration `0042_reviews_of_old_trips` makes a review's booking optional.
 - Erasure keeps a conversation a report covers (spec 9, section 7;
   Martin's answer A47): the erased person's messages read "Message deleted" to
   the other person, but the operator can still read them until the
@@ -1036,6 +1053,10 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- The health check's 2-second statement timeout holds for its own
+  transaction only. It used to stay on the pool's connection, so a later
+  query on it, such as one waiting for the legs lock or writing every
+  leg, was cancelled after 2 seconds.
 - After signing up from a ride, the app opens that ride's booking again, and
   after "Offer a ride" it opens Ready to drive. The front page left open
   under the ride took the kept choice but could not show it, so people

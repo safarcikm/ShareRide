@@ -11,6 +11,7 @@ import {
   sampleTrip,
   seedForBookings,
 } from "../bookings/testing.ts";
+import { ratingsOf } from "../people/ratings.ts";
 import { createErasure } from "./erasure.ts";
 import { anonymiseOldTrips } from "./old-trips.ts";
 import { retentionSteps, runRetention } from "./retention.ts";
@@ -187,6 +188,48 @@ async function rideWithEverything() {
   return { jon, gunna, bookingId: booking.id, carId: trip.vehicleId };
 }
 
+/**
+ * Gunna's review of Jón and his of her, both shown; the operator hid his.
+ * Returns them as stored, oldest first.
+ */
+async function reviewedEachOther(jonId: string, gunnaId: string, bookingId: string) {
+  const at = await arrival(airport);
+  const later = (minutes: number) => new Date(at.getTime() + minutes * 60 * 1000);
+  await api.connection.db.insert(schema.reviews).values([
+    {
+      bookingId,
+      authorId: gunnaId,
+      subjectId: jonId,
+      authorRole: "passenger",
+      rating: 5,
+      comment: "Smooth ride",
+      revealedAt: later(30),
+      createdAt: later(10),
+    },
+    {
+      bookingId,
+      authorId: jonId,
+      subjectId: gunnaId,
+      authorRole: "driver",
+      rating: 2,
+      comment: "Kept me waiting",
+      revealedAt: later(30),
+      hiddenAt: later(60),
+      createdAt: later(30),
+    },
+  ]);
+  return reviewsAbout(jonId, gunnaId);
+}
+
+/** The reviews about these people, oldest first. */
+function reviewsAbout(...subjectIds: readonly string[]) {
+  return api.connection.db
+    .select()
+    .from(schema.reviews)
+    .where(inArray(schema.reviews.subjectId, [...subjectIds]))
+    .orderBy(asc(schema.reviews.createdAt), asc(schema.reviews.id));
+}
+
 /** Whether a query of this database waits for a row lock. */
 async function waitingOnALock() {
   const { rows } = await api.connection.pool.query<{ waiting: number }>(
@@ -347,6 +390,77 @@ describe("trips and bookings 3 years after the trip (spec 11, 3.7; plan 4.7)", (
     ).toEqual(payments);
   });
 
+  it("keeps the trip's reviews for the people they are about, by nobody and on no ride (A51)", async () => {
+    const { jon, gunna, bookingId } = await rideWithEverything();
+    const written = await reviewedEachOther(jon.userId, gunna.userId, bookingId);
+    const ratings = await ratingsOf(api.connection.db, [jon.userId, gunna.userId]);
+
+    // One trip, one booking and two reviews.
+    expect(await run(await threeYearsAfter(airport))).toEqual({ erased: 0, anonymised: 4 });
+
+    expect(await reviewsAbout(jon.userId, gunna.userId)).toEqual(
+      written.map((review) => ({
+        ...review,
+        authorId: formerMemberId,
+        bookingId: null,
+        updatedAt: expect.any(Date) as unknown,
+      })),
+    );
+    // Stars, comments and when they were written and shown stay: so do the ratings.
+    expect(await ratingsOf(api.connection.db, [jon.userId, gunna.userId])).toEqual(ratings);
+  });
+
+  it("unlinks the reviews of a trip made anonymous before reviews were (A51)", async () => {
+    const { jon, gunna, bookingId } = await rideWithEverything();
+    const written = await reviewedEachOther(jon.userId, gunna.userId, bookingId);
+    const due = await threeYearsAfter(airport);
+    await run(due);
+    // As the clean-up left a trip before its reviews were unlinked too.
+    for (const review of written) {
+      await api.connection.db
+        .update(schema.reviews)
+        .set({ authorId: review.authorId, bookingId })
+        .where(eq(schema.reviews.id, review.id));
+    }
+
+    // The trip once more, and its two reviews.
+    expect(await run(due)).toEqual({ erased: 0, anonymised: 3 });
+
+    expect(
+      (await reviewsAbout(jon.userId, gunna.userId)).map(({ authorId, bookingId: ride }) => ({
+        authorId,
+        ride,
+      })),
+    ).toEqual([
+      { authorId: formerMemberId, ride: null },
+      { authorId: formerMemberId, ride: null },
+    ]);
+  });
+
+  it("keeps such a trip's reviews while a hold covers a person they name", async () => {
+    const { jon, gunna, bookingId } = await rideWithEverything();
+    const written = await reviewedEachOther(jon.userId, gunna.userId, bookingId);
+    const due = await threeYearsAfter(airport);
+    await run(due);
+    for (const review of written) {
+      await api.connection.db
+        .update(schema.reviews)
+        .set({ authorId: review.authorId, bookingId })
+        .where(eq(schema.reviews.id, review.id));
+    }
+    // The trip and booking name only the former member now; the reviews name Gunna.
+    await hold("user", gunna.userId, new Date(due.getTime() + 30 * day));
+
+    expect(await run(due)).toEqual({ erased: 0, anonymised: 0 });
+
+    expect(
+      (await reviewsAbout(jon.userId, gunna.userId)).map(({ authorId, bookingId: ride }) => ({
+        authorId,
+        ride,
+      })),
+    ).toEqual(written.map((review) => ({ authorId: review.authorId, ride: bookingId })));
+  });
+
   it("leaves the driver's and passengers' later trips as they were", async () => {
     const { gunna } = await rideWithEverything();
     const later = await booked(gunna.accessToken, north, { fromStop: 0, toStop: 1 });
@@ -413,7 +527,7 @@ describe("trips and bookings 3 years after the trip (spec 11, 3.7; plan 4.7)", (
       }
       await client.query("commit");
 
-      expect(await running).toEqual({ trips: 0, bookings: 0, cars: 0, failed: 0 });
+      expect(await running).toEqual({ trips: 0, bookings: 0, reviews: 0, cars: 0, failed: 0 });
     } finally {
       client.release();
     }

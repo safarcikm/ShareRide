@@ -33,6 +33,15 @@ describe("GET /v1/health/ready with a real database", () => {
     expect(response.status).toBe(200);
   });
 
+  it("leaves the pool's connections without its short timeout", async () => {
+    await pingDatabase(connection.pool);
+    // The pool hands out the connection the ping gave back.
+    const { rows } = await connection.pool.query<{ statement_timeout: string }>(
+      "SHOW statement_timeout",
+    );
+    expect(rows[0]?.statement_timeout).toBe("0");
+  });
+
   it("is unavailable when the pool is closed", async () => {
     const closed = await freshTestDatabase();
     await closed.close();

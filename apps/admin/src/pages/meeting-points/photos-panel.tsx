@@ -74,7 +74,14 @@ const draftOf = (photo: AdminMeetingPointPhoto): Draft => ({
  * (`PhotoBrowser`) and the domain's `checkPhotoFile` checks it before it is
  * sent. A retired point's photos are shown as they are.
  */
-export function PhotosPanel({ point }: { readonly point: AdminMeetingPoint }) {
+export function PhotosPanel({
+  point,
+  onChange,
+}: {
+  readonly point: AdminMeetingPoint;
+  /** Called after a photo is added, described, moved or removed, here or elsewhere. */
+  readonly onChange?: () => void;
+}) {
   const { t, locale, call, photos: browser } = useConsole();
   const base = useId();
   const [photos, setPhotos] = useState<readonly AdminMeetingPointPhoto[] | "loading" | "failed">(
@@ -194,6 +201,7 @@ export function PhotosPanel({ point }: { readonly point: AdminMeetingPoint }) {
   function done(next: readonly AdminMeetingPointPhoto[], text: MessageKey, focus = true) {
     setBusy(false);
     show(next);
+    onChange?.();
     setMessage({ kind: "status", text, focus });
   }
 
@@ -217,14 +225,17 @@ export function PhotosPanel({ point }: { readonly point: AdminMeetingPoint }) {
           return;
         }
         break;
+      // Changed elsewhere: the newest list, and the point's checklist again.
       case "photo_changed":
         void load(form === "add" ? undefined : form.photoId);
+        onChange?.();
         say("status", "admin.meetingPoint.photoChanged");
         return;
       case "photos_changed":
       case "too_many_photos":
       case "not_found":
         void load();
+        onChange?.();
         say("status", "admin.meetingPoint.photosChanged");
         return;
       case "meeting_point_retired":

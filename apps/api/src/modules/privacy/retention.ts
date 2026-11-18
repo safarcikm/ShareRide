@@ -154,7 +154,7 @@ export function retentionSteps({
           counts: {
             trips_and_bookings: {
               erased: counts.cars,
-              anonymised: counts.trips + counts.bookings,
+              anonymised: counts.trips + counts.bookings + counts.reviews,
             },
           },
           failures: counts.failed,
