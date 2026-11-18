@@ -56,6 +56,8 @@ export const trips = pgTable(
     chat: text().notNull(),
     /** To passengers, without contact details (R3.10); empty for none. */
     note: text().notNull().default(""),
+    /** When ShareRide hid the note from passengers (spec 9, 3.4.3); a new note is shown again. */
+    noteHiddenAt: at(),
     /** Copies of the first and last stops' planned times, for overlap and clean-up. */
     departsAt: at(),
     arrivesAt: at(),

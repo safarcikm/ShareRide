@@ -14,7 +14,7 @@ import {
   type Result,
 } from "@shareride/domain";
 import type { Locale } from "@shareride/i18n";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { LegalService } from "../legal/index.ts";
 import { pendingEmailOf } from "./email.ts";
 
@@ -94,7 +94,14 @@ export function createAccountService(dependencies: {
         .update(users)
         .set({
           ...(firstName === undefined ? {} : { firstName }),
-          ...(about === undefined ? {} : { about }),
+          // A different text is shown again, even after ShareRide hid the last;
+          // the same one sent back with other changes stays hidden (spec 9, 3.4.3).
+          ...(about === undefined
+            ? {}
+            : {
+                about,
+                aboutHiddenAt: sql`case when ${users.about} is distinct from ${about}::text then null else ${users.aboutHiddenAt} end`,
+              }),
           ...(languages === undefined ? {} : { languages: [...languages] }),
           ...(changes.locale === undefined ? {} : { locale: changes.locale }),
           updatedAt: clock(),
