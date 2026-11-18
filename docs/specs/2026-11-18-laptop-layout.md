@@ -297,8 +297,8 @@ changes on a phone.
 1. **Side column, here at the left:** the person: photo or initial, name,
    languages, member since, "Edit profile" and "See it as others do".
 2. **Main column:** the two groups of rows (My cars, Driving licence,
-   Meeting points; Settings, Terms, rules and privacy, Notices) and the
-   line about what is in Settings.
+   Meeting points; Settings, Terms, rules and privacy, Send feedback,
+   Notices) and the line about what is in Settings.
 3. The title starts at the left, over the card. The card stays in view
    while the rows scroll.
 4. Signed out, Profile stays one centred column.

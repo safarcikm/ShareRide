@@ -240,6 +240,7 @@ describe("My profile on a laptop (spec 18, 3.12)", () => {
       "Meeting points",
       "Settings",
       "Terms, rules and privacy",
+      "Send feedback",
       "Notices",
     ]) {
       expect(main.getByRole("button", { name: row })).toBeVisible();
