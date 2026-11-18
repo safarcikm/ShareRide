@@ -1,4 +1,9 @@
-import { corridorMaxPlaces, corridorNameMaxLength } from "@shareride/domain";
+import {
+  corridorMaxPlaces,
+  corridorNameMaxLength,
+  exitCriteria,
+  metricKeys,
+} from "@shareride/domain";
 import { z } from "zod";
 import { timestampSchema } from "./common.ts";
 import { errorResponseSchema } from "./errors.ts";
@@ -88,3 +93,82 @@ export const adminUpdateCorridorRoute = defineRoute({
     404: { description: "not_found", ...errors },
   },
 });
+
+// The weekly figures and the beta's exit criteria (spec 10, 3.4 and
+// section 6).
+
+/** An ISO week in Iceland time, as "2026-W07". */
+export const isoWeekSchema = z.string().regex(/^\d{4}-W\d{2}$/);
+
+export const metricValueSchema = z.object({
+  numerator: z.int(),
+  /** Null for a plain count or sum; otherwise what the numerator is a share of. */
+  denominator: z.int().nullable(),
+});
+
+export const adminMetricsWeekSchema = z.object({
+  week: isoWeekSchema,
+  /** The week's Monday, "2026-11-09". */
+  startsOn: z.string(),
+  /** By metric; null for a week not counted yet. */
+  metrics: z.record(z.enum(metricKeys), metricValueSchema).nullable(),
+  computedAt: timestampSchema.nullable(),
+});
+
+export const adminExitCriterionSchema = z.object({
+  key: z.enum(exitCriteria.map((criterion) => criterion.key)),
+  status: z.enum(["met", "not_met", "no_data"]),
+  numerator: z.int(),
+  denominator: z.int(),
+});
+
+export const adminMetricsSchema = z.object({
+  /** The corridor asked for; null for everything. */
+  corridorId: z.uuid().nullable(),
+  /** Oldest first. */
+  weeks: z.array(adminMetricsWeekSchema),
+  /** The last 4 complete weeks on the active corridors, whatever was asked for. */
+  exitCriteria: z.object({
+    from: isoWeekSchema,
+    to: isoWeekSchema,
+    criteria: z.array(adminExitCriterionSchema),
+  }),
+  /** Every corridor, by name, for the picker. */
+  corridors: z.array(z.object({ id: z.uuid(), name: z.string(), active: z.boolean() })),
+});
+
+export type AdminMetrics = z.infer<typeof adminMetricsSchema>;
+export type AdminMetricsWeek = z.infer<typeof adminMetricsWeekSchema>;
+
+export const adminMetricsQuerySchema = z.object({
+  /** The first week; 7 weeks before `to` when left out. */
+  from: isoWeekSchema.optional(),
+  /** The last week; the current one when left out. */
+  to: isoWeekSchema.optional(),
+  /** A corridor's ID; everything when left out. */
+  corridor: z.uuid().optional(),
+});
+
+export const adminMetricsRoute = defineRoute({
+  method: "get",
+  path: "/admin/v1/metrics",
+  summary: "The weekly figures of up to 53 weeks, and the beta's exit criteria",
+  tags: ["admin", "metrics"],
+  auth: "operator",
+  request: { query: adminMetricsQuerySchema },
+  responses: {
+    200: { description: "The figures, oldest week first", schema: adminMetricsSchema },
+    400: {
+      description: "validation_failed: no such week, `to` before `from`, or more than 53 weeks",
+      ...errors,
+    },
+    401: { description: "operator_unauthenticated", ...errors },
+    404: { description: "not_found: no such corridor", ...errors },
+  },
+});
+
+/**
+ * The same figures as a CSV file, with the same query: a file, so not a
+ * contract route. Figures about fewer than 5 people read "<5" in it.
+ */
+export const adminMetricsCsvPath = "/admin/v1/metrics.csv";

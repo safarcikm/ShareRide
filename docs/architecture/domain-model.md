@@ -346,7 +346,10 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
   random key; `corridors` a name, its places in order (`place_ids`) and
   whether it is counted. A search or a trip is on a corridor when its
   two ends are two different places of it, a meeting point counting as
-  each place that covers it (`packages/domain/src/metrics/`).
+  each place that covers it (`packages/domain/src/metrics/`). `weekly_metrics`
+  holds one row per corridor (or none, for everything), ISO week and
+  metric, with a numerator and, for a share or a rate, a denominator;
+  counting a week again replaces its rows.
 - Privacy records ([spec 11](../specs/2026-11-13-privacy-self-service.md#6-data-and-api)):
   `DataExport`, `ErasedAccount`, `BlockedNumber`, `PrivacyRequest`,
   `RetentionRun`, `Hold`.

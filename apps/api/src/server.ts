@@ -8,6 +8,7 @@ import { createApp } from "./app.ts";
 import { ConfigError, loadConfig, type Config } from "./config.ts";
 import { createLogger } from "./logger.ts";
 import { expireAllDueBookings } from "./modules/bookings/index.ts";
+import { createWeeklyMetricsService } from "./modules/metrics/index.ts";
 import { endDueSuspensions } from "./modules/moderation/index.ts";
 import { moveMeetingPointsOn } from "./modules/meeting-points/index.ts";
 import { createNotificationWorker } from "./modules/notifications/index.ts";
@@ -93,6 +94,8 @@ const app = createApp({
   },
 });
 
+const weeklyMetrics = createWeeklyMetricsService({ db: database.db, clock: () => new Date() });
+
 /** Runs a job inside the API every so often; a failure is logged and reported. */
 function every(everyMs: number, job: string, run: () => Promise<unknown>) {
   return startRepeating({
@@ -109,6 +112,12 @@ function every(everyMs: number, job: string, run: () => Promise<unknown>) {
 // Booking deadlines (R5.5, rule M1). Every booking change also stores its
 // trip's expiries first, so a late run never keeps a seat taken.
 const jobs = [
+  // The weekly figures (spec 10, 3.4.4): once a night after 03:00, the
+  // current week and the two before it. Asked every 10 minutes, so a
+  // server that was down at 03:00 still does it.
+  every(600_000, "weekly-metrics", async () => {
+    if (await weeklyMetrics.computeIfDue()) logger.info("weekly metrics counted");
+  }),
   every(60_000, "booking-deadlines", async () => {
     const expired = await expireAllDueBookings(database.db, new Date());
     if (expired > 0) logger.info({ expired }, "bookings expired");

@@ -680,3 +680,54 @@ legend + * {
   border: var(--control-outline) solid var(--color-border);
   border-radius: var(--radius-card);
 }
+
+/* The weekly figures: a wide table that scrolls sideways on its own, and
+   bars per week drawn in the page (spec 10, screen 4). */
+.table-scroll {
+  overflow-x: auto;
+}
+
+.metrics th,
+.metrics td {
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+.metric-bars {
+  display: block;
+  width: 100%;
+  max-width: var(--narrow-width);
+  height: auto;
+}
+
+.metric-bar {
+  fill: var(--color-primary);
+}
+
+.metric-axis {
+  stroke: var(--color-border);
+  stroke-width: var(--control-outline);
+}
+
+.metric-bar-label {
+  fill: var(--color-text);
+}
+
+/* The exit criteria: the status says it in words; the fill only helps the eye. */
+.exit-criteria {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.exit-criteria .tag {
+  margin-left: 0;
+}
+
+.exit-not_met {
+  background: var(--color-warning-soft);
+}
+
+.exit-no_data {
+  background: var(--color-border);
+}

@@ -497,10 +497,30 @@ before merging.
 
 ### PR 9: `feat(metrics)`: weekly figures and the exit criteria
 
-- [ ] The metric rules with their tests on a fixed set of records,
+- [x] The metric rules with their tests on a fixed set of records,
       including a week with nothing and the "fewer than 5" rule; the
       migration (`weekly_metrics`); the nightly job and the command; the
       two routes; the Metrics page
+- As built: `weekMetrics` in the domain counts one week from plain
+  records (searches, trips, bookings, reports, payments, refunds), which
+  the API reads for the weeks asked for and the 60 days before them, once
+  for everything and once per active corridor. A figure belongs to the
+  week of its own event: a search to its hour, a request to when it was
+  made, a trip to when it was published, left or completed, a booking to
+  when it was confirmed. So a booking cancelled late changes the week it
+  was confirmed in, on the next run. Drivers' cancellations are counted
+  per trip with passengers that was to leave in the week, using
+  `counts_on_reliability`, which already leaves weather and closed roads
+  out. Bookings, payments and reports belong to their trip's corridors;
+  a report about no trip is in the total alone. Reports per 1 000 trips
+  is stored per trip and shown per 1 000. Money paid is payments settled;
+  refunded is what cancelling gave back. The exit criteria add the
+  active corridors' rows of the last 4 complete weeks, so a trip on two
+  corridors counts twice there; the report target uses the total. The
+  nightly run is asked for every 10 minutes and does its work once a
+  day, under an advisory lock, so two servers do not both count. The
+  page's week range is 8, 13 or 26 weeks; the routes take up to 53.
+  Migration `0052_weekly_metrics`
 - Verify: integration tests (the job run twice gives the same rows; a
   late cancellation changes last week's figure on the next run); the
   page against a hand count on the sample data
