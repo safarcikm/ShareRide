@@ -206,8 +206,10 @@ ready, for example milestone 12 once there is a domain. Each one gets its own
 plan in `docs/plans/` before it starts.
 
 Milestone 11: beta gate, feedback and operator settings
-([spec 12](../specs/2026-11-13-beta-access-and-feedback.md),
-[spec 10](../specs/2026-11-13-operator-settings-and-metrics.md); needs the
+([plan](../plans/2026-11-18-milestone-11-beta-gate-feedback-and-settings.md),
+proposed 2026-11-18;
+[spec 12](../specs/2026-11-13-beta-access-and-feedback.md),
+[spec 10](../specs/2026-11-13-operator-settings-and-metrics.md); on the
 console from milestone 8)
 
 - [ ] Invite codes, waves and the closed-beta gate
