@@ -1,11 +1,13 @@
 import type {
+  AdminActivationChecklist,
   AdminImportRow,
   AdminMeetingPoint,
   AdminMeetingPointInput,
   AdminMeetingPointListItem,
 } from "@shareride/contracts";
-import { schema, type Database } from "@shareride/db";
+import { lockLegs, schema, type Database } from "@shareride/db";
 import {
+  activationChecklist,
   changedFields,
   err,
   icelandDate,
@@ -14,11 +16,13 @@ import {
   nextPointStatus,
   ok,
   readMeetingPointImport,
+  readyToActivate,
   reviewDueOn,
   reviewedOn,
   searchTextFor,
   validateMeetingPointDraft,
   validatePause,
+  type ActivationItem,
   type ConsoleFilters,
   type DraftProblem,
   type ImportFileProblem,
@@ -34,9 +38,10 @@ import { count, eq, ne, sql } from "drizzle-orm";
 import { recordAudit, type AuditRequest } from "../admin/audit.ts";
 import type { Transaction } from "../bookings/seats.ts";
 import { recordEvents } from "../notifications/outbox.ts";
+import type { LegService } from "./legs.ts";
 import { futureTripsAt } from "./status.ts";
 
-const { meetingPointIssues, meetingPoints } = schema;
+const { meetingPointIssues, meetingPointPhotos, meetingPoints } = schema;
 
 type MeetingPointRow = typeof meetingPoints.$inferSelect;
 
@@ -53,7 +58,8 @@ export type UpdateProblem =
 
 export type StatusProblem =
   | { readonly code: "validation_failed"; readonly problems: readonly PauseProblem[] }
-  | { readonly code: "not_found" | "meeting_point_changed" | "status_change_not_allowed" };
+  | { readonly code: "not_found" | "meeting_point_changed" | "status_change_not_allowed" }
+  | { readonly code: "activation_not_ready"; readonly missing: readonly ActivationItem[] };
 
 /** A file's rows as the console shows them, and how many became drafts. */
 export interface ImportResult {
@@ -79,6 +85,17 @@ export interface MeetingPointAdminService {
     input: AdminMeetingPointInput & Loaded,
     actor: ConsoleActor,
   ): Promise<Result<AdminMeetingPoint, UpdateProblem>>;
+  /** The point's activation checklist (R2.3), or undefined for no such point. */
+  activationChecklist(id: string): Promise<AdminActivationChecklist | undefined>;
+  /**
+   * Activates a draft whose checklist passes (spec 2, 3.6.3), computing its
+   * legs with every point in service in the same transaction.
+   */
+  activate(
+    id: string,
+    input: Loaded,
+    actor: ConsoleActor,
+  ): Promise<Result<AdminMeetingPoint, StatusProblem>>;
   /**
    * Pauses an active point (spec 2, 3.6.4): new trips cannot use it, and
    * the drivers and passengers of its future trips are told.
@@ -263,8 +280,23 @@ const collator = new Intl.Collator("is");
 export function createMeetingPointAdminService(dependencies: {
   readonly db: Database;
   readonly clock: () => Date;
+  readonly legs: LegService;
 }): MeetingPointAdminService {
-  const { db, clock } = dependencies;
+  const { db, clock, legs } = dependencies;
+
+  /** The checklist of a point as it is in `q`. */
+  async function checklistOf(q: Database | Transaction, row: MeetingPointRow) {
+    const photos = await q
+      .select({
+        descriptionIs: meetingPointPhotos.descriptionIs,
+        descriptionEn: meetingPointPhotos.descriptionEn,
+      })
+      .from(meetingPointPhotos)
+      .where(eq(meetingPointPhotos.meetingPointId, row.id));
+    return activationChecklist(row, photos, {
+      connected: await legs.connects(row.id, row.location, q),
+    });
+  }
 
   return {
     // A few hundred points at most, so the domain's filters run on all of them.
@@ -437,6 +469,59 @@ export function createMeetingPointAdminService(dependencies: {
       });
     },
 
+    async activationChecklist(id) {
+      const [row] = await db.select().from(meetingPoints).where(eq(meetingPoints.id, id));
+      if (row === undefined) return undefined;
+      const items = await checklistOf(db, row);
+      return { items, ready: readyToActivate(items) };
+    },
+
+    activate(id, input, actor) {
+      return db.transaction(async (tx): Promise<Result<AdminMeetingPoint, StatusProblem>> => {
+        // The legs lock before the point's row, in the order the sample seed
+        // takes them, so neither waits for the other for ever.
+        await lockLegs(tx);
+        const found = await loadForChange(tx, id, input.updatedAt);
+        if (found === undefined) return err({ code: "not_found" });
+        if (!found.loaded) return err({ code: "meeting_point_changed" });
+        const { row } = found;
+        const status = nextPointStatus(row.status as MeetingPointStatus, "activate", 0);
+        if (!status.ok) return err({ code: "status_change_not_allowed" });
+        const missing = (await checklistOf(tx, row))
+          .filter((check) => !check.done)
+          .map((check) => check.item);
+        if (missing.length > 0) return err({ code: "activation_not_ready", missing });
+
+        const [saved] = await tx
+          .update(meetingPoints)
+          .set({
+            status: status.value,
+            reviewDueOn: reviewDueOn(status.value, row.lastCheckedOn),
+            updatedAt: changedNow,
+          })
+          .where(eq(meetingPoints.id, id))
+          .returning();
+        if (saved === undefined) throw new Error("The meeting point was not saved.");
+        const computed = await legs.computeFor(id, tx);
+        if (!computed.ok) throw new Error("The meeting point was not found for its legs.");
+        // A draft has no trips: none can use it.
+        const before = toAdminMeetingPoint(row, 0);
+        const after = toAdminMeetingPoint(saved, 0);
+        const changes = changedFields(statusValuesOf(before), statusValuesOf(after));
+        await recordAudit(tx, {
+          operator: actor.operator,
+          action: "meeting_point.activated",
+          subjectType: "meeting_point",
+          subjectId: id,
+          before: changes.before,
+          // Its legs, and those no road connects (3.7.4).
+          after: { ...changes.after, legs: computed.value.legs, missing: computed.value.missing },
+          request: actor.request,
+        });
+        return ok(after);
+      });
+    },
+
     pause(id, input, actor) {
       const checked = validatePause(input, icelandDate(clock()));
       if (!checked.ok) {
@@ -488,7 +573,8 @@ export function createMeetingPointAdminService(dependencies: {
     id: string,
     input: Loaded,
     actor: ConsoleActor,
-    change: StatusChange,
+    // Activating has its checklist and legs: `activate`.
+    change: Exclude<StatusChange, "activate">,
     alongside: (
       tx: Transaction,
       futureTrips: readonly string[],
@@ -557,7 +643,7 @@ const auditActions = {
   pause: "paused",
   resume: "resumed",
   retire: "retired",
-} as const satisfies Record<StatusChange, string>;
+} as const satisfies Record<Exclude<StatusChange, "activate">, string>;
 
 /** What a status change's audit entry compares: the status, the pause and the review date. */
 function statusValuesOf(point: AdminMeetingPoint): Record<string, unknown> {

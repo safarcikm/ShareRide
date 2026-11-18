@@ -458,6 +458,75 @@ test("the operator recomputes the distances between meeting points on the road f
   ).toContainText("legs.recomputed");
 });
 
+// Activating a draft (spec 2, 3.6.3): the checklist (R2.3) says what is
+// still to do, and Activate waits for it; once a described photo is added,
+// the point goes into use with its distances to every point in service.
+test("the operator activates a draft once its checklist is done", async () => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/admin/meeting-points/new");
+  await page.getByLabel("Icelandic name").fill("Virkjunarprófun á Selfossi");
+  await page.getByLabel("Coordinates or a map link").fill("63.93690, -20.99380");
+  await page.getByLabel("Region").selectOption("south");
+  await page.getByLabel("Municipality").fill("Árborg");
+  await page.getByLabel("Type").selectOption("fuel-station");
+  await page.getByLabel("Where to stand, in Icelandic").fill("Við dælurnar.");
+  await page.getByLabel("Where to stand, in English").fill("By the pumps.");
+  await page.getByLabel("I have checked the amenities").check();
+  await page.getByLabel("I have checked the season").check();
+  await page.getByLabel("Last confirmed on").fill("2026-11-16");
+  await page.getByRole("button", { name: "Save the draft" }).click();
+  await expect(page.getByText("Virkjunarprófun á Selfossi is saved as a draft.")).toBeVisible();
+
+  const inUse = page.getByRole("region", { name: "In use" });
+  const checklist = inUse.getByRole("list", { name: "Activation checklist" });
+  const photosItem = checklist.getByRole("listitem").filter({ hasText: "A photo" });
+  await expect(photosItem).toContainText("To do");
+  await expect(checklist.getByRole("listitem").filter({ hasText: "A road" })).toContainText("Done");
+  const activate = inUse.getByRole("button", { name: "Activate Virkjunarprófun á Selfossi" });
+  await activate.click();
+  await expect(inUse.getByRole("alert")).toHaveText(
+    "1 thing is still to do before Virkjunarprófun á Selfossi can be activated.",
+  );
+  await expect(inUse.getByRole("alert")).toBeFocused();
+
+  const addForm = page
+    .getByRole("region", { name: "Photos" })
+    .getByRole("group", { name: "Add a photo" });
+  await addForm.getByLabel("Photo", { exact: true }).setInputFiles({
+    name: "pumps.png",
+    mimeType: "image/png",
+    buffer: gradientPng(1600, 1200),
+  });
+  await addForm.getByLabel("Description for screen readers, in Icelandic").fill("Dælurnar.");
+  await addForm.getByLabel("Description for screen readers, in English").fill("The pumps.");
+  await addForm.getByRole("button", { name: "Add the photo" }).click();
+  await expect(photosItem).toContainText("Done");
+  await expect(inUse.getByRole("alert")).toHaveCount(0);
+  // On a phone the checklist fits the width.
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await page.setViewportSize({ width: 1280, height: 800 });
+
+  await activate.click();
+  const said = page.getByText(
+    "Virkjunarprófun á Selfossi is active. Drivers can choose it for new trips.",
+  );
+  await expect(said).toBeFocused({ timeout: 30_000 });
+  await expect(page.getByText("Status: Active")).toBeVisible();
+  await expect(checklist).toHaveCount(0);
+  await expect(inUse.getByRole("button", { name: "Pause" })).toBeVisible();
+
+  // Its legs came with it, on the road file, both ways with every point in service.
+  await page.goto("/admin/meeting-points/distances");
+  await expect(
+    page.getByText("Every leg between meeting points in service is there."),
+  ).toBeVisible();
+  await page.goto("/admin/audit-log?action=meeting_point.activated");
+  await expect(
+    page.getByRole("list", { name: "Entries" }).getByRole("listitem").first(),
+  ).toContainText("meeting_point.activated");
+});
+
 // Reports (spec 9, 3.4): two sample drivers' trips are reported. The
 // operator closes one without action, suspends the other driver from their
 // report after reading the notice as the driver will, and closes that one

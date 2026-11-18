@@ -48,13 +48,23 @@ export async function migrateDatabase(db: Database): Promise<void> {
   await migrate(db, { migrationsFolder });
 }
 
-/** Resolves when the database answers a trivial query within the timeout. */
+/**
+ * Resolves when the database answers a trivial query within the timeout.
+ * The timeout holds for its own transaction only (`SET LOCAL`), so the
+ * pool's connection goes back as it was; one that failed is closed.
+ */
 export async function pingDatabase(pool: pg.Pool, timeoutMs = 2_000): Promise<void> {
   const client = await pool.connect();
+  let failed: Error | undefined;
   try {
-    await client.query(`SET statement_timeout = ${String(Math.trunc(timeoutMs))}`);
+    await client.query("BEGIN");
+    await client.query(`SET LOCAL statement_timeout = ${String(Math.trunc(timeoutMs))}`);
     await client.query("SELECT 1");
+    await client.query("COMMIT");
+  } catch (error) {
+    failed = error instanceof Error ? error : new Error(String(error));
+    throw error;
   } finally {
-    client.release();
+    client.release(failed);
   }
 }
