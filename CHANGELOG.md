@@ -605,6 +605,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   content and cancels a trip as ShareRide, each with the rule and the
   reason the person reads; `/admin/v1/appeals` lists open and answered
   appeals, and the answer is final. Only operators reach any of it.
+- The console's Reports and Appeals pages (milestone 9, PR 7b, spec 9,
+  3.4): the open reports, safety first, each with when it is due and an
+  Overdue tag, and the last ones closed; a report's page with its records,
+  both people and their history, the conversation only when asked, the
+  actions (Reinstate too, for a suspended person) with the notice shown as
+  the person reads it, in their language, before it is sent, and closing
+  it, asked once more. Appeals lists those
+  waiting with the action and its report, and the answer asks once more as
+  it is final. A browser journey closes one report and suspends from
+  another.
 - Trips depart and complete on their own (milestone 7, PR 3, spec 8,
   R8.1 and R8.2): every minute the API departs a trip at its first stop's
   planned time and completes it 2 hours after its last, with its
