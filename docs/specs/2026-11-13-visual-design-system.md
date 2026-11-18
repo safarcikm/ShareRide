@@ -242,12 +242,15 @@ review board shows the trip details in Icelandic and dark mode.
   640 of a map beside it), laid out with `Columns` or a `Grid` (section 5.2;
   spec 18, 3.2). There is one breakpoint, 900; under it every screen is the
   column.
-- On the web, a wide screen keeps room for its scrollbar at both sides
-  (`scrollbar-gutter: stable both-edges`), so the page stays in the middle
-  of the window, under the bar, whether or not it scrolls.
+- On the web, a wide screen and the top bar keep room for a scrollbar at
+  both sides (`scrollbar-gutter: stable both-edges`), so the page stays in
+  the middle of the window, under what the bar holds, whether or not it
+  scrolls and at every width.
 - Under a pointer, parts that can be pressed show it (sections 5.1 and 5.2;
   spec 18, 3.4). Phones have no pointer, and nothing is reached only by
-  pointing.
+  pointing. A chip or a secondary button tinted `primarySoft` keeps its
+  `control` outline: 3:1 or more against the surface around it, which marks
+  the part, and 2.9:1 against the tint inside.
 - From 900 wide, the trip details and request screens move the price and main
   action from the bottom bar into a panel 320 wide beside the column.
 - Search results put the map beside the list (spec 4).

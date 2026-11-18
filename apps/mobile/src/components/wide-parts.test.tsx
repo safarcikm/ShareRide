@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { Dimensions, Text } from "react-native";
 import { Columns } from "./columns";
-import { Grid } from "./grid";
+import { Grid, widthOf } from "./grid";
 import { Screen } from "./screen";
 
 // The parts that lay a screen out on wide screens (spec 18, 3.2): a page
@@ -125,6 +125,17 @@ describe("Grid", () => {
     for (const cell of screen.getAllByTestId("grid-cell")) {
       expect(cell).toHaveStyle({ width: "100%" });
     }
+  });
+
+  it("asks a view that is laid out for its width, where the platform can say", () => {
+    type View = Parameters<typeof widthOf>[0];
+    const laidOut = { getBoundingClientRect: () => ({ width: 704 }) } as unknown as View;
+    const notYet = { getBoundingClientRect: () => ({ width: 0 }) } as unknown as View;
+    expect(widthOf(laidOut)).toBe(704);
+    expect(widthOf(notYet)).toBeNull();
+    // A phone's view has no such question, and the grid waits for its layout.
+    expect(widthOf({} as View)).toBeNull();
+    expect(widthOf(null)).toBeNull();
   });
 
   it("fits as many columns as are at least 320 wide", async () => {

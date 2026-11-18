@@ -265,10 +265,11 @@ export function useWideScreen() {
 /**
  * On the web, a wide screen keeps room for its scrollbar at both sides,
  * where the browser's scrollbar takes room at all. So the page stays in the
- * middle of the window, under the top bar's content (spec 18, 3.3), and
- * does not move when it grows long enough to scroll.
+ * middle of the window and does not move when it grows long enough to
+ * scroll. The top bar keeps the same room, so what it holds stays over the
+ * page's edges at every width (spec 18, 3.3).
  */
-const evenGutterOnWeb: object =
+export const evenGutterOnWeb: object =
   Platform.OS === "web" ? { scrollbarGutter: "stable both-edges" } : {};
 
 const ScreenViewHeightContext = createContext<number | null>(null);

@@ -60,8 +60,11 @@ export function Grid({
   );
 }
 
-/** The width of a view that is laid out already, or null where it cannot be asked. */
-function widthOf(view: ComponentRef<typeof View> | null): number | null {
+/**
+ * The width of a view that is laid out already, or null where it cannot be
+ * asked (a platform without `getBoundingClientRect`) or is not known yet.
+ */
+export function widthOf(view: ComponentRef<typeof View> | null): number | null {
   const node = view as { getBoundingClientRect?: () => { readonly width: number } } | null;
   const width = node?.getBoundingClientRect?.().width;
   return width === undefined || width <= 0 ? null : width;

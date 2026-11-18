@@ -187,7 +187,9 @@ bar `primary`. A disabled or busy part shows none.
 - Modify: `apps/mobile/src/navigation/top-bar.tsx`,
   `apps/mobile/src/components/screen.tsx` (the scrollbar's room),
   `packages/i18n/src/messages/en.ts`, `is.ts` (`nav.home`)
-- Create: `apps/mobile/e2e/laptop.spec.ts`, `apps/mobile/e2e/support/laptop.ts`
+- Create: `apps/mobile/e2e/laptop.spec.ts`, `apps/mobile/e2e/support/laptop.ts`,
+  `apps/mobile/e2e/laptop-scrollbar.spec.ts` (the bar over the page with
+  the browser's scrollbars showing, 1000 and 1440 wide)
 - Test: `apps/mobile/src/__tests__/menu.test.tsx`
 
 **Interfaces:**
@@ -196,8 +198,9 @@ bar `primary`. A disabled or busy part shows none.
   middle (test ID `top-bar-content`), with `md` padding at each side as the
   page has; the logo and name as one link to `/` named `nav.home`.
 - Produces: on the web, a wide `Screen` scrolls with
-  `scrollbar-gutter: stable both-edges`, so a page stays under the bar's
-  content where the scrollbar takes room.
+  `scrollbar-gutter: stable both-edges`, and the bar keeps the same room
+  (`evenGutterOnWeb`), so a page stays under the bar's content where the
+  scrollbar takes room.
 - Produces: in `e2e/support/laptop.ts`, `expectNoSidewaysScroll(page)` (the
   document and the screen's scroll are no wider than the window),
   `widths = [900, 1280, 1440]` and `laptop(width)`, a viewport; the later

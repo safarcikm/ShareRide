@@ -11,16 +11,22 @@ export function laptop(width: number) {
 }
 
 /**
- * Neither the document nor a screen's own scroll is wider than what it
- * shows: nothing on the page is reached only by scrolling sideways.
+ * Neither the document, a screen's own scroll nor the top bar is wider than
+ * what it shows: nothing on the page is cut off or reached only by
+ * scrolling sideways.
  */
 export async function expectNoSidewaysScroll(page: Page) {
   const wider = await page.evaluate(() => {
-    const scrolls = [...document.querySelectorAll<HTMLElement>('[data-testid="screen-scroll"]')];
-    return [document.documentElement, ...scrolls]
+    const parts = [
+      ...document.querySelectorAll<HTMLElement>(
+        '[data-testid="screen-scroll"], [data-testid="top-bar"]',
+      ),
+    ];
+    return [document.documentElement, ...parts]
       .filter((part) => part.clientWidth > 0)
       .map((part) => part.scrollWidth - part.clientWidth);
   });
-  expect(wider.length).toBeGreaterThan(1);
+  // The document, the bar and at least one screen.
+  expect(wider.length).toBeGreaterThan(2);
   for (const extra of wider) expect(extra).toBeLessThanOrEqual(0);
 }

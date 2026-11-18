@@ -102,7 +102,8 @@ changes on a phone.
    underlined, the unread count on Messages.
 4. A browser whose scrollbar takes room (Windows, Linux) would push a page
    that scrolls a little to the left of the bar. A wide screen keeps the
-   same room at both sides, so the page stays under the bar's content.
+   same room at both sides, and so does the bar, so the bar's content stays
+   over the page's edges at every width.
 
 ### 3.4 Pointer and keyboard
 
@@ -115,7 +116,10 @@ changes on a phone.
    contrast; a secondary button, a chip and an icon button are tinted
    `primarySoft`; a text button is underlined; a place in the top bar turns
    `primary`. Only on devices with a pointer; a touch shows the pressed
-   look as before. A disabled or busy part shows nothing.
+   look as before. A disabled or busy part shows nothing. The `control`
+   outline of a tinted chip or button keeps its 3:1 against the surface
+   around it, which is what marks the part; against the tint inside it is
+   2.9:1.
 2. Nothing is reachable only by pointing: every action is on the screen
    without hovering.
 3. The keyboard focus ring stays as it is (spec 15, 5.1).

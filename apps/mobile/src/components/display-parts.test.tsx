@@ -100,15 +100,31 @@ describe("Row", () => {
 });
 
 describe("IconButton", () => {
-  it("is tinted under the pointer, unless it is disabled (spec 18, 3.4)", async () => {
-    await render(
-      <IconButton icon={ChevronLeft} label="Back" faceTestID="face" onPress={jest.fn()} />,
-    );
+  const button = (disabled: boolean) => (
+    <IconButton
+      icon={ChevronLeft}
+      label="Back"
+      faceTestID="face"
+      onPress={jest.fn()}
+      disabled={disabled}
+    />
+  );
+
+  it("is tinted under the pointer (spec 18, 3.4)", async () => {
+    await render(button(false));
     await fireEvent(screen.getByRole("button"), "hoverIn");
     expect(screen.getByTestId("face")).toHaveStyle({ backgroundColor: colors.light.primarySoft });
-    await screen.rerender(
-      <IconButton icon={ChevronLeft} label="Back" faceTestID="face" onPress={jest.fn()} disabled />,
-    );
+    await fireEvent(screen.getByRole("button"), "hoverOut");
+    expect(screen.getByTestId("face")).toHaveStyle({ backgroundColor: colors.light.surface });
+  });
+
+  it("shows nothing while it is disabled, and forgets the pointer", async () => {
+    await render(button(false));
+    await fireEvent(screen.getByRole("button"), "hoverIn");
+    await screen.rerender(button(true));
     expect(screen.getByTestId("face")).toHaveStyle({ backgroundColor: colors.light.border });
+    // The pointer left while the button heard nothing of it.
+    await screen.rerender(button(false));
+    expect(screen.getByTestId("face")).toHaveStyle({ backgroundColor: colors.light.surface });
   });
 });

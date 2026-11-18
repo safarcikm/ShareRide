@@ -31,6 +31,19 @@ for (const width of widths) {
   });
 }
 
+test.describe("the narrowest wide window, in Icelandic", () => {
+  test.use({ viewport: laptop(widths[0]), locale: "is-IS" });
+
+  test("holds the whole top bar, with its longer words", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "Hvert ertu að fara?" })).toBeVisible();
+    await expect(
+      page.getByTestId("top-bar").getByRole("button", { name: "Skipta yfir í ensku" }),
+    ).toBeVisible();
+    await expectNoSidewaysScroll(page);
+  });
+});
+
 test.describe("the top bar", () => {
   test.use({ viewport: laptop(1440), locale: "en-GB" });
 

@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LanguageSwitch } from "@/components/language-switch";
 import { Logo } from "@/components/logo";
+import { evenGutterOnWeb } from "@/components/screen";
 import { useUnread } from "@/chat/unread";
 import { useLanguage } from "@/i18n/language";
 import { useHover } from "@/theme/hover";
@@ -70,6 +71,7 @@ export function TopBar({
       testID="top-bar"
       style={[
         styles.bar,
+        evenGutterOnWeb,
         {
           backgroundColor: palette.surface,
           borderBottomColor: palette.border,
@@ -163,7 +165,14 @@ function Place({
 }
 
 const styles = StyleSheet.create({
-  bar: { alignItems: "center", paddingBottom: spacing.sm, borderBottomWidth: controlOutline },
+  // `overflow`: the bar never scrolls, and a browser keeps the room of
+  // `evenGutterOnWeb` only for a part that could.
+  bar: {
+    alignItems: "center",
+    paddingBottom: spacing.sm,
+    borderBottomWidth: controlOutline,
+    overflow: "hidden",
+  },
   // As wide as a page (`Screen`), whose padding the bar's own matches.
   content: {
     flexDirection: "row",
