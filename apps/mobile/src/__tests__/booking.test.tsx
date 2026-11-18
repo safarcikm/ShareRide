@@ -886,9 +886,7 @@ describe("Check and pay and a request on a laptop (spec 18, 3.8)", () => {
 
     expect(main().getByText("You pay when Anna says yes.")).toBeVisible();
     expect(
-      main().getByText(
-        "Free cancellation, with a full refund, up to 15 min before you get in.",
-      ),
+      main().getByText("Free cancellation, with a full refund, up to 15 min before you get in."),
     ).toBeVisible();
     expect(
       main().getByText("You'll see the number plate once your seat is confirmed."),

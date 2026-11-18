@@ -528,9 +528,7 @@ describe("Trip details on a laptop (spec 18, 3.7)", () => {
     expect(side().getByRole("button", { name: "Send request" })).toBeEnabled();
     expect(side().getByText("You'll sign in or create an account first.")).toBeVisible();
     expect(
-      side().getByText(
-        "Free cancellation, with a full refund, up to 15 min before you get in.",
-      ),
+      side().getByText("Free cancellation, with a full refund, up to 15 min before you get in."),
     ).toBeVisible();
 
     expect(
