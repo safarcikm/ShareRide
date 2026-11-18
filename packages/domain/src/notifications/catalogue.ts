@@ -99,6 +99,11 @@ export const notificationRules = {
   // To every operator when a switch for emergencies has been off for an
   // hour, and once a day after that (spec 10, 3.3).
   switch_still_off: { push: true, email: "always", sms: false },
+  // The operator's news about the beta (spec 10, 3.5), to those with "Beta
+  // news" on: by push, and by email to a verified address.
+  announcement: { push: true, email: "always", sms: false },
+  // "Send to me": the operator's own copy before sending, in both languages.
+  announcement_test: { push: true, email: "always", sms: false },
 } as const satisfies Record<string, NotificationRule>;
 
 export type NotificationKind = keyof typeof notificationRules;
@@ -116,6 +121,8 @@ export const accountNoticeKinds = [
   "appeal_answered",
   "report_closed",
   "feedback_replied",
+  "announcement",
+  "announcement_test",
 ] as const;
 export type AccountNoticeKind = (typeof accountNoticeKinds)[number];
 

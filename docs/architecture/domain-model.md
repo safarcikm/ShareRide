@@ -349,7 +349,13 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
   each place that covers it (`packages/domain/src/metrics/`). `weekly_metrics`
   holds one row per corridor (or none, for everything), ISO week and
   metric, with a numerator and, for a share or a rate, a denominator;
-  counting a week again replaces its rows.
+  counting a week again replaces its rows. `announcements` holds an
+  audience (everyone, drivers, passengers, or a corridor), a title and a
+  message in both languages, who wrote it, when it was last sent to the
+  operator as a test, and when it was sent with how many people it went
+  to; a draft until then, sent once, never deleted. Each person's copy
+  is a notification that names the announcement
+  (`packages/domain/src/beta/announcements.ts`).
 - Privacy records ([spec 11](../specs/2026-11-13-privacy-self-service.md#6-data-and-api)):
   `DataExport`, `ErasedAccount`, `BlockedNumber`, `PrivacyRequest`,
   `RetentionRun`, `Hold`.
@@ -433,7 +439,7 @@ recorded change), `TripChanged` (a new car or stop, likewise), `TripCancelled`, 
 (a request nobody answered, or an accepted booking nobody paid for),
 `BookingWithdrawn`, `BookingCancelled`,
 `TripDeparted`, `CheckedIn`, `PassengerNoShow`, `DriverAbsentReported`,
-`DisputeAnswered`, `DisputeDecided`, `TripCompleted`, `MessageSent`, `ReviewSubmitted`, `ReviewsRevealed`, `ReportFiled`, `ReportClosed` (the reporter is told the outcome), `FeedbackReplied` (the tester is told there is a reply),
+`DisputeAnswered`, `DisputeDecided`, `TripCompleted`, `MessageSent`, `ReviewSubmitted`, `ReviewsRevealed`, `ReportFiled`, `ReportClosed` (the reporter is told the outcome), `FeedbackReplied` (the tester is told there is a reply), `AnnouncementSent` (each person it is for is told), `AnnouncementTested` (the operator gets their own copy),
 `UserBlocked`, `ModerationActionTaken` (a warning, content hidden, a suspension, reinstatement, trip cancelled or other operator action on a person), `SuspensionEnded`, `AppealAnswered`,
 `WomenOnlyAccessWithdrawn`, `WomenOnlyAccessRestored`,
 `WeatherWarningMatched`, `RoadClosureMatched`.

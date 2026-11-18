@@ -49,12 +49,27 @@ import {
   type SwitchKey,
 } from "@shareride/domain";
 import type { CarFacts } from "@shareride/i18n";
-import { and, asc, desc, eq, gt, inArray, isNull, lte, ne, notInArray, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  inArray,
+  isNotNull,
+  isNull,
+  lte,
+  ne,
+  notInArray,
+  or,
+  sql,
+} from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { EmailChannel } from "../../platform/email.ts";
 import { MaybeSent } from "../../platform/maybe-sent.ts";
 import { deviceNotRegistered, type PushReceipt, type PushSender } from "../../platform/push.ts";
 import { SmsMaybeSent, type SmsSender } from "../../platform/sms.ts";
+import { announcementReaders } from "../beta/announcements.ts";
 import type { Queryable, Transaction } from "../bookings/seats.ts";
 import { quickOf } from "../chat/service.ts";
 import { isHidden, shown } from "../privacy/hidden.ts";
@@ -80,6 +95,7 @@ import {
 // instances share the work, and unique keys make a second run add nothing.
 
 const {
+  announcements,
   bookings,
   conversations,
   dataExports,
@@ -522,6 +538,9 @@ async function accountFactsOf(
       return reportOutcomeFactsOf(q, notification);
     case "feedback_replied":
       return feedbackReplyFactsOf(q, notification);
+    case "announcement":
+    case "announcement_test":
+      return announcementFactsOf(q, notification, kind);
     default:
       return noticeFactsOf(q, notification, kind);
   }
@@ -616,6 +635,56 @@ async function feedbackReplyFactsOf(q: Queryable, notification: typeof notificat
     facts,
     current: true,
     locale: row.locale === "is" ? "is" : "en",
+    recipientId: notification.recipientId,
+    email: row.emailVerifiedAt === null ? null : row.email,
+    phone: null,
+    booking: null,
+  } as const;
+}
+
+/**
+ * An announcement in the person's language (spec 10, 3.5.3), dropped if
+ * they turned "Beta news" off or left good standing before it went out;
+ * or the operator's own copy of one, in both languages (3.5.2).
+ */
+async function announcementFactsOf(
+  q: Queryable,
+  notification: typeof notifications.$inferSelect,
+  kind: "announcement" | "announcement_test",
+) {
+  if (notification.announcementId === null) return undefined;
+  const [row] = await q
+    .select({
+      locale: recipients.locale,
+      email: recipients.email,
+      emailVerifiedAt: recipients.emailVerifiedAt,
+      status: recipients.status,
+      deleteAfter: recipients.deleteAfter,
+      announcement: announcements,
+    })
+    .from(announcements)
+    .innerJoin(recipients, eq(recipients.id, notification.recipientId))
+    .where(eq(announcements.id, notification.announcementId));
+  if (row === undefined) return undefined;
+  const locale = row.locale === "is" ? "is" : "en";
+  const { titleIs, titleEn, messageIs, messageEn } = row.announcement;
+  const facts: AccountNoticeFacts =
+    kind === "announcement_test"
+      ? { kind, titleIs, titleEn, messageIs, messageEn }
+      : {
+          kind,
+          title: locale === "is" ? titleIs : titleEn,
+          message: locale === "is" ? messageIs : messageEn,
+        };
+  const current =
+    kind === "announcement_test" ||
+    (row.status === "active" &&
+      row.deleteAfter === null &&
+      (await preferencesOf(q, notification.recipientId)).betaNews);
+  return {
+    facts,
+    current,
+    locale,
     recipientId: notification.recipientId,
     email: row.emailVerifiedAt === null ? null : row.email,
     phone: null,
@@ -1147,6 +1216,7 @@ export function createNotificationWorker(dependencies: {
       readonly moderationActionId?: string;
       readonly privacyRequestId?: string;
       readonly feedbackId?: string;
+      readonly announcementId?: string;
       readonly meetingPointId?: string;
     },
     key: string,
@@ -1166,6 +1236,7 @@ export function createNotificationWorker(dependencies: {
         moderationActionId: notification.moderationActionId ?? null,
         privacyRequestId: notification.privacyRequestId ?? null,
         feedbackId: notification.feedbackId ?? null,
+        announcementId: notification.announcementId ?? null,
         meetingPointId: notification.meetingPointId ?? null,
         uniqueKey: `${key}:${kind}:${recipientId}`,
         createdAt: now,
@@ -1711,6 +1782,44 @@ export function createNotificationWorker(dependencies: {
       await add(
         tx,
         { kind: "feedback_replied", to: null, recipientId: sent.userId, feedbackId },
+        key,
+        now,
+      );
+      return;
+    }
+    if (type === "AnnouncementSent") {
+      // Everyone it is for now (spec 10, 3.5.3). Keyed by the announcement
+      // and the person, so nobody is told twice whatever runs twice.
+      const announcementId = idIn(event.payload, "announcementId");
+      if (announcementId === undefined) return;
+      const [sent] = await tx
+        .select({ audience: announcements.audience, corridorId: announcements.corridorId })
+        .from(announcements)
+        .where(and(eq(announcements.id, announcementId), isNotNull(announcements.sentAt)));
+      if (sent === undefined) return;
+      for (const reader of await announcementReaders(tx, sent)) {
+        await add(
+          tx,
+          { kind: "announcement", to: null, recipientId: reader.id, announcementId },
+          `announcement:${announcementId}`,
+          now,
+        );
+      }
+      return;
+    }
+    if (type === "AnnouncementTested") {
+      // The operator who asked, each time they ask (3.5.2).
+      const announcementId = idIn(event.payload, "announcementId");
+      const operatorId = idIn(event.payload, "operatorId");
+      if (announcementId === undefined || operatorId === undefined) return;
+      const [draft] = await tx
+        .select({ id: announcements.id })
+        .from(announcements)
+        .where(eq(announcements.id, announcementId));
+      if (draft === undefined) return;
+      await add(
+        tx,
+        { kind: "announcement_test", to: null, recipientId: operatorId, announcementId },
         key,
         now,
       );

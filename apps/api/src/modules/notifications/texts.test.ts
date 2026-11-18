@@ -627,6 +627,61 @@ describe("notification texts", () => {
     });
   });
 
+  it("carry an announcement as written, the email with why they get it (spec 10, 3.5.3)", () => {
+    const settings = defaultNotificationSettings;
+    const message = `We improved the map.\n${"Thank you for testing. ".repeat(10)}`.trim();
+    const news = { kind: "announcement", title: "A new version", message } as const;
+    const text = notificationText(news, "en", settings);
+    expect(text).toMatchObject({
+      title: "A new version",
+      path: "/settings/beta-news",
+      open: "Open Beta news in ShareRide",
+      emailBody: [
+        message,
+        "",
+        "You get this because you are a ShareRide beta tester. Turn off beta news in Settings.",
+      ].join("\n"),
+    });
+    // The push has the start of it, on one line.
+    expect(text.body.startsWith("We improved the map. Thank you for testing.")).toBe(true);
+    expect(text.body).toHaveLength(140);
+    expect(text.body.endsWith("…")).toBe(true);
+    expect(notificationText(news, "is", settings).emailBody).toContain(
+      "Þú færð þetta af því að þú tekur þátt í beta-prófun ShareRide. Þú getur slökkt á fréttum af beta-prófuninni í stillingum.",
+    );
+  });
+
+  it("mark the operator's own copy as a test, with both languages (spec 10, 3.5.2)", () => {
+    const test = {
+      kind: "announcement_test",
+      titleIs: "Ný útgáfa",
+      titleEn: "A new version",
+      messageIs: "Við bættum kortið.",
+      messageEn: "We improved the map.",
+    } as const;
+    expect(notificationText(test, "is", defaultNotificationSettings)).toEqual({
+      title: "Prófun: Ný útgáfa",
+      body: "Við bættum kortið.",
+      path: "/settings/beta-news",
+      open: "Opna fréttir af beta-prófuninni í ShareRide",
+      emailBody: [
+        "Ný útgáfa",
+        "",
+        "Við bættum kortið.",
+        "",
+        "Þú færð þetta af því að þú tekur þátt í beta-prófun ShareRide. Þú getur slökkt á fréttum af beta-prófuninni í stillingum.",
+        "",
+        "----",
+        "",
+        "A new version",
+        "",
+        "We improved the map.",
+        "",
+        "You get this because you are a ShareRide beta tester. Turn off beta news in Settings.",
+      ].join("\n"),
+    });
+  });
+
   it("tell the person ShareRide's answer to their appeal, the email with its words (spec 9, 3.4.4)", () => {
     const settings = defaultNotificationSettings;
     const answer = {

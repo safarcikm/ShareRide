@@ -1,5 +1,6 @@
 import type { MessageKey } from "@shareride/i18n";
 import type { ComponentType } from "react";
+import { AnnouncementsPage } from "./pages/announcements/page.tsx";
 import { AppealsPage } from "./pages/appeals/page.tsx";
 import { AuditLogPage } from "./pages/audit-log.tsx";
 import { CorridorsPage } from "./pages/corridors/page.tsx";
@@ -43,6 +44,11 @@ export const sections: readonly Section[] = [
   { path: "/admin/feedback", title: "admin.feedback.title", Page: FeedbackPage },
   { path: "/admin/metrics", title: "admin.metrics.title", Page: MetricsPage },
   { path: "/admin/corridors", title: "admin.corridors.title", Page: CorridorsPage },
+  {
+    path: "/admin/announcements",
+    title: "admin.announcements.title",
+    Page: AnnouncementsPage,
+  },
   { path: "/admin/settings", title: "admin.settings.title", Page: SettingsPage },
   { path: "/admin/audit-log", title: "admin.auditLog.title", Page: AuditLogPage },
   { path: "/admin/passkeys", title: "admin.passkeys.title", Page: PasskeysPage },

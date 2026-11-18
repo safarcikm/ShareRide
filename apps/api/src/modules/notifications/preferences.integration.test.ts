@@ -5,8 +5,8 @@ import {
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
 
-// What a person can turn off (spec 7, 3.6, item 1): trip reminders, on until
-// they are turned off. News about bookings, trips, payments and messages
+// What a person can turn off (spec 7, 3.6, item 1): trip reminders and beta
+// news (spec 10, 3.5.4), each on until it is turned off. News about bookings, trips, payments and messages
 // cannot be (R7.8).
 
 let api: TestApi;
@@ -42,6 +42,33 @@ describe("/v1/me/notification-settings", () => {
     expect(await api.client.call(getNotificationSettingsRoute, { accessToken })).toMatchObject({
       data: { reminders: true },
     });
+  });
+
+  it("has beta news on until it is turned off, each switch on its own", async () => {
+    const { accessToken } = await api.signIn(api.newPhoneNumber());
+    expect(await api.client.call(getNotificationSettingsRoute, { accessToken })).toMatchObject({
+      ok: true,
+      data: { reminders: true, betaNews: true },
+    });
+    expect(
+      await api.client.call(updateNotificationSettingsRoute, {
+        accessToken,
+        body: { betaNews: false },
+      }),
+    ).toMatchObject({ ok: true, data: { reminders: true, betaNews: false } });
+    // An app that knows only of reminders leaves beta news as it is.
+    expect(
+      await api.client.call(updateNotificationSettingsRoute, {
+        accessToken,
+        body: { reminders: false },
+      }),
+    ).toMatchObject({ ok: true, data: { reminders: false, betaNews: false } });
+    expect(
+      await api.client.call(updateNotificationSettingsRoute, {
+        accessToken,
+        body: { betaNews: true },
+      }),
+    ).toMatchObject({ ok: true, data: { reminders: false, betaNews: true } });
   });
 
   it("keeps each person's own", async () => {
