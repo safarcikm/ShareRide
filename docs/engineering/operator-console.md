@@ -632,6 +632,15 @@ version }` with the version the page loaded: it takes a lock on the
   uses and an end at most 12 months ahead; the API picks the code.
   `POST /admin/v1/invite-codes/{id}/end` ends one; accounts made with it
   stay. Audit entries `invite_code.created` and `invite_code.ended`.
+- The console's Invite codes page (`apps/admin/src/pages/invite-codes/`)
+  shows the places left, a form for a new group code (it works through the
+  end of the chosen day) and each code with its uses; ending one asks
+  first.
+- In the app, `/sign-in/invite` asks a new number for the code after the
+  text-message code, which the sign-in flow keeps and sends again with it;
+  `/invite/<code>` opens sign-in with the code filled in; `BetaLabel`
+  (`apps/mobile/src/beta/config.tsx`) shows while `GET /v1/config` says
+  `beta`.
 - `pnpm --filter @shareride/api invite add "<name>" <uses> [days]` makes a
   group code on the server, for the first account of a new environment.
   It writes no audit entry and the code has no maker.

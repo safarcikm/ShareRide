@@ -65,8 +65,13 @@ analytics are needed at all.
 2. **Group codes:** for a workplace, school or club: a code with a name, a
    number of uses and an end date, which the operator creates and shares
    by hand.
-3. Sign-up asks for the code first (spec 1, step 3). A valid code is used up
-   when the account is created. The account records which code it came from.
+3. Sign-up asks for the invite code after the text-message code, and only
+   when the number has no account yet (decided 2026-11-18, milestone 11
+   plan, choice 1): signing in and signing up are one flow since spec 16,
+   so only then does the app know the person is new, and members are never
+   asked. A link `/invite/<code>` opens sign-up with the code filled in. A
+   valid code is used up when the account is created. The account records
+   which code it came from.
 4. **Waves (decision 2):** a corridor's drivers are invited two weeks before
    its passengers, so there are trips on day one; passengers then follow in
    weekly waves of about 25 per corridor. A setting caps the
@@ -192,9 +197,10 @@ Events: `WaitlistJoined`, `WaitlistConfirmed`, `InviteSent`, `InviteUsed`,
 | `waitlist.checkEmail` | Check your email to confirm. | Athugaðu tölvupóstinn þinn til að staðfesta. |
 | `waitlist.confirmed` | You're on the list. We'll email you when there's a place for you. | Þú ert á listanum. Við sendum þér tölvupóst þegar pláss losnar fyrir þig. |
 | `waitlist.leave` | Leave the waitlist | Fara af biðlistanum |
-| `invite.enterCode` | Enter your invite code | Sláðu inn boðskóðann þinn |
-| `invite.invalid` | This code isn't valid or has expired. | Þessi kóði er ekki gildur eða er útrunninn. |
-| `invite.full` | The beta is full for now. We'll let you know when there's a place. | Beta-prófunin er full í bili. Við látum þig vita þegar pláss losnar. |
+| `invite.title` | Enter your invite code | Sláðu inn boðskóðann þinn |
+| `invite.help` | ShareRide is in a closed beta. To create an account you need an invite code. | ShareRide er í lokaðri beta-prófun. Til að stofna aðgang þarftu boðskóða. |
+| `error.invite_invalid` | This code isn't valid or has expired. | Þessi kóði er ekki gildur eða er útrunninn. |
+| `error.beta_full` | The beta is full for now. Try again later. (With the waitlist, milestone 12: "We'll let you know when there's a place.") | Beta-prófunin er full í bili. Reyndu aftur síðar. |
 | `invite.emailSubject` | Your invitation to the ShareRide beta | Boð í beta-prófun ShareRide |
 | `feedback.title` | Send feedback | Senda ábendingu |
 | `feedback.kindProblem` | Something isn't working | Eitthvað virkar ekki |

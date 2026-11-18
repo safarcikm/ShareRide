@@ -42,6 +42,8 @@ export async function renderApp(
     const { type } = input["params"] as { type: string };
     return ok(200, legalDocument(type, 1));
   });
+  // The operator's settings: the beta is open, unless a test says otherwise.
+  currentClient.answer("/v1/config", () => ok(200, { beta: false, paused: [] }));
   // The front page's rides leaving soon: none, unless a test says otherwise.
   currentClient.answer("/v1/trips/soonest", () => ok(200, { results: [] }));
   if (me !== undefined) {

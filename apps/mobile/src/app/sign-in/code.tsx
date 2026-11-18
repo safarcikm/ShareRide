@@ -49,11 +49,21 @@ export default function CodeScreen() {
     inFlight.current = true;
     setBusy(true);
     setMessage(null);
-    const result = await session.verify(phoneNumber, entered, locale);
+    const result = await session.verify(phoneNumber, entered, locale, flow.inviteCode);
     if (result.ok) return;
     inFlight.current = false;
     setBusy(false);
     setCode("");
+    // A new number while the beta is closed: the code was right and is
+    // kept, and the next screen asks for the invite code (spec 12, 3.2.3).
+    // The same for an invite link's code that did not work.
+    const refused = result.error.code;
+    if (refused === "invite_required" || refused === "invite_invalid" || refused === "beta_full") {
+      flow.setRightCode(entered);
+      flow.setNotice(refused === "invite_required" ? null : errorText(t, result));
+      router.push("/sign-in/invite");
+      return;
+    }
     setMessage({ kind: "error", text: errorText(t, result) });
     const wait = result.error.retryAfterSeconds;
     if (result.error.code === "code_attempts_exceeded" && wait !== undefined) {

@@ -41,6 +41,7 @@ export default function PhoneNumberScreen() {
       return;
     }
     sending.current = true;
+    flow.setNotice(null);
     setBusy(true);
     const result = await session.start(phoneNumber.value.e164, locale);
     sending.current = false;
@@ -82,7 +83,7 @@ export default function PhoneNumberScreen() {
           maxLength={20}
           onSubmitEditing={() => void send()}
         />
-        <Notice message={error} />
+        <Notice message={error ?? flow.notice} />
         <Button label={t("auth.phone.send")} busy={busy} onPress={() => void send()} />
       </View>
     </Screen>
