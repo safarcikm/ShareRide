@@ -37,6 +37,12 @@ describe("nextPointStatus (spec 2, 3.6)", () => {
     // Retired is final (R2.2).
     ["retired", "retire", 0, "not_allowed"],
     ["retired", "resume", 0, "not_allowed"],
+    // Activate: a draft only, once its checklist passes (3.6.3, R2.3).
+    ["draft", "activate", 0, "active"],
+    ["active", "activate", 0, "not_allowed"],
+    ["paused", "activate", 0, "not_allowed"],
+    ["retiring", "activate", 1, "not_allowed"],
+    ["retired", "activate", 0, "not_allowed"],
   ];
 
   it.each(cases)("%s, %s with %i future trips: %s", (status, change, futureTrips, expected) => {

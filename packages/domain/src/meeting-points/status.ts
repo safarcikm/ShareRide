@@ -1,11 +1,11 @@
-// Pausing, bringing back and retiring a meeting point in the operator
-// console (spec 2, 3.6.4 and 3.6.5), and its yearly review (R2.9).
-// Activating and moving come with photos and distances.
+// Activating, pausing, bringing back and retiring a meeting point in the
+// operator console (spec 2, 3.6.3 to 3.6.5), and its yearly review (R2.9).
+// Activating also needs its checklist (`activationChecklist`).
 import { err, ok, type Result } from "../result.ts";
 import type { MeetingPointStatus } from "./catalogue.ts";
 
 /** What the operator does to a point's status. */
-export const statusChanges = ["pause", "resume", "retire"] as const;
+export const statusChanges = ["activate", "pause", "resume", "retire"] as const;
 export type StatusChange = (typeof statusChanges)[number];
 
 /**
@@ -23,6 +23,8 @@ export function nextPointStatus(
   futureTrips: number,
 ): Result<MeetingPointStatus, "not_allowed"> {
   switch (change) {
+    case "activate":
+      return status === "draft" ? ok("active") : err("not_allowed");
     case "pause":
       return status === "active" ? ok("paused") : err("not_allowed");
     case "resume":

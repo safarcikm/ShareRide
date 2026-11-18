@@ -1,6 +1,6 @@
 # Operator console: adding to it
 
-**Owner:** Martin · **Last reviewed:** 2026-11-16
+**Owner:** Martin · **Last reviewed:** 2026-11-18
 
 The console is the operator's own web app
 ([ADR 0028](../decisions/0028-operator-console-web-app-and-passkeys.md)).
@@ -117,6 +117,24 @@ meeting point routes (`registerMeetingPointsAdminRoutes`), with the work in
   and an optional end date (`validatePause`). Each point's answer has
   `futureTrips`: the trips still to stop there (published or under way,
   with that stop not removed and still ahead).
+- `GET /admin/v1/meeting-points/{id}/activation` gives a point's
+  activation checklist (R2.3, the domain's `activationChecklist`): each
+  item and whether it is done, from what is saved, and `ready`. The last
+  item, `legs`, asks for a road within 1 km that reaches a point in
+  service, or none in service yet (the leg service's `connects`, one
+  search), as activating computes the legs. `POST
+  /admin/v1/meeting-points/{id}/activate`, with the `updatedAt` the
+  console loaded, makes a draft active with its review date, and refuses
+  one whose checklist is not done with `activation_not_ready` and each
+  item in `details` (`issue: "not_done"`). The console always asks, as
+  the list it shows can be older than what is saved. In one transaction,
+  it takes
+  the legs lock, then the point's row, checks the checklist again,
+  computes the point's legs both ways with every point in service
+  (`computeFor`) and writes the audit entry `meeting_point.activated`,
+  with the status and review date before and after and how many legs
+  there are and are missing. No one is told: a draft has no trips, and
+  the app finds the point in its catalogue.
 - A pause writes one `MeetingPointChanged` event per future trip in the
   same transaction. The notification worker asks that trip's driver to
   choose another stop, and tells each passenger whose accepted or
@@ -158,7 +176,13 @@ checked" date the app shows.
 
 `status-panel.tsx` is the point's "In use" panel above the form: how many
 upcoming trips stop there, a paused point's reason and end date, and the
-buttons its status allows (`nextPointStatus`). Pausing opens a short form
+buttons its status allows (`nextPointStatus`). A draft's panel has its
+activation checklist (`activation.tsx`), loaded again when the point is
+saved or the photos panel finds a photo changed, by it or elsewhere (its
+`onChange`), as the API checks what is saved. Activate always asks the
+API: if something is still to do, the list shows what the API found
+(unless a newer list is on its way) and says how many items are left,
+with the focus on it. Pausing opens a short form
 (the reason in both languages, an optional end date) checked with
 `validatePause` before it is sent; retiring asks first and says whether the
 point retires at once or after its last trip. Bringing a point back needs
@@ -361,10 +385,12 @@ our road file ([road file](road-file.md), ADR 0031):
   and how many points, legs and missing legs.
 - `computeFor` gives one point its legs both ways with every point in
   service, replacing all its old ones, those to points out of service
-  too, as they were found from where it was. It is for activating and
-  moving a point (PR 12), and is called after the move is saved. It finds
-  them under the lock, so of two points moved at once, the second reads
-  where the first now is.
+  too, as they were found from where it was. Activating a point calls it
+  inside the activation's transaction, after the point is saved; moving one will too
+  (PR 12b). It finds them under the lock, so of two points moved at once,
+  the second reads where the first now is. Whoever needs the point's row
+  as well takes the legs lock first, as the sample seed does, so neither
+  waits for the other for ever.
 - One writer of legs at a time: the leg service and the sample seed take
   a transaction lock (`lockLegs` in `@shareride/db`) before they delete
   and insert. The seed writes the sample road graph's legs again on each

@@ -373,7 +373,7 @@ journeys, and gets a code review before it opens.
       with the people on it locked as a new hold locks them, and one that
       fails is logged without stopping the others. Rows moved to the former
       member get new retry keys, here and in erasure, so two people's never
-      collide. Reviews keep to their own rule (open question Q23)
+      collide. Reviews keep to their own rule until PR 13 (A51)
 - Verify: integration tests (at the edge of the period; the drivers' and
   passengers' other trips unchanged; a hold keeps them, also one being set
   as the rule runs; twice safe)
@@ -427,6 +427,25 @@ Added once milestone 9 built reports (#119). Martin chose this on
   conversation of the person's nobody reported is emptied; Download my
   data; both people erased, then read by the operator; a chat push
   waiting when the sender is erased is skipped)
+
+### PR 13: `feat(privacy)`: reviews of old trips no longer name who or which ride
+
+Martin chose this on 2026-11-17 (open question Q23, answer A51).
+
+- [x] When the 3-year rule makes a trip anonymous, its reviews move to the
+      former member with no booking, keeping stars, comment and dates for
+      the person they are about, so ratings stay as they were. A trip
+      made anonymous before, which only its reviews still name, is done
+      again. Migration `0042_reviews_of_old_trips` makes a review's
+      booking optional, for the former member's alone.
+- [x] Download my data lists the reviews about the person from such trips
+      in their own section, once shown, with only how the author travelled.
+- [x] A profile shows them as by "A former member" (spec 8, 3.7.5), as it
+      shows those of people who left. A hold on a review's author or
+      subject keeps the trip as it is, also one made anonymous before.
+- Verify: integration tests (reviews unlinked with the ratings unchanged;
+  a trip made anonymous before; a hold on a review's person; the export
+  section).
 
 ## 6. Review focus
 
