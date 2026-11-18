@@ -323,12 +323,16 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       issues,
       requireAuth,
     );
+    const legs = createLegService({
+      ...features,
+      router: features.router ?? createRoadFileRouter(),
+    });
     const meetingPointsAdmin = {
       ...features,
-      meetingPoints: createMeetingPointAdminService(features),
+      meetingPoints: createMeetingPointAdminService({ ...features, legs }),
       photos,
       issues,
-      legs: createLegService({ ...features, router: features.router ?? createRoadFileRouter() }),
+      legs,
       requireOperator,
     };
     registerMeetingPointsAdminRoutes(app, meetingPointsAdmin);

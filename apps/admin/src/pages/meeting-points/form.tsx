@@ -90,6 +90,8 @@ export function MeetingPointForm({ id }: { readonly id: string | undefined }) {
   // Fields changed since the last check: their errors are gone until the next save.
   const [edited, setEdited] = useState<ReadonlySet<string>>(new Set());
   const [saving, setSaving] = useState(false);
+  // Counts the photo changes, so a draft's checklist is checked again.
+  const [photosVersion, setPhotosVersion] = useState(0);
   const message = useRef<HTMLDivElement>(null);
   const base = useId();
   const idOf = (field: string) => `${base}-${field.replace(".", "-")}`;
@@ -394,13 +396,15 @@ export function MeetingPointForm({ id }: { readonly id: string | undefined }) {
     } else {
       setLoaded({ state: "ready", point: result.point });
       const text: MessageKey =
-        result.change === "pause"
-          ? "admin.meetingPoint.paused"
-          : result.change === "resume"
-            ? "admin.meetingPoint.resumed"
-            : result.point.status === "retiring"
-              ? "admin.meetingPoint.retiring"
-              : "admin.meetingPoint.retired";
+        result.change === "activate"
+          ? "admin.meetingPoint.activated"
+          : result.change === "pause"
+            ? "admin.meetingPoint.paused"
+            : result.change === "resume"
+              ? "admin.meetingPoint.resumed"
+              : result.point.status === "retiring"
+                ? "admin.meetingPoint.retiring"
+                : "admin.meetingPoint.retired";
       setOutcome({ kind: "status", text, name: result.point.nameIs });
     }
   };
@@ -498,7 +502,12 @@ export function MeetingPointForm({ id }: { readonly id: string | undefined }) {
       </div>
 
       {point === null ? null : (
-        <StatusPanel point={point} onResult={statusChanged} startPausing={startPausing} />
+        <StatusPanel
+          point={point}
+          onResult={statusChanged}
+          startPausing={startPausing}
+          photosVersion={photosVersion}
+        />
       )}
 
       <form
@@ -827,7 +836,15 @@ export function MeetingPointForm({ id }: { readonly id: string | undefined }) {
         )}
       </form>
 
-      {point === null ? null : <PhotosPanel key={point.id} point={point} />}
+      {point === null ? null : (
+        <PhotosPanel
+          key={point.id}
+          point={point}
+          onChange={() => {
+            setPhotosVersion((version) => version + 1);
+          }}
+        />
+      )}
     </section>
   );
 }

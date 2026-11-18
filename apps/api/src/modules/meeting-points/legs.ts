@@ -47,9 +47,19 @@ export interface LegService {
   recomputeAll(actor: ConsoleActor): Promise<AdminLegsStatus>;
   /**
    * A point's legs to and from every point in service, replacing all its
-   * old ones: for activating a point (R2.3) and moving it (R2.10).
+   * old ones: for activating a point (R2.3) and moving it (R2.10). In `tx`
+   * when given, so the activation or move and its legs are one change.
    */
-  computeFor(pointId: string): Promise<Result<LegsComputed, { readonly code: "not_found" }>>;
+  computeFor(
+    pointId: string,
+    tx?: Transaction,
+  ): Promise<Result<LegsComputed, { readonly code: "not_found" }>>;
+  /**
+   * Whether a point at `position` can have legs (R2.3): within 1 km of a
+   * road that reaches a point in service other than `pointId`, or there is
+   * none yet. One search, written nowhere. In `on` when given.
+   */
+  connects(pointId: string, position: Position, on?: Queryable): Promise<boolean>;
 }
 
 interface Point {
@@ -236,12 +246,23 @@ export function createLegService(dependencies: {
       return running;
     },
 
-    async computeFor(pointId) {
+    async connects(pointId, position, on = db) {
+      if (!(await router.nearRoad(position))) return false;
+      const others = (await pointsInService(on)).filter((other) => other.id !== pointId);
+      if (others.length === 0) return true;
+      const found = await router.legsFrom(
+        position,
+        others.map((other) => other.location),
+      );
+      return found.some((leg) => leg !== null);
+    },
+
+    computeFor(pointId, within) {
       // Found and written under the lock: one point's legs take a few
       // hundredths of a second, and whichever of two moves comes second
       // reads where the first one put its point. Each move calls this
-      // after it is saved, so the last call has the last places.
-      return db.transaction(async (tx) => {
+      // with the move, so the last call has the last places.
+      const compute = async (tx: Transaction) => {
         await lockLegs(tx);
         const [point] = await tx
           .select({ id: meetingPoints.id, location: meetingPoints.location })
@@ -271,7 +292,8 @@ export function createLegService(dependencies: {
           .where(or(eq(legs.fromMeetingPointId, pointId), eq(legs.toMeetingPointId, pointId)));
         await insertLegs(tx, rows);
         return ok({ legs: rows.length, missing: 2 * others.length - rows.length });
-      });
+      };
+      return within === undefined ? db.transaction(compute) : compute(within);
     },
   };
 }
