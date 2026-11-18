@@ -170,7 +170,8 @@ accepted 2026-11-16; built alongside milestones 7, 9 and 10; all merged
 
 Milestone 9: safety and moderation
 ([plan](../plans/2026-11-16-milestone-9-safety-and-moderation.md), choices
-accepted 2026-11-16; built alongside milestones 7 and 8)
+accepted 2026-11-16; built alongside milestones 7 and 8; all merged
+2026-11-18, Martin's 112 check on real phones and a screen reader pass to do)
 
 - [x] Safety rules in the domain
 - [x] Emergency 112, "Before you go" and sharing trip details
@@ -182,8 +183,8 @@ accepted 2026-11-16; built alongside milestones 7 and 8)
 - [x] Notices, Appeal and the suspended account screen in the app
 - [x] Hidden content, and the operator's trip cancel (refunding one booking
   comes with payouts)
-- [ ] Console: the reports queue, the report page and appeals
-- [ ] Console: users, trips and bookings
+- [x] Console: the reports queue, the report page and appeals
+- [x] Console: users, trips and bookings
 
 Milestone 10: privacy self-service
 ([spec 11](../specs/2026-11-13-privacy-self-service.md),

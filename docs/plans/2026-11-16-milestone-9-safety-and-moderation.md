@@ -1,7 +1,9 @@
 # Milestone 9 plan: safety and moderation
 
-**Owner:** Martin · **Date:** 2026-11-16 · **Status:** In progress; the
-choices in section 3 accepted by Martin on 2026-11-16 as recommended
+**Owner:** Martin · **Date:** 2026-11-16 · **Status:** Built; the
+choices in section 3 accepted by Martin on 2026-11-16 as recommended; every
+PR merged (#93 to #144, and 8b, on 2026-11-18); a screen reader pass and
+Martin's steps in [section 7](#7-martins-steps) to do
 
 Lets people get help fast, tell someone where they are going, keep away
 from someone, and report bad behaviour knowing it will be looked at. Gives
