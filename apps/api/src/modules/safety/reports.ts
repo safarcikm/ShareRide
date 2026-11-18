@@ -13,12 +13,15 @@ import {
   type Result,
   type SafetySettings,
 } from "@shareride/domain";
-import { and, asc, desc, eq, gt } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNotNull, isNull } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { recordEvents } from "../notifications/outbox.ts";
+import { authors } from "../people/ratings.ts";
+import { shown as everyoneSees } from "../privacy/hidden.ts";
 import { closedTrips } from "./blocks.ts";
 
-const { bookings, conversations, messages, reports, trips, users } = schema;
+const { bookings, conversations, formerMemberId, messages, reports, reviews, trips, users } =
+  schema;
 
 export type ReportError =
   | { readonly code: "not_found" }
@@ -47,10 +50,14 @@ interface Found {
     readonly bookingId?: string;
     readonly messageId?: string;
     readonly conversationId?: string;
+    readonly reviewId?: string;
   };
 }
 
 const dayMs = 24 * 3_600_000;
+
+/** The person a review is about. */
+const subjects = alias(users, "subjects");
 
 export function createReportService(dependencies: {
   readonly db: Database;
@@ -60,7 +67,10 @@ export function createReportService(dependencies: {
   const { db, clock } = dependencies;
   const settings = dependencies.settings ?? defaultSafetySettings;
 
-  /** What `me` can report, or nothing: a trip I can see, my message or booking. */
+  /**
+   * What `me` can report, or nothing: a trip I can see, my message or
+   * booking, or a person or review a profile shows to anyone.
+   */
   async function find(me: string, about: ReportAbout): Promise<Found | undefined> {
     switch (about.kind) {
       case "trip": {
@@ -141,6 +151,55 @@ export function createReportService(dependencies: {
           links,
         };
       }
+      case "review": {
+        // As a profile shows it (3.1.1): revealed, not hidden, about a person
+        // everyone sees, and not by someone leaving ShareRide.
+        const [review] = await db
+          .select({
+            authorId: reviews.authorId,
+            bookingId: reviews.bookingId,
+            tripId: bookings.tripId,
+          })
+          .from(reviews)
+          .innerJoin(authors, eq(authors.id, reviews.authorId))
+          .innerJoin(subjects, eq(subjects.id, reviews.subjectId))
+          .leftJoin(bookings, eq(bookings.id, reviews.bookingId))
+          .where(
+            and(
+              eq(reviews.id, about.reviewId),
+              // Hidden with its author until they are erased (spec 11, 3.4.3).
+              isNull(authors.deleteAfter),
+              isNotNull(reviews.revealedAt),
+              isNull(reviews.hiddenAt),
+              everyoneSees(subjects),
+              isNotNull(subjects.firstName),
+            ),
+          );
+        if (review === undefined) return undefined;
+        return {
+          context: { kind: "review", authorId: review.authorId },
+          links: {
+            reviewId: about.reviewId,
+            ...(review.bookingId === null ? {} : { bookingId: review.bookingId }),
+            ...(review.tripId === null ? {} : { tripId: review.tripId }),
+          },
+        };
+      }
+      case "profile": {
+        // The person a profile shows: someone everyone sees (spec 1, 3.5).
+        const [person] = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(
+            and(
+              eq(users.profileId, about.profileId),
+              everyoneSees(users),
+              isNotNull(users.firstName),
+            ),
+          );
+        if (person === undefined) return undefined;
+        return { context: { kind: "user", userId: person.id }, links: {} };
+      }
     }
   }
 
@@ -208,7 +267,9 @@ export function createReportService(dependencies: {
           .insert(reports)
           .values({
             reporterId: me,
-            subjectUserId: checked.value.subjectUserId,
+            // The former member stands for erased accounts: nobody to act on.
+            subjectUserId:
+              checked.value.subjectUserId === formerMemberId ? null : checked.value.subjectUserId,
             subject: found.context.kind,
             ...found.links,
             category: input.category,

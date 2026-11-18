@@ -307,6 +307,53 @@ describe("a report's page (spec 9, 3.4.2)", () => {
     const missing = await send(cookie, "GET", `/admin/v1/reports/${randomUUID()}`);
     expect(missing).toMatchObject({ status: 404, body: { error: { code: "not_found" } } });
   });
+
+  it("shows the review a report is about, with its words, and whether it is hidden", async () => {
+    const { jon, gunna, bookingId } = await reportedMessage();
+    const [review] = await api.connection.db
+      .insert(schema.reviews)
+      .values({
+        bookingId,
+        authorId: gunna.userId,
+        subjectId: jon.userId,
+        authorRole: "passenger",
+        rating: 1,
+        comment: "Unkind words",
+        revealedAt: api.now(),
+      })
+      .returning({ id: schema.reviews.id, at: schema.reviews.createdAt });
+    if (review === undefined) throw new Error("No review.");
+    const reportId = await filed(jon, {
+      about: { kind: "review", reviewId: review.id },
+      category: "offensive",
+    });
+    const { cookie } = await api.signInOperator();
+
+    const { body } = await send(cookie, "GET", `/admin/v1/reports/${reportId}`);
+
+    expect(body).toMatchObject({
+      subject: "review",
+      reported: { userId: gunna.userId, firstName: "Gunna" },
+      review: {
+        id: review.id,
+        rating: 1,
+        comment: "Unkind words",
+        authorRole: "passenger",
+        writtenAt: review.at.toISOString(),
+        hidden: false,
+      },
+      about: null,
+      message: null,
+      conversation: false,
+    });
+    await api.connection.db
+      .update(schema.reviews)
+      .set({ hiddenAt: api.now() })
+      .where(eq(schema.reviews.id, review.id));
+    expect((await send(cookie, "GET", `/admin/v1/reports/${reportId}`)).body).toMatchObject({
+      review: { id: review.id, hidden: true },
+    });
+  });
 });
 
 describe("the conversation a message report covers (R9.6)", () => {

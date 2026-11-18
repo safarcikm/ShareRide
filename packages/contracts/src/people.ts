@@ -11,7 +11,8 @@ import { defineRoute } from "./route.ts";
 
 const errors = { schema: errorResponseSchema } as const;
 
-const roleSchema = z.enum(["driver", "passenger"]);
+/** Whether a person rode as the driver or as a passenger. */
+export const roleSchema = z.enum(["driver", "passenger"]);
 
 const countsSchema = z.object({ kept: z.int().nonnegative(), counted: z.int().nonnegative() });
 

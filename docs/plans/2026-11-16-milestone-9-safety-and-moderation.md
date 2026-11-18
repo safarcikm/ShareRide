@@ -451,7 +451,48 @@ Split in two, as PR 7 was: 8a the API, 8b the pages.
 
 ### Afterwards, with milestone 7
 
-- [ ] Report a review (hiding one is in PR 6d); Block and Report on the public profile
+Milestone 7's profiles (#121) and reviews merged on 2026-11-18. Split as
+PRs 7 and 8 were: 9a the API, 9b the screens.
+
+- [x] 9a: `feat(safety)`: report a review, and report or block a person
+      from their profile, in the API
+  - `reports.review_id` (migration `0046_review_reports`, the next free
+    number when it merges), set to null if the review is deleted.
+  - `POST /reports` also takes `{ kind: "review", reviewId }` for a review
+    shown on a profile (revealed and not hidden), and
+    `{ kind: "profile", profileId }` for a person found by their profile's
+    own reference (stored as a `user` report, with no booking). The
+    domain's `review` context already refuses one's own review.
+  - `POST /v1/people/{profileId}/block` blocks a person from their
+    profile, as the booking's block does, and lists what the two still
+    have together; `blockPerson` is shared by both.
+  - The console's report page carries the review reported (stars,
+    comment, the author's role, when, whether hidden), so it can be hidden
+    from there (PR 6d's `hideContent`).
+  - Verify: integration tests: a review about me reported by me, someone
+    else's review, my own refused, an unrevealed or hidden one not found;
+    a person from their profile, myself refused, a person who left not
+    found; blocking from a profile, myself and a left person not found,
+    the bookings still shared listed; the console's review record.
+  - Found while building (9a): a review by someone leaving ShareRide is
+    not found, as no profile shows it; a review by the former member (a
+    trip made anonymous after 3 years) can be reported, but names nobody,
+    since the former member is no one to act on. Any report naming the
+    former member names nobody, so an operator never warns or suspends
+    it.
+- [ ] 9b: `feat(safety)`: Report and Block on the public profile, and
+      Report review, in the app; the review on the console's report page
+  - On another person's profile, never one's own or "See it as others
+    do": Report and Block; on each review, Report review. The report
+    screen takes `kind=review` and `kind=profile`; blocking from a profile
+    has its own screen, as from a conversation, and goes back to the
+    profile.
+  - The console's report page shows a reported review and offers Hide
+    review while it is shown.
+  - Verify: screen tests for both entries and the hidden ones; a console
+    test for the review record and Hide review.
+- [ ] Afterwards: ratings, reliability and reviews on the console's person
+      and report pages (spec 3.5.2), now that milestone 7 has them
 
 ## 6. Review focus
 

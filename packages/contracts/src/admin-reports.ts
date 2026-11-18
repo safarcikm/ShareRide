@@ -16,6 +16,7 @@ import { adminConversationMessageSchema } from "./admin-disputes.ts";
 import { localeSchema, timestampSchema } from "./common.ts";
 import { errorResponseSchema } from "./errors.ts";
 import { localisedTextSchema } from "./meeting-points.ts";
+import { roleSchema } from "./people.ts";
 import { defineRoute } from "./route.ts";
 
 // The operator console's reports, actions and appeals (spec 9, 3.4 to 3.6;
@@ -150,6 +151,22 @@ export const adminReportSchema = adminReportListItemSchema.extend({
    * conversation, whose opening is logged (R9.6).
    */
   message: z.object({ id: z.uuid(), sentAt: timestampSchema, removed: z.boolean() }).nullable(),
+  /**
+   * The review reported, with its words, so that the operator can hide it;
+   * null for another report, or once the review is deleted.
+   */
+  review: z
+    .object({
+      id: z.uuid(),
+      rating: z.int().min(1).max(5),
+      /** Empty for none. */
+      comment: z.string(),
+      /** Whether its author rode as the driver or as a passenger. */
+      authorRole: roleSchema,
+      writtenAt: timestampSchema,
+      hidden: z.boolean(),
+    })
+    .nullable(),
   /** The reported person's About you, for a report about a person; null for none. */
   about: z.object({ text: z.string(), hidden: z.boolean() }).nullable(),
   /** Whether the report covers a conversation the operator can open: a message report's. */

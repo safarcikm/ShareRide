@@ -24,6 +24,7 @@ import {
   type BookingStatus,
   type ReportOutcome,
   type Result,
+  type Role,
   type SafetySettings,
   type TripStatus,
 } from "@shareride/domain";
@@ -42,7 +43,7 @@ import {
 } from "./actions.ts";
 import { createConsoleReads } from "./console-reads.ts";
 
-const { bookings, messages, moderationActions, reports, trips, users } = schema;
+const { bookings, messages, moderationActions, reports, reviews, trips, users } = schema;
 
 /** The last closed reports and answered appeals the lists show. */
 const closedShown = 50;
@@ -232,6 +233,21 @@ export function createModerationConsoleService(dependencies: {
             .select({ id: messages.id, sentAt: messages.sentAt, hiddenAt: messages.hiddenAt })
             .from(messages)
             .where(eq(messages.id, row.messageId));
+    // The review's words are shown: it is on a profile anyone can read.
+    const [review] =
+      row.reviewId === null
+        ? []
+        : await db
+            .select({
+              id: reviews.id,
+              rating: reviews.rating,
+              comment: reviews.comment,
+              authorRole: reviews.authorRole,
+              createdAt: reviews.createdAt,
+              hiddenAt: reviews.hiddenAt,
+            })
+            .from(reviews)
+            .where(eq(reviews.id, row.reviewId));
     const [about] =
       row.subject === "user" && row.subjectUserId !== null
         ? await db
@@ -264,6 +280,17 @@ export function createModerationConsoleService(dependencies: {
               id: message.id,
               sentAt: message.sentAt.toISOString(),
               removed: message.hiddenAt !== null,
+            },
+      review:
+        review === undefined
+          ? null
+          : {
+              id: review.id,
+              rating: review.rating,
+              comment: review.comment,
+              authorRole: review.authorRole as Role,
+              writtenAt: review.createdAt.toISOString(),
+              hidden: review.hiddenAt !== null,
             },
       about:
         about === undefined || about.text === null || about.text === ""
