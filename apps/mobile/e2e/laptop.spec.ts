@@ -1,4 +1,5 @@
-import { expect, test, type Locator } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
+import { english, signUp } from "./support/account";
 import { expectNoSidewaysScroll, laptop, widths } from "./support/laptop";
 
 // The web app on a laptop (spec 18): the top bar's content lines up with the
@@ -228,9 +229,35 @@ const resultsTexts = {
   },
 } as const;
 
+/**
+ * Searches from Borgarnes to Blönduós on Find, and gives the first trip
+ * found: the sample trip from Reykjavík to Akureyri, which goes through both.
+ *
+ * The trip is looked for on the results page only. Find lists rides too,
+ * as the same cards, and it is still on show for a moment after its button
+ * is pressed: a click on one of its cards would wait for ever, as Find stays
+ * in the page, hidden, under the results.
+ */
+async function searchNorth(page: Page, texts: (typeof resultsTexts)["en-GB" | "is-IS"]) {
+  await page.goto("/");
+  const row = page.getByTestId("search-row");
+  await row.getByRole("button", { name: texts.from }).click();
+  await row.getByLabel(texts.fromLabel, { exact: true }).fill("borg");
+  await row.getByRole("button", { name: texts.borgarnes }).click();
+  await row.getByRole("button", { name: texts.to }).click();
+  await row.getByLabel(texts.toLabel, { exact: true }).fill("blön");
+  await row.getByRole("button", { name: texts.blonduos }).click();
+  await row.getByRole("button", { name: texts.find, exact: true }).click();
+  const results = page
+    .getByTestId("screen-scroll")
+    .filter({ has: page.getByTestId("results-heading") });
+  const trip = results.getByTestId("trip-result").first();
+  await expect(trip).toBeVisible();
+  return trip;
+}
+
 // Search results (spec 18, 3.6): the trip on our map beside the list, and
-// chips that wrap. The sample trip goes from Reykjavík to Akureyri through
-// Borgarnes and Blönduós.
+// chips that wrap.
 for (const locale of ["en-GB", "is-IS"] as const) {
   const texts = resultsTexts[locale];
 
@@ -240,18 +267,7 @@ for (const locale of ["en-GB", "is-IS"] as const) {
     for (const width of widths) {
       test(`shows the trip on the map beside the list, ${String(width)} wide`, async ({ page }) => {
         await page.setViewportSize(laptop(width));
-        await page.goto("/");
-        const row = page.getByTestId("search-row");
-        await row.getByRole("button", { name: texts.from }).click();
-        await row.getByLabel(texts.fromLabel, { exact: true }).fill("borg");
-        await row.getByRole("button", { name: texts.borgarnes }).click();
-        await row.getByRole("button", { name: texts.to }).click();
-        await row.getByLabel(texts.toLabel, { exact: true }).fill("blön");
-        await row.getByRole("button", { name: texts.blonduos }).click();
-        await row.getByRole("button", { name: texts.find, exact: true }).click();
-
-        const trip = page.getByTestId("trip-result").filter({ visible: true }).first();
-        await expect(trip).toBeVisible();
+        const trip = await searchNorth(page, texts);
         const map = page.getByTestId("aside").getByTestId("iceland-map");
         await expect(map).toHaveAccessibleName(texts.map);
         // The map stands beside the list, level with its top.
@@ -279,3 +295,119 @@ for (const locale of ["en-GB", "is-IS"] as const) {
     }
   });
 }
+
+const tripTexts = {
+  "en-GB": {
+    ...resultsTexts["en-GB"],
+    trip: "N1 Borgarnes → Olís Blönduós",
+    request: "Send request",
+    moreSeats: "One seat more",
+  },
+  "is-IS": {
+    ...resultsTexts["is-IS"],
+    trip: "N1 Borgarnesi → Olís Blönduósi",
+    request: "Senda beiðni",
+    moreSeats: "Einu sæti fleira",
+  },
+} as const;
+
+/** Only what is on show: screens beneath the one open stay in the page. */
+const shown = { visible: true } as const;
+
+// Trip details (spec 18, 3.7): your part and who you ride with in the main
+// column, with booking and the route beside them.
+for (const locale of ["en-GB", "is-IS"] as const) {
+  const texts = tripTexts[locale];
+
+  test.describe(`trip details, ${locale}`, () => {
+    test.use({ locale });
+
+    for (const width of widths) {
+      test(`has booking and the route beside your part, ${String(width)} wide`, async ({
+        page,
+      }) => {
+        await page.setViewportSize(laptop(width));
+        await (await searchNorth(page, texts)).click();
+        // `exact`: the results' heading names the same two places.
+        await expect(
+          page.getByRole("heading", { name: texts.trip, exact: true }).filter(shown),
+        ).toBeVisible();
+
+        const main = page.getByTestId("columns-main").filter(shown);
+        const side = page.getByTestId("columns-side").filter(shown);
+        const mainBox = await box(main);
+        const sideBox = await box(side);
+        expect(sideBox.x).toBeGreaterThan(mainBox.x + mainBox.width);
+        expect(sideBox.y).toBeCloseTo(mainBox.y, 0);
+
+        // Booking is at the top of the side column: the seats and the
+        // button, whole, with no bar at the bottom of the window.
+        const request = await box(side.getByRole("button", { name: texts.request, exact: true }));
+        const more = await box(side.getByRole("button", { name: texts.moreSeats }));
+        for (const part of [request, more]) {
+          expect(part.x).toBeGreaterThanOrEqual(sideBox.x);
+          expect(part.x + part.width).toBeLessThanOrEqual(sideBox.x + sideBox.width + 1);
+        }
+        expect(more.y).toBeLessThan(request.y);
+        await expect(page.getByTestId("bottom-bar").filter(shown)).toHaveCount(0);
+        // The route's map is in the side column too, under booking.
+        const map = await box(side.getByTestId("iceland-map"));
+        expect(map.y).toBeGreaterThan(request.y + request.height);
+
+        // Get in and Get out stand side by side where the main column has
+        // room for both, and one under the other where it has not.
+        const [getIn, getOut] = await main.getByTestId("stop-choice").all();
+        if (getIn === undefined || getOut === undefined) throw new Error("No stops to choose");
+        const inBox = await box(getIn);
+        const outBox = await box(getOut);
+        if (width >= 1280) {
+          expect(outBox.y).toBeCloseTo(inBox.y, 0);
+          expect(outBox.x).toBeGreaterThan(inBox.x + inBox.width);
+        } else {
+          expect(outBox.y).toBeGreaterThan(inBox.y + inBox.height - 1);
+          expect(outBox.x).toBeCloseTo(inBox.x, 0);
+        }
+        await expectNoSidewaysScroll(page);
+      });
+    }
+  });
+}
+
+test.describe("trip details and a request", () => {
+  test.use({ viewport: laptop(1280), locale: "en-GB" });
+
+  test("prices the seats chosen beside the price, and asks for them in two columns", async ({
+    page,
+  }) => {
+    await signUp(page, english, "Dóra");
+    await (await searchNorth(page, tripTexts["en-GB"])).click();
+    const side = page.getByTestId("columns-side").filter(shown);
+    const price = side.getByText(/^[\d,]+ ISK$/);
+    const one = await price.textContent();
+    await side.getByRole("button", { name: "One seat more" }).click();
+    await expect(page).toHaveURL(/seats=2$/);
+    await expect(price).not.toHaveText(one ?? "");
+    await side.getByRole("button", { name: "Send request", exact: true }).click();
+
+    // A request: the message in the main column, the ride, the total and
+    // the button beside it.
+    await expect(page.getByRole("heading", { name: "Request this ride" })).toBeVisible();
+    const message = page
+      .getByTestId("columns-main")
+      .filter(shown)
+      .getByLabel("Message to the driver (optional)");
+    await message.fill("One small bag.");
+    const ride = page.getByTestId("columns-side").filter(shown);
+    await expect(ride.getByText(/^2 seats × [\d,]+ ISK$/)).toBeVisible();
+    for (const width of widths) {
+      await page.setViewportSize(laptop(width));
+      const field = await box(message);
+      const send = await box(ride.getByRole("button", { name: "Send request", exact: true }));
+      expect(send.x).toBeGreaterThan(field.x + field.width);
+      await expect(page.getByTestId("bottom-bar").filter(shown)).toHaveCount(0);
+      await expectNoSidewaysScroll(page);
+    }
+    // What was typed stays as the window changes.
+    await expect(message).toHaveValue("One small bag.");
+  });
+});

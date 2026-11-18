@@ -1,4 +1,5 @@
-import { fireEvent, screen, within } from "expo-router/testing-library";
+import { act, fireEvent, screen, within } from "expo-router/testing-library";
+import { Dimensions } from "react-native";
 import { shareLink } from "@/lib/share";
 import { renderApp, completeMe } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -449,6 +450,181 @@ describe("Trip details (spec 4, 3.6)", () => {
     expect(await screen.findByText("Anna")).toBeVisible();
     const [call] = client.calls.filter((made) => made.path === "/v1/trips/{id}");
     expect(call?.input["accessToken"]).toEqual(expect.stringMatching(/^sr_at_/));
+  });
+});
+
+describe("Trip details on a laptop (spec 18, 3.7)", () => {
+  const phone = { width: 750, height: 1334, scale: 2, fontScale: 2 };
+  const laptop = { width: 1280, height: 800, scale: 1, fontScale: 1 };
+
+  beforeEach(() => {
+    Dimensions.set({ window: laptop });
+  });
+
+  afterEach(async () => {
+    // The screen is still on show here, so its update goes through act.
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+  });
+
+  const main = () => within(screen.getByTestId("columns-main"));
+  const side = () => within(screen.getByTestId("columns-side"));
+
+  it("puts your part, who you ride with and safety in the main column, with booking and the route beside them", async () => {
+    await openTrip();
+    expect(await screen.findByRole("header", { name: "Borgarnes → Blönduós" })).toBeVisible();
+    expect(screen.getByTestId("page")).toBeVisible();
+    // Read in this order: the main column, then the side column.
+    expect(headings()).toEqual([
+      "Borgarnes → Blönduós",
+      "Your part",
+      "Who you ride with",
+      "Safety",
+      "Route",
+    ]);
+    expect(screen.getByText("Sunday 15 November")).toBeVisible();
+    expect(screen.getByText("Part of BSÍ bus terminal → Hof, Akureyri")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Share" })).toBeVisible();
+
+    expect(main().getByText("Driver approves")).toBeVisible();
+    expect(main().getAllByTestId("stop-choice")).toHaveLength(2);
+    expect(main().getByText("Anna")).toBeVisible();
+    expect(main().getByText("White Toyota Yaris")).toBeVisible();
+    expect(
+      main().getByRole("image", {
+        name: "Seats on your part: 3 offered, 1 taken, 1 yours and 1 free.",
+      }),
+    ).toBeVisible();
+
+    // The seats are beside the price they change, not in Your part.
+    expect(main().queryByRole("button", { name: "One seat more" })).toBeNull();
+    expect(side().getByText("2,900 ISK")).toBeVisible();
+    expect(side().getByText("2 free on your part · 2,900 ISK per seat")).toBeVisible();
+    expect(side().getByRole("adjustable", { name: "Seats" })).toHaveAccessibilityValue({
+      text: "1 seat",
+    });
+    expect(side().getByRole("button", { name: "One seat more" })).toBeEnabled();
+    expect(side().getByRole("button", { name: "Send request" })).toBeEnabled();
+    expect(side().getByText("You'll sign in or create an account first.")).toBeVisible();
+    expect(
+      side().getByText(
+        "Free cancellation, with a full refund, up to 15 minutes before you get in.",
+      ),
+    ).toBeVisible();
+
+    expect(
+      side().getByRole("image", {
+        name: "The trip on a map of Iceland: BSÍ bus terminal → Hof, Akureyri. Your part: Borgarnes → Blönduós.",
+      }),
+    ).toBeVisible();
+    expect(side().getByRole("button", { name: "10:00, Borgarnes, getting in" })).toBeVisible();
+    expect(side().getByRole("button", { name: "12:05, Blönduós, getting out" })).toBeVisible();
+
+    // The side column takes the bottom bar's place, and each thing is there once.
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+    expect(screen.getAllByRole("button", { name: "Send request" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "One seat more" })).toHaveLength(1);
+    expect(screen.getAllByText("2,900 ISK")).toHaveLength(1);
+  });
+
+  it("prices the seats chosen in the side column, up to the seats free", async () => {
+    const { client } = await openTrip();
+    await fireEvent.press(await screen.findByRole("button", { name: "One seat more" }));
+    expect(await side().findByText("5,800 ISK")).toBeVisible();
+    expect(side().getByRole("adjustable", { name: "Seats" })).toHaveAccessibilityValue({
+      text: "2 seats",
+    });
+    expect(side().getByRole("button", { name: "One seat more" })).toBeDisabled();
+    expect(
+      main().getByRole("image", {
+        name: "Seats on your part: 3 offered, 1 taken, 2 yours and 0 free.",
+      }),
+    ).toBeVisible();
+    expect(detailsCalls(client).at(-1)).toEqual({ seats: 2, fromStop: 1, toStop: 2 });
+  });
+
+  it("puts Get in and Get out side by side, each opening its stops under itself", async () => {
+    await openTrip();
+    await screen.findByRole("header", { name: "Borgarnes → Blönduós" });
+    expect(main().getByTestId("part-stops")).toHaveStyle({ flexDirection: "row" });
+    const [getIn, getOut] = main().getAllByTestId("stop-choice");
+    if (getIn === undefined || getOut === undefined) throw new Error("No stops");
+    await fireEvent.press(within(getIn).getByRole("button", { name: "Change where you get in" }));
+    expect(within(getIn).getAllByRole("radio")).toHaveLength(2);
+    expect(within(getOut).queryByRole("radio")).toBeNull();
+    await fireEvent.press(within(getIn).getByRole("radio", { name: "09:00, BSÍ bus terminal" }));
+    expect(
+      await screen.findByRole("header", { name: "BSÍ bus terminal → Blönduós" }),
+    ).toBeVisible();
+  });
+
+  it("puts the seat view beside the driver and the car", async () => {
+    await openTrip();
+    await screen.findByRole("header", { name: "Borgarnes → Blönduós" });
+    const rideWith = main().getByTestId("ride-with");
+    expect(rideWith).toHaveStyle({ flexDirection: "row" });
+    expect(within(rideWith).getByText("Anna")).toBeVisible();
+    expect(within(rideWith).getByRole("image", { name: /^Seats on your part/ })).toBeVisible();
+  });
+
+  it.each([
+    [{ freeSeats: 0, state: "full" as const }, "Full on your part of the trip"],
+    [{ state: "cancelled" as const }, "This trip was cancelled."],
+  ])("says in the side column when the part cannot be booked: %o", async (part, text) => {
+    await openTrip(undefined, () => ok(200, northTrip({ board: 1, alight: 2 }, { part })));
+    expect(await side().findByText(text)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Send request" })).toBeNull();
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+  });
+
+  it("leads someone who has booked the trip to their booking, from the side column", async () => {
+    await renderApp(`/trips/${id}?from=1&to=2`, {
+      me: completeMe,
+      setUp: (client) => {
+        tripDetailsApi(client, () =>
+          ok(
+            200,
+            northTrip(
+              { board: 1, alight: 2 },
+              { myBooking: { id: "0190a1d6-0000-7000-8000-0000000000b1", status: "confirmed" } },
+            ),
+          ),
+        );
+      },
+    });
+    expect(await side().findByRole("button", { name: "See your booking" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Send request" })).toBeNull();
+  });
+
+  it("is the column again when the window turns narrow, with the bar at the bottom", async () => {
+    await openTrip();
+    await screen.findByRole("header", { name: "Borgarnes → Blönduós" });
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+    expect(screen.queryByTestId("columns-side")).toBeNull();
+    const bar = within(screen.getByTestId("bottom-bar"));
+    expect(bar.getByText("2,900 ISK")).toBeVisible();
+    expect(bar.getByRole("button", { name: "Send request" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "One seat more" })).toBeEnabled();
+    // And two columns again when it turns wide, for the same part.
+    await act(() => {
+      Dimensions.set({ window: laptop });
+    });
+    expect(screen.getByRole("header", { name: "Borgarnes → Blönduós" })).toBeVisible();
+    expect(side().getByRole("button", { name: "Send request" })).toBeEnabled();
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+  });
+
+  it("keeps the page, with Back in its place, when the trip cannot be loaded", async () => {
+    await openTrip(undefined, () => failure(500, "internal_error"));
+    expect(await screen.findByText("The trip could not be loaded.")).toBeVisible();
+    expect(screen.getByTestId("page")).toBeVisible();
+    // What went wrong keeps the width of a column, at the page's left.
+    const column = screen.getByTestId("page-column");
+    expect(column).toHaveStyle({ maxWidth: 480 });
+    expect(within(column).getByRole("button", { name: "Try again" })).toBeVisible();
   });
 });
 

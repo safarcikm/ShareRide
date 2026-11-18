@@ -1174,6 +1174,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   with the screenshots as files, deleting the account deletes both, and
   the clean-up deletes feedback 12 months after "Invite code required"
   was last turned off.
+- Trip details, Check and pay and a request on a laptop (spec 18, 3.7 and
+  3.8): pages of two columns with no bottom bar. On trip details, your
+  part (Get in beside Get out), who you ride with (the seat view beside
+  the driver) and safety are in the main column; booking, with the seats
+  beside the price they change, and the route are in the side column. On
+  Check and pay and a request, what you read and fill in is in the main
+  column, and the ride, the total and the button are beside it. The panel
+  320 wide beside trip details is gone (`Screen footerBeside`). Both are
+  pages also while they load and when the trip cannot be loaded, so Back
+  stays in its place. Phones are unchanged.
 - Send feedback in the app and the console (spec 12, 3.3; milestone 11,
   PR 6): the form opens from the Beta label, Profile and Settings, and on
   phones from a shake, which a switch in Settings turns off. Phones take a

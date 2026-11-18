@@ -125,9 +125,9 @@ describe("Screen", () => {
       expect(screen.getByText("List")).toBeVisible();
     });
 
-    it("keeps a footer in the bottom bar when an aside takes the side", async () => {
+    it("keeps a footer in the bottom bar, with an aside at the side", async () => {
       await render(
-        <Screen aside={<Body>Map</Body>} footer={<Body>Book</Body>} footerBeside>
+        <Screen aside={<Body>Map</Body>} footer={<Body>Book</Body>}>
           <Body>Trip</Body>
         </Screen>,
       );

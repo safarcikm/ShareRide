@@ -25,12 +25,9 @@ import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 import {
   asideMaxWidth,
   controlOutline,
-  edges,
   maxContentWidth,
   pageMaxWidth,
-  radii,
   sidePanelFrom,
-  sidePanelWidth,
   spacing,
 } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -39,8 +36,7 @@ import { usePalette } from "@/theme/use-palette";
  * A full screen with safe-area padding. On wide screens (web, tablets) the
  * content sits in a centred column (spec 1, section 5). A `footer`, such as
  * a step's main button, stays at the bottom while the rest scrolls: the
- * `BottomBar` of spec 15, section 5.2. With `footerBeside`, wide screens
- * show the footer in a panel beside the column instead (section 4.8).
+ * `BottomBar` of spec 15, section 5.2.
  * Wide screens show an `aside`, such as a map, beside the column; phones
  * leave it out, and the screen shows it its own way (see `useWideScreen`).
  * With `width="page"`, wide screens give the content a page instead of the
@@ -54,7 +50,6 @@ import { usePalette } from "@/theme/use-palette";
 export function Screen({
   children,
   footer,
-  footerBeside = false,
   aside,
   width = "column",
   stickToEnd = false,
@@ -62,7 +57,6 @@ export function Screen({
 }: {
   readonly children: ReactNode;
   readonly footer?: ReactNode;
-  readonly footerBeside?: boolean;
   readonly aside?: ReactNode;
   readonly width?: "column" | "page";
   readonly stickToEnd?: boolean;
@@ -70,8 +64,6 @@ export function Screen({
 }) {
   const palette = usePalette();
   const wide = useWideScreen();
-  // An aside takes the side, so a footer then stays in the bottom bar.
-  const beside = footer !== undefined && footerBeside && wide && aside === undefined;
   const { scrollRef, scroll, keyboardRoom } = useRevealing();
   const safeEdges = useContext(ScreenEdgesContext);
   // The height the screen scrolls in: the window less any bar above it.
@@ -124,27 +116,10 @@ export function Screen({
         <ScreenScrollContext.Provider value={scroll}>
           <ScreenViewHeightContext.Provider value={viewHeight}>
             {aside !== undefined && wide ? (
-              <View style={[styles.wide, styles.wideWithAside]}>
+              <View style={styles.wide}>
                 <View style={styles.asideColumn}>{children}</View>
                 <View testID="aside" style={[styles.aside, stickyOnWeb(viewHeight)]}>
                   {aside}
-                </View>
-              </View>
-            ) : beside ? (
-              <View style={styles.wide}>
-                <View style={styles.wideColumn}>{children}</View>
-                <View
-                  testID="side-panel"
-                  style={[
-                    styles.panel,
-                    {
-                      backgroundColor: palette.surface,
-                      borderColor: palette.border,
-                      borderBottomColor: palette.edge,
-                    },
-                  ]}
-                >
-                  {footer}
                 </View>
               </View>
             ) : width === "page" && wide ? (
@@ -157,7 +132,7 @@ export function Screen({
           </ScreenViewHeightContext.Provider>
         </ScreenScrollContext.Provider>
       </ScrollView>
-      {footer === undefined || beside ? null : (
+      {footer === undefined ? null : (
         <View
           testID="bottom-bar"
           style={[styles.bar, { backgroundColor: palette.surface, borderTopColor: palette.border }]}
@@ -311,18 +286,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: spacing.lg,
     width: "100%",
-    maxWidth: maxContentWidth + spacing.lg + sidePanelWidth,
+    maxWidth: pageMaxWidth,
   },
-  wideColumn: { flex: 1, gap: spacing.md },
-  wideWithAside: { maxWidth: maxContentWidth + spacing.lg + asideMaxWidth },
   asideColumn: { flex: 1, maxWidth: maxContentWidth, gap: spacing.md },
   aside: { flex: 1, maxWidth: asideMaxWidth, gap: spacing.md },
-  panel: {
-    width: sidePanelWidth,
-    padding: spacing.md,
-    gap: spacing.sm,
-    borderRadius: radii.card,
-    borderWidth: controlOutline,
-    borderBottomWidth: edges.card,
-  },
 });

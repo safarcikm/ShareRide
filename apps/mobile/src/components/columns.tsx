@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
-import { sideColumnWidth, spacing } from "@/theme/tokens";
+import { maxContentWidth, sideColumnWidth, spacing } from "@/theme/tokens";
 import { stickyOnWeb, useScreenViewHeight, useWideScreen } from "./screen";
 
 /**
@@ -51,7 +51,22 @@ export function Columns({
   );
 }
 
+/**
+ * On a page, a part that keeps the width of a column, at the page's left:
+ * what a screen of two columns shows when it has nothing to lay out, such
+ * as a trip that could not be loaded. Back above it stays where it is on
+ * the page.
+ */
+export function PageColumn({ children }: { readonly children: ReactNode }) {
+  return (
+    <View testID="page-column" style={styles.pageColumn}>
+      {children}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  pageColumn: { width: "100%", maxWidth: maxContentWidth, gap: spacing.md },
   stack: { flexDirection: "column", gap: spacing.md },
   row: { flexDirection: "row", alignItems: "flex-start", gap: spacing.lg },
   sideFirst: { flexDirection: "row-reverse" },

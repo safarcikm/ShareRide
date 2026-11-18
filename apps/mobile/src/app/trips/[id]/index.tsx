@@ -4,7 +4,7 @@ import { defaultTripSettings } from "@shareride/domain";
 import { capitalised, formatDay, formatMoney } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { Share as ShareIcon, ShieldCheck } from "lucide-react-native";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText, formatWait } from "@/auth/errors";
 import { signUpRoute } from "@/auth/next-route";
@@ -13,11 +13,13 @@ import { bookingHref, keepPendingBooking } from "@/booking/pending-booking";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
+import { Columns, PageColumn } from "@/components/columns";
+import { Halves } from "@/components/halves";
 import { Icon } from "@/components/icon";
 import { IconButton } from "@/components/icon-button";
 import { NoIndex } from "@/components/no-index";
 import { Notice } from "@/components/notice";
-import { Screen } from "@/components/screen";
+import { Screen, useWideScreen } from "@/components/screen";
 import { ShareNotice } from "@/components/share-notice";
 import { Stepper } from "@/components/stepper";
 import { Tag } from "@/components/tag";
@@ -46,6 +48,12 @@ type Answer = CallResult<typeof tripDetailsRoute>;
  * the route and what cancelling costs. Open to everyone by link; the part
  * and seats live in the address, so a reload or a shared link shows the
  * same part. The bottom bar books the part on screen (spec 5).
+ *
+ * A wide screen (spec 18, 3.7) is a page of two columns. The main one has
+ * your part, with Get in and Get out side by side, who you ride with, with
+ * the seat view beside the driver, and safety. The side one has booking,
+ * with the seats beside the price they change, and then the route. There
+ * is no bottom bar.
  */
 export default function TripScreen() {
   const { t } = useLanguage();
@@ -81,9 +89,11 @@ export default function TripScreen() {
   const answer: Answer | undefined = loaded?.id === id ? loaded.answer : undefined;
   const current = loaded?.id === id && loaded.query === query;
 
+  // A page while it loads and when it fails, as it is once loaded, so Back
+  // does not move on a wide screen.
   if (answer === undefined || (!current && !answer.ok)) {
     return (
-      <Screen>
+      <Screen width="page">
         <NoIndex />
         <BackButton fallback="/" />
         <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
@@ -92,10 +102,12 @@ export default function TripScreen() {
   }
   if (!answer.ok) {
     return (
-      <Screen>
+      <Screen width="page">
         <NoIndex />
         <BackButton fallback="/" />
-        <Failure answer={answer} onRetry={reload} />
+        <PageColumn>
+          <Failure answer={answer} onRetry={reload} />
+        </PageColumn>
       </Screen>
     );
   }
@@ -174,6 +186,7 @@ function Trip({
   const { locale, t } = useLanguage();
   const palette = usePalette();
   const me = useMe();
+  const wide = useWideScreen();
   const [shared, setShared] = useState<Shared | null>(null);
   // The part asked for leads while its answer loads, so quick changes build
   // on each other and Share sends the part on screen. Prices and seats wait
@@ -210,99 +223,103 @@ function Trip({
   // for more, and then only fewer is offered.
   const most = Math.max(1, Math.min(trip.part.freeSeats, defaultTripSettings.maxSeats));
 
-  return (
-    <Screen footerBeside footer={<BookingBar trip={trip} pending={pending} />}>
-      <NoIndex />
-      <View style={styles.header}>
-        <BackButton fallback="/" />
-        <IconButton
-          icon={ShareIcon}
-          label={t("trip.share")}
-          onPress={() => {
-            void share();
-          }}
-        />
-      </View>
-      <ShareNotice shared={shared} />
-      <View>
-        <Text style={[typography.small, { color: palette.textMuted }]}>
-          {capitalised(formatDay(new Date(boardStop.plannedAt), locale), locale)}
-        </Text>
-        <Text accessibilityRole="header" style={[typography.title, { color: palette.text }]}>
-          {route}
-        </Text>
-        <Text style={[typography.small, { color: palette.textMuted }]}>
-          {whole ? t("trip.wholeTrip") : t("results.partOf", { from: name(first), to: name(last) })}
-        </Text>
-      </View>
-      {showsOtherTime(now()) ? <Notice kind="info" message={t("results.icelandTime")} /> : null}
-
-      <Card>
-        <View style={styles.cardHeader}>
-          <Heading>{t("trip.yourPart")}</Heading>
-          <Tag
-            kind={trip.bookingMode === "instant" ? "positive" : "info"}
-            label={trip.bookingMode === "instant" ? t("results.instant") : t("results.request")}
-          />
-        </View>
-        <StopChoice
-          getIn
-          stop={boardStop}
-          choices={trip.stops.filter((stop) => stop.position < part.alight)}
-          onChoose={(position) => {
-            changePart({ board: position, alight: part.alight });
-          }}
-        />
-        <StopChoice
-          getIn={false}
-          stop={alightStop}
-          choices={trip.stops.filter((stop) => stop.position > part.board)}
-          onChoose={(position) => {
-            changePart({ board: part.board, alight: position });
-          }}
-        />
-        <View style={[styles.divider, { backgroundColor: palette.border }]} />
-        <Stepper
-          beside
-          label={t("trip.seats")}
-          hint={t("trip.seatsHint", {
-            free: trip.part.freeSeats,
-            price:
-              trip.part.pricePerSeat.amount === 0
-                ? t("results.free")
-                : t("trip.pricePerSeat", { price: formatMoney(trip.part.pricePerSeat, locale) }),
-          })}
-          value={seats}
-          min={1}
-          max={most}
-          onChange={(value) => {
-            router.setParams({ seats: String(value) });
-          }}
-          valueText={t("search.seatCount", { count: seats })}
-          fewerLabel={t("search.fewerSeats")}
-          moreLabel={t("search.moreSeats")}
-        />
-      </Card>
-
-      <Card>
-        <Heading>{t("trip.whoYouRideWith")}</Heading>
-        <DriverAndCar
-          driver={{ ...trip.driver, standing: trip.driver }}
-          car={trip.car}
-          carNote={t("trip.plateLater")}
-          preferences={trip.preferences}
-          note={trip.note}
-        />
-        <View style={[styles.divider, { backgroundColor: palette.border }]} />
-        <SeatView
-          offered={trip.seatsOffered}
-          free={trip.part.freeSeats}
-          yours={Math.min(seats, trip.part.freeSeats)}
-          driverColour={trip.driver.colour}
-        />
-      </Card>
-
-      <Heading>{t("trip.route")}</Heading>
+  const shareButton = (
+    <IconButton
+      icon={ShareIcon}
+      label={t("trip.share")}
+      onPress={() => {
+        void share();
+      }}
+    />
+  );
+  const title = (
+    <View style={wide ? styles.grow : undefined}>
+      <Text style={[typography.small, { color: palette.textMuted }]}>
+        {capitalised(formatDay(new Date(boardStop.plannedAt), locale), locale)}
+      </Text>
+      <Text accessibilityRole="header" style={[typography.title, { color: palette.text }]}>
+        {route}
+      </Text>
+      <Text style={[typography.small, { color: palette.textMuted }]}>
+        {whole ? t("trip.wholeTrip") : t("results.partOf", { from: name(first), to: name(last) })}
+      </Text>
+    </View>
+  );
+  const otherTime = showsOtherTime(now()) ? (
+    <Notice kind="info" message={t("results.icelandTime")} />
+  ) : null;
+  const partHeader = (
+    <View style={styles.cardHeader}>
+      <Heading>{t("trip.yourPart")}</Heading>
+      <Tag
+        kind={trip.bookingMode === "instant" ? "positive" : "info"}
+        label={trip.bookingMode === "instant" ? t("results.instant") : t("results.request")}
+      />
+    </View>
+  );
+  const getIn = (
+    <StopChoice
+      getIn
+      stop={boardStop}
+      choices={trip.stops.filter((stop) => stop.position < part.alight)}
+      onChoose={(position) => {
+        changePart({ board: position, alight: part.alight });
+      }}
+    />
+  );
+  const getOut = (
+    <StopChoice
+      getIn={false}
+      stop={alightStop}
+      choices={trip.stops.filter((stop) => stop.position > part.board)}
+      onChoose={(position) => {
+        changePart({ board: part.board, alight: position });
+      }}
+    />
+  );
+  const seatsHint = t("trip.seatsHint", {
+    free: trip.part.freeSeats,
+    price:
+      trip.part.pricePerSeat.amount === 0
+        ? t("results.free")
+        : t("trip.pricePerSeat", { price: formatMoney(trip.part.pricePerSeat, locale) }),
+  });
+  // In Your part with its hint; on a wide screen beside the price in the
+  // side column, which has the hint under the two.
+  const seatsStepper = (inPanel: boolean) => (
+    <Stepper
+      {...(inPanel ? { caption: true } : { beside: true, hint: seatsHint })}
+      label={t("trip.seats")}
+      value={seats}
+      min={1}
+      max={most}
+      onChange={(value) => {
+        router.setParams({ seats: String(value) });
+      }}
+      valueText={t("search.seatCount", { count: seats })}
+      fewerLabel={t("search.fewerSeats")}
+      moreLabel={t("search.moreSeats")}
+    />
+  );
+  const driverAndCar = (
+    <DriverAndCar
+      driver={{ ...trip.driver, standing: trip.driver }}
+      car={trip.car}
+      carNote={t("trip.plateLater")}
+      preferences={trip.preferences}
+      note={trip.note}
+    />
+  );
+  const seatView = (
+    <SeatView
+      offered={trip.seatsOffered}
+      free={trip.part.freeSeats}
+      yours={Math.min(seats, trip.part.freeSeats)}
+      driverColour={trip.driver.colour}
+    />
+  );
+  const routeParts = (
+    <>
       <RouteMap
         label={t("trip.routeMap", {
           trip: t("search.route", { from: name(first), to: name(last) }),
@@ -313,33 +330,119 @@ function Trip({
       />
       <RouteList stops={trip.stops} part={part} onChange={changePart} />
       <Body>{t("trip.tapStop")}</Body>
-      {trip.part.pricePerSeat.amount === 0 ? null : (
-        <View style={styles.row}>
-          <Icon icon={ShieldCheck} color={palette.primary} />
-          <Text style={[typography.small, styles.grow, { color: palette.text }]}>
-            {t("trip.freeCancellation")}
-          </Text>
+    </>
+  );
+  const freeCancellation =
+    trip.part.pricePerSeat.amount === 0 ? null : (
+      <View style={styles.row}>
+        <Icon icon={ShieldCheck} color={palette.primary} />
+        <Text style={[typography.small, styles.grow, { color: palette.text }]}>
+          {t("trip.freeCancellation")}
+        </Text>
+      </View>
+    );
+  const safety =
+    trip.part.state === "cancelled" ? null : (
+      <TripSafety
+        regions={[boardStop.meetingPoint.region, alightStop.meetingPoint.region]}
+        share={null}
+      />
+    );
+  // Reporting needs an account; my own trip is not mine to report (spec 9, 3.1).
+  const report =
+    me === null || trip.drivenByMe ? null : (
+      <Button
+        variant="text"
+        label={t("report.trip")}
+        onPress={() => {
+          router.push({
+            pathname: "/report",
+            params: { kind: "trip", id: trip.id },
+          });
+        }}
+      />
+    );
+
+  if (wide) {
+    return (
+      <Screen width="page">
+        <NoIndex />
+        <View style={styles.wideHeader}>
+          <BackButton fallback="/" />
+          {title}
+          {shareButton}
         </View>
-      )}
-      {trip.part.state === "cancelled" ? null : (
-        <TripSafety
-          regions={[boardStop.meetingPoint.region, alightStop.meetingPoint.region]}
-          share={null}
-        />
-      )}
-      {/* Reporting needs an account; my own trip is not mine to report (spec 9, 3.1). */}
-      {me === null || trip.drivenByMe ? null : (
-        <Button
-          variant="text"
-          label={t("report.trip")}
-          onPress={() => {
-            router.push({
-              pathname: "/report",
-              params: { kind: "trip", id: trip.id },
-            });
-          }}
-        />
-      )}
+        <ShareNotice shared={shared} />
+        {otherTime}
+        <Columns
+          side={
+            <>
+              <Card>
+                <BookingBar
+                  trip={trip}
+                  pending={pending}
+                  panel={{ seats: seatsStepper(true), hint: seatsHint, note: freeCancellation }}
+                />
+              </Card>
+              <Card>
+                <Heading>{t("trip.route")}</Heading>
+                {routeParts}
+              </Card>
+            </>
+          }
+        >
+          <Card>
+            {partHeader}
+            <Halves testID="part-stops">
+              {getIn}
+              {getOut}
+            </Halves>
+          </Card>
+          <Card>
+            <Heading>{t("trip.whoYouRideWith")}</Heading>
+            <Halves testID="ride-with">
+              {driverAndCar}
+              {seatView}
+            </Halves>
+          </Card>
+          {safety}
+          {report}
+        </Columns>
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen footer={<BookingBar trip={trip} pending={pending} />}>
+      <NoIndex />
+      <View style={styles.header}>
+        <BackButton fallback="/" />
+        {shareButton}
+      </View>
+      <ShareNotice shared={shared} />
+      {title}
+      {otherTime}
+
+      <Card>
+        {partHeader}
+        {getIn}
+        {getOut}
+        <View style={[styles.divider, { backgroundColor: palette.border }]} />
+        {seatsStepper(false)}
+      </Card>
+
+      <Card>
+        <Heading>{t("trip.whoYouRideWith")}</Heading>
+        {driverAndCar}
+        <View style={[styles.divider, { backgroundColor: palette.border }]} />
+        {seatView}
+      </Card>
+
+      <Heading>{t("trip.route")}</Heading>
+      {routeParts}
+      {freeCancellation}
+      {safety}
+      {report}
     </Screen>
   );
 }
@@ -356,13 +459,29 @@ function laterStopAhead(trip: TripDetails, board: number): boolean {
 }
 
 /**
- * The bottom bar, or the panel beside the column on wide screens: the
- * price for the seats chosen and what can be done. Booking opens the booking
- * screen for the part on screen; someone without a finished account keeps
- * the choice and signs up first (spec 5, 3.1, item 1). Someone who already
- * holds a booking on the trip is led to it instead.
+ * The bottom bar, or with `panel` the card at the top of a wide screen's
+ * side column: the price for the seats chosen and what can be done. Booking
+ * opens the booking screen for the part on screen; someone without a
+ * finished account keeps the choice and signs up first (spec 5, 3.1, item
+ * 1). Someone who already holds a booking on the trip is led to it instead.
  */
-function BookingBar({ trip, pending }: { readonly trip: TripDetails; readonly pending: boolean }) {
+function BookingBar({
+  trip,
+  pending,
+  panel,
+}: {
+  readonly trip: TripDetails;
+  readonly pending: boolean;
+  /**
+   * On a wide screen: the seats stepper, beside the price it changes, the
+   * line under the two, and a line under what can be done.
+   */
+  readonly panel?: {
+    readonly seats: ReactNode;
+    readonly hint: string;
+    readonly note: ReactNode;
+  };
+}) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
   const me = useMe();
@@ -407,10 +526,13 @@ function BookingBar({ trip, pending }: { readonly trip: TripDetails; readonly pe
     });
   };
 
+  // In the bar the action sits at the right of the price; in the panel it
+  // is as wide as the card, under the price.
+  const actionStyle = panel === undefined ? styles.action : styles.panelAction;
   const action = (() => {
     if (myBooking !== null) {
       return (
-        <View style={styles.action}>
+        <View style={actionStyle}>
           <Text style={[typography.label, { color: palette.text }]}>{t("booking.yours")}</Text>
           <Button
             main
@@ -424,7 +546,7 @@ function BookingBar({ trip, pending }: { readonly trip: TripDetails; readonly pe
     }
     if (status === null) {
       return (
-        <View style={styles.action}>
+        <View style={actionStyle}>
           <Button
             main
             disabled={pending}
@@ -440,7 +562,7 @@ function BookingBar({ trip, pending }: { readonly trip: TripDetails; readonly pe
       );
     }
     return (
-      <View style={styles.action}>
+      <View style={actionStyle}>
         <Text accessibilityLiveRegion="polite" style={[typography.label, { color: palette.text }]}>
           {status}
         </Text>
@@ -454,6 +576,23 @@ function BookingBar({ trip, pending }: { readonly trip: TripDetails; readonly pe
     );
   })();
 
+  if (panel !== undefined) {
+    return (
+      <View style={styles.panel}>
+        <View style={styles.panelTop}>
+          <View style={styles.panelPrice} aria-busy={pending}>
+            <Text style={[typography.figure, { color: figureColour }]}>
+              {free ? t("results.free") : formatMoney(part.total, locale)}
+            </Text>
+          </View>
+          {panel.seats}
+        </View>
+        <Text style={[typography.small, { color: palette.textMuted }]}>{panel.hint}</Text>
+        {action}
+        {panel.note}
+      </View>
+    );
+  }
   return (
     <View style={styles.bar}>
       <View style={styles.price} aria-busy={pending}>
@@ -471,6 +610,7 @@ function BookingBar({ trip, pending }: { readonly trip: TripDetails; readonly pe
 
 const styles = StyleSheet.create({
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  wideHeader: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -484,4 +624,9 @@ const styles = StyleSheet.create({
   bar: { flexDirection: "row", alignItems: "center", gap: spacing.md, flexWrap: "wrap" },
   price: { flexShrink: 0 },
   action: { flexGrow: 1, flexBasis: sizes.barAction, alignItems: "flex-end", gap: spacing.xs },
+  panel: { gap: spacing.ms },
+  panelTop: { flexDirection: "row", alignItems: "flex-end", gap: spacing.md },
+  // The price is level with the buttons that change it, under their caption.
+  panelPrice: { flex: 1, minHeight: sizes.buttonHeight, justifyContent: "center" },
+  panelAction: { gap: spacing.xs },
 });

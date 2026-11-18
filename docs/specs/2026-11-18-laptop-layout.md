@@ -35,8 +35,9 @@ On a laptop the app is a phone screen in the middle of the window:
   the same under it.
 
 What already works and stays: the top bar with the five places (spec 16,
-3.1), the booking panel beside trip details and the map beside the meeting
-points (spec 15, 4.8).
+3.1) and the map beside the meeting points (spec 15, 4.8). The booking
+panel beside trip details becomes the first card of that screen's side
+column (3.7).
 
 Goal: on a laptop the app uses the width to show what belongs together side
 by side, so that finding, comparing and booking a ride takes less scrolling
@@ -92,6 +93,13 @@ changes on a phone.
 6. On a screen with two columns, the title starts at the left, above the
    main column. Screens of one column keep their centred title (spec 15,
    5.1, alignment).
+7. A window that crosses 900, as when its edge is dragged, lays the screen
+   out anew. What the person typed, chose or opened to pay stays, and
+   nothing loads again. Where the focus is, and a list opened in place
+   (the stops under Change), may not stay (decision 11).
+8. A two-column screen is a page from the start: while it loads, and when
+   it cannot be loaded, Back is where it will be once loaded. The notice
+   and Try again keep the 480 column, at the left (`PageColumn`, spec 15).
 
 ### 3.3 The top bar
 
@@ -178,18 +186,37 @@ changes on a phone.
 1. Back, the day and the title across the top, with Share at the right.
 2. **Main column:** "Your part" with Get in and Get out side by side; "Who
    you ride with" with the driver, car and preferences at the left and the
-   seat view at the right; Safety; reporting.
-3. **Side column:** the booking panel (price, seats, the main button, the
-   lines under it), then "Route" with the map and the list of stops.
+   seat view at the right; Safety; reporting. Each pair is two halves of
+   its card (`Halves`, spec 15): where the main column has no room for
+   two halves 280 wide, as in a window 900 wide, the second goes under the
+   first. Change opens the stops under its own half.
+3. **Side column:** the booking panel, then "Route" with the map and the
+   list of stops. The panel is a card with the price and, beside it, the
+   seats under a small "Seats"; under the two, how many are free and the
+   price per seat; then the main button as wide as the card, with its
+   lines, and the free cancellation line. A part that cannot be booked, or
+   a booking already made, shows there in the button's place.
 4. The seats stepper moves from "Your part" into the booking panel, next to
    the price it changes.
+5. There is no bottom bar. While the trip loads, and when it cannot be
+   loaded, the screen is already a page (3.2, 8).
 
 ### 3.8 Check and pay, and a request
 
-1. **Main column:** what the person fills in or reads: the message to the
-   driver, the tick list, the cancellation lines.
-2. **Side column:** the ride (day, times, places, driver and car), the total
-   and the main button ("Pay 5,800 ISK", "Send request").
+1. **Main column:** what the person reads and fills in. What went wrong
+   comes first (seats just taken, a changed price, a payment that did not
+   go through). Under it one card has the tick list, the message to the
+   driver (a request only) and what cancelling late means.
+   While the operator has paused booking (spec 10, 3.3), the banner that
+   says so comes before all of it; on a phone it stands above the title.
+2. **Side column:** a card with the ride (day, times, places, driver and
+   car) and the total, and under the card the main button ("Pay 5,800
+   ISK", "Send request"). The payment opens in the button's place; a part
+   that can no longer be booked says so there.
+3. There is no bottom bar. What was typed and ticked stays when the
+   window turns narrow or wide, and so does a payment that is open (3.2,
+   7). When the trip cannot be loaded the screen is a page all the same
+   (3.2, 8).
 
 ### 3.9 A booking
 
@@ -328,3 +355,4 @@ Every other text is one the app has.
 | 8 | Does Messages open the newest conversation by itself? | No: opening marks its messages as seen, which only the person should do (my call) |
 | 9 | A colour for a primary button under the pointer | New token `primaryHover` (#285C44 light, #8FD0AC dark), added to spec 15, 4.1 with its contrast check (my call) |
 | 10 | How does a card show the pointer? | Its bottom edge turns `primary`. A tint was tried first and dropped: tags and avatars on the card sit on the same tint and lost their shape (my call, 2026-11-18) |
+| 11 | What stays when a window crosses 900? | What the person typed, chose or opened to pay: that state lives above the layout, and nothing loads again. The focus and a list opened in place do not: the wide and the phone layout are different trees, and keeping those too would mean drawing every phone screen as a wide one folded up. Dragging a window across 900 in the middle of a booking is rare, and nothing is lost (my call, 2026-11-18, after the code review) |

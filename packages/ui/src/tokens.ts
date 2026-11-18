@@ -227,10 +227,11 @@ export const minTouchTarget = 44;
 export const maxContentWidth = 480;
 
 /**
- * From this width the trip details move the price and main action from the
- * bottom bar into a panel beside the column (spec 15, section 4.8).
+ * From this width a screen is wide: a page with columns or a grid, or a map
+ * beside a list (spec 15, section 4.8; spec 18, 3.2).
  */
 export const sidePanelFrom = 900;
+/** The menu at the side of the operator console. */
 export const sidePanelWidth = 320;
 /** From the same width, a map sits beside a list, at most this wide (spec 15, section 4.8). */
 export const asideMaxWidth = 640;
@@ -243,6 +244,8 @@ export const pageMaxWidth = maxContentWidth + spacing.lg + asideMaxWidth;
 export const sideColumnWidth = 400;
 /** Narrowest a card gets in a grid before the grid drops a column (spec 18, 3.2). */
 export const gridCardMinWidth = 320;
+/** Narrowest a half of a card gets before the two go one under the other (spec 18, 3.2). */
+export const halfMinWidth = 280;
 /** The list of conversations beside the open one (spec 18, 3.11). */
 export const listPaneWidth = 360;
 
