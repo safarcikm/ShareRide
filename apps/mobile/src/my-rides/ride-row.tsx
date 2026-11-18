@@ -35,14 +35,24 @@ export function openRide(ride: Ride): void {
 /**
  * A ride as My rides and Your next ride show it (spec 16, 3.2 and 3.3):
  * the card, and under it Pay or Answer requests when the ride needs me.
- * Both open the same place as the card.
+ * Both open the same place as the card. With `fill`, in a grid, the card
+ * takes the height its row leaves it, so the cards of a row end level and
+ * the button stays at the bottom of its cell.
  */
-export function RideItem({ ride, at }: { readonly ride: Ride; readonly at: Date }) {
+export function RideItem({
+  ride,
+  at,
+  fill = false,
+}: {
+  readonly ride: Ride;
+  readonly at: Date;
+  readonly fill?: boolean;
+}) {
   const { locale, t } = useLanguage();
   const needs = needsYou(ride, at);
   return (
-    <View style={styles.item}>
-      <RideCard ride={ride} at={at} />
+    <View style={[styles.item, fill && styles.fill]}>
+      <RideCard ride={ride} at={at} fill={fill} />
       {needs === null ? null : (
         <Button
           label={
@@ -161,7 +171,15 @@ function needsText(t: Translate, ride: Ride, at: Date): string | null {
  * a booking's driver, car, seats and price, or a trip's seats taken and
  * free; and what it needs from me (3.3 item 3). Pressing it opens the ride.
  */
-function RideCard({ ride, at }: { readonly ride: Ride; readonly at: Date }) {
+function RideCard({
+  ride,
+  at,
+  fill,
+}: {
+  readonly ride: Ride;
+  readonly at: Date;
+  readonly fill: boolean;
+}) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
   const role = t(ride.kind === "booking" ? "myRides.passenger" : "myRides.driving");
@@ -196,6 +214,7 @@ function RideCard({ ride, at }: { readonly ride: Ride; readonly at: Date }) {
   return (
     <Card
       accessibilityLabel={label}
+      fill={fill}
       onPress={() => {
         openRide(ride);
       }}
@@ -238,6 +257,7 @@ function RideCard({ ride, at }: { readonly ride: Ride; readonly at: Date }) {
 
 const styles = StyleSheet.create({
   item: { gap: spacing.sm },
+  fill: { flexGrow: 1 },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.sm, flexWrap: "wrap" },
   spread: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
 });

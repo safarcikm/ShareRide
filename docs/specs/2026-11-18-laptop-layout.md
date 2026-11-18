@@ -220,16 +220,42 @@ changes on a phone.
 
 ### 3.9 A booking
 
-1. **Main column:** the status and what to do now, the trip day's parts,
-   where to stand, the driver and car.
-2. **Side column:** the ride and price, then the actions (Message, Cancel
-   booking, Share trip details).
+1. Back, the day, the title and the status across the top, at the left.
+2. **Main column:** where the booking stands and what to do now, in the
+   order a phone has: a report about it, the status with Pay, Withdraw
+   request or Search again, changes to the trip, the review, and the
+   prompt to turn on notifications or add an email; on the trip day the
+   time and place to be at. Then the driver with the car, and where to
+   stand once the seat is confirmed. These two share a row, as tall as
+   each other, where the column has room for two cards 320 wide, and where
+   to stand comes first on the trip day; in a window 900 wide one goes
+   under the other. Under them on the trip day: "I'm here" and, after the
+   wait, "The driver didn't come". Safety ends the column, as on trip
+   details. My own status and Pay keep the 480 of a phone's column, so the
+   button is not stretched across the page.
+3. **Side column:** the ride (Get in, Get out, the seats and the price),
+   then what can be done about it: Message, Cancel booking and "Report a
+   problem with this trip". It is whole in a small laptop's window (1280
+   by 720), so none of them is reached only by scrolling the column;
+   that is why Safety, which is tall on a trip out of the capital area, is
+   not in it.
+4. There is no bottom bar. A payment that is open, a question being
+   answered (withdraw the request?) and "I'm here" just said stay when the
+   window turns narrow or wide (3.2, 7): the main column is one tree at
+   every width, and what a wide screen shows in the side column stands in
+   its phone place otherwise. While the booking loads, and when it cannot
+   be loaded, the screen is a page (3.2, 8).
 
 ### 3.10 My rides
 
 1. The title and the Coming up / Past choice at the left.
-2. The rides as a grid, two columns from 704 wide. A ride that needs you
-   comes first, as today.
+2. The rides as a grid in the same order: two columns in a window 900
+   wide, three from about 1060. "Needs you" and "Coming up" are each a grid
+   under its heading, so a ride that needs you comes first, as today.
+   Cards in one row are equally tall.
+3. With no rides, and when they cannot be loaded, what stands in their
+   place (the line, Find a ride and Offer a ride, or the notice and Try
+   again) keeps the 480 column at the page's left.
 
 ### 3.11 Messages
 
@@ -271,8 +297,11 @@ changes on a phone.
 1. **Side column, here at the left:** the person: photo or initial, name,
    languages, member since, "Edit profile" and "See it as others do".
 2. **Main column:** the two groups of rows (My cars, Driving licence,
-   Meeting points; Settings, Terms, rules and privacy, Notices).
-3. Signed out, Profile stays one centred column.
+   Meeting points; Settings, Terms, rules and privacy, Send feedback,
+   Notices) and the line about what is in Settings.
+3. The title starts at the left, over the card. The card stays in view
+   while the rows scroll.
+4. Signed out, Profile stays one centred column.
 
 ### 3.13 Offer a ride
 

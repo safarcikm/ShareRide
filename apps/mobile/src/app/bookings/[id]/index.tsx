@@ -19,14 +19,16 @@ import {
 import { PaymentSheet, usePayment } from "@/booking/payment";
 import { cancellationTexts, payByText, requestSentText } from "@/booking/texts";
 import { TripChanges, useMoveChoice } from "@/booking/trip-changes";
-import { WhereToStand } from "@/booking/where-to-stand";
+import { showsWhereToStand, WhereToStand } from "@/booking/where-to-stand";
 import { BackButton } from "@/components/back-button";
 import { otherPerson } from "@/chat/texts";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
+import { Columns, PageColumn } from "@/components/columns";
+import { Grid } from "@/components/grid";
 import { Icon } from "@/components/icon";
 import { Notice } from "@/components/notice";
-import { Screen } from "@/components/screen";
+import { Screen, useWideScreen } from "@/components/screen";
 import { Tag } from "@/components/tag";
 import { TakesFocus } from "@/components/takes-focus";
 import { Body, Heading, Title } from "@/components/text";
@@ -42,7 +44,7 @@ import { ReportStatus } from "@/trip-day/report-status";
 import { offersDriverAbsent, reportState } from "@/trip-day/reports";
 import { useTripDayRefresh } from "@/trip-day/use-refresh";
 import { DriverAndCar, PartStop } from "@/trip-details/trip-parts";
-import { controlOutline, spacing, typography } from "@/theme/tokens";
+import { controlOutline, maxContentWidth, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { firstNameOf } from "@/people/texts";
 
@@ -62,7 +64,7 @@ import { firstNameOf } from "@/people/texts";
  * reporting or answering with `report`, focus moves to it.
  * Changes to the trip since booking show, with the choice to keep or
  * cancel after a big move (spec 6, 3.2). It loads again each time it comes
- * into view.
+ * into view. On a wide screen it is a page of two columns (spec 18, 3.9).
  */
 export default function BookingScreen() {
   const { t } = useLanguage();
@@ -97,9 +99,11 @@ export default function BookingScreen() {
     refresh();
   };
 
+  // A page while it loads and when it fails, as it is once loaded, so Back
+  // does not move on a wide screen.
   if (answer === undefined) {
     return (
-      <Screen>
+      <Screen width="page">
         <BackButton fallback="/my-rides" />
         <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
       </Screen>
@@ -107,18 +111,20 @@ export default function BookingScreen() {
   }
   if (!answer.ok) {
     return (
-      <Screen>
+      <Screen width="page">
         <BackButton fallback="/my-rides" />
-        <Notice
-          message={
-            answer.status === 404 || answer.status === 400
-              ? t("booking.notFound")
-              : answer.error.code === "network_error"
-                ? errorText(t, answer)
-                : t("booking.failed")
-          }
-        />
-        <Button variant="secondary" label={t("common.retry")} onPress={reload} />
+        <PageColumn>
+          <Notice
+            message={
+              answer.status === 404 || answer.status === 400
+                ? t("booking.notFound")
+                : answer.error.code === "network_error"
+                  ? errorText(t, answer)
+                  : t("booking.failed")
+            }
+          />
+          <Button variant="secondary" label={t("common.retry")} onPress={reload} />
+        </PageColumn>
       </Screen>
     );
   }
@@ -191,6 +197,7 @@ function BookingDetails({
   // The trip day (spec 8, 3.1): when and where first, then the car and the
   // driver, then "I'm here" and the chat. It is used while parked.
   const tripDay = onTripDay(booking);
+  const wide = useWideScreen();
   const part = (
     <Card>
       <PartStop stop={board} getIn />
@@ -207,8 +214,97 @@ function BookingDetails({
     </Card>
   );
 
+  const driver = (
+    <Card key="driver" fill={wide}>
+      <DriverAndCar
+        driver={{
+          firstName: firstNameOf(t, booking.driver),
+          colour: booking.driver.colour,
+          profileId: booking.driver.profileId,
+          // Someone leaving, or a former member, has no profile, and shows no standing.
+          standing: booking.driver.profileId === null ? null : booking.driver,
+        }}
+        car={booking.car}
+        carNote={
+          confirmed !== null
+            ? confirmed.registration === null
+              ? t("booking.plateLater")
+              : t("booking.plate", { plate: confirmed.registration })
+            : booking.status === "requested" || booking.status === "accepted"
+              ? t("trip.plateLater")
+              : undefined
+        }
+      />
+    </Card>
+  );
+  // Left out, not empty, where there is nothing to show: no gap in a
+  // column and no empty cell in a row.
+  const stand = showsWhereToStand(booking) ? (
+    <WhereToStand key="stand" booking={booking} fill={wide} />
+  ) : null;
+  const message =
+    confirmed === null ? null : (
+      <Button
+        variant="secondary"
+        label={t("chat.messageTo", { name: firstNameOf(t, otherPerson(booking)) })}
+        onPress={() => {
+          router.push({ pathname: "/messages/[bookingId]", params: { bookingId: booking.id } });
+        }}
+      />
+    );
+  // Until the passenger gets out: no trip to be safe on after that.
+  const safety =
+    holdsSeats(booking.status) && new Date(alight.plannedAt) > now() ? (
+      <TripSafety
+        regions={[board.meetingPoint.region, alight.meetingPoint.region]}
+        share={bookingShareText(t, locale, booking)}
+      />
+    ) : null;
+  // After a move, the choice above cancels, with its reason.
+  const cancel =
+    passenger && canCancel(booking, now()) && !moveChoice.offered && !moveChoice.pending ? (
+      <Button
+        variant="text"
+        label={t("booking.cancel")}
+        onPress={() => {
+          onAction();
+          router.push({ pathname: "/bookings/[id]/cancel", params: { id: booking.id } });
+        }}
+      />
+    ) : null;
+  // A booking that ran or is to run, until 24 hours after the trip completed (R9.1).
+  const report = booking.problemReportable ? (
+    <Button
+      variant="text"
+      label={t("report.problem")}
+      onPress={() => {
+        router.push({
+          pathname: "/report",
+          params: { kind: "booking", id: booking.id },
+        });
+      }}
+    />
+  ) : null;
+  // A wide screen (spec 18, 3.9): the ride with its price, then what can be
+  // done about the booking, stand beside where it is at and what to do now.
+  // Safety is not among them: with "Before you go" it is tall, and the
+  // side column should be whole in a laptop's window.
+  const side = wide ? (
+    <>
+      {part}
+      {message}
+      {cancel}
+      {report}
+    </>
+  ) : null;
+
+  // One tree for a phone and a wide screen: each part of the main column
+  // keeps its place among the others, so a payment that is open, a
+  // question asked or "I'm here" just said stays when the window crosses
+  // the breakpoint. What a wide screen shows in the side column is left
+  // out of the main column there, and stands in its phone place otherwise.
   return (
-    <Screen>
+    <Screen width="page">
       <BackButton fallback={{ pathname: "/trips/[id]", params: { id: booking.trip.id } }} />
       <View>
         <Text style={[typography.small, { color: palette.textMuted }]}>
@@ -220,125 +316,79 @@ function BookingDetails({
         </View>
       </View>
 
-      {stale === null ? null : (
-        <TakesFocus key={stale}>
-          <Notice message={stale} />
-        </TakesFocus>
-      )}
-      <ReportStatus booking={booking} announce={reported} onAnnounced={onReportAnnounced} />
-      {passenger ? (
-        <Status
-          booking={booking}
-          announce={announce || (reported && reportState(booking, now()) === null)}
-          onAnnounced={onReportAnnounced}
-          onAction={onAction}
-          onChanged={onChanged}
-          onStale={onStale}
-        />
-      ) : null}
-      {passenger ? (
-        <TripChanges
-          booking={booking}
-          offered={moveChoice.offered}
-          keptHere={moveChoice.keptHere}
-          onKeep={moveChoice.keep}
-          onCancel={onAction}
-        />
-      ) : null}
-      <ReviewSection booking={booking} framed />
-      {/* Not on the trip day, when time and place come first. */}
-      {occasion === null || tripDay ? null : <NotificationsPrompt occasion={occasion} />}
+      <Columns side={side}>
+        {stale === null ? null : (
+          <TakesFocus key={stale}>
+            <Notice message={stale} />
+          </TakesFocus>
+        )}
+        <ReportStatus booking={booking} announce={reported} onAnnounced={onReportAnnounced} />
+        {passenger ? (
+          <Status
+            booking={booking}
+            announce={announce || (reported && reportState(booking, now()) === null)}
+            onAnnounced={onReportAnnounced}
+            onAction={onAction}
+            onChanged={onChanged}
+            onStale={onStale}
+          />
+        ) : null}
+        {passenger ? (
+          <TripChanges
+            booking={booking}
+            offered={moveChoice.offered}
+            keptHere={moveChoice.keptHere}
+            onKeep={moveChoice.keep}
+            onCancel={onAction}
+          />
+        ) : null}
+        <ReviewSection booking={booking} framed />
+        {/* Not on the trip day, when time and place come first. */}
+        {occasion === null || tripDay ? null : <NotificationsPrompt occasion={occasion} />}
 
-      {tripDay ? (
-        <>
-          <TripDayHeading booking={booking} />
-          <WhereToStand booking={booking} />
-        </>
-      ) : (
-        part
-      )}
+        {tripDay ? <TripDayHeading booking={booking} /> : wide ? null : part}
 
-      <Card>
-        <DriverAndCar
-          driver={{
-            firstName: firstNameOf(t, booking.driver),
-            colour: booking.driver.colour,
-            profileId: booking.driver.profileId,
-            // Someone leaving, or a former member, has no profile, and shows no standing.
-            standing: booking.driver.profileId === null ? null : booking.driver,
-          }}
-          car={booking.car}
-          carNote={
-            confirmed !== null
-              ? confirmed.registration === null
-                ? t("booking.plateLater")
-                : t("booking.plate", { plate: confirmed.registration })
-              : booking.status === "requested" || booking.status === "accepted"
-                ? t("trip.plateLater")
-                : undefined
-          }
-        />
-      </Card>
+        {tripDay && !wide ? stand : null}
 
-      {tripDay ? <PassengerImHere booking={booking} onSaid={onReload} onStale={onStale} /> : null}
+        {/* Side by side where the column has room for both; where to stand
+            comes first on the trip day, as on a phone. */}
+        {wide ? (
+          <Grid>
+            {tripDay ? stand : null}
+            {driver}
+            {tripDay ? null : stand}
+          </Grid>
+        ) : (
+          driver
+        )}
 
-      {confirmed === null ? null : (
-        <Button
-          variant="secondary"
-          label={t("chat.messageTo", { name: firstNameOf(t, otherPerson(booking)) })}
-          onPress={() => {
-            router.push({ pathname: "/messages/[bookingId]", params: { bookingId: booking.id } });
-          }}
-        />
-      )}
+        {tripDay ? <PassengerImHere booking={booking} onSaid={onReload} onStale={onStale} /> : null}
 
-      {offersDriverAbsent(booking, now()) ? (
-        <Button
-          variant="secondary"
-          label={t("tripDay.driverAbsent")}
-          onPress={() => {
-            router.push({ pathname: "/bookings/[id]/driver-absent", params: { id: booking.id } });
-          }}
-        />
-      ) : null}
+        {wide ? null : message}
 
-      {tripDay ? null : <WhereToStand booking={booking} />}
+        {offersDriverAbsent(booking, now()) ? (
+          <Button
+            variant="secondary"
+            label={t("tripDay.driverAbsent")}
+            onPress={() => {
+              router.push({
+                pathname: "/bookings/[id]/driver-absent",
+                params: { id: booking.id },
+              });
+            }}
+          />
+        ) : null}
 
-      {/* Until the passenger gets out: no trip to be safe on after that. */}
-      {holdsSeats(booking.status) && new Date(alight.plannedAt) > now() ? (
-        <TripSafety
-          regions={[board.meetingPoint.region, alight.meetingPoint.region]}
-          share={bookingShareText(t, locale, booking)}
-        />
-      ) : null}
+        {tripDay || wide ? null : stand}
 
-      {tripDay ? part : null}
+        {safety}
 
-      {/* After a move, the choice above cancels, with its reason. */}
-      {passenger && canCancel(booking, now()) && !moveChoice.offered && !moveChoice.pending ? (
-        <Button
-          variant="text"
-          label={t("booking.cancel")}
-          onPress={() => {
-            onAction();
-            router.push({ pathname: "/bookings/[id]/cancel", params: { id: booking.id } });
-          }}
-        />
-      ) : null}
+        {tripDay && !wide ? part : null}
 
-      {/* A booking that ran or is to run, until 24 hours after the trip completed (R9.1). */}
-      {booking.problemReportable ? (
-        <Button
-          variant="text"
-          label={t("report.problem")}
-          onPress={() => {
-            router.push({
-              pathname: "/report",
-              params: { kind: "booking", id: booking.id },
-            });
-          }}
-        />
-      ) : null}
+        {wide ? null : cancel}
+
+        {wide ? null : report}
+      </Columns>
     </Screen>
   );
 }
@@ -609,6 +659,8 @@ const styles = StyleSheet.create({
   grow: { flex: 1 },
   divider: { height: controlOutline / 2 },
   spread: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  pay: { gap: spacing.sm },
-  status: { gap: spacing.sm },
+  // No wider than a column, also in the main column of a wide page: a
+  // notice to read and a button to press, not a banner.
+  pay: { gap: spacing.sm, maxWidth: maxContentWidth },
+  status: { gap: spacing.sm, maxWidth: maxContentWidth },
 });

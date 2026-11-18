@@ -1,5 +1,6 @@
 import type { Booking, MyTrip } from "@shareride/contracts";
-import { fireEvent, screen } from "expo-router/testing-library";
+import { act, fireEvent, screen, within } from "expo-router/testing-library";
+import { Dimensions } from "react-native";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import {
@@ -395,5 +396,148 @@ describe("Withdrawing a request (spec 5, 3.4; R5.8)", () => {
     expect(screen.queryByText(/^You withdrew/)).toBeNull();
     expect(screen.queryByRole("button", { name: "Search again" })).toBeNull();
     expect(screen.queryByText(/^Number plate/)).toBeNull();
+  });
+});
+
+describe("My rides on a laptop (spec 18, 3.10)", () => {
+  const phone = { width: 750, height: 1334, scale: 2, fontScale: 2 };
+  const laptop = { width: 1280, height: 800, scale: 1, fontScale: 1 };
+
+  beforeEach(() => {
+    Dimensions.set({ window: laptop });
+  });
+
+  afterEach(async () => {
+    // The screen is still on show here, so its update goes through act.
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+  });
+
+  it("shows the rides as grids on a page, what needs you first, each Pay with its ride", async () => {
+    await renderApp("/my-rides", {
+      me: completeMe,
+      setUp: (client) => {
+        myRidesApi(client, {
+          upcoming: {
+            bookings: [northBooking(), unpaid, confirmed],
+            trips: [drivingLater, driving],
+          },
+        });
+      },
+    });
+    expect(await screen.findByRole("header", { name: "Needs you" })).toBeVisible();
+    expect(screen.getByTestId("page")).toBeVisible();
+    // The title starts at the left, with the choice under it.
+    expect(screen.getByRole("header", { name: "My rides" })).not.toHaveStyle({
+      textAlign: "center",
+    });
+    expect(screen.getByRole("radio", { name: "Coming up" })).toBeChecked();
+
+    // The order is the phone's: what needs you, then the rest, soonest first.
+    expect(rowNames()).toEqual([
+      expect.stringMatching(/^Driving, Sunday 15 November, /),
+      expect.stringMatching(/^Passenger, Sunday 15 November, .*Waiting for payment/),
+      expect.stringMatching(/^Passenger, Sunday 15 November, .*Request sent/),
+      expect.stringMatching(/^Passenger, Monday 16 November, /),
+      expect.stringMatching(/^Driving, Tuesday 17 November, /),
+    ]);
+    // A grid under each heading, a ride to a cell.
+    const [needing, rest, ...more] = screen.getAllByTestId("grid");
+    if (needing === undefined || rest === undefined) throw new Error("Two grids expected");
+    expect(more).toHaveLength(0);
+    const cells = within(needing).getAllByTestId("grid-cell");
+    expect(cells).toHaveLength(2);
+    expect(within(rest).getAllByTestId("grid-cell")).toHaveLength(3);
+    // What a ride needs stays with it: the button is under its card, in its cell.
+    const [answer, pay] = cells;
+    if (answer === undefined || pay === undefined) throw new Error("Two cells expected");
+    expect(within(answer).getByRole("button", { name: /^Driving, Sunday/ })).toBeVisible();
+    expect(within(answer).getByRole("button", { name: "Answer requests" })).toBeVisible();
+    expect(within(pay).getByRole("button", { name: /Waiting for payment/ })).toBeVisible();
+    expect(within(pay).getByRole("button", { name: "Pay 2,900 ISK" })).toBeVisible();
+    // The cards of a row are as tall as the tallest.
+    for (const card of screen.getAllByTestId("card")) expect(card).toHaveStyle({ flexGrow: 1 });
+  });
+
+  it("shows past rides as a grid too, and keeps the choice when the window turns narrow", async () => {
+    await renderApp("/my-rides?when=past", {
+      me: completeMe,
+      setUp: (client) => {
+        myRidesApi(client, { past: { bookings: [declined, withdrawn], trips: [drove] } });
+      },
+    });
+    expect(
+      await screen.findByRole("button", { name: /^Driving, Saturday 7 November/ }),
+    ).toBeVisible();
+    expect(within(screen.getByTestId("grid")).getAllByTestId("grid-cell")).toHaveLength(3);
+    expect(screen.queryByRole("header", { name: "Needs you" })).toBeNull();
+
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+    expect(screen.getByRole("radio", { name: "Past" })).toBeChecked();
+    expect(screen.getByRole("button", { name: /^Driving, Saturday 7 November/ })).toBeVisible();
+    expect(screen.queryByTestId("grid")).toBeNull();
+    expect(screen.queryByTestId("page")).toBeNull();
+    for (const card of screen.getAllByTestId("card")) {
+      expect(card).not.toHaveStyle({ flexGrow: 1 });
+    }
+
+    await act(() => {
+      Dimensions.set({ window: laptop });
+    });
+    expect(screen.getByRole("radio", { name: "Past" })).toBeChecked();
+    expect(within(screen.getByTestId("grid")).getAllByTestId("grid-cell")).toHaveLength(3);
+  });
+
+  it("offers Find a ride and Offer a ride in a column at the page's left when nothing is coming up", async () => {
+    await renderApp("/my-rides", {
+      me: completeMe,
+      setUp: (client) => {
+        myRidesApi(client);
+      },
+    });
+    const column = within(await screen.findByTestId("page-column"));
+    expect(
+      column.getByText(
+        "Nothing coming up. Book a seat on a ride, or offer the empty seats in your car.",
+      ),
+    ).not.toHaveStyle({ textAlign: "center" });
+    expect(column.getByRole("button", { name: "Find a ride" })).toBeVisible();
+    expect(column.getByRole("button", { name: "Offer a ride" })).toBeVisible();
+    expect(screen.getByTestId("page")).toBeVisible();
+    expect(screen.queryByTestId("grid")).toBeNull();
+
+    await fireEvent.press(screen.getByRole("radio", { name: "Past" }));
+    const past = within(await screen.findByTestId("page-column"));
+    expect(
+      await past.findByText(
+        "Rides show here once they're over, and requests once they're declined, run out or are withdrawn.",
+      ),
+    ).not.toHaveStyle({ textAlign: "center" });
+  });
+
+  it("says that the rides could not be loaded in a column at the page's left, with a retry", async () => {
+    let tries = 0;
+    await renderApp("/my-rides", {
+      me: completeMe,
+      setUp: (client) => {
+        myRidesApi(client, { upcoming: { bookings: [confirmed] } });
+        // Only the trips fail, the first time.
+        client.answer("/v1/me/trips", () => {
+          tries += 1;
+          return tries === 1 ? failure(500, "internal_error") : ok(200, { trips: [] });
+        });
+      },
+    });
+    const column = within(await screen.findByTestId("page-column"));
+    expect(column.getByText("Your rides could not be loaded.")).toBeVisible();
+    expect(screen.getByTestId("page")).toBeVisible();
+    await fireEvent.press(column.getByRole("button", { name: "Try again" }));
+    expect(
+      await screen.findByRole("button", { name: /^Passenger, Monday 16 November/ }),
+    ).toBeVisible();
+    expect(screen.getByTestId("grid")).toBeVisible();
   });
 });

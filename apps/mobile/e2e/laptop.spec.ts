@@ -414,6 +414,57 @@ test.describe("trip details and a request", () => {
 });
 
 /**
+ * A passenger in a browser of their own signs up and asks for a seat on the
+ * driver's trip, from its first stop to its second, or to the stop numbered
+ * `to`. They are left on the page that says the request was sent.
+ */
+async function askForSeat(
+  browser: Browser,
+  baseURL: string | undefined,
+  tripId: string,
+  name: string,
+  to = 1,
+) {
+  const context = await browser.newContext({ viewport: laptop(1280), baseURL, locale: "en-GB" });
+  const passenger = await context.newPage();
+  await signUp(passenger, english, name);
+  await passenger.goto(`/trips/${tripId}?from=0&to=${String(to)}`);
+  await passenger.getByRole("button", { name: "Send request", exact: true }).click();
+  await expect(passenger.getByRole("heading", { name: "Request this ride" })).toBeVisible();
+  await passenger
+    .getByTestId("columns-side")
+    .filter(shown)
+    .getByRole("button", { name: "Send request", exact: true })
+    .click();
+  await expect(passenger).toHaveURL(/\/bookings\/[0-9a-f-]+\/booked$/);
+  return passenger;
+}
+
+/** The driver accepts the request of the passenger named, on their trip's page. */
+async function accept(driver: Page, tripId: string, name: string) {
+  await driver.goto(`/drive/trips/${tripId}`);
+  await driver.getByRole("button", { name: "Accept", exact: true }).click();
+  await expect(driver.getByLabel(`${name}, 1 seat, Waiting for payment`)).toBeVisible();
+}
+
+/**
+ * Pays for the accepted booking on show in the test sheet, where no money
+ * moves. The sheet opens in the button's place and its button has the same
+ * name, so the second press waits for the sheet.
+ */
+async function payInSheet(passenger: Page) {
+  const pay = passenger.getByRole("button", { name: /^Pay [\d,]+ ISK$/ });
+  await pay.click();
+  await expect(
+    passenger.getByRole("heading", { name: "Test payment: no money moves" }),
+  ).toBeVisible();
+  await pay.click();
+  await expect(
+    passenger.getByText("Your seat is confirmed", { exact: true }).filter(shown),
+  ).toBeVisible();
+}
+
+/**
  * A passenger in a browser of their own signs up, asks for a seat on the
  * driver's trip and pays once the driver has accepted, then writes to the
  * driver from the booking.
@@ -426,27 +477,10 @@ async function bookAndWrite(
   name: string,
   text: string,
 ) {
-  const context = await browser.newContext({ viewport: laptop(1280), baseURL, locale: "en-GB" });
-  const passenger = await context.newPage();
-  await signUp(passenger, english, name);
-  await passenger.goto(`/trips/${tripId}?from=0&to=1`);
-  await passenger.getByRole("button", { name: "Send request", exact: true }).click();
-  await expect(passenger.getByRole("heading", { name: "Request this ride" })).toBeVisible();
-  await passenger
-    .getByTestId("columns-side")
-    .filter(shown)
-    .getByRole("button", { name: "Send request", exact: true })
-    .click();
-  await expect(passenger).toHaveURL(/\/bookings\/[0-9a-f-]+\/booked$/);
-  await driver.goto(`/drive/trips/${tripId}`);
-  await driver.getByRole("button", { name: "Accept", exact: true }).click();
-  await expect(driver.getByLabel(`${name}, 1 seat, Waiting for payment`)).toBeVisible();
+  const passenger = await askForSeat(browser, baseURL, tripId, name);
+  await accept(driver, tripId, name);
   await passenger.reload();
-  await passenger.getByRole("button", { name: /^Pay [\d,]+ ISK$/ }).click();
-  await passenger.getByRole("button", { name: /^Pay [\d,]+ ISK$/ }).click();
-  await expect(
-    passenger.getByText("Your seat is confirmed", { exact: true }).filter(shown),
-  ).toBeVisible();
+  await payInSheet(passenger);
   await passenger.getByRole("button", { name: "Message Bára" }).click();
   const open = passenger.getByTestId("panes-open");
   await open.getByLabel("Write a message").fill(text);
@@ -569,5 +603,194 @@ test.describe("Messages", () => {
     await expectNoSidewaysScroll(driver);
     await dora.context().close();
     await einar.context().close();
+  });
+});
+
+/** Whether the second stands beside the first, in the same row, as tall as it is. */
+async function expectSideBySide(first: Locator, second: Locator) {
+  // The grid counts its columns again after the window changes.
+  await expect(async () => {
+    const one = await box(first);
+    const other = await box(second);
+    expect(other.y).toBeCloseTo(one.y, 0);
+    expect(other.x).toBeGreaterThan(one.x + one.width);
+    expect(other.width).toBeCloseTo(one.width, 0);
+    expect(other.height).toBeCloseTo(one.height, 0);
+  }).toPass({ timeout: 5_000 });
+}
+
+/** Everything to press in the part is whole inside its width. */
+async function expectButtonsInside(part: Locator, atLeast: number) {
+  const partBox = await box(part);
+  const buttons = await part.locator('[role="button"], [role="link"]').all();
+  expect(buttons.length).toBeGreaterThanOrEqual(atLeast);
+  for (const button of buttons) {
+    const one = await box(button);
+    expect(one.x).toBeGreaterThanOrEqual(partBox.x);
+    expect(one.x + one.width).toBeLessThanOrEqual(partBox.x + partBox.width + 1);
+  }
+}
+
+// My rides, a booking and Profile (spec 18, 3.10, 3.9 and 3.12): the rides
+// in a grid, a booking's ride beside where it stands, and who I am beside
+// my profile's rows.
+test.describe("My rides, a booking and Profile", () => {
+  test.use({ viewport: laptop(1280), locale: "en-GB" });
+
+  test("show my rides in a grid, a booking in two columns and who I am beside the rows", async ({
+    page: driver,
+    browser,
+  }, testInfo) => {
+    // Two people sign up, one posts two trips, the other books and pays.
+    test.setTimeout(150_000);
+    const { baseURL } = testInfo.project.use;
+    await signUp(driver, english, "Bára");
+    const tripId = await postTripToSelfoss(driver, "17:45");
+    // Later than the first one ends: a driver has one trip at a time.
+    await postTripToSelfoss(driver, "20:15", [], true);
+
+    // My rides: the two trips she drives stand side by side, as tall as
+    // each other, under a title that starts where they do.
+    await driver.goto("/my-rides");
+    const rides = driver.getByTestId("grid").filter(shown).getByTestId("grid-cell");
+    await expect(rides).toHaveCount(2);
+    for (const width of widths) {
+      await driver.setViewportSize(laptop(width));
+      await expectSideBySide(rides.nth(0), rides.nth(1));
+      const title = await box(driver.getByRole("heading", { name: "My rides" }).filter(shown));
+      expect(title.x).toBeCloseTo((await box(rides.nth(0))).x, 0);
+      // A card fills its cell.
+      const cell = await box(rides.nth(0));
+      const card = await box(rides.nth(0).getByRole("button"));
+      expect(card.height).toBeCloseTo(cell.height, 0);
+      await expectNoSidewaysScroll(driver);
+    }
+    await driver.setViewportSize(laptop(1280));
+
+    // A request for the whole trip, out of the capital area, so Safety has
+    // all it can have: the ride with its price beside where the booking
+    // stands, and the button no wider than a phone's column.
+    const dora = await askForSeat(browser, baseURL, tripId, "Dóra", 3);
+    const booking = dora.url().replace(/\/booked$/, "");
+    await dora.goto(booking);
+    const main = dora.getByTestId("columns-main").filter(shown);
+    const side = dora.getByTestId("columns-side").filter(shown);
+    const withdraw = main.getByRole("button", { name: "Withdraw request" });
+    await expect(withdraw).toBeVisible();
+    await expect(side.getByText("Get in", { exact: true })).toBeVisible();
+    expect((await box(withdraw)).width).toBeLessThanOrEqual(480);
+    // The driver's card has a cell of its own while there is no place to
+    // stand at yet.
+    await expect(main.getByTestId("grid-cell")).toHaveCount(1);
+
+    // Accepted: paying is in the main column at every width, with the ride
+    // and "Cancel booking" beside it and no bar at the window's bottom.
+    await accept(driver, tripId, "Dóra");
+    await dora.reload();
+    const pay = main.getByRole("button", { name: /^Pay [\d,]+ ISK$/ });
+    await expect(pay).toBeVisible();
+    for (const width of widths) {
+      await dora.setViewportSize(laptop(width));
+      const mainBox = await box(main);
+      const sideBox = await box(side);
+      expect(sideBox.x).toBeGreaterThan(mainBox.x + mainBox.width);
+      expect(sideBox.y).toBeCloseTo(mainBox.y, 0);
+      const payBox = await box(pay);
+      expect(payBox.width).toBeLessThanOrEqual(480);
+      expect(payBox.x).toBeCloseTo(mainBox.x, 0);
+      expect(payBox.x + payBox.width).toBeLessThanOrEqual(mainBox.x + mainBox.width + 1);
+      await expect(side.getByRole("button", { name: "Cancel booking" })).toBeVisible();
+      await expect(dora.getByTestId("bottom-bar").filter(shown)).toHaveCount(0);
+      await expectNoSidewaysScroll(dora);
+    }
+
+    // Paid: the driver and where to stand share a row where the main
+    // column has room for both, with Safety under them; writing to the
+    // driver, cancelling and reporting are beside them, under the ride.
+    await dora.setViewportSize(laptop(1280));
+    await payInSheet(dora);
+    const cells = main.getByTestId("grid-cell");
+    await expect(cells).toHaveCount(2);
+    await expect(cells.nth(0).getByText("Bára", { exact: true })).toBeVisible();
+    await expect(cells.nth(1).getByRole("heading", { name: "Where to stand" })).toBeVisible();
+    for (const width of widths) {
+      await dora.setViewportSize(laptop(width));
+      if (width >= 1280) {
+        await expectSideBySide(cells.nth(0), cells.nth(1));
+      } else {
+        await expect(async () => {
+          const driverBox = await box(cells.nth(0));
+          const standBox = await box(cells.nth(1));
+          expect(standBox.x).toBeCloseTo(driverBox.x, 0);
+          expect(standBox.y).toBeGreaterThan(driverBox.y + driverBox.height - 1);
+        }).toPass({ timeout: 5_000 });
+      }
+      const ride = await box(side.getByText("Get in", { exact: true }));
+      for (const name of ["Message Bára", "Cancel booking", "Report a problem with this trip"]) {
+        const button = await box(side.getByRole("button", { name, exact: true }));
+        expect(button.y).toBeGreaterThan(ride.y);
+      }
+      await expect(main.getByRole("button", { name: "Share trip details" })).toBeVisible();
+      await expectButtonsInside(side, 3);
+      await expectButtonsInside(main, 4);
+      await expectNoSidewaysScroll(dora);
+    }
+
+    // In a small laptop's window the side column is whole: nothing in it
+    // is reached only by scrolling the column itself.
+    await dora.setViewportSize({ width: 1280, height: 720 });
+    await expect(async () => {
+      expect(await side.evaluate((part) => part.scrollHeight - part.clientHeight)).toBe(0);
+    }).toPass({ timeout: 5_000 });
+    const sideBox = await box(side);
+    const last = await box(side.getByRole("button", { name: "Report a problem with this trip" }));
+    expect(last.y + last.height).toBeLessThanOrEqual(sideBox.y + sideBox.height);
+    expect(sideBox.y + sideBox.height).toBeLessThanOrEqual(720);
+
+    // Her own rides: one card in a cell of the grid, not across the page.
+    await dora.setViewportSize(laptop(1280));
+    await dora.goto("/my-rides");
+    const hers = dora.getByTestId("grid").filter(shown).getByTestId("grid-cell");
+    await expect(hers).toHaveCount(1);
+    await expect(hers.getByRole("button", { name: /^Passenger, / })).toBeVisible();
+    expect((await box(hers)).width).toBeLessThan(480);
+
+    // Profile: who I am in a card at the left, the rows beside it.
+    await dora.goto("/profile");
+    await expect(dora.getByRole("heading", { name: "My profile" }).filter(shown)).toBeVisible();
+    const who = dora.getByTestId("columns-side").filter(shown);
+    const rows = dora.getByTestId("columns-main").filter(shown);
+    await expect(who.getByRole("button", { name: "Edit profile" })).toBeVisible();
+    await expect(rows.getByRole("button", { name: "Settings" })).toBeVisible();
+    for (const width of widths) {
+      await dora.setViewportSize(laptop(width));
+      const whoBox = await box(who);
+      const rowsBox = await box(rows);
+      expect(rowsBox.x).toBeGreaterThan(whoBox.x + whoBox.width);
+      expect(rowsBox.y).toBeCloseTo(whoBox.y, 0);
+      await expectButtonsInside(who, 2);
+      await expectButtonsInside(rows, 6);
+      await expectNoSidewaysScroll(dora);
+    }
+
+    // In Icelandic, with its longer words, at the narrowest wide window:
+    // the profile, the booking and my rides.
+    await dora.setViewportSize(laptop(widths[0]));
+    await dora.getByRole("button", { name: "Change the language to Icelandic" }).click();
+    await expect(
+      dora.getByRole("heading", { name: "Prófíllinn minn" }).filter(shown),
+    ).toBeVisible();
+    await expectButtonsInside(who, 2);
+    await expectButtonsInside(rows, 6);
+    await expectNoSidewaysScroll(dora);
+    await dora.goto(booking);
+    await expect(side.getByText("Inn", { exact: true })).toBeVisible();
+    await expectButtonsInside(side, 3);
+    await expectButtonsInside(main, 4);
+    await expectNoSidewaysScroll(dora);
+    await dora.goto("/my-rides");
+    await expect(hers).toHaveCount(1);
+    await expectNoSidewaysScroll(dora);
+    await dora.context().close();
   });
 });
