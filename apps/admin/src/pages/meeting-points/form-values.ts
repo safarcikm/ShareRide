@@ -82,6 +82,10 @@ export const emptyValues: FormValues = {
   lastCheckedOn: "",
 };
 
+/** The spot on OpenStreetMap, to check it before saving or moving. */
+export const osmLink = (latitude: number, longitude: number) =>
+  `https://www.openstreetmap.org/?mlat=${String(latitude)}&mlon=${String(longitude)}#map=17/${String(latitude)}/${String(longitude)}`;
+
 /** "64.5383, -21.9206": how the form shows a saved spot. */
 export const spotText = ({ latitude, longitude }: Position) =>
   `${String(latitude)}, ${String(longitude)}`;

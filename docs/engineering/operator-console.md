@@ -105,7 +105,7 @@ meeting point routes (`registerMeetingPointsAdminRoutes`), with the work in
   millisecond, as JavaScript dates hold no more.
 - Only a draft's spot is edited there (`move_needed` otherwise): moving a
   point in use recomputes its distances and tells the trips that use it
-  (R2.10), its own step. A retired point is not edited
+  (R2.10), its own step (below). A retired point is not edited
   (`meeting_point_retired`).
 - Audit entries are `meeting_point.created` with the fields, and
   `meeting_point.updated` with only the fields that changed. Saving
@@ -157,6 +157,31 @@ meeting point routes (`registerMeetingPointsAdminRoutes`), with the work in
 - Audit entries are `meeting_point.paused`, `meeting_point.resumed` and
   `meeting_point.retired`, with the status, the pause and the review date
   before and after, and how many future trips there were.
+- `POST /admin/v1/meeting-points/{id}/move`, with the new `position` and
+  the `updatedAt` the console loaded, moves a point in service: active,
+  paused or retiring (the domain's `canMove`). A draft's spot is edited
+  in its form, and a retired point stays where it was
+  (`move_not_allowed`). The spot is checked with `validateMove` (in
+  Iceland, kept to six decimals, not where the point is: `outside_iceland`,
+  `same_place`) and with the leg service's `connects` (`no_road`), each
+  as `validation_failed` on `position`. In one transaction it takes the
+  legs lock, then the point's row, saves the spot, computes the point's
+  legs again both ways (`computeFor`) and, when it moved more than 50 m
+  (`pointMovedFar`, R2.10, `moveSettings`), writes one `MeetingPointMoved`
+  event per future trip. The answer has the point, the `metres` moved
+  and `tripsTold`. The audit entry `meeting_point.moved` has the spot
+  before and after, the metres, the legs and missing counts, and the
+  trips told.
+- The worker tells a move as it tells a pause: the trip's driver once
+  (`meeting_point_moved_driver`, push and email), and each passenger whose
+  accepted or confirmed booking gets in or out there
+  (`meeting_point_moved`, push, email, and the pause's SMS within 24 hours
+  of boarding). Nothing goes to a driver whose trip has passed the point,
+  or to a passenger whose booking no longer stops there. The trips are not
+  changed: the stop is the same point, in its new place. An API version
+  from before moves (milestone 8, PR 12b) marks `MeetingPointMoved`
+  events done without telling anyone, so move no point while that
+  version deploys.
 - The API's minute job (`moveMeetingPointsOn`) brings a paused point back
   into use on its end date in Iceland, and retires a retiring point once
   no trip is still to stop there. These follow from an operator's earlier
@@ -186,7 +211,12 @@ with the focus on it. Pausing opens a short form
 (the reason in both languages, an optional end date) checked with
 `validatePause` before it is sent; retiring asks first and says whether the
 point retires at once or after its last trip. Bringing a point back needs
-no question, as it can be paused again. What a pause or a retirement does
+no question, as it can be paused again. Moving (`move.tsx`) opens a field
+for the new spot, read as a draft's is (`readSpot`), and says how far it
+is from the point (`metresMoved`) and whether anyone is told
+(`pointMovedFar`, and the upcoming trips), with a link to check it on
+OpenStreetMap; it checks the spot with `validateMove` before sending.
+After a move the form shows the new spot. What a pause, a move or a retirement does
 is read with its button (`aria-describedby`). After a status change the
 form keeps what was typed in it but not saved, as a status change leaves
 the other fields as they were. A point changed elsewhere since the page

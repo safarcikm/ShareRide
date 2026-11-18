@@ -6,6 +6,7 @@ import {
   type AdminMeetingPoint,
 } from "@shareride/contracts";
 import {
+  canMove,
   icelandDate,
   nextPointStatus,
   validatePause,
@@ -19,15 +20,17 @@ import { formatDate, type MessageKey } from "@shareride/i18n";
 import { useEffect, useId, useRef, useState } from "react";
 import { useConsole } from "../../console.tsx";
 import { ActivationChecklist } from "./activation.tsx";
+import { MoveStep, type MoveResult } from "./move.tsx";
 
-/** What a status change came to, for the page to show. */
+/** What a status change or a move came to, for the page to show. */
 export type StatusResult =
   | { readonly kind: "done"; readonly point: AdminMeetingPoint; readonly change: StatusChange }
   /** Saved or changed elsewhere since the page loaded it: the newest copy is needed. */
   | { readonly kind: "changed" }
-  | { readonly kind: "failed" };
+  | { readonly kind: "failed" }
+  | Extract<MoveResult, { readonly kind: "moved" }>;
 
-type Step = "none" | "pausing" | "retiring";
+type Step = "none" | "pausing" | "moving" | "retiring";
 
 type StatusCall =
   | CallResult<typeof adminPauseMeetingPointRoute>
@@ -46,9 +49,9 @@ const tomorrow = () => icelandDate(new Date(Date.now() + 24 * 3600_000));
 
 /**
  * Whether a point is in use: a draft's activation checklist, and pausing,
- * bringing back and retiring a point (spec 2, 3.6.3 to 3.6.5). What each
- * status allows is the domain's `nextPointStatus`. Nothing for a retired
- * point, which stays as it was.
+ * bringing back, moving and retiring a point (spec 2, 3.6.3 to 3.6.6).
+ * What each status allows is the domain's `nextPointStatus` and
+ * `canMove`. Nothing for a retired point, which stays as it was.
  */
 export function StatusPanel({
   point,
@@ -75,17 +78,22 @@ export function StatusPanel({
   const base = useId();
   const idOf = (field: keyof PauseRequest) => `${base}-${field}`;
   const pauseButton = useRef<HTMLButtonElement>(null);
+  const moveButton = useRef<HTMLButtonElement>(null);
   const retireButton = useRef<HTMLButtonElement>(null);
   const confirmButton = useRef<HTMLButtonElement>(null);
   // The step that was open, whose button has the focus back when it closes.
   const closing = useRef<Step>("none");
   const firstReason = `${base}-reasonIs`;
 
+  // The move step focuses its own field.
   useEffect(() => {
     if (step === "pausing") document.getElementById(firstReason)?.focus();
     else if (step === "retiring") confirmButton.current?.focus();
-    else if (closing.current !== "none") {
-      (closing.current === "pausing" ? pauseButton : retireButton).current?.focus();
+    else if (step === "none" && closing.current !== "none") {
+      const opener = { pausing: pauseButton, moving: moveButton, retiring: retireButton }[
+        closing.current
+      ];
+      opener.current?.focus();
       closing.current = "none";
     }
   }, [step, firstReason]);
@@ -285,6 +293,17 @@ export function StatusPanel({
             </button>
           </div>
         </form>
+      ) : step === "moving" ? (
+        <MoveStep
+          point={point}
+          onResult={(result) => {
+            close(false);
+            onResult(result);
+          }}
+          onCancel={() => {
+            close(true);
+          }}
+        />
       ) : step === "retiring" ? (
         <div
           className="stack"
@@ -357,6 +376,19 @@ export function StatusPanel({
               }
             >
               {t("admin.meetingPoint.resume")}
+            </button>
+          ) : null}
+          {canMove(status) ? (
+            <button
+              ref={moveButton}
+              type="button"
+              className="button-secondary type-label"
+              disabled={busy}
+              onClick={() => {
+                open("moving");
+              }}
+            >
+              {t("admin.meetingPoint.move")}
             </button>
           ) : null}
           {allows("retire") ? (

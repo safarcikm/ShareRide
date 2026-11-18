@@ -1,4 +1,4 @@
-import type { DraftIssue, MeetingPointStatus } from "@shareride/domain";
+import type { DraftIssue, MeetingPointStatus, MoveIssue } from "@shareride/domain";
 import type { MessageKey } from "@shareride/i18n";
 
 export const statusKeys = {
@@ -9,8 +9,11 @@ export const statusKeys = {
   retired: "admin.meetingPoints.statusRetired",
 } as const satisfies Record<MeetingPointStatus, MessageKey>;
 
-/** A problem with a field: the domain's, or the form's own for the spot and the season. */
-export type FieldIssue = DraftIssue | "unreadable" | "move_needed";
+/**
+ * A problem with a field: the domain's, the form's own for the spot and
+ * the season, or a move's (`validateMove`, and no road to the points in use).
+ */
+export type FieldIssue = DraftIssue | "unreadable" | "move_needed" | MoveIssue | "no_road";
 
 /** What each problem says; some fields say more than the domain's word. */
 export function issueKey(field: string, issue: FieldIssue): MessageKey {
@@ -37,6 +40,10 @@ export function issueKey(field: string, issue: FieldIssue): MessageKey {
       return "admin.meetingPoint.issue.needsShelter";
     case "move_needed":
       return "admin.meetingPoint.issue.moveNeeded";
+    case "same_place":
+      return "admin.meetingPoint.issue.samePlace";
+    case "no_road":
+      return "admin.meetingPoint.issue.noRoad";
     case "invalid":
       return "admin.meetingPoint.issue.unknown";
   }

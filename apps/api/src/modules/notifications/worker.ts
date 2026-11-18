@@ -417,9 +417,9 @@ async function movedPointOf(
 }
 
 /**
- * A pause told to the driver of a trip still to stop at the point, with
- * the trip's time there. `current` is false once the point is back in use,
- * or the trip no longer stops there or has passed it.
+ * A pause or a move told to the driver of a trip still to stop at the
+ * point, with the trip's time there. `current` is false once the trip no
+ * longer stops there or has passed it, or a paused point is back in use.
  */
 async function pointNewsForDriverOf(
   q: Queryable,
