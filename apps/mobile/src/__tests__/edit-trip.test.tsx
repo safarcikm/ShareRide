@@ -153,7 +153,15 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     const app = await renderApp(tripPage, {
       me: completeMe,
       setUp: (client) => {
-        client.answer("/v1/config", () => ok(200, { beta: false, paused: [], maxSeats: 4 }));
+        client.answer("/v1/config", () =>
+          ok(200, {
+            beta: false,
+            paused: [],
+            maxSeats: 4,
+            freeCancellationMinutes: 15,
+            maxMoveMinutes: 120,
+          }),
+        );
         tripsApi(client, [north]);
         driverApi(client, []);
         searchApi(client);

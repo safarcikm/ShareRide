@@ -158,7 +158,16 @@ export type NotificationEvent =
   | { readonly type: "BookingDeclined" }
   | { readonly type: "BookingExpired"; readonly reason: "unanswered" | "unpaid" }
   | { readonly type: "BookingWithdrawn" }
-  | { readonly type: "DepartureMoved"; readonly byMinutes: number }
+  | {
+      readonly type: "DepartureMoved";
+      readonly byMinutes: number;
+      /**
+       * Whether it moved by more than the booking's own `major_time_change`
+       * (R10.3). An event written before this was noted has none, and is
+       * read by the starting value.
+       */
+      readonly far?: boolean;
+    }
   | { readonly type: "TripChanged" }
   | { readonly type: "TripCancelled" }
   /** By `operator`: ShareRide cancelled it, for a suspension (spec 9, 3.6). */
@@ -223,7 +232,7 @@ export function notificationsFor(event: NotificationEvent): readonly Addressed[]
       return [
         {
           kind:
-            Math.abs(event.byMinutes) > freeCancellationMoveMinutes
+            (event.far ?? Math.abs(event.byMinutes) > freeCancellationMoveMinutes)
               ? "departure_moved_far"
               : "departure_moved",
           to: "passenger",

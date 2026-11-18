@@ -1,5 +1,5 @@
 import type { Booking } from "@shareride/contracts";
-import { carText, departureChangeText, stopAddedText } from "@shareride/i18n";
+import { carText, departureChangeText, formatDuration, stopAddedText } from "@shareride/i18n";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
@@ -98,7 +98,11 @@ export function TripChanges({
       ))}
       {offered ? (
         <>
-          <Body align="start">{t(free ? "booking.movedFarFree" : "booking.movedFar")}</Body>
+          <Body align="start">
+            {t(free ? "booking.movedFarFree" : "booking.movedFar", {
+              time: formatDuration(booking.cancellationRules.farMoveMinutes * 60, locale),
+            })}
+          </Body>
           <View style={styles.actions}>
             <Button variant="secondary" label={t("trip.keepBooking")} onPress={onKeep} />
             <Button

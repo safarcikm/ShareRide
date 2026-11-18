@@ -633,6 +633,25 @@ version }` with the version the page loaded: it takes a lock on the
   texts read it (`useMaxSeats`), with the domain's default until the API
   has answered. A trip the driver sees (`MyTrip`) carries its
   `priceSettings`, which the Edit trip screens price with.
+- Booking and paying, and Changes and cancellations (milestone 11, PR
+  12): `booking_cutoff`, `request_expiry`, `payment_window`,
+  `free_cancellation_until`, `major_time_change`, `max_time_change` and
+  `reliability_cancellation_window`. A booking records the settings
+  version it is made under (`bookings.settings_version`) and keeps that
+  version's three cancellation values (`CancellationSettings`: the refund
+  cut-off, what counts as a departure moved far, and the window in which a
+  cancellation counts), so a paid booking's deal never changes (R10.3).
+  The cut-off, the two deadlines and how far a departure can move are
+  read as they are now; a deadline is stored when it is set and does not
+  move. Modules read them through `RuleSettingsSource`
+  (`modules/settings/rule-settings.ts`); the notification worker, which
+  has no settings service, reads a booking's version with
+  `cancellationSettingsIn`.
+- The apps' texts no longer state these numbers: `GET /v1/config` gives
+  `freeCancellationMinutes` and `maxMoveMinutes` as they are now, and a
+  booking carries its own `cancellationRules`. The terms of service do
+  state them, so the page says, on both groups, to publish new terms with
+  a change.
 
 ## Invite codes
 

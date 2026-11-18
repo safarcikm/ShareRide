@@ -640,8 +640,7 @@ export const en = {
   "trip.getOutChoices": "Where you get out",
   "trip.timeAndStop": "{time}, {name}",
   "trip.whoYouRideWith": "Who you ride with",
-  "trip.freeCancellation":
-    "Free cancellation, with a full refund, up to 15 minutes before you get in.",
+  "trip.freeCancellation": "Free cancellation, with a full refund, up to {time} before you get in.",
   "trip.seatView.you": "You",
   "trip.seatView.taken": "Taken",
   "trip.seatView.free": "Free",
@@ -709,7 +708,7 @@ export const en = {
   "trip.editTimeTitle": "Change the departure",
   "trip.editTimeIntro": "Every stop moves with the departure.",
   "trip.editTimeBooked":
-    "With bookings, the departure can move by up to 2 hours from the time your passengers booked.",
+    "With bookings, the departure can move by up to {time} from the time your passengers booked.",
   "trip.editTimeSame": "This is the departure the trip has now. Choose another time.",
   "trip.editCheck": "Check the change",
   "trip.editReviewTitle": "Check the change",
@@ -718,7 +717,7 @@ export const en = {
   "trip.editTold":
     "{count, plural, one {# passenger is} other {# passengers are}} told the new time now.",
   "trip.editFreeCancel":
-    "It moves more than 30 minutes from when they booked, so {count, plural, one {# passenger} other {# passengers}} can cancel with a full refund, without it counting against them.",
+    "It moves far enough from when they booked that {count, plural, one {# passenger} other {# passengers}} can cancel with a full refund, without it counting against them.",
   "trip.editNobody": "Nobody has booked yet, so nobody needs to be told.",
   "trip.editRequests":
     "{count, plural, one {# person who asked for a seat sees} other {# people who asked for a seat see}} the new time in the app.",
@@ -948,7 +947,7 @@ export const en = {
   "booking.next": "What happens next",
   "booking.next.plateLater": "The number plate shows in My rides before you leave.",
   "booking.next.beThere": "Be at the meeting point a few minutes before {time}.",
-  "booking.next.cancel": "Plans change? Cancelling is free up to 15 minutes before you get in.",
+  "booking.next.cancel": "Plans change? Cancelling is free up to {time} before you get in.",
   "booking.next.answer": "The answer shows in My rides.",
   "booking.next.payWhenYes":
     "When {driver} says yes, pay in My rides, under Needs you, to confirm your seat.",
@@ -1019,7 +1018,7 @@ export const en = {
   "booking.cancelWhy": "Why are you cancelling?",
   "booking.cancelChooseReason": "Choose a reason.",
   "booking.fullRefund": "Full refund of {amount}",
-  "booking.noRefund": "No refund: less than 15 minutes before departure",
+  "booking.noRefund": "No refund: less than {time} before departure",
   "booking.nothingPaid": "Nothing to refund: you haven't paid yet.",
   "booking.nothingToRefund": "This ride is free, so there's nothing to refund.",
   "booking.countsOnReliability": "This cancellation shows on your profile",
@@ -1039,9 +1038,9 @@ export const en = {
   "booking.driverNote": "Note from the driver: {note}",
   "booking.changesTitle": "Changes since you booked",
   "booking.movedFar":
-    "The departure moved more than 30 minutes, so you can cancel with a full refund, without it counting against you.",
+    "The departure moved more than {time}, so you can cancel with a full refund, without it counting against you.",
   "booking.movedFarFree":
-    "The departure moved more than 30 minutes, so you can cancel without it counting against you.",
+    "The departure moved more than {time}, so you can cancel without it counting against you.",
   "booking.backToBooking": "Back to the booking",
   "booking.termsChanged": "Something changed since you opened this. Check the refund again.",
   "booking.notCancellable": "This booking can no longer be cancelled.",
@@ -2098,6 +2097,10 @@ export const en = {
     "The values the rules read. Each change needs a reason and is kept in the history.",
   "admin.settings.group.beta": "Beta",
   "admin.settings.group.prices": "Prices and seats",
+  "admin.settings.group.booking": "Booking and paying",
+  "admin.settings.group.changes": "Changes and cancellations",
+  "admin.settings.groupNote.terms":
+    "The terms of service state these values. Publish new terms with a change, or the terms and the app will disagree.",
   "admin.settings.group.switches": "Switches for emergencies",
   "admin.settings.name.signups_open": "New sign-ups",
   "admin.settings.help.signups_open":
@@ -2137,6 +2140,27 @@ export const en = {
   "admin.settings.name.max_capacity": "Most seats on a trip",
   "admin.settings.help.max_capacity":
     "The seats a driver can offer and a passenger can book, at most. It applies at once, to drafts too. Trips already published keep their seats.",
+  "admin.settings.name.booking_cutoff": "Booking closes",
+  "admin.settings.help.booking_cutoff":
+    "How long before a passenger's stop booking closes. It applies at once, to every trip.",
+  "admin.settings.name.request_expiry": "Time to answer a request",
+  "admin.settings.help.request_expiry":
+    "A request the driver has not answered expires after this long, or 2 hours before the passenger's stop if that comes first. It applies to requests made from now on. Requests already waiting keep their deadline.",
+  "admin.settings.name.payment_window": "Time to pay",
+  "admin.settings.help.payment_window":
+    "How long a passenger has to pay after the driver accepts, never past the time booking closes. It applies to requests accepted from now on. Bookings already waiting for payment keep their deadline.",
+  "admin.settings.name.free_cancellation_until": "Free cancellation until",
+  "admin.settings.help.free_cancellation_until":
+    "A passenger who cancels this long or more before their stop gets a full refund. It applies to bookings made from now on. Bookings already made keep the rule they were made under.",
+  "admin.settings.name.major_time_change": "Large change of departure",
+  "admin.settings.help.major_time_change":
+    "When a departure moves by more than this from when a passenger booked, they can cancel with a full refund, without it counting against them. It applies to bookings made from now on. Bookings already made keep the rule they were made under.",
+  "admin.settings.name.max_time_change": "Largest change of departure",
+  "admin.settings.help.max_time_change":
+    "With bookings, a driver can move the departure by this much at most from when each passenger booked. It applies at once, to every trip.",
+  "admin.settings.name.reliability_cancellation_window": "Late cancellation",
+  "admin.settings.help.reliability_cancellation_window":
+    "A passenger's cancellation counts against their reliability when made less than this long before their stop. It applies to bookings made from now on. Bookings already made keep the rule they were made under.",
   "admin.settings.on": "On",
   "admin.settings.off": "Off",
   "admin.settings.unit.people": "{count, plural, one {{value} person} other {{value} people}}",
@@ -2149,6 +2173,10 @@ export const en = {
   "admin.settings.newValue.percent": "New value, in percent",
   "admin.settings.unit.seats": "{count, plural, one {{value} seat} other {{value} seats}}",
   "admin.settings.newValue.seats": "New value, in seats",
+  "admin.settings.unit.minutes": "{count, plural, one {{value} minute} other {{value} minutes}}",
+  "admin.settings.newValue.minutes": "New value, in minutes",
+  "admin.settings.unit.hours": "{count, plural, one {{value} hour} other {{value} hours}}",
+  "admin.settings.newValue.hours": "New value, in hours",
   "admin.settings.default": "Default: {value}. From {min} to {max}.",
   "admin.settings.defaultSwitch": "Default: {value}.",
   "admin.settings.change": "Change",

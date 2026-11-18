@@ -400,7 +400,12 @@ operator changes `suggested_rate`, `reference_cost_per_km`, `price_step`,
 inside the ranges of
 [ADR 0032](../decisions/0032-operator-settings-list-ranges-and-versions.md).
 A published trip keeps the price values it was published under; the seat
-limit applies at once and leaves published trips their seats.
+limit applies at once and leaves published trips their seats. The same
+page has `booking_cutoff`, `request_expiry`, `payment_window`,
+`free_cancellation_until`, `major_time_change`, `max_time_change` and
+`reliability_cancellation_window`: a booking keeps the cancellation values
+it was made under, and the others apply from the change on. The terms of
+service state these numbers, so new terms go out with a change.
 
 | Setting | Default | Notes |
 | ------- | ------- | ----- |

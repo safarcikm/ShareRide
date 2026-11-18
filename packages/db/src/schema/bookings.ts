@@ -106,6 +106,12 @@ export const bookings = pgTable(
      * contract).
      */
     departsAtWhenBooked: at(),
+    /**
+     * The settings version the booking was made under (spec 10, R10.3; ADR
+     * 0032): its cancellation rules use that version's values. 0, the
+     * defaults, for a booking from before.
+     */
+    settingsVersion: integer().notNull().default(0),
     ...timestamps,
   },
   (table) => [

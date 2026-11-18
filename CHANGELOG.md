@@ -1269,6 +1269,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   cannot carry is refused. A published trip keeps the price values it was
   published under through every later change; the seat limit applies at
   once, and the app reads it from `GET /v1/config`.
+- Booking and cancellation values from the operator's settings (spec 10,
+  3.2; R10.3; ADR 0032; milestone 11, PR 12; migration
+  `0055_booking_settings_version`): the Settings page has two more groups,
+  Booking and paying (when booking closes, the time to answer a request,
+  the time to pay) and Changes and cancellations (free cancellation until,
+  a large change of departure, the largest change of departure, late
+  cancellation). A booking keeps the cancellation values it was made
+  under; the others apply from the change on. The app's texts take the
+  values in place of fixed numbers.
 
 ### Fixed
 

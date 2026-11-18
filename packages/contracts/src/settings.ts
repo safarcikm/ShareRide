@@ -12,6 +12,14 @@ const errors = { schema: errorResponseSchema } as const;
 export const configSchema = z.object({
   /** The seats a trip can offer and a booking can take, at most (rule S1). */
   maxSeats: z.int().min(1),
+  /**
+   * A passenger who cancels this many minutes or more before boarding is
+   * refunded in full (rule M2), for a booking made now. A booking already
+   * made says its own.
+   */
+  freeCancellationMinutes: z.int().min(0),
+  /** With bookings, a departure moves at most this many minutes from when each was made (R6.4). */
+  maxMoveMinutes: z.int().min(0),
   /** Whether creating an account needs an invite code (spec 12, R12.1). */
   beta: z.boolean(),
   /** What is paused for a short while, for the app's banners (spec 10, 3.3). */

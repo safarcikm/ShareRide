@@ -5,6 +5,7 @@ import {
   cancelReasonsFor,
   driverCancelReasons,
   excusedByReason,
+  movedFar,
   passengerCancelReasons,
   systemCancelReasons,
   tripCancelReasons,
@@ -303,5 +304,51 @@ describe("a cancellation the operator can overrule (R8.11)", () => {
         before(60),
       ),
     ).toBe(false);
+  });
+});
+
+describe("a booking's own cancellation values (R10.3; ADR 0032)", () => {
+  const own = {
+    refundCutoffMinutes: 60,
+    freeCancellationMoveMinutes: 20,
+    reliabilityWindowHours: 2,
+  };
+  const booking = {
+    status: "confirmed" as const,
+    total: { amount: 3000, currency: "ISK" as const },
+    boardsAt,
+    departsAt,
+    departsAtWhenBooked: departsAt,
+  };
+  const passenger = { by: "passenger", reason: "other" } as const;
+
+  it("refunds by its own cut-off, not the starting one", () => {
+    expect(cancellationTerms(booking, passenger, before(30))).toMatchObject({
+      value: { refund: { amount: 3000 } },
+    });
+    expect(cancellationTerms(booking, passenger, before(30), own)).toMatchObject({
+      value: { refund: { amount: 0 } },
+    });
+    expect(cancellationTerms(booking, passenger, before(60), own)).toMatchObject({
+      value: { refund: { amount: 3000 } },
+    });
+  });
+
+  it("counts by its own window", () => {
+    expect(cancellationTerms(booking, passenger, before(180))).toMatchObject({
+      value: { countsOnReliability: true },
+    });
+    expect(cancellationTerms(booking, passenger, before(180), own)).toMatchObject({
+      value: { countsOnReliability: false },
+    });
+  });
+
+  it("takes a move past its own limit as far", () => {
+    const moved = new Date(departsAt.getTime() + 25 * minuteMs);
+    expect(movedFar(departsAt, moved)).toBe(false);
+    expect(movedFar(departsAt, moved, own)).toBe(true);
+    expect(
+      cancellationTerms({ ...booking, departsAt: moved }, passenger, before(5), own),
+    ).toMatchObject({ value: { refund: { amount: 3000 }, countsOnReliability: false } });
   });
 });

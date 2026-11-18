@@ -26,7 +26,8 @@ import type { BookingMode, TripPreferences, TripStatus } from "./trip.ts";
 /**
  * With bookings, the departure moves at most this many minutes, earlier or
  * later, from the time each passenger booked (R6.4, decision 1). A bigger
- * change is a new trip: the driver cancels and posts again.
+ * change is a new trip: the driver cancels and posts again. The starting
+ * value of `max_time_change`, which the operator sets (ADR 0032).
  */
 export const maxMoveMinutes = 120;
 
@@ -70,6 +71,11 @@ export interface BookingOnTrip {
   readonly status: "requested" | "accepted" | "confirmed";
   /** The trip's departure when the booking was made (R6.3, R6.4). */
   readonly departsAtWhenBooked: Date;
+  /**
+   * The booking's own `major_time_change`, of the settings version it was
+   * made under (R10.3); the starting value when left out.
+   */
+  readonly freeCancellationMoveMinutes?: number;
   /** Where it gets in and out, by meeting point (R6.5). */
   readonly fromPoint: string;
   readonly toPoint: string;
@@ -221,7 +227,10 @@ export interface ChangeEffect {
 
 type ChangeSettings = Parameters<typeof checkTimes>[3] &
   PriceSettings &
-  Pick<TripSettings, "maxSeats" | "routeFactorPercent">;
+  Pick<TripSettings, "maxSeats" | "routeFactorPercent"> & {
+    /** `max_time_change` as it is now; the starting value when left out. */
+    readonly maxMoveMinutes?: number;
+  };
 
 /** The trip as its limit sees it (rule P3). */
 const loadOf = (trip: ChangeableTrip): TripLoad => ({
@@ -596,8 +605,9 @@ function departureProblems(
   }
   if (bookings.length > 0) {
     const booked = bookings.map((booking) => booking.departsAtWhenBooked.getTime());
-    const earliest = new Date(Math.max(...booked) - maxMoveMinutes * minuteMs);
-    const latest = new Date(Math.min(...booked) + maxMoveMinutes * minuteMs);
+    const most = (settings.maxMoveMinutes ?? maxMoveMinutes) * minuteMs;
+    const earliest = new Date(Math.max(...booked) - most);
+    const latest = new Date(Math.min(...booked) + most);
     if (departsAt < earliest || departsAt > latest) {
       problems.push({ code: "move_too_far", earliest, latest });
     }
@@ -612,6 +622,15 @@ function whoIsTold(
   bookings: readonly BookingOnTrip[],
 ): PassengerTold[] {
   const departsAt = after.stops[0]?.plannedAt ?? new Date(0);
+  // By each booking's own `major_time_change` (R10.3).
+  const far = (booking: BookingOnTrip) =>
+    movedFar(
+      booking.departsAtWhenBooked,
+      departsAt,
+      booking.freeCancellationMoveMinutes === undefined
+        ? undefined
+        : { freeCancellationMoveMinutes: booking.freeCancellationMoveMinutes },
+    );
   const tell = (
     event: PassengerTold["event"] | ((booking: BookingOnTrip) => PassengerTold["event"]),
   ) =>
@@ -620,8 +639,7 @@ function whoIsTold(
       .map((booking) => ({
         bookingId: booking.id,
         event: typeof event === "function" ? event(booking) : event,
-        freeCancellation:
-          booking.status === "confirmed" && movedFar(booking.departsAtWhenBooked, departsAt),
+        freeCancellation: booking.status === "confirmed" && far(booking),
       }));
   switch (change.kind) {
     case "departure":

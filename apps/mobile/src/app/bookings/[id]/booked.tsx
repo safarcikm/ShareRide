@@ -1,5 +1,5 @@
 import { bookingRoute, type Booking } from "@shareride/contracts";
-import { capitalised, formatClock, formatDay } from "@shareride/i18n";
+import { capitalised, formatClock, formatDay, formatDuration } from "@shareride/i18n";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { useCallback } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
@@ -118,7 +118,9 @@ function Finished({ booking }: { readonly booking: Booking }) {
           ? t("booking.next.plateLater")
           : t("booking.plate", { plate: confirmed.registration }),
         t("booking.next.beThere", { time }),
-        t("booking.next.cancel"),
+        t("booking.next.cancel", {
+          time: formatDuration(booking.cancellationRules.freeUntilMinutes * 60, locale),
+        }),
       ];
   return (
     <>

@@ -22,7 +22,14 @@ import {
 import { formatClock, formatCount, formatDate, formatMoney } from "@shareride/i18n";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useConsole } from "../../console.tsx";
-import { groupKeys, settingHelp, settingName, valueFieldLabel, valueText } from "./texts.ts";
+import {
+  groupKeys,
+  groupNotes,
+  settingHelp,
+  settingName,
+  valueFieldLabel,
+  valueText,
+} from "./texts.ts";
 
 type Loaded =
   | { readonly state: "loading" }
@@ -144,6 +151,7 @@ export function SettingsPage() {
             <Group
               key={group}
               title={t(groupKeys[group])}
+              note={groupNotes[group] === undefined ? null : t(groupNotes[group])}
               settings={inGroup}
               version={loaded.settings.version}
               values={valuesOf(loaded.settings)}
@@ -225,6 +233,8 @@ export function SettingsPage() {
 
 interface GroupProps {
   readonly title: string;
+  /** What to know before changing anything in the group. */
+  readonly note: string | null;
   readonly settings: readonly AdminSetting[];
   readonly version: number;
   readonly values: SettingValues;
@@ -234,13 +244,14 @@ interface GroupProps {
   readonly onChangedMeanwhile: () => void;
 }
 
-function Group({ title, settings, editing, onEdit, ...rest }: GroupProps) {
+function Group({ title, note, settings, editing, onEdit, ...rest }: GroupProps) {
   const id = useId();
   return (
     <>
       <h2 id={id} className="type-heading">
         {title}
       </h2>
+      {note === null ? null : <p className="type-body muted">{note}</p>}
       <ul className="cards" aria-labelledby={id}>
         {settings.map((setting) => (
           <SettingCard

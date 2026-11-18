@@ -59,6 +59,23 @@ const rate = price("suggested_rate", {});
 const cost = price("reference_cost_per_km", { value: 150, default: 150, min: 50, max: 150 });
 const seats = price("max_capacity", { unit: "seats", value: 8, default: 8, min: 1, max: 8 });
 
+const freeUntil = price("free_cancellation_until", {
+  group: "changes",
+  unit: "minutes",
+  value: 15,
+  default: 15,
+  min: 0,
+  max: 120,
+});
+const answerIn = price("request_expiry", {
+  group: "booking",
+  unit: "hours",
+  value: 1,
+  default: 12,
+  min: 1,
+  max: 48,
+});
+
 const changeOf = (more: Partial<AdminSettingChange> = {}): AdminSettingChange => ({
   version: 1,
   key: "beta_max_testers",
@@ -75,7 +92,7 @@ function start(path = "/admin/settings") {
   const api = createFakeApi();
   const state = {
     version: 1,
-    settings: [required, testers, rate, cost, seats],
+    settings: [required, testers, rate, cost, seats, answerIn, freeUntil],
     history: [changeOf()],
   };
   api.on(adminMeRoute, { status: 200, data: anna });
@@ -292,6 +309,28 @@ describe("the Settings page", () => {
     fireEvent.click(card_.getByRole("button", { name: "Change Most seats on a trip" }));
     fireEvent.change(card_.getByLabelText("New value, in seats"), { target: { value: "7" } });
     expect(card_.getByText("Changes from 8 seats to 7 seats.")).toBeTruthy();
+    expect(api.called(adminPreviewSettingRoute)).toHaveLength(0);
+  });
+
+  it("shows the booking and cancellation values in minutes and hours, each with whom a change reaches", async () => {
+    const { api } = start();
+    expect(
+      await screen.findByRole("heading", { name: "Booking and paying", level: 2 }),
+    ).toBeTruthy();
+    expect((await card("Time to answer a request")).getByText("1 hour")).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: "Changes and cancellations", level: 2 }),
+    ).toBeTruthy();
+    expect(screen.getAllByText(/^The terms of service state these values\./)).toHaveLength(2);
+    const free = await card("Free cancellation until");
+    expect(free.getByText("15 minutes")).toBeTruthy();
+    expect(free.getByText("Default: 15 minutes. From 0 to 120.")).toBeTruthy();
+    expect(
+      free.getByText(/Bookings already made keep the rule they were made under\.$/),
+    ).toBeTruthy();
+    fireEvent.click(free.getByRole("button", { name: "Change Free cancellation until" }));
+    fireEvent.change(free.getByLabelText("New value, in minutes"), { target: { value: "60" } });
+    expect(free.getByText("Changes from 15 minutes to 60 minutes.")).toBeTruthy();
     expect(api.called(adminPreviewSettingRoute)).toHaveLength(0);
   });
 });

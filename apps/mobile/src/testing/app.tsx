@@ -43,7 +43,15 @@ export async function renderApp(
     return ok(200, legalDocument(type, 1));
   });
   // The operator's settings: the beta is open, unless a test says otherwise.
-  currentClient.answer("/v1/config", () => ok(200, { beta: false, paused: [], maxSeats: 8 }));
+  currentClient.answer("/v1/config", () =>
+    ok(200, {
+      beta: false,
+      paused: [],
+      maxSeats: 8,
+      freeCancellationMinutes: 15,
+      maxMoveMinutes: 120,
+    }),
+  );
   // The front page's rides leaving soon: none, unless a test says otherwise.
   currentClient.answer("/v1/trips/soonest", () => ok(200, { results: [] }));
   if (me !== undefined) {

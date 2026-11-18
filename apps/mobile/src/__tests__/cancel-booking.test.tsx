@@ -209,7 +209,15 @@ describe("Cancelling a booking (spec 6, 3.5)", () => {
 
   it("says when there is no refund (rule M2)", async () => {
     await openCancel(paidBooking, { previews: [ok(200, cancellationPreview(none, true))] });
-    expect(screen.getByText("No refund: less than 15 minutes before departure")).toBeVisible();
+    expect(screen.getByText("No refund: less than 15 min before departure")).toBeVisible();
+  });
+
+  it("names the booking's own cut-off, the one it was made under (R10.3)", async () => {
+    await openCancel(
+      { ...paidBooking, cancellationRules: { freeUntilMinutes: 60, farMoveMinutes: 30 } },
+      { previews: [ok(200, cancellationPreview(none, true))] },
+    );
+    expect(screen.getByText("No refund: less than 1 h before departure")).toBeVisible();
   });
 
   it("says there is nothing to refund for a booking not yet paid, which never counts", async () => {
@@ -240,7 +248,7 @@ describe("Cancelling a booking (spec 6, 3.5)", () => {
     expect(
       await screen.findByText("Something changed since you opened this. Check the refund again."),
     ).toBeVisible();
-    expect(screen.getByText("No refund: less than 15 minutes before departure")).toBeVisible();
+    expect(screen.getByText("No refund: less than 15 min before departure")).toBeVisible();
     expect(screen).toHavePathname(`/bookings/${bookingId}/cancel`);
 
     await fireEvent.press(screen.getByRole("button", { name: "Cancel booking" }));

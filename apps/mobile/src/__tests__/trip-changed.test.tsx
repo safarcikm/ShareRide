@@ -82,7 +82,7 @@ describe("A trip that changed, as its passenger sees it (spec 6, 3.2; screen 7)"
     expect(screen.getByText("Departure changed from 10:00 to 10:45")).toBeVisible();
     expect(
       screen.getByText(
-        "The departure moved more than 30 minutes, so you can cancel with a full refund, without it counting against you.",
+        "The departure moved more than 30 min, so you can cancel with a full refund, without it counting against you.",
       ),
     ).toBeVisible();
     expect(await screen.findByRole("button", { name: keep })).toBeVisible();
@@ -106,7 +106,7 @@ describe("A trip that changed, as its passenger sees it (spec 6, 3.2; screen 7)"
     expect(focusMoves).toHaveBeenCalledTimes(1);
     focusMoves.mockRestore();
     expect(screen.getByText("Departure changed from 10:00 to 10:45")).toBeVisible();
-    expect(screen.queryByText(/^The departure moved more than 30 minutes/)).toBeNull();
+    expect(screen.queryByText(/^The departure moved more than 30 min/)).toBeNull();
     expect(screen.getByRole("button", { name: "Cancel booking" })).toBeVisible();
   });
 
@@ -228,7 +228,7 @@ describe("A trip that changed, as its passenger sees it (spec 6, 3.2; screen 7)"
     await openBooking({ ...moved, total: { amount: 0, currency: "ISK" } });
     expect(
       await screen.findByText(
-        "The departure moved more than 30 minutes, so you can cancel without it counting against you.",
+        "The departure moved more than 30 min, so you can cancel without it counting against you.",
       ),
     ).toBeVisible();
     expect(await screen.findByRole("button", { name: keep })).toBeVisible();

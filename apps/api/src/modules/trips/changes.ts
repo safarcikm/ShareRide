@@ -15,6 +15,7 @@ import {
   splitPrice,
   suggestedPrice,
   type BookingOnTrip,
+  defaultBookingSettings,
   type BookingSettings,
   type CarColour,
   type ChangeEffect,
@@ -35,6 +36,7 @@ import { addSystemLine } from "../chat/conversations.ts";
 import { followDepartureMove } from "../notifications/schedule.ts";
 import { recordEvents } from "../notifications/outbox.ts";
 import { choicesOf, type NotFound } from "./drafts.ts";
+import { cancellationSettingsOf, type RuleSettingsSource } from "../settings/rule-settings.ts";
 import type { TripSettingsSource } from "../settings/trip-settings.ts";
 
 const {
@@ -188,6 +190,8 @@ interface HeldBooking {
   readonly id: string;
   readonly status: string;
   readonly departsAtWhenBooked: Date | null;
+  /** The settings version it was made under (R10.3). */
+  readonly settingsVersion: number;
   readonly requestedAt: Date | null;
   readonly totalPrice: number;
   /** The planned time at its boarding stop, before the change. */
@@ -202,12 +206,19 @@ export function createTripChangeService(dependencies: {
   readonly clock: () => Date;
   /** A published trip keeps the price values of its version (spec 10, R10.3). */
   readonly settings: TripSettingsSource;
-  readonly bookingSettings: BookingSettings;
+  /**
+   * Deadlines and how far a departure can move as they are now; each
+   * booking's own `major_time_change` (ADR 0032).
+   */
+  readonly ruleSettings: RuleSettingsSource;
   readonly notificationSettings: NotificationSettings;
   /** Whether the operator paused bookings and payments (spec 10, 3.3); never when left out. */
   readonly bookingsPaused?: () => Promise<boolean>;
 }): TripChangeService {
-  const { db, clock, bookingSettings, notificationSettings } = dependencies;
+  const { db, clock, ruleSettings, notificationSettings } = dependencies;
+  // As last read: each change reads the values first, and they are the
+  // same for every trip, so a change running beside it sees them no older.
+  let bookingSettings: BookingSettings = defaultBookingSettings;
   const bookingsPaused = dependencies.bookingsPaused ?? (() => Promise.resolve(false));
 
   /** Each stretch's typical driving time now (R3.6), or the one it was published with. */
@@ -877,7 +888,11 @@ export function createTripChangeService(dependencies: {
         // After the lock, which may have waited while a deadline passed.
         const now = clock();
         await expireDueBookings(tx, tripId, now);
-        const settings = await dependencies.settings.at(trip.settingsVersion);
+        bookingSettings = (await ruleSettings.booking()).settings;
+        const settings = {
+          ...(await dependencies.settings.at(trip.settingsVersion)),
+          maxMoveMinutes: await ruleSettings.maxMoveMinutes(),
+        };
 
         const stopRows = await tx
           .select({ stop: tripStops, point: meetingPoints })
@@ -895,6 +910,7 @@ export function createTripChangeService(dependencies: {
             id: bookings.id,
             status: bookings.status,
             departsAtWhenBooked: bookings.departsAtWhenBooked,
+            settingsVersion: bookings.settingsVersion,
             requestedAt: bookings.requestedAt,
             totalPrice: bookings.totalPrice,
             boardsAt: tripStops.plannedAt,
@@ -921,6 +937,10 @@ export function createTripChangeService(dependencies: {
           .from(vehicles)
           .where(and(eq(vehicles.ownerId, driverId), isNull(vehicles.removedAt)));
         const departsAt = trip.departsAt ?? now;
+        const cancellationOf = await cancellationSettingsOf(
+          ruleSettings,
+          held.map((booking) => booking.settingsVersion),
+        );
         const points = stopRows.map(({ stop }) => stop.meetingPointId);
         const read = await readChange(tx, change, points);
         const checked = checkTripChange(
@@ -954,6 +974,8 @@ export function createTripChangeService(dependencies: {
             status: booking.status as BookingOnTrip["status"],
             // Null only for a booking the previous version made during a deploy.
             departsAtWhenBooked: booking.departsAtWhenBooked ?? departsAt,
+            freeCancellationMoveMinutes: cancellationOf(booking.settingsVersion)
+              .freeCancellationMoveMinutes,
             fromPoint: booking.fromPoint,
             toPoint: booking.toPoint,
           })),

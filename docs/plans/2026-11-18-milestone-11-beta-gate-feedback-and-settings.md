@@ -565,8 +565,18 @@ before merging.
 
 ### PR 12: `feat(settings)`: booking and cancellation values, with versions
 
-- [ ] The booking and cancellation values; `bookings.settings_version`;
+- [x] The booking and cancellation values; `bookings.settings_version`;
       `CancellationSettings`; the timing effect texts
+- As built: the effect of a timing value is said in its help sentence,
+  which names whom a change reaches (bookings from now on, or every trip
+  at once), beside "Changes from X to Y". The app's seven sentences that
+  stated 15 minutes, 30 minutes or 2 hours now take the value: as it is
+  now from `GET /v1/config`, or the booking's own from the booking. They
+  read "15 min" and "2 h", as durations do elsewhere in the app, so the
+  Icelandic needs no case endings. The sentence a driver reads before a
+  large move no longer names a number, as each booking has its own. The
+  terms of service state the same numbers and are not changed by a
+  setting: the Settings page says so on both groups.
 - Verify: integration tests (a booking made before a change to
   `free_cancellation_until` is refunded by the rule it was made under; a
   new request expires by the new value)

@@ -3,6 +3,7 @@ import type { Booking, CancellationTerms } from "@shareride/contracts";
 import {
   cancelReasonText,
   formatClock,
+  formatDuration,
   formatMoney,
   type Locale,
   type Translate,
@@ -107,7 +108,11 @@ export function refundText(
   const amount = formatMoney(terms.refund, locale);
   // A driver's cancellation always refunds in full (rule M2).
   if (booking.viewer === "driver") return t("booking.driverRefund", { name, amount });
-  return terms.refund.amount > 0 ? t("booking.fullRefund", { amount }) : t("booking.noRefund");
+  return terms.refund.amount > 0
+    ? t("booking.fullRefund", { amount })
+    : t("booking.noRefund", {
+        time: formatDuration(booking.cancellationRules.freeUntilMinutes * 60, locale),
+      });
 }
 
 /**

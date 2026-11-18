@@ -1,8 +1,10 @@
 import { changeTripRoute, myTripRoute, type MyTrip } from "@shareride/contracts";
 import { checkDeparture, defaultTripSettings } from "@shareride/domain";
+import { formatDuration } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import { StyleSheet, Text } from "react-native";
+import { useTimings } from "@/beta/config";
 import { useSession } from "@/auth/session";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
@@ -54,6 +56,7 @@ export default function EditTimeScreen() {
 
 function EditTime({ trip, departsAt }: { readonly trip: MyTrip; readonly departsAt: Date }) {
   const { locale, t } = useLanguage();
+  const { maxMoveMinutes } = useTimings();
   const palette = usePalette();
   const session = useSession();
   const today = dayOf(now());
@@ -125,7 +128,11 @@ function EditTime({ trip, departsAt }: { readonly trip: MyTrip; readonly departs
     >
       <BackButton fallback={{ pathname: "/drive/trips/[id]/edit", params: { id: trip.id } }} />
       <TripHeading trip={trip} title={t("trip.editTimeTitle")} />
-      {booked ? <Body align="start">{t("trip.editTimeBooked")}</Body> : null}
+      {booked ? (
+        <Body align="start">
+          {t("trip.editTimeBooked", { time: formatDuration(maxMoveMinutes * 60, locale) })}
+        </Body>
+      ) : null}
       <Heading>{t("trip.time.date")}</Heading>
       <Calendar
         value={date}

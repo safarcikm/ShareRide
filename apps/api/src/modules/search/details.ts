@@ -44,12 +44,16 @@ export interface TripDetailsService {
 export function createTripDetailsService(dependencies: {
   readonly db: Database;
   readonly clock: () => Date;
-  readonly settings: Pick<SearchSettings, "bookingCutoffMinutes" | "tripPageDaysAfter">;
+  /** The operator's values as they are now (ADR 0032). */
+  readonly settings: () => Promise<
+    Pick<SearchSettings, "bookingCutoffMinutes" | "tripPageDaysAfter">
+  >;
 }): TripDetailsService {
-  const { db, clock, settings } = dependencies;
+  const { db, clock } = dependencies;
 
   return {
     async details(id, choice, viewerId) {
+      const settings = await dependencies.settings();
       const [found] = await db
         .select({
           trip: trips,

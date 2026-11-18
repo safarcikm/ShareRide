@@ -10,6 +10,7 @@ import {
   type Result,
   type SearchableTrip,
   type SearchLogPlatform,
+  defaultSearchSettings,
   type SearchSettings,
   type TimeOfDay,
   type TripMatch,
@@ -104,11 +105,18 @@ const dayBounds = (first: CalendarDay, last: CalendarDay) => ({
 export function createSearchService(dependencies: {
   readonly db: Database;
   readonly clock: () => Date;
-  readonly settings: SearchSettings;
+  /** The operator's values as they are now (ADR 0032). */
+  readonly settings: () => Promise<SearchSettings>;
   /** Where searches are noted, without the searcher; nowhere when left out. */
   readonly searchLog?: SearchLog;
 }): SearchService {
-  const { db, clock, settings, searchLog } = dependencies;
+  const { db, clock, searchLog } = dependencies;
+  // As last read: each search reads the values first, and they are the
+  // same for everyone, so a search running beside it sees them no older.
+  let settings = defaultSearchSettings;
+  const readSettings = async () => {
+    settings = await dependencies.settings();
+  };
   const searchable = inArray(meetingPoints.status, searchableStatuses);
 
   /** The points a meeting point or a place covers, within `radiusM` when given. */
@@ -349,6 +357,7 @@ export function createSearchService(dependencies: {
 
   return {
     async search(request, searcherId, platform = "unknown") {
+      await readSettings();
       const resolved = await resolve(request);
       if (!resolved.ok) return resolved;
       const { from, to } = resolved.value;
@@ -391,6 +400,7 @@ export function createSearchService(dependencies: {
     },
 
     async soonest(limit, searcherId) {
+      await readSettings();
       const now = clock();
       const earliest = new Date(now.getTime() + settings.bookingCutoffMinutes * 60_000);
       const searchableStatus = sql.join(
@@ -461,6 +471,7 @@ export function createSearchService(dependencies: {
     },
 
     async alternatives(request, searcherId) {
+      await readSettings();
       const resolved = await resolve(request);
       if (!resolved.ok) return resolved;
       const { from, to } = resolved.value;

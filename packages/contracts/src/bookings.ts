@@ -155,6 +155,16 @@ export const bookingSchema = z.object({
    */
   movedFar: z.boolean(),
   /**
+   * The cancellation values this booking was made under and keeps (spec
+   * 10, R10.3): a full refund until this many minutes before boarding
+   * (rule M2), and a departure moved by more than this many minutes is
+   * moved far (R6.3).
+   */
+  cancellationRules: z.object({
+    freeUntilMinutes: z.int().min(0),
+    farMoveMinutes: z.int().min(0),
+  }),
+  /**
    * A problem with this booking can still be reported: it ran or is to run
    * (confirmed, completed or no-show), until 24 hours after its trip
    * completed (R9.1).

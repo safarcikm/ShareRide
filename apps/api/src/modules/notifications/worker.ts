@@ -46,6 +46,7 @@ import {
   channelSwitches,
   switchKeys,
   switchReminderNumber,
+  movedFar,
   type SwitchKey,
 } from "@shareride/domain";
 import type { CarFacts } from "@shareride/i18n";
@@ -73,6 +74,7 @@ import { announcementReaders } from "../beta/announcements.ts";
 import type { Queryable, Transaction } from "../bookings/seats.ts";
 import { quickOf } from "../chat/service.ts";
 import { isHidden, shown } from "../privacy/hidden.ts";
+import { cancellationSettingsIn } from "../settings/rule-settings.ts";
 import { answerByOf, disputesOf } from "../trip-day/disputes.ts";
 import { emailContent } from "./email-content.ts";
 import { preferencesOf } from "./preferences.ts";
@@ -270,6 +272,7 @@ async function moveOf(q: Queryable, tripChangeId: string, bookingId: string) {
       boardsAt: boards.plannedAt,
       departsAt: trips.departsAt,
       departsAtWhenBooked: bookings.departsAtWhenBooked,
+      settingsVersion: bookings.settingsVersion,
     })
     .from(tripChanges)
     .innerJoin(bookings, eq(bookings.tripId, tripChanges.tripId))
@@ -289,6 +292,8 @@ async function moveOf(q: Queryable, tripChangeId: string, bookingId: string) {
     to: new Date(after.getTime() + boardingAfterMs),
     // Not rounded, so it is far exactly when the domain's `movedFar` says so (R6.3).
     byMinutes: (after.getTime() - booked.getTime()) / minuteMs,
+    // By the booking's own `major_time_change` (R10.3).
+    far: movedFar(booked, after, await cancellationSettingsIn(q, row.settingsVersion)),
   };
 }
 const boardPoint = alias(meetingPoints, "board_point");
@@ -1905,7 +1910,13 @@ export function createNotificationWorker(dependencies: {
       const moved =
         tripChangeId === undefined ? undefined : await moveOf(tx, tripChangeId, booking.id);
       if (tripChangeId === undefined || moved === undefined) return;
-      await notify(tx, { type, byMinutes: moved.byMinutes }, booking, { key, tripChangeId }, now);
+      await notify(
+        tx,
+        { type, byMinutes: moved.byMinutes, far: moved.far },
+        booking,
+        { key, tripChangeId },
+        now,
+      );
       return;
     }
     if (type === "TripChanged") {

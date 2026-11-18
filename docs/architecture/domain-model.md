@@ -340,7 +340,9 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
   stored (`setting_changes`), and a version's values are the defaults with
   the changes up to it laid over them. A published `Trip` records the
   version it was published under (`settings_version`) and keeps that
-  version's four price values; the seat limit is read as it is now.
+  version's four price values; the seat limit is read as it is now. A
+  `Booking` records the version it was made under and keeps that version's
+  cancellation values; deadlines are stored when set and do not move.
 - `SearchLog` (anonymous: places, date, result count, time, platform),
   `Corridor`, `WeeklyMetric`, `Announcement`. As built: `search_log` holds
   each end as a place or a meeting point, the day searched for, the

@@ -127,6 +127,20 @@ describe("the console's settings", () => {
       { key: "price_step", unit: "kr", value: 100, min: 50, max: 500, step: 50 },
       { key: "price_level_step", unit: "percent", value: 10, min: 5, max: 25, step: 5 },
       { key: "max_capacity", unit: "seats", value: 8, min: 1, max: 8, step: 1 },
+      { key: "booking_cutoff", unit: "minutes", value: 15, min: 0, max: 120, step: 1 },
+      { key: "request_expiry", unit: "hours", value: 12, min: 1, max: 48, step: 1 },
+      { key: "payment_window", unit: "minutes", value: 30, min: 10, max: 120, step: 1 },
+      { key: "free_cancellation_until", unit: "minutes", value: 15, min: 0, max: 120, step: 1 },
+      { key: "major_time_change", unit: "minutes", value: 30, min: 10, max: 120, step: 1 },
+      { key: "max_time_change", unit: "minutes", value: 120, min: 30, max: 360, step: 1 },
+      {
+        key: "reliability_cancellation_window",
+        unit: "hours",
+        value: 24,
+        min: 0,
+        max: 72,
+        step: 1,
+      },
     ]);
   });
 
@@ -288,6 +302,8 @@ describe("GET /v1/config", () => {
       beta: required,
       paused: [],
       maxSeats: 8,
+      freeCancellationMinutes: 15,
+      maxMoveMinutes: 120,
     });
 
     await change("invite_code_required", {
@@ -299,6 +315,8 @@ describe("GET /v1/config", () => {
       beta: !required,
       paused: [],
       maxSeats: 8,
+      freeCancellationMinutes: 15,
+      maxMoveMinutes: 120,
     });
   });
 });

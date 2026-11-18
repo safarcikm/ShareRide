@@ -3,10 +3,10 @@
 // the ranges are ADR 0032's; changing a range or adding a setting needs an
 // ADR (R10.4).
 
-export const settingGroups = ["switches", "beta", "prices"] as const;
+export const settingGroups = ["switches", "beta", "prices", "booking", "changes"] as const;
 export type SettingGroup = (typeof settingGroups)[number];
 
-export type SettingUnit = "people" | "kr_per_km" | "kr" | "percent" | "seats";
+export type SettingUnit = "people" | "kr_per_km" | "kr" | "percent" | "seats" | "minutes" | "hours";
 
 export interface SettingDefinition {
   readonly group: SettingGroup;
@@ -102,6 +102,80 @@ export const settingDefinitions = {
     default: 8,
     min: 1,
     max: 8,
+    step: 1,
+  },
+  // Booking and paying (rules S4, M1; R5.5). Read as they are now: a
+  // deadline is stored when it is set and does not move.
+  /** Booking closes this many minutes before the boarding stop (rule S4). */
+  booking_cutoff: {
+    group: "booking",
+    kind: "number",
+    unit: "minutes",
+    default: 15,
+    min: 0,
+    max: 120,
+    step: 1,
+  },
+  /** A request the driver has not answered expires after this many hours (R5.5). */
+  request_expiry: {
+    group: "booking",
+    kind: "number",
+    unit: "hours",
+    default: 12,
+    min: 1,
+    max: 48,
+    step: 1,
+  },
+  /** The time to pay after the driver accepts (rule M1). */
+  payment_window: {
+    group: "booking",
+    kind: "number",
+    unit: "minutes",
+    default: 30,
+    min: 10,
+    max: 120,
+    step: 1,
+  },
+  // Changes and cancellations. A booking keeps the first, the second and
+  // the fourth as they were when it was made (R10.3).
+  /** A passenger cancelling this long or more before boarding is refunded in full (rule M2). */
+  free_cancellation_until: {
+    group: "changes",
+    kind: "number",
+    unit: "minutes",
+    default: 15,
+    min: 0,
+    max: 120,
+    step: 1,
+  },
+  /** A departure moved by more than this lets a passenger cancel for free (R6.3). */
+  major_time_change: {
+    group: "changes",
+    kind: "number",
+    unit: "minutes",
+    default: 30,
+    min: 10,
+    max: 120,
+    step: 1,
+  },
+  /** With bookings, a departure moves at most this far from when each was made (R6.4). */
+  max_time_change: {
+    group: "changes",
+    kind: "number",
+    unit: "minutes",
+    default: 120,
+    min: 30,
+    max: 360,
+    step: 1,
+  },
+  /** A passenger's cancellation counts when made less than this before boarding (R6.8). */
+  reliability_cancellation_window: {
+    group: "changes",
+    kind: "number",
+    unit: "hours",
+    default: 24,
+    min: 0,
+    max: 72,
     step: 1,
   },
 } as const satisfies Record<string, SettingDefinition>;
