@@ -271,7 +271,9 @@ Martin's steps, in the order of what they unblock:
 2. Talk to Rapyd, Teya and Straumur: milestone 15.
 3. Set up staging ([runbook](../operations/staging.md)): every check on the
    web, and the console on a server.
-4. A domain and a Mailjet account: milestone 12 and email.
+4. A domain and a Mailjet account: milestone 12 and email. Martin's
+   `skinnar.is` serves for now (2026-11-18): staging is at
+   `staging.skinnar.is` and sends its email from the domain.
 5. Register the company and open a business bank account: the payment
    contract and the store accounts in the company's name.
 6. Apple Developer, the expo.dev project and Firebase: iPhone test builds,

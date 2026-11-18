@@ -20,7 +20,7 @@ follow ([milestone 2 plan](../plans/2026-11-13-milestone-2-hosted-and-connected.
 | Setting | Value |
 | ------- | ----- |
 | App ID (bundle identifier) | `is.shareride.app.preview`, under Martin's own Apple account ([plan, decision 6](../plans/2026-11-13-milestone-2-hosted-and-connected.md#3-decisions-for-martin)). The store app ID comes with the company's account |
-| API | `https://shareride-staging-api.onrender.com`, the address in the staging runbook. If Render gave staging another address, change `EXPO_PUBLIC_API_URL` in `eas.json` first |
+| API | `https://staging.skinnar.is`, the address in the [staging runbook](staging.md). If staging moves to another address, change `EXPO_PUBLIC_API_URL` in `eas.json` first |
 | Build number | Counted up by Expo for each build; the version (`0.1.0`) is in `app.json` |
 | Error reports | Off on phones for now: the build has no Sentry DSN until native crash reports are checked against the [privacy table](../compliance/privacy-gdpr.md#providers). Testers' crash reports and feedback reach App Store Connect through TestFlight |
 

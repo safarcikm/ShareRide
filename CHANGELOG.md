@@ -1347,6 +1347,13 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Staging's address is `https://staging.skinnar.is`, on Martin's domain
+  `skinnar.is` for now: the blueprint adds the domain and sets the
+  console's `ADMIN_ORIGIN`, and the email's `WEB_APP_URL` and `EMAIL_FROM`
+  (`hello@skinnar.is`, unused until Mailjet is on). The phone test builds
+  talk to it. The staging runbook has "Point the domain" (a CNAME in ISNIC
+  DNS Hosting) and the Mailjet records for the domain.
+
 - Nothing about 112 in the app (milestone 9, PR 9d; spec 9, decision 5):
   on Martin's word, people dial 112 themselves, so the "Emergency: 112"
   buttons are gone from trip safety and the safety report, and so are
