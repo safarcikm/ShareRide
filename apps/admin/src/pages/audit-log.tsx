@@ -1,5 +1,5 @@
 import { adminAuditLogRoute, type AuditEntry } from "@shareride/contracts";
-import { inIceland } from "@shareride/domain";
+import { icelandDate } from "@shareride/domain";
 import { formatClock, formatDate, type Locale, type Translate } from "@shareride/i18n";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useConsole } from "../console.tsx";
@@ -371,8 +371,7 @@ export function AuditLogPage() {
 /** When an entry was made, in Iceland: "16 November 2026 at 22:10". */
 function when(t: Translate, locale: Locale, at: string): string {
   const moment = new Date(at);
-  const { year, month, day } = inIceland(moment);
-  const date = `${String(year)}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const date = icelandDate(moment);
   return t("admin.auditLog.at", { date: formatDate(date, locale), time: formatClock(moment) });
 }
 

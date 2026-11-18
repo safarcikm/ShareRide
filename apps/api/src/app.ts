@@ -66,16 +66,23 @@ import {
 import { createDrivingService, registerDrivingRoutes } from "./modules/driving/index.ts";
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
+  createLegService,
   createMeetingPointAdminService,
   createMeetingPointIssueService,
   createMeetingPointPhotoService,
   createMeetingPointService,
-  registerMeetingPointPhotoAdminRoutes,
+  registerLegAdminRoutes,
   registerMeetingPointIssueAdminRoutes,
+  registerMeetingPointPhotoAdminRoutes,
   registerMeetingPointRoutes,
   registerMeetingPointsAdminRoutes,
 } from "./modules/meeting-points/index.ts";
-import { createNoticeService, registerNoticeRoutes } from "./modules/moderation/index.ts";
+import {
+  createModerationConsoleService,
+  createNoticeService,
+  registerModerationAdminRoutes,
+  registerNoticeRoutes,
+} from "./modules/moderation/index.ts";
 import { registerNotificationRoutes } from "./modules/notifications/index.ts";
 import { createPaymentService, registerPaymentRoutes } from "./modules/payments/index.ts";
 import {
@@ -108,6 +115,7 @@ import { addressBlock } from "./platform/client-address.ts";
 import { createMemoryRateLimiter } from "./platform/memory-rate-limiter.ts";
 import type { PaymentProvider } from "./platform/payments.ts";
 import type { EmailChannel } from "./platform/email.ts";
+import { createRoadFileRouter, type Router } from "./platform/router.ts";
 import type { SmsSender } from "./platform/sms.ts";
 import {
   photoFilesPath,
@@ -149,6 +157,8 @@ export interface FeatureDependencies {
   readonly photos?: PhotoStorage;
   /** The same storage when it is a folder, whose files the API serves itself. */
   readonly photoFiles?: FolderPhotoStorage;
+  /** Finds the legs between meeting points; our road file when left out (ADR 0031). */
+  readonly router?: Router;
 }
 
 /** Where the request was when an unexpected error happened. No personal data. */
@@ -318,11 +328,13 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       meetingPoints: createMeetingPointAdminService(features),
       photos,
       issues,
+      legs: createLegService({ ...features, router: features.router ?? createRoadFileRouter() }),
       requireOperator,
     };
     registerMeetingPointsAdminRoutes(app, meetingPointsAdmin);
     registerMeetingPointIssueAdminRoutes(app, meetingPointsAdmin);
     registerMeetingPointPhotoAdminRoutes(app, meetingPointsAdmin);
+    registerLegAdminRoutes(app, meetingPointsAdmin);
     const { photoFiles } = features;
     if (photoFiles !== undefined) {
       // Development and tests only: the configuration refuses a folder in production.
@@ -416,6 +428,11 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       requireAuth,
     );
     registerNoticeRoutes(app, createNoticeService(features), requireAuth);
+    registerModerationAdminRoutes(app, {
+      ...features,
+      moderation: createModerationConsoleService(features),
+      requireOperator,
+    });
     registerPaymentRoutes(app, {
       payments: createPaymentService({ ...features, provider: features.payments }),
       bookings,
