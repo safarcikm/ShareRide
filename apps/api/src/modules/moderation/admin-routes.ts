@@ -27,6 +27,15 @@ export interface ModerationAdminRoutesDependencies {
 
 const notFound = (c: Context, what: string) => errorResponse(c, 404, "not_found", what);
 
+/** The operator acting in a console request, for the audit log. */
+export function consoleActorOf(
+  c: Context<AppEnv>,
+  clientAddress: (c: Context) => string,
+): ConsoleActor {
+  const { userId, sessionId } = operatorOf(c);
+  return { operator: { userId, sessionId }, request: auditRequestOf(c, clientAddress) };
+}
+
 /** A reason, note or answer the domain refused, on the field it came in. */
 const textRefused = (c: Context, path: string, issue: string) =>
   errorResponse(c, 400, "validation_failed", "The text cannot be sent.", {
@@ -42,10 +51,7 @@ export function registerModerationAdminRoutes(
   dependencies: ModerationAdminRoutesDependencies,
 ): void {
   const { moderation, requireOperator, clientAddress } = dependencies;
-  const actorOf = (c: Context<AppEnv>): ConsoleActor => {
-    const { userId, sessionId } = operatorOf(c);
-    return { operator: { userId, sessionId }, request: auditRequestOf(c, clientAddress) };
-  };
+  const actorOf = (c: Context<AppEnv>) => consoleActorOf(c, clientAddress);
 
   /** What every action can be refused for: an empty or long reason, or what it names is gone. */
   const refused = (

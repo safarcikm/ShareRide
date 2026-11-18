@@ -382,6 +382,20 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     ),
     otherIds: ["contentId"],
   },
+  operator_notes: {
+    category: "moderation",
+    // The notes about the person, never who wrote them (spec 9, 3.5.3; A49).
+    export: { section: "notes" },
+    personColumns: ["userId", "byId"],
+    // Notes about the person go with them: the erasure deletes them by
+    // person before it moves the rest. Those an operator wrote about others
+    // stay for the console, by the former member.
+    onDeletion: keep(
+      ["text"],
+      [],
+      "notes about the person are erased first; those an operator wrote about others move to the former member",
+    ),
+  },
   blocks: {
     category: "blocks",
     // Only the blocks the person made: who blocked them is never shown (R9.4).

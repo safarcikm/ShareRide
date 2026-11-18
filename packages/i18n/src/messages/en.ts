@@ -1462,6 +1462,7 @@ export const en = {
   "export.section.blocks": "People you blocked",
   "export.section.notifications": "Notifications in the last 90 days",
   "export.section.notices": "Notices from ShareRide",
+  "export.section.notes": "Notes about you from ShareRide",
   "export.section.privacy_requests": "Questions about your data",
   "export.field.about": "About",
   "export.field.acceptedAt": "Accepted",

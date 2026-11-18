@@ -21,21 +21,13 @@ import { schema, type Database } from "@shareride/db";
 import {
   defaultSafetySettings,
   ok,
-  responseDueAt,
-  type AppealOutcome,
   type BookingStatus,
-  type ModeratedContent,
-  type ModerationActionKind,
-  type ModerationRule,
-  type ReportCategory,
   type ReportOutcome,
-  type ReportStatus,
-  type ReportSubject,
   type Result,
   type SafetySettings,
   type TripStatus,
 } from "@shareride/domain";
-import { and, asc, desc, eq, inArray, isNotNull, isNull, ne, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, ne } from "drizzle-orm";
 import type { AuditEntry } from "../admin/audit.ts";
 import { readConversationAsOperator, type ReadingRefused } from "../chat/operator.ts";
 import {
@@ -48,9 +40,9 @@ import {
   type SuspendError,
   type WarnError,
 } from "./actions.ts";
+import { createConsoleReads } from "./console-reads.ts";
 
-const { bookings, meetingPoints, messages, moderationActions, reports, tripStops, trips, users } =
-  schema;
+const { bookings, messages, moderationActions, reports, trips, users } = schema;
 
 /** The last closed reports and answered appeals the lists show. */
 const closedShown = 50;
@@ -120,16 +112,6 @@ export interface ModerationConsoleService {
   ): Promise<Result<AdminModerationAction, AnswerAppealError>>;
 }
 
-const iso = (at: Date | null) => at?.toISOString() ?? null;
-
-const nameOf = (point: { nameIs: string; nameEn: string | null }) => ({
-  is: point.nameIs,
-  en: point.nameEn ?? point.nameIs,
-});
-
-type ReportRow = typeof reports.$inferSelect;
-type ActionRow = typeof moderationActions.$inferSelect;
-
 export function createModerationConsoleService(dependencies: {
   readonly db: Database;
   readonly clock: () => Date;
@@ -138,129 +120,15 @@ export function createModerationConsoleService(dependencies: {
   const { db } = dependencies;
   const settings = dependencies.settings ?? defaultSafetySettings;
   const moderation = createModerationService({ ...dependencies, settings });
-
-  /** The people these IDs name, as the console shows them. */
-  async function peopleOf(ids: readonly (string | null)[]): Promise<Map<string, AdminPerson>> {
-    const wanted = [...new Set(ids.filter((id): id is string => id !== null))];
-    if (wanted.length === 0) return new Map();
-    const rows = await db
-      .select({
-        userId: users.id,
-        firstName: users.firstName,
-        status: users.status,
-        suspendedUntil: users.suspendedUntil,
-        locale: users.locale,
-      })
-      .from(users)
-      .where(inArray(users.id, wanted));
-    return new Map(
-      rows.map((row) => [
-        row.userId,
-        {
-          userId: row.userId,
-          firstName: row.status === "deleted" ? null : row.firstName,
-          status: row.status as AdminPerson["status"],
-          suspendedUntil: iso(row.suspendedUntil),
-          locale: row.locale as AdminPerson["locale"],
-        },
-      ]),
-    );
-  }
-
-  async function listItems(rows: readonly ReportRow[]): Promise<AdminReportListItem[]> {
-    const people = await peopleOf(rows.flatMap((row) => [row.reporterId, row.subjectUserId]));
-    const of = (id: string | null) => (id === null ? null : (people.get(id) ?? null));
-    return rows.map((row) => ({
-      id: row.id,
-      subject: row.subject as ReportSubject,
-      category: row.category as ReportCategory,
-      urgent: row.urgent,
-      status: row.status as ReportStatus,
-      outcome: row.outcome as ReportOutcome | null,
-      filedAt: row.createdAt.toISOString(),
-      dueAt: responseDueAt(row.createdAt, settings).toISOString(),
-      closedAt: iso(row.closedAt),
-      reporter: of(row.reporterId),
-      reported: of(row.subjectUserId),
-    }));
-  }
-
-  async function actionsOf(rows: readonly ActionRow[]): Promise<AdminModerationAction[]> {
-    const people = await peopleOf(rows.map((row) => row.userId));
-    return rows.map((row) => ({
-      id: row.id,
-      kind: row.kind as ModerationActionKind,
-      person: row.userId === null ? null : (people.get(row.userId) ?? null),
-      reportId: row.reportId,
-      rule: row.rule as ModerationRule | null,
-      reason: row.reason,
-      content:
-        row.contentKind === null || row.contentId === null
-          ? null
-          : { kind: row.contentKind as ModeratedContent, id: row.contentId },
-      until: iso(row.until),
-      at: row.createdAt.toISOString(),
-      appeal:
-        row.appealText === null || row.appealedAt === null
-          ? null
-          : {
-              text: row.appealText,
-              sentAt: row.appealedAt.toISOString(),
-              answer: row.appealAnswer,
-              outcome: row.appealOutcome as AppealOutcome | null,
-              answeredAt: iso(row.appealAnsweredAt),
-            },
-    }));
-  }
-
-  async function actionsWhere(where: SQL | undefined, latestFirst: boolean, limit?: number) {
-    const query = db
-      .select()
-      .from(moderationActions)
-      .where(where)
-      .orderBy(
-        ...(latestFirst
-          ? [desc(moderationActions.createdAt), desc(moderationActions.id)]
-          : [asc(moderationActions.createdAt), asc(moderationActions.id)]),
-      )
-      .$dynamic();
-    return actionsOf(await (limit === undefined ? query : query.limit(limit)));
-  }
+  const { listItems, actionsOf, actionsWhere, stopsOf, shownStop, routeOf } = createConsoleReads({
+    db,
+    settings,
+  });
 
   async function action(id: string): Promise<AdminModerationAction> {
     const [found] = await actionsWhere(eq(moderationActions.id, id), false);
     if (found === undefined) throw new Error("The moderation action was just stored.");
     return found;
-  }
-
-  /** The stops of these trips, in order, with their names; removed ones too. */
-  async function stopsOf(tripIds: readonly string[]) {
-    if (tripIds.length === 0) return [];
-    return db
-      .select({
-        id: tripStops.id,
-        tripId: tripStops.tripId,
-        plannedAt: tripStops.plannedAt,
-        removedAt: tripStops.removedAt,
-        nameIs: meetingPoints.nameIs,
-        nameEn: meetingPoints.nameEn,
-      })
-      .from(tripStops)
-      .innerJoin(meetingPoints, eq(meetingPoints.id, tripStops.meetingPointId))
-      .where(inArray(tripStops.tripId, [...new Set(tripIds)]))
-      .orderBy(asc(tripStops.tripId), asc(tripStops.position));
-  }
-
-  type Stop = Awaited<ReturnType<typeof stopsOf>>[number];
-  const shownStop = (stop: Stop | undefined) => ({
-    name: stop === undefined ? { is: "", en: "" } : nameOf(stop),
-    plannedAt: iso(stop?.plannedAt ?? null),
-  });
-
-  /** A trip's whole route: its first and last stops still on it. */
-  function routeOf(stops: readonly Stop[], tripId: string) {
-    const kept = stops.filter((stop) => stop.tripId === tripId && stop.removedAt === null);
-    return { from: shownStop(kept[0]), to: shownStop(kept.at(-1)) };
   }
 
   /**

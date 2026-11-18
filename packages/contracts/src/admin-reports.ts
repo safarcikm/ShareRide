@@ -63,7 +63,11 @@ export const adminReportListItemSchema = z.object({
 
 export type AdminReportListItem = z.infer<typeof adminReportListItemSchema>;
 
-const stopSchema = z.object({ name: localisedTextSchema, plannedAt: timestampSchema.nullable() });
+/** A stop as the console names it, with its planned time. */
+export const adminStopSchema = z.object({
+  name: localisedTextSchema,
+  plannedAt: timestampSchema.nullable(),
+});
 
 /** A trip one of the people drove or booked, latest first. */
 export const adminRecentTripSchema = z.object({
@@ -71,8 +75,8 @@ export const adminRecentTripSchema = z.object({
   role: z.enum(["driver", "passenger"]),
   status: z.enum(tripStatuses),
   /** The driver's whole route, or the passenger's own part of it. */
-  from: stopSchema,
-  to: stopSchema,
+  from: adminStopSchema,
+  to: adminStopSchema,
 });
 
 export type AdminRecentTrip = z.infer<typeof adminRecentTripSchema>;
@@ -129,8 +133,8 @@ export const adminReportSchema = adminReportListItemSchema.extend({
       /** Who drives it: the console offers hiding its note or cancelling it only for them. */
       driverId: z.uuid(),
       status: z.enum(tripStatuses),
-      from: stopSchema,
-      to: stopSchema,
+      from: adminStopSchema,
+      to: adminStopSchema,
       /** Shown to passengers; empty for none. */
       note: z.string(),
       noteHidden: z.boolean(),

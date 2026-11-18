@@ -50,6 +50,8 @@ export const exportSections = [
   "blocks",
   /** What ShareRide did about the person and why, with their appeals; never which operator (spec 9, R9.5). */
   "notices",
+  /** What operators wrote down about the person; never which operator (spec 9, 3.5.3; A49). */
+  "notes",
   "notifications",
   "privacy_requests",
 ] as const;

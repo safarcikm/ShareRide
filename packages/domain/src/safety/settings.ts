@@ -19,6 +19,8 @@ export interface SafetySettings {
   readonly reportsPerDay: number;
   /** Reports, actions and appeals are kept this many years after closure (spec 9, section 7). */
   readonly reportKeptYears: number;
+  /** The console's decline rates count the requests of this many days (3.4.5). */
+  readonly declineRateDays: number;
 }
 
 /** The starting values (spec 9, accepted 2026-11-13; milestone 9 plan). */
@@ -31,6 +33,7 @@ export const defaultSafetySettings: SafetySettings = {
   appealDays: 14,
   reportsPerDay: 10,
   reportKeptYears: 3,
+  declineRateDays: 90,
 };
 
 /**

@@ -85,8 +85,10 @@ import {
 import {
   createModerationConsoleService,
   createNoticeService,
+  createPeopleConsoleService,
   registerModerationAdminRoutes,
   registerNoticeRoutes,
+  registerPeopleAdminRoutes,
 } from "./modules/moderation/index.ts";
 import { registerNotificationRoutes } from "./modules/notifications/index.ts";
 import { createPaymentService, registerPaymentRoutes } from "./modules/payments/index.ts";
@@ -443,6 +445,11 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     registerModerationAdminRoutes(app, {
       ...features,
       moderation: createModerationConsoleService(features),
+      requireOperator,
+    });
+    registerPeopleAdminRoutes(app, {
+      ...features,
+      people: createPeopleConsoleService(features),
       requireOperator,
     });
     registerPaymentRoutes(app, {

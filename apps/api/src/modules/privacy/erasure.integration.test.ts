@@ -989,6 +989,41 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
     expect(await rowsNaming(anna.userId)).toEqual([]);
   });
 
+  it("erases the notes about the person, and keeps those an operator wrote by the former member", async () => {
+    const siggi = await newMember("Siggi");
+    const gunna = await newMember("Gunna");
+    const anna = await newMember("Anna");
+    const { db } = api.connection;
+    await db.insert(schema.operatorNotes).values([
+      { userId: gunna.userId, byId: siggi.userId, text: "Called her." },
+      { userId: anna.userId, byId: siggi.userId, text: "Refund sent." },
+    ]);
+    const notes = () =>
+      db
+        .select({
+          userId: schema.operatorNotes.userId,
+          byId: schema.operatorNotes.byId,
+          text: schema.operatorNotes.text,
+        })
+        .from(schema.operatorNotes)
+        .where(inArray(schema.operatorNotes.userId, [gunna.userId, anna.userId]))
+        .orderBy(asc(schema.operatorNotes.text));
+
+    await waitEnded(gunna);
+    expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+    expect(await notes()).toEqual([
+      { userId: anna.userId, byId: siggi.userId, text: "Refund sent." },
+    ]);
+
+    // Then Siggi, the operator, goes: the note about Anna stays for the console.
+    await waitEnded(siggi);
+    expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+    expect(await notes()).toEqual([
+      { userId: anna.userId, byId: formerMemberId, text: "Refund sent." },
+    ]);
+    expect(await rowsNaming(siggi.userId)).toEqual([]);
+  });
+
   it("erases two passengers whose bookings share a retry key", async () => {
     const gunna = await newMember("Gunna");
     const siggi = await newMember("Siggi");

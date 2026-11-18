@@ -12,7 +12,7 @@ section works the same way. Security details are in
 
 1. Define the route in `packages/contracts` with `auth: "operator"` and a
    path under `/admin/v1/<area>`. Its errors include `401
-   operator_unauthenticated`.
+operator_unauthenticated`.
 2. Put the handlers in the module that owns the records, in
    `apps/api/src/modules/<area>/admin-routes.ts`, exporting
    `register<Area>AdminRoutes(app, dependencies)`. Pass
@@ -33,8 +33,8 @@ section works the same way. Security details are in
      records the operator curates. For a person's record, list the field
      names that changed, not their values (spec 9, section 7);
    - `request`: `auditRequestOf(c, clientAddress)`.
-   Opening something sensitive, such as a conversation or payment details,
-   is an action too.
+     Opening something sensitive, such as a conversation or payment details,
+     is an action too.
 5. Integration tests sign in with `api.signInOperator()` from
    `apps/api/src/testing.ts` and send its `cookie`. Test that the route
    refuses a request without it and that each action writes its entry.
@@ -96,7 +96,7 @@ meeting point routes (`registerMeetingPointsAdminRoutes`), with the work in
   its count of open reports (`openIssues`). There are a few hundred points
   at most, so it filters them all in the API.
 - `POST /admin/v1/meeting-points` adds a draft; `PUT
-  /admin/v1/meeting-points/{id}` saves its fields. Both check the fields
+/admin/v1/meeting-points/{id}` saves its fields. Both check the fields
   with `validateMeetingPointDraft` and answer `validation_failed` with each
   field and its problem in `details`, which the form shows by its field.
 - An edit sends back the `updatedAt` it loaded. If the point was saved
@@ -123,7 +123,7 @@ meeting point routes (`registerMeetingPointsAdminRoutes`), with the work in
   item, `legs`, asks for a road within 1 km that reaches a point in
   service, or none in service yet (the leg service's `connects`, one
   search), as activating computes the legs. `POST
-  /admin/v1/meeting-points/{id}/activate`, with the `updatedAt` the
+/admin/v1/meeting-points/{id}/activate`, with the `updatedAt` the
   console loaded, makes a draft active with its review date, and refuses
   one whose checklist is not done with `activation_not_ready` and each
   item in `details` (`issue: "not_done"`). The console always asks, as
@@ -233,7 +233,7 @@ A point's photos (spec 2, 3.6.3) are in
   with a link, its descriptions in both languages, its size and its
   `updatedAt`. `POST` the same path adds one last: the descriptions and
   `file`, the JPEG in base64, as the API takes only JSON. `PUT
-  .../photos/{photoId}` changes its descriptions with the `updatedAt` it
+.../photos/{photoId}` changes its descriptions with the `updatedAt` it
   loaded (`photo_changed` if it was changed since), `PUT .../photo-order`
   takes every photo's ID once in the new order (`photos_changed` if one
   was added or removed since), and `DELETE .../photos/{photoId}` removes
@@ -586,18 +586,61 @@ one or changing a range needs an ADR (R10.4).
   changes. A rule about something new reads `current()`.
 - `GET /admin/v1/settings` lists every setting with its value and the
   version. `PATCH /admin/v1/settings/{key}` takes `{ value, reason,
-  version }` with the version the page loaded: it takes a lock on the
+version }` with the version the page loaded: it takes a lock on the
   table, refuses with `settings_changed` if another change came since,
   checks the value and the reason (`checkSettingChange`), writes the next
   version and the audit entry `setting.changed` (the value before; the
   value, the version and the reason after). `GET
-  /admin/v1/settings/history` pages through the changes, newest first.
+/admin/v1/settings/history` pages through the changes, newest first.
 - `GET /v1/config` is open to everyone and cached for 5 minutes: what the
   apps need of the settings. Add a value there only when an app shows or
   checks it.
 - The console's Settings page (`apps/admin/src/pages/settings/`) shows a
   setting by the texts in its `texts.ts`: add a name, a help sentence and,
   for a new unit, the unit's two texts with each new setting.
+
+## Users, trips and decline rates
+
+`apps/api/src/modules/moderation/people-routes.ts` holds the console's
+users and trips routes (`registerPeopleAdminRoutes`), with the work in
+`people.ts` (spec 9, 3.5 and 3.4.5). Both it and `console.ts` read people,
+reports, actions and stops through `console-reads.ts`, so every page names
+them the same way.
+
+- `POST /admin/v1/users/search` with `{ q }` finds people: an ID, an
+  email in any case, a phone number (Icelandic without +354 too, as
+  `normalisePhoneNumber` reads it) or part of a first name, where `%` and
+  `_` match themselves. A POST, so a number or an email never sits in an
+  address or a log. At most 50, by first name in Icelandic order, with
+  `more` when there were more; never the former member.
+- `GET /admin/v1/users/{id}` gives a person's page: the profile with when
+  each thing was verified or declared, About you and whether ShareRide hid
+  it, cars, the 20 latest trips they drive and bookings they made (a
+  declined request with its reason, R5.7), the 20 latest reports by and
+  about them and actions on them, every note, and their decline rate.
+- `POST /admin/v1/users/{id}/notes` with `{ text }` adds a note about the
+  person, at most 1 000 characters (`checkOperatorNote`). Only operators
+  see notes in the console, but the person gets each note's text and date
+  in Download my data, never who wrote it (Martin's answer A49), so a note
+  keeps to facts. Its audit entry, `user.note_added`, names the note's ID,
+  never its words. Erasing the person erases the notes about them; erasing
+  an operator keeps the notes they wrote, by the former member.
+- `GET /admin/v1/trips` finds trips by `date` (the day they leave in
+  Iceland), `place` (part of a stop's name in either language),
+  `driverId`, or `id` (a trip's, or a booking's, which finds its trip);
+  the latest departure first. With no filter, the trips from today on, the
+  soonest first. At most 50, with `more` when there were more. Drafts
+  never show, here or on a trip's page.
+- `GET /admin/v1/trips/{id}` gives a trip with every stop (removed ones
+  marked), the car, and every booking and request on it.
+- `GET /admin/v1/decline-rates` lists each driver who answered a request
+  made in the last 90 days (`declineRateDays`), the highest share of
+  declines first, with the reasons they gave. `requestAnswer` in the
+  domain decides what counts: a request accepted or declined by the
+  driver; one declined because its trip was cancelled is not an answer.
+
+Suspending and reinstating from a person's page use the moderation routes
+above, without a `reportId`.
 
 ## A console page
 
