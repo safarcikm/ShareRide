@@ -23,6 +23,32 @@ export interface RoadLeg {
 
 const metresPerDegree = (6_371_008.8 * Math.PI) / 180;
 
+/** Each edge's box, as west, south, east and north edges in a row, kept per graph. */
+const boxes = new WeakMap<RoadGraph, Float64Array>();
+
+function edgeBoxes(graph: RoadGraph): Float64Array {
+  let found = boxes.get(graph);
+  if (found !== undefined) return found;
+  found = new Float64Array(graph.edges.length * 4);
+  graph.edges.forEach(({ shape }, index) => {
+    let west = Infinity;
+    let south = Infinity;
+    let east = -Infinity;
+    let north = -Infinity;
+    for (let at = 0; at + 1 < shape.length; at += 2) {
+      const longitude = shape[at] ?? 0;
+      const latitude = shape[at + 1] ?? 0;
+      west = Math.min(west, longitude);
+      east = Math.max(east, longitude);
+      south = Math.min(south, latitude);
+      north = Math.max(north, latitude);
+    }
+    found.set([west, south, east, north], index * 4);
+  });
+  boxes.set(graph, found);
+  return found;
+}
+
 /** The nearest place on a road, or null when no road is within `maxM`. */
 export function joinRoad(
   graph: RoadGraph,
@@ -33,10 +59,22 @@ export function joinRoad(
   const toX = (longitude: number) => (longitude - position.longitude) * xScale;
   const toY = (latitude: number) => (latitude - position.latitude) * metresPerDegree;
   const latitudeMargin = maxM / metresPerDegree;
+  const longitudeMargin = maxM / xScale;
+  // Only roads whose box comes within `maxM` can be near enough: the rest
+  // are passed over without looking at their shapes.
+  const box = edgeBoxes(graph);
 
   let best: RoadPosition | null = null;
   let bestSquared = maxM * maxM;
   graph.edges.forEach((edge, index) => {
+    if (
+      position.longitude < (box[index * 4] ?? 0) - longitudeMargin ||
+      position.latitude < (box[index * 4 + 1] ?? 0) - latitudeMargin ||
+      position.longitude > (box[index * 4 + 2] ?? 0) + longitudeMargin ||
+      position.latitude > (box[index * 4 + 3] ?? 0) + latitudeMargin
+    ) {
+      return;
+    }
     const { shape } = edge;
     let shapeLength = 0;
     let nearestAlong = -1;
@@ -97,6 +135,55 @@ export function legsFrom(
   start: RoadPosition,
   ends: readonly RoadPosition[],
 ): (RoadLeg | null)[] {
+  const reached = search(graph, start, "out");
+  return ends.map((end) => fastest(graph, reached, start, end, "out"));
+}
+
+/**
+ * The fastest way by road from each of `starts` to `end`, as `legsFrom`
+ * gives it, found in one search: roads are followed backwards from `end`.
+ */
+export function legsTo(
+  graph: RoadGraph,
+  end: RoadPosition,
+  starts: readonly RoadPosition[],
+): (RoadLeg | null)[] {
+  const reached = search(graph, end, "in");
+  return starts.map((start) => fastest(graph, reached, end, start, "in"));
+}
+
+/**
+ * Whether a search follows roads the way cars drive them, from its origin
+ * ("out"), or backwards, to its origin ("in").
+ */
+type Way = "out" | "in";
+
+interface Reached {
+  /** For each node, the fastest time from the origin (or to it, "in"). */
+  readonly time: Float64Array;
+  readonly distance: Float64Array;
+}
+
+function edgeAt(graph: RoadGraph, position: RoadPosition): RoadGraphEdge {
+  const edge = graph.edges[position.edge];
+  if (edge === undefined) throw new Error("A point is on a road the graph does not have.");
+  return edge;
+}
+
+/**
+ * Whether cars may drive an edge from `to` to `from` at a point on it: on a
+ * two-way road, or within a metre of the junction at its `from` end, where
+ * they are free to go any way.
+ */
+const backwardsFrom = (edge: RoadGraphEdge, along: number) =>
+  !edge.oneWay || along * edge.lengthM < atJunctionM;
+
+/** Whether cars may arrive at a point on an edge from its `to` end. */
+const arriveFromTo = (edge: RoadGraphEdge, along: number) =>
+  !edge.oneWay || (1 - along) * edge.lengthM < atJunctionM;
+
+/** Dijkstra by time from `origin` over the whole graph, either way. */
+function search(graph: RoadGraph, origin: RoadPosition, way: Way): Reached {
   const time = new Float64Array(graph.nodeCount).fill(Infinity);
   const distance = new Float64Array(graph.nodeCount).fill(Infinity);
   const heap = new MinHeap();
@@ -108,15 +195,15 @@ export function legsFrom(
     }
   };
 
-  const startEdge = graph.edges[start.edge];
-  if (startEdge === undefined) throw new Error("The start is on a road the graph does not have.");
-  const ahead = part(startEdge, 1 - start.along);
-  reach(startEdge.to, ahead.durationS, ahead.distanceM);
-  // A start at the beginning of a one-way road is at its junction, free to
-  // set off any way.
-  if (!startEdge.oneWay || start.along * startEdge.lengthM < atJunctionM) {
-    const behind = part(startEdge, start.along);
-    reach(startEdge.from, behind.durationS, behind.distanceM);
+  const edge = edgeAt(graph, origin);
+  const toTo = part(edge, 1 - origin.along);
+  const toFrom = part(edge, origin.along);
+  if (way === "out") {
+    reach(edge.to, toTo.durationS, toTo.distanceM);
+    if (backwardsFrom(edge, origin.along)) reach(edge.from, toFrom.durationS, toFrom.distanceM);
+  } else {
+    reach(edge.from, toFrom.durationS, toFrom.distanceM);
+    if (arriveFromTo(edge, origin.along)) reach(edge.to, toTo.durationS, toTo.distanceM);
   }
 
   for (;;) {
@@ -126,44 +213,57 @@ export function legsFrom(
     if (durationS > (time[node] ?? Infinity)) continue;
     const distanceM = distance[node] ?? Infinity;
     for (const index of graph.touching[node] ?? []) {
-      const edge = graph.edges[index];
-      if (edge === undefined) continue;
-      if (edge.from === node) reach(edge.to, durationS + edge.durationS, distanceM + edge.lengthM);
-      if (edge.to === node && !edge.oneWay) {
-        reach(edge.from, durationS + edge.durationS, distanceM + edge.lengthM);
+      const road = graph.edges[index];
+      if (road === undefined) continue;
+      // Out, a road leads on from its `from` end; in, it is reached from it.
+      const onward = way === "out" ? road.from : road.to;
+      const other = way === "out" ? road.to : road.from;
+      if (onward === node) reach(other, durationS + road.durationS, distanceM + road.lengthM);
+      if (other === node && !road.oneWay) {
+        reach(onward, durationS + road.durationS, distanceM + road.lengthM);
       }
     }
   }
+  return { time, distance };
+}
 
-  return ends.map((end) => {
-    const edge = graph.edges[end.edge];
-    if (edge === undefined) throw new Error("An end is on a road the graph does not have.");
-    const ways: RoadLeg[] = [];
-    const viaFrom = part(edge, end.along);
-    ways.push({
-      durationS: (time[edge.from] ?? Infinity) + viaFrom.durationS,
-      distanceM: (distance[edge.from] ?? Infinity) + viaFrom.distanceM,
-    });
-    // An end at the end of a one-way road is at its junction, which cars can
-    // reach from any way.
-    if (!edge.oneWay || (1 - end.along) * edge.lengthM < atJunctionM) {
-      const viaTo = part(edge, 1 - end.along);
-      ways.push({
-        durationS: (time[edge.to] ?? Infinity) + viaTo.durationS,
-        distanceM: (distance[edge.to] ?? Infinity) + viaTo.distanceM,
-      });
-    }
-    if (end.edge === start.edge) {
-      const share = end.along - start.along;
-      if (share >= 0 || !edge.oneWay) ways.push(part(edge, Math.abs(share)));
-    }
-    const fastest = ways.reduce((a, b) => (b.durationS < a.durationS ? b : a));
-    if (!Number.isFinite(fastest.durationS)) return null;
-    return {
-      distanceM: Math.max(1, Math.round(fastest.distanceM)),
-      durationS: Math.max(1, Math.round(fastest.durationS)),
-    };
+/**
+ * The fastest leg between a search's origin and another point: out, from
+ * the origin to `point`; in, from `point` to the origin.
+ */
+function fastest(
+  graph: RoadGraph,
+  reached: Reached,
+  origin: RoadPosition,
+  point: RoadPosition,
+  way: Way,
+): RoadLeg | null {
+  const edge = edgeAt(graph, point);
+  const via = (node: number, share: number): RoadLeg => ({
+    durationS: (reached.time[node] ?? Infinity) + edge.durationS * share,
+    distanceM: (reached.distance[node] ?? Infinity) + edge.lengthM * share,
   });
+  const ways: RoadLeg[] = [];
+  if (way === "out") {
+    // Arriving at `point` along its road from either end.
+    ways.push(via(edge.from, point.along));
+    if (arriveFromTo(edge, point.along)) ways.push(via(edge.to, 1 - point.along));
+  } else {
+    // Setting off from `point` along its road to either end.
+    ways.push(via(edge.to, 1 - point.along));
+    if (backwardsFrom(edge, point.along)) ways.push(via(edge.from, point.along));
+  }
+  if (point.edge === origin.edge) {
+    const [start, end] = way === "out" ? [origin, point] : [point, origin];
+    const share = end.along - start.along;
+    if (share >= 0 || !edge.oneWay) ways.push(part(edge, Math.abs(share)));
+  }
+  const best = ways.reduce((a, b) => (b.durationS < a.durationS ? b : a));
+  if (!Number.isFinite(best.durationS)) return null;
+  return {
+    distanceM: Math.max(1, Math.round(best.distanceM)),
+    durationS: Math.max(1, Math.round(best.durationS)),
+  };
 }
 
 /** A binary heap of [key, value] pairs, smallest key first. */

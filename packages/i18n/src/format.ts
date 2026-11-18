@@ -30,6 +30,11 @@ function formatWhole(value: number, locale: Locale): string {
   return value < 0 ? `-${grouped}` : grouped;
 }
 
+/** A count of things, its thousands grouped: "90,300" in English, "90.300" in Icelandic. */
+export function formatCount(value: number, locale: Locale): string {
+  return formatWhole(value, locale);
+}
+
 /** Whole krónur: "2.500 kr." in Icelandic, "2,500 ISK" in English (ADR 0011). */
 export function formatMoney(money: Money, locale: Locale): string {
   return translator(locale)("format.money", { amount: formatWhole(money.amount, locale) });

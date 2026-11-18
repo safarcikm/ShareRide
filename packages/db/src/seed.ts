@@ -42,7 +42,7 @@ export async function seedDraftLegalDocuments(db: Database, now: Date): Promise<
 }
 
 export { samplePoints } from "./sample/meeting-points.ts";
-export { sampleId, seedSampleMeetingPoints } from "./sample/seed.ts";
+export { sampleId, sampleLegSource, seedSampleMeetingPoints } from "./sample/seed.ts";
 export { sampleTrips, seedSampleTrips } from "./sample/trips.ts";
 
 /**
