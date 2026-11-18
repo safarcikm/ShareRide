@@ -37,6 +37,8 @@ export function ResultCard({
   seats,
   showDay = false,
   fill = false,
+  onShow,
+  marked = false,
 }: {
   readonly result: TripSearchResult;
   readonly searched: SearchedNames;
@@ -48,6 +50,13 @@ export function ResultCard({
    * the booking mode, so the drivers of a row are level.
    */
   readonly fill?: boolean;
+  /**
+   * The pointer or the keyboard came to the card: the screen shows the trip
+   * elsewhere too, as on the map beside search results (spec 18, 3.6).
+   */
+  readonly onShow?: (() => void) | undefined;
+  /** The trip is the one shown there. */
+  readonly marked?: boolean;
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
@@ -108,6 +117,9 @@ export function ResultCard({
   return (
     <Card
       fill={fill}
+      marked={marked}
+      onHoverIn={onShow}
+      onFocus={onShow}
       accessibilityLabel={label}
       onPress={() => {
         router.push(

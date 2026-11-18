@@ -95,7 +95,12 @@ Its sign-in is off until that address is set. Once:
    set to the staging address above, such as
    `https://shareride-staging-api.onrender.com` (no path, no slash at the
    end), then save. Render deploys the service again.
-2. Sign up in the app with your own phone, if you have not yet.
+2. Sign up in the app with your own phone, if you have not yet. While the
+   beta is closed a new account needs an invite code: open the API's
+   **Shell** in Render and run
+   `node apps/api/src/invite-cli.ts add "First testers" 20`, which prints
+   a group code for 20 accounts that works for 30 days (a third number
+   sets the days). Later codes are made in the console.
 3. Open the API's **Shell** in Render and run
    `node apps/api/src/operator-cli.ts add <your phone number>`. It gives
    your account the operator role and prints a link that works once, for

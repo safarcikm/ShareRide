@@ -562,6 +562,8 @@ export const en = {
   "results.change": "Change",
   "results.failed": "The trips could not be loaded.",
   "results.rateLimited": "Too many searches in a short time. Try again in {wait}.",
+  "results.map": "Map of Iceland",
+  "results.mapOf": "The trip on a map of Iceland: {route}.",
   "search.tripCount": "{count, plural, =0 {No trips} one {# trip} other {# trips}}",
   "trip.wholeTrip": "The whole trip",
   "trip.yourPart": "Your part",

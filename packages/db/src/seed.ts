@@ -1,7 +1,7 @@
 import type { Database } from "./index.ts";
 import { seedSampleMeetingPoints } from "./sample/seed.ts";
 import { seedSampleTrips } from "./sample/trips.ts";
-import { legalDocuments, type LegalText } from "./schema/index.ts";
+import { inviteCodes, legalDocuments, type LegalText } from "./schema/index.ts";
 
 const draftNotice = {
   en: "**Draft.** This placeholder is for development and the closed beta. The final text will be written with a lawyer before the beta opens.",
@@ -44,6 +44,30 @@ export async function seedDraftLegalDocuments(db: Database, now: Date): Promise<
 export { samplePoints } from "./sample/meeting-points.ts";
 export { sampleId, sampleLegSource, seedSampleMeetingPoints } from "./sample/seed.ts";
 export { sampleTrips, seedSampleTrips } from "./sample/trips.ts";
+
+/**
+ * The invite code of local development, to sign up with while the beta is
+ * closed. It is public, so it is seeded by the local seed command alone
+ * (`seed-cli.ts`): never by `seedDevelopmentData`, which staging runs on
+ * every deploy and where it would let anyone past the gate.
+ */
+export const developmentInviteCode = "BETA2345";
+
+/** Makes the development invite code once; one that is there, ended or not, is left alone. */
+export async function seedDevelopmentInviteCode(db: Database, now: Date): Promise<void> {
+  await db
+    .insert(inviteCodes)
+    .values({
+      code: developmentInviteCode,
+      kind: "group",
+      name: "Development",
+      usesAllowed: 500,
+      expiresAt: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000),
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoNothing({ target: inviteCodes.code });
+}
 
 /**
  * What local development and staging start with: the draft legal documents,

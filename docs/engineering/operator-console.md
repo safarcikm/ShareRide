@@ -604,6 +604,46 @@ version }` with the version the page loaded: it takes a lock on the
   setting by the texts in its `texts.ts`: add a name, a help sentence and,
   for a new unit, the unit's two texts with each new setting.
 
+## Invite codes
+
+`apps/api/src/modules/beta/` holds the closed beta's invite codes (spec 12,
+3.2; R12.1 to R12.3); the rules are in
+`packages/domain/src/beta/invites.ts`.
+
+- A code is 8 characters without I, L, O, 0 and 1. What a person types is
+  tidied first (`normaliseInviteCode`), so "abcd-2345" works.
+- The gate is in sign-in's `verify`, for a number with no account, while
+  the setting `invite_code_required` is on. The text-message code is
+  checked first. Then, without `inviteCode` the answer is
+  `invite_required` (403) and the text-message code is kept, with no try
+  counted, so the app can ask for the invite code and send both. A code
+  that is unknown, ended, expired or used up is `invite_invalid` (400),
+  one answer for all four, and counts as a wrong try on the text-message
+  code: guessing is held to sign-in's 5 tries a code and 5 codes an hour.
+  A full beta is `beta_full` (409) and counts no try.
+- A good code is used up in the transaction that makes the account, with
+  the code's row locked and one advisory lock for every sign-up through
+  the gate, so a one-use code makes one account and the cap
+  (`beta_max_testers`) is never passed. A tester is an account with
+  `users.invite_code_id`; an erased account's place is free again.
+- `POST /v1/invites/check` says whether a code would work now, without
+  using it, 10 a minute per address block.
+- `GET /admin/v1/invite-codes` lists the codes, newest first, with whether
+  a code is needed, the testers, the cap and the places left.
+  `POST /admin/v1/invite-codes` makes a group code from a name, 1 to 500
+  uses and an end at most 12 months ahead; the API picks the code.
+  `POST /admin/v1/invite-codes/{id}/end` ends one; accounts made with it
+  stay. Audit entries `invite_code.created` and `invite_code.ended`.
+- `pnpm --filter @shareride/api invite add "<name>" <uses> [days]` makes a
+  group code on the server, for the first account of a new environment.
+  It writes no audit entry and the code has no maker.
+- Integration tests and the browser tests' server run with the gate off
+  (`fixedSettings`, which only they set); a test about the gate calls
+  `api.useStoredInviteSetting()` once its first accounts exist. The
+  local seed command (`pnpm --filter @shareride/db seed`, with `APP_ENV`
+  local or unset) makes the code `BETA2345`, once; it is public, so the
+  seed staging runs on each deploy never makes it.
+
 ## Users, trips and decline rates
 
 `apps/api/src/modules/moderation/people-routes.ts` holds the console's

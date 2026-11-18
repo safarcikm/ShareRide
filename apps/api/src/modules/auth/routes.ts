@@ -15,6 +15,7 @@ import { authOf, type AppEnv } from "../../context.ts";
 import { errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
 import type { AccountService } from "../account/index.ts";
+import { inviteProblemMessages } from "../beta/routes.ts";
 import type { ConfirmError, IssuedTokens, Platform, StartError, VerifyError } from "./service.ts";
 import type { AuthService } from "./service.ts";
 
@@ -39,6 +40,8 @@ const messages: Record<StartError["code"] | VerifyError["code"], string> = {
   code_expired: "The code has expired or was used. Ask for a new one.",
   code_attempts_exceeded: "Too many wrong codes. Ask for a new one.",
   account_unavailable: "This account cannot sign in.",
+  invite_required: "ShareRide is in a closed beta. Send your invite code with the code.",
+  ...inviteProblemMessages,
 };
 
 function signInError(c: Context, error: StartError | VerifyError) {
@@ -54,7 +57,10 @@ function signInError(c: Context, error: StartError | VerifyError) {
     case "sms_failed":
       return errorResponse(c, 502, error.code, message);
     case "account_unavailable":
+    case "invite_required":
       return errorResponse(c, 403, error.code, message);
+    case "beta_full":
+      return errorResponse(c, 409, error.code, message);
     default:
       return errorResponse(c, 400, error.code, message);
   }

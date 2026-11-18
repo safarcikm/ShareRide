@@ -22,6 +22,7 @@ import { addressBlock } from "../../platform/client-address.ts";
 import { hashToken, newToken, sameHash, type KeyedHasher } from "../../platform/crypto.ts";
 import type { SmsSender } from "../../platform/sms.ts";
 import type { Logger } from "../../logger.ts";
+import type { SignUpGate, SignUpRefusal } from "../beta/invites.ts";
 
 const {
   blockedNumbers,
@@ -71,7 +72,8 @@ export type VerifyError =
   | { readonly code: "code_invalid"; readonly attemptsLeft: number }
   | { readonly code: "code_expired" }
   | { readonly code: "code_attempts_exceeded"; readonly retryAfterSeconds: number }
-  | { readonly code: "account_unavailable" };
+  | { readonly code: "account_unavailable" }
+  | SignUpRefusal;
 
 export type ConfirmError =
   | { readonly code: "code_invalid"; readonly attemptsLeft: number }
@@ -103,6 +105,8 @@ export interface AuthService {
     readonly code: string;
     readonly locale: Locale;
     readonly device: Device;
+    /** For a number with no account, while the beta is closed (spec 12, R12.1). */
+    readonly inviteCode?: string | undefined;
   }): Promise<Result<SignedIn, VerifyError>>;
   /** Rotates the refresh token (ADR 0016). */
   refresh(refreshToken: string): Promise<Result<Refreshed, RefreshError>>;
@@ -146,6 +150,8 @@ export interface AuthServiceDependencies {
   readonly logger: Logger;
   /** A cryptographically secure random integer in [0, max). */
   readonly randomInt: (max: number) => number;
+  /** Whether a new account can be made (the closed beta's invite codes); open when left out. */
+  readonly signUpGate?: SignUpGate;
 }
 
 const addSeconds = (date: Date, seconds: number) => new Date(date.getTime() + seconds * 1000);
@@ -204,6 +210,8 @@ export async function endAllSessions(
 
 export function createAuthService(dependencies: AuthServiceDependencies): AuthService {
   const { db, sms, hasher, clock, logger, randomInt } = dependencies;
+  const signUpGate: SignUpGate =
+    dependencies.signUpGate ?? (() => Promise.resolve(ok({ inviteCodeId: null })));
   const translators = { is: createTranslator("is"), en: createTranslator("en") };
 
   async function sendTimes(
@@ -358,8 +366,10 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
   }
 
   /**
-   * Checks the newest code of a number for its purpose. A right code is
-   * deleted (single use, spec 1, section 7); a wrong one is counted.
+   * Checks the newest code of a number for its purpose. A wrong one is
+   * counted. A right one is locked and its ID returned: the caller uses it
+   * up with `useUpCode` (single use, spec 1, section 7), or keeps it for
+   * another try.
    */
   async function checkCode(
     tx: Transaction,
@@ -367,7 +377,7 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
     purpose: CodePurpose,
     code: string,
     now: Date,
-  ): Promise<Result<void, ConfirmError>> {
+  ): Promise<Result<{ readonly codeId: string }, ConfirmError>> {
     const [stored] = await tx
       .select()
       .from(verificationCodes)
@@ -400,9 +410,18 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
         : err({ code: "code_invalid", attemptsLeft });
     }
 
-    await tx.delete(verificationCodes).where(eq(verificationCodes.id, stored.id));
-    return ok(undefined);
+    return ok({ codeId: stored.id });
   }
+
+  const useUpCode = (tx: Transaction, codeId: string) =>
+    tx.delete(verificationCodes).where(eq(verificationCodes.id, codeId));
+
+  /** Counts a try against a code, as a wrong text-message code would. */
+  const countAttempt = (tx: Transaction, codeId: string, now: Date) =>
+    tx
+      .update(verificationCodes)
+      .set({ attempts: sql`${verificationCodes.attempts} + 1`, updatedAt: now })
+      .where(eq(verificationCodes.id, codeId));
 
   return {
     async start(input) {
@@ -426,6 +445,7 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
       return db.transaction(async (tx): Promise<Result<SignedIn, VerifyError>> => {
         const checked = await checkCode(tx, phoneHash, "sign_in", input.code, now);
         if (!checked.ok) return checked;
+        const { codeId } = checked.value;
 
         let [user] = await tx
           .select({ id: users.id, status: users.status })
@@ -440,19 +460,33 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
             .select({ until: blockedNumbers.until })
             .from(blockedNumbers)
             .where(and(eq(blockedNumbers.phoneHash, phoneHash), gt(blockedNumbers.until, now)));
-          if (blocked !== undefined) return err({ code: "account_unavailable" });
+          if (blocked !== undefined) {
+            await useUpCode(tx, codeId);
+            return err({ code: "account_unavailable" });
+          }
+          // The closed beta (spec 12, R12.1): refused, the text-message code
+          // is kept, so the app can ask for the invite code and send both.
+          // A wrong invite code counts as a try, so guessing is held to the
+          // tries of sign-in; asking for one, or a full beta, does not.
+          const admitted = await signUpGate(tx, input.inviteCode, now);
+          if (!admitted.ok) {
+            if (admitted.error.code === "invite_invalid") await countAttempt(tx, codeId, now);
+            return admitted;
+          }
           [user] = await tx
             .insert(users)
             .values({
               phoneE164: e164,
               phoneVerifiedAt: now,
               locale: input.locale,
+              inviteCodeId: admitted.value.inviteCodeId,
               createdAt: now,
               updatedAt: now,
             })
             .returning({ id: users.id, status: users.status });
           if (user === undefined) throw new Error("The new user was not stored.");
         }
+        await useUpCode(tx, codeId);
         if (!canSignIn(user.status)) return err({ code: "account_unavailable" });
 
         const [session] = await tx
@@ -685,6 +719,7 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
             now,
           );
           if (!checked.ok) return checked;
+          await useUpCode(tx, checked.value.codeId);
           const done = await action(tx);
           if (!done.ok) {
             // Undo the action and keep the code for another try.

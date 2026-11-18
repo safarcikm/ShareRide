@@ -1,5 +1,6 @@
 export * from "./admin/index.ts";
 export * from "./auth/index.ts";
+export * from "./beta/index.ts";
 export * from "./bookings/index.ts";
 export * from "./chat/index.ts";
 export * from "./countries.ts";

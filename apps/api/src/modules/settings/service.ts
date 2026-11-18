@@ -79,6 +79,12 @@ export interface SettingsService {
 export interface SettingsServiceDependencies {
   readonly db: Database;
   readonly clock: () => Date;
+  /**
+   * Values `current()` gives whatever is stored, for tests and the browser
+   * tests' server, which run with the closed beta's gate off. Never set on
+   * a real server. The console still shows and changes the stored values.
+   */
+  readonly fixedSettings?: Partial<SettingValues>;
 }
 
 const stored = {
@@ -92,7 +98,11 @@ const snapshotOf = (changes: readonly StoredSettingChange[]): SettingsSnapshot =
   return { version, values: valuesAt(version, changes) };
 };
 
-export function createSettingsService({ db, clock }: SettingsServiceDependencies): SettingsService {
+export function createSettingsService({
+  db,
+  clock,
+  fixedSettings,
+}: SettingsServiceDependencies): SettingsService {
   let cached: { readonly snapshot: SettingsSnapshot; readonly readAt: number } | undefined;
   const versions = new Map<number, SettingValues>();
 
@@ -105,12 +115,17 @@ export function createSettingsService({ db, clock }: SettingsServiceDependencies
   const read = async (q: Database | Transaction) =>
     snapshotOf(await q.select(stored).from(settingChanges));
 
+  const fixed = (snapshot: SettingsSnapshot): SettingsSnapshot =>
+    fixedSettings === undefined
+      ? snapshot
+      : { ...snapshot, values: { ...snapshot.values, ...fixedSettings } };
+
   return {
     async current() {
       const age = cached === undefined ? Infinity : clock().getTime() - cached.readAt;
       // A clock moved back, as tests do, reads again too.
-      if (cached !== undefined && age >= 0 && age < settingsCacheMs) return cached.snapshot;
-      return remember(await read(db));
+      if (cached !== undefined && age >= 0 && age < settingsCacheMs) return fixed(cached.snapshot);
+      return fixed(remember(await read(db)));
     },
 
     latest: async () => remember(await read(db)),

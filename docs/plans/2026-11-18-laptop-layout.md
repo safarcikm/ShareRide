@@ -68,8 +68,8 @@ every main screen, as drawn, on 2026-11-18.
 | -- | ---- | ---- | ------ |
 | 0 | all | Spec 18 and this plan | Merged (#150) |
 | 1 | 3.2 to 3.4 | Groundwork: tokens, `Screen` page width, `Columns`, `Grid`, the top bar lined up, pointer looks | Merged (#155) |
-| 2 | 3.5 | Find: the search in one row, rides in a grid, the side column | Built |
-| 3 | 3.6 | Search results: the map beside the list, chips that wrap | |
+| 2 | 3.5 | Find: the search in one row, rides in a grid, the side column | Merged (#156) |
+| 3 | 3.6 | Search results: the map beside the list, chips that wrap | Built |
 | 4 | 3.7, 3.8 | Trip details, Check and pay and a request in two columns | |
 | 5 | 3.11 | Messages as two panes | |
 | 6 | 3.9, 3.10, 3.12 | A booking, My rides and Profile | |
@@ -301,26 +301,43 @@ bar `primary`. A disabled or busy part shows none.
 
 - Create: `apps/mobile/src/search/results-map.tsx`
 - Modify: `apps/mobile/src/app/search/results.tsx`,
-  `apps/mobile/src/search/result-card.tsx`, `en.ts`, `is.ts`
-  (`results.mapOf`), `e2e/laptop.spec.ts`
+  `apps/mobile/src/search/result-card.tsx`,
+  `apps/mobile/src/components/card.tsx`, `en.ts`, `is.ts`
+  (`results.map`, `results.mapOf`), `e2e/laptop.spec.ts`
 - Test: `apps/mobile/src/__tests__/search.test.tsx`
 
 **Interfaces:**
 
-- Produces: `ResultsMap({ result }: { result: TripSearchResult })`: our map
-  fitted to the stretch from `result.board` to `result.alight`, drawn along
-  the roads with both points chosen; label `results.mapOf` with their names.
+- Produces: `ResultsMap({ results, shown })`: our map fitted to the
+  stretches of every trip in `results`, muted, with the stretch of `shown`
+  drawn along the roads and its two points chosen; label `results.mapOf`
+  with their names. Without `shown`, the whole of Iceland, labelled
+  `results.map`.
+- Changes: `IcelandMap` remembers each line's way along the roads, so a
+  map that changes one line does not find the others again.
 - Produces: `ResultCard` props `onShow?: () => void`, called when the
-  pointer enters it or it takes keyboard focus.
+  pointer enters it or it takes keyboard focus, and `marked?: boolean`;
+  `Card` prop `marked?: boolean`, which keeps the edge it has under the
+  pointer.
 
-- [ ] **Step 1: Failing tests** at 1280: with trips found, `aside` holds
-  the image "Map of Iceland with the trip N1 Selfoss → N1 Vík" for the
-  first trip; focusing the second card changes the label to its stretch;
-  nothing found, loading and a failure show no `aside`; the chips are in a
-  wrapping row (`chips-wrap`), not a sideways scroll. At 390: no map, and
-  the chips scroll as today.
-- [ ] **Step 2 to 4:** Run, implement with `Screen aside`, run.
-- [ ] **Step 5:** Commit `feat(mobile): the map beside search results`.
+- [x] **Step 1: Failing tests** at 1280: with trips found, `aside` holds
+  the image "The trip on a map of Iceland: Borgarnes → Blönduós." for the
+  first trip, whose card is marked; focusing the second card changes the
+  label to its stretch and moves the mark, and the pointer does the same;
+  the map's shape stays as it goes from one trip to another; a trip
+  filtered away gives the map back to the first; the map is there while
+  the trips load, and stays without a trip when nothing is found, a filter
+  leaves none (focus stays on the chip pressed) or the search fails; the
+  trip shown stays when the order changes; trips from nearby points alone
+  are on the map; the chips are in a wrapping row
+  (`chips-wrap`), not a sideways scroll; the form to change the search
+  keeps the map. On a phone: no map, no mark, and the chips scroll
+  (`chips-scroll`) as today.
+- [x] **Step 2 to 4:** Run, implement with `Screen aside`, run.
+  `laptop.spec.ts` gains search results in both languages at 900, 1280 and
+  1440: the map beside the list with the trip's name, and every chip whole
+  in the list's column.
+- [x] **Step 5:** Commit `feat(mobile): the map beside search results`.
 
 ## PR 4: Trip details, Check and pay, a request
 
