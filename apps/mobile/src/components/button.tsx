@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { useHover } from "@/theme/hover";
 import { chunky } from "@/theme/pressable";
 import {
   edges,
@@ -28,12 +29,16 @@ interface ButtonProps {
   readonly expanded?: boolean;
 }
 
-/** Colours and edge of each variant (spec 15, section 5.1). */
-function look(variant: Variant, palette: Palette, disabled: boolean) {
+/**
+ * Colours and edge of each variant (spec 15, section 5.1), and how each
+ * shows that the pointer is over it (spec 18, 3.4).
+ */
+function look(variant: Variant, palette: Palette, disabled: boolean, hovered: boolean) {
   if (disabled) {
     return {
       face: { backgroundColor: palette.border },
       label: palette.textMuted,
+      underlined: false,
       edge: 0,
       edgeColor: "transparent",
     };
@@ -41,20 +46,32 @@ function look(variant: Variant, palette: Palette, disabled: boolean) {
   switch (variant) {
     case "primary":
       return {
-        face: { backgroundColor: palette.primary },
+        face: { backgroundColor: hovered ? palette.primaryHover : palette.primary },
         label: palette.onPrimary,
+        underlined: false,
         edge: edges.buttonPrimary,
         edgeColor: palette.primaryEdge,
       };
     case "secondary":
       return {
-        face: { backgroundColor: palette.surface, borderWidth: 2, borderColor: palette.control },
+        face: {
+          backgroundColor: hovered ? palette.primarySoft : palette.surface,
+          borderWidth: 2,
+          borderColor: palette.control,
+        },
         label: palette.text,
+        underlined: false,
         edge: edges.buttonSecondary,
         edgeColor: palette.edge,
       };
     case "text":
-      return { face: {}, label: palette.primary, edge: 0, edgeColor: "transparent" };
+      return {
+        face: {},
+        label: palette.primary,
+        underlined: hovered,
+        edge: 0,
+        edgeColor: "transparent",
+      };
   }
 }
 
@@ -70,7 +87,14 @@ export function Button({
 }: ButtonProps) {
   const palette = usePalette();
   const inactive = busy || disabled;
-  const { face, label: labelColor, edge, edgeColor } = look(variant, palette, disabled);
+  const [hovered, hover] = useHover(inactive);
+  const {
+    face,
+    label: labelColor,
+    underlined,
+    edge,
+    edgeColor,
+  } = look(variant, palette, disabled, hovered);
   return (
     <Pressable
       accessibilityRole="button"
@@ -81,6 +105,7 @@ export function Button({
       aria-expanded={expanded}
       disabled={inactive}
       onPress={onPress}
+      {...hover}
       style={({ pressed }) => [
         styles.outer,
         variant === "text" && styles.textOuter,
@@ -104,6 +129,7 @@ export function Button({
               variant === "text" ? typography.label : typography.button,
               styles.label,
               { color: labelColor },
+              underlined && styles.underlined,
             ]}
           >
             {label}
@@ -137,4 +163,5 @@ const styles = StyleSheet.create({
   },
   textFace: { paddingHorizontal: spacing.sm },
   label: { flexShrink: 1, textAlign: "center" },
+  underlined: { textDecorationLine: "underline" },
 });

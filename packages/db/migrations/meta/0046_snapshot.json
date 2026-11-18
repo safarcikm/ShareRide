@@ -1,5 +1,5 @@
 {
-  "id": "f2a7b214-4cbf-46ff-90df-d75e1d279146",
+  "id": "73411f88-1c9a-4f35-b251-0e06bd8d0edd",
   "prevId": "a5203f98-de13-4f87-82fe-88f391b8dce2",
   "version": "7",
   "dialect": "postgresql",
@@ -5317,12 +5317,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "review_id": {
-          "name": "review_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
         "category": {
           "name": "category",
           "type": "text",
@@ -5500,21 +5494,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "reports_review_index": {
-          "name": "reports_review_index",
-          "columns": [
-            {
-              "expression": "review_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -5572,15 +5551,6 @@
           "onDelete": "set null",
           "onUpdate": "no action"
         },
-        "reports_review_id_reviews_id_fk": {
-          "name": "reports_review_id_reviews_id_fk",
-          "tableFrom": "reports",
-          "tableTo": "reviews",
-          "columnsFrom": ["review_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
         "reports_closed_by_id_users_id_fk": {
           "name": "reports_closed_by_id_users_id_fk",
           "tableFrom": "reports",
@@ -5614,6 +5584,91 @@
         "reports_closed_check": {
           "name": "reports_closed_check",
           "value": "(\"reports\".\"status\" = 'closed') = (\"reports\".\"closed_at\" is not null) and (\"reports\".\"status\" = 'closed') = (\"reports\".\"outcome\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.setting_changes": {
+      "name": "setting_changes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "old_value": {
+          "name": "old_value",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "new_value": {
+          "name": "new_value",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "changed_by": {
+          "name": "changed_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "setting_changes_version_unique": {
+          "name": "setting_changes_version_unique",
+          "nullsNotDistinct": false,
+          "columns": ["version"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "setting_changes_version_check": {
+          "name": "setting_changes_version_check",
+          "value": "\"setting_changes\".\"version\" >= 1"
+        },
+        "setting_changes_reason_check": {
+          "name": "setting_changes_reason_check",
+          "value": "char_length(\"setting_changes\".\"reason\") between 1 and 500"
         }
       },
       "isRLSEnabled": false

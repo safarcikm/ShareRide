@@ -456,7 +456,7 @@ PRs 7 and 8 were: 9a the API, 9b the screens.
 
 - [x] 9a: `feat(safety)`: report a review, and report or block a person
       from their profile, in the API
-  - `reports.review_id` (migration `0046_review_reports`, the next free
+  - `reports.review_id` (migration `0047_review_reports`, the next free
     number when it merges), set to null if the review is deleted.
   - `POST /reports` also takes `{ kind: "review", reviewId }` for a review
     shown on a profile (revealed and not hidden), and

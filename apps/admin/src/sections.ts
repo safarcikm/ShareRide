@@ -8,6 +8,7 @@ import { MeetingPointsPage } from "./pages/meeting-points/page.tsx";
 import { PasskeysPage } from "./pages/passkeys.tsx";
 import { ReliabilityPage } from "./pages/reliability/page.tsx";
 import { ReportsPage } from "./pages/reports/page.tsx";
+import { SettingsPage } from "./pages/settings/page.tsx";
 import { TripsPage } from "./pages/trips/page.tsx";
 import { UsersPage } from "./pages/users/page.tsx";
 
@@ -34,6 +35,7 @@ export const sections: readonly Section[] = [
   { path: "/admin/reliability", title: "admin.reliability.title", Page: ReliabilityPage },
   { path: "/admin/users", title: "admin.users.title", Page: UsersPage },
   { path: "/admin/trips", title: "admin.trips.title", Page: TripsPage },
+  { path: "/admin/settings", title: "admin.settings.title", Page: SettingsPage },
   { path: "/admin/audit-log", title: "admin.auditLog.title", Page: AuditLogPage },
   { path: "/admin/passkeys", title: "admin.passkeys.title", Page: PasskeysPage },
 ];

@@ -61,6 +61,44 @@ describe("Button", () => {
     expect(screen.getByText("Continue")).toHaveStyle({ textAlign: "center", flexShrink: 1 });
   });
 
+  describe("under the pointer (spec 18, 3.4)", () => {
+    it("turns a primary button a step darker, and back", async () => {
+      await render(<Button label="Continue" onPress={jest.fn()} />);
+      await fireEvent(screen.getByRole("button"), "hoverIn");
+      expect(face()).toHaveStyle({ backgroundColor: colors.light.primaryHover });
+      expect(screen.getByText("Continue")).toHaveStyle({ color: colors.light.onPrimary });
+      await fireEvent(screen.getByRole("button"), "hoverOut");
+      expect(face()).toHaveStyle({ backgroundColor: colors.light.primary });
+    });
+
+    it("tints a secondary button", async () => {
+      await render(<Button label="Change" variant="secondary" onPress={jest.fn()} />);
+      await fireEvent(screen.getByRole("button"), "hoverIn");
+      expect(face()).toHaveStyle({
+        backgroundColor: colors.light.primarySoft,
+        borderColor: colors.light.control,
+      });
+    });
+
+    it("underlines a text button", async () => {
+      await render(<Button label="Report" variant="text" onPress={jest.fn()} />);
+      expect(screen.getByText("Report")).not.toHaveStyle({ textDecorationLine: "underline" });
+      await fireEvent(screen.getByRole("button"), "hoverIn");
+      expect(screen.getByText("Report")).toHaveStyle({ textDecorationLine: "underline" });
+    });
+
+    it("shows nothing on a disabled or busy button, and forgets the pointer", async () => {
+      await render(<Button label="Continue" onPress={jest.fn()} />);
+      await fireEvent(screen.getByRole("button"), "hoverIn");
+      await screen.rerender(<Button label="Continue" onPress={jest.fn()} disabled />);
+      expect(face()).toHaveStyle({ backgroundColor: colors.light.border });
+      await screen.rerender(<Button label="Continue" onPress={jest.fn()} busy />);
+      expect(face()).toHaveStyle({ backgroundColor: colors.light.primary });
+      await screen.rerender(<Button label="Continue" onPress={jest.fn()} />);
+      expect(face()).toHaveStyle({ backgroundColor: colors.light.primary });
+    });
+  });
+
   it("ignores presses while busy or disabled", async () => {
     const onPress = jest.fn();
     const { rerender } = await render(<Button label="Go" onPress={onPress} busy />);

@@ -27,6 +27,7 @@ import {
   controlOutline,
   edges,
   maxContentWidth,
+  pageMaxWidth,
   radii,
   sidePanelFrom,
   sidePanelWidth,
@@ -42,6 +43,9 @@ import { usePalette } from "@/theme/use-palette";
  * show the footer in a panel beside the column instead (section 4.8).
  * Wide screens show an `aside`, such as a map, beside the column; phones
  * leave it out, and the screen shows it its own way (see `useWideScreen`).
+ * With `width="page"`, wide screens give the content a page instead of the
+ * column, for `Columns` and `Grid` to fill (spec 18, 3.2); the bottom bar
+ * keeps the column.
  * With `stickToEnd`, as for a conversation, the screen opens at its end and
  * stays there as it grows while the reader is there, not while they read
  * further up; a new `endKey`, such as my own message on its way, brings it
@@ -52,6 +56,7 @@ export function Screen({
   footer,
   footerBeside = false,
   aside,
+  width = "column",
   stickToEnd = false,
   endKey,
 }: {
@@ -59,6 +64,7 @@ export function Screen({
   readonly footer?: ReactNode;
   readonly footerBeside?: boolean;
   readonly aside?: ReactNode;
+  readonly width?: "column" | "page";
   readonly stickToEnd?: boolean;
   readonly endKey?: string | undefined;
 }) {
@@ -87,14 +93,15 @@ export function Screen({
         ref={scrollRef}
         testID="screen-scroll"
         onLayout={
-          // Only the web's sticky aside uses the height. It is measured
-          // from the start, as an aside can come later, with its data.
+          // Only the web's sticky aside and side column use the height. It
+          // is measured from the start, as they can come later, with data.
           Platform.OS === "web"
             ? (event) => {
                 setViewHeight(event.nativeEvent.layout.height);
               }
             : undefined
         }
+        style={wide ? evenGutterOnWeb : undefined}
         contentContainerStyle={[styles.scroll, { paddingBottom: spacing.md + keyboardRoom }]}
         keyboardShouldPersistTaps="handled"
         {...(stickToEnd
@@ -115,33 +122,39 @@ export function Screen({
           : {})}
       >
         <ScreenScrollContext.Provider value={scroll}>
-          {aside !== undefined && wide ? (
-            <View style={[styles.wide, styles.wideWithAside]}>
-              <View style={styles.asideColumn}>{children}</View>
-              <View testID="aside" style={[styles.aside, stickyOnWeb(viewHeight)]}>
-                {aside}
+          <ScreenViewHeightContext.Provider value={viewHeight}>
+            {aside !== undefined && wide ? (
+              <View style={[styles.wide, styles.wideWithAside]}>
+                <View style={styles.asideColumn}>{children}</View>
+                <View testID="aside" style={[styles.aside, stickyOnWeb(viewHeight)]}>
+                  {aside}
+                </View>
               </View>
-            </View>
-          ) : beside ? (
-            <View style={styles.wide}>
-              <View style={styles.wideColumn}>{children}</View>
-              <View
-                testID="side-panel"
-                style={[
-                  styles.panel,
-                  {
-                    backgroundColor: palette.surface,
-                    borderColor: palette.border,
-                    borderBottomColor: palette.edge,
-                  },
-                ]}
-              >
-                {footer}
+            ) : beside ? (
+              <View style={styles.wide}>
+                <View style={styles.wideColumn}>{children}</View>
+                <View
+                  testID="side-panel"
+                  style={[
+                    styles.panel,
+                    {
+                      backgroundColor: palette.surface,
+                      borderColor: palette.border,
+                      borderBottomColor: palette.edge,
+                    },
+                  ]}
+                >
+                  {footer}
+                </View>
               </View>
-            </View>
-          ) : (
-            <View style={styles.column}>{children}</View>
-          )}
+            ) : width === "page" && wide ? (
+              <View testID="page" style={styles.page}>
+                {children}
+              </View>
+            ) : (
+              <View style={styles.column}>{children}</View>
+            )}
+          </ScreenViewHeightContext.Provider>
         </ScreenScrollContext.Provider>
       </ScrollView>
       {footer === undefined || beside ? null : (
@@ -250,11 +263,31 @@ export function useWideScreen() {
 }
 
 /**
- * On the web, the aside stays in view while the column scrolls, and
- * scrolls on its own when it is taller than the screen's scroll, which is
- * the window less any bar above it, such as the top bar.
+ * On the web, a wide screen keeps room for its scrollbar at both sides,
+ * where the browser's scrollbar takes room at all. So the page stays in the
+ * middle of the window and does not move when it grows long enough to
+ * scroll. The top bar keeps the same room, so what it holds stays over the
+ * page's edges at every width (spec 18, 3.3).
  */
-function stickyOnWeb(viewHeight: number | null): object {
+export const evenGutterOnWeb: object =
+  Platform.OS === "web" ? { scrollbarGutter: "stable both-edges" } : {};
+
+const ScreenViewHeightContext = createContext<number | null>(null);
+
+/**
+ * The height the screen scrolls in, for a part that stays in view with
+ * `stickyOnWeb`. Null until it is measured, on phones and outside a `Screen`.
+ */
+export function useScreenViewHeight(): number | null {
+  return useContext(ScreenViewHeightContext);
+}
+
+/**
+ * On the web, the aside or side column stays in view while the rest
+ * scrolls, and scrolls on its own when it is taller than the screen's
+ * scroll, which is the window less any bar above it, such as the top bar.
+ */
+export function stickyOnWeb(viewHeight: number | null): object {
   if (Platform.OS !== "web") return {};
   const room = 2 * spacing.md;
   return {
@@ -269,6 +302,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   scroll: { flexGrow: 1, alignItems: "center", padding: spacing.md },
   column: { flex: 1, width: "100%", maxWidth: maxContentWidth, gap: spacing.md },
+  page: { flex: 1, width: "100%", maxWidth: pageMaxWidth, gap: spacing.md },
   bar: { borderTopWidth: controlOutline, padding: spacing.md, alignItems: "center" },
   barColumn: { width: "100%", maxWidth: maxContentWidth, gap: spacing.sm },
   wide: {
