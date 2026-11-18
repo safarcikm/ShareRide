@@ -1,7 +1,7 @@
 # Milestone 11 plan: the beta gate, feedback and operator settings
 
-**Owner:** Martin · **Date:** 2026-11-18 · **Status:** Proposed; the choices
-in section 3 wait for Martin
+**Owner:** Martin · **Date:** 2026-11-18 · **Status:** Accepted; Martin accepted
+the choices in section 3 as recommended (2026-11-18)
 
 Closes the app to invited testers, lets them say what went wrong from any
 screen, and gives the operator what he needs to run a beta from the console:
@@ -77,7 +77,7 @@ When this milestone is done, on the web and on an Android test build:
 | 2 | Screenshots with feedback | **On phones only, kept in our own database.** The web form sends the message and the technical details without a picture | A phone can take a true picture of its own screen. A browser cannot: a library redraws the page and often gets it wrong. In the database a screenshot is read only through the console, is deleted with the account, and needs no storage account | Also on the web, with a redrawing library; or files in Hetzner storage, which waits for that account |
 | 3 | Which numbers the operator can change without a release | **The 17 values of [pricing and seats](../product/pricing-and-seats.md#configuration-values) that a rule reads today, plus the tester cap, each with the range in [ADR 0032](../decisions/0032-operator-settings-list-ranges-and-versions.md).** The numbers of later specs (chat closing after 7 days, the review window and so on) stay in the code | Those 17 are the ones the specs name as the operator's. Each tunable number needs a range, an effect text and tests, and a rule that must read it from the right settings version. Another can be added by an ADR when the beta shows a need | Every number of every spec, as spec 10's 3.2.1 reads: about 25 more, most of which nobody will change |
 
-Until Martin answers, the build follows the recommendations. Choice 1
+Martin accepted all three as recommended on 2026-11-18. Choice 1
 changes [spec 12](../specs/2026-11-13-beta-access-and-feedback.md), 3.2.3
 and [spec 1](../specs/2026-11-13-sign-in-and-profile.md), 3.1.4, and choice
 3 changes spec 10, 3.2.1; each is edited in the pull request that builds it.
@@ -360,7 +360,7 @@ before merging.
 
 ### PR 1: `docs(plans)`: this plan and ADR 0032
 
-- [ ] This plan, ADR 0032 (Proposed), the plans and decisions indexes and
+- [x] This plan, ADR 0032, the plans and decisions indexes and
       the roadmap's link
 
 ### PR 2: `feat(settings)`: the settings store, the Settings page and `GET /v1/config`

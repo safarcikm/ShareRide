@@ -1,6 +1,6 @@
 # 0032. Operator settings: the list, their ranges, and versions on trips and bookings
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-18)
 - **Date:** 2026-11-18
 - **Deciders:** Martin
 - **Related:** [spec 10](../specs/2026-11-13-operator-settings-and-metrics.md)
