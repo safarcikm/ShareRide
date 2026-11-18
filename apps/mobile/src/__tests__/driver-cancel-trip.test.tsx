@@ -12,6 +12,7 @@ import {
 } from "@/testing/bookings";
 import { failure, type FakeClient } from "@/testing/fake-client";
 import { tripsApi } from "@/testing/trips";
+import { aProfileId, newcomer } from "@/testing/people";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -37,7 +38,13 @@ const jon = northBooking({
   seats: 2,
   total: { amount: 8000, currency: "ISK" },
   requestExpiresAt: null,
-  passenger: { firstName: "Jón", colour: 3, memberSince: "2026-10" },
+  passenger: {
+    firstName: "Jón",
+    colour: 3,
+    memberSince: "2026-10",
+    profileId: aProfileId(16),
+    ...newcomer,
+  },
   confirmed: { registration: "AB 123", whereToStand: null },
 });
 
@@ -48,7 +55,13 @@ const dora = northBooking({
   status: "accepted",
   requestExpiresAt: null,
   paymentDueAt: "2026-11-14T12:30:00.000Z",
-  passenger: { firstName: "Dóra", colour: 4, memberSince: "2026-09" },
+  passenger: {
+    firstName: "Dóra",
+    colour: 4,
+    memberSince: "2026-09",
+    profileId: aProfileId(17),
+    ...newcomer,
+  },
 });
 
 async function openTrip(

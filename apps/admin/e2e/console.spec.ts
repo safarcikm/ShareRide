@@ -526,3 +526,97 @@ test("the operator activates a draft once its checklist is done", async () => {
     page.getByRole("list", { name: "Entries" }).getByRole("listitem").first(),
   ).toContainText("meeting_point.activated");
 });
+
+// Reports (spec 9, 3.4): two sample drivers' trips are reported. The
+// operator closes one without action, suspends the other driver from their
+// report after reading the notice as the driver will, and closes that one
+// too. Each step is in the audit log.
+test("the operator closes one report and suspends from another", async ({ request }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const file = async (data: Record<string, string>) => {
+    const response = await request.post("/e2e/report", { data });
+    expect(response.status()).toBe(201);
+  };
+  await file({
+    by: "Jón",
+    tripOf: "Sigga",
+    category: "other",
+    description: "Test: the price looked too high.",
+  });
+  await file({
+    by: "Jón",
+    tripOf: "Anna",
+    category: "safety",
+    description: "Test: she drove far too fast last time.",
+  });
+
+  const menu = page.getByRole("navigation", { name: "Console menu" });
+  await menu.getByRole("link", { name: "Reports" }).click();
+  await expect(page.getByRole("heading", { name: "Reports", level: 1 })).toBeVisible();
+  const open = page.getByRole("list", { name: "Open reports" }).getByRole("listitem");
+  await expect(open).toHaveCount(2);
+  // Safety first.
+  await expect(open.nth(0)).toContainText("Reported by Jón · About Anna");
+  await expect(open.nth(1)).toContainText("Reported by Jón · About Sigga");
+
+  // Nothing broke the rules: closed, and the reporter is told.
+  await open.nth(1).getByRole("link", { name: "A trip: Something else" }).click();
+  await expect(page.getByRole("region", { name: "The report", exact: true })).toContainText(
+    "Test: the price looked too high.",
+  );
+  await expect(page.getByRole("button", { name: "Show the conversation" })).toHaveCount(0);
+  const close = page.getByRole("region", { name: "Close the report" });
+  await close.getByRole("radio", { name: "No breach" }).check();
+  await close.getByRole("button", { name: "Close the report" }).click();
+  await expect(close.getByRole("button", { name: "Yes, close it" })).toBeFocused();
+  await close.getByRole("button", { name: "Yes, close it" }).click();
+  await expect(close.getByRole("status")).toHaveText("Closed. The reporter is told.");
+
+  // A suspension, read first as Anna reads it, in Icelandic.
+  await page.getByRole("link", { name: "All reports" }).click();
+  await expect(open).toHaveCount(1);
+  await open
+    .first()
+    .getByRole("link", { name: "A trip: Safety: dangerous driving, threats or violence" })
+    .click();
+  const reported = page.getByRole("region", { name: "The person reported: Anna" });
+  await expect(reported).toContainText("As driver:");
+  const act = page.getByRole("region", { name: "Act on it" });
+  await act.getByRole("radio", { name: "Suspend Anna" }).check();
+  await act.getByRole("combobox", { name: "Community rule" }).selectOption("safety");
+  await act.getByRole("textbox", { name: "Reason, written for Anna" }).fill("Of hraður akstur.");
+  await act.getByRole("checkbox", { name: "No end date" }).check();
+  await act.getByRole("button", { name: "Review the notice" }).click();
+  const preview = act.getByRole("group", { name: "What Anna reads, in Icelandic" });
+  await expect(preview).toContainText("Of hraður akstur.");
+  await preview.getByRole("button", { name: "Send" }).click();
+  await expect(act.getByRole("status")).toHaveText(
+    /^Suspended\. \d+ trips? and no bookings cancelled\. Anna is told why\.$/,
+  );
+  await expect(page.getByRole("region", { name: "Actions on this report" })).toContainText(
+    "Suspension",
+  );
+  await expect(reported).toContainText("Suspended with no end date");
+
+  await close.getByRole("radio", { name: "Action taken" }).check();
+  await close.getByRole("button", { name: "Close the report" }).click();
+  await close.getByRole("button", { name: "Yes, close it" }).click();
+  await expect(close.getByRole("status")).toHaveText("Closed. The reporter is told.");
+
+  // Both are closed, with their outcomes; on a phone the page fits the width.
+  await page.getByRole("link", { name: "All reports" }).click();
+  await expect(page.getByText("No report is open.")).toBeVisible();
+  await page.getByRole("link", { name: "Closed", exact: true }).click();
+  const closed = page.getByRole("list", { name: "Closed reports" }).getByRole("listitem");
+  await expect(closed).toHaveCount(2);
+  await expect(closed.filter({ hasText: "About Anna" })).toContainText("Action taken");
+  await expect(closed.filter({ hasText: "About Sigga" })).toContainText("No breach");
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+
+  await page.goto("/admin/audit-log?action=report.");
+  const entries = page.getByRole("list", { name: "Entries" }).getByRole("listitem");
+  await expect(entries).toHaveCount(2);
+  await page.goto("/admin/audit-log?action=user.suspended");
+  await expect(entries).toHaveCount(1);
+});

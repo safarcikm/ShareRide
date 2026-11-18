@@ -15,6 +15,7 @@ import {
 } from "@/testing/bookings";
 import { callsTo, chatMessage, chatServer, messageId, openedLine } from "@/testing/chat";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
+import { newcomer } from "@/testing/people";
 import { northResult, northTrip, tripDetailsApi } from "@/testing/search";
 import { tripsApi } from "@/testing/trips";
 
@@ -295,7 +296,13 @@ describe("Reporting from the driver's trip (spec 9, 3.1.1)", () => {
     board: northStop(0),
     alight: northStop(2),
     requestExpiresAt: null,
-    passenger: { firstName: "Jón", colour: 3, memberSince: "2026-10" },
+    passenger: {
+      firstName: "Jón",
+      colour: 3,
+      memberSince: "2026-10",
+      profileId: null,
+      ...newcomer,
+    },
     confirmed: { registration: "AB 123", whereToStand: null },
   });
 

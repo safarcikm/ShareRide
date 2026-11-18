@@ -23,6 +23,7 @@ import {
 } from "@/testing/chat";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { tripsApi } from "@/testing/trips";
+import { aProfileId, newcomer } from "@/testing/people";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -638,7 +639,13 @@ describe("Conversations list (spec 7, 3.1, item 9)", () => {
     board: northStop(0),
     alight: northStop(1),
     requestExpiresAt: null,
-    passenger: { firstName: "Jón", colour: 3, memberSince: "2026-10" },
+    passenger: {
+      firstName: "Jón",
+      colour: 3,
+      memberSince: "2026-10",
+      profileId: aProfileId(12),
+      ...newcomer,
+    },
     confirmed: { registration: "AB 123", whereToStand: null },
   });
 
@@ -753,7 +760,13 @@ describe("Where a chat starts (spec 7, 3.1 and 3.2)", () => {
     board: northStop(0),
     alight: northStop(2),
     requestExpiresAt: null,
-    passenger: { firstName: "Jón", colour: 3, memberSince: "2026-10" },
+    passenger: {
+      firstName: "Jón",
+      colour: 3,
+      memberSince: "2026-10",
+      profileId: aProfileId(13),
+      ...newcomer,
+    },
     confirmed: { registration: "AB 123", whereToStand: null },
   });
   const gunnaPaying = northBooking({

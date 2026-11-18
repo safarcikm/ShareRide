@@ -5,8 +5,8 @@ import {
   type ProfileReview,
   type PublicProfile,
 } from "@shareride/contracts";
-import { formatMonth, formatRating } from "@shareride/i18n";
-import { ShieldCheck, Star } from "lucide-react-native";
+import { formatMonth } from "@shareride/i18n";
+import { ShieldCheck } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSession } from "@/auth/session";
@@ -22,6 +22,7 @@ import { Body, Heading, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { languagesText } from "@/people/languages";
+import { RatingLine, reliabilityText } from "@/people/standing";
 import { firstNameOf, memberSinceText, monthOf } from "@/people/texts";
 import { Stars } from "@/reviews/stars";
 import { iconSizes, minTouchTarget, spacing, typography } from "@/theme/tokens";
@@ -70,7 +71,7 @@ export function ProfileView({
     <>
       <Person profile={profile} nameAs={nameAs} />
       <Card>
-        <RatingLine rating={profile.rating} />
+        <RatingLine rating={profile.rating} strong />
         <ReliabilityFigure reliability={profile.reliability} />
       </Card>
       <ProfileReviews key={profileId} profileId={profileId} />
@@ -122,32 +123,6 @@ function Person({
   );
 }
 
-/** "4.3 (3 ratings)", to one decimal (3.7.5), or that there are none yet. */
-function RatingLine({ rating }: { readonly rating: PublicProfile["rating"] }) {
-  const { locale, t } = useLanguage();
-  const palette = usePalette();
-  return (
-    <View style={styles.rating}>
-      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <Icon
-          icon={Star}
-          color={palette.rating}
-          fill={rating.average === null ? undefined : palette.rating}
-          size={iconSizes.inline}
-        />
-      </View>
-      <Text style={[typography.bodyStrong, styles.grow, { color: palette.text }]}>
-        {rating.average === null
-          ? t("people.noRatings")
-          : t("people.rating", {
-              rating: formatRating(rating.average, locale),
-              count: rating.count,
-            })}
-      </Text>
-    </View>
-  );
-}
-
 /**
  * The share kept, or that there are not enough trips yet (3.8.1); tapping
  * it shows the counts behind it, by role (3.8.3).
@@ -160,10 +135,7 @@ function ReliabilityFigure({
   const { t } = useLanguage();
   const palette = usePalette();
   const [open, setOpen] = useState(false);
-  const label =
-    reliability.percent === null
-      ? t("people.reliabilityNew")
-      : t("people.reliability", { percent: reliability.percent });
+  const label = reliabilityText(t, reliability.percent);
   const { driver, passenger } = reliability.byRole;
   return (
     <View style={styles.figure}>
@@ -396,7 +368,6 @@ const styles = StyleSheet.create({
   person: { flexDirection: "row", alignItems: "center", gap: spacing.ms },
   grow: { flex: 1, gap: spacing.xs },
   tags: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  rating: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   // The figure is pressed, so it is at least a touch target high.
   line: { flexDirection: "row", alignItems: "center", gap: spacing.sm, minHeight: minTouchTarget },
   figure: { gap: spacing.xs },
