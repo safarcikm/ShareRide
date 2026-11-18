@@ -1,7 +1,16 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { IcelandMap, type MapDot } from "./iceland-map";
-import { glaciers, land, mapSize, project, roads, type Position } from "@shareride/ui/map";
+import { alongRoads, glaciers, land, mapSize, project, roads } from "@shareride/ui/map";
+import type * as UiMap from "@shareride/ui/map";
 import { RouteMap } from "./route-map";
+
+type Position = UiMap.Position;
+
+// The real map, with the search for a way along the roads counted.
+jest.mock("@shareride/ui/map", () => {
+  const actual = jest.requireActual<typeof UiMap>("@shareride/ui/map");
+  return { ...actual, alongRoads: jest.fn(actual.alongRoads) };
+});
 
 const bsi: MapDot = { id: "bsi", position: { latitude: 64.1376, longitude: -21.9365 } };
 const hof: MapDot = { id: "hof", position: { latitude: 65.6839, longitude: -18.0878 } };
@@ -55,6 +64,28 @@ describe("Our map of Iceland", () => {
     expect(drawn("map-dot")).toHaveLength(1);
     expect(drawn("map-dot-chosen")).toHaveLength(1);
     expect(drawn("map-dot-muted")).toHaveLength(1);
+  });
+
+  it("finds a line's way along the roads once, however the lines around it change", async () => {
+    const found = alongRoads as jest.Mock;
+    // Positions no other test draws a line through.
+    const north = [kef.position, hof.position];
+    const south = [fitjar.position, bsi.position];
+    const lines = (part: readonly Position[]) => [
+      { id: "north", positions: north, look: "route" as const },
+      { id: "south", positions: south, look: "route" as const },
+      { id: "shown", positions: part, look: "part" as const },
+    ];
+    found.mockClear();
+    const map = await render(<IcelandMap label="Map" dots={[]} lines={lines(north)} fit />);
+    // Two ways for three lines: the part is one of the routes.
+    expect(found).toHaveBeenCalledTimes(2);
+    await map.rerender(<IcelandMap label="Map" dots={[]} lines={lines(south)} fit />);
+    expect(found).toHaveBeenCalledTimes(2);
+    expect(screen.getAllByTestId("map-line-route", { includeHiddenElements: true })).toHaveLength(
+      2,
+    );
+    expect(screen.getAllByTestId("map-line-part", { includeHiddenElements: true })).toHaveLength(1);
   });
 
   it("draws a trip's route along the roads, and the passenger's part over it", async () => {

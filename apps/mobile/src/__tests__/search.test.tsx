@@ -10,6 +10,7 @@ import { failure, ok } from "@/testing/fake-client";
 import { bsi, hof, thorlakshofn } from "@/testing/meeting-points";
 import { northResult, resultOn, searchApi, searchesOf, type SearchAnswers } from "@/testing/search";
 import { blonduos, borgarnes, tripsApi } from "@/testing/trips";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -590,11 +591,12 @@ describe("Search results on a laptop (spec 18, 3.6)", () => {
   });
   const map = () => within(screen.getByTestId("aside")).getByRole("image");
   const mapOf = (route: string) => `The trip on a map of Iceland: ${route}.`;
-  /** The edge of the card whose trip the map shows, in `primary`. */
-  const marked = { borderBottomColor: "#2F6B4F" };
+  /** The edge of the card whose trip the map shows. */
+  const marked = { borderBottomColor: colors.light.primary };
   /** The card of the trip at this place in the list, from 0. */
   const card = (place: number) => {
-    const found = screen.getAllByRole("button", { name: /^Leaves / })[place];
+    // By price a card's name starts with its day.
+    const found = screen.getAllByRole("button", { name: /(^|, )Leaves / })[place];
     if (found === undefined) throw new Error(`No trip at ${String(place)}`);
     return found;
   };
@@ -639,11 +641,32 @@ describe("Search results on a laptop (spec 18, 3.6)", () => {
     await screen.findAllByTestId("trip-result");
     // Every stretch found is on the map, so each trip fits what is shown.
     expect(drawn("map-line-route")).toHaveLength(2);
-    const area = () => within(map()).getByTestId("map-area").props["style"] as object;
-    const before = area();
+    /** The part of Iceland the map shows. */
+    const view = () => {
+      const { minX, minY, vbWidth, vbHeight } = drawn("map-drawing")[0]?.props as Record<
+        string,
+        number
+      >;
+      return { minX, minY, vbWidth, vbHeight };
+    };
+    const before = view();
+    expect(before.vbWidth).toBeGreaterThan(0);
     await fireEvent(card(1), "focus");
-    expect(area()).toEqual(before);
+    expect(map()).toHaveProp("accessibilityLabel", mapOf("BSÍ bus terminal → Hof, Akureyri"));
+    expect(view()).toEqual(before);
     expect(drawn("map-line-route")).toHaveLength(2);
+  });
+
+  it("keeps the trip shown when the order changes", async () => {
+    await openResults("", { results: () => [northResult, wholeTrip] });
+    await screen.findAllByTestId("trip-result");
+    await fireEvent(card(1), "focus");
+    await sortBy("Cheapest");
+    // By price each card says its day, and the list is one, not one a day.
+    expect(await screen.findAllByText("Sun 15 Nov")).toHaveLength(2);
+    expect(map()).toHaveProp("accessibilityLabel", mapOf("BSÍ bus terminal → Hof, Akureyri"));
+    expect(card(1)).toHaveStyle(marked);
+    expect(card(0)).not.toHaveStyle(marked);
   });
 
   it("goes back to the first trip when the one shown is filtered away", async () => {
@@ -683,13 +706,14 @@ describe("Search results on a laptop (spec 18, 3.6)", () => {
     expect(map()).toHaveProp("accessibilityLabel", mapOf("Borgarnes → Blönduós"));
   });
 
-  it("has no map when nothing matches", async () => {
+  it("keeps the map, without a trip, when nothing matches", async () => {
     await openResults("", { results: () => [] });
     expect(await screen.findByRole("header", { name: "No trips yet on this route" })).toBeVisible();
-    expect(screen.queryByTestId("aside")).toBeNull();
+    expect(map()).toHaveProp("accessibilityLabel", "Map of Iceland");
+    expect(drawn("map-dot-chosen")).toHaveLength(0);
   });
 
-  it("has no map when the search fails", async () => {
+  it("keeps the map, without a trip, when the search fails", async () => {
     await renderApp(resultsUrl(), {
       setUp: (client) => {
         searchApi(client);
@@ -699,7 +723,33 @@ describe("Search results on a laptop (spec 18, 3.6)", () => {
       },
     });
     expect(await screen.findByText(/^Too many searches/)).toBeVisible();
-    expect(screen.queryByTestId("aside")).toBeNull();
+    expect(map()).toHaveProp("accessibilityLabel", "Map of Iceland");
+  });
+
+  it("keeps the list in its place, and focus where it is, when a filter leaves no trips", async () => {
+    await openResults("", {
+      results: (query) => (query["timeOfDay"] === "evening" ? [] : [northResult]),
+    });
+    await screen.findByTestId("trip-result");
+    // Choosing an order gives focus back to the Sort chip, once.
+    await sortBy("Cheapest");
+    await screen.findByText("Sun 15 Nov");
+    const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    try {
+      focusMoves.mockClear();
+      const evening = screen.getByRole("checkbox", { name: "Evening" });
+      await fireEvent.press(evening);
+      expect(
+        await screen.findByRole("header", { name: "No trips match these filters." }),
+      ).toBeVisible();
+      // The map stays, without a trip, so the column did not move: the chip
+      // pressed is the one still there, and nothing took focus from it.
+      expect(map()).toHaveProp("accessibilityLabel", "Map of Iceland");
+      expect(screen.getByRole("checkbox", { name: "Evening" })).toBe(evening);
+      expect(focusMoves).not.toHaveBeenCalled();
+    } finally {
+      focusMoves.mockRestore();
+    }
   });
 
   it("shows the trips from nearby points on the map when only they match", async () => {

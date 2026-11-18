@@ -129,6 +129,7 @@ export function IcelandMap({
         }}
       >
         <Svg
+          testID="map-drawing"
           width="100%"
           height="100%"
           viewBox={[view.x, view.y, view.width, view.height].join(" ")}
@@ -244,22 +245,41 @@ export function IcelandMap({
   );
 }
 
+/** A line's way along the roads, as points and as the text a polyline takes. */
+interface Way {
+  readonly points: readonly MapXY[];
+  readonly text: string;
+}
+
 /**
- * The lines along the roads, worked out again only when their positions
- * change, as finding a way along the roads takes a little while.
+ * The ways found before, by their positions. Finding a way along the roads
+ * takes a little while, and a map that changes one line, as search results
+ * do when they show another trip, must not find the others again. The
+ * newest few are kept.
  */
+const ways = new Map<string, Way>();
+const waysKept = 64;
+
+function wayAlong(positions: readonly Position[]): Way {
+  const key = JSON.stringify(positions);
+  const known = ways.get(key);
+  if (known !== undefined) return known;
+  const points = alongRoads(positions.map(project));
+  const way = {
+    points,
+    text: points.map(({ x, y }) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" "),
+  };
+  const oldest = ways.keys().next();
+  if (ways.size >= waysKept && oldest.done !== true) ways.delete(oldest.value);
+  ways.set(key, way);
+  return way;
+}
+
+/** The lines along the roads, put together again only when a line changes. */
 function useDrawnLines(lines: readonly MapLine[]) {
   const key = JSON.stringify(lines);
   return useMemo(
-    () =>
-      (JSON.parse(key) as MapLine[]).map((line) => {
-        const points: MapXY[] = alongRoads(line.positions.map(project));
-        return {
-          ...line,
-          points,
-          text: points.map(({ x, y }) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" "),
-        };
-      }),
+    () => (JSON.parse(key) as MapLine[]).map((line) => ({ ...line, ...wayAlong(line.positions) })),
     [key],
   );
 }

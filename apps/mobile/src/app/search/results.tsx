@@ -196,13 +196,10 @@ export default function SearchResults() {
           : [];
   const shown = listed.find((one) => one.tripId === shownId) ?? listed[0];
   const onMap: OnMap | undefined = wide ? { shown: shown?.tripId, onShow: setShownId } : undefined;
-  // The map is there while the trips load, so the list does not move when
-  // they come; there is none when there is no trip to show.
-  const map = !wide ? undefined : loading ? (
-    <ResultsMap results={[]} shown={undefined} />
-  ) : shown === undefined ? undefined : (
-    <ResultsMap results={listed} shown={shown} />
-  );
+  // A wide screen always has the map, without a trip while there is none
+  // to show, so the list keeps its place, and what has focus in it, whatever
+  // a filter or a changed search finds.
+  const map = wide ? <ResultsMap results={listed} shown={shown} /> : undefined;
 
   let body: ReactNode;
   if (loading) {

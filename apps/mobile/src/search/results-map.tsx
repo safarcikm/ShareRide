@@ -12,7 +12,8 @@ const stretchOf = (result: TripSearchResult) =>
  * meeting points standing out. The stretches of the other trips are there
  * too, muted, so the map shows the same part of Iceland whichever trip is
  * shown and stays still under the pointer. Without a trip, as while the
- * trips load, the whole of Iceland. The list says everything the map shows.
+ * trips load or when nothing matches, the whole of Iceland. The list says
+ * everything the map shows.
  */
 export function ResultsMap({
   results,

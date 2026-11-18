@@ -1116,9 +1116,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   to drive beside them. Phones are unchanged.
 - Search results on a laptop (spec 18, 3.6): our map beside the list, with
   the stretch of the first trip found, or of the trip the pointer or the
-  keyboard came to last, whose card is marked. The map is there while the
-  trips load and stays still between trips. The chips wrap instead of
-  scrolling sideways. Phones are unchanged.
+  keyboard came to last, whose card is marked. The map is always there,
+  without a trip when there is none to show, and stays still between
+  trips. The chips wrap instead of scrolling sideways. Phones are
+  unchanged.
 
 ### Fixed
 

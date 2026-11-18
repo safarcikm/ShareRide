@@ -313,6 +313,8 @@ bar `primary`. A disabled or busy part shows none.
   drawn along the roads and its two points chosen; label `results.mapOf`
   with their names. Without `shown`, the whole of Iceland, labelled
   `results.map`.
+- Changes: `IcelandMap` remembers each line's way along the roads, so a
+  map that changes one line does not find the others again.
 - Produces: `ResultCard` props `onShow?: () => void`, called when the
   pointer enters it or it takes keyboard focus, and `marked?: boolean`;
   `Card` prop `marked?: boolean`, which keeps the edge it has under the
@@ -324,8 +326,10 @@ bar `primary`. A disabled or busy part shows none.
   label to its stretch and moves the mark, and the pointer does the same;
   the map's shape stays as it goes from one trip to another; a trip
   filtered away gives the map back to the first; the map is there while
-  the trips load; nothing found and a failure show no `aside`; trips from
-  nearby points alone are on the map; the chips are in a wrapping row
+  the trips load, and stays without a trip when nothing is found, a filter
+  leaves none (focus stays on the chip pressed) or the search fails; the
+  trip shown stays when the order changes; trips from nearby points alone
+  are on the map; the chips are in a wrapping row
   (`chips-wrap`), not a sideways scroll; the form to change the search
   keeps the map. On a phone: no map, no mark, and the chips scroll
   (`chips-scroll`) as today.
