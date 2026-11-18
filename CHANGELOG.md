@@ -1279,6 +1279,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   cannot carry is refused. A published trip keeps the price values it was
   published under through every later change; the seat limit applies at
   once, and the app reads it from `GET /v1/config`.
+- The console's home page shows what needs the operator today (spec 10,
+  3.1.1; milestone 11, PR 14): open reports, urgent ones first, appeals,
+  disputes, meeting point problem reports and overdue reviews, failed
+  notifications, people below the reliability watch level and new
+  feedback, as links to their lists; the switches that are off; and the
+  places left in the beta.
 - Trip day and reliability values from the operator's settings (spec 10,
   3.2; ADR 0032; milestone 11, PR 13): the Settings page's last group has
   the wait before a no-show, when a trip completes, and the reliability

@@ -856,6 +856,18 @@ Spec 10 (3.5; R10.7), built in milestone 11 (PR 10).
   news page (`/settings/beta-news`), which a push opens. `PATCH
   /v1/me/notification-settings` takes `reminders`, `betaNews` or both,
   and leaves alone what is not sent.
+- The home page (`apps/admin/src/pages/home.tsx`; spec 10, 3.1.1;
+  milestone 11, PR 14) shows what needs the operator today from `GET
+  /admin/v1/home`: urgent and other open reports, appeals to answer,
+  disputes waiting, open problem reports about meeting points, points
+  whose yearly review is overdue, notifications that failed in the last
+  24 hours, people below the watch level and new feedback, each a link to
+  its list and left out when zero; the switches that are off, by name;
+  and the places the beta has left while a code is needed. Each count is
+  asked of its own module the way its list is (`HomeSources` in
+  `modules/admin/home.ts`, wired in `app.ts`), so a count and its list
+  agree. Failed notifications have no page yet, so that line is not a
+  link. Held payouts and failed payments join with milestone 15.
 - The Announcements page (`apps/admin/src/pages/announcements/`) has the
   drafts with their reach, the form, and what was sent.
 

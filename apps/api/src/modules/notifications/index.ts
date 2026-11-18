@@ -5,3 +5,4 @@ export * from "./schedule.ts";
 export * from "./worker.ts";
 export * from "./push-tokens.ts";
 export * from "./routes.ts";
+export * from "./failed.ts";

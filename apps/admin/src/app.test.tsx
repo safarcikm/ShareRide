@@ -3,6 +3,7 @@ import {
   adminAddPasskeyRoute,
   adminConfirmOptionsRoute,
   adminConfirmRoute,
+  adminHomeRoute,
   adminMeRoute,
   adminPasskeysRoute,
   adminRemovePasskeyRoute,
@@ -42,6 +43,22 @@ function start(path: string) {
   api.on(adminSignInOptionsRoute, { status: 200, data: { options: { challenge: "sign-in" } } });
   api.on(adminSignInRoute, { status: 200, data: anna });
   api.on(adminSignOutRoute, { status: 204 });
+  // A quiet day on the home page.
+  api.on(adminHomeRoute, {
+    status: 200,
+    data: {
+      reports: { urgent: 0, other: 0 },
+      appeals: 0,
+      disputes: 0,
+      meetingPointProblems: 0,
+      meetingPointReviewsOverdue: 0,
+      failedNotifications: 0,
+      watched: 0,
+      newFeedback: 0,
+      placesLeft: null,
+      switchesOff: [],
+    },
+  });
   api.on(adminPasskeysRoute, {
     status: 200,
     data: { passkeys: [passkey("1", "Laptop"), passkey("2", "Phone")] },

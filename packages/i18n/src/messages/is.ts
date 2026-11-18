@@ -1866,7 +1866,29 @@ export const is = {
   "admin.home.title": "Forsíða",
   "admin.home.welcome": "Velkomin(n), {name}",
   "admin.home.welcomeNoName": "Velkomin(n)",
-  "admin.home.body": "Veldu hluta í valmyndinni.",
+  "admin.home.today": "Í dag",
+  "admin.home.nothing": "Ekkert bíður þín.",
+  "admin.home.failed": "Ekki tókst að sækja tölur dagsins.",
+  "admin.home.loadAgain": "Reyna aftur",
+  "admin.home.urgentReports":
+    "{count, plural, one {# áríðandi tilkynning} other {# áríðandi tilkynningar}}",
+  "admin.home.reports":
+    "{count, plural, one {# önnur opin tilkynning} other {# aðrar opnar tilkynningar}}",
+  "admin.home.appeals":
+    "{count, plural, one {# andmæli sem þarf að svara} other {# andmæli sem þarf að svara}}",
+  "admin.home.disputes":
+    "{count, plural, one {# ágreiningur bíður ákvörðunar} other {# ágreiningsmál bíða ákvörðunar}}",
+  "admin.home.reviewsOverdue":
+    "{count, plural, one {# mótsstaður sem er kominn fram yfir árlega yfirferð} other {# mótsstaðir sem eru komnir fram yfir árlega yfirferð}}",
+  "admin.home.failedNotifications":
+    "{count, plural, one {# tilkynning mistókst síðasta sólarhring} other {# tilkynningar mistókust síðasta sólarhring}}",
+  "admin.home.watched":
+    "{count, plural, one {# einstaklingur undir eftirlitsmörkum áreiðanleika} other {# einstaklingar undir eftirlitsmörkum áreiðanleika}}",
+  "admin.home.newFeedback": "{count, plural, one {# ný ábending} other {# nýjar ábendingar}}",
+  "admin.home.placesLeft":
+    "{count, plural, =0 {Prófunin er full: engin pláss eftir} one {# pláss eftir í prófuninni} other {# pláss eftir í prófuninni}}",
+  "admin.home.switchesOff":
+    "{count, plural, one {Slökkt er á rofa: {names}} other {Slökkt er á rofum: {names}}}",
   "admin.home.meetingPointProblems":
     "{count, plural, =0 {Engar opnar tilkynningar um mótsstaði} one {# opin tilkynning um mótsstaði} other {# opnar tilkynningar um mótsstaði}}",
   "admin.passkeys.title": "Aðgangslyklar",
