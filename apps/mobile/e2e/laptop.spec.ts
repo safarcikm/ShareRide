@@ -176,8 +176,7 @@ test.describe("Find's search row", () => {
     const second = await box(rides.nth(1));
     expect(second.y).toBeCloseTo(first.y, 0);
     expect(second.x).toBeGreaterThan(first.x + first.width);
-    // The cards of a row are as tall as each other, whatever they hold: a
-    // name on two lines in one of them makes both of them taller.
+    // The cards of a row are as tall as each other, whatever they hold.
     const cards = page.getByTestId("columns-main").getByTestId("card");
     const heights = await Promise.all(
       (await cards.all()).map(async (card) => (await box(card)).height),
@@ -186,7 +185,21 @@ test.describe("Find's search row", () => {
     for (let left = 0; left + 1 < heights.length; left += 2) {
       expect(heights[left + 1]).toBeCloseTo(heights[left] ?? 0, 0);
     }
-    expect(new Set(heights.map(Math.round)).size).toBeGreaterThan(1);
+    // Which rides leave soon changes with the hour, and they may all be as
+    // tall of themselves. So the first card is given more to hold here: the
+    // one beside it grows with it.
+    await cards
+      .nth(0)
+      .getByTestId("card-face")
+      .evaluate((face) => {
+        const more = document.createElement("div");
+        more.style.height = "200px";
+        face.append(more);
+      });
+    await expect
+      .poll(async () => (await box(cards.nth(1))).height)
+      .toBeGreaterThan((heights[1] ?? 0) + 100);
+    expect((await box(cards.nth(1))).height).toBeCloseTo((await box(cards.nth(0))).height, 0);
     const offer = await box(
       page.getByTestId("columns-side").getByRole("button", { name: "Offer a ride" }),
     );
