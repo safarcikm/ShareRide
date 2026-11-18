@@ -158,7 +158,9 @@ describe("distances between meeting points (spec 2, 3.7.4)", () => {
     );
     expect(said.getAttribute("role")).toBe("status");
     // The page moves the focus in an effect, just after the message shows.
-    await waitFor(() => expect(document.activeElement).toBe(said));
+    await waitFor(() => {
+      expect(document.activeElement).toBe(said);
+    });
     expect(summary("Last computed")).toBe("17 November 2026 at 22:30");
     expect(screen.queryByText(/older map data/)).toBeNull();
     // Pressed twice, sent once.
@@ -176,7 +178,9 @@ describe("distances between meeting points (spec 2, 3.7.4)", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Recompute all" }));
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toBe("The distances could not be recomputed. Try again.");
-    await waitFor(() => expect(document.activeElement).toBe(alert));
+    await waitFor(() => {
+      expect(document.activeElement).toBe(alert);
+    });
     expect(
       screen.getByRole("button", { name: "Recompute all" }).getAttribute("aria-disabled"),
     ).toBe("false");
