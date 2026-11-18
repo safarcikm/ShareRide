@@ -925,8 +925,10 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
     await choosePoint("To", "hof", "Hof, Akureyri");
     const blonduosSwitch = await main().findByRole("switch", { name: "Blönduós" });
     expect(
-      soFar().getByLabelText("Route: BSÍ bus terminal → Hof, Akureyri, 2 stops on the way"),
+      soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri, 2 stops on the way"),
     ).toBeVisible();
+    // Shown with an arrow, read out as "to".
+    expect(soFar().getByText("BSÍ bus terminal → Hof, Akureyri")).toBeVisible();
     expect(side().getByRole("image", { name: map })).toBeVisible();
     expect(screen.getAllByRole("image", { name: map })).toHaveLength(1);
     // The button keeps its place when the map comes: the map goes under it.
@@ -936,13 +938,13 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
 
     await fireEvent.press(blonduosSwitch);
     expect(
-      soFar().getByLabelText("Route: BSÍ bus terminal → Hof, Akureyri, 1 stop on the way"),
+      soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri, 1 stop on the way"),
     ).toBeVisible();
     expect(await main().findByText("200 km · about 2 h")).toBeVisible();
     expect(soFar().getByLabelText("Date and times: Step 2")).toBeVisible();
     // With no stop on the way, the ends alone.
     await fireEvent.press(main().getByRole("switch", { name: "Borgarnes" }));
-    expect(soFar().getByLabelText("Route: BSÍ bus terminal → Hof, Akureyri")).toBeVisible();
+    expect(soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri")).toBeVisible();
   });
 
   it("keeps what is typed and switched off when the window turns narrow and wide again", async () => {
@@ -983,12 +985,12 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
     await open(`/drive/trips/${draft.id}/time`, [draft]);
     expect(await soFar().findByLabelText("Date and times: Step 2")).toBeVisible();
     expect(
-      soFar().getByLabelText("Route: BSÍ bus terminal → Hof, Akureyri, 1 stop on the way"),
+      soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri, 1 stop on the way"),
     ).toBeVisible();
     await fireEvent.press(main().getByRole("radio", { name: "Sunday 15 November" }));
     await chooseTime("Leaving BSÍ bus terminal at", "09:00");
     expect(
-      soFar().getByLabelText("Date and times: Sunday 15 November, 09:00 → 11:00"),
+      soFar().getByLabelText("Date and times: Sunday 15 November, 09:00 to 11:00"),
     ).toBeVisible();
     expect(soFar().getByLabelText("Price: Step 3")).toBeVisible();
     expect(soFar().getByLabelText("Seats and booking: Step 4")).toBeVisible();
@@ -1001,10 +1003,10 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
     await open(`/drive/trips/${draft.id}/price`, [draft]);
     expect(await main().findByText("3,000 ISK")).toBeVisible();
     expect(
-      soFar().getByLabelText("Route: BSÍ bus terminal → Hof, Akureyri, 1 stop on the way"),
+      soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri, 1 stop on the way"),
     ).toBeVisible();
     expect(
-      soFar().getByLabelText("Date and times: Sunday 15 November, 09:00 → 11:00"),
+      soFar().getByLabelText("Date and times: Sunday 15 November, 09:00 to 11:00"),
     ).toBeVisible();
     expect(soFar().getByLabelText("Price: 100% · the whole route 3,000 ISK")).toBeVisible();
     expect(soFar().getByLabelText("Seats and booking: Step 4")).toBeVisible();
@@ -1029,16 +1031,35 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
     await fireEvent.press(await screen.findByRole("link", { name: "Edit: Route" }));
     expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
     expect(
-      soFar().getByLabelText("Route: BSÍ bus terminal → Hof, Akureyri, 1 stop on the way"),
+      soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri, 1 stop on the way"),
     ).toBeVisible();
     expect(
-      soFar().getByLabelText("Date and times: Sunday 15 November, 09:00 → 11:00"),
+      soFar().getByLabelText("Date and times: Sunday 15 November, 09:00 to 11:00"),
     ).toBeVisible();
     expect(await soFar().findByLabelText("Price: 100% · the whole route 3,000 ISK")).toBeVisible();
     expect(
       soFar().getByLabelText("Seats and booking: 3 seats, I approve each passenger"),
     ).toBeVisible();
+    expect(soFar().getByText("09:00 → 11:00")).toBeVisible();
     expect(side().getByRole("button", { name: "Save changes" })).toBeVisible();
+  });
+
+  it("names the times' step again while the route is not the saved one", async () => {
+    await open(`/drive/trips/${plannedDraft().id}/review`, [plannedDraft()]);
+    await fireEvent.press(await screen.findByRole("link", { name: "Edit: Route" }));
+    expect(
+      await soFar().findByLabelText("Date and times: Sunday 15 November, 09:00 to 11:00"),
+    ).toBeVisible();
+    // The saved times are the saved route's: with other stops they are counted anew.
+    await fireEvent.press(main().getByRole("switch", { name: "Borgarnes" }));
+    expect(soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri")).toBeVisible();
+    expect(soFar().getByLabelText("Date and times: Step 2")).toBeVisible();
+    expect(soFar().queryByText("09:00 → 11:00")).toBeNull();
+    // Back on the saved route, they are its times again.
+    await fireEvent.press(main().getByRole("switch", { name: "Borgarnes" }));
+    expect(
+      soFar().getByLabelText("Date and times: Sunday 15 November, 09:00 to 11:00"),
+    ).toBeVisible();
   });
 
   it("has Publish and what it waits for beside the summary, with no trip so far", async () => {

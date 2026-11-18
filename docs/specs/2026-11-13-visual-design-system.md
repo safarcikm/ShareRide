@@ -360,7 +360,7 @@ Built when the screens that need them are built.
 | `RadioCard` | A card with a radio, a title and a line of help; selected: `primary` 2 outline |
 | `TickList` | Rows with a tick box: done is a filled `primary` box with a tick, not done is an empty `control` box with an action button |
 | `StepProgress` | "Step 3 of 5" in `caption` above five bars 8 high; done bars `primary`, others `border` |
-| `TripSoFar` | Beside a posting step on a wide screen (spec 18, 3.13): a `Card` headed "Your trip so far", with a row each for the route, the day and times, the price, and the seats and booking. A row is its name in `label`, `textMuted`, over one or two lines in `body`, `text`; a step still to come is "Step 3" in `body`, `textMuted`. Each row is one thing to a screen reader: "Route: Mjódd bus terminal → N1 Selfoss, 2 stops on the way" |
+| `TripSoFar` | Beside a posting step on a wide screen (spec 18, 3.13): a `Card` headed "Your trip so far", with a row each for the route, the day and times, the price, and the seats and booking. A row is its name in `label`, `textMuted`, over one or two lines in `body`, `text`; a step still to come is "Step 3" in `body`, `textMuted`. Each row has one spoken label, with a word where the screen has an arrow: "Route: Mjódd bus terminal to N1 Selfoss, 2 stops on the way" |
 | `BottomBar` | `surface`, 2 `border` top line, price on the left, main button on the right; respects the safe area |
 | `NeedBubble` | A pill with a coloured round icon and a word, for trip preferences |
 | `RouteLine` | Times, a line with stops, place in `bodyStrong` and meeting point in `small`; the part you ride is solid `primary`, the rest dotted `control` |

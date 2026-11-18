@@ -855,7 +855,7 @@ test.describe("Offer a ride and the driver's trip", () => {
       await main.getByRole("button", { name: card }).click();
     }
     await expect(
-      soFar.getByLabel("Route: Mjódd bus terminal → N1 Selfoss, 2 stops on the way"),
+      soFar.getByLabel("Route: Mjódd bus terminal to N1 Selfoss, 2 stops on the way"),
     ).toBeVisible();
     const map = side.getByTestId("iceland-map");
     await expect(map).toBeVisible();
@@ -874,7 +874,7 @@ test.describe("Offer a ride and the driver's trip", () => {
     expect((await box(toTimes)).y - before.y).toBeLessThan(40);
     await main.getByRole("switch", { name: "Olís Norðlingaholt" }).click();
     await expect(
-      soFar.getByLabel("Route: Mjódd bus terminal → N1 Selfoss, 1 stop on the way"),
+      soFar.getByLabel("Route: Mjódd bus terminal to N1 Selfoss, 1 stop on the way"),
     ).toBeVisible();
     // In a small laptop's window the button is whole, above the map.
     await driver.setViewportSize({ width: 1280, height: 720 });
@@ -889,7 +889,7 @@ test.describe("Offer a ride and the driver's trip", () => {
     if (day.nextMonth) await main.getByRole("button", { name: "Next month" }).click();
     await main.getByRole("radio", { name: day.name }).click();
     await chooseTime(driver, "Leaving Mjódd bus terminal at", "17:45");
-    await expect(soFar.getByLabel(/^Date and times: .+, 17:45 → \d\d:\d\d$/)).toBeVisible();
+    await expect(soFar.getByLabel(/^Date and times: .+, 17:45 to \d\d:\d\d$/)).toBeVisible();
     await expect(soFar.getByLabel("Price: Step 3")).toBeVisible();
     await expectTwoColumns();
     await side.getByRole("button", { name: "Set your price" }).click();

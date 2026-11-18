@@ -243,6 +243,13 @@ export function RouteStep({
   };
 
   const chosen = from !== null && to !== null && from.id !== to.id;
+  const saved = trip === undefined ? {} : savedSoFar(t, locale, trip, "route", fromReview, quote);
+  // The saved times are the saved route's: with other stops only the
+  // departure stays, and the rest are counted anew when the route is saved.
+  const savedRoute =
+    trip !== undefined &&
+    trip.stops.length === ids.length &&
+    trip.stops.every((stop, index) => stop.meetingPoint.id === ids[index]);
   // Once the stops on the way are known. A wide screen has it beside the step.
   const map =
     chosen && alongFor === null ? (
@@ -263,7 +270,8 @@ export function RouteStep({
       onOffer={onOffer}
       map={map}
       soFar={{
-        ...(trip === undefined ? {} : savedSoFar(t, locale, trip, "route", fromReview, quote)),
+        ...saved,
+        time: savedRoute ? saved.time : undefined,
         // The route as it is chosen here.
         route: chosen
           ? routeSoFar(

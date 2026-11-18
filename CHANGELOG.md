@@ -1206,7 +1206,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   two columns: the step at the left, and beside it "Your trip so far",
   which fills in as the route, the day and times, the price and the seats
   are chosen, then the step's button, and on the first step the map of the
-  route. The button keeps its place from step to step and is whole in a
+  route. The button keeps its place when the map comes and is whole in a
   small laptop's window. What is typed or chosen on a step stays when the
   window turns narrow or wide. The driver's trip has "Edit trip" and
   "Cancel trip" beside its name, requests and passengers in the main

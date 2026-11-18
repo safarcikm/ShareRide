@@ -323,14 +323,17 @@ changes on a phone.
    the seats, while their steps are still to come, show "Step N", greyed
    (`textMuted`): a draft has a price and seats from the start, which the
    driver has not chosen yet. When the driver came back from the review to
-   change a step, every row shows what the draft holds. The rows are short
-   whatever the trip: the route is
-   its two ends and "2 stops on the way", the times are the day and the
-   first and the last time, the price is the level and the whole route's
-   price, the seats are their number and how people book. So the card is
-   as tall on a route of ten stops as on one of two, and the button under
-   it does not move. Each row is one thing to a screen reader: "Route:
-   Mjódd bus terminal → N1 Selfoss, 2 stops on the way".
+   change a step, every row shows what the draft holds. On the route step
+   the saved times show only while the route is the saved one: with other
+   stops they are counted anew, so until the route is saved the row says
+   "Step 2". The rows are short whatever the trip: the route is its two
+   ends and "2 stops on the way", the times are the day and the first and
+   the last time (both days, each with its time, when the trip ends on a
+   later day), the price is the level and the whole route's price, the
+   seats are their number and how people book. So the card is as tall on a
+   route of ten stops as on one of two, and the button under it does not
+   move. Each row has one spoken label, with a word where the screen has
+   an arrow: "Route: Mjódd bus terminal to N1 Selfoss, 2 stops on the way".
 4. The last step, Check and publish, has the whole trip in its main
    column, so its side column holds Publish and what it waits for, and no
    "Your trip so far".
