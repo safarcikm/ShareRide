@@ -469,12 +469,15 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     registerNoticeRoutes(app, createNoticeService(features), requireAuth);
     registerModerationAdminRoutes(app, {
       ...features,
-      moderation: createModerationConsoleService(features),
+      moderation: createModerationConsoleService({
+        ...features,
+        reliability: defaultReliabilitySettings,
+      }),
       requireOperator,
     });
     registerPeopleAdminRoutes(app, {
       ...features,
-      people: createPeopleConsoleService(features),
+      people: createPeopleConsoleService({ ...features, reliability: defaultReliabilitySettings }),
       requireOperator,
     });
     registerPaymentRoutes(app, {

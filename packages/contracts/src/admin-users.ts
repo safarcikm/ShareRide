@@ -9,12 +9,14 @@ import { z } from "zod";
 import {
   adminModerationActionSchema,
   adminPersonSchema,
+  adminReliabilitySchema,
   adminReportListItemSchema,
   adminStopSchema,
 } from "./admin-reports.ts";
 import { moneySchema, timestampSchema } from "./common.ts";
 import { errorResponseSchema } from "./errors.ts";
 import { localisedTextSchema } from "./meeting-points.ts";
+import { ratingSchema, roleSchema } from "./people.ts";
 import { defineRoute } from "./route.ts";
 
 // The console's users, trips and bookings (spec 9, 3.5; milestone 9, PR 8):
@@ -124,7 +126,34 @@ const carSchema = z.object({
   registration: z.string().nullable(),
 });
 
-/** A person's page (3.5.2). Ratings and reliability come with milestone 7's profiles. */
+/**
+ * A review by or about a person (3.5.2): every one, including those not
+ * shown yet, those ShareRide hid and those by someone leaving, with its words.
+ */
+export const adminReviewSchema = z.object({
+  id: z.uuid(),
+  rating: z.int().min(1).max(5),
+  /** Empty for none. */
+  comment: z.string(),
+  /** Whether its author rode as the driver or as a passenger. */
+  authorRole: roleSchema,
+  /** The former member once their account is erased (spec 11, 3.4.3). */
+  author: adminPersonSchema,
+  subject: adminPersonSchema,
+  writtenAt: timestampSchema,
+  /** False until both have written or 14 days have passed (R8.9): nobody else reads it until then. */
+  revealed: z.boolean(),
+  hidden: z.boolean(),
+  /**
+   * Its author is leaving ShareRide: it shows nowhere and does not count
+   * until their account is erased, then as by a former member (spec 11, 3.4.3).
+   */
+  authorLeaving: z.boolean(),
+});
+
+export type AdminReview = z.infer<typeof adminReviewSchema>;
+
+/** A person's page (3.5.2). */
 export const adminUserSchema = adminUserListItemSchema.extend({
   phoneVerifiedAt: timestampSchema.nullable(),
   emailVerifiedAt: timestampSchema.nullable(),
@@ -136,6 +165,13 @@ export const adminUserSchema = adminUserListItemSchema.extend({
   about: z.object({ text: z.string(), hidden: z.boolean() }).nullable(),
   /** While they wait for their account to be deleted (spec 11). */
   deleteAfter: timestampSchema.nullable(),
+  /** Their rating and reliability figure, as their profile counts them. */
+  rating: ratingSchema,
+  reliability: adminReliabilitySchema,
+  /** Reviews about them, latest first, at most 20. */
+  reviewsAbout: z.array(adminReviewSchema),
+  /** Reviews they wrote, latest first, at most 20. */
+  reviewsBy: z.array(adminReviewSchema),
   vehicles: z.array(carSchema.extend({ id: z.uuid(), removed: z.boolean() })),
   /** Trips they drive, drafts left out, latest departure first, at most 20. */
   trips: z.array(adminTripListItemSchema),

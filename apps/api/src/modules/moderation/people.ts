@@ -7,6 +7,7 @@ import type {
   AdminDeclineRate,
   AdminOperatorNote,
   AdminPerson,
+  AdminReview,
   AdminTrip,
   AdminTripListItem,
   AdminUser,
@@ -18,6 +19,7 @@ import { schema, type Database } from "@shareride/db";
 import {
   checkOperatorNote,
   declineRates,
+  defaultReliabilitySettings,
   defaultSafetySettings,
   fromIceland,
   normalisePhoneNumber,
@@ -28,7 +30,9 @@ import {
   type CarColour,
   type DeclineReason,
   type OperatorNoteProblem,
+  type ReliabilitySettings,
   type Result,
+  type Role,
   type SafetySettings,
   type TripStatus,
 } from "@shareride/domain";
@@ -51,6 +55,8 @@ import {
   type SQL,
 } from "drizzle-orm";
 import { recordAudit } from "../admin/audit.ts";
+import { authors } from "../people/ratings.ts";
+import { figuresOf } from "../people/standing.ts";
 import { createConsoleReads, iso, type ConsoleStop } from "./console-reads.ts";
 import type { ConsoleActor } from "./console.ts";
 
@@ -61,6 +67,7 @@ const {
   moderationActions,
   operatorNotes,
   reports,
+  reviews,
   segments,
   tripStops,
   trips,
@@ -68,7 +75,7 @@ const {
   vehicles,
 } = schema;
 
-/** A person's trips, bookings, reports and actions on their page. */
+/** A person's trips, bookings, reports, reviews and actions on their page. */
 const historyShown = 20;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -111,9 +118,11 @@ export function createPeopleConsoleService(dependencies: {
   readonly db: Database;
   readonly clock: () => Date;
   readonly settings?: SafetySettings;
+  readonly reliability?: ReliabilitySettings;
 }): PeopleConsoleService {
   const { db, clock } = dependencies;
   const settings = dependencies.settings ?? defaultSafetySettings;
+  const reliability = dependencies.reliability ?? defaultReliabilitySettings;
   const { peopleOf, listItems, actionsWhere, stopsOf, shownStop, routeOf } = createConsoleReads({
     db,
     settings,
@@ -351,6 +360,31 @@ export function createPeopleConsoleService(dependencies: {
           .orderBy(desc(reports.createdAt), desc(reports.id))
           .limit(historyShown);
       const [declines] = await requestRows(id);
+      const reviewsWhere = (side: "authorId" | "subjectId") =>
+        db
+          .select({ review: reviews, authorDeleteAfter: authors.deleteAfter })
+          .from(reviews)
+          .innerJoin(authors, eq(authors.id, reviews.authorId))
+          .where(eq(reviews[side], id))
+          .orderBy(desc(reviews.createdAt), desc(reviews.id))
+          .limit(historyShown);
+      const about = await reviewsWhere("subjectId");
+      const by = await reviewsWhere("authorId");
+      const reviewer = await peopleFor(
+        [...about, ...by].flatMap(({ review }) => [review.authorId, review.subjectId]),
+      );
+      const reviewOf = ({ review, authorDeleteAfter }: (typeof about)[number]): AdminReview => ({
+        id: review.id,
+        rating: review.rating,
+        comment: review.comment,
+        authorRole: review.authorRole as Role,
+        author: reviewer(review.authorId),
+        subject: reviewer(review.subjectId),
+        writtenAt: review.createdAt.toISOString(),
+        revealed: review.revealedAt !== null,
+        hidden: review.hiddenAt !== null,
+        authorLeaving: authorDeleteAfter !== null,
+      });
 
       return {
         ...item,
@@ -364,6 +398,9 @@ export function createPeopleConsoleService(dependencies: {
             ? null
             : { text: row.about, hidden: row.aboutHiddenAt !== null },
         deleteAfter: iso(row.deleteAfter),
+        ...(await figuresOf(db, id, clock(), reliability)),
+        reviewsAbout: about.map(reviewOf),
+        reviewsBy: by.map(reviewOf),
         vehicles: cars.map((car) => ({
           id: car.id,
           make: car.make,

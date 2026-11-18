@@ -2,6 +2,7 @@ import {
   adminAddNoteRoute,
   adminUserRoute,
   type AdminOperatorNote,
+  type AdminReview,
   type AdminUser,
 } from "@shareride/contracts";
 import { checkOperatorNote, defaultSafetySettings, formatPhoneNumber } from "@shareride/domain";
@@ -10,7 +11,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ConsoleLink } from "../../components/console-link.tsx";
 import { useConsole } from "../../console.tsx";
 import { ActPanel, type Choice } from "../reports/act.tsx";
-import { ActionList, ReportLinks } from "../reports/history.tsx";
+import { ActionList, Figures, ReportLinks } from "../reports/history.tsx";
 import {
   atText,
   bookingStatusKeys,
@@ -49,21 +50,25 @@ function personChoices(user: AdminUser): readonly Choice[] {
 }
 
 /**
- * A person's page (spec 9, 3.5.2): their account, what ShareRide did about
- * them and the notes operators keep, their trips, bookings, cars and
- * reports, and their decline rate. Suspend, Reinstate, Warn and Add note
- * act from here (3.5.3).
+ * A person's page (spec 9, 3.5.2): their account, rating and reliability,
+ * what ShareRide did about them and the notes operators keep, their
+ * reports and reviews, decline rate, trips, bookings and cars. Suspend,
+ * Reinstate, Warn and Add note act from here (3.5.3).
  */
 export function UserDetail({ id }: { readonly id: string }) {
   const { t, locale, call } = useConsole();
   const [loaded, setLoaded] = useState<Loaded>({ state: "loading" });
   const ids = {
     account: useId(),
+    figures: useId(),
     declines: useId(),
     trips: useId(),
     bookings: useId(),
     cars: useId(),
     reports: useId(),
+    reviews: useId(),
+    reviewsAbout: useId(),
+    reviewsBy: useId(),
     actions: useId(),
   };
 
@@ -210,6 +215,14 @@ export function UserDetail({ id }: { readonly id: string }) {
         </dl>
       </section>
 
+      <section className="panel stack" aria-labelledby={ids.figures}>
+        <h2 id={ids.figures} className="type-heading">
+          {t("admin.reports.figures")}
+        </h2>
+        <Figures rating={user.rating} reliability={user.reliability} />
+        <p className="type-small muted">{t("admin.users.figuresHint")}</p>
+      </section>
+
       <ActPanel
         person={user.person}
         choices={personChoices(user)}
@@ -245,6 +258,20 @@ export function UserDetail({ id }: { readonly id: string }) {
         <ReportLinks reports={user.reportsAbout} />
         <h3 className="type-label">{t("admin.reports.reportsBy")}</h3>
         <ReportLinks reports={user.reportsBy} />
+      </section>
+
+      <section className="panel stack" aria-labelledby={ids.reviews}>
+        <h2 id={ids.reviews} className="type-heading">
+          {t("admin.users.reviews")}
+        </h2>
+        <h3 id={ids.reviewsAbout} className="type-label">
+          {t("admin.users.reviewsAbout")}
+        </h3>
+        <Reviews reviews={user.reviewsAbout} other="author" labelledBy={ids.reviewsAbout} />
+        <h3 id={ids.reviewsBy} className="type-label">
+          {t("admin.users.reviewsBy")}
+        </h3>
+        <Reviews reviews={user.reviewsBy} other="subject" labelledBy={ids.reviewsBy} />
       </section>
 
       <section className="panel stack" aria-labelledby={ids.declines}>
@@ -346,8 +373,77 @@ export function UserDetail({ id }: { readonly id: string }) {
   );
 }
 
-/** The most trips, bookings, reports and actions a person's page lists, the latest first. */
+/** The most trips, bookings, reports, reviews and actions a person's page lists, the latest first. */
 const historyShown = 20;
+
+/**
+ * Reviews by or about the person, the latest first: every one, with its
+ * words, and tagged when it does not show (not yet, hidden by ShareRide, or
+ * by someone deleting their account), each naming the other person
+ * (`other`) with a link to their page.
+ */
+function Reviews({
+  reviews,
+  other,
+  labelledBy,
+}: {
+  readonly reviews: readonly AdminReview[];
+  readonly other: "author" | "subject";
+  readonly labelledBy: string;
+}) {
+  const { t, locale } = useConsole();
+  if (reviews.length === 0) return <p className="type-body muted">{t("admin.reports.none")}</p>;
+  return (
+    <>
+      <ul className="cards" aria-labelledby={labelledBy}>
+        {reviews.map((review) => {
+          const person = review[other];
+          const name = t(other === "author" ? "admin.users.reviewBy" : "admin.users.reviewAbout", {
+            name: personName(t, person),
+          });
+          return (
+            <li key={review.id} className="card entry">
+              {person.status === "deleted" ? (
+                <p className="type-label">{name}</p>
+              ) : (
+                <ConsoleLink to={`${usersPath}/${person.userId}`} className="type-label">
+                  {name}
+                </ConsoleLink>
+              )}
+              <p className="type-body">
+                {t(
+                  review.authorRole === "driver"
+                    ? "admin.reports.reviewFacts.driver"
+                    : "admin.reports.reviewFacts.passenger",
+                  { rating: review.rating, when: atText(t, locale, review.writtenAt) },
+                )}
+              </p>
+              {review.comment === "" ? null : <p className="type-body">{review.comment}</p>}
+              {review.revealed && !review.hidden && !review.authorLeaving ? null : (
+                <p className="tags">
+                  {review.revealed ? null : (
+                    <span className="tag type-small">{t("admin.users.notRevealed")}</span>
+                  )}
+                  {review.authorLeaving ? (
+                    <span className="tag type-small">{t("admin.users.authorLeaving")}</span>
+                  ) : null}
+                  {review.hidden ? (
+                    <span className="tag tag-warning type-small">
+                      {t("admin.reports.hiddenByTag")}
+                    </span>
+                  ) : null}
+                </p>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {reviews.length < historyShown ? null : (
+        <p className="type-small muted">{t("admin.users.latest", { count: historyShown })}</p>
+      )}
+    </>
+  );
+}
 
 type Saving =
   | { readonly kind: "none" }

@@ -16,7 +16,7 @@ import { adminConversationMessageSchema } from "./admin-disputes.ts";
 import { localeSchema, timestampSchema } from "./common.ts";
 import { errorResponseSchema } from "./errors.ts";
 import { localisedTextSchema } from "./meeting-points.ts";
-import { roleSchema } from "./people.ts";
+import { ratingSchema, reliabilitySchema, roleSchema } from "./people.ts";
 import { defineRoute } from "./route.ts";
 
 // The operator console's reports, actions and appeals (spec 9, 3.4 to 3.6;
@@ -112,9 +112,23 @@ export const adminModerationActionSchema = z.object({
 
 export type AdminModerationAction = z.infer<typeof adminModerationActionSchema>;
 
+/**
+ * A person's reliability figure as their profile counts it (spec 8, 3.8),
+ * and whether it is below the watch level, for the operator to look at.
+ */
+export const adminReliabilitySchema = reliabilitySchema.extend({ belowWatchLevel: z.boolean() });
+
+export type AdminReliability = z.infer<typeof adminReliabilitySchema>;
+
 /** What the console knows of one side of a report (3.4.2). */
 export const adminReportSideSchema = z.object({
   person: adminPersonSchema,
+  /**
+   * Their rating and reliability figure, as their profile counts them; null
+   * for the former member, whose records are those of everyone who left.
+   */
+  rating: ratingSchema.nullable(),
+  reliability: adminReliabilitySchema.nullable(),
   /** Other reports they filed, latest first, at most 20. */
   reportsBy: z.array(adminReportListItemSchema),
   /** Other reports about them, latest first, at most 20. */

@@ -19,8 +19,8 @@ import {
 } from "@shareride/domain";
 import { and, desc, eq, isNotNull, sql, type SQL } from "drizzle-orm";
 import { shown } from "../privacy/hidden.ts";
-import { aboutThem, authors, ratingsOf, readable } from "./ratings.ts";
-import { reliabilityOfPeople } from "./reliability.ts";
+import { aboutThem, authors, readable } from "./ratings.ts";
+import { figuresOf } from "./standing.ts";
 
 const { reviews, users } = schema;
 
@@ -69,12 +69,7 @@ export function createPeopleService(dependencies: {
     async profile(profileId) {
       const person = await personOf(profileId);
       if (person === undefined || person.firstName === null) return err({ code: "not_found" });
-      const [rating, reliability] = await Promise.all([
-        ratingsOf(db, [person.id]),
-        reliabilityOfPeople(db, [person.id], clock(), settings),
-      ]);
-      const figure = reliability.get(person.id);
-      if (figure === undefined) throw new Error("Each person asked for has a figure.");
+      const { rating, reliability: figure } = await figuresOf(db, person.id, clock(), settings);
       return ok({
         profileId,
         firstName: person.firstName,
@@ -89,7 +84,7 @@ export function createPeopleService(dependencies: {
         emailVerified: person.emailVerifiedAt !== null,
         memberSince: icelandDate(person.createdAt).slice(0, 7),
         colour: peopleColourOf(person.id),
-        rating: rating.get(person.id) ?? { average: null, count: 0 },
+        rating,
         reliability: {
           kept: figure.kept,
           counted: figure.counted,

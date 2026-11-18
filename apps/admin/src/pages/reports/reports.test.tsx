@@ -96,6 +96,14 @@ const report: AdminReport = {
   actions: [],
   reporterSide: {
     person: bara,
+    rating: { average: null, count: 0 },
+    reliability: {
+      kept: 1,
+      counted: 1,
+      percent: null,
+      byRole: { driver: { kept: 0, counted: 0 }, passenger: { kept: 1, counted: 1 } },
+      belowWatchLevel: false,
+    },
     reportsBy: [],
     reportsAbout: [],
     recentTrips: [
@@ -111,6 +119,14 @@ const report: AdminReport = {
   },
   reportedSide: {
     person: dora,
+    rating: { average: 3.5, count: 2 },
+    reliability: {
+      kept: 4,
+      counted: 6,
+      percent: 66,
+      byRole: { driver: { kept: 3, counted: 5 }, passenger: { kept: 1, counted: 1 } },
+      belowWatchLevel: true,
+    },
     reportsBy: [],
     reportsAbout: [{ ...urgent, reporter: bara, reported: dora }],
     recentTrips: [
@@ -273,6 +289,37 @@ describe("a report's page (spec 9, 3.4.2)", () => {
       within(reported).getByRole("link", { name: "Account page: Dóra" }).getAttribute("href"),
     ).toBe(`/admin/users/${dora.userId}`);
     expect(api.called(adminReportConversationRoute)).toEqual([]);
+  });
+
+  it("shows each side's rating and reliability as their profile counts them", async () => {
+    start(detailPath);
+    const reported = await screen.findByRole("region", { name: "The person reported: Dóra" });
+    expect(reported.textContent).toContain("3.5 (2 ratings)");
+    expect(reported.textContent).toContain("Reliability: 66%");
+    expect(within(reported).getByText("Below the watch level")).toBeTruthy();
+    expect(reported.textContent).toContain("Kept 4 of 6 trips and bookings in the last 12 months.");
+    expect(reported.textContent).toContain("As a driver: kept 3 of 5");
+    expect(reported.textContent).toContain("As a passenger: kept 1 of 1");
+    const reporter = screen.getByRole("region", { name: "The person who reported: Bára" });
+    expect(reporter.textContent).toContain("No ratings yet");
+    expect(reporter.textContent).toContain("Reliability: not enough trips yet");
+    expect(within(reporter).queryByText("Below the watch level")).toBeNull();
+
+    // A former member's records are everyone's who left: none show.
+    cleanup();
+    start(detailPath, {
+      ...report,
+      reporter: null,
+      reporterSide: report.reporterSide && {
+        ...report.reporterSide,
+        person: { ...bara, firstName: null, status: "deleted" },
+        rating: null,
+        reliability: null,
+      },
+    });
+    const erased = await screen.findByRole("region", { name: /^The person who reported: / });
+    expect(within(erased).queryByRole("heading", { name: "Rating and reliability" })).toBeNull();
+    expect(erased.textContent).not.toContain("Reliability");
   });
 
   it("opens the conversation when asked, marking the message reported and one removed", async () => {
