@@ -14,7 +14,7 @@ import { cancellationTermsSchema, moneySchema, timestampSchema } from "./common.
 import { accountSuspendedResponse, errorResponseSchema } from "./errors.ts";
 import { localisedTextSchema, meetingPointSummarySchema } from "./meeting-points.ts";
 import { bookingReviewSchema } from "./reviews.ts";
-import { peopleColourSchema, yearMonthSchema } from "./people.ts";
+import { peopleColourSchema, standingSchema, yearMonthSchema } from "./people.ts";
 import { defineRoute } from "./route.ts";
 import { disputeSchema } from "./trip-day.ts";
 
@@ -160,13 +160,21 @@ export const bookingSchema = z.object({
    * completed (R9.1).
    */
   problemReportable: z.boolean(),
-  /** `firstName` is null for a former member, whose data was erased (spec 11, 3.5). */
-  driver: z.object({ firstName: z.string().nullable(), colour: peopleColourSchema }),
-  /** Ratings and reliability come with spec 8; until then every member is new. */
-  passenger: z.object({
-    /** Null for a former member, whose data was erased (spec 11, 3.5). */
+  /**
+   * `firstName` is null for a former member, whose data was erased (spec 11,
+   * 3.5). `profileId` opens their public profile (spec 1, 3.5); null for a
+   * former member or someone leaving ShareRide, who have none.
+   */
+  driver: standingSchema.extend({
     firstName: z.string().nullable(),
     colour: peopleColourSchema,
+    profileId: z.uuid().nullable(),
+  }),
+  /** As the driver, with the month they joined (spec 5, 3.3.2). */
+  passenger: standingSchema.extend({
+    firstName: z.string().nullable(),
+    colour: peopleColourSchema,
+    profileId: z.uuid().nullable(),
     /** The year and month they joined. */
     memberSince: yearMonthSchema,
   }),

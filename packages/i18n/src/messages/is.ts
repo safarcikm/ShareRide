@@ -1052,6 +1052,7 @@ export const is = {
   "request.memberSince": "Meðlimur frá {month} {year}",
   "people.formerMember": "Fyrrverandi notandi",
   "people.open": "Skoða prófíl",
+  "people.openOf": "Skoða prófíl: {name}",
   "people.notFound":
     "Þessi prófíll er ekki tiltækur. Viðkomandi er hugsanlega ekki lengur á ShareRide.",
   "people.failed": "Ekki tókst að sækja prófílinn.",
