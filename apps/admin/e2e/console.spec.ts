@@ -718,3 +718,113 @@ test("the operator finds a person, adds a note and reinstates them", async () =>
   await page.goto("/admin/audit-log?action=user.reinstated");
   await expect(entries).toHaveCount(1);
 });
+
+// The closed beta from the console (specs 12 and 10; milestone 11, section
+// 1): the operator makes a group code, sees a price value's effect before
+// saving it, pauses bookings and reads that on the home page, writes an
+// announcement, sends it to themselves and then to everyone, and opens the
+// figures. Each setting is put back, so the server is left as it was.
+test("the operator runs the closed beta: a group code, a price value, a pause and an announcement", async () => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const menu = page.getByRole("navigation", { name: "Console menu" });
+  const cardOf = (name: string) =>
+    page.getByRole("listitem").filter({ has: page.getByRole("heading", { name, exact: true }) });
+
+  // Home: today's counts, and the places the beta has left.
+  await menu.getByRole("link", { name: "Home" }).click();
+  await expect(page.getByRole("heading", { name: "Today", level: 2 })).toBeVisible();
+  await page.getByRole("link", { name: /places? left in the beta$/ }).click();
+  await expect(page.getByRole("heading", { name: "Invite codes", level: 1 })).toBeVisible();
+
+  // A group code for a workplace.
+  const newCode = page.getByRole("form", { name: "New group code" });
+  await newCode.getByLabel("Who it is for").fill("Selfoss drivers");
+  await newCode.getByLabel("Accounts it can make").fill("20");
+  await newCode.getByRole("button", { name: "Make the code" }).click();
+  await expect(page.getByText(/^Code [A-Z0-9]+ was made for Selfoss drivers\.$/)).toBeVisible();
+  await expect(cardOf("Selfoss drivers")).toContainText("0 of 20 used.");
+
+  // The suggested rate, with its effect on the example trip before saving.
+  await menu.getByRole("link", { name: "Settings" }).click();
+  await expect(page.getByRole("heading", { name: "Settings", level: 1 })).toBeVisible();
+  const rate = cardOf("Suggested rate");
+  await expect(rate).toContainText("15 kr per km");
+  await rate.getByRole("button", { name: "Change Suggested rate" }).click();
+  await rate.getByLabel("New value, in kr per km").fill("16");
+  await expect(rate).toContainText("a seat at 100% costs 5,800 ISK now and would cost 6,200 ISK.");
+  await rate.getByLabel("Why").fill("Fuel costs more.");
+  await rate.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status")).toHaveText("Saved: Suggested rate.");
+  await expect(cardOf("Suggested rate")).toContainText("16 kr per km");
+  await expect(page.getByRole("list", { name: "History" })).toContainText("Fuel costs more.");
+
+  // The payment provider is down: new bookings and payments are paused.
+  const bookings = cardOf("New bookings and payments");
+  await bookings.getByRole("button", { name: "Change New bookings and payments" }).click();
+  await expect(bookings).toContainText("Changes from On to Off.");
+  await bookings.getByLabel("Why").fill("The payment provider is down.");
+  await bookings.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status")).toHaveText("Saved: New bookings and payments.");
+  await menu.getByRole("link", { name: "Home" }).click();
+  const off = page.getByRole("link", { name: "A switch is off: New bookings and payments" });
+  await expect(off).toBeVisible();
+
+  // Both are put back.
+  await off.click();
+  await expect(page.getByRole("heading", { name: "Settings", level: 1 })).toBeVisible();
+  const paused = cardOf("New bookings and payments");
+  await paused.getByRole("button", { name: "Change New bookings and payments" }).click();
+  await paused.getByLabel("Why").fill("The provider is back.");
+  await paused.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status")).toHaveText("Saved: New bookings and payments.");
+  const raised = cardOf("Suggested rate");
+  await raised.getByRole("button", { name: "Change Suggested rate" }).click();
+  await raised.getByLabel("New value, in kr per km").fill("15");
+  await raised.getByLabel("Why").fill("Back to the starting value.");
+  await raised.getByRole("button", { name: "Save" }).click();
+  await expect(cardOf("Suggested rate")).toContainText("15 kr per km");
+  await menu.getByRole("link", { name: "Home" }).click();
+  await expect(page.getByRole("heading", { name: "Today", level: 2 })).toBeVisible();
+  await expect(page.getByRole("link", { name: /switch(es)? (is|are) off/ })).toHaveCount(0);
+
+  // News about the beta, in both languages: to the operator first, then to everyone.
+  const title = "Akranes and Borgarnes open on Monday";
+  await menu.getByRole("link", { name: "Announcements" }).click();
+  await expect(page.getByRole("heading", { name: "Announcements", level: 1 })).toBeVisible();
+  const draft = page.getByRole("form", { name: "New announcement" });
+  await draft.getByLabel("Title in Icelandic").fill("Akranes og Borgarnes opna á mánudag");
+  await draft
+    .getByLabel("Message in Icelandic")
+    .fill("Frá mánudegi er hægt að bjóða og bóka ferðir til og frá Akranesi og Borgarnesi.");
+  await draft.getByLabel("Title in English").fill(title);
+  await draft
+    .getByLabel("Message in English")
+    .fill("From Monday you can offer and book rides to and from Akranes and Borgarnes.");
+  await draft.getByRole("button", { name: "Save the draft" }).click();
+  await expect(page.getByText(`“${title}” was saved as a draft. Nothing was sent.`)).toBeVisible();
+  const announcement = cardOf(title);
+  await expect(announcement).toContainText("It would reach");
+  await announcement.getByRole("button", { name: `Send “${title}” to me` }).click();
+  await expect(page.getByText(`“${title}” is on its way to you, in both languages.`)).toBeVisible();
+  await announcement.getByRole("button", { name: `Send “${title}”`, exact: true }).click();
+  await expect(announcement).toContainText(
+    "It goes out at once and cannot be taken back or changed afterwards.",
+  );
+  await announcement.getByRole("button", { name: `Send “${title}” now` }).click();
+  await expect(page.getByText(`“${title}” was sent.`)).toBeVisible();
+  await expect(cardOf(title)).toContainText("Sent on");
+
+  // The figures, with the beta's exit criteria.
+  await menu.getByRole("link", { name: "Metrics" }).click();
+  await expect(page.getByRole("heading", { name: "Metrics", level: 1 })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Exit criteria of the beta" })).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+
+  // Every change is in the audit log.
+  const entries = page.getByRole("list", { name: "Entries" }).getByRole("listitem");
+  await page.goto("/admin/audit-log?action=setting.changed");
+  await expect(entries).toHaveCount(2);
+  await page.goto("/admin/audit-log?action=switch.changed");
+  await expect(entries).toHaveCount(2);
+});

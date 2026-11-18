@@ -212,15 +212,18 @@ plan in `docs/plans/` before it starts.
 
 Milestone 11: beta gate, feedback and operator settings
 ([plan](../plans/2026-11-18-milestone-11-beta-gate-feedback-and-settings.md),
-proposed 2026-11-18;
+accepted 2026-11-18;
 [spec 12](../specs/2026-11-13-beta-access-and-feedback.md),
 [spec 10](../specs/2026-11-13-operator-settings-and-metrics.md); on the
-console from milestone 8)
+console from milestone 8; built 2026-11-18, Martin's checks on real phones
+and of the Icelandic texts to do; the waitlist and emailed personal codes
+wait for milestone 12)
 
-- [ ] Invite codes, waves and the closed-beta gate
-- [ ] In-app feedback
-- [ ] Settings and switches in the console
-- [ ] Beta metrics and announcements
+- [x] Invite codes and the closed-beta gate
+- [x] In-app feedback
+- [x] Settings and switches in the console
+- [x] Beta metrics and announcements
+- [x] The console home's counts
 
 Milestone 12: production and the waitlist
 ([spec 12](../specs/2026-11-13-beta-access-and-feedback.md#31-waitlist);

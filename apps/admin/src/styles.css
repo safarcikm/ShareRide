@@ -180,6 +180,7 @@ button[aria-disabled="true"] {
 
 /* A card whose parts stack, such as a problem report: each takes the width, from the left. */
 .card.stack {
+  flex-wrap: nowrap;
   align-items: stretch;
 }
 
