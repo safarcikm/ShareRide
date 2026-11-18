@@ -5,6 +5,7 @@ import {
   notificationText,
   smsText,
   type NotificationFacts,
+  type PointMovedFacts,
   type PointPausedFacts,
   type TripReminderFacts,
 } from "./texts.ts";
@@ -40,6 +41,7 @@ const facts: NotificationFacts = {
     until: null,
     retired: false,
   },
+  movedPoint: { name: "N1 Borgarnes" },
 };
 
 const gunna = { name: "Gunna", from: "BSÍ", to: "Hof, Akureyri" };
@@ -63,6 +65,14 @@ const pausedFacts: PointPausedFacts = {
     until: null,
     retired: false,
   },
+};
+
+const movedFacts: PointMovedFacts = {
+  kind: "meeting_point_moved_driver",
+  role: "driver",
+  tripId: "trip-1",
+  stopsAt: new Date("2026-11-14T10:10:00Z"),
+  movedPoint: { name: "N1 Borgarnes" },
 };
 
 const tripText = (changes: Partial<TripReminderFacts>, locale: "is" | "en" = "en") =>
@@ -103,6 +113,7 @@ const kinds: readonly [NotificationFacts["kind"], "driver" | "passenger"][] = [
   ["dispute_decided", "passenger"],
   ["dispute_decided_driver", "driver"],
   ["meeting_point_changed", "passenger"],
+  ["meeting_point_moved", "passenger"],
 ];
 
 describe("notification texts", () => {
@@ -420,6 +431,37 @@ describe("notification texts", () => {
     expect(
       text({ kind: "meeting_point_changed", role: "passenger", pausedPoint: retired }, "is").title,
     ).toBe("Mótsstaður ekki lengur í notkun: N1 Borgarnes");
+  });
+
+  it("tell a passenger their meeting point moved, with their part, and to look where it is (spec 2, 3.6.6)", () => {
+    const moved = { kind: "meeting_point_moved", role: "passenger" } as const;
+    expect(text(moved)).toEqual({
+      title: "Meeting point moved: N1 Borgarnes",
+      body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00. See where it is now before you go.",
+      path: "/bookings/booking-1",
+    });
+    expect(text({ ...moved, movedPoint: { name: "N1 Borgarnesi" } }, "is")).toMatchObject({
+      title: "Mótsstaður færður: N1 Borgarnesi",
+      body: "BSÍ – Hof, Akureyri · laugardagur 14. nóvember kl. 09:00. Sjáðu hvar hann er núna áður en þú leggur af stað.",
+    });
+    // By SMS within 24 hours of boarding, as a pause (spec 7, 3.4).
+    expect(smsText({ ...facts, ...moved }, "en")).toBe(
+      "ShareRide: the meeting point for your trip on Saturday 14 November has changed. Details in the app.",
+    );
+    expect(() => text({ ...moved, movedPoint: null })).toThrow(/needs the moved point/);
+  });
+
+  it("tell the driver a meeting point of the trip moved, at the time it stops there (spec 2, 3.6.6)", () => {
+    expect(notificationText(movedFacts, "en", defaultNotificationSettings)).toEqual({
+      title: "Meeting point moved: N1 Borgarnes",
+      body: "Your trip stops there: Saturday 14 November at 10:10. See where it is now before you go.",
+      path: "/drive/trips/trip-1",
+    });
+    expect(notificationText(movedFacts, "is", defaultNotificationSettings)).toEqual({
+      title: "Mótsstaður færður: N1 Borgarnes",
+      body: "Ferðin þín stoppar þar: laugardagur 14. nóvember kl. 10:10. Sjáðu hvar hann er núna áður en þú leggur af stað.",
+      path: "/drive/trips/trip-1",
+    });
   });
 
   it("refuse a kind that has no text yet", () => {

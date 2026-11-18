@@ -49,7 +49,11 @@ import {
 export interface NotificationFacts {
   readonly kind: Exclude<
     NotificationKind,
-    TripReminderFacts["kind"] | PointPausedFacts["kind"] | AccountNoticeKind | OperatorNoticeKind
+    | TripReminderFacts["kind"]
+    | PointPausedFacts["kind"]
+    | PointMovedFacts["kind"]
+    | AccountNoticeKind
+    | OperatorNoticeKind
   >;
   /** The recipient's place on the trip. */
   readonly role: TripRole;
@@ -88,6 +92,27 @@ export interface NotificationFacts {
   readonly answerBy: Date | null;
   /** For a paused meeting point: the point, while the pause still applies; otherwise null. */
   readonly pausedPoint: PausedPoint | null;
+  /** For a moved meeting point: the point, while the booking still gets in or out there. */
+  readonly movedPoint: MovedPoint | null;
+}
+
+/** A moved meeting point as a notification tells of it (spec 2, 3.6.6). */
+export interface MovedPoint {
+  /** In the recipient's language. */
+  readonly name: string;
+}
+
+/**
+ * A moved meeting point, told to the driver of a trip still to stop there
+ * (spec 2, 3.6.6): about the trip, as passengers may not be booked yet.
+ */
+export interface PointMovedFacts {
+  readonly kind: "meeting_point_moved_driver";
+  readonly role: "driver";
+  readonly tripId: string;
+  /** The trip's planned time at the point. */
+  readonly stopsAt: Date;
+  readonly movedPoint: MovedPoint;
 }
 
 /** A paused meeting point as a notification tells of it (spec 2, 3.6.4). */
@@ -232,6 +257,7 @@ export function smsText(facts: NotificationFacts | OperatorNoticeFacts, locale: 
       return t(facts.refund.amount > 0 ? "sms.tripCancelled" : "sms.tripCancelledUnpaid", values);
     // Moved or paused: what happened is in the app (spec 7, 3.4).
     case "meeting_point_changed":
+    case "meeting_point_moved":
       return t("sms.meetingPointChanged", { date: values.date });
     case "departure_moved_far": {
       // The new time, with the offer of a full refund to someone who paid (R6.3).
@@ -255,6 +281,7 @@ export function notificationText(
     | NotificationFacts
     | TripReminderFacts
     | PointPausedFacts
+    | PointMovedFacts
     | AccountNoticeFacts
     | OperatorNoticeFacts,
   locale: Locale,
@@ -262,6 +289,7 @@ export function notificationText(
 ): NotificationText {
   if (isAccountFacts(facts)) return accountText(facts, locale);
   if (isOperatorFacts(facts)) return operatorText(facts.kind, locale);
+  if (facts.kind === "meeting_point_moved_driver") return pointMovedText(facts, locale);
   if ("point" in facts) return pointPausedText(facts, locale);
   return "passengers" in facts
     ? tripReminderText(facts, locale)
@@ -547,6 +575,15 @@ function bookingText(
           ].join("\n"),
         ];
       }
+      // A moved meeting point where the passenger gets in or out (spec 2,
+      // 3.6.6): their part, and to look where it is now.
+      case "meeting_point_moved": {
+        const point = required(facts.movedPoint, "the moved point");
+        return [
+          t("notify.pointMoved", { point: point.name }),
+          t("notify.pointMovedBody", { from, to, when: when(facts.boardsAt) }),
+        ];
+      }
       case "refund_issued":
         return [
           t("notify.refunded", { total: formatMoney(facts.total, locale) }),
@@ -616,6 +653,20 @@ function tripReminderText(facts: TripReminderFacts, locale: Locale): Notificatio
       locale,
     ),
     body: lines.join("\n"),
+    path: `/drive/trips/${facts.tripId}`,
+  };
+}
+
+/** The driver is told where the trip stops has moved (spec 2, 3.6.6), on the trip's page. */
+function pointMovedText(facts: PointMovedFacts, locale: Locale): NotificationText {
+  const t = createTranslator(locale);
+  const when = t("notify.when", {
+    date: formatDay(facts.stopsAt, locale),
+    time: formatClock(facts.stopsAt),
+  });
+  return {
+    title: capitalised(t("notify.pointMoved", { point: facts.movedPoint.name }), locale),
+    body: t("notify.pointMovedDriverBody", { when }),
     path: `/drive/trips/${facts.tripId}`,
   };
 }

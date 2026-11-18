@@ -8,7 +8,7 @@ here, update or accept the linked ADR, and move the row to "Answered".
 
 ## Open
 
-A new question goes in a table here with the next free number (Q28
+A new question goes in a table here with the next free number (Q29
 onwards), a recommendation and the docs it affects.
 
 | #   | Question | Recommendation | Affects |
@@ -69,3 +69,4 @@ onwards), a recommendation and the docs it affects.
 | A49 | Q26: should a person see the notes operators write about them (spec 9, 3.5.3) in "Download my data", or get them only when they ask? | In "Download my data": each note's text and date, never which operator. Erasing the person erases the notes about them; erasing the operator who wrote one keeps it, by the former member. | 2026-11-17 |
 | A50 | Q27: after a trip departs, a no-show refits the price level counting the free seats on stretches already driven, which can no longer be booked (spec 17, section 6). On spec 17's example the stretches ahead fall to 150% where 180% would fit, about 1,500 kr less per seat. Should a departed trip count only the stretches ahead? | No, leave it as built: all stretches count. It only matters after a no-show on a trip under way, it makes the seats left a little cheaper, and it never lets a trip past its limit. (A49 is held by the operator notes question.) | 2026-11-17 |
 | A51 | Q23: 3 years after a trip, its trip and bookings are made anonymous (spec 11, 3.7), but its reviews stayed while the person they are about has an account, still naming who wrote them, whom they are about and the booking. Through them the two people stayed linked to that ride's route and date. Should an old review lose those links? | Yes, as recommended (Martin chose this on a decision card): when its trip is made anonymous, a review keeps its stars, comment and dates for the person it is about, so ratings stay as they were, but it is by the former member and on no booking. A profile shows it as by "A former member", as it shows those of people who left, and Download my data lists those about the person apart. Built in privacy PR 13. See the [privacy register](../compliance/privacy-gdpr.md) (Reviews and ratings) and [spec 8](../specs/2026-11-13-trip-day-reviews-and-reliability.md), 3.7.5. | 2026-11-17 |
+| A52 | Q28: rule R2.10 tells a point's trips only when one move goes more than 50 m, so two moves of 40 m tell nobody, yet leave a passenger 80 m from where they expect to stand. Should the 50 m be measured from where the point was when its trips were last told? | No, leave it as built: each move counts on its own, as R2.10 reads. Small moves one after another will almost never happen. | 2026-11-18 |

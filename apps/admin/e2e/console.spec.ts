@@ -527,6 +527,51 @@ test("the operator activates a draft once its checklist is done", async () => {
   ).toContainText("meeting_point.activated");
 });
 
+// Moving a point in use (spec 2, 3.6.6): N1 Fitjum, where the sample
+// airport trip stops, moves 300 m on the road file. Its distances are
+// computed again, and the people on its upcoming trip are told (R2.10).
+test("the operator moves a meeting point in use, and its trips are told", async () => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const inUse = page.getByRole("region", { name: "In use" });
+  const newSpot = page.getByLabel("New spot: coordinates or a map link");
+  await page.goto("/admin/meeting-points");
+  await page.getByRole("link", { name: "N1 Fitjum", exact: true }).click();
+  await expect(page.getByText("Status: Active")).toBeVisible();
+  await expect(page.getByLabel("Coordinates or a map link")).toHaveAttribute("readonly");
+
+  await inUse.getByRole("button", { name: "Move" }).click();
+  await expect(newSpot).toBeFocused();
+  await newSpot.fill("63.9894, -22.5408");
+  await page.getByRole("button", { name: "Move N1 Fitjum" }).click();
+  await expect(inUse.getByText("The point is here already.")).toBeVisible();
+  await expect(newSpot).toBeFocused();
+
+  // 300 m north, on a phone first: the step fits the width.
+  await newSpot.fill("63.992098, -22.5408");
+  await expect(inUse).toContainText(
+    /300 m from where it is now, so those on \d+ upcoming trips? are told\./,
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.getByRole("button", { name: "Move N1 Fitjum" }).click();
+  const said = page.getByText(
+    /^N1 Fitjum is moved 300 m, and its distances are computed again\. The drivers? of \d+ trips?, and (its|their) passengers who get in or out here, are told\.$/,
+  );
+  await expect(said).toBeFocused({ timeout: 30_000 });
+  await expect(newSpot).toHaveCount(0);
+  await expect(page.getByLabel("Coordinates or a map link")).toHaveValue("63.992098, -22.5408");
+
+  await page.goto("/admin/meeting-points/distances");
+  await expect(
+    page.getByText("Every leg between meeting points in service is there."),
+  ).toBeVisible();
+  await page.goto("/admin/audit-log?action=meeting_point.moved");
+  await expect(
+    page.getByRole("list", { name: "Entries" }).getByRole("listitem").first(),
+  ).toContainText("meeting_point.moved");
+});
+
 // Reports (spec 9, 3.4): two sample drivers' trips are reported. The
 // operator closes one without action, suspends the other driver from their
 // report after reading the notice as the driver will, and closes that one
