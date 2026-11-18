@@ -15,6 +15,7 @@ import {
 import { usePalette } from "@/theme/use-palette";
 import { Card } from "./card";
 import { IconButton } from "./icon-button";
+import { SearchField } from "./search-field";
 
 export type RouteEnd = "from" | "to";
 
@@ -26,8 +27,8 @@ type EndRef = ComponentRef<typeof View>;
  * end being chosen shows `search`, a place search that drops down in its
  * place; the swap button waits until it closes. With `direction="row"`, as
  * in the search row of a wide Find (spec 18, 3.5), the two sit side by side
- * with the swap button between them, each a caption over its value, and
- * the card is the row's own.
+ * with the swap button between them, each a caption over its value in a
+ * `SearchField`, and the card is the row's own.
  */
 export function RouteEnds({
   from,
@@ -172,6 +173,7 @@ function End({
       style={[
         value === null ? typography.body : typography.bodyStrong,
         { color: value === null ? palette.textMuted : palette.text },
+        stacked && styles.stackedText,
       ]}
     >
       {shown}
@@ -185,16 +187,12 @@ function End({
   } as const;
   if (stacked) {
     return (
-      <Pressable
-        {...pressable}
-        {...hover}
-        style={[styles.stackedEnd, hovered && { backgroundColor: palette.primarySoft }]}
-      >
+      <Pressable {...pressable} {...hover} style={styles.stackedEnd}>
         <View style={styles.searchingLabel}>
           {dot}
           {caption}
         </View>
-        <View style={styles.stackedValue}>{text}</View>
+        <SearchField hovered={hovered}>{text}</SearchField>
       </Pressable>
     );
   }
@@ -230,13 +228,14 @@ const styles = StyleSheet.create({
   },
   divider: { height: controlOutline, marginLeft: spacing.ms + spacing.ms },
   // In a row: each end at least half a column wide, growing with the row.
+  // The swap button stands close between the two fields it swaps.
   rowEnds: {
     flexGrow: 1,
     flexShrink: 1,
-    flexBasis: maxContentWidth + sizes.iconButton + 2 * spacing.md,
+    flexBasis: maxContentWidth + sizes.iconButton + 2 * spacing.sm,
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   rowEnd: { flexGrow: 1, flexShrink: 1, flexBasis: maxContentWidth / 2, minWidth: 0 },
   // Beside the values, under the captions.
@@ -245,14 +244,9 @@ const styles = StyleSheet.create({
     marginTop:
       typography.caption.lineHeight + spacing.xs + (sizes.buttonHeight - sizes.iconButton) / 2,
   },
-  // The tint under the pointer reaches a little past the text, as a `Row`'s does.
-  stackedEnd: {
-    gap: spacing.xs,
-    borderRadius: radii.control,
-    paddingHorizontal: spacing.sm,
-    marginHorizontal: -spacing.sm,
-  },
-  stackedValue: { minHeight: sizes.buttonHeight, justifyContent: "center" },
+  stackedEnd: { gap: spacing.xs },
+  // A long name goes to a second line inside its field.
+  stackedText: { flexShrink: 1 },
   // The caption stays where it is when the place search takes the value's place.
   stackedSearching: { gap: spacing.xs },
 });

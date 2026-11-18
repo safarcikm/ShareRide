@@ -112,8 +112,8 @@ for (const scheme of schemes) {
       // On phones the language switch sits at the right of the column; wide
       // screens have it in the top bar. The buttons fit their labels. On
       // phones they sit in the middle, under the centred title; a wide page
-      // has Find a ride at the end of the search row and Offer a ride in
-      // the side column (spec 18, 3.5).
+      // has Find a ride at the end of the search row and Offer a ride as a
+      // text button under the rides (spec 18, 3.5).
       const wide = (page.viewportSize()?.width ?? 0) >= 900;
       const column = await box(title);
       const languageBox = await box(language);

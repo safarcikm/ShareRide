@@ -26,6 +26,7 @@ export const is = {
   "home.title": "Hvert ertu að fara?",
   "home.nextRide": "Næsta ferðin þín",
   "home.nextRideFailed": "Ekki tókst að sækja næstu ferðina þína.",
+  "home.map": "Kort af Íslandi með {count, plural, one {# mótsstað} other {# mótsstöðum}}.",
   "welcome.signIn": "Skrá inn",
   "welcome.findRide": "Finna far",
   "welcome.soon": "Á leiðinni bráðum",
