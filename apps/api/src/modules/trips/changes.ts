@@ -25,7 +25,7 @@ import {
   type NotificationSettings,
   type Result,
   type TripChange,
-  type TripSettings,
+  type PriceSettings,
 } from "@shareride/domain";
 import { and, asc, desc, eq, gte, inArray, isNull, ne, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -35,6 +35,7 @@ import { addSystemLine } from "../chat/conversations.ts";
 import { followDepartureMove } from "../notifications/schedule.ts";
 import { recordEvents } from "../notifications/outbox.ts";
 import { choicesOf, type NotFound } from "./drafts.ts";
+import type { TripSettingsSource } from "../settings/trip-settings.ts";
 
 const {
   bookings,
@@ -199,13 +200,14 @@ interface HeldBooking {
 export function createTripChangeService(dependencies: {
   readonly db: Database;
   readonly clock: () => Date;
-  readonly settings: TripSettings;
+  /** A published trip keeps the price values of its version (spec 10, R10.3). */
+  readonly settings: TripSettingsSource;
   readonly bookingSettings: BookingSettings;
   readonly notificationSettings: NotificationSettings;
   /** Whether the operator paused bookings and payments (spec 10, 3.3); never when left out. */
   readonly bookingsPaused?: () => Promise<boolean>;
 }): TripChangeService {
-  const { db, clock, settings, bookingSettings, notificationSettings } = dependencies;
+  const { db, clock, bookingSettings, notificationSettings } = dependencies;
   const bookingsPaused = dependencies.bookingsPaused ?? (() => Promise.resolve(false));
 
   /** Each stretch's typical driving time now (R3.6), or the one it was published with. */
@@ -509,6 +511,7 @@ export function createTripChangeService(dependencies: {
     stops: readonly { readonly id: string; readonly position: number }[],
     segmentRows: readonly (typeof segments.$inferSelect)[],
     now: Date,
+    settings: PriceSettings,
   ): Promise<void> {
     const { addedStop } = effect;
     const stop = effect.trip.stops[addedStop?.position ?? -1];
@@ -650,6 +653,7 @@ export function createTripChangeService(dependencies: {
     }[],
     segmentRows: readonly (typeof segments.$inferSelect)[],
     now: Date,
+    settings: PriceSettings,
   ): Promise<void> {
     const { removedStop } = effect;
     const position = removedStop?.position ?? -1;
@@ -873,6 +877,7 @@ export function createTripChangeService(dependencies: {
         // After the lock, which may have waited while a deadline passed.
         const now = clock();
         await expireDueBookings(tx, tripId, now);
+        const settings = await dependencies.settings.at(trip.settingsVersion);
 
         const stopRows = await tx
           .select({ stop: tripStops, point: meetingPoints })
@@ -998,6 +1003,7 @@ export function createTripChangeService(dependencies: {
             stopRows.map(({ stop }) => stop),
             segmentRows,
             now,
+            settings,
           );
           await lowerAfterStop(tx, trip, checked.value, now);
         } else if (read.kind === "removeStop") {
@@ -1008,6 +1014,7 @@ export function createTripChangeService(dependencies: {
             stopRows.map(({ stop }) => stop),
             segmentRows,
             now,
+            settings,
           );
           await lowerAfterStop(tx, trip, checked.value, now);
         } else {

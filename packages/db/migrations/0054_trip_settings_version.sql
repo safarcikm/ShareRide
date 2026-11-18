@@ -1,0 +1,1 @@
+ALTER TABLE "trips" ADD COLUMN "settings_version" integer DEFAULT 0 NOT NULL;

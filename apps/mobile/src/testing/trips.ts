@@ -12,13 +12,18 @@ import type {
   Vehicle,
 } from "@shareride/contracts";
 import {
+  defaultSettingValues,
   defaultTripSettings,
   firstTripChoices,
   fitLevelWithin,
+  priceSettingsFrom,
   segmentPrice,
 } from "@shareride/domain";
 import { failure, ok, type FakeClient } from "./fake-client";
 import { bsi, hof, kef } from "./meeting-points";
+
+/** The price values a trip has while the operator has changed none. */
+export const startingPriceSettings = priceSettingsFrom(defaultSettingValues);
 
 const minuteMs = 60_000;
 const shifted = (time: string, minutes: number) =>
@@ -259,6 +264,7 @@ export function tripsApi(
       requestsCloseAt: null,
       cancellation: null,
       phase: null,
+      priceSettings: startingPriceSettings,
     };
     return ok(201, store(trip));
   });
@@ -574,6 +580,7 @@ export function plannedDraft(changes: Partial<MyTrip> = {}): MyTrip {
     requestsCloseAt: null,
     cancellation: null,
     phase: null,
+    priceSettings: startingPriceSettings,
     ...changes,
   };
 }

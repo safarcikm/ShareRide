@@ -1,9 +1,4 @@
-import {
-  defaultTripSettings,
-  highestLevelWithin,
-  routePrice,
-  segmentPrice,
-} from "@shareride/domain";
+import { highestLevelWithin, routePrice, segmentPrice } from "@shareride/domain";
 import { useState } from "react";
 import { Notice } from "@/components/notice";
 import { Body } from "@/components/text";
@@ -29,11 +24,12 @@ export default function EditPriceScreen() {
 
 function EditPrice({ trip }: { readonly trip: TripToChange }) {
   const { locale, t } = useLanguage();
-  const highest = highestLevelWithin(tripLoad(trip), defaultTripSettings);
+  const highest = highestLevelWithin(tripLoad(trip), trip.priceSettings);
   const [level, setLevel] = useState(trip.priceLevel);
-  // As publishing priced each stretch from its distance (rules P3, P4).
+  // As publishing priced each stretch from its distance (rules P3, P4), with
+  // the price values the trip was published under.
   const prices = trip.segments.map((segment) =>
-    segmentPrice(segment.distanceM, level, trip.seats, defaultTripSettings),
+    segmentPrice(segment.distanceM, level, trip.seats, trip.priceSettings),
   );
   return (
     <ChangePartScreen
@@ -49,7 +45,7 @@ function EditPrice({ trip }: { readonly trip: TripToChange }) {
         pricedLevel={level}
         level={level}
         highest={highest.level}
-        step={defaultTripSettings.priceLevelStep}
+        step={trip.priceSettings.priceLevelStep}
         onLevel={setLevel}
       />
       {highest.limitedBy === "trip_limit" ? (

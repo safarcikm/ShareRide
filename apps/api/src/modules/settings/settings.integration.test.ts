@@ -87,7 +87,7 @@ describe("the console's settings", () => {
         step: 1,
       })),
     );
-    expect(all.settings.slice(6)).toEqual([
+    expect(all.settings.slice(6, 8)).toEqual([
       {
         key: "invite_code_required",
         group: "beta",
@@ -110,6 +110,23 @@ describe("the console's settings", () => {
         max: 1000,
         step: 1,
       },
+    ]);
+    // The price values and the seat limit are ADR 0032's, with its ranges.
+    expect(
+      all.settings.slice(8).map(({ key, unit, value, min, max, step }) => ({
+        key,
+        unit,
+        value,
+        min,
+        max,
+        step,
+      })),
+    ).toEqual([
+      { key: "suggested_rate", unit: "kr_per_km", value: 15, min: 5, max: 30, step: 1 },
+      { key: "reference_cost_per_km", unit: "kr_per_km", value: 150, min: 50, max: 150, step: 1 },
+      { key: "price_step", unit: "kr", value: 100, min: 50, max: 500, step: 50 },
+      { key: "price_level_step", unit: "percent", value: 10, min: 5, max: 25, step: 5 },
+      { key: "max_capacity", unit: "seats", value: 8, min: 1, max: 8, step: 1 },
     ]);
   });
 
@@ -267,7 +284,11 @@ describe("GET /v1/config", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("public, max-age=300");
     const required = valueOf(await settings(), "invite_code_required") === 1;
-    expect((await response.json()) as Config).toEqual({ beta: required, paused: [] });
+    expect((await response.json()) as Config).toEqual({
+      beta: required,
+      paused: [],
+      maxSeats: 8,
+    });
 
     await change("invite_code_required", {
       value: required ? 0 : 1,
@@ -277,6 +298,7 @@ describe("GET /v1/config", () => {
     expect((await (await api.request("/v1/config")).json()) as Config).toEqual({
       beta: !required,
       paused: [],
+      maxSeats: 8,
     });
   });
 });

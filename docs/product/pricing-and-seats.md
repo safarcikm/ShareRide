@@ -394,7 +394,13 @@ Refunds follow rule M2. Reliability adds a trust signal on top:
 
 ## Configuration values
 
-Set centrally by the operator; changes are logged.
+Set centrally by the operator; changes are logged. From milestone 11 the
+operator changes `suggested_rate`, `reference_cost_per_km`, `price_step`,
+`price_level_step` and `max_capacity` on the console's Settings page,
+inside the ranges of
+[ADR 0032](../decisions/0032-operator-settings-list-ranges-and-versions.md).
+A published trip keeps the price values it was published under; the seat
+limit applies at once and leaves published trips their seats.
 
 | Setting | Default | Notes |
 | ------- | ------- | ----- |

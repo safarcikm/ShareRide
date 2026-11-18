@@ -3,7 +3,9 @@ import { isSettingKey, settingDefinitions, settingKeys } from "./catalogue.ts";
 import {
   checkSettingChange,
   defaultSettingValues,
+  highestSuggestedRate,
   settingReasonMaxLength,
+  suggestedFitsCap,
   valuesAt,
 } from "./values.ts";
 
@@ -148,5 +150,44 @@ describe("checkSettingChange", () => {
     expect(
       checkSettingChange("beta_max_testers", 200, "a".repeat(settingReasonMaxLength + 1), current),
     ).toEqual({ ok: false, error: { code: "reason_too_long", max: 500 } });
+  });
+});
+
+describe("the check across the price values (ADR 0032)", () => {
+  const change = (key: string, value: number, current = defaultSettingValues) =>
+    checkSettingChange(key, value, "A reason.", current);
+
+  it("holds for the defaults", () => {
+    expect(suggestedFitsCap(defaultSettingValues)).toBe(true);
+    // 150 kr shared by 8 seats and the driver.
+    expect(highestSuggestedRate(defaultSettingValues)).toBe(16);
+  });
+
+  it("refuses a suggested rate the largest car cannot carry, and says the highest", () => {
+    expect(change("suggested_rate", 16).ok).toBe(true);
+    expect(change("suggested_rate", 17)).toEqual({
+      ok: false,
+      error: { code: "suggested_over_cap", highestRate: 16 },
+    });
+  });
+
+  it("refuses a lower reference cost or more seats when the rate would no longer fit", () => {
+    expect(change("reference_cost_per_km", 135).ok).toBe(true);
+    expect(change("reference_cost_per_km", 134)).toEqual({
+      ok: false,
+      error: { code: "suggested_over_cap", highestRate: 14 },
+    });
+    const small = { ...defaultSettingValues, max_capacity: 6, suggested_rate: 20 };
+    expect(suggestedFitsCap(small)).toBe(true);
+    expect(change("max_capacity", 7, small)).toEqual({
+      ok: false,
+      error: { code: "suggested_over_cap", highestRate: 18 },
+    });
+    expect(change("max_capacity", 5, small).ok).toBe(true);
+  });
+
+  it("leaves the other settings alone", () => {
+    expect(change("price_step", 50).ok).toBe(true);
+    expect(change("beta_max_testers", 10).ok).toBe(true);
   });
 });

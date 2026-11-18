@@ -2120,6 +2120,7 @@ export const is = {
   "admin.settings.intro":
     "Gildin sem reglurnar lesa. Hver breyting þarf ástæðu og er geymd í sögunni.",
   "admin.settings.group.beta": "Beta",
+  "admin.settings.group.prices": "Verð og sæti",
   "admin.settings.group.switches": "Neyðarrofar",
   "admin.settings.name.signups_open": "Nýskráningar",
   "admin.settings.help.signups_open":
@@ -2145,16 +2146,45 @@ export const is = {
   "admin.settings.name.beta_max_testers": "Hámarksfjöldi prófara",
   "admin.settings.help.beta_max_testers":
     "Enginn boðskóði virkar eftir að þessi fjöldi aðganga hefur verið stofnaður með kóða.",
+  "admin.settings.name.suggested_rate": "Viðmiðunarverð",
+  "admin.settings.help.suggested_rate":
+    "Það sem einn farþegi greiðir á km við 100%. Ferðir sem þegar hafa verið birtar halda verðinu sem þær voru birtar með.",
+  "admin.settings.name.reference_cost_per_km": "Viðmiðunarkostnaður við akstur",
+  "admin.settings.help.reference_cost_per_km":
+    "Það sem fullur bíll deilir á km, að hámarki. Hann takmarkar hversu hátt bílstjóri getur sett verðið. Hann má ekki fara yfir akstursgjald ríkisins.",
+  "admin.settings.name.price_step": "Verðþrep",
+  "admin.settings.help.price_step": "Hvert verð er námundað að heilu þrepi af þessu.",
+  "admin.settings.name.price_level_step": "Þrep verðstigs",
+  "admin.settings.help.price_level_step":
+    "Hversu langt er á milli verðstiganna sem bílstjóri velur á milli.",
+  "admin.settings.name.max_capacity": "Hámarksfjöldi sæta í ferð",
+  "admin.settings.help.max_capacity":
+    "Sætin sem bílstjóri getur boðið og farþegi getur bókað, að hámarki. Gildir strax, líka fyrir drög. Ferðir sem þegar hafa verið birtar halda sætum sínum.",
   "admin.settings.on": "Kveikt",
   "admin.settings.off": "Slökkt",
   "admin.settings.unit.people": "{count, plural, one {{value} manneskja} other {{value} manns}}",
   "admin.settings.newValue.people": "Nýtt gildi, fjöldi fólks",
+  "admin.settings.unit.kr_per_km": "{value} kr. á km",
+  "admin.settings.newValue.kr_per_km": "Nýtt gildi, í kr. á km",
+  "admin.settings.unit.kr": "{value} kr.",
+  "admin.settings.newValue.kr": "Nýtt gildi, í kr.",
+  "admin.settings.unit.percent": "{value}%",
+  "admin.settings.newValue.percent": "Nýtt gildi, í prósentum",
+  "admin.settings.unit.seats": "{count, plural, one {{value} sæti} other {{value} sæti}}",
+  "admin.settings.newValue.seats": "Nýtt gildi, fjöldi sæta",
   "admin.settings.default": "Sjálfgefið: {value}. Frá {min} til {max}.",
   "admin.settings.defaultSwitch": "Sjálfgefið: {value}.",
   "admin.settings.change": "Breyta",
   "admin.settings.changeLabel": "Breyta: {name}",
   "admin.settings.reason": "Hvers vegna",
   "admin.settings.effect": "Breytist úr {before} í {after}.",
+  "admin.settings.priceEffect":
+    "Reykjavík til Akureyrar ({distance} km) með {seats} sætum: sæti við 100% kostar {before} núna og myndi kosta {after}. Hæsta verðstig er {beforeLevel}% núna og yrði {afterLevel}%.",
+  "admin.settings.priceEffectNew":
+    "Gildir um ferðir sem eru birtar héðan í frá. Ferðir sem þegar hafa verið birtar halda verði sínu.",
+  "admin.settings.effectFailed": "Ekki tókst að reikna dæmið. Þú getur samt vistað.",
+  "admin.settings.suggestedOverCap":
+    "Þetta myndi setja viðmiðunarverðið yfir hámark stærsta bílsins. Með þessum gildum má viðmiðunarverðið vera mest {rate} kr. á km: verðið sinnum sætin og bílstjórinn má ekki vera meira en viðmiðunarkostnaðurinn.",
   "admin.settings.save": "Vista",
   "admin.settings.valueWrong": "Veldu heila tölu frá {min} til {max}.",
   "admin.settings.reasonMissing": "Segðu hvers vegna, svo sagan skýri breytinguna.",

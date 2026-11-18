@@ -22,7 +22,7 @@ import {
   type TripChoices,
   type TripCancelReason,
   type TripDaySettings,
-  type TripSettings,
+  type PriceSettings,
 } from "@shareride/domain";
 import { and, asc, count, desc, eq, gt, inArray, isNull, lte, min, ne, or, sql } from "drizzle-orm";
 import { lockActive } from "../account/standing.ts";
@@ -30,6 +30,7 @@ import type { DrivingService } from "../driving/index.ts";
 import { seatsTakenNow, takingsBookings } from "../bookings/seats.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import { checkInsAt, driverCheckedInAt, shownWindow } from "../trip-day/check-ins.ts";
+import type { TripSettingsSource } from "../settings/trip-settings.ts";
 
 const { bookings, legs, meetingPoints, segments, trips, tripStops, users, vehicles } = schema;
 
@@ -132,11 +133,12 @@ export const choicesOf = (row: TripRow): TripChoices => ({
 export function createTripService(dependencies: {
   readonly db: Database;
   readonly clock: () => Date;
-  readonly settings: TripSettings;
+  /** A draft is planned, and a trip published, by the values now. */
+  readonly settings: TripSettingsSource;
   readonly tripDaySettings: TripDaySettings;
   readonly driving: DrivingService;
 }): TripService {
-  const { db, clock, settings, tripDaySettings, driving } = dependencies;
+  const { db, clock, tripDaySettings, driving } = dependencies;
 
   /** The legs for these ordered pairs, as a lookup. */
   async function legsFor(q: Queryable, pairs: readonly (readonly [string, string])[]) {
@@ -199,6 +201,24 @@ export function createTripService(dependencies: {
       q,
       stopRows.map(({ stop }) => stop.id),
     );
+    // A draft is priced by the values now; a trip that was published by
+    // the price values of its version (spec 10, R10.3).
+    const priceValues = ({
+      suggestedRatePerKm,
+      referenceCostPerKm,
+      priceStep,
+      priceLevelStep,
+    }: PriceSettings) => ({ suggestedRatePerKm, referenceCostPerKm, priceStep, priceLevelStep });
+    const current = priceValues((await dependencies.settings.current()).settings);
+    const published = new Map<number, PriceSettings>();
+    for (const row of rows) {
+      if (row.status !== "draft" && !published.has(row.settingsVersion)) {
+        published.set(
+          row.settingsVersion,
+          priceValues(await dependencies.settings.at(row.settingsVersion)),
+        );
+      }
+    }
     return rows.map((row) => {
       // The trip day is for a trip that runs, or ran (spec 8, 3.1).
       const runs = runsOrRan(row.status as MyTrip["status"]);
@@ -243,6 +263,8 @@ export function createTripService(dependencies: {
             seatsTaken: occupancy(row.id, segment.position, segment.occupancy),
           })),
         takings: takingsOf(takings.get(row.id) ?? []),
+        priceSettings:
+          row.status === "draft" ? current : (published.get(row.settingsVersion) ?? current),
         openRequests: requestRows.find((requests) => requests.tripId === row.id)?.count ?? 0,
         requestsCloseAt:
           requestRows.find((requests) => requests.tripId === row.id)?.closesAt?.toISOString() ??
@@ -313,6 +335,7 @@ export function createTripService(dependencies: {
       else typicalS.push(leg.durationS);
     }
     if (missing.length > 0) return err({ code: "distances_missing", pairs: missing });
+    const { settings } = await dependencies.settings.current();
     return ok(plannedTimes(departure, typicalS, settings));
   }
 
@@ -585,6 +608,9 @@ export function createTripService(dependencies: {
 
     async publish(userId, tripId) {
       const readiness = await driving.readiness(userId);
+      // The values and their version together, so the trip records the
+      // version its prices were worked out with (spec 10, R10.3).
+      const { version: settingsVersion, settings } = await dependencies.settings.current();
       return db.transaction(async (tx) => {
         // One publish at a time per driver, so two cannot overlap (R3.7);
         // none while suspended (spec 9, 3.6.2). Deleting an account takes
@@ -671,7 +697,14 @@ export function createTripService(dependencies: {
         const now = clock();
         const [published] = await tx
           .update(trips)
-          .set({ status: "published", publishedAt: now, departsAt, arrivesAt, updatedAt: now })
+          .set({
+            status: "published",
+            publishedAt: now,
+            settingsVersion,
+            departsAt,
+            arrivesAt,
+            updatedAt: now,
+          })
           .where(eq(trips.id, tripId))
           .returning();
         if (published === undefined) throw new Error("The trip was not published.");

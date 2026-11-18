@@ -1,3 +1,9 @@
+export {
+  fixedTripSettings,
+  priceSettingsAt,
+  tripSettingsSource,
+  type TripSettingsSource,
+} from "./trip-settings.ts";
 export { registerSettingsAdminRoutes } from "./admin-routes.ts";
 export { registerConfigRoutes } from "./routes.ts";
 export {

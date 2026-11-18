@@ -1,6 +1,5 @@
 import type { CallResult } from "@shareride/api-client";
 import { tripDetailsRoute, type TripDetails } from "@shareride/contracts";
-import { defaultTripSettings } from "@shareride/domain";
 import { capitalised, formatDay, formatMoney } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { Share as ShareIcon, ShieldCheck } from "lucide-react-native";
@@ -9,6 +8,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText, formatWait } from "@/auth/errors";
 import { signUpRoute } from "@/auth/next-route";
 import { useMe, useSession } from "@/auth/session";
+import { useMaxSeats } from "@/beta/config";
 import { bookingHref, keepPendingBooking } from "@/booking/pending-booking";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
@@ -57,16 +57,14 @@ type Answer = CallResult<typeof tripDetailsRoute>;
  */
 export default function TripScreen() {
   const { t } = useLanguage();
+  const maxSeats = useMaxSeats();
   const palette = usePalette();
   const session = useSession();
   const params = useLocalSearchParams<{ id: string; from?: string; to?: string; seats?: string }>();
   const { id } = params;
   const board = positionParam(params.from);
   const alight = positionParam(params.to);
-  const seats = Math.min(
-    Math.max(Math.trunc(Number(params.seats)) || 1, 1),
-    defaultTripSettings.maxSeats,
-  );
+  const seats = Math.min(Math.max(Math.trunc(Number(params.seats)) || 1, 1), maxSeats);
 
   const query = useMemo(
     () => ({
@@ -184,6 +182,7 @@ function Trip({
   readonly pending: boolean;
 }) {
   const { locale, t } = useLanguage();
+  const maxSeats = useMaxSeats();
   const palette = usePalette();
   const me = useMe();
   const wide = useWideScreen();
@@ -221,7 +220,7 @@ function Trip({
   };
   // You can choose up to the seats free, and at least one; a link can ask
   // for more, and then only fewer is offered.
-  const most = Math.max(1, Math.min(trip.part.freeSeats, defaultTripSettings.maxSeats));
+  const most = Math.max(1, Math.min(trip.part.freeSeats, maxSeats));
 
   const shareButton = (
     <IconButton

@@ -3,10 +3,10 @@
 // the ranges are ADR 0032's; changing a range or adding a setting needs an
 // ADR (R10.4).
 
-export const settingGroups = ["switches", "beta"] as const;
+export const settingGroups = ["switches", "beta", "prices"] as const;
 export type SettingGroup = (typeof settingGroups)[number];
 
-export type SettingUnit = "people";
+export type SettingUnit = "people" | "kr_per_km" | "kr" | "percent" | "seats";
 
 export interface SettingDefinition {
   readonly group: SettingGroup;
@@ -47,6 +47,61 @@ export const settingDefinitions = {
     default: 150,
     min: 0,
     max: 1000,
+    step: 1,
+  },
+  // Prices (pricing and seats, rules P2 to P4). A published trip keeps
+  // the four price values of the version it was published under (R10.3).
+  /** The suggested price per km per passenger (rule P2). */
+  suggested_rate: {
+    group: "prices",
+    kind: "number",
+    unit: "kr_per_km",
+    default: 15,
+    min: 5,
+    max: 30,
+    step: 1,
+  },
+  /**
+   * The cost of driving per km that a full car shares (rule P3). Its top
+   * is the state mileage allowance: raising it needs an ADR.
+   */
+  reference_cost_per_km: {
+    group: "prices",
+    kind: "number",
+    unit: "kr_per_km",
+    default: 150,
+    min: 50,
+    max: 150,
+    step: 1,
+  },
+  /** Prices are whole steps of this. */
+  price_step: {
+    group: "prices",
+    kind: "number",
+    unit: "kr",
+    default: 100,
+    min: 50,
+    max: 500,
+    step: 50,
+  },
+  /** Price levels are whole steps of this (rule P4). */
+  price_level_step: {
+    group: "prices",
+    kind: "number",
+    unit: "percent",
+    default: 10,
+    min: 5,
+    max: 25,
+    step: 5,
+  },
+  /** The seats a trip offers, at most (rule S1); read as it is now, never by version. */
+  max_capacity: {
+    group: "prices",
+    kind: "number",
+    unit: "seats",
+    default: 8,
+    min: 1,
+    max: 8,
     step: 1,
   },
 } as const satisfies Record<string, SettingDefinition>;

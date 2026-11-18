@@ -5,12 +5,7 @@ import {
   type Booking,
   type TripDetails,
 } from "@shareride/contracts";
-import {
-  contactDetailsIn,
-  defaultBookingSettings,
-  defaultTripSettings,
-  type Money,
-} from "@shareride/domain";
+import { contactDetailsIn, defaultBookingSettings, type Money } from "@shareride/domain";
 import { capitalised, formatDay, formatMoney } from "@shareride/i18n";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { CircleCheck } from "lucide-react-native";
@@ -22,7 +17,7 @@ import { newAttemptKey } from "@/booking/attempt-key";
 import { keepPendingBooking } from "@/booking/pending-booking";
 import { PaymentSheet, usePayment } from "@/booking/payment";
 import { bookErrorText, heldUntilText } from "@/booking/texts";
-import { PausedBanner } from "@/beta/config";
+import { PausedBanner, useMaxSeats } from "@/beta/config";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
@@ -56,6 +51,7 @@ export default function BookScreen() {
 
 function Book() {
   const { t } = useLanguage();
+  const maxSeats = useMaxSeats();
   const palette = usePalette();
   const session = useSession();
   const params = useLocalSearchParams<{
@@ -69,10 +65,7 @@ function Book() {
   const { id } = params;
   const board = positionParam(params.from);
   const alight = positionParam(params.to);
-  const seats = Math.min(
-    Math.max(Math.trunc(Number(params.seats)) || 1, 1),
-    defaultTripSettings.maxSeats,
-  );
+  const seats = Math.min(Math.max(Math.trunc(Number(params.seats)) || 1, 1), maxSeats);
   const query = useMemo(
     () => ({
       seats,
