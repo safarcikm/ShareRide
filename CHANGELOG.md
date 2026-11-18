@@ -1082,6 +1082,13 @@ releases follow [Semantic Versioning](https://semver.org/).
 - Spec 18 (approved) and its plan: the web app on a laptop. From 900 wide,
   every main screen gets two columns or a grid in a page 1144 wide, under
   the top bar; phones keep their layouts.
+- The laptop layout's groundwork (spec 18, 3.2 to 3.4): a `Screen` can be a
+  page 1144 wide, with `Columns` (a main column and a side column that
+  stays in view) and a `Grid` of cards for the screens to come. On the web,
+  parts show the pointer: a card's edge turns moss, a row, a chip and a
+  secondary button are tinted, a primary button turns a step darker. The
+  top bar's logo and language line up with the page's edges, and the logo
+  and name open Find. Phones are unchanged.
 
 ### Fixed
 

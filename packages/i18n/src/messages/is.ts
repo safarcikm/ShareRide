@@ -13,6 +13,7 @@ export const is = {
   "language.english": "English",
   "language.icelandic": "Íslenska",
   "nav.main": "Aðalvalmynd",
+  "nav.home": "ShareRide, á forsíðu",
   "nav.find": "Leita",
   "nav.myRides": "Ferðirnar mínar",
   "nav.offer": "Bjóða far",

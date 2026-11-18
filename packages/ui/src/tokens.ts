@@ -14,6 +14,8 @@ export const colors = {
     primary: "#2F6B4F",
     onPrimary: "#FFFFFF",
     primaryEdge: "#1F4A36",
+    // A primary button under the pointer (spec 18, 3.4).
+    primaryHover: "#285C44",
     primarySoft: "#E2EFE7",
     border: "#DCE5E8",
     control: "#7F8C93",
@@ -40,6 +42,7 @@ export const colors = {
     primary: "#7CC49E",
     onPrimary: "#0C2117",
     primaryEdge: "#4E8E6C",
+    primaryHover: "#8FD0AC",
     primarySoft: "#203A2D",
     border: "#2C3940",
     control: "#6E7D85",
@@ -228,6 +231,17 @@ export const sidePanelFrom = 900;
 export const sidePanelWidth = 320;
 /** From the same width, a map sits beside a list, at most this wide (spec 15, section 4.8). */
 export const asideMaxWidth = 640;
+/**
+ * A page on wide screens: the column, a gap and the map beside it, as on
+ * meeting points. Two columns and grids fill it (spec 18, 3.2).
+ */
+export const pageMaxWidth = maxContentWidth + spacing.lg + asideMaxWidth;
+/** The side column of a screen with two columns (spec 18, 3.2). */
+export const sideColumnWidth = 400;
+/** Narrowest a card gets in a grid before the grid drops a column (spec 18, 3.2). */
+export const gridCardMinWidth = 320;
+/** The list of conversations beside the open one (spec 18, 3.11). */
+export const listPaneWidth = 360;
 
 /** Stroke width of Lucide icons. */
 export const iconStroke = 2.4;

@@ -111,6 +111,18 @@ describe("Chip", () => {
     expect(screen.getByRole("button", { name: "Toyota" })).toBeOnTheScreen();
     expect(screen.queryByRole("checkbox", { name: "Toyota" })).toBeNull();
   });
+
+  it("is tinted under the pointer, with its outline as it was (spec 18, 3.4)", async () => {
+    await render(<Chip label="English" selected={false} onToggle={jest.fn()} />);
+    const chip = screen.getByRole("checkbox", { name: "English" });
+    expect(chip).toHaveStyle({ backgroundColor: colors.light.surface });
+    await fireEvent(chip, "hoverIn");
+    expect(chip).toHaveStyle({
+      backgroundColor: colors.light.primarySoft,
+      borderColor: colors.light.control,
+    });
+    expect(noIcon("chip-tick")).toBeNull();
+  });
 });
 
 describe("FieldError", () => {
