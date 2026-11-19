@@ -1347,6 +1347,10 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Staging sends error reports to Sentry's EU region: the blueprint has the
+  DSNs of the `shareride-api` and `shareride-app` projects in the
+  organisation `shareride-ehf`, whose projects scrub with the defaults and
+  store no IP addresses (ADR 0020).
 - Staging's address is `https://staging.skinnar.is`, on Martin's domain
   `skinnar.is` for now: the blueprint adds the domain and sets the
   console's `ADMIN_ORIGIN`, and the email's `WEB_APP_URL` and `EMAIL_FROM`

@@ -126,11 +126,12 @@ envVarGroups:
         value: staging
       - key: LOG_LEVEL
         value: info
-      # Error reports (ADR 0020). DSNs are not secrets; add them here once
-      # the Sentry organisation exists (runbook, "Error reports and uptime").
-      # SENTRY_DSN is the API's project; EXPO_PUBLIC_SENTRY_DSN is the app's,
-      # built into the web app (the web service's builds read this group).
-      # - key: SENTRY_DSN
-      #   value: https://...@....ingest.de.sentry.io/...
-      # - key: EXPO_PUBLIC_SENTRY_DSN
-      #   value: https://...@....ingest.de.sentry.io/...
+      # Error reports (ADR 0020), to the Sentry organisation shareride-ehf in
+      # the EU region (runbook, "Error reports and uptime"). DSNs are not
+      # secrets. SENTRY_DSN is the shareride-api project's, for the API and
+      # the clean-up job; EXPO_PUBLIC_SENTRY_DSN is shareride-app's, built
+      # into the web app (the web service's builds read this group).
+      - key: SENTRY_DSN
+        value: https://0bb93ebe70504faae21a466419a236db@o4512455618002944.ingest.de.sentry.io/4512455641464912
+      - key: EXPO_PUBLIC_SENTRY_DSN
+        value: https://278daa0f4943c5fac46be2046a1951b1@o4512455618002944.ingest.de.sentry.io/4512455641595984

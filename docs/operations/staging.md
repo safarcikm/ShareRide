@@ -256,7 +256,10 @@ outside the EU region (`*.ingest.de.sentry.io`) sends nothing, and
 `SENTRY_TRACES_SAMPLE_RATE` stops the API from starting, so tracing cannot
 be turned on by accident.
 
-Set it up once (Martin):
+Set it up once (Martin). Steps 1 to 3 were done on 2026-11-19: the
+organisation is `shareride-ehf` in the EU region (`de.sentry.io`), both
+projects scrub with the defaults and store no IP addresses, and their DSNs
+are in the blueprint.
 
 1. At sentry.io, create the organisation and choose **EU** for data
    storage. It cannot be changed later.
@@ -264,7 +267,9 @@ Set it up once (Martin):
    `shareride-app` (platform React Native; the name matters, the web build
    uploads to it). In each project's **Settings**, **Security & Privacy**,
    keep the data scrubber and its defaults on, and turn on **Prevent
-   Storing of IP Addresses**.
+   Storing of IP Addresses**. In the organisation's own **Security &
+   Privacy**, turn on the same three, so a later project cannot miss them,
+   and turn off **Allow Shared Issues**, so no issue gets a public link.
 3. Copy each project's DSN (**Settings**, **Client Keys**). They are not
    secrets: they go in the blueprint's `shareride-staging` group, the API's
    as `SENTRY_DSN` (it reaches the API and the clean-up job) and the app's
