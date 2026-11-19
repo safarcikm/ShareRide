@@ -1,4 +1,9 @@
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
+import {
+  soonestTripsMaxLimit,
+  soonestTripsRoute,
+  type TripSearchResult,
+} from "@shareride/contracts";
 import { english, signUp } from "./support/account";
 import { expectNoSidewaysScroll, laptop, widths } from "./support/laptop";
 import { chooseTime, postTripToSelfoss, tomorrow } from "./support/trips";
@@ -195,6 +200,36 @@ for (const locale of ["en-GB", "is-IS"] as const) {
   });
 }
 
+/**
+ * Gives Find the rides leaving soonest with the first that goes elsewhere
+ * than the first ride moved up beside it, from the 50 soonest.
+ *
+ * Which rides leave soonest changes with the hour and with what the other
+ * journeys have posted. The cancelling journeys post Mjódd to N1 Selfoss for
+ * tomorrow, an hour before now; from midnight UTC to the early morning those
+ * trips come before every sample trip, and Find can list nothing else.
+ */
+async function anotherRouteSecond(page: Page) {
+  await page.route(
+    (url) => url.pathname === soonestTripsRoute.path,
+    async (route) => {
+      const url = new URL(route.request().url());
+      const limit = Number(url.searchParams.get("limit"));
+      url.searchParams.set("limit", String(soonestTripsMaxLimit));
+      const response = await route.fetch({ url: url.toString() });
+      const { results } = (await response.json()) as { results: TripSearchResult[] };
+      const ends = (ride: TripSearchResult | undefined) =>
+        `${ride?.board.meetingPoint.id ?? ""} ${ride?.alight.meetingPoint.id ?? ""}`;
+      const other = results.findIndex((ride) => ends(ride) !== ends(results[0]));
+      const order =
+        other > 1
+          ? [results[0], results[other], ...results.slice(1, other), ...results.slice(other + 1)]
+          : results;
+      await route.fulfill({ response, json: { results: order.slice(0, limit) } });
+    },
+  );
+}
+
 test.describe("Find's search row", () => {
   test.use({ viewport: laptop(1280), locale: "en-GB" });
 
@@ -231,6 +266,7 @@ test.describe("Find's search row", () => {
   test("shows the rides leaving soon in two columns, and the one under the pointer on the map", async ({
     page,
   }) => {
+    await anotherRouteSecond(page);
     await page.goto("/");
     const rides = page.getByTestId("columns-main").getByTestId("trip-result");
     await expect(rides.first()).toBeVisible();
