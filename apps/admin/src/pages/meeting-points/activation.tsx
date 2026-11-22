@@ -108,18 +108,22 @@ export function ActivationChecklist({
     const { code, details } = result.error;
     if (code === "activation_not_ready") {
       // What the API found, unless a load started since, after a photo was
-      // saved meanwhile, has a newer list.
-      // The API names the required items only, so a recommended item keeps
-      // what the list shown says of it.
-      if (latest.current === loadsBefore && typeof checklist === "object") {
+      // saved meanwhile, has a newer list. The API names the required items
+      // only, so the list is loaded again for the recommended ones (the
+      // photo), whose state a load still on its way would have had.
+      if (latest.current === loadsBefore) {
         const missing = new Set<string>((details ?? []).map((detail) => detail.path));
-        latest.current++;
-        setChecklist({
-          items: checklist.items.map((check) =>
-            check.required ? { ...check, done: !missing.has(check.item) } : check,
-          ),
-          ready: false,
-        });
+        setChecklist((shown) =>
+          typeof shown === "object"
+            ? {
+                items: shown.items.map((check) =>
+                  check.required ? { ...check, done: !missing.has(check.item) } : check,
+                ),
+                ready: false,
+              }
+            : shown,
+        );
+        void load();
       }
       showNotReady();
     } else if (code === "meeting_point_changed" || code === "status_change_not_allowed") {

@@ -1069,6 +1069,10 @@ describe("activating a draft (spec 2, 3.6.3)", () => {
       expect(document.activeElement).toBe(alert);
     });
     expect(row(list, "A photo")?.textContent).toContain("Recommended");
+    // The list is loaded again, for the recommended items the API does not name.
+    await waitFor(() => {
+      expect(api.called(adminActivationChecklistRoute)).toHaveLength(2);
+    });
     // The API checks again, as the list shown can be older than what is saved.
     expect(api.called(adminActivateMeetingPointRoute)[0]?.input["body"]).toEqual({
       updatedAt: draft.updatedAt,
@@ -1166,6 +1170,8 @@ describe("activating a draft (spec 2, 3.6.3)", () => {
       },
     });
     await checklist();
+    // What is saved changed since the list was loaded: no road reaches the points in use now.
+    api.on(adminActivationChecklistRoute, { status: 200, data: checklistWith("legs") });
     fireEvent.click(activateButton());
     const alert = await within(panel()).findByRole("alert");
     expect(alert.textContent).toBe("1 thing is still to do before N1 Borgarnesi can be activated.");
