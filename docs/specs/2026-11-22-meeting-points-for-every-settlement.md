@@ -20,6 +20,11 @@ a town in place search, and has a meeting point of its own or a nearby
 one. The points arrive in the operator console as drafts, ready for the
 operator to check and activate, and can go live before they have a photo.
 
+Later the same day Martin asked for the usual tourist spots too, such as
+the stops on the Golden Circle (3.6): the main sights get a point in their
+visitor car park and are landmarks in place search, for visitors without
+a car (the "Visitor" of the [vision](../product/vision.md)).
+
 ## 2. User stories
 
 - As a passenger in Hvammstangi, I type my village and find the meeting
@@ -28,6 +33,8 @@ operator to check and activate, and can go live before they have a photo.
   only on the three launch corridors.
 - As the operator, I load all the points at once, check each spot and its
   text in the console, and activate it without travelling there first.
+- As a visitor without a car, I type "Gullfoss" and find a ride that
+  stops in its car park.
 
 ## 3. Behaviour
 
@@ -148,6 +155,46 @@ capital area hubs counted in the 96, and the 3 corridor stops.
    panel stays to say how it went, even with no draft left. Other
    filters start again with nothing ticked.
 
+### 3.6 The main sights
+
+1. **Which sights:** 32 that visitors stop at on ordinary roads (decision
+   7). The Golden Circle: Þingvellir (Hakið), Geysir, Gullfoss, Kerið. The
+   South coast: Seljalandsfoss, Skógafoss, Sólheimajökull, Dyrhólaey,
+   Reynisfjara, Fjaðrárgljúfur, Skaftafell, Fjallsárlón, Jökulsárlón (also
+   for Diamond Beach). Reykjanes: the Blue Lagoon. The West and
+   Snæfellsnes: Glymur, Deildartunguhver, Hraunfossar, Kirkjufellsfoss,
+   Búðir, Arnarstapi, Djúpalónssandur. The Westfjords: Dynjandi,
+   Látrabjarg. The North: Hvítserkur, Goðafoss, Dimmuborgir, the Mývatn
+   Nature Baths, Hverir, Dettifoss, Ásbyrgi. The East: Stuðlagil,
+   Hengifoss.
+2. **Left out:** the highlands (Landmannalaugar, Þórsmörk, Hveravellir),
+   as legs skip mountain roads (spec 2) and they need a 4x4; Reykjavík's
+   sights, which BSÍ and Hlemmur serve; businesses such as Friðheimar and
+   the Secret Lagoon, whose villages have a point; and Seltún in
+   Krýsuvík, which lies in Hafnarfjörður, so its point would show in
+   every search for the capital area.
+3. **The spot:** the sight's visitor car park in OpenStreetMap, the one by
+   its visitor centre or path, even where parking is paid (decision 6).
+   At Dyrhólaey it is the lower car park (Lágey), not the steep road up to
+   the lighthouse; at Dettifoss the west one, on the paved road 862; at
+   Stuðlagil the car park nearest the canyon.
+4. **The point:** type car park, amenities only parking, named after the
+   sight ("Gullfoss", "Þingvellir – Hakið") with its English name where it
+   differs ("Mývatn Nature Baths") and other names as aliases ("Diamond
+   Beach", "Strokkur"). Where to stand says which car park, and where the
+   map shows a fee it adds "Bílastæðið er gjaldskylt." / "Parking here is
+   paid." so a driver knows before stopping. Every point is in use all
+   year, except Látrabjarg, May to September, as its road is not kept
+   open in winter.
+5. **Place search:** each sight is a landmark place (5 km reach), at its
+   car park; the seven landmarks there already (Þingvellir, Geysir,
+   Gullfoss, Seljalandsfoss, Skógafoss, Reynisfjara and the Blue Lagoon)
+   keep their keys and spots.
+6. **Loading:** a second import file,
+   `packages/db/src/places/sight-meeting-points.csv`, imported and
+   activated as in 3.5. Its names clash with no settlement point, so the
+   two files can be imported in either order.
+
 ## 4. Rules
 
 | ID | Rule |
@@ -186,6 +233,9 @@ button with nothing ticked says to tick the checked drafts first.
   them before and after, with `confirmedToday: true`. The console sends
   one request per ticked draft, one after another.
 - No migration.
+- `packages/db/src/places/sight-meeting-points.csv`: the 32 sights' points
+  (3.6), in the same import format. `landmarkPlaces` gains the 25 sights
+  that were not places, seeded in every environment as the others are.
 
 ## 7. Privacy and safety
 
@@ -224,6 +274,12 @@ speaker reviews them with the app's texts (milestone 16).
   reaches Reykjavík by road; every place reaches at least one point; the
   places have unique keys and cover all 110 settlements; the sample keys
   are still there.
+- **Unit (sights' file):** every row reads without a problem through the
+  console's reader after the settlement file, so no name clashes; every
+  point is a car park with where to stand in both languages, says in both
+  languages whether parking is paid, and joins a road within 1 km that
+  reaches BSÍ; every landmark place reaches a point; only Látrabjarg has
+  a season.
 - **API integration:** activating a draft with no photo works; the
   checklist says `photos` is not required. With `confirmToday`, a draft
   with no reviews and no day confirmed activates with today for all
@@ -237,7 +293,8 @@ speaker reviews them with the app's texts (milestone 16).
 
 ## 10. Out of scope
 
-Photos of the new points, more than one point in the bigger towns outside
+The highlands and the other sights of 3.6.2, more than one point at a
+sight, and the parking fees' amounts, which change. Photos of the new points, more than one point in the bigger towns outside
 the capital area, the ferry islands, replacing staging's sample points
 with the real ones, and a console filter for active points without a
 photo (ADR 0036, follow-up).
@@ -251,3 +308,5 @@ photo (ADR 0036, follow-up).
 | 3 | A point in each, or a neighbour's for the tiniest? | A neighbour's for the 14 with no public spot (Claude's call, for Martin to correct) |
 | 4 | Seed the points, or import them in the console? | Import in the console, as drafts, so the operator creates them (R2.1) and the audit log has them (Claude's call) |
 | 5 | Activate the 104 drafts one by one, or several at once? | Several at once: tick the checked drafts in the list, each confirmed today with its own audit entry (Martin, 2026-11-22, on a decision card) |
+| 6 | Where does the point go at a sight with paid parking? | In the sight's car park, and where to stand says parking is paid (Martin, 2026-11-22, on a decision card) |
+| 7 | Which sights, and in season when? | The 32 of 3.6.1, all year but Látrabjarg, May to September (Claude's call, for Martin to correct) |

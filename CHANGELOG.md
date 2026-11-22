@@ -1341,6 +1341,11 @@ releases follow [Semantic Versioning](https://semver.org/).
   with its own legs and audit entry. Drafts that cannot be activated are
   listed with the reason. `POST /admin/v1/meeting-points/{id}/activate`
   takes `confirmToday`.
+- Meeting points at the main sights (spec 21, 3.6): 32 sights on ordinary
+  roads, from the Golden Circle to Hengifoss, are landmarks in place
+  search (25 new), and `packages/db/src/places/sight-meeting-points.csv`
+  holds a point in each one's visitor car park, from OpenStreetMap, for
+  the operator to import. Where to stand says where parking is paid.
 - Paying the driver in person until card payments work (ADR 0038, rule M6),
   the console's switch "Pay the driver in person" (off by default).
   While it is on, a new booking is paid to the driver in person, in cash or
