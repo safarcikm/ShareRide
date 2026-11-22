@@ -10,7 +10,8 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useConsole } from "../../console.tsx";
 import type { StatusResult } from "./status-panel.tsx";
 
-const itemKeys: Record<ActivationItem, MessageKey> = {
+/** Each checklist item's text. */
+export const itemKeys: Record<ActivationItem, MessageKey> = {
   details: "admin.activation.item.details",
   whereToStand: "admin.activation.item.whereToStand",
   photos: "admin.activation.item.photos",

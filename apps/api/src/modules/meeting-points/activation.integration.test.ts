@@ -25,6 +25,7 @@ const bare = sampleId("test:bare");
 const atSea = sampleId("test:at-sea");
 const apart = sampleId("test:apart");
 const noPhoto = sampleId("test:no-photo");
+const unchecked = sampleId("test:unchecked");
 const nowhere = sampleId("test:nowhere");
 
 /** A made-up draft with only what saving one needs. */
@@ -88,6 +89,18 @@ beforeAll(async () => {
       searchText: "an myndar",
       location: { latitude: 63.95, longitude: -21.05 },
     },
+    {
+      ...draft,
+      id: unchecked,
+      nameIs: "Óyfirfarið",
+      searchText: "oyfirfarid",
+      whereToStandIs: "Við skiltið.",
+      whereToStandEn: "By the sign.",
+      // Its season was reviewed before, and it was confirmed long ago.
+      seasonReviewedOn: "2026-10-01",
+      lastCheckedOn: "2025-11-01",
+      location: { latitude: 63.96, longitude: -21.1 },
+    },
   ]);
   const photo = {
     descriptionIs: "Skiltið.",
@@ -125,9 +138,10 @@ const notDone = async (id: string) =>
   (await checklist(id)).items.filter((check) => !check.done).map((check) => check.item);
 const loaded = async (id: string) =>
   ((await call(`/admin/v1/meeting-points/${id}`)).body as AdminMeetingPoint).updatedAt;
-const activate = async (id: string, updatedAt?: string) =>
+const activate = async (id: string, updatedAt?: string, confirmToday?: boolean) =>
   call(`/admin/v1/meeting-points/${id}/activate`, "POST", {
     updatedAt: updatedAt ?? (await loaded(id)),
+    ...(confirmToday === undefined ? {} : { confirmToday }),
   });
 const legsOf = (id: string) =>
   api.connection.db
@@ -238,6 +252,60 @@ describe("POST /admin/v1/meeting-points/{id}/activate", () => {
     const { status, body } = await activate(noPhoto);
     expect(status).toBe(200);
     expect(body).toMatchObject({ id: noPhoto, status: "active" });
+  });
+
+  it("with confirmToday, still refuses a draft a required item is missing from, and saves nothing", async () => {
+    const { status, body } = await activate(bare, undefined, true);
+    expect(status).toBe(409);
+    expect((body as ErrorResponse).error.details).toEqual([
+      { path: "whereToStand", issue: "not_done" },
+    ]);
+    const [point] = await api.connection.db
+      .select({
+        status: meetingPoints.status,
+        lastCheckedOn: meetingPoints.lastCheckedOn,
+        amenitiesReviewedOn: meetingPoints.amenitiesReviewedOn,
+      })
+      .from(meetingPoints)
+      .where(eq(meetingPoints.id, bare));
+    expect(point).toEqual({ status: "draft", lastCheckedOn: null, amenitiesReviewedOn: null });
+  });
+
+  it("confirms a draft today and activates it, with confirmToday (several at once, spec 21)", async () => {
+    // Without it, the amenities are still to do.
+    expect((await activate(unchecked)).status).toBe(409);
+    const { status, body } = await activate(unchecked, undefined, true);
+    expect(status).toBe(200);
+    // Confirmed today, so reviewed again in a year; the season keeps its earlier review.
+    expect(body).toMatchObject({
+      id: unchecked,
+      status: "active",
+      lastCheckedOn: "2026-11-13",
+      amenitiesReviewedOn: "2026-11-13",
+      seasonReviewedOn: "2026-10-01",
+      reviewDueOn: "2027-11-13",
+    });
+    const [entry] = await api.connection.db
+      .select()
+      .from(auditLog)
+      .where(
+        and(eq(auditLog.action, "meeting_point.activated"), eq(auditLog.subjectId, unchecked)),
+      );
+    expect(entry).toMatchObject({
+      before: {
+        status: "draft",
+        reviewDueOn: null,
+        lastCheckedOn: "2025-11-01",
+        amenitiesReviewedOn: null,
+      },
+      after: {
+        status: "active",
+        reviewDueOn: "2027-11-13",
+        lastCheckedOn: "2026-11-13",
+        amenitiesReviewedOn: "2026-11-13",
+        confirmedToday: true,
+      },
+    });
   });
 
   it("refuses a point that is not a draft", async () => {

@@ -1334,6 +1334,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   command. `packages/db/src/places/settlement-meeting-points.csv` holds 104
   meeting points from OpenStreetMap, one in or near each settlement, for
   the operator to import in the console as drafts.
+- Activate several meeting points at once (spec 21, 3.5.5): the console's
+  Meeting points list has a tick box on each draft and "Confirm and
+  activate N points", which activates each ticked draft in turn, with
+  today as the day confirmed and its amenities and season reviewed, each
+  with its own legs and audit entry. Drafts that cannot be activated are
+  listed with the reason. `POST /admin/v1/meeting-points/{id}/activate`
+  takes `confirmToday`.
 - Paying the driver in person until card payments work (ADR 0038, rule M6),
   the console's switch "Pay the driver in person" (off by default).
   While it is on, a new booking is paid to the driver in person, in cash or

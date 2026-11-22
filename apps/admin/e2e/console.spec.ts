@@ -372,6 +372,22 @@ test("the operator imports drafts from a CSV file, seeing each row first", async
   await expect(
     page.getByRole("list", { name: "Entries" }).getByRole("listitem").first(),
   ).toContainText("meeting_point.imported");
+
+  // Activated with others from the list (spec 21, 3.5): still without
+  // where to stand, it stays a draft, and the panel says why.
+  await page.goto("/admin/meeting-points?status=draft");
+  const several = page.getByRole("region", { name: "Activate several drafts" });
+  await page.getByRole("checkbox", { name: "Select Söluskálinn við Hraunsá" }).check();
+  await several.getByRole("button", { name: "Confirm and activate 1 point" }).click();
+  await expect(several.getByText("0 points activated.")).toBeFocused();
+  await expect(several.getByRole("list", { name: "Not activated" })).toContainText(
+    "Söluskálinn við Hraunsá: still to do: Where to stand, in Icelandic and English",
+  );
+  // Loaded again, the drafts still list it.
+  await page.reload();
+  await expect(
+    page.getByRole("checkbox", { name: "Select Söluskálinn við Hraunsá" }),
+  ).not.toBeChecked();
 });
 
 // Problem reports (spec 2, 3.5): someone reports a problem with a point in

@@ -2529,6 +2529,26 @@ export const is = {
   "admin.meetingPoints.openIssues":
     "{count, plural, one {# opin tilkynning um vandamál} other {# opnar tilkynningar um vandamál}}",
   "admin.meetingPoints.sampleTag": "Prufa",
+  "admin.activateSeveral.title": "Virkja nokkur drög",
+  "admin.activateSeveral.intro":
+    "Hakaðu við drögin sem þú hefur farið yfir: staðinn, hvar á að bíða, aðstöðuna og tímabilið. Þegar þau eru virkjuð telst hvert þeirra staðfest í dag.",
+  "admin.activateSeveral.note":
+    "Vegalengdir hvers staðar eru reiknaðar um leið og hann er virkjaður, sem tekur nokkrar sekúndur. Hafðu síðuna opna þar til því er lokið.",
+  "admin.activateSeveral.select": "Velja {name}",
+  "admin.activateSeveral.selectAll": "Velja öll drög sem eru sýnd",
+  "admin.activateSeveral.clear": "Hreinsa valið",
+  "admin.activateSeveral.activate":
+    "Staðfesta og virkja {count, plural, one {# mótsstað} other {# mótsstaði}}",
+  "admin.activateSeveral.noneTicked": "Hakaðu fyrst við drögin sem þú hefur farið yfir.",
+  "admin.activateSeveral.working": "Virkjar {done} af {count}…",
+  "admin.activateSeveral.activated":
+    "{count, plural, one {# mótsstaður virkjaður.} other {# mótsstaðir virkjaðir.}}",
+  "admin.activateSeveral.notActivated": "Ekki virkjaðir",
+  "admin.activateSeveral.refused": "{name}: {why}",
+  "admin.activateSeveral.missing": "eftir: {items}",
+  "admin.activateSeveral.changed":
+    "breyttist eftir að listinn var sóttur. Opnaðu hann til að athuga.",
+  "admin.activateSeveral.failed": "ekki tókst að virkja hann. Reyndu aftur.",
   "admin.meetingPoints.statusDraft": "Drög",
   "admin.meetingPoints.statusActive": "Virkur",
   "admin.meetingPoints.statusPaused": "Í hléi",
