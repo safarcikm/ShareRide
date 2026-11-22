@@ -28,7 +28,7 @@ to be confirmed by a native speaker before they appear in the app.
 | Price level (`priceLevel`) | Verðstig | The one percentage of the suggested prices a driver chooses for a whole trip, from 0% (free) up to the cap |
 | Cost-sharing | Kostnaðarskipting | Passengers contribute to the cost of a trip the driver makes anyway, without profit |
 | Reliability | Áreiðanleiki | Share of trips and bookings a user completed rather than cancelled |
-| Tester | Prófari | An account made with an invite code while the beta is closed; the settings cap how many there can be |
+| Tester | Prófari | Anyone with an account during the beta, which is open to everyone (ADR 0035). While the operator requires invite codes, an account made with one, and the settings cap how many there can be |
 | Invite code (`InviteCode`) | Boðskóði | A group code that lets a set number of new accounts in while the beta is closed, until a date |
 | Feedback (`Feedback`) | Ábending | What a tester sends from the app about a problem or an idea; the operator can reply once |
 | Setting (`SettingKey`) | Stilling | A value the operator can change in the console within a fixed range, with a reason; each change is a new settings version |

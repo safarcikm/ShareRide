@@ -205,6 +205,23 @@ describe("notification texts", () => {
     });
   });
 
+  it("ask how the trip was, opening the rating screen for the passenger and the trip for the driver (spec 20, 3.1.3)", () => {
+    expect(text({ kind: "rate_trip", role: "passenger", name: "Jón" })).toEqual({
+      title: "How was your trip?",
+      body: "Rate the driver: Jón. BSÍ – Hof, Akureyri · Saturday 14 November at 09:00.",
+      path: "/bookings/booking-1/rate",
+    });
+    expect(text({ kind: "rate_trip_driver" })).toEqual({
+      title: "How was your trip?",
+      body: "Rate your passengers. It helps other drivers choose.",
+      path: "/drive/trips/trip-1",
+    });
+    expect(text({ kind: "rate_trip", role: "passenger" }, "is")).toMatchObject({
+      title: "Hvernig var ferðin?",
+      path: "/bookings/booking-1/rate",
+    });
+  });
+
   it("give the deadline to pay and the amount in the recipient's language", () => {
     expect(text({ kind: "pay_now", role: "passenger" })).toEqual({
       title: "Pay now: BSÍ – Hof, Akureyri",

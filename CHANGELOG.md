@@ -1319,6 +1319,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   links that open their screen after signing in; and an email at sign-up
   on the web. The roadmap drops the waitlist and calls Phase 3 an open
   beta.
+- By email without push (spec 20, 3.1 and 3.4; ADR 0035): the hour-before
+  reminder and "How was your trip?" now fall back to email, as the evening
+  reminder and a new request do, so web members hear of them. The
+  passenger's "How was your trip?" opens the rating screen, by push and by
+  email; the driver's opens the trip. The beta is open: "Invite code
+  required" is off by default, and the Beta label shows for everyone until
+  launch.
 - A meeting point for every settlement (spec 21, ADR 0036, Accepted): a
   point can be activated before it has a photo, which the console's
   checklist now shows as recommended. Every settlement of Statistics

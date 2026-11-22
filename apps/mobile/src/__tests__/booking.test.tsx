@@ -95,6 +95,7 @@ async function openBooking(
             freeCancellationMinutes: 15,
             maxMoveMinutes: 120,
             reliabilityMonths: 12,
+            signInProviders: [],
             payInPerson: answers.payInPerson ?? false,
           }),
         );

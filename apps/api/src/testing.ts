@@ -60,9 +60,10 @@ export interface TestApi {
    */
   signInOperator(): Promise<{ userId: string; sessionId: string; cookie: string }>;
   /**
-   * From here on the setting `invite_code_required` is as stored (on by
-   * default), so a new account needs an invite code: for tests about the
-   * closed beta. Until then tests sign up without one.
+   * From here on the setting `invite_code_required` is as stored (off by
+   * default, ADR 0035): for tests about the gate, which turn it on as the
+   * operator does. Until then tests sign up without a code whatever is
+   * stored.
    */
   useStoredInviteSetting(): void;
   /**
@@ -107,7 +108,8 @@ export async function startTestApi(): Promise<TestApi> {
     }),
   });
 
-  // The closed beta's gate is off, so tests sign up without an invite code.
+  // The invite gate is held off, so tests sign up without an invite code
+  // even after one of them turns it on.
   const fixedSettings: Partial<Record<SettingKey, number>> = { invite_code_required: 0 };
   const email = createFakeEmailSender();
   const photos = createFakePhotoStorage();

@@ -36,7 +36,7 @@ test("asks about my data, adding an email first", async ({ page }) => {
   await expect(page.getByText(`We answer at ${address}.`).filter(visible)).toBeVisible();
   await page.getByRole("radio", { name: /^Ask a question/ }).click();
   await page.getByLabel("Your message").fill("How long do you keep my trips?");
-  await page.getByRole("button", { name: "Send" }).click();
+  await page.getByRole("button", { name: "Send", exact: true }).click();
 
   await expect(
     page.getByText("Thank you. We'll answer by email within a month.").filter(visible),

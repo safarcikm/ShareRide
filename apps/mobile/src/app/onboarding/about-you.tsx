@@ -28,6 +28,8 @@ export default function AboutYouScreen() {
   const session = useSession();
   const me = useMe();
   const kept = useKeptRide();
+  // Read once: the name Google or Apple gave a new account (spec 19, 3.3).
+  const [suggestedFirstName] = useState(() => session.signInNews()?.suggestedFirstName ?? null);
   // Asked once: the terms part stays as it opened after the terms are
   // accepted, so nothing moves if saving the profile then fails.
   const [askTerms] = useState(() => me?.missingSteps.includes("legal") ?? false);
@@ -73,6 +75,7 @@ export default function AboutYouScreen() {
         tickAppLanguage
         foldAbout
         submitLabel={t(createAccountKey(kept))}
+        suggestedFirstName={suggestedFirstName}
         beforeSave={acceptTerms}
         waiting={askTerms && !termsDone && terms.documents === null && terms.failure === null}
       >

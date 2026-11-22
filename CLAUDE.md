@@ -90,7 +90,7 @@ pnpm --filter @shareride/admin build   # the console's build (dist/); the API se
 pnpm --filter @shareride/api clean-up  # delete sign-in records, drafts, chats, notification logs, console sign-in records and data exports past retention, and erase deleted accounts (hourly on servers)
 pnpm --filter @shareride/api privacy reapply-erasures  # after a database restore: erase again the accounts erased since (runbook)
 pnpm --filter @shareride/api expire-bookings  # store booking deadlines that passed, once (the API does it every minute)
-pnpm --filter @shareride/api invite add "<name>" <uses> [days]  # print a new group invite code (the first account on a new server); locally the seed's BETA2345 works
+pnpm --filter @shareride/api invite add "<name>" <uses> [days]  # print a new group invite code, for while "Invite code required" is on (off by default); locally the seed's BETA2345 works
 pnpm --filter @shareride/api metrics recompute <weeks>  # count the weekly figures again, this week and the ones before it (the API counts the last three every night)
 pnpm --filter @shareride/api operator add <phone or user ID>  # give the console role, print a passkey setup link (also remove, list)
 pnpm --filter @shareride/api test:contract  # 46elks, Vonage, Mailjet and photo bucket checks, need their keys; not in CI

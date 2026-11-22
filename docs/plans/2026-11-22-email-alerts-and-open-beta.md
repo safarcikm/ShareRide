@@ -47,7 +47,7 @@ email link on the web.
 
 ## PR 1: spec, plan and ADR
 
-- [ ] Spec 20, this plan, ADR 0035 (Proposed), the indexes, open
+- [x] Spec 20, this plan, ADR 0035 (Proposed), the indexes, open
       questions A53 and A54, the roadmap's milestone 12 and Phase 3.
 
 ## PR 2: by email, and the beta open
@@ -56,38 +56,41 @@ email link on the web.
 
 **Files:** `packages/domain/src/notifications/catalogue.ts`, its test.
 
-- [ ] Test first: `channelsFor` for `reminder_hour`, `reminder_hour_driver`,
+- [x] Test first: `channelsFor` for `reminder_hour`, `reminder_hour_driver`,
       `rate_trip`, `rate_trip_driver` gives email (sent) without a push
       device and with a verified email, and email skipped `has_push` with one.
-- [ ] Change the four rules to `email: "fallback"`, with the comments.
+- [x] Change the four rules to `email: "fallback"`, with the comments.
 
 ### Task 1.2: the worker and the texts
 
 **Files:** `apps/api/src/modules/notifications/texts.ts`, `texts.test.ts`,
-`notifications.integration.test.ts`, `packages/i18n` (`review.ratePassengers`).
+`notifications.integration.test.ts`, `reviews.integration.test.ts`.
 
-- [ ] Test first: the passenger's `rate_trip` text has the path
-      `/bookings/<id>/rate` and the link words "Rate the driver"; the
-      driver's has "Rate your passengers".
-- [ ] Integration: a passenger without push and with a verified email gets
+- [x] Test first: the passenger's `rate_trip` text has the path
+      `/bookings/<id>/rate`; the driver's stays the trip. Both keep the
+      link words "Open in ShareRide": their text says what to do.
+- [x] Integration: a passenger without push and with a verified email gets
       the hour reminder by email; the review prompt by email at completion
       and after 3 days; none with push; none with Trip reminders off.
-- [ ] Change the path and link words in `bookingText`.
+- [x] Change the path in `bookingText`.
 
 ### Task 1.3: the invite code off by default
 
 **Files:** `packages/domain/src/settings/catalogue.ts`, `values.test.ts`,
 `apps/api/src/testing.ts`, `apps/api/src/modules/beta/invites.integration.test.ts`,
-`apps/api/src/modules/settings/routes.ts`, `packages/contracts/src/settings.ts`
-(or wherever `beta` is described), the console's help text.
+`apps/api/src/modules/admin/home.integration.test.ts`,
+`apps/api/src/modules/settings/routes.ts`, `packages/contracts/src/settings.ts`,
+`apps/mobile/src/notifications/paths.ts` (the push may open the rating
+screen).
 
-- [ ] Test first: the default is 0; a fresh API lets a new number sign up
+- [x] Test first: the default is 0; a fresh API lets a new number sign up
       with no code; with the setting stored on, the gate still asks.
-- [ ] Default 0. `useStoredInviteSetting()` tests store it on where they
+- [x] Default 0. `useStoredInviteSetting()` tests store it on where they
       need it. `GET /v1/config` answers `beta: true`.
-- [ ] Docs: spec 7 (3.3, 3.5), spec 8 (3.9), spec 12 (3.1, 3.2, R12.1),
-      spec 10's settings table if it names the default, pricing and seats'
-      configuration values, the privacy register (feedback note).
+- [x] Docs: spec 7 (3.3), spec 8 (3.9), spec 12 (3, 3.2.6, R12.1), the
+      operator console doc, the glossary's tester, the privacy register
+      (feedback note) and the CHANGELOG. Spec 10 and pricing and seats name
+      no default for it.
 
 ## PR 3: email links after signing in
 

@@ -50,6 +50,7 @@ export function ProfileForm({
   foldAbout = false,
   beforeSave,
   waiting = false,
+  suggestedFirstName = null,
   children,
 }: {
   readonly me: Me;
@@ -68,13 +69,18 @@ export function ProfileForm({
   readonly beforeSave?: () => Promise<string | null>;
   /** The main button shows busy, such as while the terms load. */
   readonly waiting?: boolean;
+  /**
+   * A first name to start with when the profile has none, such as the one
+   * Google or Apple gave a new account (spec 19, 3.3); the person can change it.
+   */
+  readonly suggestedFirstName?: string | null;
   /** Shown after the fields and before the main button. */
   readonly children?: ReactNode;
 }) {
   const { locale, t } = useLanguage();
   const session = useSession();
   const palette = usePalette();
-  const [firstName, setFirstName] = useState(me.firstName ?? "");
+  const [firstName, setFirstName] = useState(me.firstName ?? suggestedFirstName ?? "");
   const [about, setAbout] = useState(me.about ?? "");
   // A language a newer version added is kept off the form rather than refused.
   const [languages, setLanguages] = useState<readonly string[]>(() => {

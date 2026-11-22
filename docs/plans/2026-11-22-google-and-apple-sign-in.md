@@ -233,21 +233,30 @@ production.
 
 ### 4.6 The app
 
-- `apps/mobile/src/sign-in/provider-sign-in.ts`: `useProviderSignIn()`
-  makes the verifier when mounted and returns
-  `start(provider): Promise<ProviderOutcome>`, where `ProviderOutcome` is
-  `signedIn`, `phoneNeeded` (with `pendingSignIn`, provider, email, first
-  name), `cancelled` or `failed`.
+- `apps/mobile/src/sign-in/provider-window.ts`: `useProviderWindow()`
+  makes the verifier in advance (so a tap opens the pop-up at once, which
+  browsers allow only inside the tap) and a new one after each try, and
+  returns `open(provider): Promise<WindowOutcome>`: `ticket` (with the
+  verifier), `cancelled`, `expired` or `failed`. The sign-in screen trades
+  the ticket through `SessionManager.finishProviderSignIn`, which signs in
+  or answers `phoneNeeded`; Settings trades it through `prepare`.
 - `apps/mobile/src/sign-in/provider-buttons.tsx`: `ProviderButtons`, the
   two buttons from `GET /v1/config`'s `signInProviders`, with the logos as
-  SVG and the colours as tokens `google*` and `apple*` in
-  `apps/mobile/src/theme/tokens.ts` (spec 15 gains them, with Google's
-  light and dark values and Apple's black and white).
+  SVG and the colours as tokens `signInBrands` and `googleLogo` in
+  `@shareride/ui`, which the app's `theme/tokens.ts` passes on (spec 15
+  gains them, with Google's light and dark values and Apple's black and
+  white).
 - `SignInFlow` gains `pending` (the waiting provider sign-in); the session
-  keeps `suggestedFirstName` from a new account's verify, which step 3's
-  profile form takes as its first value.
-- `apps/mobile/src/app/sign-in/return.tsx`: the pop-up's page on the web;
-  on phones it only says "Signing you in…" if Expo Router opens it.
+  keeps `signInNews` from verify, before it says it is signed in: a new
+  account's `suggestedFirstName`, which step 3's profile form takes as its
+  first value, and the `providerLink` that `ProviderLinkNotice` tells.
+- `apps/mobile/index.ts`, the app's entry: on the web, in the pop-up, it
+  hands the answer to the opening window and takes the ticket out of the
+  address (`sign-in/popup-hand-off.web.ts`) before the app loads; the app
+  loads there only if the pop-up stays open two seconds later.
+- `apps/mobile/src/app/sign-in/return.tsx`: on the web, a pop-up left open
+  says it can be closed; on phones it only says "Signing you in…" if Expo
+  Router opens it, which `+native-intent.tsx` does without the fragment.
 - `apps/mobile/src/app/settings/sign-in-methods.tsx`: the list, add and
   remove, behind a row in Settings, Your account.
 
@@ -305,28 +314,41 @@ opens and merges once CI is green (Martin's rule of 2026-11-16).
       (section 6) in the staging runbook
 - Verify: as PR 2, plus review focus 5
 
-### PR 3: `feat(app)`: Continue with Google and Apple
+### PR 3a: `feat(app)`: Continue with Google and Apple
 
-- [ ] `expo-web-browser` (with `npx expo install`, justified in the PR),
-      `useProviderSignIn`, `/sign-in/return`, the buttons and their tokens
-      (spec 15 updated), "or with your phone number"
-- [ ] Add your phone number: the line on top of step 1 and the
+PR 3 is split in two, so each review stays a size one person reads: the
+sign-in here, Settings in 3b.
+
+- [x] `expo-web-browser` (with `npx expo install`, justified in the PR),
+      `useProviderWindow` (the plan's `useProviderSignIn`: the window only,
+      so Settings uses it too), `/sign-in/return`, the buttons and their
+      tokens (`signInBrands` and `googleLogo` in `@shareride/ui`, spec 15
+      updated), "or with your phone number"
+- [x] Add your phone number: the line on top of step 1 and the
       `pendingSignIn` through to verify; "linked" and "link refused"
-      notices; step 3's first name filled in
-- [ ] Settings, Sign-in methods: list, add (the window, then the confirm
-      code with the part spec 11's screens use), remove with its question
-- [ ] Texts of spec 19, section 8, in `en.ts` and `is.ts`
-- [ ] Safety from PR 2's review: `pendingSignIn` only ever from a `finish`
-      answer, never from an address or link; `/sign-in/return` takes the
-      `#ticket` out of the address at once; a new verifier for each try;
-      the web app's error reports leave out `sr_` tokens; `#error=expired`
+      notices (`ProviderLinkNotice`, over whichever screen opens next);
+      step 3's first name filled in
+- [x] Texts of spec 19, section 8, for signing in, in `en.ts` and `is.ts`
+- [x] Safety from PR 2's review: `pendingSignIn` only ever from a `finish`
+      answer, never from an address or link; the web app takes the
+      `#ticket` out of the pop-up's address before the router, error
+      reporting or the session load (the review found the router put it
+      back when this ran in the root layout); a new verifier for each try; error reports already
+      leave out `sr_` tokens and addresses' fragments; `#error=expired`
       shows "That took too long"
-- [ ] Screen tests with `renderApp` against the fake API: each outcome of
-      `start`, the phone step with a waiting sign-in, settings; Playwright
-      journeys with the development provider's pop-up: a newcomer, a
-      member, add and remove in Settings
-- Verify: `pnpm check`; `pnpm --filter @shareride/mobile e2e:web` (on
-  GitHub, Martin's rule for long runs)
+- [x] Screen tests with `renderApp` against the fake API: each outcome of
+      the window and of `finish`, the phone step with a waiting sign-in;
+      Playwright journeys with the development provider's pop-up: a
+      newcomer, then a member
+- Verify: `pnpm check`; `pnpm --filter @shareride/mobile e2e:web`
+
+### PR 3b: `feat(app)`: Settings, Sign-in methods
+
+- [x] Settings, Sign-in methods: list, add (the window, then the confirm
+      code with the part spec 11's screens use), remove with its question
+- [x] Texts of spec 19, section 8, for Settings
+- [x] Screen tests; a Playwright journey: add and remove in Settings
+- Verify: as PR 3a
 
 ### PR 4: `docs`: close-out
 

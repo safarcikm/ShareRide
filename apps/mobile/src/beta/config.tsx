@@ -111,7 +111,7 @@ export function PausedBanner({ part }: { readonly part: Config["paused"][number]
   return <Notice kind="info" message={t(`error.${part}_paused`)} />;
 }
 
-/** The small "Beta" label beside the name while the beta is closed (spec 12, 3.2.6). */
+/** The small "Beta" label beside the name during the beta (spec 12, 3.2.6; ADR 0035). */
 export function BetaLabel() {
   const { t } = useLanguage();
   const me = useMe();

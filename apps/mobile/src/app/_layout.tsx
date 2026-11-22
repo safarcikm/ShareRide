@@ -15,6 +15,7 @@ import { LanguageProvider, useLanguage } from "@/i18n/language";
 import { useSaveLanguage } from "@/i18n/use-save-language";
 import { reportError, startErrorReporting } from "@/lib/error-reporting";
 import { PushNotifications } from "@/notifications/push-notifications";
+import { ProviderLinkNotice } from "@/sign-in/provider-link-notice";
 import { useAppFonts } from "@/theme/fonts";
 import { TopBar } from "@/navigation/top-bar";
 import { installFocusRing } from "@/theme/focus-ring";
@@ -87,6 +88,7 @@ function Navigation() {
       <Stack.Protected guard={!deleting}>
         <Stack.Screen name="settings" />
         <Stack.Screen name="settings/email" />
+        <Stack.Screen name="settings/sign-in-methods" />
         <Stack.Screen name="settings/feedback" />
         <Stack.Screen name="settings/beta-news" />
         <Stack.Screen name="feedback" />
@@ -151,7 +153,8 @@ function Navigation() {
 /**
  * On wide screens, the top bar above every screen, which then leave its edge
  * to it. The screens stay in the same place in the tree either way, so a
- * window turning wide or narrow keeps what they show.
+ * window turning wide or narrow keeps what they show. What signing in did
+ * with a Google or Apple account shows over the screens, under the bar.
  */
 function WithTopBar({ children }: { readonly children: ReactNode }) {
   const wide = useWideScreen();
@@ -159,7 +162,12 @@ function WithTopBar({ children }: { readonly children: ReactNode }) {
   return (
     <View style={styles.frame}>
       {wide ? <TopBar onSwitchLanguage={saveLanguage} /> : null}
-      <ScreenEdges value={wide ? belowTopBar : allEdges}>{children}</ScreenEdges>
+      <ScreenEdges value={wide ? belowTopBar : allEdges}>
+        <View style={styles.frame}>
+          {children}
+          <ProviderLinkNotice belowTopBar={wide} />
+        </View>
+      </ScreenEdges>
     </View>
   );
 }

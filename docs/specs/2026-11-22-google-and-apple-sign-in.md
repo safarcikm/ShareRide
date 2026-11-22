@@ -165,15 +165,15 @@ its email when the old relay address was the account's email.
 
 ## 4. Rules
 
-| ID | Rule |
-| -- | ---- |
-| R19.1 | An account has at most one Google and one Apple account linked; a Google or Apple account is linked to at most one ShareRide account. A new one proven by the phone step takes the place of the one before. |
-| R19.2 | Every account keeps a verified phone number: a newcomer through Google or Apple verifies one before the account is made (decision 1). R1.1 and R1.6 do not change. |
+| ID    | Rule                                                                                                                                                                                                                                                                                     |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R19.1 | An account has at most one Google and one Apple account linked; a Google or Apple account is linked to at most one ShareRide account. A new one proven by the phone step takes the place of the one before.                                                                              |
+| R19.2 | Every account keeps a verified phone number: a newcomer through Google or Apple verifies one before the account is made (decision 1). R1.1 and R1.6 do not change.                                                                                                                       |
 | R19.3 | A Google or Apple account is linked to a ShareRide account only after the person proves that account's phone number with a code: the sign-in code of the phone step, or a confirm code when adding it in Settings. Never because an email address matches, and never on a session alone. |
-| R19.4 | ShareRide stores a provider's email only if the provider says it is verified and no other account has it, and never replaces an email the account already has. |
-| R19.5 | From the provider ShareRide keeps the account's identifier and the email, nothing else: no last name, photo, birthday or language. The first name only fills in step 3's field, for the person to keep or change. |
-| R19.6 | Signing in with Google or Apple follows the account rules of signing in with a phone number: a suspended person can sign in (spec 9, 3.6.2), an account waiting to be deleted goes to "Keep my account", an erased account's links are gone with it. |
-| R19.7 | Google and Apple can always be removed, since the phone number stays. |
+| R19.4 | ShareRide stores a provider's email only if the provider says it is verified and no other account has it, and never replaces an email the account already has.                                                                                                                           |
+| R19.5 | From the provider ShareRide keeps the account's identifier and the email, nothing else: no last name, photo, birthday or language. The first name only fills in step 3's field, for the person to keep or change.                                                                        |
+| R19.6 | Signing in with Google or Apple follows the account rules of signing in with a phone number: a suspended person can sign in (spec 9, 3.6.2), an account waiting to be deleted goes to "Keep my account", an erased account's links are gone with it.                                     |
+| R19.7 | Google and Apple can always be removed, since the phone number stays.                                                                                                                                                                                                                    |
 
 ## 5. Screens
 
@@ -229,14 +229,14 @@ Entities (see the [domain model](../architecture/domain-model.md)):
 Endpoints (`/v1`, shapes in `packages/contracts`), replacing spec 1's
 `POST /auth/oauth/{apple,google}`:
 
-| Method and path | Purpose |
-| --------------- | ------- |
-| `GET /auth/oauth/{google,apple}/start` | Opened in the pop-up or browser sheet: sends the person to the provider |
-| `GET /auth/oauth/google/callback`, `POST /auth/oauth/apple/callback` | Where the provider sends the person back; sends them on to the app with a one-time ticket |
-| `POST /auth/oauth/finish` | The app trades the ticket for a session, or for "add your phone number" |
-| `POST /auth/phone/verify` | Gains the waiting provider sign-in, to make or link the account |
+| Method and path                                                                                                                    | Purpose                                                                                                                   |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `GET /auth/oauth/{google,apple}/start`                                                                                             | Opened in the pop-up or browser sheet: sends the person to the provider                                                   |
+| `GET /auth/oauth/google/callback`, `POST /auth/oauth/apple/callback`                                                               | Where the provider sends the person back; sends them on to the app with a one-time ticket                                 |
+| `POST /auth/oauth/finish`                                                                                                          | The app trades the ticket for a session, or for "add your phone number"                                                   |
+| `POST /auth/phone/verify`                                                                                                          | Gains the waiting provider sign-in, to make or link the account                                                           |
 | `GET /me/sign-in-methods`, `POST /me/sign-in-methods/prepare`, `POST /me/sign-in-methods`, `DELETE /me/sign-in-methods/{provider}` | List; take the window's ticket and check it can be added, before the confirm code is asked for; add with the code; remove |
-| `GET /config` | Gains `signInProviders` |
+| `GET /config`                                                                                                                      | Gains `signInProviders`                                                                                                   |
 
 Events (in the logs, by provider and user ID): `SignInMethodLinked`, `SignInMethodRemoved`.
 
@@ -267,26 +267,39 @@ Events (in the logs, by provider and user ID): `SignInMethodLinked`, `SignInMeth
 
 ## 8. Texts (first draft; Icelandic to be reviewed by a native speaker)
 
-| Key | English | Icelandic (draft) |
-| --- | ------- | ----------------- |
-| `auth.continueGoogle` | Continue with Google | Halda áfram með Google |
-| `auth.continueApple` | Continue with Apple | Halda áfram með Apple |
-| `auth.orPhone` | or with your phone number | eða með símanúmerinu þínu |
-| `auth.provider.phoneTitle` | Add your phone number | Bættu við símanúmerinu þínu |
-| `auth.provider.phoneHelp` | You signed in with {provider} as {email}. We text you a code once, so the people you ride with can reach you. Next time {provider} is enough. | {provider} staðfesti netfangið {email}. Við sendum þér kóða með SMS einu sinni, svo fólkið sem þú ferðast með nái í þig. Næst dugar {provider}. |
-| `auth.provider.phoneHelpHidden` | {provider} confirmed it's you. We text you a code once, so the people you ride with can reach you. Next time {provider} is enough. | {provider} staðfesti að þetta sért þú. Við sendum þér kóða með SMS einu sinni, svo fólkið sem þú ferðast með nái í þig. Næst dugar {provider}. |
-| `auth.provider.linked` | {provider} is now linked to your account. Next time you can continue with {provider}. | {provider} er nú tengt aðganginum þínum. Næst getur þú haldið áfram með {provider}. |
-| `auth.provider.failed` | {provider} sign-in didn't work. Try again, or use your phone number. | Innskráning með {provider} tókst ekki. Reyndu aftur eða notaðu símanúmerið þitt. |
-| `auth.provider.expired` | That took too long. Continue with {provider} again. | Þetta tók of langan tíma. Haltu aftur áfram með {provider}. |
-| `error.provider_in_use` | This {provider} account is used by another ShareRide account. | Þessi {provider}-aðgangur er notaður af öðrum ShareRide-aðgangi. |
-| `auth.provider.replaced` | Your {provider} account on ShareRide is now {email}. | {provider}-aðgangurinn þinn á ShareRide er nú {email}. |
-| `settings.signInMethods` | Sign-in methods | Innskráningarleiðir |
-| `settings.signInMethods.add` | Add {provider} | Bæta við {provider} |
-| `settings.signInMethods.remove` | Remove {provider} | Fjarlægja {provider} |
-| `settings.signInMethods.removeQuestion` | Remove {provider}? You can still sign in with your phone number. | Fjarlægja {provider}? Þú getur áfram skráð þig inn með símanúmerinu þínu. |
-| `settings.signInMethods.notLinked` | Not linked | Ekki tengt |
-| `settings.signInMethods.linked` | Linked | Tengt |
-| `settings.signInMethods.hiddenEmail` | Email hidden by Apple | Netfang falið af Apple |
+| Key                                     | English                                                                                                                                       | Icelandic (draft)                                                                                                                               |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth.continueGoogle`                   | Continue with Google                                                                                                                          | Halda áfram með Google                                                                                                                          |
+| `auth.continueApple`                    | Continue with Apple                                                                                                                           | Halda áfram með Apple                                                                                                                           |
+| `auth.orPhone`                          | or with your phone number                                                                                                                     | eða með símanúmerinu þínu                                                                                                                       |
+| `auth.provider.phoneTitle`              | Add your phone number                                                                                                                         | Bættu við símanúmerinu þínu                                                                                                                     |
+| `auth.provider.phoneHelp`               | You signed in with {provider} as {email}. We text you a code once, so the people you ride with can reach you. Next time {provider} is enough. | {provider} staðfesti netfangið {email}. Við sendum þér kóða með SMS einu sinni, svo fólkið sem þú ferðast með nái í þig. Næst dugar {provider}. |
+| `auth.provider.phoneHelpHidden`         | {provider} confirmed it's you. We text you a code once, so the people you ride with can reach you. Next time {provider} is enough.            | {provider} staðfesti að þetta sért þú. Við sendum þér kóða með SMS einu sinni, svo fólkið sem þú ferðast með nái í þig. Næst dugar {provider}.  |
+| `auth.provider.another`                 | Sign in another way                                                                                                                           | Skrá inn á annan hátt                                                                                                                           |
+| `auth.provider.linked`                  | {provider} is now linked to your account. Next time you can continue with {provider}.                                                         | {provider} er nú tengt aðganginum þínum. Næst getur þú haldið áfram með {provider}.                                                             |
+| `auth.provider.failed`                  | {provider} sign-in didn't work. Try again, or use your phone number.                                                                          | Innskráning með {provider} tókst ekki. Reyndu aftur eða notaðu símanúmerið þitt.                                                                |
+| `auth.provider.expired`                 | That took too long. Continue with {provider} again.                                                                                           | Þetta tók of langan tíma. Haltu aftur áfram með {provider}.                                                                                     |
+| `auth.provider.inUse`                   | This {provider} account is used by another ShareRide account.                                                                                 | Þessi {provider}-aðgangur er notaður af öðrum ShareRide-aðgangi.                                                                                |
+| `auth.provider.inUseRetry`              | This {provider} account is used by another ShareRide account. Try again to go on with your phone number alone.                                | Þessi {provider}-aðgangur er notaður af öðrum ShareRide-aðgangi. Reyndu aftur til að halda áfram með símanúmerinu einu.                         |
+| `auth.provider.replaced`                | Your {provider} account on ShareRide is now {email}.                                                                                          | {provider}-aðgangurinn þinn á ShareRide er nú {email}.                                                                                          |
+| `auth.provider.replacedHidden`          | Your {provider} account on ShareRide has changed.                                                                                             | {provider}-aðgangurinn þinn á ShareRide hefur breyst.                                                                                           |
+| `auth.provider.dismiss`                 | Close the message                                                                                                                             | Loka skilaboðunum                                                                                                                               |
+| `auth.provider.returning`               | Signing you in… (phone, for a moment)                                                                                                         | Skrái þig inn…                                                                                                                                  |
+| `auth.provider.closeTitle`              | You can close this window (a pop-up left open)                                                                                                | Þú getur lokað þessum glugga                                                                                                                    |
+| `auth.provider.closeWindow`             | Then go on in the ShareRide window.                                                                                                           | Haltu svo áfram í ShareRide-glugganum.                                                                                                          |
+| `settings.signInMethods`                | Sign-in methods                                                                                                                               | Innskráningarleiðir                                                                                                                             |
+| `settings.signInMethods.help`           | Your phone number always signs you in. You can also link other ways to sign in.                                                               | Símanúmerið þitt dugar alltaf til að skrá þig inn. Þú getur líka tengt aðrar innskráningarleiðir.                                               |
+| `settings.signInMethods.add`            | Add {provider}                                                                                                                                | Bæta við {provider}                                                                                                                             |
+| `settings.signInMethods.remove`         | Remove {provider}                                                                                                                             | Fjarlægja {provider}                                                                                                                            |
+| `settings.signInMethods.removeQuestion` | Remove {provider}? You can still sign in with your phone number.                                                                              | Fjarlægja {provider}? Þú getur áfram skráð þig inn með símanúmerinu þínu.                                                                       |
+| `settings.signInMethods.notLinked`      | Not linked                                                                                                                                    | Ekki tengt                                                                                                                                      |
+| `settings.signInMethods.linked`         | Linked                                                                                                                                        | Tengt                                                                                                                                           |
+| `settings.signInMethods.hiddenEmail`    | Email hidden by Apple                                                                                                                         | Netfang falið af Apple                                                                                                                          |
+| `settings.signInMethods.confirm`        | To add {provider}, enter the code we text you.                                                                                                | Til að bæta við {provider} skaltu slá inn kóðann sem við sendum þér með SMS.                                                                    |
+| `settings.signInMethods.removed`        | {provider} is no longer linked to your account.                                                                                               | {provider} er ekki lengur tengt aðganginum þínum.                                                                                               |
+| `settings.signInMethods.alreadyLinked`  | {provider} is already linked to your account.                                                                                                 | {provider} er þegar tengt aðganginum þínum.                                                                                                     |
+| `settings.signInMethods.failed`         | Adding {provider} didn't work. Try again.                                                                                                     | Ekki tókst að bæta við {provider}. Reyndu aftur.                                                                                                |
+| `settings.signInMethods.expired`        | That took too long. Add {provider} again.                                                                                                     | Þetta tók of langan tíma. Bættu {provider} aftur við.                                                                                           |
 
 ## 9. Testing
 
@@ -326,12 +339,12 @@ Events (in the logs, by provider and user ID): `SignInMethodLinked`, `SignInMeth
 
 ## Decisions
 
-| # | Question | Decision |
-| - | -------- | -------- |
-| 1 | When does a newcomer through Google or Apple give a phone number? | At sign-up, before the account is made; later sign-ins need no code (Martin, 2026-11-22, on a decision card; not chosen: before the first booking, ride or chat, as spec 1, 3.3 said) |
-| 2 | How do the apps and the web talk to Google and Apple? | Through our API, which runs the sign-in in a browser window on every platform ([ADR 0034](../decisions/0034-google-and-apple-sign-in-through-our-api.md); my call) |
-| 3 | Is Apple offered on Android? | Yes, like on the web (my call) |
-| 4 | Is a Google or Apple account linked to an existing account by its phone? | Yes, once the person proves the number with its code; never by email (R19.3; my call) |
-| 5 | Whose email does the account keep? | Its own; the provider's verified email only fills an empty one (R19.4; my call) |
-| 6 | Can a signed-in person add Google or Apple from Settings without a code? | No: adding asks for a confirm code to the account's number, so a session alone never adds a way back in (R19.3; my call, after the design review) |
-| 7 | Which Apple developer account? | Martin's own, with the test App ID, for the beta; when the company's account takes over, people confirm their phone once more (3.5; my call, following milestone 2's decision 6) |
+| #   | Question                                                                 | Decision                                                                                                                                                                              |
+| --- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | When does a newcomer through Google or Apple give a phone number?        | At sign-up, before the account is made; later sign-ins need no code (Martin, 2026-11-22, on a decision card; not chosen: before the first booking, ride or chat, as spec 1, 3.3 said) |
+| 2   | How do the apps and the web talk to Google and Apple?                    | Through our API, which runs the sign-in in a browser window on every platform ([ADR 0034](../decisions/0034-google-and-apple-sign-in-through-our-api.md); my call)                    |
+| 3   | Is Apple offered on Android?                                             | Yes, like on the web (my call)                                                                                                                                                        |
+| 4   | Is a Google or Apple account linked to an existing account by its phone? | Yes, once the person proves the number with its code; never by email (R19.3; my call)                                                                                                 |
+| 5   | Whose email does the account keep?                                       | Its own; the provider's verified email only fills an empty one (R19.4; my call)                                                                                                       |
+| 6   | Can a signed-in person add Google or Apple from Settings without a code? | No: adding asks for a confirm code to the account's number, so a session alone never adds a way back in (R19.3; my call, after the design review)                                     |
+| 7   | Which Apple developer account?                                           | Martin's own, with the test App ID, for the beta; when the company's account takes over, people confirm their phone once more (3.5; my call, following milestone 2's decision 6)      |

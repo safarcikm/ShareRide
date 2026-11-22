@@ -59,6 +59,29 @@ export const is = {
   "auth.code.resent": "Við sendum nýjan kóða.",
   "auth.code.changeNumber": "Breyta númerinu",
   "auth.code.incomplete": "Sláðu inn alla {length} tölustafi kóðans.",
+  "auth.continueGoogle": "Halda áfram með Google",
+  "auth.continueApple": "Halda áfram með Apple",
+  "auth.orPhone": "eða með símanúmerinu þínu",
+  "auth.provider.phoneTitle": "Bættu við símanúmerinu þínu",
+  "auth.provider.phoneHelp":
+    "{provider} staðfesti netfangið {email}. Við sendum þér kóða með SMS einu sinni, svo fólkið sem þú ferðast með nái í þig. Næst dugar {provider}.",
+  "auth.provider.phoneHelpHidden":
+    "{provider} staðfesti að þetta sért þú. Við sendum þér kóða með SMS einu sinni, svo fólkið sem þú ferðast með nái í þig. Næst dugar {provider}.",
+  "auth.provider.another": "Skrá inn á annan hátt",
+  "auth.provider.linked":
+    "{provider} er nú tengt aðganginum þínum. Næst getur þú haldið áfram með {provider}.",
+  "auth.provider.replaced": "{provider}-aðgangurinn þinn á ShareRide er nú {email}.",
+  "auth.provider.replacedHidden": "{provider}-aðgangurinn þinn á ShareRide hefur breyst.",
+  "auth.provider.failed":
+    "Innskráning með {provider} tókst ekki. Reyndu aftur eða notaðu símanúmerið þitt.",
+  "auth.provider.expired": "Þetta tók of langan tíma. Haltu aftur áfram með {provider}.",
+  "auth.provider.inUse": "Þessi {provider}-aðgangur er notaður af öðrum ShareRide-aðgangi.",
+  "auth.provider.inUseRetry":
+    "Þessi {provider}-aðgangur er notaður af öðrum ShareRide-aðgangi. Reyndu aftur til að halda áfram með símanúmerinu einu.",
+  "auth.provider.returning": "Skrái þig inn…",
+  "auth.provider.closeTitle": "Þú getur lokað þessum glugga",
+  "auth.provider.closeWindow": "Haltu svo áfram í ShareRide-glugganum.",
+  "auth.provider.dismiss": "Loka skilaboðunum",
   "beta.badge": "Beta",
   "beta.badgeFeedback": "Beta. Senda ábendingu",
   "feedback.heading": "Ábendingar",
@@ -220,6 +243,22 @@ export const is = {
     "Notaðu þetta ef þú týndir síma eða skráðir þig inn á tæki sem aðrir nota.",
   "settings.yourAccount": "Aðgangurinn þinn",
   "settings.email": "Netfang",
+  "settings.signInMethods": "Innskráningarleiðir",
+  "settings.signInMethods.help":
+    "Símanúmerið þitt dugar alltaf til að skrá þig inn. Þú getur líka tengt aðrar innskráningarleiðir.",
+  "settings.signInMethods.add": "Bæta við {provider}",
+  "settings.signInMethods.remove": "Fjarlægja {provider}",
+  "settings.signInMethods.removeQuestion":
+    "Fjarlægja {provider}? Þú getur áfram skráð þig inn með símanúmerinu þínu.",
+  "settings.signInMethods.removed": "{provider} er ekki lengur tengt aðganginum þínum.",
+  "settings.signInMethods.notLinked": "Ekki tengt",
+  "settings.signInMethods.linked": "Tengt",
+  "settings.signInMethods.hiddenEmail": "Netfang falið af Apple",
+  "settings.signInMethods.alreadyLinked": "{provider} er þegar tengt aðganginum þínum.",
+  "settings.signInMethods.failed": "Ekki tókst að bæta við {provider}. Reyndu aftur.",
+  "settings.signInMethods.expired": "Þetta tók of langan tíma. Bættu {provider} aftur við.",
+  "settings.signInMethods.confirm":
+    "Til að bæta við {provider} skaltu slá inn kóðann sem við sendum þér með SMS.",
   "settings.addEmail": "Bæta við netfangi",
   "settings.changeEmail": "Breyta netfangi",
   "settings.emailWaiting": "Bíður þess að þú opnir hlekkinn sem var sendur á {email}.",

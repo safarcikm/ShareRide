@@ -53,6 +53,81 @@ describe("createSessionManager", () => {
     expect(client.calls[0]?.input["body"]).toMatchObject({ device });
   });
 
+  it("sends a waiting Google or Apple sign-in with the code, and keeps what it said", async () => {
+    const client = createFakeClient();
+    const providerLink = { provider: "google", outcome: "linked", email: "anna@example.com" };
+    client.answer("/v1/auth/phone/verify", () =>
+      ok(200, { ...tokens(1), user: testMe, isNewUser: false, providerLink }),
+    );
+    const session = createSessionManager({ client, tokenStore: memoryStore(), device });
+    expect(session.signInNews()).toBeNull();
+    await session.verify("+3546900000", "123456", "en", undefined, `sr_ps_${"p".repeat(43)}`);
+    expect(client.calls[0]?.input["body"]).toMatchObject({
+      pendingSignIn: `sr_ps_${"p".repeat(43)}`,
+    });
+    expect(session.signInNews()).toEqual({ providerLink, suggestedFirstName: null });
+    session.dismissProviderLink();
+    expect(session.signInNews()).toBeNull();
+  });
+
+  it("keeps a new account's first name from Google or Apple for step 3, until signed out", async () => {
+    const client = createFakeClient();
+    client.answer("/v1/auth/phone/verify", () =>
+      ok(200, {
+        ...tokens(1),
+        user: testMe,
+        isNewUser: true,
+        providerLink: { provider: "apple", outcome: "created", email: null },
+        suggestedFirstName: "Anna",
+      }),
+    );
+    client.answer("/v1/auth/sign-out", () => ok(204));
+    const session = createSessionManager({ client, tokenStore: memoryStore(), device });
+    await session.verify("+3546900000", "123456", "en", undefined, `sr_ps_${"p".repeat(43)}`);
+    // "created" needs no notice: the new account is the news.
+    expect(session.signInNews()).toEqual({ providerLink: null, suggestedFirstName: "Anna" });
+    await session.signOut({ all: false });
+    expect(session.signInNews()).toBeNull();
+  });
+
+  it("finishes a Google or Apple sign-in with the ticket and the verifier", async () => {
+    const client = createFakeClient();
+    const store = memoryStore();
+    client.answer("/v1/auth/oauth/finish", () =>
+      ok(200, { status: "signedIn", ...tokens(1), user: testMe, isNewUser: false }),
+    );
+    const session = createSessionManager({ client, tokenStore: store, device });
+    const result = await session.finishProviderSignIn(`sr_pt_${"t".repeat(43)}`, "v".repeat(43));
+    expect(result.ok && result.data.status).toBe("signedIn");
+    expect(client.calls[0]).toEqual({
+      path: "/v1/auth/oauth/finish",
+      input: { body: { ticket: `sr_pt_${"t".repeat(43)}`, verifier: "v".repeat(43), device } },
+    });
+    expect(store.value).toBe("sr_rt_refresh-1");
+    expect(session.state()).toEqual({ status: "signedIn", me: testMe });
+    expect(session.signInNews()).toBeNull();
+  });
+
+  it("stays signed out when Google or Apple needs the phone step first", async () => {
+    const client = createFakeClient();
+    const store = memoryStore();
+    const phoneNeeded = {
+      status: "phoneNeeded",
+      pendingSignIn: `sr_ps_${"p".repeat(43)}`,
+      provider: "google",
+      email: "anna@example.com",
+      firstName: "Anna",
+      expiresAt: "2026-11-22T12:30:00.000Z",
+    };
+    client.answer("/v1/auth/oauth/finish", () => ok(200, phoneNeeded));
+    const session = createSessionManager({ client, tokenStore: store, device });
+    await session.restore();
+    const result = await session.finishProviderSignIn(`sr_pt_${"t".repeat(43)}`, "v".repeat(43));
+    expect(result.ok && result.data).toEqual(phoneNeeded);
+    expect(store.value).toBeNull();
+    expect(session.state()).toEqual({ status: "signedOut" });
+  });
+
   it("refreshes once when the access token has expired, then repeats the call", async () => {
     const client = createFakeClient();
     client.answer("/v1/auth/phone/verify", () =>

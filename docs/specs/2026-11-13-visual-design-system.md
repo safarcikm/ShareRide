@@ -155,6 +155,17 @@ larger, in a soft `primary` halo. A route is a `primary` line on a `surface`
 casing; the rest of a passenger's trip is a dashed `control` line, with its
 stops as small `control` dots. The map sits in a card's frame.
 
+Google's and Apple's sign-in buttons ([spec 19](2026-11-22-google-and-apple-sign-in.md),
+3.1) keep the brands' own colours, as their button rules ask: the only
+colours on our screens that are not ours, as tokens `signInBrands` and
+`googleLogo`. Google's button is `#FFFFFF` with a `#747775` outline and
+`#1F1F1F` text in light mode, `#131314` with `#8E918F` and `#E3E3E3` in dark
+mode; its "G" is Google's blue `#4285F4`, green `#34A853`, yellow `#FBBC05`
+and red `#EA4335`. Apple's button is black `#000000` with white text in
+light mode and white with black text in dark mode. Their text is at least
+4.5:1 on their fill, and Google's outline and Apple's fill at least 3:1
+against `background` and `surface` (the tokens' tests check it).
+
 ### 4.3 Type
 
 Two free fonts (SIL Open Font License), both with every Icelandic letter
@@ -331,6 +342,8 @@ and tests need no edits. Only the look changes.
 | `TopBar` | The menu from 900 wide, above every screen: `surface`, a 2 `border` line under it; the `Logo` (36) and "ShareRide" in `heading` at the left, together a link to Find named "ShareRide, to the front page"; the five places in `label` (the chosen one `primary` and underlined, at least 44 high; one under the pointer `primary`), then the `LanguageSwitch`. All of it in a row at most 1144 wide in the middle, with `md` padding at each side, as a page has (spec 18, 3.3) |
 | `CountBadge` | The unread count on Messages (spec 7, 3.1, item 9): `onPrimary` figures in `caption` on a `primary` pill, at least 20 (`sizes.badge`) wide and high, with a 2 `surface` ring; up to 9, then "9+"; nothing at zero. On the tab bar it sits on the icon's top corner, in the top bar after the name. Screen readers skip it: the place's name says the count ("Messages, 3 unread") |
 | `Logo` | The app icon in small: logo A on `primary`, corners rounded like an app icon, the same in both modes; hidden from screen readers, since the name sits beside it |
+| `ProviderButtons` | "Continue with Google" and "Continue with Apple" (spec 19, 3.1), one under the other, full width: height 48, corner `control`, a 2 outline, the brand's fill, outline and text (section 4.2) with the label in `button`, the brand's logo before it (18 for Google's "G", 22 for Apple's), and a 3 bottom edge in `edge` it sinks over when pressed. A busy one shows a spinner instead of its logo, and both wait. Under them "or with your phone number" in `small` `textMuted`, between two `border` hairlines |
+| `ProviderLinkNotice` | After the phone step linked a Google or Apple account (spec 19, 3.3): an `info` `Notice` with a close `IconButton` on a `surface` card with a `card` edge, at most 480 wide, at the top of whichever screen opens next (under the top bar on wide screens), taking focus as it appears, until it is closed |
 
 **Focus:** every pressable part shows a 3 wide `focus` ring with a 2 gap
 around its shape when reached by keyboard (web, and keyboards on phones).

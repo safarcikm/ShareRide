@@ -180,7 +180,7 @@ Sent through spec 7, in the recipient's language:
 | No-show marked | Passenger | Push and email |
 | Driver didn't come reported | Driver | Push and email |
 | Dispute decided by the operator | Both | Push and email |
-| Trip completed: rate your trip | Driver and passengers | Push; one reminder after 3 days |
+| Trip completed: rate your trip | Driver and passengers | Push, and email without push (spec 20); one reminder after 3 days |
 | A review about you is now visible | The person reviewed | Push |
 
 ## 4. Rules

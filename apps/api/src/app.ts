@@ -171,7 +171,7 @@ import {
   type PhotoStorage,
 } from "./platform/photo-storage.ts";
 import { createAdminApp } from "./admin-app.ts";
-import { createWebApp } from "./web-app.ts";
+import { createWebApp, openerPolicyFor } from "./web-app.ts";
 
 export type { AppEnv };
 
@@ -293,6 +293,13 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       c.res.headers.set("Cross-Origin-Resource-Policy", "cross-origin");
     });
   }
+  // Before the secure headers, so it has the last word on the opener
+  // policy: Google's and Apple's pop-up stays linked to its page (ADR 0034).
+  app.use(async (c, next) => {
+    await next();
+    const policy = openerPolicyFor(c.req.path);
+    if (policy !== null) c.res.headers.set("Cross-Origin-Opener-Policy", policy);
+  });
   app.use(secureHeaders());
   app.use(
     createMiddleware<AppEnv>(async (c, next) => {
