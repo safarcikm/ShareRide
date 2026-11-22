@@ -1,11 +1,12 @@
 # Spec 22: Get back into the console with a text code
 
-**Owner:** Martin · **Date:** 2026-11-22 · **Status:** Proposed
+**Owner:** Martin · **Date:** 2026-11-22 · **Status:** Approved
+(2026-11-22, by Martin on a decision card)
 
 Features: H1 to H7, the operator console ([features](../product/features.md)).
 Changes how the operator signs in to the console
 ([spec 10, 3.1](2026-11-13-operator-settings-and-metrics.md#31-console-home-and-layout))
-through [ADR 0040](../decisions/0040-console-recovery-by-text-code.md), which
+through [ADR 0040](../decisions/0040-console-recovery-by-text-code.md) (accepted), which
 amends [ADR 0028](../decisions/0028-operator-console-web-app-and-passkeys.md).
 Related: [security](../engineering/security.md#operator-console),
 [operator console](../engineering/operator-console.md),

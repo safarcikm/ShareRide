@@ -1,6 +1,7 @@
 # 0040. Get back into the console with a text code and a new passkey
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-22, by Martin on a decision card in the
+  project thread)
 - **Date:** 2026-11-22
 - **Deciders:** Martin
 - **Related:** amends [ADR 0028](0028-operator-console-web-app-and-passkeys.md)
