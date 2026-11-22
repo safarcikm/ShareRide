@@ -9,13 +9,13 @@ import {
   type RateLimited,
   type Result,
 } from "@shareride/domain";
-import { createTranslator } from "@shareride/i18n";
+import { createTranslator, type Locale } from "@shareride/i18n";
 import { and, desc, eq, gt, isNull, ne } from "drizzle-orm";
 import type { Logger } from "../../logger.ts";
 import { hashToken, newToken } from "../../platform/crypto.ts";
 import { MaybeSent } from "../../platform/maybe-sent.ts";
 import type { EmailChannel } from "../../platform/email.ts";
-import { emailContent } from "../notifications/email-content.ts";
+import { emailContent, type EmailContent } from "../notifications/email-content.ts";
 import { uniqueViolation } from "../../platform/database-errors.ts";
 
 // Adding an email (spec 1, 3.5; plan 4.6). The address waits with a link
@@ -38,6 +38,22 @@ export interface EmailService {
   ask(userId: string, input: string): Promise<Result<undefined, AskError>>;
   /** Makes the link's address the account's verified email. */
   verify(token: string): Promise<Result<{ readonly email: string }, VerifyError>>;
+}
+
+/** The email with the link that confirms an address, in the reader's language. */
+export function verifyEmailContent(locale: Locale, webAppUrl: string, token: string): EmailContent {
+  const t = createTranslator(locale);
+  return emailContent(
+    {
+      title: t("email.verifySubject"),
+      body: t("email.verifyBody"),
+      // After the #, so the token never reaches the server's request logs.
+      path: `/verify-email#${token}`,
+    },
+    locale,
+    webAppUrl,
+    { open: t("email.verifyOpen"), footer: t("email.verifyFooter") },
+  );
 }
 
 /** The address waiting for its link, if the newest link sent still works. */
@@ -129,18 +145,7 @@ export function createEmailService(dependencies: {
       if (!asked.ok) return asked;
       if (asked.value === null) return ok(undefined);
       const { id, locale } = asked.value;
-      const t = createTranslator(locale);
-      const content = emailContent(
-        {
-          title: t("email.verifySubject"),
-          body: t("email.verifyBody"),
-          // After the #, so the token never reaches the server's request logs.
-          path: `/verify-email#${token}`,
-        },
-        locale,
-        email.webAppUrl,
-        { open: t("email.verifyOpen"), footer: t("email.verifyFooter") },
-      );
+      const content = verifyEmailContent(locale, email.webAppUrl, token);
       try {
         await email.sender.send({ to: address.value, ...content, idempotencyKey: id });
       } catch (error) {

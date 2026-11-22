@@ -196,6 +196,8 @@ These work as in the [staging runbook](staging.md), on `puffinride-api`,
 - [Retention runs and holds](staging.md#retention-runs-and-holds) and
   [Answer privacy requests](staging.md#answer-privacy-requests).
 - [Rotate a secret](staging.md#rotate-a-secret).
+- [Show the puffin beside our emails](staging.md#show-the-puffin-beside-our-emails):
+  one `hello@` user for both.
 
 ## Turn on photos
 

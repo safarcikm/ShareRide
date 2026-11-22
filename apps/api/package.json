@@ -20,7 +20,8 @@
     "metrics": "node --env-file-if-exists=../../.env src/metrics-cli.ts",
     "operator": "node --env-file-if-exists=../../.env src/operator-cli.ts",
     "privacy": "node --env-file-if-exists=../../.env src/privacy-cli.ts",
-    "sentry:check": "node --env-file-if-exists=../../.env src/sentry-check-cli.ts"
+    "sentry:check": "node --env-file-if-exists=../../.env src/sentry-check-cli.ts",
+    "email-previews": "node src/email-previews-cli.ts"
   },
   "dependencies": {
     "@hono/node-server": "catalog:",
@@ -30,6 +31,7 @@
     "@shareride/db": "workspace:*",
     "@shareride/domain": "workspace:*",
     "@shareride/i18n": "workspace:*",
+    "@shareride/ui": "workspace:*",
     "@simplewebauthn/server": "14.1.0",
     "aws4fetch": "1.0.20",
     "drizzle-orm": "catalog:",

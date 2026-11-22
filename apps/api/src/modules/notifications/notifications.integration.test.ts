@@ -55,6 +55,7 @@ import {
 import { expireAllDueBookings } from "../bookings/index.ts";
 import { createPaymentService } from "../payments/service.ts";
 import { cleanUpNotifications } from "./clean-up.ts";
+import { emailLogo } from "./email-logo.ts";
 import { recordEvents } from "./outbox.ts";
 import { setPreferences } from "./preferences.ts";
 import { createNotificationWorker, type WorkerSwitches } from "./worker.ts";
@@ -563,17 +564,18 @@ describe("the worker (plan 4.4)", () => {
         to: "anna@example.com",
         subject: "New request: Jón",
         text: expect.stringMatching(
-          /^1 seat · BSÍ bus terminal – N1 Borgarnes · Saturday/,
+          /^New request: Jón\n\n1 seat · BSÍ bus terminal – N1 Borgarnes · Saturday/,
         ) as unknown,
-        html: expect.stringContaining(
-          "<p>1 seat · BSÍ bus terminal – N1 Borgarnes · Saturday",
+        html: expect.stringMatching(
+          /<p [^>]*>1 seat · BSÍ bus terminal – N1 Borgarnes · Saturday/,
         ) as unknown,
+        images: [emailLogo],
         idempotencyKey: expect.any(String) as unknown,
       },
     ]);
-    // A plain link to the trip, in both parts (plan 4.6).
+    // A link to the trip, in both parts (plan 4.6), and the button in the HTML (spec 24).
     expect(email.sent[0]?.text).toContain(`Open in PuffinRide: ${webAppUrl}/drive/trips/${north}`);
-    expect(email.sent[0]?.html).toContain(`<a href="${webAppUrl}/drive/trips/${north}">`);
+    expect(email.sent[0]?.html).toContain(`href="${webAppUrl}/drive/trips/${north}"`);
 
     const gunna = await newMember("Gunna");
     await booked(gunna.accessToken, north, { fromStop: 1, toStop: 2 });
@@ -662,7 +664,7 @@ describe("the worker (plan 4.4)", () => {
       to: "gunna@example.com",
       subject: `Refund of ${formatMoney(cancellation.refund, "en")}`,
       text: expect.stringMatching(
-        /^Hlemmur – Fjörður shopping centre · Saturday 14 November at 05:30\. It goes back to the card you paid with\./,
+        /^Refund of .+\n\nHlemmur – Fjörður shopping centre · Saturday 14 November at 05:30\. It goes back to the card you paid with\./,
       ) as unknown,
     });
     expect(push.sent.slice(pushedBefore)).toHaveLength(1);
@@ -945,7 +947,7 @@ describe("the worker (plan 4.4)", () => {
       to: "gunna-trip@example.com",
       subject: "Trip cancelled: Weather",
       text: expect.stringMatching(
-        /^BSÍ bus terminal – Hof bus stop, Akureyri · Saturday 14 November at 09:00\. Full refund of /,
+        /^Trip cancelled: Weather\n\nBSÍ bus terminal – Hof bus stop, Akureyri · Saturday 14 November at 09:00\. Full refund of /,
       ) as unknown,
     });
     expect(JSON.stringify([push.sent, sms.outbox, email.sent])).not.toMatch(/snow/);
@@ -1874,7 +1876,9 @@ describe("email (plan 4.6)", () => {
         expect.stringMatching(/^You have unread messages about your trip on \w+day \d+ \w+$/),
       ],
     ]);
-    expect(email.sent[0]?.text).toMatch(/^Open the chat in PuffinRide to read them\.\n/);
+    expect(email.sent[0]?.text).toMatch(
+      /^You have unread messages about your trip on \w+day \d+ \w+\n\nOpen the chat in PuffinRide to read them\.\n/,
+    );
     expect(email.sent[0]?.text).toContain(`Open in PuffinRide: ${webAppUrl}/messages/${bookingId}`);
     expect(JSON.stringify(email.sent)).not.toContain("4512");
 

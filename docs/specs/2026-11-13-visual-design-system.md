@@ -321,6 +321,10 @@ and the pin keeps the puffin a travel sign rather than a souvenir.
   while the app starts; the fonts and your session then load behind the
   usual loading view.
 - **Browser tab:** the icon with rounded corners, 48 pixels.
+- **In emails:** the same icon, 40 pixels, with the name, at the top of
+  every email, sent inside the email
+  ([spec 24](2026-11-22-branded-emails.md)). Its picture,
+  `apps/api/assets/email-logo.png` (120 pixels), is exported with the others.
 - **With the name:** the icon, then "PuffinRide" in Fredoka SemiBold in
   `text`, at 0.6 of the icon's height, with a gap of a quarter of the
   icon's height. The name comes from the app's texts, so a new name only

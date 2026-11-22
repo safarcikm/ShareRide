@@ -1,26 +1,22 @@
 import { createTranslator, type Locale } from "@shareride/i18n";
+import type { EmailImage } from "../../platform/email.ts";
+import { emailHtml } from "./email-layout.ts";
+import { emailLogo } from "./email-logo.ts";
 import type { NotificationText } from "./texts.ts";
 
-// The email for a notification (plan 4.6): its title as the subject, its
-// words, a plain link to the screen it is about, and a footer that will
-// carry the company's details (spec 13). Readable without images, and
-// nothing that tracks opens or clicks (R7.9).
+// The email for a notification (plan 4.6), in the PuffinRide layout (spec
+// 24): its title as the subject and heading, its words, one button to the
+// screen it is about, and a footer that will carry the company's details
+// (spec 13). Readable without pictures, with a plain-text part of the same
+// words, and nothing that tracks opens or clicks (R7.9, R24.2).
 
 export interface EmailContent {
   readonly subject: string;
   readonly text: string;
   readonly html: string;
+  /** The pictures the HTML shows: the puffin pin. */
+  readonly images: readonly EmailImage[];
 }
-
-const escapes: Readonly<Record<string, string>> = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  '"': "&quot;",
-  "'": "&#39;",
-};
-
-const escaped = (text: string) => text.replace(/[&<>"']/g, (character) => escapes[character] ?? "");
 
 /** The link's words and the footer, when not those of a notification. */
 export interface EmailWords {
@@ -28,7 +24,16 @@ export interface EmailWords {
   readonly footer: string;
 }
 
-/** `webAppUrl` is an origin, such as https://shareride.is. */
+/**
+ * The words as paragraphs, split at blank lines. Words that start with the
+ * title, as a statement of reasons does, start after it (spec 24, 3.1).
+ */
+function paragraphsOf(words: string, title: string): string[] {
+  const paragraphs = words.split(/\n[ \t]*\n+/).filter((paragraph) => paragraph.trim() !== "");
+  return paragraphs.length > 1 && paragraphs[0] === title ? paragraphs.slice(1) : paragraphs;
+}
+
+/** `webAppUrl` is an origin, such as https://puffinride.is. */
 export function emailContent(
   notification: NotificationText,
   locale: Locale,
@@ -36,23 +41,32 @@ export function emailContent(
   words?: EmailWords,
 ): EmailContent {
   const t = createTranslator(locale);
+  const { title } = notification;
   const link = `${webAppUrl}${notification.path}`;
   const open = words?.open ?? notification.open ?? t("email.open");
   const footer = words?.footer ?? t("email.footer");
-  const body = notification.emailBody ?? notification.body;
-  const text = [body, "", `${open}: ${link}`, "", footer].join("\n");
-  const html = [
-    "<!doctype html>",
-    `<html lang="${locale}">`,
-    '<head><meta charset="utf-8"><meta name="viewport" content="width=device-width">',
-    `<title>${escaped(notification.title)}</title></head>`,
-    "<body>",
-    `<p>${escaped(body).replaceAll("\n", "<br>")}</p>`,
-    `<p><a href="${escaped(link)}">${escaped(open)}</a></p>`,
-    "<hr>",
-    `<p><small>${escaped(footer)}</small></p>`,
-    "</body>",
-    "</html>",
+  const name = t("app.name");
+  const paragraphs = paragraphsOf(notification.emailBody ?? notification.body, title);
+  const text = [
+    title,
+    "",
+    paragraphs.join("\n\n"),
+    "",
+    `${open}: ${link}`,
+    "",
+    "--",
+    footer,
+    `${name} · ${webAppUrl}`,
   ].join("\n");
-  return { subject: notification.title, text, html };
+  const html = emailHtml({
+    locale,
+    title,
+    paragraphs,
+    button: { label: open, href: link },
+    footer,
+    name,
+    home: { label: new URL(webAppUrl).host, href: webAppUrl },
+    logo: emailLogo,
+  });
+  return { subject: title, text, html, images: [emailLogo] };
 }
