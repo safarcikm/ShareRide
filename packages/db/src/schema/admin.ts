@@ -32,7 +32,7 @@ export const operatorSessions = pgTable(
     index("operator_sessions_user_index").on(table.userId),
     check(
       "operator_sessions_end_reason_check",
-      sql`${table.endReason} is null or ${table.endReason} in ('signed_out', 'idle', 'expired', 'role_removed', 'suspended')`,
+      sql`${table.endReason} is null or ${table.endReason} in ('signed_out', 'idle', 'expired', 'role_removed', 'suspended', 'recovered')`,
     ),
   ],
 );

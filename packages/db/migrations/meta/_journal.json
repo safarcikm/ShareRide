@@ -421,6 +421,13 @@
       "when": 1795356075093,
       "tag": "0059_booking_payment_method",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1795362845160,
+      "tag": "0060_console_recovery",
+      "breakpoints": true
     }
   ]
 }
