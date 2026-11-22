@@ -59,7 +59,6 @@ test.describe("Continue with Google", () => {
 
     // Signed out, Google alone signs the member in again: no code.
     await menuLink(page, english.profileTab).click();
-    await page.getByRole("button", { name: "Settings" }).click();
     await page.getByRole("button", { name: "Sign out", exact: true }).click();
     await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
     await menuLink(page, english.profileTab).click();

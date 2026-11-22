@@ -1,15 +1,17 @@
 import { driverReadinessRoute, type Me } from "@shareride/contracts";
 import { peopleColourOf } from "@shareride/domain";
 import { router } from "expo-router";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useMe, useSession } from "@/auth/session";
+import { useSignOut } from "@/auth/use-sign-out";
 import { Avatar } from "@/components/avatar";
 import { useOpenFeedback } from "@/beta/feedback";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Columns } from "@/components/columns";
 import { LanguageSwitch } from "@/components/language-switch";
+import { Notice } from "@/components/notice";
 import { Row } from "@/components/row";
 import { Screen, useWideScreen } from "@/components/screen";
 import { Title } from "@/components/text";
@@ -18,6 +20,7 @@ import { useLanguage } from "@/i18n/language";
 import { useSaveLanguage } from "@/i18n/use-save-language";
 import { dayOf } from "@/lib/days";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
+import { openPlace } from "@/navigation/open-place";
 import { SignInFirst } from "@/navigation/sign-in-first";
 import { languagesText } from "@/people/languages";
 import { memberSinceText } from "@/people/texts";
@@ -28,7 +31,8 @@ import { usePalette } from "@/theme/use-palette";
 /**
  * Profile, a place of the menu (spec 16, 3.1). Signed in, my profile
  * (spec 16, 3.4): who I am, then rows for my cars, my licence, the meeting
- * points, Settings and the legal documents. Signed out: Sign in, the
+ * points, Settings and the legal documents, and Sign out, which signs out
+ * of this device and returns to Find, as Settings does. Signed out: Sign in, the
  * language, the meeting points and the legal documents, in one column on
  * any screen.
  */
@@ -66,6 +70,13 @@ function MyProfile({ me }: { readonly me: Me }) {
   const load = useCallback(() => session.call(driverReadinessRoute, {}), [session]);
   const { value: readiness } = useLoadedOnFocus(load);
   const wide = useWideScreen();
+  const [error, setError] = useState<string | null>(null);
+  const { signingOut, signOut } = useSignOut({
+    onSignedOut: () => {
+      openPlace("/");
+    },
+    onError: setError,
+  });
   // Without an answer the row just leaves the value out.
   const licence =
     readiness?.ok === true
@@ -134,6 +145,16 @@ function MyProfile({ me }: { readonly me: Me }) {
         />
       </Card>
       <Small>{t("profile.inSettings")}</Small>
+      {/* On a wide page it starts at the left, with the rows. */}
+      <View style={wide ? styles.start : null}>
+        <Button
+          variant="secondary"
+          label={t("settings.signOut")}
+          busy={signingOut !== null}
+          onPress={() => void signOut(false)}
+        />
+      </View>
+      <Notice message={error} />
     </>
   );
   // A wide screen (spec 18, 3.12): who I am in a card at the left, which
@@ -196,5 +217,6 @@ function Small({
 const styles = StyleSheet.create({
   person: { alignItems: "center", gap: spacing.xs },
   links: { gap: spacing.sm, paddingTop: spacing.lg },
+  start: { flexDirection: "row" },
   centre: { textAlign: "center" },
 });

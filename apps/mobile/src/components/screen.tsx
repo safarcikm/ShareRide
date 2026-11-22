@@ -31,6 +31,7 @@ import {
   spacing,
 } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { useRefresh, type Refresh } from "./refresh";
 
 /**
  * A full screen with safe-area padding. On wide screens (web, tablets) the
@@ -46,6 +47,10 @@ import { usePalette } from "@/theme/use-palette";
  * stays there as it grows while the reader is there, not while they read
  * further up; a new `endKey`, such as my own message on its way, brings it
  * back to the end.
+ * With `refresh`, pulling down at the top loads the screen again, with a
+ * spinner and then "Updated" at the top (spec 16, 3.9); a new
+ * `refreshAsked` count, such as from pressing the logo, does the same from
+ * the top of the screen.
  */
 export function Screen({
   children,
@@ -54,6 +59,8 @@ export function Screen({
   width = "column",
   stickToEnd = false,
   endKey,
+  refresh,
+  refreshAsked,
 }: {
   readonly children: ReactNode;
   readonly footer?: ReactNode;
@@ -61,6 +68,8 @@ export function Screen({
   readonly width?: "column" | "page";
   readonly stickToEnd?: boolean;
   readonly endKey?: string | undefined;
+  readonly refresh?: Refresh | undefined;
+  readonly refreshAsked?: number | undefined;
 }) {
   const palette = usePalette();
   const wide = useWideScreen();
@@ -69,48 +78,54 @@ export function Screen({
   // The height the screen scrolls in: the window less any bar above it.
   const [viewHeight, setViewHeight] = useState<number | null>(null);
   const sticking = useStickToEnd(scrollRef, stickToEnd, endKey);
+  const refreshing = useRefresh({ refresh, asked: refreshAsked, scrollRef });
   return (
     <SafeAreaView
       edges={safeEdges}
       style={[styles.safeArea, { backgroundColor: palette.background }]}
     >
-      {/* "handled": with the keyboard open, a tap on a button acts at once. */}
-      <ScrollView
-        ref={scrollRef}
-        testID="screen-scroll"
-        onLayout={
-          // Only the web's sticky aside and side column use the height. It
-          // is measured from the start, as they can come later, with data.
-          Platform.OS === "web"
-            ? (event) => {
-                setViewHeight(event.nativeEvent.layout.height);
-              }
-            : undefined
-        }
-        style={wide ? evenGutterOnWeb : undefined}
-        contentContainerStyle={[styles.scroll, { paddingBottom: spacing.md + keyboardRoom }]}
-        keyboardShouldPersistTaps="handled"
-        {...sticking}
-      >
-        <ScreenScrollContext.Provider value={scroll}>
-          <ScreenViewHeightContext.Provider value={viewHeight}>
-            {aside !== undefined && wide ? (
-              <View style={styles.wide}>
-                <View style={styles.asideColumn}>{children}</View>
-                <View testID="aside" style={[styles.aside, stickyOnWeb(viewHeight)]}>
-                  {aside}
+      {/* The scroll and, over its top, what a refresh shows. */}
+      <View style={styles.scrollArea}>
+        {/* "handled": with the keyboard open, a tap on a button acts at once. */}
+        <ScrollView
+          ref={scrollRef}
+          testID="screen-scroll"
+          refreshControl={refreshing.control}
+          onLayout={
+            // Only the web's sticky aside and side column use the height. It
+            // is measured from the start, as they can come later, with data.
+            Platform.OS === "web"
+              ? (event) => {
+                  setViewHeight(event.nativeEvent.layout.height);
+                }
+              : undefined
+          }
+          style={wide ? evenGutterOnWeb : undefined}
+          contentContainerStyle={[styles.scroll, { paddingBottom: spacing.md + keyboardRoom }]}
+          keyboardShouldPersistTaps="handled"
+          {...sticking}
+        >
+          <ScreenScrollContext.Provider value={scroll}>
+            <ScreenViewHeightContext.Provider value={viewHeight}>
+              {aside !== undefined && wide ? (
+                <View style={styles.wide}>
+                  <View style={styles.asideColumn}>{children}</View>
+                  <View testID="aside" style={[styles.aside, stickyOnWeb(viewHeight)]}>
+                    {aside}
+                  </View>
                 </View>
-              </View>
-            ) : width === "page" && wide ? (
-              <View testID="page" style={styles.page}>
-                {children}
-              </View>
-            ) : (
-              <View style={styles.column}>{children}</View>
-            )}
-          </ScreenViewHeightContext.Provider>
-        </ScreenScrollContext.Provider>
-      </ScrollView>
+              ) : width === "page" && wide ? (
+                <View testID="page" style={styles.page}>
+                  {children}
+                </View>
+              ) : (
+                <View style={styles.column}>{children}</View>
+              )}
+            </ScreenViewHeightContext.Provider>
+          </ScreenScrollContext.Provider>
+        </ScrollView>
+        {refreshing.mark}
+      </View>
       {footer === undefined ? null : (
         <View
           testID="bottom-bar"
@@ -299,6 +314,7 @@ export function stickyOnWeb(viewHeight: number | null): object {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
+  scrollArea: { flex: 1 },
   scroll: { flexGrow: 1, alignItems: "center", padding: spacing.md },
   column: { flex: 1, width: "100%", maxWidth: maxContentWidth, gap: spacing.md },
   page: { flex: 1, width: "100%", maxWidth: pageMaxWidth, gap: spacing.md },

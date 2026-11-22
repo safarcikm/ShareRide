@@ -13,7 +13,8 @@ import { spacing } from "@/theme/tokens";
  * screen 1). One row per confirmed booking, the latest message first, with
  * the other person, the trip day and part, the last message and the unread
  * count. It loads again each time it comes into view, and sets the badge
- * from the same answer. Signed out, it asks to sign in.
+ * from the same answer. On a phone, pulling down loads it again (spec 16,
+ * 3.9). Signed out, it asks to sign in.
  *
  * On a wide screen the list is the left pane of a card, and the right pane
  * asks to choose a conversation (spec 18, 3.11). None opens by itself:
@@ -43,7 +44,7 @@ function Conversations() {
     );
   }
   return (
-    <Screen>
+    <Screen refresh={state.pull}>
       <Title>{t("chat.title")}</Title>
       <ConversationList state={state} />
     </Screen>

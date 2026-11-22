@@ -108,7 +108,9 @@ changes on a phone.
 
 1. Its content lines up with the page: logo and name at the page's left
    edge, the places and the language at its right edge.
-2. The logo and name are a link to Find.
+2. The logo and name are a link to Find. Pressing it also loads Find
+   again, with what a pull to refresh shows (spec 16, 3.9; Martin,
+   2026-11-22).
 3. Nothing else changes: five places, the chosen one `primary` and
    underlined, the unread count on Messages.
 4. A browser whose scrollbar takes room (Windows, Linux) would push a page
@@ -331,7 +333,8 @@ changes on a phone.
    languages, member since, "Edit profile" and "See it as others do".
 2. **Main column:** the two groups of rows (My cars, Driving licence,
    Meeting points; Settings, Terms, rules and privacy, Send feedback,
-   Notices) and the line about what is in Settings.
+   Notices), the line about what is in Settings, and Sign out, at the left
+   (spec 16, 3.4 item 4).
 3. The title starts at the left, over the card. The card stays in view
    while the rows scroll.
 4. Signed out, Profile stays one centred column.

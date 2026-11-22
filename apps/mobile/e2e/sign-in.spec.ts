@@ -52,3 +52,20 @@ test.describe("sign out on all devices", () => {
     await otherDevice.close();
   });
 });
+
+test.describe("sign out from Profile", () => {
+  test.use({ locale: "en-GB" });
+
+  test("signs out of this device from Profile, and stays signed out after a reload", async ({
+    page,
+  }) => {
+    await signUp(page, english, "Gunna");
+    await menuLink(page, english.profileTab).click();
+    await expect(page.getByRole("heading", { name: english.myProfile })).toBeVisible();
+    await page.getByRole("button", { name: "Sign out", exact: true }).click();
+    await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+    await page.reload();
+    await menuLink(page, english.profileTab).click();
+    await expect(page.getByRole("button", { name: english.signIn, exact: true })).toBeVisible();
+  });
+});
