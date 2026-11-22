@@ -2496,6 +2496,25 @@ export const en = {
   "admin.meetingPoints.openIssues":
     "{count, plural, one {# open problem report} other {# open problem reports}}",
   "admin.meetingPoints.sampleTag": "Sample",
+  "admin.activateSeveral.title": "Activate several drafts",
+  "admin.activateSeveral.intro":
+    "Tick the drafts you have checked: the spot, where to stand, the amenities and the season. Activating them confirms each one today.",
+  "admin.activateSeveral.note":
+    "Each one's distances are computed as it is activated, which takes a few seconds. Keep this page open until it is done.",
+  "admin.activateSeveral.select": "Select {name}",
+  "admin.activateSeveral.selectAll": "Select every draft shown",
+  "admin.activateSeveral.clear": "Clear the selection",
+  "admin.activateSeveral.activate":
+    "Confirm and activate {count, plural, one {# point} other {# points}}",
+  "admin.activateSeveral.noneTicked": "Tick the drafts you have checked first.",
+  "admin.activateSeveral.working": "Activating {done} of {count}…",
+  "admin.activateSeveral.activated":
+    "{count, plural, one {# point activated.} other {# points activated.}}",
+  "admin.activateSeveral.notActivated": "Not activated",
+  "admin.activateSeveral.refused": "{name}: {why}",
+  "admin.activateSeveral.missing": "still to do: {items}",
+  "admin.activateSeveral.changed": "changed since the list was loaded. Open it to check.",
+  "admin.activateSeveral.failed": "could not be activated. Try again.",
   "admin.meetingPoints.statusDraft": "Draft",
   "admin.meetingPoints.statusActive": "Active",
   "admin.meetingPoints.statusPaused": "Paused",

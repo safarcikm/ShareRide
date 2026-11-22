@@ -131,6 +131,17 @@ capital area hubs counted in the 96, and the 3 corridor stops.
    the town is open.
 4. A photo is recommended, not required (ADR 0036). The checklist shows
    it as "Recommended" until there is one.
+5. Several at once (decision 5): with drafts in the list, the Meeting
+   points page shows "Activate several drafts". The operator ticks each
+   draft they have checked (or "Select every draft shown", which follows
+   the filters) and presses "Confirm and activate N points". Each ticked
+   draft is activated in turn, as if activated alone: today becomes the
+   day it was confirmed, its amenities and season count as reviewed, its
+   legs are computed and it gets its own audit entry. None of that is
+   saved for a draft that cannot be activated: one still missing
+   something else (such as where to stand), or one changed since the
+   list was loaded, is listed under "Not activated" with the reason, and
+   the others go ahead. The list then reloads.
 
 ## 4. Rules
 
@@ -140,10 +151,17 @@ capital area hubs counted in the 96, and the 3 corridor stops.
 
 ## 5. Screens
 
-No new screens. In the console's activation checklist, the photo item
-reads "Recommended" when there is none, instead of "To do", and is not
-counted in "things still to do". The app's meeting point details already
-show no photo block for a point without photos.
+In the console's activation checklist, the photo item reads
+"Recommended" when there is none, instead of "To do", and is not counted
+in "things still to do". The app's meeting point details already show no
+photo block for a point without photos.
+
+The console's Meeting points list gains a panel above the list while it
+shows drafts (3.5.5): a tick box on each draft's card, "Select every
+draft shown", "Clear the selection" and "Confirm and activate N points".
+While it works it says "Activating 3 of 10…"; then "N points activated."
+and the list of those not activated, each with its reason. Pressing the
+button with nothing ticked says to tick the checked drafts first.
 
 ## 6. Data and API
 
@@ -155,6 +173,13 @@ show no photo block for a point without photos.
 - `GET /admin/v1/meeting-points/{id}/activation`: each item gains
   `required`. `ready` and `POST .../activate` look at the required items
   only, and `activation_not_ready` names only those.
+- `POST /admin/v1/meeting-points/{id}/activate` takes an optional
+  `confirmToday` (3.5.5): today, in Iceland, becomes the day confirmed,
+  and the amenities and season count as reviewed (an earlier review day
+  is kept), before the checklist is checked. They are saved only if the
+  point activates, and the audit entry `meeting_point.activated` shows
+  them before and after, with `confirmedToday: true`. The console sends
+  one request per ticked draft, one after another.
 - No migration.
 
 ## 7. Privacy and safety
@@ -173,6 +198,13 @@ show no photo block for a point without photos.
 | Key | English | Icelandic (draft) |
 | --- | ------- | ----------------- |
 | `admin.activation.recommended` | Recommended | Mælt með |
+| `admin.activateSeveral.title` | Activate several drafts | Virkja nokkur drög |
+| `admin.activateSeveral.activate` | Confirm and activate N points | Staðfesta og virkja N mótsstaði |
+| `admin.activateSeveral.activated` | N points activated. | N mótsstaðir virkjaðir. |
+| `admin.activateSeveral.notActivated` | Not activated | Ekki virkjaðir |
+
+The panel's other texts (the intro, tick boxes, progress and reasons) are
+in `packages/i18n` under `admin.activateSeveral`.
 
 The texts in the import file are for the operator to check; a native
 speaker reviews them with the app's texts (milestone 16).
@@ -188,9 +220,15 @@ speaker reviews them with the app's texts (milestone 16).
   places have unique keys and cover all 110 settlements; the sample keys
   are still there.
 - **API integration:** activating a draft with no photo works; the
-  checklist says `photos` is not required.
+  checklist says `photos` is not required. With `confirmToday`, a draft
+  with no reviews and no day confirmed activates with today for all
+  three and the audit entry shows them; one missing where to stand is
+  refused and nothing is saved.
 - **Console:** the photo item shows "Recommended" and the activate button
-  is enabled without a photo.
+  is enabled without a photo. Activating several: the ticked drafts are
+  activated one by one with `confirmToday`, a refused one is listed with
+  what is still to do, and the list reloads; select all and clear; the
+  panel is hidden without drafts.
 
 ## 10. Out of scope
 
@@ -207,3 +245,4 @@ photo (ADR 0036, follow-up).
 | 2 | Which list counts as every settlement? | Statistics Iceland's byggðakjarnar with people in 2026, without the ferry islands (Claude's call, stated to Martin 2026-11-22) |
 | 3 | A point in each, or a neighbour's for the tiniest? | A neighbour's for the 14 with no public spot (Claude's call, for Martin to correct) |
 | 4 | Seed the points, or import them in the console? | Import in the console, as drafts, so the operator creates them (R2.1) and the audit log has them (Claude's call) |
+| 5 | Activate the 104 drafts one by one, or several at once? | Several at once: tick the checked drafts in the list, each confirmed today with its own audit entry (Martin, 2026-11-22, on a decision card) |

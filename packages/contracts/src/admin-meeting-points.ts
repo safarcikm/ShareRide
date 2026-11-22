@@ -345,13 +345,23 @@ export const adminActivationChecklistRoute = defineRoute({
   },
 });
 
+export const adminActivateMeetingPointSchema = loadedSchema.extend({
+  /**
+   * The operator confirms the point today, from the console's list of
+   * drafts (several at once, spec 21): the amenities and season count as
+   * reviewed and today is the day confirmed, saved only if it activates.
+   */
+  confirmToday: z.boolean().optional(),
+});
+export type AdminActivateMeetingPoint = z.infer<typeof adminActivateMeetingPointSchema>;
+
 export const adminActivateMeetingPointRoute = defineRoute({
   method: "post",
   path: "/admin/v1/meeting-points/{id}/activate",
   summary: "Activate a draft whose checklist passes, computing its legs",
   tags: ["admin", "meeting-points"],
   auth: "operator",
-  request: { params: z.object({ id: z.uuid() }), body: loadedSchema },
+  request: { params: z.object({ id: z.uuid() }), body: adminActivateMeetingPointSchema },
   responses: {
     ...statusResponses,
     400: { description: "validation_failed", ...errors },

@@ -137,7 +137,19 @@ meeting point routes (`registerMeetingPointsAdminRoutes`), with the work in
   (`computeFor`) and writes the audit entry `meeting_point.activated`,
   with the status and review date before and after and how many legs
   there are and are missing. No one is told: a draft has no trips, and
-  the app finds the point in its catalogue.
+  the app finds the point in its catalogue. With `confirmToday: true`
+  (spec 21, 3.5.5), today in Iceland becomes the day confirmed and the
+  amenities and season count as reviewed (an earlier review day stays)
+  before the checklist is checked; they are saved only if the point
+  activates, and the audit entry shows them, with `confirmedToday`.
+- "Activate several drafts" on the Meeting points list (spec 21, 3.5.5):
+  while the list shows drafts, each draft's card has a tick box. "Confirm
+  and activate N points" sends one activate request per ticked draft, one
+  after another, each with its `updatedAt` and `confirmToday`, so each
+  computes its own legs and writes its own audit entry. A refusal does
+  not stop the rest: the panel lists each draft not activated with what
+  is still to do, or that it changed since the list was loaded, and the
+  list reloads at the end.
 - A pause writes one `MeetingPointChanged` event per future trip in the
   same transaction. The notification worker asks that trip's driver to
   choose another stop, and tells each passenger whose accepted or
@@ -370,9 +382,13 @@ on each server, staging and production alike:
    and check it. On staging the rows named like a sample point (BSÍ,
    Kringlan, Keflavíkurflugvöllur and the other hubs, Staðarskáli) show
    as duplicates and are skipped. "Add N drafts".
-2. For each draft: open its spot in maps and move it if needed, check
-   where to stand, the amenities and the season, set the day confirmed,
-   and activate it. Grindavík needs a check that the town is open.
+2. For each draft: open its spot in maps and move it if needed, and
+   check where to stand, the amenities and the season. Grindavík needs a
+   check that the town is open.
+3. Filter Status: Draft, tick the drafts checked, and "Confirm and
+   activate N points": each becomes active, confirmed today. A draft can
+   still be activated alone from its page, with the day confirmed set in
+   its form.
 
 `settlement-meeting-points.test.ts` reads the file with the console's own
 reader and checks that every point joins a road that reaches BSÍ and

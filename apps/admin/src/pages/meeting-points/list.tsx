@@ -14,6 +14,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ConsoleLink } from "../../components/console-link.tsx";
 import { IcelandMap } from "../../components/iceland-map.tsx";
 import { useConsole } from "../../console.tsx";
+import { ActivateSeveral } from "./activate-several.tsx";
 import { statusKeys } from "./texts.ts";
 
 export const meetingPointsPath = "/admin/meeting-points";
@@ -84,6 +85,10 @@ export function MeetingPointList() {
   const [filters, setFilters] = useState<Filters>(filtersFromAddress);
   const [draft, setDraft] = useState<Filters>(filters);
   const [list, setList] = useState<List>({ state: "loading" });
+  // The drafts ticked to activate together (spec 21, 3.5).
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  // Activated some together: the panel stays to say how it went, even with no draft left.
+  const [activatedSeveral, setActivatedSeveral] = useState(false);
   const listHeading = useRef<HTMLHeadingElement>(null);
   const focusList = useRef(false);
   // Only the newest request may show its answer.
@@ -100,22 +105,28 @@ export function MeetingPointList() {
     list: useId(),
   };
 
-  const load = useCallback(async () => {
-    const mine = ++request.current;
-    setList({ state: "loading" });
-    // Sent as typed: the API reads the query as it was meant (R2.6).
-    const result = await call(adminMeetingPointsRoute, { query: queryOf(filters) });
-    if (mine !== request.current) return;
-    setList(
-      result.ok
-        ? { state: "ready", points: result.data.meetingPoints }
-        : { state: "failed", badFilters: result.status === 400 },
-    );
-  }, [call, filters]);
+  const load = useCallback(
+    async (quietly = false) => {
+      const mine = ++request.current;
+      if (!quietly) setList({ state: "loading" });
+      // Sent as typed: the API reads the query as it was meant (R2.6).
+      const result = await call(adminMeetingPointsRoute, { query: queryOf(filters) });
+      if (mine !== request.current) return;
+      setList(
+        result.ok
+          ? { state: "ready", points: result.data.meetingPoints }
+          : { state: "failed", badFilters: result.status === 400 },
+      );
+    },
+    [call, filters],
+  );
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  const drafts =
+    list.state === "ready" ? list.points.filter((point) => point.status === "draft") : [];
 
   useEffect(() => {
     if (list.state !== "loading" && focusList.current) {
@@ -126,6 +137,7 @@ export function MeetingPointList() {
 
   function apply(next: Filters, moveFocus = false) {
     focusList.current = moveFocus;
+    setActivatedSeveral(false);
     setDraft(next);
     setFilters(next);
     showInAddress(next);
@@ -298,6 +310,20 @@ export function MeetingPointList() {
           ) : null}
         </div>
       </form>
+      {drafts.length > 0 || activatedSeveral ? (
+        <ActivateSeveral
+          // Other filters, other drafts: it starts again.
+          key={JSON.stringify(filters)}
+          drafts={drafts}
+          selected={selected}
+          onSelect={setSelected}
+          // Loaded again in place, so the panel keeps saying how it went.
+          onFinished={() => {
+            setActivatedSeveral(true);
+            void load(true);
+          }}
+        />
+      ) : null}
       <h2 ref={listHeading} id={ids.list} className="type-heading" tabIndex={-1}>
         {t("admin.meetingPoints.list")}
       </h2>
@@ -383,6 +409,21 @@ export function MeetingPointList() {
                         })}
                       </p>
                     )}
+                    {point.status === "draft" ? (
+                      <label className="check type-body">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(point.id)}
+                          onChange={(event) => {
+                            const next = new Set(selected);
+                            if (event.target.checked) next.add(point.id);
+                            else next.delete(point.id);
+                            setSelected(next);
+                          }}
+                        />
+                        {t("admin.activateSeveral.select", { name: point.nameIs })}
+                      </label>
+                    ) : null}
                   </div>
                   <p className="tags">
                     <span className={`tag status-${point.status} type-small`}>
