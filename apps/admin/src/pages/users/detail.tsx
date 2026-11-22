@@ -44,6 +44,9 @@ function personChoices(user: AdminUser): readonly Choice[] {
     ...(user.about !== null && !user.about.hidden
       ? [{ kind: "hide", content: "about", id: person.userId } as const]
       : []),
+    ...(user.photo !== null && !user.photo.hidden
+      ? [{ kind: "hide", content: "photo", id: person.userId } as const]
+      : []),
     ...(person.status === "active" ? [{ kind: "suspend" } as const] : []),
     ...(person.status === "suspended" ? [{ kind: "reinstate" } as const] : []),
   ];
@@ -209,6 +212,23 @@ export function UserDetail({ id }: { readonly id: string }) {
                 <span className="tag tag-warning type-small">{t("admin.reports.hiddenTag")}</span>
               </>
             ) : null}
+          </dd>
+          <dt>{t("admin.users.photo")}</dt>
+          <dd>
+            {user.photo === null ? (
+              t("admin.users.noneGiven")
+            ) : (
+              <>
+                <img className="profile-photo" src={user.photo.url} alt={t("admin.users.photo")} />
+                {user.photo.hidden ? (
+                  <span className="tags">
+                    <span className="tag tag-warning type-small">
+                      {t("admin.reports.hiddenByTag")}
+                    </span>
+                  </span>
+                ) : null}
+              </>
+            )}
           </dd>
           <dt>{t("admin.users.userId")}</dt>
           <dd>{user.person.userId}</dd>

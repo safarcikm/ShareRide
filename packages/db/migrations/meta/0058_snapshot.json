@@ -1,5 +1,5 @@
 {
-  "id": "d67cd0f6-8bbd-485e-9811-311ea81a05c0",
+  "id": "ec5e56b6-169b-4338-b78c-319b88e7ec90",
   "prevId": "0affce06-c00c-425d-81d9-8def1bce845d",
   "version": "7",
   "dialect": "postgresql",
@@ -2102,13 +2102,6 @@
           "notNull": true,
           "default": 0
         },
-        "payment_method": {
-          "name": "payment_method",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'in_app'"
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -2267,10 +2260,6 @@
         "bookings_message_check": {
           "name": "bookings_message_check",
           "value": "char_length(\"bookings\".\"message\") <= 300"
-        },
-        "bookings_payment_method_check": {
-          "name": "bookings_payment_method_check",
-          "value": "\"bookings\".\"payment_method\" in ('in_app', 'in_person')"
         },
         "bookings_decline_reason_check": {
           "name": "bookings_decline_reason_check",
@@ -6268,7 +6257,7 @@
         },
         "moderation_actions_content_check": {
           "name": "moderation_actions_content_check",
-          "value": "(\"moderation_actions\".\"content_kind\" is null) = (\"moderation_actions\".\"content_id\" is null) and (\"moderation_actions\".\"content_kind\" is null or \"moderation_actions\".\"content_kind\" in ('message', 'review', 'trip_note', 'about', 'trip', 'booking'))"
+          "value": "(\"moderation_actions\".\"content_kind\" is null) = (\"moderation_actions\".\"content_id\" is null) and (\"moderation_actions\".\"content_kind\" is null or \"moderation_actions\".\"content_kind\" in ('message', 'review', 'trip_note', 'about', 'photo', 'trip', 'booking'))"
         },
         "moderation_actions_until_check": {
           "name": "moderation_actions_until_check",

@@ -912,6 +912,7 @@ export const is = {
   "notices.content.review": "umsögn sem þú skrifaðir",
   "notices.content.tripNote": "athugasemd þína við ferð",
   "notices.content.about": "textann Um þig",
+  "notices.content.photo": "prófílmyndina þína",
   "notices.content.trip": "ferð sem þú bauðst",
   "notices.content.booking": "bókun",
   "notices.appealUntil": "Ef þú ert ósammála geturðu andmælt. Frestur: {until}.",
@@ -2777,6 +2778,7 @@ export const is = {
   "admin.reports.reviewFacts.passenger": "{rating} af 5 stjörnum, frá farþeganum, skrifuð {when}",
   "admin.reports.reviewWords": "Orð umsagnarinnar",
   "admin.reports.about": "Um þig",
+  "admin.reports.photo": "Prófílmynd",
   "admin.reports.hiddenTag": "ShareRide fjarlægði",
   "admin.reports.hiddenByTag": "Falið af ShareRide",
   "admin.reports.reportedTag": "Tilkynnt",
@@ -2837,6 +2839,7 @@ export const is = {
   "admin.reports.hide.review": "umsögnina",
   "admin.reports.hide.trip_note": "athugasemd ferðarinnar",
   "admin.reports.hide.about": "textann Um þig",
+  "admin.reports.hide.photo": "prófílmynd viðkomandi",
   "admin.reports.effect.warn": "Ekkert annað breytist.",
   "admin.reports.effect.suspend":
     "Viðkomandi getur ekki lengur leitað, bókað, boðið ferðir, sent skilaboð né skrifað umsagnir. Ferðum og bókunum framundan er aflýst með fullri endurgreiðslu; hinum er ekki sagt hvers vegna.",
@@ -2849,6 +2852,8 @@ export const is = {
     "Farþegar sjá hana ekki lengur, fyrr en bílstjórinn skrifar nýja.",
   "admin.reports.effect.hide.about":
     "Aðrir sjá hann ekki lengur, fyrr en viðkomandi skrifar nýjan.",
+  "admin.reports.effect.hide.photo":
+    "Aðrir sjá upphafsstafinn í staðinn, þar til viðkomandi bætir við nýrri mynd.",
   "admin.reports.effect.cancelTrip":
     "Allir farþegar fá fulla endurgreiðslu og að vita að ShareRide aflýsti ferðinni, aldrei hvers vegna.",
   "admin.reports.chooseAction": "Veldu aðgerð.",
@@ -2920,6 +2925,7 @@ export const is = {
   "admin.appeals.content.review": "umsögn frá viðkomandi",
   "admin.appeals.content.trip_note": "athugasemd viðkomandi við ferð",
   "admin.appeals.content.about": "textann Um þig hjá viðkomandi",
+  "admin.appeals.content.photo": "prófílmynd viðkomandi",
   "admin.appeals.content.trip": "ferð sem viðkomandi bauð",
   "admin.appeals.content.booking": "bókun",
   "admin.appeals.until": "Lokunin gildir til {when}.",
@@ -3059,6 +3065,7 @@ export const is = {
   "admin.users.licenceDeclared": "Ökuskírteini staðfest",
   "admin.users.languages": "Tungumál sem viðkomandi talar",
   "admin.users.about": "Um þig",
+  "admin.users.photo": "Prófílmynd",
   "admin.users.userId": "Auðkenni notanda",
   "admin.users.notYet": "Ekki enn",
   "admin.users.noneGiven": "Ekkert",

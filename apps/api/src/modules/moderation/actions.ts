@@ -68,8 +68,8 @@ export type CancelTripError =
   NotFound | { readonly code: "already_cancelled" | "trip_not_cancellable" } | StatementProblem;
 
 /**
- * A piece of content: a message, a review, a trip's note (by the trip's ID)
- * or About you (by the person's).
+ * A piece of content: a message, a review, a trip's note (by the trip's ID),
+ * or About you or a profile photo (by the person's).
  */
 export interface Content {
   readonly kind: HideableContent;
@@ -138,7 +138,8 @@ export interface ModerationService {
    * Hides content (3.4.3): a message reads "Removed by ShareRide" to both
    * people; a review no longer shows to the person it is about, nor counts;
    * a trip's note and About you are no longer shown to others, until the
-   * person writes a new one. Reversing it on appeal shows it again.
+   * person writes a new one, and a profile photo until they add a new one.
+   * Reversing it on appeal shows it again.
    */
   hideContent(
     by: Moderator,
@@ -215,6 +216,7 @@ async function ownerOf(tx: Transaction, content: Content): Promise<string | unde
       return row?.driverId;
     }
     case "about":
+    case "photo":
       return content.id;
   }
 }
@@ -288,6 +290,17 @@ async function lockContent(
         ? undefined
         : { hiddenAt: row.hiddenAt, also: [] };
     }
+    case "photo": {
+      // The person's row, locked already as the owner's. A new photo is
+      // shown until hidden in turn, and a removed one is gone.
+      const [row] = await tx
+        .select({ photoKey: users.photoKey, hiddenAt: users.photoHiddenAt })
+        .from(users)
+        .where(eq(users.id, content.id));
+      return row === undefined || row.photoKey === null
+        ? undefined
+        : { hiddenAt: row.hiddenAt, also: [] };
+    }
   }
 }
 
@@ -324,6 +337,12 @@ async function setHidden(
         .set({ aboutHiddenAt: at, updatedAt: now })
         .where(eq(users.id, content.id));
       return;
+    case "photo":
+      await tx
+        .update(users)
+        .set({ photoHiddenAt: at, updatedAt: now })
+        .where(eq(users.id, content.id));
+      return;
   }
 }
 
@@ -333,6 +352,7 @@ const hiding = {
   review: { action: "review.hidden", subjectType: "review", field: "hiddenAt" },
   trip_note: { action: "trip.note_hidden", subjectType: "trip", field: "noteHiddenAt" },
   about: { action: "user.about_hidden", subjectType: "user", field: "aboutHiddenAt" },
+  photo: { action: "user.photo_hidden", subjectType: "user", field: "photoHiddenAt" },
 } as const satisfies Record<
   HideableContent,
   { action: string; subjectType: string; field: string }

@@ -92,6 +92,7 @@ const report: AdminReport = {
   message: { id: messageId, sentAt: "2099-11-15T09:50:00.000Z", removed: false },
   review: null,
   about: null,
+  photo: null,
   conversation: true,
   actions: [],
   reporterSide: {
@@ -143,6 +144,7 @@ const report: AdminReport = {
 };
 
 const reviewId = "0196f000-0000-7000-8000-0000000000f9";
+const photoUrl = "https://photos.test/profile-photos/0193f0c4-7d4a-7b1e-9c2a-123456789abc.jpg";
 
 const reportedReview = {
   id: reviewId,
@@ -351,6 +353,20 @@ describe("a report's page (spec 9, 3.4.2)", () => {
 
     cleanup();
     start(detailPath, { ...reviewReport, review: { ...reportedReview, hidden: true } });
+    const hidden = await screen.findByRole("region", { name: "What it is about" });
+    expect(hidden.textContent).toContain("Hidden by ShareRide");
+  });
+
+  it("shows the reported person's profile photo, and whether ShareRide hid it", async () => {
+    start(detailPath, { ...report, photo: { url: photoUrl, hidden: false } });
+    const records = await screen.findByRole("region", { name: "What it is about" });
+    expect(within(records).getByRole("img", { name: "Profile photo" }).getAttribute("src")).toBe(
+      photoUrl,
+    );
+    expect(records.textContent).not.toContain("Hidden by ShareRide");
+
+    cleanup();
+    start(detailPath, { ...report, photo: { url: photoUrl, hidden: true } });
     const hidden = await screen.findByRole("region", { name: "What it is about" });
     expect(hidden.textContent).toContain("Hidden by ShareRide");
   });
@@ -609,6 +625,51 @@ describe("acting on a report (spec 9, 3.4.3)", () => {
     });
     await waitFor(() => {
       expect(within(act).queryByRole("radio", { name: "Hide the review" })).toBeNull();
+    });
+  });
+
+  it("hides the reported person's profile photo while it is shown (ADR 0033)", async () => {
+    const shown = { ...reviewReport, photo: { url: photoUrl, hidden: false } };
+    const api = start(detailPath, shown);
+    api.on(adminHideContentRoute, {
+      status: 201,
+      data: { action: { ...warning, kind: "content_hidden" } },
+    });
+    const act = await screen.findByRole("region", { name: "Act on it" });
+    const choices = within(act)
+      .getAllByRole("radio")
+      .map((radio) => radio.closest("label")?.textContent);
+    expect(choices).toEqual([
+      "Warn Dóra",
+      "Hide the review",
+      "Hide their profile photo",
+      "Suspend Dóra",
+    ]);
+    fireEvent.click(within(act).getByRole("radio", { name: "Hide their profile photo" }));
+    expect(act.textContent).toContain(
+      "Others see their first letter instead, until they add a new photo.",
+    );
+    fireEvent.change(within(act).getByRole("combobox", { name: "Community rule" }), {
+      target: { value: "offensive" },
+    });
+    fireEvent.change(within(act).getByRole("textbox", { name: "Reason, written for Dóra" }), {
+      target: { value: "Not a photo of you." },
+    });
+    fireEvent.click(within(act).getByRole("button", { name: "Review the notice" }));
+    api.on(adminReportRoute, {
+      status: 200,
+      data: { ...shown, photo: { ...shown.photo, hidden: true } },
+    });
+    fireEvent.click(within(act).getByRole("button", { name: "Send" }));
+    expect((await within(act).findByRole("status")).textContent).toBe("Done. Dóra is told why.");
+    expect(api.called(adminHideContentRoute)[0]?.input["body"]).toEqual({
+      rule: "offensive",
+      reason: "Not a photo of you.",
+      reportId,
+      content: { kind: "photo", id: dora.userId },
+    });
+    await waitFor(() => {
+      expect(within(act).queryByRole("radio", { name: "Hide their profile photo" })).toBeNull();
     });
   });
 

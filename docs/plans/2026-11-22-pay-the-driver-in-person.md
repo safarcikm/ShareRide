@@ -34,8 +34,9 @@ pay the driver in cash or by bank transfer, and for the build to stay lean.
 - Every new text in `en.ts` and `is.ts`; tokens only on screens.
 - The test payment sheet keeps working on local and staging with the
   switch off, so every journey that pays today still passes unchanged.
-- Migration `0058` (check `packages/db/migrations` first: other threads
-  add migrations too). Backward compatible: a default of `in_app`.
+- Migration `0059` (0058 went to hiding profile photos; check
+  `packages/db/migrations` first: other threads add migrations too).
+  Backward compatible: a default of `in_app`.
 
 ## Review Focus
 
@@ -74,7 +75,7 @@ texts come in PR 2, so the switch stays off on every server until then.
       `packages/domain/src/settings/catalogue.ts`: group `booking`, a
       switch, default 0 (off), the console's name and help in both
       languages. The list is ADR 0032's; ADR 0038 adds it.
-- [x] **Database.** Migration 0058: `bookings.payment_method text not null
+- [x] **Database.** Migration 0059: `bookings.payment_method text not null
       default 'in_app'` with a check on the two values;
       `pnpm --filter @shareride/db generate`.
 - [x] **API, booking.** The booking and request routes read the switch

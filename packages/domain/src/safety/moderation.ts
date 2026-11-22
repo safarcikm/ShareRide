@@ -39,8 +39,8 @@ export const moderationRules = [
 ] as const;
 export type ModerationRule = (typeof moderationRules)[number];
 
-/** Content the operator can hide (3.4.3). Profile photos join when they exist. */
-export const hideableContent = ["message", "review", "trip_note", "about"] as const;
+/** Content the operator can hide (3.4.3), a profile photo among it (ADR 0033). */
+export const hideableContent = ["message", "review", "trip_note", "about", "photo"] as const;
 export type HideableContent = (typeof hideableContent)[number];
 
 /** What an action can concern: content hidden, a trip cancelled or a booking refunded. */

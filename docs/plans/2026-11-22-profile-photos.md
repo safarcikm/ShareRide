@@ -219,10 +219,12 @@ required: each half is smaller to review.
 
 ### PR 5: `feat(moderation)`: hide a profile photo
 
-- [ ] `photo` in `hideableContent`, the hide action, the statement texts,
+- [x] `photo` in `hideableContent`, the hide action, the statement texts,
       and appeal reversal (only while the hidden photo is still the
-      person's)
-- [ ] Console: the photo on the user page and the report, with Hide photo
+      person's). Migration `0058_hide_profile_photos` lets an action concern
+      a photo
+- [x] Console: the photo on the user page and the report (the reported
+      person's, whatever the report is about), with Hide their profile photo
 - Verify: moderation integration tests, console tests
 
 ### PR 6: `docs(operations)`: photos on staging
