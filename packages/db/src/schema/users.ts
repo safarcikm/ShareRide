@@ -23,6 +23,13 @@ export const users = pgTable(
     about: text(),
     /** When ShareRide hid About you from others (spec 9, 3.4.3); a new text is shown again. */
     aboutHiddenAt: at(),
+    /**
+     * Where the profile photo's file is in photo storage (ADR 0033): a
+     * random key, new for each photo; empty for none.
+     */
+    photoKey: text().unique("users_photo_key_unique"),
+    /** When ShareRide hid the photo from others (spec 9, 3.4.3); a new photo is shown again. */
+    photoHiddenAt: at(),
     /** ISO 639-1 codes of languages the person speaks. */
     languages: text()
       .array()
@@ -69,8 +76,24 @@ export const users = pgTable(
     // "deleted" is the former member's alone (formerMemberId).
     check("users_status_check", sql`${table.status} in ('active', 'suspended', 'deleted')`),
     check(
+      "users_photo_hidden_at_check",
+      sql`${table.photoHiddenAt} is null or ${table.photoKey} is not null`,
+    ),
+    check(
       "users_suspended_until_check",
       sql`${table.suspendedUntil} is null or ${table.status} = 'suspended'`,
     ),
   ],
 );
+
+/**
+ * Files in photo storage that nobody has any more (ADR 0033): a photo
+ * replaced or removed, an erased account's photo, or an upload not yet
+ * saved, whose `deleteAfter` lies a little ahead. The API deletes each file
+ * once its time has come, and the row with it, trying again every minute.
+ */
+export const photoFilesToDelete = pgTable("photo_files_to_delete", {
+  key: text().primaryKey(),
+  deleteAfter: at().notNull(),
+  createdAt: at().notNull().defaultNow(),
+});

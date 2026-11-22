@@ -22,6 +22,8 @@ export const personalDataKeys = [
   "firstName",
   "lastName",
   "about",
+  // A profile photo in base64 (ADR 0033).
+  "photo",
   "deviceName",
   "ipAddress",
   // A car's number plate.

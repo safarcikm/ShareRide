@@ -15,6 +15,7 @@ import {
 } from "@shareride/domain";
 import type { Locale } from "@shareride/i18n";
 import { eq, sql } from "drizzle-orm";
+import type { PhotoStorage } from "../../platform/photo-storage.ts";
 import type { LegalService } from "../legal/index.ts";
 import { pendingEmailOf } from "./email.ts";
 
@@ -39,8 +40,10 @@ export function createAccountService(dependencies: {
   readonly db: Database;
   readonly clock: () => Date;
   readonly legal: LegalService;
+  /** Profile photos' files (ADR 0033); none when this server takes no photos. */
+  readonly photos?: PhotoStorage;
 }): AccountService {
-  const { db, clock, legal } = dependencies;
+  const { db, clock, legal, photos } = dependencies;
 
   async function me(userId: string): Promise<Me> {
     const [user] = await db.select().from(users).where(eq(users.id, userId));
@@ -63,6 +66,13 @@ export function createAccountService(dependencies: {
       firstName: user.firstName,
       about: user.about,
       languages: user.languages,
+      photo:
+        user.photoKey === null || photos === undefined
+          ? null
+          : {
+              url: await photos.linkTo(user.photoKey, clock()),
+              hidden: user.photoHiddenAt !== null,
+            },
       locale: user.locale === "is" ? "is" : "en",
       email: user.emailVerifiedAt === null ? null : user.email,
       pendingEmail: await pendingEmailOf(db, userId, clock()),

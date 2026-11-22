@@ -1674,6 +1674,8 @@ export const en = {
   "export.field.appealAnswer": "ShareRide's answer",
   "export.field.appealOutcome": "Decision on the appeal",
   "export.field.aboutHiddenAt": "About you hidden by ShareRide",
+  "export.field.photo": "Profile photo (a file in this folder)",
+  "export.field.photoHiddenAt": "Profile photo hidden by ShareRide",
   "export.field.noteHiddenAt": "Note hidden by ShareRide",
   "export.field.removedByShareRide": "Removed by ShareRide",
   "export.field.content": "Concerns",
