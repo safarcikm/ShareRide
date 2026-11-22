@@ -31,10 +31,10 @@ because other work merges in parallel. Names that people never see keep
 5. [x] **App IDs and the link scheme,** with the Google and Apple sign-in
    work: `is.puffinride.app`, `is.puffinride.app.preview`,
    `is.puffinride.preview.web`, `puffinride://`, slug `puffinride`.
-6. [ ] **Living docs and legal drafts.** README, CLAUDE.md, glossary,
+6. [x] **Living docs and legal drafts.** README, CLAUDE.md, glossary,
    product, architecture, compliance (with the legal texts), operations and
    strategy docs. ADRs, specs and plans written before 2026-11-22 keep the old
-   name.
+   name. The changelog's earlier entries keep it too.
 7. [x] **The puffin logo.** Directions on the design canvas; Martin picks
    one; then the drawings in `apps/mobile/assets/logo`, the app icons, the
    splash and the logo lockup (spec 15, section 4.9). Done: logo C, the

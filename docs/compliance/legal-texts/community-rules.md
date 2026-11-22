@@ -1,11 +1,11 @@
-# ShareRide Community Rules (draft)
+# PuffinRide Community Rules (draft)
 
 > **Draft for the lawyer, not in force.** Version 1, written 2026-11-16.
 > See the [README](README.md).
 
 **Last updated:** [date of publication]
 
-ShareRide works because people who don't know each other share a car. These
+PuffinRide works because people who don't know each other share a car. These
 rules keep that safe and fair. They are part of the
 [Terms of Service](terms-of-service.md), and everyone accepts them when they
 create an account.
@@ -45,7 +45,7 @@ create an account.
 
 ## 3. Share costs, don't make a profit
 
-- Drive trips you are making anyway. ShareRide is for sharing the cost of a
+- Drive trips you are making anyway. PuffinRide is for sharing the cost of a
   trip, not for running a taxi or a business.
 - Use the price the app works out. Never ask for extra money, tips or
   fuel money on top.
@@ -54,7 +54,7 @@ create an account.
   price it shows, when you get in, in cash or by bank transfer. Drivers
   never ask for more, or for money for a cancelled booking or a passenger
   who didn't come. Otherwise, never pay or accept cash or a bank transfer
-  for a ShareRide ride, and never offer to.
+  for a PuffinRide ride, and never offer to.
 
 ## 4. Be reliable
 

@@ -2,12 +2,12 @@
 
 **Owner:** Martin · **Last reviewed:** 2026-11-13 · **Status:** Draft for review
 
-This is the one-page-per-topic summary of how ShareRide will be built. Each
+This is the one-page-per-topic summary of how PuffinRide will be built. Each
 section links to the detailed document. If you only read one file, read this.
 
 ## 1. The product in one paragraph
 
-ShareRide connects drivers who are already making a trip in Iceland with
+PuffinRide connects drivers who are already making a trip in Iceland with
 passengers going the same way. A driver publishes a trip as an ordered list of
 curated **meeting points** with a departure time. Each stretch between two
 consecutive meeting points is a **segment** with its own price. A passenger can
@@ -82,7 +82,7 @@ flowchart LR
     C[Web app]
     D[Admin console]
   end
-  A & B & C & D -->|HTTPS, typed client| API[ShareRide API<br/>modular monolith]
+  A & B & C & D -->|HTTPS, typed client| API[PuffinRide API<br/>modular monolith]
   API --> DOM[Domain package<br/>pricing, seats, booking rules]
   API --> DB[(PostgreSQL + PostGIS<br/>EEA region)]
   API --> JOBS[Background jobs<br/>reminders, expiry, imports]

@@ -9,7 +9,7 @@
 ## 1. Ride-sharing versus taxi service (highest priority)
 
 **The question:** may private drivers accept contributions from passengers
-through ShareRide without a taxi licence?
+through PuffinRide without a taxi licence?
 
 What we know:
 
@@ -17,7 +17,7 @@ What we know:
   service, defined as a passenger car being rented out with a driver *for a set
   fee* to carry passengers and their luggage. Taxi service requires a licence.
 - The Act defines a **taxi dispatch station** (leigubifreiðastöð) as an entity
-  that mediates taxi services commercially. If drivers on ShareRide were seen
+  that mediates taxi services commercially. If drivers on PuffinRide were seen
   as providing taxi service, the platform could be seen as a dispatch station.
 - The Act does **not** contain an explicit exemption for carpooling or cost
   sharing. Licensed passenger transport is governed separately by the **Act on
@@ -34,7 +34,7 @@ How the product is designed to stay on the cost-sharing side:
   have already paid ([spec 17](../specs/2026-11-17-trip-earnings-limit.md)).
 - Pickups and drop-offs only at published meeting points on the route; no
   door-to-door service.
-- Drivers cannot use ShareRide as a business: limits on trips per day are an
+- Drivers cannot use PuffinRide as a business: limits on trips per day are an
   option if the lawyer recommends them.
 - Terms of service state the cost-sharing nature and forbid commercial use.
 
@@ -52,7 +52,7 @@ Actions:
 - Ask insurers whether accepting cost contributions through a platform
   affects cover, and whether a platform-level policy is available or needed.
 - Terms must make clear that the driver's own insurance applies, that
-  ShareRide is not the carrier, and that the driver is responsible for being
+  PuffinRide is not the carrier, and that the driver is responsible for being
   allowed to use the car, including rental or borrowed cars (decided
   2026-11-13, [spec 3](../specs/2026-11-13-post-a-trip.md#32-cars)).
 
@@ -88,7 +88,7 @@ Actions:
   passengers pay the driver in person, in cash or by bank transfer, the
   price the app shows
   ([ADR 0038](../decisions/0038-pay-the-driver-in-person-until-card-payments.md),
-  rule M6): ShareRide takes no money and no fee, so no payment licence
+  rule M6): PuffinRide takes no money and no fee, so no payment licence
   question arises for that time, but it has no record of what was paid.
 
 - Holding passengers' money and paying it to drivers may be a regulated
@@ -109,7 +109,7 @@ Actions:
   English, accepted at sign-up, versioned, with acceptance recorded. First
   English [drafts](legal-texts/README.md) for the lawyer: 2026-11-16.
 - Clear pre-booking information: price, cancellation rules, who the driver is,
-  and that ShareRide is an intermediary.
+  and that PuffinRide is an intermediary.
 - Distance-selling and consumer rules for payments, refunds and any service
   fee; the Consumer Agency (Neytendastofa) is the regulator.
 - Marketing messages (email, SMS, push) only with opt-in consent under the
@@ -149,13 +149,13 @@ Actions:
    driver keeps after a no-show or late cancellation
    (the trip limit in [spec 17](../specs/2026-11-17-trip-earnings-limit.md), accepted 2026-11-17)? Does
    the passenger service fee count towards the cost of the ride?
-3. Is ShareRide at risk of being a taxi dispatch station under the Taxi Act?
+3. Is PuffinRide at risk of being a taxi dispatch station under the Taxi Act?
 4. What must the terms of service say about liability, insurance and the
    intermediary role?
 5. Which payment structure avoids needing our own payment licence?
    Does taking payments in the app change the answer to question 1? And
    until then, does passengers paying the driver in person, in cash or by
-   bank transfer, the capped price the app shows, with no fee to ShareRide
+   bank transfer, the capped price the app shows, with no fee to PuffinRide
    ([ADR 0038](../decisions/0038-pay-the-driver-in-person-until-card-payments.md)),
    change the answers to questions 1 and 3?
 6. What do drivers need to know about tax on contributions?

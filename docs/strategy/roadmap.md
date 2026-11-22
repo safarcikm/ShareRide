@@ -70,6 +70,8 @@ Legal and company (start now, see [legal and regulatory](../compliance/legal-and
 - [ ] Informal check with Samgöngustofa (Icelandic Transport Authority)
 - [ ] Decide company form (likely an ehf., private limited company)
 - [x] Name: keep "ShareRide" for now, with the option to change it later
+      (renamed PuffinRide on 2026-11-22, A56 and
+      [ADR 0039](../decisions/0039-rename-to-puffinride.md))
       (2026-11-13); a trademark and domain check before public launch
 - [ ] Ask two insurers how cost-sharing affects drivers' motor insurance
 - [ ] Talk to payment providers (Rapyd, Teya, Straumur) about marketplace
@@ -374,7 +376,7 @@ beta on the launch corridors,
 
 ## Phase 4: Public launch
 
-Goal: anyone in Iceland, residents and visitors, can use ShareRide.
+Goal: anyone in Iceland, residents and visitors, can use PuffinRide.
 
 - [ ] App Store and Google Play release; public web app
 - [ ] Website with route pages for search engines (for example "Reykjavík to

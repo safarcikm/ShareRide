@@ -2,7 +2,7 @@
 
 **Owner:** Martin · **Last reviewed:** 2026-11-13
 
-Meeting points are the backbone of ShareRide. Every trip is built from them, so
+Meeting points are the backbone of PuffinRide. Every trip is built from them, so
 their quality decides whether the app feels safe and easy. They are curated by
 the operator, not typed in freely by drivers.
 

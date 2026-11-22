@@ -311,7 +311,7 @@ A cancellation records who cancelled, when, and the reason (including
 
 All payments go through the app
 ([ADR 0013](../decisions/0013-in-app-payments-only.md)). Passengers never pay
-drivers in cash or by direct transfer for a ShareRide booking, except while
+drivers in cash or by direct transfer for a PuffinRide booking, except while
 the operator lets them pay the driver in person until payments in the app
 work (rule M6,
 [ADR 0038](../decisions/0038-pay-the-driver-in-person-until-card-payments.md)).
@@ -326,7 +326,7 @@ Rules M1 to M5 are about bookings paid in the app.
   frees its seats.
 - A paid booking is `confirmed`. A free booking (price 0) is confirmed at once.
 - A licensed payment provider holds the money until it is paid out to the
-  driver. Card details never reach ShareRide's servers.
+  driver. Card details never reach PuffinRide's servers.
 
 ### Rule M2: refunds
 
@@ -351,7 +351,7 @@ should never happen and would mean a bug (spec 17).
 
 ### Rule M4: card fees
 
-In the beta, ShareRide pays the payment provider's fees; passengers pay the
+In the beta, PuffinRide pays the payment provider's fees; passengers pay the
 booking price and nothing more, and drivers receive the full price (decided
 2026-11-13). From public launch a passenger service fee is added (rule P5,
 [ADR 0014](../decisions/0014-passenger-service-fee-from-launch.md)).
@@ -360,7 +360,7 @@ booking price and nothing more, and drivers receive the full price (decided
 
 If a passenger's bank reverses a payment after the driver was paid and the
 chargeback is lost, the amount is taken from the driver's next payouts when the
-trip did not happen because of the driver. Otherwise ShareRide carries the loss
+trip did not happen because of the driver. Otherwise PuffinRide carries the loss
 in the beta (decided 2026-11-13; reviewed before launch).
 
 ### Rule M6: paying the driver in person (until milestone 15)
@@ -371,7 +371,7 @@ new bookings are paid to the driver in person, not in the app:
 
 - The passenger pays the booking's price (rule P1, from its price snapshot)
   to the driver when they get in, in cash or by bank transfer, as the two
-  agree. Never more than that price. ShareRide holds no money.
+  agree. Never more than that price. PuffinRide holds no money.
 - The booking is confirmed when it is accepted: at once in instant mode,
   when the driver accepts in approval mode. There is no payment window and
   no payment step.

@@ -5,7 +5,7 @@ Keep this file short and current. Details live in `docs/`; link, don't copy.
 
 ## What this project is
 
-ShareRide is a ride-sharing marketplace for Iceland. Drivers publish trips made
+PuffinRide is a ride-sharing marketplace for Iceland. Drivers publish trips made
 of curated **meeting points**; each **segment** between two consecutive meeting
 points has its own price; passengers book seats on any contiguous part of a
 trip. Clients: iOS, Android, web. Vocabulary: [docs/glossary.md](docs/glossary.md).
