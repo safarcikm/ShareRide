@@ -14,13 +14,13 @@ calendar time and the beta cannot start without them.
 ```mermaid
 flowchart LR
   subgraph Product
-    P1[1 Design] --> P2[2 Build] --> P3[3 Closed beta] --> P4[4 Public launch] --> P5[5 Grow and monetise]
+    P1[1 Design] --> P2[2 Build] --> P3[3 Open beta] --> P4[4 Public launch] --> P5[5 Grow and monetise]
   end
   subgraph Legal["Legal and company"]
     L1[Legal opinion,<br/>company form, name check] --> L2[Company, terms,<br/>privacy policy, insurance] --> L3[Payments provider<br/>and licensing]
   end
   subgraph Community
-    C1[Waitlist and<br/>driver recruitment] --> C2[Beta community<br/>and feedback] --> C3[Launch marketing]
+    C1[Driver<br/>recruitment] --> C2[Beta community<br/>and feedback] --> C3[Launch marketing]
   end
   P1 -.- L1
   P2 -.- L2
@@ -204,7 +204,7 @@ built alongside milestones 7 to 9)
 - [x] Ask about my data
 
 Milestones 7 to 10 are built at the same time, each in its own thread, at
-Martin's request (2026-11-16). The rest of the way to the closed beta follows
+Martin's request (2026-11-16). The rest of the way to the beta follows
 the order Martin approved on 2026-11-16: first the parts the beta needs
 whatever the legal opinion says, then the parts that need his accounts, and
 last the parts the legal opinion or the company may still change. A milestone
@@ -219,7 +219,8 @@ accepted 2026-11-18;
 [spec 10](../specs/2026-11-13-operator-settings-and-metrics.md); on the
 console from milestone 8; built 2026-11-18, Martin's checks on real phones
 and of the Icelandic texts to do; the waitlist and emailed personal codes
-wait for milestone 12)
+are dropped, as the beta is open,
+[ADR 0035](../decisions/0035-open-web-beta-reached-by-email.md))
 
 - [x] Invite codes and the closed-beta gate
 - [x] In-app feedback
@@ -227,13 +228,17 @@ wait for milestone 12)
 - [x] Beta metrics and announcements
 - [x] The console home's counts
 
-Milestone 12: production and the waitlist
-([spec 12](../specs/2026-11-13-beta-access-and-feedback.md#31-waitlist);
-needs Martin's domain and Mailjet account)
+Milestone 12: production
+(needs Martin's domain and Mailjet account; the waitlist is dropped, as the
+beta is open to everyone,
+[ADR 0035](../decisions/0035-open-web-beta-reached-by-email.md))
 
 - [ ] Production environment, separate from staging
 - [ ] Email from our own domain
-- [ ] Waitlist page with double opt-in, so driver recruiting can start
+- [ ] Web members reached by email: the hour-before reminder, requests and
+      "How was your trip?", links that open after signing in, and an email
+      at sign-up on the web
+      ([spec 20](../specs/2026-11-22-email-alerts-and-open-beta.md))
 
 Milestone 13: photos and Apple and Google sign-in
 (the rest of [milestone 2](../plans/2026-11-13-milestone-2-hosted-and-connected.md);
@@ -320,18 +325,22 @@ Legal and company (in parallel)
 
 Community (in parallel)
 
-- [ ] Landing page with a waitlist
+- [ ] Landing page
 - [ ] Recruit drivers on the launch corridors (commuters, students, workplaces)
 
 Exit criteria: MVP features done and tested on staging; terms and privacy
 policy approved; company registered.
 
-## Phase 3: Closed beta
+## Phase 3: Open beta
+
+Open to everyone, with no invite code, on the web first
+([ADR 0035](../decisions/0035-open-web-beta-reached-by-email.md),
+[spec 20](../specs/2026-11-22-email-alerts-and-open-beta.md)).
 
 Goal: prove that people find rides and that the rules work in real life.
 
 - [ ] 50 to 150 testers on the three commuter corridors (Selfoss, Keflavík
-  Airport, Akranes and Borgarnes; Akureyri if the waitlist shows demand), for
+  Airport, Akranes and Borgarnes; Akureyri if searches show demand), for
   6 to 8 weeks
 - [ ] TestFlight and Google Play internal testing, plus the web app
 - [ ] In-app feedback and a weekly review of metrics and reports

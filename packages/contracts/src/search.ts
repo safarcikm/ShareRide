@@ -11,7 +11,7 @@ import { z } from "zod";
 import { moneySchema, timestampSchema } from "./common.ts";
 import { accountSuspendedResponse, errorResponseSchema } from "./errors.ts";
 import { dateSchema, localisedTextSchema, meetingPointSummarySchema } from "./meeting-points.ts";
-import { ratingSchema, standingSchema } from "./people.ts";
+import { personPhotoSchema, ratingSchema, standingSchema } from "./people.ts";
 import { defineRoute } from "./route.ts";
 import { tripPreferencesSchema } from "./trips.ts";
 
@@ -65,8 +65,8 @@ export const tripSearchResultSchema = z.object({
   total: moneySchema,
   /** Seats free on every stretch of the part (rule S3). */
   freeSeats: z.int().nonnegative(),
-  /** The rating, or a new driver before the first (spec 4, 3.4.1); photos come with spec 1. */
-  driver: z.object({ firstName: z.string(), rating: ratingSchema }),
+  /** The rating, or a new driver before the first (spec 4, 3.4.1), and their photo (spec 1). */
+  driver: z.object({ firstName: z.string(), rating: ratingSchema, photo: personPhotoSchema }),
   bookingMode: z.enum(bookingModes),
 });
 
@@ -217,12 +217,13 @@ export const tripDetailsSchema = z.object({
   seatsOffered: z.int().positive(),
   /**
    * With their rating, and for members signed in their reliability figure
-   * (spec 4, 3.6.3), null for visitors; photos come with spec 1. `colour`
-   * picks one of spec 15's five people colours, the same on every trip of
-   * this driver.
+   * (spec 4, 3.6.3), null for visitors; their photo for everyone (spec 1,
+   * 3.5). `colour` picks one of spec 15's five people colours, the same on
+   * every trip of this driver.
    */
   driver: standingSchema.extend({
     firstName: z.string(),
+    photo: personPhotoSchema,
     colour: z
       .int()
       .min(0)

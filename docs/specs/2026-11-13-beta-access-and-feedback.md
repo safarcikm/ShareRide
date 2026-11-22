@@ -6,7 +6,7 @@ Features: J1 Beta access, J2 In-app feedback, J3 Usage analytics with consent
 ([features](../product/features.md)). Related:
 [spec 1](2026-11-13-sign-in-and-profile.md) (sign-up asks for an invite
 code), [spec 10](2026-11-13-operator-settings-and-metrics.md) (metrics,
-announcements, switches), [roadmap](../strategy/roadmap.md#phase-3-closed-beta)
+announcements, switches), [roadmap](../strategy/roadmap.md#phase-3-open-beta)
 (50 to 150 testers on the three launch corridors, see
 [meeting points](../product/meeting-points.md#launch-corridors), for 6 to 8
 weeks).

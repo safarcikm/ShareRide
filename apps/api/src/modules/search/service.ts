@@ -19,8 +19,10 @@ import {
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { occupancyNow } from "../bookings/seats.ts";
 import { searchableStatuses, toSummary } from "../meeting-points/service.ts";
+import type { PhotoStorage } from "../../platform/photo-storage.ts";
 import type { SearchLog } from "../metrics/search-log.ts";
 import { notSuspended } from "../account/standing.ts";
+import { photoLinkOf, type PhotoOwner } from "../people/photos.ts";
 import { ratingsOf } from "../people/ratings.ts";
 import { newcomer } from "../people/standing.ts";
 import { shown } from "../privacy/hidden.ts";
@@ -109,6 +111,8 @@ export function createSearchService(dependencies: {
   readonly settings: () => Promise<SearchSettings>;
   /** Where searches are noted, without the searcher; nowhere when left out. */
   readonly searchLog?: SearchLog;
+  /** Where drivers' photos are kept; no photos when left out (spec 1, 3.5). */
+  readonly photos?: PhotoStorage;
 }): SearchService {
   const { db, clock, searchLog } = dependencies;
   // As last read: each search reads the values first, and they are the
@@ -231,7 +235,11 @@ export function createSearchService(dependencies: {
     if (ids.length === 0) return [];
     const [tripRows, stopRows, segmentRows, asOfNow] = await Promise.all([
       db
-        .select({ trip: trips, firstName: users.firstName })
+        .select({
+          trip: trips,
+          firstName: users.firstName,
+          photo: { photoKey: users.photoKey, photoHiddenAt: users.photoHiddenAt },
+        })
         .from(trips)
         .innerJoin(users, eq(users.id, trips.driverId))
         // A driver deleting their account is hidden at once (spec 11, 3.4.3),
@@ -252,7 +260,7 @@ export function createSearchService(dependencies: {
         .orderBy(asc(segments.position)),
       occupancyNow(db, [...ids], clock()),
     ]);
-    return tripRows.map(({ trip, firstName }) => {
+    return tripRows.map(({ trip, firstName, photo }) => {
       const stops = stopRows.filter((row) => row.stop.tripId === trip.id);
       const searchable: SearchableTrip = {
         id: trip.id,
@@ -274,6 +282,7 @@ export function createSearchService(dependencies: {
         searchable,
         points: stops.map((row) => row.point),
         firstName: firstName ?? "",
+        photo,
         bookingMode: trip.bookingMode as TripSearchResult["bookingMode"],
       };
     });
@@ -281,15 +290,16 @@ export function createSearchService(dependencies: {
 
   type Candidate = Awaited<ReturnType<typeof candidates>>[number];
 
-  /** A result before its driver's rating, which is read only for those shown. */
+  /** A result before its driver's rating and photo, which are read only for those shown. */
   type Unrated = Omit<TripSearchResult, "driver"> & {
-    readonly driver: Omit<TripSearchResult["driver"], "rating">;
+    readonly driver: Omit<TripSearchResult["driver"], "rating" | "photo">;
   };
 
   interface Found {
     readonly result: Unrated;
     readonly boardsAt: Date;
     readonly driverId: string;
+    readonly driverPhoto: PhotoOwner;
   }
 
   function toResult(
@@ -326,18 +336,26 @@ export function createSearchService(dependencies: {
       bookingMode: candidate.bookingMode,
     };
     const boardsAt = searchable.stops[found.board]?.plannedAt ?? new Date(0);
-    return { result, boardsAt, driverId: searchable.driverId };
+    return { result, boardsAt, driverId: searchable.driverId, driverPhoto: candidate.photo };
   }
 
-  /** The results shown, with their drivers' ratings. */
+  /** The results shown, with their drivers' ratings and photos. */
   async function rated(found: readonly Found[]): Promise<TripSearchResult[]> {
-    const ratings = await ratingsOf(
-      db,
-      found.map(({ driverId }) => driverId),
-    );
-    return found.map(({ result, driverId }) => ({
+    const linkOf = photoLinkOf(dependencies.photos, clock());
+    const [ratings, photos] = await Promise.all([
+      ratingsOf(
+        db,
+        found.map(({ driverId }) => driverId),
+      ),
+      Promise.all(found.map(({ driverPhoto }) => linkOf(driverPhoto))),
+    ]);
+    return found.map(({ result, driverId }, index) => ({
       ...result,
-      driver: { ...result.driver, rating: ratings.get(driverId) ?? newcomer.rating },
+      driver: {
+        ...result.driver,
+        rating: ratings.get(driverId) ?? newcomer.rating,
+        photo: photos[index] ?? null,
+      },
     }));
   }
 

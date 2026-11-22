@@ -1313,6 +1313,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   settings terms (tester, invite code, setting, settings version, switch,
   corridor, weekly figures, announcement), and a browser journey through
   the operator's side of the beta in the console.
+- Spec 20 (approved), its plan and ADR 0035 (accepted): an open beta on the web,
+  reaching members by email. No invite code by default; the hour-before
+  reminder and "How was your trip?" by email when there is no push; email
+  links that open their screen after signing in; and an email at sign-up
+  on the web. The roadmap drops the waitlist and calls Phase 3 an open
+  beta.
 - A meeting point for every settlement (spec 21, ADR 0036, Accepted): a
   point can be activated before it has a photo, which the console's
   checklist now shows as recommended. Every settlement of Statistics

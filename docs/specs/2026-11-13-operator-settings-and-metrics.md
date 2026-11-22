@@ -6,7 +6,7 @@ Features: H4 Pricing and timing settings, H5 Beta metrics, H6 Message all beta
 testers ([features](../product/features.md)), and the console's overall
 layout. Related: [pricing and seats](../product/pricing-and-seats.md#configuration-values)
 (the settings), [vision](../product/vision.md) and
-[roadmap](../strategy/roadmap.md#phase-3-closed-beta) (beta metrics and exit
+[roadmap](../strategy/roadmap.md#phase-3-open-beta) (beta metrics and exit
 criteria), [spec 7](2026-11-13-chat-and-notifications.md) (sending),
 [spec 9](2026-11-13-safety-and-moderation.md) (console, audit log).
 
