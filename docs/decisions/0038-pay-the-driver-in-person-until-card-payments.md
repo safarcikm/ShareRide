@@ -1,6 +1,7 @@
 # 0038. Passengers pay the driver in person until payments in the app work
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-22, by Martin: "keep it as is", with the
+  payment step saying card payments are coming soon)
 - **Date:** 2026-11-22
 - **Deciders:** Martin
 - **Related:** supersedes [ADR 0013](0013-in-app-payments-only.md) until
@@ -77,6 +78,9 @@ until payments in the app work:
 ## Consequences
 
 - The open beta can start with paid rides now, on staging or production.
+  Where the payment step was, the app says that card payments are coming
+  soon and to pay the driver in cash or by bank transfer (Martin,
+  2026-11-22).
 - No refunds or no-show costs through the app; reliability and the
   operator's watch list are the only answer, as ADR 0008 had.
 - A driver could ask for more than the price. The terms and community

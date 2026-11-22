@@ -19,7 +19,9 @@ on the web.
 
 **Rules:** rule M6 in [pricing and seats](../product/pricing-and-seats.md),
 [ADR 0038](../decisions/0038-pay-the-driver-in-person-until-card-payments.md);
-the draft terms 6.9, 7.6 and 8.2.
+the draft terms 6.9, 7.6 and 8.2. Accepted by Martin on 2026-11-22, who
+asked for the payment step to say that card payments are coming soon and to
+pay the driver in cash or by bank transfer, and for the build to stay lean.
 
 ## Global Constraints
 
