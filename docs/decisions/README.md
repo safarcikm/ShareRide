@@ -72,3 +72,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0039](0039-rename-to-puffinride.md) | Rename the product to PuffinRide, on puffinride.is | Accepted |
 | [0040](0040-console-recovery-by-text-code.md) | Get back into the console with a text code and a new passkey | Accepted |
 | [0041](0041-console-password-for-now.md) | Sign in to the console with a password for now | Accepted |
+| [0042](0042-production-on-render-released-with-a-button.md) | Production on Render, released with a button | Accepted |
