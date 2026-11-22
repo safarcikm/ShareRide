@@ -408,14 +408,21 @@ in the seat view, empty screens, confirmations and onboarding. They never
 stand in for a real person's photo, never speak about money or safety, and
 their shape or colour never says anything about a person's gender.
 
+**Puffins** took the shape people's place in the seat view on 2026-11-22,
+with the puffin logo (decision 12): our own puffin, drawn like the logo's
+(section 4.2), the head three-quarters and facing right, the way the car
+drives. Every puffin looks the same; only a hat or a scarf in a people
+colour tells one rider from another, and like the shapes they say nothing
+about who sits there. The part is `Puffin` in `apps/mobile/src/components`.
+
 **The seat view** shows the car from above, front to the right, on your part
 of the trip:
 
 | Seat | How it looks | Meaning |
 | ---- | ------------ | ------- |
-| Driver | A shape person whose colour comes from the driver's id, so it stays the same on every trip | Always there |
-| You | `primarySoft` seat, 3 `primary` outline, a moss shape person and a "You" flag | The seats you are booking |
-| Taken | A grey shape with no colour and no face details beyond two dots | Booked by someone on this part |
+| Driver | A puffin in a knitted hat whose colour comes from the driver's id, so it stays the same on every trip | Always there |
+| You | `primarySoft` seat, 3 `primary` outline, a puffin in a moss scarf and a "You" flag | The seats you are booking |
+| Taken | A grey puffin with no colour: its head and beak in the car's taken grey, its face in the seat's grey, one dot for an eye | Booked by someone on this part |
 | Free | White seat with a dashed `control` outline | Free on your part |
 | Not offered | Flat grey seat with a cross | The driver doesn't offer it |
 
