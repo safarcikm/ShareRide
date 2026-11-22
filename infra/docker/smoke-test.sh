@@ -59,8 +59,8 @@ check() {
 status_of() { curl -s -o /dev/null -w '%{http_code}' "$base$1"; }
 
 check "API ready" test "$(status_of /v1/health/ready)" = 200
-check "web app at /" sh -c "curl -fsS '$base/' | grep -q '<title>PuffinRide</title>'"
-check "web app at an app route (reload)" sh -c "curl -fsS '$base/sign-in' | grep -q '<title>PuffinRide</title>'"
+check "web app at /" sh -c "curl -fsS '$base/' | grep -q '<title>PuffinRide · '"
+check "web app at an app route (reload)" sh -c "curl -fsS '$base/sign-in' | grep -q '<title>PuffinRide · '"
 check "content security policy on the page" sh -c "curl -fsSI '$base/' | grep -qi '^content-security-policy:'"
 check "unknown /v1 path is the API's 404" test "$(status_of /v1/no-such-endpoint)" = 404
 check "missing bundle is a 404, not the page" test "$(status_of /_expo/static/js/web/gone.js)" = 404

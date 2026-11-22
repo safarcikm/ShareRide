@@ -214,6 +214,35 @@ Hetzner project of its own:
    `PHOTO_BUCKET_SECRET_KEY`. Save; Render deploys again.
 4. Check as on staging ([Turn on photos](staging.md#turn-on-photos), step 4).
 
+## Google Search Console
+
+Search engines may index production's public pages only (spec 23): Find,
+the meeting points, the places and the legal texts, each in Icelandic
+(`?lang=is`) and English (`?lang=en`). The API serves `/robots.txt` and
+`/sitemap.xml` from the active meeting points and the places, and answers
+everything else, and every address on staging, with `X-Robots-Tag: noindex`.
+Nothing to set: it follows `APP_ENV` (production when unset) and
+`WEB_APP_URL`.
+
+To tell Google about the site, once:
+
+1. Open [Search Console](https://search.google.com/search-console) signed in
+   as `admin@puffinride.is`, **Add property**, **Domain**: `puffinride.is`.
+   Google shows a TXT record (`google-site-verification=…`).
+2. At ISNIC, **DNS Hosting** for `puffinride.is`, add a **TXT** record on
+   the domain itself (`@`) with that value. Keep the A and CNAME records.
+3. Back in Search Console, **Verify**. It can take a few minutes, sometimes
+   hours, for the record to show.
+4. **Sitemaps**: add `https://puffinride.is/sitemap.xml`. Its status should
+   become "Success", with the pages found.
+5. Check one address with **URL inspection**, for example
+   `https://puffinride.is/?lang=is`: "URL is available to Google", and
+   **Test live URL** shows the page with its title.
+
+The domain property covers `staging.puffinride.is` too: should a staging
+address ever show in results, **Removals** hides it while the noindex drops
+it.
+
 ## Upgrade to Render Pro
 
 ADR 0018 recommends Render's Pro plan for production: 7 days of

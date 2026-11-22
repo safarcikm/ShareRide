@@ -94,7 +94,9 @@ describe("the operator console at /admin (ADR 0028)", () => {
 
   it("keeps the app's pages for every other path", async () => {
     const response = await app.request("/trips/abc");
-    expect(await response.text()).toContain("<title>PuffinRide</title>");
+    expect(await response.text()).toContain(
+      "<title>PuffinRide · Shared rides across Iceland</title>",
+    );
     expect(response.headers.get("content-security-policy")).toContain("'unsafe-inline'");
   });
 });
@@ -106,7 +108,7 @@ describe("without the console built", () => {
     for (const path of ["/admin", "/admin/setup"]) {
       const response = await app.request(path);
       expect(response.status, path).toBe(404);
-      expect(await response.text(), path).not.toContain("<title>PuffinRide</title>");
+      expect(await response.text(), path).not.toContain("<title>PuffinRide");
     }
   });
 });

@@ -6,6 +6,19 @@ import type { MessageKey } from "./en.ts";
  */
 export const is = {
   "app.name": "PuffinRide",
+  "seo.title": "{page} · PuffinRide",
+  "seo.findTitle": "PuffinRide · Samferða um Ísland",
+  "seo.findDescription":
+    "Finndu far, eða bjóddu laus sæti í bílnum þínum, milli bæja á Íslandi og deildu kostnaðinum við ferðina.",
+  "seo.meetingPointsDescription":
+    "Mótsstaðirnir þar sem bílstjórar og farþegar PuffinRide hittast, um allt Ísland, á korti og eftir landshlutum.",
+  "seo.meetingPointDescription":
+    "{name}: mótsstaður PuffinRide, þar sem bílstjórar og farþegar hittast til að verða samferða.",
+  "seo.placeTitle": "{place}: næstu mótsstaðir",
+  "seo.placeDescription":
+    "Næstu mótsstaðir PuffinRide við {place}, til að finna far eða bjóða far.",
+  "seo.legalDescription": "Notendaskilmálar, samfélagsreglur og persónuverndarstefna PuffinRide.",
+  "seo.shareImage": "Lundi PuffinRide á kortanælu",
   "common.back": "Til baka",
   "common.loading": "Hleð",
   "refresh.updating": "Uppfæri",

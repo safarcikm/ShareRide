@@ -10,6 +10,7 @@ import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Chip } from "@/components/chip";
 import { Notice } from "@/components/notice";
+import { PageHead } from "@/components/page-head";
 import { Screen, useWideScreen } from "@/components/screen";
 import { Body, Heading, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
@@ -36,6 +37,10 @@ export default function MeetingPointsScreen() {
   const points = result?.ok === true ? result.data.meetingPoints : [];
   return (
     <Screen aside={points.length === 0 ? undefined : <PointsMap points={points} />}>
+      <PageHead
+        title={t("seo.title", { page: t("meetingPoints.title") })}
+        description={t("seo.meetingPointsDescription")}
+      />
       <BackButton />
       <Title>{t("meetingPoints.title")}</Title>
       <Body>{t("meetingPoints.intro")}</Body>
