@@ -1,11 +1,11 @@
-// Hetzner Object Storage in Helsinki (ADR 0022), through its S3 interface:
+// Hetzner Object Storage in Nuremberg (ADRs 0022 and 0037), through its S3 interface:
 // requests and links signed with AWS Signature Version 4 by aws4fetch. The
 // bucket stays private; the apps show a photo through a signed link.
 import { AwsClient } from "aws4fetch";
 import { photoKeyPattern, photoLinkLifetimeMs, type PhotoStorage } from "./photo-storage.ts";
 
 export interface HetznerPhotoStorageSettings {
-  /** The location's endpoint, such as https://hel1.your-objectstorage.com. */
+  /** The location's endpoint, such as https://nbg1.your-objectstorage.com. */
   readonly endpoint: string;
   readonly bucket: string;
   readonly accessKey: string;
@@ -30,7 +30,7 @@ const startOfHour = (now: Date) =>
 
 export function createHetznerPhotoStorage(settings: HetznerPhotoStorageSettings): PhotoStorage {
   const endpoint = new URL(settings.endpoint);
-  // The location, such as hel1, is the endpoint's first label and the signing region.
+  // The location, such as nbg1, is the endpoint's first label and the signing region.
   const region = endpoint.hostname.split(".")[0] ?? "";
   const origin = `https://${settings.bucket}.${endpoint.host}`;
   const client = new AwsClient({
