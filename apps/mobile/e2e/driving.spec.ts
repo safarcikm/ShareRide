@@ -39,7 +39,7 @@ test.describe("getting ready to drive on the web", () => {
     await page.getByRole("button", { name: "Save car" }).click();
     await expect(car).toContainText("TEST0001");
 
-    await page.getByRole("button", { name: "Back" }).click();
+    await page.getByRole("button", { name: "Back", exact: true }).click();
     await page.getByRole("button", { name: "Driving licence, Not confirmed yet" }).click();
     await expect(page.getByRole("heading", { name: "Your driving licence" })).toBeVisible();
     const declaration = page.getByRole("checkbox", {

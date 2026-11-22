@@ -62,7 +62,7 @@ describe("GET /admin/v1/home", () => {
     expect((await send("GET", "/admin/v1/home", undefined, "")).status).toBe(401);
   });
 
-  it("counts nothing on a quiet day, and the places the beta has left", async () => {
+  it("counts nothing on a quiet day, and no places while no code is needed", async () => {
     expect(await home()).toEqual({
       reports: { urgent: 0, other: 0 },
       appeals: 0,
@@ -72,8 +72,8 @@ describe("GET /admin/v1/home", () => {
       failedNotifications: 0,
       watched: 0,
       newFeedback: 0,
-      // An invite code is needed as the settings are stored: 150 testers at most.
-      placesLeft: 150,
+      // The beta is open by default (ADR 0035): no places to count.
+      placesLeft: null,
       switchesOff: [],
     });
   });
@@ -143,12 +143,12 @@ describe("GET /admin/v1/home", () => {
     expect((await home()).failedNotifications).toBe(1);
   });
 
-  it("names the switches that are off, and has no places to count once no code is needed", async () => {
+  it("names the switches that are off, and counts the places left once a code is needed", async () => {
     await turn("sms_sending", 0);
-    await turn("invite_code_required", 0);
-    expect(await home()).toMatchObject({ switchesOff: ["sms_sending"], placesLeft: null });
-    await turn("sms_sending", 1);
     await turn("invite_code_required", 1);
-    expect(await home()).toMatchObject({ switchesOff: [], placesLeft: 150 });
+    expect(await home()).toMatchObject({ switchesOff: ["sms_sending"], placesLeft: 150 });
+    await turn("sms_sending", 1);
+    await turn("invite_code_required", 0);
+    expect(await home()).toMatchObject({ switchesOff: [], placesLeft: null });
   });
 });

@@ -2340,7 +2340,7 @@ describe("trip reminders (spec 7, 3.5)", () => {
     ]);
   });
 
-  it("emails the evening reminder, with Directions, to someone without push, but not the hour one", async () => {
+  it("emails both reminders, with Directions, to someone without push (spec 20, 3.1)", async () => {
     const { passenger } = await confirmedBooking();
     await withEmail(passenger, "gunna-reminder@example.com");
     await worker().runOnce();
@@ -2349,12 +2349,47 @@ describe("trip reminders (spec 7, 3.5)", () => {
     await worker().runOnce();
     await until(saturday0430);
     await worker().runOnce();
-    expect(email.sent.map((sent) => sent.subject)).toEqual([
+    const toGunna = email.sent.filter((sent) => sent.to === "gunna-reminder@example.com");
+    expect(toGunna.map((sent) => sent.subject)).toEqual([
       "Tomorrow at 05:30 · Meeting point: Hlemmur",
+      "In one hour, at 05:30 · Meeting point: Hlemmur",
     ]);
-    expect(email.sent[0]?.text).toMatch(
-      new RegExp(`Directions: ${webAppUrl}/meeting-points/[0-9a-f-]+`),
+    for (const sent of toGunna) {
+      expect(sent.text).toMatch(new RegExp(`Directions: ${webAppUrl}/meeting-points/[0-9a-f-]+`));
+    }
+  });
+
+  it("emails the driver an hour before, without push, and nobody with push (spec 20, 3.1)", async () => {
+    const { jon, passenger } = await confirmedBooking();
+    await withEmail(jon, "jon-reminder@example.com");
+    await withEmail(passenger, "gunna-pushed@example.com");
+    await withDevice(passenger);
+    await worker().runOnce();
+    email.sent.length = 0;
+    await until(saturday0430);
+    await worker().runOnce();
+    expect(
+      email.sent.filter((sent) => sent.to === "jon-reminder@example.com").map((s) => s.subject),
+    ).toEqual(["In one hour, at 05:30: 1 passenger"]);
+    expect(email.sent.filter((sent) => sent.to === "gunna-pushed@example.com")).toEqual([]);
+  });
+
+  it("emails no hour reminder to either side with trip reminders off (spec 20, 3.1.1)", async () => {
+    const { jon, passenger } = await confirmedBooking();
+    await withEmail(jon, "jon-off@example.com");
+    await withEmail(passenger, "gunna-off@example.com");
+    await remindersOff(jon);
+    await remindersOff(passenger);
+    await worker().runOnce();
+    email.sent.length = 0;
+    await until(friday18);
+    await worker().runOnce();
+    await until(saturday0430);
+    await worker().runOnce();
+    const reminders = email.sent.filter(
+      (sent) => sent.to === "jon-off@example.com" || sent.to === "gunna-off@example.com",
     );
+    expect(reminders).toEqual([]);
   });
 });
 

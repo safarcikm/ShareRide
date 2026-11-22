@@ -13,6 +13,7 @@ onwards), a recommendation and the docs it affects.
 
 | #   | Question | Recommendation | Affects |
 | --- | -------- | -------------- | ------- |
+| Q29 | Feedback is kept 12 months after the beta ends, counted from when "Invite code required" was last turned off. Now that the beta is open and the switch is only a gate (ADR 0035), turning it on for a day against abuse and off again would start that count. Should the end of the beta be its own moment instead? | Yes: the operator sets the end of the beta at public launch (launch work, spec 20, section 10), and the switch stops counting. Until then, avoid turning the switch on and off again. | [privacy register](../compliance/privacy-gdpr.md) (Feedback), spec 12, spec 20 (3.4.5), `retention.ts` |
 
 ## Answered
 

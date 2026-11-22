@@ -55,8 +55,10 @@ export const notificationRules = {
   unread_messages: { push: false, email: "fallback", sms: false },
   reminder_evening: { push: true, email: "fallback", sms: false },
   reminder_evening_driver: { push: true, email: "fallback", sms: false },
-  reminder_hour: { push: true, email: "never", sms: false },
-  reminder_hour_driver: { push: true, email: "never", sms: false },
+  // The web has no push, so the hour reminder falls back to email, as the
+  // evening one does (spec 20, 3.1).
+  reminder_hour: { push: true, email: "fallback", sms: false },
+  reminder_hour_driver: { push: true, email: "fallback", sms: false },
   payout_sent: { push: false, email: "always", sms: false },
   checked_in: { push: true, email: "never", sms: false },
   checked_in_driver: { push: true, email: "never", sms: false },
@@ -68,10 +70,11 @@ export const notificationRules = {
   dispute_decided: { push: true, email: "always", sms: false },
   dispute_decided_driver: { push: true, email: "always", sms: false },
   // Reviews (spec 8, 3.7 and 3.9): "How was your trip?" when the trip
-  // completes and once more 3 days later, and a review about you that now
-  // shows. Push only: a nudge, not news anyone must have.
-  rate_trip: { push: true, email: "never", sms: false },
-  rate_trip_driver: { push: true, email: "never", sms: false },
+  // completes and once more 3 days later, by email without push, as the
+  // web has none (spec 20, 3.1); and a review about you that now shows,
+  // push only: a nudge, not news anyone must have.
+  rate_trip: { push: true, email: "fallback", sms: false },
+  rate_trip_driver: { push: true, email: "fallback", sms: false },
   review_visible: { push: true, email: "never", sms: false },
   // News about the account rather than a trip (spec 11): the texts say what
   // is ready and until when, never a link (spec 11, 7).

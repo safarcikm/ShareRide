@@ -10,12 +10,12 @@ import {
 } from "./values.ts";
 
 describe("the settings catalogue", () => {
-  it("starts with the beta's own settings (ADR 0032)", () => {
+  it("starts with the beta's own settings (ADR 0032), the invite code off as the beta is open (ADR 0035)", () => {
     expect(settingDefinitions.invite_code_required).toEqual({
       group: "beta",
       kind: "switch",
       unit: null,
-      default: 1,
+      default: 0,
       min: 0,
       max: 1,
       step: 1,
@@ -50,30 +50,30 @@ describe("the settings catalogue", () => {
 describe("valuesAt", () => {
   const changes = [
     { version: 1, key: "beta_max_testers", newValue: 100 },
-    { version: 2, key: "invite_code_required", newValue: 0 },
+    { version: 2, key: "invite_code_required", newValue: 1 },
     { version: 3, key: "beta_max_testers", newValue: 120 },
   ];
 
   it("is the defaults at version 0", () => {
     expect(valuesAt(0, changes)).toEqual(defaultSettingValues);
-    expect(defaultSettingValues).toMatchObject({ invite_code_required: 1, beta_max_testers: 150 });
+    expect(defaultSettingValues).toMatchObject({ invite_code_required: 0, beta_max_testers: 150 });
   });
 
   it("lays each change up to the version over the defaults", () => {
     const changedTo = (changed: object) => ({ ...defaultSettingValues, ...changed });
     expect(valuesAt(1, changes)).toEqual(changedTo({ beta_max_testers: 100 }));
     expect(valuesAt(2, changes)).toEqual(
-      changedTo({ invite_code_required: 0, beta_max_testers: 100 }),
+      changedTo({ invite_code_required: 1, beta_max_testers: 100 }),
     );
     expect(valuesAt(3, changes)).toEqual(
-      changedTo({ invite_code_required: 0, beta_max_testers: 120 }),
+      changedTo({ invite_code_required: 1, beta_max_testers: 120 }),
     );
   });
 
   it("is the newest values past the last version, in whatever order the changes come", () => {
     expect(valuesAt(9, [...changes].reverse())).toEqual({
       ...defaultSettingValues,
-      invite_code_required: 0,
+      invite_code_required: 1,
       beta_max_testers: 120,
     });
   });

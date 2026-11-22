@@ -18,17 +18,17 @@ test("a tester sends feedback and reads PuffinRide's reply", async ({ page }) =>
   const { phone } = await signUp(page, english, "Ari");
 
   await page.goto("/settings");
-  await page.getByRole("button", { name: "Send feedback" }).click();
+  await page.getByRole("button", { name: "Send feedback", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Send feedback" })).toBeVisible();
   // No picture of the screen from a browser.
   await expect(page.getByText("Remove the screenshot")).toHaveCount(0);
 
   // It asks what it is about, and for a message.
-  await page.getByRole("button", { name: "Send feedback" }).click();
+  await page.getByRole("button", { name: "Send feedback", exact: true }).click();
   await expect(page.getByText("Choose what it is about.").filter(visible)).toBeVisible();
   await page.getByRole("radio", { name: "Something isn't working" }).click();
   await page.getByLabel("Your message").fill(message);
-  await page.getByRole("button", { name: "Send feedback" }).click();
+  await page.getByRole("button", { name: "Send feedback", exact: true }).click();
   await expect(page.getByText(/^Thank you\. We got your feedback\./).filter(visible)).toBeVisible();
 
   await page.getByRole("button", { name: "My feedback" }).click();

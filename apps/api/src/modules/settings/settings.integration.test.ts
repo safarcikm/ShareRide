@@ -93,8 +93,8 @@ describe("the console's settings", () => {
         group: "beta",
         kind: "switch",
         unit: null,
-        value: 1,
-        default: 1,
+        value: 0,
+        default: 0,
         min: 0,
         max: 1,
         step: 1,
@@ -212,19 +212,19 @@ describe("the console's settings", () => {
   it("refuse a change made on values the console did not see", async () => {
     const { version } = await settings();
     const stale = await change("invite_code_required", {
-      value: 0,
-      reason: "Open the doors",
+      value: 1,
+      reason: "Invited people only",
       version: version - 1,
     });
     expect([stale.status, codeOf(stale.body)]).toEqual([409, "settings_changed"]);
-    expect(valueOf(await settings(), "invite_code_required")).toBe(1);
+    expect(valueOf(await settings(), "invite_code_required")).toBe(0);
   });
 
   it("give two changes made at the same moment one version each, or refuse the second", async () => {
     const { version } = await settings();
     const answers = await Promise.all([
       change("beta_max_testers", { value: 140, reason: "One", version }),
-      change("invite_code_required", { value: 0, reason: "Two", version }),
+      change("invite_code_required", { value: 1, reason: "Two", version }),
     ]);
     expect(answers.map((answer) => answer.status).sort()).toEqual([200, 409]);
     const all = await settings();
@@ -297,14 +297,14 @@ describe("the settings service", () => {
 });
 
 describe("GET /v1/config", () => {
-  it("tells the apps, signed in or not, whether the beta is closed, cached for 5 minutes", async () => {
+  it("tells the apps, signed in or not, that this is the beta, whatever the invite switch, cached for 5 minutes", async () => {
     const before = (await settings()).version;
     const response = await api.request("/v1/config");
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("public, max-age=300");
     const required = valueOf(await settings(), "invite_code_required") === 1;
     expect((await response.json()) as Config).toEqual({
-      beta: required,
+      beta: true,
       paused: [],
       maxSeats: 8,
       freeCancellationMinutes: 15,
@@ -319,7 +319,7 @@ describe("GET /v1/config", () => {
       version: before,
     });
     expect((await (await api.request("/v1/config")).json()) as Config).toEqual({
-      beta: !required,
+      beta: true,
       paused: [],
       maxSeats: 8,
       freeCancellationMinutes: 15,

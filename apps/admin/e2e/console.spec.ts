@@ -739,10 +739,12 @@ test("the operator runs the closed beta: a group code, a price value, a pause an
   const cardOf = (name: string) =>
     page.getByRole("listitem").filter({ has: page.getByRole("heading", { name, exact: true }) });
 
-  // Home: today's counts, and the places the beta has left.
+  // Home: today's counts. The beta is open (spec 20, "Invite code required"
+  // off by default), so home counts no places left; codes are in the menu.
   await menu.getByRole("link", { name: "Home" }).click();
   await expect(page.getByRole("heading", { name: "Today", level: 2 })).toBeVisible();
-  await page.getByRole("link", { name: /places? left in the beta$/ }).click();
+  await expect(page.getByRole("link", { name: /places? left in the beta$/ })).toHaveCount(0);
+  await menu.getByRole("link", { name: "Invite codes" }).click();
   await expect(page.getByRole("heading", { name: "Invite codes", level: 1 })).toBeVisible();
 
   // A group code for a workplace.

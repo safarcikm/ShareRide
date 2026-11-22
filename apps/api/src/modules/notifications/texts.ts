@@ -724,9 +724,13 @@ function bookingText(
       : reminder
         ? // "Directions" opens the meeting point page, with its photo (3.5).
           `/meeting-points/${facts.boardPointId}`
-        : facts.role === "driver"
-          ? `/drive/trips/${facts.tripId}`
-          : `/bookings/${facts.bookingId}`;
+        : facts.kind === "rate_trip"
+          ? // Straight to rating the driver (spec 20, 3.1.3); the driver's
+            // trip lists each passenger to rate.
+            `/bookings/${facts.bookingId}/rate`
+          : facts.role === "driver"
+            ? `/drive/trips/${facts.tripId}`
+            : `/bookings/${facts.bookingId}`;
   return {
     title: capitalised(title, locale),
     // A message is shown as its sender wrote it.
