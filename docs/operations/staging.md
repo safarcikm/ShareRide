@@ -185,6 +185,13 @@ DATABASE_URL=postgres://shareride:shareride-local-only@localhost:5432/shareride_
 The script migrates and seeds that database, so never point it at one that
 matters. It needs Linux's host networking (`--network host`), as in CI.
 
+A build that passes in CI can still fail on Render. Metro starts a bundling
+worker per CPU it sees, each a few hundred MB, and Render's build machines
+can show it more CPUs than CI's. A build log that stops with no error during
+the web export (`expo export`) most likely ran out of memory (2026-11-22):
+the Dockerfile caps Metro at two workers, about 1.4 GB, so keep that cap
+when changing the export.
+
 To deploy by hand, for example after a failed build: open the service and
 choose **Manual Deploy**, then **Deploy latest commit**.
 

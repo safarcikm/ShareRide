@@ -1365,6 +1365,10 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Staging deploys again. Since 2026-11-22 every Render build stopped
+  during the web app's export with no error: Metro started a bundling
+  worker per CPU of the build machine and ran out of memory. The image now
+  exports with two workers, which peak at about 1.4 GB.
 - The filters above the weekly figures in the operator console fit a
   phone's width. A card whose parts stack let them grow past its edge.
 - Ending an invite code, sending an announcement to yourself and sending
