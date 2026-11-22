@@ -139,7 +139,7 @@ const environmentSchema = z
      */
     PHOTO_STORAGE: z.enum(["none", "folder", "hetzner"]).optional(),
     PHOTO_FOLDER: z.string().min(1).optional(),
-    /** The bucket's location, such as https://hel1.your-objectstorage.com. */
+    /** The bucket's location, such as https://nbg1.your-objectstorage.com. */
     PHOTO_BUCKET_ENDPOINT: originSchema
       .refine((value) => value.startsWith("https://"), "not https")
       .optional(),

@@ -921,6 +921,7 @@ export const en = {
   "notices.content.review": "a review you wrote",
   "notices.content.tripNote": "your note on a trip",
   "notices.content.about": "your About you text",
+  "notices.content.photo": "your profile photo",
   "notices.content.trip": "a trip you offered",
   "notices.content.booking": "a booking",
   "notices.appealUntil": "If you disagree, you can appeal until {until}.",
@@ -2749,6 +2750,7 @@ export const en = {
   "admin.reports.reviewFacts.passenger": "{rating} of 5 stars, by the passenger, written {when}",
   "admin.reports.reviewWords": "The review's words",
   "admin.reports.about": "About you",
+  "admin.reports.photo": "Profile photo",
   "admin.reports.hiddenTag": "Removed by ShareRide",
   "admin.reports.hiddenByTag": "Hidden by ShareRide",
   "admin.reports.reportedTag": "Reported",
@@ -2809,6 +2811,7 @@ export const en = {
   "admin.reports.hide.review": "the review",
   "admin.reports.hide.trip_note": "the trip's note",
   "admin.reports.hide.about": "their About you",
+  "admin.reports.hide.photo": "their profile photo",
   "admin.reports.effect.warn": "Nothing else changes.",
   "admin.reports.effect.suspend":
     "They can no longer search, book, offer trips, send messages or review. Their upcoming trips and bookings are cancelled with full refunds; the others are not told why.",
@@ -2820,6 +2823,8 @@ export const en = {
   "admin.reports.effect.hide.trip_note":
     "Passengers no longer see it, until the driver writes a new one.",
   "admin.reports.effect.hide.about": "Others no longer see it, until they write a new one.",
+  "admin.reports.effect.hide.photo":
+    "Others see their first letter instead, until they add a new photo.",
   "admin.reports.effect.cancelTrip":
     "Every passenger gets a full refund and is told ShareRide cancelled it, never why.",
   "admin.reports.chooseAction": "Choose an action.",
@@ -2890,6 +2895,7 @@ export const en = {
   "admin.appeals.content.review": "their review",
   "admin.appeals.content.trip_note": "their trip's note",
   "admin.appeals.content.about": "their About you",
+  "admin.appeals.content.photo": "their profile photo",
   "admin.appeals.content.trip": "the trip they offered",
   "admin.appeals.content.booking": "a booking",
   "admin.appeals.until": "It runs until {when}.",
@@ -3025,6 +3031,7 @@ export const en = {
   "admin.users.licenceDeclared": "Driving licence declared",
   "admin.users.languages": "Languages they speak",
   "admin.users.about": "About you",
+  "admin.users.photo": "Profile photo",
   "admin.users.userId": "User ID",
   "admin.users.notYet": "Not yet",
   "admin.users.noneGiven": "None",

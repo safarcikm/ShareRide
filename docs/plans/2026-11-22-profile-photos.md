@@ -219,10 +219,12 @@ required: each half is smaller to review.
 
 ### PR 5: `feat(moderation)`: hide a profile photo
 
-- [ ] `photo` in `hideableContent`, the hide action, the statement texts,
+- [x] `photo` in `hideableContent`, the hide action, the statement texts,
       and appeal reversal (only while the hidden photo is still the
-      person's)
-- [ ] Console: the photo on the user page and the report, with Hide photo
+      person's). Migration `0058_hide_profile_photos` lets an action concern
+      a photo
+- [x] Console: the photo on the user page and the report (the reported
+      person's, whatever the report is about), with Hide their profile photo
 - Verify: moderation integration tests, console tests
 
 ### PR 6: `docs(operations)`: photos on staging
@@ -244,7 +246,8 @@ required: each half is smaller to review.
 ## 7. Martin's steps
 
 1. In the Hetzner Console, create the bucket for staging: location
-   Helsinki, private (runbook, "Turn on photos").
+   Nuremberg, private (runbook, "Turn on photos"; ADR 0037, as Helsinki
+   was not offered). Done 2026-11-22.
 2. Generate S3 credentials. Put them and the bucket's details in the
    staging API's environment in Render.
 3. Sign Hetzner's data processing agreement.

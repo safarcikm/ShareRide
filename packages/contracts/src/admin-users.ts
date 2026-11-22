@@ -163,6 +163,8 @@ export const adminUserSchema = adminUserListItemSchema.extend({
   languages: z.array(z.string()),
   /** Their About you; null for none. */
   about: z.object({ text: z.string(), hidden: z.boolean() }).nullable(),
+  /** Their profile photo, also while ShareRide hides it; null for none (ADR 0033). */
+  photo: z.object({ url: z.string(), hidden: z.boolean() }).nullable(),
   /** While they wait for their account to be deleted (spec 11). */
   deleteAfter: timestampSchema.nullable(),
   /** Their rating and reliability figure, as their profile counts them. */

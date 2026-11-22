@@ -1,0 +1,2 @@
+ALTER TABLE "moderation_actions" DROP CONSTRAINT "moderation_actions_content_check";--> statement-breakpoint
+ALTER TABLE "moderation_actions" ADD CONSTRAINT "moderation_actions_content_check" CHECK (("moderation_actions"."content_kind" is null) = ("moderation_actions"."content_id" is null) and ("moderation_actions"."content_kind" is null or "moderation_actions"."content_kind" in ('message', 'review', 'trip_note', 'about', 'photo', 'trip', 'booking')));

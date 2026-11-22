@@ -54,7 +54,9 @@ import {
   sql,
   type SQL,
 } from "drizzle-orm";
+import type { PhotoStorage } from "../../platform/photo-storage.ts";
 import { recordAudit } from "../admin/audit.ts";
+import { markedPhotoOf } from "../people/photos.ts";
 import { authors } from "../people/ratings.ts";
 import { figuresOf } from "../people/standing.ts";
 import { createConsoleReads, iso, type ConsoleStop } from "./console-reads.ts";
@@ -119,6 +121,8 @@ export function createPeopleConsoleService(dependencies: {
   readonly clock: () => Date;
   readonly settings?: SafetySettings;
   readonly reliability?: ReliabilitySettings;
+  /** Where profile photos are kept, to show the person's (ADR 0033). */
+  readonly photos?: PhotoStorage;
 }): PeopleConsoleService {
   const { db, clock } = dependencies;
   const settings = dependencies.settings ?? defaultSafetySettings;
@@ -397,6 +401,8 @@ export function createPeopleConsoleService(dependencies: {
           row.about === null || row.about === ""
             ? null
             : { text: row.about, hidden: row.aboutHiddenAt !== null },
+        // Also while hidden, so the operator can judge it.
+        photo: await markedPhotoOf(dependencies.photos, clock())(row),
         deleteAfter: iso(row.deleteAfter),
         ...(await figuresOf(db, id, clock(), reliability)),
         reviewsAbout: about.map(reviewOf),
