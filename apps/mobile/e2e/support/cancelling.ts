@@ -41,7 +41,8 @@ export async function secondPage(browser: Browser, testInfo: TestInfo) {
 /**
  * Bára posts a trip for tomorrow, without the suggested stops named in
  * `skip`, Dóra requests a seat, Bára accepts and Dóra pays, as in the
- * request journey. Gives the trip, the booking's address and Dóra's number.
+ * request journey. Gives the trip, the booking's address, and Dóra's number
+ * and the email she gave at sign-up.
  */
 export async function confirmedBooking(
   driver: Page,
@@ -50,7 +51,7 @@ export async function confirmedBooking(
 ) {
   await signUp(driver, english, "Bára");
   const tripId = await postTripToSelfoss(driver, withinADay(), skip);
-  const { phone } = await signUp(passenger, english, "Dóra");
+  const { phone, email } = await signUp(passenger, english, "Dóra");
   await askForSeat(passenger, tripId);
   await driver.goto(`/drive/trips/${tripId}`);
   await driver.getByRole("button", { name: "Accept", exact: true }).click();
@@ -63,7 +64,7 @@ export async function confirmedBooking(
   await expect(
     passenger.getByText("Your seat is confirmed", { exact: true }).filter(visible),
   ).toBeVisible();
-  return { tripId, booking, passengerPhone: phone };
+  return { tripId, booking, passengerPhone: phone, passengerEmail: email };
 }
 
 /**

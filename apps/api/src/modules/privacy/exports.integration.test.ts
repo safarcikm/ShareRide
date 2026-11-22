@@ -118,8 +118,8 @@ async function exportOf(member: Member) {
   const response = await api.request(link.data.path);
   expect(response.status).toBe(200);
   const entries = readZip(Buffer.from(await response.arrayBuffer()));
-  const json = entries.find((entry) => entry.name === "shareride-data.json");
-  const html = entries.find((entry) => entry.name === "shareride-data.html");
+  const json = entries.find((entry) => entry.name === "puffinride-data.json");
+  const html = entries.find((entry) => entry.name === "puffinride-data.html");
   if (json === undefined || html === undefined) throw new Error("A file is missing.");
   return {
     text: json.data.toString("utf8"),
@@ -267,16 +267,16 @@ describe("download my data (spec 11, 3.2)", () => {
     expect(response.headers.get("content-type")).toBe("application/zip");
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(response.headers.get("content-disposition")).toMatch(
-      /^attachment; filename="shareride-data-\d{4}-\d{2}-\d{2}\.zip"$/,
+      /^attachment; filename="puffinride-data-\d{4}-\d{2}-\d{2}\.zip"$/,
     );
     const names = readZip(Buffer.from(await response.arrayBuffer())).map((entry) => entry.name);
-    expect(names).toEqual(["shareride-data.json", "shareride-data.html"]);
+    expect(names).toEqual(["puffinride-data.json", "puffinride-data.html"]);
 
     const { data, html } = await exportOf(await newMember("Siggi"));
     expect(data).toMatchObject({ format: "shareride-export", version: 1, locale: "en" });
     expect(Object.keys(data.sections)).toEqual([...exportSections]);
     expect(data.sections.account).toMatchObject({ firstName: "Siggi", deleteAfter: null });
-    expect(html).toContain("<h1>Your ShareRide data</h1>");
+    expect(html).toContain("<h1>Your PuffinRide data</h1>");
     expect(html).not.toMatch(/<script|https?:\/\//i);
   });
 
@@ -477,8 +477,8 @@ describe("download my data (spec 11, 3.2)", () => {
     const raisedAt = api.now();
     const answeredAt = new Date(raisedAt.getTime() + hours(1) * 1000);
     const decidedAt = new Date(raisedAt.getTime() + hours(2) * 1000);
-    // Anna marked Gunna a no-show, Gunna contested it and ShareRide decided;
-    // Siggi says Anna didn't come, and Anna's contest waits for ShareRide.
+    // Anna marked Gunna a no-show, Gunna contested it and PuffinRide decided;
+    // Siggi says Anna didn't come, and Anna's contest waits for PuffinRide.
     await api.connection.db.insert(schema.disputes).values([
       {
         bookingId: await bookingOf(gunna),
@@ -558,7 +558,7 @@ describe("download my data (spec 11, 3.2)", () => {
     expect(unlabelledFields(annas.data)).toEqual([]);
   });
 
-  it("has whether a cancellation counts, and when ShareRide made it, with whoever cancelled (spec 8, 6)", async () => {
+  it("has whether a cancellation counts, and when PuffinRide made it, with whoever cancelled (spec 8, 6)", async () => {
     const { anna, passengers } = await busyTrip();
     const [gunna, siggi] = passengers;
     if (gunna === undefined || siggi === undefined) throw new Error("No passengers.");
@@ -578,7 +578,7 @@ describe("download my data (spec 11, 3.2)", () => {
         })
         .where(eq(schema.bookings.passengerId, member.userId));
     // Anna cancelled Gunna's booking and Siggi his own, both for the
-    // weather; ShareRide made each count on whoever cancelled.
+    // weather; PuffinRide made each count on whoever cancelled.
     await cancel(gunna, "driver");
     await cancel(siggi, "passenger");
     const counted = { countsOnReliability: true, overruledAt: overruledAt.toISOString() };
@@ -827,8 +827,8 @@ describe("download my data (spec 11, 3.2)", () => {
     ]);
     // The picture is a file of the ZIP; nobody else's is, and the operator's status is theirs.
     expect(entries.map((entry) => entry.name)).toEqual([
-      "shareride-data.json",
-      "shareride-data.html",
+      "puffinride-data.json",
+      "puffinride-data.html",
       `feedback/${mine.id}.jpg`,
     ]);
     expect(entries[2]?.data.equals(picture)).toBe(true);
@@ -840,7 +840,7 @@ describe("download my data (spec 11, 3.2)", () => {
     await db.delete(schema.feedback);
   });
 
-  it("has my profile photo as a file, and when ShareRide hid it (ADR 0033)", async () => {
+  it("has my profile photo as a file, and when PuffinRide hid it (ADR 0033)", async () => {
     const gunna = await newMember("Gunna");
     const { db } = api.connection;
     const key = "profile-photos/0193f0c4-7d4a-7b1e-9c2a-123456789abc.jpg";
@@ -858,8 +858,8 @@ describe("download my data (spec 11, 3.2)", () => {
       photoHiddenAt: hiddenAt.toISOString(),
     });
     expect(entries.map((entry) => entry.name)).toEqual([
-      "shareride-data.json",
-      "shareride-data.html",
+      "puffinride-data.json",
+      "puffinride-data.html",
       "profile/photo.jpg",
     ]);
     expect(entries[2]?.data.equals(Buffer.from(picture))).toBe(true);
@@ -883,7 +883,7 @@ describe("download my data (spec 11, 3.2)", () => {
     await later(hours(24), anna);
     const icelandic = await exportOf(anna);
     expect(icelandic.html).toContain('<html lang="is">');
-    expect(icelandic.html).toContain("<h1>ShareRide gögnin þín</h1>");
+    expect(icelandic.html).toContain("<h1>PuffinRide-gögnin þín</h1>");
     expect(icelandic.html).toContain("<dt>Staða</dt><dd>Staðfest</dd>");
     expect(icelandic.html).not.toMatch(/<dd>(confirmed|published|approval)<\/dd>/);
   });
@@ -905,7 +905,9 @@ describe("download my data (spec 11, 3.2)", () => {
       title: "Gögnin þín eru tilbúin til niðurhals",
       data: { path: "/settings/privacy/download" },
     });
-    expect(pushed?.body).toMatch(/^Sæktu skrána í ShareRide fyrir .+\. Eftir það er henni eytt\.$/);
+    expect(pushed?.body).toMatch(
+      /^Sæktu skrána í PuffinRide fyrir .+\. Eftir það er henni eytt\.$/,
+    );
     expect(email.sent).toHaveLength(1);
     const [mail] = email.sent;
     expect(mail?.to).toBe(address);

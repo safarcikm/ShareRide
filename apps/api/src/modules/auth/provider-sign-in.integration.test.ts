@@ -203,7 +203,7 @@ describe("the start (plan 4.1, steps 2 and 3)", () => {
   });
 
   it("takes the app's own address and, outside production, Expo Go's", async () => {
-    for (const url of ["shareride://sign-in/return", "exp://192.168.1.5:8081/--/sign-in/return"]) {
+    for (const url of ["puffinride://sign-in/return", "exp://192.168.1.5:8081/--/sign-in/return"]) {
       newAddress();
       expect((await api.request(startPath(newVerifier(), url))).status).toBe(303);
     }

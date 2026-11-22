@@ -54,7 +54,7 @@ describe("Signing in with a phone number", () => {
     expect(screen.getByText("Step 1 of 3")).toBeVisible();
     expect(
       screen.getByText(
-        "We text you a 6-digit code. New to ShareRide? The same code creates your account.",
+        "We text you a 6-digit code. New to PuffinRide? The same code creates your account.",
       ),
     ).toBeVisible();
     // Nothing kept: no ride card.
@@ -162,7 +162,7 @@ describe("Signing in with a phone number", () => {
     app.client.answer("/v1/auth/phone/start", () => failure(0, "network_error"));
     await sendCodeTo("690 0000");
     expect(
-      await screen.findByText("We couldn't reach ShareRide. Check your connection and try again."),
+      await screen.findByText("We couldn't reach PuffinRide. Check your connection and try again."),
     ).toBeVisible();
   });
 
@@ -368,7 +368,7 @@ describe("Signing up while the beta is closed (spec 12, 3.2.3)", () => {
     expect(screen.getByText("Step 2 of 3")).toBeVisible();
     expect(
       screen.getByText(
-        "ShareRide is in a closed beta. To create an account you need an invite code.",
+        "PuffinRide is in a closed beta. To create an account you need an invite code.",
       ),
     ).toBeVisible();
     expect(screen).toHavePathname("/sign-in/invite");
@@ -466,7 +466,7 @@ describe("Signing up while the beta is closed (spec 12, 3.2.3)", () => {
 describe("The Beta label (spec 12, 3.2.6)", () => {
   it("sits beside the name while the beta is closed, and not otherwise", async () => {
     await renderApp("/");
-    expect(await screen.findByText("ShareRide")).toBeVisible();
+    expect(await screen.findByText("PuffinRide")).toBeVisible();
     expect(screen.queryByText("Beta")).toBeNull();
 
     await renderApp("/", {

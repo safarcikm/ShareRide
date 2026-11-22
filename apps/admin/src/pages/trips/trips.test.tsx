@@ -275,7 +275,7 @@ describe("a trip's page (spec 9, 3.5.2)", () => {
     const facts = screen.getByRole("region", { name: "The trip" });
     expect(facts.textContent).toContain("White Skoda Octavia · AB123");
     expect(facts.textContent).toContain("No dogs, please.");
-    expect(facts.textContent).toContain("Removed by ShareRide");
+    expect(facts.textContent).toContain("Removed by PuffinRide");
     expect(facts.textContent).toContain("The driver accepts each request");
     const stops = within(screen.getByRole("list", { name: "Stops" })).getAllByRole("listitem");
     expect(stops.map((stop) => stop.textContent.includes("Removed"))).toEqual([false, true, false]);

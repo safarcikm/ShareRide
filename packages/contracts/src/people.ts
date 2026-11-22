@@ -47,7 +47,7 @@ export type Standing = z.infer<typeof standingSchema>;
 
 /**
  * A link to a person's profile photo beside their name (spec 1, 3.5; ADR
- * 0033), valid for an hour at least. Null without one, for one ShareRide
+ * 0033), valid for an hour at least. Null without one, for one PuffinRide
  * hid (spec 9, 3.4.3), for someone leaving ShareRide and for the former
  * member; also null when missing, as from an API before photos.
  */
@@ -107,7 +107,7 @@ const profileParams = z.object({ profileId: z.uuid() });
 
 const notFound = {
   description:
-    "not_found: no such profile, or the person has left ShareRide or is leaving (spec 11)",
+    "not_found: no such profile, or the person has left PuffinRide or is leaving (spec 11)",
   ...errors,
 } as const;
 

@@ -123,7 +123,7 @@ describe("Meeting points", () => {
     const app = await openMeetingPoints((client) => {
       client.answer("/v1/meeting-points", () => failure(0, "network_error"));
     });
-    expect(screen.getByText(/We couldn't reach ShareRide/)).toBeVisible();
+    expect(screen.getByText(/We couldn't reach PuffinRide/)).toBeVisible();
     expect(screen.queryByRole("radio", { name: "Map" })).toBeNull();
     catalogue(app.client);
     await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
@@ -234,7 +234,7 @@ describe("The map of meeting points", () => {
     await openMeetingPoints((client) => {
       client.answer("/v1/meeting-points", () => failure(0, "network_error"));
     });
-    expect(screen.getByText(/We couldn't reach ShareRide/)).toBeVisible();
+    expect(screen.getByText(/We couldn't reach PuffinRide/)).toBeVisible();
     expect(screen.queryByTestId("aside")).toBeNull();
     expect(screen.queryByRole("image", { name: /^Map of Iceland/ })).toBeNull();
   });

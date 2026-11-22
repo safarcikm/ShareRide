@@ -48,6 +48,8 @@ export function ProfileForm({
   submitLabel,
   tickAppLanguage = false,
   foldAbout = false,
+  afterFirstName,
+  check,
   beforeSave,
   waiting = false,
   suggestedFirstName = null,
@@ -62,6 +64,10 @@ export function ProfileForm({
   readonly tickAppLanguage?: boolean;
   /** Folds an empty About you behind "Add a few words about you (optional)". */
   readonly foldAbout?: boolean;
+  /** Shown after the first name, such as the email at sign-up on the web. */
+  readonly afterFirstName?: ReactNode;
+  /** Runs with the fields' own checks; false stops the save, and the part shows why. */
+  readonly check?: () => boolean;
   /**
    * Runs once the fields pass their checks, before saving, such as
    * accepting the terms first. A text stops the save and shows as the error.
@@ -114,10 +120,13 @@ export function ProfileForm({
     if (saving.current) return;
     setError(null);
     const valid = validateProfileChanges({ firstName, about, languages });
+    // Both run, so every field that needs a change says so at once.
+    const checked = check?.() ?? true;
     if (!valid.ok) {
       showError(valid.error.field);
       return;
     }
+    if (!checked) return;
     saving.current = true;
     setBusy(true);
     const stop = (await beforeSave?.()) ?? null;
@@ -165,6 +174,7 @@ export function ProfileForm({
         autoCapitalize="words"
         maxLength={60}
       />
+      {afterFirstName}
       <View style={styles.languages}>
         <Text style={[typography.label, { color: palette.text }]}>{t("profile.languages")}</Text>
         <View style={styles.chips}>

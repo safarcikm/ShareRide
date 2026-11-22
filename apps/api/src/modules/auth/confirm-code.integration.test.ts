@@ -62,7 +62,7 @@ describe("confirm with a fresh code (spec 11; R11.1)", () => {
     expect(sent).toEqual({ ok: true, status: 202, data: { resendAfterSeconds: 30 } });
     const message = api.sms.outbox.at(-1);
     expect(message?.to).toBe(phone);
-    expect(message?.text).toMatch(/^\d{6} is your ShareRide code to confirm/);
+    expect(message?.text).toMatch(/^\d{6} is your PuffinRide code to confirm/);
 
     expect(await confirm(me.userId, api.lastCode(phone))).toEqual({ ok: true, value: "done" });
   });

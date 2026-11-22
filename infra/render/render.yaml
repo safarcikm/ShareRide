@@ -5,9 +5,11 @@
 # No secrets here: Render generates AUTH_SECRET, and asks for the SMS
 # provider and the Vonage keys once, when the blueprint is first applied.
 #
-# Staging's address is https://staging.skinnar.is, on Martin's domain
-# skinnar.is for now (2026-11-18). Its DNS is ISNIC DNS Hosting: a CNAME
-# from staging.skinnar.is to the service's onrender.com address (runbook).
+# Staging's address is https://staging.puffinride.is (ADR 0039), since
+# 2026-11-22. Its DNS is ISNIC DNS Hosting: a CNAME from
+# staging.puffinride.is to the service's onrender.com address (runbook). The
+# old address, staging.skinnar.is, still answers until nobody uses it
+# (runbook, "Move to puffinride.is").
 
 services:
   # The API, which also serves the web app on the same origin, so the
@@ -23,6 +25,7 @@ services:
     # Render issues and renews its TLS certificate once the DNS record is in.
     domains:
       - staging.skinnar.is
+      - staging.puffinride.is
     dockerfilePath: ./apps/api/Dockerfile
     dockerContext: .
     # Deploy a commit on main only after its CI checks pass.
@@ -61,17 +64,17 @@ services:
       - key: TRUST_PROXY
         value: "2"
       # The operator console's origin (ADR 0028): its passkeys are bound to
-      # it, so the console signs in at https://staging.skinnar.is/admin only.
+      # it, so the console signs in at https://staging.puffinride.is/admin only.
       - key: ADMIN_ORIGIN
-        value: https://staging.skinnar.is
+        value: https://staging.puffinride.is
       # Email (ADR 0027): where its links lead, and the sender on the domain
       # validated in Mailjet. Both wait unused until EMAIL_PROVIDER is set to
       # mailjet, with the Mailjet keys, in the dashboard (runbook, "Turn on
       # email").
       - key: WEB_APP_URL
-        value: https://staging.skinnar.is
+        value: https://staging.puffinride.is
       - key: EMAIL_FROM
-        value: hello@skinnar.is
+        value: hello@puffinride.is
       # The photo storage settings (ADR 0022) are added in the dashboard when
       # photos are turned on; see the runbook.
       # Google sign-in (ADR 0034): asked for, not set here. GOOGLE_SIGN_IN
@@ -97,7 +100,7 @@ services:
       - key: APPLE_PRIVATE_KEY
         sync: false
       - key: API_ORIGIN
-        value: https://staging.skinnar.is
+        value: https://staging.puffinride.is
 
   # Deletes records past their retention and erases deleted accounts, every hour (UTC).
   - type: cron

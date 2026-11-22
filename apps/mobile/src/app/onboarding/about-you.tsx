@@ -9,6 +9,7 @@ import { Screen } from "@/components/screen";
 import { Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { LegalPart, useCurrentDocuments } from "@/onboarding/legal-part";
+import { useSignUpEmail } from "@/onboarding/sign-up-email";
 import { ProfileForm } from "@/profile/profile-form";
 import { createAccountKey, useKeptRide } from "@/sign-in/kept-ride";
 import { KeptRideCard } from "@/sign-in/kept-ride-card";
@@ -18,8 +19,9 @@ import { spacing } from "@/theme/tokens";
 /**
  * Step 3 of signing up, about you (spec 16, 3.5 item 4): the first name,
  * languages and a few words, and for a new account the age and the terms,
- * in one step. The button accepts the documents shown, then saves the
- * profile (item 6); if saving fails the answers stay, and a retry does not
+ * in one step, and on the web an email (spec 20, 3.3). The button sends
+ * the email's link and accepts the documents shown, then saves the profile
+ * (item 6); if saving fails the answers stay, and a retry does not send or
  * accept again. Saving completes the account: the app then opens the ride
  * kept on the way, or Find (_layout.tsx and the menu).
  */
@@ -30,6 +32,7 @@ export default function AboutYouScreen() {
   const kept = useKeptRide();
   // Read once: the name Google or Apple gave a new account (spec 19, 3.3).
   const [suggestedFirstName] = useState(() => session.signInNews()?.suggestedFirstName ?? null);
+  const email = useSignUpEmail(me);
   // Asked once: the terms part stays as it opened after the terms are
   // accepted, so nothing moves if saving the profile then fails.
   const [askTerms] = useState(() => me?.missingSteps.includes("legal") ?? false);
@@ -76,7 +79,9 @@ export default function AboutYouScreen() {
         foldAbout
         submitLabel={t(createAccountKey(kept))}
         suggestedFirstName={suggestedFirstName}
-        beforeSave={acceptTerms}
+        afterFirstName={email.field}
+        check={email.check}
+        beforeSave={async () => (await email.send()) ?? acceptTerms()}
         waiting={askTerms && !termsDone && terms.documents === null && terms.failure === null}
       >
         {askTerms ? (

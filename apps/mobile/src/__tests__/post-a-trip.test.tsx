@@ -167,7 +167,7 @@ describe("Posting a trip (spec 3)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Share the trip" }));
     expect(mockedShare).toHaveBeenCalledWith(
       expect.stringMatching(new RegExp(`^http://localhost:3000/trips/${id}\\?from=0&to=\\d$`)),
-      expect.stringMatching(/ on ShareRide$/),
+      expect.stringMatching(/ on PuffinRide$/),
     );
     expect(await screen.findByText("Link copied. Paste it wherever you like.")).toBeVisible();
     expect(screen.getByRole("link", { name: "See the trip page" })).toBeVisible();

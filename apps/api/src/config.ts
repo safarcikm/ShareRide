@@ -53,7 +53,7 @@ const environmentSchema = z
     SMS_SENDER: z
       .string()
       .regex(/^[A-Za-z][A-Za-z0-9]{0,10}$/)
-      .default("ShareRide"),
+      .default("PuffinRide"),
     /** The kill switch: every sign-in code fails to send while true. */
     SMS_PAUSED: z
       .enum(["true", "false"])
@@ -120,7 +120,7 @@ const environmentSchema = z
     MAILJET_SECRET_KEY: z.string().min(1).optional(),
     /** The sender's address, on a domain validated in Mailjet. */
     EMAIL_FROM: z.email().optional(),
-    EMAIL_FROM_NAME: z.string().min(1).max(60).default("ShareRide"),
+    EMAIL_FROM_NAME: z.string().min(1).max(60).default("PuffinRide"),
     /** Where links in emails lead: the web app's origin. */
     WEB_APP_URL: originSchema.optional(),
     /**

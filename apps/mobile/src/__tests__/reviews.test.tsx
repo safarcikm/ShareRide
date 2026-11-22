@@ -67,7 +67,7 @@ const ratePage = (booking: Booking) => `/bookings/${booking.id}/rate`;
 const rateDriver = { name: "Rate the driver" } as const;
 const send = { name: "Send review" } as const;
 const reportOpen = "You can review this trip once the report about it is settled.";
-const personLeft = "This person has left ShareRide, so they can't be reviewed.";
+const personLeft = "This person has left PuffinRide, so they can't be reviewed.";
 
 /** Gunna's completed booking while her report that Anna didn't come waits to be decided. */
 const withOpenReport = (): Booking => ({
@@ -75,7 +75,7 @@ const withOpenReport = (): Booking => ({
   dispute: dispute({ kind: "driver_absent", answer: "contested" }),
 });
 
-/** Gunna's completed booking once Anna, the driver, has left ShareRide. */
+/** Gunna's completed booking once Anna, the driver, has left PuffinRide. */
 function withFormerDriver(): Booking {
   const booking = completedBooking();
   return { ...booking, driver: { ...booking.driver, firstName: null } };
@@ -94,7 +94,7 @@ describe("rating the driver from the booking (spec 8, 3.7)", () => {
     expect(screen.queryByRole("button", rateDriver)).toBeNull();
   });
 
-  it("is not offered about a driver who has left ShareRide", async () => {
+  it("is not offered about a driver who has left PuffinRide", async () => {
     await open(withFormerDriver(), bookingPage(withFormerDriver()));
     expect(await screen.findByText(personLeft)).toBeVisible();
     expect(screen.queryByRole("button", rateDriver)).toBeNull();
@@ -281,7 +281,7 @@ describe("the rate screen (spec 8, screen 6; R8.8)", () => {
     expect(screen.queryByRole("button", send)).toBeNull();
   });
 
-  it("says at once that a driver who has left ShareRide can't be reviewed", async () => {
+  it("says at once that a driver who has left PuffinRide can't be reviewed", async () => {
     await open(withFormerDriver(), ratePage(withFormerDriver()));
     expect(await screen.findByText(personLeft)).toBeVisible();
     expect(screen.queryByRole("button", send)).toBeNull();
@@ -433,7 +433,7 @@ describe("the driver rates each passenger (spec 8, 3.7)", () => {
     expect(screen.getByText("Quiet ride.")).toBeVisible();
   });
 
-  it("offers no review of a passenger who has left ShareRide", async () => {
+  it("offers no review of a passenger who has left PuffinRide", async () => {
     const former = completedRider("0190a1d6-0000-7000-8000-0000000000c1", "Gunna");
     await openDriverTrip([{ ...former, passenger: { ...former.passenger, firstName: null } }]);
     expect(await screen.findByText(personLeft)).toBeVisible();

@@ -172,7 +172,7 @@ describe("Opened from a link", () => {
     await renderApp("/drive/licence", { me: completeMe, setUp: (client) => driver(client) });
     await fireEvent.press(
       await screen.findByRole("checkbox", {
-        name: "I declare that I hold a valid driving licence for the cars I drive on ShareRide",
+        name: "I declare that I hold a valid driving licence for the cars I drive on PuffinRide",
       }),
     );
     await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
@@ -261,7 +261,7 @@ describe("Driving licence (spec 3, 3.3)", () => {
 
     await fireEvent.press(
       screen.getByRole("checkbox", {
-        name: "I declare that I hold a valid driving licence for the cars I drive on ShareRide",
+        name: "I declare that I hold a valid driving licence for the cars I drive on PuffinRide",
       }),
     );
     await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));

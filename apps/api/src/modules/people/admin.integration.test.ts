@@ -220,7 +220,7 @@ describe("cancellations excused by their reason (R8.11)", () => {
     ]);
   });
 
-  it("leaves out someone leaving ShareRide, and what is older than the period", async () => {
+  it("leaves out someone leaving PuffinRide, and what is older than the period", async () => {
     const jon = await vikCancelledForWeather();
     const { cookie } = await api.signInOperator();
     expect(await listed(cookie)).toHaveLength(1);
@@ -424,7 +424,7 @@ describe("people below the watch level (spec 8, 3.8.4)", () => {
       },
     ]);
 
-    // Someone leaving ShareRide is not watched any more.
+    // Someone leaving PuffinRide is not watched any more.
     await db
       .update(users)
       .set({ deleteAfter: new Date(api.now().getTime() + 86_400_000) })

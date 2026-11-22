@@ -2,10 +2,10 @@ import { expect, test } from "@playwright/test";
 import { apiUrl } from "../playwright.config";
 import { english, signUp } from "./support/account";
 
-// Spec 9's suspension on the web build: ShareRide suspends a person (the
+// Spec 9's suspension on the web build: PuffinRide suspends a person (the
 // test API does what the console will), and the app then shows Find and
 // Offer as the suspension, leads to Notices with the reason, and takes one
-// appeal, which waits for ShareRide's answer.
+// appeal, which waits for PuffinRide's answer.
 
 test.use({ locale: "en-GB" });
 
@@ -39,7 +39,7 @@ test("a suspended person reads why and appeals", async ({ page }) => {
   await page.getByRole("button", { name: "Send appeal" }).click();
   await expect(page.getByText(/^Your appeal, sent /).filter(visible)).toBeVisible();
   await expect(
-    page.getByText("ShareRide will look at it and answer here.").filter(visible),
+    page.getByText("PuffinRide will look at it and answer here.").filter(visible),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Appeal", exact: true })).toHaveCount(0);
 

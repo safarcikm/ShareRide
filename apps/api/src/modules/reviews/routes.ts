@@ -49,7 +49,7 @@ function reviewError(c: Context, error: ReviewError) {
         "A report on this booking is waiting to be decided.",
       );
     case "person_left":
-      return errorResponse(c, 409, "person_left", "The other person has left ShareRide.");
+      return errorResponse(c, 409, "person_left", "The other person has left PuffinRide.");
     case "account_suspended":
       return accountSuspended(c, error);
   }

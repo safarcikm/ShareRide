@@ -8,7 +8,7 @@ import {
 } from "./identity-providers.ts";
 
 /** The app's own address scheme (apps/mobile/app.json), for the phones' way back. */
-export const appScheme = "shareride";
+export const appScheme = "puffinride";
 
 /**
  * The Google and Apple sign-ins the configuration turns on (ADR 0034), and

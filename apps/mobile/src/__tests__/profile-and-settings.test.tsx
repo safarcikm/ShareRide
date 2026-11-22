@@ -378,7 +378,7 @@ describe("Settings", () => {
   it("has beta news on, turns it off on its own, and opens the news (spec 10, 3.5.4)", async () => {
     const app = await openSettings();
     const news = await screen.findByRole("switch", {
-      name: "Beta news. News from ShareRide about the beta, by notification and email.",
+      name: "Beta news. News from PuffinRide about the beta, by notification and email.",
     });
     await waitFor(() => {
       expect(news).toBeChecked();
@@ -415,7 +415,7 @@ describe("Settings", () => {
     });
     await fireEvent.press(reminders);
     expect(
-      await screen.findByText("We couldn't reach ShareRide. Check your connection and try again."),
+      await screen.findByText("We couldn't reach PuffinRide. Check your connection and try again."),
     ).toBeVisible();
     expect(screen.getByRole("switch", { name: reminderSwitch })).toBeChecked();
   });
@@ -481,7 +481,7 @@ describe("Settings", () => {
       },
     });
     expect(
-      await screen.findByText("We couldn't reach ShareRide. Check your connection and try again."),
+      await screen.findByText("We couldn't reach PuffinRide. Check your connection and try again."),
     ).toBeVisible();
     expect(screen.queryByRole("switch", { name: reminderSwitch })).toBeNull();
     await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
@@ -505,7 +505,7 @@ describe("Settings", () => {
     app.client.answer("/v1/auth/sign-out", () => failure(0, "network_error"));
     await fireEvent.press(screen.getByRole("button", { name: "Sign out on all devices" }));
     expect(
-      await screen.findByText("We couldn't reach ShareRide. Check your connection and try again."),
+      await screen.findByText("We couldn't reach PuffinRide. Check your connection and try again."),
     ).toBeVisible();
     expect(screen.getByRole("header", { name: "Settings" })).toBeVisible();
     expect(app.store.value).toBe("sr_rt_refresh-1");
@@ -549,7 +549,7 @@ describe("Settings", () => {
 });
 
 describe("Starting the app", () => {
-  it("says when ShareRide cannot be reached and tries again", async () => {
+  it("says when PuffinRide cannot be reached and tries again", async () => {
     const app = await renderApp("/", {
       me: completeMe,
       setUp: (client) => {
@@ -557,7 +557,7 @@ describe("Starting the app", () => {
       },
     });
     expect(
-      await screen.findByText("We couldn't reach ShareRide. Check your connection and try again."),
+      await screen.findByText("We couldn't reach PuffinRide. Check your connection and try again."),
     ).toBeVisible();
     expect(app.store.value).toBe("sr_rt_stored");
 

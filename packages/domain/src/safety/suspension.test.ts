@@ -163,7 +163,7 @@ describe("what a suspension cancels (3.6.2, R9.10, milestone 9 decision 3)", () 
   });
 });
 
-describe("ShareRide's refund when it cancels a booking (decision 3)", () => {
+describe("PuffinRide's refund when it cancels a booking (decision 3)", () => {
   it("gives back all that was paid, and nothing for what was not", () => {
     expect(operatorBookingRefund("confirmed", kr(5600), "in_app")).toEqual(kr(5600));
     expect(operatorBookingRefund("accepted", kr(5600), "in_app")).toEqual(kr(0));

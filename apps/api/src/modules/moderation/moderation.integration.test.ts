@@ -142,7 +142,7 @@ async function withPush(...members: Member[]) {
 }
 
 describe("suspending someone (spec 9, 3.6; R9.10)", () => {
-  it("cancels their upcoming trips and bookings with full refunds, and tells the others only that ShareRide cancelled", async () => {
+  it("cancels their upcoming trips and bookings with full refunds, and tells the others only that PuffinRide cancelled", async () => {
     const jon = await driverOf(airport, "Jón");
     const anna = await driverOf(north, "Anna");
     const gunna = await newMember("Gunna");
@@ -181,7 +181,7 @@ describe("suspending someone (spec 9, 3.6; R9.10)", () => {
       reportId: null,
     });
 
-    // Jón's trip: cancelled by ShareRide, without a reason, not on his reliability.
+    // Jón's trip: cancelled by PuffinRide, without a reason, not on his reliability.
     const [trip] = await api.connection.db
       .select()
       .from(schema.trips)
@@ -193,7 +193,7 @@ describe("suspending someone (spec 9, 3.6; R9.10)", () => {
       cancelNote: "",
       countsOnReliability: false,
     });
-    // Gunna gets back all she paid, and reads only that ShareRide cancelled.
+    // Gunna gets back all she paid, and reads only that PuffinRide cancelled.
     expect(await stored(ride.id)).toMatchObject({
       status: "cancelled",
       cancelledBy: "operator",
@@ -232,7 +232,7 @@ describe("suspending someone (spec 9, 3.6; R9.10)", () => {
       key: "cancelled_by_shareride",
       wholeTrip: true,
     });
-    // Jón's request on Anna's trip: cancelled by ShareRide, its seat free again.
+    // Jón's request on Anna's trip: cancelled by PuffinRide, its seat free again.
     expect(await stored(asked.id)).toMatchObject({
       status: "cancelled",
       cancelledBy: "operator",
@@ -286,17 +286,17 @@ describe("suspending someone (spec 9, 3.6; R9.10)", () => {
     expect(to(jon)).toEqual([
       {
         title: expect.stringMatching(/^Your account is suspended until /) as unknown,
-        body: "Read why in ShareRide.",
+        body: "Read why in PuffinRide.",
       },
     ]);
     expect(to(gunna)).toEqual([
       {
-        title: "ShareRide cancelled the trip",
+        title: "PuffinRide cancelled the trip",
         body: expect.stringContaining("Full refund") as unknown,
       },
     ]);
     expect(to(anna)).toEqual([
-      { title: "Cancelled by ShareRide: Jón", body: expect.any(String) as unknown },
+      { title: "Cancelled by PuffinRide: Jón", body: expect.any(String) as unknown },
     ]);
     expect(JSON.stringify(push.sent)).not.toContain("Repeated");
   });
@@ -711,7 +711,7 @@ describe("warning someone (spec 9, 3.4.3)", () => {
   });
 });
 
-describe("ShareRide's cancellations (spec 9, 3.4.3 and 3.6)", () => {
+describe("PuffinRide's cancellations (spec 9, 3.4.3 and 3.6)", () => {
   const inTransaction = <T>(run: (tx: Transaction) => Promise<T>) =>
     api.connection.db.transaction(run);
 
@@ -744,7 +744,7 @@ describe("ShareRide's cancellations (spec 9, 3.4.3 and 3.6)", () => {
   });
 });
 
-describe("Download my data, after ShareRide acted (spec 11; spec 9, R9.5)", () => {
+describe("Download my data, after PuffinRide acted (spec 11; spec 9, R9.5)", () => {
   it("has the suspension's end, who cancelled a trip, and the notices", async () => {
     const jon = await driverOf(airport, "Jón");
     const until = days(30);

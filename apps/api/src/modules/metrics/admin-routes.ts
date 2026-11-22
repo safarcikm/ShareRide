@@ -173,7 +173,7 @@ export function registerMetricsAdminRoutes(
     const view = await metrics.read({ ...range.value, corridorId });
     if (view === undefined) return noCorridor(c);
     const name = view.corridors.find((corridor) => corridor.id === corridorId)?.name ?? "all";
-    const file = `shareride-metrics-${formatIsoWeek(range.value.from)}-${formatIsoWeek(range.value.to)}.csv`;
+    const file = `puffinride-metrics-${formatIsoWeek(range.value.from)}-${formatIsoWeek(range.value.to)}.csv`;
     return c.body(metricsCsv(name, view.weeks), 200, {
       "Content-Type": "text/csv; charset=utf-8",
       "Content-Disposition": `attachment; filename="${file}"`,

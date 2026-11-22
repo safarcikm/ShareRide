@@ -1362,9 +1362,17 @@ releases follow [Semantic Versioning](https://semver.org/).
   browser that is not signed in, opens Sign in and then that screen once
   the account is ready. Only the path is kept, in the app's own storage,
   for an hour; a booking or Offer chosen in the app goes first.
+- An email at sign-up on the web (spec 20, 3.3): step 3, About you, asks
+  for an email after the first name when the account has none verified or
+  waiting, and sends its link before the profile is saved, once. A server
+  that sends no email lets sign-up go on. The phone apps do not ask.
 
 ### Fixed
 
+- Staging deploys again. Since 2026-11-22 every Render build stopped
+  during the web app's export with no error: Metro started a bundling
+  worker per CPU of the build machine and ran out of memory. The image now
+  exports with two workers, which peak at about 1.4 GB.
 - The filters above the weekly figures in the operator console fit a
   phone's width. A card whose parts stack let them grow past its edge.
 - Ending an invite code, sending an announcement to yourself and sending
@@ -1396,6 +1404,25 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Staging's address is `https://staging.puffinride.is` (ADR 0039): the
+  console's origin, the emails' links and sender (`hello@puffinride.is`),
+  Google's and Apple's return address and the phone test builds' API all
+  use it. `staging.skinnar.is` still answers until nobody uses it; console
+  passkeys are made again on the new address.
+- The app's IDs and link scheme say PuffinRide (ADR 0039): slug and scheme
+  `puffinride` (the phones' sign-in return is `puffinride://sign-in/return`),
+  iPhone preview `is.puffinride.app.preview`, Android `is.puffinride.app`,
+  and Apple's Services ID `is.puffinride.preview.web` in the runbook. The
+  runbook's Google and Apple steps use `staging.puffinride.is` and
+  `admin@puffinride.is`. Nothing was registered under the old IDs yet.
+- ShareRide is now PuffinRide (ADR 0039): every Icelandic and English text,
+  the app's name and photo permission texts, the email sender name and SMS
+  sender (`PuffinRide`), the console's passkey name and page title, and the
+  names of downloaded files (`puffinride-data.json`, `puffinride-metrics-…`).
+  A test keeps the old name out of the texts. Message keys, internal names
+  and the export's key purpose keep "shareride". Staging answers on
+  `staging.puffinride.is` too, beside `staging.skinnar.is`; the runbook's
+  "Move to puffinride.is" lists Martin's steps.
 - The logo is a puffin for PuffinRide (spec 15, decision 12): logo C, the
   puffin pin, our own cartoon puffin as a map pin with its beak pointing
   the way, replaces the car of logo A in the app icon (iOS light, dark and

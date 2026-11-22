@@ -523,7 +523,7 @@ describe("Nothing matches (spec 4, 3.5)", () => {
       },
     });
     expect(
-      await screen.findByText("We couldn't reach ShareRide. Check your connection and try again."),
+      await screen.findByText("We couldn't reach PuffinRide. Check your connection and try again."),
     ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Search any day" })).toBeNull();
     fail = false;

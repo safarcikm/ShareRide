@@ -424,7 +424,7 @@ describe("the console's feedback (spec 12, 3.3.4)", () => {
     expect(email.sent).toHaveLength(1);
     const [mail] = email.sent;
     expect(mail?.to).toBe(`${gunna.userId}@example.test`);
-    expect(mail?.subject).toBe("ShareRide replied to your feedback");
+    expect(mail?.subject).toBe("PuffinRide replied to your feedback");
     expect(mail?.text).toContain("Thanks, fixed in the next version.");
     expect(mail?.text).toContain("https://shareride.test/settings/feedback");
 

@@ -96,7 +96,8 @@ Walking skeleton, milestone 2: hosted and connected
 2026-11-13; providers in ADRs 0018 to 0022)
 
 - [x] API deployed to staging in the EEA (Render in Frankfurt, live at
-      `https://staging.skinnar.is` since 2026-11-18)
+      `https://staging.skinnar.is` since 2026-11-18, at
+      `https://staging.puffinride.is` since 2026-11-22)
 - [x] Real SMS provider for sign-in codes (Vonage, ADR 0023; Martin's own
       sign-up on staging brought a real SMS, 2026-11-18)
 - [ ] Error tracking and uptime checks connected
@@ -243,7 +244,7 @@ beta is open to everyone,
 
 - [ ] Production environment, separate from staging
 - [ ] Email from our own domain
-- [ ] Web members reached by email: the hour-before reminder, requests and
+- [x] Web members reached by email: the hour-before reminder, requests and
       "How was your trip?", links that open after signing in, and an email
       at sign-up on the web
       ([spec 20](../specs/2026-11-22-email-alerts-and-open-beta.md))
@@ -296,8 +297,9 @@ Martin's steps, in the order of what they unblock:
    web, and the console on a server. Done 2026-11-18, with Martin's console
    passkey; the client address check is left.
 4. A domain and a Mailjet account: milestone 12 and email. Martin's
-   `skinnar.is` serves for now (2026-11-18): staging is at
-   `staging.skinnar.is` and sends its email from the domain.
+   `skinnar.is` served first (2026-11-18); since 2026-11-22 staging is at
+   `staging.puffinride.is` and sends its email from `puffinride.is`
+   ([ADR 0039](../decisions/0039-rename-to-puffinride.md)).
 5. Register the company and open a business bank account: the payment
    contract and the store accounts in the company's name.
 6. Apple Developer, the expo.dev project and Firebase: iPhone test builds,
@@ -331,7 +333,7 @@ Legal and company (in parallel)
 - [ ] Data processing agreements with every provider
 - [ ] Apple and Google developer accounts in the company's name (until then,
       Martin's individual Apple account signs the team's test builds only,
-      under its own app ID, `is.shareride.app.preview`,
+      under its own app ID, `is.puffinride.app.preview`,
       [milestone 2 plan](../plans/2026-11-13-milestone-2-hosted-and-connected.md#3-decisions-for-martin))
 
 Community (in parallel)

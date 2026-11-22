@@ -152,7 +152,7 @@ describe("Delete my account (spec 11, 3.4)", () => {
     ).toBeVisible();
     expect(
       screen.getByText(
-        "A report about a ride is waiting for an answer or for ShareRide's decision.",
+        "A report about a ride is waiting for an answer or for PuffinRide's decision.",
       ),
     ).toBeVisible();
     // What happens is said first; the button comes once nothing is open.
@@ -261,7 +261,7 @@ describe("While the deletion waits (spec 11, 3.4.4)", () => {
     expect(screen).toHavePathname("/account/deletion");
     expect(
       screen.getByText(
-        "Nobody can see your profile or trips, book with you or message you. Keep your account to use ShareRide again, as it was.",
+        "Nobody can see your profile or trips, book with you or message you. Keep your account to use PuffinRide again, as it was.",
       ),
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Keep my account" })).toBeVisible();

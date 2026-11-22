@@ -12,8 +12,8 @@ export default function appConfig({ config }: ConfigContext): ExpoConfig {
   const googleServicesFile = env["GOOGLE_SERVICES_JSON"];
   return {
     ...config,
-    name: config.name ?? "ShareRide",
-    slug: config.slug ?? "shareride",
+    name: config.name ?? "PuffinRide",
+    slug: config.slug ?? "puffinride",
     android: {
       ...config.android,
       ...(googleServicesFile === undefined || googleServicesFile === ""

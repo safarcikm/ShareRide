@@ -289,7 +289,7 @@ describe("a person's page (spec 9, 3.5.2)", () => {
     );
     expect(unkind.textContent).toContain("By: A former member");
     expect(within(unkind).queryByRole("link")).toBeNull();
-    expect(unkind.textContent).toContain("Hidden by ShareRide");
+    expect(unkind.textContent).toContain("Hidden by PuffinRide");
     const waiting = itemOf("Reviews they wrote", 0);
     expect(waiting.textContent).toContain("4 of 5 stars, by the driver, written");
     expect(within(waiting).getByRole("link", { name: "About: Gunna" })).toBeTruthy();

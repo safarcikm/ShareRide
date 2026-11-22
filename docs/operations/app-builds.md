@@ -19,8 +19,8 @@ follow ([milestone 2 plan](../plans/2026-11-13-milestone-2-hosted-and-connected.
 
 | Setting | Value |
 | ------- | ----- |
-| App ID (bundle identifier) | `is.shareride.app.preview`, under Martin's own Apple account ([plan, decision 6](../plans/2026-11-13-milestone-2-hosted-and-connected.md#3-decisions-for-martin)). The store app ID comes with the company's account |
-| API | `https://staging.skinnar.is`, the address in the [staging runbook](staging.md). If staging moves to another address, change `EXPO_PUBLIC_API_URL` in `eas.json` first |
+| App ID (bundle identifier) | `is.puffinride.app.preview`, under Martin's own Apple account ([plan, decision 6](../plans/2026-11-13-milestone-2-hosted-and-connected.md#3-decisions-for-martin)). The store app ID comes with the company's account |
+| API | `https://staging.puffinride.is`, the address in the [staging runbook](staging.md). If staging moves to another address, change `EXPO_PUBLIC_API_URL` in `eas.json` first |
 | Build number | Counted up by Expo for each build; the version (`0.1.0`) is in `app.json` |
 | Error reports | Off on phones for now: the build has no Sentry DSN until native crash reports are checked against the [privacy table](../compliance/privacy-gdpr.md#providers). Testers' crash reports and feedback reach App Store Connect through TestFlight |
 
@@ -37,7 +37,7 @@ Martin's steps, with the shared project email address.
    passport for the photo check. It costs $99 a year. Approval can take a
    few days.
 2. **Expo.** Create an account at expo.dev. Choose **Create a project**,
-   name it `shareride` (the slug must be `shareride`), and send the
+   name it `puffinride` (the slug must be `puffinride`), and send the
    project ID to the build thread. It is not a secret; it goes in `app.json`
    as `extra.eas.projectId`, so builds know their project.
 3. **The PC.** Follow the README's [one-time setup](../../README.md#one-time-setup)
@@ -69,10 +69,10 @@ The first time, the command asks some questions:
   to let Expo make one.
 
 Right after the build is queued, the command also creates the app in App
-Store Connect, named **ShareRide Preview** (`appName` in `eas.json`). The
-name ShareRide stays free for the company's store app; on the phone the app
-is still called ShareRide. If the name is taken, it adds a few random
-letters, such as `ShareRide Preview (a1b2c3)`, which can be changed in App
+Store Connect, named **PuffinRide Preview** (`appName` in `eas.json`). The
+name PuffinRide stays free for the company's store app; on the phone the app
+is still called PuffinRide. If the name is taken, it adds a few random
+letters, such as `PuffinRide Preview (a1b2c3)`, which can be changed in App
 Store Connect. It also creates an internal TestFlight group, **Team
 (Expo)**, which gets every new build by itself, and adds the account's
 admins to it.
@@ -89,12 +89,12 @@ Later builds are the same command, without the questions.
 The first time:
 
 1. In [App Store Connect](https://appstoreconnect.apple.com), open
-   **Apps**, then **ShareRide Preview**, then **TestFlight**.
+   **Apps**, then **PuffinRide Preview**, then **TestFlight**.
 2. Under **Internal Testing**, open **Team (Expo)** and check that you are
    listed. Add other people on the App Store Connect team there; do not make
    a second group.
 3. On the iPhone, install **TestFlight** from the App Store, open the
-   invitation email, and install ShareRide.
+   invitation email, and install PuffinRide.
 
 Internal testers need no review from Apple. A build expires after 90 days;
 a newer build replaces it.
@@ -121,13 +121,13 @@ Firebase project's key. Do this once the Expo project ID is in `app.json`
 
 1. **Firebase project.** At [console.firebase.google.com](https://console.firebase.google.com),
    with the shared project Google account, choose **Create a project**,
-   name it `shareride-staging`, and turn Google Analytics off.
+   name it `puffinride-staging`, and turn Google Analytics off.
 2. **The Android app in it.** In the project, choose **Add app**, then
-   **Android**. Package name: `com.shareride.app`; nickname: ShareRide.
+   **Android**. Package name: `is.puffinride.app`; nickname: PuffinRide.
    Choose **Register app**, then **Download google-services.json**. Skip the
    remaining steps: Expo does them.
 3. **Give the file to Expo, not to the repository.** On
-   [expo.dev](https://expo.dev), open the `shareride` project, then
+   [expo.dev](https://expo.dev), open the `puffinride` project, then
    **Project settings**, **Environment variables**, **Add Variables**. Name
    `GOOGLE_SERVICES_JSON`, the file as its value, environment **preview**
    only, visibility **Secret**. Builds read it through `app.config.ts`;
@@ -135,7 +135,7 @@ Firebase project's key. Do this once the Expo project ID is in `app.json`
 4. **The push key.** Back in Firebase, open the gear, **Project settings**,
    **Service accounts**, then **Generate new private key** and **Generate
    key**. On expo.dev, open **Credentials**, **Android**, add the
-   application identifier `com.shareride.app`, then under **Service
+   application identifier `is.puffinride.app`, then under **Service
    credentials**, **FCM V1 service account key**, choose **Add a service
    account key**, upload the downloaded file and **Save**. Then delete the
    file from the PC: Expo keeps the key, and Firebase can make a new one.
@@ -169,8 +169,8 @@ page on expo.dev shows **Install** and a QR code:
    another browser, with a second one. Book a seat on the other person's
    trip so the two can chat.
 2. Until the app asks for notifications itself (milestone 5, PR 8), allow
-   them by hand: Android **Settings**, **Apps**, **ShareRide**,
-   **Notifications**, on. Then close ShareRide fully (swipe it away from
+   them by hand: Android **Settings**, **Apps**, **PuffinRide**,
+   **Notifications**, on. Then close PuffinRide fully (swipe it away from
    recent apps) and open it again, so it registers the phone.
 3. Close the app on the phone, and send a message from the web. A push
    arrives within about ten seconds; tapping it opens the conversation.

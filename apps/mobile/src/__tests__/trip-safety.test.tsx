@@ -180,7 +180,7 @@ describe("Share trip details (spec 9, 3.3.3, R9.8)", () => {
     expect(mockedShare).toHaveBeenCalledWith(
       "My trip: Sunday 15 November at 10:00 · Borgarnes → Blönduós · " +
         "Meeting point: Borgarnes (By the petrol pumps) · Driver: Anna · " +
-        "Car: White Toyota Yaris, AB 123 · Booked on ShareRide",
+        "Car: White Toyota Yaris, AB 123 · Booked on PuffinRide",
     );
   });
 
@@ -202,7 +202,7 @@ describe("Share trip details (spec 9, 3.3.3, R9.8)", () => {
         "The trip details could not be shared. Here they are to copy: My trip: " +
           "Sunday 15 November at 10:00 · Borgarnes → Blönduós · " +
           "Meeting point: Borgarnes (By the petrol pumps) · Driver: Anna · " +
-          "Car: White Toyota Yaris, AB 123 · Booked on ShareRide",
+          "Car: White Toyota Yaris, AB 123 · Booked on PuffinRide",
       ),
     ).toBeVisible();
   });
@@ -218,7 +218,7 @@ describe("Share trip details (spec 9, 3.3.3, R9.8)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: "Share trip details" }));
     expect(mockedShare).toHaveBeenCalledWith(
       "My trip: Sunday 15 November at 09:00 · BSÍ bus terminal → Hof, Akureyri · " +
-        "Offered on ShareRide",
+        "Offered on PuffinRide",
     );
     expect(mockedShare).not.toHaveBeenCalledWith(expect.stringContaining("Gunna"));
   });

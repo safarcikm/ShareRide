@@ -319,7 +319,7 @@ describe("POST /v1/people/{profileId}/block (spec 9, 3.2.1)", () => {
     }
   });
 
-  it("finds no profile of mine to block, of someone leaving ShareRide, or unknown", async () => {
+  it("finds no profile of mine to block, of someone leaving PuffinRide, or unknown", async () => {
     const jon = await jonDrives();
     const sigga = await newMember("Sigga");
     expect(await blockFromProfile(jon, await profileIdOf(jon))).toMatchObject({
