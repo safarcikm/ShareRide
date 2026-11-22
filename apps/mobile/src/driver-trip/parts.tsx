@@ -220,6 +220,7 @@ export function PassengersByPart({ bookings }: { readonly bookings: readonly Boo
                     <Avatar
                       firstName={firstNameOf(t, booking.passenger)}
                       colour={booking.passenger.colour}
+                      photo={booking.passenger.photo}
                     />
                     <View style={styles.grow}>
                       <Text style={[typography.bodyStrong, { color: palette.text }]}>

@@ -22,6 +22,9 @@ export default {
     // Native only; tests set the screen's picture and shake the phone themselves.
     "^react-native-view-shot$": "<rootDir>/src/testing/view-shot.ts",
     "^expo-sensors$": "<rootDir>/src/testing/sensors.ts",
+    // Native (a file chooser and a canvas on the web); tests pick the photo themselves.
+    "^expo-image-picker$": "<rootDir>/src/testing/image-picker.ts",
+    "^expo-image-manipulator$": "<rootDir>/src/testing/image-manipulator.ts",
   },
   transformIgnorePatterns: [
     nodeModulesPattern.replace("(.pnpm|", "(.pnpm|intl-messageformat|@formatjs|"),

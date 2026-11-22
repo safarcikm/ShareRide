@@ -178,7 +178,7 @@ folders.
       storage failure answers 503 and leaves the old photo, the crash gap
       (queued new key), the job deletes due rows only
 - [x] `Me.photo`, readiness with the photo. Publishing is refused without
-      one from PR 4, when the app can add a photo (`photosOn`)
+      one from PR 4b, once the app can add a photo (`photosOn`)
 - [x] Erasure queues the key. Export holds the photo file
 - Verify: `pnpm check --force`, integration tests for account, driving,
   privacy and trips
@@ -192,15 +192,28 @@ folders.
       leaving are null; visitors get the driver's photo
 - Verify: integration tests for search, bookings and people
 
-### PR 4: `feat(mobile)`: add, change and remove a photo
+### PR 4a: `feat(mobile)`: add, change and remove a photo
 
-- [ ] Dependencies, the picker port and its native and web makers
-- [ ] `Avatar` with a photo, and every screen that has one
-- [ ] Profile photo controls, the hidden note, and the trip form's missing
-      item
-- [ ] Texts in English and Icelandic
-- [ ] Screen tests with the fake picker. A web journey adds a photo from a
-      file and sees it on Profile
+Split from the first PR 4 so the app shows photos before they are
+required: each half is smaller to review.
+
+- [x] Dependencies, the picker (`profile/photo-picker.ts`, one maker for
+      phones and the web, tested against fakes of both Expo packages)
+- [x] `Avatar` with a photo, and every screen that has one
+- [x] Profile photo controls and the hidden note
+- [x] Texts in English and Icelandic, and the iOS camera and photos
+      permission texts in both
+- [x] Screen tests with the fake picker. A web journey adds a photo from a
+      file, sees it on Profile and removes it
+- [x] The API's folder photos may be shown from another origin, as the web
+      app in development and the journeys run on another port
+- Verify: `pnpm check`, `e2e:web`
+
+### PR 4b: `feat(driving)`: a photo before posting a ride
+
+- [ ] Flip `photosOn` in the driving service. The API tests that publish,
+      and the journeys that post a ride, give their driver a photo
+- [ ] The trip form's missing item: "Profile photo, with Add a photo"
 - Verify: `pnpm check`, `e2e:web`, a look on the web at phone and laptop
   widths
 

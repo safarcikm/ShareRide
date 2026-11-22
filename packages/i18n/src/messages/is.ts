@@ -192,6 +192,22 @@ export const is = {
   "profile.legal": "Skilmálar, reglur og persónuvernd",
   "profile.inSettings": "Símanúmer, tungumál og útskráning eru í stillingum.",
   "profile.noCars": "Engir bílar enn. Bættu við bílnum sem þú ekur.",
+  "profile.photo.add": "Bæta við mynd",
+  "profile.photo.take": "Taka mynd",
+  "profile.photo.change": "Skipta um mynd",
+  "profile.photo.remove": "Fjarlægja mynd",
+  "profile.photo.help": "Þau sem ferðast með þér sjá hana við nafnið þitt.",
+  "profile.photo.saved": "Myndin var vistuð.",
+  "profile.photo.removed": "Myndin var fjarlægð.",
+  "profile.photo.hidden":
+    "ShareRide faldi myndina þína því hún braut samfélagsreglurnar. Bættu við annarri.",
+  "profile.photo.tooSmall":
+    "Þessi mynd er of lítil. Veldu mynd sem er að minnsta kosti {min} punktar á breidd.",
+  "profile.photo.unusable": "Ekki var hægt að nota þessa mynd. Prófaðu aðra.",
+  "profile.photo.noCamera":
+    "Til að taka mynd skaltu leyfa ShareRide að nota myndavélina í stillingum símans.",
+  "profile.photo.failed": "Ekki tókst að vista myndina. Reyndu aftur eftir smástund.",
+  "profile.photo.off": "Enn er ekki hægt að bæta við myndum.",
   "preview.title": "Eins og aðrir sjá þig",
   "preview.intro": "Þetta er opinberi prófíllinn þinn. Símanúmerið þitt er aldrei hluti af honum.",
   "settings.title": "Stillingar",

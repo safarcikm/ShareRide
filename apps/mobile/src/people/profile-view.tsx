@@ -105,7 +105,7 @@ function Person({
   return (
     <Card>
       <View style={styles.person}>
-        <Avatar firstName={profile.firstName} colour={profile.colour} />
+        <Avatar firstName={profile.firstName} colour={profile.colour} photo={profile.photo} />
         <View style={styles.grow}>
           {nameAs === "title" ? (
             <Title align="start">{profile.firstName}</Title>

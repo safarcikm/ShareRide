@@ -267,6 +267,15 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       c.req.path.startsWith("/admin/") ? next() : allowWebOrigins(c, next),
     );
   }
+  if (dependencies.features?.photoFiles !== undefined) {
+    // Development and tests only: the web app there runs on another port and
+    // shows these photos, so they may be shown from another origin. Before
+    // the secure headers, so this runs after them and keeps the last word.
+    app.use(`${photoFilesPath}/*`, async (c, next) => {
+      await next();
+      c.res.headers.set("Cross-Origin-Resource-Policy", "cross-origin");
+    });
+  }
   app.use(secureHeaders());
   app.use(
     createMiddleware<AppEnv>(async (c, next) => {

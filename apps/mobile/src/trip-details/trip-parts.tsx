@@ -66,6 +66,8 @@ export function DriverAndCar({
     readonly profileId: string | null;
     /** Their rating and figure; null for someone nobody sees any more. */
     readonly standing: Standing | null;
+    /** A link to their photo, or null (spec 1, 3.5). */
+    readonly photo: string | null;
   };
   readonly car: TripDetails["car"];
   /** What the passenger learns about the number plate, if anything. */
@@ -107,7 +109,7 @@ export function DriverAndCar({
   return (
     <>
       <View style={styles.person}>
-        <Avatar firstName={driver.firstName} colour={driver.colour} />
+        <Avatar firstName={driver.firstName} colour={driver.colour} photo={driver.photo} />
         <View style={styles.grow}>
           <Text style={[typography.bodyStrong, { color: palette.text }]}>{driver.firstName}</Text>
           {driver.standing === null ? null : (
