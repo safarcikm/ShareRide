@@ -27,6 +27,7 @@ export function registerConfigRoutes(
         beta: values.invite_code_required === 1,
         paused: pausedNow(values),
         signInProviders: [...signInProviders],
+        payInPerson: values.pay_in_person === 1,
       },
       200,
     );

@@ -29,6 +29,7 @@ export interface SettingDefinition {
 }
 
 const onByDefault = { kind: "switch", unit: null, default: 1, min: 0, max: 1, step: 1 } as const;
+const offByDefault = { ...onByDefault, default: 0 } as const;
 
 export const settingDefinitions = {
   // The switches for emergencies (spec 10, 3.3; R10.5): off pauses only
@@ -144,6 +145,12 @@ export const settingDefinitions = {
     max: 120,
     step: 1,
   },
+  /**
+   * On: a booking made from now on is paid to the driver in person, not in
+   * the app, until payments in the app work (rule M6, ADR 0038). A booking
+   * keeps the way of paying it was made with.
+   */
+  pay_in_person: { group: "booking", ...offByDefault },
   // Changes and cancellations. A booking keeps the first, the second and
   // the fourth as they were when it was made (R10.3).
   /** A passenger cancelling this long or more before boarding is refunded in full (rule M2). */

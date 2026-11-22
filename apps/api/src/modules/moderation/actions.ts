@@ -29,7 +29,7 @@ import {
   cancelTripAsOperator,
   heldStatuses,
 } from "../bookings/cancel-trip.ts";
-import type { Transaction } from "../bookings/seats.ts";
+import { methodOf, type Transaction } from "../bookings/seats.ts";
 import { recordEvents } from "../notifications/outbox.ts";
 
 // The operator's actions on a person (spec 9, 3.4.3 and 3.6): each one in
@@ -386,6 +386,7 @@ async function cancellable(tx: Transaction, userId: string, now: Date) {
       plannedAt: tripStops.plannedAt,
       departsAt: trips.departsAt,
       total: bookings.totalPrice,
+      paymentMethod: bookings.paymentMethod,
     })
     .from(bookings)
     .innerJoin(trips, eq(trips.id, bookings.tripId))
@@ -395,7 +396,7 @@ async function cancellable(tx: Transaction, userId: string, now: Date) {
     driven.flatMap(({ id, status, departsAt }) =>
       departsAt === null ? [] : [{ id, status: status as TripStatus, departsAt }],
     ),
-    booked.flatMap(({ id, status, tripStatus, plannedAt, departsAt, total }) => {
+    booked.flatMap(({ id, status, tripStatus, plannedAt, departsAt, total, paymentMethod }) => {
       // When they get in: their stop's own time, or the trip's departure.
       const boardsAt = plannedAt ?? departsAt;
       return boardsAt === null
@@ -407,6 +408,7 @@ async function cancellable(tx: Transaction, userId: string, now: Date) {
               tripStatus: tripStatus as TripStatus,
               boardsAt,
               total: { amount: total, currency: "ISK" as const },
+              paymentMethod: methodOf({ paymentMethod }),
             },
           ];
     }),

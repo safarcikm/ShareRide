@@ -130,6 +130,7 @@ describe("the console's settings", () => {
       { key: "booking_cutoff", unit: "minutes", value: 15, min: 0, max: 120, step: 1 },
       { key: "request_expiry", unit: "hours", value: 12, min: 1, max: 48, step: 1 },
       { key: "payment_window", unit: "minutes", value: 30, min: 10, max: 120, step: 1 },
+      { key: "pay_in_person", unit: null, value: 0, min: 0, max: 1, step: 1 },
       { key: "free_cancellation_until", unit: "minutes", value: 15, min: 0, max: 120, step: 1 },
       { key: "major_time_change", unit: "minutes", value: 30, min: 10, max: 120, step: 1 },
       { key: "max_time_change", unit: "minutes", value: 120, min: 30, max: 360, step: 1 },
@@ -311,6 +312,7 @@ describe("GET /v1/config", () => {
       maxMoveMinutes: 120,
       reliabilityMonths: 12,
       signInProviders: ["google", "apple"],
+      payInPerson: false,
     });
 
     await change("invite_code_required", {
@@ -326,6 +328,7 @@ describe("GET /v1/config", () => {
       maxMoveMinutes: 120,
       reliabilityMonths: 12,
       signInProviders: ["google", "apple"],
+      payInPerson: false,
     });
   });
 });

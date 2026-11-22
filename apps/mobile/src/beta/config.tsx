@@ -26,6 +26,7 @@ const quiet: Config = {
   maxMoveMinutes,
   reliabilityMonths: defaultReliabilitySettings.periodMonths,
   signInProviders: [],
+  payInPerson: false,
 };
 
 const ConfigContext = createContext<Config>(quiet);

@@ -118,8 +118,8 @@ describe("the operator's answer to an appeal (3.4.4)", () => {
 describe("the operator cancels a trip (3.4.3)", () => {
   const trip = { status: "published", departsAt: new Date("2026-11-21T08:00:00Z") } as const;
   const bookings = [
-    { id: "gunna", status: "confirmed", total: kr(2900) },
-    { id: "sigga", status: "requested", total: kr(1500) },
+    { id: "gunna", status: "confirmed", total: kr(2900), paymentMethod: "in_app" },
+    { id: "sigga", status: "requested", total: kr(1500), paymentMethod: "in_app" },
   ] as const;
 
   it("refunds in full and does not count on the driver unless the operator says so", () => {

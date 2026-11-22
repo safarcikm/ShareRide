@@ -2,6 +2,7 @@ import {
   arrivals,
   bookingModes,
   bookingStatuses,
+  paymentMethods,
   cancelReasons,
   carColours,
   dayPhases,
@@ -87,6 +88,11 @@ export const bookingSchema = z.object({
   seats: z.int().positive(),
   /** The price snapshot for every seat (rule P1, R5.3). */
   total: moneySchema,
+  /**
+   * How it is paid, for good: in the app (rule M1), or to the driver in
+   * person, in cash or by bank transfer (rule M6, ADR 0038).
+   */
+  payment: z.enum(paymentMethods).default("in_app"),
   /** The passenger's message with a request; empty for none. */
   message: z.string(),
   createdAt: timestampSchema,

@@ -32,6 +32,12 @@ export const configSchema = z.object({
    * buttons (spec 19); none from an API that does not say.
    */
   signInProviders: z.array(signInProviderSchema).default([]),
+  /**
+   * Whether a booking made now is paid to the driver in person, in cash or
+   * by bank transfer, while card payments are coming (rule M6, ADR 0038);
+   * false from an API that does not say.
+   */
+  payInPerson: z.boolean().default(false),
 });
 
 export type Config = z.infer<typeof configSchema>;

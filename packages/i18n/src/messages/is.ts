@@ -2230,6 +2230,9 @@ export const is = {
   "admin.settings.name.payment_window": "Tími til að greiða",
   "admin.settings.help.payment_window":
     "Hversu langan tíma farþegi hefur til að greiða eftir að bílstjóri samþykkir, aldrei lengur en þar til bókun lokar. Gildir um beiðnir sem eru samþykktar héðan í frá. Bókanir sem þegar bíða greiðslu halda fresti sínum.",
+  "admin.settings.name.pay_in_person": "Greitt bílstjóranum á staðnum",
+  "admin.settings.help.pay_in_person":
+    "Kveikt: farþegar greiða bílstjóranum verðið sem appið sýnir, með reiðufé eða millifærslu, þegar þeir stíga inn, og bókun er staðfest um leið og hún er samþykkt. Ekkert er greitt eða endurgreitt í appinu. Gildir um bókanir sem eru gerðar héðan í frá. Bókanir sem þegar hafa verið gerðar halda þeim greiðslumáta sem þær voru gerðar með. Aðeins þar til greiðslur í appinu virka.",
   "admin.settings.name.free_cancellation_until": "Ókeypis afbókun þar til",
   "admin.settings.help.free_cancellation_until":
     "Farþegi sem afbókar með þessum fyrirvara eða meiri fyrir viðkomustað sinn fær fulla endurgreiðslu. Gildir um bókanir sem eru gerðar héðan í frá. Bókanir sem þegar hafa verið gerðar halda reglunni sem gilti þegar þær voru gerðar.",

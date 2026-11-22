@@ -2203,6 +2203,9 @@ export const en = {
   "admin.settings.name.payment_window": "Time to pay",
   "admin.settings.help.payment_window":
     "How long a passenger has to pay after the driver accepts, never past the time booking closes. It applies to requests accepted from now on. Bookings already waiting for payment keep their deadline.",
+  "admin.settings.name.pay_in_person": "Pay the driver in person",
+  "admin.settings.help.pay_in_person":
+    "On: passengers pay the driver the price the app shows, in cash or by bank transfer, when they get in, and a booking is confirmed as soon as it is accepted. Nothing is paid or refunded in the app. It applies to bookings made from now on. Bookings already made keep the way of paying they were made with. Only until payments in the app work.",
   "admin.settings.name.free_cancellation_until": "Free cancellation until",
   "admin.settings.help.free_cancellation_until":
     "A passenger who cancels this long or more before their stop gets a full refund. It applies to bookings made from now on. Bookings already made keep the rule they were made under.",

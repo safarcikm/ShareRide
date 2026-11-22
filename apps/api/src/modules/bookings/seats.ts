@@ -7,6 +7,7 @@ import {
   limitRoom,
   takingsOf,
   type BookingStatus,
+  type PaymentMethod,
   type Money,
   type TakingsBooking,
 } from "@shareride/domain";
@@ -106,6 +107,11 @@ export async function takingsOfTrip(tx: Transaction, tripId: string): Promise<Mo
   return takingsOf((await takingsBookings(tx, [tripId], null)).get(tripId) ?? []);
 }
 
+/** How a stored booking is paid (rules M1 and M6): the column holds one of the two. */
+export function methodOf(booking: { readonly paymentMethod: string }): PaymentMethod {
+  return booking.paymentMethod as PaymentMethod;
+}
+
 /**
  * Each trip's bookings as the takings see them (rule P3). With `now`, a
  * request or an unpaid booking whose deadline has passed reads as expired,
@@ -126,6 +132,7 @@ export async function takingsBookings(
             totalPrice: bookings.totalPrice,
             refundAmount: bookings.refundAmount,
             confirmedAt: bookings.confirmedAt,
+            paymentMethod: bookings.paymentMethod,
           })
           .from(bookings)
           .where(
@@ -138,7 +145,7 @@ export async function takingsBookings(
   for (const { tripId, ...booking } of rows) {
     byTrip.set(tripId, [
       ...(byTrip.get(tripId) ?? []),
-      { ...booking, status: booking.status as BookingStatus },
+      { ...booking, status: booking.status as BookingStatus, paymentMethod: methodOf(booking) },
     ]);
   }
   return byTrip;
