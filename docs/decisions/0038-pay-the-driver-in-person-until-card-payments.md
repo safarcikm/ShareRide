@@ -85,8 +85,8 @@ until payments in the app work:
   chat messages; the app suggests agreeing in person instead.
 - Rules M1 to M5 apply only to bookings paid in the app. The terms,
   community rules, lawyer questions, booking, cancel and trip-day texts and
-  notifications all need an in-person version (the plan follows on
-  acceptance).
+  notifications all need an in-person version; see the
+  [plan](../plans/2026-11-22-pay-the-driver-in-person.md).
 - A new column on bookings and a new setting (an addition to ADR 0032's
   list).
 
