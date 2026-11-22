@@ -73,6 +73,8 @@ const port = Number(env["PORT"] ?? "3001");
 const webOrigin = env["E2E_WEB_ORIGIN"] ?? "http://localhost:8082";
 const adminAppDir = env["E2E_ADMIN_APP_DIR"];
 const operatorLink = env["E2E_OPERATOR_LINK"];
+/** The operator's verified number, for "Lost your passkey?" (spec 22). */
+const operatorPhone = env["E2E_OPERATOR_PHONE"];
 const adminOrigin = env["E2E_ADMIN_ORIGIN"] ?? `http://localhost:${String(port)}`;
 
 // Refuses databases whose name does not end in _test, because it empties them.
@@ -111,7 +113,13 @@ const clock = () => new Date();
 if (operatorLink !== undefined && operatorLink !== "") {
   const [operator] = await connection.db
     .insert(schema.users)
-    .values({ firstName: "Operator", locale: "en" })
+    .values({
+      firstName: "Operator",
+      locale: "en",
+      ...(operatorPhone === undefined || operatorPhone === ""
+        ? {}
+        : { phoneE164: operatorPhone, phoneVerifiedAt: clock() }),
+    })
     .returning({ id: schema.users.id });
   const sessions = createOperatorSessionService({ db: connection.db, clock });
   const printed: string[] = [];

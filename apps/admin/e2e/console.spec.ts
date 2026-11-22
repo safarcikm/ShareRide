@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
-import { operatorLink } from "../playwright.config.ts";
+import { operatorLink, operatorPhone } from "../playwright.config.ts";
 import { addAuthenticator } from "./passkeys.ts";
-import { reportProblem } from "./person.ts";
+import { codeSentTo, reportProblem } from "./person.ts";
 import { gradientPng } from "./png.ts";
 
 // One operator, one browser tab and its passkeys, through the journeys in
@@ -838,4 +838,36 @@ test("the operator runs the closed beta: a group code, a price value, a pause an
   await expect(entries).toHaveCount(2);
   await page.goto("/admin/audit-log?action=switch.changed");
   await expect(entries).toHaveCount(2);
+});
+
+// Lost every passkey (spec 22): a code by text to the operator's own number
+// opens the setup step on another device, saving a passkey signs in, and
+// the audit log keeps it.
+test("the operator who lost their passkey gets back in with a text code", async () => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/admin");
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page.getByText("You signed out.")).toBeVisible();
+  await device.switchDevice();
+
+  await page.getByRole("link", { name: "Lost your passkey?" }).click();
+  await expect(page.getByRole("heading", { name: "Get back into the console" })).toBeVisible();
+  // Typed as people do, without the country code.
+  await page.getByLabel("Your phone number").fill("899 9990");
+  await page.getByRole("button", { name: "Send a code" }).click();
+  await expect(page.getByRole("status")).toHaveText(
+    "If this number belongs to an operator, we sent it a code. It works for 10 minutes.",
+  );
+  await page.getByLabel("Code").fill(await codeSentTo(operatorPhone));
+  await page.getByRole("button", { name: "Check the code" }).click();
+
+  await expect(page.getByRole("heading", { name: "Save your passkey" })).toBeVisible();
+  await expect(page).toHaveURL(/\/admin\/recover$/);
+  await page.getByLabel("Name of this passkey").fill("New laptop");
+  await page.getByRole("button", { name: "Save the passkey" }).click();
+  await expect(page.getByRole("heading", { name: "Welcome, Operator" })).toBeVisible();
+
+  const entries = page.getByRole("list", { name: "Entries" }).getByRole("listitem");
+  await page.goto("/admin/audit-log?action=operator.recovered");
+  await expect(entries).toHaveCount(1);
 });

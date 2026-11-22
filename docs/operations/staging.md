@@ -268,7 +268,11 @@ The API refuses to start with `ADMIN_PASSWORD` on production.
 
 ### Lost every passkey
 
-Run step 2 of the first list above again for a new link. To take the role
+On the sign-in page, **Lost your passkey?**: type your number, then the code
+that comes by text, and save a new passkey. It ends your other console
+sessions, and you get a text (and an email once email is on) saying it was
+used. If no text comes, run step 2 of the first list above again for a new
+link. To take the role
 away: `node apps/api/src/operator-cli.ts remove <phone number or user
 ID>`, which also ends that account's console sessions and deletes its
 passkeys; `list` shows the operators. Changing `ADMIN_ORIGIN` (for example

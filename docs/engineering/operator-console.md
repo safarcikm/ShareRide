@@ -47,6 +47,19 @@ opens the console's setup page. `remove` takes the role away and `list`
 lists operators. Passkeys are bound to `ADMIN_ORIGIN`, which is
 `http://localhost:3000` locally unless you set it.
 
+An operator who lost every passkey uses **Lost your passkey?** on the
+sign-in page (spec 22, ADR 0040): `/admin/recover` asks for their number,
+`POST /admin/v1/auth/recovery/code` texts a code only to an account that
+may use the console, and `POST /admin/v1/auth/recovery/verify` checks it.
+`createRecoveryService` (`apps/api/src/modules/admin/recovery.ts`) does
+both, with the auth module's `sendRecoveryCode` and `withRecoveryCode`: in
+one transaction a right code ends the account's console sessions, makes a
+setup link as the command does, writes `operator.recovered` and queues
+`ConsoleRecovered`, which texts and emails the operator at any hour, even
+while the console pauses texts or email. The page keeps the setup token in
+memory and shows the setup step itself. Locally the code prints in the
+API's terminal.
+
 To work on the console locally, run the API
 (`pnpm --filter @shareride/api dev`) with `ADMIN_ORIGIN=http://localhost:5173`
 in `.env`, then `pnpm --filter @shareride/admin dev` and open
@@ -62,7 +75,8 @@ does.
 for every request under `/admin/v1`, before any console route, so a route
 that forgets `requireOperator` is still closed. Only the routes in
 `openAdminRoutes`, matched exactly as `METHOD /path`, skip it: the sign-in
-steps that run before there is a session. Add a route there only if it
+steps that run before there is a session (passkey, setup link, the
+temporary password of ADR 0041 and the two recovery steps of spec 22). Add a route there only if it
 cannot need a signed-in operator, and say why in the pull request.
 
 `requireOperator` on a route runs the same check again only when the guard
