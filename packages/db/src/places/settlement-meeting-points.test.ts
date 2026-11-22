@@ -49,11 +49,13 @@ describe("the settlement meeting points file", () => {
 
   it("gives every point where to stand in both languages, and its season all year", () => {
     for (const draft of drafts) {
-      expect({ name: draft.nameIs, is: draft.whereToStandIs, en: draft.whereToStandEn }).toEqual({
+      // A whole sentence in each language.
+      const sentence = (text: string | null) => text?.endsWith(".") === true;
+      expect({
         name: draft.nameIs,
-        is: expect.stringMatching(/\.$/),
-        en: expect.stringMatching(/\.$/),
-      });
+        is: sentence(draft.whereToStandIs),
+        en: sentence(draft.whereToStandEn),
+      }).toEqual({ name: draft.nameIs, is: true, en: true });
       expect(draft.season).toBeNull();
     }
   });
