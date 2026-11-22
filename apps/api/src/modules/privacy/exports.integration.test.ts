@@ -350,6 +350,30 @@ describe("download my data (spec 11, 3.2)", () => {
     expect((await exportOf(anna)).data.sections.blocks).toEqual([]);
   });
 
+  it("lists the Google and Apple accounts linked to mine (spec 19, 7)", async () => {
+    const ari = await newMember("Ari");
+    const linkedAt = new Date("2026-11-10T09:00:00.000Z");
+    await api.connection.db.insert(schema.identities).values({
+      userId: ari.userId,
+      provider: "google",
+      subject: "export-subject",
+      email: "ari-export@example.com",
+      linkedAt,
+      lastUsedAt: linkedAt,
+    });
+    const { data, text } = await exportOf(ari);
+    expect(data.sections.sign_in_methods).toEqual([
+      {
+        method: "Google",
+        email: "ari-export@example.com",
+        linkedAt: linkedAt.toISOString(),
+        lastUsedAt: linkedAt.toISOString(),
+      },
+    ]);
+    // The provider's own identifier for the person stays out (R19.5).
+    expect(text).not.toContain("export-subject");
+  });
+
   it("lists the reports I sent and their outcome, never a report about me (R9.2)", async () => {
     const anna = await driverOf(sampleTrip.north, "Anna");
     const gunna = await newMember("Gunna");

@@ -110,6 +110,26 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   transaction: a wrong code is counted even though the action does not run,
   and the code is used up only when the action succeeds, so a route checks
   whatever else can refuse before asking for the code.
+- **Google and Apple** ([ADR 0034](../decisions/0034-google-and-apple-sign-in-through-our-api.md),
+  [spec 19](../specs/2026-11-22-google-and-apple-sign-in.md)): the API runs
+  the sign-in in a browser window. The start takes the app's challenge
+  (SHA-256 of a secret the app keeps) and a return address from a fixed
+  list (the web app's `/sign-in/return` on `WEB_ORIGINS` or `WEB_APP_URL`,
+  `shareride://sign-in/return`, Expo Go's only outside production), stores
+  only a hash of a new 256-bit state, and limits starts to 20 per 10
+  minutes per address. The PKCE verifier and the nonce are keyed hashes of
+  the state, never stored. The callback takes a state once and within 10
+  minutes, trades the code with the client secret, and checks the ID
+  token's signature against the provider's published keys, its issuer,
+  audience (our client), expiry (a minute's leeway) and nonce. It sends
+  the browser back with a ticket (`sr_pt_`, 5 minutes, once) in the
+  fragment, with `Cache-Control: no-store` and no referrer. Finishing needs
+  the app's secret, so a ticket caught on its way is useless. A newcomer
+  gets a waiting sign-in (`sr_ps_`, 30 minutes) for the phone step. A link
+  is made only after a code to the account's phone: the phone step's, or a
+  confirm code in Settings; never by email. The development stand-in is
+  refused under `NODE_ENV=production`. Logs carry the provider and the
+  user ID, never the email, the provider's identifier or a token.
 - **Data exports:** kept in the database sealed with AES-256-GCM under a key
   derived from `AUTH_SECRET` (HKDF, `shareride-data-export-v1`), a fresh IV
   per file, so a copy of the database alone cannot read them. They leave

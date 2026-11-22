@@ -86,8 +86,13 @@ processing agreement, only as we instruct.
 | Hetzner | Storing profile photos | Nuremberg, Germany |
 | [Payment provider] | Payments, refunds and payouts; it also checks drivers' identity and bank accounts | [Location] |
 
-If you sign in with Apple or Google, they share your account ID and email
-address with us under their own privacy policies. Beta testers who install
+If you sign in with Google or Apple, you do so on their own page, under
+their own privacy policies, and they learn that you sign in to ShareRide.
+They share with us their ID for you, your email address and whether they
+have verified it, and your first name. We keep the ID and a verified email
+address while the Google or Apple account is linked to yours; your first
+name only fills in the form when you create your account. You can remove
+Google or Apple in Settings at any time. Beta testers who install
 the iPhone app through Apple's TestFlight also share data with Apple under
 Apple's terms.
 

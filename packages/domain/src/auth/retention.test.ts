@@ -8,6 +8,10 @@ describe("retention (privacy inventory)", () => {
     expect(retention.rateLimitEventsSeconds).toBe(24 * 3600);
   });
 
+  it("keeps a Google or Apple sign-in an hour after it ended (spec 19, 7)", () => {
+    expect(retention.providerSignInsSeconds).toBe(3600);
+  });
+
   it("keeps ended sessions for 30 days", () => {
     expect(retention.endedSessionsSeconds).toBe(30 * 24 * 3600);
   });
@@ -33,6 +37,7 @@ describe("retentionCutoffs", () => {
       sessionsIdleSince: new Date(now.getTime() - sessionRules.refreshTokenIdleSeconds * 1000),
       sessionsEndedBefore: new Date("2026-10-14T12:00:00Z"),
       emailLinksSentBefore: new Date("2026-11-12T12:00:00Z"),
+      providerSignInsExpiredBefore: new Date("2026-11-13T11:00:00Z"),
     });
   });
 });

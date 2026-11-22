@@ -6,6 +6,9 @@ describe("newToken", () => {
     const token = newToken("access");
     expect(token).toMatch(/^sr_at_[A-Za-z0-9_-]{43}$/);
     expect(newToken("refresh")).toMatch(/^sr_rt_[A-Za-z0-9_-]{43}$/);
+    expect(newToken("providerState")).toMatch(/^sr_st_[A-Za-z0-9_-]{43}$/);
+    expect(newToken("providerTicket")).toMatch(/^sr_pt_[A-Za-z0-9_-]{43}$/);
+    expect(newToken("pendingSignIn")).toMatch(/^sr_ps_[A-Za-z0-9_-]{43}$/);
     expect(newToken("access")).not.toBe(token);
   });
 });

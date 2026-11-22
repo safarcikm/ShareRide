@@ -310,6 +310,7 @@ describe("GET /v1/config", () => {
       freeCancellationMinutes: 15,
       maxMoveMinutes: 120,
       reliabilityMonths: 12,
+      signInProviders: ["google"],
     });
 
     await change("invite_code_required", {
@@ -324,6 +325,7 @@ describe("GET /v1/config", () => {
       freeCancellationMinutes: 15,
       maxMoveMinutes: 120,
       reliabilityMonths: 12,
+      signInProviders: ["google"],
     });
   });
 });

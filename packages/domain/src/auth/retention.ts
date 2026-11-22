@@ -10,6 +10,8 @@ export const retention = {
   rateLimitEventsSeconds: 24 * 3600,
   /** Ended sessions stay visible in the device list for a while. */
   endedSessionsSeconds: 30 * 24 * 3600,
+  /** A Google or Apple sign-in stays an hour after it ended (spec 19, 7). */
+  providerSignInsSeconds: 3600,
 } as const;
 
 export interface RetentionCutoffs {
@@ -27,6 +29,8 @@ export interface RetentionCutoffs {
    * longer work, and the send limits look back no further.
    */
   readonly emailLinksSentBefore: Date;
+  /** Google and Apple sign-ins that ended before this time are deleted. */
+  readonly providerSignInsExpiredBefore: Date;
 }
 
 export function retentionCutoffs(now: Date): RetentionCutoffs {
@@ -38,5 +42,6 @@ export function retentionCutoffs(now: Date): RetentionCutoffs {
     sessionsIdleSince: ago(sessionRules.refreshTokenIdleSeconds),
     sessionsEndedBefore: ago(retention.endedSessionsSeconds),
     emailLinksSentBefore: ago(emailLinkRules.validForSeconds),
+    providerSignInsExpiredBefore: ago(retention.providerSignInsSeconds),
   };
 }

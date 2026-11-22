@@ -15,12 +15,16 @@ const tokenPrefixes = {
   operatorSession: "sr_os",
   operatorSetup: "sr_ol",
   dataExport: "sr_dx",
+  providerState: "sr_st",
+  providerTicket: "sr_pt",
+  pendingSignIn: "sr_ps",
 } as const;
 
 /**
  * A new opaque token: 256 random bits (ADR 0016). The prefix tells access and
- * refresh tokens, email links, console sessions, setup links and data export
- * links apart and lets secret scanners recognise leaked tokens.
+ * refresh tokens, email links, console sessions, setup links, data export
+ * links and the steps of a Google or Apple sign-in apart, and lets secret
+ * scanners recognise leaked tokens.
  */
 export function newToken(kind: keyof typeof tokenPrefixes): string {
   return `${tokenPrefixes[kind]}_${randomBytes(32).toString("base64url")}`;

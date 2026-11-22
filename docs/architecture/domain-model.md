@@ -318,6 +318,20 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
 
 ### Supporting records
 
+- `Identity` (table `identities`): a Google or Apple account linked to a
+  user (provider, the provider's subject identifier, the email when the
+  provider said it is verified, linked and last used at). At most one of
+  each provider per user, and each provider account on one user (R19.1);
+  the phone number stays on every account
+  ([spec 19](../specs/2026-11-22-google-and-apple-sign-in.md#6-data-and-api),
+  [ADR 0034](../decisions/0034-google-and-apple-sign-in-through-our-api.md)).
+- `ProviderSignIn` (table `provider_sign_ins`): one Google or Apple sign-in
+  from the tap to its end: the state, the app's challenge and return
+  address, then the provider's answer, the one-time ticket and the waiting
+  sign-in for the phone step or Settings. Only hashes of the state, ticket
+  and waiting sign-in are kept; the row is deleted when used, cancelled or
+  failed, and the hourly clean-up deletes the rest an hour after they end
+  ([plan 4.1](../plans/2026-11-22-google-and-apple-sign-in.md#4-design)).
 - `AuditLog`: who did what to which record, when, from where (the
   operator, their console session, an action such as
   `meeting_point.update`, the record's type and ID, the fields before and
