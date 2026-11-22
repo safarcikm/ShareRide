@@ -1,7 +1,8 @@
 # 0041. Sign in to the console with a password for now
 
-- **Status:** Accepted (2026-11-22, Martin asked for it in the project
-  thread: "can u simplify the login for just password atm")
+- **Status:** Superseded by [ADR 0044](0044-console-password-on-production.md)
+  (Accepted 2026-11-22, Martin asked for it in the project thread: "can u
+  simplify the login for just password atm")
 - **Date:** 2026-11-22
 - **Deciders:** Martin
 - **Related:** amends [ADR 0028](0028-operator-console-web-app-and-passkeys.md)

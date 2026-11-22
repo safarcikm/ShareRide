@@ -279,18 +279,17 @@ describe("loadConfig", () => {
     );
   });
 
-  it("takes a console password of 12 characters or more on staging, and none by default (ADR 0041)", () => {
+  it("takes a console password of 12 characters or more, and none by default (ADR 0044)", () => {
     const staging = { ...valid, APP_ENV: "staging" };
-    expect(loadConfig(staging).adminPassword).toBeUndefined();
-    expect(loadConfig({ ...staging, ADMIN_PASSWORD: "twelve chars" }).adminPassword).toBe(
-      "twelve chars",
-    );
-    // Cleared instead of deleted in Render: off, not a failed start.
-    expect(loadConfig({ ...staging, ADMIN_PASSWORD: "" }).adminPassword).toBeUndefined();
-    expect(() => loadConfig({ ...staging, ADMIN_PASSWORD: "short" })).toThrow("ADMIN_PASSWORD");
-    expect(() => loadConfig({ ...valid, ADMIN_PASSWORD: "twelve chars" })).toThrow(
-      "ADMIN_PASSWORD: password sign-in is not allowed in production",
-    );
+    for (const env of [staging, valid]) {
+      expect(loadConfig(env).adminPassword).toBeUndefined();
+      expect(loadConfig({ ...env, ADMIN_PASSWORD: "twelve chars" }).adminPassword).toBe(
+        "twelve chars",
+      );
+      // Cleared instead of deleted in Render: off, not a failed start.
+      expect(loadConfig({ ...env, ADMIN_PASSWORD: "" }).adminPassword).toBeUndefined();
+      expect(() => loadConfig({ ...env, ADMIN_PASSWORD: "short" })).toThrow("ADMIN_PASSWORD");
+    }
   });
 
   it("gives the operator command the same console origin as the API", () => {

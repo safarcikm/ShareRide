@@ -1403,6 +1403,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   publishes every listed version a database lacks, in every environment,
   and a test fails if a published text changes. The app's reader shows
   their lists as bullet points.
+- The console's password sign-in works on production too (ADR 0044,
+  superseding ADR 0041's refusal there): the API starts with
+  `ADMIN_PASSWORD` set on production, with the same limits and audit as on
+  staging.
 
 ### Fixed
 

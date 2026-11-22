@@ -21,7 +21,7 @@ apps.
 | Harassment | Abusive messages, unsafe behaviour | Report and block, moderation queue, suspension, retained evidence for reports |
 | Data breach | Leaked database or backups | Encryption at rest and in transit, least-privilege database roles, no personal data in logs, access audit |
 | Supply chain | Malicious package or action | Lockfile, pinned actions, dependency review, minimal dependencies |
-| Admin misuse | Operator account compromised | Separate operator role, passkey or hardware-key sign-in (a password for now while `ADMIN_PASSWORD` is set, ADR 0041), audit log of every admin action |
+| Admin misuse | Operator account compromised | Separate operator role, passkey or hardware-key sign-in (a password for now while `ADMIN_PASSWORD` is set, ADRs 0041 and 0044), audit log of every admin action |
 
 ## Baseline controls
 
@@ -228,9 +228,10 @@ is built, in `apps/api/src/modules/admin` with the rules in
   are limited per address (10 a minute, 60 an hour, keyed by a hash of the
   address, of its /64 network for IPv6).
 - **Password, for now:** while `ADMIN_PASSWORD` is set (12 characters or
-  more, never on production: the API refuses to start) and `ADMIN_ORIGIN`
-  too, an operator can also sign in with their phone number and that
-  password ([ADR 0041](../decisions/0041-console-password-for-now.md)). It
+  more, staging and production alike) and `ADMIN_ORIGIN` too, an operator
+  can also sign in with their phone number and that password
+  ([ADR 0041](../decisions/0041-console-password-for-now.md), on
+  production by [ADR 0044](../decisions/0044-console-password-on-production.md)). It
   is compared in constant time through SHA-256 digests before the number is
   looked up, and never logged. Tries are limited as above, then to 5 a
   minute and 20 an hour per address, and 200 an hour from all addresses

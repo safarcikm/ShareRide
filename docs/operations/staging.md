@@ -264,7 +264,8 @@ To turn it off, delete `ADMIN_PASSWORD` in the same place. Then check the
 **Passkeys** page for passkeys you did not save, and the audit log
 (`operator.`) for sign-ins with method `password` and passkeys added or
 removed after them: a password sign-in can change passkeys for 5 minutes.
-The API refuses to start with `ADMIN_PASSWORD` on production.
+Production takes it too ([ADR 0044](../decisions/0044-console-password-on-production.md));
+its runbook has the steps.
 
 ### Lost every passkey
 

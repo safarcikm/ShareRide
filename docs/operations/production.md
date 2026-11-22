@@ -30,9 +30,10 @@ What makes it production, rather than a second staging:
 - Its own `AUTH_SECRET` and database. Email is on from the start
   (`EMAIL_PROVIDER=mailjet`). No payments in the app: passengers pay the
   driver in person (ADR 0038), switched on in the console.
-- Never set `ADMIN_PASSWORD` here: the console signs in with passkeys only,
-  and the API refuses to start with a password on production
-  ([ADR 0041](../decisions/0041-console-password-for-now.md)).
+- The console takes a password as well as passkeys while `ADMIN_PASSWORD`
+  is set in the Render dashboard
+  ([ADR 0044](../decisions/0044-console-password-on-production.md)); never
+  put it in the blueprint.
 
 ## Set it up (once)
 
@@ -76,11 +77,22 @@ the repository.
    phone. Check the texts you accept at `/legal/terms`, `/legal/privacy`
    and `/legal/community-rules`.
 4. **The console.** Open `puffinride-api`, **Shell**, and run
-   `node apps/api/src/operator-cli.ts add <your phone number>`. Open the
-   link it prints (it works once, for 30 minutes) and save a passkey. Sign
-   in at `https://puffinride.is/admin` from then on; staging's passkeys do
-   not work here. If saving the passkey fails, as it did on staging, stop
-   and tell Claude: production has no password to fall back on.
+   `node apps/api/src/operator-cli.ts add <your phone number>`: it gives
+   your account the operator role and prints a link to save a passkey (it
+   works once, for 30 minutes). Staging's passkeys and password do not work
+   here. To sign in with a password instead
+   ([ADR 0044](../decisions/0044-console-password-on-production.md)):
+   - make a password of 12 characters or more that you use nowhere else,
+     and keep it in your password manager;
+   - in Render, `puffinride-api`, **Environment**, **Add Environment
+     Variable**: key `ADMIN_PASSWORD`, value the password. **Save Changes**
+     (Render deploys again, a few minutes);
+   - at `https://puffinride.is/admin`, **Or sign in with a password**: your
+     phone number and the password.
+
+   To turn it off, delete `ADMIN_PASSWORD` there, then check **Passkeys**
+   and the audit log as in the staging runbook ("Sign in with a password
+   for now").
 5. **Settings in the console.** **Settings**, **Booking**: turn on **Pay
    the driver in person** and save; without it no booking can be confirmed,
    as production takes no payments in the app. Check that **Invite code
