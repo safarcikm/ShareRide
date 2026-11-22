@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-deprecated -- `x` and `y` on SVG shapes are
    coordinates; the types mark the transform style of the same name as deprecated. */
+import { useId } from "react";
 import { StyleSheet, useColorScheme, View } from "react-native";
-import Svg, { Circle, Path, Rect } from "react-native-svg";
-import { carDrawing, people, puffin } from "@/theme/tokens";
+import Svg, { Circle, ClipPath, Defs, G, Path, Rect } from "react-native-svg";
+import { carDrawing, people, puffin, puffinCar } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { Puffin } from "./puffin";
 
@@ -11,8 +12,11 @@ import { Puffin } from "./puffin";
 // them say what matters, so screen readers skip them.
 
 /** The car's own drawing area, and how far the lines behind a moving car reach. */
-const car = { left: 2, top: 26, width: 96, height: 62 } as const;
-const behind = 29;
+const car = { left: 4, top: 9, width: 190, height: 108 } as const;
+const behind = 32;
+
+/** The side windows, the back one first: the puffins show through them. */
+const windows = "M42 66 C44 50 56 39 77 37 L77 66 Z M83 37 C103 37 116 47 124 66 L83 66 Z";
 
 /** A puffin drawn straight on the screen: basalt, or lifted on the night screen. */
 function useScene() {
@@ -21,10 +25,11 @@ function useScene() {
 }
 
 /**
- * Two puffins in a little open car, from the side and driving right: the
- * driver in a crowberry hat in front, you in a moss scarf behind. `moving`
- * draws three lines behind it, for a seat just booked. `width` is the whole
- * drawing's, lines included.
+ * Two puffins in a round little car, from the side and driving right: the
+ * driver in a crowberry hat in front, you in a moss scarf behind, both seen
+ * through the side windows, and a case on the roof. `moving` draws three
+ * lines behind it, for a seat just booked. `width` is the whole drawing's,
+ * lines included.
  */
 export function PuffinsInCar({
   width,
@@ -34,12 +39,9 @@ export function PuffinsInCar({
   readonly moving?: boolean;
 }) {
   const palette = usePalette();
-  const { scheme, black } = useScene();
-  const colours = carDrawing[scheme];
-  // In light mode the car is the seat view's pale cabin with a line of its
-  // body; in dark mode its body with a line of the seats, lighter than night.
-  const body = scheme === "dark" ? colours.body : colours.cabin;
-  const line = scheme === "dark" ? colours.seat : colours.body;
+  const { black } = useScene();
+  // Its own name for the windows' outline, as two cars can be on one page.
+  const clip = `windows-${useId().replaceAll(":", "")}`;
   const left = moving ? car.left - behind : car.left;
   const across = moving ? car.width + behind : car.width;
   return (
@@ -54,75 +56,102 @@ export function PuffinsInCar({
         height={(width * car.height) / across}
         viewBox={`${String(left)} ${String(car.top)} ${String(across)} ${String(car.height)}`}
       >
+        <Defs>
+          <ClipPath id={clip}>
+            <Path d={windows} />
+          </ClipPath>
+        </Defs>
         {moving ? (
           <Path
             testID="moving-lines"
-            d="M-3 51 H-21 M0 56 H-25 M-4 61 H-18"
+            d="M-4 78 H-24 M0 88 H-28 M-6 98 H-20"
             stroke={palette.control}
-            strokeWidth={1.5}
+            strokeWidth={3}
             strokeLinecap="round"
           />
         ) : null}
-        <Puffin
-          testID="puffin-you"
-          x={27}
-          y={42.5}
-          size={0.55}
-          look={{ kind: "colour", scarf: people.mossLight, black }}
+        {/* The case on the roof rack. */}
+        <Rect x={58} y={16} width={42} height={12} rx={3} fill={people.crowberry} />
+        <Rect
+          x={75}
+          y={13}
+          width={9}
+          height={4}
+          rx={2}
+          fill="none"
+          stroke={black}
+          strokeWidth={1.6}
         />
-        <Puffin
-          testID="puffin-driver"
-          x={61}
-          y={44}
-          size={0.6}
-          look={{ kind: "colour", hat: people.crowberry, black }}
-        />
-        {/* The windscreen, with a glint. */}
+        <Path d="M64 16 V28 M94 16 V28" stroke={puffinCar.strap} strokeWidth={2} />
         <Path
-          d="M79.5 55 L83.5 37.5 Q84.3 35 86.8 35.6 Q89.2 36.4 88.6 39 L86 55 Z"
-          fill={colours.glass}
-          fillOpacity={0.85}
-          stroke={body}
-          strokeWidth={1.8}
-          strokeLinejoin="round"
-        />
-        <Path
-          d="M84.6 39.5 L82.6 49"
-          stroke={puffin.white}
-          strokeWidth={1.4}
+          d="M52 29 H106 M60 29 V33 M98 29 V33"
+          stroke={black}
+          strokeWidth={2.4}
           strokeLinecap="round"
-          opacity={0.9}
         />
+        {/* The body: a round roof, a short round back and a sloping bonnet. */}
         <Path
-          d="M6 62 C6 56 10 54 16 54 L84 54 C91 54 95 58 95 64 L95 72 C95 75.5 93 77 89.5 77 L11 77 C8 77 6 75 6 72 Z"
-          fill={body}
+          d="M14 98 C10 86 16 74 30 69 C34 46 54 31 80 31 C106 31 122 44 130 64 C152 65 172 70 182 81 C186 86 186 92 185 98 Z"
+          fill={puffinCar.body}
         />
-        <Path d="M6 66.5 L95 66.5" stroke={line} strokeWidth={2.2} />
-        <Rect x={44} y={60} width={8} height={2.6} rx={1.3} fill={line} />
-        {/* The front light, then the back light. */}
-        <Rect x={89} y={58.5} width={6} height={5} rx={2.5} fill={people.sun} />
-        <Rect x={6} y={58.5} width={5} height={5} rx={2.5} fill={people.crowberry} />
-        {[25, 75].map((cx) => (
-          <Wheel key={cx} cx={cx} tyre={colours.wheel} hub={colours.taken} />
+        <Path d={windows} fill={puffinCar.glass} />
+        {/* The puffins sit inside, so the glass's edges cut them. */}
+        <G clipPath={`url(#${clip})`}>
+          <Puffin
+            testID="puffin-you"
+            x={58}
+            y={57}
+            size={0.54}
+            look={{ kind: "colour", scarf: people.mossLight }}
+          />
+          <Puffin
+            testID="puffin-driver"
+            x={96}
+            y={58}
+            size={0.58}
+            look={{ kind: "colour", hat: people.crowberry }}
+          />
+        </G>
+        {/* A glint on the windscreen, the door and its handle. */}
+        <Path
+          d="M114 48 L107 62"
+          stroke={puffin.white}
+          strokeWidth={2}
+          strokeLinecap="round"
+          opacity={0.7}
+        />
+        <Path d="M80 68 V91" stroke={puffinCar.wing} strokeWidth={1.6} strokeLinecap="round" />
+        <Rect x={85} y={72} width={8} height={2.6} rx={1.3} fill={puffinCar.wing} />
+        {/* The wings over the wheels, and the step between them. */}
+        <Path d="M26 98 C26 80 38 72 52 72 C66 72 77 80 78 98 Z" fill={puffinCar.wing} />
+        <Path d="M124 98 C125 80 137 72 151 72 C165 72 176 80 178 98 Z" fill={puffinCar.wing} />
+        <Rect x={74} y={93} width={54} height={6} rx={3} fill={puffinCar.trim} />
+        {/* The headlight, the back light and the bumpers. */}
+        <Circle
+          cx={170}
+          cy={80}
+          r={6.2}
+          fill={puffinCar.headlight}
+          stroke={puffinCar.trim}
+          strokeWidth={2}
+        />
+        <Rect x={11} y={78} width={6} height={9} rx={3} fill={people.crowberry} />
+        <Rect x={178} y={93} width={14} height={5.5} rx={2.75} fill={puffinCar.trim} />
+        <Rect x={6} y={93} width={14} height={5.5} rx={2.75} fill={puffinCar.trim} />
+        {[52, 151].map((cx) => (
+          <Wheel key={cx} cx={cx} tyre={black} />
         ))}
       </Svg>
     </View>
   );
 }
 
-function Wheel({
-  cx,
-  tyre,
-  hub,
-}: {
-  readonly cx: number;
-  readonly tyre: string;
-  readonly hub: string;
-}) {
+function Wheel({ cx, tyre }: { readonly cx: number; readonly tyre: string }) {
   return (
     <>
-      <Circle cx={cx} cy={77} r={10.5} fill={tyre} />
-      <Circle cx={cx} cy={77} r={4.2} fill={hub} />
+      <Circle cx={cx} cy={100} r={15} fill={tyre} />
+      <Circle cx={cx} cy={100} r={7} fill={puffinCar.hub} />
+      <Circle cx={cx} cy={100} r={2.4} fill={tyre} />
     </>
   );
 }

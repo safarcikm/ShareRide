@@ -94,6 +94,23 @@ export const puffin = {
   nightBlack: "#2E3D45",
 } as const;
 
+/**
+ * The puffins' car (spec 15, section 5.3): a round car seen from the side,
+ * in the sun's yellow with darker wings over the wheels, light glass, grey
+ * trim, a pale headlight and a crowberry case on the roof with darker
+ * straps. The same in both modes; only its tyres lift on the night screen,
+ * to `puffin.nightBlack`. Like the people colours, only for drawings.
+ */
+export const puffinCar = {
+  body: "#F4C04E",
+  wing: "#E0A93A",
+  glass: "#CFE6EF",
+  trim: "#C9D5DA",
+  hub: "#DCE5E8",
+  headlight: "#FFF6D8",
+  strap: "#D9707F",
+} as const;
+
 /** The five people colours a driver's shape person and initial can have, in a fixed order. */
 export const peopleColours = [
   people.glacier,

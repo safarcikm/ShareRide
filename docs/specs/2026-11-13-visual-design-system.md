@@ -161,6 +161,16 @@ basalt, as the seats around them are lighter than the screen. The face
 stands out from all three blacks by more than 3:1 (the tokens' tests check
 it).
 
+The puffins' car (section 5.3, decision 14) has its own drawing colours,
+as tokens `puffinCar`, the same in both modes: its body sun `#F4C04E`, the
+wings over its wheels `#E0A93A`, its windows `#CFE6EF`, the bumpers, step
+and headlight's rim `#C9D5DA`, the hubs `#DCE5E8`, the headlight
+`#FFF6D8` and the straps of the crowberry case on its roof `#D9707F`. It
+replaced the pale car of board 2, which had the seat view's `cabin` colour
+and almost vanished on frost (1.05:1).
+
+![The puffins' car on frost and on night](images/visual-design-system/puffin-car.png)
+
 Our map of Iceland ([ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)):
 sea `#D7E9F0`, land `#F4F1EA` with its coast `#B9CBD3`, glaciers `#FFFFFF`,
 main roads `#C6CED2` and the Ring Road `#9AA9B0` in light mode; `#142630`,
@@ -432,7 +442,7 @@ or a photo is.
 
 | Scene | What it shows | Where |
 | ----- | ------------- | ----- |
-| `PuffinsInCar` | A little round car from the side, open on top, front to the right: the driver's puffin in a crowberry knitted hat in front, yours in a moss scarf behind, both facing the way it drives. The car takes the seat view's car colours, lighter than the screen in both modes: in light mode its body `cabin` with a `body` line along it, in dark mode its body `body` with a `seat` line; the windscreen `glass`, `wheel` wheels with `taken` hubs, a sun front light and a crowberry back light | The front page: on a phone in the middle over "Where are you going?", 170 wide; on a wide page 88 wide on the title's line, just before it, so the line is no higher than the title alone and the map beside the rides stays whole in a window 720 high. The booked screen once a seat is confirmed, 200 wide, `moving`: three `control` lines behind it |
+| `PuffinsInCar` | A round little car from the side, front to the right, in the spirit of an old round-roofed family car but our own (no maker's marks): a domed roof, a short round back, a sloping bonnet, darker wings over the wheels, a step between them, a round headlight and a crowberry case on a roof rack. The driver's puffin in a crowberry knitted hat sits in front and yours in a moss scarf behind, both facing the way it drives and seen through the side windows, which cut them like glass (each car has its own outline, so two on one page don't mix). Its colours are `puffinCar` (section 4.2), the same in both modes: a sun-yellow body that stands off frost, surface and night alike. The puffins behind the glass keep basalt; the tyres, straight on the screen, take `puffin.nightBlack` in dark mode | The front page: on a phone in the middle over "Where are you going?", 170 wide; on a wide page 88 wide on the title's line, just before it, so the line is no higher than the title alone and the map beside the rides stays whole in a window 720 high. The booked screen once a seat is confirmed, 200 wide, `moving`: three `control` lines behind it |
 | `PuffinByPin` | A whole puffin standing, three-quarters to the right, in a crowberry scarf, beside a map pin in `primary` with a `surface` dot on a `steering` pole | Empty screens, 120 high, over their sentence: Rides leaving soon with none, My rides with nothing coming up, Chats with none, and My trips with none. Search results stay as they are: what they offer instead (other days, places nearby, asking for a ride) matters more |
 
 A request sent but not yet answered keeps the seat on its own with you in
@@ -618,6 +628,7 @@ Decided by Martin after the spec was approved:
 | - | -------- | -------- |
 | 11 | Which logo? | A, "A shared ride": the car from above with the driver and you (chosen 2026-11-13; the refined drawing approved 2026-11-14), not B (a friend in a hat) or C (your stretch of road). Replaced by decision 12 |
 | 12 | Which logo for PuffinRide, with cartoon puffins? | C, "Puffin pin": the puffin as a map pin, its beak pointing the way (chosen 2026-11-22), not A (two puffins in a little open car) or B (Lundi, a puffin's head in a knitted hat). Moss stays the main colour |
-| 13 | Where else do puffins go? | Board 2 as drawn (Martin, 2026-11-22: "all the cute graphics"): two puffins in a little open car on the front page and when a seat is booked, and a puffin by a map pin on empty screens (section 5.3). Not on prices, times, payment, safety or photos |
+| 13 | Where else do puffins go? | Board 2 as drawn (Martin, 2026-11-22: "all the cute graphics"): two puffins in a little open car on the front page and when a seat is booked, and a puffin by a map pin on empty screens (section 5.3). Not on prices, times, payment, safety or photos. The car changed with decision 14 |
+| 14 | What car do the puffins drive? | A round, sun-yellow car with a domed roof, "something like a VW Beetle" (Martin, 2026-11-22, as the open car blended into the frost background), our own drawing with no maker's marks; the puffins look out of its side windows and a case rides on the roof. The launch ads use the same drawing |
 
 ![The three puffin logo directions Martin chose from](images/visual-design-system/logo-puffin-directions.png)

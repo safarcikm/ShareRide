@@ -1473,6 +1473,10 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- The puffins drive a round, sun-yellow car with a domed roof (spec 15,
+  decision 14), seen through its side windows, with a case on the roof: on
+  the front page and when a seat is booked. The pale open car almost
+  vanished on the frost background. The launch ads use the same drawing.
 - Every email looks like PuffinRide (spec 24): the puffin pin and the name
   at the top, sent inside the email so nothing loads when it is opened, a
   white card with the title, the words and one moss button, and the footer
