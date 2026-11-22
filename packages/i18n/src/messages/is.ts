@@ -245,7 +245,7 @@ export const is = {
   "settings.email": "Netfang",
   "settings.signInMethods": "Innskráningarleiðir",
   "settings.signInMethods.help":
-    "Skráðu þig inn með símanúmerinu þínu, eða með Google eða Apple þegar þau eru tengd.",
+    "Símanúmerið þitt dugar alltaf til að skrá þig inn. Þú getur líka tengt aðrar innskráningarleiðir.",
   "settings.signInMethods.add": "Bæta við {provider}",
   "settings.signInMethods.remove": "Fjarlægja {provider}",
   "settings.signInMethods.removeQuestion":
@@ -254,6 +254,7 @@ export const is = {
   "settings.signInMethods.notLinked": "Ekki tengt",
   "settings.signInMethods.linked": "Tengt",
   "settings.signInMethods.hiddenEmail": "Netfang falið af Apple",
+  "settings.signInMethods.alreadyLinked": "{provider} er þegar tengt aðganginum þínum.",
   "settings.signInMethods.failed": "Ekki tókst að bæta við {provider}. Reyndu aftur.",
   "settings.signInMethods.expired": "Þetta tók of langan tíma. Bættu {provider} aftur við.",
   "settings.signInMethods.confirm":

@@ -239,7 +239,7 @@ export const en = {
   "settings.email": "Email",
   "settings.signInMethods": "Sign-in methods",
   "settings.signInMethods.help":
-    "Sign in with your phone number, or with Google or Apple once they are linked.",
+    "Your phone number always signs you in. You can also link other ways to sign in.",
   "settings.signInMethods.add": "Add {provider}",
   "settings.signInMethods.remove": "Remove {provider}",
   "settings.signInMethods.removeQuestion":
@@ -248,6 +248,7 @@ export const en = {
   "settings.signInMethods.notLinked": "Not linked",
   "settings.signInMethods.linked": "Linked",
   "settings.signInMethods.hiddenEmail": "Email hidden by Apple",
+  "settings.signInMethods.alreadyLinked": "{provider} is already linked to your account.",
   "settings.signInMethods.failed": "Adding {provider} didn't work. Try again.",
   "settings.signInMethods.expired": "That took too long. Add {provider} again.",
   "settings.signInMethods.confirm": "To add {provider}, enter the code we text you.",

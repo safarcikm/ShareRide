@@ -152,6 +152,7 @@ describe("Sign-in methods in Settings", () => {
       );
     });
     windowReturnsTo(`shareride://sign-in/return#ticket=${ticket}`);
+    const mesBefore = callsTo(app, "/v1/me").length;
     await fireEvent.press(await screen.findByRole("button", { name: "Add Apple" }));
 
     expect(await screen.findByText("To add Apple, enter the code we text you.")).toBeVisible();
@@ -180,7 +181,10 @@ describe("Sign-in methods in Settings", () => {
       )?.input["body"],
     ).toEqual({ pendingSignIn, code: "123456" });
     expect(await screen.findByRole("button", { name: "Remove Apple" })).toBeVisible();
+    expect(screen.getByText("Email hidden by Apple")).toBeVisible();
     expect(screen.queryByLabelText("6-digit code")).toBeNull();
+    // Linking may have given the account its email: the account is read again.
+    expect(callsTo(app, "/v1/me").length).toBeGreaterThan(mesBefore);
   });
 
   it("says when another ShareRide account has that Google account", async () => {
@@ -223,5 +227,94 @@ describe("Sign-in methods in Settings", () => {
     expect(await screen.findByText("That took too long. Add Google again.")).toBeVisible();
     expect(screen.queryByLabelText("6-digit code")).toBeNull();
     expect(screen.getByRole("button", { name: "Add Google" })).toBeVisible();
+  });
+
+  /** Google checked and waiting for the code, with `answer` for the code. */
+  async function addGoogleWith(answer: () => ReturnType<typeof ok> | ReturnType<typeof failure>) {
+    const opened = await openMethods([], (client) => {
+      client.answer("/v1/me/sign-in-methods/prepare", () =>
+        ok(200, {
+          pendingSignIn,
+          provider: "google",
+          email: "anna@example.com",
+          expiresAt: "2026-11-22T12:30:00.000Z",
+        }),
+      );
+      client.answer("/v1/me/sign-in-methods", answer, "post");
+    });
+    windowReturnsTo(`shareride://sign-in/return#ticket=${ticket}`);
+    await fireEvent.press(await screen.findByRole("button", { name: "Add Google" }));
+    await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
+    return opened;
+  }
+
+  it("keeps the form open when the code is wrong", async () => {
+    await addGoogleWith(() => failure(400, "code_invalid"));
+    expect(await screen.findByLabelText("6-digit code")).toBeVisible();
+    // The form's own button; Google and Apple both stay not linked.
+    expect(screen.getByRole("button", { name: "Add Google" })).toBeVisible();
+    expect(screen.getAllByText("Not linked")).toHaveLength(2);
+  });
+
+  it("closes the form when another account took the Google account meanwhile", async () => {
+    await addGoogleWith(() => failure(409, "provider_in_use"));
+    expect(
+      await screen.findByText("This Google account is used by another ShareRide account."),
+    ).toBeVisible();
+    expect(screen.queryByLabelText("6-digit code")).toBeNull();
+  });
+
+  it("says so when another device linked it first", async () => {
+    await openMethods([], (client) => {
+      client.answer("/v1/me/sign-in-methods/prepare", () =>
+        failure(409, "provider_already_linked"),
+      );
+    });
+    windowReturnsTo(`shareride://sign-in/return#ticket=${ticket}`);
+    await fireEvent.press(await screen.findByRole("button", { name: "Add Google" }));
+    expect(await screen.findByText("Google is already linked to your account.")).toBeVisible();
+  });
+
+  it("offers only Remove for one linked from before that is no longer set up", async () => {
+    await openMethods([googleMethod], (client) => {
+      client.answer("/v1/config", () =>
+        ok(200, {
+          beta: false,
+          paused: [],
+          maxSeats: 8,
+          freeCancellationMinutes: 15,
+          maxMoveMinutes: 120,
+          reliabilityMonths: 12,
+          signInProviders: ["apple"],
+        }),
+      );
+    });
+    expect(await screen.findByRole("button", { name: "Remove Google" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Add Google" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Add Apple" })).toBeVisible();
+  });
+
+  it("keeps the list when it cannot be loaded again after a change", async () => {
+    let lists = 0;
+    await openMethods([googleMethod], (client) => {
+      client.answer(
+        "/v1/me/sign-in-methods",
+        () => {
+          lists += 1;
+          return lists === 1
+            ? ok(200, { methods: [googleMethod] })
+            : failure(503, "service_unavailable");
+        },
+        "get",
+      );
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Remove Google" }));
+    const confirm = screen.getAllByRole("button", { name: "Remove Google" }).at(-1);
+    if (confirm === undefined) throw new Error("No confirm button");
+    await fireEvent.press(confirm);
+    expect(await screen.findByText("Google is no longer linked to your account.")).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Add Google" })).toBeVisible();
+    expect(lists).toBe(2);
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
   });
 });

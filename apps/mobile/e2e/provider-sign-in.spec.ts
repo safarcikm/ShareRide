@@ -117,11 +117,10 @@ test.describe("Sign-in methods in Settings", () => {
   test.use({ locale: "en-GB" });
 
   test("adds Apple with a confirm code, then removes it", async ({ page }, testInfo) => {
-    // Apple's stand-in people, so no Google journey meets them.
-    const person =
-      testInfo.project.name === "phone"
-        ? "Anna, with a verified email"
-        : "Bjarni, who hid his email";
+    // Apple's stand-in people, so no Google journey meets them. The
+    // stand-in's relay-style address is not Apple's own relay domain, so the
+    // row shows it as it is; "Email hidden by Apple" has its screen test.
+    const person = personOf(testInfo.project.name);
     const { phone } = await signUp(page, english, "Gunna");
     await page.goto("/settings");
     await page.getByRole("button", { name: "Sign-in methods" }).click();
@@ -133,7 +132,7 @@ test.describe("Sign-in methods in Settings", () => {
     await page.getByRole("button", { name: "Add Apple" }).click();
     const window = await popup;
     // Apple posts its answer back as a form.
-    await window.getByRole("button", { name: person }).click();
+    await window.getByRole("button", { name: person.label }).click();
     await window.waitForEvent("close");
 
     await expect(page.getByText("To add Apple, enter the code we text you.")).toBeVisible();
@@ -142,6 +141,8 @@ test.describe("Sign-in methods in Settings", () => {
     await expect(
       page.getByText("Apple is now linked to your account. Next time you can continue with Apple."),
     ).toBeVisible();
+    await expect(page.getByText(person.email, { exact: true })).toBeVisible();
+    await expect(page.getByText("Not linked")).toHaveCount(1);
 
     await page.getByRole("button", { name: "Remove Apple" }).click();
     await expect(

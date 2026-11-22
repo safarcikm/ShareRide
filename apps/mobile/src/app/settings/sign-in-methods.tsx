@@ -14,13 +14,14 @@ import {
 } from "@shareride/domain";
 import type { Translate } from "@shareride/i18n";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
 import { useConfig } from "@/beta/config";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
+import { Loading } from "@/components/loading";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { TakesFocus } from "@/components/takes-focus";
@@ -46,8 +47,9 @@ function refusalText(t: Translate, failure: CallFailure, provider: string): stri
       return t("auth.provider.inUse", { provider });
     case "provider_expired":
       return t("settings.signInMethods.expired", { provider });
-    case "ticket_invalid":
     case "provider_already_linked":
+      return t("settings.signInMethods.alreadyLinked", { provider });
+    case "ticket_invalid":
       return t("settings.signInMethods.failed", { provider });
     default:
       return errorText(t, failure);
@@ -59,7 +61,9 @@ function refusalText(t: Translate, failure: CallFailure, provider: string): stri
  * and Google and Apple, each linked with its email or not linked. Adding
  * one opens its window, checks it can be added, then asks for a code
  * texted to the account's own number, as downloading the data does (R19.3).
- * Removing one asks first; sessions stay signed in.
+ * Removing one asks first; sessions stay signed in. After a change the list
+ * shows it at once and is loaded again; a list that fails to load then
+ * stays as it was.
  */
 export default function SignInMethodsScreen() {
   const me = useMe();
@@ -74,12 +78,16 @@ function SignInMethods({ phoneNumber }: { readonly phoneNumber: string | null })
   const config = useConfig();
   const providerWindow = useProviderWindow();
   const load = useCallback(() => session.call(listSignInMethodsRoute, {}), [session]);
-  const { value: answer, reload, refresh } = useLoaded(load);
+  const { value: answer, reload } = useLoaded(load);
+  // The list as changed here, over the one first loaded.
+  const [changed, setChanged] = useState<readonly SignInMethod[] | null>(null);
   const [busy, setBusy] = useState<SignInProvider | null>(null);
   const [asking, setAsking] = useState<SignInProvider | null>(null);
   const [adding, setAdding] = useState<Adding | null>(null);
   // When a new confirm code can be asked for, kept while the form closes and opens.
   const [sentUntil, setSentUntil] = useState(0);
+  // The question or form that just closed: its button takes focus back.
+  const [closed, setClosed] = useState<SignInProvider | null>(null);
   // Counted, so each outcome takes focus anew: the button pressed may be gone.
   const [outcome, setOutcome] = useState<{
     text: string;
@@ -88,12 +96,20 @@ function SignInMethods({ phoneNumber }: { readonly phoneNumber: string | null })
   } | null>(null);
 
   function tell(text: string, failed: boolean) {
+    setClosed(null);
     setOutcome((last) => ({ text, failed, count: (last?.count ?? 0) + 1 }));
+  }
+
+  /** Loads the list again; if that fails, the list stays as it was. */
+  async function refresh() {
+    const result = await session.call(listSignInMethodsRoute, {});
+    if (result.ok) setChanged(result.data.methods);
   }
 
   /** Opens the window in the tap itself, then checks the account can be added. */
   async function add(provider: SignInProvider) {
     setOutcome(null);
+    setClosed(null);
     setAsking(null);
     setBusy(provider);
     const opened = providerWindow.open(provider);
@@ -112,9 +128,10 @@ function SignInMethods({ phoneNumber }: { readonly phoneNumber: string | null })
     });
     setBusy(null);
     if (!prepared.ok) {
-      tell(refusalText(t, prepared, name), true);
-      // Another device may have added one meanwhile.
-      if (prepared.error.code === "provider_already_linked") refresh();
+      // Another device may have added it meanwhile: that is no failure.
+      const already = prepared.error.code === "provider_already_linked";
+      tell(refusalText(t, prepared, name), !already);
+      if (already) void refresh();
       return;
     }
     setAdding({ pendingSignIn: prepared.data.pendingSignIn, provider: prepared.data.provider });
@@ -127,9 +144,18 @@ function SignInMethods({ phoneNumber }: { readonly phoneNumber: string | null })
       body: { pendingSignIn: adding.pendingSignIn, code },
     });
     if (result.ok) {
+      const added = result.data;
       setAdding(null);
+      // The code is used up: the next one is sent at once.
+      setSentUntil(0);
       tell(t("auth.provider.linked", { provider: name }), false);
-      refresh();
+      setChanged((before) => [
+        ...(before ?? methodsOf(answer)).filter((method) => method.provider !== added.provider),
+        added,
+      ]);
+      // Linking may have given the account its email (R19.4).
+      void session.reloadMe();
+      void refresh();
       return { ok: true };
     }
     // The code is right but the account cannot be added: the form closes.
@@ -142,7 +168,7 @@ function SignInMethods({ phoneNumber }: { readonly phoneNumber: string | null })
     ) {
       setAdding(null);
       tell(refusalText(t, result, name), true);
-      refresh();
+      void refresh();
     }
     return result;
   }
@@ -155,7 +181,10 @@ function SignInMethods({ phoneNumber }: { readonly phoneNumber: string | null })
     const name = providerNames[provider];
     if (result.ok || result.error.code === "not_found") {
       tell(t("settings.signInMethods.removed", { provider: name }), false);
-      refresh();
+      setChanged((before) =>
+        (before ?? methodsOf(answer)).filter((method) => method.provider !== provider),
+      );
+      void refresh();
       return;
     }
     tell(errorText(t, result), true);
@@ -168,15 +197,16 @@ function SignInMethods({ phoneNumber }: { readonly phoneNumber: string | null })
       <Body>{t("settings.signInMethods.help")}</Body>
     </>
   );
-  if (answer === undefined) {
+  const methods = changed ?? methodsOf(answer);
+  if (answer === undefined && changed === null) {
     return (
       <Screen>
         {header}
-        <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
+        <Loading />
       </Screen>
     );
   }
-  if (!answer.ok) {
+  if (answer?.ok === false && changed === null) {
     return (
       <Screen>
         {header}
@@ -187,8 +217,10 @@ function SignInMethods({ phoneNumber }: { readonly phoneNumber: string | null })
   }
 
   const linked = new Map<SignInProvider, SignInMethod>(
-    answer.data.methods.map((method) => [method.provider, method]),
+    methods.map((method) => [method.provider, method]),
   );
+  // Linked meanwhile, such as from another device: the form has no more to do.
+  const confirming = adding !== null && !linked.has(adding.provider) ? adding : null;
   // A provider shows when it is set up, or still linked from before.
   const shown = signInProviders.filter(
     (provider) => config.signInProviders.includes(provider) || linked.has(provider),
@@ -226,14 +258,16 @@ function SignInMethods({ phoneNumber }: { readonly phoneNumber: string | null })
                 {label(name)}
                 <Body align="start">{describeMethod(t, provider, method)}</Body>
                 {method === undefined ? (
-                  canAdd && adding === null ? (
-                    <Button
-                      variant="secondary"
-                      label={t("settings.signInMethods.add", { provider: name })}
-                      busy={busy === provider}
-                      disabled={(busy !== null && busy !== provider) || !providerWindow.ready}
-                      onPress={() => void add(provider)}
-                    />
+                  canAdd && confirming === null ? (
+                    <TakesFocus when={closed === provider}>
+                      <Button
+                        variant="secondary"
+                        label={t("settings.signInMethods.add", { provider: name })}
+                        busy={busy === provider}
+                        disabled={(busy !== null && busy !== provider) || !providerWindow.ready}
+                        onPress={() => void add(provider)}
+                      />
+                    </TakesFocus>
                   ) : null
                 ) : asking === provider ? (
                   <TakesFocus>
@@ -252,46 +286,62 @@ function SignInMethods({ phoneNumber }: { readonly phoneNumber: string | null })
                         disabled={busy === provider}
                         onPress={() => {
                           setAsking(null);
+                          setClosed(provider);
                         }}
                       />
                     </View>
                   </TakesFocus>
                 ) : (
-                  <Button
-                    variant="secondary"
-                    label={t("settings.signInMethods.remove", { provider: name })}
-                    disabled={busy !== null}
-                    onPress={() => {
-                      setOutcome(null);
-                      setAsking(provider);
-                    }}
-                  />
+                  <TakesFocus when={closed === provider}>
+                    <Button
+                      variant="secondary"
+                      label={t("settings.signInMethods.remove", { provider: name })}
+                      disabled={busy !== null}
+                      onPress={() => {
+                        setOutcome(null);
+                        setClosed(null);
+                        setAsking(provider);
+                      }}
+                    />
+                  </TakesFocus>
                 )}
               </View>
             );
           })}
         </View>
       </Card>
-      {adding === null ? null : (
-        <TakesFocus>
+      {/* The code field takes focus itself, as in Download my data. */}
+      {confirming === null ? null : (
+        <View style={styles.form}>
           <Body align="start">
-            {t("settings.signInMethods.confirm", { provider: providerNames[adding.provider] })}
+            {t("settings.signInMethods.confirm", { provider: providerNames[confirming.provider] })}
           </Body>
           <ConfirmWithCode
             confirmLabel={t("settings.signInMethods.add", {
-              provider: providerNames[adding.provider],
+              provider: providerNames[confirming.provider],
             })}
             onConfirm={confirmAdding}
             sentUntil={sentUntil}
             onSent={setSentUntil}
             onCancel={() => {
               setAdding(null);
+              setClosed(confirming.provider);
             }}
           />
-        </TakesFocus>
+        </View>
       )}
     </Screen>
   );
+}
+
+/** The methods in the list first loaded, or none before it comes. */
+function methodsOf(
+  answer:
+    | { readonly ok: true; readonly data: { readonly methods: readonly SignInMethod[] } }
+    | { readonly ok: false }
+    | undefined,
+): readonly SignInMethod[] {
+  return answer?.ok === true ? answer.data.methods : [];
 }
 
 /** The linked account's email, "Linked" without one, or "Not linked". */
@@ -312,4 +362,5 @@ const styles = StyleSheet.create({
   list: { gap: spacing.lg },
   method: { gap: spacing.xs, alignItems: "flex-start" },
   question: { gap: spacing.sm, alignItems: "flex-start" },
+  form: { gap: spacing.md },
 });
