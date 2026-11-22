@@ -285,6 +285,26 @@ describe("the frame", () => {
     fireEvent.click(screen.getByRole("button", { name: "Skipta yfir í ensku" }));
     expect(await screen.findByRole("heading", { name: "Welcome, Anna" })).toBeTruthy();
   });
+
+  it("marks the page Icelandic as soon as Icelandic text shows", async () => {
+    const { api, show } = start("/admin");
+    api.on(adminMeRoute, { status: 200, data: { ...anna, locale: "is" } });
+    // What a screen reader would meet: the page's language when the text appears.
+    let languageWhenShown: string | undefined;
+    const watch = new MutationObserver(() => {
+      if (languageWhenShown !== undefined) return;
+      if (screen.queryByRole("heading", { name: "Velkomin(n), Anna" }) === null) return;
+      languageWhenShown = document.documentElement.lang;
+    });
+    watch.observe(document.body, { childList: true, subtree: true });
+    try {
+      show();
+      await screen.findByRole("heading", { name: "Velkomin(n), Anna" });
+    } finally {
+      watch.disconnect();
+    }
+    expect(languageWhenShown).toBe("is");
+  });
 });
 
 describe("the passkeys page", () => {

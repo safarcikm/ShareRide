@@ -67,7 +67,9 @@ export function ConsoleApp({ client, passkeys, photos = browserPhotos }: Console
     };
   }, []);
 
-  useEffect(() => {
+  // Before the browser paints, so the page never shows text in one language
+  // while it says it is in the other.
+  useLayoutEffect(() => {
     document.documentElement.lang = locale;
     document.title = t("admin.title");
   }, [locale, t]);
