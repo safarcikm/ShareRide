@@ -1,11 +1,16 @@
-import { callingCode, codeRules, normalisePhoneNumber } from "@shareride/domain";
+import {
+  callingCode,
+  codeRules,
+  normalisePhoneNumber,
+  type SignInProvider,
+} from "@shareride/domain";
 import { countryNames } from "@shareride/i18n";
 import { router } from "expo-router";
 import { useRef, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
-import { PausedBanner } from "@/beta/config";
+import { PausedBanner, useConfig } from "@/beta/config";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
@@ -14,24 +19,66 @@ import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useSignInFlow } from "@/sign-in/flow";
 import { KeptRideCard } from "@/sign-in/kept-ride-card";
+import { ProviderButtons } from "@/sign-in/provider-buttons";
+import { providerNames, useProviderWindow } from "@/sign-in/provider-window";
 import { SignUpProgress } from "@/sign-in/sign-up-progress";
-import { spacing } from "@/theme/tokens";
+import { spacing, typography } from "@/theme/tokens";
+import { usePalette } from "@/theme/use-palette";
 
 /**
- * Step 1 of signing in or up: the phone number, with the country picker
- * (spec 1, screen 2; spec 16, 3.5), under the ride kept on the way.
+ * Step 1 of signing in or up: Continue with Google or Apple, or the phone
+ * number with the country picker (spec 1, screen 2; spec 16, 3.5; spec 19,
+ * 3.1), under the ride kept on the way. After a Google or Apple account
+ * ShareRide does not know, it asks for the phone number, with a line on
+ * top saying why (spec 19, 3.3).
  */
 export default function PhoneNumberScreen() {
   const { locale, t } = useLanguage();
   const session = useSession();
   const flow = useSignInFlow();
+  const { signInProviders } = useConfig();
+  const providerWindow = useProviderWindow();
   const [fieldError, setFieldError] = useState<string>();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [providerBusy, setProviderBusy] = useState<SignInProvider | null>(null);
   // Guards against a second tap or a Return key before the first reply.
   const sending = useRef(false);
   const country = countryNames[locale][flow.country];
   const code = callingCode(flow.country);
+  const { pending } = flow;
+
+  /**
+   * Opens the window at once, in the tap itself, so a browser lets the
+   * pop-up open; then trades its ticket for a session or the phone step.
+   */
+  async function continueWith(provider: SignInProvider) {
+    if (sending.current) return;
+    setError(null);
+    flow.setNotice(null);
+    setProviderBusy(provider);
+    const opened = providerWindow.open(provider);
+    const name = providerNames[provider];
+    const outcome = await opened;
+    if (outcome.kind !== "ticket") {
+      setProviderBusy(null);
+      if (outcome.kind === "expired") setError(t("auth.provider.expired", { provider: name }));
+      if (outcome.kind === "failed") setError(t("auth.provider.failed", { provider: name }));
+      return;
+    }
+    const result = await session.finishProviderSignIn(outcome.ticket, outcome.verifier);
+    setProviderBusy(null);
+    if (!result.ok) {
+      setError(
+        result.error.code === "ticket_invalid"
+          ? t("auth.provider.failed", { provider: name })
+          : errorText(t, result),
+      );
+      return;
+    }
+    // Signed in: sign-in closes by itself. Otherwise the phone number comes next.
+    if (result.data.status === "phoneNeeded") flow.setPending(result.data);
+  }
 
   async function send() {
     if (sending.current) return;
@@ -55,12 +102,37 @@ export default function PhoneNumberScreen() {
     router.push("/sign-in/code");
   }
 
+  const pendingName = pending === null ? null : providerNames[pending.provider];
   return (
     <Screen>
       <SignUpProgress step={1} />
       <KeptRideCard kept={flow.keptRide} />
-      <Title>{t("signIn.title")}</Title>
-      <Body>{t("signIn.help", { length: codeRules.length })}</Body>
+      {pending === null || pendingName === null ? (
+        <>
+          <Title>{t("signIn.title")}</Title>
+          {signInProviders.length > 0 ? (
+            <View style={styles.providers}>
+              <ProviderButtons
+                providers={signInProviders}
+                busy={providerBusy}
+                disabled={!providerWindow.ready || busy}
+                onPress={(provider) => void continueWith(provider)}
+              />
+              <OrWithPhone label={t("auth.orPhone")} />
+            </View>
+          ) : null}
+          <Body>{t("signIn.help", { length: codeRules.length })}</Body>
+        </>
+      ) : (
+        <>
+          <Title>{t("auth.provider.phoneTitle")}</Title>
+          <Body>
+            {pending.email === null
+              ? t("auth.provider.phoneHelpHidden", { provider: pendingName })
+              : t("auth.provider.phoneHelp", { provider: pendingName, email: pending.email })}
+          </Body>
+        </>
+      )}
       <PausedBanner part="sms" />
       <PausedBanner part="signups" />
       <View style={styles.form}>
@@ -87,10 +159,34 @@ export default function PhoneNumberScreen() {
           onSubmitEditing={() => void send()}
         />
         <Notice message={error ?? flow.notice} />
-        <Button label={t("auth.phone.send")} busy={busy} onPress={() => void send()} />
+        <Button
+          label={t("auth.phone.send")}
+          busy={busy}
+          disabled={providerBusy !== null}
+          onPress={() => void send()}
+        />
       </View>
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({ form: { gap: spacing.md, marginTop: spacing.md } });
+/** "or with your phone number", between two lines. */
+function OrWithPhone({ label }: { readonly label: string }) {
+  const palette = usePalette();
+  const line = [styles.line, { backgroundColor: palette.border }];
+  return (
+    <View style={styles.or}>
+      <View style={line} />
+      <Text style={[typography.small, styles.orLabel, { color: palette.textMuted }]}>{label}</Text>
+      <View style={line} />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  form: { gap: spacing.md, marginTop: spacing.md },
+  providers: { gap: spacing.md, marginTop: spacing.md },
+  or: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  line: { flex: 1, height: StyleSheet.hairlineWidth },
+  orLabel: { flexShrink: 1, textAlign: "center" },
+});

@@ -180,6 +180,26 @@ describe("requests", () => {
     const response = await setup().app.request("/v1/health");
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
     expect(response.headers.get("strict-transport-security")).toContain("max-age=");
+    expect(response.headers.get("cross-origin-opener-policy")).toBe("same-origin");
+  });
+
+  it("keeps Google's and Apple's pop-up linked to the page that opened it (ADR 0034)", async () => {
+    // The start, the callbacks and the stand-in's page open in the pop-up,
+    // which hands its answer to its opener: an opener policy would cut it off.
+    const { app } = setup();
+    for (const path of [
+      "/v1/auth/oauth/google/start",
+      "/v1/auth/oauth/google/callback",
+      "/v1/auth/oauth/dev/google",
+    ]) {
+      const response = await app.request(path);
+      expect(response.headers.get("cross-origin-opener-policy")).toBe("unsafe-none");
+    }
+    const apple = await app.request("/v1/auth/oauth/apple/callback", { method: "POST" });
+    expect(apple.headers.get("cross-origin-opener-policy")).toBe("unsafe-none");
+    // The API's other answers keep the strict policy.
+    const finish = await app.request("/v1/auth/oauth/finish", { method: "POST" });
+    expect(finish.headers.get("cross-origin-opener-policy")).toBe("same-origin");
   });
 });
 

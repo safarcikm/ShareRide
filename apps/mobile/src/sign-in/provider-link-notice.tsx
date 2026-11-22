@@ -1,0 +1,88 @@
+import type { ProviderLink } from "@shareride/contracts";
+import type { Translate } from "@shareride/i18n";
+import { X } from "lucide-react-native";
+import { useSyncExternalStore } from "react";
+import { StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSession } from "@/auth/session";
+import { IconButton } from "@/components/icon-button";
+import { Notice } from "@/components/notice";
+import { useLanguage } from "@/i18n/language";
+import { edges, maxContentWidth, radii, spacing } from "@/theme/tokens";
+import { usePalette } from "@/theme/use-palette";
+import { providerNames } from "./provider-window";
+
+/** What the phone step did with the Google or Apple account, in words. */
+export function providerLinkText(t: Translate, link: ProviderLink): string | null {
+  const provider = providerNames[link.provider];
+  switch (link.outcome) {
+    case "linked":
+      return t("auth.provider.linked", { provider });
+    case "replaced":
+      return link.email === null
+        ? t("auth.provider.replacedHidden", { provider })
+        : t("auth.provider.replaced", { provider, email: link.email });
+    case "in_use":
+      return t("auth.provider.inUse", { provider });
+    case "created":
+    case "already_linked":
+      return null;
+  }
+}
+
+/**
+ * After the phone step linked a Google or Apple account to an account that
+ * had the number (spec 19, 3.3): says so over whichever screen opens next,
+ * since signing in closes the sign-in screens, until the person closes it.
+ */
+export function ProviderLinkNotice() {
+  const { t } = useLanguage();
+  const session = useSession();
+  const palette = usePalette();
+  const insets = useSafeAreaInsets();
+  const news = useSyncExternalStore(session.subscribe, session.signInNews, session.signInNews);
+  const link = news?.providerLink ?? null;
+  const text = link === null ? null : providerLinkText(t, link);
+  if (text === null) return null;
+  return (
+    <View style={[styles.layer, { top: insets.top + spacing.sm }]}>
+      <View
+        style={[styles.card, { backgroundColor: palette.surface, borderBottomColor: palette.edge }]}
+      >
+        <View style={styles.message}>
+          <Notice message={text} kind="info" />
+        </View>
+        <IconButton
+          icon={X}
+          label={t("auth.provider.dismiss")}
+          onPress={() => {
+            session.dismissProviderLink();
+          }}
+        />
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  // Only the card takes taps; the screen around it stays as it is.
+  layer: {
+    position: "absolute",
+    left: spacing.md,
+    right: spacing.md,
+    alignItems: "center",
+    pointerEvents: "box-none",
+  },
+  card: {
+    width: "100%",
+    maxWidth: maxContentWidth,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    padding: spacing.sm,
+    borderRadius: radii.card,
+    // A card's chunky edge (spec 15, section 5.2).
+    borderBottomWidth: edges.card,
+  },
+  message: { flex: 1 },
+});

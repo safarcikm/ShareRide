@@ -1,3 +1,4 @@
+import type { PhoneNeeded } from "@shareride/contracts";
 import type { SupportedCountry } from "@shareride/domain";
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import { useKeptRide, type KeptRide } from "./kept-ride";
@@ -37,6 +38,13 @@ export interface SignInFlow {
   /** Said once on step 1, such as why the person is back there. */
   readonly notice: string | null;
   readonly setNotice: (notice: string | null) => void;
+  /**
+   * A Google or Apple sign-in waiting for the phone step (spec 19, 3.3):
+   * set only from the finish answer, never from an address or a link, and
+   * sent with the code.
+   */
+  readonly pending: PhoneNeeded | null;
+  readonly setPending: (pending: PhoneNeeded | null) => void;
 }
 
 const SignInFlowContext = createContext<SignInFlow | null>(null);
@@ -56,6 +64,7 @@ export function SignInFlowProvider({
   const [inviteCode, setInviteCode] = useState(fromLink);
   const [rightCode, setRightCode] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [pending, setPending] = useState<PhoneNeeded | null>(null);
   const keptRide = useKeptRide();
   const value = useMemo<SignInFlow>(
     () => ({
@@ -79,8 +88,10 @@ export function SignInFlowProvider({
       setRightCode,
       notice,
       setNotice,
+      pending,
+      setPending,
     }),
-    [country, typed, sentTo, resendAt, keptRide, inviteCode, rightCode, notice],
+    [country, typed, sentTo, resendAt, keptRide, inviteCode, rightCode, notice, pending],
   );
   return <SignInFlowContext value={value}>{children}</SignInFlowContext>;
 }

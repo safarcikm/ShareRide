@@ -1,11 +1,13 @@
 import type { ApiClient, CallFailure, CallInput, CallResult } from "@shareride/api-client";
 import {
+  finishProviderSignInRoute,
   getMeRoute,
   refreshRoute,
   signOutRoute,
   startPhoneSignInRoute,
   verifyPhoneCodeRoute,
   type Me,
+  type ProviderLink,
   type RouteDefinition,
 } from "@shareride/contracts";
 import type { Locale } from "@shareride/i18n";
@@ -30,6 +32,25 @@ export type SessionState =
   | { readonly status: "signedOut" }
   | { readonly status: "signedIn"; readonly me: Me };
 
+/**
+ * What the last sign-in told the screens after it (spec 19, 3.3): a Google or
+ * Apple account linked, swapped or refused, for a notice the person closes,
+ * and a new account's first name from Google or Apple, which step 3 fills
+ * in. Never stored: it goes when the app closes or the person signs out.
+ */
+export interface SignInNews {
+  /** Linked, replaced or in use; null once closed, or when there is nothing to say. */
+  readonly providerLink: ProviderLink | null;
+  readonly suggestedFirstName: string | null;
+}
+
+/** The outcomes of a waiting Google or Apple sign-in that the person is told about. */
+const toldOutcomes: ReadonlySet<ProviderLink["outcome"]> = new Set([
+  "linked",
+  "replaced",
+  "in_use",
+]);
+
 export interface SessionManager {
   // Properties, not methods, so React can take them as they are (useSyncExternalStore).
   readonly state: () => SessionState;
@@ -46,7 +67,25 @@ export interface SessionManager {
     locale: Locale,
     /** For a new account while the beta is closed; a member's is ignored. */
     inviteCode?: string,
+    /**
+     * A Google or Apple sign-in waiting for this phone step, as the finish
+     * answer gave it (spec 19, 3.3); never from an address or a link.
+     */
+    pendingSignIn?: string,
   ): Promise<CallResult<typeof verifyPhoneCodeRoute>>;
+  /**
+   * Trades the ticket of a Google or Apple window, with the secret its start
+   * was made from, for a session; or answers that the phone step comes
+   * first, signed out still (spec 19, 3.2; ADR 0034).
+   */
+  finishProviderSignIn(
+    ticket: string,
+    verifier: string,
+  ): Promise<CallResult<typeof finishProviderSignInRoute>>;
+  /** What the last sign-in said; null when nothing. Changes call the listeners. */
+  readonly signInNews: () => SignInNews | null;
+  /** The person closed the notice about their Google or Apple account. */
+  dismissProviderLink(): void;
   /** A call as the signed-in person; refreshes the tokens once if they have expired. */
   call<R extends RouteDefinition>(route: R, input: CallInput<R>): Promise<CallResult<R>>;
   me(): Promise<CallResult<typeof getMeRoute>>;
@@ -96,11 +135,30 @@ export function createSessionManager(options: {
   let current: SessionState = { status: "loading" };
   let accessToken: string | undefined;
   let refreshing: Promise<RefreshOutcome> | null = null;
+  let news: SignInNews | null = null;
   const listeners = new Set<() => void>();
+
+  function tell(): void {
+    for (const listener of listeners) listener();
+  }
 
   function set(next: SessionState): void {
     current = next;
-    for (const listener of listeners) listener();
+    tell();
+  }
+
+  /** Before the signed-in state, so the screens that open next find it. */
+  function keepNews(signedIn: {
+    readonly providerLink?: ProviderLink | undefined;
+    readonly suggestedFirstName?: string | undefined;
+  }): void {
+    const link = signedIn.providerLink;
+    const providerLink = link !== undefined && toldOutcomes.has(link.outcome) ? link : null;
+    const suggestedFirstName = signedIn.suggestedFirstName ?? null;
+    news =
+      providerLink === null && suggestedFirstName === null
+        ? null
+        : { providerLink, suggestedFirstName };
   }
 
   async function keep(tokens: { accessToken: string; refreshToken?: string | undefined }) {
@@ -115,6 +173,7 @@ export function createSessionManager(options: {
 
   async function forget(): Promise<void> {
     accessToken = undefined;
+    news = null;
     try {
       await tokenStore.clear();
     } catch {
@@ -214,7 +273,7 @@ export function createSessionManager(options: {
     start: (phoneNumber, locale) =>
       client.call(startPhoneSignInRoute, { body: { phoneNumber, locale } }),
 
-    async verify(phoneNumber, code, locale, inviteCode) {
+    async verify(phoneNumber, code, locale, inviteCode, pendingSignIn) {
       const result = await client.call(verifyPhoneCodeRoute, {
         body: {
           phoneNumber,
@@ -222,13 +281,35 @@ export function createSessionManager(options: {
           locale,
           device,
           ...(inviteCode === undefined || inviteCode === "" ? {} : { inviteCode }),
+          ...(pendingSignIn === undefined ? {} : { pendingSignIn }),
         },
       });
       if (result.ok) {
         await keep(result.data);
+        keepNews(result.data);
         set({ status: "signedIn", me: result.data.user });
       }
       return result;
+    },
+
+    async finishProviderSignIn(ticket, verifier) {
+      const result = await client.call(finishProviderSignInRoute, {
+        body: { ticket, verifier, device },
+      });
+      if (result.ok && result.data.status === "signedIn") {
+        await keep(result.data);
+        keepNews(result.data);
+        set({ status: "signedIn", me: result.data.user });
+      }
+      return result;
+    },
+
+    signInNews: () => news,
+
+    dismissProviderLink() {
+      if (news === null || news.providerLink === null) return;
+      news = news.suggestedFirstName === null ? null : { ...news, providerLink: null };
+      tell();
     },
 
     call,

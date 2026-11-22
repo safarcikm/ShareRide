@@ -89,6 +89,7 @@ function start(
           freeCancellationMinutes: 15,
           maxMoveMinutes: 120,
           reliabilityMonths: 12,
+          signInProviders: [],
         }),
       );
     },

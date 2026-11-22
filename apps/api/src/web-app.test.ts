@@ -94,6 +94,15 @@ describe("the web app on the API's origin", () => {
     expect(response.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
   });
 
+  it("lets the page open Google's or Apple's pop-up and hear back from it (ADR 0034)", async () => {
+    const page = await app.request("/trips/abc");
+    expect(page.headers.get("cross-origin-opener-policy")).toBe("same-origin-allow-popups");
+    // The pop-up's last page, which hands the answer to the page under it.
+    const back = await app.request("/sign-in/return");
+    expect(back.status).toBe(200);
+    expect(back.headers.get("cross-origin-opener-policy")).toBe("unsafe-none");
+  });
+
   it("serves other files without long caching", async () => {
     const response = await app.request("/favicon.ico");
     expect(response.status).toBe(200);

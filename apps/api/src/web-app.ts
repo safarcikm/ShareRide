@@ -1,4 +1,6 @@
 import { serveStatic } from "@hono/node-server/serve-static";
+import { finishProviderSignInRoute } from "@shareride/contracts";
+import { providerReturnPath } from "@shareride/domain";
 import type { Context } from "hono";
 import { isConsolePath } from "./admin-app.ts";
 import type { AppEnv } from "./context.ts";
@@ -44,6 +46,23 @@ export const webContentSecurityPolicy = (photoOrigin: string | null = null) =>
     "form-action 'self'",
     "frame-ancestors 'none'",
   ].join("; ");
+
+/**
+ * The opener policy of an answer, where it is not the secure headers'
+ * `same-origin` (ADR 0034). Google's and Apple's sign-in runs in a pop-up
+ * on the web, which hands its answer to the page that opened it, so the two
+ * must stay linked: the pop-up's pages here (the start, the callbacks, the
+ * stand-in's page, then the web app's sign-in/return) have no policy, and
+ * the web app's other pages let the pop-ups they open keep the link. The
+ * rest of the API and the console keep `same-origin`.
+ */
+export function openerPolicyFor(path: string): "unsafe-none" | "same-origin-allow-popups" | null {
+  if (path.startsWith("/v1/auth/oauth/") && path !== finishProviderSignInRoute.path) {
+    return "unsafe-none";
+  }
+  if (isApiPath(path) || isConsolePath(path)) return null;
+  return path === `/${providerReturnPath}` ? "unsafe-none" : "same-origin-allow-popups";
+}
 
 /**
  * Trip pages show a person's first name and travel plans, so search engines

@@ -12,6 +12,7 @@ import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useSignInFlow } from "@/sign-in/flow";
 import { KeptRideCard } from "@/sign-in/kept-ride-card";
+import { providerNames } from "@/sign-in/provider-window";
 import { SignUpProgress } from "@/sign-in/sign-up-progress";
 import { useSecondsUntil } from "@/sign-in/use-seconds-until";
 import { spacing } from "@/theme/tokens";
@@ -49,11 +50,18 @@ export default function CodeScreen() {
     inFlight.current = true;
     setBusy(true);
     setMessage(null);
-    const result = await session.verify(phoneNumber, entered, locale, flow.inviteCode);
+    const result = await session.verify(
+      phoneNumber,
+      entered,
+      locale,
+      flow.inviteCode,
+      flow.pending?.pendingSignIn,
+    );
     if (result.ok) return;
     inFlight.current = false;
     setBusy(false);
     setCode("");
+    if (providerRefused(result.error.code)) return;
     // A new number while the beta is closed: the code was right and is
     // kept, and the next screen asks for the invite code (spec 12, 3.2.3).
     // The same for an invite link's code that did not work.
@@ -69,6 +77,30 @@ export default function CodeScreen() {
     if (result.error.code === "code_attempts_exceeded" && wait !== undefined) {
       flow.waitBeforeResend(wait);
     }
+  }
+
+  /**
+   * The waiting Google or Apple sign-in was refused; the code was not used
+   * (spec 19, 3.3). Too late: back to step 1 to continue with it again.
+   * Another account has it: the code still makes an account with the
+   * number alone, if the person enters it again.
+   */
+  function providerRefused(code: string): boolean {
+    const { pending } = flow;
+    if (pending === null) return false;
+    const provider = providerNames[pending.provider];
+    if (code === "provider_expired") {
+      flow.setPending(null);
+      flow.setNotice(t("auth.provider.expired", { provider }));
+      router.dismissTo("/sign-in");
+      return true;
+    }
+    if (code === "provider_in_use") {
+      flow.setPending(null);
+      setMessage({ kind: "error", text: t("auth.provider.inUse", { provider }) });
+      return true;
+    }
+    return false;
   }
 
   async function resend() {

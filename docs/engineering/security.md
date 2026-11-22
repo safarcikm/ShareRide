@@ -136,6 +136,14 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   confirm code in Settings; never by email. The development stand-in is
   refused under `NODE_ENV=production`. Logs carry the provider and the
   user ID, never the email, the provider's identifier or a token.
+  On the web the window is a pop-up that hands its answer to the page that
+  opened it, so they must stay linked: the pop-up's pages (the start, the
+  callbacks, the stand-in's page and the web app's `/sign-in/return`) have
+  no opener policy, the web app's other pages have
+  `same-origin-allow-popups`, and the rest of the API and the console keep
+  `same-origin` (`openerPolicyFor`). The web app takes the ticket out of
+  the pop-up's address as it loads, before error reporting starts, and
+  keeps the secret in memory for that one try; a new try gets a new one.
 - **Data exports:** kept in the database sealed with AES-256-GCM under a key
   derived from `AUTH_SECRET` (HKDF, `shareride-data-export-v1`), a fresh IV
   per file, so a copy of the database alone cannot read them. They leave

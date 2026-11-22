@@ -15,10 +15,15 @@ import { LanguageProvider, useLanguage } from "@/i18n/language";
 import { useSaveLanguage } from "@/i18n/use-save-language";
 import { reportError, startErrorReporting } from "@/lib/error-reporting";
 import { PushNotifications } from "@/notifications/push-notifications";
+import { completeProviderPopup } from "@/sign-in/complete-popup";
+import { ProviderLinkNotice } from "@/sign-in/provider-link-notice";
 import { useAppFonts } from "@/theme/fonts";
 import { TopBar } from "@/navigation/top-bar";
 import { installFocusRing } from "@/theme/focus-ring";
 
+// First: in Google's or Apple's pop-up, the ticket leaves the address
+// before error reporting could see it (ADR 0034).
+completeProviderPopup();
 startErrorReporting();
 installFocusRing();
 
@@ -30,6 +35,7 @@ export default function RootLayout() {
           <ConfigProvider>
             <UnreadProvider>
               <Navigation />
+              <ProviderLinkNotice />
               <PushNotifications />
               <ShakeForFeedback />
             </UnreadProvider>

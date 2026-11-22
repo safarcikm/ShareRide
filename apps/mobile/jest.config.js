@@ -25,6 +25,8 @@ export default {
     // Native (a file chooser and a canvas on the web); tests pick the photo themselves.
     "^expo-image-picker$": "<rootDir>/src/testing/image-picker.ts",
     "^expo-image-manipulator$": "<rootDir>/src/testing/image-manipulator.ts",
+    // Google's or Apple's window; tests say where it comes back to.
+    "^expo-web-browser$": "<rootDir>/src/testing/web-browser.ts",
   },
   transformIgnorePatterns: [
     nodeModulesPattern.replace("(.pnpm|", "(.pnpm|intl-messageformat|@formatjs|"),
