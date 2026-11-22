@@ -1369,6 +1369,8 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Offering a ride, **Choose date and time** shows as busy while the stops
+  on the way load. A press then did nothing, without saying so.
 - Staging deploys again. Since 2026-11-22 every Render build stopped
   during the web app's export with no error: Metro started a bundling
   worker per CPU of the build machine and ran out of memory. The image now

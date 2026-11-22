@@ -212,6 +212,33 @@ describe("Posting a trip (spec 3)", () => {
     expect(screen.getByRole("button", { name: "From: Hof, Akureyri" })).toBeVisible();
   });
 
+  it("keeps Choose date and time busy until the stops on the way are known", async () => {
+    const { client } = await open("/drive/trips/new");
+    let release: () => void = () => undefined;
+    client.answer(
+      "/v1/routes/stops-along",
+      () =>
+        new Promise((resolve) => {
+          release = () => {
+            resolve(ok(200, { meetingPoints: [borgarnes, blonduos] }));
+          };
+        }),
+    );
+    await choosePoint("From", "bs", "BSÍ bus terminal");
+    await choosePoint("To", "hof", "Hof, Akureyri");
+    // A press now would be lost: the route is not known yet.
+    expect(screen.getByRole("button", { name: "Choose date and time", busy: true })).toBeVisible();
+    await act(async () => {
+      release();
+      await Promise.resolve();
+    });
+    expect(await screen.findByRole("switch", { name: "Blönduós" })).toBeVisible();
+    await fireEvent.press(
+      await screen.findByRole("button", { name: "Choose date and time", busy: false }),
+    );
+    expect(await screen.findByRole("header", { name: "When are you leaving?" })).toBeVisible();
+  });
+
   it("adds a meeting point where it adds least, and says how far it takes you", async () => {
     const { client } = await open("/drive/trips/new");
     await choosePoint("From", "bs", "BSÍ bus terminal");
@@ -662,9 +689,7 @@ describe("Posting a trip (spec 3)", () => {
     expect(screen.getByText("So passengers know who to look for")).toBeVisible();
     expect(screen.getByRole("button", { name: "Publish trip" })).toBeDisabled();
     expect(
-      screen.getByText(
-        "Add a profile photo to publish. Your trip is saved as a draft until then.",
-      ),
+      screen.getByText("Add a profile photo to publish. Your trip is saved as a draft until then."),
     ).toBeVisible();
 
     await fireEvent.press(screen.getByRole("button", { name: "Add a photo" }));

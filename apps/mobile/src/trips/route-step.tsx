@@ -284,7 +284,8 @@ export function RouteStep({
         <Button
           main
           label={fromReview ? t("trip.saveChanges") : t("trip.route.next")}
-          busy={busy || (ready && quoted.stale)}
+          // Busy while the stops on the way load, as a press then is lost.
+          busy={busy || (alongFor !== null && alongFailure === null) || (ready && quoted.stale)}
           onPress={() => {
             void save();
           }}
