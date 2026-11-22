@@ -17,14 +17,17 @@ export const adminPrefix = "/admin/v1";
 
 /**
  * The only console routes open without a session, as `METHOD path`: the
- * ones that sign in. Everything else under /admin/v1 is closed, including
- * paths no route matches.
+ * ones that sign in, with a passkey or the temporary password (ADR 0041).
+ * Everything else under /admin/v1 is closed, including paths no route
+ * matches.
  */
 export const openAdminRoutes: ReadonlySet<string> = new Set<string>([
   "POST /admin/v1/auth/setup/options",
   "POST /admin/v1/auth/setup",
   "POST /admin/v1/auth/sign-in/options",
   "POST /admin/v1/auth/sign-in",
+  "GET /admin/v1/auth/methods",
+  "POST /admin/v1/auth/password",
 ]);
 
 export function setOperatorCookie(c: Context, token: string, secure: boolean): void {

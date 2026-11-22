@@ -1952,6 +1952,16 @@ export const is = {
   "admin.signIn.unavailable": "Þessi aðgangur getur ekki notað stjórnborðið.",
   "admin.signIn.ended": "Lotunni lauk. Skráðu þig inn aftur.",
   "admin.signIn.signedOut": "Þú skráðir þig út.",
+  "admin.signIn.passwordTitle": "Eða skráðu þig inn með lykilorði",
+  "admin.signIn.passwordBody": "Símanúmer aðgangsins þíns og lykilorð stjórnborðsins.",
+  "admin.signIn.phoneNumber": "Símanúmer",
+  "admin.signIn.password": "Lykilorð",
+  "admin.signIn.passwordButton": "Skrá inn með lykilorðinu",
+  "admin.signIn.passwordWrong": "Símanúmerið eða lykilorðið er rangt.",
+  "admin.signIn.passwordMissing": "Sláðu inn símanúmerið þitt og lykilorðið.",
+  "admin.signIn.tooManyTries": "Of margar tilraunir. Bíddu aðeins og reyndu svo aftur.",
+  "admin.passkey.wrongAddress":
+    "Aðgangslyklar virka ekki á þessu vistfangi. Opnaðu stjórnborðið á eigin vistfangi þess og reyndu aftur.",
   "admin.passkey.cancelled":
     "Aðgangslykillinn var ekki notaður: hætt var við eða tíminn rann út. Reyndu aftur.",
   "admin.passkey.unsupported":

@@ -11,6 +11,7 @@ import {
   defaultReviewSettings,
   inviteCheckLimitsPerAddress,
   operatorSignInLimitsPerAddress,
+  operatorPasswordRules,
   providerSignInRules,
   searchLimitsPerAddress,
   type ReturnUrlsAllowed,
@@ -30,6 +31,7 @@ import type { Logger } from "./logger.ts";
 import {
   createOperatorSessionService,
   createPasskeyService,
+  createPasswordSignIn,
   createRequireOperator,
   guardAdminPaths,
   operatorCookie,
@@ -200,6 +202,8 @@ export interface FeatureDependencies {
    * Left out, the console's sign-in is off.
    */
   readonly adminOrigin?: string;
+  /** The console's temporary password (ADR 0041); left out, password sign-in is off. */
+  readonly adminPassword?: string;
   /** Where meeting point and profile photos are kept (ADRs 0022 and 0033); none when `PHOTO_STORAGE=none`. */
   readonly photos?: PhotoStorage;
   /** The same storage when it is a folder, whose files the API serves itself. */
@@ -373,6 +377,21 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
           sessions: operatorSessions,
           adminOrigin: features.adminOrigin,
         }),
+        password: createPasswordSignIn({
+          ...features,
+          sessions: operatorSessions,
+          password: features.adminPassword,
+        }),
+        passwordLimiters: {
+          perAddress: createMemoryRateLimiter({
+            rules: operatorPasswordRules.triesPerAddress,
+            clock: features.clock,
+          }),
+          all: createMemoryRateLimiter({
+            rules: operatorPasswordRules.triesFromAll,
+            clock: features.clock,
+          }),
+        },
         requireOperator,
         limiter: createMemoryRateLimiter({
           rules: operatorSignInLimitsPerAddress,
