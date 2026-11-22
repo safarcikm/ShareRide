@@ -38,6 +38,13 @@ analytics are needed at all.
 
 ## 3. Behaviour
 
+Since 2026-11-22 the beta is open to everyone, with no invite code and no
+waitlist ([ADR 0035](../decisions/0035-open-web-beta-reached-by-email.md),
+[spec 20](2026-11-22-email-alerts-and-open-beta.md)): "Invite code required"
+is off by default, and 3.1 and 3.2's personal codes and waves are not built.
+Group codes and the cap stay behind the switch, for the operator to close
+sign-ups to invited people again.
+
 ### 3.1 Waitlist
 
 1. A waitlist page on the ShareRide website, in Icelandic and English, asks
@@ -80,7 +87,8 @@ analytics are needed at all.
 5. At public launch, the switch "Invite code required" (spec 10) is turned
    off and the waitlist is invited in one go.
 6. Testers see a small "Beta" label in the app, and the terms (spec 1) say
-   that this is a test version.
+   that this is a test version. In the open beta everyone sees it, until
+   public launch (spec 20, 3.4).
 
 ### 3.3 In-app feedback (J2)
 
@@ -124,7 +132,7 @@ Crash and error reports are not analytics: they are covered by
 
 | ID | Rule |
 | -- | ---- |
-| R12.1 | During the beta, creating an account needs a valid invite code, until the operator turns the requirement off. |
+| R12.1 | Creating an account needs a valid invite code while the operator has "Invite code required" on. It is off by default (ADR 0035). |
 | R12.2 | A personal code works once and expires after 30 days; a group code works up to its number of uses and until its end date. |
 | R12.3 | No code works once the number of testers reaches `beta_max_testers`. |
 | R12.4 | A waitlist entry counts only after email confirmation, and leaving the waitlist deletes it. |

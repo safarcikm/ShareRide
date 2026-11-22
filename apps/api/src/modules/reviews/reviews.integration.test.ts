@@ -13,6 +13,7 @@ import {
 } from "@shareride/domain";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { createFakeEmailSender, type FakeEmailSender } from "../../platform/email.ts";
 import { createFakePushSender, type FakePushSender } from "../../platform/push.ts";
 import { startTestApi, type TestApi } from "../../testing.ts";
 import {
@@ -37,6 +38,8 @@ import { revealDueReviews } from "./reveal.ts";
 
 let api: TestApi;
 let push: FakePushSender;
+let email: FakeEmailSender;
+const webAppUrl = "https://shareride.test";
 
 const { airport } = sampleTrip;
 const { outboxEvents, reviews, scheduledNotifications } = schema;
@@ -54,6 +57,7 @@ beforeEach(async () => {
   await api.connection.db.execute(sql`delete from scheduled_notifications`);
   await api.connection.db.execute(sql`delete from push_tokens`);
   push = createFakePushSender();
+  email = createFakeEmailSender();
 });
 
 afterEach(() => {
@@ -187,7 +191,30 @@ async function eventsOf(bookingId: string) {
 }
 
 function worker() {
-  return createNotificationWorker({ db: api.connection.db, clock: () => api.now(), push });
+  return createNotificationWorker({
+    db: api.connection.db,
+    clock: () => api.now(),
+    push,
+    email: { sender: email, webAppUrl },
+  });
+}
+
+/** A verified email address, as opening the link in it gives (spec 1). */
+async function withEmail(member: Member, address: string) {
+  await api.connection.db
+    .update(schema.users)
+    .set({ email: address, emailVerifiedAt: api.now() })
+    .where(eq(schema.users.id, member.userId));
+}
+
+/** What was emailed to the address about reviews: subject and the link's line. */
+function emailedTo(address: string) {
+  return email.sent
+    .filter((sent) => sent.to === address && reviewTitles.includes(sent.subject))
+    .map((sent) => ({
+      subject: sent.subject,
+      link: sent.text.split("\n").find((line) => line.includes(webAppUrl)),
+    }));
 }
 
 /** A push token on the member's newest session, as the app registers it. */
@@ -521,7 +548,7 @@ describe("asking for reviews (spec 8, 3.7.6 and 3.9)", () => {
       {
         title: "How was your trip?",
         body: "Rate the driver: Jón. Hlemmur – Fjörður shopping centre · Saturday 14 November at 05:30.",
-        path: `/bookings/${bookingId}`,
+        path: `/bookings/${bookingId}/rate`,
       },
     ]);
     expect(pushedTo(jon)).toEqual([
@@ -572,6 +599,50 @@ describe("asking for reviews (spec 8, 3.7.6 and 3.9)", () => {
     await worker().runOnce();
     expect(await toldTo(jon)).toEqual(["rate_trip_driver"]);
     expect(await toldTo(gunna)).toEqual(["rate_trip", "rate_trip"]);
+  });
+
+  it("emails each side without push when the trip completes and once more, with the rating link (spec 20, 3.1)", async () => {
+    const { jon, gunna, bookingId, completesAt } = await onTheTrip();
+    await withEmail(gunna, "gunna-reviews@example.com");
+    await withEmail(jon, "jon-reviews@example.com");
+
+    await until(completesAt, 1, jon, gunna);
+    await minuteJob();
+    await worker().runOnce();
+    const asked = {
+      subject: "How was your trip?",
+      link: `Open in ShareRide: ${webAppUrl}/bookings/${bookingId}/rate`,
+    };
+    const askedDriver = {
+      subject: "How was your trip?",
+      link: `Open in ShareRide: ${webAppUrl}/drive/trips/${airport}`,
+    };
+    expect(emailedTo("gunna-reviews@example.com")).toEqual([asked]);
+    expect(emailedTo("jon-reviews@example.com")).toEqual([askedDriver]);
+
+    await until(completesAt, 3 * 24 * 60, jon, gunna);
+    await worker().runOnce();
+    expect(emailedTo("gunna-reviews@example.com")).toEqual([asked, asked]);
+    expect(emailedTo("jon-reviews@example.com")).toEqual([askedDriver, askedDriver]);
+  });
+
+  it("emails nobody with push, nor anyone with trip reminders off (spec 20, 3.1)", async () => {
+    const { jon, gunna, completesAt } = await onTheTrip();
+    await withEmail(gunna, "gunna-pushed@example.com");
+    await withEmail(jon, "jon-off@example.com");
+    await withDevice(gunna);
+    await setPreferences(api.connection.db, jon.userId, { reminders: false }, api.now());
+
+    await until(completesAt, 1, jon, gunna);
+    await minuteJob();
+    await worker().runOnce();
+    await until(completesAt, 3 * 24 * 60, jon, gunna);
+    await worker().runOnce();
+    expect(await toldTo(gunna)).toEqual(["rate_trip", "rate_trip"]);
+    expect(pushedTo(gunna)).toHaveLength(2);
+    expect(emailedTo("gunna-pushed@example.com")).toEqual([]);
+    expect(await toldTo(jon)).toEqual([]);
+    expect(emailedTo("jon-off@example.com")).toEqual([]);
   });
 
   it("follows the trip reminders switch", async () => {

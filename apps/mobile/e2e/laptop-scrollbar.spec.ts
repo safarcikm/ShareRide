@@ -35,7 +35,7 @@ for (const width of [1000, 1440]) {
     expect(scrollbar).toBeGreaterThan(0);
 
     const bar = await page.getByTestId("top-bar-content").boundingBox();
-    const back = await page.getByRole("button", { name: "Back" }).boundingBox();
+    const back = await page.getByRole("button", { name: "Back", exact: true }).boundingBox();
     const map = await page.getByTestId("aside").boundingBox();
     expect(bar?.x).toBeCloseTo(back?.x ?? -1, 0);
     expect((bar?.x ?? 0) + (bar?.width ?? 0)).toBeCloseTo((map?.x ?? 0) + (map?.width ?? 0), 0);

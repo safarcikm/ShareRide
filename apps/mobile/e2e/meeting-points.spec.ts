@@ -122,13 +122,13 @@ test.describe("meeting points on the web", () => {
     await finishSignUp(page, english, "Freyja");
 
     await expect(page.getByRole("heading", { name: "What's wrong here?" })).toBeVisible();
-    await page.getByRole("button", { name: "Send" }).click();
+    await page.getByRole("button", { name: "Send", exact: true }).click();
     await expect(page.getByText("Choose what is wrong.")).toBeVisible();
     await page.getByRole("radio", { name: "It's in the wrong place on the map" }).click();
     await page
       .getByRole("textbox", { name: "Tell us more (optional)" })
       .fill("The pin is across the road.");
-    await page.getByRole("button", { name: "Send" }).click();
+    await page.getByRole("button", { name: "Send", exact: true }).click();
     await expect(
       page.getByRole("heading", { name: "Thank you. We'll check this meeting point." }),
     ).toBeVisible();

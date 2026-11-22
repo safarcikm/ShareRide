@@ -23,7 +23,11 @@ export const configSchema = z.object({
   maxMoveMinutes: z.int().min(0),
   /** The reliability figure counts trips and bookings over this many months (spec 8, 3.8). */
   reliabilityMonths: z.int().min(1),
-  /** Whether creating an account needs an invite code (spec 12, R12.1). */
+  /**
+   * Whether this is the beta, for the small "Beta" label (spec 12, 3.2.6).
+   * True until public launch, whether or not an invite code is needed
+   * (ADR 0035).
+   */
   beta: z.boolean(),
   /** What is paused for a short while, for the app's banners (spec 10, 3.3). */
   paused: z.array(z.enum(pausedParts)),

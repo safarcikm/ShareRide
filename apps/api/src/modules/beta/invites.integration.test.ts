@@ -14,7 +14,10 @@ import { createInviteService } from "./invites.ts";
 
 // Invite codes and the closed beta's gate (spec 12, 3.2; R12.1 to R12.3;
 // milestone 11, PR 3). One database for the whole file; the operator and a
-// member join before the gate is on.
+// member join before the gate is on. The beta is open by default (ADR
+// 0035), so the first test signs up without a code, and the operator then
+// turns the requirement on; each group of the gate's tests turns it on
+// too, so it runs on its own.
 
 let api: TestApi;
 let operator: { userId: string; cookie: string };
@@ -96,7 +99,27 @@ async function setSetting(key: string, value: number) {
   expect(changed.status).toBe(200);
 }
 
+/** Turns "Invite code required" on, unless it is already: the gate's tests need it on. */
+async function requireCodes() {
+  if (!(await overview()).required) await setSetting("invite_code_required", 1);
+}
+
+describe("by default (ADR 0035)", () => {
+  it("lets anyone sign up without a code, and the operator turn the requirement on", async () => {
+    expect((await overview()).required).toBe(false);
+    const phone = api.newPhoneNumber();
+    const joined = await verify(phone, await start(phone));
+    expect(joined).toMatchObject({ ok: true, data: { isNewUser: true } });
+    expect((await accountOf(phone))?.inviteCodeId).toBeNull();
+
+    await setSetting("invite_code_required", 1);
+    expect((await overview()).required).toBe(true);
+  });
+});
+
 describe("the operator's group codes", () => {
+  beforeAll(requireCodes);
+
   it("are made with a code of 8 clear characters, and listed newest first with the places left", async () => {
     const first = await makeCode(20, "  Carpool at work ");
     const second = await makeCode(5, "Climbing club");
@@ -168,6 +191,8 @@ describe("the operator's group codes", () => {
 });
 
 describe("signing up while the beta is closed (R12.1)", () => {
+  beforeAll(requireCodes);
+
   it("refuses a new number without an invite code, makes no account and keeps the text-message code", async () => {
     const { code: invite } = await makeCode();
     const phone = api.newPhoneNumber();
@@ -274,6 +299,8 @@ describe("signing up while the beta is closed (R12.1)", () => {
 });
 
 describe("the tester cap (R12.3)", () => {
+  beforeAll(requireCodes);
+
   it("holds when two codes are used at once for the last place, and frees a place when raised", async () => {
     const [{ count: testers }] = [
       {
@@ -308,6 +335,8 @@ describe("the tester cap (R12.3)", () => {
 });
 
 describe("checking a code before sign-up", () => {
+  beforeAll(requireCodes);
+
   const check = (code: string) => api.client.call(checkInviteCodeRoute, { body: { code } });
 
   it("says whether a code would work, without using it", async () => {
