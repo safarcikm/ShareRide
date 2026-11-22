@@ -234,6 +234,183 @@ describe("the meeting points list (spec 2, 3.6.1)", () => {
   });
 });
 
+describe("activating several drafts at once (spec 21, 3.5)", () => {
+  const hella: AdminMeetingPointListItem = {
+    ...listItem(draft),
+    id: "0196f000-0000-7000-8000-0000000000a2",
+    nameIs: "N1 Hellu",
+    updatedAt: "2026-11-16T10:05:00.000Z",
+  };
+  const blonduos: AdminMeetingPointListItem = {
+    ...listItem(draft),
+    id: "0196f000-0000-7000-8000-0000000000a3",
+    nameIs: "Olís Blönduósi",
+  };
+  const panel = () => screen.getByRole("region", { name: "Activate several drafts" });
+
+  function open() {
+    const api = start("/admin/meeting-points?status=draft");
+    api.on(adminMeetingPointsRoute, {
+      status: 200,
+      data: { meetingPoints: [bsi, listItem(draft), hella, blonduos] },
+    });
+    return api;
+  }
+
+  it("activates the ticked drafts one after another, confirmed today, and says how it went", async () => {
+    const api = open();
+    let answerFirst = () => {};
+    const firstAnswered = new Promise<void>((resolve) => {
+      answerFirst = resolve;
+    });
+    api.on(adminActivateMeetingPointRoute, async (input) => {
+      if ((input["params"] as { id: string }).id === hella.id) {
+        return {
+          status: 409,
+          error: {
+            code: "activation_not_ready",
+            details: [{ path: "whereToStand", issue: "not_done" }],
+          },
+        };
+      }
+      await firstAnswered;
+      return { status: 200, data: { ...draft, status: "active" } };
+    });
+    const list = await screen.findByRole("list", { name: "The meeting points" });
+    // Only drafts can be ticked.
+    expect(within(list).queryByRole("checkbox", { name: "Select BSÍ" })).toBeNull();
+    expect(panel().textContent).toContain(
+      "Tick the drafts you have checked: the spot, where to stand, the amenities and the season. Activating them confirms each one today.",
+    );
+    fireEvent.click(within(list).getByRole("checkbox", { name: "Select N1 Borgarnesi" }));
+    fireEvent.click(within(list).getByRole("checkbox", { name: "Select N1 Hellu" }));
+    fireEvent.click(within(panel()).getByRole("button", { name: "Confirm and activate 2 points" }));
+
+    // One at a time: the second waits for the first, and the list waits too.
+    expect((await within(panel()).findByText("Activating 1 of 2…")).getAttribute("role")).toBe(
+      "status",
+    );
+    expect(api.called(adminActivateMeetingPointRoute)).toHaveLength(1);
+    expect(
+      within(list).getByRole<HTMLInputElement>("checkbox", { name: "Select N1 Hellu" }).disabled,
+    ).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Show meeting points" }));
+    expect(api.called(adminMeetingPointsRoute)).toHaveLength(1);
+    answerFirst();
+
+    const said = await within(panel()).findByText("1 point activated.");
+    await waitFor(() => {
+      expect(document.activeElement).toBe(said);
+    });
+    expect(
+      api
+        .called(adminActivateMeetingPointRoute)
+        .map((call) => [call.input["params"], call.input["body"]]),
+    ).toEqual([
+      [{ id: pointId }, { updatedAt: draft.updatedAt, confirmToday: true }],
+      [{ id: hella.id }, { updatedAt: hella.updatedAt, confirmToday: true }],
+    ]);
+    expect(within(panel()).getByRole("list", { name: "Not activated" }).textContent).toBe(
+      "N1 Hellu: still to do: Where to stand, in Icelandic and English",
+    );
+    // The list is loaded again, with their new status.
+    await waitFor(() => {
+      expect(api.called(adminMeetingPointsRoute)).toHaveLength(2);
+    });
+  });
+
+  it("selects every draft shown, and asks for one first", async () => {
+    const api = open();
+    const list = await screen.findByRole("list", { name: "The meeting points" });
+    fireEvent.click(within(panel()).getByRole("button", { name: "Confirm and activate 0 points" }));
+    expect((await within(panel()).findByRole("alert")).textContent).toBe(
+      "Tick the drafts you have checked first.",
+    );
+    expect(api.called(adminActivateMeetingPointRoute)).toHaveLength(0);
+    fireEvent.click(within(panel()).getByRole("button", { name: "Select every draft shown" }));
+    expect(
+      within(list)
+        .getAllByRole("checkbox")
+        .map((box) => (box as HTMLInputElement).checked),
+    ).toEqual([true, true, true]);
+    expect(within(panel()).queryByRole("alert")).toBeNull();
+    expect(
+      within(panel()).getByRole("button", { name: "Confirm and activate 3 points" }),
+    ).toBeTruthy();
+    fireEvent.click(within(panel()).getByRole("button", { name: "Clear the selection" }));
+    expect(
+      within(list)
+        .getAllByRole("checkbox")
+        .some((box) => (box as HTMLInputElement).checked),
+    ).toBe(false);
+  });
+
+  it("stops when the API cannot be reached, and says which were not activated", async () => {
+    const api = open();
+    api.on(adminActivateMeetingPointRoute, { status: 503, error: { code: "network_error" } });
+    const list = await screen.findByRole("list", { name: "The meeting points" });
+    fireEvent.click(within(list).getByRole("checkbox", { name: "Select N1 Borgarnesi" }));
+    fireEvent.click(within(list).getByRole("checkbox", { name: "Select N1 Hellu" }));
+    fireEvent.click(within(panel()).getByRole("button", { name: "Confirm and activate 2 points" }));
+    await within(panel()).findByText("0 points activated.");
+    expect(api.called(adminActivateMeetingPointRoute)).toHaveLength(1);
+    expect(
+      within(within(panel()).getByRole("list", { name: "Not activated" }))
+        .getAllByRole("listitem")
+        .map((item) => item.textContent),
+    ).toEqual([
+      "N1 Borgarnesi: could not be activated. Try again.",
+      "N1 Hellu: could not be activated. Try again.",
+    ]);
+  });
+
+  it("starts again with other filters", async () => {
+    open();
+    await screen.findByRole("list", { name: "The meeting points" });
+    fireEvent.click(within(panel()).getByRole("button", { name: "Select every draft shown" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show meeting points" }));
+    await waitFor(() => {
+      expect(
+        within(screen.getByRole("list", { name: "The meeting points" }))
+          .getAllByRole("checkbox")
+          .some((box) => (box as HTMLInputElement).checked),
+      ).toBe(false);
+    });
+    expect(
+      within(panel()).getByRole("button", { name: "Confirm and activate 0 points" }),
+    ).toBeTruthy();
+  });
+
+  it("keeps saying how it went when no draft is left", async () => {
+    const api = start("/admin/meeting-points?status=draft");
+    let loads = 0;
+    api.on(adminMeetingPointsRoute, () => ({
+      status: 200,
+      data: { meetingPoints: loads++ === 0 ? [hella] : [] },
+    }));
+    api.on(adminActivateMeetingPointRoute, {
+      status: 200,
+      data: { ...draft, id: hella.id, status: "active" },
+    });
+    const list = await screen.findByRole("list", { name: "The meeting points" });
+    fireEvent.click(within(list).getByRole("checkbox", { name: "Select N1 Hellu" }));
+    fireEvent.click(within(panel()).getByRole("button", { name: "Confirm and activate 1 point" }));
+    await waitFor(() => {
+      expect(api.called(adminMeetingPointsRoute)).toHaveLength(2);
+    });
+    expect(within(panel()).getByText("1 point activated.")).toBeTruthy();
+    // Nothing left to tick, so nothing to press.
+    expect(within(panel()).queryByRole("button")).toBeNull();
+  });
+
+  it("is not offered when no draft is shown", async () => {
+    const api = start("/admin/meeting-points");
+    api.on(adminMeetingPointsRoute, { status: 200, data: { meetingPoints: [bsi] } });
+    await screen.findByRole("list", { name: "The meeting points" });
+    expect(screen.queryByRole("region", { name: "Activate several drafts" })).toBeNull();
+  });
+});
+
 describe("the meeting point form (spec 2, 3.6.2)", () => {
   async function fillNew() {
     await screen.findByRole("heading", { name: "New meeting point", level: 1 });

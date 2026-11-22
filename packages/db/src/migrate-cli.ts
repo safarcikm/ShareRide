@@ -1,10 +1,13 @@
-// Applies pending migrations to DATABASE_URL, then adds or updates the
-// places of place search, which are reference data every environment has
-// (spec 21, 3.2). Used locally (`pnpm --filter @shareride/db migrate`) and
-// before each deploy. With --seed-drafts it then adds the draft legal documents, the sample meeting
-// points and the sample trips (replaced with fresh dates each time), as
-// staging's pre-deploy command does: one command, so it needs no shell.
+// Applies pending migrations to DATABASE_URL, adds or updates the places of
+// place search, which are reference data every environment has (spec 21,
+// 3.2), and publishes the legal documents of the repository that the database
+// does not have yet (ADR 0043). Used locally (`pnpm --filter @shareride/db
+// migrate`) and before each deploy. With --seed-drafts it then adds the draft
+// legal documents, the sample meeting points and the sample trips (replaced
+// with fresh dates each time), as staging's pre-deploy command does: one
+// command, so it needs no shell.
 import { connectDatabase, migrateDatabase } from "./index.ts";
+import { publishLegalDocuments } from "./legal/published.ts";
 import { seedPlaces } from "./places/seed.ts";
 import { seedRefusal } from "./seed-guard.ts";
 import { seedDevelopmentData } from "./seed.ts";
@@ -30,6 +33,8 @@ try {
   process.stdout.write("Migrations applied.\n");
   await seedPlaces(connection.db, new Date());
   process.stdout.write("The places of place search are up to date.\n");
+  const published = await publishLegalDocuments(connection.db, new Date());
+  process.stdout.write(`Legal documents published: ${String(published)} new.\n`);
   if (seedDrafts) {
     await seedDevelopmentData(connection.db, new Date());
     process.stdout.write(

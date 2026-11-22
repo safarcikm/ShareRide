@@ -103,6 +103,9 @@ imports end in `.ts`.
   back then always lands on a version that understands what is stored.
   Before the beta, staging holds only sample data, so one deploy is enough
   and the runbook says when to roll forward instead (decided 2026-11-16).
+  Production holds real data, and there each release is a deploy
+  ([ADR 0042](../decisions/0042-production-on-render-released-with-a-button.md)):
+  release the reading half before the saving half.
 - Every table has `created_at` and `updated_at`.
 - Foreign keys and constraints are mandatory where the data model implies them.
 - Soft delete only where retention rules require it; otherwise delete.

@@ -10,12 +10,13 @@ import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
 import { Tag } from "@/components/tag";
+import { PuffinByPin } from "@/components/puffin-scenes";
 import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { firstNameOf } from "@/people/texts";
 import { useHover } from "@/theme/hover";
-import { controlOutline, edges, spacing, typography } from "@/theme/tokens";
+import { controlOutline, edges, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { otherPerson, previewText } from "./texts";
 import { useUnread } from "./unread";
@@ -27,6 +28,8 @@ export interface Conversations {
   /** The answer that failed, when there is nothing to show, until `reload`. */
   readonly failed: CallFailure | null;
   readonly reload: () => void;
+  /** Loads them again for pulling down to refresh (spec 16, 3.9), as `useLoaded` says. */
+  readonly pull: () => Promise<boolean | null>;
 }
 
 /**
@@ -42,11 +45,11 @@ export interface Conversations {
  */
 export function useConversations(follows: boolean): Conversations {
   const { conversations, load } = useUnread();
-  const { value: answer, reload } = useLoadedOnFocus(load);
+  const { value: answer, reload, pull } = useLoadedOnFocus(load);
   const own = answer?.ok === true ? answer.data.conversations : null;
   const rows = follows ? (conversations ?? own) : own;
   const failed = rows === null && answer !== undefined && !answer.ok ? answer : null;
-  return { rows, failed, reload };
+  return { rows, failed, reload, pull: () => pull((loaded) => loaded.ok) };
 }
 
 /**
@@ -91,6 +94,7 @@ export function ConversationList({
   if (rows.length === 0) {
     return (
       <Aside pane={pane}>
+        <PuffinByPin height={sizes.scenePuffin} align={pane ? "start" : "center"} />
         <Body align={pane ? "start" : "center"}>{t("chat.empty")}</Body>
       </Aside>
     );

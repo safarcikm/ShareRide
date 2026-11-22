@@ -1334,6 +1334,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   command. `packages/db/src/places/settlement-meeting-points.csv` holds 104
   meeting points from OpenStreetMap, one in or near each settlement, for
   the operator to import in the console as drafts.
+- Activate several meeting points at once (spec 21, 3.5.5): the console's
+  Meeting points list has a tick box on each draft and "Confirm and
+  activate N points", which activates each ticked draft in turn, with
+  today as the day confirmed and its amenities and season reviewed, each
+  with its own legs and audit entry. Drafts that cannot be activated are
+  listed with the reason. `POST /admin/v1/meeting-points/{id}/activate`
+  takes `confirmToday`.
 - Paying the driver in person until card payments work (ADR 0038, rule M6),
   the console's switch "Pay the driver in person" (off by default).
   While it is on, a new booking is paid to the driver in person, in cash or
@@ -1376,6 +1383,30 @@ releases follow [Semantic Versioning](https://semver.org/).
   A driver needs one to publish a trip while the server keeps photos. The
   operator can hide one from the console, with appeal (migration
   `0058_hide_profile_photos`).
+- Production at `https://puffinride.is` (ADR 0042): its own Render
+  blueprint, `infra/render/production.yaml`, with its own database and
+  secrets, following the `production` branch. The "Release to production"
+  action moves that branch to a commit on `main` whose CI passed, which
+  staging already runs; the production runbook has the setup steps.
+- Pull to refresh (spec 16, 3.9): pulling down at the top of Find, search
+  results, Rides leaving soon, My rides, Messages, a booking or the
+  driver's trip page loads it again, with a spinner and then "Updated" or
+  "Couldn't update" for two seconds, read out. What was on screen stays
+  until the new answer comes, and stays if it fails. Phones use their own
+  pull; the web, where React Native has none, gets its own touch pull. The
+  logo, on Find on a phone and in the top bar on a wide screen, loads Find
+  again the same way.
+- The legal documents published from the repository (ADR 0043): version 2
+  of the Terms of Service, the Community Rules and the Privacy Policy, in
+  English and Icelandic, adapted from the drafts for the lawyer to the open
+  beta and naming Martin Safarcik as the operator. The migration command
+  publishes every listed version a database lacks, in every environment,
+  and a test fails if a published text changes. The app's reader shows
+  their lists as bullet points.
+- The console's password sign-in works on production too (ADR 0044,
+  superseding ADR 0041's refusal there): the API starts with
+  `ADMIN_PASSWORD` set on production, with the same limits and audit as on
+  staging.
 
 ### Fixed
 
@@ -1416,6 +1447,8 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Sign out is on Profile too (spec 16, 3.4 item 4), under the rows; Sign
+  out on all devices stays in Settings.
 - The living docs and the legal drafts say PuffinRide (ADR 0039): the
   README, CLAUDE.md, the glossary, product, architecture, compliance,
   engineering and strategy docs, SECURITY.md, the ADR skill, and the terms,
@@ -1450,6 +1483,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   the driver in a knitted hat of their colour, you in a moss scarf, and a
   grey puffin with no colour on a seat someone else took, all facing the
   way the car drives. The booked screen's seat shows your puffin too.
+- More puffins (spec 15, 5.3, decision 13): two puffins in a little open
+  car over "Where are you going?" on the front page and driving off on
+  "You're booked!", and a puffin by a map pin on empty screens (Rides
+  leaving soon, My rides, Chats and My trips). A request sent keeps your
+  seat with you in it. In dark mode the puffins drawn on the screen lift
+  their black (`puffin.nightBlack`); screen readers skip all of them.
 - Photos are kept in Hetzner Object Storage in Nuremberg, not Helsinki,
   which Hetzner did not offer when the staging bucket was made (ADR 0037).
   The privacy policy draft, the privacy register and the runbook say so;

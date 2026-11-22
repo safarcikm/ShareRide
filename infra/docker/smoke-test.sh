@@ -77,6 +77,7 @@ check "the console page names its bundle" test -n "$console_bundle"
 check "the console's bundle is served" test "$(status_of "$console_bundle")" = 200
 check "the console's API needs a session" test "$(status_of /admin/v1/me)" = 401
 check "legal documents seeded" test "$(status_of /v1/legal/terms/current)" = 200
+check "the terms are a published version, not the draft" sh -c "curl -fsS '$base/v1/legal/terms/current' | grep -Eq '\"version\":([2-9]|[1-9][0-9]+),'"
 check "sample meeting points seeded" sh -c "curl -fsS '$base/v1/meeting-points' | grep -q '\"sample\":true'"
 # Render copies secret files into the build context (see .dockerignore).
 check "no secret files in the image" docker run --rm "$image" test ! -e /repo/sentry-auth-token

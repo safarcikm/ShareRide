@@ -5,6 +5,7 @@ import { useSession, useSessionState } from "@/auth/session";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
+import { PuffinByPin } from "@/components/puffin-scenes";
 import { Screen } from "@/components/screen";
 import { Body, Title } from "@/components/text";
 import { offerRide } from "@/drive/offer-ride";
@@ -12,11 +13,13 @@ import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { failureText } from "@/search/failure-text";
 import { ResultCard } from "@/search/result-card";
+import { sizes } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
  * All rides leaving soon (spec 4, 3.8, item 3): the 50 soonest, each for
- * its whole route, from "See all rides" on the front page.
+ * its whole route, from "See all rides" on the front page. Pulling down
+ * loads them again (spec 16, 3.9).
  */
 export default function Rides() {
   const { t } = useLanguage();
@@ -27,10 +30,10 @@ export default function Rides() {
     () => session.call(soonestTripsRoute, { query: { limit: soonestTripsMaxLimit } }),
     [session],
   );
-  const { value: answer, reload } = useLoaded(load);
+  const { value: answer, reload, pull } = useLoaded(load);
 
   return (
-    <Screen>
+    <Screen refresh={() => pull((loaded) => loaded.ok)}>
       <BackButton />
       <Title>{t("rides.title")}</Title>
       {answer === undefined ? (
@@ -42,6 +45,7 @@ export default function Rides() {
         </>
       ) : answer.data.results.length === 0 ? (
         <>
+          <PuffinByPin height={sizes.scenePuffin} />
           <Body>{t("rides.none")}</Body>
           <Button
             variant="secondary"

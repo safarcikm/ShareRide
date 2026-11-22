@@ -9,10 +9,11 @@ import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Screen } from "@/components/screen";
 import { Tag } from "@/components/tag";
+import { PuffinByPin } from "@/components/puffin-scenes";
 import { Body, Heading, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
-import { spacing, typography } from "@/theme/tokens";
+import { sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { resumeStep, stepHref } from "@/trips/steps";
 import { routeText } from "@/trips/texts";
@@ -47,7 +48,10 @@ export default function MyTripsScreen() {
       {trips === null ? (
         <Loading failure={result?.ok === false ? result : undefined} onRetry={reload} />
       ) : trips.length === 0 ? (
-        <Body>{t("trip.mine.empty")}</Body>
+        <>
+          <PuffinByPin height={sizes.scenePuffin} />
+          <Body>{t("trip.mine.empty")}</Body>
+        </>
       ) : (
         <>
           {drafts.length === 0 ? null : <Heading>{t("trip.mine.drafts")}</Heading>}

@@ -1,4 +1,5 @@
 import type {
+  AdminActivateMeetingPoint,
   AdminActivationChecklist,
   AdminImportRow,
   AdminMeetingPoint,
@@ -108,11 +109,13 @@ export interface MeetingPointAdminService {
   /**
    * Activates a draft whose checklist's required items are done (spec 2,
    * 3.6.3; the photo is recommended, ADR 0036), computing its
-   * legs with every point in service in the same transaction.
+   * legs with every point in service in the same transaction. With
+   * `confirmToday` the operator confirms it today (spec 21, 3.5): its
+   * amenities and season count as reviewed and today is the day confirmed.
    */
   activate(
     id: string,
-    input: Loaded,
+    input: AdminActivateMeetingPoint,
     actor: ConsoleActor,
   ): Promise<Result<AdminMeetingPoint, StatusProblem>>;
   /**
@@ -513,15 +516,26 @@ export function createMeetingPointAdminService(dependencies: {
         const found = await loadForChange(tx, id, input.updatedAt);
         if (found === undefined) return err({ code: "not_found" });
         if (!found.loaded) return err({ code: "meeting_point_changed" });
-        const { row } = found;
-        const status = nextPointStatus(row.status as MeetingPointStatus, "activate", 0);
+        const status = nextPointStatus(found.row.status as MeetingPointStatus, "activate", 0);
         if (!status.ok) return err({ code: "status_change_not_allowed" });
+        // Confirmed today: checked as if saved, and saved only with the activation.
+        const today = icelandDate(clock());
+        const confirmed =
+          input.confirmToday === true
+            ? {
+                lastCheckedOn: today,
+                amenitiesReviewedOn: reviewedOn(found.row.amenitiesReviewedOn, true, today),
+                seasonReviewedOn: reviewedOn(found.row.seasonReviewedOn, true, today),
+              }
+            : {};
+        const row = { ...found.row, ...confirmed };
         const missing = missingForActivation(await checklistOf(tx, row));
         if (missing.length > 0) return err({ code: "activation_not_ready", missing });
 
         const [saved] = await tx
           .update(meetingPoints)
           .set({
+            ...confirmed,
             status: status.value,
             reviewDueOn: reviewDueOn(status.value, row.lastCheckedOn),
             updatedAt: changedNow,
@@ -532,9 +546,12 @@ export function createMeetingPointAdminService(dependencies: {
         const computed = await legs.computeFor(id, tx);
         if (!computed.ok) throw new Error("The meeting point was not found for its legs.");
         // A draft has no trips: none can use it.
-        const before = toAdminMeetingPoint(row, 0);
+        const before = toAdminMeetingPoint(found.row, 0);
         const after = toAdminMeetingPoint(saved, 0);
-        const changes = changedFields(statusValuesOf(before), statusValuesOf(after));
+        const changes = changedFields(
+          { ...statusValuesOf(before), ...confirmedValuesOf(before) },
+          { ...statusValuesOf(after), ...confirmedValuesOf(after) },
+        );
         await recordAudit(tx, {
           operator: actor.operator,
           action: "meeting_point.activated",
@@ -542,7 +559,12 @@ export function createMeetingPointAdminService(dependencies: {
           subjectId: id,
           before: changes.before,
           // Its legs, and those no road connects (3.7.4).
-          after: { ...changes.after, legs: computed.value.legs, missing: computed.value.missing },
+          after: {
+            ...changes.after,
+            ...(input.confirmToday === true ? { confirmedToday: true } : {}),
+            legs: computed.value.legs,
+            missing: computed.value.missing,
+          },
           request: actor.request,
         });
         return ok(after);
@@ -738,6 +760,15 @@ const auditActions = {
   resume: "resumed",
   retire: "retired",
 } as const satisfies Record<Exclude<StatusChange, "activate">, string>;
+
+/** What confirming a point today changes (`activate` with `confirmToday`). */
+function confirmedValuesOf(point: AdminMeetingPoint): Record<string, unknown> {
+  return {
+    lastCheckedOn: point.lastCheckedOn,
+    amenitiesReviewedOn: point.amenitiesReviewedOn,
+    seasonReviewedOn: point.seasonReviewedOn,
+  };
+}
 
 /** What a status change's audit entry compares: the status, the pause and the review date. */
 function statusValuesOf(point: AdminMeetingPoint): Record<string, unknown> {

@@ -242,7 +242,11 @@ payments in the app work)
 Milestone 12: production
 (needs Martin's domain and Mailjet account; the waitlist is dropped, as the
 beta is open to everyone,
-[ADR 0035](../decisions/0035-open-web-beta-reached-by-email.md))
+[ADR 0035](../decisions/0035-open-web-beta-reached-by-email.md);
+[plan](../plans/2026-11-22-production.md), started 2026-11-22: production at
+`https://puffinride.is`, released with a button,
+[ADR 0042](../decisions/0042-production-on-render-released-with-a-button.md),
+[runbook](../operations/production.md))
 
 - [ ] Production environment, separate from staging
 - [ ] Email from our own domain

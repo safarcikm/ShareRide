@@ -1,7 +1,7 @@
 import { soonestTripsRoute, type TripSearchResult } from "@shareride/contracts";
 import { router } from "expo-router";
 import { useCallback, useState, type ReactNode } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useMe, useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { BetaLabel } from "@/beta/config";
@@ -11,6 +11,7 @@ import { Grid } from "@/components/grid";
 import { Notice } from "@/components/notice";
 import { LanguageSwitch } from "@/components/language-switch";
 import { Logo } from "@/components/logo";
+import { PuffinsInCar } from "@/components/puffin-scenes";
 import { Screen, useWideScreen } from "@/components/screen";
 import { Body, Heading, Title } from "@/components/text";
 import { offerRide } from "@/drive/offer-ride";
@@ -18,6 +19,7 @@ import { useLanguage } from "@/i18n/language";
 import { useSaveLanguage } from "@/i18n/use-save-language";
 import { now } from "@/lib/clock";
 import { useLoaded } from "@/lib/use-loaded";
+import { refreshFrontPage, useFrontPageRefreshes } from "@/navigation/front-page-refresh";
 import { RideItem } from "@/my-rides/ride-row";
 import { SuspendedAccount, suspensionNow } from "@/safety/suspended-account";
 import { useRides } from "@/my-rides/use-rides";
@@ -38,8 +40,9 @@ const shownRidesWide = 6;
 /**
  * Find, the home of the app for everyone, signed in or not (spec 16, 3.2):
  * the logo and the language (in the top bar on wide screens), Your next
- * ride when signed in, a route search with the seats, the rides leaving soon (spec 4, 3.8) and "Offer a
- * ride". Signing in is in the menu.
+ * ride when signed in, two puffins in a little car over the title (spec 15,
+ * 5.3), a route search with the seats, the rides leaving soon (spec 4, 3.8)
+ * and "Offer a ride". Signing in is in the menu.
  *
  * A wide screen (spec 18, 3.5) has the search in one row across the page,
  * then the rides in a grid, closed by the offer as one line, with Your
@@ -48,6 +51,9 @@ const shownRidesWide = 6;
  * the keyboard came to last. The column is there from the start, so
  * nothing moves when the rides come; with no rides the offer is a card
  * where they would be.
+ *
+ * Pulling down, or pressing the logo, loads the rides and Your next ride
+ * again (spec 16, 3.9).
  */
 export default function FindScreen() {
   const suspension = suspensionNow(useMe());
@@ -68,8 +74,17 @@ function FrontPage() {
     () => session.call(soonestTripsRoute, { query: { limit: shown + 1 } }),
     [session, shown],
   );
-  const { value } = useLoaded(load);
+  const { value, pull } = useLoaded(load);
   const rides = value?.ok === true ? value.data.results : [];
+  const mine = useRides("upcoming", me !== null);
+  const refresh = async () => {
+    const [soonest, next] = await Promise.all([
+      pull((loaded) => loaded.ok),
+      me === null ? Promise.resolve(null) : mine.pull(),
+    ]);
+    return soonest === false || next === false ? false : (soonest ?? next);
+  };
+  const refreshAsked = useFrontPageRefreshes();
   // The ride the pointer or the keyboard came to last, for the map.
   const [shownId, setShownId] = useState<string | null>(null);
   const route = useRouteSearch((query) => {
@@ -84,7 +99,8 @@ function FrontPage() {
     />
   );
   const title = (
-    <View style={styles.intro}>
+    <View testID="title-line" style={wide ? styles.introWide : styles.intro}>
+      <PuffinsInCar width={wide ? sizes.sceneCarSmall : sizes.sceneCar} />
       <Title>{t("home.title")}</Title>
     </View>
   );
@@ -115,13 +131,13 @@ function FrontPage() {
     // heading, the map starts with the offer card.
     const level = headed ? <View testID="map-level" style={styles.head} /> : null;
     return (
-      <Screen width="page">
+      <Screen width="page" refresh={refresh} refreshAsked={refreshAsked}>
         {title}
         {route.row(findRide)}
         <Columns
           side={
             <>
-              {me === null ? level : <NextRide beside otherwise={level} />}
+              {me === null ? level : <NextRide rides={mine} beside otherwise={level} />}
               <FindMap shown={onMap} />
             </>
           }
@@ -163,16 +179,23 @@ function FrontPage() {
     );
   }
   return (
-    <Screen>
+    <Screen refresh={refresh} refreshAsked={refreshAsked}>
       <View style={styles.top}>
         <View style={styles.brand}>
-          <Logo size={sizes.logoSmall} />
-          <Text style={[typography.heading, { color: palette.text }]}>{t("app.name")}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("nav.refreshHome")}
+            onPress={refreshFrontPage}
+            style={styles.logo}
+          >
+            <Logo size={sizes.logoSmall} />
+            <Text style={[typography.heading, { color: palette.text }]}>{t("app.name")}</Text>
+          </Pressable>
           <BetaLabel />
         </View>
         <LanguageSwitch onSwitch={saveLanguage} />
       </View>
-      {me === null ? null : <NextRide />}
+      {me === null ? null : <NextRide rides={mine} />}
       {title}
       {route.fields}
       {findRide}
@@ -195,14 +218,17 @@ function FrontPage() {
  * it has no ride to show, so what follows keeps its level.
  */
 function NextRide({
+  rides,
   beside = false,
   otherwise = null,
 }: {
+  /** My rides coming up, which the front page loads, to load them again too. */
+  readonly rides: ReturnType<typeof useRides>;
   readonly beside?: boolean;
   readonly otherwise?: ReactNode;
 }) {
   const { t } = useLanguage();
-  const { loaded, reload } = useRides("upcoming");
+  const { loaded, reload } = rides;
   if (loaded === undefined) return otherwise;
   if ("failure" in loaded) {
     return (
@@ -320,7 +346,23 @@ function LeavingSoon({
 const styles = StyleSheet.create({
   top: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   brand: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  logo: {
+    minHeight: minTouchTarget,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
   intro: { gap: spacing.md, paddingVertical: spacing.lg },
+  // On a wide page the car is on the title's line, taking the room over and
+  // under the title: the line is no higher than the title alone was, so the
+  // map beside the rides stays whole in a window 720 high (spec 18).
+  introWide: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: spacing.ms,
+  },
   next: { gap: spacing.sm, paddingTop: spacing.md },
   nextBeside: { gap: spacing.md },
   rides: { gap: spacing.md },

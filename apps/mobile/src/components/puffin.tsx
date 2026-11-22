@@ -10,9 +10,18 @@ const face =
   "M-13 3 C-13.4 -4.6 -7.6 -8.4 1 -8.2 C9 -8 15.4 -8.6 18.4 -9 L18.4 11.4 C15 17.6 8 19.4 0.5 19 C-7.6 18.4 -12.8 11.6 -13 3 Z";
 const beak = "M18.2 -11.9 C26.2 -11.9 34.7 -6.9 38.7 2.2 C32.7 6.6 25.7 9.6 18.2 10.2 Z";
 
-/** How a puffin looks: in its colours, or grey with no colour, for a seat someone else took. */
+/**
+ * How a puffin looks: in its colours, or grey with no colour, for a seat
+ * someone else took. `black` is basalt unless given: a puffin drawn straight
+ * on the night screen takes `puffin.nightBlack` (spec 15, section 4.2).
+ */
 export type PuffinLook =
-  | { readonly kind: "colour"; readonly hat?: string; readonly scarf?: string }
+  | {
+      readonly kind: "colour";
+      readonly hat?: string;
+      readonly scarf?: string;
+      readonly black?: string;
+    }
   | { readonly kind: "grey"; readonly black: string; readonly face: string };
 
 /**
@@ -47,7 +56,7 @@ export function Puffin({
   }
   return (
     <G testID={testID} transform={transform}>
-      <Path d={head} fill={people.face} />
+      <Path d={head} fill={look.black ?? people.face} />
       <Path d={face} fill={puffin.white} />
       {/* The eye, with its red ring and the grey marks above and below. */}
       <Path d="M5.4 -6.4 L11.4 -6.4 L8.6 -10.4 Z" fill={puffin.eyeMark} />

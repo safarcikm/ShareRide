@@ -69,8 +69,15 @@ describe("the puffin (spec 15, sections 4.2 and 4.9)", () => {
   it.each([
     ["the logo", people.face],
     ["the dark icon", carDrawing.dark.body],
+    ["a scene on the night screen", puffin.nightBlack],
   ])("shows its face against its black in %s", (_, black) => {
     expect(contrastRatio(puffin.white, black)).toBeGreaterThanOrEqual(3);
+  });
+
+  it("lifts its black on the night screen, so its shape stands off it (section 5.3)", () => {
+    expect(contrastRatio(puffin.nightBlack, colors.dark.background)).toBeGreaterThan(
+      contrastRatio(people.face, colors.dark.background),
+    );
   });
 });
 

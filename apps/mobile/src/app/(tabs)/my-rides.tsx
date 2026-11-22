@@ -9,6 +9,7 @@ import { PageColumn } from "@/components/columns";
 import { Grid } from "@/components/grid";
 import { Notice } from "@/components/notice";
 import { Screen, useWideScreen } from "@/components/screen";
+import { PuffinByPin } from "@/components/puffin-scenes";
 import { Body, Heading, Title } from "@/components/text";
 import { offerRide } from "@/drive/offer-ride";
 import { useLanguage } from "@/i18n/language";
@@ -17,14 +18,14 @@ import { RideItem } from "@/my-rides/ride-row";
 import { needsYou, rideKey, type Ride, type When } from "@/my-rides/rides";
 import { useRides } from "@/my-rides/use-rides";
 import { SignInFirst } from "@/navigation/sign-in-first";
-import { spacing } from "@/theme/tokens";
+import { sizes, spacing } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
  * My rides, a place of the menu (spec 16, 3.3): my bookings and the trips I
  * drive in one list, coming up or past. Coming up puts what needs me first.
- * Which list shows lives in the address, so Back returns to it. Signed
- * out, it asks to sign in.
+ * Which list shows lives in the address, so Back returns to it. Pulling
+ * down loads it again (3.9). Signed out, it asks to sign in.
  *
  * On a wide screen (spec 18, 3.10) it is a page: the title and the choice
  * start at the left, and the rides are a grid in the same order. What
@@ -43,11 +44,11 @@ function MyRides() {
   const palette = usePalette();
   const params = useLocalSearchParams<{ when?: string }>();
   const when: When = params.when === "past" ? "past" : "upcoming";
-  const { loaded, reload } = useRides(when);
+  const { loaded, reload, pull } = useRides(when);
   const wide = useWideScreen();
 
   return (
-    <Screen width="page">
+    <Screen width="page" refresh={pull}>
       <Title align={wide ? "start" : "center"}>{t("nav.myRides")}</Title>
       <View
         accessibilityRole="radiogroup"
@@ -103,6 +104,7 @@ function ComingUp({ rides, wide }: { readonly rides: readonly Ride[]; readonly w
   if (rides.length === 0) {
     const nothing = (
       <View style={styles.nothing}>
+        <PuffinByPin height={sizes.scenePuffin} align={wide ? "start" : "center"} />
         <Body align={wide ? "start" : "center"}>{t("myRides.nothing")}</Body>
         <Button
           label={t("welcome.findRide")}

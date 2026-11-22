@@ -71,8 +71,20 @@ describe("My profile (spec 16, 3.4)", () => {
       expect(screen.getByRole("button", { name: row })).toBeVisible();
     }
     expect(
-      screen.getByText("Phone number, language and signing out are in Settings."),
+      screen.getByText("Phone number, language and signing out on all devices are in Settings."),
     ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeVisible();
+  });
+
+  it("signs out of this device from Profile and returns to Find", async () => {
+    const app = await openProfile();
+    await fireEvent.press(screen.getByRole("button", { name: "Sign out" }));
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(app.client.calls.findLast((call) => call.path === "/v1/auth/sign-out")?.input).toEqual({
+      body: { all: false },
+      accessToken: "sr_at_access-1",
+    });
+    expect(app.store.value).toBeNull();
   });
 
   it("says the licence is not confirmed yet, and opens the licence screen", async () => {
@@ -246,7 +258,10 @@ describe("My profile on a laptop (spec 18, 3.12)", () => {
       expect(main.getByRole("button", { name: row })).toBeVisible();
     }
     expect(main.getAllByTestId("card")).toHaveLength(2);
-    expect(main.getByText("Phone number, language and signing out are in Settings.")).toBeVisible();
+    expect(
+      main.getByText("Phone number, language and signing out on all devices are in Settings."),
+    ).toBeVisible();
+    expect(main.getByRole("button", { name: "Sign out" })).toBeVisible();
     // Each once.
     expect(screen.getAllByRole("button", { name: "Edit profile" })).toHaveLength(1);
     expect(screen.getAllByRole("button", { name: "My cars" })).toHaveLength(1);
@@ -545,6 +560,27 @@ describe("Settings", () => {
     // A legal document starts each line at the left, for reading.
     expect(screen.getByText("Your phone number.")).not.toHaveStyle({ textAlign: "center" });
     expect(screen.getByText("phone number")).toHaveStyle({ fontFamily: "Nunito_700Bold" });
+  });
+
+  it("shows the lists of a legal document as bullet points", async () => {
+    const app = await openSettings();
+    app.client.answer("/v1/legal/{type}/current", () =>
+      ok(
+        200,
+        legalDocument(
+          "privacy",
+          2,
+          "## Your rights\n\nYou can:\n\n- **Download your data** in the app.\n- Delete your account.",
+        ),
+      ),
+    );
+    await fireEvent.press(screen.getByRole("button", { name: "Privacy Policy" }));
+    expect(await screen.findByRole("header", { name: "Your rights" })).toBeVisible();
+    expect(screen.getByText("You can:")).toBeVisible();
+    expect(screen.getByText("• Download your data in the app.")).toBeVisible();
+    expect(screen.getByText("Download your data")).toHaveStyle({ fontFamily: "Nunito_700Bold" });
+    expect(screen.getByText("• Delete your account.")).toBeVisible();
+    expect(screen.queryByText(/^- /)).toBeNull();
   });
 });
 

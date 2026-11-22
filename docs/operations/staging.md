@@ -264,7 +264,8 @@ To turn it off, delete `ADMIN_PASSWORD` in the same place. Then check the
 **Passkeys** page for passkeys you did not save, and the audit log
 (`operator.`) for sign-ins with method `password` and passkeys added or
 removed after them: a password sign-in can change passkeys for 5 minutes.
-The API refuses to start with `ADMIN_PASSWORD` on production.
+Production takes it too ([ADR 0044](../decisions/0044-console-password-on-production.md));
+its runbook has the steps.
 
 ### Lost every passkey
 
@@ -283,9 +284,11 @@ saving passkeys again with a new link.
 
 Every merge to `main` deploys by itself: when the commit's CI checks pass
 (`autoDeployTrigger: checksPass`), Render builds the same Dockerfile, runs
-`node packages/db/src/migrate-cli.ts --seed-drafts` (migrations, then the
-draft legal documents, the sample meeting points with their distances, and
-the sample trips, replaced with fresh dates on each deploy)
+`node packages/db/src/migrate-cli.ts --seed-drafts` (migrations, the legal
+documents published from the repository
+([ADR 0043](../decisions/0043-legal-documents-published-from-the-repository.md)),
+then the draft legal documents, the sample meeting points with their
+distances, and the sample trips, replaced with fresh dates on each deploy)
 and starts the new version. Traffic moves to it only
 once `/v1/health/ready` answers 200, so a version that cannot reach the
 database never takes over. If the migration or the health check fails, the

@@ -336,6 +336,13 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
     expect(screen.queryByRole("button", { name: "Sign in" })).toBeNull();
   });
 
+  it("draws two puffins in a little car over the title, which screen readers skip (spec 15, 5.3)", async () => {
+    await openFrontPage();
+    await screen.findByRole("header", { name: "Where are you going?" });
+    expect(screen.getByTestId("puffins-in-car", { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.queryByTestId("puffins-in-car")).toBeNull();
+  });
+
   it("ends with Offer a ride as a secondary button, and the meeting points", async () => {
     await openFrontPage();
     expect(
@@ -620,6 +627,16 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     // One search, not a second one under it.
     expect(screen.getAllByRole("button", { name: "Find a ride" })).toHaveLength(1);
     expect(screen.queryByRole("radio", { name: "Choose a day" })).toBeNull();
+  });
+
+  it("draws the puffins' car on the title's line on a wide page, so the page under it stays put (spec 15, 5.3)", async () => {
+    await openFrontPage();
+    await screen.findByRole("header", { name: "Where are you going?" });
+    const line = screen.getByTestId("title-line");
+    const car = within(line).getByTestId("puffins-in-car", { includeHiddenElements: true });
+    expect(within(car).getByTestId("puffin-driver", { includeHiddenElements: true })).toBeTruthy();
+    // Beside the title, not over it: the map beside the rides stays whole.
+    expect(line).toHaveStyle({ flexDirection: "row" });
   });
 
   it("shows From, To and the date as fields a shade off the card, tinted under the pointer", async () => {

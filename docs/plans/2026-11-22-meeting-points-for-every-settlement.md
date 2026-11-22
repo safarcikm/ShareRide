@@ -97,5 +97,7 @@ and its test; `packages/i18n/src/messages/en.ts`, `is.ts`.
 
 On staging and later production: the console's Meeting points page,
 Import, the file `packages/db/src/places/settlement-meeting-points.csv`.
-Then for each draft: open it in maps, move it if needed, check its texts,
-amenities and season, set the day confirmed, and activate it.
+Then for each draft: open it in maps, move it if needed, and check its
+texts, amenities and season. Then, on the list filtered to drafts, tick
+the ones checked and "Confirm and activate N points" (added after this
+plan, spec 21 decision 5), which confirms each today.
