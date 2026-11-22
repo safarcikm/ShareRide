@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { activationChecklist, readyToActivate, type ActivationPoint } from "./activation.ts";
+import {
+  activationChecklist,
+  missingForActivation,
+  readyToActivate,
+  type ActivationPoint,
+} from "./activation.ts";
 
 /** A made-up draft with everything R2.3 asks for. */
 const ready: ActivationPoint = {
@@ -41,10 +46,23 @@ describe("activationChecklist (R2.3)", () => {
     expect(missing({ ...ready, whereToStandIs: " " })).toEqual(["whereToStand"]);
   });
 
-  it("needs a photo with descriptions in both languages", () => {
+  it("counts a photo with descriptions in both languages", () => {
     expect(missing(ready, [])).toEqual(["photos"]);
     expect(missing(ready, [{ ...photo, descriptionEn: "" }])).toEqual(["photos"]);
     expect(missing(ready, [{ ...photo, descriptionEn: "" }, photo])).toEqual([]);
+  });
+
+  it("recommends the photo and requires every other item (ADR 0034)", () => {
+    const list = activationChecklist(ready, [], { connected: true });
+    expect(list.filter((check) => !check.required).map((check) => check.item)).toEqual(["photos"]);
+    expect(list.find((check) => check.item === "photos")?.done).toBe(false);
+    expect(readyToActivate(list)).toBe(true);
+  });
+
+  it("is not ready without a photo when a required item is missing too", () => {
+    const list = activationChecklist({ ...ready, lastCheckedOn: null }, [], { connected: true });
+    expect(readyToActivate(list)).toBe(false);
+    expect(missingForActivation(list)).toEqual(["confirmed"]);
   });
 
   it("needs the amenities and the season reviewed, and the date the operator confirmed it", () => {

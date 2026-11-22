@@ -15,6 +15,7 @@ import {
   icelandDate,
   matchesConsoleFilters,
   metresMoved,
+  missingForActivation,
   monthInIceland,
   nextPointStatus,
   ok,
@@ -105,7 +106,8 @@ export interface MeetingPointAdminService {
   /** The point's activation checklist (R2.3), or undefined for no such point. */
   activationChecklist(id: string): Promise<AdminActivationChecklist | undefined>;
   /**
-   * Activates a draft whose checklist passes (spec 2, 3.6.3), computing its
+   * Activates a draft whose checklist's required items are done (spec 2,
+   * 3.6.3; the photo is recommended, ADR 0034), computing its
    * legs with every point in service in the same transaction.
    */
   activate(
@@ -514,9 +516,7 @@ export function createMeetingPointAdminService(dependencies: {
         const { row } = found;
         const status = nextPointStatus(row.status as MeetingPointStatus, "activate", 0);
         if (!status.ok) return err({ code: "status_change_not_allowed" });
-        const missing = (await checklistOf(tx, row))
-          .filter((check) => !check.done)
-          .map((check) => check.item);
+        const missing = missingForActivation(await checklistOf(tx, row));
         if (missing.length > 0) return err({ code: "activation_not_ready", missing });
 
         const [saved] = await tx

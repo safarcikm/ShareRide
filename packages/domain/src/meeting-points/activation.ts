@@ -1,5 +1,7 @@
 // Activating a meeting point in the operator console (spec 2, 3.6.3): only
-// when every item of the activation checklist is done (rule R2.3).
+// when every required item of the activation checklist is done (rule R2.3).
+// The photo is recommended, not required (ADR 0034, spec 19): the
+// checklist still shows it, so the operator sees what is missing.
 // Activation computes the point's legs (3.7) in the same step, so the
 // checklist asks that it can have them: a road within 1 km that reaches a
 // point in service.
@@ -10,7 +12,7 @@ export const activationItems = [
   "details",
   /** "Where to stand" in Icelandic and English. */
   "whereToStand",
-  /** At least one photo with its descriptions in both languages. */
+  /** At least one photo with its descriptions in both languages (recommended). */
   "photos",
   /** The amenities reviewed. */
   "amenities",
@@ -25,6 +27,13 @@ export const activationItems = [
   "legs",
 ] as const;
 export type ActivationItem = (typeof activationItems)[number];
+
+/** The items the checklist shows but activation does not wait for (ADR 0034). */
+export const recommendedActivationItems: readonly ActivationItem[] = ["photos"];
+
+/** Activation waits for this item. */
+export const activationItemRequired = (item: ActivationItem): boolean =>
+  !recommendedActivationItems.includes(item);
 
 /** What the checklist reads of a draft. Its spot is always set. */
 export interface ActivationPoint {
@@ -47,6 +56,8 @@ export interface ActivationPhoto {
 export interface ActivationCheck {
   readonly item: ActivationItem;
   readonly done: boolean;
+  /** Activation waits for it; false for a recommended item (the photo). */
+  readonly required: boolean;
 }
 
 const written = (text: string | null) => text !== null && text.trim() !== "";
@@ -66,10 +77,19 @@ export function activationChecklist(
     confirmed: point.lastCheckedOn !== null,
     legs: legs.connected,
   };
-  return activationItems.map((item) => ({ item, done: done[item] }));
+  return activationItems.map((item) => ({
+    item,
+    done: done[item],
+    required: activationItemRequired(item),
+  }));
 }
 
-/** Every item is done. */
+/** The required items that are not done: what stops activation. */
+export function missingForActivation(checklist: readonly ActivationCheck[]): ActivationItem[] {
+  return checklist.filter((check) => check.required && !check.done).map((check) => check.item);
+}
+
+/** Every required item is done. */
 export function readyToActivate(checklist: readonly ActivationCheck[]): boolean {
-  return checklist.every((check) => check.done);
+  return missingForActivation(checklist).length === 0;
 }

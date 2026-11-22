@@ -4,7 +4,7 @@ import {
   type AdminActivationChecklist,
   type AdminMeetingPoint,
 } from "@shareride/contracts";
-import { activationItems, type ActivationItem } from "@shareride/domain";
+import type { ActivationItem } from "@shareride/domain";
 import type { MessageKey } from "@shareride/i18n";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useConsole } from "../../console.tsx";
@@ -22,9 +22,18 @@ const itemKeys: Record<ActivationItem, MessageKey> = {
 
 type Checklist = AdminActivationChecklist | "loading" | "failed";
 
+/** What the tag beside an item says, and how it looks. */
+function tagOf(check: { readonly done: boolean; readonly required: boolean }) {
+  if (check.done) return { text: "admin.activation.done", look: "tag" } as const;
+  if (check.required) return { text: "admin.activation.toDo", look: "tag tag-warning" } as const;
+  return { text: "admin.activation.recommended", look: "tag tag-quiet" } as const;
+}
+
 /**
  * A draft's activation checklist (R2.3) and its Activate button (spec 2,
- * 3.6.3). The API checks what is saved, so the list is loaded again when
+ * 3.6.3). The photo is recommended, not required (ADR 0034): its item says
+ * so while it is not done, and is not counted in what is still to do. The
+ * API checks what is saved, so the list is loaded again when
  * the point or one of its photos is saved (`version`). Activate always
  * asks the API, which checks again, as the list shown can be older: if
  * something is still to do, the list shows what the API found and says
@@ -100,11 +109,15 @@ export function ActivationChecklist({
     if (code === "activation_not_ready") {
       // What the API found, unless a load started since, after a photo was
       // saved meanwhile, has a newer list.
-      if (latest.current === loadsBefore) {
-        const missing = new Set((details ?? []).map((detail) => detail.path));
+      // The API names the required items only, so a recommended item keeps
+      // what the list shown says of it.
+      if (latest.current === loadsBefore && typeof checklist === "object") {
+        const missing = new Set<string>((details ?? []).map((detail) => detail.path));
         latest.current++;
         setChecklist({
-          items: activationItems.map((item) => ({ item, done: !missing.has(item) })),
+          items: checklist.items.map((check) =>
+            check.required ? { ...check, done: !missing.has(check.item) } : check,
+          ),
           ready: false,
         });
       }
@@ -147,7 +160,7 @@ export function ActivationChecklist({
     );
   }
 
-  const toDo = checklist.items.filter((check) => !check.done).length;
+  const toDo = checklist.items.filter((check) => check.required && !check.done).length;
 
   return (
     <div className="stack">
@@ -158,14 +171,15 @@ export function ActivationChecklist({
         <p className="hint type-small">{t("admin.activation.fromSaved")}</p>
       </div>
       <ul className="checklist" aria-labelledby={titleId}>
-        {checklist.items.map((check) => (
-          <li key={check.item} className="checklist-item type-body">
-            <span>{t(itemKeys[check.item])}</span>{" "}
-            <span className={check.done ? "tag type-small" : "tag tag-warning type-small"}>
-              {t(check.done ? "admin.activation.done" : "admin.activation.toDo")}
-            </span>
-          </li>
-        ))}
+        {checklist.items.map((check) => {
+          const tag = tagOf(check);
+          return (
+            <li key={check.item} className="checklist-item type-body">
+              <span>{t(itemKeys[check.item])}</span>{" "}
+              <span className={`${tag.look} type-small`}>{t(tag.text)}</span>
+            </li>
+          );
+        })}
       </ul>
       {tried && toDo > 0 ? (
         <p ref={notReady} className="problem type-body" role="alert" tabIndex={-1}>

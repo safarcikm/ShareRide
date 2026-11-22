@@ -119,7 +119,9 @@ describe("GET /v1/places/search (spec 2, 3.4)", () => {
       "place:Þorlákshöfn",
       "point:N1 Þorlákshöfn",
     ]);
-    expect(await search("egilsstadir")).toEqual([]);
+    // Every settlement is a place (spec 19), but not the ferry islands.
+    expect(await search("egilsstadir")).toEqual(["place:Egilsstaðir"]);
+    expect(await search("vestmannaeyjar")).toEqual([]);
   });
 
   it("puts exact and prefix matches before aliases and close matches", async () => {

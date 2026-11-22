@@ -1313,6 +1313,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   settings terms (tester, invite code, setting, settings version, switch,
   corridor, weekly figures, announcement), and a browser journey through
   the operator's side of the beta in the console.
+- A meeting point for every settlement (spec 19, ADR 0034, Accepted): a
+  point can be activated before it has a photo, which the console's
+  checklist now shows as recommended. Every settlement of Statistics
+  Iceland with people in 2026, less the ferry islands (110), is a town or
+  village in place search, seeded in every environment by the migration
+  command. `packages/db/src/places/settlement-meeting-points.csv` holds 104
+  meeting points from OpenStreetMap, one in or near each settlement, for
+  the operator to import in the console as drafts.
 
 ### Fixed
 

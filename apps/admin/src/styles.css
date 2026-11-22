@@ -369,7 +369,8 @@ code {
 }
 
 .status-draft,
-.status-retired {
+.status-retired,
+.tag-quiet {
   background: var(--color-border);
 }
 

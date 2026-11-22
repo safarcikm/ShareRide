@@ -3,7 +3,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { DatabaseConnection } from "../index.ts";
 import { corridors, legs, meetingPoints, places } from "../schema/index.ts";
 import { freshTestDatabase } from "../testing.ts";
-import { samplePlaces, samplePoints } from "./meeting-points.ts";
+import { allPlaces } from "../places/places.ts";
+import { samplePoints } from "./meeting-points.ts";
 import {
   sampleCorridors,
   sampleId,
@@ -40,7 +41,7 @@ describe("seedSampleMeetingPoints", () => {
 
   it("adds the places, with the capital area covering its six municipalities", async () => {
     const rows = await connection.db.select().from(places);
-    expect(rows).toHaveLength(samplePlaces.length);
+    expect(rows).toHaveLength(allPlaces.length);
     const capital = rows.find((row) => row.id === sampleId("place:capital-area"));
     expect(capital?.municipalities).toHaveLength(6);
     expect(rows.find((row) => row.nameIs === "Akureyri")?.matchRadiusM).toBe(10_000);

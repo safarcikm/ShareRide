@@ -119,14 +119,17 @@ meeting point routes (`registerMeetingPointsAdminRoutes`), with the work in
   with that stop not removed and still ahead).
 - `GET /admin/v1/meeting-points/{id}/activation` gives a point's
   activation checklist (R2.3, the domain's `activationChecklist`): each
-  item and whether it is done, from what is saved, and `ready`. The last
+  item, whether it is done, from what is saved, and whether it is
+  `required`, and `ready`, which counts the required items only. The
+  photo is recommended, not required (spec 19, ADR 0034). The last
   item, `legs`, asks for a road within 1 km that reaches a point in
   service, or none in service yet (the leg service's `connects`, one
   search), as activating computes the legs. `POST
 /admin/v1/meeting-points/{id}/activate`, with the `updatedAt` the
   console loaded, makes a draft active with its review date, and refuses
-  one whose checklist is not done with `activation_not_ready` and each
-  item in `details` (`issue: "not_done"`). The console always asks, as
+  one whose required items are not all done with `activation_not_ready`
+  and each of those in `details` (`issue: "not_done"`, the domain's
+  `missingForActivation`). The console always asks, as
   the list it shows can be older than what is saved. In one transaction,
   it takes
   the legs lock, then the point's row, checks the checklist again,
@@ -207,7 +210,8 @@ saved or the photos panel finds a photo changed, by it or elsewhere (its
 `onChange`), as the API checks what is saved. Activate always asks the
 API: if something is still to do, the list shows what the API found
 (unless a newer list is on its way) and says how many items are left,
-with the focus on it. Pausing opens a short form
+with the focus on it. A recommended item not done (the photo) says
+"Recommended" instead of "To do" and is not counted. Pausing opens a short form
 (the reason in both languages, an optional end date) checked with
 `validatePause` before it is sent; retiring asks first and says whether the
 point retires at once or after its last trip. Bringing a point back needs
@@ -355,6 +359,26 @@ name_is,name_en,aliases,latitude,longitude,type,region,municipality,amenities,se
 N1 Borgarnesi,N1 Borgarnes,Hyrnan,64.5383,-21.9206,fuel-station,west,Borgarbyggð,toilets|shop,,
 Hof,,"Menningarhúsið Hof",65.6839,-18.0878,other,northeast,Akureyrarbær,,5,9
 ```
+
+#### The settlement file
+
+`packages/db/src/places/settlement-meeting-points.csv` (spec 19) holds a
+point in or near every settlement, 104 rows, for the operator to import
+on each server, staging and production alike:
+
+1. In the console, Meeting points, "Import from a file": choose the file
+   and check it. On staging the rows named like a sample point (BSÍ,
+   Kringlan, Keflavíkurflugvöllur and the other hubs, Staðarskáli) show
+   as duplicates and are skipped. "Add N drafts".
+2. For each draft: open its spot in maps and move it if needed, check
+   where to stand, the amenities and the season, set the day confirmed,
+   and activate it. Grindavík needs a check that the town is open.
+
+`settlement-meeting-points.test.ts` reads the file with the console's own
+reader and checks that every point joins a road that reaches BSÍ and
+back, and that every place of place search reaches a point. To change a
+point, change its row: a file already imported adds nothing again, as
+its names are duplicates, so a changed point is edited in its form.
 
 ### Problem reports
 
