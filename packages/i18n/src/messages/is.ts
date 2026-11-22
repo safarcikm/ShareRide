@@ -67,6 +67,7 @@ export const is = {
     "{provider} staðfesti netfangið {email}. Við sendum þér kóða með SMS einu sinni, svo fólkið sem þú ferðast með nái í þig. Næst dugar {provider}.",
   "auth.provider.phoneHelpHidden":
     "{provider} staðfesti að þetta sért þú. Við sendum þér kóða með SMS einu sinni, svo fólkið sem þú ferðast með nái í þig. Næst dugar {provider}.",
+  "auth.provider.another": "Skrá inn á annan hátt",
   "auth.provider.linked":
     "{provider} er nú tengt aðganginum þínum. Næst getur þú haldið áfram með {provider}.",
   "auth.provider.replaced": "{provider}-aðgangurinn þinn á ShareRide er nú {email}.",
@@ -75,8 +76,11 @@ export const is = {
     "Innskráning með {provider} tókst ekki. Reyndu aftur eða notaðu símanúmerið þitt.",
   "auth.provider.expired": "Þetta tók of langan tíma. Haltu aftur áfram með {provider}.",
   "auth.provider.inUse": "Þessi {provider}-aðgangur er notaður af öðrum ShareRide-aðgangi.",
+  "auth.provider.inUseRetry":
+    "Þessi {provider}-aðgangur er notaður af öðrum ShareRide-aðgangi. Reyndu aftur til að halda áfram með símanúmerinu einu.",
   "auth.provider.returning": "Skrái þig inn…",
-  "auth.provider.closeWindow": "Þú getur lokað þessum glugga og farið aftur í ShareRide.",
+  "auth.provider.closeTitle": "Þú getur lokað þessum glugga",
+  "auth.provider.closeWindow": "Haltu svo áfram í ShareRide-glugganum.",
   "auth.provider.dismiss": "Loka skilaboðunum",
   "beta.badge": "Beta",
   "beta.badgeFeedback": "Beta. Senda ábendingu",

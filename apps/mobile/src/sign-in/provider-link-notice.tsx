@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSession } from "@/auth/session";
 import { IconButton } from "@/components/icon-button";
 import { Notice } from "@/components/notice";
+import { TakesFocus } from "@/components/takes-focus";
 import { useLanguage } from "@/i18n/language";
 import { edges, maxContentWidth, radii, spacing } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -34,8 +35,10 @@ export function providerLinkText(t: Translate, link: ProviderLink): string | nul
  * After the phone step linked a Google or Apple account to an account that
  * had the number (spec 19, 3.3): says so over whichever screen opens next,
  * since signing in closes the sign-in screens, until the person closes it.
+ * It takes focus as it appears, so a screen reader reads it. On wide
+ * screens it sits under the top bar, which pads the top itself.
  */
-export function ProviderLinkNotice() {
+export function ProviderLinkNotice({ belowTopBar }: { readonly belowTopBar: boolean }) {
   const { t } = useLanguage();
   const session = useSession();
   const palette = usePalette();
@@ -45,20 +48,27 @@ export function ProviderLinkNotice() {
   const text = link === null ? null : providerLinkText(t, link);
   if (text === null) return null;
   return (
-    <View style={[styles.layer, { top: insets.top + spacing.sm }]}>
-      <View
-        style={[styles.card, { backgroundColor: palette.surface, borderBottomColor: palette.edge }]}
-      >
-        <View style={styles.message}>
-          <Notice message={text} kind="info" />
-        </View>
-        <IconButton
-          icon={X}
-          label={t("auth.provider.dismiss")}
-          onPress={() => {
-            session.dismissProviderLink();
-          }}
-        />
+    <View style={[styles.layer, { top: (belowTopBar ? 0 : insets.top) + spacing.sm }]}>
+      <View style={styles.width}>
+        <TakesFocus>
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: palette.surface, borderBottomColor: palette.edge },
+            ]}
+          >
+            <View style={styles.message}>
+              <Notice message={text} kind="info" />
+            </View>
+            <IconButton
+              icon={X}
+              label={t("auth.provider.dismiss")}
+              onPress={() => {
+                session.dismissProviderLink();
+              }}
+            />
+          </View>
+        </TakesFocus>
       </View>
     </View>
   );
@@ -73,9 +83,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     pointerEvents: "box-none",
   },
+  width: { width: "100%", maxWidth: maxContentWidth },
   card: {
-    width: "100%",
-    maxWidth: maxContentWidth,
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,

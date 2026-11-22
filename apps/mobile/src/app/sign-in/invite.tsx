@@ -76,7 +76,7 @@ export default function InviteCodeScreen() {
         const provider = providerNames[waiting.provider];
         flow.setPending(null);
         if (result.error.code === "provider_in_use") {
-          setMessage(t("auth.provider.inUse", { provider }));
+          setMessage(t("auth.provider.inUseRetry", { provider }));
           return;
         }
         flow.setRightCode(null);

@@ -6,8 +6,9 @@ import {
   digestStringAsync,
   getRandomBytes,
 } from "expo-crypto";
-import { openAuthSessionAsync } from "expo-web-browser";
+import { dismissAuthSession, openAuthSessionAsync } from "expo-web-browser";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Platform } from "react-native";
 import { apiBaseUrl } from "@/auth/api";
 import { providerReturnUrl } from "./return-address";
 
@@ -110,21 +111,33 @@ export function openProviderWindow(options: {
  * The window for the sign-in buttons and for adding one in Settings. The
  * secret for the next try is made in advance, so a tap opens the window at
  * once; each try gets a new one. `ready` is false for the moment it takes.
+ * If no secret can be made, a tap says sign-in didn't work. Leaving the
+ * screen while the pop-up is open closes it, so a later tap opens a new
+ * one rather than finding the old one.
  */
 export function useProviderWindow(): {
   readonly ready: boolean;
   readonly open: (provider: SignInProvider) => Promise<WindowOutcome>;
 } {
-  const next = useRef<Attempt | null>(null);
+  const next = useRef<Attempt | "unavailable" | null>(null);
   const [ready, setReady] = useState(false);
   const mounted = useRef(true);
+  const windowOpen = useRef(false);
 
   const prepare = useCallback(() => {
-    void makeAttempt().then((attempt) => {
-      if (!mounted.current) return;
-      next.current = attempt;
-      setReady(true);
-    });
+    makeAttempt().then(
+      (attempt) => {
+        if (!mounted.current) return;
+        next.current = attempt;
+        setReady(true);
+      },
+      () => {
+        // Such as no secure random numbers on a page that is not https.
+        if (!mounted.current) return;
+        next.current = "unavailable";
+        setReady(true);
+      },
+    );
   }, []);
 
   useEffect(() => {
@@ -132,6 +145,7 @@ export function useProviderWindow(): {
     prepare();
     return () => {
       mounted.current = false;
+      if (windowOpen.current && Platform.OS === "web") dismissAuthSession();
     };
   }, [prepare]);
 
@@ -140,15 +154,20 @@ export function useProviderWindow(): {
       const attempt = next.current;
       // A second tap while a window is open, or before the first secret.
       if (attempt === null) return Promise.resolve({ kind: "cancelled" });
+      if (attempt === "unavailable") return Promise.resolve({ kind: "failed" });
       next.current = null;
       setReady(false);
+      windowOpen.current = true;
       const outcome = openProviderWindow({
         provider,
         attempt,
         apiBaseUrl: apiBaseUrl(),
         returnUrl: providerReturnUrl(),
       });
-      return outcome.finally(prepare);
+      return outcome.finally(() => {
+        windowOpen.current = false;
+        prepare();
+      });
     },
     [prepare],
   );

@@ -82,4 +82,33 @@ test.describe("Continue with Google", () => {
     await expect(page.getByRole("heading", { name: "Sign in or create an account" })).toBeVisible();
     await expect(page.getByTestId("notice")).toHaveCount(0);
   });
+
+  test("leaving sign-in closes its pop-up", async ({ page }) => {
+    await page.goto("/profile");
+    await page.getByRole("button", { name: english.signIn, exact: true }).click();
+    const popup = page.waitForEvent("popup");
+    await page.getByRole("button", { name: "Continue with Google" }).click();
+    const window = await popup;
+    const closed = window.waitForEvent("close");
+    await page.goBack();
+    await closed;
+  });
+
+  test("a pop-up nothing waits for says it can be closed, and keeps no ticket", async ({
+    page,
+  }, testInfo) => {
+    const person = personOf(testInfo.project.name);
+    await page.goto("/sign-in");
+    const popup = page.waitForEvent("popup");
+    await page.getByRole("button", { name: "Continue with Google" }).click();
+    const window = await popup;
+    // The page underneath reloads, so nothing there waits for the answer.
+    await page.reload();
+    await window.getByRole("link", { name: person.label }).click();
+    await expect(window.getByRole("heading", { name: "You can close this window" })).toBeVisible();
+    expect(window.url()).toMatch(/\/sign-in\/return$/);
+    expect(
+      await window.evaluate(() => `${location.href} ${JSON.stringify(history.state)}`),
+    ).not.toContain("sr_");
+  });
 });

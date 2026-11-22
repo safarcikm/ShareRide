@@ -29,10 +29,12 @@ jest.mock("expo-crypto", () => {
   const { createHash: hash } = jest.requireActual<typeof NodeCrypto>("node:crypto");
   return {
     ...jest.requireActual<object>("expo-crypto"),
-    digestStringAsync: (_algorithm: string, data: string) =>
+    digestStringAsync: jest.fn((_algorithm: string, data: string) =>
       Promise.resolve(hash("sha256").update(data).digest("base64")),
+    ),
   };
 });
+const digest = jest.requireMock<{ digestStringAsync: jest.Mock }>("expo-crypto").digestStringAsync;
 
 const ticket = `sr_pt_${"t".repeat(43)}`;
 const pendingSignIn = `sr_ps_${"p".repeat(43)}`;
@@ -80,6 +82,9 @@ async function addPhoneNumber(code = "123456") {
   await fireEvent.press(screen.getByRole("button", { name: "Send code" }));
   await fireEvent.changeText(await screen.findByLabelText("6-digit code"), code);
 }
+
+const inUseRetry =
+  "This Google account is used by another ShareRide account. Try again to go on with your phone number alone.";
 
 const verifyBodies = (app: { client: FakeClient }) =>
   app.client.calls
@@ -314,15 +319,96 @@ describe("Continue with Google or Apple (spec 19)", () => {
     await screen.findByRole("header", { name: "Add your phone number" });
     await addPhoneNumber();
 
-    expect(
-      await screen.findByText("This Google account is used by another ShareRide account."),
-    ).toBeVisible();
+    expect(await screen.findByText(inUseRetry)).toBeVisible();
     await fireEvent.changeText(screen.getByLabelText("6-digit code"), "123456");
     expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
     expect(verifyBodies(app).map((body) => body["pendingSignIn"])).toEqual([
       pendingSignIn,
       undefined,
     ]);
+  });
+
+  it("goes back to the choice from the phone step", async () => {
+    await openSignIn((client) => {
+      client.answer("/v1/auth/oauth/finish", () =>
+        ok(200, phoneNeeded("google", "anna@example.com")),
+      );
+    });
+    windowReturnsTo(back(`ticket=${ticket}`));
+    await continueWith("Google");
+    await screen.findByRole("header", { name: "Add your phone number" });
+    await fireEvent.press(screen.getByRole("button", { name: "Sign in another way" }));
+    expect(
+      await screen.findByRole("header", { name: "Sign in or create an account" }),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Continue with Apple" })).toBeVisible();
+  });
+
+  it("sends no code from the keyboard while the window is open", async () => {
+    const app = await openSignIn();
+    openAuthSessionAsync.mockImplementationOnce(() => new Promise(() => undefined));
+    await continueWith("Google");
+    await fireEvent.changeText(screen.getByLabelText("Mobile number"), "690 0000");
+    await fireEvent(screen.getByLabelText("Mobile number"), "submitEditing");
+    expect(app.client.calls.filter((call) => call.path === "/v1/auth/phone/start")).toEqual([]);
+  });
+
+  it("says sign-in didn't work when no secret can be made", async () => {
+    digest.mockRejectedValueOnce(new Error("No secure random numbers here"));
+    await openSignIn();
+    const opened = openAuthSessionAsync.mock.calls.length;
+    await continueWith("Google");
+    expect(
+      await screen.findByText("Google sign-in didn't work. Try again, or use your phone number."),
+    ).toBeVisible();
+    expect(openAuthSessionAsync.mock.calls).toHaveLength(opened);
+  });
+
+  describe("at the invite step", () => {
+    /** Asks for an invite code first; then answers with the Google account as `refusal`. */
+    async function reachInviteStep(refusal: string) {
+      const app = await openSignIn((client) => {
+        client.answer("/v1/auth/oauth/finish", () =>
+          ok(200, phoneNeeded("google", "anna@example.com")),
+        );
+        client.answer("/v1/auth/phone/verify", (input) => {
+          const body = input["body"] as { pendingSignIn?: string; inviteCode?: string };
+          if (body.inviteCode === undefined) return failure(403, "invite_required");
+          if (body.pendingSignIn !== undefined) {
+            return failure(refusal === "provider_in_use" ? 409 : 400, refusal);
+          }
+          return ok(200, { ...tokens(1), user: testMe, isNewUser: true });
+        });
+      });
+      windowReturnsTo(back(`ticket=${ticket}`));
+      await continueWith("Google");
+      await screen.findByRole("header", { name: "Add your phone number" });
+      await addPhoneNumber();
+      expect(await screen.findByRole("header", { name: "Enter your invite code" })).toBeVisible();
+      await fireEvent.changeText(screen.getByLabelText("Invite code"), "abcd-2345");
+      await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+      return app;
+    }
+
+    it("drops the Google account another account has, then makes the account", async () => {
+      const app = await reachInviteStep("provider_in_use");
+      expect(await screen.findByText(inUseRetry)).toBeVisible();
+      await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+      expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
+      expect(verifyBodies(app).map((body) => body["pendingSignIn"])).toEqual([
+        pendingSignIn,
+        pendingSignIn,
+        undefined,
+      ]);
+    });
+
+    it("goes back to step 1 when it came too late for the Google account", async () => {
+      await reachInviteStep("provider_expired");
+      expect(
+        await screen.findByText("That took too long. Continue with Google again."),
+      ).toBeVisible();
+      expect(screen.getByRole("header", { name: "Sign in or create an account" })).toBeVisible();
+    });
   });
 
   it("closes the return page on a phone, back to signing in", async () => {

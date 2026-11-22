@@ -97,7 +97,7 @@ export default function CodeScreen() {
     }
     if (code === "provider_in_use") {
       flow.setPending(null);
-      setMessage({ kind: "error", text: t("auth.provider.inUse", { provider }) });
+      setMessage({ kind: "error", text: t("auth.provider.inUseRetry", { provider }) });
       return true;
     }
     return false;

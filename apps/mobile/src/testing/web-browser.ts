@@ -10,6 +10,7 @@ let answer: (startUrl: string) => AuthSessionResult = () => ({ type: "cancel" })
 export const openAuthSessionAsync = jest.fn(
   (startUrl: string, _returnUrl?: string, _options?: unknown) => Promise.resolve(answer(startUrl)),
 );
+export const dismissAuthSession = jest.fn();
 export const maybeCompleteAuthSession = jest.fn((_options?: unknown) => ({
   type: "failed",
   message: "Not in a pop-up",

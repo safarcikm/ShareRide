@@ -423,7 +423,11 @@ where Google sends the browser back. Martin's steps:
 8. Check, once the app's buttons are out (plan PR 3): in a laptop's browser
    and a phone's browser, continue with Google as someone new (the phone
    step comes once), then sign out and continue with Google again (no
-   code). Settings, Sign-in methods lists Google.
+   code). Settings, Sign-in methods lists Google. In the laptop's browser,
+   Google's window must close by itself and the sign-in go on; if it stays
+   open with "You can close this window", or the ShareRide window shows
+   the sign-in screen as before, tell Claude: Google's pages cut the
+   window off from ShareRide.
 
 To turn Google off, set `GOOGLE_SIGN_IN` to `off`: the button goes, and
 links stay for when it is back. A new secret (Google Cloud, the client,
@@ -481,7 +485,9 @@ store's `is.shareride.app` stays free for the company's account (spec 19,
    **Hide my email**, then sign out and continue with Apple again. Then
    have ShareRide email that account (for example, offer a test trip as the
    Apple member and ask for a seat on it as another member) and check the
-   email arrives in the inbox behind the hidden address. If it does not, Apple refused the sender: in
+   email arrives in the inbox behind the hidden address. As with Google, in
+   the laptop's browser Apple's window must close by itself and the
+   sign-in go on; if not, tell Claude. If it does not, Apple refused the sender: in
    Mailjet, set up the domain's DKIM and a custom return path on
    `skinnar.is`, and tell Claude. Apple asks about the name and the email
    only the first time: to be someone new again, stop using Apple with

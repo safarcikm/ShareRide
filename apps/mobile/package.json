@@ -5,7 +5,7 @@
   "description": "The ShareRide app for iOS, Android and the web (Expo, ADR 0003)",
   "license": "UNLICENSED",
   "type": "module",
-  "main": "expo-router/entry",
+  "main": "./index.ts",
   "scripts": {
     "dev": "expo start",
     "start": "expo start",

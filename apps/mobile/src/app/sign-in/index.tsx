@@ -131,6 +131,16 @@ export default function PhoneNumberScreen() {
               ? t("auth.provider.phoneHelpHidden", { provider: pendingName })
               : t("auth.provider.phoneHelp", { provider: pendingName, email: pending.email })}
           </Body>
+          {/* The wrong account, or another way after all: back to the choice. */}
+          <Button
+            variant="text"
+            label={t("auth.provider.another")}
+            disabled={busy}
+            onPress={() => {
+              setError(null);
+              flow.setPending(null);
+            }}
+          />
         </>
       )}
       <PausedBanner part="sms" />
@@ -156,7 +166,10 @@ export default function PhoneNumberScreen() {
           autoComplete="tel"
           textContentType="telephoneNumber"
           maxLength={20}
-          onSubmitEditing={() => void send()}
+          onSubmitEditing={() => {
+            // Held, as the button is, while Google's or Apple's window is open.
+            if (providerBusy === null) void send();
+          }}
         />
         <Notice message={error ?? flow.notice} />
         <Button

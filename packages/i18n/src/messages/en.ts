@@ -66,6 +66,7 @@ export const en = {
     "You signed in with {provider} as {email}. We text you a code once, so the people you ride with can reach you. Next time {provider} is enough.",
   "auth.provider.phoneHelpHidden":
     "{provider} confirmed it's you. We text you a code once, so the people you ride with can reach you. Next time {provider} is enough.",
+  "auth.provider.another": "Sign in another way",
   "auth.provider.linked":
     "{provider} is now linked to your account. Next time you can continue with {provider}.",
   "auth.provider.replaced": "Your {provider} account on ShareRide is now {email}.",
@@ -73,8 +74,11 @@ export const en = {
   "auth.provider.failed": "{provider} sign-in didn't work. Try again, or use your phone number.",
   "auth.provider.expired": "That took too long. Continue with {provider} again.",
   "auth.provider.inUse": "This {provider} account is used by another ShareRide account.",
+  "auth.provider.inUseRetry":
+    "This {provider} account is used by another ShareRide account. Try again to go on with your phone number alone.",
   "auth.provider.returning": "Signing you in…",
-  "auth.provider.closeWindow": "You can close this window and go back to ShareRide.",
+  "auth.provider.closeTitle": "You can close this window",
+  "auth.provider.closeWindow": "Then go on in the ShareRide window.",
   "auth.provider.dismiss": "Close the message",
   "beta.badge": "Beta",
   "beta.badgeFeedback": "Beta. Send feedback",

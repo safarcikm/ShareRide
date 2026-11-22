@@ -250,8 +250,13 @@ production.
   keeps `signInNews` from verify, before it says it is signed in: a new
   account's `suggestedFirstName`, which step 3's profile form takes as its
   first value, and the `providerLink` that `ProviderLinkNotice` tells.
-- `apps/mobile/src/app/sign-in/return.tsx`: the pop-up's page on the web;
-  on phones it only says "Signing you in…" if Expo Router opens it.
+- `apps/mobile/index.ts`, the app's entry: on the web, in the pop-up, it
+  hands the answer to the opening window and takes the ticket out of the
+  address (`sign-in/popup-hand-off.web.ts`) before the app loads; the app
+  loads there only if the pop-up stays open two seconds later.
+- `apps/mobile/src/app/sign-in/return.tsx`: on the web, a pop-up left open
+  says it can be closed; on phones it only says "Signing you in…" if Expo
+  Router opens it, which `+native-intent.tsx` does without the fragment.
 - `apps/mobile/src/app/settings/sign-in-methods.tsx`: the list, add and
   remove, behind a row in Settings, Your account.
 
@@ -326,8 +331,9 @@ sign-in here, Settings in 3b.
 - [x] Texts of spec 19, section 8, for signing in, in `en.ts` and `is.ts`
 - [x] Safety from PR 2's review: `pendingSignIn` only ever from a `finish`
       answer, never from an address or link; the web app takes the
-      `#ticket` out of the pop-up's address as it loads, before error
-      reporting starts; a new verifier for each try; error reports already
+      `#ticket` out of the pop-up's address before the router, error
+      reporting or the session load (the review found the router put it
+      back when this ran in the root layout); a new verifier for each try; error reports already
       leave out `sr_` tokens and addresses' fragments; `#error=expired`
       shows "That took too long"
 - [x] Screen tests with `renderApp` against the fake API: each outcome of
