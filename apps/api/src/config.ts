@@ -294,17 +294,17 @@ const environmentSchema = z
           });
         }
       }
-      if (
-        env.NODE_ENV === "production" &&
-        env.API_ORIGIN !== undefined &&
-        !env.API_ORIGIN.startsWith("https://")
-      ) {
-        context.addIssue({
-          code: "custom",
-          path: ["API_ORIGIN"],
-          message: "must be https in production, where Google sends the person back to it",
-        });
-      }
+    }
+    if (
+      env.NODE_ENV === "production" &&
+      env.API_ORIGIN !== undefined &&
+      !env.API_ORIGIN.startsWith("https://")
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["API_ORIGIN"],
+        message: "must be https in production, where Google and Apple send the person back to it",
+      });
     }
     if (env.EMAIL_PROVIDER === "mailjet") {
       for (const key of [

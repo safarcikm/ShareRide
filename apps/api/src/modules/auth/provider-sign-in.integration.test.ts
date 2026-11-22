@@ -803,10 +803,17 @@ describe("Apple (spec 19; plan, PR 2b)", () => {
     });
   });
 
-  it("takes a user field that is not JSON as no name", async () => {
+  it.each([
+    ["not JSON", "{not json"],
+    ["JSON of another shape", '{"name":{"firstName":7}}'],
+    [
+      "longer than 2 000 characters",
+      JSON.stringify({ name: { firstName: "Sól" }, pad: "x".repeat(2000) }),
+    ],
+  ])("takes a user field that is %s as no name", async (_case, user) => {
     await freeUpApple(sol);
     const verifier = newVerifier();
-    const location = await postBack({ ...(await appleFormFor(verifier, sol)), user: "{not json" });
+    const location = await postBack({ ...(await appleFormFor(verifier, sol)), user });
     const ticket = /#ticket=(sr_pt_[A-Za-z0-9_-]{43})$/.exec(location)?.[1] ?? "";
     expect(await finish(ticket, verifier)).toMatchObject({
       ok: true,

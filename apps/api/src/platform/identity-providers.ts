@@ -197,6 +197,8 @@ export const appleEndpoints = {
 /** How long Apple's client secret is made for, and how early a new one is made. */
 const appleSecretSeconds = 3600;
 const appleSecretRenewSeconds = 300;
+/** Issued a little in the past, so a server clock slightly ahead of Apple's does no harm. */
+const appleSecretBackdateSeconds = 30;
 
 /**
  * Sign in with Apple: a Services ID, and a key of the team that signs the
@@ -224,7 +226,7 @@ export function createAppleProvider(options: {
   /** The client secret: a JWT signed with the team's key, kept until 5 minutes before it ends. */
   async function clientSecret(now: Date): Promise<string> {
     if (secret !== undefined && now.getTime() < secret.renewAt) return secret.value;
-    const issuedAt = Math.floor(now.getTime() / 1000);
+    const issuedAt = Math.floor(now.getTime() / 1000) - appleSecretBackdateSeconds;
     const value = await new SignJWT({})
       .setProtectedHeader({ alg: "ES256", kid: options.keyId })
       .setIssuer(options.teamId)

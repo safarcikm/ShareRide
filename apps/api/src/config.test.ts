@@ -140,6 +140,11 @@ describe("loadConfig", () => {
         "APPLE_PRIVATE_KEY",
       );
     }
+    // The error names the setting, never the key.
+    expect(() => loadConfig({ ...valid, ...apple, APPLE_PRIVATE_KEY: rsa })).not.toThrow("BEGIN");
+    expect(() =>
+      loadConfig({ ...valid, ...apple, API_ORIGIN: "http://staging.skinnar.is" }),
+    ).toThrow("API_ORIGIN");
     expect(() => loadConfig({ ...valid, ...apple, APPLE_TEAM_ID: "team" })).toThrow(
       "APPLE_TEAM_ID",
     );

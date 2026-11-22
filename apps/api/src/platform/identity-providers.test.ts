@@ -436,8 +436,8 @@ describe("Apple (plan 4.3)", () => {
       subject: servicesId,
       currentDate: now,
     });
-    expect(payload.iat).toBe(nowSeconds);
-    expect(payload.exp).toBe(nowSeconds + 3600);
+    expect(payload.iat).toBe(nowSeconds - 30);
+    expect(payload.exp).toBe(nowSeconds - 30 + 3600);
   });
 
   it("finishes without the form's name, which Apple sends only the first time", async () => {
@@ -460,9 +460,9 @@ describe("Apple (plan 4.3)", () => {
     };
     const first = await secretAt(0);
     expect(await secretAt(54)).toBe(first);
-    const second = await secretAt(56);
+    const second = await secretAt(55);
     expect(second).not.toBe(first);
-    expect(decodeJwt(second ?? "").iat).toBe(nowSeconds + 56 * 60);
+    expect(decodeJwt(second ?? "").iat).toBe(nowSeconds + 55 * 60 - 30);
   });
 
   it.each([

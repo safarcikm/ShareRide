@@ -448,9 +448,11 @@ store's `is.shareride.app` stays free for the company's account (spec 19,
    `ShareRide preview`, bundle ID **Explicit** `is.shareride.app.preview`,
    and under capabilities tick **Sign in with Apple**. **Continue**,
    **Register**.
-3. **Identifiers**, **+**, **Services IDs**: description
-   `ShareRide staging web`, identifier `is.shareride.preview.web`.
-   **Continue**, **Register**. Open it again, tick **Sign in with Apple**,
+3. **Identifiers**, **+**, **Services IDs**: description `ShareRide`
+   (Apple may show it to people when they sign in), identifier
+   `is.shareride.preview.web`. **Continue**, **Register**. Open it again:
+   the list shows App IDs, so switch the menu at its top right to
+   **Services IDs** first. Tick **Sign in with Apple**,
    **Configure**: primary App ID `is.shareride.app.preview`, domain
    `staging.skinnar.is`, and one return URL, exactly
    `https://staging.skinnar.is/v1/auth/oauth/apple/callback`. **Next**,
@@ -464,8 +466,8 @@ store's `is.shareride.app` stays free for the company's account (spec 19,
 5. Apple's private email relay: in Certificates, Identifiers and Profiles,
    **Services**, **Sign in with Apple for Email Communication**,
    **Configure**, **+**, and add `hello@skinnar.is`. Apple checks the
-   domain's SPF, which the Mailjet setup gives it. Until this is done,
-   ShareRide's emails do not reach people who hid their email from us.
+   sender's SPF and DKIM. Until this is done, ShareRide's emails do not
+   reach people who hid their email from us, and nothing says so.
 6. Open `shareride-staging-api`, **Environment**, and add `APPLE_SIGN_IN`
    set to `apple`, `APPLE_SERVICES_ID` set to `is.shareride.preview.web`,
    `APPLE_TEAM_ID`, `APPLE_KEY_ID`, and `APPLE_PRIVATE_KEY` (as a secret):
@@ -475,8 +477,17 @@ store's `is.shareride.app` stays free for the company's account (spec 19,
    version stays. Keep the `.p8` file somewhere safe and nowhere else:
    never in chat, email or the repository.
 7. Check, once the app's buttons are out (plan PR 3): in a laptop's browser
-   and a phone's browser, continue with Apple as someone new, once with
-   "Hide my email", then sign out and continue with Apple again.
+   and a phone's browser, continue with Apple as someone new and choose
+   **Hide my email**, then sign out and continue with Apple again. Then
+   have ShareRide email that account (for example, offer a test trip as the
+   Apple member and ask for a seat on it as another member) and check the
+   email arrives in the inbox behind the hidden address. If it does not, Apple refused the sender: in
+   Mailjet, set up the domain's DKIM and a custom return path on
+   `skinnar.is`, and tell Claude. Apple asks about the name and the email
+   only the first time: to be someone new again, stop using Apple with
+   ShareRide at [account.apple.com](https://account.apple.com) (**Sign-In
+   and Security**, **Sign in with Apple**) and remove Apple in ShareRide's
+   Settings, or use another Apple Account.
 
 To turn Apple off, set `APPLE_SIGN_IN` to `off`. If the key leaks, revoke
 it under **Keys** and make a new one (step 4 and the two key values of
