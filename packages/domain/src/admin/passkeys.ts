@@ -26,6 +26,17 @@ export const operatorSignInLimitsPerAddress: readonly RateLimitRule[] = [
   { limit: 60, windowSeconds: 3600 },
 ];
 
+/**
+ * How often a recovery code may be sent to an operator's number (spec 22,
+ * R22.6), counted apart from the app's sign-in codes of that number.
+ */
+export const recoveryCodeSendLimits = {
+  perNumber: [
+    { limit: 1, windowSeconds: 30 },
+    { limit: 5, windowSeconds: 3600 },
+  ],
+} as const satisfies { readonly perNumber: readonly RateLimitRule[] };
+
 export interface SetupLinkState {
   readonly expiresAt: Date;
   readonly usedAt: Date | null;

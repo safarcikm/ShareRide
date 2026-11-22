@@ -1508,6 +1508,10 @@ export const en = {
   "email.unreadMessagesBody": "Open the chat in PuffinRide to read them.",
   /** The link in every email, to the screen it is about. */
   "email.open": "Open in PuffinRide",
+  "email.consoleRecovered.subject": "PuffinRide: someone got into the console with a text code",
+  "email.consoleRecovered.body":
+    "A text code to your phone was just used to get into the PuffinRide console and save a new passkey. If this wasn't you, take away the operator role on the server now: operator remove.",
+  "email.consoleRecovered.open": "Open the console",
   "email.footer":
     "You get this email because you have a PuffinRide account. News about your bookings is always sent, because others rely on it.",
   /** The email with the link that verifies an address (spec 1, 3.5). */
@@ -1525,6 +1529,7 @@ export const en = {
     "This sign-in has expired or was already used. Close this window and try again.",
   "sms.signInCode": "{code} is your PuffinRide code. It expires in 10 minutes.",
   "sms.confirmCode": "{code} is your PuffinRide code to confirm. Never share it.",
+  "sms.consoleRecoveryCode": "{code} is your PuffinRide console code. Never share it.",
   "sms.bookingCancelled":
     "PuffinRide: the driver cancelled your booking for {date} at {time}. Full refund. Details in the app.",
   "sms.bookingCancelledUnpaid":
@@ -1538,6 +1543,8 @@ export const en = {
   "sms.departureMovedUnpaid":
     "PuffinRide: your trip on {date} now leaves at {time}. Details in the app.",
   "sms.reportFiledUrgent": "PuffinRide: a new safety report. Look at it in the console now.",
+  "sms.consoleRecovered":
+    "PuffinRide: a text code was just used to get into the console and save a new passkey. If this wasn't you, take away the operator role on the server now (operator remove).",
   "sms.meetingPointChanged":
     "PuffinRide: the meeting point for your trip on {date} has changed. Details in the app.",
   // Privacy (spec 11, section 8; plan 4.9).
@@ -1850,6 +1857,7 @@ export const en = {
   "export.value.kind.report_filed": "New report",
   "export.value.kind.report_filed_urgent": "New safety report",
   "export.value.kind.moderation_action": "Notice from PuffinRide",
+  "export.value.kind.console_recovered": "A text code was used to get into the console",
   "export.value.kind.suspension_ended": "Suspension ended",
   "export.value.kind.appeal_answered": "Answer to your appeal",
   "export.value.kind.report_closed": "Outcome of your report",

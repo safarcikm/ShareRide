@@ -92,6 +92,9 @@ export const notificationRules = {
   // "New report" or "New safety report", never who or what.
   report_filed: { push: true, email: "never", sms: false },
   report_filed_urgent: { push: true, email: "never", sms: true },
+  // To the operator whose recovery code was used (spec 22, R22.4): by SMS at
+  // any hour, and by email, which a SIM swap does not reach.
+  console_recovered: { push: false, email: "always", sms: true },
   // By email only: deleting signs the person out of every device (spec 11, 3.4.5).
   account_deletion_scheduled: { push: false, email: "always", sms: false },
   // The answer to "Ask about my data" goes by email, which asking needs (spec 11, 3.6).
@@ -138,12 +141,22 @@ export const operatorNoticeKinds = [
   "report_filed",
   "report_filed_urgent",
   "switch_still_off",
+  "console_recovered",
 ] as const;
 export type OperatorNoticeKind = (typeof operatorNoticeKinds)[number];
 
 export function isOperatorNotice(kind: NotificationKind): kind is OperatorNoticeKind {
   return (operatorNoticeKinds as readonly NotificationKind[]).includes(kind);
 }
+
+/**
+ * The kinds sent while the console's channel switches are off (spec 10,
+ * 3.3): the notice of a console recovery goes out whenever its code could
+ * (spec 22, R22.5).
+ */
+export const switchExemptKinds = [
+  "console_recovered",
+] as const satisfies readonly NotificationKind[];
 
 /**
  * What can happen, as the catalogue sees it: the domain events of spec 5, 6,
@@ -439,10 +452,13 @@ export function channelsFor(
     decisions.push(smsDecision(recipient, now, settings));
   }
   if (rule.sms && isOperatorNotice(kind)) {
+    // A recovery notice follows the operator's own action, so any hour.
+    const inWindow =
+      kind === "console_recovered" || alertChannels(true, now, safety).includes("sms");
     decisions.push(
       !recipient.hasVerifiedPhone
         ? skip("sms", "no_phone")
-        : alertChannels(true, now, safety).includes("sms")
+        : inWindow
           ? { channel: "sms", send: true }
           : skip("sms", "outside_sms_window"),
     );

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { checkCodeAttempt, codeRules, codeSendLimits, generateCode } from "./sign-in-code.ts";
+import {
+  checkCodeAttempt,
+  codePurposes,
+  codeRules,
+  codeSendLimits,
+  generateCode,
+} from "./sign-in-code.ts";
 
 const t0 = new Date("2026-11-13T12:00:00Z");
 const seconds = (n: number) => new Date(t0.getTime() + n * 1000);
@@ -76,5 +82,11 @@ describe("codeSendLimits (rule R1.3)", () => {
       { limit: 50, windowSeconds: 3600 },
       { limit: 100, windowSeconds: 24 * 3600 },
     ]);
+  });
+});
+
+describe("codePurposes", () => {
+  it("keep a console recovery code apart from sign-in and confirm codes (spec 22, R22.1)", () => {
+    expect(codePurposes).toEqual(["sign_in", "confirm", "console_recovery"]);
   });
 });

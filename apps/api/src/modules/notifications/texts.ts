@@ -261,8 +261,10 @@ function required<T>(value: T | null, what: string): T {
  */
 export function smsText(facts: NotificationFacts | OperatorNoticeFacts, locale: Locale): string {
   const t = createTranslator(locale);
-  // Never who or what: the operator reads it in the console (spec 9, R9.9).
-  if (isOperatorFacts(facts)) return t("sms.reportFiledUrgent");
+  if (isOperatorFacts(facts)) {
+    // Never who or what: the operator reads it in the console (spec 9, R9.9).
+    return t(facts.kind === "console_recovered" ? "sms.consoleRecovered" : "sms.reportFiledUrgent");
+  }
   const values = { date: formatDay(facts.boardsAt, locale), time: formatClock(facts.boardsAt) };
   switch (facts.kind) {
     case "booking_cancelled_by_driver":
@@ -335,6 +337,15 @@ function operatorText(facts: OperatorNoticeFacts, locale: Locale): NotificationT
       title: t("notify.switchStillOff"),
       body: t("notify.switchStillOffBody", { names }),
       path: "/",
+    };
+  }
+  if (facts.kind === "console_recovered") {
+    // By email, which a SIM swap does not reach; the link opens the console (spec 22).
+    return {
+      title: t("email.consoleRecovered.subject"),
+      body: t("email.consoleRecovered.body"),
+      path: "/admin",
+      open: t("email.consoleRecovered.open"),
     };
   }
   return facts.kind === "report_filed_urgent"

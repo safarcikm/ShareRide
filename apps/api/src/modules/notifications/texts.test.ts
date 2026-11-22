@@ -762,4 +762,18 @@ describe("notification texts", () => {
       "PuffinRide: ný öryggistilkynning. Skoðaðu hana strax í stjórnborðinu.",
     );
   });
+
+  it("tell an operator in their language that a recovery code was used (spec 22)", () => {
+    expect(
+      notificationText({ kind: "console_recovered" }, "is", defaultNotificationSettings),
+    ).toEqual({
+      title: "PuffinRide: einhver komst inn í stjórnborðið með SMS-kóða",
+      body: "SMS-kóði í símann þinn var notaður til að komast inn í stjórnborð PuffinRide og vista nýjan aðgangslykil. Ef þetta varst ekki þú skaltu taka hlutverkið af á þjóninum strax: operator remove.",
+      path: "/admin",
+      open: "Opna stjórnborðið",
+    });
+    expect(smsText({ kind: "console_recovered" }, "is")).toBe(
+      "PuffinRide: SMS-kóði var notaður til að komast inn í stjórnborðið og vista nýjan aðgangslykil. Ef þetta varst ekki þú skaltu taka hlutverkið af á þjóninum strax (operator remove).",
+    );
+  });
 });

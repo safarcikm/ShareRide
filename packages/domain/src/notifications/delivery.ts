@@ -47,6 +47,8 @@ export const outboxEventTypes = [
   "FeedbackReplied",
   "AnnouncementSent",
   "AnnouncementTested",
+  // An operator used a recovery code (spec 22, R22.4).
+  "ConsoleRecovered",
 ] as const;
 export type OutboxEventType = (typeof outboxEventTypes)[number];
 

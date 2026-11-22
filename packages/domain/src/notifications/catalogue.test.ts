@@ -488,4 +488,26 @@ describe("the operator's alert of a new report (spec 9, 3.4.1; R9.9)", () => {
       { channel: "sms", send: false, reason: "no_phone" },
     ]);
   });
+
+  it("tells of a console recovery by email and by SMS at any hour (spec 22, R22.4)", () => {
+    expect(isOperatorNotice("console_recovered")).toBe(true);
+    for (const time of ["03:00", "12:00", "23:30"]) {
+      expect(channels("console_recovered", at(time))).toEqual([
+        { channel: "email", send: true },
+        { channel: "sms", send: true },
+      ]);
+    }
+  });
+
+  it("sends a console recovery notice only to what is verified", () => {
+    expect(
+      channels("console_recovered", at("12:00"), {
+        hasVerifiedEmail: false,
+        hasVerifiedPhone: false,
+      }),
+    ).toEqual([
+      { channel: "email", send: false, reason: "no_email" },
+      { channel: "sms", send: false, reason: "no_phone" },
+    ]);
+  });
 });

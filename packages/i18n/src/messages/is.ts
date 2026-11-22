@@ -1534,6 +1534,10 @@ export const is = {
   "email.unreadMessages": "Þú átt ólesin skilaboð um ferðina: {date}",
   "email.unreadMessagesBody": "Opnaðu spjallið í PuffinRide til að lesa þau.",
   "email.open": "Opna í PuffinRide",
+  "email.consoleRecovered.subject": "PuffinRide: einhver komst inn í stjórnborðið með SMS-kóða",
+  "email.consoleRecovered.body":
+    "SMS-kóði í símann þinn var notaður til að komast inn í stjórnborð PuffinRide og vista nýjan aðgangslykil. Ef þetta varst ekki þú skaltu taka hlutverkið af á þjóninum strax: operator remove.",
+  "email.consoleRecovered.open": "Opna stjórnborðið",
   "email.footer":
     "Þú færð þennan póst því þú ert með aðgang að PuffinRide. Fréttir af bókunum þínum eru alltaf sendar, því aðrir treysta á þær.",
   "email.verifySubject": "Staðfestu netfangið þitt hjá PuffinRide",
@@ -1550,6 +1554,8 @@ export const is = {
     "Þessi innskráning er útrunnin eða var þegar notuð. Lokaðu glugganum og reyndu aftur.",
   "sms.signInCode": "{code} er PuffinRide-kóðinn þinn. Hann gildir í 10 mínútur.",
   "sms.confirmCode": "{code} er PuffinRide-kóðinn til að staðfesta. Ekki deila honum.",
+  "sms.consoleRecoveryCode":
+    "{code} er kóðinn þinn fyrir stjórnborð PuffinRide. Deildu honum aldrei.",
   "sms.bookingCancelled":
     "PuffinRide: Bílstjórinn aflýsti bókun þinni: {date} kl. {time}. Full endurgreiðsla. Nánar í appinu.",
   "sms.bookingCancelledUnpaid":
@@ -1562,6 +1568,8 @@ export const is = {
     "PuffinRide: Ný brottför: {date} kl. {time}. Haltu bókuninni eða afbókaðu með fullri endurgreiðslu í appinu.",
   "sms.departureMovedUnpaid": "PuffinRide: Ný brottför: {date} kl. {time}. Nánar í appinu.",
   "sms.reportFiledUrgent": "PuffinRide: ný öryggistilkynning. Skoðaðu hana strax í stjórnborðinu.",
+  "sms.consoleRecovered":
+    "PuffinRide: SMS-kóði var notaður til að komast inn í stjórnborðið og vista nýjan aðgangslykil. Ef þetta varst ekki þú skaltu taka hlutverkið af á þjóninum strax (operator remove).",
   "sms.meetingPointChanged":
     "PuffinRide: Mótsstaður ferðarinnar þinnar hefur breyst: {date}. Nánar í appinu.",
   // Privacy (spec 11, section 8; plan 4.9).
@@ -1873,6 +1881,7 @@ export const is = {
   "export.value.kind.report_filed": "Ný tilkynning",
   "export.value.kind.report_filed_urgent": "Ný öryggistilkynning",
   "export.value.kind.moderation_action": "Orðsending frá PuffinRide",
+  "export.value.kind.console_recovered": "SMS-kóði var notaður til að komast inn í stjórnborðið",
   "export.value.kind.suspension_ended": "Lokun lokið",
   "export.value.kind.appeal_answered": "Svar við andmælum",
   "export.value.kind.report_closed": "Niðurstaða tilkynningar",

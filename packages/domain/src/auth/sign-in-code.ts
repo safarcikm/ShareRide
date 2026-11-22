@@ -8,11 +8,12 @@ export const codeRules = {
 } as const;
 
 /**
- * What a code is for: signing in, or confirming a sensitive action of a
+ * What a code is for: signing in, confirming a sensitive action of a
  * signed-in person, such as downloading their data or deleting their
- * account (spec 11; security, re-verification). A code only does its own job.
+ * account (spec 11; security, re-verification), or letting an operator who
+ * lost their passkeys save a new one (spec 22). A code only does its own job.
  */
-export const codePurposes = ["sign_in", "confirm"] as const;
+export const codePurposes = ["sign_in", "confirm", "console_recovery"] as const;
 export type CodePurpose = (typeof codePurposes)[number];
 
 /**

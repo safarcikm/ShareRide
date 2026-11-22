@@ -14,7 +14,7 @@ type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 type Executor = Database | Transaction;
 
 export type OperatorSessionEndReason =
-  "signed_out" | "idle" | "expired" | "role_removed" | "suspended";
+  "signed_out" | "idle" | "expired" | "role_removed" | "suspended" | "recovered";
 
 export interface StartedOperatorSession {
   /** Goes to the browser in the session cookie only; never stored. */
