@@ -26,6 +26,7 @@ import { otherPerson } from "@/chat/texts";
 import { useUnread } from "@/chat/unread";
 import { useConversation } from "@/chat/use-conversation";
 import { useLanguage } from "@/i18n/language";
+import { BackToMenu } from "@/navigation/back-to-menu";
 import { firstNameOf } from "@/people/texts";
 import { suspensionNow } from "@/safety/suspended-account";
 import { halfMinWidth, spacing, typography } from "@/theme/tokens";
@@ -39,9 +40,17 @@ import { usePalette } from "@/theme/use-palette";
  *
  * On a wide screen it is the right pane of Messages, with my conversations
  * beside it (spec 18, 3.11), wherever it was opened from. Another row of
- * the list shows its conversation in the same place.
+ * the list shows its conversation in the same place. Signed out, as from
+ * an email's link, it goes back to the menu, which asks to sign in and
+ * opens it after (spec 20, 3.2).
  */
 export default function ConversationScreen() {
+  const me = useMe();
+  if (me === null) return <BackToMenu />;
+  return <Conversation />;
+}
+
+function Conversation() {
   const { t } = useLanguage();
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
   const wide = useWideScreen();
