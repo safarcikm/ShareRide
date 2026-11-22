@@ -2,7 +2,7 @@
 // spec 17): a trip never brings its driver more than a full car pays at the
 // caps, counting what its bookings have paid or will pay, whatever changed
 // after they booked. All amounts are whole krónur.
-import type { BookingStatus } from "../bookings/lifecycle.ts";
+import type { BookingStatus, PaymentMethod } from "../bookings/lifecycle.ts";
 import type { Money } from "../money.ts";
 import { highestPriceLevel, priceCap, segmentPrices, type PriceSettings } from "./prices.ts";
 
@@ -56,21 +56,29 @@ export interface TakingsBooking {
   readonly totalPrice: number;
   readonly refundAmount: number | null;
   readonly confirmedAt: Date | null;
+  readonly paymentMethod: PaymentMethod;
 }
+
+/** Paid in person, a booking that ends without a ride brings the driver nothing (rule M6). */
+const leftUnpaid = (booking: TakingsBooking) =>
+  booking.paymentMethod === "in_person" &&
+  (booking.status === "cancelled" || booking.status === "no_show");
 
 /**
  * Rule P3: everything the bookings pay the driver at the prices they were
  * made at, less refunds. Money kept after a no-show or a late cancellation
  * counts; a request withdrawn or a booking cancelled before it was paid
- * does not; the passenger service fee is never part of it.
+ * does not, nor a booking paid in person that is cancelled or a no-show;
+ * the passenger service fee is never part of it.
  */
 export function takingsOf(bookings: readonly TakingsBooking[]): Money {
   return isk(
     bookings
       .filter(
         (booking) =>
-          takingsStatuses.includes(booking.status) ||
-          (booking.status === "cancelled" && booking.confirmedAt !== null),
+          !leftUnpaid(booking) &&
+          (takingsStatuses.includes(booking.status) ||
+            (booking.status === "cancelled" && booking.confirmedAt !== null)),
       )
       .reduce((total, booking) => total + booking.totalPrice - (booking.refundAmount ?? 0), 0),
   );

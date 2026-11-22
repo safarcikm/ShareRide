@@ -2,6 +2,7 @@ import {
   bookingStatuses,
   cancelReasons,
   declineReasons,
+  paymentMethods,
   defaultBookingSettings,
   defaultTripSettings,
   noteMaxLength,
@@ -112,6 +113,12 @@ export const bookings = pgTable(
      * defaults, for a booking from before.
      */
     settingsVersion: integer().notNull().default(0),
+    /**
+     * How it is paid, fixed when it is made (rules M1 and M6, ADR 0038): in
+     * the app, or to the driver in person while the operator's
+     * `pay_in_person` switch is on. Older bookings were all paid in the app.
+     */
+    paymentMethod: text().notNull().default("in_app"),
     ...timestamps,
   },
   (table) => [
@@ -127,6 +134,7 @@ export const bookings = pgTable(
       "bookings_message_check",
       sql`char_length(${table.message}) <= ${sql.raw(String(defaultBookingSettings.messageMaxLength))}`,
     ),
+    check("bookings_payment_method_check", oneOf(table.paymentMethod, paymentMethods)),
     check("bookings_decline_reason_check", oneOf(table.declineReason, declineReasons)),
     check("bookings_cancel_reason_check", oneOf(table.cancelReason, cancelReasons)),
     check(

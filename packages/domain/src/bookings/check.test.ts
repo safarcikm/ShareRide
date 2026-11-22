@@ -6,6 +6,7 @@ import { holdsSeats, nextStatus, statusOnAcceptance, type BookingStatus } from "
 import { defaultBookingSettings } from "./settings.ts";
 
 const settings = defaultBookingSettings;
+const inPerson = { ...settings, paymentMethod: "in_person" as const };
 const kr = (amount: number) => ({ amount, currency: "ISK" as const });
 const at = (iso: string) => new Date(iso);
 // Saturday 14 November 2026, noon in Iceland (which keeps UTC).
@@ -60,6 +61,7 @@ describe("checking a booking (rule S4, R5.3, R5.6, R5.10)", () => {
         total: kr(2600),
         requestExpiresAt: at("2026-11-15T00:00:00Z"),
         paymentDueAt: null,
+        paymentMethod: "in_app",
       },
     });
   });
@@ -82,6 +84,7 @@ describe("checking a booking (rule S4, R5.3, R5.6, R5.10)", () => {
         total: kr(9200),
         requestExpiresAt: null,
         paymentDueAt: at("2026-11-14T12:30:00Z"),
+        paymentMethod: "in_app",
       },
     });
   });
@@ -95,6 +98,28 @@ describe("checking a booking (rule S4, R5.3, R5.6, R5.10)", () => {
     const result = checkBooking({ ...attempt, trip: free, shownTotal: kr(0) }, settings);
     expect(result.ok && result.value.status).toBe("confirmed");
     expect(result.ok && result.value.paymentDueAt).toBeNull();
+  });
+
+  it("confirms an instant booking paid to the driver in person at once, at its price (rule M6)", () => {
+    const instant = { ...northTrip, bookingMode: "instant" as const };
+    const result = checkBooking({ ...attempt, trip: instant }, inPerson);
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        status: "confirmed",
+        segmentPrices: [{ position: 1, price: 2600 }],
+        total: kr(2600),
+        requestExpiresAt: null,
+        paymentDueAt: null,
+        paymentMethod: "in_person",
+      },
+    });
+  });
+
+  it("still sends a request to a driver who approves, when paid in person (rule M6)", () => {
+    const result = checkBooking(attempt, inPerson);
+    expect(result.ok && result.value.status).toBe("requested");
+    expect(result.ok && result.value.paymentMethod).toBe("in_person");
   });
 
   it("refuses a trip that is not published or under way, or has passed the boarding stop", () => {
@@ -315,7 +340,7 @@ describe("seats over any sequence of bookings (rules S2 and S3)", () => {
                 const moved = nextStatus(booking.status, next.kind);
                 if (moved.ok) {
                   booking.status =
-                    next.kind === "accept" ? statusOnAcceptance(kr(price)) : moved.value;
+                    next.kind === "accept" ? statusOnAcceptance(kr(price), "in_app") : moved.value;
                 }
               }
             }

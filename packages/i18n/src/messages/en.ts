@@ -893,7 +893,7 @@ export const en = {
   "report.category.safety": "Safety: dangerous driving, threats or violence",
   "report.category.harassment": "Harassment or unwanted contact",
   "report.category.discrimination": "Discrimination",
-  "report.category.scam": "Scam, or payment outside the app",
+  "report.category.scam": "Scam, or asked to pay more than the app's price",
   "report.category.false": "False profile, car or licence",
   "report.category.offensive": "Offensive content",
   "report.category.notAsListed": "The trip wasn't as listed",
@@ -1015,6 +1015,13 @@ export const en = {
   "booking.findAnother": "Find another ride",
   "booking.total": "Total",
   "booking.freeRide": "This ride is free: there's nothing to pay.",
+  "booking.payInPerson":
+    "Card payments are coming soon. Pay the driver {total} in cash or by bank transfer when you get in.",
+  "booking.payInPersonShort":
+    "Card payments are coming soon: pay the driver in cash or by bank transfer when you get in.",
+  "booking.cancelInPerson": "Plans change? Cancel in the app: there's nothing to pay.",
+  "booking.paysYouInPerson":
+    "{name} pays you {total} in cash or by bank transfer when they get in.",
   "booking.reliabilityNote":
     "If you can't make it, cancel as early as you can. Late cancellations and no-shows show on your profile.",
   "booking.message": "Message to the driver (optional)",
@@ -1079,6 +1086,7 @@ export const en = {
   "booking.noRefund": "No refund: less than {time} before departure",
   "booking.nothingPaid": "Nothing to refund: you haven't paid yet.",
   "booking.nothingToRefund": "This ride is free, so there's nothing to refund.",
+  "booking.nothingToRefundInPerson": "Nothing to refund: you pay the driver in person.",
   "booking.countsOnReliability": "This cancellation shows on your profile",
   "booking.cancelTold":
     "{driver} is told, and {seats, plural, one {the seat is} other {the seats are}} freed for others.",
@@ -1086,6 +1094,7 @@ export const en = {
   "booking.cancelTitleDriver": "Cancel booking: {name}",
   "booking.driverRefund": "{name} gets a full refund of {amount}",
   "booking.driverNothingPaid": "{name} hasn't paid yet, so there's nothing to refund.",
+  "booking.driverNothingInPerson": "{name} pays you in person, so there's nothing to refund.",
   "booking.cancelToldPassenger":
     "{name} is told at once, and {seats, plural, one {the seat is} other {the seats are}} freed for others.",
   "booking.cancelNote": "Note to the passenger (optional)",
@@ -1109,6 +1118,7 @@ export const en = {
   "booking.cancelledDriverAbsent": "{name} didn't come, so ShareRide cancelled this booking.",
   "booking.cancelledLeftBehind": "{name} left without you, so ShareRide cancelled this booking.",
   "booking.noShow": "Marked as a no-show: no refund, and it shows on your profile.",
+  "booking.noShowInPerson": "Marked as a no-show. It shows on your profile.",
   "booking.refundOnItsWay": "Full refund of {amount}, back to the card you paid with.",
   "cancelReason.weather": "Weather",
   "cancelReason.roadClosed": "Road closed",
@@ -1212,6 +1222,8 @@ export const en = {
   "chat.title": "Messages",
   "chat.placeholder": "Write a message",
   "chat.safetyTip": "Pay only in the app. ShareRide never asks for card details in a chat.",
+  "chat.safetyTipInPerson":
+    "Pay the driver only the price in the app. ShareRide never asks for card details in a chat.",
   "chat.seen": "Seen",
   "chat.closed": "This chat is closed. You can still read it.",
   "chat.messageAll": "Message all passengers",
@@ -1281,6 +1293,7 @@ export const en = {
   "tripDay.markNoShowOf": "Mark as no-show: {name}",
   "tripDay.noShowConfirm":
     "Mark this passenger as a no-show? They get no refund, and it shows on their profile.",
+  "tripDay.noShowConfirmInPerson": "Mark this passenger as a no-show? It shows on their profile.",
   "tripDay.noShowTold":
     "{name} is told at once and can answer until {deadline}. If {name} says it's not right, ShareRide decides.",
   "tripDay.noShowNeedsImHere": "To mark a no-show here, press “I'm here” first.",
@@ -1307,9 +1320,12 @@ export const en = {
   "dispute.answerBy": "Answer by {deadline}.",
   "dispute.ifNoAnswerNoShow":
     "If you don't answer, it stands: no refund, and it shows on your profile.",
+  "dispute.ifNoAnswerNoShowInPerson":
+    "If you don't answer, it stands, and it shows on your profile.",
   "dispute.ifNoAnswerDriverAbsent":
     "If you don't answer, it stands: the booking is cancelled as if by you, and it shows on your profile.",
   "dispute.agreeNoShow": "The no-show stands: no refund, and it shows on your profile.",
+  "dispute.agreeNoShowInPerson": "The no-show stands, and it shows on your profile.",
   "dispute.agreeDriverAbsent":
     "The booking is cancelled as if by you: {name} gets a full refund, and it shows on your profile.",
   "dispute.agreeDriverAbsentFree":
@@ -1385,7 +1401,7 @@ export const en = {
   "moderation.rule.safety": "Safety",
   "moderation.rule.harassment": "Harassment",
   "moderation.rule.discrimination": "Discrimination",
-  "moderation.rule.scam": "Scams and payments outside the app",
+  "moderation.rule.scam": "Scams, and asking for more than the app's price",
   "moderation.rule.falseInfo": "False information",
   "moderation.rule.offensive": "Offensive content",
   "moderation.rule.notAsListed": "Trips as listed",
@@ -1683,6 +1699,7 @@ export const en = {
   "export.field.overruledAt": "ShareRide made it count",
   "export.field.passengers": "Passengers",
   "export.field.paymentDueAt": "Pay by",
+  "export.field.paidHow": "Paid",
   "export.field.person": "Person",
   "export.field.pets": "Pets",
   "export.field.phoneNumber": "Phone number",
@@ -1756,6 +1773,8 @@ export const en = {
   "export.value.status.declined": "Declined",
   "export.value.status.expired": "Expired",
   "export.value.status.no_show": "Didn't show up",
+  "export.value.paidHow.in_app": "In the app",
+  "export.value.paidHow.in_person": "To the driver in person",
   "export.value.status.pending": "Pending",
   "export.value.status.succeeded": "Paid",
   "export.value.status.failed": "Failed",
@@ -2241,6 +2260,9 @@ export const en = {
   "admin.settings.name.payment_window": "Time to pay",
   "admin.settings.help.payment_window":
     "How long a passenger has to pay after the driver accepts, never past the time booking closes. It applies to requests accepted from now on. Bookings already waiting for payment keep their deadline.",
+  "admin.settings.name.pay_in_person": "Pay the driver in person",
+  "admin.settings.help.pay_in_person":
+    "On: passengers pay the driver the price the app shows, in cash or by bank transfer, when they get in, and a booking is confirmed as soon as it is accepted. Nothing is paid or refunded in the app. It applies to bookings made from now on. Bookings already made keep the way of paying they were made with. Only until payments in the app work.",
   "admin.settings.name.free_cancellation_until": "Free cancellation until",
   "admin.settings.help.free_cancellation_until":
     "A passenger who cancels this long or more before their stop gets a full refund. It applies to bookings made from now on. Bookings already made keep the rule they were made under.",

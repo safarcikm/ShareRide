@@ -1,6 +1,12 @@
 // Suspension (spec 9, 3.6; rule R9.10): who is suspended, what they can no
 // longer do, and what a suspension cancels.
-import { holdsSeats, type BookingEvent, type BookingStatus } from "../bookings/lifecycle.ts";
+import {
+  holdsSeats,
+  paidInApp,
+  type BookingEvent,
+  type BookingStatus,
+  type PaymentMethod,
+} from "../bookings/lifecycle.ts";
 import type { Money } from "../money.ts";
 import { err, ok, type Result } from "../result.ts";
 import type { TripStatus } from "../trips/trip.ts";
@@ -99,6 +105,7 @@ export interface SuspendedPassengerBooking {
   /** When the person boards: a later stop of a trip under way is still ahead. */
   readonly boardsAt: Date;
   readonly total: Money;
+  readonly paymentMethod: PaymentMethod;
 }
 
 export interface SuspensionEffects {
@@ -112,9 +119,18 @@ export interface SuspensionEffects {
   }[];
 }
 
-/** What goes back when ShareRide cancels a booking: all that was paid (decision 3). */
-export function operatorBookingRefund(status: BookingStatus, total: Money): Money {
-  return status === "confirmed" ? total : { amount: 0, currency: total.currency };
+/**
+ * What goes back when ShareRide cancels a booking: all that was paid in the
+ * app (decision 3), so nothing for one paid in person (rule M6).
+ */
+export function operatorBookingRefund(
+  status: BookingStatus,
+  total: Money,
+  method: PaymentMethod,
+): Money {
+  return status === "confirmed"
+    ? paidInApp(total, method)
+    : { amount: 0, currency: total.currency };
 }
 
 const upcoming = (status: TripStatus, departsAt: Date, now: Date) =>
@@ -142,10 +158,10 @@ export function suspensionEffects(
     trips: trips.filter((trip) => upcoming(trip.status, trip.departsAt, now)).map(({ id }) => id),
     bookings: bookings
       .filter((booking) => notBoarded(booking, now))
-      .map(({ id, status, total }) => ({
+      .map(({ id, status, total, paymentMethod }) => ({
         id,
         event: status === "requested" ? "withdraw" : "cancel",
-        refund: operatorBookingRefund(status, total),
+        refund: operatorBookingRefund(status, total, paymentMethod),
       })),
   };
 }

@@ -1,0 +1,2 @@
+ALTER TABLE "bookings" ADD COLUMN "payment_method" text DEFAULT 'in_app' NOT NULL;--> statement-breakpoint
+ALTER TABLE "bookings" ADD CONSTRAINT "bookings_payment_method_check" CHECK ("bookings"."payment_method" in ('in_app', 'in_person'));

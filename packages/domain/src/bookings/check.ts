@@ -8,7 +8,7 @@ import { contactDetailsIn, type ContactKind } from "../trips/note.ts";
 import { freeSeats, partPrice, type SearchableTrip } from "../trips/search.ts";
 import { takesBookings, type BookingMode } from "../trips/trip.ts";
 import { paymentDeadline, requestDeadline } from "./deadlines.ts";
-import { statusOnAcceptance } from "./lifecycle.ts";
+import { statusOnAcceptance, type PaymentMethod } from "./lifecycle.ts";
 import type { BookingSettings } from "./settings.ts";
 
 /** A trip as booking sees it: search's view plus the driver's booking mode. */
@@ -69,6 +69,8 @@ export interface BookingPlan {
   readonly requestExpiresAt: Date | null;
   /** Set for an accepted booking that has something to pay (rule M1). */
   readonly paymentDueAt: Date | null;
+  /** How it is paid, from the settings it is made under, for good (rules M1 and M6). */
+  readonly paymentMethod: PaymentMethod;
 }
 
 const isk = (amount: number): Money => ({ amount, currency: "ISK" });
@@ -134,14 +136,16 @@ export function checkBooking(
       total,
       requestExpiresAt: requestDeadline(now, boardsAt, settings),
       paymentDueAt: null,
+      paymentMethod: settings.paymentMethod,
     });
   }
-  const status = statusOnAcceptance(total);
+  const status = statusOnAcceptance(total, settings.paymentMethod);
   return ok({
     status,
     segmentPrices,
     total,
     requestExpiresAt: null,
     paymentDueAt: status === "accepted" ? paymentDeadline(now, boardsAt, settings) : null,
+    paymentMethod: settings.paymentMethod,
   });
 }

@@ -78,6 +78,7 @@ function codeWords(t: Translate, locale: Locale): Readonly<Record<string, Say>> 
   const language: Say = (code) => (languageNames[locale] as Record<string, string>)[code];
   return {
     status: keyed("export.value.status"),
+    paidHow: keyed("export.value.paidHow"),
     kind: keyed("export.value.kind"),
     channel: keyed("export.value.channel"),
     platform: keyed("export.value.platform"),

@@ -6,9 +6,20 @@ const departsAt = new Date("2026-11-20T08:00:00Z");
 const before = (minutes: number) => new Date(departsAt.getTime() - minutes * 60_000);
 const trip = { status: "published", departsAt } as const;
 
-const gunna: BookingToCancelWithTrip = { id: "gunna", status: "confirmed", total: kr(2900) };
-const jon: BookingToCancelWithTrip = { id: "jon", status: "accepted", total: kr(2900) };
-const sigga: BookingToCancelWithTrip = { id: "sigga", status: "requested", total: kr(1500) };
+const inApp = { paymentMethod: "in_app" } as const;
+const gunna: BookingToCancelWithTrip = {
+  id: "gunna",
+  status: "confirmed",
+  total: kr(2900),
+  ...inApp,
+};
+const jon: BookingToCancelWithTrip = { id: "jon", status: "accepted", total: kr(2900), ...inApp };
+const sigga: BookingToCancelWithTrip = {
+  id: "sigga",
+  status: "requested",
+  total: kr(1500),
+  ...inApp,
+};
 
 describe("cancelling a trip (spec 6, 3.3; R6.6, R6.7)", () => {
   it("refunds every paid booking in full, cancels the unpaid ones and declines the requests", () => {
@@ -21,6 +32,17 @@ describe("cancelling a trip (spec 6, 3.3; R6.6, R6.7)", () => {
           { id: "jon", outcome: "cancelled", refund: kr(0) },
           { id: "sigga", outcome: "declined", refund: kr(0) },
         ],
+      },
+    });
+  });
+
+  it("refunds nothing for a booking paid to the driver in person (rule M6)", () => {
+    const anna = { ...gunna, id: "anna", paymentMethod: "in_person" } as const;
+    expect(tripCancellation(trip, [anna], "car_problem", before(60))).toEqual({
+      ok: true,
+      value: {
+        countsOnReliability: true,
+        bookings: [{ id: "anna", outcome: "cancelled", refund: kr(0) }],
       },
     });
   });

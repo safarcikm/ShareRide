@@ -97,6 +97,13 @@ describe("the booking and cancellation values (ADR 0032)", () => {
     expect(searchSettingsFrom(now).bookingCutoffMinutes).toBe(30);
   });
 
+  it("pay new bookings in the app, or to the driver in person while the switch is on (rule M6)", () => {
+    expect(bookingSettingsFrom(defaultSettingValues).paymentMethod).toBe("in_app");
+    expect(bookingSettingsFrom({ ...defaultSettingValues, pay_in_person: 1 }).paymentMethod).toBe(
+      "in_person",
+    );
+  });
+
   it("give a booking the cancellation values of the version it was made under", () => {
     expect(
       cancellationSettingsFrom({

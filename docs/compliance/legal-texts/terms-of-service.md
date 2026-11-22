@@ -1,6 +1,7 @@
 # ShareRide Terms of Service (draft)
 
-> **Draft for the lawyer, not in force.** Version 1, written 2026-11-16.
+> **Draft for the lawyer, not in force.** Version 1, written 2026-11-16;
+> paying the driver in person (section 6.9) added 2026-11-22.
 > Placeholders are in square brackets. See the [README](README.md) for the
 > questions this draft raises.
 
@@ -74,11 +75,12 @@ When you publish a trip, you confirm and promise that:
    car's number plate by the planned departure.
 6. You set one price level for the trip within the limits the app allows,
    and you never ask passengers for more money, or for payment outside the
-   app.
+   app, except as section 6.9 allows.
 7. You are responsible for any tax on what you receive. [Short guidance to
    follow once Skatturinn's position is confirmed.]
 8. For a trip with a price, you set up payouts with our payment provider
-   before publishing (section 6).
+   before publishing (section 6). While passengers pay drivers in person
+   (section 6.9), no payout setup is needed.
 
 ## 5. Passengers
 
@@ -90,7 +92,8 @@ When you book, you confirm and promise that:
    seat belt, and bring only the luggage the trip allows.
 3. If you book seats for others, you are responsible for them, and they must
    follow these terms and the Community Rules.
-4. You will pay only through the app (section 6).
+4. You will pay only as section 6 says: through the app, or to the driver
+   in person when the app says so (section 6.9).
 
 ## 6. Prices and payment
 
@@ -101,7 +104,7 @@ When you book, you confirm and promise that:
    in Icelandic krónur.
 2. **Paying in the app only.** All payments for rides go through the app.
    Never pay a driver in cash or by bank transfer for a ShareRide booking,
-   and never ask a passenger to.
+   and never ask a passenger to, except as item 9 allows.
 3. **When you pay.** In instant booking you pay at once. When the driver
    approves requests, you pay once the driver accepts. You have 30 minutes
    to pay, and never later than 15 minutes before the planned time at your
@@ -124,6 +127,15 @@ When you book, you confirm and promise that:
 8. **Chargebacks.** If a passenger's bank reverses a payment after the driver
    was paid, and the trip did not happen because of the driver, the amount
    can be taken from the driver's later payouts.
+9. **Paying the driver in person, for now.** Until payments in the app
+   start, we may let passengers pay the driver in person instead. The app
+   says so on the trip and before you book. You then pay the driver the
+   price the app showed, when you get in, in cash or by bank transfer as
+   you agree. Never pay more, and drivers never ask for more. Your booking
+   is confirmed as soon as it is accepted. We do not take, hold or pass on
+   that money, so we cannot refund it or give a receipt for it, and items 3
+   to 5, 7 and 8 do not apply to that booking. A booking keeps the way of
+   paying it was made with.
 
 ## 7. Requests, changes and cancellations
 
@@ -145,9 +157,13 @@ When you book, you confirm and promise that:
    a passenger gets in or out cannot be removed.
 5. **Refunds** go back to the card or payment method you paid with. How long
    the refund takes to show depends on your bank.
-6. We may cancel a trip or a booking ourselves when these terms or the
+6. **Bookings paid in person** (section 6.9). Nothing is refunded, as
+   nothing was paid in the app. When either side cancels, the passenger owes
+   the driver nothing, even later than 15 minutes before boarding; a late
+   cancellation still counts on the passenger's reliability (section 9).
+7. We may cancel a trip or a booking ourselves when these terms or the
    Community Rules are broken, or for safety. When we do, the other people
-   on the trip get a full refund.
+   on the trip get a full refund of what they paid in the app.
 
 ## 8. The trip day
 
@@ -156,7 +172,9 @@ When you book, you confirm and promise that:
 2. **A passenger who doesn't come.** The driver waits at least 10 minutes
    after the planned time at the passenger's stop. After that, a driver who
    is there can mark the passenger as not having come. The passenger then
-   gets no refund, and the driver is paid.
+   gets no refund, and the driver is paid. For a booking paid in person
+   (section 6.9), the passenger owes the driver nothing, and the no-show
+   counts on their reliability.
 3. **A driver who doesn't come.** A passenger can report it from the end of
    the wait until 24 hours after the trip completes. If the report stands,
    the passenger gets a full refund.

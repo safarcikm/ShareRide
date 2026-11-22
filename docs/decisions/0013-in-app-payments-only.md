@@ -1,7 +1,9 @@
 # 0013. All payments through the app, from the beta
 
 - **Status:** Accepted (2026-11-13, decided by Martin while reviewing spec 5);
-  the payment provider is chosen in a later ADR
+  the payment provider is chosen in a later ADR. Set aside until payments in
+  the app work (milestone 15) by [ADR 0038](0038-pay-the-driver-in-person-until-card-payments.md):
+  passengers pay the driver in person while its switch is on
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** supersedes [ADR 0008](0008-payments-phased.md);

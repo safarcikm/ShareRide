@@ -25,6 +25,7 @@ export function northBooking(changes: Partial<Booking> = {}): Booking {
     alight: northStop(2),
     seats: 1,
     total: { amount: 2900, currency: "ISK" },
+    payment: "in_app",
     message: "",
     createdAt: "2026-11-14T12:00:00.000Z",
     requestExpiresAt: "2026-11-14T22:00:00.000Z",

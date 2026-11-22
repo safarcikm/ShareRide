@@ -2,6 +2,7 @@
 // and seats, "Configuration values"; feature H4). Until the operator settings
 // exist they are these defaults, passed to every rule.
 import { defaultSearchSettings } from "../trips/search.ts";
+import type { PaymentMethod } from "./lifecycle.ts";
 
 export interface BookingSettings {
   /** Booking closes this many minutes before the boarding stop (rule S4); as in search. */
@@ -16,6 +17,11 @@ export interface BookingSettings {
   readonly paymentWindowMinutes: number;
   /** A request's message to the driver, in characters (R5.6). */
   readonly messageMaxLength: number;
+  /**
+   * How a booking made now is paid: in the app, or to the driver in person
+   * while the operator's `pay_in_person` switch is on (rule M6, ADR 0038).
+   */
+  readonly paymentMethod: PaymentMethod;
 }
 
 /** The starting values (decided 2026-11-13, pricing and seats; spec 5). */
@@ -26,4 +32,5 @@ export const defaultBookingSettings: BookingSettings = {
   lateRequestMinutes: 2 * 60 + 30,
   paymentWindowMinutes: 30,
   messageMaxLength: 300,
+  paymentMethod: "in_app",
 };
