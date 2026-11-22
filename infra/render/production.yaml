@@ -69,7 +69,8 @@ projects:
               - key: TRUST_PROXY
                 value: "2"
               # The console's origin (ADR 0028): its passkeys are bound to it.
-              # Password sign-in (ADMIN_PASSWORD) is never set here.
+              # Password sign-in (ADMIN_PASSWORD, ADR 0041) is never set here:
+              # the API refuses to start with it on production.
               - key: ADMIN_ORIGIN
                 value: https://puffinride.is
               # Email is on from the start: web members hear about requests,

@@ -30,7 +30,9 @@ What makes it production, rather than a second staging:
 - Its own `AUTH_SECRET` and database. Email is on from the start
   (`EMAIL_PROVIDER=mailjet`). No payments in the app: passengers pay the
   driver in person (ADR 0038), switched on in the console.
-- Never set `ADMIN_PASSWORD` here: the console signs in with passkeys only.
+- Never set `ADMIN_PASSWORD` here: the console signs in with passkeys only,
+  and the API refuses to start with a password on production
+  ([ADR 0041](../decisions/0041-console-password-for-now.md)).
 
 ## Set it up (once)
 
@@ -77,7 +79,8 @@ the repository.
    `node apps/api/src/operator-cli.ts add <your phone number>`. Open the
    link it prints (it works once, for 30 minutes) and save a passkey. Sign
    in at `https://puffinride.is/admin` from then on; staging's passkeys do
-   not work here.
+   not work here. If saving the passkey fails, as it did on staging, stop
+   and tell Claude: production has no password to fall back on.
 5. **Settings in the console.** **Settings**, **Booking**: turn on **Pay
    the driver in person** and save; without it no booking can be confirmed,
    as production takes no payments in the app. Check that **Invite code
