@@ -211,9 +211,12 @@ required: each half is smaller to review.
 
 ### PR 4b: `feat(driving)`: a photo before posting a ride
 
-- [ ] Flip `photosOn` in the driving service. The API tests that publish,
+- [x] Flip `photosOn` in the driving service. The API tests that publish,
       and the journeys that post a ride, give their driver a photo
-- [ ] The trip form's missing item: "Profile photo, with Add a photo"
+- [x] The trip form's missing item: "Profile photo, with Add a photo",
+      which opens a photo screen (`/drive/photo`) that goes back to step 5
+      once a photo is added. "Three things before you publish" when all
+      three are missing
 - Verify: `pnpm check`, `e2e:web`, a look on the web at phone and laptop
   widths
 

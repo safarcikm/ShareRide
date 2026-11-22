@@ -9,7 +9,10 @@ import {
 import { schema } from "@shareride/db";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { createApp } from "../../app.ts";
+import { createLogger } from "../../logger.ts";
 import { startTestApi, type TestApi } from "../../testing.ts";
+import { givePhoto } from "../account/testing.ts";
 
 let api: TestApi;
 
@@ -52,7 +55,7 @@ describe("GET /v1/me/driver-readiness (spec 3, 3.1)", () => {
       data: {
         ready: false,
         items: [
-          { item: "photo", done: false, blocking: false },
+          { item: "photo", done: false, blocking: true },
           { item: "car", done: false, blocking: true },
           { item: "licence", done: false, blocking: true },
         ],
@@ -61,16 +64,43 @@ describe("GET /v1/me/driver-readiness (spec 3, 3.1)", () => {
     });
   });
 
-  it("is ready with a car and the licence declaration, without a photo yet", async () => {
-    const { accessToken } = await newDriver();
+  it("is ready with a photo, a car and the licence declaration", async () => {
+    const { accessToken, userId } = await newDriver();
     await api.client.call(addVehicleRoute, { accessToken, body: yaris });
     const declared = await api.client.call(declareLicenceRoute, {
       accessToken,
       body: { declared: true },
     });
+    // The photo is still missing (spec 1, 3.5).
     expect(declared).toMatchObject({
       status: 200,
-      data: { ready: true, licenceDeclaredAt: api.now().toISOString() },
+      data: { ready: false, licenceDeclaredAt: api.now().toISOString() },
+    });
+    await givePhoto(api, userId);
+    const result = await api.client.call(driverReadinessRoute, { accessToken });
+    expect(result).toMatchObject({ status: 200, data: { ready: true } });
+  });
+
+  it("asks for no photo on a server without photo storage", async () => {
+    const { db, sms, hasher, exportCipher, clock, clientAddress, secureCookies } = api.features;
+    const app = createApp({
+      logger: createLogger({ level: "silent" }),
+      checkDatabase: () => Promise.resolve(),
+      features: { db, sms, hasher, exportCipher, clock, clientAddress, secureCookies },
+    });
+    const { accessToken } = await newDriver();
+    await api.client.call(addVehicleRoute, { accessToken, body: yaris });
+    await api.client.call(declareLicenceRoute, { accessToken, body: { declared: true } });
+    const response = await app.request("/v1/me/driver-readiness", {
+      headers: { authorization: `Bearer ${accessToken}` },
+    });
+    expect(await response.json()).toMatchObject({
+      ready: true,
+      items: [
+        { item: "photo", done: false, blocking: false },
+        { item: "car" },
+        { item: "licence" },
+      ],
     });
   });
 
@@ -80,10 +110,7 @@ describe("GET /v1/me/driver-readiness (spec 3, 3.1)", () => {
       const result = await api.client.call(driverReadinessRoute, { accessToken });
       return result.ok ? result.data.items.find((entry) => entry.item === "photo") : undefined;
     };
-    await api.connection.db
-      .update(schema.users)
-      .set({ photoKey: "profile-photos/0193f0c4-7d4a-7b1e-9c2a-123456789abc.jpg" })
-      .where(eq(schema.users.id, userId));
+    await givePhoto(api, userId);
     expect(await photoItem()).toMatchObject({ done: true });
     await api.connection.db
       .update(schema.users)

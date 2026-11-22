@@ -16,6 +16,7 @@ import { defaultTripSettings, priceCap, segmentPrice, suggestedPrice } from "@sh
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
+import { givePhoto } from "../account/testing.ts";
 
 // The price values from the settings, with their versions (spec 10, 3.2.2
 // to 3.2.4; R10.3; ADR 0032; milestone 11, PR 11). One database for the
@@ -91,6 +92,7 @@ async function newDriver() {
   });
   if (!car.ok) throw new Error(car.error.code);
   await api.client.call(declareLicenceRoute, { accessToken, body: { declared: true } });
+  await givePhoto(api, signedIn.userId);
   return accessToken;
 }
 

@@ -395,6 +395,8 @@ export const en = {
   "driver.offerRide": "Offer a ride",
   "driver.ready.licence": "Driving licence",
   "driver.ready.confirmLicence": "Confirm your licence",
+  "driver.photo.title": "Your profile photo",
+  "driver.photo.intro": "You need one to publish a trip.",
   "vehicle.add": "Add a car",
   "vehicle.editTitle": "Edit your car",
   "vehicle.make": "Make",
@@ -560,7 +562,9 @@ export const en = {
   "trip.review.editLabel": "Edit: {section}",
   "trip.review.fix": "Fix these before you publish:",
   "trip.review.missing":
-    "{count, plural, one {One thing before you publish} other {Two things before you publish}}",
+    "{count, plural, one {One thing before you publish} =2 {Two things before you publish} other {Three things before you publish}}",
+  "trip.review.yourPhoto": "Profile photo",
+  "trip.review.photoDetail": "So passengers know who to look for",
   "trip.review.yourCar": "Your car",
   "trip.review.carDetail": "Make, model and colour",
   "trip.review.licenceDetail": "One tick, no upload",
@@ -569,12 +573,19 @@ export const en = {
   "trip.review.waitsForCar": "Add your car to publish. Your trip is saved as a draft until then.",
   "trip.review.waitsForLicence":
     "Confirm your licence to publish. Your trip is saved as a draft until then.",
+  "trip.review.waitsForPhoto":
+    "Add a profile photo to publish. Your trip is saved as a draft until then.",
+  "trip.review.waitsForPhotoAndCar":
+    "Add a profile photo and your car to publish. Your trip is saved as a draft until then.",
+  "trip.review.waitsForPhotoAndLicence":
+    "Add a profile photo and confirm your licence to publish. Your trip is saved as a draft until then.",
+  "trip.review.waitsForAll":
+    "Add a profile photo and your car, and confirm your licence to publish. Your trip is saved as a draft until then.",
   "trip.publish": "Publish trip",
   "trip.review.delete": "Delete draft",
   "trip.review.deleteConfirm": "Delete this draft? You can't undo this.",
   "trip.review.keep": "Keep it",
-  "trip.problem.driver_not_ready":
-    "Finish the list above: add your car and confirm your driving licence.",
+  "trip.problem.driver_not_ready": "Finish the list above before you publish.",
   "trip.problem.car_missing": "Choose the car you're driving.",
   "trip.problem.seats_invalid": "Offer 1 to {max} seats.",
   "trip.problem.price_level_invalid":
