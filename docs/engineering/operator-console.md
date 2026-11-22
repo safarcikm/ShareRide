@@ -121,7 +121,7 @@ meeting point routes (`registerMeetingPointsAdminRoutes`), with the work in
   activation checklist (R2.3, the domain's `activationChecklist`): each
   item, whether it is done, from what is saved, and whether it is
   `required`, and `ready`, which counts the required items only. The
-  photo is recommended, not required (spec 19, ADR 0034). The last
+  photo is recommended, not required (spec 19, ADR 0036). The last
   item, `legs`, asks for a road within 1 km that reaches a point in
   service, or none in service yet (the leg service's `connects`, one
   search), as activating computes the legs. `POST

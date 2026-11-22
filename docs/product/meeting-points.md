@@ -53,7 +53,7 @@ Preferred
 | Amenities | Shelter, toilets, shop, lighting, parking, step-free |
 | Opening hours of shelter | Where relevant |
 | Season | All year, or the months it is usable |
-| Photo and directions | Where to stand, which entrance; a photo is recommended, not required to go live ([ADR 0034](../decisions/0034-meeting-points-go-live-before-their-photo.md)) |
+| Photo and directions | Where to stand, which entrance; a photo is recommended, not required to go live ([ADR 0036](../decisions/0036-meeting-points-go-live-before-their-photo.md)) |
 | Status | Draft, active, paused, retiring, retired ([spec 2](../specs/2026-11-13-meeting-points.md#36-operator-console)); retired points stay on past trips |
 
 ## The meeting-point network

@@ -5,7 +5,7 @@
 Features: B1 Meeting point catalogue, B2 Place search
 ([features](../product/features.md)). Builds on
 [spec 2](2026-11-13-meeting-points.md), whose rule R2.3 it changes through
-[ADR 0034](../decisions/0034-meeting-points-go-live-before-their-photo.md).
+[ADR 0036](../decisions/0036-meeting-points-go-live-before-their-photo.md).
 Plan: [a meeting point for every settlement](../plans/2026-11-22-meeting-points-for-every-settlement.md).
 
 ## 1. Problem and goal
@@ -129,14 +129,14 @@ capital area hubs counted in the 96, and the 3 corridor stops.
    it if needed, and checks its text, amenities and season, then sets the
    day it was confirmed (spec 2, decision 2). Grindavík needs a check that
    the town is open.
-4. A photo is recommended, not required (ADR 0034). The checklist shows
+4. A photo is recommended, not required (ADR 0036). The checklist shows
    it as "Recommended" until there is one.
 
 ## 4. Rules
 
 | ID | Rule |
 | -- | ---- |
-| R2.3 (changed) | A point can be activated only with: a name, location, type, region and municipality; "where to stand" in Icelandic and English; amenities and season reviewed; the date the operator confirmed it (decision 2); computed legs. A photo with descriptions is recommended, not required (ADR 0034). |
+| R2.3 (changed) | A point can be activated only with: a name, location, type, region and municipality; "where to stand" in Icelandic and English; amenities and season reviewed; the date the operator confirmed it (decision 2); computed legs. A photo with descriptions is recommended, not required (ADR 0036). |
 
 ## 5. Screens
 
@@ -197,13 +197,13 @@ speaker reviews them with the app's texts (milestone 16).
 Photos of the new points, more than one point in the bigger towns outside
 the capital area, the ferry islands, replacing staging's sample points
 with the real ones, and a console filter for active points without a
-photo (ADR 0034, follow-up).
+photo (ADR 0036, follow-up).
 
 ## Decisions
 
 | # | Question | Decision |
 | - | -------- | -------- |
-| 1 | Can a point go live before it has a photo? | Yes, the photo can follow (Martin, 2026-11-22, on a decision card; ADR 0034) |
+| 1 | Can a point go live before it has a photo? | Yes, the photo can follow (Martin, 2026-11-22, on a decision card; ADR 0036) |
 | 2 | Which list counts as every settlement? | Statistics Iceland's byggðakjarnar with people in 2026, without the ferry islands (Claude's call, stated to Martin 2026-11-22) |
 | 3 | A point in each, or a neighbour's for the tiniest? | A neighbour's for the 14 with no public spot (Claude's call, for Martin to correct) |
 | 4 | Seed the points, or import them in the console? | Import in the console, as drafts, so the operator creates them (R2.1) and the audit log has them (Claude's call) |

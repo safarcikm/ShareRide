@@ -64,4 +64,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0031](0031-distances-from-our-own-road-file.md) | Distances between meeting points from our own road file | Accepted |
 | [0032](0032-operator-settings-list-ranges-and-versions.md) | Operator settings: the list, their ranges, and versions on trips and bookings | Accepted |
 | [0033](0033-profile-photos-made-in-the-app-and-checked-by-the-api.md) | Profile photos made in the app and checked by the API | Accepted |
-| [0034](0034-meeting-points-go-live-before-their-photo.md) | A meeting point can go live before it has a photo | Accepted |
+| [0036](0036-meeting-points-go-live-before-their-photo.md) | A meeting point can go live before it has a photo | Accepted |

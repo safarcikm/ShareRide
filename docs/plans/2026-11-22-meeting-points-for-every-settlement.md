@@ -6,7 +6,7 @@
 to is a town in place search, and the console can import a meeting point
 for each of them as drafts that go live without a photo.
 
-**Architecture:** Three parts. The photo rule (ADR 0034) is a flag on
+**Architecture:** Three parts. The photo rule (ADR 0036) is a flag on
 each checklist item in the domain, which the API's `ready` and
 `activate`, the contract and the console read. The places move from the
 sample data to reference data in `packages/db/src/places/`, seeded by the
@@ -18,7 +18,7 @@ and the road file; the operator imports them.
 
 **Spec:** [spec 19](../specs/2026-11-22-meeting-points-for-every-settlement.md).
 Martin chose that a point can go live before its photo on 2026-11-22
-([ADR 0034](../decisions/0034-meeting-points-go-live-before-their-photo.md)).
+([ADR 0036](../decisions/0036-meeting-points-go-live-before-their-photo.md)).
 
 ## Global Constraints
 
@@ -90,7 +90,7 @@ and its test; `packages/i18n/src/messages/en.ts`, `is.ts`.
 
 - [x] Spec 2's R2.3 says "amended by spec 19"; the meeting point guide and
   the console doc say a photo is recommended; the console doc has the
-  steps to import the file; the indexes list spec 19, ADR 0034 and this
+  steps to import the file; the indexes list spec 19, ADR 0036 and this
   plan; `CHANGELOG.md`.
 
 ## After merging (Martin)

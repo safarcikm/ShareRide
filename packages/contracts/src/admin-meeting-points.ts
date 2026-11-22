@@ -322,7 +322,7 @@ export const adminActivationChecklistSchema = z.object({
     z.object({
       item: z.enum(activationItems),
       done: z.boolean(),
-      /** Activation waits for it; false for the photo, which is recommended (ADR 0034). */
+      /** Activation waits for it; false for the photo, which is recommended (ADR 0036). */
       required: z.boolean(),
     }),
   ),

@@ -1,4 +1,4 @@
-# 0034. A meeting point can go live before it has a photo
+# 0036. A meeting point can go live before it has a photo
 
 - **Status:** Accepted (2026-11-22, by Martin on a decision card in the
   project thread)

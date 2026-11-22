@@ -52,7 +52,7 @@ describe("activationChecklist (R2.3)", () => {
     expect(missing(ready, [{ ...photo, descriptionEn: "" }, photo])).toEqual([]);
   });
 
-  it("recommends the photo and requires every other item (ADR 0034)", () => {
+  it("recommends the photo and requires every other item (ADR 0036)", () => {
     const list = activationChecklist(ready, [], { connected: true });
     expect(list.filter((check) => !check.required).map((check) => check.item)).toEqual(["photos"]);
     expect(list.find((check) => check.item === "photos")?.done).toBe(false);

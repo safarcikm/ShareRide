@@ -1060,7 +1060,7 @@ describe("activating a draft (spec 2, 3.6.3)", () => {
     );
     fireEvent.click(activateButton());
 
-    // The photo is recommended (ADR 0034): not counted, and still shown as such.
+    // The photo is recommended (ADR 0036): not counted, and still shown as such.
     const alert = await within(panel()).findByRole("alert");
     expect(alert.textContent).toBe(
       "2 things are still to do before N1 Borgarnesi can be activated.",
@@ -1076,7 +1076,7 @@ describe("activating a draft (spec 2, 3.6.3)", () => {
   });
 
   it("activates a draft whose checklist is done, which computes its distances", async () => {
-    // With no photo yet, which is recommended, not required (ADR 0034).
+    // With no photo yet, which is recommended, not required (ADR 0036).
     const api = open(checklistWith("photos"));
     const active: AdminMeetingPoint = {
       ...draft,

@@ -31,7 +31,7 @@ function tagOf(check: { readonly done: boolean; readonly required: boolean }) {
 
 /**
  * A draft's activation checklist (R2.3) and its Activate button (spec 2,
- * 3.6.3). The photo is recommended, not required (ADR 0034): its item says
+ * 3.6.3). The photo is recommended, not required (ADR 0036): its item says
  * so while it is not done, and is not counted in what is still to do. The
  * API checks what is saved, so the list is loaded again when
  * the point or one of its photos is saved (`version`). Activate always

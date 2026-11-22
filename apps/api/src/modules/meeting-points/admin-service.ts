@@ -107,7 +107,7 @@ export interface MeetingPointAdminService {
   activationChecklist(id: string): Promise<AdminActivationChecklist | undefined>;
   /**
    * Activates a draft whose checklist's required items are done (spec 2,
-   * 3.6.3; the photo is recommended, ADR 0034), computing its
+   * 3.6.3; the photo is recommended, ADR 0036), computing its
    * legs with every point in service in the same transaction.
    */
   activate(

@@ -14,7 +14,7 @@ import { createLegService } from "./legs.ts";
 
 // Activating a draft (spec 2, 3.6.3): only when its checklist passes
 // (R2.3), and its legs come with it. The photo is recommended, not
-// required (ADR 0034). The tests' router finds no road south of 63.3° N.
+// required (ADR 0036). The tests' router finds no road south of 63.3° N.
 
 const { auditLog, legs, meetingPointPhotos, meetingPoints } = schema;
 
@@ -168,7 +168,7 @@ describe("the activation checklist", () => {
     });
   });
 
-  it("is ready without a photo, which it recommends (ADR 0034)", async () => {
+  it("is ready without a photo, which it recommends (ADR 0036)", async () => {
     const list = await checklist(noPhoto);
     expect(list.items.find((check) => check.item === "photos")).toEqual({
       item: "photos",
@@ -234,7 +234,7 @@ describe("POST /admin/v1/meeting-points/{id}/activate", () => {
     });
   });
 
-  it("activates a draft with no photo yet (ADR 0034)", async () => {
+  it("activates a draft with no photo yet (ADR 0036)", async () => {
     const { status, body } = await activate(noPhoto);
     expect(status).toBe(200);
     expect(body).toMatchObject({ id: noPhoto, status: "active" });
