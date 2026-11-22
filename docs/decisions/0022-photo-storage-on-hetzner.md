@@ -4,7 +4,7 @@
   re-encodes a photo and how long its links last are superseded by
   [ADR 0029](0029-photos-cleaned-in-the-browser-and-checked-by-the-api.md);
   the location (Helsinki) is superseded by
-  [ADR 0036](0036-photo-storage-in-nuremberg.md)
+  [ADR 0037](0037-photo-storage-in-nuremberg.md)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [ADR 0007](0007-eea-hosting-and-data-residency.md),

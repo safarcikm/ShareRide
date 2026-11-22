@@ -360,8 +360,8 @@ someone.
 ## Turn on photos
 
 Staging takes no meeting point or profile photos until the bucket is open
-(ADRs 0022 and 0036, about €5 a month). Real meeting points need one to go
-into use. Martin's steps:
+(ADRs 0022 and 0037, about €5 a month). A meeting point can go live
+without one, though the console recommends it (ADR 0036). Martin's steps:
 
 1. In the Hetzner Console, open (or create) a project, then **Object
    Storage**, **Create Bucket**: location Nuremberg (`nbg1`), a name such

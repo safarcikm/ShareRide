@@ -1,4 +1,4 @@
-// Photo storage (ADRs 0022 and 0036): Hetzner Object Storage in Nuremberg
+// Photo storage (ADRs 0022 and 0037): Hetzner Object Storage in Nuremberg
 // (photo-storage-hetzner.ts), or a folder on this computer in development
 // and tests. The API keeps each photo's key; the storage keeps its file
 // and gives links to show it: meeting point photos (spec 2, 3.6.3) and

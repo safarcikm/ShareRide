@@ -3074,6 +3074,7 @@ export const en = {
   "admin.activation.item.legs": "A road within 1 km that reaches the points in use",
   "admin.activation.done": "Done",
   "admin.activation.toDo": "To do",
+  "admin.activation.recommended": "Recommended",
   "admin.activation.failed": "The checklist could not be loaded.",
   "admin.activation.activate": "Activate {name}",
   "admin.activation.activating": "Activating {name}…",

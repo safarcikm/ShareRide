@@ -1,4 +1,4 @@
-// Hetzner Object Storage in Nuremberg (ADRs 0022 and 0036), through its S3 interface:
+// Hetzner Object Storage in Nuremberg (ADRs 0022 and 0037), through its S3 interface:
 // requests and links signed with AWS Signature Version 4 by aws4fetch. The
 // bucket stays private; the apps show a photo through a signed link.
 import { AwsClient } from "aws4fetch";

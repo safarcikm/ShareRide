@@ -1319,6 +1319,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   links that open their screen after signing in; and an email at sign-up
   on the web. The roadmap drops the waitlist and calls Phase 3 an open
   beta.
+- A meeting point for every settlement (spec 21, ADR 0036, Accepted): a
+  point can be activated before it has a photo, which the console's
+  checklist now shows as recommended. Every settlement of Statistics
+  Iceland with people in 2026, less the ferry islands (110), is a town or
+  village in place search, seeded in every environment by the migration
+  command. `packages/db/src/places/settlement-meeting-points.csv` holds 104
+  meeting points from OpenStreetMap, one in or near each settlement, for
+  the operator to import in the console as drafts.
 
 ### Fixed
 
@@ -1354,7 +1362,7 @@ releases follow [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - Photos are kept in Hetzner Object Storage in Nuremberg, not Helsinki,
-  which Hetzner did not offer when the staging bucket was made (ADR 0036).
+  which Hetzner did not offer when the staging bucket was made (ADR 0037).
   The privacy policy draft, the privacy register and the runbook say so;
   staging's `PHOTO_BUCKET_ENDPOINT` is `https://nbg1.your-objectstorage.com`.
 - Staging sends error reports to Sentry's EU region: the blueprint has the

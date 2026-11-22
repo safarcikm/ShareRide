@@ -1,9 +1,10 @@
-// Sample meeting points, places and roads for local development and
-// staging (milestone 3 plan, decision 1). Real public places on three
-// corridors from Reykjavík, with approximate positions and road distances.
-// The operator's real list v1 and legs from the road file (ADR 0031)
-// replace them before the beta; nothing here has been checked on site.
-import type { Amenity, MeetingPointType, PlaceKind, Region } from "@shareride/domain";
+// Sample meeting points and roads for local development and staging
+// (milestone 3 plan, decision 1). Real public places on three corridors
+// from Reykjavík, with approximate positions and road distances. The
+// operator's real points (spec 21's import file) and legs from the road
+// file (ADR 0031) replace them; nothing here has been checked on site. The
+// places are no longer sample data: they are in ../places/places.ts.
+import type { Amenity, MeetingPointType, Region } from "@shareride/domain";
 import type { Position } from "../schema/columns.ts";
 
 export interface SamplePoint {
@@ -17,18 +18,6 @@ export interface SamplePoint {
   readonly type: MeetingPointType;
   readonly amenities: readonly Amenity[];
   readonly whereToStand: { readonly is: string; readonly en: string };
-}
-
-export interface SamplePlace {
-  readonly key: string;
-  readonly nameIs: string;
-  readonly nameEn?: string;
-  readonly aliases?: readonly string[];
-  readonly position: Position;
-  readonly kind: PlaceKind;
-  readonly region: Region;
-  readonly matchRadiusM?: number;
-  readonly municipalities?: readonly string[];
 }
 
 /** A stretch of road between neighbouring points or junctions, in km and minutes. */
@@ -54,15 +43,6 @@ const stand = {
     en: "Sample point: the location is approximate. Outside the arrivals hall.",
   },
 } as const;
-
-const capitalArea = [
-  "Reykjavík",
-  "Kópavogur",
-  "Garðabær",
-  "Hafnarfjörður",
-  "Seltjarnarnes",
-  "Mosfellsbær",
-] as const;
 
 export const samplePoints: readonly SamplePoint[] = [
   // Capital area
@@ -383,96 +363,3 @@ export const sampleRoads: readonly SampleRoad[] = [
   ["hella", "hvolsvollur", 12, 9],
   ["hvolsvollur", "vik", 80, 60],
 ];
-
-const town = (
-  key: string,
-  nameIs: string,
-  position: Position,
-  region: Region,
-  extra: Partial<SamplePlace> = {},
-): SamplePlace => ({ key, nameIs, position, kind: "town", region, ...extra });
-
-export const samplePlaces: readonly SamplePlace[] = [
-  {
-    key: "capital-area",
-    nameIs: "Reykjavík",
-    aliases: ["Höfuðborgarsvæðið", "Capital area"],
-    position: at(64.1466, -21.9426),
-    kind: "area",
-    region: "capital",
-    municipalities: capitalArea,
-  },
-  // The other capital area towns stay limited to themselves (spec 4, decision 1).
-  town("kopavogur", "Kópavogur", at(64.1123, -21.9123), "capital", {
-    municipalities: ["Kópavogur"],
-  }),
-  town("gardabaer", "Garðabær", at(64.0886, -21.9227), "capital", { municipalities: ["Garðabær"] }),
-  town("hafnarfjordur", "Hafnarfjörður", at(64.0671, -21.9377), "capital", {
-    municipalities: ["Hafnarfjörður"],
-  }),
-  town("seltjarnarnes", "Seltjarnarnes", at(64.153, -21.995), "capital", {
-    municipalities: ["Seltjarnarnes"],
-  }),
-  town("mosfellsbaer-town", "Mosfellsbær", at(64.1667, -21.7), "capital", {
-    municipalities: ["Mosfellsbær"],
-  }),
-  town("reykjanesbaer", "Reykjanesbær", at(63.9998, -22.5583), "southern-peninsula", {
-    aliases: ["Keflavík", "Njarðvík"],
-  }),
-  town("grindavik", "Grindavík", at(63.8424, -22.4338), "southern-peninsula"),
-  town("akranes-town", "Akranes", at(64.3218, -22.0749), "west"),
-  town("borgarnes-town", "Borgarnes", at(64.5383, -21.9206), "west"),
-  {
-    ...town("bifrost", "Bifröst", at(64.7653, -21.5583), "west"),
-    kind: "village",
-    matchRadiusM: 5_000,
-  },
-  town("stykkisholmur", "Stykkishólmur", at(65.0753, -22.7297), "west"),
-  { ...town("hvammstangi", "Hvammstangi", at(65.3955, -20.9433), "northwest"), kind: "village" },
-  town("blonduos-town", "Blönduós", at(65.6605, -20.2789), "northwest"),
-  { ...town("skagastrond", "Skagaströnd", at(65.8264, -20.3198), "northwest"), kind: "village" },
-  { ...town("varmahlid-village", "Varmahlíð", at(65.5525, -19.452), "northwest"), kind: "village" },
-  town("saudarkrokur-town", "Sauðárkrókur", at(65.7461, -19.6394), "northwest"),
-  town("akureyri-town", "Akureyri", at(65.6826, -18.0907), "northeast"),
-  town("dalvik", "Dalvík", at(65.9702, -18.5287), "northeast"),
-  town("hveragerdi-town", "Hveragerði", at(64.0001, -21.1859), "south"),
-  town("selfoss-town", "Selfoss", at(63.9331, -20.9971), "south", { aliases: ["Árborg"] }),
-  town("thorlakshofn-town", "Þorlákshöfn", at(63.8558, -21.3829), "south"),
-  { ...town("eyrarbakki", "Eyrarbakki", at(63.8634, -21.1524), "south"), kind: "village" },
-  { ...town("hella-town", "Hella", at(63.8344, -20.3973), "south"), kind: "village" },
-  { ...town("hvolsvollur-town", "Hvolsvöllur", at(63.7513, -20.226), "south"), kind: "village" },
-  {
-    ...town("vik-town", "Vík", at(63.4186, -19.006), "south", { aliases: ["Vík í Mýrdal"] }),
-    kind: "village",
-  },
-  landmark(
-    "thingvellir",
-    "Þingvellir",
-    "Thingvellir National Park",
-    at(64.2559, -21.1299),
-    "south",
-  ),
-  landmark("geysir", "Geysir", undefined, at(64.3104, -20.3024), "south"),
-  landmark("gullfoss", "Gullfoss", undefined, at(64.3271, -20.1199), "south"),
-  landmark("seljalandsfoss", "Seljalandsfoss", undefined, at(63.6156, -19.9886), "south"),
-  landmark("skogafoss", "Skógafoss", undefined, at(63.5321, -19.5114), "south"),
-  landmark("reynisfjara", "Reynisfjara", "Reynisfjara beach", at(63.4044, -19.0447), "south"),
-  landmark("blue-lagoon", "Bláa lónið", "Blue Lagoon", at(63.8804, -22.4495), "southern-peninsula"),
-];
-
-function landmark(
-  key: string,
-  nameIs: string,
-  nameEn: string | undefined,
-  position: Position,
-  region: Region,
-): SamplePlace {
-  return {
-    key,
-    nameIs,
-    ...(nameEn === undefined ? {} : { nameEn }),
-    position,
-    kind: "landmark",
-    region,
-  };
-}

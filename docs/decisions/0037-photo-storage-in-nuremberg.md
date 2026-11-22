@@ -1,4 +1,4 @@
-# 0036. Store photos in Hetzner Object Storage in Nuremberg
+# 0037. Store photos in Hetzner Object Storage in Nuremberg
 
 - **Status:** Accepted (2026-11-22, by Martin: Helsinki was not available
   when he made the bucket)

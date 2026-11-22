@@ -244,7 +244,7 @@ required: each half is smaller to review.
 ## 7. Martin's steps
 
 1. In the Hetzner Console, create the bucket for staging: location
-   Nuremberg, private (runbook, "Turn on photos"; ADR 0036, as Helsinki
+   Nuremberg, private (runbook, "Turn on photos"; ADR 0037, as Helsinki
    was not offered). Done 2026-11-22.
 2. Generate S3 credentials. Put them and the bucket's details in the
    staging API's environment in Render.

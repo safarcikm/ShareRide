@@ -3111,6 +3111,7 @@ export const is = {
   "admin.activation.item.legs": "Vegur innan 1 km sem nær til staða í notkun",
   "admin.activation.done": "Lokið",
   "admin.activation.toDo": "Eftir",
+  "admin.activation.recommended": "Mælt með",
   "admin.activation.failed": "Ekki tókst að sækja gátlistann.",
   "admin.activation.activate": "Virkja {name}",
   "admin.activation.activating": "Virkjar {name}…",

@@ -271,7 +271,9 @@ Milestone 16: ready for the beta
 - [ ] Accessibility pass to WCAG 2.2 AA
 - [ ] Icelandic texts checked by a native speaker
 - [ ] TestFlight and Google Play internal testing builds against production
-- [ ] The real meeting points for the beta corridors in production
+- [ ] The real meeting points for the beta corridors in production (a
+      point in or near every settlement since spec 21: the import file is
+      built, the operator imports, checks and activates them)
 
 Martin's steps, in the order of what they unblock:
 
