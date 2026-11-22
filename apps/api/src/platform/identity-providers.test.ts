@@ -1,7 +1,19 @@
 import { createHash } from "node:crypto";
-import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT, type JWK } from "jose";
+import {
+  createLocalJWKSet,
+  decodeJwt,
+  decodeProtectedHeader,
+  exportJWK,
+  exportPKCS8,
+  generateKeyPair,
+  jwtVerify,
+  SignJWT,
+  type JWK,
+} from "jose";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
+  appleEndpoints,
+  createAppleProvider,
   createDevProvider,
   createGoogleProvider,
   devPeople,
@@ -34,6 +46,7 @@ interface TokenOptions {
   readonly issuer?: string;
   readonly audience?: string | readonly string[];
   readonly expiresAt?: number;
+  readonly subject?: string;
 }
 
 function idToken(options: TokenOptions = {}): Promise<string> {
@@ -45,7 +58,7 @@ function idToken(options: TokenOptions = {}): Promise<string> {
     ...options.claims,
   })
     .setProtectedHeader({ alg: "RS256", kid: "key-1" })
-    .setSubject("google-subject-1")
+    .setSubject(options.subject ?? "google-subject-1")
     .setIssuer(options.issuer ?? "https://accounts.google.com")
     .setAudience(
       typeof options.audience === "object" ? [...options.audience] : (options.audience ?? clientId),
@@ -294,8 +307,186 @@ describe("the development provider (plan 4.3)", () => {
     ).toEqual({ ok: false, error: { code: "provider_failed", reason: "nonce" } });
   });
 
+  it("answers for Apple with forms posted to the callback, and the name in the user field", async () => {
+    const appleDev = createDevProvider({ name: "apple", apiOrigin });
+    const appleCallback = `${apiOrigin}/v1/auth/oauth/apple/callback`;
+    const page = devSignInPage({
+      provider: "apple",
+      state: "the-state",
+      nonce: "the-nonce",
+      redirectUri: appleCallback,
+    });
+    const forms = [...page.matchAll(/<form method="post" action="([^"]+)">([\s\S]*?)<\/form>/g)];
+    expect(forms).toHaveLength(devPeople.length + 1);
+    const fields = forms.map(([, action, body]): Record<string, string> => {
+      expect(action).toBe(appleCallback);
+      return Object.fromEntries(
+        [...(body ?? "").matchAll(/name="([^"]+)" value="([^"]*)"/g)].map(([, name, value]) => [
+          name ?? "",
+          (value ?? "").replaceAll("&quot;", '"'),
+        ]),
+      );
+    });
+    expect(fields.at(-1)).toEqual({ state: "the-state", error: "user_cancelled_authorize" });
+    const first = fields[0] ?? {};
+    expect(first.state).toBe("the-state");
+    const user: unknown = JSON.parse(first.user ?? "null");
+    expect(user).toMatchObject({ name: { firstName: "Anna" } });
+    const redeem = { ...redeemInput, code: first.code ?? "", redirectUri: appleCallback };
+    expect(await appleDev.redeem({ ...redeem, appleUser: user })).toEqual({
+      ok: true,
+      value: { subject: "dev-apple-1", email: "dev-person-1@example.com", firstName: "Anna" },
+    });
+    // Apple sends the name only the first time.
+    expect(await appleDev.redeem(redeem)).toMatchObject({ ok: true, value: { firstName: null } });
+  });
+
   it("fails on a code it did not make", async () => {
     expect(await dev.redeem({ ...redeemInput, code: "garbage" })).toEqual({
+      ok: false,
+      error: { code: "provider_failed", reason: "token_request" },
+    });
+  });
+});
+
+describe("Apple (plan 4.3)", () => {
+  const servicesId = "is.shareride.preview.web";
+  const appleRedirect = "https://api.shareride.test/v1/auth/oauth/apple/callback";
+  let teamKey: { privateKey: CryptoKey; publicKey: CryptoKey };
+  let teamKeyPem: string;
+
+  beforeAll(async () => {
+    teamKey = await generateKeyPair("ES256", { extractable: true });
+    teamKeyPem = await exportPKCS8(teamKey.privateKey);
+  });
+
+  function apple(fetchFake: typeof fetch, clock: () => Date = () => now) {
+    return createAppleProvider({
+      servicesId,
+      teamId: "TEAM123456",
+      keyId: "KEY1234567",
+      privateKey: teamKeyPem,
+      fetch: fetchFake,
+      keys,
+      clock,
+    });
+  }
+
+  const appleToken = (claims: Record<string, unknown> = {}) =>
+    idToken({
+      issuer: appleEndpoints.issuer,
+      audience: servicesId,
+      subject: "000123.apple-subject.0456",
+      claims: { given_name: undefined, email_verified: "true", ...claims },
+    });
+
+  const appleRedeem = { ...redeemInput, redirectUri: appleRedirect };
+
+  it("sends the person to Apple, asking for the name and email, answered by a form", () => {
+    const url = new URL(
+      apple(fakeTokenEndpoint(() => Promise.resolve(new Response())).fetch).authorizationUrl({
+        state: "the-state",
+        nonce: "the-nonce",
+        codeVerifier: "v".repeat(64),
+        redirectUri: appleRedirect,
+      }),
+    );
+    expect(`${url.origin}${url.pathname}`).toBe(appleEndpoints.authorization);
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      response_type: "code",
+      response_mode: "form_post",
+      client_id: servicesId,
+      redirect_uri: appleRedirect,
+      scope: "name email",
+      state: "the-state",
+      nonce: "the-nonce",
+    });
+  });
+
+  it("trades the code with a client secret it signs, and keeps the first name from the form", async () => {
+    const token = await appleToken();
+    const endpoint = fakeTokenEndpoint(() => Promise.resolve(Response.json({ id_token: token })));
+    expect(
+      await apple(endpoint.fetch).redeem({
+        ...appleRedeem,
+        appleUser: { name: { firstName: "Bjarni", lastName: "Not kept" } },
+      }),
+    ).toEqual({
+      ok: true,
+      value: {
+        subject: "000123.apple-subject.0456",
+        email: "person@example.com",
+        firstName: "Bjarni",
+      },
+    });
+    const form = Object.fromEntries(endpoint.requests[0]?.body ?? []);
+    expect(endpoint.requests[0]?.url).toBe(appleEndpoints.token);
+    expect(form).toMatchObject({
+      grant_type: "authorization_code",
+      code: "the-code",
+      client_id: servicesId,
+      redirect_uri: appleRedirect,
+    });
+    expect(form).not.toHaveProperty("code_verifier");
+    const secret = form.client_secret ?? "";
+    expect(decodeProtectedHeader(secret)).toEqual({ alg: "ES256", kid: "KEY1234567" });
+    const { payload } = await jwtVerify(secret, teamKey.publicKey, {
+      issuer: "TEAM123456",
+      audience: appleEndpoints.issuer,
+      subject: servicesId,
+      currentDate: now,
+    });
+    expect(payload.iat).toBe(nowSeconds);
+    expect(payload.exp).toBe(nowSeconds + 3600);
+  });
+
+  it("finishes without the form's name, which Apple sends only the first time", async () => {
+    const token = await appleToken();
+    const endpoint = fakeTokenEndpoint(() => Promise.resolve(Response.json({ id_token: token })));
+    expect(await apple(endpoint.fetch).redeem(appleRedeem)).toMatchObject({
+      ok: true,
+      value: { firstName: null },
+    });
+  });
+
+  it("keeps its client secret, and makes a new one 5 minutes before it ends", async () => {
+    let time = now;
+    const endpoint = fakeTokenEndpoint(async () => Response.json({ id_token: await appleToken() }));
+    const provider = apple(endpoint.fetch, () => time);
+    const secretAt = async (minutes: number) => {
+      time = new Date(now.getTime() + minutes * 60_000);
+      await provider.redeem(appleRedeem);
+      return endpoint.requests.at(-1)?.body.get("client_secret");
+    };
+    const first = await secretAt(0);
+    expect(await secretAt(54)).toBe(first);
+    const second = await secretAt(56);
+    expect(second).not.toBe(first);
+    expect(decodeJwt(second ?? "").iat).toBe(nowSeconds + 56 * 60);
+  });
+
+  it.each([
+    ["from Google's issuer", { issuer: "https://accounts.google.com" }],
+    ["for another Services ID", { audience: "someone.else" }],
+  ])("refuses an ID token %s", async (_case, options) => {
+    const token = await idToken({
+      subject: "000123.apple-subject.0456",
+      issuer: appleEndpoints.issuer,
+      audience: servicesId,
+      ...options,
+    });
+    const endpoint = fakeTokenEndpoint(() => Promise.resolve(Response.json({ id_token: token })));
+    expect(await apple(endpoint.fetch).redeem(appleRedeem)).toEqual({
+      ok: false,
+      error: { code: "provider_failed", reason: "id_token" },
+    });
+  });
+
+  it("fails when Apple's token endpoint refuses the code", async () => {
+    const endpoint = fakeTokenEndpoint(() =>
+      Promise.resolve(Response.json({ error: "invalid_grant" }, { status: 400 })),
+    );
+    expect(await apple(endpoint.fetch).redeem(appleRedeem)).toEqual({
       ok: false,
       error: { code: "provider_failed", reason: "token_request" },
     });

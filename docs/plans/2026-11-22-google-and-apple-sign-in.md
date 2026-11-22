@@ -296,12 +296,12 @@ opens and merges once CI is green (Martin's rule of 2026-11-16).
 
 ### PR 2b: `feat(auth)`: Sign in with Apple, the API
 
-- [ ] Apple adapter: the client secret (tests: its header and claims, a
+- [x] Apple adapter: the client secret (tests: its header and claims, a
       new one before the old one ends), the form `user` field, the ID token
       checks
-- [ ] `POST /v1/auth/oauth/apple/callback` taking a form body, the one
+- [x] `POST /v1/auth/oauth/apple/callback` taking a form body, the one
       exception to JSON bodies, with a test that no other route takes one
-- [ ] Render blueprint entries (`sync: false`), and Martin's Apple steps
+- [x] Render blueprint entries (`sync: false`), and Martin's Apple steps
       (section 6) in the staging runbook
 - Verify: as PR 2, plus review focus 5
 
@@ -334,9 +334,10 @@ opens and merges once CI is green (Martin's rule of 2026-11-16).
 
 ## 6. Martin's steps
 
-Exact clicks are in the staging runbook: Google's in
+Exact clicks are in the staging runbook:
 [Turn on Google sign-in](../operations/staging.md#turn-on-google-sign-in)
-(PR 2), Apple's with PR 2b. In short:
+and [Turn on Sign in with Apple](../operations/staging.md#turn-on-sign-in-with-apple).
+In short:
 
 1. **Google Cloud** (free): a project "ShareRide"; Google Auth Platform,
    Branding (app name, support email, the domain `skinnar.is`, links to the

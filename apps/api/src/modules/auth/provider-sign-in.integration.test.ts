@@ -47,8 +47,8 @@ function newVerifier(): string {
   return randomBytes(32).toString("base64url");
 }
 
-const startPath = (verifier: string, url = returnUrl) =>
-  `/v1/auth/oauth/google/start?${new URLSearchParams({
+const startPath = (verifier: string, url = returnUrl, provider = "google") =>
+  `/v1/auth/oauth/${provider}/start?${new URLSearchParams({
     challenge: pkceChallenge(verifier),
     returnUrl: url,
   }).toString()}`;
@@ -217,12 +217,6 @@ describe("the start (plan 4.1, steps 2 and 3)", () => {
     expect(started.status).toBe(400);
   });
 
-  it("says Apple is not on yet", async () => {
-    const started = await api.request(startPath(newVerifier()).replace("/google/", "/apple/"));
-    expect(started.status).toBe(404);
-    expect(await started.text()).toContain("isn't available");
-  });
-
   it("allows 20 starts per address in 10 minutes, then goes back with failed", async () => {
     newAddress();
     for (let start = 0; start < 20; start += 1) {
@@ -237,10 +231,10 @@ describe("the start (plan 4.1, steps 2 and 3)", () => {
     ).toBe("/v1/auth/oauth/dev/google");
   });
 
-  it("lists Google in the config for the sign-in screen", async () => {
+  it("lists Google and Apple in the config for the sign-in screen", async () => {
     expect(await api.client.call(configRoute, {})).toMatchObject({
       ok: true,
-      data: { signInProviders: ["google"] },
+      data: { signInProviders: ["google", "apple"] },
     });
   });
 });
@@ -738,5 +732,110 @@ describe("Sign-in methods in Settings (spec 19, 3.4)", () => {
         body: { pendingSignIn: again.data.pendingSignIn, code },
       }),
     ).toMatchObject({ ok: true, status: 201 });
+  });
+});
+
+describe("Apple (spec 19; plan, PR 2b)", () => {
+  /** Opens Apple's start and the stand-in's page; the fields of the chosen person's form (or Cancel's). */
+  async function appleFormFor(verifier: string, choice: number | "cancel") {
+    newAddress();
+    const started = await api.request(startPath(verifier, returnUrl, "apple"));
+    expect(started.status).toBe(303);
+    const page = await api.request(pathOf(started.headers.get("location") ?? ""));
+    const forms = [
+      ...(await page.text()).matchAll(/<form method="post" action="([^"]+)">([\s\S]*?)<\/form>/g),
+    ];
+    const chosen = choice === "cancel" ? forms.at(-1) : forms[choice];
+    if (chosen === undefined) throw new Error("No such form on the page.");
+    expect(chosen[1]).toBe("http://api.test/v1/auth/oauth/apple/callback");
+    return Object.fromEntries(
+      [...(chosen[2] ?? "").matchAll(/name="([^"]+)" value="([^"]*)"/g)].map(([, name, value]) => [
+        name ?? "",
+        (value ?? "").replaceAll("&quot;", '"'),
+      ]),
+    );
+  }
+
+  /** Posts the form back as Apple does; the address the browser is sent to. */
+  async function postBack(fields: Record<string, string>): Promise<string> {
+    const answered = await api.request("/v1/auth/oauth/apple/callback", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams(fields).toString(),
+    });
+    expect(answered.status).toBe(303);
+    return answered.headers.get("location") ?? "";
+  }
+
+  async function freeUpApple(person: number) {
+    await api.connection.db
+      .delete(identities)
+      .where(eq(identities.subject, `dev-apple-${String(person + 1)}`));
+    await freeUp(person);
+  }
+
+  it("comes back as a form, and fills in the first name Apple sends the first time", async () => {
+    await freeUpApple(anna);
+    const verifier = newVerifier();
+    const location = await postBack(await appleFormFor(verifier, anna));
+    const ticket = /#ticket=(sr_pt_[A-Za-z0-9_-]{43})$/.exec(location)?.[1] ?? "";
+    expect(await finish(ticket, verifier)).toMatchObject({
+      ok: true,
+      data: {
+        status: "phoneNeeded",
+        provider: "apple",
+        email: "dev-person-1@example.com",
+        firstName: "Anna",
+      },
+    });
+  });
+
+  it("finishes without the user field, which later sign-ins do not have", async () => {
+    await freeUpApple(bjarni);
+    const verifier = newVerifier();
+    const fields = await appleFormFor(verifier, bjarni);
+    delete fields.user;
+    const location = await postBack(fields);
+    const ticket = /#ticket=(sr_pt_[A-Za-z0-9_-]{43})$/.exec(location)?.[1] ?? "";
+    expect(await finish(ticket, verifier)).toMatchObject({
+      ok: true,
+      data: { status: "phoneNeeded", provider: "apple", firstName: null },
+    });
+  });
+
+  it("takes a user field that is not JSON as no name", async () => {
+    await freeUpApple(sol);
+    const verifier = newVerifier();
+    const location = await postBack({ ...(await appleFormFor(verifier, sol)), user: "{not json" });
+    const ticket = /#ticket=(sr_pt_[A-Za-z0-9_-]{43})$/.exec(location)?.[1] ?? "";
+    expect(await finish(ticket, verifier)).toMatchObject({
+      ok: true,
+      data: { status: "phoneNeeded", firstName: null },
+    });
+  });
+
+  it("goes back without an error when the person pressed Cancel at Apple (review focus 2)", async () => {
+    expect(await postBack(await appleFormFor(newVerifier(), "cancel"))).toBe(
+      `${returnUrl}#error=cancelled`,
+    );
+  });
+
+  it("makes the account with the phone step and signs in with Apple next time", async () => {
+    await freeUpApple(anna);
+    const phone = api.newPhoneNumber();
+    const verifier = newVerifier();
+    const location = await postBack(await appleFormFor(verifier, anna));
+    const ticket = /#ticket=(sr_pt_[A-Za-z0-9_-]{43})$/.exec(location)?.[1] ?? "";
+    const finished = await finish(ticket, verifier);
+    if (!finished.ok || finished.data.status !== "phoneNeeded")
+      throw new Error("Expected the phone step.");
+    expect(await phoneStep(phone, finished.data.pendingSignIn)).toMatchObject({
+      ok: true,
+      data: { isNewUser: true, providerLink: { provider: "apple", outcome: "created" } },
+    });
+    const again = newVerifier();
+    const back = await postBack(await appleFormFor(again, anna));
+    const next = /#ticket=(sr_pt_[A-Za-z0-9_-]{43})$/.exec(back)?.[1] ?? "";
+    expect(await finish(next, again)).toMatchObject({ ok: true, data: { status: "signedIn" } });
   });
 });

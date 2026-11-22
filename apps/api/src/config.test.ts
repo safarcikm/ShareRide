@@ -1,3 +1,4 @@
+import { generateKeyPairSync } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -19,6 +20,14 @@ const valid = {
   RENDER_GIT_COMMIT: "0123abc",
   WEB_APP_DIR: "/repo/web",
 };
+
+/** A made-up Apple team key: a P-256 key as PKCS #8 PEM, as Apple's .p8 file is. */
+const pem = { type: "pkcs8", format: "pem" } as const;
+const appleKey = generateKeyPairSync("ec", {
+  namedCurve: "P-256",
+  privateKeyEncoding: pem,
+  publicKeyEncoding: { type: "spki", format: "pem" },
+}).privateKey;
 
 const development = {
   NODE_ENV: "development",
@@ -57,6 +66,7 @@ describe("loadConfig", () => {
       photos: { provider: "folder", folder: join(tmpdir(), "shareride-photos") },
       signIn: {
         google: { mode: "dev" },
+        apple: { mode: "dev" },
         apiOrigin: "http://localhost:8080",
         returnOrigins: [
           "https://shareride.is",
@@ -71,12 +81,14 @@ describe("loadConfig", () => {
   it("uses the stand-in for Google locally, and nothing on a server until told (ADR 0034)", () => {
     expect(loadConfig(development).signIn).toEqual({
       google: { mode: "dev" },
+      apple: { mode: "dev" },
       apiOrigin: "http://localhost:3000",
       returnOrigins: ["http://localhost:8081"],
       allowExpoGo: true,
     });
     expect(loadConfig(valid).signIn).toEqual({
       google: { mode: "off" },
+      apple: { mode: "off" },
       apiOrigin: "http://localhost:8080",
       returnOrigins: ["https://shareride.is", "https://www.shareride.is"],
       allowExpoGo: false,
@@ -85,6 +97,53 @@ describe("loadConfig", () => {
 
   it("refuses the stand-in in production, staging included", () => {
     expect(() => loadConfig({ ...valid, GOOGLE_SIGN_IN: "dev" })).toThrow("GOOGLE_SIGN_IN");
+    expect(() => loadConfig({ ...valid, APPLE_SIGN_IN: "dev" })).toThrow("APPLE_SIGN_IN");
+  });
+
+  it("signs in with Apple with its Services ID and the team's key, \\n allowed for line breaks", () => {
+    const apple = {
+      APPLE_SIGN_IN: "apple",
+      APPLE_SERVICES_ID: "is.shareride.preview.web",
+      APPLE_TEAM_ID: "TEAM123456",
+      APPLE_KEY_ID: "KEY1234567",
+      APPLE_PRIVATE_KEY: appleKey.trim().replaceAll("\n", "\\n"),
+      API_ORIGIN: "https://staging.skinnar.is",
+    };
+    expect(loadConfig({ ...valid, ...apple }).signIn.apple).toEqual({
+      mode: "apple",
+      servicesId: "is.shareride.preview.web",
+      teamId: "TEAM123456",
+      keyId: "KEY1234567",
+      privateKey: appleKey.trim(),
+    });
+    expect(
+      loadConfig({ ...valid, ...apple, APPLE_PRIVATE_KEY: appleKey }).signIn.apple,
+    ).toMatchObject({
+      privateKey: appleKey,
+    });
+    for (const key of [
+      "APPLE_SERVICES_ID",
+      "APPLE_TEAM_ID",
+      "APPLE_KEY_ID",
+      "APPLE_PRIVATE_KEY",
+      "API_ORIGIN",
+    ] as const) {
+      expect(() => loadConfig({ ...valid, ...apple, [key]: undefined })).toThrow(key);
+    }
+    const rsa = generateKeyPairSync("rsa", {
+      modulusLength: 2048,
+      privateKeyEncoding: pem,
+      publicKeyEncoding: { type: "spki", format: "pem" },
+    }).privateKey;
+    for (const wrong of [rsa, "not a key"]) {
+      expect(() => loadConfig({ ...valid, ...apple, APPLE_PRIVATE_KEY: wrong })).toThrow(
+        "APPLE_PRIVATE_KEY",
+      );
+    }
+    expect(() => loadConfig({ ...valid, ...apple, APPLE_TEAM_ID: "team" })).toThrow(
+      "APPLE_TEAM_ID",
+    );
+    expect(loadConfig({ ...development, ...apple }).signIn.allowExpoGo).toBe(false);
   });
 
   it("signs in with Google with its web client, on the API's public origin", () => {
@@ -102,6 +161,7 @@ describe("loadConfig", () => {
         clientId: "client.apps.googleusercontent.com",
         clientSecret: "a-secret",
       },
+      apple: { mode: "off" },
       apiOrigin: "https://staging.skinnar.is",
       returnOrigins: ["https://staging.skinnar.is"],
       allowExpoGo: false,
@@ -134,9 +194,14 @@ describe("loadConfig", () => {
         GOOGLE_SIGN_IN: "",
         GOOGLE_CLIENT_ID: "",
         GOOGLE_CLIENT_SECRET: "",
+        APPLE_SIGN_IN: "",
+        APPLE_SERVICES_ID: "",
+        APPLE_TEAM_ID: "",
+        APPLE_KEY_ID: "",
+        APPLE_PRIVATE_KEY: "",
         API_ORIGIN: "",
-      }).signIn.google,
-    ).toEqual({ mode: "off" });
+      }).signIn,
+    ).toMatchObject({ google: { mode: "off" }, apple: { mode: "off" } });
   });
 
   it("keeps photos in a folder locally, and takes none on a server until a bucket is set (ADR 0022)", () => {

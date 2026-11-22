@@ -115,13 +115,19 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   the sign-in in a browser window. The start takes the app's challenge
   (SHA-256 of a secret the app keeps) and a return address from a fixed
   list (the web app's `/sign-in/return` on `WEB_ORIGINS` or `WEB_APP_URL`,
-  `shareride://sign-in/return`, Expo Go's only outside production), stores
+  `shareride://sign-in/return`, Expo Go's only outside production and with
+  the stand-ins), stores
   only a hash of a new 256-bit state, and limits starts to 20 per 10
   minutes per address. The PKCE verifier and the nonce are keyed hashes of
   the state, never stored. The callback takes a state once and within 10
   minutes, trades the code with the client secret, and checks the ID
-  token's signature against the provider's published keys, its issuer,
-  audience (our client), expiry (a minute's leeway) and nonce. It sends
+  token's signature (RS256) against the provider's published keys, its
+  issuer, audience and authorized party (our client), expiry (a minute's
+  leeway) and nonce. Apple's client secret is a JWT the API signs with the
+  team's key (ES256, an hour long); the key is a Render secret, checked to
+  be a P-256 key at start-up. Apple's callback is the one route that takes
+  a form body, as Apple posts it; it reads no cookie, and its state works
+  once. It sends
   the browser back with a ticket (`sr_pt_`, 5 minutes, once) in the
   fragment, with `Cache-Control: no-store` and no referrer. Finishing needs
   the app's secret, so a ticket caught on its way is useless. A newcomer
