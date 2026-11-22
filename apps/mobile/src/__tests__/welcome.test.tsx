@@ -629,12 +629,14 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     expect(screen.queryByRole("radio", { name: "Choose a day" })).toBeNull();
   });
 
-  it("draws the puffins' car over the title on a wide page too (spec 15, 5.3)", async () => {
+  it("draws the puffins' car on the title's line on a wide page, so the page under it stays put (spec 15, 5.3)", async () => {
     await openFrontPage();
     await screen.findByRole("header", { name: "Where are you going?" });
-    const title = within(screen.getByTestId("title-line"));
-    const car = title.getByTestId("puffins-in-car", { includeHiddenElements: true });
+    const line = screen.getByTestId("title-line");
+    const car = within(line).getByTestId("puffins-in-car", { includeHiddenElements: true });
     expect(within(car).getByTestId("puffin-driver", { includeHiddenElements: true })).toBeTruthy();
+    // Beside the title, not over it: the map beside the rides stays whole.
+    expect(line).toHaveStyle({ flexDirection: "row" });
   });
 
   it("shows From, To and the date as fields a shade off the card, tinted under the pointer", async () => {

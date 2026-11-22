@@ -266,11 +266,12 @@ export const sizes = {
   screenshotHeight: 312,
   /**
    * The puffin scenes (spec 15, section 5.3): the car on a phone's front page,
-   * at the end of a wide page's title line, and driving off when a seat is
-   * booked; the puffin by a pin on an empty screen, by its height.
+   * on a wide page's title line (no higher than the title and the room
+   * around it), and driving off when a seat is booked; the puffin by a pin
+   * on an empty screen, by its height.
    */
   sceneCar: 170,
-  sceneCarSmall: 120,
+  sceneCarSmall: 88,
   sceneCarBooked: 200,
   scenePuffin: 120,
 } as const;

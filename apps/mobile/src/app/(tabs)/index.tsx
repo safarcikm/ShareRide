@@ -86,7 +86,7 @@ function FrontPage() {
     />
   );
   const title = (
-    <View testID="title-line" style={styles.intro}>
+    <View testID="title-line" style={wide ? styles.introWide : styles.intro}>
       <PuffinsInCar width={wide ? sizes.sceneCarSmall : sizes.sceneCar} />
       <Title>{t("home.title")}</Title>
     </View>
@@ -324,6 +324,16 @@ const styles = StyleSheet.create({
   top: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   brand: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   intro: { gap: spacing.md, paddingVertical: spacing.lg },
+  // On a wide page the car is on the title's line, taking the room over and
+  // under the title: the line is no higher than the title alone was, so the
+  // map beside the rides stays whole in a window 720 high (spec 18).
+  introWide: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: spacing.ms,
+  },
   next: { gap: spacing.sm, paddingTop: spacing.md },
   nextBeside: { gap: spacing.md },
   rides: { gap: spacing.md },
