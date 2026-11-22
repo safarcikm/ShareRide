@@ -18,6 +18,7 @@ import { sampleId, seedSampleMeetingPoints } from "@shareride/db/seed";
 import { eq, inArray } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
+import { givePhoto } from "../account/testing.ts";
 import { cleanUpDrafts } from "./clean-up.ts";
 
 let api: TestApi;
@@ -35,8 +36,8 @@ afterAll(async () => {
   await api.close();
 });
 
-/** A driver ready to publish: account finished, a car, the licence declared. */
-async function newDriver({ ready = true } = {}) {
+/** A driver ready to publish: account finished, a photo, a car, the licence declared. */
+async function newDriver({ ready = true, photo = true } = {}) {
   const phone = api.newPhoneNumber();
   const signedIn = await api.signIn(phone);
   const { accessToken } = signedIn;
@@ -60,6 +61,7 @@ async function newDriver({ ready = true } = {}) {
   });
   if (!car.ok) throw new Error(car.error.code);
   if (ready) await api.client.call(declareLicenceRoute, { accessToken, body: { declared: true } });
+  if (photo) await givePhoto(api, signedIn.userId);
   return { ...signedIn, phone, carId: car.data.id };
 }
 
@@ -337,6 +339,34 @@ describe("publishing (spec 3, 3.8 and section 4)", () => {
       params: { id: trip.id },
     });
     expect(removed).toMatchObject({ status: 409, error: { code: "trip_not_draft" } });
+  });
+
+  it("asks for a profile photo before publishing (spec 1, 3.5)", async () => {
+    const { accessToken, userId } = await newDriver({ photo: false });
+    const trip = await draft(accessToken, { departure: tomorrowAt("09:00") });
+    const refused = await publish(accessToken, trip.id);
+    expect(refused).toMatchObject({
+      status: 422,
+      error: {
+        code: "trip_not_publishable",
+        details: [{ path: "driver", issue: "driver_not_ready" }],
+      },
+    });
+    await givePhoto(api, userId);
+    expect(await publish(accessToken, trip.id)).toMatchObject({
+      status: 200,
+      data: { status: "published" },
+    });
+  });
+
+  it("does not count a photo ShareRide hid (spec 9, 3.4.3)", async () => {
+    const { accessToken, userId } = await newDriver({ photo: false });
+    await givePhoto(api, userId, api.now());
+    const trip = await draft(accessToken, { departure: tomorrowAt("09:00") });
+    expect(await publish(accessToken, trip.id)).toMatchObject({
+      status: 422,
+      error: { details: [{ path: "driver", issue: "driver_not_ready" }] },
+    });
   });
 
   it("waits for a pause of one of its stops under way, then refuses it (spec 2, 3.6.4)", async () => {

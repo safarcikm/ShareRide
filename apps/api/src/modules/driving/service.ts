@@ -11,6 +11,7 @@ import {
   type VehicleInput,
 } from "@shareride/domain";
 import { and, asc, eq, isNull, ne } from "drizzle-orm";
+import type { PhotoStorage } from "../../platform/photo-storage.ts";
 import type { AccountService } from "../account/index.ts";
 
 const { trips, users, vehicles } = schema;
@@ -53,6 +54,8 @@ export function createDrivingService(dependencies: {
   readonly db: Database;
   readonly clock: () => Date;
   readonly account: AccountService;
+  /** Photo storage: while there is some, a driver needs a photo to publish (spec 1, 3.5). */
+  readonly photos?: PhotoStorage;
 }): DrivingService {
   const { db, clock, account } = dependencies;
   /** One of my cars that I have not removed. */
@@ -85,8 +88,8 @@ export function createDrivingService(dependencies: {
     const { ready, items } = driverReadiness({
       accountComplete: me.missingSteps.length === 0,
       hasPhoto: user === undefined ? false : photoShown(user),
-      // Blocking once the app can add a photo (profile photos plan, PR 4b).
-      photosOn: false,
+      // A server without photo storage takes none, so it cannot ask for one.
+      photosOn: dependencies.photos !== undefined,
       hasCar: cars.length > 0,
       licenceDeclared: licenceDeclaredAt !== null,
     });

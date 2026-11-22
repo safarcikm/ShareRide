@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import { formatDay, type Locale } from "@shareride/i18n";
+import { addPhotoBeforePublishing } from "./photo";
 
 // Finding a sample trip through the search, for journeys that book, and
 // posting one as a new driver, for journeys that answer requests.
@@ -102,15 +103,15 @@ export function tomorrow(locale: Locale) {
 
 /**
  * Posts Mjódd to N1 Selfoss tomorrow at `departure` as a new driver, in
- * English, keeping the suggested price and seats, with the car and licence
- * added on the way; returns the trip's ID. The stops on the way that the
- * app suggests stay, except those named in `skip`.
+ * English, keeping the suggested price and seats, with the photo, car and
+ * licence added on the way; returns the trip's ID. The stops on the way
+ * that the app suggests stay, except those named in `skip`.
  */
 export async function postTripToSelfoss(
   page: Page,
   departure: string,
   skip: readonly string[] = [],
-  /** The driver has posted before: their car and licence are in place. */
+  /** The driver has posted before: their photo, car and licence are in place. */
   ready = false,
 ) {
   const choose = async (end: "From" | "To", typed: string, card: RegExp) => {
@@ -132,6 +133,7 @@ export async function postTripToSelfoss(
   await page.getByRole("button", { name: "Choose seats" }).click();
   await page.getByRole("button", { name: "Review your trip" }).click();
   if (ready) return publish(page);
+  await addPhotoBeforePublishing(page);
   await page.getByRole("button", { name: "Add a car" }).click();
   await page.getByLabel("Make").fill("Toyota");
   await page.getByLabel("Model").fill("Yaris");
