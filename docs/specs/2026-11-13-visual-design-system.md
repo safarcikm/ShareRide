@@ -407,7 +407,7 @@ Built when the screens that need them are built.
 | `RadioCard` | A card with a radio, a title and a line of help; selected: `primary` 2 outline |
 | `TickList` | Rows with a tick box: done is a filled `primary` box with a tick, not done is an empty `control` box with an action button |
 | `StepProgress` | "Step 3 of 5" in `caption` above five bars 8 high; done bars `primary`, others `border` |
-| `TripSoFar` | Beside a posting step on a wide screen (spec 18, 3.13): a `Card` headed "Your trip so far", with a row each for the route, the day and times, the price, and the seats and booking. A row is its name in `label`, `textMuted`, over one or two lines in `body`, `text`; a step still to come is "Step 3" in `body`, `textMuted`. Each row has one spoken label, with a word where the screen has an arrow: "Route: Mjódd bus terminal to N1 Selfoss, 2 stops on the way" |
+| `TripSoFar` | Beside a posting step on a wide screen (spec 18, 3.13): a `Card` headed "Your trip so far", with a row each for the route, the day and times, the seats and booking, and the price, in the order of the steps. A row is its name in `label`, `textMuted`, over one or two lines in `body`, `text`; a step still to come is "Step 3" in `body`, `textMuted`. Each row has one spoken label, with a word where the screen has an arrow: "Route: Mjódd bus terminal to N1 Selfoss, 2 stops on the way" |
 | `BottomBar` | `surface`, 2 `border` top line, price on the left, main button on the right; respects the safe area |
 | `NeedBubble` | A pill with a coloured round icon and a word, for trip preferences |
 | `RouteLine` | Times, a line with stops, place in `bodyStrong` and meeting point in `small`; the part you ride is solid `primary`, the rest dotted `control` |
@@ -496,8 +496,8 @@ in the specs named under each.
 | Screen | Board |
 | ------ | ----- |
 | Step 1, route: from, to, the map and the stops on the way, each with a switch | ![Route step](images/visual-design-system/post-route.png) |
-| Step 3, price: the whole-route price, the price level control with a shape person as the handle, minus and plus buttons, each stretch's price and why there is a limit | ![Price step](images/visual-design-system/post-price.png) |
-| Step 4, seats and preferences: the seats offered in the seat view, booking mode, preferences and a note | ![Seats step](images/visual-design-system/post-seats.png) |
+| Step 4, price (step 3 until 2026-11-22, when the seats moved before it): the whole-route price, the price level control with a shape person as the handle, minus and plus buttons, each stretch's price and why there is a limit | ![Price step](images/visual-design-system/post-price.png) |
+| Step 3, seats and preferences (step 4 until 2026-11-22): the seats offered in the seat view, booking mode, preferences and a note | ![Seats step](images/visual-design-system/post-seats.png) |
 | Step 5, check and publish: what is still missing ("Two things before you publish", spec 16), a summary with Edit links and "Publish trip" | ![Check and publish step](images/visual-design-system/post-review.png) |
 
 Some details in the drawings are older than this spec, and the tables above

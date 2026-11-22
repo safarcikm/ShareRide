@@ -196,7 +196,7 @@ function TimeStep({
       );
       return;
     }
-    goOn(trip.id, "price", fromReview);
+    goOn(trip.id, "seats", fromReview);
   };
 
   // The times at the stops start folded, worked out for the driver (spec 16,

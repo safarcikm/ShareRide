@@ -15,7 +15,7 @@ import { priceSoFar, savedSoFar } from "@/trips/trip-so-far";
 import { Loading, useDraftOnFocus } from "@/trips/use-draft";
 import { useQuote } from "@/trips/use-quote";
 
-/** Step 3, the price level (spec 3, 3.6; ADR 0012). */
+/** Step 4, the price level, for the seats chosen in step 3 (spec 3, 3.6; ADR 0012). */
 export default function PriceStepScreen() {
   const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
   const { t } = useLanguage();
@@ -61,7 +61,7 @@ function PriceStep({ trip, fromReview }: { readonly trip: MyTrip; readonly fromR
       setFailure(errorText(t, saved));
       return;
     }
-    goOn(trip.id, "seats", fromReview);
+    goOn(trip.id, "review", fromReview);
   };
 
   return (

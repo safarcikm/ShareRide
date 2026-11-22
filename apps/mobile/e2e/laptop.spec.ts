@@ -968,7 +968,7 @@ test.describe("Offer a ride and the driver's trip", () => {
     await driver.goto("/offer");
     await expect(main.getByRole("heading", { name: "Where are you driving?" })).toBeVisible();
     await expect(soFar.getByLabel("Route: Step 1")).toBeVisible();
-    await expect(soFar.getByLabel("Seats and booking: Step 4")).toBeVisible();
+    await expect(soFar.getByLabel("Price: Step 4")).toBeVisible();
     const toTimes = side.getByRole("button", { name: "Choose date and time" });
     const before = await box(toTimes);
     await expectTwoColumns();
@@ -1019,25 +1019,18 @@ test.describe("Offer a ride and the driver's trip", () => {
     await main.getByRole("radio", { name: day.name }).click();
     await chooseTime(driver, "Leaving Mjódd bus terminal at", "17:45");
     await expect(soFar.getByLabel(/^Date and times: .+, 17:45 to \d\d:\d\d$/)).toBeVisible();
-    await expect(soFar.getByLabel("Price: Step 3")).toBeVisible();
-    await expectTwoColumns();
-    await side.getByRole("button", { name: "Set your price" }).click();
-
-    // Step 3: the price as it is chosen.
-    await expect(main.getByRole("heading", { name: "Set your price" })).toBeVisible();
-    await expect(soFar.getByLabel(/^Price: 100% · the whole route [\d,]+ ISK$/)).toBeVisible();
-    await main.getByRole("button", { name: "Raise the price" }).click();
-    await expect(soFar.getByLabel(/^Price: 110% · the whole route [\d,]+ ISK$/)).toBeVisible();
+    await expect(soFar.getByLabel("Seats and booking: Step 3")).toBeVisible();
+    await expect(soFar.getByLabel("Price: Step 4")).toBeVisible();
     await expectTwoColumns();
     await side.getByRole("button", { name: "Choose seats" }).click();
 
-    // Step 4, the longest: its button stays in the window while the step
+    // Step 3, the longest: its button stays in the window while the step
     // scrolls, also in a small laptop's window and in Icelandic.
     await expect(main.getByRole("heading", { name: "Seats and preferences" })).toBeVisible();
     await expect(
       soFar.getByLabel("Seats and booking: 3 seats, I approve each passenger"),
     ).toBeVisible();
-    const toReview = side.getByRole("button", { name: "Review your trip" });
+    const toPrice = side.getByRole("button", { name: "Set your price" });
     const choices = '[role="button"], [role="radio"], [role="checkbox"], [role="switch"]';
     for (const width of widths) {
       await driver.setViewportSize(laptop(width));
@@ -1059,8 +1052,19 @@ test.describe("Offer a ride and the driver's trip", () => {
         scroll.scrollTop = scroll.scrollHeight;
       });
     await expect(main.getByLabel("Note to passengers (optional)")).toBeInViewport();
-    await expectInWindow(toReview);
-    await toReview.click();
+    await expectInWindow(toPrice);
+    await toPrice.click();
+
+    // Step 4: the price as it is chosen, for the seats just chosen.
+    await expect(main.getByRole("heading", { name: "Set your price" })).toBeVisible();
+    await expect(
+      soFar.getByLabel("Seats and booking: 3 seats, I approve each passenger"),
+    ).toBeVisible();
+    await expect(soFar.getByLabel(/^Price: 100% · the whole route [\d,]+ ISK$/)).toBeVisible();
+    await main.getByRole("button", { name: "Raise the price" }).click();
+    await expect(soFar.getByLabel(/^Price: 110% · the whole route [\d,]+ ISK$/)).toBeVisible();
+    await expectTwoColumns();
+    await side.getByRole("button", { name: "Review your trip" }).click();
 
     // Step 5: Publish and what it waits for beside the summary.
     await expect(main.getByRole("heading", { name: "Check and publish" })).toBeVisible();

@@ -11,6 +11,15 @@ licence are in Profile, and step 5 starts with what is still missing, with
 Publish waiting until the car and licence are done. The times at the other
 stops (3.5, item 2) show folded, with Change (spec 16, 3.6).
 
+Amended on 2026-11-22 (Martin: "shouldn't we select the amount of seats
+before we set the price?"): the seats step (3.7) comes before the price
+step (3.6), as step 3 and step 4. The highest price level depends on the
+seats offered (rule P4, spec 17), so the price step now shows the limit
+for the seats the driver chose, not a guess from the last trip; a level a
+draft carries from the last trip that is above it is lowered quietly on the
+seats step, and the driver is told only when they change the seats from the
+review after choosing a price (3.6, item 4). No rule changes.
+
 Features: A3 Driver setup, C1 Post a trip, C2 Segment prices, C3 Seats and
 booking mode, C4 Trip preferences and notes ([features](../product/features.md)).
 Related: [pricing and seats](../product/pricing-and-seats.md) (source of truth
@@ -151,8 +160,10 @@ Drivers do not edit segment prices one by one (decision 2,
    updates as the level changes.
 3. The default is the level of the driver's previous trip, or 100% the first
    time.
-4. If the driver offers more seats, the highest level falls; a level above it
-   is lowered to it and the driver is told. Once people have booked, the
+4. The seats are chosen before the price (step 3), so the price step shows
+   the highest level for them. If the driver later offers more seats, from
+   the review, the highest level falls; a level above it is lowered to it
+   and the driver is told. Once people have booked, the
    trip limit can lower it further (spec 17, rule P4); the screen then says
    "Passengers have already paid most of this trip's limit, so the seats
    left can cost at most 120%."
@@ -244,8 +255,9 @@ Phone first. The same screens work in the web app in a centred column.
 3. Driving licence declaration
 4. Route: from, to, the stops added along the way, map
 5. Date and times
-6. Price level, with the whole-route price and the price of each stretch
-7. Seats, booking mode, car and preferences
+6. Seats, booking mode, car and preferences (step 3, before the price)
+7. Price level, with the whole-route price and the price of each stretch,
+   for the seats chosen (step 4)
 8. Note
 9. Review and publish
 10. Published: share and post the return trip

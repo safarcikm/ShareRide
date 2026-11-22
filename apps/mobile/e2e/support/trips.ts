@@ -129,8 +129,8 @@ export async function postTripToSelfoss(
   if (day.nextMonth) await page.getByRole("button", { name: "Next month" }).click();
   await page.getByRole("radio", { name: day.name }).click();
   await chooseTime(page, "Leaving Mjódd bus terminal at", departure);
-  await page.getByRole("button", { name: "Set your price" }).click();
   await page.getByRole("button", { name: "Choose seats" }).click();
+  await page.getByRole("button", { name: "Set your price" }).click();
   await page.getByRole("button", { name: "Review your trip" }).click();
   if (ready) return publish(page);
   await addPhotoBeforePublishing(page);

@@ -26,7 +26,7 @@ changes: the seats and price rules (P3, P4, S1 to S5) stay as they are; only
 the order the driver answers them in changes. The boards Martin chose from
 are in the project files (`beautify/`).
 
-## PR 1: the puffins' car
+## PR 1: the puffins' car (#226)
 
 - [x] Test first (`components/puffin-scenes.test.tsx`): the car is
   `puffinCar.body` with `wing` and `glass`; the puffins are cut by their
@@ -44,13 +44,17 @@ are in the project files (`beautify/`).
 
 ## PR 2: seats before price
 
-- [ ] Test first (`__tests__/post-a-trip.test.tsx`): step 3 is "Seats and
-  booking", step 4 the price; the price step quotes the seats chosen.
-- [ ] `trips/steps.ts`: `route`, `time`, `seats`, `price`, `review`; the
-  steps' next buttons and `TripSoFar` follow the new order.
-- [ ] Spec 3, sections 3.6 to 3.8 and the screens list; spec 16 and 18
-  where they name step numbers. The journeys (`e2e/post-a-trip.spec.ts` and
-  others that post a trip) follow the new order.
+- [x] Test first (`__tests__/post-a-trip.test.tsx`): step 3 is "Seats and
+  booking", step 4 the price; the price step quotes the seats chosen; a
+  draft's level above the highest for more seats is lowered quietly on the
+  first pass, and with the notice when the seats change from the review.
+- [x] `trips/steps.ts`: `route`, `time`, `seats`, `price`, `review`; the
+  steps' next buttons ("Choose seats", "Set your price", "Review your
+  trip") and `TripSoFar` follow the new order.
+- [x] Spec 3 (amendment, 3.6 item 4, screens list), spec 15 (5.4 and
+  `TripSoFar`), spec 18 (3.13 item 3). The journeys
+  (`e2e/post-a-trip.spec.ts`, `laptop.spec.ts`, `post-again.spec.ts`,
+  `support/trips.ts`) follow the new order.
 
 ## PR 3: the phone's search in one card
 
