@@ -6,6 +6,7 @@ import {
   maxContentWidth,
   pageMaxWidth,
   sideColumnWidth,
+  signInBrands,
   spacing,
   typeScale,
 } from "./tokens.ts";
@@ -56,6 +57,23 @@ describe.each(["light", "dark"] as const)("%s colours", (scheme) => {
     expect(
       contrastRatio(colors[scheme][foreground], colors[scheme][background]),
     ).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe.each(["light", "dark"] as const)("%s sign-in buttons", (scheme) => {
+  const brand = signInBrands[scheme];
+  const page = colors[scheme];
+
+  it("has text that reads on its button", () => {
+    expect(contrastRatio(brand.googleText, brand.googleFill)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(brand.appleText, brand.appleFill)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("has buttons that stand out from the screen", () => {
+    for (const behind of [page.background, page.surface]) {
+      expect(contrastRatio(brand.googleBorder, behind)).toBeGreaterThanOrEqual(3);
+      expect(contrastRatio(brand.appleFill, behind)).toBeGreaterThanOrEqual(3);
+    }
   });
 });
 

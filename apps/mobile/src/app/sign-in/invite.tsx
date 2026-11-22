@@ -12,6 +12,7 @@ import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useSignInFlow } from "@/sign-in/flow";
 import { KeptRideCard } from "@/sign-in/kept-ride-card";
+import { providerNames } from "@/sign-in/provider-window";
 import { SignUpProgress } from "@/sign-in/sign-up-progress";
 import { spacing } from "@/theme/tokens";
 
@@ -47,7 +48,13 @@ export default function InviteCodeScreen() {
     setBusy(true);
     setMessage(null);
     flow.setNotice(null);
-    const result = await session.verify(phoneNumber, smsCode, locale, invite);
+    const result = await session.verify(
+      phoneNumber,
+      smsCode,
+      locale,
+      invite,
+      flow.pending?.pendingSignIn,
+    );
     if (result.ok) return;
     inFlight.current = false;
     setBusy(false);
@@ -55,6 +62,28 @@ export default function InviteCodeScreen() {
       case "invite_invalid":
         setFieldError(errorText(t, result));
         return;
+      case "provider_expired":
+      case "provider_in_use": {
+        // As on the code screen (spec 19, 3.3): too late goes back to step
+        // 1 to continue with Google or Apple again; one another account
+        // has is dropped, and "Create account" again makes the account
+        // with the number alone, since the API kept the code.
+        const waiting = flow.pending;
+        if (waiting === null) {
+          setMessage(errorText(t, result));
+          return;
+        }
+        const provider = providerNames[waiting.provider];
+        flow.setPending(null);
+        if (result.error.code === "provider_in_use") {
+          setMessage(t("auth.provider.inUseRetry", { provider }));
+          return;
+        }
+        flow.setRightCode(null);
+        flow.setNotice(t("auth.provider.expired", { provider }));
+        router.dismissTo("/sign-in");
+        return;
+      }
       case "code_invalid":
       case "code_expired":
       case "code_attempts_exceeded":

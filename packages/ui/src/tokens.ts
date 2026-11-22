@@ -134,6 +134,37 @@ export const mapDrawing = {
   },
 } as const;
 
+/**
+ * Google's and Apple's own colours for their sign-in buttons (spec 15,
+ * section 4.2; spec 19, 3.1): the only colours on our screens that are not
+ * ours, as their button rules ask. Google's light and dark buttons; Apple's
+ * black button in light mode and white in dark.
+ */
+export const signInBrands = {
+  light: {
+    googleFill: "#FFFFFF",
+    googleBorder: "#747775",
+    googleText: "#1F1F1F",
+    appleFill: "#000000",
+    appleText: "#FFFFFF",
+  },
+  dark: {
+    googleFill: "#131314",
+    googleBorder: "#8E918F",
+    googleText: "#E3E3E3",
+    appleFill: "#FFFFFF",
+    appleText: "#000000",
+  },
+} as const;
+
+/** Google's "G", the same in both modes. */
+export const googleLogo = {
+  blue: "#4285F4",
+  green: "#34A853",
+  yellow: "#FBBC05",
+  red: "#EA4335",
+} as const;
+
 export type ColorScheme = keyof typeof colors;
 export type Palette = { readonly [K in keyof (typeof colors)["light"]]: string };
 

@@ -105,6 +105,8 @@ export const providerLinkSchema = z.object({
   email: z.string().nullable(),
 });
 
+export type ProviderLink = z.infer<typeof providerLinkSchema>;
+
 export const signedInSchema = tokensSchema.extend({
   user: meSchema,
   /** True when this sign-in created the account. */
@@ -289,6 +291,8 @@ export const phoneNeededSchema = z.object({
   firstName: z.string().nullable(),
   expiresAt: timestampSchema,
 });
+
+export type PhoneNeeded = z.infer<typeof phoneNeededSchema>;
 
 export const finishProviderSignInResponseSchema = z.discriminatedUnion("status", [
   signedInSchema.extend({ status: z.literal("signedIn") }),
