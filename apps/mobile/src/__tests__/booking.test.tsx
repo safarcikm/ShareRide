@@ -63,6 +63,15 @@ const paymentFor = (booking: ReturnType<typeof northBooking>) => ({
   dueAt: booking.paymentDueAt,
 });
 
+// The first render in a file loads every screen of the app, and with no
+// cache (as in CI) compiles them too. Jest runs this file first, as the
+// largest, while every package's checks run at once, and that took the
+// first test past its 15 s. Load the app here, with time of its own.
+beforeAll(async () => {
+  const { unmount } = await renderApp("/");
+  await unmount();
+}, 120_000);
+
 beforeEach(() => {
   mockedRead.mockReset().mockResolvedValue(null);
   mockedWrite.mockReset().mockResolvedValue(undefined);
