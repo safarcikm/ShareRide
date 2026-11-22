@@ -1,5 +1,5 @@
 import { useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface Loaded<T> {
   /** Undefined while the first result is on its way and after `reload`. */
@@ -8,6 +8,11 @@ interface Loaded<T> {
   readonly reload: () => void;
   /** Loads again and keeps the last result on screen until the new one comes. */
   readonly refresh: () => void;
+  /**
+   * Loads again as `refresh` does, for pulling down to refresh (spec 16,
+   * 3.9): the result is on screen when the promise settles, with it.
+   */
+  readonly pull: () => Promise<T>;
 }
 
 /**
@@ -18,6 +23,7 @@ export function useLoaded<T>(load: () => Promise<T>): Loaded<T> {
   const [value, setValue] = useState<T>();
   const [attempt, setAttempt] = useState(0);
   useEffect(() => loadInto(load, setValue), [load, attempt]);
+  const pull = usePull(load, setValue);
   return {
     value,
     reload: () => {
@@ -27,6 +33,7 @@ export function useLoaded<T>(load: () => Promise<T>): Loaded<T> {
     refresh: () => {
       setAttempt((count) => count + 1);
     },
+    pull,
   };
 }
 
@@ -45,6 +52,7 @@ export function useLoadedOnFocus<T>(load: () => Promise<T>): Loaded<T> {
     }, []),
   );
   useEffect(() => (round === 0 ? undefined : loadInto(load, setValue)), [load, round]);
+  const pull = usePull(load, setValue);
   return {
     value,
     reload: () => {
@@ -54,6 +62,7 @@ export function useLoadedOnFocus<T>(load: () => Promise<T>): Loaded<T> {
     refresh: () => {
       setRound((count) => count + 1);
     },
+    pull,
   };
 }
 
@@ -66,4 +75,28 @@ function loadInto<T>(load: () => Promise<T>, setValue: (value: T) => void): () =
   return () => {
     current = false;
   };
+}
+
+/**
+ * Loads with the current `load` and shows the result, unless `load` changed
+ * meanwhile (another search, another list) or the screen closed: that
+ * result is for what was on screen before.
+ */
+function usePull<T>(load: () => Promise<T>, setValue: (value: T) => void): () => Promise<T> {
+  const current = useRef<(() => Promise<T>) | null>(load);
+  useEffect(() => {
+    current.current = load;
+  }, [load]);
+  useEffect(
+    () => () => {
+      current.current = null;
+    },
+    [],
+  );
+  return useCallback(async () => {
+    const asked = load;
+    const loaded = await asked();
+    if (current.current === asked) setValue(loaded);
+    return loaded;
+  }, [load, setValue]);
 }

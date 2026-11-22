@@ -27,6 +27,8 @@ export interface Conversations {
   /** The answer that failed, when there is nothing to show, until `reload`. */
   readonly failed: CallFailure | null;
   readonly reload: () => void;
+  /** Loads them again for pulling down to refresh: true once they are on screen (spec 16, 3.9). */
+  readonly pull: () => Promise<boolean>;
 }
 
 /**
@@ -42,11 +44,11 @@ export interface Conversations {
  */
 export function useConversations(follows: boolean): Conversations {
   const { conversations, load } = useUnread();
-  const { value: answer, reload } = useLoadedOnFocus(load);
+  const { value: answer, reload, pull } = useLoadedOnFocus(load);
   const own = answer?.ok === true ? answer.data.conversations : null;
   const rows = follows ? (conversations ?? own) : own;
   const failed = rows === null && answer !== undefined && !answer.ok ? answer : null;
-  return { rows, failed, reload };
+  return { rows, failed, reload, pull: async () => (await pull()).ok };
 }
 
 /**

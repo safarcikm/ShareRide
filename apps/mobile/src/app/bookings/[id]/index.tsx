@@ -64,7 +64,8 @@ import { firstNameOf } from "@/people/texts";
  * reporting or answering with `report`, focus moves to it.
  * Changes to the trip since booking show, with the choice to keep or
  * cancel after a big move (spec 6, 3.2). It loads again each time it comes
- * into view. On a wide screen it is a page of two columns (spec 18, 3.9).
+ * into view, and when pulled down (spec 16, 3.9). On a wide screen it is a
+ * page of two columns (spec 18, 3.9).
  */
 export default function BookingScreen() {
   const { t } = useLanguage();
@@ -76,7 +77,7 @@ export default function BookingScreen() {
     report?: string;
   }>();
   const load = useCallback(() => session.call(bookingRoute, { params: { id } }), [session, id]);
-  const { value: answer, reload, refresh } = useLoadedOnFocus(load);
+  const { value: answer, reload, refresh, pull } = useLoadedOnFocus(load);
   useTripDayRefresh(answer?.ok === true && onTripDay(answer.data), refresh);
   // The booking as the last payment or withdrawal left it, until it loads
   // again: kept with the answer it changed, so a newer answer wins.
@@ -150,6 +151,7 @@ export default function BookingScreen() {
       }}
       onStale={loadAgain}
       onReload={refresh}
+      onPull={async () => (await pull()).ok}
     />
   );
 }
@@ -164,6 +166,7 @@ function BookingDetails({
   onChanged,
   onStale,
   onReload,
+  onPull,
 }: {
   readonly booking: Booking;
   /** The status changed on this screen: focus moves to it when it shows. */
@@ -184,6 +187,8 @@ function BookingDetails({
   readonly onStale: (why: string) => void;
   /** Load the booking again, quietly, as after "I'm here". */
   readonly onReload: () => void;
+  /** Load it again for pulling down: true once it is on screen (spec 16, 3.9). */
+  readonly onPull: () => Promise<boolean>;
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
@@ -305,7 +310,7 @@ function BookingDetails({
   // the breakpoint. What a wide screen shows in the side column is left
   // out of the main column there, and stands in its phone place otherwise.
   return (
-    <Screen width="page">
+    <Screen width="page" refresh={onPull}>
       <BackButton fallback={{ pathname: "/trips/[id]", params: { id: booking.trip.id } }} />
       <View>
         <Text style={[typography.small, { color: palette.textMuted }]}>

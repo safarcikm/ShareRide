@@ -1,7 +1,8 @@
 # Spec 16: One home and simpler flows
 
 **Owner:** Martin · **Date:** 2026-11-15 · **Status:** Approved
-(2026-11-15); all six proposals built
+(2026-11-15); all six proposals built. Amended 2026-11-22 at Martin's ask:
+Sign out on Profile (3.4 item 4) and pull to refresh (3.9)
 
 Amends: [spec 1](2026-11-13-sign-in-and-profile.md) (front page, sign-up,
 profile, settings), [spec 2](2026-11-13-meeting-points.md) (the From and To
@@ -148,9 +149,14 @@ Find replaces both the front page and My profile as the place the app opens.
    since" and About you, never the phone number.
 3. My cars and Driving licence replace the car and licence parts of "Before
    you publish", which goes (3.6).
-4. Under the rows: "Phone number, language and signing out are in
-   Settings." The phone number, marked as private, moves from Profile to
-   the top of Settings.
+4. Under the rows: "Phone number, language and signing out on all devices
+   are in Settings." The phone number, marked as private, moves from
+   Profile to the top of Settings. Under that line, **Sign out**, a
+   secondary button, signs out of this device and returns to Find, as Sign
+   out in Settings does; if that fails, the person stays signed in and a
+   notice under it says why. Settings keeps both Sign out and Sign out on
+   all devices (Martin, 2026-11-22: "make sign out on profile tab, so it's
+   easier").
 
 ### 3.5 Sign up without losing your ride (proposal 3)
 
@@ -335,6 +341,42 @@ Find replaces both the front page and My profile as the place the app opens.
    at the left, so they are easy to scan. Titles and buttons stay centred
    (spec 15, 5.1).
 
+### 3.9 Pull to refresh and the logo (2026-11-22)
+
+Martin, 2026-11-22: "on my phone when I pull, it should indicate that we did
+a refresh", and "same when you click on logo". The web app had no pull to
+refresh: React Native's `RefreshControl` does nothing in a browser, and the
+browser's own reload does not reach a screen that scrolls inside the page.
+
+1. **Which screens:** Find, search results, Rides leaving soon, My rides,
+   Messages (the list on a phone), a booking and the driver's trip page.
+   Pulling down at the top of one loads what it shows again. The last answer
+   stays on screen until the new one comes; an answer that failed shows as
+   it does when the screen opens (a notice with Try again).
+2. **What shows:** while it loads, a spinner at the top: the phone's own
+   when pulled in the app, and on the web a round mark (`surface`, `border`
+   outline, the card's bottom edge) that comes down with the finger, its
+   arrow turning, and turns `primary` once letting go refreshes, about 64
+   points down. Let go before that and nothing happens. Then "Updated", with
+   a tick, or "Couldn't update", with the alert icon in `error`, shows at
+   the top for two seconds and is read out (a live region on the web, an
+   announcement on phones). Taps go through it to the screen.
+3. **Find also loads Your next ride again.** Signed out, there is none to
+   load.
+4. **The logo:** on a phone, the logo and name at the top of Find are a
+   button, "PuffinRide, update the front page", that goes to the top of Find
+   and loads it again, with the same spinner and "Updated". On a wide
+   screen, the logo in the top bar opens Find, as before (spec 18, 3.3), and
+   loads it again the same way.
+5. **Not pulled:** a touch that starts lower down pulls only once the screen
+   is back at its top; a touch that moves more sideways than down, as on a
+   row of chips, or that starts in a part scrolling on its own, scrolls
+   instead. A mouse does not pull; the logo is the way to refresh Find on a
+   laptop, and a screen also loads again each time it comes into view, as
+   before.
+6. Nothing moves on its own: the mark follows the finger and stops; with
+   reduce motion on, nothing else changes (spec 15, 4.6).
+
 ## 4. Rules
 
 No business rule changes. Booking still checks rule S4, holds seats under rule
@@ -422,6 +464,11 @@ The main new or changed ones ("Find a ride" keeps `welcome.findRide`):
 | `results.instantOnly` | Book instantly only | Aðeins bókun strax |
 | `search.townsAndAreas` | Towns and areas | Bæir og svæði |
 | `search.meetingPoints` | Meeting points | Mótsstaðir |
+| `profile.inSettings` | Phone number, language and signing out on all devices are in Settings. | Símanúmer, tungumál og útskráning á öllum tækjum eru í stillingum. |
+| `refresh.updating` | Updating | Uppfæri |
+| `refresh.updated` | Updated | Uppfært |
+| `refresh.failed` | Couldn't update | Ekki tókst að uppfæra |
+| `nav.refreshHome` | PuffinRide, update the front page | PuffinRide, uppfæra forsíðuna |
 
 "Sætið er þitt!" ("The seat is yours!") avoids "bókuð" or "bókaður", which
 depend on gender; the Icelandic review can change it.
@@ -436,6 +483,11 @@ depend on gender; the Icelandic review can change it.
   grouped place list and language choice.
 - **Browser journeys** (`e2e`): booking, requests, posting and sign-up run
   through the new screens, on phone and desktop, in both languages.
+  `refresh.spec.ts` pulls Find down with a finger on the phone and presses
+  the logo on both (3.9).
+- **Screen tests** for 3.9: each screen loads again when pulled and says
+  "Updated" or "Couldn't update", which goes after two seconds; the logo on
+  Find and in the top bar; Sign out on Profile (3.4 item 4).
 - **By hand:** a phone with VoiceOver and TalkBack once phones are tested:
   the tab bar's names and selected state, and the steps.
 
@@ -458,3 +510,6 @@ depend on gender; the Icelandic review can change it.
 | 5 | Is the tab bar on screens opened on top? | No on phones (back button instead); the top bar is on every screen on wide screens (3.1, item 2) (Martin, 2026-11-15) |
 | 6 | Where do drafts live? | On Offer, as "Continue your draft" (3.6, item 2) (Martin, 2026-11-15) |
 | 7 | Request trips: pay where? | From My rides, under Needs you, when the driver says yes (3.7, item 2) (Martin, 2026-11-15) |
+| 8 | Where is Sign out? | On Profile too, under the rows; Sign out on all devices stays in Settings (3.4 item 4) (Martin, 2026-11-22) |
+| 9 | Pull to refresh | On the main lists, a booking and the driver's trip page, with a spinner and "Updated" (3.9) (Martin, 2026-11-22; "pull up" read as the usual pull down at the top) |
+| 10 | The logo | Loads Find again from its top, with the same signs (3.9 item 4) (Martin, 2026-11-22) |

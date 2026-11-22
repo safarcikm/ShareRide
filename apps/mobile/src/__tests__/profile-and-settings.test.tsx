@@ -71,8 +71,20 @@ describe("My profile (spec 16, 3.4)", () => {
       expect(screen.getByRole("button", { name: row })).toBeVisible();
     }
     expect(
-      screen.getByText("Phone number, language and signing out are in Settings."),
+      screen.getByText("Phone number, language and signing out on all devices are in Settings."),
     ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeVisible();
+  });
+
+  it("signs out of this device from Profile and returns to Find", async () => {
+    const app = await openProfile();
+    await fireEvent.press(screen.getByRole("button", { name: "Sign out" }));
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(app.client.calls.findLast((call) => call.path === "/v1/auth/sign-out")?.input).toEqual({
+      body: { all: false },
+      accessToken: "sr_at_access-1",
+    });
+    expect(app.store.value).toBeNull();
   });
 
   it("says the licence is not confirmed yet, and opens the licence screen", async () => {
@@ -246,7 +258,10 @@ describe("My profile on a laptop (spec 18, 3.12)", () => {
       expect(main.getByRole("button", { name: row })).toBeVisible();
     }
     expect(main.getAllByTestId("card")).toHaveLength(2);
-    expect(main.getByText("Phone number, language and signing out are in Settings.")).toBeVisible();
+    expect(
+      main.getByText("Phone number, language and signing out on all devices are in Settings."),
+    ).toBeVisible();
+    expect(main.getByRole("button", { name: "Sign out" })).toBeVisible();
     // Each once.
     expect(screen.getAllByRole("button", { name: "Edit profile" })).toHaveLength(1);
     expect(screen.getAllByRole("button", { name: "My cars" })).toHaveLength(1);

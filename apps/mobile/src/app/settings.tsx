@@ -6,6 +6,7 @@ import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
+import { useSignOut } from "@/auth/use-sign-out";
 import { useConfig } from "@/beta/config";
 import { useOpenFeedback } from "@/beta/feedback";
 import { ShakeSwitch } from "@/beta/shake";
@@ -46,20 +47,9 @@ function Settings({ me }: { readonly me: Me }) {
   const palette = usePalette();
   const openFeedback = useOpenFeedback();
   const { signInProviders } = useConfig();
-  const [signingOut, setSigningOut] = useState<"one" | "all" | null>(null);
+  // Once signed out, this screen closes back to Find by itself.
+  const { signingOut, error: signOutError, signOut } = useSignOut();
   const [error, setError] = useState<string | null>(null);
-
-  async function signOut(all: boolean) {
-    setSigningOut(all ? "all" : "one");
-    setError(null);
-    // Once signed out, the signed-in screens close. Otherwise the person
-    // stays here and can try again.
-    const result = await session.signOut({ all });
-    if (!result.ok && session.state().status === "signedIn") {
-      setSigningOut(null);
-      setError(errorText(t, result));
-    }
-  }
 
   async function saveLanguage(locale: Locale) {
     setError(null);
@@ -208,7 +198,7 @@ function Settings({ me }: { readonly me: Me }) {
           onPress={() => void signOut(true)}
         />
         <Body>{t("settings.signOutAllHelp")}</Body>
-        <Notice message={error} />
+        <Notice message={signOutError ?? error} />
       </View>
     </Screen>
   );

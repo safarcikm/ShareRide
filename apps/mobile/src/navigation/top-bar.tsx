@@ -25,6 +25,7 @@ import {
 } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { CountBadge } from "./count-badge";
+import { refreshFrontPage } from "./front-page-refresh";
 import { menuTabOf, menuTabs } from "./menu";
 import { openPlace } from "./open-place";
 
@@ -50,9 +51,10 @@ function opensElsewhere(event: GestureResponderEvent): boolean {
  * The menu on wide screens (spec 16, 3.1): the logo and name, the places
  * and the language, in a bar at the top of every screen. The bar spans the
  * window; what it holds lines up with the page under it, and the logo and
- * name open Find (spec 18, 3.3). The place the screen belongs to is chosen:
- * `primary` and underlined. Messages shows its unread count after its name.
- * A place under the pointer turns `primary` (spec 18, 3.4).
+ * name open Find (spec 18, 3.3) and load it again (spec 16, 3.9). The
+ * place the screen belongs to is chosen: `primary` and underlined.
+ * Messages shows its unread count after its name. A place under the
+ * pointer turns `primary` (spec 18, 3.4).
  */
 export function TopBar({
   onSwitchLanguage,
@@ -91,6 +93,8 @@ export function TopBar({
               if (opensElsewhere(event)) return;
               event.preventDefault();
               openPlace("/");
+              // Find loads again, as when pulled down (spec 16, 3.9).
+              refreshFrontPage();
             }}
             style={styles.brand}
           >

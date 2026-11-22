@@ -39,7 +39,8 @@ import { firstNameOf } from "@/people/texts";
  * booking to cancel (spec 6, 3.4); then the seats held on each stretch,
  * "Edit trip" (3.2) and "Cancel trip" (3.3) until it leaves, and "Post
  * again" and "Post the return" (3.6), also once cancelled. It loads
- * again each time it comes into view. `cancelled`, the booking just
+ * again each time it comes into view, and when pulled down (spec 16,
+ * 3.9). `cancelled`, the booking just
  * cancelled, says so with focus; so does `tripCancelled`, once the trip is,
  * and `changed`, which changes once each change is saved, with `told`, how
  * many passengers were told. A cancelled trip says why, and nothing more.
@@ -74,7 +75,7 @@ export default function DriverTripScreen() {
       ]),
     [session, id],
   );
-  const { value: loaded, reload, refresh } = useLoadedOnFocus(load);
+  const { value: loaded, reload, refresh, pull } = useLoadedOnFocus(load);
   useTripDayRefresh(loaded?.[0].ok === true && onTripDay(loaded[0].data), refresh);
   // The report made or answered before coming back, once focus has moved
   // to it: not again when it changes later.
@@ -243,7 +244,13 @@ export default function DriverTripScreen() {
   );
 
   return (
-    <Screen width="page">
+    <Screen
+      width="page"
+      refresh={async () => {
+        const [trip, bookings] = await pull();
+        return trip.ok && bookings.ok;
+      }}
+    >
       {head(editAndCancel)}
       <Columns side={wide ? stretches : null}>
         {said === null ? null : (

@@ -103,7 +103,7 @@ export default function SearchResults() {
     () => session.call(tripSearchRoute, { query }).then((answer) => ({ query, answer })),
     [session, query],
   );
-  const { value: loaded, reload } = useLoaded(load);
+  const { value: loaded, reload, pull } = useLoaded(load);
   const result = loaded?.answer;
   const found = result?.ok === true ? result.data.results : undefined;
   const current = loaded?.query === query;
@@ -147,6 +147,12 @@ export default function SearchResults() {
       return kept;
     });
     setAlternativesRound((round) => round + 1);
+  };
+  // Pulling down searches again, and asks for other days and nearby
+  // points again when they are wanted (spec 16, 3.9).
+  const refresh = async () => {
+    retryAlternatives();
+    return (await pull()).answer.ok;
   };
   const otherDays =
     alternatives?.ok === true
@@ -324,7 +330,7 @@ export default function SearchResults() {
     </>
   );
   return (
-    <Screen aside={map}>
+    <Screen aside={map} refresh={refresh}>
       <View style={styles.header}>
         <BackButton fallback="/" />
         {/* The screen's heading, with the button inside it as in an

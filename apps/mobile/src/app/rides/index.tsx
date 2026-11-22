@@ -16,7 +16,8 @@ import { usePalette } from "@/theme/use-palette";
 
 /**
  * All rides leaving soon (spec 4, 3.8, item 3): the 50 soonest, each for
- * its whole route, from "See all rides" on the front page.
+ * its whole route, from "See all rides" on the front page. Pulling down
+ * loads them again (spec 16, 3.9).
  */
 export default function Rides() {
   const { t } = useLanguage();
@@ -27,10 +28,10 @@ export default function Rides() {
     () => session.call(soonestTripsRoute, { query: { limit: soonestTripsMaxLimit } }),
     [session],
   );
-  const { value: answer, reload } = useLoaded(load);
+  const { value: answer, reload, pull } = useLoaded(load);
 
   return (
-    <Screen>
+    <Screen refresh={async () => (await pull()).ok}>
       <BackButton />
       <Title>{t("rides.title")}</Title>
       {answer === undefined ? (
