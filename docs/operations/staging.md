@@ -1,6 +1,6 @@
 # Staging runbook
 
-**Owner:** Martin · **Last reviewed:** 2026-11-18
+**Owner:** Martin · **Last reviewed:** 2026-11-22
 
 Staging runs on Render in Frankfurt ([ADR 0018](../decisions/0018-hosting-on-render-frankfurt.md)),
 described by the blueprint
@@ -15,7 +15,7 @@ edge ([privacy providers](../compliance/privacy-gdpr.md#providers)).
 | ---- | ----------- | ---------- |
 | API and web app | `shareride-staging-api` | Web service built from `apps/api/Dockerfile`; serves `/v1` and the web app on one origin |
 | Clean-up | `shareride-staging-clean-up` | Cron job, every hour at minute 17 (UTC): deletes sign-in records past their retention (with the push tokens of sessions ended for being idle), old trip drafts, conversations 12 months after their trip (unless a report covers them: then until 3 years after it closes), makes trips and bookings anonymous 3 years after the trip, the notification log after 90 days, operator console sessions 30 days after they end, passkey challenges and setup links once they expire, and data export files once expired (their dates 30 days later); then erases the accounts whose 7 days after "Delete my account" have ended (spec 11). It takes `AUTH_SECRET` from the API |
-| Domain | `staging.skinnar.is` | The web service's own domain; its DNS record is in ISNIC DNS Hosting ([Point the domain](#point-the-domain)) and Render issues its certificate |
+| Domains | `staging.skinnar.is`, `staging.puffinride.is` | The web service's own domains, both answering while staging moves to puffinride.is ([Move to puffinride.is](#move-to-puffinrideis)); their DNS records are in ISNIC DNS Hosting ([Point the domain](#point-the-domain)) and Render issues their certificates |
 | Database | `shareride-staging-db` | PostgreSQL 18 with PostGIS, private network only |
 | Settings | `shareride-staging` | Environment group: `NODE_ENV=production`, `APP_ENV=staging`, `LOG_LEVEL`. `PAYMENT_PROVIDER` is unset, so staging pays with the test provider: no card, no money moves. `WORKER` is unset, so the API runs the notification worker: it pushes through Expo to the phones that registered, with `EXPO_ACCESS_TOKEN` once it is set ([app builds](app-builds.md#android-build-with-push)); `EMAIL_PROVIDER` is unset, so it sends no email and records who would have been emailed, until email is turned on (below) |
 
@@ -126,7 +126,7 @@ and again if Render changes its network or the domain's DNS:
 
 Staging moves from `staging.skinnar.is` to `staging.puffinride.is`, as
 ShareRide becomes PuffinRide ([ADR 0039](../decisions/0039-rename-to-puffinride.md)).
-The blueprint lists both addresses, so both answer until step 5 switches the
+The blueprint lists both addresses, so both answer until step 6 switches the
 settings, and nothing stops working in between. Martin's steps, in order:
 
 1. **DNS hosting.** At [isnic.is](https://www.isnic.is), **My page**, the
@@ -134,17 +134,46 @@ settings, and nothing stops working in between. Martin's steps, in order:
    Hosting**, **Submit**. Within about 10 minutes the domain's page lets you
    add records.
 2. **The mailbox `admin@puffinride.is`,** for the operator's own accounts
-   (Google, Apple, Render, Mailjet, Sentry), never for members' mail. Zoho
-   Mail's free plan has up to 5 mailboxes of 5 GB, in the browser and Zoho's
-   phone app (no IMAP). Sign up for the free plan; if Zoho asks where to keep
-   the data, choose Europe. Add the domain `puffinride.is`, then add in ISNIC
-   what Zoho shows: the TXT record that proves the domain is yours (name
-   empty), the MX records (name empty, each with its priority), and, under
-   Zoho's email configuration, **DKIM** with a selector such as `zoho` (a
-   TXT record named `zoho._domainkey`). Leave out Zoho's SPF record: step 4
-   makes one for Zoho and Mailjet together. Create the user `admin`. Check:
-   an email from your own address to `admin@puffinride.is` arrives.
-3. **Staging's new address.** In ISNIC, add type **CNAME**, name `staging`,
+   (Google, Apple, Render, Mailjet, Sentry), never for members' mail. It is a
+   Google Workspace mailbox (Business Starter, paid per user and month, the
+   first 14 days free). At [workspace.google.com](https://workspace.google.com),
+   **Get started**: you already have a domain, `puffinride.is`; create the
+   user `admin`. Google then shows three records to add in ISNIC:
+   - the proof that the domain is yours: type **TXT**, name empty, value
+     `google-site-verification=…` (copy it), then **Verify** in Google;
+   - mail delivery: type **MX**, name empty, priority `1`, value
+     `smtp.google.com` (the only MX record);
+   - DKIM: in the Admin console, **Apps**, **Google Workspace**, **Gmail**,
+     **Authenticate email**, **Generate new record**; add it as type
+     **TXT**, name `google._domainkey`, and choose **Start authentication**
+     once ISNIC has it. Google may wait a day or two after sign-up before it
+     offers the key.
+
+   Leave out Google's SPF record: step 5 makes one for Google and Mailjet
+   together. Turn on two-step sign-in: in the Admin console, **Security**,
+   **Authentication**, **2-Step Verification**, allow it, then turn it on
+   for `admin@` at [myaccount.google.com](https://myaccount.google.com) with
+   a passkey or an authenticator app, and keep its backup codes in your
+   password manager, not in a file or chat. Check: an email from your own
+   address to `admin@puffinride.is` arrives. Add no `hello@` address: a
+   member's reply to our emails would then be member data in this mailbox
+   (ADR 0039); Google returns such replies to their sender.
+3. **`puffinride.com`, at Cloudflare,** leads to `puffinride.is`. In
+   Cloudflare, the domain `puffinride.com`, **DNS**, **Records**: type
+   **A**, name `@`, IPv4 `192.0.2.1`, **Proxied**; and the same with name
+   `www`. The address goes nowhere; it only lets Cloudflare answer for the
+   domain. Then **Rules**, **Redirect Rules**, **Create rule**: **Wildcard
+   pattern**, request URL `http*://*puffinride.com/*`, target URL
+   `https://puffinride.is/`, status `301`. Nothing is needed in Render:
+   Cloudflare answers for `.com` itself, and Render never sees it.
+   `puffinride.is` itself gets a website with production, so until then
+   the redirect leads to an address that does not answer yet. As
+   `puffinride.com` sends no email, add type **TXT**, name `@`, value
+   `v=spf1 -all`, and type **TXT**, name `_dmarc`, value
+   `v=DMARC1; p=reject`, so nobody can send email in its name. (It can
+   become an alias domain in Google Workspace later, if mail to
+   `@puffinride.com` should arrive; it then needs Google's records too.)
+4. **Staging's new address.** In ISNIC, add type **CNAME**, name `staging`,
    and as its value the same `onrender.com` address as the `staging` record
    of `skinnar.is` (it is at the top of `shareride-staging-api`'s page in
    Render). No `AAAA` record. In Render, `shareride-staging-api`,
@@ -152,26 +181,26 @@ settings, and nothing stops working in between. Martin's steps, in order:
    `staging.puffinride.is`. Check:
    `https://staging.puffinride.is/v1/health/ready` answers
    `{"status":"ok"}`.
-4. **Email from puffinride.is.** In Mailjet, **Account settings**,
+5. **Email from puffinride.is.** In Mailjet, **Account settings**,
    **Domains and senders**, add `puffinride.is` and add the TXT records it
    shows for ownership and DKIM, as in [Turn on email](#turn-on-email). Then
-   one SPF record for both senders: type **TXT**, name empty, value
-   `v=spf1 include:spf.mailjet.com include:zohomail.com ~all`, with Zoho's
-   part as Zoho's own SPF value has it (such as `zohomail.eu`). Two SPF
+   one SPF record for both senders, Google Workspace and Mailjet: type
+   **TXT**, name empty, value
+   `v=spf1 include:_spf.google.com include:spf.mailjet.com ~all`. Two SPF
    records on one domain break both. And DMARC: type **TXT**, name
    `_dmarc`, value `v=DMARC1; p=none`. Wait until Mailjet shows the domain
    as validated, with SPF and DKIM in order.
-5. **Tell Claude.** Claude switches the blueprint's `ADMIN_ORIGIN`,
+6. **Tell Claude.** Claude switches the blueprint's `ADMIN_ORIGIN`,
    `WEB_APP_URL` and `API_ORIGIN` to `https://staging.puffinride.is`,
    `EMAIL_FROM` to `hello@puffinride.is`, and the app builds' API address.
-6. **After that deploy, the console.** Its passkeys belong to the old
+7. **After that deploy, the console.** Its passkeys belong to the old
    address. In the API's **Shell** in Render, run
    `node apps/api/src/operator-cli.ts add <your phone number>`, open the
    link and save a new passkey ([Sign in to the console](#sign-in-to-the-console)).
    Sign in at `https://staging.puffinride.is/admin` from then on, and delete
    the old passkey from your password manager. Testers sign in again on the
    new address.
-7. **Google sign-in,** if it is set up already: in Google Cloud, **Google
+8. **Google sign-in,** if it is set up already: in Google Cloud, **Google
    Auth Platform**, **Branding**: app name `PuffinRide`, support email
    `admin@puffinride.is`, home page, privacy policy and terms of service on
    `https://staging.puffinride.is` (the same paths as before), and the
@@ -180,16 +209,16 @@ settings, and nothing stops working in between. Martin's steps, in order:
    `https://staging.puffinride.is/v1/auth/oauth/google/callback`. If it is
    not set up yet, follow [Turn on Google sign-in](#turn-on-google-sign-in)
    with these values instead of the old ones.
-8. **Sign in with Apple:** wait until Claude has changed the app IDs to
+9. **Sign in with Apple:** wait until Claude has changed the app IDs to
    `is.puffinride.…` (plan task 5), then follow
    [Turn on Sign in with Apple](#turn-on-sign-in-with-apple). A Services ID
    cannot be renamed: if one with the old name exists, make the new ones and
    replace `APPLE_SERVICES_ID`, `APPLE_KEY_ID` and `APPLE_PRIVATE_KEY` in
    Render. Register `hello@puffinride.is` for Apple's email relay.
-9. **Sentry:** change the uptime monitor's address to
+10. **Sentry:** change the uptime monitor's address to
    `https://staging.puffinride.is/v1/health/ready`. The organisation's name
    may become PuffinRide; keep its short name (slug) as it is.
-10. **The old address,** once nobody uses it: tell Claude, who removes
+11. **The old address,** once nobody uses it: tell Claude, who removes
     `staging.skinnar.is` from the blueprint. Then delete the `staging`
     record of `skinnar.is` in ISNIC, the domain `skinnar.is` in Mailjet, the
     old redirect URI in Google Cloud and `hello@skinnar.is` in Apple's email

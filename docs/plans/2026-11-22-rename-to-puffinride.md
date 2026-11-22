@@ -21,7 +21,8 @@ because other work merges in parallel. Names that people never see keep
 3. [x] **A second address for staging.** `staging.puffinride.is` beside
    staging.skinnar.is in `infra/render/render.yaml`; the runbook's
    "Move to puffinride.is" steps, including the mailbox for
-   `admin@puffinride.is` and one SPF record for Zoho and Mailjet.
+   `admin@puffinride.is` in Google Workspace, one SPF record for Google and
+   Mailjet, and `puffinride.com`'s redirect at Cloudflare.
 4. [ ] **Switch staging to puffinride.is,** once Render shows the new
    address as verified: `ADMIN_ORIGIN`, `WEB_APP_URL`, `API_ORIGIN`,
    `EMAIL_FROM` (`hello@puffinride.is`), and `EXPO_PUBLIC_API_URL` in
