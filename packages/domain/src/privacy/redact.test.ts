@@ -68,6 +68,12 @@ describe("redactDeep", () => {
     });
   });
 
+  it("hides a profile photo sent in a body (ADR 0033)", () => {
+    expect(redactDeep({ body: { photo: "/9j/4AAQSkZJRg==" } })).toEqual({
+      body: { photo: "[redacted]" },
+    });
+  });
+
   it("treats snake_case and kebab-case keys like camelCase ones", () => {
     expect(
       redactDeep({

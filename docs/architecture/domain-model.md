@@ -42,7 +42,7 @@ erDiagram
 | `profile_id` | Random UUID; the only reference to the person on their public profile (`/people/{profile_id}`), so the `id` is never handed to everyone |
 | `phone` | E.164, verified; unique |
 | `email` | Optional, verified if present |
-| `first_name`, `photo`, `bio` | Public profile; last name is never shown publicly. The bio is `about`; `about_hidden_at` is set when ShareRide hid it from others (spec 9, 3.4.3), and a new text clears it |
+| `first_name`, `photo_key`, `bio` | Public profile; last name is never shown publicly. The bio is `about`; `about_hidden_at` is set when ShareRide hid it from others (spec 9, 3.4.3), and a new text clears it. `photo_key` names the photo's file in photo storage, new for each photo ([ADR 0033](../decisions/0033-profile-photos-made-in-the-app-and-checked-by-the-api.md)); `photo_hidden_at` works as `about_hidden_at`. Files nobody has any more wait in `photo_files_to_delete` until the API deletes them |
 | `languages` | Languages spoken, shown on profile |
 | `locale` | App language |
 | `verification` | Set of: `phone`, `email`, `audkenni` |

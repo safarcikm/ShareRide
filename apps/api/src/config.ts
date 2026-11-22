@@ -112,7 +112,8 @@ const environmentSchema = z
      */
     ADMIN_ORIGIN: originSchema.optional(),
     /**
-     * Where meeting point photos are kept (ADR 0022): `hetzner` is the
+     * Where meeting point and profile photos are kept (ADRs 0022 and
+     * 0033): `hetzner` is the
      * Hetzner Object Storage bucket; `folder` a folder on this computer,
      * for development and tests; `none` takes no photos. By default
      * `folder`, except under NODE_ENV=production (staging too), where it is
@@ -330,7 +331,7 @@ export interface Config {
   readonly email: EmailConfig;
   /** The console's origin for passkeys; undefined turns its sign-in off (ADR 0028). */
   readonly adminOrigin: string | undefined;
-  /** Where meeting point photos are kept, if anywhere (ADR 0022). */
+  /** Where meeting point and profile photos are kept, if anywhere (ADRs 0022 and 0033). */
   readonly photos: PhotoStorageConfig;
 }
 

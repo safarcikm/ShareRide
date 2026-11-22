@@ -1692,6 +1692,8 @@ export const is = {
   "export.field.appealAnswer": "Svar ShareRide",
   "export.field.appealOutcome": "Niðurstaða andmæla",
   "export.field.aboutHiddenAt": "„Um þig“ falið",
+  "export.field.photo": "Prófílmynd (skrá í þessari möppu)",
+  "export.field.photoHiddenAt": "Prófílmynd falin",
   "export.field.noteHiddenAt": "Athugasemd falin",
   "export.field.removedByShareRide": "Fjarlægt",
   "export.field.content": "Varðar",

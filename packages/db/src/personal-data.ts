@@ -66,6 +66,9 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     // random, never their ID, and erased with the row.
     otherIds: ["profileId"],
   },
+  photo_files_to_delete: notAboutAPerson(
+    "random keys of photo files waiting to be deleted from storage, gone within minutes",
+  ),
   verification_codes: notAboutAPerson(
     "keyed hashes of a number and a code, not linked to an account and gone within minutes",
   ),

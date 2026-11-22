@@ -26,6 +26,7 @@ import { createExpoPushSender } from "./platform/push-expo.ts";
 import { startRepeating } from "./platform/repeat.ts";
 import { selectEmail } from "./platform/select-email.ts";
 import { selectPhotoStorage } from "./platform/select-photo-storage.ts";
+import { deleteDuePhotoFiles } from "./modules/account/photo-files.ts";
 import { selectSmsSender } from "./platform/select-sms-sender.ts";
 
 let config: Config;
@@ -64,6 +65,8 @@ const email = selectEmail(config.email, (line) => {
   process.stdout.write(`${line}\n`);
 });
 const exportCipher = createFileCipher(config.authSecret, exportCipherPurpose);
+// Meeting point and profile photos (ADRs 0022 and 0033); none when PHOTO_STORAGE is none.
+const photoStorage = selectPhotoStorage(config.photos);
 const app = createApp({
   logger,
   checkDatabase: () => pingDatabase(database.pool),
@@ -90,7 +93,7 @@ const app = createApp({
     ...(config.adminOrigin === undefined ? {} : { adminOrigin: config.adminOrigin }),
     ...(payments === undefined ? {} : { payments }),
     ...(email === undefined ? {} : { email }),
-    ...selectPhotoStorage(config.photos),
+    ...photoStorage,
   },
 });
 
@@ -154,6 +157,7 @@ const exportBuilder = createExportBuilder({
   cipher: exportCipher,
   clock: () => new Date(),
   logger,
+  ...(photoStorage.photos === undefined ? {} : { photos: photoStorage.photos }),
 });
 jobs.push(
   every(10_000, "data-exports", async () => {
@@ -161,6 +165,23 @@ jobs.push(
     if (built > 0) logger.info({ built }, "data exports built");
   }),
 );
+// Photo files nobody has any more leave the bucket (ADR 0033): a replaced
+// or removed profile photo, or an erased account's, queued by the
+// clean-up's erasure, which holds no bucket keys.
+const { photos } = photoStorage;
+if (photos !== undefined) {
+  jobs.push(
+    every(60_000, "photo-files", async () => {
+      const deleted = await deleteDuePhotoFiles({
+        db: database.db,
+        photos,
+        now: new Date(),
+        logger,
+      });
+      if (deleted > 0) logger.info({ deleted }, "photo files deleted");
+    }),
+  );
+}
 // Refunds the provider has not taken yet are asked for again (R13.3).
 // Without a provider nothing is paid, so nothing is owed back.
 if (payments !== undefined) {

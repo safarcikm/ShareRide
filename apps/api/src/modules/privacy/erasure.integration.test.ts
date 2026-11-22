@@ -425,6 +425,21 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
     await db.delete(schema.feedback);
   });
 
+  it("queues the person's profile photo, so its file leaves photo storage (ADR 0033)", async () => {
+    const gunna = await newMember("Gunna");
+    const { db } = api.connection;
+    const key = "profile-photos/0193f0c4-7d4a-7b1e-9c2a-123456789abc.jpg";
+    await db.update(schema.users).set({ photoKey: key }).where(eq(schema.users.id, gunna.userId));
+
+    await waitEnded(gunna);
+    expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+
+    const queued = await db.select().from(schema.photoFilesToDelete);
+    expect(queued).toMatchObject([{ key }]);
+    expect(queued[0]?.deleteAfter.getTime()).toBeLessThanOrEqual(api.now().getTime());
+    await db.delete(schema.photoFilesToDelete);
+  });
+
   it("changes nothing the second time", async () => {
     const { anna, bookingId } = await busyDriver();
     await waitEnded(anna);

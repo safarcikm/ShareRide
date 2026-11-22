@@ -1,4 +1,4 @@
-import { acceptableDocumentTypes } from "@shareride/domain";
+import { acceptableDocumentTypes, profilePhotoLimits } from "@shareride/domain";
 import { z } from "zod";
 import { localeSchema, platformSchema, timestampSchema } from "./common.ts";
 import { errorResponseSchema } from "./errors.ts";
@@ -15,6 +15,12 @@ export const meSchema = z.object({
   firstName: z.string().nullable(),
   about: z.string().nullable(),
   languages: z.array(z.string()),
+  /**
+   * My profile photo (spec 1, 3.5): a link valid at least an hour, and
+   * whether ShareRide hid it from others (spec 9, 3.4.3). Null for none.
+   */
+  // Null when missing, as from an API before photos.
+  photo: z.object({ url: z.string(), hidden: z.boolean() }).nullable().default(null),
   locale: localeSchema,
   /** The verified email address, if any. */
   email: z.string().nullable(),
@@ -204,6 +210,47 @@ export const acceptLegalRoute = defineRoute({
       description: "legal_version_outdated: a newer version exists; show it and ask again",
       ...errors,
     },
+  },
+});
+
+/** A profile photo in base64: a square JPEG as the app wrote it (ADR 0033). */
+export const profilePhotoBodySchema = z.object({
+  photo: z.base64().max(Math.ceil(profilePhotoLimits.maxBytes / 3) * 4),
+});
+
+export const putMyPhotoRoute = defineRoute({
+  method: "put",
+  path: "/v1/me/photo",
+  summary: "Add or replace my profile photo: a square JPEG with nothing but the picture",
+  tags: ["me"],
+  auth: true,
+  request: { body: profilePhotoBodySchema },
+  responses: {
+    200: { description: "My account with the new photo", schema: meSchema },
+    400: {
+      description:
+        "validation_failed, with the photo's problem in `details`: not_jpeg, metadata, too_large, not_square or too_small",
+      ...errors,
+    },
+    401: unauthenticated,
+    413: { description: "payload_too_large", ...errors },
+    503: {
+      description:
+        "photo_storage_off: this server takes no photos; photo_storage_unavailable: try again later",
+      ...errors,
+    },
+  },
+});
+
+export const deleteMyPhotoRoute = defineRoute({
+  method: "delete",
+  path: "/v1/me/photo",
+  summary: "Remove my profile photo; its file is deleted",
+  tags: ["me"],
+  auth: true,
+  responses: {
+    200: { description: "My account without a photo", schema: meSchema },
+    401: unauthenticated,
   },
 });
 

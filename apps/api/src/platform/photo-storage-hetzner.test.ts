@@ -61,6 +61,30 @@ describe("createHetznerPhotoStorage", () => {
     expect(requests.map((request) => request.method)).toEqual(["DELETE", "DELETE"]);
   });
 
+  it("reads a photo back with a signed request, for Download my data", async () => {
+    const file = Uint8Array.from([0xff, 0xd8, 0xff, 0xd9]);
+    const requests: Request[] = [];
+    const storage = createHetznerPhotoStorage({
+      ...settings,
+      fetch: (input, init) => {
+        requests.push(new Request(input, init));
+        return Promise.resolve(new Response(file, { status: 200 }));
+      },
+    });
+    expect(await storage.read(key)).toEqual(file);
+    const [request] = requests;
+    expect(request?.method).toBe("GET");
+    expect(request?.url).toBe(`https://shareride-photos.hel1.your-objectstorage.com/${key}`);
+    expect(request?.headers.get("authorization")).toMatch(/^AWS4-HMAC-SHA256 /);
+  });
+
+  it("reads nothing for a photo that is gone, and throws when the bucket fails", async () => {
+    const { fetch } = recordingFetch(404, 500);
+    const storage = createHetznerPhotoStorage({ ...settings, fetch });
+    expect(await storage.read(key)).toBeUndefined();
+    await expect(storage.read(key)).rejects.toThrow("Photo storage answered 500 to GET.");
+  });
+
   it("throws when a delete fails, so the photo is not taken as gone", async () => {
     const storage = createHetznerPhotoStorage({ ...settings, fetch: recordingFetch(500).fetch });
     await expect(storage.remove(key)).rejects.toThrow("Photo storage answered 500 to DELETE.");
