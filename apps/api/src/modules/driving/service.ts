@@ -85,7 +85,7 @@ export function createDrivingService(dependencies: {
     const { ready, items } = driverReadiness({
       accountComplete: me.missingSteps.length === 0,
       hasPhoto: user === undefined ? false : photoShown(user),
-      // Blocking once the app can add a photo (profile photos plan, PR 4).
+      // Blocking once the app can add a photo (profile photos plan, PR 4b).
       photosOn: false,
       hasCar: cars.length > 0,
       licenceDeclared: licenceDeclaredAt !== null,

@@ -6,7 +6,7 @@ import { Notice } from "@/components/notice";
 import { useLanguage } from "@/i18n/language";
 import { radii, spacing } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
-import { photoUrl } from "./photo-url";
+import { photoUrl } from "@/lib/photo-url";
 
 /** On the web a label counts only on an element with a role. */
 const imageRole: object = Platform.OS === "web" ? { role: "img" } : {};
