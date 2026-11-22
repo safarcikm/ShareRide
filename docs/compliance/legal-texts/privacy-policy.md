@@ -83,7 +83,7 @@ processing agreement, only as we instruct.
 | Mailjet | Sending email | Germany and Belgium |
 | Expo, with Apple and Google | Sending push notifications to your phone | United States |
 | Sentry | Error reports, with personal details removed | Frankfurt, Germany |
-| Hetzner | Storing profile photos | Helsinki, Finland |
+| Hetzner | Storing profile photos | Nuremberg, Germany |
 | [Payment provider] | Payments, refunds and payouts; it also checks drivers' identity and bank accounts | [Location] |
 
 If you sign in with Apple or Google, they share your account ID and email

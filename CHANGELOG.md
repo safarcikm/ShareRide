@@ -1353,6 +1353,10 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Photos are kept in Hetzner Object Storage in Nuremberg, not Helsinki,
+  which Hetzner did not offer when the staging bucket was made (ADR 0036).
+  The privacy policy draft, the privacy register and the runbook say so;
+  staging's `PHOTO_BUCKET_ENDPOINT` is `https://nbg1.your-objectstorage.com`.
 - Staging sends error reports to Sentry's EU region: the blueprint has the
   DSNs of the `shareride-api` and `shareride-app` projects in the
   organisation `shareride-ehf`, whose projects scrub with the defaults and
