@@ -167,8 +167,9 @@ describe("the channels of each kind (spec 7, 3.3 and 3.4)", () => {
     ["unread_messages", false, "fallback", false],
     ["reminder_evening", true, "fallback", false],
     ["reminder_evening_driver", true, "fallback", false],
-    ["reminder_hour", true, "never", false],
-    ["reminder_hour_driver", true, "never", false],
+    // By email without push, as the web has none (spec 20, 3.1).
+    ["reminder_hour", true, "fallback", false],
+    ["reminder_hour_driver", true, "fallback", false],
     ["payout_sent", false, "always", false],
     // Push only (spec 8, 3.9): it matters at the stop, and nowhere later.
     ["checked_in", true, "never", false],
@@ -178,9 +179,10 @@ describe("the channels of each kind (spec 7, 3.3 and 3.4)", () => {
     ["driver_absent_reported", true, "always", false],
     ["dispute_decided", true, "always", false],
     ["dispute_decided_driver", true, "always", false],
+    // "How was your trip?": by email without push (spec 20, 3.1).
+    ["rate_trip", true, "fallback", false],
+    ["rate_trip_driver", true, "fallback", false],
     // Push only (spec 8, 3.9): a nudge, not news anyone must have.
-    ["rate_trip", true, "never", false],
-    ["rate_trip_driver", true, "never", false],
     ["review_visible", true, "never", false],
     ["data_export_ready", true, "always", false],
     // The statement of reasons (spec 9, R9.5; milestone 9 decision 1): in
@@ -263,6 +265,30 @@ describe("how one person is reached (spec 7, 3.3, 3.4 and 3.7)", () => {
     expect(channels("unread_messages", { hasPushDevice: false })).toEqual([
       { channel: "email", send: true },
     ]);
+  });
+
+  it("emails the hour reminder and the review prompt only without push (spec 20, 3.1)", () => {
+    for (const [kind, role] of [
+      ["reminder_hour", "passenger"],
+      ["reminder_hour_driver", "driver"],
+      ["rate_trip", "passenger"],
+      ["rate_trip_driver", "driver"],
+    ] as const) {
+      expect(channels(kind, { role, hasPushDevice: false }, hoursBefore(1))).toEqual([
+        { channel: "push", send: false, reason: "no_device" },
+        { channel: "email", send: true },
+      ]);
+      expect(channels(kind, { role }, hoursBefore(1))).toEqual([
+        { channel: "push", send: true },
+        { channel: "email", send: false, reason: "has_push" },
+      ]);
+      expect(
+        channels(kind, { role, hasPushDevice: false, hasVerifiedEmail: false }, hoursBefore(1)),
+      ).toEqual([
+        { channel: "push", send: false, reason: "no_device" },
+        { channel: "email", send: false, reason: "no_email" },
+      ]);
+    }
   });
 
   it("sends an SMS to a passenger from exactly 24 hours before boarding", () => {

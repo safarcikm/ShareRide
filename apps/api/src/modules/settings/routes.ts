@@ -19,7 +19,9 @@ export function registerConfigRoutes(app: OpenAPIHono<AppEnv>, settings: Setting
         freeCancellationMinutes: values.free_cancellation_until,
         maxMoveMinutes: values.max_time_change,
         reliabilityMonths: values.reliability_period,
-        beta: values.invite_code_required === 1,
+        // The beta is open to everyone (ADR 0035): the label shows until
+        // launch, whether or not the operator asks for invite codes.
+        beta: true,
         paused: pausedNow(values),
       },
       200,

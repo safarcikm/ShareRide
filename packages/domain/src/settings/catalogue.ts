@@ -29,6 +29,7 @@ export interface SettingDefinition {
 }
 
 const onByDefault = { kind: "switch", unit: null, default: 1, min: 0, max: 1, step: 1 } as const;
+const offByDefault = { ...onByDefault, default: 0 } as const;
 
 export const settingDefinitions = {
   // The switches for emergencies (spec 10, 3.3; R10.5): off pauses only
@@ -45,8 +46,12 @@ export const settingDefinitions = {
   email_sending: { group: "switches", ...onByDefault },
   /** Off: push notifications wait. */
   push_sending: { group: "switches", ...onByDefault },
-  /** Creating an account needs an invite code (spec 12, R12.1). */
-  invite_code_required: { group: "beta", ...onByDefault },
+  /**
+   * Creating an account needs an invite code (spec 12, R12.1). Off by
+   * default: the beta is open to everyone (ADR 0035); the operator can
+   * still close sign-ups to invited people.
+   */
+  invite_code_required: { group: "beta", ...offByDefault },
   /** No code works once this many accounts joined with one (R12.3). */
   beta_max_testers: {
     group: "beta",

@@ -109,11 +109,13 @@ right screen in the app (booking, trip, request or conversation).
 | Refund issued (spec 13) | Passenger | No | Yes (refund receipt) |
 | Meeting point moved or paused (spec 2) | Driver and passengers who use it on an upcoming trip | Yes | Yes |
 | New chat message | The other person | Yes | Summary (3.6) |
-| Reminders (3.5) | Passenger and driver | Yes | Fallback for the day-before reminder |
+| Reminders (3.5) | Passenger and driver | Yes | Fallback (the hour-before reminder since spec 20) |
 | Payout sent (spec 13) | Driver | No | Yes |
 
 "Fallback" means an email is sent when the person has no device with push
-turned on. Changes to seats, price level, booking mode, preferences and the
+turned on. The web app gets no push, so on the web the fallbacks are how
+people hear; spec 20 (2026-11-22) added the hour-before reminder and
+"How was your trip?" (spec 8) to them. Changes to seats, price level, booking mode, preferences and the
 note send nothing (spec 6). Sign-in codes and account emails are spec 1.
 
 As built for a new car (milestone 6, PR 5c): "New car: Red Volvo XC40",

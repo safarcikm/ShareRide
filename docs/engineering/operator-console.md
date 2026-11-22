@@ -675,7 +675,8 @@ version }` with the version the page loaded: it takes a lock on the
 - A code is 8 characters without I, L, O, 0 and 1. What a person types is
   tidied first (`normaliseInviteCode`), so "abcd-2345" works.
 - The gate is in sign-in's `verify`, for a number with no account, while
-  the setting `invite_code_required` is on. The text-message code is
+  the setting `invite_code_required` is on. It is off by default, as the
+  beta is open (ADR 0035). The text-message code is
   checked first. Then, without `inviteCode` the answer is
   `invite_required` (403) and the text-message code is kept, with no try
   counted, so the app can ask for the invite code and send both. A code

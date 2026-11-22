@@ -60,11 +60,12 @@ have it").
    and once more after 3 days to those who have not reviewed (spec 8,
    3.7.6). So a web member gets at most two such emails per booking.
 3. **Where the links lead.** The passenger's "How was your trip?" opens the
-   rating screen of that booking (`/bookings/<id>/rate`), with the link
-   "Rate the driver"; the push opens the same screen. The driver's opens
-   the trip, where each passenger has "Rate your passenger", with the link
-   "Rate your passengers". The hour reminder keeps "Directions" (the
-   meeting point) for the passenger and the trip for the driver.
+   rating screen of that booking (`/bookings/<id>/rate`); the push opens
+   the same screen. The driver's opens the trip, where each passenger has
+   "Rate your passenger". Both emails' links read "Open in ShareRide", as
+   their text already says what to do ("Rate the driver: Bára."). The
+   hour reminder keeps "Directions" (the meeting point) for the passenger
+   and the trip for the driver.
 4. Nothing else changes: the other push-only kinds (`pay_reminder`,
    `checked_in`, `review_visible`, `report_closed`, `report_filed`) stay as
    they are.
@@ -131,7 +132,7 @@ have it").
 ## 5. Screens
 
 - **Emails:** as every notification email today (subject, words, one link,
-  footer; plan 4.6 of milestone 5), with the link words above.
+  footer; plan 4.6 of milestone 5).
 - **About you on the web:** an Email field after the first name, with the
   help "We email you about your rides: requests, reminders and how your
   trip went." and the field error of Settings, Email.
@@ -157,7 +158,6 @@ have it").
 
 | Key | English | Icelandic |
 | --- | ------- | --------- |
-| `review.ratePassengers` | Rate your passengers | Gefðu farþegunum einkunn |
 | `onboarding.emailHelp` | We email you about your rides: requests, reminders and how your trip went. | Við sendum þér tölvupóst um ferðirnar þínar: beiðnir, áminningar og hvernig ferðin gekk. |
 
 ## 9. Testing

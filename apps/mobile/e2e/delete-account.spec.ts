@@ -41,7 +41,7 @@ test("deletes an account after cancelling its booking, then keeps it on signing 
   await expect(dora).toHaveURL(`${booking}?cancelled=1`);
 
   // Back on the deletion screen, which looks again: nothing is open now.
-  await dora.getByRole("button", { name: "Back" }).filter(visible).click();
+  await dora.getByRole("button", { name: "Back", exact: true }).filter(visible).click();
   await expect(dora.getByRole("heading", { name: "Delete my account" })).toBeVisible();
   await expect(remove).toBeVisible();
 
