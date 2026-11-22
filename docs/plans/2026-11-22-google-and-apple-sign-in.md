@@ -1,9 +1,9 @@
 # Google and Apple sign-in: implementation plan
 
-**Owner:** Martin · **Date:** 2026-11-22 · **Status:** Draft, with
+**Owner:** Martin · **Date:** 2026-11-22 · **Status:** Approved with
 [spec 19](../specs/2026-11-22-google-and-apple-sign-in.md) and
-[ADR 0033](../decisions/0033-google-and-apple-sign-in-through-our-api.md),
-for Martin's approval
+[ADR 0033](../decisions/0033-google-and-apple-sign-in-through-our-api.md)
+(Martin, 2026-11-22, on a decision card); building
 
 > **For agentic workers:** use superpowers:executing-plans to carry this out
 > task by task. Tick each task as its pull request merges.
@@ -249,7 +249,7 @@ opens and merges once CI is green (Martin's rule of 2026-11-16).
 
 ### PR 1: `docs(auth)`: spec 19, ADR 0033 and this plan
 
-- [ ] Spec, ADR and plan, the indexes, a line at the top of spec 1 and in
+- [x] Spec, ADR and plan, the indexes, a line at the top of spec 1 and in
       milestone 2's section 4.7 pointing here, the roadmap's milestone 13
 - Merge: after Martin approves spec 19 and ADR 0033 (ADR 0033 then
   Accepted)

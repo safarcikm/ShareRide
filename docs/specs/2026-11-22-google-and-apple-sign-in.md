@@ -1,10 +1,10 @@
 # Spec 19: Sign in with Google and Apple
 
-**Owner:** Martin · **Date:** 2026-11-22 · **Status:** Draft, for Martin's
-approval; see the [implementation plan](../plans/2026-11-22-google-and-apple-sign-in.md)
+**Owner:** Martin · **Date:** 2026-11-22 · **Status:** Approved
+(2026-11-22, by Martin on a decision card); see the [implementation plan](../plans/2026-11-22-google-and-apple-sign-in.md)
 
 Decision record: [ADR 0033](../decisions/0033-google-and-apple-sign-in-through-our-api.md)
-(proposed). This spec amends [spec 1](2026-11-13-sign-in-and-profile.md)
+(accepted). This spec amends [spec 1](2026-11-13-sign-in-and-profile.md)
 3.3 (sign in with Apple or Google), 3.8 (linked sign-in methods) and 6
 (the provider endpoint), and replaces section 4.7 of the
 [milestone 2 plan](../plans/2026-11-13-milestone-2-hosted-and-connected.md).

@@ -63,4 +63,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0030](0030-limit-what-a-whole-trip-brings-the-driver.md) | Limit what a whole trip brings the driver, counting money already booked | Accepted |
 | [0031](0031-distances-from-our-own-road-file.md) | Distances between meeting points from our own road file | Accepted |
 | [0032](0032-operator-settings-list-ranges-and-versions.md) | Operator settings: the list, their ranges, and versions on trips and bookings | Accepted |
-| [0033](0033-google-and-apple-sign-in-through-our-api.md) | Google and Apple sign-in through our API, in a browser window | Proposed |
+| [0033](0033-google-and-apple-sign-in-through-our-api.md) | Google and Apple sign-in through our API, in a browser window | Accepted |
