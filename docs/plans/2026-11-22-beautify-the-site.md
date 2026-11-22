@@ -67,9 +67,11 @@ are in the project files (`beautify/`).
 
 ## PR 4: the front page's top (Martin's pick)
 
-- [ ] As chosen on the decision card: A, a moss panel behind the logo, the
+- [x] As chosen on the decision card: A, a moss panel behind the logo, the
   car and the title with the search card on its edge (on a laptop, a rounded
   panel as wide as the page); B, an Iceland scene; or C, nothing more.
+  Martin chose B. On a laptop the title's line is 96 high, so the mountains
+  show, and the map still fits a window 720 high (spec 15, decision 15).
 
 ## PR 5: empty screens
 

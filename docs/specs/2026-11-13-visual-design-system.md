@@ -171,6 +171,14 @@ and almost vanished on frost (1.05:1).
 
 ![The puffins' car on frost and on night](images/visual-design-system/puffin-car.png)
 
+The Iceland scene behind the front page's top (section 5.3, decision 15)
+has its own drawing colours too, as tokens `icelandScene`. By day: sky
+`#D7E9F0`, mountains `#B9CBD3`, glaciers `#FFFFFF`, hills `#B7DDB9`, road
+`#C6CED2` with a white line. At night: sky `#142630`, mountains `#24323A`,
+glaciers `#3A4C55`, hills `#203A2D`, road `#3E525C` with a `#6E7D85` line.
+The name and the language switch stand on the sky, so `text` and `primary`
+keep 4.5:1 on it in both modes (the tokens' tests check it).
+
 Our map of Iceland ([ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)):
 sea `#D7E9F0`, land `#F4F1EA` with its coast `#B9CBD3`, glaciers `#FFFFFF`,
 main roads `#C6CED2` and the Ring Road `#9AA9B0` in light mode; `#142630`,
@@ -443,7 +451,8 @@ or a photo is.
 
 | Scene | What it shows | Where |
 | ----- | ------------- | ----- |
-| `PuffinsInCar` | A round little car from the side, front to the right, in the spirit of an old round-roofed family car but our own (no maker's marks): a domed roof, a short round back, a sloping bonnet, darker wings over the wheels, a step between them, a round headlight and a crowberry case on a roof rack. The driver's puffin in a crowberry knitted hat sits in front and yours in a moss scarf behind, both facing the way it drives and seen through the side windows, which cut them like glass (each car has its own outline, so two on one page don't mix). Its colours are `puffinCar` (section 4.2), the same in both modes: a sun-yellow body that stands off frost, surface and night alike. The puffins behind the glass keep basalt; the tyres, straight on the screen, take `puffin.nightBlack` in dark mode | The front page: on a phone in the middle over "Where are you going?", 170 wide; on a wide page 88 wide on the title's line, just before it, so the line is no higher than the title alone and the map beside the rides stays whole in a window 720 high. The booked screen once a seat is confirmed, 200 wide, `moving`: three `control` lines behind it |
+| `PuffinsInCar` | A round little car from the side, front to the right, in the spirit of an old round-roofed family car but our own (no maker's marks): a domed roof, a short round back, a sloping bonnet, darker wings over the wheels, a step between them, a round headlight and a crowberry case on a roof rack. The driver's puffin in a crowberry knitted hat sits in front and yours in a moss scarf behind, both facing the way it drives and seen through the side windows, which cut them like glass (each car has its own outline, so two on one page don't mix). Its colours are `puffinCar` (section 4.2), the same in both modes: a sun-yellow body that stands off frost, surface and night alike. The puffins behind the glass keep basalt; the tyres, straight on the screen, take `puffin.nightBlack` in dark mode | The front page, on the `IcelandScene`: on a phone in the middle under the name line, 170 wide, its wheels on the road; on a wide page 116 wide on the hills at the start of the title's line, `xl` in. The booked screen once a seat is confirmed, 200 wide, `moving`: three `control` lines behind it |
+| `IcelandScene` | Iceland from the road (decision 15): a sky, a ridge of mountains with glaciers on the two highest peaks, green hills and a grey road with a dashed line along the bottom, in `icelandScene` (section 4.2) by day and at night. A page as wide as a laptop's has more peaks and a valley in the middle, under the title. It is drawn behind the screen (`Screen`'s `backdrop`), so it scrolls with the page and takes no presses | The front page. On a phone from the top of the screen, edge to edge, to the road under the car (the room left for the status bar or a notch is the sky too): the logo, the name, Beta and the language switch stand on the sky, and "Where are you going?" on the screen's own colour under it. On a wide page in a panel with `card` corners as wide as the page, behind the title's line, made 96 high so the mountains show (the map beside the rides stays whole in a window 720 high), and the top half of the search row, whose card stands on it; there the hills go on down, with no road |
 | `PuffinByPin` | A whole puffin standing, three-quarters to the right, in a crowberry scarf, beside a map pin in `primary` with a `surface` dot on a `steering` pole | Empty screens, 120 high, over their sentence: Rides leaving soon with none, My rides with nothing coming up, Chats with none, and My trips with none. Search results stay as they are: what they offer instead (other days, places nearby, asking for a ride) matters more |
 
 A request sent but not yet answered keeps the seat on its own with you in
@@ -631,5 +640,6 @@ Decided by Martin after the spec was approved:
 | 12 | Which logo for PuffinRide, with cartoon puffins? | C, "Puffin pin": the puffin as a map pin, its beak pointing the way (chosen 2026-11-22), not A (two puffins in a little open car) or B (Lundi, a puffin's head in a knitted hat). Moss stays the main colour |
 | 13 | Where else do puffins go? | Board 2 as drawn (Martin, 2026-11-22: "all the cute graphics"): two puffins in a little open car on the front page and when a seat is booked, and a puffin by a map pin on empty screens (section 5.3). Not on prices, times, payment, safety or photos. The car changed with decision 14 |
 | 14 | What car do the puffins drive? | A round, sun-yellow car with a domed roof, "something like a VW Beetle" (Martin, 2026-11-22, as the open car blended into the frost background), our own drawing with no maker's marks; the puffins look out of its side windows and a case rides on the roof. The launch ads use the same drawing |
+| 15 | What does the front page's top look like? | B, "Iceland scene" (Martin, 2026-11-22): the car on a road under mountains and glaciers, edge to edge on a phone and a rounded panel as wide as the page on a laptop, made taller there than first drawn. Not A, a moss panel with white text and the search card on its edge, or C, the new car alone on frost |
 
 ![The three puffin logo directions Martin chose from](images/visual-design-system/logo-puffin-directions.png)

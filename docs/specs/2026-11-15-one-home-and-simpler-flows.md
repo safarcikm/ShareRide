@@ -90,7 +90,9 @@ say where you are and what happens next.
 Find replaces both the front page and My profile as the place the app opens.
 
 1. **Top:** the logo and "ShareRide", and the language switch. On a wide
-   screen these are in the top bar instead.
+   screen these are in the top bar instead. Since 2026-11-22 they stand on
+   an Iceland scene with the puffins' car on its road, and the title under
+   it (spec 15, 5.3, decision 15).
 2. **Your next ride** (signed in, when one is coming up): the soonest
    confirmed, requested or unpaid booking, or the soonest published trip you
    drive, a ride under way included. It is the same row as in My rides

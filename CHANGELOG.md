@@ -1498,6 +1498,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   one line, and Find a ride, which is now on the first screen (spec 16, 3.2,
   amended 2026-11-22). The date opens the calendar under it, as on a laptop.
   In Icelandic "Any day" is "Allir dagar".
+- The front page's top is an Iceland scene (spec 15, decision 15): on a
+  phone the name, the language and the puffins' car stand on a sky with
+  mountains, glaciers, hills and a road, and on a laptop the title's line
+  and the top of the search sit on a rounded panel with the same land.
 - Sign out is on Profile too (spec 16, 3.4 item 4), under the rows; Sign
   out on all devices stays in Settings.
 - The living docs and the legal drafts say PuffinRide (ADR 0039): the

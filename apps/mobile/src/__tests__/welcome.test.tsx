@@ -24,7 +24,15 @@ import {
 } from "@/testing/search";
 import { blonduos, borgarnes } from "@/testing/trips";
 import { bsi, hof, kef, meetingPoints } from "@/testing/meeting-points";
-import { colors, spacing } from "@/theme/tokens";
+import {
+  colors,
+  icelandScene,
+  pageMaxWidth,
+  radii,
+  sizes,
+  spacing,
+  typography,
+} from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -341,6 +349,34 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
     await screen.findByRole("header", { name: "Where are you going?" });
     expect(screen.getByTestId("puffins-in-car", { includeHiddenElements: true })).toBeTruthy();
     expect(screen.queryByTestId("puffins-in-car")).toBeNull();
+  });
+
+  it("puts the name, the language and the car on an Iceland scene, the title under it (spec 15, 5.3)", async () => {
+    await openFrontPage();
+    await screen.findByRole("header", { name: "Where are you going?" });
+    // Behind the top of the page: a picture, which takes no presses.
+    const backdrop = screen.getByTestId("screen-backdrop", { includeHiddenElements: true });
+    expect(backdrop).toHaveProp("pointerEvents", "none");
+    const scene = within(backdrop).getByTestId("iceland-scene", { includeHiddenElements: true });
+    expect(screen.queryByTestId("iceland-scene")).toBeNull();
+    // On it the name, the language switch and the car; the title on the screen under it.
+    const top = screen.getByTestId("scene-top");
+    expect(within(top).getByText("PuffinRide")).toBeVisible();
+    expect(within(top).getByText("Íslenska")).toBeVisible();
+    expect(within(top).getByTestId("puffins-in-car", { includeHiddenElements: true })).toBeTruthy();
+    expect(within(top).queryByRole("header", { name: "Where are you going?" })).toBeNull();
+    // From the top of the screen to just under the car, its wheels on the road.
+    await fireEvent(top, "layout", {
+      nativeEvent: { layout: { x: 0, y: 0, width: 343, height: 180 } },
+    });
+    expect(scene).toHaveStyle({ height: spacing.md + 180 + spacing.sm });
+    // Behind the status bar, over the notch, the sky goes on.
+    expect(screen.getByTestId("screen-safe-area")).toHaveStyle({
+      backgroundColor: icelandScene.light.sky,
+    });
+    expect(screen.getByTestId("screen-scroll-area")).toHaveStyle({
+      backgroundColor: colors.light.background,
+    });
   });
 
   it("ends with Offer a ride as a secondary button, and the meeting points", async () => {
@@ -727,6 +763,39 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     expect(within(car).getByTestId("puffin-driver", { includeHiddenElements: true })).toBeTruthy();
     // Beside the title, not over it: the map beside the rides stays whole.
     expect(line).toHaveStyle({ flexDirection: "row" });
+  });
+
+  it("draws the Iceland scene in a rounded panel as wide as the page, under the title's line and the search's top (spec 15, 5.3)", async () => {
+    await openFrontPage();
+    await screen.findByRole("header", { name: "Where are you going?" });
+    const backdrop = screen.getByTestId("screen-backdrop", { includeHiddenElements: true });
+    const panel = within(backdrop).getByTestId("scene-panel", { includeHiddenElements: true });
+    // The panel stands in the page: no sky behind the window's edges.
+    expect(screen.getByTestId("screen-safe-area")).toHaveStyle({
+      backgroundColor: colors.light.background,
+    });
+    expect(panel).toHaveStyle({
+      maxWidth: pageMaxWidth,
+      borderRadius: radii.card,
+      overflow: "hidden",
+    });
+    // The line is taller than the title alone, so the mountains show; the
+    // panel goes on under the top half of the search row's card.
+    const line = screen.getByTestId("title-line");
+    expect(line).toHaveStyle({ minHeight: sizes.sceneLine });
+    const searchTop =
+      spacing.md + (typography.caption.lineHeight + spacing.xs + sizes.buttonHeight) / 2;
+    expect(panel).toHaveStyle({ height: sizes.sceneLine + spacing.md + searchTop });
+    await fireEvent(line, "layout", {
+      nativeEvent: { layout: { x: 0, y: 0, width: 1144, height: 120 } },
+    });
+    expect(panel).toHaveStyle({ height: 120 + spacing.md + searchTop });
+    // The car drives on the hills at the start of the line, larger than beside the title.
+    const hills = within(line).getByTestId("car-on-hills", { includeHiddenElements: true });
+    expect(hills).toHaveStyle({ position: "absolute", left: spacing.xl });
+    expect(
+      within(hills).getByTestId("puffins-in-car", { includeHiddenElements: true }),
+    ).toBeTruthy();
   });
 
   it("shows From, To and the date as fields a shade off the card, tinted under the pointer", async () => {

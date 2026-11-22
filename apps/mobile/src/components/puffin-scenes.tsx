@@ -1,9 +1,18 @@
 /* eslint-disable @typescript-eslint/no-deprecated -- `x` and `y` on SVG shapes are
    coordinates; the types mark the transform style of the same name as deprecated. */
-import { useId } from "react";
+import { useId, useState } from "react";
 import { StyleSheet, useColorScheme, View } from "react-native";
 import Svg, { Circle, ClipPath, Defs, G, Path, Rect } from "react-native-svg";
-import { carDrawing, people, puffin, puffinCar } from "@/theme/tokens";
+import {
+  carDrawing,
+  icelandScene,
+  pageMaxWidth,
+  people,
+  puffin,
+  puffinCar,
+  radii,
+  sizes,
+} from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { Puffin } from "./puffin";
 
@@ -220,7 +229,197 @@ export function PuffinByPin({
   );
 }
 
+/**
+ * The ridge of the mountains: points across the width, each at a part of
+ * the height over the ground; glaciers cap the two highest. A screen as
+ * wide as a page has more of them, and a valley in the middle, under the
+ * title.
+ */
+const ridges = {
+  narrow: [
+    [0, 0.8],
+    [0.12, 0.55],
+    [0.24, 0.72],
+    [0.38, 0.45],
+    [0.52, 0.7],
+    [0.68, 0.5],
+    [0.84, 0.74],
+    [0.94, 0.6],
+    [1, 0.72],
+  ],
+  wide: [
+    [0, 0.62],
+    [0.05, 0.42],
+    [0.1, 0.56],
+    [0.17, 0.3],
+    [0.25, 0.6],
+    [0.31, 0.5],
+    [0.37, 0.72],
+    [0.5, 0.82],
+    [0.63, 0.7],
+    [0.7, 0.45],
+    [0.77, 0.62],
+    [0.84, 0.28],
+    [0.91, 0.55],
+    [0.96, 0.4],
+    [1, 0.55],
+  ],
+} as const;
+
+/**
+ * Iceland behind the front page's top (decision 15): a sky, mountains with
+ * glaciers on the two highest, green hills, and from `ground` down a road
+ * with a dashed line, where the car drives; or, with `road={false}`, the
+ * hills go on down, as under a wide page's search. `width` and `height` are
+ * the drawing's. At night the same land in the dark (`icelandScene`).
+ */
+export function IcelandScene({
+  width,
+  height,
+  ground = height - sizes.sceneRoad,
+  road = true,
+}: {
+  readonly width: number;
+  readonly height: number;
+  readonly ground?: number;
+  readonly road?: boolean;
+}) {
+  const { scheme } = useScene();
+  const land = icelandScene[scheme];
+  if (width <= 0 || height <= 0) return null;
+  const ridge = width > 4 * ground ? ridges.wide : ridges.narrow;
+  const points = ridge.map(([x, y]) => [x * width, y * ground] as const);
+  // The two highest peaks, which are never at the edges.
+  const capped = points
+    .map(([, y], index) => ({ y, index }))
+    .slice(1, -1)
+    .sort((a, b) => a.y - b.y)
+    .slice(0, 2)
+    .map(({ index }) => index);
+  const at = ([x, y]: readonly [number, number]) => `${x.toFixed(1)} ${y.toFixed(1)}`;
+  const mountains = `M0 ${String(ground)} ${points.map((point) => `L${at(point)}`).join(" ")} L${String(width)} ${String(ground)} Z`;
+  // A cap down a third of each side of its peak, with a ragged lower edge.
+  const glaciers = capped.map((index) => {
+    const [px, py] = points[index] ?? [0, 0];
+    const [lx, ly] = points[index - 1] ?? [0, 0];
+    const [rx, ry] = points[index + 1] ?? [0, 0];
+    const left = [px + (lx - px) / 3, py + (ly - py) / 3] as const;
+    const right = [px + (rx - px) / 3, py + (ry - py) / 3] as const;
+    const dip = (left[1] + right[1]) / 2 - py;
+    return [
+      `M${at(left)}`,
+      `L${at([px, py])}`,
+      `L${at(right)}`,
+      `L${at([px + (right[0] - px) / 2, py + dip * 0.7])}`,
+      `L${at([px, py + dip])}`,
+      `L${at([px + (left[0] - px) / 2, py + dip * 0.7])}`,
+      "Z",
+    ].join(" ");
+  });
+  const hills = [
+    `M0 ${String(ground)} L0 ${String(ground - 16)}`,
+    `C${at([width * 0.22, ground - 40])} ${at([width * 0.4, ground - 2])} ${at([width * 0.58, ground - 18])}`,
+    `S${at([width * 0.86, ground - 36])} ${at([width, ground - 12])}`,
+    `L${String(width)} ${String(ground)} Z`,
+  ].join(" ");
+  const below = height - ground;
+  return (
+    <View
+      testID="iceland-scene"
+      aria-hidden
+      importantForAccessibility="no-hide-descendants"
+      style={{ width, height }}
+    >
+      <Svg width={width} height={height}>
+        <Rect x={0} y={0} width={width} height={height} fill={land.sky} />
+        <Path
+          d={mountains}
+          fill={land.mountain}
+          stroke={land.mountain}
+          strokeWidth={4}
+          strokeLinejoin="round"
+        />
+        {glaciers.map((d) => (
+          <Path
+            key={d}
+            d={d}
+            fill={land.glacier}
+            stroke={land.glacier}
+            strokeWidth={3}
+            strokeLinejoin="round"
+          />
+        ))}
+        <Path d={hills} fill={land.hill} />
+        {road ? (
+          <>
+            <Rect
+              testID="scene-road"
+              x={0}
+              y={ground}
+              width={width}
+              height={below}
+              fill={land.road}
+            />
+            <Path
+              d={`M${String(spacingOnRoad)} ${String(ground + below / 2)} H${String(width)}`}
+              stroke={land.roadLine}
+              strokeWidth={2.5}
+              strokeDasharray="14 12"
+              strokeLinecap="round"
+            />
+          </>
+        ) : (
+          <Rect
+            testID="scene-ground"
+            x={0}
+            y={ground}
+            width={width}
+            height={below}
+            fill={land.hill}
+          />
+        )}
+      </Svg>
+    </View>
+  );
+}
+
+/**
+ * The scene in a rounded panel as wide as its room, for a wide front page
+ * (spec 18): the sky first, so the panel shows at once, then the land once
+ * its width is known; the hills go on from `ground` to the bottom.
+ */
+export function IcelandPanel({
+  height,
+  ground,
+}: {
+  readonly height: number;
+  readonly ground: number;
+}) {
+  const { scheme } = useScene();
+  const [width, setWidth] = useState(0);
+  return (
+    <View
+      testID="scene-panel"
+      onLayout={(event) => {
+        setWidth(event.nativeEvent.layout.width);
+      }}
+      style={[styles.panel, { height, backgroundColor: icelandScene[scheme].sky }]}
+    >
+      <IcelandScene width={width} height={height} ground={ground} road={false} />
+    </View>
+  );
+}
+
+/** The height of `PuffinsInCar` drawn `width` wide, standing still. */
+export function carHeight(width: number) {
+  return (width * car.height) / car.width;
+}
+
+/** Where the road's line starts, from the left edge. */
+const spacingOnRoad = 8;
+
 const styles = StyleSheet.create({
   scene: { alignItems: "center" },
   start: { alignItems: "flex-start" },
+  panel: { width: "100%", maxWidth: pageMaxWidth, borderRadius: radii.card, overflow: "hidden" },
 });
