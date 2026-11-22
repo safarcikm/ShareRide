@@ -1525,6 +1525,7 @@ export const en = {
     "This sign-in has expired or was already used. Close this window and try again.",
   "sms.signInCode": "{code} is your PuffinRide code. It expires in 10 minutes.",
   "sms.confirmCode": "{code} is your PuffinRide code to confirm. Never share it.",
+  "sms.consoleRecoveryCode": "{code} is your PuffinRide console code. Never share it.",
   "sms.bookingCancelled":
     "PuffinRide: the driver cancelled your booking for {date} at {time}. Full refund. Details in the app.",
   "sms.bookingCancelledUnpaid":

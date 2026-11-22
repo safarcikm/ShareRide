@@ -1550,6 +1550,8 @@ export const is = {
     "Þessi innskráning er útrunnin eða var þegar notuð. Lokaðu glugganum og reyndu aftur.",
   "sms.signInCode": "{code} er PuffinRide-kóðinn þinn. Hann gildir í 10 mínútur.",
   "sms.confirmCode": "{code} er PuffinRide-kóðinn til að staðfesta. Ekki deila honum.",
+  "sms.consoleRecoveryCode":
+    "{code} er kóðinn þinn fyrir stjórnborð PuffinRide. Deildu honum aldrei.",
   "sms.bookingCancelled":
     "PuffinRide: Bílstjórinn aflýsti bókun þinni: {date} kl. {time}. Full endurgreiðsla. Nánar í appinu.",
   "sms.bookingCancelledUnpaid":
