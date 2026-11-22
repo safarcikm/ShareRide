@@ -15,6 +15,9 @@ jest.mock("@/lib/preferences", () => ({
   readPreference: jest.fn(() => Promise.resolve(null)),
   writePreference: jest.fn(() => Promise.resolve()),
 }));
+// The web asks for an email at sign-up; the phone apps do not (spec 20, 3.3).
+let mockOnTheWeb = false;
+jest.mock("@/onboarding/email-at-sign-up", () => ({ emailAtSignUp: () => mockOnTheWeb }));
 // The app's own storage, in memory: a ride kept while signing up waits here.
 const mockStored = new Map<string, string>();
 jest.mock("@/lib/app-data", () => ({
@@ -27,6 +30,7 @@ jest.mock("@/lib/app-data", () => ({
 
 beforeEach(() => {
   mockStored.clear();
+  mockOnTheWeb = false;
 });
 
 /** Accepted the terms in an earlier version of the app, then left before the profile. */
@@ -398,5 +402,133 @@ describe("Only the part of step 3 that is left", () => {
   it("asks for step 3 before anything else, even when Profile is opened directly", async () => {
     await renderApp("/profile", { me: testMe });
     expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
+  });
+});
+
+describe("On the web, step 3 asks for an email (spec 20, 3.3)", () => {
+  const address = "dora@example.com";
+  const emailHelp = "We email you about your rides: requests, reminders and how your trip went.";
+  const wrongEmail = "Enter an email address, such as anna@example.com.";
+
+  beforeEach(() => {
+    mockOnTheWeb = true;
+  });
+
+  /** Fills in step 3 but the email, and answers the terms and the profile. */
+  async function fillIn(app: Awaited<ReturnType<typeof renderApp>>, saves: unknown[] = []) {
+    app.client.answer("/v1/me/legal-acceptances", () => ok(200, afterLegal));
+    app.client.answer("/v1/me", (input) => {
+      const body = input["body"] as Partial<Me> | undefined;
+      if (body === undefined) return ok(200, testMe);
+      return saves.shift() ?? ok(200, { ...afterLegal, ...body, missingSteps: [] });
+    });
+    await fireEvent.changeText(screen.getByLabelText("First name"), "Dóra");
+    await tickBoth();
+  }
+
+  const create = () => fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+
+  it("asks for it after the first name, saying why", async () => {
+    await openAboutYou();
+    expect(screen.getByLabelText("Email")).toBeVisible();
+    expect(screen.getByText(emailHelp)).toBeVisible();
+  });
+
+  it("refuses an empty or wrong address, and sends nothing", async () => {
+    const app = await openAboutYou();
+    await fillIn(app);
+    await create();
+    expect(await screen.findByText(wrongEmail)).toBeVisible();
+    await fireEvent.changeText(screen.getByLabelText("Email"), "dora@");
+    await create();
+    expect(await screen.findByText(wrongEmail)).toBeVisible();
+    expect(callsTo(app, "/v1/me/email")).toHaveLength(0);
+    expect(callsTo(app, "/v1/me/legal-acceptances")).toHaveLength(0);
+    expect(callsTo(app, "/v1/me", "patch")).toHaveLength(0);
+    expect(screen).toHavePathname("/onboarding/about-you");
+  });
+
+  it("sends the link before saving, and only once when saving fails", async () => {
+    const app = await openAboutYou();
+    app.client.answer("/v1/me/email", () => ok(200, { ...testMe, pendingEmail: address }));
+    await fillIn(app, [failure(0, "network_error")]);
+    await fireEvent.changeText(screen.getByLabelText("Email"), ` ${address} `);
+    await create();
+    expect(
+      await screen.findByText("We couldn't reach PuffinRide. Check your connection and try again."),
+    ).toBeVisible();
+    // The answers stay, the email too.
+    expect(screen.getByLabelText("Email")).toHaveDisplayValue(` ${address} `);
+    await create();
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    const emails = callsTo(app, "/v1/me/email");
+    expect(emails).toHaveLength(1);
+    expect(emails[0]?.input["body"]).toEqual({ email: address });
+    const sent = app.client.calls.findIndex((c) => c.path === "/v1/me/email");
+    const legal = app.client.calls.findIndex((c) => c.path === "/v1/me/legal-acceptances");
+    expect(sent).toBeLessThan(legal);
+    expect(callsTo(app, "/v1/me", "patch")).toHaveLength(2);
+  });
+
+  it("sends it again to an address changed after it was sent", async () => {
+    const app = await openAboutYou();
+    app.client.answer("/v1/me/email", (input) => {
+      const { email } = input["body"] as { email: string };
+      return ok(200, { ...testMe, pendingEmail: email });
+    });
+    await fillIn(app, [failure(0, "network_error")]);
+    await fireEvent.changeText(screen.getByLabelText("Email"), "dora@exmaple.com");
+    await create();
+    await screen.findByText("We couldn't reach PuffinRide. Check your connection and try again.");
+    await fireEvent.changeText(screen.getByLabelText("Email"), address);
+    await create();
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(callsTo(app, "/v1/me/email").map((call) => call.input["body"])).toEqual([
+      { email: "dora@exmaple.com" },
+      { email: address },
+    ]);
+  });
+
+  it("keeps the answers when the link cannot be sent, and saves nothing", async () => {
+    const app = await openAboutYou();
+    app.client.answer("/v1/me/email", () => failure(502, "email_failed"));
+    await fillIn(app);
+    await fireEvent.changeText(screen.getByLabelText("Email"), address);
+    await create();
+    expect(
+      await screen.findByText("We couldn't send the email. Try again in a minute."),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Email")).toHaveDisplayValue(address);
+    expect(screen.getByLabelText("First name")).toHaveDisplayValue("Dóra");
+    expect(callsTo(app, "/v1/me/legal-acceptances")).toHaveLength(0);
+    expect(callsTo(app, "/v1/me", "patch")).toHaveLength(0);
+  });
+
+  it("goes on without it when this server sends no email", async () => {
+    const app = await openAboutYou();
+    app.client.answer("/v1/me/email", () => failure(503, "email_unavailable"));
+    await fillIn(app);
+    await fireEvent.changeText(screen.getByLabelText("Email"), address);
+    await create();
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(callsTo(app, "/v1/me/email")).toHaveLength(1);
+  });
+
+  it("does not ask with a verified email or a link waiting", async () => {
+    await openAboutYou(undefined, { ...testMe, email: address });
+    expect(screen.queryByLabelText("Email")).toBeNull();
+    expect(screen.queryByText(emailHelp)).toBeNull();
+  });
+
+  it("does not ask while a link waits", async () => {
+    await openAboutYou(undefined, { ...testMe, pendingEmail: address });
+    expect(screen.queryByLabelText("Email")).toBeNull();
+  });
+});
+
+describe("On phones, step 3 does not ask for an email (spec 20, 3.3 item 4)", () => {
+  it("has no email field", async () => {
+    await openAboutYou();
+    expect(screen.queryByLabelText("Email")).toBeNull();
   });
 });

@@ -1362,6 +1362,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   browser that is not signed in, opens Sign in and then that screen once
   the account is ready. Only the path is kept, in the app's own storage,
   for an hour; a booking or Offer chosen in the app goes first.
+- An email at sign-up on the web (spec 20, 3.3): step 3, About you, asks
+  for an email after the first name when the account has none verified or
+  waiting, and sends its link before the profile is saved, once. A server
+  that sends no email lets sign-up go on. The phone apps do not ask.
 
 ### Fixed
 

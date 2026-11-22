@@ -1,11 +1,11 @@
-import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { english, signUp } from "./support/account";
-import { emailTo, linkIn } from "./support/email";
+import { confirmEmail } from "./support/email";
 
-// Ask about my data (spec 11, 3.6) on the web build: someone without an
-// email is asked to add one first, since the answer goes by email; with it
-// added, they send a question from Privacy and are told it is answered
+// Ask about my data (spec 11, 3.6) on the web build: someone without a
+// confirmed email is asked to add one first, since the answer goes by
+// email. Email shows the link sent at sign-up waiting (spec 20, 3.3); with
+// it opened, they send a question from Privacy and are told it is answered
 // within a month. The address is new each run and project.
 
 test.use({ locale: "en-GB" });
@@ -13,9 +13,7 @@ test.use({ locale: "en-GB" });
 test("asks about my data, adding an email first", async ({ page }) => {
   test.setTimeout(120_000);
   const visible = { visible: true } as const;
-  const address = `rosa-${randomUUID().slice(0, 8)}@example.com`;
-
-  await signUp(page, english, "Rósa");
+  const { email: address } = await signUp(page, english, "Rósa");
   await page.goto("/settings");
   await page.getByRole("button", { name: "Privacy and your data" }).click();
   await page.getByRole("button", { name: "Ask about my data" }).click();
@@ -26,11 +24,12 @@ test("asks about my data, adding an email first", async ({ page }) => {
 
   await page.getByRole("button", { name: "Add my email" }).click();
   await expect(page).toHaveURL("/settings/email");
-  await page.getByLabel("Email", { exact: true }).fill(address);
-  await page.getByRole("button", { name: "Send the link" }).click();
-  const confirm = await emailTo(address, /^Confirm your email for PuffinRide$/);
-  await page.goto(linkIn(confirm, "Confirm my email"));
-  await expect(page.getByRole("heading", { name: "Your email is added" })).toBeVisible();
+  await expect(
+    page
+      .getByText(`We sent a link to ${address}. Open it within 24 hours to add the address.`)
+      .filter(visible),
+  ).toBeVisible();
+  await confirmEmail(page, address);
 
   await page.goto("/settings/privacy/ask");
   await expect(page.getByText(`We answer at ${address}.`).filter(visible)).toBeVisible();

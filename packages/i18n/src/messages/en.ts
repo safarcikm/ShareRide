@@ -183,6 +183,8 @@ export const en = {
   "legal.version": "Version {version}",
   "legal.documentVersion": "{title}, version {version}",
   "onboarding.aboutYou": "Last step: about you",
+  "onboarding.emailHelp":
+    "We email you about your rides: requests, reminders and how your trip went.",
   "profile.addAbout": "Add a few words about you (optional)",
   "onboarding.create": "Create account",
   "onboarding.createAndBook": "Create account and book",

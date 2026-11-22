@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { expect, type Page } from "@playwright/test";
 import { codeIn, newPhoneNumber, sentCount, textMessage } from "./sms";
 
@@ -18,6 +19,8 @@ export interface Texts {
   /** Step 3 of signing up, about you, with the terms (spec 16, 3.5). */
   readonly aboutYouTitle: string;
   readonly firstName: string;
+  /** Asked on the web, where there is no push (spec 20, 3.3). */
+  readonly email: string;
   readonly addAbout: string;
   readonly about: string;
   readonly age: string;
@@ -37,6 +40,7 @@ export const english: Texts = {
   codeLabel: "6-digit code",
   aboutYouTitle: "Last step: about you",
   firstName: "First name",
+  email: "Email",
   addAbout: "Add a few words about you (optional)",
   about: "About you",
   age: "I am 18 or older",
@@ -55,6 +59,7 @@ export const icelandic: Texts = {
   codeLabel: "6 stafa kóði",
   aboutYouTitle: "Síðasta skref: um þig",
   firstName: "Fornafn",
+  email: "Netfang",
   addAbout: "Bættu við nokkrum orðum um þig (valfrjálst)",
   about: "Um þig",
   age: "Ég er 18 ára eða eldri",
@@ -82,12 +87,14 @@ export async function enterCode(page: Page, texts: Texts, phone: { local: string
 
 /**
  * Signs up a new person through the three steps, which opens Find, then
- * checks the profile under Profile in the menu and goes back to Find.
+ * checks the profile under Profile in the menu and goes back to Find. Gives
+ * the number, the text message with the code and the email given at
+ * sign-up, whose link is not opened yet.
  */
 export async function signUp(page: Page, texts: Texts, firstName: string) {
   const phone = newPhoneNumber();
   const text = await signIn(page, texts, phone);
-  await finishSignUp(page, texts, firstName);
+  const email = await finishSignUp(page, texts, firstName);
   await expect(page.getByRole("heading", { name: texts.findTitle })).toBeVisible();
   await menuLink(page, texts.profileTab).click();
   await expect(page.getByRole("heading", { name: texts.myProfile })).toBeVisible();
@@ -98,7 +105,7 @@ export async function signUp(page: Page, texts: Texts, firstName: string) {
   // Back to Find goes back in the browser's history, which moves the address
   // a moment after the screen. A reload before then opens My profile again.
   await expect(page).toHaveURL("/");
-  return { phone, text };
+  return { phone, text, email };
 }
 
 /** A place of the menu: the tab bar on phones, the top bar on wide screens. */
@@ -107,9 +114,10 @@ export function menuLink(page: Page, name: string) {
 }
 
 /**
- * After the code, step 3: a new person gives a first name and a few words,
- * keeps the app's language ticked, accepts the terms and presses the button,
- * which names what comes next ("Create account" when nothing is kept).
+ * After the code, step 3: a new person gives a first name, an email (new
+ * each time) and a few words, keeps the app's language ticked, accepts the
+ * terms and presses the button, which names what comes next ("Create
+ * account" when nothing is kept). Gives the email.
  */
 export async function finishSignUp(
   page: Page,
@@ -117,11 +125,14 @@ export async function finishSignUp(
   firstName: string,
   button = texts.createAccount,
 ) {
+  const email = `test-${randomUUID().slice(0, 8)}@example.com`;
   await expect(page.getByRole("heading", { name: texts.aboutYouTitle })).toBeVisible();
   await page.getByLabel(texts.firstName).fill(firstName);
+  await page.getByLabel(texts.email, { exact: true }).fill(email);
   await page.getByRole("button", { name: texts.addAbout }).click();
   await page.getByLabel(texts.about).fill("Test account.");
   await page.getByRole("checkbox", { name: texts.age }).click();
   await page.getByRole("checkbox", { name: texts.accept }).click();
   await page.getByRole("button", { name: button, exact: true }).click();
+  return email;
 }

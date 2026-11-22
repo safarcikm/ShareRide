@@ -115,7 +115,7 @@ with a link to the community rules.
 | Photo | Optional for passengers, required for drivers before their first trip (decision 4); any photo the phone or browser can open, cropped square and made a JPEG of at most 640 pixels by the app, without location and camera data ([ADR 0033](../decisions/0033-profile-photos-made-in-the-app-and-checked-by-the-api.md)) | Everyone |
 | About you | Optional, up to 300 characters | Everyone |
 | Languages spoken | Optional, choose from a list | Everyone |
-| Email | Optional but encouraged (decision 5); verified by a link | Only the user and the operator |
+| Email | Optional but encouraged in the phone apps (decision 5); asked at sign-up on the web, which gets no push ([spec 20](2026-11-22-email-alerts-and-open-beta.md), 3.3); verified by a link | Only the user and the operator |
 | Phone number | Required, verified | Only the user and the operator |
 
 Public profile shows: first name, photo, about, languages, badges (phone
@@ -275,5 +275,5 @@ Accepted by Martin on 2026-11-13 as recommended.
 | 2 | Age check: tick "I am 18 or older", or enter a date of birth? | Tick box in the beta, so no birth date is collected; revisit before public launch |
 | 3 | Which phone numbers can sign up? | Iceland, the EEA, the UK, the US and Canada at first; others on request |
 | 4 | Is a profile photo required? | Optional for passengers, required for drivers before their first trip (spec 3) |
-| 5 | Is email required? | Optional but encouraged, for receipts and account recovery |
+| 5 | Is email required? | Optional but encouraged, for receipts and account recovery. Changed 2026-11-22: the web asks for it at sign-up, as a browser gets no push ([spec 20](2026-11-22-email-alerts-and-open-beta.md), 3.3; [ADR 0035](../decisions/0035-open-web-beta-reached-by-email.md)); the phone apps keep it optional |
 | 6 | What does the welcome screen show? | A front page that makes joining more interesting: a route search on top, the rides leaving soon, "Offer a ride" as the main button and a small "Sign in" link, instead of "Continue with phone" and "Browse trips" (Martin, 2026-11-15) |
