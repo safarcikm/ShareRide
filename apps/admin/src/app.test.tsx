@@ -208,7 +208,11 @@ describe("the frame", () => {
     api.on(adminMeRoute, { status: 200, data: { ...anna, locale: "is" } });
     show();
     expect(await screen.findByRole("heading", { name: "Velkomin(n), Anna" })).toBeTruthy();
-    expect(document.documentElement.lang).toBe("is");
+    // The page's language is set in an effect after the render that shows the
+    // heading, so on a busy machine it can come a moment later.
+    await waitFor(() => {
+      expect(document.documentElement.lang).toBe("is");
+    });
     fireEvent.click(screen.getByRole("button", { name: "Skipta yfir í ensku" }));
     expect(await screen.findByRole("heading", { name: "Welcome, Anna" })).toBeTruthy();
   });
