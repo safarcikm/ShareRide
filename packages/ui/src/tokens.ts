@@ -76,6 +76,22 @@ export const people = {
   face: "#1F2A30",
 } as const;
 
+/**
+ * The puffin (spec 15, sections 4.2 and 4.9), in the logo: its white face,
+ * the beak's orange, the darker orange of its grooves and the eye's ring,
+ * the grey plate at the beak's base, and the grey marks above and below the
+ * eye. Its black is `people.face`, the yellow at the beak's base
+ * `people.sun`. Like the people colours, only for drawings: never for text,
+ * and never the only way to show meaning.
+ */
+export const puffin = {
+  white: "#F7F5F0",
+  beak: "#F26B2E",
+  beakGroove: "#D9512A",
+  beakPlate: "#7C93A0",
+  eyeMark: "#8E9CA3",
+} as const;
+
 /** The five people colours a driver's shape person and initial can have, in a fixed order. */
 export const peopleColours = [
   people.glacier,

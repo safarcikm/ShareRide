@@ -4,7 +4,10 @@ import {
   asideMaxWidth,
   colors,
   maxContentWidth,
+  carDrawing,
   pageMaxWidth,
+  people,
+  puffin,
   sideColumnWidth,
   signInBrands,
   spacing,
@@ -57,6 +60,17 @@ describe.each(["light", "dark"] as const)("%s colours", (scheme) => {
     expect(
       contrastRatio(colors[scheme][foreground], colors[scheme][background]),
     ).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("the puffin (spec 15, sections 4.2 and 4.9)", () => {
+  // Drawing colours carry no text, but the white face must stand out from the
+  // black around it, on the moss icon and on the dark one, or it is no puffin.
+  it.each([
+    ["the logo", people.face],
+    ["the dark icon", carDrawing.dark.body],
+  ])("shows its face against its black in %s", (_, black) => {
+    expect(contrastRatio(puffin.white, black)).toBeGreaterThanOrEqual(3);
   });
 });
 

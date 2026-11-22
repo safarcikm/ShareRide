@@ -4,7 +4,7 @@ import { inflateSync } from "node:zlib";
 import { colors } from "../theme/tokens";
 
 // Spec 15, section 4.9: the app icon, the Android icon layers, the opening
-// screen and the browser tab icon, all drawn from logo A. The pictures are
+// screen and the browser tab icon, all drawn from logo C, the puffin pin. The pictures are
 // exported from the drawings in assets/logo by scripts/export-icons.ts.
 const appDir = join(__dirname, "..", "..");
 
@@ -96,7 +96,7 @@ function expectSeeThrough(path: string, size: number): void {
 }
 
 describe("app icon and opening screen (spec 15, section 4.9)", () => {
-  it("uses logo A as the app icon, filling the square with moss", () => {
+  it("uses the puffin pin as the app icon, filling the square with moss", () => {
     expect(config.ios.icon.light).toBe(config.icon);
     expectFullSquare(config.icon, colors.light.primary);
   });
@@ -106,7 +106,7 @@ describe("app icon and opening screen (spec 15, section 4.9)", () => {
     expectFullSquare(config.ios.icon.tinted, "#000000");
   });
 
-  it("gives Android a car layer and a one-colour layer over moss", () => {
+  it("gives Android a pin layer and a one-colour layer over moss", () => {
     const adaptive = config.android.adaptiveIcon;
     expect(adaptive.backgroundColor).toBe(colors.light.primary);
     expect(adaptive.backgroundImage).toBeUndefined();
