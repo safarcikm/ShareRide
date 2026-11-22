@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   decideLink,
   emailToStore,
+  isAppleRelay,
   isAllowedReturnUrl,
   isChallengeShaped,
   providerReturnPath,
@@ -191,6 +192,15 @@ describe("emailToStore (R19.4)", () => {
         takenByOther: false,
       }),
     ).toBeNull();
+  });
+});
+
+describe("isAppleRelay (spec 19, 3.5)", () => {
+  it("tells Apple's private relay addresses from others", () => {
+    expect(isAppleRelay("abc123@privaterelay.appleid.com")).toBe(true);
+    expect(isAppleRelay("ABC123@PrivateRelay.AppleID.com")).toBe(true);
+    expect(isAppleRelay("anna@example.com")).toBe(false);
+    expect(isAppleRelay("someone@privaterelay.appleid.com.example")).toBe(false);
   });
 });
 
