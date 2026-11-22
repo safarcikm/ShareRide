@@ -309,7 +309,7 @@ describe("the console's metrics routes", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe("text/csv; charset=utf-8");
     expect(response.headers.get("content-disposition")).toBe(
-      'attachment; filename="shareride-metrics-2026-W46-2026-W47.csv"',
+      'attachment; filename="puffinride-metrics-2026-W46-2026-W47.csv"',
     );
     const lines = (await response.text()).trimEnd().split("\r\n");
     expect(lines[0]).toBe("week,starts_on,corridor,metric,numerator,denominator");

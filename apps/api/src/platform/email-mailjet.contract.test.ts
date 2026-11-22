@@ -14,7 +14,7 @@ const fromEmail = process.env["EMAIL_FROM"];
 
 const message = {
   to: "contract-test@example.com",
-  subject: "ShareRide contract test",
+  subject: "PuffinRide contract test",
   text: "Sandbox mode: this is never sent.",
   html: "<p>Sandbox mode: this is never sent.</p>",
   idempotencyKey: "contract-test",
@@ -28,7 +28,7 @@ describe.skipIf(apiKey === undefined || secretKey === undefined || fromEmail ===
       const sender = createMailjetEmailSender({
         apiKey,
         secretKey,
-        from: { email: fromEmail, name: "ShareRide" },
+        from: { email: fromEmail, name: "PuffinRide" },
         sandbox: true,
       });
       await expect(sender.send(message)).resolves.toEqual({ id: expect.any(String) as unknown });
@@ -39,7 +39,7 @@ describe.skipIf(apiKey === undefined || secretKey === undefined || fromEmail ===
       const sender = createMailjetEmailSender({
         apiKey,
         secretKey: "wrong-secret-for-the-contract-test",
-        from: { email: fromEmail, name: "ShareRide" },
+        from: { email: fromEmail, name: "PuffinRide" },
         sandbox: true,
       });
       const error = await sender.send(message).then(

@@ -251,7 +251,7 @@ describe("Send feedback (spec 12, 3.3)", () => {
     expect(await screen.findByText("Something isn't working · 17 November 2026")).toBeVisible();
     expect(screen.getByText("The map does not move.")).toBeVisible();
     expect(screen.getByText("Sent with a screenshot.")).toBeVisible();
-    expect(screen.getByText("ShareRide replied on 18 November 2026")).toBeVisible();
+    expect(screen.getByText("PuffinRide replied on 18 November 2026")).toBeVisible();
     expect(screen.getByText("Thanks, fixed in the next version.")).toBeVisible();
     expect(screen.getByText("An idea · 16 November 2026")).toBeVisible();
     expect(screen.getByText("No reply yet.")).toBeVisible();

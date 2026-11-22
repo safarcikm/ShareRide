@@ -18,7 +18,7 @@ function exportedWebApp(): string {
   writeFileSync(join(parent, "secret.txt"), secret);
   const dir = join(parent, "web");
   mkdirSync(dir);
-  writeFileSync(join(dir, "index.html"), "<!doctype html><title>ShareRide</title>");
+  writeFileSync(join(dir, "index.html"), "<!doctype html><title>PuffinRide</title>");
   writeFileSync(join(dir, "favicon.ico"), "icon");
   mkdirSync(join(dir, "_expo", "static", "js", "web"), { recursive: true });
   writeFileSync(join(dir, "_expo", "static", "js", "web", "entry-abc123.js"), "console.log(1);");
@@ -47,7 +47,7 @@ describe("the web app on the API's origin", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/html");
     expect(response.headers.get("cache-control")).toBe("no-cache");
-    expect(await response.text()).toContain("<title>ShareRide</title>");
+    expect(await response.text()).toContain("<title>PuffinRide</title>");
   });
 
   it("limits the page to its own scripts, styles and API", async () => {
@@ -73,7 +73,7 @@ describe("the web app on the API's origin", () => {
     for (const path of ["/sign-in", "/sign-in/code", "/legal/terms"]) {
       const response = await app.request(path);
       expect(response.status).toBe(200);
-      expect(await response.text()).toContain("<title>ShareRide</title>");
+      expect(await response.text()).toContain("<title>PuffinRide</title>");
     }
   });
 
@@ -81,7 +81,7 @@ describe("the web app on the API's origin", () => {
     const trip = await app.request("/trips/0190a1d6-0000-7000-8000-0000000000d1?fromStop=1");
     expect(trip.status).toBe(200);
     expect(trip.headers.get("x-robots-tag")).toBe("noindex, nofollow");
-    expect(await trip.text()).toContain("<title>ShareRide</title>");
+    expect(await trip.text()).toContain("<title>PuffinRide</title>");
     for (const path of ["/", "/search", "/tripsearch"]) {
       expect((await app.request(path)).headers.get("x-robots-tag"), path).toBeNull();
     }

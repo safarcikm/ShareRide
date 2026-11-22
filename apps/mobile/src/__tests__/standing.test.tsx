@@ -188,7 +188,7 @@ describe("a passenger, for the driver (spec 5, 3.3 and 3.7)", () => {
     expect(screen.getByText("Reliability: not enough trips yet")).toBeVisible();
   });
 
-  it("shows nothing of the kind for someone asking who is leaving ShareRide", async () => {
+  it("shows nothing of the kind for someone asking who is leaving PuffinRide", async () => {
     // As the API answers for someone leaving: no profile, and a newcomer's standing.
     await openTrip([gunna({ ...newcomer, profileId: null })]);
     expect((await screen.findAllByText(/Gunna/)).length).toBeGreaterThan(0);

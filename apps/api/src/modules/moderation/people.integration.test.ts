@@ -388,7 +388,7 @@ describe("a person's page (spec 9, 3.5.2)", () => {
     expect((rider.body as AdminUser).bookings.map((booking) => booking.id)).toEqual([acceptedId]);
   });
 
-  it("shows their profile photo, also once ShareRide hid it (ADR 0033)", async () => {
+  it("shows their profile photo, also once PuffinRide hid it (ADR 0033)", async () => {
     const jon = await newMember("Jón");
     const link = await givePhoto(api, jon.userId, api.now());
     const { cookie } = await api.signInOperator();
@@ -440,7 +440,7 @@ describe("a person's rating, reliability and reviews (spec 9, 3.5.2)", () => {
           revealedAt: null,
           createdAt: waiting,
         },
-        // By someone since erased, and hidden by ShareRide: it does not count either.
+        // By someone since erased, and hidden by PuffinRide: it does not count either.
         {
           bookingId: null,
           authorId: schema.formerMemberId,
@@ -452,7 +452,7 @@ describe("a person's rating, reliability and reviews (spec 9, 3.5.2)", () => {
           hiddenAt: gone,
           createdAt: gone,
         },
-        // By someone leaving ShareRide: it shows nowhere until they are erased.
+        // By someone leaving PuffinRide: it shows nowhere until they are erased.
         {
           bookingId,
           authorId: siggi.userId,

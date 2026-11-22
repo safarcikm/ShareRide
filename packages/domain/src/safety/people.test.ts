@@ -35,7 +35,7 @@ describe("how a driver answered a request (spec 9, 3.4.5; spec 5)", () => {
 
   it("is declined only when the driver turned the person down", () => {
     expect(requestAnswer({ ...request, status: "declined" })).toBe("declined");
-    // A request is declined with the trip when the driver or ShareRide cancels it.
+    // A request is declined with the trip when the driver or PuffinRide cancels it.
     expect(requestAnswer({ ...request, status: "declined", cancelledAt: daysAgo(2) })).toBeNull();
   });
 

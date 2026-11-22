@@ -104,11 +104,11 @@ describe("checkProfilePhoto", () => {
 describe("photoShown", () => {
   const key = "profile-photos/0193f0c4-7d4a-7b1e-9c2a-123456789abc.jpg";
 
-  it("is true for a photo ShareRide has not hidden (spec 9, 3.4.3)", () => {
+  it("is true for a photo PuffinRide has not hidden (spec 9, 3.4.3)", () => {
     expect(photoShown({ photoKey: key, photoHiddenAt: null })).toBe(true);
   });
 
-  it("is false without a photo, or for one ShareRide hid", () => {
+  it("is false without a photo, or for one PuffinRide hid", () => {
     expect(photoShown({ photoKey: null, photoHiddenAt: null })).toBe(false);
     expect(photoShown({ photoKey: key, photoHiddenAt: new Date("2026-11-22T10:00:00Z") })).toBe(
       false,

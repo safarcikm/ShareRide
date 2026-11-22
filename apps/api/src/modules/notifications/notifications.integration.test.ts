@@ -571,7 +571,7 @@ describe("the worker (plan 4.4)", () => {
       },
     ]);
     // A plain link to the trip, in both parts (plan 4.6).
-    expect(email.sent[0]?.text).toContain(`Open in ShareRide: ${webAppUrl}/drive/trips/${north}`);
+    expect(email.sent[0]?.text).toContain(`Open in PuffinRide: ${webAppUrl}/drive/trips/${north}`);
     expect(email.sent[0]?.html).toContain(`<a href="${webAppUrl}/drive/trips/${north}">`);
 
     const gunna = await newMember("Gunna");
@@ -688,7 +688,7 @@ describe("the worker (plan 4.4)", () => {
     expect(sms.outbox).toEqual([
       {
         to: await phoneOf(passenger),
-        text: "ShareRide: the driver cancelled your booking for Saturday 14 November at 05:30. Full refund. Details in the app.",
+        text: "PuffinRide: the driver cancelled your booking for Saturday 14 November at 05:30. Full refund. Details in the app.",
       },
     ]);
     expect(
@@ -822,7 +822,7 @@ describe("the worker (plan 4.4)", () => {
     await cancelAsDriver(jon, unpaid.id, "illness");
     await worker().runOnce();
     expect(sms.outbox.map((message) => message.text)).toEqual([
-      "ShareRide: Bílstjórinn aflýsti bókun þinni: laugardagur 14. nóvember kl. 05:30. Nánar í appinu.",
+      "PuffinRide: Bílstjórinn aflýsti bókun þinni: laugardagur 14. nóvember kl. 05:30. Nánar í appinu.",
     ]);
 
     // Two days ahead: outside the window.
@@ -932,11 +932,11 @@ describe("the worker (plan 4.4)", () => {
       expect.arrayContaining([
         {
           to: await phoneOf(gunna),
-          text: "ShareRide: your trip on Saturday 14 November at 09:00 is cancelled. Full refund. Details in the app.",
+          text: "PuffinRide: your trip on Saturday 14 November at 09:00 is cancelled. Full refund. Details in the app.",
         },
         {
           to: await phoneOf(oli),
-          text: "ShareRide: Ferðinni þinni var aflýst: laugardagur 14. nóvember kl. 09:00. Nánar í appinu.",
+          text: "PuffinRide: Ferðinni þinni var aflýst: laugardagur 14. nóvember kl. 09:00. Nánar í appinu.",
         },
       ]),
     );
@@ -1018,11 +1018,11 @@ describe("the worker (plan 4.4)", () => {
       expect.arrayContaining([
         {
           to: await phoneOf(gunna),
-          text: "ShareRide: your trip on Saturday 14 November now leaves at 06:10. Keep it or cancel with a full refund in the app.",
+          text: "PuffinRide: your trip on Saturday 14 November now leaves at 06:10. Keep it or cancel with a full refund in the app.",
         },
         {
           to: await phoneOf(dora),
-          text: `ShareRide: Ný brottför: laugardagur 14. nóvember kl. ${doraAt(40)}. Nánar í appinu.`,
+          text: `PuffinRide: Ný brottför: laugardagur 14. nóvember kl. ${doraAt(40)}. Nánar í appinu.`,
         },
       ]),
     );
@@ -1051,7 +1051,7 @@ describe("the worker (plan 4.4)", () => {
     expect(sms.outbox).toEqual([
       {
         to: await phoneOf(passenger),
-        text: "ShareRide: your trip on Saturday 14 November now leaves at 12:30. Keep it or cancel with a full refund in the app.",
+        text: "PuffinRide: your trip on Saturday 14 November now leaves at 12:30. Keep it or cancel with a full refund in the app.",
       },
     ]);
   });
@@ -1873,8 +1873,8 @@ describe("email (plan 4.6)", () => {
         expect.stringMatching(/^You have unread messages about your trip on \w+day \d+ \w+$/),
       ],
     ]);
-    expect(email.sent[0]?.text).toMatch(/^Open the chat in ShareRide to read them\.\n/);
-    expect(email.sent[0]?.text).toContain(`Open in ShareRide: ${webAppUrl}/messages/${bookingId}`);
+    expect(email.sent[0]?.text).toMatch(/^Open the chat in PuffinRide to read them\.\n/);
+    expect(email.sent[0]?.text).toContain(`Open in PuffinRide: ${webAppUrl}/messages/${bookingId}`);
     expect(JSON.stringify(email.sent)).not.toContain("4512");
 
     // Five minutes on, another message: its email waits for the hour.

@@ -140,7 +140,7 @@ export async function postTripToSelfoss(
   await page.getByRole("button", { name: "Confirm your licence" }).click();
   await page
     .getByRole("checkbox", {
-      name: "I declare that I hold a valid driving licence for the cars I drive on ShareRide",
+      name: "I declare that I hold a valid driving licence for the cars I drive on PuffinRide",
     })
     .click();
   await page.getByRole("button", { name: "Confirm", exact: true }).click();

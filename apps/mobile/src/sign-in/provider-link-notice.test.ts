@@ -10,12 +10,12 @@ describe("providerLinkText", () => {
     );
     expect(
       providerLinkText(t, { provider: "google", outcome: "replaced", email: "anna@example.com" }),
-    ).toBe("Your Google account on ShareRide is now anna@example.com.");
+    ).toBe("Your Google account on PuffinRide is now anna@example.com.");
     expect(providerLinkText(t, { provider: "apple", outcome: "replaced", email: null })).toBe(
-      "Your Apple account on ShareRide has changed.",
+      "Your Apple account on PuffinRide has changed.",
     );
     expect(providerLinkText(t, { provider: "apple", outcome: "in_use", email: null })).toBe(
-      "This Apple account is used by another ShareRide account.",
+      "This Apple account is used by another PuffinRide account.",
     );
   });
 

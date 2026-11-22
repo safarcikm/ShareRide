@@ -43,7 +43,7 @@ test.describe("getting ready to drive on the web", () => {
     await page.getByRole("button", { name: "Driving licence, Not confirmed yet" }).click();
     await expect(page.getByRole("heading", { name: "Your driving licence" })).toBeVisible();
     const declaration = page.getByRole("checkbox", {
-      name: "I declare that I hold a valid driving licence for the cars I drive on ShareRide",
+      name: "I declare that I hold a valid driving licence for the cars I drive on PuffinRide",
     });
     await page.getByRole("button", { name: "Confirm", exact: true }).click();
     await expect(

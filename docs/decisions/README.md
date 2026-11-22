@@ -69,3 +69,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0036](0036-meeting-points-go-live-before-their-photo.md) | A meeting point can go live before it has a photo | Accepted |
 | [0037](0037-photo-storage-in-nuremberg.md) | Store photos in Hetzner Object Storage in Nuremberg | Accepted |
 | [0038](0038-pay-the-driver-in-person-until-card-payments.md) | Passengers pay the driver in person until payments in the app work | Accepted |
+| [0039](0039-rename-to-puffinride.md) | Rename the product to PuffinRide, on puffinride.is | Accepted |

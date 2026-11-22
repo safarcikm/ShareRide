@@ -1,6 +1,6 @@
 {
   "ios": {
-    "NSPhotoLibraryUsageDescription": "ShareRide opnar myndirnar þínar svo þú getir valið prófílmynd.",
-    "NSCameraUsageDescription": "ShareRide notar myndavélina svo þú getir tekið prófílmynd."
+    "NSPhotoLibraryUsageDescription": "PuffinRide opnar myndirnar þínar svo þú getir valið prófílmynd.",
+    "NSCameraUsageDescription": "PuffinRide notar myndavélina svo þú getir tekið prófílmynd."
   }
 }

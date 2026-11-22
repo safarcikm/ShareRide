@@ -8,7 +8,7 @@ import { confirmedBooking, secondPage, visible } from "./support/cancelling";
 // side reports, the other is asked and doesn't answer, and the test API
 // moves the trip a day and a half back: the 24 hours to answer have passed
 // and the report stands, as the minute job lets it. Contested reports and
-// ShareRide's decisions are left to the API and screen tests.
+// PuffinRide's decisions are left to the API and screen tests.
 
 test.use({ locale: "en-GB" });
 
@@ -43,7 +43,7 @@ test("a no-show nobody contests stands, with no refund", async ({
       "Mark this passenger as a no-show? They get no refund, and it shows on their profile.",
     ),
   ).toBeVisible();
-  await driver.getByLabel("Note for ShareRide (optional)").fill("Waited 15 minutes.");
+  await driver.getByLabel("Note for PuffinRide (optional)").fill("Waited 15 minutes.");
   await driver.getByRole("button", { name: "Mark as no-show", exact: true }).click();
   await expect(
     text(driver, /^You marked Dóra as a no-show\. Dóra can answer until /),
@@ -72,13 +72,13 @@ test("the driver didn't come and didn't answer: the booking is cancelled with a 
   const { tripId, booking } = await confirmedBooking(driver, passenger);
   await move(driver, tripId, -15);
 
-  // Dóra waited at Mjódd and tells ShareRide that Bára didn't come.
+  // Dóra waited at Mjódd and tells PuffinRide that Bára didn't come.
   await passenger.goto(booking);
   await passenger.getByRole("button", { name: "The driver didn't come" }).click();
-  await expect(text(passenger, "Tell ShareRide that Bára didn't come?")).toBeVisible();
-  await passenger.getByRole("button", { name: "Tell ShareRide", exact: true }).click();
+  await expect(text(passenger, "Tell PuffinRide that Bára didn't come?")).toBeVisible();
+  await passenger.getByRole("button", { name: "Tell PuffinRide", exact: true }).click();
   await expect(
-    text(passenger, /^You told ShareRide Bára didn't come\. Bára can answer until /),
+    text(passenger, /^You told PuffinRide Bára didn't come\. Bára can answer until /),
   ).toBeVisible();
 
   // Bára is asked on her trip, and doesn't answer.
@@ -88,7 +88,7 @@ test("the driver didn't come and didn't answer: the booking is cancelled with a 
   await move(driver, tripId, -36 * 60);
   await passenger.reload();
   await expect(
-    text(passenger, "Bára didn't come, so ShareRide cancelled this booking."),
+    text(passenger, "Bára didn't come, so PuffinRide cancelled this booking."),
   ).toBeVisible();
   await expect(
     text(passenger, /^Full refund of [\d,]+ ISK, back to the card you paid with\.$/),

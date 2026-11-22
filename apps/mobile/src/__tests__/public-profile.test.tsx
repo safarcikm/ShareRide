@@ -117,7 +117,7 @@ describe("a public profile (spec 1, 3.5)", () => {
       },
     });
     expect(
-      await screen.findByText("This profile isn't available. The person may have left ShareRide."),
+      await screen.findByText("This profile isn't available. The person may have left PuffinRide."),
     ).toBeVisible();
 
     await renderApp(`/people/${annaProfileId}`, {
@@ -138,7 +138,7 @@ describe("a public profile (spec 1, 3.5)", () => {
       },
     });
     expect(
-      await screen.findByText("This profile isn't available. The person may have left ShareRide."),
+      await screen.findByText("This profile isn't available. The person may have left PuffinRide."),
     ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
   });
@@ -294,7 +294,7 @@ describe("the reviews on a profile (spec 8, 3.7.5)", () => {
       client.answer("/v1/people/{profileId}/reviews", () => failure(404, "not_found"));
     });
     expect(
-      await screen.findByText("This profile isn't available. The person may have left ShareRide."),
+      await screen.findByText("This profile isn't available. The person may have left PuffinRide."),
     ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
   });

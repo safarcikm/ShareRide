@@ -54,8 +54,8 @@ async function openNotices(notices: () => unknown, setUp?: (client: FakeClient) 
   return app;
 }
 
-describe("Notices from ShareRide (spec 9, 3.4.4; R9.5)", () => {
-  it("says what ShareRide did and why, and until when it can be appealed", async () => {
+describe("Notices from PuffinRide (spec 9, 3.4.4; R9.5)", () => {
+  it("says what PuffinRide did and why, and until when it can be appealed", async () => {
     await openNotices(() =>
       ok(200, {
         notices: [
@@ -91,7 +91,7 @@ describe("Notices from ShareRide (spec 9, 3.4.4; R9.5)", () => {
     expect(screen.getAllByRole("button", { name: "Appeal" })).toHaveLength(1);
   });
 
-  it("sends one appeal, and shows it waiting for ShareRide's answer", async () => {
+  it("sends one appeal, and shows it waiting for PuffinRide's answer", async () => {
     const app = await openNotices(
       () => ok(200, { notices: [suspension()] }),
       (client) => {
@@ -129,7 +129,7 @@ describe("Notices from ShareRide (spec 9, 3.4.4; R9.5)", () => {
     expect(await screen.findByText("Your appeal, sent 14 November 2026")).toBeVisible();
     expect(appealsSent(app.client)).toEqual([{ text: "I was not there that day." }]);
     expect(screen.getByText("I was not there that day.")).toBeVisible();
-    expect(screen.getByText("ShareRide will look at it and answer here.")).toBeVisible();
+    expect(screen.getByText("PuffinRide will look at it and answer here.")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Appeal" })).toBeNull();
   });
 
@@ -142,7 +142,7 @@ describe("Notices from ShareRide (spec 9, 3.4.4; R9.5)", () => {
     expect(appealsSent(app.client)).toEqual([]);
   });
 
-  it("shows ShareRide's answer", async () => {
+  it("shows PuffinRide's answer", async () => {
     await openNotices(() =>
       ok(200, {
         notices: [
@@ -159,7 +159,7 @@ describe("Notices from ShareRide (spec 9, 3.4.4; R9.5)", () => {
         ],
       }),
     );
-    expect(await screen.findByText("ShareRide's answer: we changed our decision")).toBeVisible();
+    expect(await screen.findByText("PuffinRide's answer: we changed our decision")).toBeVisible();
     expect(screen.getByText("You were right; sorry.")).toBeVisible();
   });
 
@@ -196,7 +196,7 @@ describe("Notices from ShareRide (spec 9, 3.4.4; R9.5)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
     expect(
       await screen.findByText(
-        "Nothing here. If ShareRide ever acts on your account, you'll read why here.",
+        "Nothing here. If PuffinRide ever acts on your account, you'll read why here.",
       ),
     ).toBeVisible();
   });

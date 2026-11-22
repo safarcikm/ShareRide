@@ -61,7 +61,7 @@ test("the driver and passenger of a confirmed booking message each other", async
   await expect(passenger).toHaveURL(/\/messages\/[0-9a-f-]+$/);
   await expect(
     passenger
-      .getByText("Pay only in the app. ShareRide never asks for card details in a chat.")
+      .getByText("Pay only in the app. PuffinRide never asks for card details in a chat.")
       .filter(visible),
   ).toBeVisible();
   // On a laptop the list beside the conversation shows this line too, as

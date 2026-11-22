@@ -65,7 +65,7 @@ async function openBooking(
   });
 }
 
-/** The report once answered: contested, it waits for ShareRide; agreed, it stands. */
+/** The report once answered: contested, it waits for PuffinRide; agreed, it stands. */
 function answered(booking: Booking, body: AnswerDisputeBody) {
   const at = mockNow.toISOString();
   const open = booking.dispute ?? dispute();
@@ -120,27 +120,27 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
     expect(screen.queryByRole("button", driverAbsent)).toBeNull();
   });
 
-  it("says what happens next, takes a note only ShareRide reads, and tells ShareRide", async () => {
+  it("says what happens next, takes a note only PuffinRide reads, and tells PuffinRide", async () => {
     const { client } = await openBooking(onTheDay());
     await fireEvent.press(await screen.findByRole("button", driverAbsent));
     expect(await screen.findByRole("header", driverAbsent)).toBeVisible();
     expect(screen).toHavePathname(`/bookings/${bookingId}/driver-absent`);
-    expect(screen.getByText("Tell ShareRide that Anna didn't come?")).toBeVisible();
+    expect(screen.getByText("Tell PuffinRide that Anna didn't come?")).toBeVisible();
     expect(
       screen.getByText(
         "Anna is told at once and has 24 hours to answer. If Anna agrees or doesn't answer, the booking is cancelled.",
       ),
     ).toBeVisible();
     expect(screen.getByText("You then get a full refund of 2,900 ISK.")).toBeVisible();
-    expect(screen.getByText("Only ShareRide reads this. Up to 500 characters.")).toBeVisible();
+    expect(screen.getByText("Only PuffinRide reads this. Up to 500 characters.")).toBeVisible();
     await fireEvent.changeText(
-      screen.getByLabelText("Note for ShareRide (optional)"),
+      screen.getByLabelText("Note for PuffinRide (optional)"),
       "  Waited until 10:30 by the pumps.  ",
     );
-    await fireEvent.press(screen.getByRole("button", { name: "Tell ShareRide" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Tell PuffinRide" }));
     expect(
       await screen.findByText(
-        "You told ShareRide Anna didn't come. Anna can answer until 16 November at 10:15.",
+        "You told PuffinRide Anna didn't come. Anna can answer until 16 November at 10:15.",
       ),
     ).toBeVisible();
     expect(screen).toHavePathname(`/bookings/${bookingId}`);
@@ -153,10 +153,10 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
     const free = { amount: 0, currency: "ISK" } as const;
     const { client } = await openBooking(onTheDay({}, { total: free }));
     await fireEvent.press(await screen.findByRole("button", driverAbsent));
-    expect(await screen.findByText("Tell ShareRide that Anna didn't come?")).toBeVisible();
+    expect(await screen.findByText("Tell PuffinRide that Anna didn't come?")).toBeVisible();
     expect(screen.queryByText(/full refund/)).toBeNull();
-    await fireEvent.press(screen.getByRole("button", { name: "Tell ShareRide" }));
-    expect(await screen.findByText(/You told ShareRide Anna didn't come/)).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Tell PuffinRide" }));
+    expect(await screen.findByText(/You told PuffinRide Anna didn't come/)).toBeVisible();
     expect(bodiesOf(client, "/v1/bookings/{id}/driver-absent")).toEqual([{}]);
   });
 
@@ -164,10 +164,10 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
     const { client } = await openBooking(onTheDay());
     await fireEvent.press(await screen.findByRole("button", driverAbsent));
     await fireEvent.changeText(
-      await screen.findByLabelText("Note for ShareRide (optional)"),
+      await screen.findByLabelText("Note for PuffinRide (optional)"),
       "x".repeat(501),
     );
-    await fireEvent.press(screen.getByRole("button", { name: "Tell ShareRide" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Tell PuffinRide" }));
     expect(await screen.findAllByText("Keep the note to 500 characters.")).not.toHaveLength(0);
     expect(bodiesOf(client, "/v1/bookings/{id}/driver-absent")).toEqual([]);
   });
@@ -183,12 +183,12 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
     ],
     [
       failure(0, "network_error"),
-      "We couldn't reach ShareRide. Check your connection and try again.",
+      "We couldn't reach PuffinRide. Check your connection and try again.",
     ],
-  ])("says why it could not tell ShareRide (%#)", async (answer, said) => {
+  ])("says why it could not tell PuffinRide (%#)", async (answer, said) => {
     await openBooking(onTheDay(), { report: () => answer });
     await fireEvent.press(await screen.findByRole("button", driverAbsent));
-    await fireEvent.press(await screen.findByRole("button", { name: "Tell ShareRide" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Tell PuffinRide" }));
     expect(await screen.findByText(said)).toBeVisible();
   });
 
@@ -197,14 +197,14 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
     async (code) => {
       await openBooking(onTheDay(), { report: () => failure(409, code) });
       await fireEvent.press(await screen.findByRole("button", driverAbsent));
-      await fireEvent.press(await screen.findByRole("button", { name: "Tell ShareRide" }));
+      await fireEvent.press(await screen.findByRole("button", { name: "Tell PuffinRide" }));
       expect(await screen.findByText("This booking changed since you opened it.")).toBeVisible();
       await fireEvent.press(screen.getByRole("button", { name: "Back to the booking" }));
       expect(screen).toHavePathname(`/bookings/${bookingId}`);
     },
   );
 
-  it("waits for the driver, then for ShareRide once the driver contests it", async () => {
+  it("waits for the driver, then for PuffinRide once the driver contests it", async () => {
     const reported = dispute({ kind: "driver_absent" });
     await openBooking(
       onTheDay(
@@ -213,11 +213,11 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
       ),
     );
     expect(
-      await screen.findByText("Anna says it's not right. ShareRide will look into it and decide."),
+      await screen.findByText("Anna says it's not right. PuffinRide will look into it and decide."),
     ).toBeVisible();
   });
 
-  it("says ShareRide cancelled it once it stands, with the refund", async () => {
+  it("says PuffinRide cancelled it once it stands, with the refund", async () => {
     await openBooking(
       northBooking({
         ...paidBooking,
@@ -240,15 +240,15 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
       }),
     );
     expect(
-      await screen.findByText("Anna didn't come, so ShareRide cancelled this booking."),
+      await screen.findByText("Anna didn't come, so PuffinRide cancelled this booking."),
     ).toBeVisible();
     expect(
       screen.getByText("Full refund of 2,900 ISK, back to the card you paid with."),
     ).toBeVisible();
-    expect(screen.queryByText("ShareRide has looked into it and decided.")).toBeNull();
+    expect(screen.queryByText("PuffinRide has looked into it and decided.")).toBeNull();
   });
 
-  it("says the driver left without them when ShareRide decides so (decision 4)", async () => {
+  it("says the driver left without them when PuffinRide decides so (decision 4)", async () => {
     const marked = dispute();
     await openBooking(
       northBooking({
@@ -274,13 +274,15 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
       }),
     );
     expect(
-      await screen.findByText("Anna left without you, so ShareRide cancelled this booking."),
+      await screen.findByText("Anna left without you, so PuffinRide cancelled this booking."),
     ).toBeVisible();
-    expect(screen.queryByText("Anna didn't come, so ShareRide cancelled this booking.")).toBeNull();
+    expect(
+      screen.queryByText("Anna didn't come, so PuffinRide cancelled this booking."),
+    ).toBeNull();
     expect(
       screen.getByText("Full refund of 2,900 ISK, back to the card you paid with."),
     ).toBeVisible();
-    expect(screen.getByText("ShareRide has looked into it and decided.")).toBeVisible();
+    expect(screen.getByText("PuffinRide has looked into it and decided.")).toBeVisible();
   });
 });
 
@@ -302,7 +304,7 @@ describe("Answering a no-show (spec 8, 3.3; R8.6)", () => {
     expect(screen.queryByText(/Marked as a no-show/)).toBeNull();
   });
 
-  it("contests it with a note, then waits for ShareRide", async () => {
+  it("contests it with a note, then waits for PuffinRide", async () => {
     const { client } = await openBooking(markedNoShow());
     await fireEvent.press(await screen.findByRole("button", { name: "That's not right" }));
     expect(await screen.findByRole("header", { name: "Is this right?" })).toBeVisible();
@@ -310,7 +312,7 @@ describe("Answering a no-show (spec 8, 3.3; R8.6)", () => {
     expect(screen.getByRole("radio", { name: "That's not right" })).toBeChecked();
     expect(
       screen.getByText(
-        "ShareRide looks at what you both said, when each of you said you were there and your messages, then decides.",
+        "PuffinRide looks at what you both said, when each of you said you were there and your messages, then decides.",
       ),
     ).toBeVisible();
     await fireEvent.changeText(
@@ -319,7 +321,7 @@ describe("Answering a no-show (spec 8, 3.3; R8.6)", () => {
     );
     await fireEvent.press(screen.getByRole("button", { name: "Send answer" }));
     expect(
-      await screen.findByText("You said it's not right. ShareRide will look into it and decide."),
+      await screen.findByText("You said it's not right. PuffinRide will look into it and decide."),
     ).toBeVisible();
     expect(screen).toHavePathname(`/bookings/${bookingId}`);
     expect(
@@ -379,7 +381,7 @@ describe("Answering a no-show (spec 8, 3.3; R8.6)", () => {
     expect(screen.queryByRole("button", { name: "That's right" })).toBeNull();
   });
 
-  it("says ShareRide decided, and the outcome", async () => {
+  it("says PuffinRide decided, and the outcome", async () => {
     await openBooking(
       markedNoShow({
         dispute: {
@@ -392,7 +394,7 @@ describe("Answering a no-show (spec 8, 3.3; R8.6)", () => {
         },
       }),
     );
-    expect(await screen.findByText("ShareRide has looked into it and decided.")).toBeVisible();
+    expect(await screen.findByText("PuffinRide has looked into it and decided.")).toBeVisible();
     expect(
       screen.getByText("Marked as a no-show: no refund, and it shows on your profile."),
     ).toBeVisible();
@@ -496,7 +498,7 @@ describe("Marking a no-show (spec 8, 3.3; R8.4)", () => {
     expect(screen.queryByRole("button", markGunna)).toBeNull();
   });
 
-  it("confirms with what it does, takes a note for ShareRide, and marks them", async () => {
+  it("confirms with what it does, takes a note for PuffinRide, and marks them", async () => {
     const { client } = await openDriverTrip(tripOnTheDay([0, 1]), riders());
     await fireEvent.press(await screen.findByRole("button", markGunna));
     expect(await screen.findByRole("header", markGunna)).toBeVisible();
@@ -508,11 +510,11 @@ describe("Marking a no-show (spec 8, 3.3; R8.4)", () => {
     ).toBeVisible();
     expect(
       screen.getByText(
-        "Gunna is told at once and can answer until 16 November at 16:00. If Gunna says it's not right, ShareRide decides.",
+        "Gunna is told at once and can answer until 16 November at 16:00. If Gunna says it's not right, PuffinRide decides.",
       ),
     ).toBeVisible();
     await fireEvent.changeText(
-      screen.getByLabelText("Note for ShareRide (optional)"),
+      screen.getByLabelText("Note for PuffinRide (optional)"),
       "Waited until 10:15.",
     );
     await fireEvent.press(screen.getByRole("button", { name: "Mark as no-show" }));
@@ -549,7 +551,7 @@ describe("Marking a no-show (spec 8, 3.3; R8.4)", () => {
       await act(() => jest.advanceTimersByTimeAsync(30_000));
       expect(
         await screen.findByText(
-          "Gunna says it's not right. ShareRide will look into it and decide.",
+          "Gunna says it's not right. PuffinRide will look into it and decide.",
         ),
       ).toBeVisible();
       expect(focusMoves).toHaveBeenCalledTimes(1);
@@ -597,7 +599,9 @@ describe("Marking a no-show (spec 8, 3.3; R8.4)", () => {
       }),
     );
     expect(
-      await screen.findByText("Gunna says it's not right. ShareRide will look into it and decide."),
+      await screen.findByText(
+        "Gunna says it's not right. PuffinRide will look into it and decide.",
+      ),
     ).toBeVisible();
   });
 });
@@ -649,13 +653,13 @@ describe("Answering the driver didn't come (spec 8, 3.4; R8.6)", () => {
     expect(screen.queryByText(/full refund/)).toBeNull();
   });
 
-  it("contests it, then waits for ShareRide", async () => {
+  it("contests it, then waits for PuffinRide", async () => {
     mockNow = new Date("2026-11-15T10:40:00Z");
     await openDriverTrip(tripOnTheDay([0, 1]), riders({ dispute: reported }));
     await fireEvent.press(await screen.findByRole("button", { name: "That's not right" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Send answer" }));
     expect(
-      await screen.findByText("You said it's not right. ShareRide will look into it and decide."),
+      await screen.findByText("You said it's not right. PuffinRide will look into it and decide."),
     ).toBeVisible();
   });
 

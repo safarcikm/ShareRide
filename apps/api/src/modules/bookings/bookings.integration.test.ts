@@ -578,7 +578,7 @@ describe("the trip limit (rule P3, spec 17)", () => {
     expect(await book(kari.accessToken, north, { fromStop: 0, toStop: 3 })).toMatchObject({
       error: { code: "trip_limit_reached" },
     });
-    // ShareRide refunds it all after all: nothing is kept, and the room comes back.
+    // PuffinRide refunds it all after all: nothing is kept, and the room comes back.
     await api.connection.db
       .update(schema.bookings)
       .set({ refundAmount: 7000 })

@@ -36,7 +36,7 @@ test("the passenger rates the driver from the email, signing in on the way", asy
   // The email opens the rating screen of her booking.
   const asked = await emailTo(address, /^How was your trip\?$/);
   expect(asked.text).toContain("Rate the driver: Bára.");
-  const link = linkIn(asked, "Open in ShareRide");
+  const link = linkIn(asked, "Open in PuffinRide");
   expect(link).toBe(`${booking}/rate`);
 
   // In a browser that is not signed in, the link asks her to sign in first.

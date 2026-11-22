@@ -270,7 +270,7 @@ describe("Report and Block on a profile (spec 9, 3.1.1 and 3.2.1)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Block Anna" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Block Anna" }));
     expect(
-      await screen.findByText("This profile isn't available. The person may have left ShareRide."),
+      await screen.findByText("This profile isn't available. The person may have left PuffinRide."),
     ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Block Anna" })).toBeNull();
 
@@ -281,7 +281,7 @@ describe("Report and Block on a profile (spec 9, 3.1.1 and 3.2.1)", () => {
       },
     });
     expect(
-      await screen.findByText("This profile isn't available. The person may have left ShareRide."),
+      await screen.findByText("This profile isn't available. The person may have left PuffinRide."),
     ).toBeVisible();
     expect(screen.queryByRole("button", { name: /^Block / })).toBeNull();
   });

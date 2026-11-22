@@ -310,7 +310,7 @@ describe("a report's page (spec 9, 3.4.2)", () => {
     expect(missing).toMatchObject({ status: 404, body: { error: { code: "not_found" } } });
   });
 
-  it("shows the reported person's profile photo, also once ShareRide hid it (ADR 0033)", async () => {
+  it("shows the reported person's profile photo, also once PuffinRide hid it (ADR 0033)", async () => {
     const { jon, reportId } = await reportedMessage();
     const link = await givePhoto(api, jon.userId);
     const { cookie } = await api.signInOperator();
@@ -417,7 +417,7 @@ describe("a report's page (spec 9, 3.4.2)", () => {
 });
 
 describe("the conversation a message report covers (R9.6)", () => {
-  it("opens it, logged, with a message ShareRide removed marked so", async () => {
+  it("opens it, logged, with a message PuffinRide removed marked so", async () => {
     const { bookingId, messageId, reportId } = await reportedMessage();
     const { cookie, userId } = await api.signInOperator();
     const hidden = await send(cookie, "POST", "/admin/v1/hidden-content", {
@@ -580,7 +580,7 @@ describe("the operator's actions from a report (spec 9, 3.4.3)", () => {
     expect(twice).toMatchObject({ status: 409, body: { error: { code: "not_suspended" } } });
   });
 
-  it("hides content once, and cancels a trip as ShareRide once", async () => {
+  it("hides content once, and cancels a trip as PuffinRide once", async () => {
     const { jon, messageId, reportId } = await reportedMessage();
     const { cookie } = await api.signInOperator();
     const hide = () =>
