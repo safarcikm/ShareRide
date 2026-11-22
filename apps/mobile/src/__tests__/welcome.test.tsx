@@ -24,7 +24,7 @@ import {
 } from "@/testing/search";
 import { blonduos, borgarnes } from "@/testing/trips";
 import { bsi, hof, kef, meetingPoints } from "@/testing/meeting-points";
-import { colors } from "@/theme/tokens";
+import { colors, spacing } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -383,6 +383,96 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
     ]);
   });
 
+  /** The card with From and To, which holds the rest of the search on a phone. */
+  const searchCard = async () => {
+    await screen.findByRole("button", { name: /^From: / });
+    const card = screen
+      .getAllByTestId("card")
+      .find((found) => within(found).queryByRole("button", { name: /^From: / }) !== null);
+    if (card === undefined) throw new Error("No card with From");
+    return within(card);
+  };
+
+  it("puts the whole search in one card, with the date and the seats on one line", async () => {
+    await openFrontPage();
+    const card = await searchCard();
+    expect(card.getByRole("button", { name: "To: Choose a town or meeting point" })).toBeVisible();
+    // The main button, as wide as the card.
+    expect(card.getByRole("button", { name: "Find a ride" })).toHaveStyle({
+      alignSelf: "stretch",
+      minHeight: 56,
+    });
+    expect(screen.getAllByRole("button", { name: "Find a ride" })).toHaveLength(1);
+    // Side by side, and onto two lines only where the text is too large.
+    const line = card.getByTestId("search-when");
+    expect(line).toHaveStyle({ flexDirection: "row", flexWrap: "wrap" });
+    expect(within(line).getByRole("button", { name: "Date: Any day" })).toBeVisible();
+    expect(within(line).getByRole("adjustable", { name: "Seats" })).toBeVisible();
+    // The seats keep their value close between the buttons, for the date's room.
+    expect(within(line).getByTestId("stepper-buttons")).toHaveStyle({ gap: 4 });
+    // The date needs room for "Allir dagar" and its chevron at the text size
+    // used: twice as large here, so it takes a line of its own.
+    expect(within(line).getByTestId("search-when-date")).toHaveStyle({ flexBasis: 136 * 2 });
+    // The day is chosen from the date, not from chips over a calendar.
+    expect(screen.queryByRole("radio", { name: "Choose a day" })).toBeNull();
+  });
+
+  it("gives the calendar in the card some of the card's padding, so its days keep their size", async () => {
+    await openFrontPage();
+    const card = await searchCard();
+    await fireEvent.press(card.getByRole("button", { name: "Date: Any day" }));
+    expect(card.getByTestId("search-calendar")).toHaveStyle({ marginHorizontal: -spacing.sm });
+  });
+
+  it("leaves Android's back to the screen on top while the calendar is open on Find", async () => {
+    const listen = jest.spyOn(BackHandler, "addEventListener");
+    try {
+      await openFrontPage();
+      await fireEvent.press(await screen.findByRole("button", { name: "Date: Any day" }));
+      expect(await screen.findByRole("radio", { name: "Friday 20 November" })).toBeVisible();
+      // The listener added last is the calendar's.
+      const [, back] = listen.mock.calls.at(-1) ?? [];
+      await fireEvent.press(screen.getByRole("tab", { name: "My rides" }));
+      expect(
+        await screen.findByRole("header", { name: "Sign in to see your rides" }),
+      ).toBeVisible();
+      let handled: boolean | undefined;
+      await act(() => {
+        handled = back?.({ type: "hardwareBackPress", timeStamp: 0 });
+      });
+      expect(handled).toBe(false);
+      // Back on Find, the calendar is still open.
+      await fireEvent.press(screen.getByRole("tab", { name: "Find" }));
+      expect(await screen.findByRole("radio", { name: "Friday 20 November" })).toBeVisible();
+    } finally {
+      listen.mockRestore();
+    }
+  });
+
+  it("opens the calendar in the card under the date, and searches the day chosen", async () => {
+    const { client } = await openFrontPage((fake) => {
+      searchApi(fake);
+    });
+    await choose("From", "borg", "Borgarnes");
+    await choose("To", "blön", "Blönduós");
+    const card = await searchCard();
+    await fireEvent.press(card.getByRole("button", { name: "Date: Any day" }));
+    expect(card.getByRole("button", { name: "Date: Any day" })).toBeExpanded();
+    expect(card.getByRole("radio", { name: "Any day" })).toBeChecked();
+    await fireEvent.press(await card.findByRole("radio", { name: "Friday 20 November" }));
+    expect(card.getByRole("button", { name: "Date: Fri 20 Nov" })).toBeCollapsed();
+    expect(card.queryByRole("radio", { name: "Friday 20 November" })).toBeNull();
+    await fireEvent.press(card.getByRole("button", { name: "Find a ride" }));
+    expect(
+      await screen.findByRole("button", {
+        name: "Change search: Borgarnes → Blönduós, Fri 20 Nov, 1 seat",
+      }),
+    ).toBeVisible();
+    expect(searchesOf(client)).toEqual([
+      { from: borgarnes.id, to: blonduos.id, date: "2026-11-20", seats: 1, sort: "departure" },
+    ]);
+  });
+
   it("leads from Offer a ride to signing in, keeping the offer", async () => {
     await openFrontPage();
     await fireEvent.press(await screen.findByRole("button", { name: "Offer a ride" }));
@@ -666,7 +756,7 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     });
   });
 
-  it("keeps a phone's From, To and day as they were, without fields", async () => {
+  it("keeps a phone's From and To as a list, with only the date as a field", async () => {
     await act(() => {
       Dimensions.set({ window: phone });
     });
@@ -674,7 +764,8 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     expect(
       await screen.findByRole("button", { name: "From: Choose a town or meeting point" }),
     ).toBeVisible();
-    expect(screen.queryByTestId("search-field")).toBeNull();
+    // One field: getBy finds no more than one.
+    expect(within(screen.getByTestId("search-field")).getByText("Any day")).toBeVisible();
   });
 
   it("opens the place search in From's own part of the row", async () => {
@@ -758,19 +849,23 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     }
   });
 
-  it("leaves Android's back alone on a phone, where the calendar is part of the form", async () => {
+  it("closes the calendar with Android's back on a phone too, where it opens under the date", async () => {
     await act(() => {
       Dimensions.set({ window: phone });
     });
     const listen = jest.spyOn(BackHandler, "addEventListener");
     try {
       await openFrontPage();
-      await fireEvent.press(await screen.findByRole("radio", { name: "Choose a day" }));
+      await fireEvent.press(await screen.findByRole("button", { name: "Date: Any day" }));
       expect(await screen.findByRole("radio", { name: "Friday 20 November" })).toBeVisible();
-      for (const [, back] of listen.mock.calls) {
-        expect(back({ type: "hardwareBackPress", timeStamp: 0 })).not.toBe(true);
-      }
-      expect(screen.getByRole("radio", { name: "Friday 20 November" })).toBeVisible();
+      const [, back] = listen.mock.calls.at(-1) ?? [];
+      let handled: boolean | undefined;
+      await act(() => {
+        handled = back?.({ type: "hardwareBackPress", timeStamp: 0 });
+      });
+      expect(handled).toBe(true);
+      expect(screen.queryByRole("radio", { name: "Friday 20 November" })).toBeNull();
+      expect(screen.getByRole("button", { name: "Date: Any day" })).toBeCollapsed();
     } finally {
       listen.mockRestore();
     }
@@ -829,7 +924,7 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     });
     expect(screen.queryByTestId("search-row")).toBeNull();
     expect(screen.getByRole("button", { name: "From: Borgarnes" })).toBeVisible();
-    expect(screen.getByRole("radio", { name: "Fri 20 Nov" })).toBeChecked();
+    expect(screen.getByRole("button", { name: "Date: Fri 20 Nov" })).toBeVisible();
     expect(screen.getByRole("adjustable", { name: "Seats" })).toHaveAccessibilityValue({
       text: "2 seats",
     });
@@ -1208,7 +1303,7 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     const search = await row();
     expect(search.getByRole("button", { name: "Frá: Veldu bæ eða mótsstað" })).toBeVisible();
     expect(search.getByRole("button", { name: "Til: Veldu bæ eða mótsstað" })).toBeVisible();
-    expect(search.getByRole("button", { name: "Dagsetning: Hvaða dag sem er" })).toBeVisible();
+    expect(search.getByRole("button", { name: "Dagsetning: Allir dagar" })).toBeVisible();
     expect(search.getByRole("adjustable", { name: "Sæti" })).toBeVisible();
     expect(search.getByRole("button", { name: "Finna far" })).toBeVisible();
   });

@@ -58,8 +58,12 @@ are in the project files (`beautify/`).
 
 ## PR 3: the phone's search in one card
 
-- [ ] On a phone, the date, the seats and Find a ride sit in the From and To
+- [x] On a phone, the date, the seats and Find a ride sit in the From and To
   card, so the main button is on the first screen of an iPhone 13.
+- [x] The date and the seats on one line (Martin asked): the date as the
+  laptop's field, the seats' value closer between its buttons, and
+  "Allir dagar" for "Any day" in Icelandic, which fits where "Hvaða dag sem
+  er" took three lines.
 
 ## PR 4: the front page's top (Martin's pick)
 

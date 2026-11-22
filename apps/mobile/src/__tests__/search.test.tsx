@@ -133,9 +133,9 @@ describe("Searching for a ride (spec 4)", () => {
     await choose("To", "þorl", "Þorlákshöfn");
     await fireEvent.press(screen.getByRole("button", { name: "Swap from and to" }));
     expect(screen.getByRole("button", { name: "From: Þorlákshöfn" })).toBeVisible();
-    await fireEvent.press(screen.getByRole("radio", { name: "Choose a day" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Date: Any day" }));
     await fireEvent.press(await screen.findByRole("radio", { name: "Friday 20 November" }));
-    expect(screen.getByRole("radio", { name: "Fri 20 Nov" })).toBeChecked();
+    expect(screen.getByRole("button", { name: "Date: Fri 20 Nov" })).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Search" }));
     expect(await screen.findByText("Fri 20 Nov, 1 seat")).toBeVisible();
     expect(searchesOf(client)).toEqual([
@@ -238,7 +238,7 @@ describe("Results header and chips (spec 16, 3.8)", () => {
     expect(await screen.findByRole("header", { name: "Change search" })).toBeVisible();
     expect(screen.getByRole("button", { name: "From: Borgarnes" })).toBeVisible();
     expect(screen.getByRole("button", { name: "To: Blönduós" })).toBeVisible();
-    expect(screen.getByRole("radio", { name: "Any day" })).toBeChecked();
+    expect(screen.getByRole("button", { name: "Date: Any day" })).toBeVisible();
     expect(screen.queryByTestId("trip-result")).toBeNull();
     expect(screen.queryByRole("button", { name: /^Sort: / })).toBeNull();
 
@@ -298,7 +298,7 @@ describe("Results header and chips (spec 16, 3.8)", () => {
   it("keeps the day searched in the form, and Cancel leaves the search as it was", async () => {
     const { client } = await openResults("&date=2026-11-15");
     await fireEvent.press(await changeSearch("Borgarnes → Blönduós", "Sun 15 Nov, 1 seat"));
-    expect(await screen.findByRole("radio", { name: "Sun 15 Nov" })).toBeChecked();
+    expect(await screen.findByRole("button", { name: "Date: Sun 15 Nov" })).toBeVisible();
     const searches = searchesOf(client).length;
 
     await fireEvent.press(screen.getByRole("button", { name: "Cancel" }));

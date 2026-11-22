@@ -28,7 +28,9 @@ type EndRef = ComponentRef<typeof View>;
  * place; the swap button waits until it closes. With `direction="row"`, as
  * in the search row of a wide Find (spec 18, 3.5), the two sit side by side
  * with the swap button between them, each a caption over its value in a
- * `SearchField`, and the card is the row's own.
+ * `SearchField`, and the card is the row's own. In a column, `below` goes
+ * in the same card under the two ends, as the rest of a phone's search
+ * does (spec 16, 3.2).
  */
 export function RouteEnds({
   from,
@@ -37,6 +39,7 @@ export function RouteEnds({
   open = null,
   search = null,
   direction = "column",
+  below = null,
   onPick,
   onSwap,
 }: {
@@ -55,6 +58,8 @@ export function RouteEnds({
   /** The place search shown in place of the open end. */
   readonly search?: ReactNode;
   readonly direction?: "column" | "row";
+  /** In a column: more in the card, under the two ends. */
+  readonly below?: ReactNode;
   readonly onPick: (end: RouteEnd) => void;
   readonly onSwap: () => void;
 }) {
@@ -116,6 +121,7 @@ export function RouteEnds({
         </View>
         {open === null ? swap : null}
       </View>
+      {below}
     </Card>
   );
 }

@@ -1490,6 +1490,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   words did not change. `pnpm --filter @shareride/api email-previews`
   writes the key emails to look at; the runbook's "Show the puffin beside
   our emails" gives `hello@` the puffin as its picture in Gmail.
+- On a phone the search is one card: From and To, the date and the seats on
+  one line, and Find a ride, which is now on the first screen (spec 16, 3.2,
+  amended 2026-11-22). The date opens the calendar under it, as on a laptop.
+  In Icelandic "Any day" is "Allir dagar".
 - Sign out is on Profile too (spec 16, 3.4 item 4), under the rows; Sign
   out on all devices stays in Settings.
 - The living docs and the legal drafts say PuffinRide (ADR 0039): the
