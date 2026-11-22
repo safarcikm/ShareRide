@@ -1,4 +1,4 @@
-// The places of place search (spec 4, 3.1; spec 19, 3.2): every settlement
+// The places of place search (spec 4, 3.1; spec 21, 3.2): every settlement
 // in Iceland that people live in and can drive to, and the landmarks.
 // Reference data, not personal data, so every environment has them:
 // `seedPlaces` adds or updates them on each deploy.
@@ -21,7 +21,7 @@ export interface Place {
   readonly nameEn?: string;
   readonly aliases?: readonly string[];
   readonly position: Position;
-  /** A town from 1 000 people, otherwise a village (spec 19, 3.2). */
+  /** A town from 1 000 people, otherwise a village (spec 21, 3.2). */
   readonly kind: PlaceKind;
   readonly region: Region;
   /** How far a search reaches, when not the kind's default (spec 4, R4.2). */

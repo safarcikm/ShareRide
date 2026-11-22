@@ -90,7 +90,7 @@ Skaftafell, Höfn), Golden Circle, and ferry ports (Landeyjahöfn, Stykkishólmu
 ## Every settlement
 
 On 2026-11-22 Martin opened the beta to the public and asked for a meeting
-point in every settlement ([spec 19](../specs/2026-11-22-meeting-points-for-every-settlement.md)).
+point in every settlement ([spec 21](../specs/2026-11-22-meeting-points-for-every-settlement.md)).
 Every settlement of Statistics Iceland with people in 2026, less the
 ferry islands, is a place in search: 110, from Hafnir to Bakkafjörður.
 Each has a point of its own, or, for 14 small ones with no public spot, a

@@ -1,6 +1,6 @@
 // Applies pending migrations to DATABASE_URL, then adds or updates the
 // places of place search, which are reference data every environment has
-// (spec 19, 3.2). Used locally (`pnpm --filter @shareride/db migrate`) and
+// (spec 21, 3.2). Used locally (`pnpm --filter @shareride/db migrate`) and
 // before each deploy. With --seed-drafts it then adds the draft legal documents, the sample meeting
 // points and the sample trips (replaced with fresh dates each time), as
 // staging's pre-deploy command does: one command, so it needs no shell.

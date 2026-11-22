@@ -1313,7 +1313,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   settings terms (tester, invite code, setting, settings version, switch,
   corridor, weekly figures, announcement), and a browser journey through
   the operator's side of the beta in the console.
-- A meeting point for every settlement (spec 19, ADR 0036, Accepted): a
+- A meeting point for every settlement (spec 21, ADR 0036, Accepted): a
   point can be activated before it has a photo, which the console's
   checklist now shows as recommended. Every settlement of Statistics
   Iceland with people in 2026, less the ferry islands (110), is a town or

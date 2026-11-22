@@ -134,6 +134,11 @@ if (operatorLink !== undefined && operatorLink !== "") {
 let requests = 0;
 
 const secret = randomBytes(32).toString("hex");
+// Meeting point and profile photos go to a new folder each run.
+const photoStorage = selectPhotoStorage({
+  provider: "folder",
+  folder: mkdtempSync(join(tmpdir(), "shareride-e2e-photos-")),
+});
 const app = createApp({
   logger: createLogger({ level: "warn" }),
   checkDatabase: () => pingDatabase(connection.pool),
@@ -153,10 +158,7 @@ const app = createApp({
     secureCookies: false,
     payments: createTestPaymentProvider(),
     adminOrigin,
-    ...selectPhotoStorage({
-      provider: "folder",
-      folder: mkdtempSync(join(tmpdir(), "shareride-e2e-photos-")),
-    }),
+    ...photoStorage,
   },
 });
 
@@ -314,6 +316,7 @@ const exportBuilder = createExportBuilder({
   cipher: createFileCipher(secret, exportCipherPurpose),
   clock,
   logger: createLogger({ level: "warn" }),
+  ...(photoStorage.photos === undefined ? {} : { photos: photoStorage.photos }),
 });
 startRepeating({
   everyMs: 1000,

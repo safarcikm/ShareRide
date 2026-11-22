@@ -6,7 +6,7 @@ import { freshTestDatabase } from "../testing.ts";
 import { allPlaces } from "./places.ts";
 import { placeId, seedPlaces } from "./seed.ts";
 
-describe("seedPlaces (spec 19, 3.2)", () => {
+describe("seedPlaces (spec 21, 3.2)", () => {
   let connection: DatabaseConnection;
 
   beforeAll(async () => {

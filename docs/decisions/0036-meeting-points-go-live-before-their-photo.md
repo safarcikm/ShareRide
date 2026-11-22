@@ -6,7 +6,7 @@
 - **Deciders:** Martin
 - **Changes:** rule R2.3 of [spec 2](../specs/2026-11-13-meeting-points.md#4-rules):
   a photo is recommended, no longer required, to activate a point
-- **Related:** [spec 19](../specs/2026-11-22-meeting-points-for-every-settlement.md),
+- **Related:** [spec 21](../specs/2026-11-22-meeting-points-for-every-settlement.md),
   [ADR 0022](0022-photo-storage-on-hetzner.md),
   [ADR 0029](0029-photos-cleaned-in-the-browser-and-checked-by-the-api.md)
 
@@ -19,7 +19,7 @@ local knowledge, without a visit.
 
 On 2026-11-22 Martin opened the beta to the public and asked for a meeting
 point in every settlement of Iceland: about 110 places from Reykjanes to
-Vopnafjörður (spec 19). One person cannot photograph them all before the
+Vopnafjörður (spec 21). One person cannot photograph them all before the
 beta. Photo storage on Hetzner (ADR 0022) is not yet set up on staging or
 production either. With the photo required, nearly every point would stay
 a draft, and most of the country would have nowhere to meet.

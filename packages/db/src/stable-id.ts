@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
  * The same ID for the same key on every run, so a seed updates its rows
  * instead of adding new ones: a UUID (version 8) from a hash of the key.
  * The prefix is the sample seed's, where it began, so the places keep the
- * IDs they had as sample places (spec 19, 6).
+ * IDs they had as sample places (spec 21, 6).
  */
 export function stableId(key: string): string {
   const hex = createHash("sha256").update(`shareride-sample:${key}`).digest("hex");

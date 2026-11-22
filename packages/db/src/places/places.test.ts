@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { sampleCorridors } from "../sample/seed.ts";
 import { allPlaces, settlementPlaces } from "./places.ts";
 
-// The places of place search (spec 19, 3.2): Statistics Iceland's
+// The places of place search (spec 21, 3.2): Statistics Iceland's
 // settlements with people in 2026, less the ferry islands, and the
 // landmarks.
 

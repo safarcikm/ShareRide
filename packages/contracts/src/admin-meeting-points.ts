@@ -312,7 +312,7 @@ export const adminRetireMeetingPointRoute = defineRoute({
 });
 
 // Activating a draft (spec 2, 3.6.3; milestone 8, PR 12a): only when its
-// checklist's required items are done (R2.3 as spec 19 changed it,
+// checklist's required items are done (R2.3 as spec 21 changed it,
 // `activationChecklist`; the photo is recommended). Activation computes the
 // point's legs with every point in service (3.7) in the same transaction.
 

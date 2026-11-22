@@ -89,6 +89,9 @@ export interface ExportData {
   readonly sections: { readonly [Section in ExportSection]: unknown };
 }
 
+/** Where the profile photo is in the export's ZIP (ADR 0033). */
+export const profilePhotoFileName = "profile/photo.jpg";
+
 /** Where a feedback's screenshot is in the export's ZIP. */
 export const screenshotFileName = (feedbackId: string) => `feedback/${feedbackId}.jpg`;
 
@@ -120,7 +123,13 @@ function placeName(locale: Locale, point: Named): string {
   return locale === "en" ? (point.nameEn ?? point.nameIs) : point.nameIs;
 }
 
-export async function collectExport(q: Queryable, userId: string, now: Date): Promise<ExportData> {
+export async function collectExport(
+  q: Queryable,
+  userId: string,
+  now: Date,
+  /** Whether the ZIP holds the profile photo's file; a person without one has none. */
+  { withPhoto }: { readonly withPhoto: boolean } = { withPhoto: false },
+): Promise<ExportData> {
   const [user] = await q.select().from(users).where(eq(users.id, userId));
   if (user === undefined) throw new Error("The person to export does not exist.");
   const locale: Locale = user.locale === "is" ? "is" : "en";
@@ -132,6 +141,8 @@ export async function collectExport(q: Queryable, userId: string, now: Date): Pr
     firstName: user.firstName,
     about: user.about,
     aboutHiddenAt: when(user.aboutHiddenAt),
+    photo: withPhoto ? profilePhotoFileName : null,
+    photoHiddenAt: when(user.photoHiddenAt),
     languages: user.languages,
     locale: user.locale,
     email: user.emailVerifiedAt === null ? null : user.email,

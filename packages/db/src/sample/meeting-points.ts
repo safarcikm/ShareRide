@@ -1,7 +1,7 @@
 // Sample meeting points and roads for local development and staging
 // (milestone 3 plan, decision 1). Real public places on three corridors
 // from Reykjavík, with approximate positions and road distances. The
-// operator's real points (spec 19's import file) and legs from the road
+// operator's real points (spec 21's import file) and legs from the road
 // file (ADR 0031) replace them; nothing here has been checked on site. The
 // places are no longer sample data: they are in ../places/places.ts.
 import type { Amenity, MeetingPointType, Region } from "@shareride/domain";

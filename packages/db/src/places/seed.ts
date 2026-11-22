@@ -30,7 +30,7 @@ const rowOf = (place: Place) => ({
 });
 
 /**
- * Adds or updates the places of place search (spec 19, 3.2), in every
+ * Adds or updates the places of place search (spec 21, 3.2), in every
  * environment: the migration command runs it after the migrations. A place
  * that is there is updated, the sample ones included; none is deleted, so a
  * corridor or a search log entry never loses its place.

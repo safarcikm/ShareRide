@@ -16,7 +16,7 @@ and the road file; the operator imports them.
 
 **Tech Stack:** TypeScript, Drizzle, Hono, React (console), Vitest.
 
-**Spec:** [spec 19](../specs/2026-11-22-meeting-points-for-every-settlement.md).
+**Spec:** [spec 21](../specs/2026-11-22-meeting-points-for-every-settlement.md).
 Martin chose that a point can go live before its photo on 2026-11-22
 ([ADR 0036](../decisions/0036-meeting-points-go-live-before-their-photo.md)).
 
@@ -88,9 +88,9 @@ and its test; `packages/i18n/src/messages/en.ts`, `is.ts`.
 
 ## Task 4: Docs
 
-- [x] Spec 2's R2.3 says "amended by spec 19"; the meeting point guide and
+- [x] Spec 2's R2.3 says "amended by spec 21"; the meeting point guide and
   the console doc say a photo is recommended; the console doc has the
-  steps to import the file; the indexes list spec 19, ADR 0036 and this
+  steps to import the file; the indexes list spec 21, ADR 0036 and this
   plan; `CHANGELOG.md`.
 
 ## After merging (Martin)

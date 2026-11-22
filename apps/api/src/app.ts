@@ -37,8 +37,10 @@ import {
 } from "./modules/admin/index.ts";
 import {
   createAccountService,
+  createProfilePhotoService,
   createEmailService,
   registerAccountRoutes,
+  registerProfilePhotoRoutes,
   registerEmailRoutes,
 } from "./modules/account/index.ts";
 import { checkStanding } from "./modules/account/standing.ts";
@@ -193,7 +195,7 @@ export interface FeatureDependencies {
    * Left out, the console's sign-in is off.
    */
   readonly adminOrigin?: string;
-  /** Where meeting point photos are kept (ADR 0022); none when `PHOTO_STORAGE=none`. */
+  /** Where meeting point and profile photos are kept (ADRs 0022 and 0033); none when `PHOTO_STORAGE=none`. */
   readonly photos?: PhotoStorage;
   /** The same storage when it is a folder, whose files the API serves itself. */
   readonly photoFiles?: FolderPhotoStorage;
@@ -379,6 +381,12 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     const requireAuth = createRequireAuth(auth);
     registerAuthRoutes(app, { ...features, auth, account, requireAuth });
     registerAccountRoutes(app, account, requireAuth);
+    registerProfilePhotoRoutes(
+      app,
+      createProfilePhotoService({ ...features, logger }),
+      account,
+      requireAuth,
+    );
     registerEmailRoutes(app, createEmailService({ ...features, logger }), account, requireAuth);
     const driving = createDrivingService({ ...features, account });
     registerDrivingRoutes(app, driving, requireAuth);

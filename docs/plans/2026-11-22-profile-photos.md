@@ -106,8 +106,9 @@ folders.
 ### 4.4 API
 
 - `PUT /v1/me/photo`, body `{ photo: <base64 JPEG> }` with a 1 MB body
-  limit. It answers 200 with `Me`. Errors: 400 `photo_invalid` with the
-  issue, 409 `photo_storage_off`, 503 `photo_storage_unavailable`.
+  limit. It answers 200 with `Me`. Errors, as for meeting point photos:
+  400 `validation_failed` with the issue on `photo`, 413 over the limit,
+  503 `photo_storage_off` or `photo_storage_unavailable`.
 - `DELETE /v1/me/photo` answers 200 with `Me`. Removing no photo is fine.
 - `Me.photo`: `{ url, hidden }` or null. I see my own photo while it is
   hidden, with a note.
@@ -166,18 +167,19 @@ folders.
 
 ### PR 2: `feat(profile)`: store a profile photo
 
-- [ ] Domain: `checkProfilePhoto` (tests: square, sizes, an iPhone-shaped
+- [x] Domain: `checkProfilePhoto` (tests: square, sizes, an iPhone-shaped
       file with Exif and ICC refused until stripped), `driverReadiness`
       with `photosOn`
-- [ ] Migration 0056, schema, `personal-data.ts`, domain model doc
-- [ ] Storage: profile key folder, `read(key)` on the port and adapters
+- [x] Migration 0056, schema, `personal-data.ts`, domain model doc
+- [x] Storage: profile key folder, `read(key)` on the port and adapters
       (Hetzner test with a fake fetch)
-- [ ] Photo service and routes: put, remove, queue, job. Integration tests:
+- [x] Photo service and routes: put, remove, queue, job. Integration tests:
       replace queues the old key, remove, a refused file is never stored,
       storage failure answers 503 and leaves the old photo, the crash gap
       (queued new key), the job deletes due rows only
-- [ ] `Me.photo`, readiness with the photo, publishing refused without one
-- [ ] Erasure queues the key. Export holds the photo file
+- [x] `Me.photo`, readiness with the photo. Publishing is refused without
+      one from PR 4, when the app can add a photo (`photosOn`)
+- [x] Erasure queues the key. Export holds the photo file
 - Verify: `pnpm check --force`, integration tests for account, driving,
   privacy and trips
 

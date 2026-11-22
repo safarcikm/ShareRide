@@ -1,4 +1,4 @@
-// The import file of spec 19 (3.3 to 3.5): a meeting point in or near every
+// The import file of spec 21 (3.3 to 3.5): a meeting point in or near every
 // settlement, in the console's import format, read here as the console's
 // own reader reads it. The points are OpenStreetMap's spots; the operator
 // checks each one before it goes live.

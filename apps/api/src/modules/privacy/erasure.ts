@@ -8,6 +8,7 @@ import {
 import { and, asc, eq, inArray, lte, notExists, or, sql } from "drizzle-orm";
 import type { Logger } from "../../logger.ts";
 import type { KeyedHasher } from "../../platform/crypto.ts";
+import { queuePhotoFile } from "../account/photo-files.ts";
 import type { Transaction } from "../bookings/seats.ts";
 import { reportCovers } from "../chat/clean-up.ts";
 import { catalogued, emptiedOf, freshIdsOf, tableOf } from "./catalogue.ts";
@@ -216,6 +217,11 @@ async function eraseAccount(
         set: { until: sql`greatest(${blockedNumbers.until}, excluded.until)` },
       });
   }
+  // The profile photo's file leaves photo storage through the API's queue
+  // (ADR 0033): this run holds no bucket keys.
+  const [photo] = await tx.select({ key: users.photoKey }).from(users).where(eq(users.id, userId));
+  const key = photo?.key ?? null;
+  if (key !== null) await queuePhotoFile(tx, key, now);
   // Erased again after a restore, it keeps the first time.
   await tx.insert(erasedAccounts).values({ userId, erasedAt: now }).onConflictDoNothing();
   await tx.delete(users).where(eq(users.id, userId));

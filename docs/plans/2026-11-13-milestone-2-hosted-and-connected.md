@@ -209,6 +209,11 @@ Render, Frankfurt (deploys a commit once its checks pass)
 
 ### 4.7 Google and Apple sign-in (spec 1, section 3.3)
 
+Replaced on 2026-11-22 by [spec 19](../specs/2026-11-22-google-and-apple-sign-in.md),
+[ADR 0034](../decisions/0034-google-and-apple-sign-in-through-our-api.md) and
+its [plan](2026-11-22-google-and-apple-sign-in.md): the API runs the sign-in
+in a browser window, and PRs 8 and 9 below are that plan's. Kept as it was:
+
 - `POST /v1/auth/oauth/google` and `/apple` take the provider's ID token and
   a nonce. The API checks the signature against the provider's published
   keys, the audience (our client IDs), the issuer, the expiry and the nonce,

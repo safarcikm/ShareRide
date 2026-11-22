@@ -1,4 +1,4 @@
-# Spec 19: A meeting point for every settlement
+# Spec 21: A meeting point for every settlement
 
 **Owner:** Martin · **Date:** 2026-11-22 · **Status:** Approved (2026-11-22)
 

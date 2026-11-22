@@ -53,6 +53,7 @@ beforeAll(async () => {
     cipher: api.features.exportCipher,
     clock: api.features.clock,
     logger: createLogger({ level: "silent" }),
+    photos: api.photos,
   });
 });
 
@@ -813,6 +814,37 @@ describe("download my data (spec 11, 3.2)", () => {
     expect(html).toContain("Something isn&#39;t working");
     expect(unlabelledFields(data)).toEqual([]);
     await db.delete(schema.feedback);
+  });
+
+  it("has my profile photo as a file, and when ShareRide hid it (ADR 0033)", async () => {
+    const gunna = await newMember("Gunna");
+    const { db } = api.connection;
+    const key = "profile-photos/0193f0c4-7d4a-7b1e-9c2a-123456789abc.jpg";
+    const picture = Uint8Array.from([0xff, 0xd8, 0x05, 0x06, 0xff, 0xd9]);
+    api.photos.files.set(key, picture);
+    const hiddenAt = api.now();
+    await db
+      .update(schema.users)
+      .set({ photoKey: key, photoHiddenAt: hiddenAt })
+      .where(eq(schema.users.id, gunna.userId));
+
+    const { data, entries } = await exportOf(gunna);
+    expect(data.sections.account).toMatchObject({
+      photo: "profile/photo.jpg",
+      photoHiddenAt: hiddenAt.toISOString(),
+    });
+    expect(entries.map((entry) => entry.name)).toEqual([
+      "shareride-data.json",
+      "shareride-data.html",
+      "profile/photo.jpg",
+    ]);
+    expect(entries[2]?.data.equals(Buffer.from(picture))).toBe(true);
+    expect(unlabelledFields(data)).toEqual([]);
+
+    // Without a photo, nothing.
+    const siggi = await exportOf(await newMember("Siggi"));
+    expect(siggi.data.sections.account).toMatchObject({ photo: null, photoHiddenAt: null });
+    api.photos.files.clear();
   });
 
   it("labels every field of the readable page in both languages", async () => {
