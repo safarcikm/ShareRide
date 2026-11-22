@@ -1,0 +1,164 @@
+# Production on Render in Frankfurt (ADRs 0018 and 0042): the public app at
+# https://puffinride.is. Create it as a Blueprint of its own, with the
+# Blueprint Path infra/render/production.yaml; paths below are relative to the
+# repository root. The runbook is docs/operations/production.md. Staging's
+# blueprint, infra/render/render.yaml, is separate: nothing here touches it.
+#
+# No secrets here: Render generates AUTH_SECRET (production's own, never
+# staging's) and asks for the SMS, email and Google keys once, when the
+# blueprint is first applied.
+#
+# Production follows the `production` branch, which only the "Release to
+# production" action moves, to a commit on main whose checks passed and that
+# staging already runs (ADR 0042). A merge to main does not reach it.
+#
+# Its DNS is ISNIC DNS Hosting: an A record for puffinride.is to Render's
+# address, and a CNAME for www to the service's onrender.com address
+# (runbook, "Point the domain").
+
+projects:
+  - name: PuffinRide
+    environments:
+      - name: production
+        services:
+          # The API, which also serves the web app and the operator console
+          # on the same origin, so the refresh cookie stays first-party.
+          - type: web
+            name: puffinride-api
+            runtime: docker
+            region: frankfurt
+            plan: 0.5c-512mb
+            branch: production
+            # Render adds www.puffinride.is too, and redirects it here.
+            domains:
+              - puffinride.is
+            dockerfilePath: ./apps/api/Dockerfile
+            dockerContext: .
+            # The release action checked the commit's CI before moving the
+            # branch, so each move deploys.
+            autoDeployTrigger: commit
+            buildFilter:
+              ignoredPaths:
+                - docs/**
+                - "**/*.md"
+                - .claude/**
+            # Render switches traffic to a new deploy only once this answers
+            # 200, which needs the database.
+            healthCheckPath: /v1/health/ready
+            # Runs in the new image before it takes traffic: migrations, the
+            # places of place search and the published legal documents. Never
+            # --seed-drafts: production refuses the sample data.
+            preDeployCommand: node packages/db/src/migrate-cli.ts
+            envVars:
+              - fromGroup: puffinride-production
+              - key: DATABASE_URL
+                fromDatabase:
+                  name: puffinride-db
+                  property: connectionString
+              - key: AUTH_SECRET
+                generateValue: true
+              # vonage (ADR 0023); 46elks is the fallback, as on staging.
+              - key: SMS_PROVIDER
+                sync: false
+              - key: VONAGE_API_KEY
+                sync: false
+              - key: VONAGE_API_SECRET
+                sync: false
+              # Cloudflare adds the client, then Render's proxy adds the
+              # Cloudflare edge (staging runbook, "Check client addresses").
+              - key: TRUST_PROXY
+                value: "2"
+              # The console's origin (ADR 0028): its passkeys are bound to it.
+              # Password sign-in (ADMIN_PASSWORD) is never set here.
+              - key: ADMIN_ORIGIN
+                value: https://puffinride.is
+              # Email is on from the start: web members hear about requests,
+              # the hour reminder and "How was your trip?" only by email (ADR
+              # 0035). The API does not start without the Mailjet keys.
+              - key: EMAIL_PROVIDER
+                value: mailjet
+              - key: MAILJET_API_KEY
+                sync: false
+              - key: MAILJET_SECRET_KEY
+                sync: false
+              - key: EMAIL_FROM
+                value: hello@puffinride.is
+              - key: WEB_APP_URL
+                value: https://puffinride.is
+              # Google sign-in (ADR 0034): off until GOOGLE_SIGN_IN is google,
+              # with production's web client. Left empty, it stays off.
+              - key: GOOGLE_SIGN_IN
+                sync: false
+              - key: GOOGLE_CLIENT_ID
+                sync: false
+              - key: GOOGLE_CLIENT_SECRET
+                sync: false
+              - key: API_ORIGIN
+                value: https://puffinride.is
+              # No PAYMENT_PROVIDER: production takes no payments in the app
+              # until milestone 15, so passengers pay the driver in person
+              # (ADR 0038), switched on in the console. No PHOTO_STORAGE yet:
+              # photos stay off until production's own bucket is added
+              # (runbook, "Turn on photos").
+
+          # Deletes records past their retention and erases deleted accounts,
+          # every hour (UTC).
+          - type: cron
+            name: puffinride-clean-up
+            runtime: docker
+            region: frankfurt
+            plan: 0.5c-512mb
+            branch: production
+            dockerfilePath: ./apps/api/Dockerfile
+            dockerContext: .
+            autoDeployTrigger: commit
+            buildFilter:
+              ignoredPaths:
+                - docs/**
+                - "**/*.md"
+                - .claude/**
+            schedule: "17 * * * *"
+            dockerCommand: node apps/api/src/clean-up-cli.ts
+            envVars:
+              - fromGroup: puffinride-production
+              - key: DATABASE_URL
+                fromDatabase:
+                  name: puffinride-db
+                  property: connectionString
+              # The API's own: erasing a suspended account keeps its number's
+              # keyed hash, which sign-up must recognise.
+              - key: AUTH_SECRET
+                fromService:
+                  type: web
+                  name: puffinride-api
+                  envVarKey: AUTH_SECRET
+
+        databases:
+          - name: puffinride-db
+            databaseName: puffinride
+            user: puffinride
+            region: frankfurt
+            plan: 0.1c-256mb
+            diskSizeGB: 5
+            postgresMajorVersion: "18"
+            # Private network only: no connections from the internet.
+            ipAllowList: []
+
+        envVarGroups:
+          - name: puffinride-production
+            envVars:
+              - key: NODE_ENV
+                value: production
+              # Refuses the sample data and test payments, and marks error
+              # reports as production.
+              - key: APP_ENV
+                value: production
+              - key: LOG_LEVEL
+                value: info
+              # The same Sentry projects as staging (ADR 0020); reports carry
+              # the environment, so they can be told apart. DSNs are not
+              # secrets.
+              - key: SENTRY_DSN
+                value: https://0bb93ebe70504faae21a466419a236db@o4512455618002944.ingest.de.sentry.io/4512455641464912
+              - key: EXPO_PUBLIC_SENTRY_DSN
+                value: https://278daa0f4943c5fac46be2046a1951b1@o4512455618002944.ingest.de.sentry.io/4512455641595984

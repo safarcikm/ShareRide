@@ -13,7 +13,8 @@ trip. Clients: iOS, Android, web. Vocabulary: [docs/glossary.md](docs/glossary.m
 Current phase: **Phase 2, Build**, milestone 2 (hosted and connected,
 [plan](docs/plans/2026-11-13-milestone-2-hosted-and-connected.md)). See
 [docs/strategy/roadmap.md](docs/strategy/roadmap.md). Staging:
-[runbook](docs/operations/staging.md).
+[runbook](docs/operations/staging.md). Production (`puffinride.is`, released
+with the "Release to production" action): [runbook](docs/operations/production.md).
 
 ## Before you change anything
 

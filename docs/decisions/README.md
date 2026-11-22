@@ -71,3 +71,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0038](0038-pay-the-driver-in-person-until-card-payments.md) | Passengers pay the driver in person until payments in the app work | Accepted |
 | [0039](0039-rename-to-puffinride.md) | Rename the product to PuffinRide, on puffinride.is | Accepted |
 | [0040](0040-console-recovery-by-text-code.md) | Get back into the console with a text code and a new passkey | Accepted |
+| [0042](0042-production-on-render-released-with-a-button.md) | Production on Render, released with a button | Accepted |
