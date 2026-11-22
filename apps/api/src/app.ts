@@ -382,10 +382,16 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
           sessions: operatorSessions,
           password: features.adminPassword,
         }),
-        passwordLimiter: createMemoryRateLimiter({
-          rules: operatorPasswordRules.triesFromAll,
-          clock: features.clock,
-        }),
+        passwordLimiters: {
+          perAddress: createMemoryRateLimiter({
+            rules: operatorPasswordRules.triesPerAddress,
+            clock: features.clock,
+          }),
+          all: createMemoryRateLimiter({
+            rules: operatorPasswordRules.triesFromAll,
+            clock: features.clock,
+          }),
+        },
         requireOperator,
         limiter: createMemoryRateLimiter({
           rules: operatorSignInLimitsPerAddress,

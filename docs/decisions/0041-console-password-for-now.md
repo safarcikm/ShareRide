@@ -39,19 +39,20 @@ yet. Martin needs to use the console now, and asked for a password.
 We will let the operator sign in with **their phone number and a password
 set in the API's environment** (option 1), for now and next to passkeys.
 
-- `ADMIN_PASSWORD` turns it on; unset, it is off and the sign-in page shows
-  passkeys only. It must be 12 characters or more, or the API does not
-  start.
+- `ADMIN_PASSWORD` turns it on, where `ADMIN_ORIGIN` is set too; unset or
+  empty, it is off and the sign-in page shows passkeys only. It must be 12
+  characters or more, and the API refuses to start with it on production.
 - The password is compared in constant time, before the number is looked
   up, and never logged. Only an account that may use the console
   (`canUseConsole`) gets in.
-- Tries are limited per address, as for passkeys (10 a minute, 60 an hour),
-  and to 50 an hour from all addresses together.
+- Tries are limited per address as for passkeys (10 a minute, 60 an hour),
+  then to 5 a minute and 20 an hour per address, and to 200 an hour from all
+  addresses together, so one address cannot use up the others' tries.
 - A password sign-in starts the same console session as a passkey (same
   cookie, same 30-minute and 12-hour limits) and writes
   `operator.signed_in` with `{ "method": "password" }` to the audit log. It
-  counts as a fresh sign-in, so the operator can save a new passkey from the
-  Passkeys page right after it.
+  counts as a passkey just used, so for 5 minutes the operator can save a new
+  passkey from the Passkeys page, or remove one.
 
 ## Consequences
 
@@ -60,7 +61,9 @@ set in the API's environment** (option 1), for now and next to passkeys.
 - The console is guarded by one shared secret while it is on: anyone who
   learns the password and an operator's number gets in, and the phone number
   is no secret. The audit log shows every password sign-in. A session
-  started with the password can also save a passkey that outlasts it.
+  started with the password can also save a passkey that outlasts it, or
+  remove the operator's own, so the audit log and the Passkeys page are
+  checked when it is turned off.
 - The console now names the wrong-address refusal, so the passkey problem
   can be found.
 - Follow-up: find why the passkey setup failed; once a passkey works,

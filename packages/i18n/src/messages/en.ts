@@ -1925,7 +1925,7 @@ export const en = {
   "admin.signIn.passwordButton": "Sign in with the password",
   "admin.signIn.passwordWrong": "The phone number or the password is wrong.",
   "admin.signIn.passwordMissing": "Type your phone number and the password.",
-  "admin.signIn.tooManyTries": "Too many tries. Wait a few minutes, then try again.",
+  "admin.signIn.tooManyTries": "Too many tries. Wait a while, then try again.",
   "admin.passkey.wrongAddress":
     "Passkeys do not work on this address. Open the console at its own address and try again.",
   "admin.passkey.cancelled":

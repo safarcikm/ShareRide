@@ -104,9 +104,9 @@ describe("signing in to the console with the password (ADR 0041)", () => {
     });
   });
 
-  it("limits each address", async () => {
+  it("limits each address to 5 tries a minute", async () => {
     const { phone } = await newOperator();
-    for (let tries = 0; tries < 10; tries += 1) {
+    for (let tries = 0; tries < 5; tries += 1) {
       expect((await signIn(phone, "not the password")).status).toBe(401);
     }
     expect(await signIn(phone, testAdminPassword)).toMatchObject({
@@ -119,11 +119,14 @@ describe("signing in to the console with the password (ADR 0041)", () => {
   it("limits tries from all addresses together", async () => {
     const { phone } = await newOperator();
     let refused = null;
-    for (let tries = 0; tries < 50 && refused === null; tries += 1) {
+    let tries = 0;
+    for (; tries < 200 && refused === null; tries += 1) {
       if (tries % 5 === 0) newAddress();
       const result = await signIn(phone, "not the password");
       if (result.status === 429) refused = result;
     }
     expect(refused).toMatchObject({ body: { error: { code: "rate_limited" } } });
+    // More than one address's hour: an address alone cannot use them all up.
+    expect(tries).toBeGreaterThan(60);
   });
 });

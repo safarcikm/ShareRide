@@ -135,7 +135,7 @@ const environmentSchema = z
      * signs in with their phone number and this password as well as with a
      * passkey. Unset, password sign-in is off.
      */
-    ADMIN_PASSWORD: z.string().min(operatorPasswordRules.minLength).optional(),
+    ADMIN_PASSWORD: unsetIfEmpty(z.string().min(operatorPasswordRules.minLength).optional()),
     /**
      * Where meeting point and profile photos are kept (ADRs 0022 and
      * 0033): `hetzner` is the
@@ -204,6 +204,13 @@ const environmentSchema = z
         code: "custom",
         path: ["SMS_PROVIDER"],
         message: "dev prints codes in the terminal and is not allowed in production",
+      });
+    }
+    if (deploymentOf(env) === "production" && env.ADMIN_PASSWORD !== undefined) {
+      context.addIssue({
+        code: "custom",
+        path: ["ADMIN_PASSWORD"],
+        message: "password sign-in is not allowed in production (ADR 0041)",
       });
     }
     if (deploymentOf(env) === "production" && env.PAYMENT_PROVIDER === "test") {

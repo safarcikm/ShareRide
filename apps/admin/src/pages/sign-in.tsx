@@ -145,8 +145,9 @@ export function SignInPage({ notice, onSignedIn }: SignInPageProps) {
             <input
               id={phoneId}
               className="input type-body"
-              type="tel"
-              autoComplete="tel"
+              type="text"
+              inputMode="tel"
+              autoComplete="username"
               value={phoneNumber}
               onChange={(event) => {
                 setPhoneNumber(event.target.value);

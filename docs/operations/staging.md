@@ -260,9 +260,11 @@ a password set in Render
 4. On the **Passkeys** page, save a passkey for this device right away (it
    works for 5 minutes after signing in).
 
-To turn it off, delete `ADMIN_PASSWORD` in the same place. Every password
-sign-in is in the audit log as `operator.signed_in` with method
-`password`.
+To turn it off, delete `ADMIN_PASSWORD` in the same place. Then check the
+**Passkeys** page for passkeys you did not save, and the audit log
+(`operator.`) for sign-ins with method `password` and passkeys added or
+removed after them: a password sign-in can change passkeys for 5 minutes.
+The API refuses to start with `ADMIN_PASSWORD` on production.
 
 ### Lost every passkey
 

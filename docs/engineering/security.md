@@ -218,7 +218,8 @@ is built, in `apps/api/src/modules/admin` with the rules in
   counter that goes back is refused, as a sign of a copied key. The last
   passkey cannot be removed from the console.
 - **Changing passkeys:** adding or removing one needs a passkey used in the
-  last 5 minutes, at sign-in or again through `/admin/v1/confirm`, so a
+  last 5 minutes (or, while it is on, a password sign-in), at sign-in or
+  again through `/admin/v1/confirm`, so a
   stolen session alone (for example a script injected while the console
   shares the web app's origin) cannot swap in its own key and lock the
   operator out. The `operator` command locks the account while it removes
@@ -227,14 +228,17 @@ is built, in `apps/api/src/modules/admin` with the rules in
   are limited per address (10 a minute, 60 an hour, keyed by a hash of the
   address, of its /64 network for IPv6).
 - **Password, for now:** while `ADMIN_PASSWORD` is set (12 characters or
-  more), an operator can also sign in with their phone number and that
+  more, never on production: the API refuses to start) and `ADMIN_ORIGIN`
+  too, an operator can also sign in with their phone number and that
   password ([ADR 0041](../decisions/0041-console-password-for-now.md)). It
   is compared in constant time through SHA-256 digests before the number is
-  looked up, never logged, limited per address as above and to 50 tries an
-  hour from all addresses together, and audited as `operator.signed_in` with
-  `{ "method": "password" }`. Unset, `/admin/v1/auth/methods` says it is
-  off and `/admin/v1/auth/password` refuses every try. It must be unset on
-  production.
+  looked up, and never logged. Tries are limited as above, then to 5 a
+  minute and 20 an hour per address, and 200 an hour from all addresses
+  together. Each sign-in is audited as `operator.signed_in` with
+  `{ "method": "password" }`, and counts as a passkey just used: for 5
+  minutes the session can add or remove passkeys. Unset or empty,
+  `/admin/v1/auth/methods` says it is off and `/admin/v1/auth/password`
+  refuses every try.
 - **Sessions:** separate from the app's. The cookie `sr_operator` is
   `HttpOnly`, `SameSite=Strict`, `Path=/admin/v1` and `Secure` outside
   development, and holds 256 random bits (prefix `sr_os_`) kept only as a

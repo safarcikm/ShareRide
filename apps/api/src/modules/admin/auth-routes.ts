@@ -33,8 +33,8 @@ export interface AdminAuthRoutesDependencies {
   readonly passkeys: PasskeyService;
   /** The temporary password sign-in (ADR 0041). */
   readonly password: PasswordSignIn;
-  /** Password tries from all addresses together. */
-  readonly passwordLimiter: RateLimiter;
+  /** Password tries per address (keyed like `limiter`) and from all addresses together. */
+  readonly passwordLimiters: { readonly perAddress: RateLimiter; readonly all: RateLimiter };
   readonly requireOperator: MiddlewareHandler<AppEnv>;
   readonly clientAddress: (c: Context) => string;
   /** Per-address limits on signing in and setup links, keyed without the plain address. */
@@ -57,7 +57,7 @@ export function registerAdminAuthRoutes(
     db,
     passkeys,
     password,
-    passwordLimiter,
+    passwordLimiters,
     requireOperator,
     clientAddress,
     limiter,
@@ -128,7 +128,7 @@ export function registerAdminAuthRoutes(
     });
     if (!result.ok) {
       logger.warn(
-        { requestId: c.get("requestId"), code: result.error.code },
+        { requestId: c.get("requestId"), errorCode: result.error.code },
         "console setup refused",
       );
       return result.error.code === "setup_link_invalid"
@@ -154,7 +154,7 @@ export function registerAdminAuthRoutes(
     });
     if (!result.ok) {
       logger.warn(
-        { requestId: c.get("requestId"), code: result.error.code },
+        { requestId: c.get("requestId"), errorCode: result.error.code },
         "console sign-in refused",
       );
       return result.error.code === "operator_unavailable"
@@ -173,11 +173,15 @@ export function registerAdminAuthRoutes(
     if (refused !== null) return refused;
     const body = validated(c, "json", adminPasswordSignInRoute.request.body);
     if (password.on) {
-      const all = passwordLimiter.hit("all");
-      if (!all.ok) {
+      for (const [limiter, key] of [
+        [passwordLimiters.perAddress, clientKey(c)],
+        [passwordLimiters.all, "all"],
+      ] as const) {
+        const check = limiter.hit(key);
+        if (check.ok) continue;
         logger.warn({ requestId: c.get("requestId") }, "console password tries limited");
         return errorResponse(c, 429, "rate_limited", "Too many tries. Wait a little.", {
-          retryAfterSeconds: all.error.retryAfterSeconds,
+          retryAfterSeconds: check.error.retryAfterSeconds,
         });
       }
     }
@@ -188,7 +192,7 @@ export function registerAdminAuthRoutes(
     });
     if (result.ok) return signedIn(c, result.value);
     logger.warn(
-      { requestId: c.get("requestId"), code: result.error.code },
+      { requestId: c.get("requestId"), errorCode: result.error.code },
       "console password sign-in refused",
     );
     switch (result.error.code) {
