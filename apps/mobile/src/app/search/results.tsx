@@ -149,10 +149,26 @@ export default function SearchResults() {
     setAlternativesRound((round) => round + 1);
   };
   // Pulling down searches again, and asks for other days and nearby
-  // points again when they are wanted (spec 16, 3.9).
+  // points again when they show (spec 16, 3.9). What shows stays until
+  // each new answer comes, and stays if it fails.
   const refresh = async () => {
-    retryAlternatives();
-    return (await pull()).answer.ok;
+    const key = alternativesKey;
+    const [search, others] = await Promise.all([
+      pull(({ answer }) => answer.ok),
+      wantAlternatives
+        ? session
+            .call(tripSearchAlternativesRoute, {
+              query: { from, to, seats, ...(date === undefined ? {} : { date }) },
+            })
+            .then((answer) => {
+              if (answer.ok) {
+                setAlternativeAnswers((answers) => new Map(answers).set(key, answer));
+              }
+              return answer.ok;
+            })
+        : Promise.resolve(null),
+    ]);
+    return search === false || others === false ? false : search;
   };
   const otherDays =
     alternatives?.ok === true

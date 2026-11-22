@@ -47,9 +47,9 @@ function Settings({ me }: { readonly me: Me }) {
   const palette = usePalette();
   const openFeedback = useOpenFeedback();
   const { signInProviders } = useConfig();
-  // Once signed out, this screen closes back to Find by itself.
-  const { signingOut, error: signOutError, signOut } = useSignOut();
   const [error, setError] = useState<string | null>(null);
+  // Once signed out, this screen closes back to Find by itself.
+  const { signingOut, signOut } = useSignOut({ onError: setError });
 
   async function saveLanguage(locale: Locale) {
     setError(null);
@@ -198,7 +198,7 @@ function Settings({ me }: { readonly me: Me }) {
           onPress={() => void signOut(true)}
         />
         <Body>{t("settings.signOutAllHelp")}</Body>
-        <Notice message={signOutError ?? error} />
+        <Notice message={error} />
       </View>
     </Screen>
   );

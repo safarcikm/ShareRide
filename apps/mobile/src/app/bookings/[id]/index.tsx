@@ -112,7 +112,7 @@ export default function BookingScreen() {
   }
   if (!answer.ok) {
     return (
-      <Screen width="page">
+      <Screen width="page" refresh={() => pull((loaded) => loaded.ok)}>
         <BackButton fallback="/my-rides" />
         <PageColumn>
           <Notice
@@ -151,7 +151,7 @@ export default function BookingScreen() {
       }}
       onStale={loadAgain}
       onReload={refresh}
-      onPull={async () => (await pull()).ok}
+      onPull={() => pull((loaded) => loaded.ok)}
     />
   );
 }
@@ -187,8 +187,8 @@ function BookingDetails({
   readonly onStale: (why: string) => void;
   /** Load the booking again, quietly, as after "I'm here". */
   readonly onReload: () => void;
-  /** Load it again for pulling down: true once it is on screen (spec 16, 3.9). */
-  readonly onPull: () => Promise<boolean>;
+  /** Load it again for pulling down (spec 16, 3.9), as `useLoaded` says. */
+  readonly onPull: () => Promise<boolean | null>;
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();

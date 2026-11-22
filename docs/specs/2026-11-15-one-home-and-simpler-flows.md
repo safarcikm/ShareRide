@@ -351,8 +351,9 @@ browser's own reload does not reach a screen that scrolls inside the page.
 1. **Which screens:** Find, search results, Rides leaving soon, My rides,
    Messages (the list on a phone), a booking and the driver's trip page.
    Pulling down at the top of one loads what it shows again. The last answer
-   stays on screen until the new one comes; an answer that failed shows as
-   it does when the screen opens (a notice with Try again).
+   stays on screen until the new one comes, and stays when the new one
+   fails. A screen showing that it could not load (a notice with Try again)
+   can be pulled too.
 2. **What shows:** while it loads, a spinner at the top: the phone's own
    when pulled in the app, and on the web a round mark (`surface`, `border`
    outline, the card's bottom edge) that comes down with the finger, its
@@ -368,10 +369,13 @@ browser's own reload does not reach a screen that scrolls inside the page.
    and loads it again, with the same spinner and "Updated". On a wide
    screen, the logo in the top bar opens Find, as before (spec 18, 3.3), and
    loads it again the same way.
-5. **Not pulled:** a touch that starts lower down pulls only once the screen
-   is back at its top; a touch that moves more sideways than down, as on a
-   row of chips, or that starts in a part scrolling on its own, scrolls
-   instead. A mouse does not pull; the logo is the way to refresh Find on a
+5. **Not pulled:** on the web a touch at the top only pulls once the finger
+   has gone 8 points mostly down (within about 27 degrees of straight
+   down); before that, and once it comes back up past where it started, the
+   page scrolls as usual. A touch that starts lower down pulls only once the
+   screen is back at its top; a touch that moves more sideways than down,
+   as on a row of chips, or that starts in a part scrolling on its own,
+   scrolls instead, for the whole touch. A mouse does not pull; the logo is the way to refresh Find on a
    laptop, and a screen also loads again each time it comes into view, as
    before.
 6. Nothing moves on its own: the mark follows the finger and stops; with
@@ -486,8 +490,9 @@ depend on gender; the Icelandic review can change it.
   `refresh.spec.ts` pulls Find down with a finger on the phone and presses
   the logo on both (3.9).
 - **Screen tests** for 3.9: each screen loads again when pulled and says
-  "Updated" or "Couldn't update", which goes after two seconds; the logo on
-  Find and in the top bar; Sign out on Profile (3.4 item 4).
+  "Updated" or "Couldn't update" (keeping what was there), which goes after
+  two seconds; telling a pull from a scroll; the logo on Find and in the top
+  bar; Sign out on Profile (3.4 item 4).
 - **By hand:** a phone with VoiceOver and TalkBack once phones are tested:
   the tab bar's names and selected state, and the steps.
 

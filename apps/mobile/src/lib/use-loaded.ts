@@ -1,5 +1,12 @@
 import { useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 
 interface Loaded<T> {
   /** Undefined while the first result is on its way and after `reload`. */
@@ -9,10 +16,14 @@ interface Loaded<T> {
   /** Loads again and keeps the last result on screen until the new one comes. */
   readonly refresh: () => void;
   /**
-   * Loads again as `refresh` does, for pulling down to refresh (spec 16,
-   * 3.9): the result is on screen when the promise settles, with it.
+   * Loads again for pulling down to refresh (spec 16, 3.9), keeping the
+   * last result on screen meanwhile. A result that is `ok` takes its place
+   * and gives true. One that is not gives false and leaves the last result
+   * on screen, unless there was none. Null when the result no longer
+   * fits the screen, which loads its own: `load` changed meanwhile
+   * (another list, another search) or the screen closed.
    */
-  readonly pull: () => Promise<T>;
+  readonly pull: (ok: (loaded: T) => boolean) => Promise<boolean | null>;
 }
 
 /**
@@ -77,26 +88,28 @@ function loadInto<T>(load: () => Promise<T>, setValue: (value: T) => void): () =
   };
 }
 
-/**
- * Loads with the current `load` and shows the result, unless `load` changed
- * meanwhile (another search, another list) or the screen closed: that
- * result is for what was on screen before.
- */
-function usePull<T>(load: () => Promise<T>, setValue: (value: T) => void): () => Promise<T> {
+/** `pull` of `useLoaded` and `useLoadedOnFocus`, with the current `load`. */
+function usePull<T>(
+  load: () => Promise<T>,
+  setValue: Dispatch<SetStateAction<T | undefined>>,
+): Loaded<T>["pull"] {
   const current = useRef<(() => Promise<T>) | null>(load);
   useEffect(() => {
     current.current = load;
-  }, [load]);
-  useEffect(
-    () => () => {
+    return () => {
+      // Until the next `load`, or for good once the screen closes.
       current.current = null;
+    };
+  }, [load]);
+  return useCallback(
+    async (ok) => {
+      const asked = load;
+      const loaded = await asked();
+      if (current.current !== asked) return null;
+      const better = ok(loaded);
+      setValue((last) => (better || last === undefined ? loaded : last));
+      return better;
     },
-    [],
+    [load, setValue],
   );
-  return useCallback(async () => {
-    const asked = load;
-    const loaded = await asked();
-    if (current.current === asked) setValue(loaded);
-    return loaded;
-  }, [load, setValue]);
 }

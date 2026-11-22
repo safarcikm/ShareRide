@@ -77,10 +77,10 @@ function FrontPage() {
   const mine = useRides("upcoming", me !== null);
   const refresh = async () => {
     const [soonest, next] = await Promise.all([
-      pull(),
-      me === null ? Promise.resolve(true) : mine.pull(),
+      pull((loaded) => loaded.ok),
+      me === null ? Promise.resolve(null) : mine.pull(),
     ]);
-    return soonest.ok && next;
+    return soonest === false || next === false ? false : (soonest ?? next);
   };
   const refreshAsked = useFrontPageRefreshes();
   // The ride the pointer or the keyboard came to last, for the map.

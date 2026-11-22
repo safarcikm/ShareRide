@@ -69,7 +69,7 @@ describe("Pulling down to refresh (spec 16, 3.9)", () => {
     expect(pullControl()?.props.refreshing).toBe(false);
   });
 
-  it("says when the rides could not be loaded again", async () => {
+  it("keeps the rides and says so when they could not be loaded again", async () => {
     const app = await renderApp("/my-rides", {
       me: completeMe,
       setUp: myRidesApi,
@@ -80,7 +80,30 @@ describe("Pulling down to refresh (spec 16, 3.9)", () => {
     app.client.answer("/v1/me/bookings", () => failure(0, "network_error"));
     await pullDown();
     expect(await screen.findByText("Couldn't update")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+    expect(screen.getByRole("button", { name: /^Passenger, Sunday 15 November/ })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+    // Pulled again once PuffinRide answers, it is up to date.
+    myRidesApi(app.client);
+    await pullDown();
+    expect(await screen.findByText("Updated")).toBeVisible();
+  });
+
+  it("shows My rides once a pull loads them, after they could not be loaded", async () => {
+    let fails = true;
+    await renderApp("/my-rides", {
+      me: completeMe,
+      setUp: (client) => {
+        myRidesApi(client);
+        client.answer("/v1/me/bookings", () =>
+          fails ? failure(0, "network_error") : ok(200, { bookings: [northBooking()] }),
+        );
+      },
+    });
+    expect(await screen.findByRole("button", { name: "Try again" })).toBeVisible();
+    fails = false;
+    await pullDown();
+    expect(await screen.findByText("Updated")).toBeVisible();
+    expect(screen.getByRole("button", { name: /^Passenger, Sunday 15 November/ })).toBeVisible();
   });
 
   it("takes Updated away after two seconds", async () => {
@@ -164,6 +187,40 @@ describe("Pulling down to refresh (spec 16, 3.9)", () => {
     expect(callsTo(app.client, "/v1/trips/search")).toBe(before + 1);
   });
 
+  it("keeps the trips from nearby points on screen while they load again", async () => {
+    const nearby = { ...northResult, board: { ...northResult.board, nearbyM: 8_400 } };
+    let answerNearby: () => void = () => undefined;
+    const app = await renderApp(
+      `/search/results?from=${borgarnes.id}&to=${blonduos.id}&fromName=Borgarnes&toName=Bl%C3%B6ndu%C3%B3s&seats=1`,
+      {
+        setUp: (client) => {
+          searchApi(client, { results: () => [], nearby: [nearby] });
+        },
+      },
+    );
+    expect(await screen.findByText("8.4 km from Borgarnes")).toBeVisible();
+    const before = callsTo(app.client, "/v1/trips/search/alternatives");
+    app.client.answer(
+      "/v1/trips/search/alternatives",
+      () =>
+        new Promise((resolve) => {
+          answerNearby = () => {
+            resolve(ok(200, { days: [], nearby: [nearby] }));
+          };
+        }),
+    );
+    await pullDown();
+    expect(callsTo(app.client, "/v1/trips/search/alternatives")).toBe(before + 1);
+    // Still waiting for the nearby trips: the last ones stay, nothing is updated yet.
+    expect(screen.getByText("8.4 km from Borgarnes")).toBeVisible();
+    expect(screen.queryByText("Updated")).toBeNull();
+    await act(() => {
+      answerNearby();
+    });
+    expect(await screen.findByText("Updated")).toBeVisible();
+    expect(screen.getByText("8.4 km from Borgarnes")).toBeVisible();
+  });
+
   it("loads my conversations again", async () => {
     const app = await renderApp("/messages", {
       me: completeMe,
@@ -195,6 +252,20 @@ describe("Pulling down to refresh (spec 16, 3.9)", () => {
     await pullDown();
     expect(await screen.findByText("Updated")).toBeVisible();
     expect(callsTo(app.client, "/v1/bookings/{id}")).toBe(before + 1);
+  });
+
+  it("keeps a booking on screen and says so when it could not be loaded again", async () => {
+    const app = await renderApp(`/bookings/${northBooking().id}`, {
+      me: completeMe,
+      setUp: (client) => {
+        bookingApi(client, () => northBooking());
+      },
+    });
+    expect(await screen.findByText("Request sent")).toBeVisible();
+    app.client.answer("/v1/bookings/{id}", () => failure(0, "network_error"), "get");
+    await pullDown();
+    expect(await screen.findByText("Couldn't update")).toBeVisible();
+    expect(screen.getByText("Request sent")).toBeVisible();
   });
 
   it("loads the driver's trip page again, with its requests", async () => {

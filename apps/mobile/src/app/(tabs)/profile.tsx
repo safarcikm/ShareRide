@@ -1,7 +1,7 @@
 import { driverReadinessRoute, type Me } from "@shareride/contracts";
 import { peopleColourOf } from "@shareride/domain";
 import { router } from "expo-router";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useMe, useSession } from "@/auth/session";
 import { useSignOut } from "@/auth/use-sign-out";
@@ -70,8 +70,12 @@ function MyProfile({ me }: { readonly me: Me }) {
   const load = useCallback(() => session.call(driverReadinessRoute, {}), [session]);
   const { value: readiness } = useLoadedOnFocus(load);
   const wide = useWideScreen();
-  const { signingOut, error, signOut } = useSignOut(() => {
-    openPlace("/");
+  const [error, setError] = useState<string | null>(null);
+  const { signingOut, signOut } = useSignOut({
+    onSignedOut: () => {
+      openPlace("/");
+    },
+    onError: setError,
   });
   // Without an answer the row just leaves the value out.
   const licence =

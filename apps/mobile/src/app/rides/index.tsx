@@ -31,7 +31,7 @@ export default function Rides() {
   const { value: answer, reload, pull } = useLoaded(load);
 
   return (
-    <Screen refresh={async () => (await pull()).ok}>
+    <Screen refresh={() => pull((loaded) => loaded.ok)}>
       <BackButton />
       <Title>{t("rides.title")}</Title>
       {answer === undefined ? (

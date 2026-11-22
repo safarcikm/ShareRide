@@ -14,8 +14,8 @@ type Loaded =
  * the screen comes into view (spec 16, section 6). Either failing is one
  * failure, so the screen shows one notice. Undefined while loading; the
  * other list's answer stays out of sight while this one loads. `pull`
- * loads them again for pulling down to refresh, true once they are on
- * screen (spec 16, 3.9). Not `on`, as when signed out, there are none,
+ * loads them again for pulling down to refresh (spec 16, 3.9), as
+ * `useLoaded` says. Not `on`, as when signed out, there are none,
  * without asking.
  */
 export function useRides(
@@ -24,7 +24,7 @@ export function useRides(
 ): {
   readonly loaded: Loaded | undefined;
   readonly reload: () => void;
-  readonly pull: () => Promise<boolean>;
+  readonly pull: () => Promise<boolean | null>;
 } {
   const session = useSession();
   const load = useCallback(async (): Promise<Loaded> => {
@@ -41,6 +41,6 @@ export function useRides(
   return {
     loaded: value?.when === when ? value : undefined,
     reload,
-    pull: async () => !("failure" in (await pull())),
+    pull: () => pull((loaded) => !("failure" in loaded)),
   };
 }

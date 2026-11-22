@@ -37,9 +37,11 @@ import { pullMost, pullReady, pullTrigger, usePullOnWeb } from "./pull-gesture";
 
 /**
  * Loads what a screen shows again (spec 16, 3.9): true once the new answer
- * is on screen, false when it could not be loaded.
+ * is on screen, false when it could not be loaded (the last one stays),
+ * null when there is nothing to say, as the screen moved on to something
+ * else meanwhile and loads that itself.
  */
-export type Refresh = () => Promise<boolean>;
+export type Refresh = () => Promise<boolean | null>;
 
 type Status =
   | { readonly kind: "idle" }
@@ -79,13 +81,13 @@ export function useRefresh({
   const busy = useRef(false);
   const open = useRef(true);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    open.current = true;
+    return () => {
       open.current = false;
       if (timer.current !== null) clearTimeout(timer.current);
-    },
-    [],
-  );
+    };
+  }, []);
 
   const run = useCallback(async (by: "pull" | "ask") => {
     const refreshNow = latest.current;
@@ -96,6 +98,10 @@ export function useRefresh({
     const ok = await refreshNow().catch(() => false);
     busy.current = false;
     if (!open.current) return;
+    if (ok === null) {
+      setStatus(idle);
+      return;
+    }
     setStatus({ kind: "done", ok });
     timer.current = setTimeout(() => {
       setStatus(idle);
@@ -122,7 +128,12 @@ export function useRefresh({
     },
   });
 
-  if (refresh === undefined) return { control: undefined, mark: null };
+  // A refresh under way finishes showing even if the screen stopped offering it.
+  const mark =
+    refresh === undefined && status.kind === "idle" ? null : (
+      <RefreshMark status={status} pull={pull} />
+    );
+  if (refresh === undefined) return { control: undefined, mark };
   const control =
     Platform.OS === "web" ? undefined : (
       <RefreshControl
@@ -134,7 +145,7 @@ export function useRefresh({
         progressBackgroundColor={palette.surface}
       />
     );
-  return { control, mark: <RefreshMark status={status} pull={pull} /> };
+  return { control, mark };
 }
 
 /** How far a finger on the web has pulled the mark down, for the mark alone to follow. */

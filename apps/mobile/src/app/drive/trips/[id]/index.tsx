@@ -103,10 +103,12 @@ export default function DriverTripScreen() {
     );
   }
   const [trip, onTrip] = loaded;
+  // Pulling down loads both again (spec 16, 3.9).
+  const pullBoth = () => pull(([trip, onTrip]) => trip.ok && onTrip.ok);
   if (!trip.ok || !onTrip.ok) {
     const failure: CallFailure = trip.ok ? (onTrip as CallFailure) : trip;
     return (
-      <Screen width="page">
+      <Screen width="page" refresh={pullBoth}>
         <BackButton fallback="/drive/trips" />
         <PageColumn>
           <Notice
@@ -244,13 +246,7 @@ export default function DriverTripScreen() {
   );
 
   return (
-    <Screen
-      width="page"
-      refresh={async () => {
-        const [trip, bookings] = await pull();
-        return trip.ok && bookings.ok;
-      }}
-    >
+    <Screen width="page" refresh={pullBoth}>
       {head(editAndCancel)}
       <Columns side={wide ? stretches : null}>
         {said === null ? null : (
