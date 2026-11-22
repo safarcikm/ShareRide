@@ -1366,6 +1366,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   for an email after the first name when the account has none verified or
   waiting, and sends its link before the profile is saved, once. A server
   that sends no email lets sign-up go on. The phone apps do not ask.
+- Profile photos (milestone 13; ADRs 0033 and 0037): a member adds,
+  changes or removes a photo in Profile, from their photos or, on phones,
+  the camera. The app crops it square, at most 640 pixels, writes a JPEG
+  and drops what the phone added; the API checks it again and keeps it in
+  the Hetzner bucket in Nuremberg (migration `0056_profile_photos`). A file
+  nobody has any more is deleted at once, or by the `photo-files` job every
+  minute. Every avatar beside a name shows the photo, or the first letter.
+  A driver needs one to publish a trip while the server keeps photos. The
+  operator can hide one from the console, with appeal (migration
+  `0058_hide_profile_photos`).
 - Production at `https://puffinride.is` (ADR 0042): its own Render
   blueprint, `infra/render/production.yaml`, with its own database and
   secrets, following the `production` branch. The "Release to production"
@@ -1374,6 +1384,8 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Offering a ride, **Choose date and time** shows as busy while the stops
+  on the way load. A press then did nothing, without saying so.
 - Staging deploys again. Since 2026-11-22 every Render build stopped
   during the web app's export with no error: Metro started a bundling
   worker per CPU of the build machine and ran out of memory. The image now

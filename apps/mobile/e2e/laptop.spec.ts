@@ -6,6 +6,7 @@ import {
 } from "@shareride/contracts";
 import { english, signUp } from "./support/account";
 import { expectNoSidewaysScroll, laptop, widths } from "./support/laptop";
+import { addPhotoBeforePublishing } from "./support/photo";
 import { chooseTime, postTripToSelfoss, tomorrow } from "./support/trips";
 
 // The web app on a laptop (spec 18): the top bar's content lines up with the
@@ -1066,10 +1067,11 @@ test.describe("Offer a ride and the driver's trip", () => {
     const publish = side.getByRole("button", { name: "Publish trip" });
     await expect(publish).toBeDisabled();
     await expect(
-      side.getByText(/^Add your car and confirm your licence to publish\./),
+      side.getByText(/^Add a profile photo and your car, and confirm your licence to publish\./),
     ).toBeVisible();
     await expect(side.getByTestId("trip-so-far")).toHaveCount(0);
     await expectTwoColumns();
+    await addPhotoBeforePublishing(driver);
     await main.getByRole("button", { name: "Add a car" }).click();
     await driver.getByLabel("Make").fill("Toyota");
     await driver.getByLabel("Model").fill("Yaris");

@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import type { Locale } from "@shareride/i18n";
 import { english, icelandic, signUp, type Texts } from "./support/account";
+import { addPhotoBeforePublishing, englishPhoto, type PhotoTexts } from "./support/photo";
 import { chooseTime, englishWheel, timeField, tomorrow, type WheelTexts } from "./support/trips";
 
 /**
@@ -13,7 +14,8 @@ function shownText(page: Page, text: string) {
 
 // Spec 3's journey on the web build, against the test API and its sample
 // meeting points: a first-time driver posts Reykjavík to Akureyri, adds a
-// car and confirms the licence from the check step, and publishes. Offer,
+// photo and a car and confirms the licence from the check step, and
+// publishes. Offer,
 // the folded stop times and step 5 follow spec 16, 3.6.
 
 interface Journey {
@@ -51,6 +53,7 @@ interface Journey {
   readonly toReview: string;
   readonly reviewTitle: string;
   readonly missing: string;
+  readonly photo: PhotoTexts;
   readonly addCar: string;
   readonly make: string;
   readonly model: string;
@@ -99,7 +102,8 @@ const inEnglish: Journey = {
   pets: "Pets welcome",
   toReview: "Review your trip",
   reviewTitle: "Check and publish",
-  missing: "Two things before you publish",
+  missing: "Three things before you publish",
+  photo: englishPhoto,
   addCar: "Add a car",
   make: "Make",
   model: "Model",
@@ -148,7 +152,12 @@ const inIcelandic: Journey = {
   pets: "Gæludýr velkomin",
   toReview: "Fara yfir ferðina",
   reviewTitle: "Yfirfara og birta",
-  missing: "Tvennt áður en þú birtir",
+  missing: "Þrennt áður en þú birtir",
+  photo: {
+    reviewTitle: "Yfirfara og birta",
+    addPhoto: "Bæta við mynd",
+    photoTitle: "Prófílmyndin þín",
+  },
   addCar: "Bæta við bíl",
   make: "Tegund",
   model: "Gerð",
@@ -225,11 +234,13 @@ async function postTrip(page: Page, journey: Journey) {
   await expect(page.getByRole("radio", { name: journey.pets })).toBeChecked();
   await page.getByRole("button", { name: journey.toReview }).click();
 
-  // 5. Check: the car and licence come first and are done from here;
-  // Publish waits for them.
+  // 5. Check: the photo, car and licence come first and are done from
+  // here; Publish waits for them.
   await expect(page.getByRole("heading", { name: journey.reviewTitle })).toBeVisible();
   await expect(page.getByRole("heading", { name: journey.missing })).toBeVisible();
   await expect(page.getByRole("button", { name: journey.publish })).toBeDisabled();
+  await addPhotoBeforePublishing(page, journey.photo);
+  await expect(page.getByRole("heading", { name: journey.reviewTitle })).toBeVisible();
   await page.getByRole("button", { name: journey.addCar }).click();
   await page.getByLabel(journey.make).fill("Toyota");
   await page.getByLabel(journey.model).fill("Yaris");

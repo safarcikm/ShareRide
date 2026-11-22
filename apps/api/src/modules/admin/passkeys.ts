@@ -226,7 +226,7 @@ export function createPasskeyService(dependencies: PasskeyServiceDependencies): 
     return account !== undefined && canUseConsole(account);
   }
 
-  /** Whether the session used a passkey in the last few minutes. */
+  /** Whether the session used a passkey, or the password (ADR 0041), in the last few minutes. */
   async function isConfirmed(tx: Transaction | Database, sessionId: string): Promise<boolean> {
     const [session] = await tx
       .select({ confirmedAt: operatorSessions.confirmedAt })

@@ -243,7 +243,32 @@ step 4). Once:
    other devices from inside the console.
 4. From then on, sign in at `https://staging.puffinride.is/admin`.
 
-Lost every passkey: run step 2 again for a new link. To take the role
+### Sign in with a password for now
+
+While passkeys are being fixed, the console also takes your phone number and
+a password set in Render
+([ADR 0041](../decisions/0041-console-password-for-now.md)):
+
+1. Make a password of 12 characters or more that you use nowhere else, for
+   example four random words, and keep it in your password manager.
+2. In Render, open **shareride-staging-api**, then **Environment**, and
+   **Add Environment Variable**: key `ADMIN_PASSWORD`, value your password.
+   **Save Changes** (Render redeploys the API, a few minutes).
+3. Open `https://staging.puffinride.is/admin`. Under **Or sign in with a
+   password**, type your phone number and the password, then **Sign in with
+   the password**.
+4. On the **Passkeys** page, save a passkey for this device right away (it
+   works for 5 minutes after signing in).
+
+To turn it off, delete `ADMIN_PASSWORD` in the same place. Then check the
+**Passkeys** page for passkeys you did not save, and the audit log
+(`operator.`) for sign-ins with method `password` and passkeys added or
+removed after them: a password sign-in can change passkeys for 5 minutes.
+The API refuses to start with `ADMIN_PASSWORD` on production.
+
+### Lost every passkey
+
+Run step 2 of the first list above again for a new link. To take the role
 away: `node apps/api/src/operator-cli.ts remove <phone number or user
 ID>`, which also ends that account's console sessions and deletes its
 passkeys; `list` shows the operators. Changing `ADMIN_ORIGIN` (for example
@@ -473,8 +498,9 @@ without one, though the console recommends it (ADR 0036). Martin's steps:
 
 1. In the Hetzner Console, open (or create) a project, then **Object
    Storage**, **Create Bucket**: location Nuremberg (`nbg1`), a name such
-   as `shareride-staging-photos`, and visibility **Private**. Sign
-   Hetzner's data processing agreement in the account's settings.
+   as `shareride-staging-photos`, and visibility **Private**. Leave
+   **Object Lock** off: with it, a removed photo would stay in the bucket.
+   Sign Hetzner's data processing agreement in the account's settings.
 2. In the project's **Security**, **S3 credentials**, generate
    credentials. The secret key is shown once: copy it straight into
    Render, never anywhere else.
@@ -487,9 +513,15 @@ without one, though the console recommends it (ADR 0036). Martin's steps:
 4. Check: add a photo to a point in the console. It shows there and in
    the app's meeting point details, and its link stops working about two
    hours later.
+5. Check profile photos: in the app, open **Profile** and **Add a photo**.
+   It shows beside your name on your trips, bookings and chats. Remove it:
+   its file is deleted from the bucket at once, or by the API's
+   `photo-files` job, which runs every minute while storage is on.
 
-To stop taking photos, set `PHOTO_STORAGE` to `none`: the app and the
-console then show none, and the bucket keeps the files.
+While photos are on, a driver needs a profile photo to publish a trip
+(ADR 0033). To stop taking photos, set `PHOTO_STORAGE` to `none`: the app
+and the console then show none, drivers are not asked for one, and the
+bucket keeps the files.
 
 ## Turn on Google sign-in
 

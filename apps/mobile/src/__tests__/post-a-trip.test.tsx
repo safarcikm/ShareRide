@@ -4,6 +4,8 @@ import { shareLink } from "@/lib/share";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
+import { photoSizeIs, resetManipulator } from "@/testing/image-manipulator";
+import { photoPickedIs } from "@/testing/image-picker";
 import { bsi, fitjar, hof, kef, thorlakshofn } from "@/testing/meeting-points";
 import { blonduos, borgarnes, plannedDraft, quoteFor, tripsApi, yaris } from "@/testing/trips";
 
@@ -208,6 +210,33 @@ describe("Posting a trip (spec 3)", () => {
       .map((call) => call.input["query"]);
     expect(queries.at(-1)).toEqual({ from: hof.id, to: bsi.id });
     expect(screen.getByRole("button", { name: "From: Hof, Akureyri" })).toBeVisible();
+  });
+
+  it("keeps Choose date and time busy until the stops on the way are known", async () => {
+    const { client } = await open("/drive/trips/new");
+    let release: () => void = () => undefined;
+    client.answer(
+      "/v1/routes/stops-along",
+      () =>
+        new Promise((resolve) => {
+          release = () => {
+            resolve(ok(200, { meetingPoints: [borgarnes, blonduos] }));
+          };
+        }),
+    );
+    await choosePoint("From", "bs", "BSÍ bus terminal");
+    await choosePoint("To", "hof", "Hof, Akureyri");
+    // A press now would be lost: the route is not known yet.
+    expect(screen.getByRole("button", { name: "Choose date and time", busy: true })).toBeVisible();
+    await act(async () => {
+      release();
+      await Promise.resolve();
+    });
+    expect(await screen.findByRole("switch", { name: "Blönduós" })).toBeVisible();
+    await fireEvent.press(
+      await screen.findByRole("button", { name: "Choose date and time", busy: false }),
+    );
+    expect(await screen.findByRole("header", { name: "When are you leaving?" })).toBeVisible();
   });
 
   it("adds a meeting point where it adds least, and says how far it takes you", async () => {
@@ -634,6 +663,82 @@ describe("Posting a trip (spec 3)", () => {
     ).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Confirm your licence" }));
     expect(await screen.findByRole("header", { name: "Your driving licence" })).toBeVisible();
+  });
+
+  it("asks for a profile photo while photos are on, and comes back once one is added (spec 16, 3.6, item 5)", async () => {
+    const draft = plannedDraft();
+    const { client } = await open(`/drive/trips/${draft.id}/review`, [draft]);
+    let hasPhoto = false;
+    client.answer("/v1/me/driver-readiness", () =>
+      ok(200, {
+        ready: hasPhoto,
+        items: [
+          { item: "photo", done: hasPhoto, blocking: true },
+          { item: "car", done: true, blocking: true },
+          { item: "licence", done: true, blocking: true },
+        ],
+        licenceDeclaredAt: "2026-11-14T12:00:00.000Z",
+      }),
+    );
+    await fireEvent.press(await screen.findByRole("link", { name: "Edit: Route" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Back" }));
+    expect(
+      await screen.findByRole("header", { name: "One thing before you publish" }),
+    ).toBeVisible();
+    expect(screen.getByText("Profile photo")).toBeVisible();
+    expect(screen.getByText("So passengers know who to look for")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Publish trip" })).toBeDisabled();
+    expect(
+      screen.getByText("Add a profile photo to publish. Your trip is saved as a draft until then."),
+    ).toBeVisible();
+
+    await fireEvent.press(screen.getByRole("button", { name: "Add a photo" }));
+    expect(await screen.findByRole("header", { name: "Your profile photo" })).toBeVisible();
+    resetManipulator();
+    photoPickedIs({ uri: "file:///picked.jpg", width: 800, height: 800 });
+    photoSizeIs("file:///picked.jpg", { width: 800, height: 800 });
+    const url = "https://photos.test/profile-photos/0193f0c4-7d4a-7b1e-9c2a-123456789abc.jpg";
+    client.answer(
+      "/v1/me/photo",
+      () => {
+        hasPhoto = true;
+        return ok(200, { ...completeMe, photo: { url, hidden: false } });
+      },
+      "put",
+    );
+    await fireEvent.press(screen.getByRole("button", { name: "Add a photo" }));
+    expect(await screen.findByRole("button", { name: "Publish trip" })).toBeEnabled();
+    expect(screen.queryByRole("header", { name: /before you publish$/ })).toBeNull();
+  });
+
+  it("names all three when the photo, the car and the licence are missing", async () => {
+    const draft = plannedDraft({ vehicleId: null });
+    const { client } = await open(`/drive/trips/${draft.id}/review`, [draft]);
+    client.answer("/v1/me/vehicles", () => ok(200, { vehicles: [] }));
+    client.answer("/v1/me/driver-readiness", () =>
+      ok(200, {
+        ready: false,
+        items: [
+          { item: "photo", done: false, blocking: true },
+          { item: "car", done: false, blocking: true },
+          { item: "licence", done: false, blocking: true },
+        ],
+        licenceDeclaredAt: null,
+      }),
+    );
+    await fireEvent.press(await screen.findByRole("link", { name: "Edit: Route" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Back" }));
+    expect(
+      await screen.findByRole("header", { name: "Three things before you publish" }),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add a car" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Confirm your licence" })).toBeVisible();
+    expect(
+      screen.getByText(
+        "Add a profile photo and your car, and confirm your licence to publish. Your trip is saved as a draft until then.",
+      ),
+    ).toBeVisible();
   });
 
   it("has nothing in the way once the car and licence are done", async () => {

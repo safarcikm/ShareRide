@@ -299,23 +299,33 @@ function Review({
   );
 }
 
-type Missing = "car" | "licence";
+type Missing = "photo" | "car" | "licence";
 
 /**
  * What the driver still has to do before publishing (rules R3.1 and R3.2):
- * the car and the licence. The photo does not count until photos exist
- * (spec 16, 3.6, item 5).
+ * the photo, the car and the licence. The API asks for the photo only
+ * while photo storage is on (spec 16, 3.6, item 5).
  */
 function stillMissing(readiness: DriverReadiness): Missing[] {
-  return readiness.items.flatMap(({ item, done, blocking }) =>
-    (item === "car" || item === "licence") && blocking && !done ? [item] : [],
+  const order: readonly Missing[] = ["photo", "car", "licence"];
+  return order.filter((wanted) =>
+    readiness.items.some(({ item, done, blocking }) => item === wanted && blocking && !done),
   );
 }
 
+const waitingTexts = {
+  photo: "trip.review.waitsForPhoto",
+  car: "trip.review.waitsForCar",
+  licence: "trip.review.waitsForLicence",
+  "photo car": "trip.review.waitsForPhotoAndCar",
+  "photo licence": "trip.review.waitsForPhotoAndLicence",
+  "car licence": "trip.review.waitsForBoth",
+  "photo car licence": "trip.review.waitsForAll",
+} as const;
+
 /** Why Publish waits, under it. */
 function waitsFor(missing: readonly Missing[]) {
-  if (missing.length > 1) return "trip.review.waitsForBoth";
-  return missing[0] === "car" ? "trip.review.waitsForCar" : "trip.review.waitsForLicence";
+  return waitingTexts[missing.join(" ") as keyof typeof waitingTexts];
 }
 
 /**
@@ -329,7 +339,20 @@ function StillMissing({ missing }: { readonly missing: readonly Missing[] }) {
     <Card>
       <Heading>{t("trip.review.missing", { count: missing.length })}</Heading>
       {missing.map((item) =>
-        item === "car" ? (
+        item === "photo" ? (
+          <TickRow
+            key={item}
+            label={t("trip.review.yourPhoto")}
+            detail={t("trip.review.photoDetail")}
+            done={false}
+            action={{
+              label: t("profile.photo.add"),
+              onPress: () => {
+                router.push("/drive/photo");
+              },
+            }}
+          />
+        ) : item === "car" ? (
           <TickRow
             key={item}
             label={t("trip.review.yourCar")}
