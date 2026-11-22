@@ -333,6 +333,9 @@ the builds run in Expo's cloud and reach his phone through TestFlight.
 
 ### PR 7: `feat(profile)`: profile photo
 
+Replaced by the [profile photos plan](2026-11-22-profile-photos.md)
+(2026-11-22), which follows ADR 0033.
+
 - [ ] Storage port with a Hetzner adapter and an in-memory fake
 - [ ] Photo endpoints. Tests: metadata is gone after upload (a fixture with
       fake GPS data), size and type limits, replace deletes the old file
