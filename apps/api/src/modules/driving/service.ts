@@ -2,6 +2,7 @@ import type { DriverReadiness, Vehicle } from "@shareride/contracts";
 import { schema, type Database } from "@shareride/db";
 import {
   driverReadiness,
+  photoShown,
   err,
   ok,
   validateVehicle,
@@ -72,15 +73,20 @@ export function createDrivingService(dependencies: {
       account.me(userId),
       listVehicles(userId),
       db
-        .select({ licenceDeclaredAt: users.licenceDeclaredAt })
+        .select({
+          licenceDeclaredAt: users.licenceDeclaredAt,
+          photoKey: users.photoKey,
+          photoHiddenAt: users.photoHiddenAt,
+        })
         .from(users)
         .where(eq(users.id, userId)),
     ]);
     const licenceDeclaredAt = user?.licenceDeclaredAt ?? null;
     const { ready, items } = driverReadiness({
       accountComplete: me.missingSteps.length === 0,
-      // Photo upload comes with milestone 2, PR 7.
-      hasPhoto: false,
+      hasPhoto: user === undefined ? false : photoShown(user),
+      // Blocking once the app can add a photo (profile photos plan, PR 4).
+      photosOn: false,
       hasCar: cars.length > 0,
       licenceDeclared: licenceDeclaredAt !== null,
     });

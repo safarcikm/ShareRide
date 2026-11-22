@@ -1,17 +1,24 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import {
   acceptLegalRoute,
+  deleteMyPhotoRoute,
   getMeRoute,
   putEmailRoute,
+  putMyPhotoRoute,
   updateMeRoute,
   verifyEmailRoute,
 } from "@shareride/contracts";
 import type { MiddlewareHandler } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { authOf, type AppEnv } from "../../context.ts";
-import { errorResponse } from "../../errors.ts";
+import { errorBody, errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
 import type { EmailService } from "./email.ts";
+import type { ProfilePhotoService } from "./photo.ts";
 import type { AccountService } from "./service.ts";
+
+/** A profile photo of at most 512 KB, in base64 and JSON. */
+const photoBodyLimit = 1024 * 1024;
 
 export function registerAccountRoutes(
   app: OpenAPIHono<AppEnv>,
@@ -81,5 +88,52 @@ export function registerEmailRoutes(
     return verified.error.code === "email_taken"
       ? errorResponse(c, 409, "email_taken", "Another account has this email address.")
       : errorResponse(c, 400, "link_invalid", "This link no longer works. Ask for a new one.");
+  });
+}
+
+/** My profile photo (spec 1, 3.5; ADR 0033): add, replace or remove it. */
+export function registerProfilePhotoRoutes(
+  app: OpenAPIHono<AppEnv>,
+  photo: ProfilePhotoService,
+  account: AccountService,
+  requireAuth: MiddlewareHandler,
+): void {
+  app.use(
+    "/v1/me/photo",
+    bodyLimit({
+      maxSize: photoBodyLimit,
+      onError: (c) =>
+        c.json(errorBody("payload_too_large", "A profile photo is at most 512 KB."), 413),
+    }),
+  );
+
+  app.openapi(toOpenApiRoute(putMyPhotoRoute, requireAuth), async (c) => {
+    const body = validated(c, "json", putMyPhotoRoute.request.body);
+    const { userId } = authOf(c);
+    const result = await photo.put(userId, new Uint8Array(Buffer.from(body.photo, "base64")));
+    if (!result.ok) {
+      switch (result.error.code) {
+        case "photo_invalid":
+          return errorResponse(c, 400, "validation_failed", "The photo is not one the app made.", {
+            details: [{ path: "photo", issue: result.error.issue }],
+          });
+        case "photo_storage_off":
+          return errorResponse(c, 503, "photo_storage_off", "No photo storage is set up here.");
+        case "photo_storage_unavailable":
+          return errorResponse(
+            c,
+            503,
+            "photo_storage_unavailable",
+            "Photo storage did not take the file. Try again later.",
+          );
+      }
+    }
+    return c.json(await account.me(userId), 200);
+  });
+
+  app.openapi(toOpenApiRoute(deleteMyPhotoRoute, requireAuth), async (c) => {
+    const { userId } = authOf(c);
+    await photo.remove(userId);
+    return c.json(await account.me(userId), 200);
   });
 }

@@ -19,6 +19,7 @@ export const testMe: Me = {
   firstName: null,
   about: null,
   languages: [],
+  photo: null,
   locale: "en",
   email: null,
   pendingEmail: null,

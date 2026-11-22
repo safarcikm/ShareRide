@@ -1,5 +1,5 @@
 // Checks the Hetzner adapter against the real bucket: a photo is stored,
-// shown through its signed link and not without it, and deleted. `pnpm
+// shown through its signed link and not without it, read back, and deleted. `pnpm
 // --filter @shareride/api test:contract` with PHOTO_BUCKET_ENDPOINT,
 // PHOTO_BUCKET, PHOTO_BUCKET_ACCESS_KEY and PHOTO_BUCKET_SECRET_KEY set.
 // Not part of the CI run. It leaves nothing in the bucket.
@@ -39,6 +39,8 @@ describe.skipIf(
       expect(shown.status).toBe(200);
       expect(shown.headers.get("content-type")).toBe("image/jpeg");
       expect(new Uint8Array(await shown.arrayBuffer())).toEqual(file);
+
+      expect(await storage.read(key)).toEqual(file);
 
       const unsigned = await fetch(`${storage.origin ?? ""}/${key}`);
       expect(unsigned.status).toBe(403);

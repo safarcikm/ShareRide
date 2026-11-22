@@ -14,6 +14,12 @@ Settings shows the language as two choices, English and Íslenska, then Your
 account, Notifications, Legal documents and signing out, its rows at the
 left (3.8).
 
+Amended by [spec 19](2026-11-22-google-and-apple-sign-in.md): a newcomer
+through Google or Apple verifies a phone number at sign-up, before the account
+is made, instead of before the first booking (3.3); Settings gains Sign-in
+methods to add and remove Google and Apple (3.8); the provider endpoints are
+spec 19's (6).
+
 Features: A1 Sign up and sign in, A2 Profile, A4 Settings, A6 Terms, privacy
 policy and community rules ([features](../product/features.md)).
 Related decisions: [ADR 0010](../decisions/0010-authentication-and-identity.md)

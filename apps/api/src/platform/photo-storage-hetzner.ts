@@ -47,7 +47,7 @@ export function createHetznerPhotoStorage(settings: HetznerPhotoStorageSettings)
     return `${origin}/${key}`;
   };
 
-  const request = async (method: "PUT" | "DELETE", key: string, init: RequestInit = {}) => {
+  const request = async (method: "PUT" | "DELETE" | "GET", key: string, init: RequestInit = {}) => {
     const signed = await client.sign(urlOf(key), { ...init, method });
     // A request that hangs fails, so the operator can try again.
     return send(signed, { signal: AbortSignal.timeout(requestTimeoutMs) });
@@ -70,6 +70,18 @@ export function createHetznerPhotoStorage(settings: HetznerPhotoStorageSettings)
       if (!response.ok && response.status !== 404) {
         throw new Error(`Photo storage answered ${String(response.status)} to DELETE.`);
       }
+    },
+
+    async read(key) {
+      const response = await request("GET", key);
+      if (!response.ok) {
+        // Frees the connection; the answer's text is not needed.
+        await response.body?.cancel();
+        // The project's own keys may list the bucket, so a missing file is a 404, not a 403.
+        if (response.status === 404) return undefined;
+        throw new Error(`Photo storage answered ${String(response.status)} to GET.`);
+      }
+      return new Uint8Array(await response.arrayBuffer());
     },
 
     async linkTo(key, now) {

@@ -243,7 +243,9 @@ beta is open to everyone,
 Milestone 13: photos and Apple and Google sign-in
 (the rest of [milestone 2](../plans/2026-11-13-milestone-2-hosted-and-connected.md);
 needs Hetzner storage, a Google sign-in client and the Apple account;
-profile photos: [plan](../plans/2026-11-22-profile-photos.md))
+profile photos: [plan](../plans/2026-11-22-profile-photos.md); sign-in:
+[plan](../plans/2026-11-22-google-and-apple-sign-in.md), started 2026-11-22
+for the open beta)
 
 - [ ] Profile photos, required for drivers before their first trip
 - [ ] Google sign-in

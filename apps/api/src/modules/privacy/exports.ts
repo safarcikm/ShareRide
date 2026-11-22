@@ -12,17 +12,19 @@ import {
 import { and, desc, eq, gt, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
 import type { Logger } from "../../logger.ts";
 import { hashToken, newToken, type FileCipher } from "../../platform/crypto.ts";
+import type { PhotoStorage } from "../../platform/photo-storage.ts";
 import { zip } from "../../platform/zip.ts";
 import type { AuthService, ConfirmError } from "../auth/service.ts";
+import type { Queryable } from "../bookings/seats.ts";
 import { recordEvents } from "../notifications/outbox.ts";
-import { collectExport, collectExportFiles } from "./export-data.ts";
+import { collectExport, collectExportFiles, profilePhotoFileName } from "./export-data.ts";
 import { renderExportPage } from "./export-page.ts";
 
 // "Download my data" (spec 11, 3.2; plan 4.4): asked for with a fresh code,
 // built by a job inside the API, sealed with the server secret and kept 7
 // days. It leaves only through a one-time link that works for 2 minutes.
 
-const { dataExports } = schema;
+const { dataExports, users } = schema;
 
 /** The HKDF purpose of the export key; a new version makes earlier files unreadable. */
 export const exportCipherPurpose = "shareride-data-export-v1";
@@ -107,6 +109,8 @@ export interface ExportBuilderDependencies {
   readonly cipher: FileCipher;
   readonly clock: () => Date;
   readonly logger: Logger;
+  /** Where the profile photo's file is (ADR 0033); without it the ZIP holds none. */
+  readonly photos?: PhotoStorage;
 }
 
 type ExportRow = typeof dataExports.$inferSelect;
@@ -276,7 +280,16 @@ function usableLink(token: string, now: Date) {
 
 /** The job that builds exports, every 10 seconds inside the API. */
 export function createExportBuilder(dependencies: ExportBuilderDependencies): ExportBuilder {
-  const { db, cipher, clock, logger } = dependencies;
+  const { db, cipher, clock, logger, photos } = dependencies;
+
+  /** The profile photo's key, in the snapshot; none when this server keeps no photos. */
+  async function photoKeyOf(tx: Queryable, userId: string) {
+    const [user] = await tx
+      .select({ photoKey: users.photoKey })
+      .from(users)
+      .where(eq(users.id, userId));
+    return photos === undefined ? null : (user?.photoKey ?? null);
+  }
 
   /**
    * Builds one export taken on its `attempts`-th try; false when another try
@@ -285,11 +298,24 @@ export function createExportBuilder(dependencies: ExportBuilderDependencies): Ex
   async function build(row: ExportRow): Promise<boolean> {
     const now = clock();
     // One snapshot, so the sections agree with each other.
+    // The photo's file, downloaded before the snapshot so no transaction waits
+    // on the bucket; storage failing fails this try, and a later one tries again.
+    const keyBefore = await photoKeyOf(db, row.userId);
+    const photo = keyBefore === null ? undefined : await photos?.read(keyBefore);
     const { data, files } = await db.transaction(
-      async (tx) => ({
-        data: await collectExport(tx, row.userId, now),
-        files: await collectExportFiles(tx, row.userId),
-      }),
+      async (tx) => {
+        // A photo changed meanwhile is left out, so the export never holds one it does not name.
+        const withPhoto = photo !== undefined && (await photoKeyOf(tx, row.userId)) === keyBefore;
+        return {
+          data: await collectExport(tx, row.userId, now, { withPhoto }),
+          files: [
+            ...(photo === undefined || !withPhoto
+              ? []
+              : [{ name: profilePhotoFileName, data: Buffer.from(photo) }]),
+            ...(await collectExportFiles(tx, row.userId)),
+          ],
+        };
+      },
       { isolationLevel: "repeatable read", accessMode: "read only" },
     );
     const archive = zip(

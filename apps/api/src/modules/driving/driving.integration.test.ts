@@ -74,6 +74,24 @@ describe("GET /v1/me/driver-readiness (spec 3, 3.1)", () => {
     });
   });
 
+  it("counts a profile photo once added, but not one ShareRide hid", async () => {
+    const { accessToken, userId } = await newDriver();
+    const photoItem = async () => {
+      const result = await api.client.call(driverReadinessRoute, { accessToken });
+      return result.ok ? result.data.items.find((entry) => entry.item === "photo") : undefined;
+    };
+    await api.connection.db
+      .update(schema.users)
+      .set({ photoKey: "profile-photos/0193f0c4-7d4a-7b1e-9c2a-123456789abc.jpg" })
+      .where(eq(schema.users.id, userId));
+    expect(await photoItem()).toMatchObject({ done: true });
+    await api.connection.db
+      .update(schema.users)
+      .set({ photoHiddenAt: api.now() })
+      .where(eq(schema.users.id, userId));
+    expect(await photoItem()).toMatchObject({ done: false });
+  });
+
   it("is not ready while the account misses a step", async () => {
     const { accessToken } = await api.signIn(api.newPhoneNumber());
     await api.client.call(addVehicleRoute, { accessToken, body: yaris });

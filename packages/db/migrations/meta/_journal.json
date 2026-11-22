@@ -393,6 +393,13 @@
       "when": 1795004185943,
       "tag": "0055_booking_settings_version",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1795342795504,
+      "tag": "0056_profile_photos",
+      "breakpoints": true
     }
   ]
 }
