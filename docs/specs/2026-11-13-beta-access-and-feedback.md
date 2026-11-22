@@ -114,6 +114,14 @@ sign-ups to invited people again.
 
 ### 3.4 Usage analytics (J3)
 
+> Changed on 2026-11-22 by
+> [spec 23](2026-11-22-google-analytics-and-search.md) and
+> [ADR 0045](../decisions/0045-google-analytics-on-the-website-after-consent.md):
+> the website counts page views with Google Analytics for visitors who
+> accept, with the consent and event rules below; Google is the exception
+> to the EEA provider, under the EU-US Data Privacy Framework. R12.6 no
+> longer applies to the website.
+
 The beta has no usage analytics (decision 3). The metrics in spec 10
 measure the exit criteria without tracking anyone, and feedback and talks
 with testers tell us the rest. So there is no consent screen, no analytics
@@ -137,7 +145,7 @@ Crash and error reports are not analytics: they are covered by
 | R12.3 | No code works once the number of testers reaches `beta_max_testers`. |
 | R12.4 | A waitlist entry counts only after email confirmation, and leaving the waitlist deletes it. |
 | R12.5 | Feedback carries only the tester's message, an optional screenshot they have seen, and the app's technical details. |
-| R12.6 | The beta collects no usage analytics. |
+| R12.6 | The beta collects no usage analytics. Changed by spec 23: the website counts page views with consent (R23.1 to R23.5). |
 
 ## 5. Screens
 
