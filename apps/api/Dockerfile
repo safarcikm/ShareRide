@@ -24,7 +24,10 @@ ENV EXPO_PUBLIC_APP_ENV=$APP_ENV \
   EXPO_PUBLIC_SENTRY_DSN=$EXPO_PUBLIC_SENTRY_DSN
 COPY . .
 RUN pnpm install --frozen-lockfile --filter "@shareride/mobile..."
-RUN pnpm --filter @shareride/mobile export:web --source-maps
+# Metro starts a bundling worker per CPU it sees, and each takes a few hundred
+# MB: on Render's build machines that ran out of memory and the build was
+# killed without a word. Two workers peak at about 1.4 GB (16 took 6 GB).
+RUN pnpm --filter @shareride/mobile export:web --source-maps --max-workers 2
 RUN --mount=type=secret,id=sentry-auth-token \
   pnpm --filter @shareride/mobile upload-source-maps
 
