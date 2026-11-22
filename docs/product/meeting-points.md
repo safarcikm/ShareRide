@@ -101,6 +101,15 @@ a church or a community hall. Their names start with the settlement:
 "Hvammstangi – N1". They arrive as drafts from an import file, and the
 operator checks each one before it goes live, with or without a photo.
 
+## The main sights
+
+Later on 2026-11-22 Martin asked for the usual tourist spots too, such as
+the Golden Circle's stops. 32 sights on ordinary roads, from Þingvellir to
+Hengifoss, have a point in their visitor car park and are landmarks in
+place search (spec 21, 3.6). Where to stand says when the car park
+charges for parking. The highlands wait, as legs skip mountain roads.
+Like the settlements' points, they arrive as drafts from an import file.
+
 ## Governance
 
 - Only the operator can activate a meeting point.

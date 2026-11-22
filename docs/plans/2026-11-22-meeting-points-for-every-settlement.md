@@ -93,6 +93,12 @@ and its test; `packages/i18n/src/messages/en.ts`, `is.ts`.
   steps to import the file; the indexes list spec 21, ADR 0036 and this
   plan; `CHANGELOG.md`.
 
+## Task 5: The main sights (added 2026-11-22)
+
+- [x] Martin asked for the tourist spots: `sight-meeting-points.csv`, 32
+  points in the sights' car parks (spec 21, 3.6, decisions 6 and 7), the
+  25 new sights in `landmarkPlaces`, and `sight-meeting-points.test.ts`.
+
 ## After merging (Martin)
 
 On staging and later production: the console's Meeting points page,
@@ -100,4 +106,5 @@ Import, the file `packages/db/src/places/settlement-meeting-points.csv`.
 Then for each draft: open it in maps, move it if needed, and check its
 texts, amenities and season. Then, on the list filtered to drafts, tick
 the ones checked and "Confirm and activate N points" (added after this
-plan, spec 21 decision 5), which confirms each today.
+plan, spec 21 decision 5), which confirms each today. Then the same with
+`packages/db/src/places/sight-meeting-points.csv`.

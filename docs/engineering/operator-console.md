@@ -409,6 +409,12 @@ on each server, staging and production alike:
    still be activated alone from its page, with the day confirmed set in
    its form.
 
+`packages/db/src/places/sight-meeting-points.csv` (spec 21, 3.6) holds
+the 32 main sights' points, one in each visitor car park, imported and
+activated the same way; its names clash with no settlement point.
+`sight-meeting-points.test.ts` checks it as below, reading it after the
+settlement file.
+
 `settlement-meeting-points.test.ts` reads the file with the console's own
 reader and checks that every point joins a road that reaches BSÍ and
 back, and that every place of place search reaches a point. To change a
