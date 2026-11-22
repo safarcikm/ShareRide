@@ -228,6 +228,14 @@ are dropped, as the beta is open,
 - [x] Beta metrics and announcements
 - [x] The console home's counts
 
+Paying the driver in person, until milestone 15
+([ADR 0038](../decisions/0038-pay-the-driver-in-person-until-card-payments.md),
+asked for by Martin on 2026-11-22 so the open beta can be public before
+payments in the app work)
+
+- [ ] A console switch: passengers pay the driver in person, in cash or by
+      bank transfer, the price the app shows (rule M6)
+
 Milestone 12: production
 (needs Martin's domain and Mailjet account; the waitlist is dropped, as the
 beta is open to everyone,
@@ -263,6 +271,7 @@ provider contract, after the provider ADR)
 
 - [ ] Receipts
 - [ ] Payments and refunds through the chosen provider
+- [ ] Remove the switch for paying the driver in person (ADR 0038)
 - [ ] Driver payout setup and payouts
 - [ ] Payments in the console
 

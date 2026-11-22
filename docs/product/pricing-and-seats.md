@@ -1,10 +1,12 @@
 # Pricing and seats
 
-**Owner:** Martin · **Last reviewed:** 2026-11-17 · **Status:** Accepted
+**Owner:** Martin · **Last reviewed:** 2026-11-22 · **Status:** Accepted
 ([ADR 0006](../decisions/0006-meeting-points-and-segment-pricing.md), with the
 driver's price control replaced by [ADR 0012](../decisions/0012-trip-price-level.md),
-payments by [ADR 0013](../decisions/0013-in-app-payments-only.md) and the
-trip limit added by [ADR 0030](../decisions/0030-limit-what-a-whole-trip-brings-the-driver.md));
+payments by [ADR 0013](../decisions/0013-in-app-payments-only.md), paying
+the driver in person until then by
+[ADR 0038](../decisions/0038-pay-the-driver-in-person-until-card-payments.md),
+and the trip limit added by [ADR 0030](../decisions/0030-limit-what-a-whole-trip-brings-the-driver.md));
 configuration values are still to be set
 
 These are the business rules for prices, seat capacity, bookings and
@@ -99,7 +101,9 @@ takings    = Σ (total price − refund) of the trip's bookings that are
   at the prices they were made at. Money the driver keeps after a no-show or
   a late cancellation counts (rule M2); a refund does not. Declined and
   expired bookings, and requests withdrawn or bookings cancelled before
-  they were paid, count nothing.
+  they were paid, count nothing. A booking paid to the driver in person
+  (rule M6) that is cancelled or a no-show counts nothing either, as no
+  money changed hands.
 - The passenger service fee (rule P5) is not part of `takings`.
 - A booking is valid only if `takings` stays at or below `trip_limit` after
   it (checked with the seats, rule S2). Rule P4 sets the level so that this
@@ -246,7 +250,7 @@ passengers on different parts of the trip.
 ## Booking modes
 
 - **Instant:** a valid request is accepted immediately, and the passenger pays
-  at once.
+  at once (or, paid in person, rule M6, it is confirmed at once).
 - **Approval:** the request holds the seats while the driver decides. It
   expires if the driver does not answer within 12 hours, or by 2 hours before
   departure from the boarding stop, whichever is earlier. A request made less
@@ -254,7 +258,8 @@ passengers on different parts of the trip.
   instead. Expired requests free their seats. When the driver accepts, the
   passenger pays.
 
-In both modes a booking is confirmed only once it is paid (rule M1).
+In both modes a booking is confirmed only once it is paid (rule M1), or as
+soon as it is accepted when it is paid to the driver in person (rule M6).
 
 The driver chooses the mode per trip. Default during the beta: approval
 (decided 2026-11-13).
@@ -269,7 +274,7 @@ stateDiagram-v2
   requested --> declined : driver declines
   requested --> expired : no answer in time
   requested --> cancelled : passenger withdraws
-  accepted --> confirmed : passenger pays, or the ride is free
+  accepted --> confirmed : passenger pays, or the ride is free or paid in person
   accepted --> expired : not paid in time
   accepted --> cancelled : passenger or driver cancels
   confirmed --> cancelled : passenger or driver cancels
@@ -304,9 +309,13 @@ A cancellation records who cancelled, when, and the reason (including
 
 ## Payment and refunds
 
-All payments go through the app, from the beta
+All payments go through the app
 ([ADR 0013](../decisions/0013-in-app-payments-only.md)). Passengers never pay
-drivers in cash or by direct transfer for a ShareRide booking.
+drivers in cash or by direct transfer for a ShareRide booking, except while
+the operator lets them pay the driver in person until payments in the app
+work (rule M6,
+[ADR 0038](../decisions/0038-pay-the-driver-in-person-until-card-payments.md)).
+Rules M1 to M5 are about bookings paid in the app.
 
 ### Rule M1: paying
 
@@ -353,6 +362,31 @@ If a passenger's bank reverses a payment after the driver was paid and the
 chargeback is lost, the amount is taken from the driver's next payouts when the
 trip did not happen because of the driver. Otherwise ShareRide carries the loss
 in the beta (decided 2026-11-13; reviewed before launch).
+
+### Rule M6: paying the driver in person (until milestone 15)
+
+While the operator's switch `pay_in_person` is on
+([ADR 0038](../decisions/0038-pay-the-driver-in-person-until-card-payments.md)),
+new bookings are paid to the driver in person, not in the app:
+
+- The passenger pays the booking's price (rule P1, from its price snapshot)
+  to the driver when they get in, in cash or by bank transfer, as the two
+  agree. Never more than that price. ShareRide holds no money.
+- The booking is confirmed when it is accepted: at once in instant mode,
+  when the driver accepts in approval mode. There is no payment window and
+  no payment step.
+- Cancelling refunds nothing, as nothing was paid in the app. A passenger
+  who cancels later than 15 minutes before boarding, or does not come, owes
+  the driver nothing. Reliability counts it as usual.
+- The price cap and the trip limit (rules P3 and P4) apply unchanged; such
+  a booking counts nothing towards the takings once it is cancelled or a
+  no-show.
+- No service fee (rule P5) and no card fees (rule M4). No payouts (M3) or
+  chargebacks (M5).
+- Every booking stores how it is paid, `in_app` or `in_person`, fixed when
+  it is made. Turning the switch on or off never changes a booking already
+  made.
+- Milestone 15 removes the switch once payments in the app work.
 
 ## Trip changes after bookings exist
 
@@ -408,7 +442,8 @@ it was made under, and the others apply from the change on. The terms of
 service state these numbers, so new terms go out with a change. The last
 five, `no_show_wait`, `trip_completion_delay`, `reliability_period`,
 `reliability_min_count` and `reliability_watch_level`, apply at once to
-every trip and every person's figure.
+every trip and every person's figure. The switch `pay_in_person` (rule M6)
+applies to bookings made from the change on.
 
 | Setting | Default | Notes |
 | ------- | ------- | ----- |
@@ -430,3 +465,4 @@ every trip and every person's figure.
 | `reliability_min_count` | 5 | Counted trips and bookings before the figure is shown |
 | `reliability_watch_level` | 80% | Below this, the operator is alerted |
 | `max_capacity` | 8 | Most seats a driver can offer; matching the car is the driver's responsibility |
+| `pay_in_person` | Off | On: new bookings are paid to the driver in person (rule M6, [ADR 0038](../decisions/0038-pay-the-driver-in-person-until-card-payments.md)); removed in milestone 15 |
