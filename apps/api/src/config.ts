@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { z } from "zod";
 import { operatorPasswordRules } from "@shareride/domain";
+import type { SearchEngines } from "./search-engines.ts";
 
 /** An origin such as https://shareride.is: scheme, host and port, nothing more. */
 const originSchema = z.string().refine((value) => {
@@ -515,6 +516,8 @@ export interface Config {
   readonly photos: PhotoStorageConfig;
   /** Google and Apple sign-in (ADR 0034). */
   readonly signIn: SignInConfig;
+  /** What search engines may index, and the site's own address (spec 23). */
+  readonly searchEngines: SearchEngines;
 }
 
 export class ConfigError extends Error {
@@ -665,5 +668,10 @@ export function loadConfig(environment: Readonly<Record<string, string | undefin
     adminPassword: env.ADMIN_PASSWORD,
     photos: photoStorageConfig(env),
     signIn: signInConfig(env),
+    searchEngines: {
+      // Only production's own address is the public site (spec 23, R23.6).
+      indexable: deploymentOf(env) === "production" && env.WEB_APP_URL !== undefined,
+      siteOrigin: env.WEB_APP_URL ?? null,
+    },
   };
 }

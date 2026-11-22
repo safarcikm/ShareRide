@@ -1407,6 +1407,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   superseding ADR 0041's refusal there): the API starts with
   `ADMIN_PASSWORD` set on production, with the same limits and audit as on
   staging.
+- Search engines (spec 23): production's public pages (Find, the meeting
+  points, the places, the legal texts) may be indexed, each in Icelandic
+  and English at `?lang=is` and `?lang=en`, which open the site in that
+  language. The API fills the page's language, title, description,
+  canonical address, alternates and link preview per request, serves
+  `/robots.txt` and `/sitemap.xml`, and answers every other address, and
+  every address off production, with `X-Robots-Tag: noindex`. The public
+  screens set their own title and description; Find's rides leaving soon
+  are kept out of snippets; `public/share.png` is the link preview.
 
 ### Fixed
 

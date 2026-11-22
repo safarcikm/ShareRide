@@ -159,6 +159,13 @@ processing agreement; Martin signs each one when he opens the account.
   What deletion does to each kind of data is in the domain
   (`deletionEffects`, spec 11, 3.5).
 - No personal data in logs, analytics events, error reports or URLs.
+- Search engines index only production's public pages that hold no
+  person's data: Find, the meeting points, the places and the legal texts.
+  Every other answer, and every answer off production, carries
+  `X-Robots-Tag: noindex`; Find's rides leaving soon are kept out of
+  snippets, and link previews name nobody
+  ([spec 23](../specs/2026-11-22-google-analytics-and-search.md), R23.6,
+  R23.7).
 - Production data never copied to staging or development.
 - Privacy impact is a checkbox in every PR template.
 - Retention jobs are tested like any other feature.

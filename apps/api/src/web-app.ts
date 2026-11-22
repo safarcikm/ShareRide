@@ -1,9 +1,12 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { finishProviderSignInRoute } from "@shareride/contracts";
 import { providerReturnPath } from "@shareride/domain";
 import type { Context } from "hono";
 import { isConsolePath } from "./admin-app.ts";
 import type { AppEnv } from "./context.ts";
+import { fillPage, notIndexed, pageHead, type SearchEngines } from "./search-engines.ts";
 
 const isApiPath = (path: string) =>
   path === "/v1" ||
@@ -64,29 +67,38 @@ export function openerPolicyFor(path: string): "unsafe-none" | "same-origin-allo
   return path === `/${providerReturnPath}` ? "unsafe-none" : "same-origin-allow-popups";
 }
 
-/**
- * Trip pages show a person's first name and travel plans, so search engines
- * must not index them (spec 4, R4.6). The page adds a robots meta tag too.
- */
-const isTripPage = (path: string) => path.startsWith("/trips/");
-
 /** Lets serveStatic report a miss instead of running another handler. */
 const reportMiss = () => Promise.resolve();
 
 export type WebApp = (c: Context<AppEnv, string>) => Promise<Response | undefined>;
+
+/** The exported page, or undefined when the export has none. */
+async function readPage(root: string): Promise<string | undefined> {
+  try {
+    return await readFile(join(root, "index.html"), "utf8");
+  } catch {
+    return undefined;
+  }
+}
 
 /**
  * Serves the exported web app (`expo export --platform web`) on the API's own
  * origin, so the refresh cookie stays first-party (ADR 0018). It answers only
  * reads that no API route took: files come from the export, and any other
  * path outside /v1 that names a screen gets the app's page, whose router
- * shows it. Returns undefined for everything else, which gets the API's 404.
+ * shows it, with its head filled for the language asked for (spec 23, 3.6).
+ * Returns undefined for everything else, which gets the API's 404.
  * Running after the routes, not as a route, keeps API route names in logs.
+ * Which answers search engines may index is the app's middleware's to say
+ * (spec 23, R23.6; trip pages, R4.6, add a robots tag of their own too).
  */
-export function createWebApp(root: string, photoOrigin: string | null = null): WebApp {
+export function createWebApp(
+  root: string,
+  photoOrigin: string | null = null,
+  searchEngines: SearchEngines = notIndexed,
+): WebApp {
   const contentSecurityPolicy = webContentSecurityPolicy(photoOrigin);
   const files = serveStatic<AppEnv>({ root });
-  const page = serveStatic<AppEnv>({ root, path: "index.html" });
 
   return async (c) => {
     const read = c.req.method === "GET" || c.req.method === "HEAD";
@@ -99,13 +111,26 @@ export function createWebApp(root: string, photoOrigin: string | null = null): W
       "Cache-Control",
       isHashed(c.req.path) ? "public, max-age=31536000, immutable" : "no-cache",
     );
-    const file = await files(c, reportMiss);
-    if (file instanceof Response) return file;
-    // Neither the 404 nor the page may be kept as if it were a bundle.
-    c.header("Cache-Control", "no-cache");
-    if (isFilePath(c.req.path)) return undefined;
-    if (isTripPage(c.req.path)) c.header("X-Robots-Tag", "noindex, nofollow");
-    const fallback = await page(c, reportMiss);
-    return fallback instanceof Response ? fallback : undefined;
+    if (isFilePath(c.req.path)) {
+      const file = await files(c, reportMiss);
+      if (file instanceof Response) return file;
+      // A missing file's 404 may not be kept as if it were a bundle.
+      c.header("Cache-Control", "no-cache");
+      return undefined;
+    }
+    // A screen, the front page too: the page with its head filled, never the
+    // export's index.html as it is.
+    const html = await readPage(root);
+    if (html === undefined) return undefined;
+    const head = pageHead(
+      {
+        path: c.req.path,
+        lang: c.req.query("lang") ?? null,
+        acceptLanguage: c.req.header("accept-language") ?? null,
+      },
+      searchEngines,
+    );
+    if (head.fromBrowser) c.header("Vary", "Accept-Language");
+    return c.html(fillPage(html, head));
   };
 }

@@ -42,17 +42,17 @@ Spec 23's decisions 6 to 8 are built as recommended.
 
 ## PR 2: search engines
 
-- [ ] API: `searchEngines` config (indexable, site origin); `/robots.txt`;
+- [x] API: `searchEngines` config (indexable, site origin); `/robots.txt`;
   `/sitemap.xml` (active meeting points, places, both languages, alternates);
   the page's head filled per request and language; noindex outside the
   public list and off production; tests in `web-app.test.ts` and a new
   `search-engines` test.
-- [ ] App: `?lang=` read at start on the web (`LanguageProvider`); a
+- [x] App: `?lang=` read at start on the web (`LanguageProvider`); a
   `PageHead` component (title, description) on Find, meeting points, a
   meeting point, a place, the legal pages; `data-nosnippet` on Find's ride
   list; the share picture `public/share.png` made by `export-icons.ts`.
-- [ ] Docs: runbook "Google Search Console"; the privacy register's
-  indexing line.
+- [x] Docs: runbook "Google Search Console"; the privacy register's
+  indexing line; a journey (`e2e/search-engines.spec.ts`).
 
 ## PR 3: the consent question and Google Analytics
 

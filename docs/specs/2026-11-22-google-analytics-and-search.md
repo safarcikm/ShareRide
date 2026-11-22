@@ -248,13 +248,14 @@ the steps are in the [production runbook](../operations/production.md).
 | `cookies.analyticsHelp` | Google Analytics sets cookies that last 13 months and tells Google, in the United States, which pages you open, your browser and roughly where you are. We see only totals. You can turn it off at any time. | Google Analytics setur vafrakökur sem gilda í 13 mánuði og segir Google, í Bandaríkjunum, hvaða síður þú opnar, hvaða vafra þú notar og nokkurn veginn hvar þú ert. Við sjáum aðeins samtölur. Þú getur slökkt á því hvenær sem er. |
 | `cookies.none` | No visits are counted here, and no cookies are used for analytics. | Hér eru engar heimsóknir taldar og engar vafrakökur notaðar fyrir vefmælingar. |
 | `seo.title` | {page} · PuffinRide | {page} · PuffinRide |
-| `seo.findTitle` | PuffinRide · Share rides across Iceland | PuffinRide · Samferða um Ísland |
+| `seo.findTitle` | PuffinRide · Shared rides across Iceland | PuffinRide · Samferða um Ísland |
 | `seo.findDescription` | Find a ride, or offer the empty seats in your car, between towns in Iceland, and share the cost of the trip. | Finndu far, eða bjóddu laus sæti í bílnum þínum, milli bæja á Íslandi og deildu kostnaðinum við ferðina. |
 | `seo.meetingPointsDescription` | The meeting points where PuffinRide drivers and passengers meet, all around Iceland, on the map and by region. | Mótsstaðirnir þar sem bílstjórar og farþegar PuffinRide hittast, um allt Ísland, á korti og eftir landshlutum. |
 | `seo.meetingPointDescription` | {name}: a PuffinRide meeting point, where drivers and passengers meet for shared rides. | {name}: mótsstaður PuffinRide, þar sem bílstjórar og farþegar hittast til að verða samferða. |
 | `seo.placeTitle` | {place}: nearest meeting points | {place}: næstu mótsstaðir |
 | `seo.placeDescription` | The PuffinRide meeting points nearest to {place}, for finding or offering a shared ride. | Næstu mótsstaðir PuffinRide við {place}, til að finna far eða bjóða far. |
 | `seo.legalDescription` | PuffinRide's Terms of Service, Community Rules and Privacy Policy. | Notendaskilmálar, samfélagsreglur og persónuverndarstefna PuffinRide. |
+| `seo.shareImage` | The PuffinRide puffin on a map pin | Lundi PuffinRide á kortanælu |
 | `seo.cookiesDescription` | What the PuffinRide website keeps on your device, and your choice about Google Analytics. | Hvað vefur PuffinRide geymir í tækinu þínu, og val þitt um Google Analytics. |
 
 `seo.placeDescription` in Icelandic puts the place after "við", which takes

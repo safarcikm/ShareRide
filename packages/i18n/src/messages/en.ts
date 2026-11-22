@@ -4,6 +4,19 @@
  */
 export const en = {
   "app.name": "PuffinRide",
+  "seo.title": "{page} · PuffinRide",
+  "seo.findTitle": "PuffinRide · Shared rides across Iceland",
+  "seo.findDescription":
+    "Find a ride, or offer the empty seats in your car, between towns in Iceland, and share the cost of the trip.",
+  "seo.meetingPointsDescription":
+    "The meeting points where PuffinRide drivers and passengers meet, all around Iceland, on the map and by region.",
+  "seo.meetingPointDescription":
+    "{name}: a PuffinRide meeting point, where drivers and passengers meet for shared rides.",
+  "seo.placeTitle": "{place}: nearest meeting points",
+  "seo.placeDescription":
+    "The PuffinRide meeting points nearest to {place}, for finding or offering a shared ride.",
+  "seo.legalDescription": "PuffinRide's Terms of Service, Community Rules and Privacy Policy.",
+  "seo.shareImage": "The PuffinRide puffin on a map pin",
   "common.back": "Back",
   "common.loading": "Loading",
   "refresh.updating": "Updating",

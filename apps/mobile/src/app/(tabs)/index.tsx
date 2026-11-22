@@ -8,7 +8,9 @@ import { BetaLabel } from "@/beta/config";
 import { Card } from "@/components/card";
 import { Columns } from "@/components/columns";
 import { Grid } from "@/components/grid";
+import { NoSnippet } from "@/components/no-snippet";
 import { Notice } from "@/components/notice";
+import { PageHead } from "@/components/page-head";
 import { LanguageSwitch } from "@/components/language-switch";
 import { Logo } from "@/components/logo";
 import { PuffinsInCar } from "@/components/puffin-scenes";
@@ -59,7 +61,18 @@ export default function FindScreen() {
   const suspension = suspensionNow(useMe());
   // Searching is closed to a suspended person (spec 9, 3.6.2).
   if (suspension !== null) return <SuspendedAccount suspension={suspension} />;
-  return <FrontPage />;
+  return (
+    <>
+      <FindHead />
+      <FrontPage />
+    </>
+  );
+}
+
+/** Find's title and description for search engines (spec 23, 3.6). */
+function FindHead() {
+  const { t } = useLanguage();
+  return <PageHead title={t("seo.findTitle")} description={t("seo.findDescription")} />;
 }
 
 function FrontPage() {
@@ -325,21 +338,22 @@ function LeavingSoon({
     ) : null;
   if (grid) {
     return (
-      <View style={styles.rides}>
+      <NoSnippet style={styles.rides}>
         <View style={[styles.head, styles.headWithLink]}>
           <Heading>{t("welcome.soon")}</Heading>
           {all}
         </View>
         <Grid>{cards}</Grid>
-      </View>
+      </NoSnippet>
     );
   }
+  // Drivers' first names: kept out of search engines' snippets (spec 23, 3.4).
   return (
-    <View style={styles.rides}>
+    <NoSnippet style={styles.rides}>
       <Heading>{t("welcome.soon")}</Heading>
       {cards}
       {all}
-    </View>
+    </NoSnippet>
   );
 }
 
