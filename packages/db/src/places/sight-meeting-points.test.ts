@@ -41,6 +41,7 @@ beforeAll(async () => {
 
 describe("the sights' meeting points file", () => {
   it("reads through the console's import, every row without a problem, after the settlements", () => {
+    expect(settlements).toHaveLength(104);
     expect(read.ok).toBe(true);
     expect(rows.filter((row) => !row.ok)).toEqual([]);
     expect(rows).toHaveLength(32);
@@ -88,18 +89,16 @@ describe("the sights' meeting points file", () => {
     ).toEqual([["Látrabjarg", { startMonth: 5, endMonth: 9 }]]);
   });
 
-  it("gives every landmark of place search a point within its reach", () => {
-    const unreached = landmarkPlaces
-      .filter(
-        (place) =>
-          !drafts.some(
-            (draft) =>
-              metresBetween(draft.position, place.position) <=
-              (place.matchRadiusM ?? defaultRadiusM[place.kind]),
-          ),
-      )
+  it("gives every landmark of place search its own point, a short walk away and within its reach", () => {
+    const far = landmarkPlaces
+      .filter((place) => {
+        const own = drafts.find((draft) => draft.nameIs.startsWith(place.nameIs));
+        if (own === undefined) return true;
+        const metres = metresBetween(own.position, place.position);
+        return metres > 700 || metres > (place.matchRadiusM ?? defaultRadiusM[place.kind]);
+      })
       .map((place) => place.key);
-    expect(unreached).toEqual([]);
+    expect(far).toEqual([]);
     expect(landmarkPlaces).toHaveLength(32);
   });
 

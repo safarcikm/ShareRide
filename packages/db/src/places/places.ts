@@ -175,6 +175,7 @@ export const landmarkPlaces: readonly Place[] = [
   {
     key: "geysir",
     nameIs: "Geysir",
+    aliases: ["Strokkur"],
     position: at(64.3104, -20.3024),
     kind: "landmark",
     region: "south",
@@ -196,6 +197,7 @@ export const landmarkPlaces: readonly Place[] = [
   {
     key: "skogafoss",
     nameIs: "Skógafoss",
+    aliases: ["Skógar"],
     position: at(63.5321, -19.5114),
     kind: "landmark",
     region: "south",
@@ -253,7 +255,6 @@ export const landmarkPlaces: readonly Place[] = [
   {
     key: "skaftafell",
     nameIs: "Skaftafell",
-    nameEn: "Skaftafell visitor centre",
     aliases: ["Skaftafellsstofa"],
     position: at(64.0145, -16.9685),
     kind: "landmark",
@@ -369,7 +370,7 @@ export const landmarkPlaces: readonly Place[] = [
     key: "jardbodin",
     nameIs: "Jarðböðin við Mývatn",
     nameEn: "Mývatn Nature Baths",
-    aliases: ["Jarðböðin", "Mývatn"],
+    aliases: ["Jarðböðin"],
     position: at(65.6313, -16.8471),
     kind: "landmark",
     region: "northeast",

@@ -294,8 +294,8 @@ speaker reviews them with the app's texts (milestone 16).
 ## 10. Out of scope
 
 The highlands and the other sights of 3.6.2, more than one point at a
-sight, and the parking fees' amounts, which change. Photos of the new points, more than one point in the bigger towns outside
-the capital area, the ferry islands, replacing staging's sample points
+sight, and the parking fees' amounts, which change. Photos of the new
+points, more than one point in the bigger towns outside the capital area, the ferry islands, replacing staging's sample points
 with the real ones, and a console filter for active points without a
 photo (ADR 0036, follow-up).
 
