@@ -1,6 +1,7 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import {
   addSignInMethodRoute,
+  appleCallbackRoute,
   finishProviderSignInRoute,
   listSignInMethodsRoute,
   prepareSignInMethodRoute,
@@ -18,6 +19,19 @@ import { devProviderPath, devSignInPage } from "../../platform/identity-provider
 import type { AccountService } from "../account/index.ts";
 import type { BrowserStep, ProviderSignInService } from "./provider-sign-in.ts";
 import { confirmCodeError, tokensBodyFor } from "./routes.ts";
+
+/** The longest `user` field read; Apple's holds a name and an email. */
+const maxAppleUserLength = 2000;
+
+/** Apple's `user` field, JSON sent only the first time; anything else counts as none. */
+function appleUserOf(user: string | undefined): unknown {
+  if (user === undefined || user.length > maxAppleUserLength) return undefined;
+  try {
+    return JSON.parse(user) as unknown;
+  } catch {
+    return undefined;
+  }
+}
 
 export interface ProviderRoutesDependencies {
   readonly providers: ProviderSignInService;
@@ -101,6 +115,18 @@ export function registerProviderRoutes(
       state: query.state,
       code: query.code,
       error: query.error,
+    });
+    return browserStep(c, step);
+  });
+
+  app.openapi(toOpenApiRoute(appleCallbackRoute), async (c) => {
+    const form = validated(c, "form", appleCallbackRoute.request.body);
+    const step = await providers.callback({
+      provider: "apple",
+      state: form.state,
+      code: form.code,
+      error: form.error,
+      appleUser: appleUserOf(form.user),
     });
     return browserStep(c, step);
   });

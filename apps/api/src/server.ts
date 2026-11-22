@@ -246,6 +246,7 @@ const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
       paymentProvider: config.payments.provider,
       emailProvider: config.email.provider,
       googleSignIn: config.signIn.google.mode,
+      appleSignIn: config.signIn.apple.mode,
       worker: config.worker,
       trustedProxies: config.trustedProxies,
       webApp: config.webAppDir !== undefined,

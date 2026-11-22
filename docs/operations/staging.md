@@ -430,6 +430,70 @@ links stay for when it is back. A new secret (Google Cloud, the client,
 **Add secret**) goes into Render the same way; delete the old one in
 Google Cloud once the API runs with the new.
 
+## Turn on Sign in with Apple
+
+Staging shows no "Continue with Apple" until Apple knows ShareRide
+([ADR 0034](../decisions/0034-google-and-apple-sign-in-through-our-api.md),
+[spec 19](../specs/2026-11-22-google-and-apple-sign-in.md)). It needs the
+paid Apple Developer Program, even for the web. The beta uses Martin's own
+developer account with the test App ID `is.shareride.app.preview`, so the
+store's `is.shareride.app` stays free for the company's account (spec 19,
+3.5). Martin's steps:
+
+1. If not a member yet: [Apple Developer Program](https://developer.apple.com/programs/enroll/),
+   **Start your enrollment**, as an individual (99 USD a year). Apple can
+   take up to two days to confirm.
+2. Open [Certificates, Identifiers and Profiles](https://developer.apple.com/account/resources/identifiers/list),
+   **Identifiers**, **+**, **App IDs**, **App**: description
+   `ShareRide preview`, bundle ID **Explicit** `is.shareride.app.preview`,
+   and under capabilities tick **Sign in with Apple**. **Continue**,
+   **Register**.
+3. **Identifiers**, **+**, **Services IDs**: description `ShareRide`
+   (Apple may show it to people when they sign in), identifier
+   `is.shareride.preview.web`. **Continue**, **Register**. Open it again:
+   the list shows App IDs, so switch the menu at its top right to
+   **Services IDs** first. Tick **Sign in with Apple**,
+   **Configure**: primary App ID `is.shareride.app.preview`, domain
+   `staging.skinnar.is`, and one return URL, exactly
+   `https://staging.skinnar.is/v1/auth/oauth/apple/callback`. **Next**,
+   **Done**, **Continue**, **Save**. There is no file to upload.
+4. **Keys**, **+**: name `ShareRide sign-in`, tick **Sign in with Apple**,
+   **Configure**, primary App ID `is.shareride.app.preview`, **Save**,
+   **Continue**, **Register**. **Download** the `AuthKey_….p8` file: Apple
+   gives it once. Note the key ID (ten letters and digits) shown with it.
+   The team ID is under the name at the top right, or in **Membership
+   details**.
+5. Apple's private email relay: in Certificates, Identifiers and Profiles,
+   **Services**, **Sign in with Apple for Email Communication**,
+   **Configure**, **+**, and add `hello@skinnar.is`. Apple checks the
+   sender's SPF and DKIM. Until this is done, ShareRide's emails do not
+   reach people who hid their email from us, and nothing says so.
+6. Open `shareride-staging-api`, **Environment**, and add `APPLE_SIGN_IN`
+   set to `apple`, `APPLE_SERVICES_ID` set to `is.shareride.preview.web`,
+   `APPLE_TEAM_ID`, `APPLE_KEY_ID`, and `APPLE_PRIVATE_KEY` (as a secret):
+   open the `.p8` file in a text editor and paste all of it, the
+   `BEGIN` and `END` lines too. Save; Render deploys the service again. A
+   missing or wrong value stops the API from starting, and the running
+   version stays. Keep the `.p8` file somewhere safe and nowhere else:
+   never in chat, email or the repository.
+7. Check, once the app's buttons are out (plan PR 3): in a laptop's browser
+   and a phone's browser, continue with Apple as someone new and choose
+   **Hide my email**, then sign out and continue with Apple again. Then
+   have ShareRide email that account (for example, offer a test trip as the
+   Apple member and ask for a seat on it as another member) and check the
+   email arrives in the inbox behind the hidden address. If it does not, Apple refused the sender: in
+   Mailjet, set up the domain's DKIM and a custom return path on
+   `skinnar.is`, and tell Claude. Apple asks about the name and the email
+   only the first time: to be someone new again, stop using Apple with
+   ShareRide at [account.apple.com](https://account.apple.com) (**Sign-In
+   and Security**, **Sign in with Apple**) and remove Apple in ShareRide's
+   Settings, or use another Apple Account.
+
+To turn Apple off, set `APPLE_SIGN_IN` to `off`. If the key leaks, revoke
+it under **Keys** and make a new one (step 4 and the two key values of
+step 6). When the company's Apple account takes over, every Apple member
+gives their phone number once more (spec 19, 3.5).
+
 ## Restore the database
 
 Staging data is generated, so a restore is rarely needed; we rehearse it

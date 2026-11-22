@@ -128,9 +128,12 @@ export async function startTestApi(): Promise<TestApi> {
     // Legs on straight lines; south of 63.3° N, at sea off the south coast, there is no road.
     router: createStraightLineRouter({ offRoad: (position) => position.latitude < 63.3 }),
     fixedSettings,
-    // Google through the development stand-in (ADR 0034).
+    // Google and Apple through the development stand-in (ADR 0034).
     signIn: {
-      providers: [createDevProvider({ name: "google", apiOrigin: testApiOrigin })],
+      providers: [
+        createDevProvider({ name: "google", apiOrigin: testApiOrigin }),
+        createDevProvider({ name: "apple", apiOrigin: testApiOrigin }),
+      ],
       apiOrigin: testApiOrigin,
       returnUrls: { webOrigins: [testWebAppUrl], appScheme: "shareride", allowExpoGo: true },
     },
