@@ -160,9 +160,10 @@ const app = createApp({
     payments: createTestPaymentProvider(),
     adminOrigin,
     ...photoStorage,
-    // Google through the development stand-in's page (ADR 0034).
+    // Google and Apple through the development stand-in's page (ADR 0034).
     signIn: selectSignIn({
       google: { mode: "dev" },
+      apple: { mode: "dev" },
       apiOrigin: `http://localhost:${String(port)}`,
       returnOrigins: [webOrigin],
       allowExpoGo: false,

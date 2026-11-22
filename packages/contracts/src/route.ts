@@ -29,6 +29,11 @@ export interface RouteDefinition {
     readonly params?: z.ZodObject;
     readonly query?: z.ZodObject;
     readonly body?: z.ZodType;
+    /**
+     * How the body is sent: JSON, or a form for the one route a provider
+     * posts to, Apple's callback (ADR 0034).
+     */
+    readonly bodyType?: "json" | "form";
   };
   readonly responses: Readonly<Record<number, ResponseDefinition>>;
 }

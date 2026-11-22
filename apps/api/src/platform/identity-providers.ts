@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, createPrivateKey, type KeyObject } from "node:crypto";
 import {
   err,
   readProviderClaims,
@@ -6,7 +6,7 @@ import {
   type Result,
   type SignInProvider,
 } from "@shareride/domain";
-import { createRemoteJWKSet, customFetch, jwtVerify, type JWTVerifyGetKey } from "jose";
+import { createRemoteJWKSet, customFetch, jwtVerify, SignJWT, type JWTVerifyGetKey } from "jose";
 
 // Google and Apple as OpenID Connect providers (ADR 0034; plan 4.3): where
 // to send the person, and how to turn the code they come back with into
@@ -187,6 +187,95 @@ export function createGoogleProvider(options: {
   };
 }
 
+export const appleEndpoints = {
+  authorization: "https://appleid.apple.com/auth/authorize",
+  token: "https://appleid.apple.com/auth/token",
+  keys: "https://appleid.apple.com/auth/keys",
+  issuer: "https://appleid.apple.com",
+} as const;
+
+/** How long Apple's client secret is made for, and how early a new one is made. */
+const appleSecretSeconds = 3600;
+const appleSecretRenewSeconds = 300;
+/** Issued a little in the past, so a server clock slightly ahead of Apple's does no harm. */
+const appleSecretBackdateSeconds = 30;
+
+/**
+ * Sign in with Apple: a Services ID, and a key of the team that signs the
+ * client secret (ADR 0034). Apple answers with a form POST, and sends the
+ * person's name only the first time, in its `user` field.
+ */
+export function createAppleProvider(options: {
+  readonly servicesId: string;
+  readonly teamId: string;
+  readonly keyId: string;
+  /** The key's `.p8` file: a PKCS #8 PEM of a P-256 key. */
+  readonly privateKey: string;
+  readonly fetch?: typeof fetch;
+  /** Apple's published keys; tests pass keys they made. */
+  readonly keys?: JWTVerifyGetKey;
+  readonly clock?: () => Date;
+}): IdentityProvider {
+  const fetchToken = options.fetch ?? fetch;
+  const keys =
+    options.keys ?? createRemoteJWKSet(new URL(appleEndpoints.keys), { [customFetch]: fetchToken });
+  const clock = options.clock ?? (() => new Date());
+  const signingKey: KeyObject = createPrivateKey(options.privateKey);
+  let secret: { readonly value: string; readonly renewAt: number } | undefined;
+
+  /** The client secret: a JWT signed with the team's key, kept until 5 minutes before it ends. */
+  async function clientSecret(now: Date): Promise<string> {
+    if (secret !== undefined && now.getTime() < secret.renewAt) return secret.value;
+    const issuedAt = Math.floor(now.getTime() / 1000) - appleSecretBackdateSeconds;
+    const value = await new SignJWT({})
+      .setProtectedHeader({ alg: "ES256", kid: options.keyId })
+      .setIssuer(options.teamId)
+      .setSubject(options.servicesId)
+      .setAudience(appleEndpoints.issuer)
+      .setIssuedAt(issuedAt)
+      .setExpirationTime(issuedAt + appleSecretSeconds)
+      .sign(signingKey);
+    secret = { value, renewAt: (issuedAt + appleSecretSeconds - appleSecretRenewSeconds) * 1000 };
+    return value;
+  }
+
+  return {
+    name: "apple",
+    authorizationUrl(input) {
+      const url = new URL(appleEndpoints.authorization);
+      url.search = new URLSearchParams({
+        response_type: "code",
+        response_mode: "form_post",
+        client_id: options.servicesId,
+        redirect_uri: input.redirectUri,
+        scope: "name email",
+        state: input.state,
+        nonce: input.nonce,
+      }).toString();
+      return url.toString();
+    },
+    async redeem(input) {
+      const now = clock();
+      const idToken = await requestIdToken(fetchToken, appleEndpoints.token, {
+        grant_type: "authorization_code",
+        code: input.code,
+        client_id: options.servicesId,
+        client_secret: await clientSecret(now),
+        redirect_uri: input.redirectUri,
+      });
+      if (idToken === null) return failed("token_request");
+      return checkIdToken(idToken, {
+        keys,
+        issuer: appleEndpoints.issuer,
+        audience: options.servicesId,
+        nonce: input.nonce,
+        now,
+        appleUser: input.appleUser,
+      });
+    },
+  };
+}
+
 /**
  * Made-up people for the development provider: one with a verified email,
  * one with a hidden, relay-style email, and one whose email is not verified.
@@ -254,8 +343,13 @@ export function createDevProvider(options: {
       const person = decoded === null ? undefined : devPeople[decoded.person];
       if (decoded === null || person === undefined) return Promise.resolve(failed("token_request"));
       if (decoded.nonce !== input.nonce) return Promise.resolve(failed("nonce"));
+      // Apple's ID token has no name: it comes in the form's user field.
+      const { given_name: givenName, ...withoutName } = person.claims;
       const read = readProviderClaims({
-        claims: { sub: `dev-${name}-${String(decoded.person + 1)}`, ...person.claims },
+        claims: {
+          sub: `dev-${name}-${String(decoded.person + 1)}`,
+          ...(name === "apple" ? withoutName : { ...withoutName, given_name: givenName }),
+        },
         appleUser: input.appleUser,
       });
       return Promise.resolve(read.ok ? read : failed("claims"));
@@ -272,8 +366,10 @@ const escapeHtml = (text: string) =>
   );
 
 /**
- * The development provider's page: each made-up person, and Cancel, as
- * links back to the callback. Development only, so in English.
+ * The development provider's page: each made-up person, and Cancel, back
+ * to the callback: as links for Google, and as forms posted for Apple, with
+ * the name in the `user` field as Apple sends it the first time.
+ * Development only, so in English.
  */
 export function devSignInPage(input: {
   readonly provider: SignInProvider;
@@ -281,17 +377,29 @@ export function devSignInPage(input: {
   readonly nonce: string;
   readonly redirectUri: string;
 }): string {
-  const back = (params: Record<string, string>) => {
+  const link = (label: string, params: Record<string, string>) => {
     const url = new URL(input.redirectUri);
     url.search = new URLSearchParams({ ...params, state: input.state }).toString();
-    return escapeHtml(url.toString());
+    return `<a href="${escapeHtml(url.toString())}">${escapeHtml(label)}</a>`;
   };
-  const title = input.provider === "apple" ? "Apple (development)" : "Google (development)";
+  const form = (label: string, params: Record<string, string>) => {
+    const fields = Object.entries({ state: input.state, ...params })
+      .map(([name, value]) => `<input type="hidden" name="${name}" value="${escapeHtml(value)}">`)
+      .join("");
+    return `<form method="post" action="${escapeHtml(input.redirectUri)}">${fields}<button>${escapeHtml(label)}</button></form>`;
+  };
+  const apple = input.provider === "apple";
+  const back = apple ? form : link;
+  const title = apple ? "Apple (development)" : "Google (development)";
   const people = devPeople
-    .map(
-      (person, index) =>
-        `<li><a href="${back({ code: encodeDevCode(index, input.nonce) })}">${escapeHtml(person.label)}</a></li>`,
-    )
+    .map((person, index) => {
+      const code = encodeDevCode(index, input.nonce);
+      const user = JSON.stringify({
+        name: { firstName: person.claims.given_name, lastName: "Dev" },
+        email: person.claims.email,
+      });
+      return `<li>${back(person.label, apple ? { code, user } : { code })}</li>`;
+    })
     .join("\n");
   return `<!doctype html>
 <html lang="en">
@@ -302,7 +410,7 @@ export function devSignInPage(input: {
 <ul>
 ${people}
 </ul>
-<p><a href="${back({ error: "access_denied" })}">Cancel</a></p>
+<p>${back("Cancel", { error: apple ? "user_cancelled_authorize" : "access_denied" })}</p>
 </body>
 </html>
 `;

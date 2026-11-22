@@ -230,6 +230,14 @@ export const startProviderSignInRoute = defineRoute({
   },
 });
 
+const callbackAnswers = {
+  303: {
+    description:
+      "To returnUrl with #ticket=… (5 minutes, once), #error=cancelled, #error=expired (after 10 minutes, the first time) or #error=failed",
+  },
+  400: { description: "A page: the sign-in is unknown, used or older than 10 minutes" },
+} as const;
+
 export const providerCallbackRoute = defineRoute({
   method: "get",
   path: "/v1/auth/oauth/google/callback",
@@ -242,13 +250,25 @@ export const providerCallbackRoute = defineRoute({
       error: z.string().optional(),
     }),
   },
-  responses: {
-    303: {
-      description:
-        "To returnUrl with #ticket=… (5 minutes, once), #error=cancelled or #error=failed",
-    },
-    400: { description: "A page: the sign-in is unknown, used or older than 10 minutes" },
-  },
+  responses: callbackAnswers,
+});
+
+/** What Apple posts back (response_mode=form_post). */
+export const appleCallbackBodySchema = z.object({
+  state: z.string().optional(),
+  code: z.string().optional(),
+  error: z.string().optional(),
+  /** JSON with the person's name and email: sent only the first time. */
+  user: z.string().optional(),
+});
+
+export const appleCallbackRoute = defineRoute({
+  method: "post",
+  path: "/v1/auth/oauth/apple/callback",
+  summary: "Where Apple posts the person back; on to the app with a one-time ticket",
+  tags: ["auth"],
+  request: { body: appleCallbackBodySchema, bodyType: "form" },
+  responses: callbackAnswers,
 });
 
 export const finishProviderSignInBodySchema = z.object({
