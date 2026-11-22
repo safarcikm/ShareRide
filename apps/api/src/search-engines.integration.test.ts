@@ -81,6 +81,7 @@ describe("the sitemap on production (spec 23, 3.7)", () => {
         "/legal/terms",
         "/legal/community-rules",
         "/legal/privacy",
+        "/cookies",
       ]),
     );
     for (const left of ["paused", "draft", "sample-place"]) {

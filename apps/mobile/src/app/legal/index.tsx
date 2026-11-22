@@ -13,7 +13,10 @@ const documents = [
   { type: "privacy", title: "legal.privacy" },
 ] as const;
 
-/** Terms, rules and privacy (spec 16, 3.4 item 2): the three legal documents. Open to everyone. */
+/**
+ * Terms, rules and privacy (spec 16, 3.4 item 2): the three legal documents,
+ * and Cookies (spec 23, 3.2). Open to everyone.
+ */
 export default function LegalDocumentsScreen() {
   const { t } = useLanguage();
   return (
@@ -34,6 +37,12 @@ export default function LegalDocumentsScreen() {
             }}
           />
         ))}
+        <Row
+          title={t("cookies.title")}
+          onPress={() => {
+            router.push("/cookies");
+          }}
+        />
       </Card>
     </Screen>
   );

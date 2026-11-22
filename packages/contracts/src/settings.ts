@@ -1,4 +1,9 @@
-import { pausedParts, settingGroups, settingReasonMaxLength } from "@shareride/domain";
+import {
+  isGoogleMeasurementId,
+  pausedParts,
+  settingGroups,
+  settingReasonMaxLength,
+} from "@shareride/domain";
 import { z } from "zod";
 import { signInProviderSchema } from "./auth.ts";
 import { timestampSchema } from "./common.ts";
@@ -42,6 +47,15 @@ export const configSchema = z.object({
    * false from an API that does not say.
    */
   payInPerson: z.boolean().default(false),
+  /**
+   * Google Analytics on the website, asked about before it loads (spec 23,
+   * 3.1): its measurement ID, or null where the site has none, as from an
+   * API that does not say.
+   */
+  analytics: z
+    .object({ googleMeasurementId: z.string().refine(isGoogleMeasurementId) })
+    .nullable()
+    .default(null),
 });
 
 export type Config = z.infer<typeof configSchema>;

@@ -47,7 +47,7 @@ function setup(searchEngines?: SearchEngines) {
 }
 
 describe("which pages search engines may index (spec 23, 3.4)", () => {
-  it("lists Find, the meeting points, the places and the legal texts", () => {
+  it("lists Find, the meeting points, the places, the legal texts and Cookies", () => {
     for (const path of [
       "/",
       "/meeting-points",
@@ -57,6 +57,7 @@ describe("which pages search engines may index (spec 23, 3.4)", () => {
       "/legal/terms",
       "/legal/community-rules",
       "/legal/privacy",
+      "/cookies",
     ]) {
       expect(isIndexablePath(path), path).toBe(true);
     }
@@ -164,6 +165,25 @@ describe("the page's head (spec 23, 3.6)", () => {
     );
   });
 
+  it("follows the locale Facebook asks a link's preview in (3.6, item 3)", () => {
+    const facebook = (facebookLocale: string) =>
+      pageHead(
+        { path: "/trips/abc", lang: null, acceptLanguage: "en-US", facebookLocale },
+        production,
+      );
+    expect(facebook("is_IS").locale).toBe("is");
+    expect(facebook("is_IS").tags).toContain(
+      '<meta data-rh="true" property="og:locale" content="is_IS">',
+    );
+    expect(facebook("en_GB").locale).toBe("en");
+    expect(facebook("de_DE").locale).toBe("en");
+    // The address's own language still wins.
+    expect(
+      pageHead({ path: "/", lang: "en", acceptLanguage: null, facebookLocale: "is_IS" }, production)
+        .locale,
+    ).toBe("en");
+  });
+
   it("names no canonical address for a page that is not indexed, or off production", () => {
     expect(
       pageHead({ path: "/trips/abc", lang: null, acceptLanguage: null }, production).tags,
@@ -217,6 +237,15 @@ describe("the web app for search engines", () => {
     expect(page).toContain('<html lang="is">');
     expect(page).toContain(`rel="canonical" href="${site}/meeting-points?lang=is"`);
     expect(response.headers.get("x-robots-tag")).toBeNull();
+  });
+
+  it("answers Facebook's crawler in the locale it asks for, by header or address", async () => {
+    const app = setup(production);
+    const byHeader = await app.request("/", { headers: { "X-Facebook-Locale": "is_IS" } });
+    expect(await byHeader.text()).toContain("<title>PuffinRide · Samferða um Ísland</title>");
+    expect(byHeader.headers.get("vary")).toContain("X-Facebook-Locale");
+    const byAddress = await app.request("/trips/abc?fb_locale=is_IS");
+    expect(await byAddress.text()).toContain('<html lang="is">');
   });
 
   it("says the page depends on the browser's language when the address does not name one", async () => {

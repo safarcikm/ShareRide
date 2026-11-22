@@ -16,7 +16,22 @@ export const en = {
   "seo.placeDescription":
     "The PuffinRide meeting points nearest to {place}, for finding or offering a shared ride.",
   "seo.legalDescription": "PuffinRide's Terms of Service, Community Rules and Privacy Policy.",
-  "seo.shareImage": "The PuffinRide puffin on a map pin",
+  "seo.shareImage": "Two PuffinRide puffins driving in a little car",
+  "seo.cookiesDescription":
+    "What the PuffinRide website keeps on your device, and your choice about Google Analytics.",
+  "consent.title": "Cookies",
+  "consent.text":
+    "May we count your visit with Google Analytics? It uses cookies and tells Google which pages you open, never your name.",
+  "consent.accept": "Accept",
+  "consent.decline": "Decline",
+  "consent.more": "Read more",
+  "cookies.title": "Cookies",
+  "cookies.needed":
+    "The website keeps on your device what it needs to work, such as your sign-in, your language and your last searches. That needs no consent and is not sent to anyone else.",
+  "cookies.analytics": "Count my visits with Google Analytics",
+  "cookies.analyticsHelp":
+    "Google Analytics sets cookies that last 13 months and tells Google, in the United States, which pages you open, your browser and roughly where you are. We see only totals. You can turn it off at any time.",
+  "cookies.none": "No visits are counted here, and no cookies are used for analytics.",
   "common.back": "Back",
   "common.loading": "Loading",
   "refresh.updating": "Updating",

@@ -174,7 +174,7 @@ import {
   type PhotoStorage,
 } from "./platform/photo-storage.ts";
 import { createAdminApp } from "./admin-app.ts";
-import { createWebApp, openerPolicyFor } from "./web-app.ts";
+import { createWebApp, openerPolicyFor, type Analytics } from "./web-app.ts";
 import {
   mayIndex,
   noIndex,
@@ -265,6 +265,8 @@ export interface AppDependencies {
   readonly reportError?: ErrorReporter;
   /** What search engines may index (spec 23); nothing when left out. */
   readonly searchEngines?: SearchEngines;
+  /** Google Analytics on the website (spec 23); none when left out. */
+  readonly analytics?: Analytics | null;
 }
 
 export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
@@ -622,7 +624,12 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       settings: reliabilitySettings,
       requireOperator,
     });
-    registerConfigRoutes(app, operatorSettings, providerSignIn.names);
+    registerConfigRoutes(
+      app,
+      operatorSettings,
+      providerSignIn.names,
+      dependencies.analytics ?? null,
+    );
     registerSettingsAdminRoutes(app, { ...features, settings: operatorSettings, requireOperator });
     registerInviteRoutes(app, {
       invites,
@@ -737,7 +744,12 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
   const webApp =
     dependencies.webAppDir === undefined
       ? undefined
-      : createWebApp(dependencies.webAppDir, photoOrigin, searchEngines);
+      : createWebApp(
+          dependencies.webAppDir,
+          photoOrigin,
+          searchEngines,
+          dependencies.analytics ?? null,
+        );
   const adminApp =
     dependencies.adminAppDir === undefined
       ? undefined

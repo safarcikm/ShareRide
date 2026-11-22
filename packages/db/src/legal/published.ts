@@ -79,6 +79,22 @@ export const publishedVersions: readonly PublishedVersion[] = [
       is: "f7b068060c037a8e588c2e7ee37540379f34ca607a3b077b666a6872ba8e1d94",
     },
   },
+  {
+    // Google Analytics on the website, only after the visitor accepts (spec
+    // 23, ADR 0045). Not material: nobody has to accept anything new.
+    type: "privacy",
+    version: 3,
+    material: false,
+    title: { en: "Privacy Policy", is: "Persónuverndarstefna" },
+    summary: {
+      en: "The website can count visits with Google Analytics, only if you accept, and you can turn it off on the Cookies page.",
+      is: "Vefurinn getur talið heimsóknir með Google Analytics, aðeins ef þú samþykkir, og þú getur slökkt á því á síðunni Vafrakökur.",
+    },
+    sha256: {
+      en: "d5bcddb792c41aad628bd8c86d0e593186c83491b52c6910a391e32d34aba853",
+      is: "5667071cec558d164f11dd18ddc5c0e72bde60ce429c765b26e245bb32d2553d",
+    },
+  },
 ];
 
 /** A version ready to store, its texts read and checked. */

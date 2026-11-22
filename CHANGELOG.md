@@ -1421,6 +1421,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   every address off production, with `X-Robots-Tag: noindex`. The public
   screens set their own title and description; Find's rides leaving soon
   are kept out of snippets; `public/share.png` is the link preview.
+- Google Analytics on the website, only after the visitor accepts (spec 23,
+  ADR 0045). With `GOOGLE_ANALYTICS_ID` set, `/v1/config` names it, the web
+  app's Content Security Policy lets Google's tag load, and a question
+  about cookies shows at the bottom of every screen, with Accept and
+  Decline alike. Nothing from Google loads before Accept. Page views carry
+  the screen's pattern, such as `/trips/[id]`, never its address, with
+  only the campaign tags (`utm_`) of our own ads' and flyers' links; Google
+  signals and ad personalisation are off, and cookies last 13 months. The
+  choice is kept in the browser for 12 months. The new Cookies page, under
+  Terms, rules and privacy, turns it off, which removes Google's cookies.
+  Privacy Policy version 3, in both languages, describes it; it is not
+  material, so nobody accepts it again. The phone apps count nothing.
 
 ### Fixed
 

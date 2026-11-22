@@ -76,6 +76,7 @@ const app = createApp({
   ...(config.adminAppDir === undefined ? {} : { adminAppDir: config.adminAppDir }),
   ...(reportError === undefined ? {} : { reportError }),
   searchEngines: config.searchEngines,
+  analytics: config.analytics,
   features: {
     db: database.db,
     sms,

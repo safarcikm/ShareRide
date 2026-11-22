@@ -27,6 +27,7 @@ const quiet: Config = {
   reliabilityMonths: defaultReliabilitySettings.periodMonths,
   signInProviders: [],
   payInPerson: false,
+  analytics: null,
 };
 
 const ConfigContext = createContext<Config>(quiet);
