@@ -15,7 +15,7 @@ jest.mock("@/lib/preferences", () => ({
   writePreference: jest.fn(() => Promise.resolve()),
 }));
 jest.mock("@/sign-in/return-address", () => ({
-  providerReturnUrl: () => "shareride://sign-in/return",
+  providerReturnUrl: () => "puffinride://sign-in/return",
 }));
 
 // Settings, Sign-in methods (spec 19, 3.4).
@@ -151,7 +151,7 @@ describe("Sign-in methods in Settings", () => {
         "post",
       );
     });
-    windowReturnsTo(`shareride://sign-in/return#ticket=${ticket}`);
+    windowReturnsTo(`puffinride://sign-in/return#ticket=${ticket}`);
     const mesBefore = callsTo(app, "/v1/me").length;
     await fireEvent.press(await screen.findByRole("button", { name: "Add Apple" }));
 
@@ -191,7 +191,7 @@ describe("Sign-in methods in Settings", () => {
     const { app } = await openMethods([], (client) => {
       client.answer("/v1/me/sign-in-methods/prepare", () => failure(409, "provider_in_use"));
     });
-    windowReturnsTo(`shareride://sign-in/return#ticket=${ticket}`);
+    windowReturnsTo(`puffinride://sign-in/return#ticket=${ticket}`);
     await fireEvent.press(await screen.findByRole("button", { name: "Add Google" }));
     expect(
       await screen.findByText("This Google account is used by another PuffinRide account."),
@@ -221,7 +221,7 @@ describe("Sign-in methods in Settings", () => {
       );
       client.answer("/v1/me/sign-in-methods", () => failure(400, "provider_expired"), "post");
     });
-    windowReturnsTo(`shareride://sign-in/return#ticket=${ticket}`);
+    windowReturnsTo(`puffinride://sign-in/return#ticket=${ticket}`);
     await fireEvent.press(await screen.findByRole("button", { name: "Add Google" }));
     await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
     expect(await screen.findByText("That took too long. Add Google again.")).toBeVisible();
@@ -242,7 +242,7 @@ describe("Sign-in methods in Settings", () => {
       );
       client.answer("/v1/me/sign-in-methods", answer, "post");
     });
-    windowReturnsTo(`shareride://sign-in/return#ticket=${ticket}`);
+    windowReturnsTo(`puffinride://sign-in/return#ticket=${ticket}`);
     await fireEvent.press(await screen.findByRole("button", { name: "Add Google" }));
     await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
     return opened;
@@ -270,7 +270,7 @@ describe("Sign-in methods in Settings", () => {
         failure(409, "provider_already_linked"),
       );
     });
-    windowReturnsTo(`shareride://sign-in/return#ticket=${ticket}`);
+    windowReturnsTo(`puffinride://sign-in/return#ticket=${ticket}`);
     await fireEvent.press(await screen.findByRole("button", { name: "Add Google" }));
     expect(await screen.findByText("Google is already linked to your account.")).toBeVisible();
   });

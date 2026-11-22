@@ -29,7 +29,7 @@ describe("makeAttempt", () => {
 describe("readReturn", () => {
   it("takes the ticket from the address's fragment", () => {
     expect(readReturn(`${returnUrl}#ticket=${ticket}`)).toEqual({ kind: "ticket", ticket });
-    expect(readReturn(`shareride://sign-in/return#ticket=${ticket}`)).toEqual({
+    expect(readReturn(`puffinride://sign-in/return#ticket=${ticket}`)).toEqual({
       kind: "ticket",
       ticket,
     });

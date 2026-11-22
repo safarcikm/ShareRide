@@ -21,7 +21,7 @@ jest.mock("@/lib/app-data", () => ({
 }));
 // The app's own address, as a build from the store has it.
 jest.mock("@/sign-in/return-address", () => ({
-  providerReturnUrl: () => "shareride://sign-in/return",
+  providerReturnUrl: () => "puffinride://sign-in/return",
 }));
 // Jest has no SHA-256 of its own behind expo-crypto: Node's stands in, so
 // the challenge sent to the start is the real one of the verifier.
@@ -38,7 +38,7 @@ const digest = jest.requireMock<{ digestStringAsync: jest.Mock }>("expo-crypto")
 
 const ticket = `sr_pt_${"t".repeat(43)}`;
 const pendingSignIn = `sr_ps_${"p".repeat(43)}`;
-const back = (fragment: string) => `shareride://sign-in/return#${fragment}`;
+const back = (fragment: string) => `puffinride://sign-in/return#${fragment}`;
 
 const phoneNeeded = (provider: "google" | "apple", email: string | null) => ({
   status: "phoneNeeded",
@@ -124,8 +124,8 @@ describe("Continue with Google or Apple (spec 19)", () => {
     expect(startUrl.origin + startUrl.pathname).toBe(
       "http://localhost:3000/v1/auth/oauth/google/start",
     );
-    expect(startUrl.searchParams.get("returnUrl")).toBe("shareride://sign-in/return");
-    expect(openAuthSessionAsync.mock.lastCall?.[1]).toBe("shareride://sign-in/return");
+    expect(startUrl.searchParams.get("returnUrl")).toBe("puffinride://sign-in/return");
+    expect(openAuthSessionAsync.mock.lastCall?.[1]).toBe("puffinride://sign-in/return");
     const finish = app.client.calls.find((call) => call.path === "/v1/auth/oauth/finish");
     const body = finish?.input["body"] as { ticket: string; verifier: string; device: unknown };
     expect(body.ticket).toBe(ticket);

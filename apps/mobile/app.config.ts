@@ -13,7 +13,7 @@ export default function appConfig({ config }: ConfigContext): ExpoConfig {
   return {
     ...config,
     name: config.name ?? "PuffinRide",
-    slug: config.slug ?? "shareride",
+    slug: config.slug ?? "puffinride",
     android: {
       ...config.android,
       ...(googleServicesFile === undefined || googleServicesFile === ""

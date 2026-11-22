@@ -33,7 +33,7 @@ function googleOnly() {
     auth: {} as AuthService,
     providers: [createDevProvider({ name: "google", apiOrigin })],
     apiOrigin,
-    returnUrls: { webOrigins: ["https://web.test"], appScheme: "shareride", allowExpoGo: false },
+    returnUrls: { webOrigins: ["https://web.test"], appScheme: "puffinride", allowExpoGo: false },
     limiter: createMemoryRateLimiter({
       rules: [{ limit: 20, windowSeconds: 600 }],
       clock: () => now,

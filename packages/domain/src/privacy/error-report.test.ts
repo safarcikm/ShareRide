@@ -50,7 +50,7 @@ describe("scrubErrorReport", () => {
     const scope = { kind: "scope" };
     const sdkFields = {
       event_id: "4c3b2a1987654321fedcba9876543210",
-      release: "com.shareride.app@0.1.0+2026111401",
+      release: "is.puffinride.app@0.1.0+2026111401",
       dist: "2026111401",
       environment: "staging",
       debug_meta: {

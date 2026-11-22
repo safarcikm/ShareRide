@@ -47,6 +47,8 @@ describe("The iPhone preview build", () => {
   it("talks to staging over HTTPS, with Expo's preview settings, not production's", () => {
     expect(preview?.environment).toBe("preview");
     expect(preview?.env?.["EXPO_PUBLIC_API_URL"]).toMatch(/^https:\/\/[^/]+$/);
+    // Staging's address since the move to puffinride.is (ADR 0039).
+    expect(preview?.env?.["EXPO_PUBLIC_API_URL"]).toBe("https://staging.puffinride.is");
     expect(preview?.env?.["EXPO_PUBLIC_APP_ENV"]).toBe("staging");
   });
 
@@ -56,7 +58,7 @@ describe("The iPhone preview build", () => {
   });
 
   it("has its own app ID and declares only standard encryption (HTTPS)", () => {
-    expect(app.expo.ios["bundleIdentifier"]).toBe("is.shareride.app.preview");
+    expect(app.expo.ios["bundleIdentifier"]).toBe("is.puffinride.app.preview");
     expect(app.expo.ios).toHaveProperty("config.usesNonExemptEncryption", false);
   });
 });

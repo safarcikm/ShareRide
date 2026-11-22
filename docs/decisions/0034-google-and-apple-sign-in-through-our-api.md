@@ -1,6 +1,8 @@
 # 0034. Google and Apple sign-in through our API, in a browser window
 
-- **Status:** Accepted (2026-11-22, by Martin on a decision card)
+- **Status:** Accepted (2026-11-22, by Martin on a decision card); the app's
+  IDs and its `shareride://` scheme renamed to `puffinride` by
+  [ADR 0039](0039-rename-to-puffinride.md)
 - **Date:** 2026-11-22
 - **Deciders:** Martin
 - **Related:** [spec 19](../specs/2026-11-22-google-and-apple-sign-in.md),

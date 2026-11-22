@@ -298,7 +298,7 @@ export const adminReportConversationRoute = defineRoute({
   request: { params: z.object({ id: z.uuid() }) },
   responses: {
     200: {
-      description: "The messages, oldest first; one ShareRide removed is marked",
+      description: "The messages, oldest first; one PuffinRide removed is marked",
       schema: z.object({ messages: z.array(adminConversationMessageSchema) }),
     },
     401: unauthenticated,
@@ -409,7 +409,7 @@ export const adminCancelTripRoute = defineRoute({
   method: "post",
   path: "/admin/v1/trips/{id}/cancellation",
   summary:
-    "Cancel an upcoming trip as ShareRide, with full refunds; the driver is told why (3.4.3)",
+    "Cancel an upcoming trip as PuffinRide, with full refunds; the driver is told why (3.4.3)",
   tags: ["admin", "moderation"],
   auth: "operator",
   request: { params: z.object({ id: z.uuid() }), body: adminCancelTripBodySchema },

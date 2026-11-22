@@ -103,7 +103,7 @@ describe("loadConfig", () => {
   it("signs in with Apple with its Services ID and the team's key, \\n allowed for line breaks", () => {
     const apple = {
       APPLE_SIGN_IN: "apple",
-      APPLE_SERVICES_ID: "is.shareride.preview.web",
+      APPLE_SERVICES_ID: "is.puffinride.preview.web",
       APPLE_TEAM_ID: "TEAM123456",
       APPLE_KEY_ID: "KEY1234567",
       APPLE_PRIVATE_KEY: appleKey.trim().replaceAll("\n", "\\n"),
@@ -111,7 +111,7 @@ describe("loadConfig", () => {
     };
     expect(loadConfig({ ...valid, ...apple }).signIn.apple).toEqual({
       mode: "apple",
-      servicesId: "is.shareride.preview.web",
+      servicesId: "is.puffinride.preview.web",
       teamId: "TEAM123456",
       keyId: "KEY1234567",
       privateKey: appleKey.trim(),
