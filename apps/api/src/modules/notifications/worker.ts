@@ -44,6 +44,7 @@ import {
   type ReviewSettings,
   type TripRole,
   channelSwitches,
+  switchExemptKinds,
   switchKeys,
   switchReminderNumber,
   movedFar,
@@ -56,12 +57,14 @@ import {
   asc,
   desc,
   eq,
+  exists,
   gt,
   inArray,
   isNotNull,
   isNull,
   lte,
   ne,
+  notExists,
   notInArray,
   or,
   sql,
@@ -2135,6 +2138,17 @@ export function createNotificationWorker(dependencies: {
     });
   }
 
+  /** A delivery of a kind the channel switches do not hold (spec 22, R22.5). */
+  const switchExempt = db
+    .select({ id: notifications.id })
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.id, notificationDeliveries.notificationId),
+        inArray(notifications.kind, [...switchExemptKinds]),
+      ),
+    );
+
   /** Takes the next delivery that is due on a channel that is not paused, with a lease, or none. */
   async function claim(paused: readonly string[]): Promise<Delivery | undefined> {
     const now = clock();
@@ -2145,8 +2159,11 @@ export function createNotificationWorker(dependencies: {
         and(
           eq(notificationDeliveries.status, "queued"),
           lte(notificationDeliveries.nextAttemptAt, now),
-          // A paused channel's messages wait where they are (spec 10, 3.3).
-          paused.length === 0 ? undefined : notInArray(notificationDeliveries.channel, [...paused]),
+          // A paused channel's messages wait where they are (spec 10, 3.3),
+          // except a console recovery's notice.
+          paused.length === 0
+            ? undefined
+            : or(notInArray(notificationDeliveries.channel, [...paused]), exists(switchExempt)),
         ),
       )
       .orderBy(asc(notificationDeliveries.nextAttemptAt))
@@ -2428,6 +2445,7 @@ export function createNotificationWorker(dependencies: {
             eq(notificationDeliveries.channel, channel),
             lte(notificationDeliveries.createdAt, state.since),
             lte(notificationDeliveries.createdAt, tooOld),
+            notExists(switchExempt),
           ),
         );
     }

@@ -108,7 +108,7 @@ the way back in when the phone number is lost too.
 | R22.2 | The answer to "Send a code" uses the same words for any valid number. The page does not try to hide the operators from someone who times its answers or reads its error codes: the operator is the company's owner, which is no secret. |
 | R22.3 | A recovery code alone never opens the console: it only lets the operator save a new passkey, and the console opens once that passkey is saved.                                                       |
 | R22.4 | Using a recovery code ends all the account's console sessions, writes `operator.recovered` to the audit log, texts the account's number and emails its verified address when the server sends email. |
-| R22.5 | The console's "Text messages" switch (spec 10, 3.3) does not stop recovery codes, so pausing texts cannot lock the operator out; the server's `SMS_PAUSED` kill switch does.                             |
+| R22.5 | The console's "Text messages" switch (spec 10, 3.3) does not stop recovery codes, so pausing texts cannot lock the operator out; the server's `SMS_PAUSED` kill switch does. The notice of R22.4 is not held by the "Text messages" or "Email" switch either, and is texted at any hour, not only in the day's alert hours.                             |
 | R22.6 | Recovery codes have their own sending count per number (1 per 30 seconds, 5 an hour). They do not use up the app's sign-in texts of that number, and do not count in the app's limits per address or the daily cap per country: only operators' numbers get one, so the page cannot send texts in bulk. |
 
 ## 5. Screens

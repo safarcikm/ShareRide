@@ -150,6 +150,15 @@ export function isOperatorNotice(kind: NotificationKind): kind is OperatorNotice
 }
 
 /**
+ * The kinds sent while the console's channel switches are off (spec 10,
+ * 3.3): the notice of a console recovery goes out whenever its code could
+ * (spec 22, R22.5).
+ */
+export const switchExemptKinds = [
+  "console_recovered",
+] as const satisfies readonly NotificationKind[];
+
+/**
  * What can happen, as the catalogue sees it: the domain events of spec 5, 6,
  * 8, 13 and 2, and the moments the worker schedules (the halfway and pay
  * reminders, the unread messages email and the trip reminders).

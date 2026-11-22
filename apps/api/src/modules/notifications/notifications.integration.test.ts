@@ -2616,17 +2616,37 @@ describe("a console recovery (spec 22, R22.4)", () => {
     night.setUTCHours(26, 0, 0, 0);
     const ahead = (night.getTime() - api.now().getTime()) / 1000;
     api.advance(ahead);
+    try {
+      await recovered(olga);
+      await worker().runOnce();
+      await worker().runOnce();
+      expect(await notices(olga)).toContainEqual({
+        kind: "console_recovered",
+        channel: "sms",
+        status: "sent",
+        reason: null,
+        attempts: 1,
+      });
+    } finally {
+      api.advance(-ahead);
+    }
+  });
+
+  it("sends it while texts and email are paused in the console (R22.5)", async () => {
+    const olga = await newMember("Olga");
+    await withEmail(olga, `${olga.userId}@example.com`);
     await recovered(olga);
-    await worker().runOnce();
-    await worker().runOnce();
-    expect(await notices(olga)).toContainEqual({
-      kind: "console_recovered",
-      channel: "sms",
-      status: "sent",
-      reason: null,
-      attempts: 1,
-    });
-    api.advance(-ahead);
+    const off = {
+      ...allOn,
+      sms_sending: { on: false, since: minutesAgo(1) },
+      email_sending: { on: false, since: minutesAgo(1) },
+    };
+    await worker({ switches: off }).runOnce();
+    await worker({ switches: off }).runOnce();
+    expect(await notices(olga)).toEqual([
+      { kind: "console_recovered", channel: "email", status: "sent", reason: null, attempts: 1 },
+      { kind: "console_recovered", channel: "sms", status: "sent", reason: null, attempts: 1 },
+    ]);
   });
 
   it("sends no email without a verified address", async () => {
