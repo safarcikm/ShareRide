@@ -88,6 +88,21 @@ describe("Lost your passkey? (spec 22)", () => {
     );
   });
 
+  it("points to the operator command when the text could not be sent", async () => {
+    const { api } = start("/admin/recover");
+    api.on(adminRecoveryCodeRoute, { status: 503, error: { code: "sms_failed" } });
+    fireEvent.change(await screen.findByLabelText("Your phone number"), {
+      target: { value: "690 0000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send a code" }));
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "We couldn't send the text. Try again in a moment.",
+    );
+    expect(
+      screen.getByText("No text? The operator command on the server makes a setup link too."),
+    ).toBeTruthy();
+  });
+
   it("says a wrong code and the tries left", async () => {
     const { api } = start("/admin/recover");
     api.on(adminRecoveryVerifyRoute, {

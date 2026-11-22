@@ -222,7 +222,7 @@ settings, and nothing stops working in between. Martin's steps, in order:
 
 ## Sign in to the console
 
-The operator console signs in with passkeys only, bound to one address
+The operator console signs in with passkeys, bound to one address
 ([ADR 0028](../decisions/0028-operator-console-web-app-and-passkeys.md)):
 the blueprint sets `ADMIN_ORIGIN` to `https://staging.puffinride.is`, so the
 domain must answer first ([Move to puffinride.is](#move-to-puffinrideis),

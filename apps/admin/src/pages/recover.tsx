@@ -129,6 +129,9 @@ export function RecoverPage({ onSignedIn }: RecoverPageProps) {
           {t(problem.key, problem.values)}
         </p>
       )}
+      {!sent && problem?.key === "error.sms_failed" ? (
+        <p className="type-body muted">{t("admin.recover.noText")}</p>
+      ) : null}
       {sent ? (
         <form
           className="stack"

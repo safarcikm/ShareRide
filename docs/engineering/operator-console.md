@@ -55,7 +55,8 @@ may use the console, and `POST /admin/v1/auth/recovery/verify` checks it.
 both, with the auth module's `sendRecoveryCode` and `withRecoveryCode`: in
 one transaction a right code ends the account's console sessions, makes a
 setup link as the command does, writes `operator.recovered` and queues
-`ConsoleRecovered`, which texts and emails the operator at any hour, even
+`ConsoleRecovered`, which texts the operator, and emails a verified address
+when the server sends email, at any hour, even
 while the console pauses texts or email. The page keeps the setup token in
 memory and shows the setup step itself. Locally the code prints in the
 API's terminal.
