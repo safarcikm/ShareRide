@@ -213,6 +213,7 @@ car or stop.
 | `refund_amount`, `counts_on_reliability` | Worked out by the domain when the booking is cancelled ([spec 6](../specs/2026-11-13-changes-and-cancellations.md#4-rules)); the refund is at most the total, and is the payment once one comes through after cancelling |
 | `excused_by_reason`, `overruled_at`, `overrule_note` | As on the trip: whether only a weather or road-closure reason keeps the cancellation from counting, when the operator overruled it, and their note (R8.11) |
 | `departs_at_when_booked` | The trip's departure when the booking was made: moved more than 30 minutes from it, the passenger may cancel for free (R6.3) |
+| `payment_method` | `in_app` (rule M1) or `in_person`, paid to the driver in cash or by bank transfer while the operator's `pay_in_person` switch was on when it was made (rule M6, [ADR 0038](../decisions/0038-pay-the-driver-in-person-until-card-payments.md)); it never changes. Paid in person, it is confirmed on acceptance and refunds nothing |
 
 ### BookingSegmentPrice
 

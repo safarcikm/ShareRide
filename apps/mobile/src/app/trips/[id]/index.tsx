@@ -8,7 +8,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText, formatWait } from "@/auth/errors";
 import { signUpRoute } from "@/auth/next-route";
 import { useMe, useSession } from "@/auth/session";
-import { useMaxSeats, useTimings } from "@/beta/config";
+import { useMaxSeats, usePayInPerson, useTimings } from "@/beta/config";
 import { bookingHref, keepPendingBooking } from "@/booking/pending-booking";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
@@ -183,6 +183,7 @@ function Trip({
 }) {
   const { locale, t } = useLanguage();
   const { freeCancellationMinutes } = useTimings();
+  const inPerson = usePayInPerson();
   const maxSeats = useMaxSeats();
   const palette = usePalette();
   const me = useMe();
@@ -337,9 +338,11 @@ function Trip({
       <View style={styles.row}>
         <Icon icon={ShieldCheck} color={palette.primary} />
         <Text style={[typography.small, styles.grow, { color: palette.text }]}>
-          {t("trip.freeCancellation", {
-            time: formatDuration(freeCancellationMinutes * 60, locale),
-          })}
+          {inPerson
+            ? t("booking.payInPersonShort")
+            : t("trip.freeCancellation", {
+                time: formatDuration(freeCancellationMinutes * 60, locale),
+              })}
         </Text>
       </View>
     );

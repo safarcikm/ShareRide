@@ -4,7 +4,7 @@
   this list of what keeps the old internal name, as written)
 - **Date:** 2026-11-22
 - **Deciders:** Martin
-- **Related:** [open questions](../strategy/open-questions.md) A32 and A55,
+- **Related:** [open questions](../strategy/open-questions.md) A32 and A56,
   [ADR 0017](0017-visual-design-system.md) (the logo),
   [ADR 0018](0018-hosting-on-render-frankfurt.md),
   [ADR 0027](0027-email-through-mailjet.md),

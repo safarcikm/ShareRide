@@ -10,7 +10,7 @@ because other work merges in parallel. Names that people never see keep
 
 ## Tasks
 
-1. [x] **Decision and plan.** ADR 0039, this plan, answer A55.
+1. [x] **Decision and plan.** ADR 0039, this plan, answer A56.
 2. [x] **What people see.** Every "ShareRide" in the Icelandic and English
    texts becomes PuffinRide, keeping the message keys. Also the app's name and
    permission texts in `apps/mobile/app.json`, the email sender name and SMS

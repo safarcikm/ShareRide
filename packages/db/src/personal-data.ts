@@ -205,7 +205,7 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     export: { section: "bookings" },
     personColumns: ["passengerId"],
     onDeletion: keep(
-      ["status", "currency", "declineReason", "cancelledBy", "cancelReason"],
+      ["status", "currency", "declineReason", "cancelledBy", "cancelReason", "paymentMethod"],
       ["message", "cancelNote", "overruleNote"],
     ),
     otherIds: ["attemptKey"],

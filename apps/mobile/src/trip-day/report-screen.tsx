@@ -208,6 +208,8 @@ function ReportForm({
   const [notice, setNotice] = useState<string | null>(null);
   const [changed, setChanged] = useState(false);
   const noShow = kind === "no_show";
+  // Paid to the driver in person (rule M6): no refund either way.
+  const inPerson = booking.payment === "in_person";
   const name = firstNameOf(t, otherPerson(booking));
   const problem = noteError(t, note);
   // A no-show can be answered until 24 hours after the trip completes, the
@@ -271,7 +273,9 @@ function ReportForm({
       </View>
       <Card>
         <Text style={[typography.bodyStrong, { color: palette.text }]}>
-          {noShow ? t("tripDay.noShowConfirm") : t("tripDay.driverAbsentConfirm", { name })}
+          {noShow
+            ? t(inPerson ? "tripDay.noShowConfirmInPerson" : "tripDay.noShowConfirm")
+            : t("tripDay.driverAbsentConfirm", { name })}
         </Text>
         <Body align="start">
           {noShow
@@ -281,7 +285,7 @@ function ReportForm({
               })
             : t("tripDay.driverAbsentTold", { name })}
         </Body>
-        {noShow || booking.total.amount === 0 ? null : (
+        {noShow || booking.total.amount === 0 || inPerson ? null : (
           <Body align="start">
             {t("tripDay.driverAbsentRefund", { amount: formatMoney(booking.total, locale) })}
           </Body>

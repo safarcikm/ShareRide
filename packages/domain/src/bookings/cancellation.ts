@@ -4,7 +4,13 @@
 // between, at a time edge or after a move, are shown again before cancelling.
 import type { Money } from "../money.ts";
 import { err, ok, type Result } from "../result.ts";
-import { nextStatus, type BookingStatus, type ChangeNotAllowed } from "./lifecycle.ts";
+import {
+  nextStatus,
+  paidInApp,
+  type BookingStatus,
+  type ChangeNotAllowed,
+  type PaymentMethod,
+} from "./lifecycle.ts";
 
 /** Why a driver cancels a trip (spec 6, 3.3.1). */
 export const tripCancelReasons = [
@@ -124,6 +130,8 @@ export interface BookingToCancel {
   readonly status: BookingStatus;
   /** What the passenger paid, or pays once accepted (rule P1). */
   readonly total: Money;
+  /** Paid in person, nothing goes back through the app (rule M6). */
+  readonly paymentMethod: PaymentMethod;
   /** The planned time at the boarding stop as it is now, after any move. */
   readonly boardsAt: Date;
   /** The trip's departure as it is now… */
@@ -163,6 +171,8 @@ export interface BoardingPassed {
  *   minutes before departure". It counts only less than 24 hours before
  *   boarding, and never for weather or after such a move.
  * - An accepted booking not yet paid has nothing to refund and never counts.
+ * - A booking paid to the driver in person refunds nothing, and counts as
+ *   one paid in the app would (rule M6).
  *
  * The numbers are the starting values; `settings` are the booking's own.
  */
@@ -180,14 +190,15 @@ export function cancellationTerms(
   if (booking.status !== "confirmed") return ok({ refund: nothing, countsOnReliability: false });
 
   const excused = excusedReasons.has(canceller.reason);
+  const paid = paidInApp(booking.total, booking.paymentMethod);
   if (canceller.by === "driver") {
-    return ok({ refund: booking.total, countsOnReliability: !excused });
+    return ok({ refund: paid, countsOnReliability: !excused });
   }
   const far = movedFar(booking.departsAtWhenBooked, booking.departsAt, settings);
   const refunded = untilBoardingMs >= settings.refundCutoffMinutes * minuteMs || far;
   const late = untilBoardingMs < settings.reliabilityWindowHours * 60 * minuteMs;
   return ok({
-    refund: refunded ? booking.total : nothing,
+    refund: refunded ? paid : nothing,
     countsOnReliability: late && !excused && !far,
   });
 }

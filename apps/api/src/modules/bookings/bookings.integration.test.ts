@@ -1763,3 +1763,128 @@ describe("reading bookings (spec 5, 3.6 and 3.7)", () => {
     expect(await taken()).toEqual([0, 0, 0]);
   });
 });
+
+describe("paying the driver in person (rule M6, ADR 0038)", () => {
+  const none = { amount: 0, currency: "ISK" } as const;
+  afterEach(() => {
+    api.fixSetting("pay_in_person", undefined);
+  });
+
+  const preview = async (member: Member, id: string, reason: CancelBookingBody["reason"]) => {
+    const shown = await api.client.call(cancellationPreviewRoute, {
+      accessToken: member.accessToken,
+      params: { id },
+    });
+    if (!shown.ok) throw new Error(shown.error.code);
+    const option = shown.data.reasons.find((offered) => offered.reason === reason);
+    if (option === undefined) throw new Error(`${reason} is not offered.`);
+    return { refund: option.refund, countsOnReliability: option.countsOnReliability };
+  };
+  const accept = async (driver: Member, id: string) => {
+    const answer = await api.client.call(acceptRequestRoute, {
+      accessToken: driver.accessToken,
+      params: { id },
+      body: {},
+    });
+    if (!answer.ok) throw new Error(answer.error.code);
+    return answer.data;
+  };
+
+  it("confirms an instant booking at once, at its price, with no payment, and keeps it so after the switch goes off", async () => {
+    api.fixSetting("pay_in_person", 1);
+    const gunna = await newMember("Gunna");
+    const booking = await booked(gunna.accessToken, airport, { fromStop: 0, toStop: 3 });
+    expect(booking).toMatchObject({
+      status: "confirmed",
+      payment: "in_person",
+      paymentDueAt: null,
+    });
+    expect(booking.total.amount).toBeGreaterThan(0);
+    expect(await paymentsOf(booking.id)).toEqual([]);
+    expect(await eventsOf(booking.id, "BookingConfirmed")).toHaveLength(1);
+
+    api.fixSetting("pay_in_person", 0);
+    const read = await api.client.call(bookingRoute, {
+      accessToken: gunna.accessToken,
+      params: { id: booking.id },
+    });
+    expect(read).toMatchObject({
+      status: 200,
+      data: { status: "confirmed", payment: "in_person" },
+    });
+    expect((await stored(booking.id))?.paymentMethod).toBe("in_person");
+  });
+
+  it("confirms a request made while the switch was on when the driver accepts, even after it goes off", async () => {
+    api.fixSetting("pay_in_person", 1);
+    const anna = await driverOf(north);
+    const jon = await newMember("Jón");
+    const request = await booked(jon.accessToken, north, { fromStop: 1, toStop: 3 });
+    expect(request).toMatchObject({ status: "requested", payment: "in_person" });
+    api.fixSetting("pay_in_person", 0);
+    expect(await accept(anna, request.id)).toMatchObject({
+      status: "confirmed",
+      payment: "in_person",
+      paymentDueAt: null,
+    });
+    expect(await paymentsOf(request.id)).toEqual([]);
+  });
+
+  it("keeps the payment step of a booking made before the switch went on", async () => {
+    const gunna = await newMember("Gunna");
+    const booking = await booked(gunna.accessToken, airport, { fromStop: 0, toStop: 3 });
+    expect(booking).toMatchObject({ status: "accepted", payment: "in_app" });
+    api.fixSetting("pay_in_person", 1);
+    await paid(gunna.accessToken, booking.id);
+    expect((await stored(booking.id))?.status).toBe("confirmed");
+  });
+
+  it("refunds nothing when the passenger cancels late, and it still counts on them", async () => {
+    api.fixSetting("pay_in_person", 1);
+    const gunna = await newMember("Gunna");
+    const booking = await booked(gunna.accessToken, airport, { fromStop: 0, toStop: 3 });
+    // Ten minutes before Gunna gets in: no refund in the app either way.
+    await later(
+      (new Date(booking.board.plannedAt).getTime() - api.now().getTime()) / 1000 - 600,
+      gunna,
+    );
+    const terms = await preview(gunna, booking.id, "plans_changed");
+    expect(terms).toEqual({ refund: none, countsOnReliability: true });
+    expect(
+      await api.client.call(cancelBookingRoute, {
+        accessToken: gunna.accessToken,
+        params: { id: booking.id },
+        body: { reason: "plans_changed", terms },
+      }),
+    ).toMatchObject({ status: 200, data: { status: "cancelled", cancellation: { refund: none } } });
+    expect(await paymentsOf(booking.id)).toEqual([]);
+    expect((await stored(booking.id))?.refundAmount).toBe(0);
+  });
+
+  it("refunds nothing when the driver cancels the whole trip", async () => {
+    api.fixSetting("pay_in_person", 1);
+    const anna = await driverOf(north);
+    const gunna = await newMember("Gunna");
+    const request = await booked(gunna.accessToken, north, { fromStop: 0, toStop: 3 });
+    await accept(anna, request.id);
+    expect(
+      await api.client.call(cancelTripRoute, {
+        accessToken: anna.accessToken,
+        params: { id: north },
+        body: { reason: "car_problem", countsOnReliability: true },
+      }),
+    ).toMatchObject({ status: 200 });
+    expect(await stored(request.id)).toMatchObject({ status: "cancelled", refundAmount: 0 });
+    expect(await paymentsOf(request.id)).toEqual([]);
+  });
+
+  it("says in the config whether a booking made now is paid in person", async () => {
+    const config = async () => {
+      const response = await api.request("/v1/config");
+      return ((await response.json()) as { payInPerson: boolean }).payInPerson;
+    };
+    expect(await config()).toBe(false);
+    api.fixSetting("pay_in_person", 1);
+    expect(await config()).toBe(true);
+  });
+});

@@ -81,9 +81,26 @@ export function holdsSeats(status: BookingStatus): boolean {
 }
 
 /**
- * Where an accepted booking goes: straight to confirmed when the ride is
- * free, otherwise to waiting for payment (R5.11, rule M1).
+ * How a booking is paid, fixed when it is made: in the app (rule M1), or to
+ * the driver in person while the operator's switch says so, until payments
+ * in the app work (rule M6, ADR 0038).
  */
-export function statusOnAcceptance(total: Money): "accepted" | "confirmed" {
-  return total.amount === 0 ? "confirmed" : "accepted";
+export const paymentMethods = ["in_app", "in_person"] as const;
+export type PaymentMethod = (typeof paymentMethods)[number];
+
+/**
+ * Where an accepted booking goes: straight to confirmed when the ride is
+ * free or paid to the driver in person, otherwise to waiting for payment
+ * (R5.11, rules M1 and M6).
+ */
+export function statusOnAcceptance(total: Money, method: PaymentMethod): "accepted" | "confirmed" {
+  return total.amount === 0 || method === "in_person" ? "confirmed" : "accepted";
+}
+
+/**
+ * What a booking's price brings in the app, so what a full refund pays
+ * back: all of it in the app, nothing paid in person (rule M6).
+ */
+export function paidInApp(total: Money, method: PaymentMethod): Money {
+  return method === "in_person" ? { amount: 0, currency: total.currency } : total;
 }

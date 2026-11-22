@@ -96,6 +96,10 @@ const settingTexts = {
     name: "admin.settings.name.payment_window",
     help: "admin.settings.help.payment_window",
   },
+  pay_in_person: {
+    name: "admin.settings.name.pay_in_person",
+    help: "admin.settings.help.pay_in_person",
+  },
   free_cancellation_until: {
     name: "admin.settings.name.free_cancellation_until",
     help: "admin.settings.help.free_cancellation_until",

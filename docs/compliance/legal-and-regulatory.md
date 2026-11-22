@@ -82,9 +82,14 @@ Actions:
 
 ## 5. Payments
 
-- Payments go through the app from the beta
+- Payments go through the app
   ([ADR 0013](../decisions/0013-in-app-payments-only.md)), so the company,
-  the provider contract and this legal work must be done before the beta.
+  the provider contract and this legal work come before them. Until then,
+  passengers pay the driver in person, in cash or by bank transfer, the
+  price the app shows
+  ([ADR 0038](../decisions/0038-pay-the-driver-in-person-until-card-payments.md),
+  rule M6): ShareRide takes no money and no fee, so no payment licence
+  question arises for that time, but it has no record of what was paid.
 
 - Holding passengers' money and paying it to drivers may be a regulated
   payment service under the Icelandic payment services law implementing the
@@ -148,7 +153,11 @@ Actions:
 4. What must the terms of service say about liability, insurance and the
    intermediary role?
 5. Which payment structure avoids needing our own payment licence?
-   Does taking payments in the app change the answer to question 1?
+   Does taking payments in the app change the answer to question 1? And
+   until then, does passengers paying the driver in person, in cash or by
+   bank transfer, the capped price the app shows, with no fee to ShareRide
+   ([ADR 0038](../decisions/0038-pay-the-driver-in-person-until-card-payments.md)),
+   change the answers to questions 1 and 3?
 6. What do drivers need to know about tax on contributions?
 7. Which company form and set-up do you recommend for a solo operator?
 8. Do the Digital Services Act and the European Accessibility Act apply in

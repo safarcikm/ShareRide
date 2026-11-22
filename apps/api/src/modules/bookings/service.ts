@@ -87,6 +87,7 @@ import {
   stopsOf,
   type Queryable,
   type Transaction,
+  methodOf,
 } from "./seats.ts";
 import { refitToTripLimit } from "../trips/limit.ts";
 
@@ -422,6 +423,7 @@ function toCancel(
   return {
     status,
     total: isk(booking.totalPrice),
+    paymentMethod: methodOf(booking),
     boardsAt,
     departsAt,
     // Null only for a booking the previous version made during a deploy.
@@ -526,6 +528,7 @@ function present(
     alight: stopOf(row.alightPoint, row.alightStop),
     seats: booking.seats,
     total: isk(booking.totalPrice),
+    payment: methodOf(booking),
     message: booking.message,
     createdAt: booking.createdAt.toISOString(),
     // An expired booking keeps the deadline that passed, so it can say which.
@@ -915,6 +918,7 @@ export function createBookingService(dependencies: {
             confirmedAt: plan.status === "confirmed" ? now : null,
             departsAtWhenBooked: trip.departsAt,
             settingsVersion,
+            paymentMethod: plan.paymentMethod,
             createdAt: now,
             updatedAt: now,
           })
@@ -1181,8 +1185,9 @@ export function createBookingService(dependencies: {
         "driver",
         "accept",
         (booking, boardsAt, now) => {
-          // A free ride needs no payment, so it is confirmed at once (R5.11).
-          const status = statusOnAcceptance(isk(booking.totalPrice));
+          // A free ride needs no payment, nor one paid to the driver in
+          // person, so it is confirmed at once (R5.11, rule M6).
+          const status = statusOnAcceptance(isk(booking.totalPrice), methodOf(booking));
           return {
             status,
             decidedAt: now,

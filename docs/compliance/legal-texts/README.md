@@ -33,7 +33,7 @@ changes, the text changes in the same PR.
 | Topic | Source |
 | ----- | ------ |
 | Cost sharing, the price cap, prices | [Pricing and seats](../../product/pricing-and-seats.md#prices), [ADR 0012](../../decisions/0012-trip-price-level.md) |
-| Paying, refunds, payouts, chargebacks | [Pricing and seats](../../product/pricing-and-seats.md#payment-and-refunds), [spec 13](../../specs/2026-11-13-payments.md), [ADR 0013](../../decisions/0013-in-app-payments-only.md) |
+| Paying, refunds, payouts, chargebacks | [Pricing and seats](../../product/pricing-and-seats.md#payment-and-refunds), [spec 13](../../specs/2026-11-13-payments.md), [ADR 0013](../../decisions/0013-in-app-payments-only.md); paying the driver in person until then, [ADR 0038](../../decisions/0038-pay-the-driver-in-person-until-card-payments.md) |
 | Booking modes and deadlines | [Pricing and seats](../../product/pricing-and-seats.md#booking-modes), [spec 5](../../specs/2026-11-13-booking-and-requests.md) |
 | Changes and cancellations | [Pricing and seats](../../product/pricing-and-seats.md#trip-changes-after-bookings-exist), [spec 6](../../specs/2026-11-13-changes-and-cancellations.md) |
 | Trip day, no-shows, reviews, reliability | [Spec 8](../../specs/2026-11-13-trip-day-reviews-and-reliability.md) |
@@ -108,3 +108,12 @@ section 9, whose answers may change the drafts too.
     company is registered; is anything else needed first?
 12. **Women-only trips.** Question 9 of the brief. The terms and rules
     describe a self-declaration with no proof; is that wording right?
+13. **Paying the driver in person.** Until payments in the app start,
+    passengers may pay the driver the price the app shows, in cash or by
+    bank transfer, when they get in (terms 6.9, 7.6 and 8.2;
+    [ADR 0038](../../decisions/0038-pay-the-driver-in-person-until-card-payments.md)).
+    ShareRide takes no money and no fee, and has no record of what was
+    paid. Does that change the Taxi Act answer (brief, questions 1 and 3)?
+    Is the wording that we cannot refund or give a receipt for that money
+    enough, and does a late canceller owing nothing need saying anywhere
+    else?

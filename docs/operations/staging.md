@@ -602,6 +602,24 @@ it under **Keys** and make a new one (step 4 and the two key values of
 step 6). When the company's Apple account takes over, every Apple member
 gives their phone number once more (spec 19, 3.5).
 
+## Turn on paying the driver in person
+
+Until card payments work (milestone 15), passengers can pay the driver in
+person, in cash or by bank transfer, the price the app shows
+([ADR 0038](../decisions/0038-pay-the-driver-in-person-until-card-payments.md),
+rule M6). It is off by default, and staging then shows the test payment
+sheet, where no money moves. Martin's steps:
+
+1. Sign in to the console, open **Settings**, **Booking**, turn on **Pay
+   the driver in person** and save. It applies within five minutes.
+2. Check: on the web, book a paid ride. The booking screen says card
+   payments are coming soon and to pay the driver in cash or by bank
+   transfer, there is no payment sheet, and the booking is confirmed as
+   soon as it is accepted.
+
+Turning it off again changes no booking already made: each keeps the way
+of paying it was made with.
+
 ## Restore the database
 
 Staging data is generated, so a restore is rarely needed; we rehearse it

@@ -521,6 +521,7 @@ export async function collectExport(
     seats: booking.seats,
     total: booking.totalPrice,
     currency: booking.currency,
+    paidHow: booking.paymentMethod,
     status: booking.status,
     message: booking.message,
     prices: stretches

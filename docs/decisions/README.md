@@ -43,7 +43,7 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0010](0010-authentication-and-identity.md) | Phone-first authentication and layered identity verification | Accepted (implementation superseded by ADR 0016) |
 | [0011](0011-localization.md) | Icelandic and English from day one | Accepted (formatting superseded by ADR 0025) |
 | [0012](0012-trip-price-level.md) | One price level per trip instead of per-segment price editing | Accepted |
-| [0013](0013-in-app-payments-only.md) | All payments through the app, from the beta | Accepted |
+| [0013](0013-in-app-payments-only.md) | All payments through the app, from the beta | Accepted (set aside until milestone 15 by ADR 0038) |
 | [0014](0014-passenger-service-fee-from-launch.md) | A passenger service fee from public launch | Accepted |
 | [0015](0015-women-only-trips.md) | Women-only trips based on a private self-declaration | Accepted |
 | [0016](0016-own-sign-in-module.md) | Our own sign-in module instead of an auth library | Accepted |
@@ -68,4 +68,5 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0035](0035-open-web-beta-reached-by-email.md) | An open beta on the web, reaching members by email | Accepted |
 | [0036](0036-meeting-points-go-live-before-their-photo.md) | A meeting point can go live before it has a photo | Accepted |
 | [0037](0037-photo-storage-in-nuremberg.md) | Store photos in Hetzner Object Storage in Nuremberg | Accepted |
+| [0038](0038-pay-the-driver-in-person-until-card-payments.md) | Passengers pay the driver in person until payments in the app work | Accepted |
 | [0039](0039-rename-to-puffinride.md) | Rename the product to PuffinRide, on puffinride.is | Accepted |
