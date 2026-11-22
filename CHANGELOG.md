@@ -1366,6 +1366,11 @@ releases follow [Semantic Versioning](https://semver.org/).
   for an email after the first name when the account has none verified or
   waiting, and sends its link before the profile is saved, once. A server
   that sends no email lets sign-up go on. The phone apps do not ask.
+- Production at `https://puffinride.is` (ADR 0042): its own Render
+  blueprint, `infra/render/production.yaml`, with its own database and
+  secrets, following the `production` branch. The "Release to production"
+  action moves that branch to a commit on `main` whose CI passed, which
+  staging already runs; the production runbook has the setup steps.
 
 ### Fixed
 
