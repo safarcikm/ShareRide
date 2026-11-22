@@ -1381,6 +1381,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   secrets, following the `production` branch. The "Release to production"
   action moves that branch to a commit on `main` whose CI passed, which
   staging already runs; the production runbook has the setup steps.
+- Pull to refresh (spec 16, 3.9): pulling down at the top of Find, search
+  results, Rides leaving soon, My rides, Messages, a booking or the
+  driver's trip page loads it again, with a spinner and then "Updated" or
+  "Couldn't update" for two seconds, read out. What was on screen stays
+  until the new answer comes, and stays if it fails. Phones use their own
+  pull; the web, where React Native has none, gets its own touch pull. The
+  logo, on Find on a phone and in the top bar on a wide screen, loads Find
+  again the same way.
 
 ### Fixed
 
@@ -1421,6 +1429,8 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Sign out is on Profile too (spec 16, 3.4 item 4), under the rows; Sign
+  out on all devices stays in Settings.
 - The living docs and the legal drafts say PuffinRide (ADR 0039): the
   README, CLAUDE.md, the glossary, product, architecture, compliance,
   engineering and strategy docs, SECURITY.md, the ADR skill, and the terms,
