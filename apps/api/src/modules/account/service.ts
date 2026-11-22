@@ -17,6 +17,7 @@ import type { Locale } from "@shareride/i18n";
 import { eq, sql } from "drizzle-orm";
 import type { PhotoStorage } from "../../platform/photo-storage.ts";
 import type { LegalService } from "../legal/index.ts";
+import { markedPhotoOf } from "../people/photos.ts";
 import { pendingEmailOf } from "./email.ts";
 
 const { legalAcceptances, legalDocuments, pushTokens, users } = schema;
@@ -66,13 +67,7 @@ export function createAccountService(dependencies: {
       firstName: user.firstName,
       about: user.about,
       languages: user.languages,
-      photo:
-        user.photoKey === null || photos === undefined
-          ? null
-          : {
-              url: await photos.linkTo(user.photoKey, clock()),
-              hidden: user.photoHiddenAt !== null,
-            },
+      photo: await markedPhotoOf(photos, clock())(user),
       locale: user.locale === "is" ? "is" : "en",
       email: user.emailVerifiedAt === null ? null : user.email,
       pendingEmail: await pendingEmailOf(db, userId, clock()),

@@ -183,6 +183,11 @@ export const adminReportSchema = adminReportListItemSchema.extend({
     .nullable(),
   /** The reported person's About you, for a report about a person; null for none. */
   about: z.object({ text: z.string(), hidden: z.boolean() }).nullable(),
+  /**
+   * The reported person's profile photo, also while ShareRide hides it; null
+   * for none (ADR 0033).
+   */
+  photo: z.object({ url: z.string(), hidden: z.boolean() }).nullable(),
   /** Whether the report covers a conversation the operator can open: a message report's. */
   conversation: z.boolean(),
   /** Actions taken on this report. */

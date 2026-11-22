@@ -18,6 +18,7 @@ import { defaultTripDaySettings, icelandDate } from "@shareride/domain";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
+import { givePhoto } from "../account/testing.ts";
 import { collectExport } from "../privacy/export-data.ts";
 import { moveTripsOn } from "../trips/completion.ts";
 import {
@@ -320,6 +321,7 @@ describe("a person's page (spec 9, 3.5.2)", () => {
       licenceDeclaredAt: null,
       languages: ["is", "en"],
       about: { text: "I like quiet drives.", hidden: true },
+      photo: null,
       deleteAfter: null,
       vehicles: [
         {
@@ -384,6 +386,16 @@ describe("a person's page (spec 9, 3.5.2)", () => {
     expect((passenger.body as AdminUser).declines).toBeNull();
     const rider = await send(cookie, "GET", `/admin/v1/users/${gunna.userId}`);
     expect((rider.body as AdminUser).bookings.map((booking) => booking.id)).toEqual([acceptedId]);
+  });
+
+  it("shows their profile photo, also once ShareRide hid it (ADR 0033)", async () => {
+    const jon = await newMember("Jón");
+    const link = await givePhoto(api, jon.userId, api.now());
+    const { cookie } = await api.signInOperator();
+
+    const { body } = await send(cookie, "GET", `/admin/v1/users/${jon.userId}`);
+
+    expect((body as AdminUser).photo).toEqual({ url: link, hidden: true });
   });
 
   it("answers not found for no such person", async () => {

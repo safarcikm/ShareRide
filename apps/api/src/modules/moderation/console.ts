@@ -31,8 +31,10 @@ import {
   type TripStatus,
 } from "@shareride/domain";
 import { and, asc, desc, eq, inArray, isNotNull, isNull, ne } from "drizzle-orm";
+import type { PhotoStorage } from "../../platform/photo-storage.ts";
 import type { AuditEntry } from "../admin/audit.ts";
 import { readConversationAsOperator, type ReadingRefused } from "../chat/operator.ts";
+import { markedPhotoOf } from "../people/photos.ts";
 import { figuresOf } from "../people/standing.ts";
 import {
   createModerationService,
@@ -122,6 +124,8 @@ export function createModerationConsoleService(dependencies: {
   readonly clock: () => Date;
   readonly settings?: SafetySettings;
   readonly reliability?: ReliabilitySettings;
+  /** Where profile photos are kept, to show the reported person's (ADR 0033). */
+  readonly photos?: PhotoStorage;
 }): ModerationConsoleService {
   const { db, clock } = dependencies;
   const settings = dependencies.settings ?? defaultSafetySettings;
@@ -267,6 +271,14 @@ export function createModerationConsoleService(dependencies: {
             .from(users)
             .where(eq(users.id, row.subjectUserId))
         : [];
+    // The reported person's photo, also while hidden, so the operator can judge it.
+    const [reportedPhoto] =
+      row.subjectUserId === null
+        ? []
+        : await db
+            .select({ photoKey: users.photoKey, photoHiddenAt: users.photoHiddenAt })
+            .from(users)
+            .where(eq(users.id, row.subjectUserId));
     return {
       ...item,
       description: row.description,
@@ -308,6 +320,10 @@ export function createModerationConsoleService(dependencies: {
         about === undefined || about.text === null || about.text === ""
           ? null
           : { text: about.text, hidden: about.hiddenAt !== null },
+      photo:
+        reportedPhoto === undefined
+          ? null
+          : await markedPhotoOf(dependencies.photos, clock())(reportedPhoto),
       conversation: row.subject === "message" && row.bookingId !== null,
       actions: await actionsWhere(eq(moderationActions.reportId, row.id), false),
       reporterSide: item.reporter === null ? null : await sideOf(item.reporter, row.id),

@@ -57,6 +57,7 @@ const moderatedContentKeys: Readonly<Record<ModeratedContent, MessageKey>> = {
   review: "notices.content.review",
   trip_note: "notices.content.tripNote",
   about: "notices.content.about",
+  photo: "notices.content.photo",
   trip: "notices.content.trip",
   booking: "notices.content.booking",
 };

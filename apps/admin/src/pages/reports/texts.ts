@@ -76,6 +76,7 @@ export const hiddenKeys = {
   review: "admin.reports.hide.review",
   trip_note: "admin.reports.hide.trip_note",
   about: "admin.reports.hide.about",
+  photo: "admin.reports.hide.photo",
 } as const satisfies Record<HideableContent, MessageKey>;
 
 /** A person's first name, or that they have left ShareRide (spec 11, 3.5). */
