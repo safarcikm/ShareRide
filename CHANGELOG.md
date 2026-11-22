@@ -1389,6 +1389,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   pull; the web, where React Native has none, gets its own touch pull. The
   logo, on Find on a phone and in the top bar on a wide screen, loads Find
   again the same way.
+- The legal documents published from the repository (ADR 0043): version 2
+  of the Terms of Service, the Community Rules and the Privacy Policy, in
+  English and Icelandic, adapted from the drafts for the lawyer to the open
+  beta and naming Martin Safarcik as the operator. The migration command
+  publishes every listed version a database lacks, in every environment,
+  and a test fails if a published text changes. The app's reader shows
+  their lists as bullet points.
 
 ### Fixed
 

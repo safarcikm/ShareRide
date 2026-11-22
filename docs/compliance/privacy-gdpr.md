@@ -11,7 +11,9 @@
   **Act on Data Protection and the Processing of Personal Data No. 90/2018**.
 - The supervisory authority is **Persónuvernd** (the Icelandic Data
   Protection Authority).
-- The PuffinRide company is the **controller**. Hosting, SMS, email, push,
+- The PuffinRide company is the **controller**; until it is registered,
+  Martin Safarcik is, as the published Privacy Policy says
+  ([ADR 0043](../decisions/0043-legal-documents-published-from-the-repository.md)). Hosting, SMS, email, push,
   analytics, error tracking, identity and payment providers are
   **processors** (or separate controllers, for some identity and payment
   providers) and each needs a data processing agreement.
