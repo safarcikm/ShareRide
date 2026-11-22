@@ -1,6 +1,6 @@
 # Visual design system implementation plan
 
-**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13, PR #12); PR A merged (PR #14); PR B in review
+**Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13, PR #12); PR A merged (PR #14); PR B merged (PR #19). Logo A was replaced by logo C, the puffin pin, on 2026-11-22 ([plan](2026-11-22-puffinride-logo.md))
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > superpowers:subagent-driven-development (recommended) or
