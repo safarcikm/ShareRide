@@ -33,7 +33,7 @@ describe("the rules an operator's action concerns (spec 9, R9.5)", () => {
       const texts = moderationRules.map((rule) => moderationRuleText(t, rule));
       expect(new Set(texts).size).toBe(moderationRules.length);
     }
-    expect(moderationRuleText(en, "scam")).toBe("Scams and payments outside the app");
+    expect(moderationRuleText(en, "scam")).toBe("Scams, and asking for more than the app's price");
     expect(moderationRuleText(is, "reliability")).toBe("Áreiðanleiki");
   });
 });

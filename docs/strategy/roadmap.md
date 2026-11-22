@@ -233,7 +233,7 @@ Paying the driver in person, until milestone 15
 asked for by Martin on 2026-11-22 so the open beta can be public before
 payments in the app work)
 
-- [ ] A console switch: passengers pay the driver in person, in cash or by
+- [x] A console switch: passengers pay the driver in person, in cash or by
       bank transfer, the price the app shows (rule M6)
 
 Milestone 12: production

@@ -78,21 +78,24 @@ async function openBooking(
     settle?: (outcome: string) => unknown;
     /** What the operator has paused (spec 10, 3.3). */
     paused?: readonly string[];
+    /** The operator's switch for paying the driver in person (rule M6). */
+    payInPerson?: boolean;
   } = {},
   path = `/trips/${id}/book?from=1&to=2&seats=1`,
 ) {
   return renderApp(path, {
     me: completeMe,
     setUp: (client) => {
-      if (answers.paused !== undefined) {
+      if (answers.paused !== undefined || answers.payInPerson !== undefined) {
         client.answer("/v1/config", () =>
           ok(200, {
             beta: false,
-            paused: answers.paused,
+            paused: answers.paused ?? [],
             maxSeats: 8,
             freeCancellationMinutes: 15,
             maxMoveMinutes: 120,
             reliabilityMonths: 12,
+            payInPerson: answers.payInPerson ?? false,
           }),
         );
       }
@@ -553,6 +556,60 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     expect(await screen.findByRole("header", { name: "You're booked!" })).toBeVisible();
     expect(bookCalls(client)).toHaveLength(1);
     expect(paymentCalls(client)).toEqual([]);
+  });
+
+  describe("paying the driver in person (rule M6, ADR 0038)", () => {
+    const inPersonBooking = northBooking({ ...paidBooking, payment: "in_person" });
+    const payDriver =
+      "Card payments are coming soon. Pay the driver 2,900 ISK in cash or by bank transfer when you get in.";
+
+    it("books with Book, confirmed without a payment, and says how to pay the driver", async () => {
+      const { client } = await openBooking({
+        payInPerson: true,
+        trip: instantTrip,
+        book: () => ok(201, inPersonBooking),
+        booking: () => inPersonBooking,
+      });
+      expect(await screen.findByRole("header", { name: "Book this ride" })).toBeVisible();
+      expect(screen.getByText(payDriver)).toBeVisible();
+      expect(
+        screen.getByText("Plans change? Cancel in the app: there's nothing to pay."),
+      ).toBeVisible();
+      expect(screen.queryByText(/^Free cancellation/)).toBeNull();
+      await fireEvent.press(screen.getByRole("button", { name: "Book" }));
+      expect(await screen.findByRole("header", { name: "You're booked!" })).toBeVisible();
+      expect(bookCalls(client)).toHaveLength(1);
+      expect(paymentCalls(client)).toEqual([]);
+    });
+
+    it("says how to pay the driver before asking, on a request", async () => {
+      await openBooking({ payInPerson: true });
+      expect(await screen.findByText(payDriver)).toBeVisible();
+      expect(screen.queryByText("You pay when Anna says yes.")).toBeNull();
+    });
+
+    it("still pays in the app a booking the server made to be paid there", async () => {
+      // The switch went off between reading it and booking.
+      const { client } = await openBooking({
+        payInPerson: true,
+        trip: instantTrip,
+        book: () => ok(201, unpaidBooking),
+        booking: () => paidBooking,
+      });
+      await fireEvent.press(await screen.findByRole("button", { name: "Book" }));
+      expect(await screen.findByRole("button", { name: "Pay 2,900 ISK" })).toBeVisible();
+      expect(paymentCalls(client)).toEqual([bookingId]);
+    });
+
+    it("shows a confirmed booking's price to pay the driver on its page", async () => {
+      await renderApp(`/bookings/${bookingId}`, {
+        me: completeMe,
+        setUp: (client) => {
+          bookingApi(client, () => inPersonBooking);
+        },
+      });
+      expect(await screen.findByText(payDriver)).toBeVisible();
+    });
   });
 
   it("sends one request for a double tap", async () => {

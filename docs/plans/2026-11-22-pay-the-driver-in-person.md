@@ -57,27 +57,27 @@ pay the driver in cash or by bank transfer, and for the build to stay lean.
 Nothing changes for anyone until the operator turns the switch on, and the
 texts come in PR 2, so the switch stays off on every server until then.
 
-- [ ] **Domain, payment methods.** `paymentMethods = ["in_app",
+- [x] **Domain, payment methods.** `paymentMethods = ["in_app",
       "in_person"]` in `packages/domain/src/bookings/lifecycle.ts`;
       `statusOnAcceptance(total, method)` confirms an in-person booking at
       once. `checkBooking` (`check.ts`) takes the method. Tests first in
       `lifecycle.test.ts` and `check.test.ts`.
-- [ ] **Domain, cancelling.** `BookingToCancel` gains `paymentMethod`;
+- [x] **Domain, cancelling.** `BookingToCancel` gains `paymentMethod`;
       `cancellationTerms` gives an in-person booking a refund of 0 in every
       case and the same `countsOnReliability` as today. The driver-absence
       refund (`disputes.ts`) is 0 for it too. Tests first.
-- [ ] **Domain, takings.** `TakingsBooking` gains `paymentMethod`;
+- [x] **Domain, takings.** `TakingsBooking` gains `paymentMethod`;
       `takingsOf` counts nothing for an in-person booking that is cancelled
       or `no_show`. Property test: an in-person trip never has more
       takings than the same trip paid in the app.
-- [ ] **Setting.** `pay_in_person` in
+- [x] **Setting.** `pay_in_person` in
       `packages/domain/src/settings/catalogue.ts`: group `booking`, a
       switch, default 0 (off), the console's name and help in both
       languages. The list is ADR 0032's; ADR 0038 adds it.
-- [ ] **Database.** Migration 0058: `bookings.payment_method text not null
+- [x] **Database.** Migration 0058: `bookings.payment_method text not null
       default 'in_app'` with a check on the two values;
       `pnpm --filter @shareride/db generate`.
-- [ ] **API, booking.** The booking and request routes read the switch
+- [x] **API, booking.** The booking and request routes read the switch
       inside the booking transaction, as `bookings_open` is read, and store
       the method. `accept` passes it to `statusOnAcceptance`. Every
       cancellation path (`bookings/service.ts`, `bookings/cancel-trip.ts`,
@@ -85,7 +85,7 @@ texts come in PR 2, so the switch stays off on every server until then.
       deletion) passes the booking's method to the domain, so no refund is
       owed. Integration tests: book instant and request with the switch
       on; flip the switch while a booking waits for payment.
-- [ ] **API, what clients see.** `bookingSchema` in
+- [x] **API, what clients see.** `bookingSchema` in
       `packages/contracts/src/bookings.ts` gains `payment: "in_app" |
       "in_person"`; `/v1/config` gains `payInPerson`. The notification
       worker's `paid` flag is false for an in-person booking, so the
@@ -94,18 +94,18 @@ texts come in PR 2, so the switch stays off on every server until then.
 
 ## PR 2: what passengers, drivers and the operator see
 
-- [ ] **Trip page and booking screen.** While `payInPerson` is on: "Pay
+- [x] **Trip page and booking screen.** While `payInPerson` is on: "Pay
       {driver} {total} in person when you get in: cash or a bank transfer"
       instead of "You pay when {driver} says yes", and the cancellation
       line says there is nothing to pay if you cancel. No payment sheet.
-- [ ] **My rides and a booking's page.** An in-person booking shows the
+- [x] **My rides and a booking's page.** An in-person booking shows the
       price to pay the driver, never "Waiting for payment" or a refund. The
       cancel sheets of both sides say nothing is refunded and nothing is
       owed, and whether it counts on reliability.
-- [ ] **The driver's side.** The trip's bookings say "Pays you {total} in
+- [x] **The driver's side.** The trip's bookings say "Pays you {total} in
       person"; the no-show and dispute texts drop "no refund" and "the
       driver is paid" for in-person bookings.
-- [ ] **Chat and reports.** The chat's safety tip and the report category
+- [x] **Chat and reports.** The chat's safety tip and the report category
       "Scam, or payment outside the app" become "asked for more than the
       price" while the switch is on; the community rule follows the terms.
 - [ ] **Notifications.** Booking confirmed (push, email) says how much to
@@ -114,8 +114,14 @@ texts come in PR 2, so the switch stays off on every server until then.
       a booking's method on the console's booking view.
 - [ ] **Journey.** A web journey books an in-person ride with the switch
       on and cancels it; the existing paying journeys keep the switch off.
-- [ ] **Docs.** Roadmap tick, CHANGELOG, the staging runbook's "Turn on
+- [x] **Docs.** Roadmap tick, CHANGELOG, the staging runbook's "Turn on
       paying in person", and spec 5 and spec 6 notes where they say "pay".
+
+Built lean, in one pull request (Martin, 2026-11-22: "the goal is to get
+the app working"). Left for later: the confirmed push and email naming the
+amount (they stay neutral), the method on the console's booking view, a web
+journey (screen tests cover the screens) and spec 5 and 6 notes. The
+driver sees "pays you in person" on the booking's page.
 
 Martin's steps after PR 2: turn the switch on in the staging console
 (Settings, Booking), then book a ride on the web to see it.

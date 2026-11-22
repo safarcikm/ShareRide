@@ -92,6 +92,8 @@ function AnswerForm({
   const [changed, setChanged] = useState(false);
   const name = firstNameOf(t, otherPerson(booking));
   const noShow = dispute.kind === "no_show";
+  // Paid to the driver in person (rule M6): no refund either way.
+  const inPerson = booking.payment === "in_person";
   const problem = noteError(t, note);
 
   const send = async () => {
@@ -196,8 +198,8 @@ function AnswerForm({
             {chosen === "contested"
               ? t("dispute.contestThen")
               : noShow
-                ? t("dispute.agreeNoShow")
-                : booking.total.amount === 0
+                ? t(inPerson ? "dispute.agreeNoShowInPerson" : "dispute.agreeNoShow")
+                : booking.total.amount === 0 || inPerson
                   ? t("dispute.agreeDriverAbsentFree")
                   : t("dispute.agreeDriverAbsent", { name })}
           </Body>

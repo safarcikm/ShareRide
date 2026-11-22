@@ -868,7 +868,7 @@ export const is = {
   "report.category.safety": "Öryggi: hættulegur akstur, hótanir eða ofbeldi",
   "report.category.harassment": "Áreitni eða óæskileg samskipti",
   "report.category.discrimination": "Mismunun",
-  "report.category.scam": "Svik, eða greiðsla utan appsins",
+  "report.category.scam": "Svik, eða beðið um að greiða meira en verðið í appinu",
   "report.category.false": "Rangar upplýsingar um notanda, bíl eða ökuréttindi",
   "report.category.offensive": "Móðgandi efni",
   "report.category.notAsListed": "Ferðin var ekki eins og henni var lýst",
@@ -993,6 +993,13 @@ export const is = {
   "booking.findAnother": "Finna aðra ferð",
   "booking.total": "Samtals",
   "booking.freeRide": "Þessi ferð er ókeypis: það er ekkert að greiða.",
+  "booking.payInPerson":
+    "Kortagreiðslur koma bráðum. Þú greiðir bílstjóranum {total} með reiðufé eða millifærslu þegar þú sest inn.",
+  "booking.payInPersonShort":
+    "Kortagreiðslur koma bráðum: þú greiðir bílstjóranum með reiðufé eða millifærslu þegar þú sest inn.",
+  "booking.cancelInPerson": "Breytast plönin? Afbókaðu í appinu: það er ekkert að greiða.",
+  "booking.paysYouInPerson":
+    "{name} greiðir þér {total} með reiðufé eða millifærslu þegar viðkomandi sest inn.",
   "booking.reliabilityNote":
     "Ef þú kemst ekki skaltu afbóka eins fljótt og hægt er. Seinar afbókanir og fjarvistir sjást á prófílnum þínum.",
   "booking.message": "Skilaboð til ökumanns (valfrjálst)",
@@ -1057,6 +1064,7 @@ export const is = {
   "booking.noRefund": "Engin endurgreiðsla: innan við {time} í brottför",
   "booking.nothingPaid": "Ekkert að endurgreiða: þú hefur ekki greitt enn.",
   "booking.nothingToRefund": "Farið er ókeypis svo það er ekkert að endurgreiða.",
+  "booking.nothingToRefundInPerson": "Ekkert að endurgreiða: þú greiðir bílstjóranum á staðnum.",
   "booking.countsOnReliability": "Þessi afbókun sést á prófílnum þínum",
   "booking.cancelTold":
     "{driver} fær að vita það og {seats, plural, one {sætið losnar} other {sætin losna}} fyrir aðra.",
@@ -1064,6 +1072,8 @@ export const is = {
   "booking.cancelTitleDriver": "Afbóka: {name}",
   "booking.driverRefund": "{name} fær fulla endurgreiðslu, {amount}",
   "booking.driverNothingPaid": "{name} hefur ekki greitt enn svo það er ekkert að endurgreiða.",
+  "booking.driverNothingInPerson":
+    "{name} greiðir þér á staðnum, svo það er ekkert að endurgreiða.",
   "booking.cancelToldPassenger":
     "{name} fær að vita það strax og {seats, plural, one {sætið losnar} other {sætin losna}} fyrir aðra.",
   "booking.cancelNote": "Skilaboð til farþegans (valfrjálst)",
@@ -1089,6 +1099,7 @@ export const is = {
   "booking.cancelledDriverAbsent": "{name} kom ekki, svo ShareRide afbókaði þessa bókun.",
   "booking.cancelledLeftBehind": "{name} fór án þín, svo ShareRide afbókaði þessa bókun.",
   "booking.noShow": "Skráð sem fjarvist: engin endurgreiðsla, og þetta sést á prófílnum þínum.",
+  "booking.noShowInPerson": "Skráð sem fjarvist. Þetta sést á prófílnum þínum.",
   "booking.refundOnItsWay": "Full endurgreiðsla, {amount}, aftur á kortið sem þú greiddir með.",
   "cancelReason.weather": "Veður",
   "cancelReason.roadClosed": "Vegur lokaður",
@@ -1194,6 +1205,8 @@ export const is = {
   "chat.placeholder": "Skrifaðu skilaboð",
   "chat.safetyTip":
     "Greiddu aðeins í appinu. ShareRide biður aldrei um kortaupplýsingar í spjalli.",
+  "chat.safetyTipInPerson":
+    "Greiddu bílstjóranum aðeins verðið í appinu. ShareRide biður aldrei um kortaupplýsingar í spjalli.",
   "chat.seen": "Séð",
   "chat.closed": "Spjallinu hefur verið lokað. Þú getur enn lesið það.",
   "chat.messageAll": "Senda öllum farþegum skilaboð",
@@ -1265,6 +1278,7 @@ export const is = {
   "tripDay.markNoShowOf": "Skrá fjarvist: {name}",
   "tripDay.noShowConfirm":
     "Skrá fjarvist farþegans? Engin endurgreiðsla, og þetta sést á prófíl farþegans.",
+  "tripDay.noShowConfirmInPerson": "Skrá fjarvist farþegans? Þetta sést á prófíl farþegans.",
   "tripDay.noShowTold":
     "{name} fær að vita af þessu strax og getur svarað til {deadline}. Ef {name} segir að þetta sé ekki rétt ákveður ShareRide.",
   "tripDay.noShowNeedsImHere": "Ýttu fyrst á „Ég er á staðnum“ til að geta skráð fjarvist hér.",
@@ -1291,10 +1305,13 @@ export const is = {
   "dispute.answerBy": "Svarfrestur: {deadline}.",
   "dispute.ifNoAnswerNoShow":
     "Ef þú svarar ekki stendur þetta: engin endurgreiðsla, og þetta sést á prófílnum þínum.",
+  "dispute.ifNoAnswerNoShowInPerson":
+    "Ef þú svarar ekki stendur þetta, og þetta sést á prófílnum þínum.",
   "dispute.ifNoAnswerDriverAbsent":
     "Ef þú svarar ekki stendur þetta: bókunin er afbókuð eins og þú hefðir afbókað hana, og þetta sést á prófílnum þínum.",
   "dispute.agreeNoShow":
     "Fjarvistin stendur: engin endurgreiðsla, og þetta sést á prófílnum þínum.",
+  "dispute.agreeNoShowInPerson": "Fjarvistin stendur, og þetta sést á prófílnum þínum.",
   "dispute.agreeDriverAbsent":
     "Bókunin er afbókuð eins og þú hefðir afbókað hana: {name} fær fulla endurgreiðslu, og þetta sést á prófílnum þínum.",
   "dispute.agreeDriverAbsentFree":
@@ -1370,7 +1387,7 @@ export const is = {
   "moderation.rule.safety": "Öryggi",
   "moderation.rule.harassment": "Áreitni",
   "moderation.rule.discrimination": "Mismunun",
-  "moderation.rule.scam": "Svik og greiðslur utan appsins",
+  "moderation.rule.scam": "Svik, og að biðja um meira en verðið í appinu",
   "moderation.rule.falseInfo": "Rangar upplýsingar",
   "moderation.rule.offensive": "Móðgandi efni",
   "moderation.rule.notAsListed": "Ferðir eins og þeim er lýst",
@@ -1664,6 +1681,7 @@ export const is = {
   "export.field.overruledAt": "ShareRide lét hana telja",
   "export.field.passengers": "Farþegar",
   "export.field.paymentDueAt": "Greiða fyrir",
+  "export.field.paidHow": "Greitt",
   "export.field.person": "Manneskja",
   "export.field.pets": "Gæludýr",
   "export.field.phoneNumber": "Símanúmer",
@@ -1737,6 +1755,8 @@ export const is = {
   "export.value.status.declined": "Hafnað",
   "export.value.status.expired": "Útrunnið",
   "export.value.status.no_show": "Mætti ekki",
+  "export.value.paidHow.in_app": "Í appinu",
+  "export.value.paidHow.in_person": "Bílstjóranum á staðnum",
   "export.value.status.pending": "Í vinnslu",
   "export.value.status.succeeded": "Greitt",
   "export.value.status.failed": "Mistókst",

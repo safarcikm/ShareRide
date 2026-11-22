@@ -225,7 +225,11 @@ function Open({
       {conversation.blockedByMe ? (
         <Body align="start">{t("block.youBlocked", { name })}</Body>
       ) : null}
-      <Notice kind="info" urgent={false} message={t("chat.safetyTip")} />
+      <Notice
+        kind="info"
+        urgent={false}
+        message={t(booking.payment === "in_person" ? "chat.safetyTipInPerson" : "chat.safetyTip")}
+      />
       {messages.some((message) => message.from === "them" && !message.removed) ? (
         <Text style={[typography.small, { color: palette.textMuted }]}>
           {t(Platform.OS === "web" ? "report.messageHintWeb" : "report.messageHint")}

@@ -87,6 +87,14 @@ export function useReliabilityMonths(): number {
   return useContext(ConfigContext).reliabilityMonths;
 }
 
+/**
+ * Whether a booking made now is paid to the driver in person (rule M6, ADR
+ * 0038). A booking already made says how it is paid itself.
+ */
+export function usePayInPerson(): boolean {
+  return useContext(ConfigContext).payInPerson;
+}
+
 /** The seats a trip can offer and a booking can take, at most (rule S1), as the operator has it. */
 export function useMaxSeats(): number {
   return useContext(ConfigContext).maxSeats;
