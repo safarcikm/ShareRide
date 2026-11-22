@@ -18,7 +18,9 @@ import {
   type Role,
 } from "@shareride/domain";
 import { and, desc, eq, isNotNull, sql, type SQL } from "drizzle-orm";
+import type { PhotoStorage } from "../../platform/photo-storage.ts";
 import { shown } from "../privacy/hidden.ts";
+import { photoLinkOf } from "./photos.ts";
 import { aboutThem, authors, readable } from "./ratings.ts";
 import { figuresOf } from "./standing.ts";
 
@@ -45,6 +47,8 @@ export function createPeopleService(dependencies: {
   readonly db: Database;
   readonly clock: () => Date;
   readonly settings: ReliabilitySettings;
+  /** Where people's photos are kept; no photos when left out (spec 1, 3.5). */
+  readonly photos?: PhotoStorage;
 }): PeopleService {
   const { db, clock, settings } = dependencies;
 
@@ -55,6 +59,8 @@ export function createPeopleService(dependencies: {
         firstName: users.firstName,
         about: users.about,
         aboutHiddenAt: users.aboutHiddenAt,
+        photoKey: users.photoKey,
+        photoHiddenAt: users.photoHiddenAt,
         languages: users.languages,
         phoneVerifiedAt: users.phoneVerifiedAt,
         emailVerifiedAt: users.emailVerifiedAt,
@@ -69,7 +75,11 @@ export function createPeopleService(dependencies: {
     async profile(profileId) {
       const person = await personOf(profileId);
       if (person === undefined || person.firstName === null) return err({ code: "not_found" });
-      const { rating, reliability: figure } = await figuresOf(db, person.id, clock(), settings);
+      const now = clock();
+      const [{ rating, reliability: figure }, photo] = await Promise.all([
+        figuresOf(db, person.id, now, settings),
+        photoLinkOf(dependencies.photos, now)(person),
+      ]);
       return ok({
         profileId,
         firstName: person.firstName,
@@ -84,6 +94,7 @@ export function createPeopleService(dependencies: {
         emailVerified: person.emailVerifiedAt !== null,
         memberSince: icelandDate(person.createdAt).slice(0, 7),
         colour: peopleColourOf(person.id),
+        photo,
         rating,
         reliability: {
           kept: figure.kept,

@@ -45,6 +45,14 @@ export const standingSchema = z.object({
 
 export type Standing = z.infer<typeof standingSchema>;
 
+/**
+ * A link to a person's profile photo beside their name (spec 1, 3.5; ADR
+ * 0033), valid for an hour at least. Null without one, for one ShareRide
+ * hid (spec 9, 3.4.3), for someone leaving ShareRide and for the former
+ * member; also null when missing, as from an API before photos.
+ */
+export const personPhotoSchema = z.string().nullable().default(null);
+
 /** A person's colour, from their ID (spec 15): the same everywhere they appear. */
 export const peopleColourSchema = z
   .int()
@@ -67,6 +75,7 @@ export const publicProfileSchema = z.object({
   /** The year and month they joined. */
   memberSince: yearMonthSchema,
   colour: peopleColourSchema,
+  photo: personPhotoSchema,
   rating: ratingSchema,
   reliability: reliabilitySchema,
 });

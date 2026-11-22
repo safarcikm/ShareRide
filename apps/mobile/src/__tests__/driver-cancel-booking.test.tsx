@@ -43,6 +43,7 @@ const jon = northBooking({
     colour: 3,
     memberSince: "2026-10",
     profileId: aProfileId(14),
+    photo: null,
     ...newcomer,
   },
   confirmed: { registration: "AB 123", whereToStand: null },
@@ -97,6 +98,7 @@ describe("The driver cancels one booking (spec 6, 3.4)", () => {
         colour: 4,
         memberSince: "2026-09",
         profileId: aProfileId(15),
+        photo: null,
         ...newcomer,
       },
     });
