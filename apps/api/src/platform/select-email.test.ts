@@ -38,7 +38,7 @@ describe("selectEmail (ADR 0027)", () => {
         provider: "mailjet",
         apiKey: "public",
         secretKey: "secret",
-        from: { email: "hello@shareride.is", name: "ShareRide" },
+        from: { email: "hello@shareride.is", name: "PuffinRide" },
         webAppUrl: "https://shareride.is",
       },
       () => undefined,
@@ -49,7 +49,7 @@ describe("selectEmail (ADR 0027)", () => {
     expect(
       JSON.parse(typeof requests[0]?.body === "string" ? requests[0].body : "null"),
     ).toMatchObject({
-      Messages: [{ From: { Email: "hello@shareride.is", Name: "ShareRide" } }],
+      Messages: [{ From: { Email: "hello@shareride.is", Name: "PuffinRide" } }],
     });
   });
 });

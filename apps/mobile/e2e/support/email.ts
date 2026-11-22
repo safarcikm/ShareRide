@@ -36,7 +36,7 @@ export function linkIn(email: Email, label: string): string {
 
 /** Opens the link sent to confirm `address`, such as the one given at sign-up. */
 export async function confirmEmail(page: Page, address: string) {
-  const confirm = await emailTo(address, /^Confirm your email for ShareRide$/);
+  const confirm = await emailTo(address, /^Confirm your email for PuffinRide$/);
   await page.goto(linkIn(confirm, "Confirm my email"));
   await expect(page.getByRole("heading", { name: "Your email is added" })).toBeVisible();
 }

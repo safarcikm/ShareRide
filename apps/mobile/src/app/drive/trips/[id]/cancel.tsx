@@ -188,9 +188,11 @@ function CancelTripForm({
       : noteProblem.code === "note_too_long"
         ? t("trip.note.tooLong", { max: noteMaxLength })
         : t("booking.cancelNoteNoContact");
-  // A free ride has nothing to refund (R5.11): it is told, as requests and unpaid bookings are.
+  // A free ride has nothing to refund (R5.11), nor one paid to the driver in
+  // person (rule M6): it is told, as requests and unpaid bookings are.
   const paid = bookings.filter(
-    (booking) => booking.status === "confirmed" && booking.total.amount > 0,
+    (booking) =>
+      booking.status === "confirmed" && booking.total.amount > 0 && booking.payment === "in_app",
   ).length;
   const others = bookings.length - paid;
   // Whether it shows on the profile, for the reason chosen, as the server works it out.
@@ -199,7 +201,12 @@ function CancelTripForm({
       ? null
       : tripCancellation(
           { status: "published", departsAt },
-          bookings.map(({ id, status, total }) => ({ id, status, total })),
+          bookings.map(({ id, status, total, payment }) => ({
+            id,
+            status,
+            total,
+            paymentMethod: payment,
+          })),
           reason,
           now(),
         );

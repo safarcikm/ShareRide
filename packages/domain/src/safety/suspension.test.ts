@@ -120,7 +120,14 @@ describe("what a suspension cancels (3.6.2, R9.10, milestone 9 decision 3)", () 
     status: SuspendedPassengerBooking["status"],
     tripStatus: SuspendedPassengerBooking["tripStatus"] = "published",
     boardsAt = later,
-  ): SuspendedPassengerBooking => ({ id, status, tripStatus, boardsAt, total: kr(2900) });
+  ): SuspendedPassengerBooking => ({
+    id,
+    status,
+    tripStatus,
+    boardsAt,
+    total: kr(2900),
+    paymentMethod: "in_app",
+  });
 
   it("cancels only the upcoming trips the person drives", () => {
     expect(suspensionEffects(trips, [], now).trips).toEqual(["upcoming"]);
@@ -156,10 +163,14 @@ describe("what a suspension cancels (3.6.2, R9.10, milestone 9 decision 3)", () 
   });
 });
 
-describe("ShareRide's refund when it cancels a booking (decision 3)", () => {
+describe("PuffinRide's refund when it cancels a booking (decision 3)", () => {
   it("gives back all that was paid, and nothing for what was not", () => {
-    expect(operatorBookingRefund("confirmed", kr(5600))).toEqual(kr(5600));
-    expect(operatorBookingRefund("accepted", kr(5600))).toEqual(kr(0));
-    expect(operatorBookingRefund("requested", kr(5600))).toEqual(kr(0));
+    expect(operatorBookingRefund("confirmed", kr(5600), "in_app")).toEqual(kr(5600));
+    expect(operatorBookingRefund("accepted", kr(5600), "in_app")).toEqual(kr(0));
+    expect(operatorBookingRefund("requested", kr(5600), "in_app")).toEqual(kr(0));
+  });
+
+  it("gives back nothing for a booking paid to the driver in person (rule M6)", () => {
+    expect(operatorBookingRefund("confirmed", kr(5600), "in_person")).toEqual(kr(0));
   });
 });

@@ -100,6 +100,12 @@ export function refundText(
 ): string {
   if (booking.total.amount === 0) return t("booking.nothingToRefund");
   const name = firstNameOf(t, booking.passenger);
+  // Paid to the driver in person (rule M6): nothing went through the app.
+  if (booking.payment === "in_person") {
+    return booking.viewer === "driver"
+      ? t("booking.driverNothingInPerson", { name })
+      : t("booking.nothingToRefundInPerson");
+  }
   if (booking.status === "accepted") {
     return booking.viewer === "driver"
       ? t("booking.driverNothingPaid", { name })

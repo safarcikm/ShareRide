@@ -414,6 +414,13 @@
       "when": 1795351749814,
       "tag": "0058_hide_profile_photos",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1795356075093,
+      "tag": "0059_booking_payment_method",
+      "breakpoints": true
     }
   ]
 }

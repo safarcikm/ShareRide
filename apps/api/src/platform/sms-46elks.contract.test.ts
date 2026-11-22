@@ -14,7 +14,7 @@ const to = "+3546900000";
 
 describe.skipIf(keys === null)("46elks contract (dry run)", () => {
   const sender = (credentials: { username: string; password: string }) =>
-    createElksSmsSender({ ...credentials, sender: "ShareRide", dryRun: true });
+    createElksSmsSender({ ...credentials, sender: "PuffinRide", dryRun: true });
 
   it.each(["is", "en"] as const)("accepts a sign-in code text in %s", async (locale) => {
     if (keys === null) return;

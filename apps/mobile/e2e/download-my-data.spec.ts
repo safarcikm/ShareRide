@@ -37,18 +37,18 @@ test("downloads my data from Settings", async ({ page }) => {
   const downloading = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download the file" }).click();
   const download = await downloading;
-  expect(download.suggestedFilename()).toMatch(/^shareride-data-\d{4}-\d{2}-\d{2}\.zip$/);
+  expect(download.suggestedFilename()).toMatch(/^puffinride-data-\d{4}-\d{2}-\d{2}\.zip$/);
 
   // Both files open: the data for programs, and the page to read.
   const files = filesIn(readFileSync(await download.path()));
-  expect([...files.keys()].sort()).toEqual(["shareride-data.html", "shareride-data.json"]);
-  const data = JSON.parse(files.get("shareride-data.json") ?? "") as {
+  expect([...files.keys()].sort()).toEqual(["puffinride-data.html", "puffinride-data.json"]);
+  const data = JSON.parse(files.get("puffinride-data.json") ?? "") as {
     readonly format: string;
     readonly sections: { readonly account: { readonly firstName: string } };
   };
   expect(data.format).toBe("shareride-export");
   expect(data.sections.account.firstName).toBe("Rósa");
-  const html = files.get("shareride-data.html") ?? "";
+  const html = files.get("puffinride-data.html") ?? "";
   expect(html).toContain("<h1>");
   expect(html).toContain("Rósa");
   expect(html).not.toContain("<script");

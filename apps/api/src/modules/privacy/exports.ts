@@ -162,7 +162,7 @@ function filenameOf(readyAt: Date): string {
     month: "2-digit",
     day: "2-digit",
   }).format(readyAt);
-  return `shareride-data-${day}.zip`;
+  return `puffinride-data-${day}.zip`;
 }
 
 export function createExportService(dependencies: ExportServiceDependencies): ExportService {
@@ -320,8 +320,8 @@ export function createExportBuilder(dependencies: ExportBuilderDependencies): Ex
     );
     const archive = zip(
       [
-        { name: "shareride-data.json", data: Buffer.from(`${JSON.stringify(data, null, 2)}\n`) },
-        { name: "shareride-data.html", data: Buffer.from(renderExportPage(data)) },
+        { name: "puffinride-data.json", data: Buffer.from(`${JSON.stringify(data, null, 2)}\n`) },
+        { name: "puffinride-data.html", data: Buffer.from(renderExportPage(data)) },
         ...files,
       ],
       now,

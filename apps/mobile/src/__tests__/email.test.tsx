@@ -153,7 +153,7 @@ describe("The link's page (plan 4.6)", () => {
     const app = await openLink(() => ok(200, { email: "anna@example.com" }), completeMe);
     expect(await screen.findByRole("header", { name: "Your email is added" })).toBeVisible();
     expect(
-      screen.getByText("anna@example.com is now the email of your ShareRide account."),
+      screen.getByText("anna@example.com is now the email of your PuffinRide account."),
     ).toBeVisible();
     expect(
       app.client.calls.find((call) => call.path === "/v1/email-verifications")?.input["body"],
@@ -166,7 +166,7 @@ describe("The link's page (plan 4.6)", () => {
   it("adds the email when nobody is signed in, and opens the app from there", async () => {
     await openLink(() => ok(200, { email: "anna@example.com" }));
     expect(await screen.findByRole("header", { name: "Your email is added" })).toBeVisible();
-    expect(screen.getByRole("link", { name: "Open ShareRide" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Open PuffinRide" })).toBeVisible();
   });
 
   it("says when the link no longer works", async () => {
@@ -186,11 +186,11 @@ describe("The link's page (plan 4.6)", () => {
     ).toBeVisible();
   });
 
-  it("lets the person try again when ShareRide cannot be reached", async () => {
+  it("lets the person try again when PuffinRide cannot be reached", async () => {
     let answer: unknown = failure(0, "network_error");
     const app = await openLink(() => answer);
     expect(
-      await screen.findByText("We couldn't reach ShareRide. Check your connection and try again."),
+      await screen.findByText("We couldn't reach PuffinRide. Check your connection and try again."),
     ).toBeVisible();
     answer = ok(200, { email: "anna@example.com" });
     await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
@@ -200,7 +200,7 @@ describe("The link's page (plan 4.6)", () => {
     );
   });
 
-  it("says what went wrong on ShareRide's side, and lets the person try again", async () => {
+  it("says what went wrong on PuffinRide's side, and lets the person try again", async () => {
     let answer: unknown = failure(500, "internal_error");
     await openLink(() => answer);
     expect(await screen.findByText("Something went wrong on our side. Try again.")).toBeVisible();

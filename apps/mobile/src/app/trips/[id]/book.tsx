@@ -17,7 +17,7 @@ import { newAttemptKey } from "@/booking/attempt-key";
 import { keepPendingBooking } from "@/booking/pending-booking";
 import { PaymentSheet, usePayment } from "@/booking/payment";
 import { bookErrorText, heldUntilText } from "@/booking/texts";
-import { PausedBanner, useMaxSeats, useTimings } from "@/beta/config";
+import { PausedBanner, useMaxSeats, usePayInPerson, useTimings } from "@/beta/config";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
@@ -207,6 +207,7 @@ function BookForm({
 }) {
   const { locale, t } = useLanguage();
   const { freeCancellationMinutes } = useTimings();
+  const inPerson = usePayInPerson();
   const palette = usePalette();
   const session = useSession();
   const wide = useWideScreen();
@@ -252,7 +253,9 @@ function BookForm({
   const priceChanged = problem?.kind === "price_changed";
   const total = made?.total ?? (problem?.kind === "price_changed" ? problem.total : part.total);
   const free = total.amount === 0;
-  const paysNow = instant && !free;
+  // Paid to the driver in person (rule M6): confirmed at once, nothing to
+  // pay here. A booking the server made to be paid here is paid here.
+  const paysNow = instant && !free && (made !== null || !inPerson);
   const max = defaultBookingSettings.messageMaxLength;
   const trimmed = message.trim();
   const length = Array.from(trimmed.normalize("NFC")).length;
@@ -399,14 +402,18 @@ function BookForm({
       ? t("booking.confirmedOnPay")
       : free
         ? t("booking.freeRide")
-        : t("booking.payWhenYes", { driver }),
+        : inPerson
+          ? t("booking.payInPerson", { total: shownTotal })
+          : t("booking.payWhenYes", { driver }),
     ...(free
       ? []
-      : [
-          t("trip.freeCancellation", {
-            time: formatDuration(freeCancellationMinutes * 60, locale),
-          }),
-        ]),
+      : inPerson
+        ? [t("booking.cancelInPerson")]
+        : [
+            t("trip.freeCancellation", {
+              time: formatDuration(freeCancellationMinutes * 60, locale),
+            }),
+          ]),
     t("booking.plateOnceConfirmed"),
   ];
 

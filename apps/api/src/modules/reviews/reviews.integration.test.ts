@@ -424,7 +424,7 @@ describe("rating and reviewing (spec 8, 3.7; R8.8)", () => {
     }
   });
 
-  it("is refused about a former member, who has left ShareRide", async () => {
+  it("is refused about a former member, who has left PuffinRide", async () => {
     const { jon, bookingId } = await afterTheTrip();
     await api.connection.db
       .update(schema.bookings)
@@ -611,11 +611,11 @@ describe("asking for reviews (spec 8, 3.7.6 and 3.9)", () => {
     await worker().runOnce();
     const asked = {
       subject: "How was your trip?",
-      link: `Open in ShareRide: ${webAppUrl}/bookings/${bookingId}/rate`,
+      link: `Open in PuffinRide: ${webAppUrl}/bookings/${bookingId}/rate`,
     };
     const askedDriver = {
       subject: "How was your trip?",
-      link: `Open in ShareRide: ${webAppUrl}/drive/trips/${airport}`,
+      link: `Open in PuffinRide: ${webAppUrl}/drive/trips/${airport}`,
     };
     expect(emailedTo("gunna-reviews@example.com")).toEqual([asked]);
     expect(emailedTo("jon-reviews@example.com")).toEqual([askedDriver]);
@@ -705,7 +705,7 @@ describe("asking for reviews (spec 8, 3.7.6 and 3.9)", () => {
     expect(await toldTo(jon)).toEqual([]);
   });
 
-  it("asks nobody to rate a person who is leaving ShareRide", async () => {
+  it("asks nobody to rate a person who is leaving PuffinRide", async () => {
     const { jon, gunna, completesAt } = await onTheTrip();
     await leaving(jon);
     await until(completesAt, 1, jon, gunna);

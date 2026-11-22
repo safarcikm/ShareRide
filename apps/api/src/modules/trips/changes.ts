@@ -27,11 +27,18 @@ import {
   type Result,
   type TripChange,
   type PriceSettings,
+  paidInApp,
 } from "@shareride/domain";
 import { and, asc, desc, eq, gte, inArray, isNull, ne, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { lockActive } from "../account/standing.ts";
-import { expireDueBookings, lockTrip, takingsOfTrip, type Transaction } from "../bookings/seats.ts";
+import {
+  expireDueBookings,
+  lockTrip,
+  methodOf,
+  takingsOfTrip,
+  type Transaction,
+} from "../bookings/seats.ts";
 import { addSystemLine } from "../chat/conversations.ts";
 import { followDepartureMove } from "../notifications/schedule.ts";
 import { recordEvents } from "../notifications/outbox.ts";
@@ -194,6 +201,8 @@ interface HeldBooking {
   readonly settingsVersion: number;
   readonly requestedAt: Date | null;
   readonly totalPrice: number;
+  /** Paid to the driver in person, there is nothing to refund (rule M6). */
+  readonly paymentMethod: string;
   /** The planned time at its boarding stop, before the change. */
   readonly boardsAt: Date | null;
   /** Where it gets in and out, by meeting point (R6.5). */
@@ -258,9 +267,15 @@ export function createTripChangeService(dependencies: {
         boardsAt !== null &&
         requestDeadline(requestedAt, new Date(boardsAt.getTime() + byMs), bookingSettings) <= now,
     ).length;
-    // A free ride has nothing to refund (R5.11).
+    // A free ride has nothing to refund (R5.11), nor one paid in person (rule M6).
     const paid = new Set(
-      held.filter((booking) => booking.totalPrice > 0).map((booking) => booking.id),
+      held
+        .filter(
+          (booking) =>
+            paidInApp({ amount: booking.totalPrice, currency: "ISK" }, methodOf(booking)).amount >
+            0,
+        )
+        .map((booking) => booking.id),
     );
     // A new stop splits one stretch in two, and removing one joins two;
     // the others keep their prices.
@@ -916,6 +931,7 @@ export function createTripChangeService(dependencies: {
             settingsVersion: bookings.settingsVersion,
             requestedAt: bookings.requestedAt,
             totalPrice: bookings.totalPrice,
+            paymentMethod: bookings.paymentMethod,
             boardsAt: tripStops.plannedAt,
             fromPoint: tripStops.meetingPointId,
             toPoint: alightStops.meetingPointId,

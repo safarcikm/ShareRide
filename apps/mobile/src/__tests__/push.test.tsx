@@ -130,7 +130,7 @@ describe("Push notifications (plan 4.5)", () => {
     expect(screen).toHavePathname(page);
   });
 
-  it("opens Notices from a notice of ShareRide's action (spec 9, R9.5)", async () => {
+  it("opens Notices from a notice of PuffinRide's action (spec 9, R9.5)", async () => {
     await renderApp("/", {
       me: completeMe,
       setUp: (client) => {

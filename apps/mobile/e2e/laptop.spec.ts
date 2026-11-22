@@ -57,7 +57,7 @@ test.describe("the top bar", () => {
   test("lines its logo and its language up with the page's edges", async ({ page }) => {
     await page.goto("/meeting-points");
     const bar = page.getByTestId("top-bar");
-    const home = bar.getByRole("link", { name: "ShareRide, to the front page" });
+    const home = bar.getByRole("link", { name: "PuffinRide, to the front page" });
     await expect(home).toBeVisible();
     // A page is 1144 wide in the middle of the window: from 148 to 1292.
     const logo = await home.boundingBox();
@@ -77,7 +77,7 @@ test.describe("the top bar", () => {
     await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
     await page
       .getByTestId("top-bar")
-      .getByRole("link", { name: "ShareRide, to the front page" })
+      .getByRole("link", { name: "PuffinRide, to the front page" })
       .click();
     await expect(page.getByRole("heading", { name: "Where are you going?" })).toBeVisible();
     await expect(page).toHaveURL(/\/$/);
@@ -1078,7 +1078,7 @@ test.describe("Offer a ride and the driver's trip", () => {
     await main.getByRole("button", { name: "Confirm your licence" }).click();
     await driver
       .getByRole("checkbox", {
-        name: "I declare that I hold a valid driving licence for the cars I drive on ShareRide",
+        name: "I declare that I hold a valid driving licence for the cars I drive on PuffinRide",
       })
       .click();
     await driver.getByRole("button", { name: "Confirm", exact: true }).click();

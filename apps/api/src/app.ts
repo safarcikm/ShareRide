@@ -672,7 +672,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
   });
   app.doc31("/v1/openapi.json", {
     openapi: "3.1.0",
-    info: { title: "ShareRide API", version: "1" },
+    info: { title: "PuffinRide API", version: "1" },
   });
 
   const photoOrigin = dependencies.features?.photos?.origin ?? null;

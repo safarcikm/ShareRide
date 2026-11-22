@@ -48,6 +48,7 @@ import {
   switchReminderNumber,
   movedFar,
   type SwitchKey,
+  paidInApp,
 } from "@shareride/domain";
 import type { CarFacts } from "@shareride/i18n";
 import {
@@ -71,7 +72,7 @@ import { MaybeSent } from "../../platform/maybe-sent.ts";
 import { deviceNotRegistered, type PushReceipt, type PushSender } from "../../platform/push.ts";
 import { SmsMaybeSent, type SmsSender } from "../../platform/sms.ts";
 import { announcementReaders } from "../beta/announcements.ts";
-import type { Queryable, Transaction } from "../bookings/seats.ts";
+import { methodOf, type Queryable, type Transaction } from "../bookings/seats.ts";
 import { quickOf } from "../chat/service.ts";
 import { isHidden, shown } from "../privacy/hidden.ts";
 import { cancellationSettingsIn } from "../settings/rule-settings.ts";
@@ -998,7 +999,10 @@ async function factsOf(q: Queryable, notificationId: string, now: Date, switches
         : { name: named(locale, newStop.name), plannedAt: newStop.plannedAt },
     removedStop: removedStop === undefined ? null : { name: named(locale, removedStop.name) },
     moved: moved === undefined ? null : { from: moved.from, to: moved.to },
-    paid: booking.status === "confirmed" && booking.totalPrice > 0,
+    // Paid to the driver in person, nothing was paid in the app (rule M6).
+    paid:
+      booking.status === "confirmed" &&
+      paidInApp({ amount: booking.totalPrice, currency: "ISK" }, methodOf(booking)).amount > 0,
     answerBy:
       report === undefined || row.arrivesAt === null
         ? null

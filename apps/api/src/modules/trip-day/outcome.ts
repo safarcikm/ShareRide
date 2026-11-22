@@ -10,9 +10,10 @@ import {
   type BookingStatus,
   type DisputeKind,
   type DisputeOutcome,
+  paidInApp,
 } from "@shareride/domain";
 import { and, eq, isNull } from "drizzle-orm";
-import { changeOccupancy, partOf, stopsOf, type Transaction } from "../bookings/seats.ts";
+import { changeOccupancy, methodOf, partOf, stopsOf, type Transaction } from "../bookings/seats.ts";
 import { recordEvents } from "../notifications/outbox.ts";
 import { oweRefund } from "../payments/refunds.ts";
 import { refitToTripLimit } from "../trips/limit.ts";
@@ -70,8 +71,12 @@ export async function applyOutcome(
   if (effect.bookingEvent === null) return;
   const next = nextStatus(status, effect.bookingEvent);
   if (!next.ok) throw new Error(`A ${status} booking cannot take "${effect.bookingEvent}".`);
-  // All the passenger paid goes back, or nothing (rules M2, M3).
-  const refund = effect.refund === "full" ? booking.totalPrice : 0;
+  // All the passenger paid goes back, or nothing (rules M2, M3); paid to
+  // the driver in person, nothing was paid in the app (rule M6).
+  const refund =
+    effect.refund === "full"
+      ? paidInApp({ amount: booking.totalPrice, currency: "ISK" }, methodOf(booking)).amount
+      : 0;
   await tx
     .update(bookings)
     .set({

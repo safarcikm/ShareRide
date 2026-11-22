@@ -8,7 +8,7 @@ test.describe("sign up in English", () => {
 
   test("signs up with a phone number and stays signed in after a reload", async ({ page }) => {
     const { text } = await signUp(page, english, "Anna");
-    expect(text).toContain("is your ShareRide code");
+    expect(text).toContain("is your PuffinRide code");
     await page.reload();
     await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
     await menuLink(page, english.profileTab).click();
@@ -21,7 +21,7 @@ test.describe("sign up in Icelandic", () => {
 
   test("signs up with the app and the text message in Icelandic", async ({ page }) => {
     const { text } = await signUp(page, icelandic, "Jón");
-    expect(text).toContain("er ShareRide kóðinn þinn");
+    expect(text).toContain("er PuffinRide-kóðinn þinn");
   });
 });
 

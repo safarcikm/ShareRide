@@ -335,7 +335,7 @@ describe("a report's page (spec 9, 3.4.2)", () => {
     expect(reportedLine?.textContent).toContain("The driver");
     expect(reportedLine?.textContent).toContain("Reported");
     expect(reportedLine?.textContent).toContain("Something unkind");
-    expect(removedLine?.textContent).toContain("Removed by ShareRide");
+    expect(removedLine?.textContent).toContain("Removed by PuffinRide");
     expect(api.called(adminReportConversationRoute)).toHaveLength(1);
   });
 
@@ -347,28 +347,28 @@ describe("a report's page (spec 9, 3.4.2)", () => {
     const records = screen.getByRole("region", { name: "What it is about" });
     expect(records.textContent).toContain("1 of 5 stars, by the passenger, written");
     expect(records.textContent).toContain("Unkind words");
-    expect(records.textContent).not.toContain("Hidden by ShareRide");
+    expect(records.textContent).not.toContain("Hidden by PuffinRide");
     expect(records.textContent).not.toContain("What it was about no longer exists.");
     expect(screen.queryByRole("button", { name: "Show the conversation" })).toBeNull();
 
     cleanup();
     start(detailPath, { ...reviewReport, review: { ...reportedReview, hidden: true } });
     const hidden = await screen.findByRole("region", { name: "What it is about" });
-    expect(hidden.textContent).toContain("Hidden by ShareRide");
+    expect(hidden.textContent).toContain("Hidden by PuffinRide");
   });
 
-  it("shows the reported person's profile photo, and whether ShareRide hid it", async () => {
+  it("shows the reported person's profile photo, and whether PuffinRide hid it", async () => {
     start(detailPath, { ...report, photo: { url: photoUrl, hidden: false } });
     const records = await screen.findByRole("region", { name: "What it is about" });
     expect(within(records).getByRole("img", { name: "Profile photo" }).getAttribute("src")).toBe(
       photoUrl,
     );
-    expect(records.textContent).not.toContain("Hidden by ShareRide");
+    expect(records.textContent).not.toContain("Hidden by PuffinRide");
 
     cleanup();
     start(detailPath, { ...report, photo: { url: photoUrl, hidden: true } });
     const hidden = await screen.findByRole("region", { name: "What it is about" });
-    expect(hidden.textContent).toContain("Hidden by ShareRide");
+    expect(hidden.textContent).toContain("Hidden by PuffinRide");
   });
 
   it("says when the report does not exist", async () => {
@@ -414,7 +414,7 @@ describe("acting on a report (spec 9, 3.4.3)", () => {
     fireEvent.click(within(act).getByRole("button", { name: "Review the notice" }));
 
     const preview = within(act).getByRole("group", { name: "What Dóra reads, in Icelandic" });
-    expect(preview.textContent).toContain("Viðvörun frá ShareRide");
+    expect(preview.textContent).toContain("Viðvörun frá PuffinRide");
     expect(preview.textContent).toContain("Regla: Áreitni");
     expect(preview.textContent).toContain("Ástæða: Please keep messages kind.");
     expect(api.called(adminWarnRoute)).toEqual([]);
@@ -447,7 +447,7 @@ describe("acting on a report (spec 9, 3.4.3)", () => {
       "Hide the message reported",
       "Hide the trip's note",
       "Suspend Dóra",
-      "Cancel the trip as ShareRide",
+      "Cancel the trip as PuffinRide",
     ]);
   });
 
@@ -587,7 +587,7 @@ describe("acting on a report (spec 9, 3.4.3)", () => {
     });
     await waitFor(() => {
       expect(within(list).getAllByRole("listitem")[0]?.textContent).toContain(
-        "Removed by ShareRide",
+        "Removed by PuffinRide",
       );
     });
     // Read once: the mark comes from the report, not from opening it again.
@@ -680,7 +680,7 @@ describe("acting on a report (spec 9, 3.4.3)", () => {
       data: { action: { ...warning, kind: "trip_cancelled" }, bookingsCancelled: 1 },
     });
     const act = await screen.findByRole("region", { name: "Act on it" });
-    fireEvent.click(within(act).getByRole("radio", { name: "Cancel the trip as ShareRide" }));
+    fireEvent.click(within(act).getByRole("radio", { name: "Cancel the trip as PuffinRide" }));
     fireEvent.change(within(act).getByRole("combobox", { name: "Community rule" }), {
       target: { value: "not_as_listed" },
     });

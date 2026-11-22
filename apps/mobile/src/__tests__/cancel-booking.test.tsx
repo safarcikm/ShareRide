@@ -233,6 +233,14 @@ describe("Cancelling a booking (spec 6, 3.5)", () => {
     expect(screen.getByText("This ride is free, so there's nothing to refund.")).toBeVisible();
   });
 
+  it("says there is nothing to refund for a ride paid to the driver in person (rule M6)", async () => {
+    const inPerson: Booking = { ...paidBooking, payment: "in_person" };
+    await openCancel(inPerson, { previews: [ok(200, cancellationPreview(none, true))] });
+    expect(screen.getByText("Nothing to refund: you pay the driver in person.")).toBeVisible();
+    await choose("Plans changed");
+    expect(screen.getByText("This cancellation shows on your profile")).toBeVisible();
+  });
+
   it("shows the terms again when they changed meanwhile, to confirm them", async () => {
     const { client } = await openCancel(paidBooking, {
       previews: [

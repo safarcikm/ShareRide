@@ -259,8 +259,8 @@ describe("POST /admin/v1/meeting-points/{id}/move", () => {
     );
     // Both board within 24 hours, so the passengers also get an SMS (spec 7, 3.4).
     expect(sms.outbox.map((message) => message.text)).toEqual([
-      "ShareRide: the meeting point for your trip on Saturday 14 November has changed. Details in the app.",
-      "ShareRide: the meeting point for your trip on Saturday 14 November has changed. Details in the app.",
+      "PuffinRide: the meeting point for your trip on Saturday 14 November has changed. Details in the app.",
+      "PuffinRide: the meeting point for your trip on Saturday 14 November has changed. Details in the app.",
     ]);
     const [entry] = (await movedEntries(fitjar)).slice(-1);
     expect(entry?.after).toMatchObject({ tripsTold: 1 });

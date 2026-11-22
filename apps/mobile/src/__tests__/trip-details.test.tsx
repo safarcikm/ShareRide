@@ -290,7 +290,7 @@ describe("Trip details (spec 4, 3.6)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Share" }));
     expect(mockedShare).toHaveBeenLastCalledWith(
       `http://localhost:3000/trips/${id}?from=0&to=2`,
-      "BSÍ bus terminal → Blönduós on ShareRide",
+      "BSÍ bus terminal → Blönduós on PuffinRide",
     );
     await fireEvent.press(
       screen.getByRole("button", { name: "14:00, Hof, Akureyri, not on your part" }),
@@ -411,7 +411,7 @@ describe("Trip details (spec 4, 3.6)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: "Share" }));
     expect(mockedShare).toHaveBeenCalledWith(
       `http://localhost:3000/trips/${id}?from=1&to=2`,
-      "Borgarnes → Blönduós on ShareRide",
+      "Borgarnes → Blönduós on PuffinRide",
     );
     expect(await screen.findByText("Link copied. Paste it wherever you like.")).toBeVisible();
 

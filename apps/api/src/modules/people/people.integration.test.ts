@@ -287,7 +287,7 @@ describe("the rating and reviews on a profile (spec 8, 3.7; R8.9)", () => {
     expect((await shownReviews(gunna, jon)).reviews).toEqual([]);
   });
 
-  it("leaves out what someone leaving ShareRide wrote (spec 11, 3.4.3)", async () => {
+  it("leaves out what someone leaving PuffinRide wrote (spec 11, 3.4.3)", async () => {
     const { jon, gunna, bookingId } = await afterTheTrip();
     await storedReview({
       bookingId,
@@ -660,7 +660,7 @@ describe("beside a person's name (spec 4, 3.4 and 3.6; spec 5, 3.3)", () => {
     expect(shownOnTrip?.passenger).toMatchObject(gunnaAsShown);
   });
 
-  it("gives no profile, rating or figure for someone leaving ShareRide", async () => {
+  it("gives no profile, rating or figure for someone leaving PuffinRide", async () => {
     const { jon, gunna, bookingId } = await afterTheTrip();
     await storedReview({
       bookingId,
@@ -710,7 +710,7 @@ describe("beside a person's name (spec 4, 3.4 and 3.6; spec 5, 3.3)", () => {
 describe("a profile photo beside a person's name (spec 1, 3.5; ADR 0033)", () => {
   const point = (key: string) => sampleId(`point:${key}`);
 
-  /** Gives the member a photo, as `PUT /v1/me/photo` stores it; one ShareRide hid with `hiddenAt`. */
+  /** Gives the member a photo, as `PUT /v1/me/photo` stores it; one PuffinRide hid with `hiddenAt`. */
   async function withPhoto(member: Member, hiddenAt: Date | null = null) {
     const photoKey = `profile-photos/${crypto.randomUUID()}.jpg`;
     await api.connection.db
@@ -779,7 +779,7 @@ describe("a profile photo beside a person's name (spec 1, 3.5; ADR 0033)", () =>
     expect((await shownProfile(gunna, jon)).photo).toBe(jonsPhoto);
   });
 
-  it("gives no photo for someone without one, or for one ShareRide hid (spec 9, 3.4.3)", async () => {
+  it("gives no photo for someone without one, or for one PuffinRide hid (spec 9, 3.4.3)", async () => {
     const jon = await driverOf(north, "Jón");
     await withPhoto(jon, api.now());
     const dora = await newMember("Dóra");
@@ -794,7 +794,7 @@ describe("a profile photo beside a person's name (spec 1, 3.5; ADR 0033)", () =>
     expect((await shownProfile(jon, dora)).photo).toBeNull();
   });
 
-  it("gives no photo for someone leaving ShareRide (spec 11, 3.4.3)", async () => {
+  it("gives no photo for someone leaving PuffinRide (spec 11, 3.4.3)", async () => {
     const { jon, gunna, bookingId } = await afterTheTrip();
     await withPhoto(jon);
     const gunnasPhoto = await withPhoto(gunna);

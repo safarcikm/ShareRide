@@ -41,7 +41,7 @@ test("a passenger confirms the email given at sign-up and gets the Pay now email
   ).toBeVisible();
 
   // The link opens the web app, which confirms the address.
-  const confirm = await emailTo(address, /^Confirm your email for ShareRide$/);
+  const confirm = await emailTo(address, /^Confirm your email for PuffinRide$/);
   const link = linkIn(confirm, "Confirm my email");
   expect(link).toMatch(/\/verify-email#sr_ev_/);
   await passenger.goto(link);
@@ -68,6 +68,6 @@ test("a passenger confirms the email given at sign-up and gets the Pay now email
 
   const payNow = await emailTo(address, /^Pay now: /);
   expect(payNow.text).toMatch(/^Pay [\d,]+ ISK by \d\d:\d\d to confirm your seat\./);
-  expect(linkIn(payNow, "Open in ShareRide")).toBe(`${baseURL ?? ""}${bookingPath}`);
+  expect(linkIn(payNow, "Open in PuffinRide")).toBe(`${baseURL ?? ""}${bookingPath}`);
   await driverContext.close();
 });

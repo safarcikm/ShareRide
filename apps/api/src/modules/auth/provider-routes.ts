@@ -80,7 +80,7 @@ const ticketMessages = {
   ticket_invalid:
     "The Google or Apple sign-in is not valid: it was used, took too long, or is not this app's.",
   account_unavailable: "This account cannot sign in.",
-  provider_in_use: "This Google or Apple account is used by another ShareRide account.",
+  provider_in_use: "This Google or Apple account is used by another PuffinRide account.",
   provider_already_linked:
     "This account already has a sign-in method of this kind. Remove it first, then add the new one.",
   provider_expired: "The Google or Apple sign-in took too long. Continue with it again.",

@@ -84,7 +84,7 @@ async function addPhoneNumber(code = "123456") {
 }
 
 const inUseRetry =
-  "This Google account is used by another ShareRide account. Try again to go on with your phone number alone.";
+  "This Google account is used by another PuffinRide account. Try again to go on with your phone number alone.";
 
 const verifyBodies = (app: { client: FakeClient }) =>
   app.client.calls
@@ -230,7 +230,7 @@ describe("Continue with Google or Apple (spec 19)", () => {
     await screen.findByRole("header", { name: "Add your phone number" });
     await addPhoneNumber();
     expect(
-      await screen.findByText("Your Google account on ShareRide is now ana@example.com."),
+      await screen.findByText("Your Google account on PuffinRide is now ana@example.com."),
     ).toBeVisible();
   });
 

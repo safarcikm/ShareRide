@@ -32,7 +32,7 @@ import { collectExport } from "../privacy/export-data.ts";
 import { choicesOf } from "../trips/drafts.ts";
 import { createModerationService, type Moderator } from "./actions.ts";
 
-// Content ShareRide hides, and a trip it cancels, as the console will call
+// Content PuffinRide hides, and a trip it cancels, as the console will call
 // them (spec 9, 3.4.3): a message, a review, a trip's note, About you or a
 // profile photo;
 // each with its notice and audit entry, and the content shown again when an
@@ -165,7 +165,7 @@ async function withNote(tripId: string, note: string) {
 }
 
 describe("hiding a message (spec 9, 3.4.3)", () => {
-  it("shows both people that ShareRide removed it, and tells the sender why", async () => {
+  it("shows both people that PuffinRide removed it, and tells the sender why", async () => {
     const { jon, gunna, bookingId } = await ride();
     const messageId = await said(jon, bookingId, "Something rude");
     const by = await moderator();
@@ -281,7 +281,7 @@ describe("hiding a message (spec 9, 3.4.3)", () => {
         messages: expect.arrayContaining([
           expect.objectContaining({
             from: "Jón",
-            text: "Removed by ShareRide",
+            text: "Removed by PuffinRide",
             key: null,
             params: null,
             removedByShareRide: true,
@@ -347,7 +347,7 @@ describe("hiding a message (spec 9, 3.4.3)", () => {
     ]);
   });
 
-  it("refuses hiding it twice, a line of ShareRide's, and what does not exist", async () => {
+  it("refuses hiding it twice, a line of PuffinRide's, and what does not exist", async () => {
     const { jon, bookingId } = await ride();
     const messageId = await said(jon, bookingId, "Something rude");
     const by = await moderator();
@@ -861,7 +861,7 @@ describe("hiding a review (spec 9, 3.4.3)", () => {
   });
 });
 
-describe("ShareRide cancelling a trip (spec 9, 3.4.3)", () => {
+describe("PuffinRide cancelling a trip (spec 9, 3.4.3)", () => {
   it("cancels it with full refunds, off the driver's reliability, and tells the driver why", async () => {
     const { jon, gunna, bookingId } = await ride();
     const by = await moderator();

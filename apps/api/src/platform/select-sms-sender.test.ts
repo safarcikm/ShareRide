@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { selectSmsSender } from "./select-sms-sender.ts";
 import { SmsSendError } from "./sms.ts";
 
-const message = { to: "+3546900001", text: "123456 is your ShareRide code." };
+const message = { to: "+3546900001", text: "123456 is your PuffinRide code." };
 
 describe("selectSmsSender", () => {
   it("prints codes with the development sender", async () => {
@@ -17,12 +17,12 @@ describe("selectSmsSender", () => {
     const dev = selectSmsSender({ provider: "dev", paused: true }, (line) => printed.push(line));
     await expect(dev.send(message)).rejects.toThrow(SmsSendError);
     const elks = selectSmsSender(
-      { provider: "46elks", username: "u", password: "p", sender: "ShareRide", paused: true },
+      { provider: "46elks", username: "u", password: "p", sender: "PuffinRide", paused: true },
       () => undefined,
     );
     await expect(elks.send(message)).rejects.toThrow(SmsSendError);
     const vonage = selectSmsSender(
-      { provider: "vonage", apiKey: "k", apiSecret: "s", sender: "ShareRide", paused: true },
+      { provider: "vonage", apiKey: "k", apiSecret: "s", sender: "PuffinRide", paused: true },
       () => undefined,
     );
     await expect(vonage.send(message)).rejects.toThrow(SmsSendError);
@@ -36,7 +36,7 @@ describe("selectSmsSender", () => {
       return Promise.resolve(Response.json({ "message-count": "1", messages: [{ status: "0" }] }));
     }) as typeof globalThis.fetch;
     const sms = selectSmsSender(
-      { provider: "vonage", apiKey: "k", apiSecret: "s", sender: "ShareRide", paused: false },
+      { provider: "vonage", apiKey: "k", apiSecret: "s", sender: "PuffinRide", paused: false },
       () => undefined,
       fetch,
     );
@@ -51,7 +51,7 @@ describe("selectSmsSender", () => {
       return Promise.resolve(Response.json({ status: "created" }));
     }) as typeof globalThis.fetch;
     const sms = selectSmsSender(
-      { provider: "46elks", username: "u", password: "p", sender: "ShareRide", paused: false },
+      { provider: "46elks", username: "u", password: "p", sender: "PuffinRide", paused: false },
       () => undefined,
       fetch,
     );

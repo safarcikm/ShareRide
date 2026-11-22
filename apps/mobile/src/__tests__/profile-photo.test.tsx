@@ -93,7 +93,7 @@ describe("my profile photo (spec 1, 3.5)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Take a photo" }));
     expect(
       await screen.findByText(
-        "To take a photo, let ShareRide use the camera in your phone's settings.",
+        "To take a photo, let PuffinRide use the camera in your phone's settings.",
       ),
     ).toBeVisible();
     expect(photoCalls(app.client)).toEqual([]);
@@ -147,11 +147,11 @@ describe("my profile photo (spec 1, 3.5)", () => {
     expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
   });
 
-  it("says ShareRide hid my photo, which only I still see, and lets me add another (spec 9, 3.4.3)", async () => {
+  it("says PuffinRide hid my photo, which only I still see, and lets me add another (spec 9, 3.4.3)", async () => {
     await openProfile({ ...completeMe, photo: { url: link, hidden: true } });
     expect(
       screen.getByText(
-        "ShareRide hid your photo because it broke the Community Rules. Add another one.",
+        "PuffinRide hid your photo because it broke the Community Rules. Add another one.",
       ),
     ).toBeVisible();
     expect(screen.getByTestId("avatar-photo", hidden)).toHaveProp("source", { uri: link });

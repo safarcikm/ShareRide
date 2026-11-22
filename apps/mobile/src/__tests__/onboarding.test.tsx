@@ -195,7 +195,7 @@ describe("Step 3 of signing up, about you (spec 16, 3.5)", () => {
     await tickBoth();
     await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
     expect(
-      await screen.findByText("We couldn't reach ShareRide. Check your connection and try again."),
+      await screen.findByText("We couldn't reach PuffinRide. Check your connection and try again."),
     ).toBeVisible();
     expect(screen.getByLabelText("First name")).toHaveDisplayValue("Anna");
     expect(screen.getByRole("checkbox", { name: "English" })).toBeChecked();
@@ -220,7 +220,7 @@ describe("Step 3 of signing up, about you (spec 16, 3.5)", () => {
     await tickBoth();
     await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
     expect(
-      await screen.findByText("We couldn't reach ShareRide. Check your connection and try again."),
+      await screen.findByText("We couldn't reach PuffinRide. Check your connection and try again."),
     ).toBeVisible();
     // Leaving for Find comes back to step 3, now without the terms.
     await act(() => {
@@ -236,7 +236,7 @@ describe("Step 3 of signing up, about you (spec 16, 3.5)", () => {
       client.answer("/v1/legal/{type}/current", () => failure(0, "network_error"));
     });
     expect(
-      await screen.findByText("We couldn't reach ShareRide. Check your connection and try again."),
+      await screen.findByText("We couldn't reach PuffinRide. Check your connection and try again."),
     ).toBeVisible();
     await fireEvent.changeText(screen.getByLabelText("First name"), "Anna");
     await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
@@ -455,7 +455,7 @@ describe("On the web, step 3 asks for an email (spec 20, 3.3)", () => {
     await fireEvent.changeText(screen.getByLabelText("Email"), ` ${address} `);
     await create();
     expect(
-      await screen.findByText("We couldn't reach ShareRide. Check your connection and try again."),
+      await screen.findByText("We couldn't reach PuffinRide. Check your connection and try again."),
     ).toBeVisible();
     // The answers stay, the email too.
     expect(screen.getByLabelText("Email")).toHaveDisplayValue(` ${address} `);
@@ -479,7 +479,7 @@ describe("On the web, step 3 asks for an email (spec 20, 3.3)", () => {
     await fillIn(app, [failure(0, "network_error")]);
     await fireEvent.changeText(screen.getByLabelText("Email"), "dora@exmaple.com");
     await create();
-    await screen.findByText("We couldn't reach ShareRide. Check your connection and try again.");
+    await screen.findByText("We couldn't reach PuffinRide. Check your connection and try again.");
     await fireEvent.changeText(screen.getByLabelText("Email"), address);
     await create();
     expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();

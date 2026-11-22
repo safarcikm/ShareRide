@@ -183,7 +183,7 @@ export function createPasskeyService(dependencies: PasskeyServiceDependencies): 
       .where(eq(operatorPasskeys.userId, userId));
     const name = firstName ?? "Operator";
     return generateRegistrationOptions({
-      rpName: "ShareRide console",
+      rpName: "PuffinRide console",
       rpID,
       userName: name,
       userDisplayName: name,

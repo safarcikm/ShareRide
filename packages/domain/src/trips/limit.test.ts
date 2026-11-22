@@ -9,6 +9,7 @@ import {
   tripLimit,
   type TripLoad,
 } from "./limit.ts";
+import { bookingStatuses } from "../bookings/lifecycle.ts";
 import { highestPriceLevel, priceCap, segmentPrices } from "./prices.ts";
 import { defaultTripSettings as settings } from "./settings.ts";
 
@@ -39,8 +40,11 @@ describe("takingsOf (rule P3)", () => {
     totalPrice: number,
     refundAmount: number | null = null,
     confirmedAt: Date | null = paidAt,
+    paymentMethod = "in_app",
   ) =>
-    ({ status, totalPrice, refundAmount, confirmedAt }) as Parameters<typeof takingsOf>[0][number];
+    ({ status, totalPrice, refundAmount, confirmedAt, paymentMethod }) as Parameters<
+      typeof takingsOf
+    >[0][number];
 
   it("counts what each booking pays the driver, less refunds", () => {
     expect(takingsOf([booking("confirmed", 14_600)])).toEqual(kr(14_600));
@@ -63,6 +67,32 @@ describe("takingsOf (rule P3)", () => {
   it("does not count declined or expired bookings", () => {
     expect(takingsOf([booking("declined", 5_800), booking("expired", 5_800)])).toEqual(kr(0));
   });
+
+  it("counts a booking paid in person while it holds seats or completes, and not once it is cancelled or a no-show (rule M6)", () => {
+    const inPerson = (status: string) => booking(status, 5_800, 0, paidAt, "in_person");
+    expect(takingsOf(["requested", "confirmed", "completed"].map(inPerson))).toEqual(kr(17_400));
+    expect(takingsOf(["cancelled", "no_show"].map(inPerson))).toEqual(kr(0));
+  });
+
+  it("never counts more for bookings paid in person than for the same bookings paid in the app (rule M6)", () => {
+    const anyBooking = fc.record({
+      status: fc.constantFrom(...bookingStatuses),
+      totalPrice: fc.integer({ min: 0, max: 60_000 }),
+      paidAt: fc.option(fc.constant(paidAt)),
+    });
+    fc.assert(
+      fc.property(fc.array(anyBooking, { maxLength: 8 }), (bookings) => {
+        // As cancelling stores it: a booking paid in person is never refunded.
+        const asPaid = bookings.map(({ status, totalPrice, paidAt: at }) =>
+          booking(status, totalPrice, null, at),
+        );
+        const asInPerson = bookings.map(({ status, totalPrice, paidAt: at }) =>
+          booking(status, totalPrice, 0, at, "in_person"),
+        );
+        expect(takingsOf(asInPerson).amount).toBeLessThanOrEqual(takingsOf(asPaid).amount);
+      }),
+    );
+  });
 });
 
 describe("limitRoom (rule P3)", () => {
@@ -75,6 +105,7 @@ describe("limitRoom (rule P3)", () => {
     totalPrice,
     refundAmount,
     confirmedAt: new Date("2026-11-14T12:00:00Z"),
+    paymentMethod: "in_app" as const,
   });
 
   it("is the stored caps' limit less the takings", () => {

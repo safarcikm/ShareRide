@@ -26,6 +26,7 @@ const minutesFrom = (moment: Date, minutes: number) =>
 const paid: BookingToCancel = {
   status: "confirmed",
   total: kr(2600),
+  paymentMethod: "in_app",
   boardsAt,
   departsAt,
   departsAtWhenBooked: departsAt,
@@ -80,7 +81,7 @@ describe("the reasons (spec 6, 3.3 to 3.5)", () => {
     expect(cancelReasonsFor("driver")).toBe(driverCancelReasons);
   });
 
-  it("keep the driver's absence for ShareRide, never offered to anyone (spec 8, 3.4)", () => {
+  it("keep the driver's absence for PuffinRide, never offered to anyone (spec 8, 3.4)", () => {
     expect(systemCancelReasons).toEqual(["driver_absent"]);
     expect(cancelReasonsFor("driver")).not.toContain("driver_absent");
     expect(cancelReasonsFor("passenger")).not.toContain("driver_absent");
@@ -226,6 +227,27 @@ describe("a passenger cancelling a booking not yet paid (spec 6, 3.5.4)", () => 
   });
 });
 
+describe("cancelling a booking paid to the driver in person (rule M6)", () => {
+  const inPerson: BookingToCancel = { ...paid, paymentMethod: "in_person" };
+
+  it("refunds nothing, as nothing was paid in the app, and counts as a booking paid in the app would", () => {
+    const passenger = { by: "passenger", reason: "plans_changed" } as const;
+    const driver = { by: "driver", reason: "car_problem" } as const;
+    for (const canceller of [passenger, driver]) {
+      for (const minutes of [2 * 24 * 60, 60, 5]) {
+        const asPaid = cancellationTerms(paid, canceller, before(minutes));
+        expect(cancellationTerms(inPerson, canceller, before(minutes))).toEqual({
+          ok: true,
+          value: {
+            refund: kr(0),
+            countsOnReliability: asPaid.ok && asPaid.value.countsOnReliability,
+          },
+        });
+      }
+    }
+  });
+});
+
 describe("the driver cancelling a booking (rules M2 and R6.7)", () => {
   it("refunds in full and counts, whenever it is before boarding", () => {
     for (const minutes of [7 * 24 * 60, 60, 5]) {
@@ -316,6 +338,7 @@ describe("a booking's own cancellation values (R10.3; ADR 0032)", () => {
   const booking = {
     status: "confirmed" as const,
     total: { amount: 3000, currency: "ISK" as const },
+    paymentMethod: "in_app" as const,
     boardsAt,
     departsAt,
     departsAtWhenBooked: departsAt,
