@@ -220,7 +220,7 @@ accepted 2026-11-18;
 console from milestone 8; built 2026-11-18, Martin's checks on real phones
 and of the Icelandic texts to do; the waitlist and emailed personal codes
 are dropped, as the beta is open,
-[ADR 0033](../decisions/0033-open-web-beta-reached-by-email.md))
+[ADR 0035](../decisions/0035-open-web-beta-reached-by-email.md))
 
 - [x] Invite codes and the closed-beta gate
 - [x] In-app feedback
@@ -231,18 +231,19 @@ are dropped, as the beta is open,
 Milestone 12: production
 (needs Martin's domain and Mailjet account; the waitlist is dropped, as the
 beta is open to everyone,
-[ADR 0033](../decisions/0033-open-web-beta-reached-by-email.md))
+[ADR 0035](../decisions/0035-open-web-beta-reached-by-email.md))
 
 - [ ] Production environment, separate from staging
 - [ ] Email from our own domain
 - [ ] Web members reached by email: the hour-before reminder, requests and
       "How was your trip?", links that open after signing in, and an email
       at sign-up on the web
-      ([spec 19](../specs/2026-11-22-email-alerts-and-open-beta.md))
+      ([spec 20](../specs/2026-11-22-email-alerts-and-open-beta.md))
 
 Milestone 13: photos and Apple and Google sign-in
 (the rest of [milestone 2](../plans/2026-11-13-milestone-2-hosted-and-connected.md);
-needs Hetzner storage, a Google sign-in client and the Apple account)
+needs Hetzner storage, a Google sign-in client and the Apple account;
+profile photos: [plan](../plans/2026-11-22-profile-photos.md))
 
 - [ ] Profile photos, required for drivers before their first trip
 - [ ] Google sign-in
@@ -329,8 +330,8 @@ policy approved; company registered.
 ## Phase 3: Open beta
 
 Open to everyone, with no invite code, on the web first
-([ADR 0033](../decisions/0033-open-web-beta-reached-by-email.md),
-[spec 19](../specs/2026-11-22-email-alerts-and-open-beta.md)).
+([ADR 0035](../decisions/0035-open-web-beta-reached-by-email.md),
+[spec 20](../specs/2026-11-22-email-alerts-and-open-beta.md)).
 
 Goal: prove that people find rides and that the rules work in real life.
 

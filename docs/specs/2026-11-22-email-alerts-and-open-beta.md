@@ -1,7 +1,7 @@
 # Email alerts for web members, and an open beta
 
 **Status:** Proposed (2026-11-22), for Martin's review · **Owner:** Martin ·
-**Decision:** [ADR 0033](../decisions/0033-open-web-beta-reached-by-email.md) ·
+**Decision:** [ADR 0035](../decisions/0035-open-web-beta-reached-by-email.md) ·
 **Changes:** [spec 1](2026-11-13-sign-in-and-profile.md) (decision 5),
 [spec 7](2026-11-13-chat-and-notifications.md) (3.3, 3.5),
 [spec 8](2026-11-13-trip-day-reviews-and-reliability.md) (3.9),
@@ -123,9 +123,9 @@ have it").
 
 | ID | Rule |
 | -- | ---- |
-| R19.1 | The hour reminder and "How was your trip?" go by email when the person has no device with push on, and only to a verified address. |
-| R19.2 | On the web, creating an account asks for an email unless the account already has a verified one or a link waiting. |
-| R19.3 | A link to a member screen opened before signing in opens that screen once signing in is done, within an hour. |
+| R20.1 | The hour reminder and "How was your trip?" go by email when the person has no device with push on, and only to a verified address. |
+| R20.2 | On the web, creating an account asks for an email unless the account already has a verified one or a link waiting. |
+| R20.3 | A link to a member screen opened before signing in opens that screen once signing in is done, within an hour. |
 | R12.1 (changed) | Creating an account needs a valid invite code only while the operator has "Invite code required" on; it is off by default. |
 
 ## 5. Screens

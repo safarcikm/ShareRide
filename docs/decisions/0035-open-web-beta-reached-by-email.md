@@ -1,9 +1,9 @@
-# 0033. An open beta on the web, reaching members by email
+# 0035. An open beta on the web, reaching members by email
 
 - **Status:** Proposed
 - **Date:** 2026-11-22
 - **Deciders:** Martin
-- **Related:** [spec 19](../specs/2026-11-22-email-alerts-and-open-beta.md),
+- **Related:** [spec 20](../specs/2026-11-22-email-alerts-and-open-beta.md),
   [spec 12](../specs/2026-11-13-beta-access-and-feedback.md) (R12.1),
   [spec 1](../specs/2026-11-13-sign-in-and-profile.md) (decision 5),
   [spec 7](../specs/2026-11-13-chat-and-notifications.md) (3.3),
@@ -54,7 +54,7 @@ when the account has no verified one (Google and Apple bring theirs), and
 the hour-before reminder and "How was your trip?" go by email when the
 person has no device with push, as a new request already does. A link in
 an email opened before signing in opens its screen once signing in is
-done. Details are in spec 19.
+done. Details are in spec 20.
 
 ## Consequences
 

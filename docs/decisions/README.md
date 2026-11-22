@@ -63,4 +63,5 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0030](0030-limit-what-a-whole-trip-brings-the-driver.md) | Limit what a whole trip brings the driver, counting money already booked | Accepted |
 | [0031](0031-distances-from-our-own-road-file.md) | Distances between meeting points from our own road file | Accepted |
 | [0032](0032-operator-settings-list-ranges-and-versions.md) | Operator settings: the list, their ranges, and versions on trips and bookings | Accepted |
-| [0033](0033-open-web-beta-reached-by-email.md) | An open beta on the web, reaching members by email | Proposed |
+| [0033](0033-profile-photos-made-in-the-app-and-checked-by-the-api.md) | Profile photos made in the app and checked by the API | Accepted |
+| [0035](0035-open-web-beta-reached-by-email.md) | An open beta on the web, reaching members by email | Proposed |

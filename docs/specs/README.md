@@ -43,4 +43,4 @@ Specs follow the order in [features](../product/features.md#spec-order).
 | 16 | [One home and simpler flows](2026-11-15-one-home-and-simpler-flows.md) | All screens | Approved (2026-11-15) |
 | 17 | [A limit on what one trip brings the driver](2026-11-17-trip-earnings-limit.md) | C2, C3 | Approved (2026-11-17) |
 | 18 | [The web app on a laptop](2026-11-18-laptop-layout.md) | All screens | Approved (2026-11-18) |
-| 19 | [Email alerts for web members, and an open beta](2026-11-22-email-alerts-and-open-beta.md) | A1, E1, F2, G1, J1 | Proposed (2026-11-22) |
+| 20 | [Email alerts for web members, and an open beta](2026-11-22-email-alerts-and-open-beta.md) | A1, E1, F2, G1, J1 | Proposed (2026-11-22) |

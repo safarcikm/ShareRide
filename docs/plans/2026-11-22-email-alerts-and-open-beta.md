@@ -19,8 +19,8 @@ email link on the web.
 (API, integration tests against PostgreSQL), Expo Router and React Native
 (app, Jest with RNTL 14), Playwright web journeys.
 
-**Spec:** [spec 19](../specs/2026-11-22-email-alerts-and-open-beta.md),
-[ADR 0033](../decisions/0033-open-web-beta-reached-by-email.md) (Proposed).
+**Spec:** [spec 20](../specs/2026-11-22-email-alerts-and-open-beta.md),
+[ADR 0035](../decisions/0035-open-web-beta-reached-by-email.md) (Proposed).
 
 ## Global Constraints
 
@@ -47,7 +47,7 @@ email link on the web.
 
 ## PR 1: spec, plan and ADR
 
-- [ ] Spec 19, this plan, ADR 0033 (Proposed), the indexes, open
+- [ ] Spec 20, this plan, ADR 0035 (Proposed), the indexes, open
       questions A53 and A54, the roadmap's milestone 12 and Phase 3.
 
 ## PR 2: by email, and the beta open
