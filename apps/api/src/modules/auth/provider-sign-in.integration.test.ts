@@ -446,7 +446,7 @@ describe("a newcomer (spec 19, 3.3)", () => {
     const made = await api.connection.db
       .select({ id: users.id })
       .from(users)
-      .where(eq(users.phoneE164, results[0]?.ok === true ? (phones[1] ?? "") : (phones[0] ?? "")));
+      .where(eq(users.phoneE164, results[0].ok ? (phones[1] ?? "") : (phones[0] ?? "")));
     expect(made).toEqual([]);
   });
 

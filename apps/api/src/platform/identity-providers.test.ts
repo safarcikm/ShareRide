@@ -57,7 +57,9 @@ function idToken(options: TokenOptions = {}): Promise<string> {
 function fakeTokenEndpoint(answer: () => Promise<Response>) {
   const requests: { url: string; body: URLSearchParams }[] = [];
   const fetchFake = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    requests.push({ url: String(input), body: new URLSearchParams(String(init?.body)) });
+    const url = input instanceof Request ? input.url : input.toString();
+    const body = typeof init?.body === "string" ? init.body : "";
+    requests.push({ url, body: new URLSearchParams(body) });
     return answer();
   }) as typeof fetch;
   return { requests, fetch: fetchFake };
@@ -233,7 +235,7 @@ describe("the development provider (plan 4.3)", () => {
   it("lists made-up people: with a verified email, a hidden one, and an unverified one", () => {
     expect(devPeople.map((person) => person.claims.email_verified)).toEqual([true, true, false]);
     for (const person of devPeople) {
-      expect(String(person.claims.email)).toMatch(/@(example\.com|privaterelay\.example)$/);
+      expect(person.claims.email).toMatch(/@(example\.com|privaterelay\.example)$/);
     }
   });
 

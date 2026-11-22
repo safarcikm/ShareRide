@@ -297,8 +297,8 @@ opens and merges once CI is green (Martin's rule of 2026-11-16).
       checks
 - [ ] `POST /v1/auth/oauth/apple/callback` taking a form body, the one
       exception to JSON bodies, with a test that no other route takes one
-- [ ] Render blueprint entries (`sync: false`), the runbook
-      `docs/operations/sign-in-providers.md` with Martin's steps (section 6)
+- [ ] Render blueprint entries (`sync: false`), and Martin's Apple steps
+      (section 6) in the staging runbook
 - Verify: as PR 2, plus review focus 5
 
 ### PR 3: `feat(app)`: Continue with Google and Apple
@@ -325,7 +325,9 @@ opens and merges once CI is green (Martin's rule of 2026-11-16).
 
 ## 6. Martin's steps
 
-Exact clicks go in the runbook with PR 2b. In short:
+Exact clicks are in the staging runbook: Google's in
+[Turn on Google sign-in](../operations/staging.md#turn-on-google-sign-in)
+(PR 2), Apple's with PR 2b. In short:
 
 1. **Google Cloud** (free): a project "ShareRide"; Google Auth Platform,
    Branding (app name, support email, the domain `skinnar.is`, links to the

@@ -383,6 +383,53 @@ steps:
 To stop taking photos, set `PHOTO_STORAGE` to `none`: the app and the
 console then show none, and the bucket keeps the files.
 
+## Turn on Google sign-in
+
+Staging shows no "Continue with Google" until Google knows ShareRide
+([ADR 0034](../decisions/0034-google-and-apple-sign-in-through-our-api.md),
+[spec 19](../specs/2026-11-22-google-and-apple-sign-in.md)). It is free.
+The blueprint already sets `API_ORIGIN` = `https://staging.skinnar.is`,
+where Google sends the browser back. Martin's steps:
+
+1. Open [Google Cloud](https://console.cloud.google.com/) with the Google
+   account that should own ShareRide's sign-in. In the project picker at
+   the top, **New project**: name `ShareRide`, then **Create**, and pick
+   it.
+2. Menu, **Google Auth Platform** (the old "OAuth consent screen" leads
+   there too), **Get started**: app name `ShareRide`, a support email,
+   audience **External**, a contact email, agree to the policy, then
+   **Create**.
+3. **Branding**: home page `https://staging.skinnar.is`, privacy policy
+   `https://staging.skinnar.is/legal/privacy`, terms of service
+   `https://staging.skinnar.is/legal/terms`, and under authorised domains
+   `skinnar.is`. Leave the logo out: a logo needs Google's review, and the
+   basic sign-in does not. **Save**.
+4. **Data access**, **Add or remove scopes**: tick `openid`,
+   `.../auth/userinfo.email` and `.../auth/userinfo.profile` and nothing
+   else, then **Update** and **Save**.
+5. **Audience**: **Publish app**, then **Confirm**, so anyone can sign in,
+   not only listed test users. With these three scopes Google asks for no
+   review.
+6. **Clients**, **Create client**: type **Web application**, name
+   `ShareRide staging`, no JavaScript origins, and one authorised redirect
+   URI, exactly `https://staging.skinnar.is/v1/auth/oauth/google/callback`.
+   **Create**. Google shows the client ID and the client secret once:
+   copy the secret straight into Render (step 7), never anywhere else.
+7. Open `shareride-staging-api`, **Environment**, and add
+   `GOOGLE_SIGN_IN` set to `google`, `GOOGLE_CLIENT_ID` (the ID, ending in
+   `.apps.googleusercontent.com`) and `GOOGLE_CLIENT_SECRET` (as a
+   secret), then save. Render deploys the service again; a missing one
+   stops the API from starting, and the running version stays.
+8. Check, once the app's buttons are out (plan PR 3): in a laptop's browser
+   and a phone's browser, continue with Google as someone new (the phone
+   step comes once), then sign out and continue with Google again (no
+   code). Settings, Sign-in methods lists Google.
+
+To turn Google off, set `GOOGLE_SIGN_IN` to `off`: the button goes, and
+links stay for when it is back. A new secret (Google Cloud, the client,
+**Add secret**) goes into Render the same way; delete the old one in
+Google Cloud once the API runs with the new.
+
 ## Restore the database
 
 Staging data is generated, so a restore is rarely needed; we rehearse it

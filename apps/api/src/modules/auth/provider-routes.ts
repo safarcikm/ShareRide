@@ -90,8 +90,7 @@ export function registerProviderRoutes(
       returnUrl: query.returnUrl,
       clientKey: clientKey(c),
     });
-    // The responses are a redirect or a page, which the OpenAPI types do not describe.
-    return browserStep(c, step) as never;
+    return browserStep(c, step);
   });
 
   app.openapi(toOpenApiRoute(providerCallbackRoute), async (c) => {
@@ -102,7 +101,7 @@ export function registerProviderRoutes(
       code: query.code,
       error: query.error,
     });
-    return browserStep(c, step) as never;
+    return browserStep(c, step);
   });
 
   // The development stand-in's page (ADR 0034), only while a provider is it.
