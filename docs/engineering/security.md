@@ -21,7 +21,7 @@ apps.
 | Harassment | Abusive messages, unsafe behaviour | Report and block, moderation queue, suspension, retained evidence for reports |
 | Data breach | Leaked database or backups | Encryption at rest and in transit, least-privilege database roles, no personal data in logs, access audit |
 | Supply chain | Malicious package or action | Lockfile, pinned actions, dependency review, minimal dependencies |
-| Admin misuse | Operator account compromised | Separate operator role, passkey or hardware-key sign-in, audit log of every admin action |
+| Admin misuse | Operator account compromised | Separate operator role, passkey or hardware-key sign-in (a password for now while `ADMIN_PASSWORD` is set, ADR 0041), audit log of every admin action |
 
 ## Baseline controls
 
@@ -200,8 +200,8 @@ is built, in `apps/api/src/modules/admin` with the rules in
 - **Guard:** every path under `/admin/v1` needs a live console session of an
   active account with the `operator` role, checked by one middleware before
   any route, so a route that forgets its own guard is still closed. Only
-  the four sign-in and setup steps under `/admin/v1/auth/`, listed exactly
-  in `openAdminRoutes`, are open. The app's bearer tokens are never
+  the sign-in and setup steps under `/admin/v1/auth/`, listed exactly in
+  `openAdminRoutes`, are open. The app's bearer tokens are never
   accepted there, and the console's cookie is never sent to `/v1`.
 - **Role:** only the `operator` command on the server gives or removes it
   (`pnpm --filter @shareride/api operator`). Removing it ends the account's
@@ -226,6 +226,15 @@ is built, in `apps/api/src/modules/admin` with the rules in
   sees the role gone. Signing in and setup links
   are limited per address (10 a minute, 60 an hour, keyed by a hash of the
   address, of its /64 network for IPv6).
+- **Password, for now:** while `ADMIN_PASSWORD` is set (12 characters or
+  more), an operator can also sign in with their phone number and that
+  password ([ADR 0041](../decisions/0041-console-password-for-now.md)). It
+  is compared in constant time through SHA-256 digests before the number is
+  looked up, never logged, limited per address as above and to 50 tries an
+  hour from all addresses together, and audited as `operator.signed_in` with
+  `{ "method": "password" }`. Unset, `/admin/v1/auth/methods` says it is
+  off and `/admin/v1/auth/password` refuses every try. It must be unset on
+  production.
 - **Sessions:** separate from the app's. The cookie `sr_operator` is
   `HttpOnly`, `SameSite=Strict`, `Path=/admin/v1` and `Secure` outside
   development, and holds 256 random bits (prefix `sr_os_`) kept only as a

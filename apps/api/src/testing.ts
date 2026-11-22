@@ -79,6 +79,8 @@ export interface TestApi {
 export const testWebAppUrl = "https://shareride.test";
 /** The console origin passkeys are bound to in tests (ADR 0028). */
 export const testAdminOrigin = "https://shareride.test";
+/** The console's temporary password in tests (ADR 0041). */
+export const testAdminPassword = "integration test console password";
 /** Where the browser reaches the API in tests, for Google's and Apple's way back. */
 export const testApiOrigin = "http://api.test";
 
@@ -126,6 +128,7 @@ export async function startTestApi(): Promise<TestApi> {
     secureCookies: false,
     payments: createTestPaymentProvider(),
     adminOrigin: testAdminOrigin,
+    adminPassword: testAdminPassword,
     photos,
     // Legs on straight lines; south of 63.3° N, at sea off the south coast, there is no road.
     router: createStraightLineRouter({ offRoad: (position) => position.latitude < 63.3 }),

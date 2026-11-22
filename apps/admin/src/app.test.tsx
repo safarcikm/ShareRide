@@ -6,9 +6,11 @@ import {
   adminHomeRoute,
   adminMeRoute,
   adminPasskeysRoute,
+  adminPasswordSignInRoute,
   adminRemovePasskeyRoute,
   adminSetupOptionsRoute,
   adminSetupRoute,
+  adminSignInMethodsRoute,
   adminSignInOptionsRoute,
   adminSignInRoute,
   adminSignOutRoute,
@@ -67,6 +69,67 @@ function start(path: string) {
   return { api, browser, show };
 }
 
+describe("signing in with the password (ADR 0041)", () => {
+  function withPassword(path: string) {
+    const started = start(path);
+    started.api.on(adminSignInMethodsRoute, { status: 200, data: { password: true } });
+    started.api.on(adminPasswordSignInRoute, { status: 200, data: anna });
+    return started;
+  }
+
+  async function fillIn(phoneNumber: string, password: string) {
+    fireEvent.change(await screen.findByLabelText("Phone number"), {
+      target: { value: phoneNumber },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: password } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in with the password" }));
+  }
+
+  it("is offered only when it is on", async () => {
+    const off = start("/admin");
+    const { unmount } = off.show();
+    expect(await screen.findByRole("button", { name: "Sign in with a passkey" })).toBeTruthy();
+    await waitFor(() => {
+      expect(off.api.called(adminSignInMethodsRoute)).toHaveLength(1);
+    });
+    expect(screen.queryByLabelText("Password")).toBeNull();
+    unmount();
+
+    withPassword("/admin").show();
+    expect(await screen.findByLabelText("Password")).toBeTruthy();
+  });
+
+  it("signs in with the phone number and the password, then opens the page asked for", async () => {
+    const { api, show } = withPassword("/admin/passkeys");
+    show();
+    await fillIn("690 0000", "a long console password");
+    expect(await screen.findByRole("heading", { name: "Passkeys" })).toBeTruthy();
+    expect(api.called(adminPasswordSignInRoute)[0]?.input).toEqual({
+      body: { phoneNumber: "690 0000", password: "a long console password" },
+    });
+  });
+
+  it("says when the number or the password is wrong", async () => {
+    const { api, show } = withPassword("/admin");
+    api.on(adminPasswordSignInRoute, { status: 401, error: { code: "password_invalid" } });
+    show();
+    await fillIn("690 0000", "not it");
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "The phone number or the password is wrong",
+    );
+  });
+
+  it("asks for both fields before sending", async () => {
+    const { api, show } = withPassword("/admin");
+    show();
+    await fillIn("", "");
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "Type your phone number and the password",
+    );
+    expect(api.called(adminPasswordSignInRoute)).toEqual([]);
+  });
+});
+
 describe("signing in", () => {
   it("sends a signed-out operator to sign in, then on to the page asked for", async () => {
     const { api, browser, show } = start("/admin/passkeys");
@@ -97,6 +160,16 @@ describe("signing in", () => {
     browser.state.failWith = Object.assign(new Error("stopped"), { name: "NotAllowedError" });
     fireEvent.click(screen.getByRole("button", { name: "Sign in with a passkey" }));
     expect((await screen.findByRole("alert")).textContent).toContain("cancelled or timed out");
+  });
+
+  it("says when the page is open on an address the passkeys do not work on", async () => {
+    const { browser, show } = start("/admin");
+    browser.state.failWith = Object.assign(new Error("wrong RP ID"), { name: "SecurityError" });
+    show();
+    fireEvent.click(await screen.findByRole("button", { name: "Sign in with a passkey" }));
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "Passkeys do not work on this address",
+    );
   });
 
   it("says when the browser has no passkeys", async () => {

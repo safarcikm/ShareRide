@@ -279,6 +279,14 @@ describe("loadConfig", () => {
     );
   });
 
+  it("takes a console password of 12 characters or more, and none by default (ADR 0041)", () => {
+    expect(loadConfig(valid).adminPassword).toBeUndefined();
+    expect(loadConfig({ ...valid, ADMIN_PASSWORD: "twelve chars" }).adminPassword).toBe(
+      "twelve chars",
+    );
+    expect(() => loadConfig({ ...valid, ADMIN_PASSWORD: "short" })).toThrow("ADMIN_PASSWORD");
+  });
+
   it("gives the operator command the same console origin as the API", () => {
     expect(loadAdminOrigin({ NODE_ENV: "development" })).toBe("http://localhost:3000");
     expect(loadAdminOrigin({ NODE_ENV: "production" })).toBeUndefined();

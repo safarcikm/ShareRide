@@ -1918,6 +1918,16 @@ export const en = {
   "admin.signIn.unavailable": "This account cannot use the console.",
   "admin.signIn.ended": "Your session ended. Sign in again.",
   "admin.signIn.signedOut": "You signed out.",
+  "admin.signIn.passwordTitle": "Or sign in with a password",
+  "admin.signIn.passwordBody": "Your account's phone number and the console's password.",
+  "admin.signIn.phoneNumber": "Phone number",
+  "admin.signIn.password": "Password",
+  "admin.signIn.passwordButton": "Sign in with the password",
+  "admin.signIn.passwordWrong": "The phone number or the password is wrong.",
+  "admin.signIn.passwordMissing": "Type your phone number and the password.",
+  "admin.signIn.tooManyTries": "Too many tries. Wait a few minutes, then try again.",
+  "admin.passkey.wrongAddress":
+    "Passkeys do not work on this address. Open the console at its own address and try again.",
   "admin.passkey.cancelled":
     "The passkey was not used: the request was cancelled or timed out. Try again.",
   "admin.passkey.unsupported":

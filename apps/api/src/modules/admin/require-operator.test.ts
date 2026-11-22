@@ -5,6 +5,7 @@ import {
   clearOperatorCookie,
   createRequireOperator,
   guardAdminPaths,
+  openAdminRoutes,
   setOperatorCookie,
 } from "./require-operator.ts";
 import type { OperatorSessionService } from "./sessions.ts";
@@ -75,5 +76,18 @@ describe("guardAdminPaths", () => {
     expect((await app.request("/v1/health")).status).toBe(200);
     expect((await app.request("/admin")).status).toBe(200);
     expect((await app.request("/admin-v1")).status).toBe(200);
+  });
+});
+
+describe("openAdminRoutes", () => {
+  it("opens the passkey sign-in and the password sign-in (ADR 0041), nothing else", () => {
+    expect([...openAdminRoutes].sort()).toEqual([
+      "GET /admin/v1/auth/methods",
+      "POST /admin/v1/auth/password",
+      "POST /admin/v1/auth/setup",
+      "POST /admin/v1/auth/setup/options",
+      "POST /admin/v1/auth/sign-in",
+      "POST /admin/v1/auth/sign-in/options",
+    ]);
   });
 });

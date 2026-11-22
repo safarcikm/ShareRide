@@ -243,7 +243,30 @@ step 4). Once:
    other devices from inside the console.
 4. From then on, sign in at `https://staging.puffinride.is/admin`.
 
-Lost every passkey: run step 2 again for a new link. To take the role
+### Sign in with a password for now
+
+While passkeys are being fixed, the console also takes your phone number and
+a password set in Render
+([ADR 0041](../decisions/0041-console-password-for-now.md)):
+
+1. Make a password of 12 characters or more that you use nowhere else, for
+   example four random words, and keep it in your password manager.
+2. In Render, open **shareride-staging-api**, then **Environment**, and
+   **Add Environment Variable**: key `ADMIN_PASSWORD`, value your password.
+   **Save Changes** (Render redeploys the API, a few minutes).
+3. Open `https://staging.puffinride.is/admin`. Under **Or sign in with a
+   password**, type your phone number and the password, then **Sign in with
+   the password**.
+4. On the **Passkeys** page, save a passkey for this device right away (it
+   works for 5 minutes after signing in).
+
+To turn it off, delete `ADMIN_PASSWORD` in the same place. Every password
+sign-in is in the audit log as `operator.signed_in` with method
+`password`.
+
+### Lost every passkey
+
+Run step 2 of the first list above again for a new link. To take the role
 away: `node apps/api/src/operator-cli.ts remove <phone number or user
 ID>`, which also ends that account's console sessions and deletes its
 passkeys; `list` shows the operators. Changing `ADMIN_ORIGIN` (for example

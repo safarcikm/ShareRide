@@ -2,6 +2,7 @@ import { createPrivateKey } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { z } from "zod";
+import { operatorPasswordRules } from "@shareride/domain";
 
 /** An origin such as https://shareride.is: scheme, host and port, nothing more. */
 const originSchema = z.string().refine((value) => {
@@ -129,6 +130,12 @@ const environmentSchema = z
      * server, the console's sign-in is off until it is set.
      */
     ADMIN_ORIGIN: originSchema.optional(),
+    /**
+     * The console's temporary password (ADR 0041): with it, an operator
+     * signs in with their phone number and this password as well as with a
+     * passkey. Unset, password sign-in is off.
+     */
+    ADMIN_PASSWORD: z.string().min(operatorPasswordRules.minLength).optional(),
     /**
      * Where meeting point and profile photos are kept (ADRs 0022 and
      * 0033): `hetzner` is the
@@ -502,6 +509,8 @@ export interface Config {
   readonly email: EmailConfig;
   /** The console's origin for passkeys; undefined turns its sign-in off (ADR 0028). */
   readonly adminOrigin: string | undefined;
+  /** The console's temporary password; undefined turns password sign-in off (ADR 0041). */
+  readonly adminPassword: string | undefined;
   /** Where meeting point and profile photos are kept, if anywhere (ADRs 0022 and 0033). */
   readonly photos: PhotoStorageConfig;
   /** Google and Apple sign-in (ADR 0034). */
@@ -653,6 +662,7 @@ export function loadConfig(environment: Readonly<Record<string, string | undefin
     push: { accessToken: env.EXPO_ACCESS_TOKEN },
     email: emailConfig(env),
     adminOrigin: adminOriginOf(env),
+    adminPassword: env.ADMIN_PASSWORD,
     photos: photoStorageConfig(env),
     signIn: signInConfig(env),
   };

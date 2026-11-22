@@ -5,9 +5,11 @@ import {
   adminConfirmOptionsRoute,
   adminConfirmRoute,
   adminPasskeysRoute,
+  adminPasswordSignInRoute,
   adminRemovePasskeyRoute,
   adminSetupOptionsRoute,
   adminSetupRoute,
+  adminSignInMethodsRoute,
   adminSignInOptionsRoute,
   adminSignInRoute,
 } from "@shareride/contracts";
@@ -23,11 +25,16 @@ import { toOpenApiRoute, validated } from "../../openapi.ts";
 import type { RateLimiter } from "../../platform/memory-rate-limiter.ts";
 import { auditRequestOf } from "./audit.ts";
 import type { PasskeyService, SignedInOperator } from "./passkeys.ts";
+import type { PasswordSignIn } from "./password.ts";
 import { setOperatorCookie } from "./require-operator.ts";
 
 export interface AdminAuthRoutesDependencies {
   readonly db: Database;
   readonly passkeys: PasskeyService;
+  /** The temporary password sign-in (ADR 0041). */
+  readonly password: PasswordSignIn;
+  /** Password tries from all addresses together. */
+  readonly passwordLimiter: RateLimiter;
   readonly requireOperator: MiddlewareHandler<AppEnv>;
   readonly clientAddress: (c: Context) => string;
   /** Per-address limits on signing in and setup links, keyed without the plain address. */
@@ -38,9 +45,9 @@ export interface AdminAuthRoutesDependencies {
 }
 
 /**
- * Passkey sign-in and the operator's passkeys (ADR 0028). The four routes
- * under /admin/v1/auth are the only console routes open without a session
- * (`openAdminRoutes`).
+ * Passkey sign-in, the temporary password sign-in (ADR 0041) and the
+ * operator's passkeys (ADR 0028). The routes under /admin/v1/auth are the
+ * only console routes open without a session (`openAdminRoutes`).
  */
 export function registerAdminAuthRoutes(
   app: OpenAPIHono<AppEnv>,
@@ -49,6 +56,8 @@ export function registerAdminAuthRoutes(
   const {
     db,
     passkeys,
+    password,
+    passwordLimiter,
     requireOperator,
     clientAddress,
     limiter,
@@ -153,6 +162,48 @@ export function registerAdminAuthRoutes(
         : errorResponse(c, 401, "passkey_invalid", "That passkey did not work. Try again.");
     }
     return signedIn(c, result.value);
+  });
+
+  app.openapi(toOpenApiRoute(adminSignInMethodsRoute), (c) =>
+    c.json({ password: password.on }, 200),
+  );
+
+  app.openapi(toOpenApiRoute(adminPasswordSignInRoute), async (c) => {
+    const refused = limited(c);
+    if (refused !== null) return refused;
+    const body = validated(c, "json", adminPasswordSignInRoute.request.body);
+    if (password.on) {
+      const all = passwordLimiter.hit("all");
+      if (!all.ok) {
+        logger.warn({ requestId: c.get("requestId") }, "console password tries limited");
+        return errorResponse(c, 429, "rate_limited", "Too many tries. Wait a little.", {
+          retryAfterSeconds: all.error.retryAfterSeconds,
+        });
+      }
+    }
+    const result = await password.signIn({
+      phoneNumber: body.phoneNumber,
+      password: body.password,
+      request: auditRequestOf(c, clientAddress),
+    });
+    if (result.ok) return signedIn(c, result.value);
+    logger.warn(
+      { requestId: c.get("requestId"), code: result.error.code },
+      "console password sign-in refused",
+    );
+    switch (result.error.code) {
+      case "password_sign_in_off":
+        return errorResponse(c, 403, "password_sign_in_off", "Password sign-in is off.");
+      case "operator_unavailable":
+        return errorResponse(
+          c,
+          403,
+          "operator_unavailable",
+          "This account cannot use the console.",
+        );
+      default:
+        return errorResponse(c, 401, "password_invalid", "The phone number or password is wrong.");
+    }
   });
 
   app.openapi(toOpenApiRoute(adminPasskeysRoute, requireOperator), async (c) => {
