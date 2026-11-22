@@ -1366,6 +1366,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   for an email after the first name when the account has none verified or
   waiting, and sends its link before the profile is saved, once. A server
   that sends no email lets sign-up go on. The phone apps do not ask.
+- Profile photos (milestone 13; ADRs 0033 and 0037): a member adds,
+  changes or removes a photo in Profile, from their photos or, on phones,
+  the camera. The app crops it square, at most 640 pixels, writes a JPEG
+  and drops what the phone added; the API checks it again and keeps it in
+  the Hetzner bucket in Nuremberg (migration `0056_profile_photos`). A file
+  nobody has any more is deleted at once, or by the `photo-files` job every
+  minute. Every avatar beside a name shows the photo, or the first letter.
+  A driver needs one to publish a trip while the server keeps photos. The
+  operator can hide one from the console, with appeal (migration
+  `0058_hide_profile_photos`).
 
 ### Fixed
 

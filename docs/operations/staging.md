@@ -473,8 +473,9 @@ without one, though the console recommends it (ADR 0036). Martin's steps:
 
 1. In the Hetzner Console, open (or create) a project, then **Object
    Storage**, **Create Bucket**: location Nuremberg (`nbg1`), a name such
-   as `shareride-staging-photos`, and visibility **Private**. Sign
-   Hetzner's data processing agreement in the account's settings.
+   as `shareride-staging-photos`, and visibility **Private**. Leave
+   **Object Lock** off: with it, a removed photo would stay in the bucket.
+   Sign Hetzner's data processing agreement in the account's settings.
 2. In the project's **Security**, **S3 credentials**, generate
    credentials. The secret key is shown once: copy it straight into
    Render, never anywhere else.
@@ -487,9 +488,15 @@ without one, though the console recommends it (ADR 0036). Martin's steps:
 4. Check: add a photo to a point in the console. It shows there and in
    the app's meeting point details, and its link stops working about two
    hours later.
+5. Check profile photos: in the app, open **Profile** and **Add a photo**.
+   It shows beside your name on your trips, bookings and chats. Remove it:
+   its file is deleted from the bucket at once, or by the API's
+   `photo-files` job, which runs every minute while storage is on.
 
-To stop taking photos, set `PHOTO_STORAGE` to `none`: the app and the
-console then show none, and the bucket keeps the files.
+While photos are on, a driver needs a profile photo to publish a trip
+(ADR 0033). To stop taking photos, set `PHOTO_STORAGE` to `none`: the app
+and the console then show none, drivers are not asked for one, and the
+bucket keeps the files.
 
 ## Turn on Google sign-in
 

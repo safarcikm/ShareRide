@@ -258,7 +258,9 @@ profile photos: [plan](../plans/2026-11-22-profile-photos.md); sign-in:
 [plan](../plans/2026-11-22-google-and-apple-sign-in.md), started 2026-11-22
 for the open beta)
 
-- [ ] Profile photos, required for drivers before their first trip
+- [x] Profile photos, required for drivers before their first trip
+      (built 2026-11-22: #186, #189, #191, #193, #195, #198 and the photo
+      before posting; ADRs 0033 and 0037)
 - [x] Google sign-in (built 2026-11-22: #188, #192, #199, #200; on staging
       once Martin turns it on, runbook "Turn on Google sign-in")
 - [x] Sign in with Apple (built 2026-11-22: #196, #199, #200; on staging

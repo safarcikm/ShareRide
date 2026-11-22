@@ -87,7 +87,8 @@ first name only, never the phone number.
 (make and model, colour, number plate; the plate can be added up to
 departure). Any car the driver may use; who owns it does not matter. Declare a
 valid
-driving licence before publishing the first trip (see decision 3).
+driving licence before publishing the first trip (see decision 3), and add a
+profile photo, so passengers know who to look for.
 The registration number is shown only to booked passengers.
 
 **A4. Settings (Must).** Language, notification choices per category,

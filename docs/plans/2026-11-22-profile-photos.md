@@ -2,7 +2,8 @@
 
 - **Status:** Approved 2026-11-22 (Martin: the design in the project thread,
   and "the app cleans, the API checks" on a decision card,
-  [ADR 0033](../decisions/0033-profile-photos-made-in-the-app-and-checked-by-the-api.md))
+  [ADR 0033](../decisions/0033-profile-photos-made-in-the-app-and-checked-by-the-api.md)).
+  Built 2026-11-22: #186, #189, #191, #193, #195, #198 and PR 4b with PR 6
 - **Covers:** [milestone 13](../strategy/roadmap.md), first item:
   profile photos, required for drivers before they publish. This is
   [spec 1](../specs/2026-11-13-sign-in-and-profile.md) 3.5 (the photo),
@@ -232,8 +233,9 @@ required: each half is smaller to review.
 
 ### PR 6: `docs(operations)`: photos on staging
 
-- [ ] Runbook "Turn on photos" covers profile photos and the minute job,
-      roadmap tick, plan as built, features list
+- [x] Runbook "Turn on photos" covers profile photos and the minute job,
+      roadmap tick, plan as built, features list. Built with PR 4b, as
+      that is when the rule starts
 - Verify: markdownlint
 
 ## 6. Working alongside the other threads
