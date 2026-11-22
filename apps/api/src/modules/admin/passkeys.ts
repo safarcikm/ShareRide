@@ -52,8 +52,12 @@ export interface SignedInOperator {
 }
 
 export interface PasskeyService {
-  /** A setup link for the `operator` command; replaces the account's earlier ones. */
-  createSetupLink(userId: string): Promise<{ token: string; expiresAt: Date }>;
+  /**
+   * A setup link for the `operator` command or a recovery code (spec 22);
+   * replaces the account's earlier ones. With `tx`, it is made in that
+   * transaction.
+   */
+  createSetupLink(userId: string, tx?: Transaction): Promise<{ token: string; expiresAt: Date }>;
   setupOptions(token: string): Promise<Result<WebAuthnOptions, SetupError>>;
   /** Saves the first passkey from a setup link and signs the operator in. */
   setup(input: {
@@ -361,15 +365,16 @@ export function createPasskeyService(dependencies: PasskeyServiceDependencies): 
   }
 
   return {
-    async createSetupLink(userId) {
+    async createSetupLink(userId, tx) {
       const token = newToken("operatorSetup");
       const expiresAt = new Date(clock().getTime() + passkeyRules.setupLinkMinutes * 60_000);
-      await db.transaction(async (tx) => {
-        await tx.delete(operatorSetupLinks).where(eq(operatorSetupLinks.userId, userId));
-        await tx
+      const replace = async (executor: Transaction) => {
+        await executor.delete(operatorSetupLinks).where(eq(operatorSetupLinks.userId, userId));
+        await executor
           .insert(operatorSetupLinks)
           .values({ userId, tokenHash: hashToken(token), expiresAt });
-      });
+      };
+      await (tx === undefined ? db.transaction(replace) : replace(tx));
       return { token, expiresAt };
     },
 

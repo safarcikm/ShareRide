@@ -80,10 +80,12 @@ describe("guardAdminPaths", () => {
 });
 
 describe("openAdminRoutes", () => {
-  it("opens the passkey sign-in and the password sign-in (ADR 0041), nothing else", () => {
+  it("opens the passkey sign-in, the password sign-in (ADR 0041) and the two recovery steps (spec 22), nothing else", () => {
     expect([...openAdminRoutes].sort()).toEqual([
       "GET /admin/v1/auth/methods",
       "POST /admin/v1/auth/password",
+      "POST /admin/v1/auth/recovery/code",
+      "POST /admin/v1/auth/recovery/verify",
       "POST /admin/v1/auth/setup",
       "POST /admin/v1/auth/setup/options",
       "POST /admin/v1/auth/sign-in",

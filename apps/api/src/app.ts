@@ -32,6 +32,7 @@ import {
   createOperatorSessionService,
   createPasskeyService,
   createPasswordSignIn,
+  createRecoveryService,
   createRequireOperator,
   guardAdminPaths,
   operatorCookie,
@@ -368,39 +369,6 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     const requireOperator = createRequireOperator(operatorSessions, features.secureCookies);
     app.use(guardAdminPaths(requireOperator));
     registerAdminRoutes(app, { ...features, sessions: operatorSessions, requireOperator });
-    if (features.adminOrigin !== undefined) {
-      registerAdminAuthRoutes(app, {
-        ...features,
-        logger,
-        passkeys: createPasskeyService({
-          ...features,
-          sessions: operatorSessions,
-          adminOrigin: features.adminOrigin,
-        }),
-        password: createPasswordSignIn({
-          ...features,
-          sessions: operatorSessions,
-          password: features.adminPassword,
-        }),
-        passwordLimiters: {
-          perAddress: createMemoryRateLimiter({
-            rules: operatorPasswordRules.triesPerAddress,
-            clock: features.clock,
-          }),
-          all: createMemoryRateLimiter({
-            rules: operatorPasswordRules.triesFromAll,
-            clock: features.clock,
-          }),
-        },
-        requireOperator,
-        limiter: createMemoryRateLimiter({
-          rules: operatorSignInLimitsPerAddress,
-          clock: features.clock,
-        }),
-        clientKey: (c) =>
-          features.hasher("operator-sign-in", addressBlock(features.clientAddress(c))),
-      });
-    }
     const legal = createLegalService(features);
     const account = createAccountService({ ...features, legal });
     const operatorSettings = createSettingsService({
@@ -437,6 +405,46 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       smsPaused: () => paused("sms"),
     });
     const requireAuth = createRequireAuth(auth);
+    if (features.adminOrigin !== undefined) {
+      const passkeys = createPasskeyService({
+        ...features,
+        sessions: operatorSessions,
+        adminOrigin: features.adminOrigin,
+      });
+      registerAdminAuthRoutes(app, {
+        ...features,
+        logger,
+        passkeys,
+        recovery: createRecoveryService({
+          ...features,
+          auth,
+          passkeys,
+          sessions: operatorSessions,
+        }),
+        password: createPasswordSignIn({
+          ...features,
+          sessions: operatorSessions,
+          password: features.adminPassword,
+        }),
+        passwordLimiters: {
+          perAddress: createMemoryRateLimiter({
+            rules: operatorPasswordRules.triesPerAddress,
+            clock: features.clock,
+          }),
+          all: createMemoryRateLimiter({
+            rules: operatorPasswordRules.triesFromAll,
+            clock: features.clock,
+          }),
+        },
+        requireOperator,
+        limiter: createMemoryRateLimiter({
+          rules: operatorSignInLimitsPerAddress,
+          clock: features.clock,
+        }),
+        clientKey: (c) =>
+          features.hasher("operator-sign-in", addressBlock(features.clientAddress(c))),
+      });
+    }
     registerAuthRoutes(app, { ...features, auth, account, requireAuth });
     const providerSignIn = createProviderSignInService({
       ...features,
