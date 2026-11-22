@@ -3,7 +3,8 @@
 **Owner:** Martin · **Date:** 2026-11-22 · **Status:** Approved with
 [spec 19](../specs/2026-11-22-google-and-apple-sign-in.md) and
 [ADR 0034](../decisions/0034-google-and-apple-sign-in-through-our-api.md)
-(Martin, 2026-11-22, on a decision card); building
+(Martin, 2026-11-22, on a decision card); built 2026-11-22 in PRs
+188, 192, 196, 199, 200 and this close-out
 
 > **For agentic workers:** use superpowers:executing-plans to carry this out
 > task by task. Tick each task as its pull request merges.
@@ -352,7 +353,8 @@ sign-in here, Settings in 3b.
 
 ### PR 4: `docs`: close-out
 
-- [ ] Roadmap ticks, spec 19 and this plan marked built, ADR index
+- [x] Roadmap ticks, spec 19 and this plan marked built, ADR index (ADR
+      0034 was already Accepted), the changelog
 
 ## 6. Martin's steps
 
