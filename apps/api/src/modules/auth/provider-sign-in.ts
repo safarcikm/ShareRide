@@ -12,7 +12,7 @@ import {
   type ReturnUrlsAllowed,
   type SignInProvider,
 } from "@shareride/domain";
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, isNull, lte } from "drizzle-orm";
 import type { Logger } from "../../logger.ts";
 import { hashToken, newToken, type KeyedHasher } from "../../platform/crypto.ts";
 import { uniqueViolation } from "../../platform/database-errors.ts";
@@ -146,6 +146,32 @@ const addSeconds = (date: Date, seconds: number) => new Date(date.getTime() + se
 /** The longest return address taken; ours are far shorter. */
 const maxReturnUrlLength = 300;
 
+/** What Google and Apple send when the person pressed Cancel (plan, section 1, item 2). */
+const cancelErrors: readonly string[] = ["access_denied", "user_cancelled_authorize"];
+
+/**
+ * The errors of OAuth 2.0 (RFC 6749, 4.1.2.1) and OpenID Connect (Core
+ * 3.1.2.6) that are logged by name; any other text is logged as "other".
+ */
+const knownProviderErrors: readonly string[] = [
+  "no_code",
+  "invalid_request",
+  "unauthorized_client",
+  "unsupported_response_type",
+  "invalid_scope",
+  "server_error",
+  "temporarily_unavailable",
+  "interaction_required",
+  "login_required",
+  "account_selection_required",
+  "consent_required",
+  "invalid_request_uri",
+  "invalid_request_object",
+  "request_not_supported",
+  "request_uri_not_supported",
+  "registration_not_supported",
+];
+
 function sameChallenge(verifier: string, challenge: string): boolean {
   const left = Buffer.from(pkceChallenge(verifier));
   const right = Buffer.from(challenge);
@@ -277,14 +303,41 @@ export function createProviderSignInService(
           ),
         )
         .returning({ id: providerSignIns.id, returnUrl: providerSignIns.returnUrl });
-      if (claimed === undefined) return { kind: "page", status: 400, page: "expired" };
+      if (claimed === undefined) {
+        // Too late: back to the app, which says so, the first time only.
+        const [late] = await db
+          .delete(providerSignIns)
+          .where(
+            and(
+              eq(providerSignIns.stateHash, hashToken(state)),
+              eq(providerSignIns.provider, input.provider),
+              isNull(providerSignIns.answeredAt),
+              lte(providerSignIns.expiresAt, now),
+            ),
+          )
+          .returning({ returnUrl: providerSignIns.returnUrl });
+        return late === undefined
+          ? { kind: "page", status: 400, page: "expired" }
+          : back(late.returnUrl, "error=expired");
+      }
       const forget = () => db.delete(providerSignIns).where(eq(providerSignIns.id, claimed.id));
 
       if (input.error !== undefined || input.code === undefined) {
         await forget();
         // The person pressed Cancel: back to the sign-in screen, without an error.
-        const cancelled = ["access_denied", "user_cancelled_authorize"].includes(input.error ?? "");
-        return back(claimed.returnUrl, cancelled ? "error=cancelled" : "error=failed");
+        if (cancelErrors.includes(input.error ?? ""))
+          return back(claimed.returnUrl, "error=cancelled");
+        // Anything else is logged, by a name from the OAuth lists only, and not passed on.
+        const said = input.error ?? "no_code";
+        logger.warn(
+          {
+            provider: input.provider,
+            reason: "provider_error",
+            providerError: knownProviderErrors.includes(said) ? said : "other",
+          },
+          "provider sign-in refused",
+        );
+        return back(claimed.returnUrl, "error=failed");
       }
       const claims = await provider.redeem({
         code: input.code,
@@ -412,6 +465,12 @@ export function createProviderSignInService(
               code: "provider_expired",
             });
           }
+          // As the phone step does, so the two link one account in turn.
+          await tx
+            .select({ id: users.id })
+            .from(users)
+            .where(eq(users.id, input.userId))
+            .for("update");
           const decision = decideLink({
             via: "settings",
             accountId: input.userId,

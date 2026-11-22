@@ -192,6 +192,9 @@ export const signInStatuses = ["active", "suspended"];
 export const canSignIn = (status: string) => signInStatuses.includes(status);
 
 /** How often `last_active_at` is written, so not every request writes. */
+/** The outcomes of the phone step that add a way into an account. */
+const linkingOutcomes: readonly LinkOutcome["outcome"][] = ["created", "linked", "replaced"];
+
 const lastActiveWriteSeconds = 5 * 60;
 
 const longestWindowSeconds = (rules: readonly RateLimitRule[]) =>
@@ -510,10 +513,14 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
       now,
     });
 
-    logger.info(
-      { userId: user.id, sessionId, isNewUser, provider: providerLink?.provider },
-      "signed in",
-    );
+    logger.info({ userId: user.id, sessionId, isNewUser }, "signed in");
+    // A new way into the account (spec 19, section 6), for the audit trail.
+    if (providerLink !== undefined && linkingOutcomes.includes(providerLink.outcome)) {
+      logger.info(
+        { userId: user.id, provider: providerLink.provider, outcome: providerLink.outcome },
+        "sign-in method linked",
+      );
+    }
     return ok({
       userId: user.id,
       sessionId,

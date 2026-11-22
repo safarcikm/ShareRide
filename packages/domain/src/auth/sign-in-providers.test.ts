@@ -181,6 +181,17 @@ describe("emailToStore (R19.4)", () => {
       }),
     ).toBe("new@privaterelay.appleid.com");
   });
+
+  it("keeps the account's email when a new Google account takes the old one's place (spec 19, 3.3)", () => {
+    expect(
+      emailToStore({
+        providerEmail: "ana@new.example",
+        accountEmail: "ana@example.com",
+        replacedLinkEmail: "ana@example.com",
+        takenByOther: false,
+      }),
+    ).toBeNull();
+  });
 });
 
 describe("isAllowedReturnUrl (ADR 0034)", () => {

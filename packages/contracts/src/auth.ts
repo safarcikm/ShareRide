@@ -158,7 +158,7 @@ export const verifyPhoneCodeRoute = defineRoute({
     200: { description: "Signed in", schema: signedInSchema },
     400: {
       description:
-        "code_invalid (with attemptsLeft), code_expired, phone_invalid; invite_invalid: the invite code does not work, and counts as a wrong code",
+        "code_invalid (with attemptsLeft), code_expired, phone_invalid; invite_invalid: the invite code does not work, and counts as a wrong code; provider_expired: the Google or Apple sign-in waited more than 30 minutes, and the code is kept",
       ...errors,
     },
     403: {
@@ -166,7 +166,11 @@ export const verifyPhoneCodeRoute = defineRoute({
         "account_unavailable; invite_required: the number has no account and the beta is closed, send the same code again with inviteCode",
       ...errors,
     },
-    409: { description: "beta_full: the beta has no places left", ...errors },
+    409: {
+      description:
+        "beta_full: the beta has no places left; provider_in_use: no account is made for a Google or Apple account another account has, and the code is kept",
+      ...errors,
+    },
     429: { description: "code_attempts_exceeded, with retryAfterSeconds", ...errors },
     503: {
       description:

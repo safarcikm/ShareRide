@@ -239,6 +239,17 @@ const environmentSchema = z
           });
         }
       }
+      if (
+        env.NODE_ENV === "production" &&
+        env.API_ORIGIN !== undefined &&
+        !env.API_ORIGIN.startsWith("https://")
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["API_ORIGIN"],
+          message: "must be https in production, where Google sends the person back to it",
+        });
+      }
     }
     if (env.EMAIL_PROVIDER === "mailjet") {
       for (const key of [
@@ -358,7 +369,10 @@ export interface SignInConfig {
   readonly apiOrigin: string;
   /** The web app's origins, whose /sign-in/return the browser window may go back to. */
   readonly returnOrigins: readonly string[];
-  /** Expo Go's exp:// return addresses: in development only, never on a server. */
+  /**
+   * Expo Go's exp:// return addresses: in development with the stand-in
+   * only, never on a server.
+   */
   readonly allowExpoGo: boolean;
 }
 
@@ -379,7 +393,9 @@ function signInConfig(env: z.infer<typeof environmentSchema>): SignInConfig {
     returnOrigins: [
       ...new Set([...env.WEB_ORIGINS, ...(webAppUrl === undefined ? [] : [webAppUrl])]),
     ],
-    allowExpoGo: !production,
+    // Only with the stand-in, so a real Google ticket never goes to an
+    // Expo project someone else names.
+    allowExpoGo: !production && mode !== "google",
   };
 }
 

@@ -90,8 +90,18 @@ async function requestIdToken(
 }
 
 /**
- * Checks an ID token's signature, issuer, audience, expiry and nonce, then
- * reads the claims ShareRide keeps (R19.4, R19.5).
+ * Whether the token was given to us (OpenID Connect Core 3.1.3.7): an
+ * authorized party, when there is one, is our client, and a token for
+ * several audiences must name one.
+ */
+function authorizedForUs(claims: Readonly<Record<string, unknown>>, clientId: string): boolean {
+  if (claims.azp !== undefined) return claims.azp === clientId;
+  return !(Array.isArray(claims.aud) && claims.aud.length > 1);
+}
+
+/**
+ * Checks an ID token's signature, issuer, audience, authorized party,
+ * expiry and nonce, then reads the claims ShareRide keeps (R19.4, R19.5).
  */
 async function checkIdToken(
   idToken: string,
@@ -109,7 +119,8 @@ async function checkIdToken(
     const verified = await jwtVerify(idToken, options.keys, {
       issuer: [...(typeof options.issuer === "string" ? [options.issuer] : options.issuer)],
       audience: options.audience,
-      algorithms: ["RS256", "ES256"],
+      // Google and Apple both sign their ID tokens with RS256.
+      algorithms: ["RS256"],
       clockTolerance: clockToleranceSeconds,
       currentDate: options.now,
       requiredClaims: ["exp", "iss", "aud"],
@@ -118,6 +129,7 @@ async function checkIdToken(
   } catch {
     return failed("id_token");
   }
+  if (!authorizedForUs(claims, options.audience)) return failed("id_token");
   if (claims.nonce !== options.nonce) return failed("nonce");
   const read = readProviderClaims({ claims, appleUser: options.appleUser });
   return read.ok ? read : failed("claims");

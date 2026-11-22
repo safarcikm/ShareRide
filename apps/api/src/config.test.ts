@@ -112,6 +112,19 @@ describe("loadConfig", () => {
     expect(() => loadConfig({ ...valid, ...google, API_ORIGIN: "https://x.is/api" })).toThrow(
       "API_ORIGIN",
     );
+    expect(() =>
+      loadConfig({ ...valid, ...google, API_ORIGIN: "http://staging.skinnar.is" }),
+    ).toThrow("API_ORIGIN");
+  });
+
+  it("takes Expo Go's return addresses only while Google is the stand-in", () => {
+    const google = {
+      GOOGLE_SIGN_IN: "google",
+      GOOGLE_CLIENT_ID: "client.apps.googleusercontent.com",
+      GOOGLE_CLIENT_SECRET: "a-secret",
+    };
+    expect(loadConfig({ ...development, ...google }).signIn.allowExpoGo).toBe(false);
+    expect(loadConfig({ ...development, GOOGLE_SIGN_IN: "off" }).signIn.allowExpoGo).toBe(true);
   });
 
   it("takes an empty value as unset, as Render's empty secret entries are", () => {

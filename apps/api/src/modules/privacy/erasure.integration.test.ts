@@ -440,6 +440,41 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
     await db.delete(schema.photoFilesToDelete);
   });
 
+  it("erases the person's Google link and a Google sign-in waiting for Settings (spec 19, section 7)", async () => {
+    const gunna = await newMember("Gunna");
+    const { db } = api.connection;
+    const now = api.now();
+    await db.insert(schema.identities).values({
+      userId: gunna.userId,
+      provider: "google",
+      subject: `erasure-google-${randomUUID()}`,
+      email: "gunna-google@example.com",
+      linkedAt: now,
+      lastUsedAt: now,
+    });
+    await db.insert(schema.providerSignIns).values({
+      provider: "google",
+      stateHash: randomUUID(),
+      challenge: "c".repeat(43),
+      returnUrl: "shareride://sign-in/return",
+      expiresAt: new Date(now.getTime() + 30 * 60_000),
+      answeredAt: now,
+      subject: `erasure-google-${randomUUID()}`,
+      email: "gunna-other@example.com",
+      pendingHash: randomUUID(),
+      linkUserId: gunna.userId,
+    });
+
+    await waitEnded(gunna);
+    expect(await erasure().eraseDue()).toEqual({ erased: 1, failed: 0 });
+    expect(await rowsNaming(gunna.userId)).toEqual([]);
+    const left = await db
+      .select({ id: schema.providerSignIns.id })
+      .from(schema.providerSignIns)
+      .where(eq(schema.providerSignIns.email, "gunna-other@example.com"));
+    expect(left).toEqual([]);
+  });
+
   it("changes nothing the second time", async () => {
     const { anna, bookingId } = await busyDriver();
     await waitEnded(anna);

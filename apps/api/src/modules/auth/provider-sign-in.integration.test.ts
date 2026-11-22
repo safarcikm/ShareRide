@@ -268,10 +268,41 @@ describe("the provider's answer (plan 4.1, step 4)", () => {
     expect(await again.text()).toContain("expired or was already used");
   });
 
-  it("refuses a sign-in that took more than 10 minutes", async () => {
+  it("goes back with expired after more than 10 minutes, once", async () => {
     const callback = await callbackFor(newVerifier(), anna);
     api.advance(601);
+    expect((await back(callback)).headers.get("location")).toBe(`${returnUrl}#error=expired`);
     expect((await back(callback)).status).toBe(400);
+  });
+
+  it.each([
+    ["server_error", "server_error"],
+    ["something-new", "other"],
+  ])(
+    "logs the provider's error %s and goes back with failed, passing nothing on",
+    async (error, logged) => {
+      const callback = new URL(await callbackFor(newVerifier(), anna));
+      callback.searchParams.delete("code");
+      callback.searchParams.set("error", error);
+      const before = api.logLines.length;
+      expect((await back(callback.toString())).headers.get("location")).toBe(
+        `${returnUrl}#error=failed`,
+      );
+      const line = api.logLines
+        .slice(before)
+        .find((entry) => entry.includes("provider sign-in refused"));
+      expect(JSON.parse(line ?? "{}")).toMatchObject({
+        provider: "google",
+        reason: "provider_error",
+        providerError: logged,
+      });
+    },
+  );
+
+  it("logs nothing when the person pressed Cancel", async () => {
+    const before = api.logLines.length;
+    await back(await callbackFor(newVerifier(), "cancel"));
+    expect(api.logLines.slice(before).join("\n")).not.toContain("provider sign-in refused");
   });
 
   it("fails when the code is not the provider's", async () => {
@@ -280,6 +311,16 @@ describe("the provider's answer (plan 4.1, step 4)", () => {
     expect((await back(callback.toString())).headers.get("location")).toBe(
       `${returnUrl}#error=failed`,
     );
+  });
+
+  it("has the development page refuse to send the person anywhere but our callback", async () => {
+    newAddress();
+    const started = await api.request(startPath(newVerifier()));
+    const page = new URL(started.headers.get("location") ?? "");
+    page.searchParams.set("redirect_uri", "https://evil.example/v1/auth/oauth/google/callback");
+    const shown = await api.request(pathOf(page.toString()));
+    expect(shown.status).toBe(400);
+    expect(await shown.text()).not.toContain("evil.example");
   });
 
   it("shows a page for a state it never made", async () => {
@@ -450,9 +491,19 @@ describe("a newcomer (spec 19, 3.3)", () => {
     expect(made).toEqual([]);
   });
 
-  it("logs no email and no provider identifier", async () => {
+  it("logs the new link, and no email and no provider identifier", async () => {
     await freeUp(anna);
-    await phoneStep(api.newPhoneNumber(), await pendingFor(anna));
+    const before = api.logLines.length;
+    const verified = await phoneStep(api.newPhoneNumber(), await pendingFor(anna));
+    if (!verified.ok) throw new Error(verified.error.code);
+    const linked = api.logLines
+      .slice(before)
+      .find((entry) => entry.includes("sign-in method linked"));
+    expect(JSON.parse(linked ?? "{}")).toMatchObject({
+      userId: verified.data.user.id,
+      provider: "google",
+      outcome: "created",
+    });
     const logs = api.logLines.join("\n");
     expect(logs).not.toContain("dev-person-1@example.com");
     expect(logs).not.toContain("dev-google-1");
@@ -503,7 +554,7 @@ describe("a member (spec 19, 3.3; plan 4.2)", () => {
     expect(await linksOf(member.userId)).toEqual([]);
   });
 
-  it("puts a new Google account in place of the old one, with its email (spec 19, 3.5)", async () => {
+  it("puts a new Google account in place of the old one, and keeps the account's email (spec 19, 3.3)", async () => {
     await freeUp(anna);
     await freeUp(bjarni);
     const phone = api.newPhoneNumber();
@@ -517,9 +568,25 @@ describe("a member (spec 19, 3.3; plan 4.2)", () => {
     expect(await linksOf(member.userId)).toEqual([
       { provider: "google", subject: "dev-google-2", email: "dev-person-2@privaterelay.example" },
     ]);
-    expect(await emailOf(member.userId)).toMatchObject({
-      email: "dev-person-2@privaterelay.example",
+    // Only an Apple relay address gives way to the new link's (3.5; domain tests).
+    expect(await emailOf(member.userId)).toMatchObject({ email: "dev-person-1@example.com" });
+  });
+
+  it("signs in and changes nothing when the account already has that Google account", async () => {
+    await freeUp(anna);
+    const phone = api.newPhoneNumber();
+    const member = await api.signIn(phone);
+    const waiting = await pendingFor(anna);
+    await phoneStep(phone, await pendingFor(anna));
+    const before = api.logLines.length;
+    expect(await phoneStep(phone, waiting)).toMatchObject({
+      ok: true,
+      data: { user: { id: member.userId }, providerLink: { outcome: "already_linked" } },
     });
+    expect(await linksOf(member.userId)).toEqual([
+      { provider: "google", subject: "dev-google-1", email: "dev-person-1@example.com" },
+    ]);
+    expect(api.logLines.slice(before).join("\n")).not.toContain("sign-in method linked");
   });
 
   it("signs in a suspended person and an account waiting to be deleted, as the phone does (R19.6)", async () => {
@@ -661,5 +728,15 @@ describe("Sign-in methods in Settings (spec 19, 3.4)", () => {
     expect(
       await api.client.call(addSignInMethodRoute, { accessToken, body: { pendingSignIn, code } }),
     ).toMatchObject({ ok: false, status: 400, error: { code: "provider_expired" } });
+
+    // The refusal kept the code for another try.
+    const again = await prepare(accessToken, sol);
+    if (!again.ok) throw new Error(again.error.code);
+    expect(
+      await api.client.call(addSignInMethodRoute, {
+        accessToken,
+        body: { pendingSignIn: again.data.pendingSignIn, code },
+      }),
+    ).toMatchObject({ ok: true, status: 201 });
   });
 });

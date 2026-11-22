@@ -110,11 +110,19 @@ export function decideLink(input: {
     : { action: "refuse", code: "provider_already_linked" };
 }
 
+/** The domain of Apple's private relay addresses (spec 19, 3.5). */
+const appleRelayDomain = "privaterelay.appleid.com";
+
+function isAppleRelay(email: string): boolean {
+  return email.toLowerCase().endsWith(`@${appleRelayDomain}`);
+}
+
 /**
  * The email to put on the account, or null to leave it as it is (R19.4):
- * a verified one fills an empty email, or takes the place of the relay
- * address of the link it replaces (spec 19, 3.5); never one another
- * account has, and never over the person's own.
+ * a verified one fills an empty email, or takes the place of the Apple
+ * relay address of the link it replaces (spec 19, 3.5); never one another
+ * account has, and never over the person's own, even when it came from the
+ * Google account being replaced (3.3).
  */
 export function emailToStore(input: {
   readonly providerEmail: string | null;
@@ -126,11 +134,12 @@ export function emailToStore(input: {
   const { providerEmail, accountEmail, takenByOther, replacedLinkEmail } = input;
   if (providerEmail === null || takenByOther || providerEmail === accountEmail) return null;
   if (accountEmail === null) return providerEmail;
-  return replacedLinkEmail !== undefined &&
+  const relayOfReplacedLink =
+    replacedLinkEmail !== undefined &&
     replacedLinkEmail !== null &&
-    accountEmail === replacedLinkEmail
-    ? providerEmail
-    : null;
+    accountEmail === replacedLinkEmail &&
+    isAppleRelay(replacedLinkEmail);
+  return relayOfReplacedLink ? providerEmail : null;
 }
 
 export interface ReturnUrlsAllowed {

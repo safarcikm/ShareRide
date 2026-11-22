@@ -32,7 +32,7 @@ interface TokenOptions {
   readonly key?: CryptoKey;
   readonly claims?: Record<string, unknown>;
   readonly issuer?: string;
-  readonly audience?: string;
+  readonly audience?: string | readonly string[];
   readonly expiresAt?: number;
 }
 
@@ -47,7 +47,9 @@ function idToken(options: TokenOptions = {}): Promise<string> {
     .setProtectedHeader({ alg: "RS256", kid: "key-1" })
     .setSubject("google-subject-1")
     .setIssuer(options.issuer ?? "https://accounts.google.com")
-    .setAudience(options.audience ?? clientId)
+    .setAudience(
+      typeof options.audience === "object" ? [...options.audience] : (options.audience ?? clientId),
+    )
     .setIssuedAt(nowSeconds - 10)
     .setExpirationTime(options.expiresAt ?? nowSeconds + 3600)
     .sign(options.key ?? signingKey);
@@ -154,6 +156,12 @@ describe("Google (plan 4.3)", () => {
   it.each([
     ["signed with another key", { key: "other" }, "id_token"],
     ["for another client", { audience: "someone-else" }, "id_token"],
+    [
+      "for us and another client, with no authorized party",
+      { audience: [clientId, "other"] },
+      "id_token",
+    ],
+    ["authorized for another client", { claims: { azp: "someone-else" } }, "id_token"],
     ["from another issuer", { issuer: "https://evil.example" }, "id_token"],
     ["expired more than a minute ago", { expiresAt: nowSeconds - 61 }, "id_token"],
     ["with another nonce", { claims: { nonce: "old-nonce" } }, "nonce"],

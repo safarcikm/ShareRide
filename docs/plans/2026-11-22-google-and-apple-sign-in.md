@@ -112,8 +112,10 @@ another thread's.
    the state's hash (unused, less than 10 minutes old), redeems the code
    (4.3), stores the subject, the email with whether it is verified, and
    the first name, makes a ticket (`sr_pt_…`, 5 minutes), and answers
-   `303` to `returnUrl#ticket=…`. Errors go to `returnUrl#error=cancelled`
-   or `#error=failed`; anything else the provider said is not passed on.
+   `303` to `returnUrl#ticket=…`. Errors go to `returnUrl#error=cancelled`,
+   `#error=expired` (the 10 minutes passed, the first time only) or
+   `#error=failed`; anything else the provider said is not passed on, and
+   is logged only by its OAuth error name.
 5. The app (or, on the web, the pop-up page `/sign-in/return`, which calls
    `WebBrowser.maybeCompleteAuthSession()`) gets the URL and calls
    `POST /v1/auth/oauth/finish { ticket, verifier, locale, device }`. The
@@ -139,8 +141,8 @@ another thread's.
 | none | another account | | `provider_in_use`, code kept |
 | exists | nobody | no | link, sign in, `linked: provider` |
 | exists | this account | | sign in (already linked) |
-| exists | another account | | sign in without linking, `linkRefused: provider_in_use` |
-| exists | nobody | yes | replace the old link, sign in, `replaced: provider` (and the email, when the account's email was the old link's) |
+| exists | another account | | sign in without linking, `providerLink.outcome: in_use` |
+| exists | nobody | yes | replace the old link, sign in, `replaced: provider`; the account's email stays, unless it was the old link's Apple relay address (spec 19, 3.5) |
 
 Settings follows the same rules without "make", and refuses instead of
 replacing, in two calls. `POST /v1/me/sign-in-methods/prepare { ticket,
@@ -205,7 +207,9 @@ interface IdentityProvider {
 An empty value counts as unset, so Render's empty `sync: false` entries do
 not break the start. Allowed return addresses: each `WEB_ORIGINS` origin
 with the path `/sign-in/return`; `shareride://sign-in/return`; and, outside
-production, `exp://` addresses ending in `/--/sign-in/return` (Expo Go).
+production and only while no provider is the real one, `exp://` addresses
+ending in `/--/sign-in/return` (Expo Go). `API_ORIGIN` must be `https` in
+production.
 
 ### 4.5 Data
 
@@ -312,6 +316,11 @@ opens and merges once CI is green (Martin's rule of 2026-11-16).
 - [ ] Settings, Sign-in methods: list, add (the window, then the confirm
       code with the part spec 11's screens use), remove with its question
 - [ ] Texts of spec 19, section 8, in `en.ts` and `is.ts`
+- [ ] Safety from PR 2's review: `pendingSignIn` only ever from a `finish`
+      answer, never from an address or link; `/sign-in/return` takes the
+      `#ticket` out of the address at once; a new verifier for each try;
+      the web app's error reports leave out `sr_` tokens; `#error=expired`
+      shows "That took too long"
 - [ ] Screen tests with `renderApp` against the fake API: each outcome of
       `start`, the phone step with a waiting sign-in, settings; Playwright
       journeys with the development provider's pop-up: a newcomer, a
