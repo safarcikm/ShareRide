@@ -407,6 +407,13 @@
       "when": 1795346071482,
       "tag": "0057_sign_in_identities",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1795351749814,
+      "tag": "0058_hide_profile_photos",
+      "breakpoints": true
     }
   ]
 }

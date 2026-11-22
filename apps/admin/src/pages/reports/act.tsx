@@ -63,6 +63,9 @@ export function choicesOf(report: AdminReport): readonly Choice[] {
     ...(report.about !== null && !report.about.hidden
       ? [{ kind: "hide", content: "about", id: reported.userId } as const]
       : []),
+    ...(report.photo !== null && !report.photo.hidden
+      ? [{ kind: "hide", content: "photo", id: reported.userId } as const]
+      : []),
     ...(reported.status === "active" ? [{ kind: "suspend" } as const] : []),
     // A suspension made by mistake, or one to end early (3.6.3).
     ...(reported.status === "suspended" ? [{ kind: "reinstate" } as const] : []),

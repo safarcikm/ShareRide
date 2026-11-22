@@ -673,6 +673,15 @@ legend + * {
   border-radius: var(--radius-card);
 }
 
+/* A person's profile photo, large enough to judge (ADR 0033). */
+.profile-photo {
+  display: block;
+  width: calc(var(--space-xxl) * 3);
+  height: calc(var(--space-xxl) * 3);
+  border-radius: var(--radius-card);
+  object-fit: cover;
+}
+
 /* A tester's screenshot of a phone's screen: tall, so held to a phone's width. */
 .screenshot {
   display: block;

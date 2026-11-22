@@ -116,6 +116,7 @@ const user: AdminUser = {
   licenceDeclaredAt: "2099-01-11T12:00:00.000Z",
   languages: ["is", "en"],
   about: { text: "I like quiet drives.", hidden: false },
+  photo: null,
   deleteAfter: null,
   rating: { average: 4.5, count: 2 },
   reliability: {
@@ -457,6 +458,36 @@ describe("a person's page (spec 9, 3.5.2)", () => {
       rule: "offensive",
       reason: "Rude words.",
       content: { kind: "about", id: dora.userId },
+    });
+  });
+
+  it("shows their profile photo, and hides it without a report (ADR 0033)", async () => {
+    const url = "https://photos.test/profile-photos/0193f0c4-7d4a-7b1e-9c2a-123456789abc.jpg";
+    const api = start(`/admin/users/${dora.userId}`, { ...user, photo: { url, hidden: false } });
+    api.on(adminHideContentRoute, {
+      status: 201,
+      data: { action: { ...suspension, kind: "content_hidden", rule: "offensive" } },
+    });
+    const account = await screen.findByRole("region", { name: "Account" });
+    expect(within(account).getByRole("img", { name: "Profile photo" }).getAttribute("src")).toBe(
+      url,
+    );
+    const act = screen.getByRole("region", { name: "Act on the account" });
+    fireEvent.click(within(act).getByRole("radio", { name: "Hide their profile photo" }));
+    fireEvent.change(within(act).getByRole("combobox", { name: "Community rule" }), {
+      target: { value: "offensive" },
+    });
+    fireEvent.change(within(act).getByRole("textbox", { name: "Reason, written for Dóra" }), {
+      target: { value: "Not a photo of you." },
+    });
+    fireEvent.click(within(act).getByRole("button", { name: "Review the notice" }));
+    fireEvent.click(within(act).getByRole("button", { name: "Send" }));
+
+    expect((await within(act).findByRole("status")).textContent).toBe("Done. Dóra is told why.");
+    expect(api.called(adminHideContentRoute)[0]?.input["body"]).toEqual({
+      rule: "offensive",
+      reason: "Not a photo of you.",
+      content: { kind: "photo", id: dora.userId },
     });
   });
 

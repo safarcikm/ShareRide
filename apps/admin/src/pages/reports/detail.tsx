@@ -202,12 +202,26 @@ export function ReportDetail({ id }: { readonly id: string }) {
               </dd>
             </>
           )}
+          {report.photo === null ? null : (
+            <>
+              <dt>{t("admin.reports.photo")}</dt>
+              <dd>
+                <img
+                  className="profile-photo"
+                  src={report.photo.url}
+                  alt={t("admin.reports.photo")}
+                />
+                {report.photo.hidden ? <HiddenTag removed={false} /> : null}
+              </dd>
+            </>
+          )}
         </dl>
         {report.trip === null &&
         report.booking === null &&
         report.message === null &&
         report.review === null &&
-        report.about === null ? (
+        report.about === null &&
+        report.photo === null ? (
           <p className="type-body">{t("admin.reports.recordsGone")}</p>
         ) : null}
       </section>
@@ -239,7 +253,10 @@ export function ReportDetail({ id }: { readonly id: string }) {
   );
 }
 
-/** A message ShareRide removed, or a note or About you it hid until the person writes anew. */
+/**
+ * A message ShareRide removed, or a note, About you or profile photo it hid
+ * until the person writes or adds a new one.
+ */
 function HiddenTag({ removed }: { readonly removed: boolean }) {
   const { t } = useConsole();
   return (

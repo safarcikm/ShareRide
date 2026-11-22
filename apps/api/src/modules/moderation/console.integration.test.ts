@@ -12,6 +12,7 @@ import { schema } from "@shareride/db";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
+import { givePhoto } from "../account/testing.ts";
 import {
   bookingHelpers,
   freshSampleTrips,
@@ -268,6 +269,7 @@ describe("a report's page (spec 9, 3.4.2)", () => {
       booking: { id: bookingId, status: "confirmed", seats: 1 },
       message: { id: messageId, removed: false },
       about: null,
+      photo: null,
       conversation: true,
       actions: [],
     });
@@ -306,6 +308,18 @@ describe("a report's page (spec 9, 3.4.2)", () => {
     });
     const missing = await send(cookie, "GET", `/admin/v1/reports/${randomUUID()}`);
     expect(missing).toMatchObject({ status: 404, body: { error: { code: "not_found" } } });
+  });
+
+  it("shows the reported person's profile photo, also once ShareRide hid it (ADR 0033)", async () => {
+    const { jon, reportId } = await reportedMessage();
+    const link = await givePhoto(api, jon.userId);
+    const { cookie } = await api.signInOperator();
+    const photo = async () =>
+      ((await send(cookie, "GET", `/admin/v1/reports/${reportId}`)).body as AdminReport).photo;
+
+    expect(await photo()).toEqual({ url: link, hidden: false });
+    await givePhoto(api, jon.userId, api.now());
+    expect(await photo()).toEqual({ url: expect.any(String) as unknown, hidden: true });
   });
 
   it("shows the review a report is about, with its words, and whether it is hidden", async () => {
