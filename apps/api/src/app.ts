@@ -427,7 +427,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       apiOrigin: features.signIn?.apiOrigin ?? "",
       returnUrls: features.signIn?.returnUrls ?? {
         webOrigins: [],
-        appScheme: "shareride",
+        appScheme: "puffinride",
         allowExpoGo: false,
       },
       limiter: createMemoryRateLimiter({

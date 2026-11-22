@@ -1,6 +1,7 @@
 import { generateKeyPairSync } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { selectSignIn } from "./select-identity-providers.ts";
+import { appScheme, selectSignIn } from "./select-identity-providers.ts";
 
 const apiOrigin = "https://staging.skinnar.is";
 const returnOrigins = ["https://staging.skinnar.is"];
@@ -48,7 +49,7 @@ describe("selectSignIn (ADR 0034)", () => {
       google: { mode: "google", clientId: "client.apps.googleusercontent.com", clientSecret: "s" },
       apple: {
         mode: "apple",
-        servicesId: "is.shareride.preview.web",
+        servicesId: "is.puffinride.preview.web",
         teamId: "TEAM123456",
         keyId: "KEY1234567",
         privateKey,
@@ -64,11 +65,21 @@ describe("selectSignIn (ADR 0034)", () => {
     const clientIds = providers.map((provider) =>
       new URL(provider.authorizationUrl(authorization)).searchParams.get("client_id"),
     );
-    expect(clientIds).toEqual(["client.apps.googleusercontent.com", "is.shareride.preview.web"]);
+    expect(clientIds).toEqual(["client.apps.googleusercontent.com", "is.puffinride.preview.web"]);
     expect(returnUrls).toEqual({
       webOrigins: returnOrigins,
-      appScheme: "shareride",
+      appScheme: "puffinride",
       allowExpoGo: false,
     });
+  });
+});
+
+describe("appScheme", () => {
+  it("is the app's own link scheme in apps/mobile/app.json", () => {
+    const app = JSON.parse(
+      readFileSync(new URL("../../../mobile/app.json", import.meta.url), "utf8"),
+    ) as { readonly expo: { readonly scheme: string } };
+    expect(appScheme).toBe(app.expo.scheme);
+    expect(appScheme).toBe("puffinride");
   });
 });

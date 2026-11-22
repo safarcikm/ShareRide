@@ -350,7 +350,7 @@ describe("the development provider (plan 4.3)", () => {
 });
 
 describe("Apple (plan 4.3)", () => {
-  const servicesId = "is.shareride.preview.web";
+  const servicesId = "is.puffinride.preview.web";
   const appleRedirect = "https://api.shareride.test/v1/auth/oauth/apple/callback";
   let teamKey: { privateKey: CryptoKey; publicKey: CryptoKey };
   let teamKeyPem: string;

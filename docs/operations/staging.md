@@ -15,18 +15,19 @@ edge ([privacy providers](../compliance/privacy-gdpr.md#providers)).
 | ---- | ----------- | ---------- |
 | API and web app | `shareride-staging-api` | Web service built from `apps/api/Dockerfile`; serves `/v1` and the web app on one origin |
 | Clean-up | `shareride-staging-clean-up` | Cron job, every hour at minute 17 (UTC): deletes sign-in records past their retention (with the push tokens of sessions ended for being idle), old trip drafts, conversations 12 months after their trip (unless a report covers them: then until 3 years after it closes), makes trips and bookings anonymous 3 years after the trip, the notification log after 90 days, operator console sessions 30 days after they end, passkey challenges and setup links once they expire, and data export files once expired (their dates 30 days later); then erases the accounts whose 7 days after "Delete my account" have ended (spec 11). It takes `AUTH_SECRET` from the API |
-| Domains | `staging.skinnar.is`, `staging.puffinride.is` | The web service's own domains, both answering while staging moves to puffinride.is ([Move to puffinride.is](#move-to-puffinrideis)); their DNS records are in ISNIC DNS Hosting ([Point the domain](#point-the-domain)) and Render issues their certificates |
+| Domains | `staging.puffinride.is`, `staging.skinnar.is` | The web service's own domains: the new one, and the old one until nobody uses it ([Move to puffinride.is](#move-to-puffinrideis)); their DNS records are in ISNIC DNS Hosting ([Point the domain](#point-the-domain)) and Render issues their certificates |
 | Database | `shareride-staging-db` | PostgreSQL 18 with PostGIS, private network only |
 | Settings | `shareride-staging` | Environment group: `NODE_ENV=production`, `APP_ENV=staging`, `LOG_LEVEL`. `PAYMENT_PROVIDER` is unset, so staging pays with the test provider: no card, no money moves. `WORKER` is unset, so the API runs the notification worker: it pushes through Expo to the phones that registered, with `EXPO_ACCESS_TOKEN` once it is set ([app builds](app-builds.md#android-build-with-push)); `EMAIL_PROVIDER` is unset, so it sends no email and records who would have been emailed, until email is turned on (below) |
 
-Staging's address is **`https://staging.skinnar.is`**, on Martin's domain
-`skinnar.is`, which serves ShareRide for now (2026-11-18). The web app and
-the API share it, so the refresh cookie stays on one site, and the operator
-console is at `/admin` on it. Render's own address for
+Staging's address is **`https://staging.puffinride.is`** (since 2026-11-22,
+[ADR 0039](../decisions/0039-rename-to-puffinride.md)); before that it was
+`https://staging.skinnar.is`, which still answers until nobody uses it. The
+web app and the API share the address, so the refresh cookie stays on one
+site, and the operator console is at `/admin` on it. Render's own address for
 `shareride-staging-api`, usually `https://shareride-staging-api.onrender.com`,
 keeps working too: the domain's DNS record points at it. The web app works
 there as well, with a cookie of its own (`onrender.com` is a public suffix),
-but the console signs in only on `staging.skinnar.is`.
+but the console signs in only on `staging.puffinride.is`.
 
 The domain's DNS is ISNIC DNS Hosting, on ISNIC's own site, where the domain
 is registered. ISNIC lists no fee for it beyond the domain's own, and it
@@ -57,14 +58,16 @@ Add credit to it: a trial account only sends to the numbers verified on it.
    `VONAGE_API_SECRET`. Render only asks when a blueprint is first applied.
 5. Choose **Apply**. The first build takes a few minutes.
 6. Point the domain at staging ([below](#point-the-domain)).
-7. Check: `https://staging.skinnar.is` shows the welcome screen,
-   `https://staging.skinnar.is/v1/health/ready` answers `{"status":"ok"}`,
+7. Check: `https://staging.puffinride.is` shows the welcome screen,
+   `https://staging.puffinride.is/v1/health/ready` answers `{"status":"ok"}`,
    and signing up with your own phone brings a real SMS.
 8. Check once that the per-address limit uses the real client address
    ([below](#check-client-addresses)).
 
 ### Point the domain
 
+These steps set up `staging.skinnar.is` in 2026-11; `staging.puffinride.is`
+took the same record ([Move to puffinride.is](#move-to-puffinrideis), step 4).
 Once, after the blueprint is applied. ISNIC's steps work on a phone;
 Render's dashboard is easier on a computer.
 
@@ -103,7 +106,7 @@ and again if Render changes its network or the domain's DNS:
    a different address in every header a client could forge:
 
    ```sh
-   STAGING=https://staging.skinnar.is
+   STAGING=https://staging.puffinride.is
    for i in $(seq 1 11); do
      curl -s -o /dev/null -w '%{http_code}\n' -X POST "$STAGING/v1/auth/phone/start" \
        -H 'Content-Type: application/json' \
@@ -200,36 +203,30 @@ settings, and nothing stops working in between. Martin's steps, in order:
    Sign in at `https://staging.puffinride.is/admin` from then on, and delete
    the old passkey from your password manager. Testers sign in again on the
    new address.
-8. **Google sign-in,** if it is set up already: in Google Cloud, **Google
-   Auth Platform**, **Branding**: app name `PuffinRide`, support email
-   `admin@puffinride.is`, home page, privacy policy and terms of service on
-   `https://staging.puffinride.is` (the same paths as before), and the
-   authorised domain `puffinride.is`. Then **Clients**, the web client, and
-   add the redirect URI
-   `https://staging.puffinride.is/v1/auth/oauth/google/callback`. If it is
-   not set up yet, follow [Turn on Google sign-in](#turn-on-google-sign-in)
-   with these values instead of the old ones.
-9. **Sign in with Apple:** wait until Claude has changed the app IDs to
-   `is.puffinride.…` (plan task 5), then follow
-   [Turn on Sign in with Apple](#turn-on-sign-in-with-apple). A Services ID
-   cannot be renamed: if one with the old name exists, make the new ones and
-   replace `APPLE_SERVICES_ID`, `APPLE_KEY_ID` and `APPLE_PRIVATE_KEY` in
-   Render. Register `hello@puffinride.is` for Apple's email relay.
+8. **Google sign-in:** follow [Turn on Google sign-in](#turn-on-google-sign-in),
+   which uses the new names and address, signed in to Google Cloud as
+   `admin@puffinride.is`.
+9. **Sign in with Apple:** follow
+   [Turn on Sign in with Apple](#turn-on-sign-in-with-apple), with the
+   `is.puffinride.…` IDs, including `hello@puffinride.is` for Apple's email
+   relay. A Services ID cannot be renamed: one made earlier with an old name
+   stays unused.
 10. **Sentry:** change the uptime monitor's address to
    `https://staging.puffinride.is/v1/health/ready`. The organisation's name
    may become PuffinRide; keep its short name (slug) as it is.
 11. **The old address,** once nobody uses it: tell Claude, who removes
     `staging.skinnar.is` from the blueprint. Then delete the `staging`
-    record of `skinnar.is` in ISNIC, the domain `skinnar.is` in Mailjet, the
-    old redirect URI in Google Cloud and `hello@skinnar.is` in Apple's email
-    relay.
+    record of `skinnar.is` in ISNIC, and, if any were made earlier, the
+    domain `skinnar.is` in Mailjet, a redirect URI on `staging.skinnar.is`
+    in Google Cloud and `hello@skinnar.is` in Apple's email relay.
 
 ## Sign in to the console
 
 The operator console signs in with passkeys only, bound to one address
 ([ADR 0028](../decisions/0028-operator-console-web-app-and-passkeys.md)):
-the blueprint sets `ADMIN_ORIGIN` to `https://staging.skinnar.is`, so the
-domain must answer first ([Point the domain](#point-the-domain)). Once:
+the blueprint sets `ADMIN_ORIGIN` to `https://staging.puffinride.is`, so the
+domain must answer first ([Move to puffinride.is](#move-to-puffinrideis),
+step 4). Once:
 
 1. Sign up in the app with your own phone, if you have not yet. While the
    beta is closed a new account needs an invite code: open the API's
@@ -244,7 +241,7 @@ domain must answer first ([Point the domain](#point-the-domain)). Once:
 3. Open the link on the laptop or phone you will use, and save a passkey
    there (Touch ID, Face ID, Windows Hello or a security key). Add your
    other devices from inside the console.
-4. From then on, sign in at `https://staging.skinnar.is/admin`.
+4. From then on, sign in at `https://staging.puffinride.is/admin`.
 
 Lost every passkey: run step 2 again for a new link. To take the role
 away: `node apps/api/src/operator-cli.ts remove <phone number or user
@@ -427,15 +424,17 @@ sent. Set it back to
 
 ## Turn on email
 
-Staging sends no email until Mailjet sends for `skinnar.is` (ADR 0027).
-The blueprint already sets the sender, `EMAIL_FROM` = `hello@skinnar.is`,
-and `WEB_APP_URL` = `https://staging.skinnar.is`, where the emails' links
-lead. Martin's steps, after [Point the domain](#point-the-domain):
+Staging sends no email until Mailjet sends for `puffinride.is` (ADR 0027).
+The blueprint already sets the sender, `EMAIL_FROM` = `hello@puffinride.is`,
+and `WEB_APP_URL` = `https://staging.puffinride.is`, where the emails' links
+lead. Martin's steps; if [Move to puffinride.is](#move-to-puffinrideis)
+step 5 is done, the domain is in Mailjet already, with its one SPF and one
+DMARC record: start at step 2.
 
 1. In Mailjet, **Account settings**, **Domains and senders**: add the
-   domain `skinnar.is`. Mailjet shows TXT records: one that proves the
+   domain `puffinride.is`. Mailjet shows TXT records: one that proves the
    domain is ours, then SPF and DKIM. Add each in ISNIC DNS Hosting as
-   type **TXT**, with the name Mailjet shows without `.skinnar.is` (empty
+   type **TXT**, with the name Mailjet shows without `.puffinride.is` (empty
    for the domain itself) and its value. If the domain already has an SPF
    record (`v=spf1 …`), add `include:spf.mailjet.com` to it instead of a
    second one. Add DMARC too: type **TXT**, name `_dmarc`, value
@@ -455,9 +454,9 @@ lead. Martin's steps, after [Point the domain](#point-the-domain):
 
 To stop email again, set `EMAIL_PROVIDER` to `none`.
 
-`skinnar.is` has no mailbox, so a reply to `hello@skinnar.is` is lost. Add
-one (its MX records go in ISNIC DNS Hosting too) if replies should reach
-someone.
+`puffinride.is`'s mail goes to Google Workspace, which has no `hello@`
+address: Google returns a reply to `hello@puffinride.is` to its sender, so
+members' replies never land in the operator's mailbox (ADR 0039).
 
 ## Turn on photos
 
@@ -487,24 +486,27 @@ console then show none, and the bucket keeps the files.
 
 ## Turn on Google sign-in
 
-Staging shows no "Continue with Google" until Google knows ShareRide
+Staging shows no "Continue with Google" until Google knows PuffinRide
 ([ADR 0034](../decisions/0034-google-and-apple-sign-in-through-our-api.md),
 [spec 19](../specs/2026-11-22-google-and-apple-sign-in.md)). It is free.
-The blueprint already sets `API_ORIGIN` = `https://staging.skinnar.is`,
-where Google sends the browser back. Martin's steps:
+Do this after staging has moved to `staging.puffinride.is`
+([Move to puffinride.is](#move-to-puffinrideis), step 6), when the blueprint
+sets `API_ORIGIN` = `https://staging.puffinride.is`, where Google sends the
+browser back. Martin's steps:
 
-1. Open [Google Cloud](https://console.cloud.google.com/) with the Google
-   account that should own ShareRide's sign-in. In the project picker at
-   the top, **New project**: name `ShareRide`, then **Create**, and pick
-   it.
+1. Open [Google Cloud](https://console.cloud.google.com/) signed in as
+   `admin@puffinride.is`, the Google Workspace account from step 2 of the
+   move, which owns PuffinRide's sign-in. In the project picker at the top,
+   **New project**: name `PuffinRide`, then **Create**, and pick it.
 2. Menu, **Google Auth Platform** (the old "OAuth consent screen" leads
-   there too), **Get started**: app name `ShareRide`, a support email,
-   audience **External**, a contact email, agree to the policy, then
+   there too), **Get started**: app name `PuffinRide`, support email
+   `admin@puffinride.is`, audience **External**, contact email
+   `admin@puffinride.is`, agree to the policy, then
    **Create**.
-3. **Branding**: home page `https://staging.skinnar.is`, privacy policy
-   `https://staging.skinnar.is/legal/privacy`, terms of service
-   `https://staging.skinnar.is/legal/terms`, and under authorised domains
-   `skinnar.is`. Leave the logo out: a logo needs Google's review, and the
+3. **Branding**: home page `https://staging.puffinride.is`, privacy policy
+   `https://staging.puffinride.is/legal/privacy`, terms of service
+   `https://staging.puffinride.is/legal/terms`, and under authorised domains
+   `puffinride.is`. Leave the logo out: a logo needs Google's review, and the
    basic sign-in does not. **Save**.
 4. **Data access**, **Add or remove scopes**: tick `openid`,
    `.../auth/userinfo.email` and `.../auth/userinfo.profile` and nothing
@@ -513,8 +515,8 @@ where Google sends the browser back. Martin's steps:
    not only listed test users. With these three scopes Google asks for no
    review.
 6. **Clients**, **Create client**: type **Web application**, name
-   `ShareRide staging`, no JavaScript origins, and one authorised redirect
-   URI, exactly `https://staging.skinnar.is/v1/auth/oauth/google/callback`.
+   `PuffinRide staging`, no JavaScript origins, and one authorised redirect
+   URI, exactly `https://staging.puffinride.is/v1/auth/oauth/google/callback`.
    **Create**. Google shows the client ID and the client secret once:
    copy the secret straight into Render (step 7), never anywhere else.
 7. Open `shareride-staging-api`, **Environment**, and add
@@ -527,9 +529,9 @@ where Google sends the browser back. Martin's steps:
    step comes once), then sign out and continue with Google again (no
    code). Settings, Sign-in methods lists Google. In the laptop's browser,
    Google's window must close by itself and the sign-in go on; if it stays
-   open with "You can close this window", or the ShareRide window shows
+   open with "You can close this window", or the PuffinRide window shows
    the sign-in screen as before, tell Claude: Google's pages cut the
-   window off from ShareRide.
+   window off from PuffinRide.
 
 To turn Google off, set `GOOGLE_SIGN_IN` to `off`: the button goes, and
 links stay for when it is back. A new secret (Google Cloud, the client,
@@ -538,12 +540,12 @@ Google Cloud once the API runs with the new.
 
 ## Turn on Sign in with Apple
 
-Staging shows no "Continue with Apple" until Apple knows ShareRide
+Staging shows no "Continue with Apple" until Apple knows PuffinRide
 ([ADR 0034](../decisions/0034-google-and-apple-sign-in-through-our-api.md),
 [spec 19](../specs/2026-11-22-google-and-apple-sign-in.md)). It needs the
 paid Apple Developer Program, even for the web. The beta uses Martin's own
-developer account with the test App ID `is.shareride.app.preview`, so the
-store's `is.shareride.app` stays free for the company's account (spec 19,
+developer account with the test App ID `is.puffinride.app.preview`, so the
+store's `is.puffinride.app` stays free for the company's account (spec 19,
 3.5). Martin's steps:
 
 1. If not a member yet: [Apple Developer Program](https://developer.apple.com/programs/enroll/),
@@ -551,31 +553,31 @@ store's `is.shareride.app` stays free for the company's account (spec 19,
    take up to two days to confirm.
 2. Open [Certificates, Identifiers and Profiles](https://developer.apple.com/account/resources/identifiers/list),
    **Identifiers**, **+**, **App IDs**, **App**: description
-   `ShareRide preview`, bundle ID **Explicit** `is.shareride.app.preview`,
+   `PuffinRide preview`, bundle ID **Explicit** `is.puffinride.app.preview`,
    and under capabilities tick **Sign in with Apple**. **Continue**,
    **Register**.
-3. **Identifiers**, **+**, **Services IDs**: description `ShareRide`
+3. **Identifiers**, **+**, **Services IDs**: description `PuffinRide`
    (Apple may show it to people when they sign in), identifier
-   `is.shareride.preview.web`. **Continue**, **Register**. Open it again:
+   `is.puffinride.preview.web`. **Continue**, **Register**. Open it again:
    the list shows App IDs, so switch the menu at its top right to
    **Services IDs** first. Tick **Sign in with Apple**,
-   **Configure**: primary App ID `is.shareride.app.preview`, domain
-   `staging.skinnar.is`, and one return URL, exactly
-   `https://staging.skinnar.is/v1/auth/oauth/apple/callback`. **Next**,
+   **Configure**: primary App ID `is.puffinride.app.preview`, domain
+   `staging.puffinride.is`, and one return URL, exactly
+   `https://staging.puffinride.is/v1/auth/oauth/apple/callback`. **Next**,
    **Done**, **Continue**, **Save**. There is no file to upload.
-4. **Keys**, **+**: name `ShareRide sign-in`, tick **Sign in with Apple**,
-   **Configure**, primary App ID `is.shareride.app.preview`, **Save**,
+4. **Keys**, **+**: name `PuffinRide sign-in`, tick **Sign in with Apple**,
+   **Configure**, primary App ID `is.puffinride.app.preview`, **Save**,
    **Continue**, **Register**. **Download** the `AuthKey_….p8` file: Apple
    gives it once. Note the key ID (ten letters and digits) shown with it.
    The team ID is under the name at the top right, or in **Membership
    details**.
 5. Apple's private email relay: in Certificates, Identifiers and Profiles,
    **Services**, **Sign in with Apple for Email Communication**,
-   **Configure**, **+**, and add `hello@skinnar.is`. Apple checks the
-   sender's SPF and DKIM. Until this is done, ShareRide's emails do not
+   **Configure**, **+**, and add `hello@puffinride.is`. Apple checks the
+   sender's SPF and DKIM. Until this is done, PuffinRide's emails do not
    reach people who hid their email from us, and nothing says so.
 6. Open `shareride-staging-api`, **Environment**, and add `APPLE_SIGN_IN`
-   set to `apple`, `APPLE_SERVICES_ID` set to `is.shareride.preview.web`,
+   set to `apple`, `APPLE_SERVICES_ID` set to `is.puffinride.preview.web`,
    `APPLE_TEAM_ID`, `APPLE_KEY_ID`, and `APPLE_PRIVATE_KEY` (as a secret):
    open the `.p8` file in a text editor and paste all of it, the
    `BEGIN` and `END` lines too. Save; Render deploys the service again. A
@@ -585,16 +587,16 @@ store's `is.shareride.app` stays free for the company's account (spec 19,
 7. Check, once the app's buttons are out (plan PR 3): in a laptop's browser
    and a phone's browser, continue with Apple as someone new and choose
    **Hide my email**, then sign out and continue with Apple again. Then
-   have ShareRide email that account (for example, offer a test trip as the
+   have PuffinRide email that account (for example, offer a test trip as the
    Apple member and ask for a seat on it as another member) and check the
    email arrives in the inbox behind the hidden address. As with Google, in
    the laptop's browser Apple's window must close by itself and the
    sign-in go on; if not, tell Claude. If it does not, Apple refused the sender: in
    Mailjet, set up the domain's DKIM and a custom return path on
-   `skinnar.is`, and tell Claude. Apple asks about the name and the email
+   `puffinride.is`, and tell Claude. Apple asks about the name and the email
    only the first time: to be someone new again, stop using Apple with
-   ShareRide at [account.apple.com](https://account.apple.com) (**Sign-In
-   and Security**, **Sign in with Apple**) and remove Apple in ShareRide's
+   PuffinRide at [account.apple.com](https://account.apple.com) (**Sign-In
+   and Security**, **Sign in with Apple**) and remove Apple in PuffinRide's
    Settings, or use another Apple Account.
 
 To turn Apple off, set `APPLE_SIGN_IN` to `off`. If the key leaks, revoke

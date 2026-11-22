@@ -457,7 +457,7 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
       provider: "google",
       stateHash: randomUUID(),
       challenge: "c".repeat(43),
-      returnUrl: "shareride://sign-in/return",
+      returnUrl: "puffinride://sign-in/return",
       expiresAt: new Date(now.getTime() + 30 * 60_000),
       answeredAt: now,
       subject: `erasure-google-${randomUUID()}`,

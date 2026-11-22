@@ -115,7 +115,7 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   the sign-in in a browser window. The start takes the app's challenge
   (SHA-256 of a secret the app keeps) and a return address from a fixed
   list (the web app's `/sign-in/return` on `WEB_ORIGINS` or `WEB_APP_URL`,
-  `shareride://sign-in/return`, Expo Go's only outside production and with
+  `puffinride://sign-in/return`, Expo Go's only outside production and with
   the stand-ins), stores
   only a hash of a new 256-bit state, and limits starts to 20 per 10
   minutes per address. The PKCE verifier and the nonce are keyed hashes of

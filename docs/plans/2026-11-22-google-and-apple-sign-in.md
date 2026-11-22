@@ -361,29 +361,33 @@ sign-in here, Settings in 3b.
 Exact clicks are in the staging runbook:
 [Turn on Google sign-in](../operations/staging.md#turn-on-google-sign-in)
 and [Turn on Sign in with Apple](../operations/staging.md#turn-on-sign-in-with-apple).
-In short:
+The product became PuffinRide before anything was registered
+([ADR 0039](../decisions/0039-rename-to-puffinride.md)), so the values below
+are the new ones. In short:
 
-1. **Google Cloud** (free): a project "ShareRide"; Google Auth Platform,
-   Branding (app name, support email, the domain `skinnar.is`, links to the
+1. **Google Cloud** (free), as `admin@puffinride.is`: a project
+   "PuffinRide"; Google Auth Platform, Branding (app name, support email,
+   the domain `puffinride.is`, links to the
    privacy policy and terms), Audience "External" then "Publish app"; Data
    access with `openid`, `email` and `profile` only; Clients, "Web
    application", authorised redirect URI
-   `https://staging.skinnar.is/v1/auth/oauth/google/callback`. Then in
+   `https://staging.puffinride.is/v1/auth/oauth/google/callback`. Then in
    Render: `GOOGLE_SIGN_IN=google`, `GOOGLE_CLIENT_ID`,
-   `GOOGLE_CLIENT_SECRET`, `API_ORIGIN=https://staging.skinnar.is`.
+   `GOOGLE_CLIENT_SECRET`; the blueprint sets
+   `API_ORIGIN=https://staging.puffinride.is`.
 2. **Apple Developer Program** ($99 a year), if not joined yet. Then in
    Certificates, Identifiers and Profiles: the test builds' App ID
-   (`is.shareride.app.preview`; the store's `is.shareride.app` stays for the
-   company's account) with Sign in with Apple; a Services ID (for example
-   `is.shareride.preview.web`) with Sign in with Apple configured for the domain
-   `staging.skinnar.is` and the return URL
-   `https://staging.skinnar.is/v1/auth/oauth/apple/callback` (no file to
+   (`is.puffinride.app.preview`; the store's `is.puffinride.app` stays for
+   the company's account) with Sign in with Apple; a Services ID
+   (`is.puffinride.preview.web`) with Sign in with Apple configured for the
+   domain `staging.puffinride.is` and the return URL
+   `https://staging.puffinride.is/v1/auth/oauth/apple/callback` (no file to
    upload); a key with Sign in with Apple, downloaded once as a `.p8`. In
    Render: `APPLE_SIGN_IN=apple`, `APPLE_SERVICES_ID`, `APPLE_TEAM_ID`,
    `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`.
-3. **Apple's private email relay:** register `hello@skinnar.is` (or the
-   domain) as an email source; Apple checks its SPF, which skinnar.is
-   already has for Mailjet.
+3. **Apple's private email relay:** register `hello@puffinride.is` (or the
+   domain) as an email source; Apple checks its SPF, which puffinride.is
+   has for Google Workspace and Mailjet.
 4. **Check** on staging: continue with Google and with Apple, as a
    newcomer and again as a member, in a laptop's browser and a phone's
    browser. Inside the apps once their test builds exist.

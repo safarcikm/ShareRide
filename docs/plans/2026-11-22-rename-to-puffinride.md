@@ -23,21 +23,22 @@ because other work merges in parallel. Names that people never see keep
    "Move to puffinride.is" steps, including the mailbox for
    `admin@puffinride.is` in Google Workspace, one SPF record for Google and
    Mailjet, and `puffinride.com`'s redirect at Cloudflare.
-4. [ ] **Switch staging to puffinride.is,** once Render shows the new
+4. [x] **Switch staging to puffinride.is,** once Render shows the new
    address as verified: `ADMIN_ORIGIN`, `WEB_APP_URL`, `API_ORIGIN`,
    `EMAIL_FROM` (`hello@puffinride.is`), and `EXPO_PUBLIC_API_URL` in
-   `apps/mobile/eas.json`. Martin adds a new console passkey and updates
-   Google's redirect URI and Apple's return URL.
-5. [ ] **App IDs and the link scheme,** with the Google and Apple sign-in
+   `apps/mobile/eas.json`. Martin adds a new console passkey, then sets up
+   Google and Apple sign-in with the new names and address.
+5. [x] **App IDs and the link scheme,** with the Google and Apple sign-in
    work: `is.puffinride.app`, `is.puffinride.app.preview`,
    `is.puffinride.preview.web`, `puffinride://`, slug `puffinride`.
 6. [ ] **Living docs and legal drafts.** README, CLAUDE.md, glossary,
    product, architecture, compliance (with the legal texts), operations and
    strategy docs. ADRs, specs and plans written before 2026-11-22 keep the old
    name.
-7. [ ] **The puffin logo.** Directions on the design canvas; Martin picks
+7. [x] **The puffin logo.** Directions on the design canvas; Martin picks
    one; then the drawings in `apps/mobile/assets/logo`, the app icons, the
-   splash and the logo lockup (spec 15, section 4.9).
+   splash and the logo lockup (spec 15, section 4.9). Done: logo C, the
+   puffin pin (#203).
 8. [ ] **Remove staging.skinnar.is** from the blueprint once nobody uses it.
 9. [ ] **Later, when no parallel work is open:** the `@shareride/` package
    scope, code comments and the repository's name (Martin chose this on
