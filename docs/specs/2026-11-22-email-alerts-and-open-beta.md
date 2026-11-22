@@ -1,6 +1,6 @@
 # Email alerts for web members, and an open beta
 
-**Status:** Proposed (2026-11-22), for Martin's review · **Owner:** Martin ·
+**Status:** Approved (2026-11-22) · **Owner:** Martin ·
 **Decision:** [ADR 0035](../decisions/0035-open-web-beta-reached-by-email.md) ·
 **Changes:** [spec 1](2026-11-13-sign-in-and-profile.md) (decision 5),
 [spec 7](2026-11-13-chat-and-notifications.md) (3.3, 3.5),

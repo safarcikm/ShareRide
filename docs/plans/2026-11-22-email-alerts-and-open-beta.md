@@ -20,7 +20,7 @@ email link on the web.
 (app, Jest with RNTL 14), Playwright web journeys.
 
 **Spec:** [spec 20](../specs/2026-11-22-email-alerts-and-open-beta.md),
-[ADR 0035](../decisions/0035-open-web-beta-reached-by-email.md) (Proposed).
+[ADR 0035](../decisions/0035-open-web-beta-reached-by-email.md) (Accepted).
 
 ## Global Constraints
 

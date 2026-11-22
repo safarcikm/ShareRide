@@ -1,6 +1,6 @@
 # 0035. An open beta on the web, reaching members by email
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-22, by Martin)
 - **Date:** 2026-11-22
 - **Deciders:** Martin
 - **Related:** [spec 20](../specs/2026-11-22-email-alerts-and-open-beta.md),

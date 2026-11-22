@@ -1313,7 +1313,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   settings terms (tester, invite code, setting, settings version, switch,
   corridor, weekly figures, announcement), and a browser journey through
   the operator's side of the beta in the console.
-- Spec 20 (proposed), its plan and ADR 0035: an open beta on the web,
+- Spec 20 (approved), its plan and ADR 0035 (accepted): an open beta on the web,
   reaching members by email. No invite code by default; the hour-before
   reminder and "How was your trip?" by email when there is no push; email
   links that open their screen after signing in; and an email at sign-up
