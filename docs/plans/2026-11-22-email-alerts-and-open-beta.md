@@ -97,22 +97,26 @@ screen).
 ### Task 2.1: the kept link
 
 **Files:** `apps/mobile/src/navigation/kept-link.ts` (new) and its test,
-`kept-choice.ts`, `apps/mobile/src/app/_layout.tsx`, the web's first
-address (`opened-link.web.ts` and `opened-link.ts`).
+`member-screens.ts` (new), `kept-choice.ts`, `apps/mobile/src/app/_layout.tsx`,
+the menu's `(tabs)/_layout.tsx`, the web's first address
+(`opened-link.web.ts` and `opened-link.ts`), and a screen test
+(`src/__tests__/opened-link.test.tsx`).
 
-- [ ] Test first: a member screen's path is kept and taken once; one older
+- [x] Test first: a member screen's path is kept and taken once; one older
       than an hour is not; a public path, a full address or `//host` is
       never kept; booking, offer and problem go before the link.
-- [ ] The member screens come from one list that `_layout.tsx` renders, so
+- [x] The member screens come from one list that `_layout.tsx` renders, so
       the two cannot drift apart.
-- [ ] Signed out (or with sign-up steps left) on a member link: keep it and
-      open Sign in.
+- [x] Signed out (or with sign-up steps left) on a member link: keep it and
+      open Sign in. The menu does it, where the router lands such a link,
+      once it is on screen: from the root layout, Sign in was sometimes
+      lost while the app was still starting.
 
 ### Task 2.2: the web journey
 
 **Files:** `apps/mobile/e2e/review-from-email.spec.ts`.
 
-- [ ] Dóra adds an email, books Bára's trip, the trip completes; in a new
+- [x] Dóra adds an email, books Bára's trip, the trip completes; in a new
       browser, Dóra opens "Rate the driver" from the email, signs in, lands
       on the rating screen and sends a review.
 

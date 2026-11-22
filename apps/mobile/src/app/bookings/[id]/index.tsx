@@ -448,16 +448,30 @@ function Status({
 }
 
 function StatusText({ booking }: { readonly booking: Booking }) {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   const palette = usePalette();
+  // Paid to the driver in person (rule M6): the price, and how.
+  const inPerson = booking.payment === "in_person" && booking.total.amount > 0;
   switch (booking.status) {
     case "confirmed":
       return (
-        <View style={styles.row} accessibilityLiveRegion="polite">
-          <Icon icon={CircleCheck} color={palette.primary} />
-          <Text style={[typography.heading, styles.grow, { color: palette.text }]}>
-            {t("booking.confirmed")}
-          </Text>
+        <View style={styles.status}>
+          <View style={styles.row} accessibilityLiveRegion="polite">
+            <Icon icon={CircleCheck} color={palette.primary} />
+            <Text style={[typography.heading, styles.grow, { color: palette.text }]}>
+              {t("booking.confirmed")}
+            </Text>
+          </View>
+          {inPerson ? (
+            <Body align="start">
+              {booking.viewer === "driver"
+                ? t("booking.paysYouInPerson", {
+                    name: firstNameOf(t, booking.passenger),
+                    total: formatMoney(booking.total, locale),
+                  })
+                : t("booking.payInPerson", { total: formatMoney(booking.total, locale) })}
+            </Body>
+          ) : null}
         </View>
       );
     case "declined":
@@ -489,7 +503,10 @@ function StatusText({ booking }: { readonly booking: Booking }) {
     case "no_show":
       // While its report is open, the report says where it stands (spec 8, 3.3).
       return booking.dispute !== null && booking.dispute.outcome === null ? null : (
-        <Notice kind="info" message={t("booking.noShow")} />
+        <Notice
+          kind="info"
+          message={t(booking.payment === "in_person" ? "booking.noShowInPerson" : "booking.noShow")}
+        />
       );
     default:
       return null;

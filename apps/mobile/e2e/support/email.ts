@@ -1,4 +1,4 @@
-import { expect } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { emailOutbox } from "../../playwright.config";
 import { readOutbox } from "./outbox";
 
@@ -32,4 +32,14 @@ export function linkIn(email: Email, label: string): string {
   const link = new RegExp(`${label}: (\\S+)`).exec(email.text)?.[1];
   if (link === undefined) throw new Error(`No "${label}" link in the email.`);
   return link;
+}
+
+/** Adds an email from Settings and opens the link in it, as in the email journey. */
+export async function addEmail(page: Page, address: string) {
+  await page.goto("/settings/email");
+  await page.getByLabel("Email", { exact: true }).fill(address);
+  await page.getByRole("button", { name: "Send the link" }).click();
+  const confirm = await emailTo(address, /^Confirm your email for ShareRide$/);
+  await page.goto(linkIn(confirm, "Confirm my email"));
+  await expect(page.getByRole("heading", { name: "Your email is added" })).toBeVisible();
 }

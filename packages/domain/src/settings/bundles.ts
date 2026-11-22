@@ -45,6 +45,7 @@ export function bookingSettingsFrom(now: SettingValues): BookingSettings {
     bookingCutoffMinutes: now.booking_cutoff,
     requestExpiryMinutes: now.request_expiry * 60,
     paymentWindowMinutes: now.payment_window,
+    paymentMethod: now.pay_in_person === 1 ? "in_person" : "in_app",
   };
 }
 

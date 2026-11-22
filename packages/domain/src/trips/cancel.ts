@@ -2,6 +2,7 @@
 // happens to each booking on it, and whether it counts on the driver's
 // reliability. The API applies it in one transaction.
 import type { TripCancelReason } from "../bookings/cancellation.ts";
+import { paidInApp, type PaymentMethod } from "../bookings/lifecycle.ts";
 import type { Money } from "../money.ts";
 import { err, ok, type Result } from "../result.ts";
 import type { TripStatus } from "./trip.ts";
@@ -19,6 +20,8 @@ export interface BookingToCancelWithTrip {
   readonly status: "requested" | "accepted" | "confirmed";
   /** What the passenger paid, or pays once accepted (rule P1). */
   readonly total: Money;
+  /** Paid in person, nothing goes back through the app (rule M6). */
+  readonly paymentMethod: PaymentMethod;
 }
 
 export type TripCancelProblem =
@@ -35,7 +38,10 @@ export interface TripCancellation {
   readonly bookings: readonly {
     readonly id: string;
     readonly outcome: "cancelled" | "declined";
-    /** All that was paid (rule M2); nothing for an unpaid booking or a request. */
+    /**
+     * All that was paid in the app (rule M2); nothing for an unpaid booking,
+     * a request or a booking paid in person (rule M6).
+     */
     readonly refund: Money;
   }[];
 }
@@ -58,10 +64,13 @@ export function tripCancellation(
   const withPassenger = bookings.some((booking) => booking.status === "confirmed");
   return ok({
     countsOnReliability: withPassenger && !excused.has(reason),
-    bookings: bookings.map(({ id, status, total }) => ({
+    bookings: bookings.map(({ id, status, total, paymentMethod }) => ({
       id,
       outcome: status === "requested" ? "declined" : "cancelled",
-      refund: status === "confirmed" ? total : { amount: 0, currency: total.currency },
+      refund:
+        status === "confirmed"
+          ? paidInApp(total, paymentMethod)
+          : { amount: 0, currency: total.currency },
     })),
   });
 }

@@ -20,6 +20,7 @@ import {
   changeOccupancy,
   expireDueBookings,
   lockTrip,
+  methodOf,
   partOf,
   stopsOf,
   type Transaction,
@@ -57,6 +58,7 @@ export function toCancelWithTrip(held: readonly (typeof bookings.$inferSelect)[]
     id: booking.id,
     status: booking.status as "requested" | "accepted" | "confirmed",
     total: isk(booking.totalPrice),
+    paymentMethod: methodOf(booking),
   }));
 }
 
@@ -200,7 +202,11 @@ export async function cancelBookingAsOperator(
   // A cancellation is open until boarding (spec 6), also while the lock waited.
   const boardsAt = stops[part.board]?.plannedAt ?? trip.departsAt;
   if (boardsAt === null || boardsAt.getTime() <= now.getTime()) return false;
-  const refund = operatorBookingRefund(booking.status as BookingStatus, isk(booking.totalPrice));
+  const refund = operatorBookingRefund(
+    booking.status as BookingStatus,
+    isk(booking.totalPrice),
+    methodOf(booking),
+  );
   await tx
     .update(bookings)
     .set({

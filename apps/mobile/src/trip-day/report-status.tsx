@@ -69,7 +69,13 @@ function ToAnswer({
         {t("dispute.answerBy", { deadline: deadlineText(t, locale, report.deadline) })}
       </Body>
       <Body align="start">
-        {t(noShow ? "dispute.ifNoAnswerNoShow" : "dispute.ifNoAnswerDriverAbsent")}
+        {t(
+          !noShow
+            ? "dispute.ifNoAnswerDriverAbsent"
+            : booking.payment === "in_person"
+              ? "dispute.ifNoAnswerNoShowInPerson"
+              : "dispute.ifNoAnswerNoShow",
+        )}
       </Body>
       <View style={styles.answers}>
         <Button

@@ -49,8 +49,12 @@ create an account.
   trip, not for running a taxi or a business.
 - Use the price the app works out. Never ask for extra money, tips or
   fuel money on top.
-- Pay and get paid only through the app. Never pay or accept cash or a bank
-  transfer for a ShareRide ride, and never offer to.
+- Pay and get paid only the way the app says. Until payments in the app
+  start, the app may say to pay the driver in person: then pay exactly the
+  price it shows, when you get in, in cash or by bank transfer. Drivers
+  never ask for more, or for money for a cancelled booking or a passenger
+  who didn't come. Otherwise, never pay or accept cash or a bank transfer
+  for a ShareRide ride, and never offer to.
 
 ## 4. Be reliable
 

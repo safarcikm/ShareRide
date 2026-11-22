@@ -1334,6 +1334,19 @@ releases follow [Semantic Versioning](https://semver.org/).
   command. `packages/db/src/places/settlement-meeting-points.csv` holds 104
   meeting points from OpenStreetMap, one in or near each settlement, for
   the operator to import in the console as drafts.
+- Paying the driver in person until card payments work (ADR 0038, rule M6),
+  the console's switch "Pay the driver in person" (off by default).
+  While it is on, a new booking is paid to the driver in person, in cash or
+  by bank transfer, and is confirmed as soon as it is accepted; each
+  booking stores how it is paid (migration 0059), so the switch never
+  changes a booking already made. Cancelling one refunds nothing, and a
+  cancelled or no-show booking paid in person counts nothing towards the
+  trip limit. `/v1/config` says `payInPerson`, and a booking says its
+  `payment`. While the switch is on, the booking screen and the trip page
+  say that card payments are coming soon and to pay the driver in cash or
+  by bank transfer, with no payment sheet; a booking's page, the cancel
+  sheets, the trip day's no-show and report texts and the chat's tip say
+  there is nothing to refund. Steps in the staging runbook.
 - Sign in with Google and Apple (spec 19, ADR 0034; migration
   `0057_sign_in_identities`): "Continue with Google" and "Continue with
   Apple" on step 1 of signing in, on the web, Android and iPhone, through
@@ -1344,6 +1357,11 @@ releases follow [Semantic Versioning](https://semver.org/).
   accounts, and adds one only after a code to the account's own number.
   A development stand-in replaces Google and Apple locally and in tests;
   staging turns them on with the runbook's steps.
+- Email links after signing in (spec 20, 3.2): a link to a screen that
+  needs an account, such as "How was your trip?" in an email, opened in a
+  browser that is not signed in, opens Sign in and then that screen once
+  the account is ready. Only the path is kept, in the app's own storage,
+  for an hour; a booking or Offer chosen in the app goes first.
 
 ### Fixed
 
