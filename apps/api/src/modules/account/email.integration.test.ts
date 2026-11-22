@@ -72,7 +72,7 @@ describe("adding an email (plan 4.6)", () => {
     expect(sent?.to).toBe("gunna.add@example.com");
     expect(sent?.subject).toBe("Confirm your email for PuffinRide");
     expect(sent?.text).toMatch(
-      /^Open the link within 24 hours to confirm that this is your email address\. /,
+      /^Confirm your email for PuffinRide\n\nOpen the link within 24 hours to confirm that this is your email address\. /,
     );
     expect(sent?.text).toContain(`Confirm my email: ${testWebAppUrl}/verify-email#sr_ev_`);
     expect(sent?.html).toContain(`href="${testWebAppUrl}/verify-email#sr_ev_`);

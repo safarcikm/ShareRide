@@ -3,13 +3,23 @@
 // fake records what it was given.
 import { MaybeSent } from "./maybe-sent.ts";
 
+/** A picture inside an email, which its HTML shows as `cid:<contentId>` (spec 24, 3.4). */
+export interface EmailImage {
+  readonly contentId: string;
+  readonly filename: string;
+  readonly contentType: "image/png";
+  readonly content: Uint8Array;
+}
+
 export interface EmailMessage {
   readonly to: string;
   readonly subject: string;
   /** The plain text part. */
   readonly text: string;
-  /** The same words as simple HTML: no images, no tracking. */
+  /** The same words in the PuffinRide layout: nothing loaded from elsewhere, no tracking. */
   readonly html: string;
+  /** The pictures the HTML shows, sent inside the email. */
+  readonly images?: readonly EmailImage[];
   /**
    * The same for every attempt at one delivery. Mailjet keeps it with the
    * message (`CustomID`), so a delivery can be found in its logs; it does

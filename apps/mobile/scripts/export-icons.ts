@@ -54,10 +54,30 @@ const pictures: Readonly<Record<string, number>> = {
   favicon: 48,
 };
 
+/**
+ * Pictures for the API: the icon inside every email (spec 24, 3.1), three
+ * times its 40 pixels. The API's image holds no apps/mobile, so it keeps its own.
+ */
+const forTheApi: readonly { drawing: string; size: number; file: string }[] = [
+  {
+    drawing: "favicon",
+    size: 120,
+    file: join(import.meta.dirname, "..", "..", "api", "assets", "email-logo.png"),
+  },
+];
+
 const env = process.env as Readonly<Record<string, string | undefined>>;
 const browser = await chromium.launch({ executablePath: env["PLAYWRIGHT_CHROMIUM_PATH"] });
 try {
-  for (const [name, size] of Object.entries(pictures)) {
+  const exports = [
+    ...Object.entries(pictures).map(([name, size]) => ({
+      drawing: name,
+      size,
+      file: join(assets, `${name}.png`),
+    })),
+    ...forTheApi,
+  ];
+  for (const { drawing: name, size, file } of exports) {
     const drawing = await readFile(join(assets, "logo", `${name}.svg`), "utf8");
     const page = await browser.newPage({ viewport: { width: size, height: size } });
     await page.setContent(
@@ -65,9 +85,9 @@ try {
     );
     // Chromium leaves out the alpha channel when every pixel is opaque, so
     // the icons that fill their square come out the way the app stores want.
-    await writeFile(join(assets, `${name}.png`), await page.screenshot({ omitBackground: true }));
+    await writeFile(file, await page.screenshot({ omitBackground: true }));
     await page.close();
-    process.stdout.write(`assets/${name}.png\n`);
+    process.stdout.write(`${file}\n`);
   }
   const page = await browser.newPage({ viewport: { width: 1200, height: 630 } });
   await page.setContent(await sharePicture());

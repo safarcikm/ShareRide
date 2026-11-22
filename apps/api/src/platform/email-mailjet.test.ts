@@ -93,6 +93,42 @@ describe("createMailjetEmailSender (ADR 0027)", () => {
     });
   });
 
+  it("sends the pictures the HTML shows inside the email, as inline attachments (spec 24, 3.4)", async () => {
+    const { calls, fetch } = fakeFetch(accepted);
+    const content = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+    await createMailjetEmailSender({ ...keys, from, fetch }).send({
+      ...message,
+      html: '<img src="cid:puffinride-logo" alt="">',
+      images: [
+        {
+          contentId: "puffinride-logo",
+          filename: "puffinride.png",
+          contentType: "image/png",
+          content,
+        },
+      ],
+    });
+
+    const [sent] = (JSON.parse(bodyOf(calls[0])) as { Messages: unknown[] }).Messages;
+    expect(sent).toMatchObject({
+      InlinedAttachments: [
+        {
+          ContentType: "image/png",
+          Filename: "puffinride.png",
+          ContentID: "puffinride-logo",
+          Base64Content: Buffer.from(content).toString("base64"),
+        },
+      ],
+    });
+  });
+
+  it("sends no attachments field when there are no pictures", async () => {
+    const { calls, fetch } = fakeFetch(accepted);
+    await createMailjetEmailSender({ ...keys, from, fetch }).send({ ...message, images: [] });
+
+    expect(bodyOf(calls[0])).not.toContain("InlinedAttachments");
+  });
+
   it("asks Mailjet not to send in sandbox mode", async () => {
     const { calls, fetch } = fakeFetch(() =>
       Response.json({

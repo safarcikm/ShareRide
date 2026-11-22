@@ -350,6 +350,9 @@ importers:
       '@shareride/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@shareride/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@simplewebauthn/server':
         specifier: 14.1.0
         version: 14.1.0
