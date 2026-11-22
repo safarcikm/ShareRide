@@ -1452,6 +1452,10 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- The puffins drive a round, sun-yellow car with a domed roof (spec 15,
+  decision 14), seen through its side windows, with a case on the roof: on
+  the front page and when a seat is booked. The pale open car almost
+  vanished on the frost background. The launch ads use the same drawing.
 - Sign out is on Profile too (spec 16, 3.4 item 4), under the rows; Sign
   out on all devices stays in Settings.
 - The living docs and the legal drafts say PuffinRide (ADR 0039): the

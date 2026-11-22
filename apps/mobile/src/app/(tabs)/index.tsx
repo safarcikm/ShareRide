@@ -40,7 +40,7 @@ const shownRidesWide = 6;
 /**
  * Find, the home of the app for everyone, signed in or not (spec 16, 3.2):
  * the logo and the language (in the top bar on wide screens), Your next
- * ride when signed in, two puffins in a little car over the title (spec 15,
+ * ride when signed in, two puffins in a round car over the title (spec 15,
  * 5.3), a route search with the seats, the rides leaving soon (spec 4, 3.8)
  * and "Offer a ride". Signing in is in the menu.
  *

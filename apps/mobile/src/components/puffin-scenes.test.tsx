@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react-native";
-import { people, puffin } from "@/theme/tokens";
+import { people, puffin, puffinCar } from "@/theme/tokens";
 import { PuffinByPin, PuffinsInCar } from "./puffin-scenes";
 
 // Spec 15, section 5.3, "Puffin scenes": drawings around the screens, hidden
@@ -21,28 +21,55 @@ const drawn = (hex: string) => ({
 const part = (testID: string) => screen.getByTestId(testID, { includeHiddenElements: true });
 const parts = (testID: string) => screen.queryAllByTestId(testID, { includeHiddenElements: true });
 
-/** Every fill inside a drawn part, nested shapes included. */
-function fillsIn(node: unknown): unknown[] {
-  if (Array.isArray(node)) return node.flatMap(fillsIn);
+/** Every value of a prop inside a drawn part, nested shapes included. */
+function valuesIn(node: unknown, prop: string): unknown[] {
+  if (Array.isArray(node)) return node.flatMap((child) => valuesIn(child, prop));
   if (typeof node !== "object" || node === null) return [];
   const own: unknown[] = [];
   if ("props" in node && typeof node.props === "object" && node.props !== null) {
-    const { fill } = node.props as { fill?: unknown };
-    if (fill !== undefined) own.push(fill);
+    const value = (node.props as Record<string, unknown>)[prop];
+    if (value !== undefined) own.push(value);
   }
-  return "children" in node ? [...own, ...fillsIn(node.children)] : own;
+  return "children" in node ? [...own, ...valuesIn(node.children, prop)] : own;
 }
+
+/** Every fill inside a drawn part, nested shapes included. */
+const fillsIn = (node: unknown) => valuesIn(node, "fill");
 
 afterEach(() => {
   mockScheme = "light";
 });
 
-describe("two puffins in a little open car", () => {
+describe("two puffins in a round little car", () => {
   it("carries the driver in a crowberry hat in front and you in a moss scarf", async () => {
     await render(<PuffinsInCar width={170} />);
     expect(fillsIn(part("puffin-driver"))).toContainEqual(drawn(people.crowberry));
     expect(fillsIn(part("puffin-you"))).toContainEqual(drawn(people.mossLight));
     expect(parts("moving-lines")).toHaveLength(0);
+  });
+
+  it("is the sun's yellow, with darker wings over its wheels and glass for the puffins", async () => {
+    await render(<PuffinsInCar width={170} />);
+    const fills = fillsIn(part("puffins-in-car"));
+    expect(fills).toContainEqual(drawn(puffinCar.body));
+    expect(fills).toContainEqual(drawn(puffinCar.wing));
+    expect(fills).toContainEqual(drawn(puffinCar.glass));
+  });
+
+  it("keeps the puffins inside its windows, each car by its own outline", async () => {
+    await render(
+      <>
+        <PuffinsInCar width={170} />
+        <PuffinsInCar width={200} moving />
+      </>,
+    );
+    const names = parts("puffins-in-car").map((car) => {
+      const [name] = valuesIn(car, "name");
+      // The puffins' group is cut by the car's own windows.
+      expect(valuesIn(car, "clipPath")).toContainEqual(name);
+      return name;
+    });
+    expect(new Set(names).size).toBe(2);
   });
 
   it("drives off with lines behind it when moving", async () => {
@@ -72,7 +99,7 @@ describe("in dark mode", () => {
     mockScheme = "dark";
   });
 
-  it("lifts the puffins' black so they stand off the night screen", async () => {
+  it("lifts the black of what stands on the night screen: the car's tyres, the puffin by a pin", async () => {
     await render(
       <>
         <PuffinsInCar width={170} />
@@ -83,6 +110,12 @@ describe("in dark mode", () => {
       const fills = fillsIn(part(id));
       expect(fills).toContainEqual(drawn(puffin.nightBlack));
     }
+  });
+
+  it("keeps basalt for the puffins in the car, as they sit behind its light glass", async () => {
+    await render(<PuffinsInCar width={170} />);
+    expect(fillsIn(part("puffin-driver"))).toContainEqual(drawn(people.face));
+    expect(fillsIn(part("puffin-driver"))).not.toContainEqual(drawn(puffin.nightBlack));
   });
 
   it("keeps basalt in light mode", async () => {
