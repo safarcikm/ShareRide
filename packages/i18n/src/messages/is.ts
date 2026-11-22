@@ -1534,6 +1534,10 @@ export const is = {
   "email.unreadMessages": "Þú átt ólesin skilaboð um ferðina: {date}",
   "email.unreadMessagesBody": "Opnaðu spjallið í PuffinRide til að lesa þau.",
   "email.open": "Opna í PuffinRide",
+  "email.consoleRecovered.subject": "PuffinRide: einhver komst inn í stjórnborðið með SMS-kóða",
+  "email.consoleRecovered.body":
+    "SMS-kóði í símann þinn var notaður til að komast inn í stjórnborð PuffinRide og vista nýjan aðgangslykil. Ef þetta varst ekki þú skaltu taka hlutverkið af á þjóninum strax: operator remove.",
+  "email.consoleRecovered.open": "Opna stjórnborðið",
   "email.footer":
     "Þú færð þennan póst því þú ert með aðgang að PuffinRide. Fréttir af bókunum þínum eru alltaf sendar, því aðrir treysta á þær.",
   "email.verifySubject": "Staðfestu netfangið þitt hjá PuffinRide",
@@ -1564,6 +1568,8 @@ export const is = {
     "PuffinRide: Ný brottför: {date} kl. {time}. Haltu bókuninni eða afbókaðu með fullri endurgreiðslu í appinu.",
   "sms.departureMovedUnpaid": "PuffinRide: Ný brottför: {date} kl. {time}. Nánar í appinu.",
   "sms.reportFiledUrgent": "PuffinRide: ný öryggistilkynning. Skoðaðu hana strax í stjórnborðinu.",
+  "sms.consoleRecovered":
+    "PuffinRide: SMS-kóði var notaður til að komast inn í stjórnborðið og vista nýjan aðgangslykil. Ef þetta varst ekki þú skaltu taka hlutverkið af á þjóninum strax (operator remove).",
   "sms.meetingPointChanged":
     "PuffinRide: Mótsstaður ferðarinnar þinnar hefur breyst: {date}. Nánar í appinu.",
   // Privacy (spec 11, section 8; plan 4.9).

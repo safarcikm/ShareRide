@@ -55,6 +55,7 @@ import {
 import { expireAllDueBookings } from "../bookings/index.ts";
 import { createPaymentService } from "../payments/service.ts";
 import { cleanUpNotifications } from "./clean-up.ts";
+import { recordEvents } from "./outbox.ts";
 import { setPreferences } from "./preferences.ts";
 import { createNotificationWorker, type WorkerSwitches } from "./worker.ts";
 
@@ -2572,5 +2573,76 @@ describe("the operator's switches for sending (spec 10, 3.3)", () => {
       expect(await reminders(olga)).toEqual([]);
       api.advance(-2 * 3600);
     });
+  });
+});
+
+describe("a console recovery (spec 22, R22.4)", () => {
+  async function recovered(member: Member) {
+    await api.connection.db
+      .update(schema.users)
+      .set({ roles: [operatorRole] })
+      .where(eq(schema.users.id, member.userId));
+    await api.connection.db.transaction((tx) =>
+      recordEvents(tx, [{ type: "ConsoleRecovered", userId: member.userId }], api.now()),
+    );
+  }
+  const notices = async (member: Member) =>
+    (await logOf(member)).filter((row) => row.kind === "console_recovered");
+
+  it("tells the operator by text and email that a recovery code was used", async () => {
+    const olga = await newMember("Olga");
+    await withEmail(olga, `${olga.userId}@example.com`);
+    await recovered(olga);
+    await worker().runOnce();
+    await worker().runOnce();
+    expect(await notices(olga)).toEqual([
+      { kind: "console_recovered", channel: "email", status: "sent", reason: null, attempts: 1 },
+      { kind: "console_recovered", channel: "sms", status: "sent", reason: null, attempts: 1 },
+    ]);
+    expect(sms.outbox.at(-1)?.text).toBe(
+      "PuffinRide: a text code was just used to get into the console and save a new passkey. If this wasn't you, take away the operator role on the server now (operator remove).",
+    );
+    expect(email.sent.at(-1)).toMatchObject({
+      to: `${olga.userId}@example.com`,
+      subject: "PuffinRide: someone got into the console with a text code",
+    });
+    expect(email.sent.at(-1)?.text).toContain(`${webAppUrl}/admin`);
+  });
+
+  it("texts it at night too", async () => {
+    const olga = await newMember("Olga");
+    // 02:00 in Reykjavik, which keeps UTC.
+    const night = new Date(api.now());
+    night.setUTCHours(26, 0, 0, 0);
+    const ahead = (night.getTime() - api.now().getTime()) / 1000;
+    api.advance(ahead);
+    await recovered(olga);
+    await worker().runOnce();
+    await worker().runOnce();
+    expect(await notices(olga)).toContainEqual({
+      kind: "console_recovered",
+      channel: "sms",
+      status: "sent",
+      reason: null,
+      attempts: 1,
+    });
+    api.advance(-ahead);
+  });
+
+  it("sends no email without a verified address", async () => {
+    const olga = await newMember("Olga");
+    await recovered(olga);
+    await worker().runOnce();
+    await worker().runOnce();
+    expect(await notices(olga)).toEqual([
+      {
+        kind: "console_recovered",
+        channel: "email",
+        status: "skipped",
+        reason: "no_email",
+        attempts: 0,
+      },
+      { kind: "console_recovered", channel: "sms", status: "sent", reason: null, attempts: 1 },
+    ]);
   });
 });

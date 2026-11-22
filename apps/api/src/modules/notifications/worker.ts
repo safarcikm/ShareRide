@@ -790,7 +790,8 @@ async function operatorFactsOf(
 ) {
   const kind = notification.kind as NotificationKind;
   if (!isOperatorNotice(kind)) return undefined;
-  if (kind !== "switch_still_off" && notification.reportId === null) return undefined;
+  const aboutAReport = kind === "report_filed" || kind === "report_filed_urgent";
+  if (aboutAReport && notification.reportId === null) return undefined;
   const [row] = await q
     .select({
       locale: recipients.locale,
@@ -813,6 +814,16 @@ async function operatorFactsOf(
     phone: row.phoneVerifiedAt === null ? null : row.phone,
     booking: null,
   } as const;
+  if (kind === "console_recovered") {
+    // Told whether or not they still hold the role: it is about their account.
+    const facts: OperatorNoticeFacts = { kind };
+    return {
+      ...common,
+      facts,
+      current: true,
+      email: row.emailVerifiedAt === null ? null : row.email,
+    } as const;
+  }
   if (kind === "switch_still_off") {
     const off = await switchesOff();
     const facts: OperatorNoticeFacts = { kind, off };
@@ -1700,6 +1711,15 @@ export function createNotificationWorker(dependencies: {
   ): Promise<void> {
     const type = event.kind as OutboxEventType;
     const key = `event:${event.id}`;
+    if (type === "ConsoleRecovered") {
+      // The operator whose recovery code was used (spec 22, R22.4).
+      const userId = idIn(event.payload, "userId");
+      if (userId === undefined) return;
+      const [user] = await tx.select({ id: users.id }).from(users).where(eq(users.id, userId));
+      if (user === undefined) return;
+      await add(tx, { kind: "console_recovered", to: null, recipientId: userId }, key, now);
+      return;
+    }
     if (type === "DataExportReady" || type === "AccountDeletionScheduled") {
       const userId = idIn(event.payload, "userId");
       if (userId === undefined) return;
@@ -2278,9 +2298,11 @@ export function createNotificationWorker(dependencies: {
           throw new Error("An SMS is about a booking or a safety report.");
         }
         if (found.phone === null) return { skipped: "no_phone" };
-        // Never at night, even when a send from before 23:00 is tried again (R9.9).
+        // Never at night, even when a send from before 23:00 is tried again
+        // (R9.9); a recovery notice follows the operator's own action (R22.4).
         if (
           isOperatorFacts(found.facts) &&
+          found.facts.kind !== "console_recovered" &&
           !alertChannels(true, clock(), defaultSafetySettings).includes("sms")
         ) {
           return { skipped: "outside_sms_window" };
