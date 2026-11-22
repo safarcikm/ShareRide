@@ -70,7 +70,7 @@ Priorities:
 | I5 | Dark mode | Could | all |
 | J1 | Beta access | Must | 12 |
 | J2 | In-app feedback | Must | 12 |
-| J3 | Usage analytics with consent | Dropped for the beta | 12 |
+| J3 | Usage analytics with consent | Must (website, Google Analytics) | 12, 23 |
 
 ## A. Accounts and profiles
 
@@ -291,9 +291,11 @@ the beta stays on the launch corridors and with known testers.
 **J2. In-app feedback (Must).** Send a note with an optional screenshot from any
 screen; it lands in the operator console.
 
-**J3. Usage analytics with consent (dropped for the beta).** Not needed: the
-operator metrics (H5) measure the exit criteria without tracking anyone.
-Revisit before launch (spec 12, decision 3).
+**J3. Usage analytics with consent (Must, website only).** First dropped for
+the beta (spec 12, decision 3); since 2026-11-22 Google Analytics counts page
+views on the website from visitors who accept, and nothing loads before they
+do ([spec 23](../specs/2026-11-22-google-analytics-and-search.md),
+[ADR 0045](../decisions/0045-google-analytics-on-the-website-after-consent.md)).
 
 ## Decisions
 

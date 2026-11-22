@@ -47,3 +47,4 @@ Specs follow the order in [features](../product/features.md#spec-order).
 | 20 | [Email alerts for web members, and an open beta](2026-11-22-email-alerts-and-open-beta.md) | A1, E1, F2, G1, J1 | Approved (2026-11-22); built (2026-11-22) |
 | 21 | [A meeting point for every settlement](2026-11-22-meeting-points-for-every-settlement.md) | B1, B2 | Approved (2026-11-22) |
 | 22 | [Get back into the console with a text code](2026-11-22-console-passkey-recovery.md) | H1 to H7 | Approved (2026-11-22) |
+| 23 | [Google Analytics with consent, and finding PuffinRide on Google](2026-11-22-google-analytics-and-search.md) | J3, the website | Proposed (2026-11-22) |
