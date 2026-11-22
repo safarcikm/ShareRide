@@ -1,4 +1,4 @@
-# ShareRide Privacy Policy (draft)
+# PuffinRide Privacy Policy (draft)
 
 > **Draft for the lawyer, not in force.** Version 1, written 2026-11-16 from
 > the [privacy register](../privacy-gdpr.md). Periods marked "to confirm" are
@@ -8,8 +8,8 @@
 
 ## 1. Who we are
 
-[Company name] ehf., kennitala [number], [address], Iceland ("ShareRide",
-"we") is responsible for your personal data in the ShareRide app and website
+[Company name] ehf., kennitala [number], [address], Iceland ("PuffinRide",
+"we") is responsible for your personal data in the PuffinRide app and website
 (the controller). Questions about your data: [privacy contact email], or
 "Ask about my data" on the Privacy page in Settings.
 
@@ -46,7 +46,7 @@
 | **Feedback** you send in the beta, with an optional screenshot and technical details | To improve the app | Legitimate interest | 12 months after the beta ends, or until you delete your account |
 | **Technical logs and error reports,** with personal details removed | Security and fixing errors | Legitimate interest | 30 days |
 | **Privacy requests** and our answers | To answer your rights requests | Legal obligation | 3 years after the answer (to confirm) |
-| **Waitlist** (if you join before you have an account): email, how you want to use ShareRide, the routes you travel, language | To invite you to the beta | Your consent, given by confirming your email | Until you leave the list, 30 days after you create an account, or 12 months if you are never invited |
+| **Waitlist** (if you join before you have an account): email, how you want to use PuffinRide, the routes you travel, language | To invite you to the beta | Your consent, given by confirming your email | Until you leave the list, 30 days after you create an account, or 12 months if you are never invited |
 
 We do not store your location. When you ask the app to find meeting points
 near you, your phone's location is used for that search only.
@@ -57,7 +57,7 @@ so the number cannot be used to sign up again.
 
 ## 4. Who can see what
 
-- **Anyone using ShareRide:** your first name, photo, bio, languages,
+- **Anyone using PuffinRide:** your first name, photo, bio, languages,
   badges, reviews and reliability figure. For a trip you publish, also its
   route, times, prices, free seats, notes and your car's make, model and
   colour.
@@ -67,7 +67,7 @@ so the number cannot be used to sign up again.
   on it can see that you booked it.
 - **Nobody else** sees your phone number, email address, payments or the
   messages in your conversations.
-- **ShareRide's operator** can see what the service needs to run it and keep
+- **PuffinRide's operator** can see what the service needs to run it and keep
   it safe. The operator reads a conversation only when a report or a
   trip-day disagreement covers it, and every such look is logged.
 
@@ -87,7 +87,7 @@ processing agreement, only as we instruct.
 | [Payment provider] | Payments, refunds and payouts; it also checks drivers' identity and bank accounts | [Location] |
 
 If you sign in with Google or Apple, you do so on their own page, under
-their own privacy policies, and they learn that you sign in to ShareRide.
+their own privacy policies, and they learn that you sign in to PuffinRide.
 They share with us their ID for you, your email address and whether they
 have verified it, and your first name. We keep the ID and a verified email
 address while the Google or Apple account is linked to yours; your first
@@ -140,7 +140,7 @@ analytics cookies, so there is nothing to consent to.
 
 ## 9. Age
 
-ShareRide is for people aged 18 and over. We do not knowingly collect data
+PuffinRide is for people aged 18 and over. We do not knowingly collect data
 about children.
 
 ## 10. Security

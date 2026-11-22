@@ -1,6 +1,6 @@
 # Documentation
 
-Everything needed to understand, build and run ShareRide. Start with the
+Everything needed to understand, build and run PuffinRide. Start with the
 [development strategy](strategy/development-strategy.md).
 
 ## Strategy

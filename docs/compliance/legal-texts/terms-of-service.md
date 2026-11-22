@@ -1,4 +1,4 @@
-# ShareRide Terms of Service (draft)
+# PuffinRide Terms of Service (draft)
 
 > **Draft for the lawyer, not in force.** Version 1, written 2026-11-16;
 > paying the driver in person (section 6.9) added 2026-11-22.
@@ -9,22 +9,22 @@
 
 ## 1. About these terms
 
-1. ShareRide is run by [Company name] ehf., kennitala [number], [address],
-   Iceland ("ShareRide", "we", "us"). You can reach us at [contact email].
-2. These terms are an agreement between you and us about using the ShareRide
+1. PuffinRide is run by [Company name] ehf., kennitala [number], [address],
+   Iceland ("PuffinRide", "we", "us"). You can reach us at [contact email].
+2. These terms are an agreement between you and us about using the PuffinRide
    app and website (the "service"). By creating an account you accept them,
    together with the [Community Rules](community-rules.md). The
    [Privacy Policy](privacy-policy.md) explains how we handle your personal
    data.
-3. **Closed beta.** ShareRide is in a closed test (beta). You need an
+3. **Closed beta.** PuffinRide is in a closed test (beta). You need an
    invitation to create an account, some features may change or stop
    working, and we ask testers for feedback. During the beta there is no
    service fee.
 4. If you don't agree to these terms, please don't use the service.
 
-## 2. What ShareRide is, and what it is not
+## 2. What PuffinRide is, and what it is not
 
-1. ShareRide helps people who are already making a trip by car share the
+1. PuffinRide helps people who are already making a trip by car share the
    empty seats, and the cost of the trip, with others going the same way.
    Drivers publish a trip they are making anyway, from fixed meeting points
    on their route. Passengers book seats on all of the trip or part of it.
@@ -37,7 +37,7 @@
    not earn a living from it. The app suggests prices from the distance and
    caps them, so that a trip never brings the driver more than the
    passengers' share of the cost of driving it, counting everything
-   passengers have already paid. Using ShareRide as a business, as a taxi or to make a
+   passengers have already paid. Using PuffinRide as a business, as a taxi or to make a
    profit is not allowed.
 4. **We are not an emergency service.** In an emergency, call 112.
 5. We do not check drivers, passengers, cars or licences before they use the
@@ -103,7 +103,7 @@ When you book, you confirm and promise that:
    stretches it covers. You see the full price before you book. Prices are
    in Icelandic krónur.
 2. **Paying in the app only.** All payments for rides go through the app.
-   Never pay a driver in cash or by bank transfer for a ShareRide booking,
+   Never pay a driver in cash or by bank transfer for a PuffinRide booking,
    and never ask a passenger to, except as item 9 allows.
 3. **When you pay.** In instant booking you pay at once. When the driver
    approves requests, you pay once the driver accepts. You have 30 minutes

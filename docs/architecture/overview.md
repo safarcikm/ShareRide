@@ -12,7 +12,7 @@ flowchart TB
   P[Passenger] --> SR
   D[Driver] --> SR
   O[Operator] --> SR
-  SR[ShareRide]
+  SR[PuffinRide]
   SR --> SMS[SMS provider]
   SR --> MAIL[Email provider]
   SR --> PUSH[Apple and Google push<br/>via Expo push service]

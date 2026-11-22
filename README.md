@@ -1,6 +1,6 @@
-# ShareRide
+# PuffinRide
 
-ShareRide is a ride-sharing app for Iceland. Drivers publish trips built from
+PuffinRide is a ride-sharing app for Iceland. Drivers publish trips built from
 curated **meeting points**, set a price for each **segment** between consecutive
 meeting points, and passengers book the empty seats on any part of the route.
 
@@ -118,9 +118,9 @@ code appears in the API's terminal.
   finds the API at the computer's address on port 3000.
 - The first time, allow Node.js through the firewall when Windows or macOS
   asks (on Windows, for private networks). Otherwise the phone cannot reach
-  the API and the app says it cannot reach ShareRide.
+  the API and the app says it cannot reach PuffinRide.
 - Enter your number and tap **Send code**. The code appears in the API
-  terminal, for example `[dev SMS to +354••••••67] 123456 is your ShareRide
+  terminal, for example `[dev SMS to +354••••••67] 123456 is your PuffinRide
   code.` Type it in the app.
 - If the phone still cannot reach the API (some office and guest networks
   block it), put `EXPO_PUBLIC_API_URL=http://<your computer's address>:3000`
@@ -136,14 +136,14 @@ code appears in the API's terminal.
    **Device Manager**, add a phone and start it.
 2. Start the database, the API and the app as above, then press `a` in the
    app's terminal. Expo installs Expo Go on the emulator and opens the app.
-3. If the app cannot reach ShareRide, put
+3. If the app cannot reach PuffinRide, put
    `EXPO_PUBLIC_API_URL=http://10.0.2.2:3000` in `apps/mobile/.env.local`
    and restart the app (10.0.2.2 is the computer, seen from the emulator).
    Remove the line again before using a phone or the web app.
 
 ### See the app icon and opening screen
 
-Expo Go shows its own icon. To see ShareRide's, build the app once on the
+Expo Go shows its own icon. To see PuffinRide's, build the app once on the
 emulator (several minutes the first time):
 
 1. Tell the build where Android Studio's tools are, as user environment

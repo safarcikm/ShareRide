@@ -506,7 +506,7 @@ reliability routes (`registerReliabilityAdminRoutes`), with the work in
   its reason is the weather or a closed road (`excused_by_reason`, saved
   when they are cancelled), newest first, with who cancelled, in which
   role, the route and the time. Those already overruled stay, with
-  `overruledAt` and the operator's note. Nobody leaving ShareRide, nor the
+  `overruledAt` and the operator's note. Nobody leaving PuffinRide, nor the
   former member.
 - `POST /admin/v1/reliability/cancellations/{kind}/{id}/counts`, with
   `kind` `trip` or `booking` and `{ counts, note }`, changes whether it
@@ -517,7 +517,7 @@ reliability routes (`registerReliabilityAdminRoutes`), with the work in
   (`checkOverruleNote`), and is the operator's only. It writes
   `trip.reason_overruled` or `trip.overrule_undone` (or `booking.…`) with
   the names of the fields changed, never the note. It answers
-  `not_found` for anything not on that list, so nobody leaving ShareRide
+  `not_found` for anything not on that list, so nobody leaving PuffinRide
   is changed, and `unchanged` when it already counts, or already
   doesn't.
 - `GET /admin/v1/reliability/watch` gives the watch level (80%) and the
@@ -559,7 +559,7 @@ safety routes (`registerModerationAdminRoutes`), with the work in
 - `GET /admin/v1/reports/{id}/conversation` reads the conversation through
   `readConversationAsOperator` with `{ type: "report", id }`: only a
   report about a message covers it (R9.6), else `not_covered`. A message
-  ShareRide removed comes with its words, marked `removed`.
+  PuffinRide removed comes with its words, marked `removed`.
 - `POST /admin/v1/reports/{id}/close` with `{ outcome }` closes it and
   tells the reporter in general terms.
 - `POST /admin/v1/users/{id}/warning`, `.../suspension` (with `until`,
@@ -911,14 +911,14 @@ them the same way.
   address or a log. At most 50, by first name in Icelandic order, with
   `more` when there were more; never the former member.
 - `GET /admin/v1/users/{id}` gives a person's page: the profile with when
-  each thing was verified or declared, About you and whether ShareRide hid
+  each thing was verified or declared, About you and whether PuffinRide hid
   it, their rating and reliability figure as their profile counts them
   (`figuresOf` in `people/standing.ts`, which the profile uses too, with
   whether the figure is below the watch level), cars, the 20 latest trips
   they drive and bookings they made (a declined request with its reason,
   R5.7), the 20 latest reports by and about them, reviews about them and
   reviews they wrote (every one, with its words, whether it shows yet,
-  whether ShareRide hid it and whether its author is deleting their
+  whether PuffinRide hid it and whether its author is deleting their
   account, and the other person), and actions on them, every note, and
   their decline rate.
 - `POST /admin/v1/users/{id}/notes` with `{ text }` adds a note about the

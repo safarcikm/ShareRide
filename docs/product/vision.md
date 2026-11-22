@@ -32,7 +32,7 @@ fewer cars carry one person.
 | **Visitor** | Travels without a rental car | Rides from the airport and between sights, clear meeting points, safety information |
 | **Operator (Martin)** | Runs the service alone | Automated checks, a clear admin console, low operating effort |
 
-## What makes ShareRide different
+## What makes PuffinRide different
 
 1. **Meeting points, not addresses.** Trips are built from curated, safe, easy
    to find meeting points. Drivers don't detour to doorsteps; passengers know

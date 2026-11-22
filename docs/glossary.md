@@ -18,7 +18,7 @@ to be confirmed by a native speaker before they appear in the app.
 | Booking mode (`BookingMode`) | Bókunarháttur | Instant booking, or request and driver approval |
 | Driver (`Driver`) | Ökumaður | A user offering a trip |
 | Passenger (`Passenger`) | Farþegi | A user booking seats |
-| Operator | Rekstraraðili | The person or company running ShareRide; uses the admin console |
+| Operator | Rekstraraðili | The person or company running PuffinRide; uses the admin console |
 | Suggested price | Ráðlagt verð | Price per segment proposed by the app from distance and rate |
 | Price cap | Hámarksverð | Highest price a segment may have (cost-sharing limit) |
 | Trip limit (`tripLimit`) | Hámark ferðar | The most a whole trip may bring its driver: what a full car pays at the price caps. Everything the trip's bookings pay the driver counts against it ([spec 17](specs/2026-11-17-trip-earnings-limit.md)) |

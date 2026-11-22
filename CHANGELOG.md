@@ -1404,6 +1404,11 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- The living docs and the legal drafts say PuffinRide (ADR 0039): the
+  README, CLAUDE.md, the glossary, product, architecture, compliance,
+  engineering and strategy docs, SECURITY.md, the ADR skill, and the terms,
+  privacy policy and community rules for the lawyer. Older ADRs, specs and
+  plans keep the name they were written with.
 - Staging's address is `https://staging.puffinride.is` (ADR 0039): the
   console's origin, the emails' links and sender (`hello@puffinride.is`),
   Google's and Apple's return address and the phone test builds' API all

@@ -1,6 +1,6 @@
 ---
 name: write-adr
-description: Create or supersede an Architecture Decision Record in docs/decisions for ShareRide. Use when a change involves an architectural choice, a new external service or dependency category, a business-rule change (pricing, seats, cancellations), or a security, privacy or legal decision, or when asked to "record this decision" or "write an ADR".
+description: Create or supersede an Architecture Decision Record in docs/decisions for PuffinRide. Use when a change involves an architectural choice, a new external service or dependency category, a business-rule change (pricing, seats, cancellations), or a security, privacy or legal decision, or when asked to "record this decision" or "write an ADR".
 ---
 
 # Write an ADR
