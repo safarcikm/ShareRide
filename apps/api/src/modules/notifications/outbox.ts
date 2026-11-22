@@ -32,6 +32,7 @@ export type OutboxEvent =
         | "FeedbackReplied"
         | "AnnouncementSent"
         | "AnnouncementTested"
+        | "ConsoleRecovered"
       >;
       readonly bookingId: string;
     }
@@ -87,6 +88,11 @@ export type OutboxEvent =
       readonly type: "MeetingPointChanged" | "MeetingPointMoved";
       readonly tripId: string;
       readonly meetingPointId: string;
+    }
+  | {
+      /** An operator used a recovery code: they are told by text and email (spec 22, R22.4). */
+      readonly type: "ConsoleRecovered";
+      readonly userId: string;
     }
   | {
       /** The person's file of their data is ready to download (spec 11, 3.2). */

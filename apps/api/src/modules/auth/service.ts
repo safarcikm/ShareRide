@@ -10,6 +10,7 @@ import {
   generateCode,
   normalisePhoneNumber,
   ok,
+  recoveryCodeSendLimits,
   type CodePurpose,
   type PhoneNumberError,
   type RateLimited,
@@ -165,6 +166,21 @@ export interface AuthService {
     code: string,
     action: (tx: Transaction) => Promise<Result<T, E>>,
   ): Promise<Result<T, ConfirmError | E>>;
+  /**
+   * Sends a console recovery code to this number (spec 22): the caller has
+   * checked that it is an operator's. Counted apart from the number's
+   * sign-in codes (R22.6), and sent while the console pauses texts (R22.5).
+   */
+  sendRecoveryCode(input: {
+    readonly e164: string;
+    readonly locale: Locale;
+  }): Promise<Result<{ readonly resendAfterSeconds: number }, StartError>>;
+  /** As `withConfirmCode`, for the number's console recovery code. */
+  withRecoveryCode<T, E>(
+    e164: string,
+    code: string,
+    action: (tx: Transaction) => Promise<Result<T, E>>,
+  ): Promise<Result<T, ConfirmError | E>>;
 }
 
 export interface AuthServiceDependencies {
@@ -265,11 +281,25 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
     return rows.map((row) => row.createdAt);
   }
 
-  /** Seconds until a new code can be sent to this number. */
-  async function resendWait(executor: Executor, phoneHash: string, now: Date): Promise<number> {
-    const rules = codeSendLimits.perNumber;
+  /**
+   * A number's own count of codes sent: recovery codes are counted apart
+   * from sign-in and confirm codes (spec 22, R22.6).
+   */
+  const perNumberLimit = (purpose: CodePurpose) =>
+    purpose === "console_recovery"
+      ? { scope: "console_recovery_phone", rules: recoveryCodeSendLimits.perNumber }
+      : { scope: "phone", rules: codeSendLimits.perNumber };
+
+  /** Seconds until a new code for this purpose can be sent to this number. */
+  async function resendWait(
+    executor: Executor,
+    phoneHash: string,
+    purpose: CodePurpose,
+    now: Date,
+  ): Promise<number> {
+    const { scope, rules } = perNumberLimit(purpose);
     const check = checkRateLimits(
-      await sendTimes(executor, "phone", phoneHash, rules, now),
+      await sendTimes(executor, scope, phoneHash, rules, now),
       rules,
       now,
     );
@@ -278,36 +308,51 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
 
   /**
    * Sends a new code for its purpose under the limits of rule R1.3, which
-   * sign-in and confirming share. It replaces the number's earlier code for
-   * the same purpose only.
+   * sign-in and confirming share; a console recovery code has its own
+   * count per number only (spec 22, R22.6). It replaces the number's earlier
+   * code for the same purpose only.
    */
-  async function sendCode(input: {
-    readonly e164: string;
-    readonly callingCode: string;
-    readonly purpose: CodePurpose;
-    readonly locale: Locale;
-    readonly ipAddress: string;
-  }): Promise<Result<{ readonly resendAfterSeconds: number }, StartError>> {
+  async function sendCode(
+    input:
+      | {
+          readonly e164: string;
+          readonly callingCode: string;
+          readonly purpose: "sign_in" | "confirm";
+          readonly locale: Locale;
+          readonly ipAddress: string;
+        }
+      | {
+          readonly e164: string;
+          readonly callingCode: string;
+          readonly purpose: "console_recovery";
+          readonly locale: Locale;
+        },
+  ): Promise<Result<{ readonly resendAfterSeconds: number }, StartError>> {
     const { e164, callingCode, purpose } = input;
     // Before anything is counted or stored: a code that cannot be sent is
-    // not made, and the earlier one keeps working.
-    if (await smsPaused()) return err({ code: "sms_paused" });
+    // not made, and the earlier one keeps working. The console's pause never
+    // stops a recovery code, so it cannot lock the operator out (R22.5).
+    if (purpose !== "console_recovery" && (await smsPaused())) return err({ code: "sms_paused" });
     const now = clock();
     const phoneHash = hasher("phone", e164);
-    const limits = [
-      { scope: "phone", keyHash: phoneHash, rules: codeSendLimits.perNumber },
-      {
-        // An IPv6 address counts by its /64 network, as search does.
-        scope: "ip",
-        keyHash: hasher("ip", addressBlock(input.ipAddress)),
-        rules: codeSendLimits.perIpAddress,
-      },
-      {
-        scope: "calling_code",
-        keyHash: hasher("calling-code", callingCode),
-        rules: codeSendLimits.perCallingCode(callingCode),
-      },
-    ];
+    const perNumber = { ...perNumberLimit(purpose), keyHash: phoneHash };
+    const limits =
+      input.purpose === "console_recovery"
+        ? [perNumber]
+        : [
+            perNumber,
+            {
+              // An IPv6 address counts by its /64 network, as search does.
+              scope: "ip",
+              keyHash: hasher("ip", addressBlock(input.ipAddress)),
+              rules: codeSendLimits.perIpAddress,
+            },
+            {
+              scope: "calling_code",
+              keyHash: hasher("calling-code", callingCode),
+              rules: codeSendLimits.perCallingCode(callingCode),
+            },
+          ];
     const code = generateCode(randomInt);
 
     const refused = await db.transaction(async (tx) => {
@@ -351,10 +396,12 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
       return err(refused.error);
     }
 
-    const text =
-      purpose === "sign_in"
-        ? translators[input.locale]("sms.signInCode", { code })
-        : translators[input.locale]("sms.confirmCode", { code });
+    const textKey = {
+      sign_in: "sms.signInCode",
+      confirm: "sms.confirmCode",
+      console_recovery: "sms.consoleRecoveryCode",
+    } as const;
+    const text = translators[input.locale](textKey[purpose], { code });
     try {
       await sms.send({ to: e164, text });
     } catch (error) {
@@ -392,7 +439,10 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
     const attempt = checkCodeAttempt(stored, now);
     if (!attempt.ok) {
       return attempt.error.code === "code_attempts_exceeded"
-        ? err({ ...attempt.error, retryAfterSeconds: await resendWait(tx, phoneHash, now) })
+        ? err({
+            ...attempt.error,
+            retryAfterSeconds: await resendWait(tx, phoneHash, purpose, now),
+          })
         : err(attempt.error);
     }
 
@@ -405,7 +455,7 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
       return attemptsLeft === 0
         ? err({
             code: "code_attempts_exceeded",
-            retryAfterSeconds: await resendWait(tx, phoneHash, now),
+            retryAfterSeconds: await resendWait(tx, phoneHash, purpose, now),
           })
         : err({ code: "code_invalid", attemptsLeft });
     }
@@ -415,6 +465,42 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
 
   const useUpCode = (tx: Transaction, codeId: string) =>
     tx.delete(verificationCodes).where(eq(verificationCodes.id, codeId));
+
+  /**
+   * Checks the newest code of a number for its purpose, then runs the action
+   * in the same transaction. A wrong code is counted and the action does not
+   * run. The code is used up only when the action succeeds: when it returns
+   * an error or throws, its changes are rolled back and the code still works.
+   */
+  async function withCode<T, E>(
+    numberOf: (tx: Transaction) => Promise<string | null>,
+    purpose: CodePurpose,
+    code: string,
+    action: (tx: Transaction) => Promise<Result<T, E>>,
+  ): Promise<Result<T, ConfirmError | E>> {
+    const now = clock();
+    let refused: { readonly error: E } | undefined;
+    try {
+      return await db.transaction(async (tx): Promise<Result<T, ConfirmError | E>> => {
+        const e164 = await numberOf(tx);
+        if (e164 === null) return err({ code: "code_expired" });
+        // A wrong code returns, so the transaction commits its count.
+        const checked = await checkCode(tx, hasher("phone", e164), purpose, code, now);
+        if (!checked.ok) return checked;
+        await useUpCode(tx, checked.value.codeId);
+        const done = await action(tx);
+        if (!done.ok) {
+          // Undo the action and keep the code for another try.
+          refused = { error: done.error };
+          tx.rollback();
+        }
+        return done;
+      });
+    } catch (error) {
+      if (refused !== undefined) return err(refused.error);
+      throw error;
+    }
+  }
 
   /** Counts a try against a code, as a wrong text-message code would. */
   const countAttempt = (tx: Transaction, codeId: string, now: Date) =>
@@ -754,37 +840,37 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
       code: string,
       action: (tx: Transaction) => Promise<Result<T, E>>,
     ): Promise<Result<T, ConfirmError | E>> {
-      const now = clock();
-      let refused: { readonly error: E } | undefined;
-      try {
-        return await db.transaction(async (tx): Promise<Result<T, ConfirmError | E>> => {
+      return withCode(
+        async (tx) => {
           const [user] = await tx
             .select({ phoneE164: users.phoneE164 })
             .from(users)
             .where(eq(users.id, userId));
-          if (user === undefined || user.phoneE164 === null) return err({ code: "code_expired" });
-          // A wrong code returns, so the transaction commits its count.
-          const checked = await checkCode(
-            tx,
-            hasher("phone", user.phoneE164),
-            "confirm",
-            code,
-            now,
-          );
-          if (!checked.ok) return checked;
-          await useUpCode(tx, checked.value.codeId);
-          const done = await action(tx);
-          if (!done.ok) {
-            // Undo the action and keep the code for another try.
-            refused = { error: done.error };
-            tx.rollback();
-          }
-          return done;
-        });
-      } catch (error) {
-        if (refused !== undefined) return err(refused.error);
-        throw error;
-      }
+          return user?.phoneE164 ?? null;
+        },
+        "confirm",
+        code,
+        action,
+      );
+    },
+
+    async sendRecoveryCode(input) {
+      // The stored number as it is, as for a confirm code.
+      const phone = normalisePhoneNumber(input.e164);
+      return sendCode({
+        e164: input.e164,
+        callingCode: phone.ok ? phone.value.callingCode : "unknown",
+        purpose: "console_recovery",
+        locale: input.locale,
+      });
+    },
+
+    async withRecoveryCode<T, E>(
+      e164: string,
+      code: string,
+      action: (tx: Transaction) => Promise<Result<T, E>>,
+    ): Promise<Result<T, ConfirmError | E>> {
+      return withCode(() => Promise.resolve(e164), "console_recovery", code, action);
     },
   };
 }

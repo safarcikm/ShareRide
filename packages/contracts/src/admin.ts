@@ -175,6 +175,41 @@ export const adminSignInRoute = defineRoute({
   },
 });
 
+export const adminSignInMethodsRoute = defineRoute({
+  method: "get",
+  path: "/admin/v1/auth/methods",
+  summary: "How the operator can sign in besides a passkey",
+  tags: ["admin"],
+  responses: {
+    200: {
+      description: "password: whether the temporary password sign-in is on (ADR 0041)",
+      schema: z.object({ password: z.boolean() }),
+    },
+  },
+});
+
+export const adminPasswordSignInRoute = defineRoute({
+  method: "post",
+  path: "/admin/v1/auth/password",
+  summary: "Sign in with a phone number and the console's temporary password (ADR 0041)",
+  tags: ["admin"],
+  request: {
+    body: z.object({
+      phoneNumber: z.string().trim().min(1).max(32),
+      password: z.string().min(1).max(200),
+    }),
+  },
+  responses: {
+    200: { description: "Signed in; the session cookie is set", schema: adminMeSchema },
+    401: { description: "password_invalid: the password or the number is wrong", ...errors },
+    403: {
+      description: "operator_unavailable; password_sign_in_off: ADMIN_PASSWORD is not set",
+      ...errors,
+    },
+    429: { description: "rate_limited", ...errors },
+  },
+});
+
 export const adminConfirmOptionsRoute = defineRoute({
   method: "post",
   path: "/admin/v1/confirm/options",

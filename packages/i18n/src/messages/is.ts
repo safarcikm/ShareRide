@@ -410,6 +410,8 @@ export const is = {
   "driver.offerRide": "Bjóða far",
   "driver.ready.licence": "Ökuskírteini",
   "driver.ready.confirmLicence": "Staðfesta ökuskírteini",
+  "driver.photo.title": "Prófílmyndin þín",
+  "driver.photo.intro": "Þú þarft mynd til að birta ferð.",
   "vehicle.add": "Bæta við bíl",
   "vehicle.editTitle": "Breyta bílnum",
   "vehicle.make": "Tegund",
@@ -576,7 +578,9 @@ export const is = {
   "trip.review.editLabel": "Breyta: {section}",
   "trip.review.fix": "Lagaðu þetta áður en þú birtir:",
   "trip.review.missing":
-    "{count, plural, one {Eitt áður en þú birtir} other {Tvennt áður en þú birtir}}",
+    "{count, plural, one {Eitt áður en þú birtir} =2 {Tvennt áður en þú birtir} other {Þrennt áður en þú birtir}}",
+  "trip.review.yourPhoto": "Prófílmynd",
+  "trip.review.photoDetail": "Svo farþegar viti að hverjum þeir leita",
   "trip.review.yourCar": "Bíllinn þinn",
   "trip.review.carDetail": "Tegund, gerð og litur",
   "trip.review.licenceDetail": "Eitt hak, ekkert að hlaða upp",
@@ -585,12 +589,19 @@ export const is = {
   "trip.review.waitsForCar": "Bættu bílnum við til að birta. Ferðin er vistuð sem drög þangað til.",
   "trip.review.waitsForLicence":
     "Staðfestu ökuskírteinið til að birta. Ferðin er vistuð sem drög þangað til.",
+  "trip.review.waitsForPhoto":
+    "Bættu við prófílmynd til að birta. Ferðin er vistuð sem drög þangað til.",
+  "trip.review.waitsForPhotoAndCar":
+    "Bættu við prófílmynd og bílnum til að birta. Ferðin er vistuð sem drög þangað til.",
+  "trip.review.waitsForPhotoAndLicence":
+    "Bættu við prófílmynd og staðfestu ökuskírteinið til að birta. Ferðin er vistuð sem drög þangað til.",
+  "trip.review.waitsForAll":
+    "Bættu við prófílmynd og bílnum og staðfestu ökuskírteinið til að birta. Ferðin er vistuð sem drög þangað til.",
   "trip.publish": "Birta ferð",
   "trip.review.delete": "Eyða drögum",
   "trip.review.deleteConfirm": "Eyða þessum drögum? Það er ekki hægt að afturkalla.",
   "trip.review.keep": "Halda þeim",
-  "trip.problem.driver_not_ready":
-    "Kláraðu listann hér að ofan: bættu við bílnum og staðfestu ökuskírteinið.",
+  "trip.problem.driver_not_ready": "Kláraðu listann hér að ofan áður en þú birtir.",
   "trip.problem.car_missing": "Veldu bílinn sem þú ekur.",
   "trip.problem.seats_invalid": "Bjóddu 1 til {max} sæti.",
   "trip.problem.price_level_invalid":
@@ -1527,6 +1538,10 @@ export const is = {
   "email.unreadMessages": "Þú átt ólesin skilaboð um ferðina: {date}",
   "email.unreadMessagesBody": "Opnaðu spjallið í PuffinRide til að lesa þau.",
   "email.open": "Opna í PuffinRide",
+  "email.consoleRecovered.subject": "PuffinRide: einhver komst inn í stjórnborðið með SMS-kóða",
+  "email.consoleRecovered.body":
+    "SMS-kóði í símann þinn var notaður til að komast inn í stjórnborð PuffinRide og vista nýjan aðgangslykil. Ef þetta varst ekki þú skaltu taka hlutverkið af á þjóninum strax: operator remove.",
+  "email.consoleRecovered.open": "Opna stjórnborðið",
   "email.footer":
     "Þú færð þennan póst því þú ert með aðgang að PuffinRide. Fréttir af bókunum þínum eru alltaf sendar, því aðrir treysta á þær.",
   "email.verifySubject": "Staðfestu netfangið þitt hjá PuffinRide",
@@ -1543,6 +1558,8 @@ export const is = {
     "Þessi innskráning er útrunnin eða var þegar notuð. Lokaðu glugganum og reyndu aftur.",
   "sms.signInCode": "{code} er PuffinRide-kóðinn þinn. Hann gildir í 10 mínútur.",
   "sms.confirmCode": "{code} er PuffinRide-kóðinn til að staðfesta. Ekki deila honum.",
+  "sms.consoleRecoveryCode":
+    "{code} er kóðinn þinn fyrir stjórnborð PuffinRide. Deildu honum aldrei.",
   "sms.bookingCancelled":
     "PuffinRide: Bílstjórinn aflýsti bókun þinni: {date} kl. {time}. Full endurgreiðsla. Nánar í appinu.",
   "sms.bookingCancelledUnpaid":
@@ -1555,6 +1572,8 @@ export const is = {
     "PuffinRide: Ný brottför: {date} kl. {time}. Haltu bókuninni eða afbókaðu með fullri endurgreiðslu í appinu.",
   "sms.departureMovedUnpaid": "PuffinRide: Ný brottför: {date} kl. {time}. Nánar í appinu.",
   "sms.reportFiledUrgent": "PuffinRide: ný öryggistilkynning. Skoðaðu hana strax í stjórnborðinu.",
+  "sms.consoleRecovered":
+    "PuffinRide: SMS-kóði var notaður til að komast inn í stjórnborðið og vista nýjan aðgangslykil. Ef þetta varst ekki þú skaltu taka hlutverkið af á þjóninum strax (operator remove).",
   "sms.meetingPointChanged":
     "PuffinRide: Mótsstaður ferðarinnar þinnar hefur breyst: {date}. Nánar í appinu.",
   // Privacy (spec 11, section 8; plan 4.9).
@@ -1866,6 +1885,7 @@ export const is = {
   "export.value.kind.report_filed": "Ný tilkynning",
   "export.value.kind.report_filed_urgent": "Ný öryggistilkynning",
   "export.value.kind.moderation_action": "Orðsending frá PuffinRide",
+  "export.value.kind.console_recovered": "SMS-kóði var notaður til að komast inn í stjórnborðið",
   "export.value.kind.suspension_ended": "Lokun lokið",
   "export.value.kind.appeal_answered": "Svar við andmælum",
   "export.value.kind.report_closed": "Niðurstaða tilkynningar",
@@ -1945,6 +1965,16 @@ export const is = {
   "admin.signIn.unavailable": "Þessi aðgangur getur ekki notað stjórnborðið.",
   "admin.signIn.ended": "Lotunni lauk. Skráðu þig inn aftur.",
   "admin.signIn.signedOut": "Þú skráðir þig út.",
+  "admin.signIn.passwordTitle": "Eða skráðu þig inn með lykilorði",
+  "admin.signIn.passwordBody": "Símanúmer aðgangsins þíns og lykilorð stjórnborðsins.",
+  "admin.signIn.phoneNumber": "Símanúmer",
+  "admin.signIn.password": "Lykilorð",
+  "admin.signIn.passwordButton": "Skrá inn með lykilorðinu",
+  "admin.signIn.passwordWrong": "Símanúmerið eða lykilorðið er rangt.",
+  "admin.signIn.passwordMissing": "Sláðu inn símanúmerið þitt og lykilorðið.",
+  "admin.signIn.tooManyTries": "Of margar tilraunir. Bíddu aðeins og reyndu svo aftur.",
+  "admin.passkey.wrongAddress":
+    "Aðgangslyklar virka ekki á þessu vistfangi. Opnaðu stjórnborðið á eigin vistfangi þess og reyndu aftur.",
   "admin.passkey.cancelled":
     "Aðgangslykillinn var ekki notaður: hætt var við eða tíminn rann út. Reyndu aftur.",
   "admin.passkey.unsupported":

@@ -1,5 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { english, signUp } from "./support/account";
+import { landscapeJpeg } from "./support/photo";
 
 // A profile photo on the web build (spec 1, 3.5; ADR 0033): a member picks
 // a picture from a file, the browser crops it square and writes it as a
@@ -9,23 +10,6 @@ import { english, signUp } from "./support/account";
 test.use({ locale: "en-GB" });
 
 const visible = { visible: true } as const;
-
-/** A landscape picture, 900 by 600 pixels, as the browser itself writes a JPEG. */
-async function landscapeJpeg(page: Page): Promise<Buffer> {
-  const dataUrl = await page.evaluate(() => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 900;
-    canvas.height = 600;
-    const context = canvas.getContext("2d");
-    if (context === null) throw new Error("No canvas.");
-    context.fillStyle = "#2f6b4f";
-    context.fillRect(0, 0, 900, 600);
-    context.fillStyle = "#eef3f4";
-    context.fillRect(300, 150, 300, 300);
-    return canvas.toDataURL("image/jpeg", 0.9);
-  });
-  return Buffer.from(dataUrl.replace(/^data:image\/jpeg;base64,/, ""), "base64");
-}
 
 test("a member adds a profile photo from a file, sees it on Profile, and removes it", async ({
   page,

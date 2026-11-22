@@ -16,10 +16,21 @@ type Busy = PhotoSource | "remove" | null;
 
 /**
  * Adding, changing and removing my profile photo, under my avatar on
- * Profile (spec 1, 3.5): from my photos, or the camera on a phone. While
- * ShareRide hides it (spec 9, 3.4.3) only I see it, with a note why.
+ * Profile and before publishing a trip (spec 1, 3.5): from my photos, or
+ * the camera on a phone. While ShareRide hides it (spec 9, 3.4.3) only I
+ * see it, with a note why.
  */
-export function PhotoControls({ me }: { readonly me: Me }) {
+export function PhotoControls({
+  me,
+  onAdded,
+  prominent = false,
+}: {
+  readonly me: Me;
+  /** After a photo is added or changed, in place of saying so here. */
+  readonly onAdded?: () => void;
+  /** Adding a photo is the screen's main action, not a link under the avatar. */
+  readonly prominent?: boolean;
+}) {
   const { t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
@@ -70,8 +81,12 @@ export function PhotoControls({ me }: { readonly me: Me }) {
         return;
       }
       const result = await session.call(putMyPhotoRoute, { body: { photo: chosen.photo } });
-      if (result.ok) saved(result.data, t("profile.photo.saved"));
-      else setError(failed(result));
+      if (!result.ok) setError(failed(result));
+      else if (onAdded === undefined) saved(result.data, t("profile.photo.saved"));
+      else {
+        session.update(result.data);
+        onAdded();
+      }
     } finally {
       setBusy(null);
     }
@@ -96,9 +111,10 @@ export function PhotoControls({ me }: { readonly me: Me }) {
       {me.photo?.hidden === true ? (
         <Notice kind="info" urgent={false} message={t("profile.photo.hidden")} />
       ) : null}
-      <View style={styles.buttons}>
+      <View style={prominent ? styles.stacked : styles.buttons}>
         <Button
-          variant="text"
+          main={prominent}
+          variant={prominent ? "primary" : "text"}
           label={t(hasPhoto ? "profile.photo.change" : "profile.photo.add")}
           busy={busy === "library"}
           disabled={busy !== null}
@@ -108,7 +124,7 @@ export function PhotoControls({ me }: { readonly me: Me }) {
         />
         {Platform.OS === "web" ? null : (
           <Button
-            variant="text"
+            variant={prominent ? "secondary" : "text"}
             label={t("profile.photo.take")}
             busy={busy === "camera"}
             disabled={busy !== null}
@@ -148,5 +164,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     columnGap: spacing.md,
   },
+  stacked: { gap: spacing.sm },
   centre: { textAlign: "center" },
 });

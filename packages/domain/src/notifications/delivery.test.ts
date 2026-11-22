@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { retryAt } from "./delivery.ts";
+import { outboxEventTypes, retryAt } from "./delivery.ts";
 import { defaultNotificationSettings } from "./settings.ts";
 
 describe("trying a failed send again (spec 7, 3.7)", () => {
@@ -20,5 +20,11 @@ describe("trying a failed send again (spec 7, 3.7)", () => {
     expect(next(7, 1_680)).toEqual(after(3_600));
     expect(next(7, 1_681)).toBeNull();
     expect(next(8, 3_600)).toBeNull();
+  });
+});
+
+describe("outboxEventTypes", () => {
+  it("include a console recovery (spec 22, R22.4)", () => {
+    expect(outboxEventTypes).toContain("ConsoleRecovered");
   });
 });
