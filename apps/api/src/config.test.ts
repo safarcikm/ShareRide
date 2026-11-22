@@ -75,7 +75,27 @@ describe("loadConfig", () => {
         ],
         allowExpoGo: true,
       },
+      searchEngines: { indexable: false, siteOrigin: null },
     });
+  });
+
+  it("lets search engines index production's public pages only (spec 23, R23.6)", () => {
+    const site = "https://puffinride.is";
+    expect(loadConfig({ ...valid, WEB_APP_URL: site }).searchEngines).toEqual({
+      indexable: true,
+      siteOrigin: site,
+    });
+    // Unset, APP_ENV is production under NODE_ENV=production, as for the seed guard.
+    expect(
+      loadConfig({ ...valid, APP_ENV: undefined, WEB_APP_URL: site }).searchEngines.indexable,
+    ).toBe(true);
+    const staging = "https://staging.puffinride.is";
+    expect(
+      loadConfig({ ...valid, APP_ENV: "staging", WEB_APP_URL: staging }).searchEngines,
+    ).toEqual({ indexable: false, siteOrigin: staging });
+    // Without its address production has nothing to name in a sitemap.
+    expect(loadConfig(valid).searchEngines).toEqual({ indexable: false, siteOrigin: null });
+    expect(loadConfig(development).searchEngines).toEqual({ indexable: false, siteOrigin: null });
   });
 
   it("uses the stand-in for Google locally, and nothing on a server until told (ADR 0034)", () => {

@@ -9,6 +9,7 @@ import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Loading } from "@/components/loading";
 import { Notice } from "@/components/notice";
+import { PageHead } from "@/components/page-head";
 import { Screen } from "@/components/screen";
 import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
@@ -45,6 +46,10 @@ export default function LegalDocumentScreen() {
         </>
       ) : (
         <>
+          <PageHead
+            title={t("seo.title", { page: result.data.title })}
+            description={t("seo.legalDescription")}
+          />
           <Title>{result.data.title}</Title>
           <Body>{t("legal.version", { version: result.data.version })}</Body>
           <Markdown text={result.data.body} />

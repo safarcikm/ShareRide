@@ -11,6 +11,7 @@ import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Icon } from "@/components/icon";
 import { Notice } from "@/components/notice";
+import { PageHead } from "@/components/page-head";
 import { Screen } from "@/components/screen";
 import { Tag } from "@/components/tag";
 import { Body, Heading, Title } from "@/components/text";
@@ -69,6 +70,10 @@ function Details({ point }: { readonly point: MeetingPointDetails }) {
       : t("meetingPoints.pausedBecause", { reason: point.pauseReason[locale] });
   return (
     <>
+      <PageHead
+        title={t("seo.title", { page: name })}
+        description={t("seo.meetingPointDescription", { name })}
+      />
       <Title>{name}</Title>
       {otherName === name ? null : <Body>{otherName}</Body>}
       <Body>
