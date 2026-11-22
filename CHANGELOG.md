@@ -1347,6 +1347,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   by bank transfer, with no payment sheet; a booking's page, the cancel
   sheets, the trip day's no-show and report texts and the chat's tip say
   there is nothing to refund. Steps in the staging runbook.
+- Sign in with Google and Apple (spec 19, ADR 0034; migration
+  `0057_sign_in_identities`): "Continue with Google" and "Continue with
+  Apple" on step 1 of signing in, on the web, Android and iPhone, through
+  our API's browser flow (`expo-web-browser`, a one-time ticket and the
+  app's own secret). A newcomer gives their phone number once, at
+  sign-up; a member Google or Apple knows is signed in with no code.
+  Settings, Sign-in methods lists the phone number and the linked
+  accounts, and adds one only after a code to the account's own number.
+  A development stand-in replaces Google and Apple locally and in tests;
+  staging turns them on with the runbook's steps.
 
 ### Fixed
 

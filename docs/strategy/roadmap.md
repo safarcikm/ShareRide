@@ -256,8 +256,10 @@ profile photos: [plan](../plans/2026-11-22-profile-photos.md); sign-in:
 for the open beta)
 
 - [ ] Profile photos, required for drivers before their first trip
-- [ ] Google sign-in
-- [ ] Sign in with Apple
+- [x] Google sign-in (built 2026-11-22: #188, #192, #199, #200; on staging
+      once Martin turns it on, runbook "Turn on Google sign-in")
+- [x] Sign in with Apple (built 2026-11-22: #196, #199, #200; on staging
+      once Martin turns it on, runbook "Turn on Sign in with Apple")
 
 Milestone 14: women-only trips
 ([spec 14](../specs/2026-11-13-women-only-trips.md); after the lawyer answers
