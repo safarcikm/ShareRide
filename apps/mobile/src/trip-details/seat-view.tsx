@@ -2,7 +2,8 @@
    coordinates; the types mark the transform style of the same name as deprecated. */
 import type { ReactNode } from "react";
 import { Platform, StyleSheet, Text, useColorScheme, View } from "react-native";
-import Svg, { Circle, G, Path, Rect, Text as SvgText } from "react-native-svg";
+import Svg, { G, Path, Rect, Text as SvgText } from "react-native-svg";
+import { Puffin } from "@/components/puffin";
 import { useLanguage } from "@/i18n/language";
 import {
   carDrawing,
@@ -44,6 +45,9 @@ const wheel = { length: 32, width: 10 };
 const light = { width: 5, length: 14, fromSide: 34 };
 
 const slotY = (slot: number) => bodyTop + inset + slot * (seat + gap);
+/** A puffin on a seat: half its drawing's size, moved back so its beak fits. */
+const puffinSize = 0.5;
+const puffinShift = 6;
 
 /**
  * The car from above, front to the right, with the seats on the
@@ -263,7 +267,7 @@ function LegendItem({ label, children }: { readonly label: string; readonly chil
   );
 }
 
-/** One seat in its state, with a shape person on it when someone sits there. */
+/** One seat in its state, with a puffin on it when someone sits there. */
 function SeatShape({
   spot,
   x,
@@ -287,8 +291,13 @@ function SeatShape({
       return (
         <G>
           <Rect x={x} y={y} width={seat} height={seat} rx={9} fill={seatColour} />
-          <Person shape="pebble" cx={cx} cy={cy} colour={driverColour} />
-          <KnittedHat cx={cx} cy={cy} />
+          <Puffin
+            testID="puffin-driver"
+            x={cx - puffinShift}
+            y={cy + 2}
+            size={puffinSize}
+            look={{ kind: "colour", hat: driverColour }}
+          />
         </G>
       );
     case "you":
@@ -304,14 +313,26 @@ function SeatShape({
             stroke={palette.primary}
             strokeWidth={3}
           />
-          <Person shape={shapeAt(spot)} cx={cx} cy={cy} colour={people.mossLight} />
+          <Puffin
+            testID="puffin-you"
+            x={cx - puffinShift}
+            y={cy - 1}
+            size={puffinSize}
+            look={{ kind: "colour", scarf: people.mossLight }}
+          />
         </G>
       );
     case "taken":
       return (
         <G>
           <Rect x={x} y={y} width={seat} height={seat} rx={9} fill={seatColour} />
-          <Person shape={shapeAt(spot)} cx={cx} cy={cy} colour={takenColour} smile={false} />
+          <Puffin
+            testID="puffin-taken"
+            x={cx - puffinShift}
+            y={cy + 1}
+            size={puffinSize}
+            look={{ kind: "grey", black: takenColour, face: seatColour }}
+          />
         </G>
       );
     case "free":
@@ -369,74 +390,15 @@ export function YourSeat() {
           stroke={palette.primary}
           strokeWidth={3}
         />
-        <Person shape="pebble" cx={seat / 2} cy={seat / 2} colour={people.mossLight} />
+        <Puffin
+          testID="puffin-you"
+          x={seat / 2 - puffinShift}
+          y={seat / 2 - 1}
+          size={puffinSize}
+          look={{ kind: "colour", scarf: people.mossLight }}
+        />
       </Svg>
     </View>
-  );
-}
-
-type Shape = "pebble" | "mountain" | "dome";
-const shapes: readonly Shape[] = ["pebble", "mountain", "dome"];
-/** Shapes vary by seat, never by person: they say nothing about who sits there. */
-const shapeAt = (spot: SeatSpot): Shape =>
-  shapes[(spot.row + spot.slot) % shapes.length] ?? "pebble";
-
-/** A shape person (spec 15, 5.3): a pebble, a mountain or a dome with two dot eyes and a smile. */
-function Person({
-  shape,
-  cx,
-  cy,
-  colour,
-  smile = true,
-}: {
-  readonly shape: Shape;
-  readonly cx: number;
-  readonly cy: number;
-  readonly colour: string;
-  readonly smile?: boolean;
-}) {
-  const n = (value: number) => String(value);
-  const body =
-    shape === "pebble" ? (
-      <Circle cx={cx} cy={cy + 1} r={11} fill={colour} />
-    ) : shape === "dome" ? (
-      <Path
-        d={`M${n(cx - 11)} ${n(cy + 10)}L${n(cx + 11)} ${n(cy + 10)}L${n(cx + 11)} ${n(cy + 1)}A11 11 0 0 0 ${n(cx - 11)} ${n(cy + 1)}Z`}
-        fill={colour}
-      />
-    ) : (
-      <Path
-        d={`M${n(cx - 12)} ${n(cy + 10)}Q${n(cx - 12)} ${n(cy + 7)} ${n(cx - 9)} ${n(cy + 3)}L${n(cx - 2)} ${n(cy - 9)}Q${n(cx)} ${n(cy - 12)} ${n(cx + 2)} ${n(cy - 9)}L${n(cx + 9)} ${n(cy + 3)}Q${n(cx + 12)} ${n(cy + 7)} ${n(cx + 12)} ${n(cy + 10)}Z`}
-        fill={colour}
-      />
-    );
-  return (
-    <G>
-      {body}
-      <Circle cx={cx - 3.5} cy={cy + 2} r={1.8} fill={people.face} />
-      <Circle cx={cx + 3.5} cy={cy + 2} r={1.8} fill={people.face} />
-      {smile ? (
-        <Path
-          d={`M${n(cx - 3.2)} ${n(cy + 5.4)}q3.2 2.5 6.4 0`}
-          stroke={people.face}
-          strokeWidth={1.8}
-          strokeLinecap="round"
-          fill="none"
-        />
-      ) : null}
-    </G>
-  );
-}
-
-/** The driver's crowberry knitted hat, as on the logo. */
-function KnittedHat({ cx, cy }: { readonly cx: number; readonly cy: number }) {
-  const n = (value: number) => String(value);
-  return (
-    <G>
-      <Path d={`M${n(cx - 10)} ${n(cy - 3)}a10 8.5 0 0 1 20 0z`} fill={people.crowberry} />
-      <Rect x={cx - 11} y={cy - 5} width={22} height={4.2} rx={2.1} fill={people.wool} />
-      <Circle cx={cx} cy={cy - 13} r={2.6} fill={people.wool} />
-    </G>
   );
 }
 

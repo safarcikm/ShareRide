@@ -1384,6 +1384,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   tinted; Android adaptive and themed), the opening screen, the browser
   tab and the logo beside the name. The puffin's drawing colours are tokens
   (`puffin`), and a test keeps the `Logo` part and `icon.svg` the same.
+- Puffins sit in the seat view instead of the shape people (spec 15, 5.3):
+  the driver in a knitted hat of their colour, you in a moss scarf, and a
+  grey puffin with no colour on a seat someone else took, all facing the
+  way the car drives. The booked screen's seat shows your puffin too.
 - Photos are kept in Hetzner Object Storage in Nuremberg, not Helsinki,
   which Hetzner did not offer when the staging bucket was made (ADR 0037).
   The privacy policy draft, the privacy register and the runbook say so;

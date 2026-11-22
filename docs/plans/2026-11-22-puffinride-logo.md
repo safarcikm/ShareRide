@@ -1,7 +1,7 @@
 # PuffinRide logo and puffins implementation plan
 
 **Owner:** Martin · **Date:** 2026-11-22 · **Status:** Logo C chosen by
-Martin (2026-11-22, decision card); PR 1 in review
+Martin (2026-11-22, decision card); PR 1 merged (#203); PR 2 in review
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > superpowers:executing-plans to implement this plan task by task. Steps use
@@ -41,22 +41,24 @@ it lives with the design boards in the project files
 - [x] `apps/mobile/src/components/logo.tsx` draws the pin from the tokens.
 - [x] Spec 15: sections 4.2 and 4.9, decision 12, the logo picture and the
   three directions; the changelog.
-- [ ] `pnpm check`, the web build, review, then merge when CI is green.
+- [x] `pnpm check`, the web build, review, then merge when CI is green (#203).
 
 ## PR 2: puffins in the seat view
 
-- [ ] Spec 15, section 5.3: the shape people become puffins facing the way
+- [x] Spec 15, section 5.3: the shape people become puffins facing the way
   the car drives. The driver wears a knitted hat in their people colour, you
   wear a moss scarf on your `primarySoft` seat with its `primary` outline,
-  and a taken seat shows a grey puffin with no colour. In dark mode the
-  puffin's black lifts to `#2E3D45` so it shows on the dark car.
-- [ ] **Test first:** in the seat view's tests, each kind of seat still
-  draws its person, and the driver's hat takes the driver's colour.
-- [ ] `apps/mobile/src/trip-details/seat-view.tsx`: a `Puffin` drawing in
-  place of `Person` (pebble, mountain, dome), from the same outlines as the
-  logo's puffin; the `puffin` tokens gain the night black.
-- [ ] Screens that draw a shape person elsewhere (the driver's seats step)
-  follow.
+  and a taken seat shows a grey puffin with no colour. The puffin's black
+  stays basalt in dark mode: the seats around it are lighter than the
+  screen, and its white face carries it.
+- [x] **Test first:** `apps/mobile/src/trip-details/seat-view.test.tsx`,
+  the driver's puffin wears the driver's colour, yours a moss scarf, a taken
+  seat's puffin has none of the puffin's or the people colours, and the
+  booked screen's seat shows you.
+- [x] `apps/mobile/src/components/puffin.tsx`: the `Puffin` drawing, in
+  colour or grey, with an optional hat or scarf. `seat-view.tsx` uses it in
+  place of `Person` (pebble, mountain, dome) and the driver's `KnittedHat`;
+  no other screen drew a shape person.
 - [ ] `pnpm check`, the web build and the look screenshots, review, merge.
 
 Puffins on the front page, on empty screens and when a seat is booked (the
