@@ -1,0 +1,114 @@
+name: Release to production
+
+# Moves the `production` branch, which production on Render follows (ADR
+# 0042), to a commit on main whose CI passed. Run it from the Actions tab,
+# "Release to production", "Run workflow"; the production runbook says when.
+# It builds nothing itself: Render deploys the branch once it moves.
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: "Commit on main to release. Empty: the newest one whose CI passed, which staging runs."
+        required: false
+        default: ""
+      older:
+        description: "Allow moving production back to an older commit (a lasting rollback)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: release-production
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Choose the commit
+        id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WANTED: ${{ inputs.commit }}
+        run: |
+          set -euo pipefail
+          if [ -z "$WANTED" ]; then
+            sha=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --branch main \
+              --event push --status success --limit 1 --json headSha --jq '.[0].headSha // ""')
+            if [ -z "$sha" ]; then
+              echo "::error::No commit on main has passing CI."
+              exit 1
+            fi
+          elif ! sha=$(git rev-parse --verify --quiet "${WANTED}^{commit}"); then
+            echo "::error::${WANTED} is not a commit in this repository."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$sha" origin/main; then
+            echo "::error::${sha} is not on main."
+            exit 1
+          fi
+          passed=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --commit "$sha" \
+            --event push --json conclusion --jq 'map(select(.conclusion == "success")) | length')
+          if [ "$passed" = 0 ]; then
+            echo "::error::CI has not passed on ${sha} after it reached main."
+            exit 1
+          fi
+          echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+
+      - name: Move production
+        env:
+          SHA: ${{ steps.pick.outputs.sha }}
+          OLDER: ${{ inputs.older }}
+        run: |
+          set -euo pipefail
+          current=""
+          if git ls-remote --exit-code --heads origin production > /dev/null; then
+            git fetch --quiet origin production
+            current=$(git rev-parse FETCH_HEAD)
+          fi
+          summary="$GITHUB_STEP_SUMMARY"
+          echo "## Release to production" >> "$summary"
+          if [ "$current" = "$SHA" ]; then
+            echo "Production already runs \`${SHA}\`. Nothing to do." >> "$summary"
+            exit 0
+          fi
+          push=(git push origin "${SHA}:refs/heads/production")
+          if [ -z "$current" ]; then
+            echo "First release: \`${SHA}\`, $(git log -1 --format=%s "$SHA")." >> "$summary"
+          elif git merge-base --is-ancestor "$current" "$SHA"; then
+            {
+              echo "From \`${current}\` to \`${SHA}\`:"
+              echo
+              git log --reverse --format='- %h %s' "${current}..${SHA}"
+              migrations=$(git diff --name-only "$current" "$SHA" -- 'packages/db/migrations/*.sql')
+              if [ -n "$migrations" ]; then
+                echo
+                echo "Migrations in this release (run before it takes traffic):"
+                echo
+                echo "$migrations" | sed 's/^/- /'
+              fi
+            } >> "$summary"
+          elif [ "$OLDER" = true ]; then
+            {
+              echo "Back from \`${current}\` to the older \`${SHA}\`. The database keeps its newer"
+              echo "migrations; the older version must still read them (conventions, Database)."
+            } >> "$summary"
+            push=(git push --force origin "${SHA}:refs/heads/production")
+          else
+            echo "::error::${SHA} is older than production's ${current}. Tick \"older\" to roll back."
+            exit 1
+          fi
+          "${push[@]}"
+          echo >> "$summary"
+          echo "Render now deploys it to https://puffinride.is." >> "$summary"

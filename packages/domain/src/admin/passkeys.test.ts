@@ -5,6 +5,7 @@ import {
   isRecentlyConfirmed,
   operatorSignInLimitsPerAddress,
   passkeyRules,
+  recoveryCodeSendLimits,
 } from "./passkeys.ts";
 
 const sentAt = new Date("2026-11-16T22:00:00Z");
@@ -49,5 +50,14 @@ describe("isRecentlyConfirmed", () => {
     expect(isRecentlyConfirmed(sentAt, minutes(0))).toBe(true);
     expect(isRecentlyConfirmed(sentAt, new Date(minutes(5).getTime() - 1))).toBe(true);
     expect(isRecentlyConfirmed(sentAt, minutes(5))).toBe(false);
+  });
+});
+
+describe("recoveryCodeSendLimits (spec 22, R22.6)", () => {
+  it("allow one recovery code per 30 seconds and 5 an hour per number", () => {
+    expect(recoveryCodeSendLimits.perNumber).toEqual([
+      { limit: 1, windowSeconds: 30 },
+      { limit: 5, windowSeconds: 3600 },
+    ]);
   });
 });

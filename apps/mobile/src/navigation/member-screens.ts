@@ -12,6 +12,7 @@ export const memberScreens = [
   "drive/cars/new",
   "drive/cars/[id]",
   "drive/licence",
+  "drive/photo",
   "drive/trips/index",
   "drive/trips/new",
   "drive/trips/[id]/index",

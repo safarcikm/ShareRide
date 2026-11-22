@@ -39,7 +39,10 @@ export const browserPasskeys: PasskeyBrowser = {
 /** Why the browser's passkey call failed, as a text key. */
 export function passkeyFailure(
   error: unknown,
-): "admin.passkey.cancelled" | "admin.passkeys.alreadySaved" {
+): "admin.passkey.cancelled" | "admin.passkeys.alreadySaved" | "admin.passkey.wrongAddress" {
   const name = error instanceof Error ? error.name : "";
-  return name === "InvalidStateError" ? "admin.passkeys.alreadySaved" : "admin.passkey.cancelled";
+  if (name === "InvalidStateError") return "admin.passkeys.alreadySaved";
+  // The page's address is not the one the passkeys are bound to (ADMIN_ORIGIN).
+  if (name === "SecurityError") return "admin.passkey.wrongAddress";
+  return "admin.passkey.cancelled";
 }

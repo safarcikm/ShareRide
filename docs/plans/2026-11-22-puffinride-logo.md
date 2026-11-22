@@ -1,8 +1,8 @@
 # PuffinRide logo and puffins implementation plan
 
 **Owner:** Martin · **Date:** 2026-11-22 · **Status:** Logo C chosen by
-Martin (2026-11-22, decision card); PR 1 merged (#203), PR 2 merged (#205);
-PR 3 in review
+Martin (2026-11-22, decision card); PR 1 merged (#203), PR 2 merged (#205),
+PR 3 merged (#213): done
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > superpowers:executing-plans to implement this plan task by task. Steps use
@@ -87,5 +87,5 @@ section 5.3 ("Puffin scenes") and decision 13.
 - [x] The screens: `app/(tabs)/index.tsx`, `app/bookings/[id]/booked.tsx`,
   `app/rides/index.tsx`, `app/(tabs)/my-rides.tsx`,
   `chat/conversation-list.tsx` and `app/drive/trips/index.tsx`.
-- [ ] `pnpm check`, the web build, a look at the screens in light and dark,
+- [x] `pnpm check`, the web build, a look at the screens in light and dark,
   review, merge.
