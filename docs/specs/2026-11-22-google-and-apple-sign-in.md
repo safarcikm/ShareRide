@@ -1,7 +1,7 @@
 # Spec 19: Sign in with Google and Apple
 
 **Owner:** Martin · **Date:** 2026-11-22 · **Status:** Approved
-(2026-11-22, by Martin on a decision card); see the [implementation plan](../plans/2026-11-22-google-and-apple-sign-in.md)
+(2026-11-22, by Martin on a decision card); built (2026-11-22); see the [implementation plan](../plans/2026-11-22-google-and-apple-sign-in.md)
 
 Decision record: [ADR 0034](../decisions/0034-google-and-apple-sign-in-through-our-api.md)
 (accepted). This spec amends [spec 1](2026-11-13-sign-in-and-profile.md)
