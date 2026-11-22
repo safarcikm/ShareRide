@@ -1881,6 +1881,7 @@ export const is = {
   "export.value.kind.report_filed": "Ný tilkynning",
   "export.value.kind.report_filed_urgent": "Ný öryggistilkynning",
   "export.value.kind.moderation_action": "Orðsending frá PuffinRide",
+  "export.value.kind.console_recovered": "SMS-kóði var notaður til að komast inn í stjórnborðið",
   "export.value.kind.suspension_ended": "Lokun lokið",
   "export.value.kind.appeal_answered": "Svar við andmælum",
   "export.value.kind.report_closed": "Niðurstaða tilkynningar",

@@ -1857,6 +1857,7 @@ export const en = {
   "export.value.kind.report_filed": "New report",
   "export.value.kind.report_filed_urgent": "New safety report",
   "export.value.kind.moderation_action": "Notice from PuffinRide",
+  "export.value.kind.console_recovered": "A text code was used to get into the console",
   "export.value.kind.suspension_ended": "Suspension ended",
   "export.value.kind.appeal_answered": "Answer to your appeal",
   "export.value.kind.report_closed": "Outcome of your report",
