@@ -207,7 +207,7 @@ describe("isAppleRelay (spec 19, 3.5)", () => {
 describe("isAllowedReturnUrl (ADR 0034)", () => {
   const allowed = {
     webOrigins: ["https://staging.skinnar.is", "http://localhost:8081"],
-    appScheme: "shareride",
+    appScheme: "puffinride",
     allowExpoGo: false,
   };
 
@@ -218,7 +218,7 @@ describe("isAllowedReturnUrl (ADR 0034)", () => {
   it.each([
     "https://staging.skinnar.is/sign-in/return",
     "http://localhost:8081/sign-in/return",
-    "shareride://sign-in/return",
+    "puffinride://sign-in/return",
   ])("allows %s", (url) => {
     expect(isAllowedReturnUrl(url, allowed)).toBe(true);
   });
@@ -230,7 +230,7 @@ describe("isAllowedReturnUrl (ADR 0034)", () => {
     "https://staging.skinnar.is/sign-in/return#x",
     "https://staging.skinnar.is/other",
     "https://user@staging.skinnar.is/sign-in/return",
-    "shareride://other",
+    "puffinride://other",
     "exp://192.168.1.5:8081/--/sign-in/return",
     "javascript:alert(1)",
     "not a url",

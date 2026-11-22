@@ -156,12 +156,12 @@ describe("The driver's trip page (spec 5, 3.3 and 3.7)", () => {
     expect(await screen.findByText("Request accepted. The booking is confirmed.")).toBeVisible();
   });
 
-  it("declines with an optional reason that only ShareRide sees (R5.7)", async () => {
+  it("declines with an optional reason that only PuffinRide sees (R5.7)", async () => {
     const { client } = await openAsDriver(tripPage);
     await fireEvent.press(await screen.findByRole("button", { name: "Decline" }));
     expect(
       screen.getByText(
-        "Only ShareRide sees the reason. Gunna is told you couldn't take the request.",
+        "Only PuffinRide sees the reason. Gunna is told you couldn't take the request.",
       ),
     ).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Don't decline" }));

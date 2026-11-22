@@ -49,7 +49,7 @@ one page, one at a time.
 ### 3.2 Step 1: the phone number
 
 One field, **Your phone number**, with the hint "The number of your
-ShareRide account. We send a code by text message." A number without a
+PuffinRide account. We send a code by text message." A number without a
 country code is read as Icelandic, as in the app (R1.1). **Send a code**.
 
 The API sends a code only when the number belongs to an account that may use
@@ -120,7 +120,7 @@ tokens and parts the sign-in and setup pages use.
 Sign in to the console            Get back into the console
 [ Sign in with a passkey ]        Your phone number
 Lost your passkey?                [ 690 0000            ]
-                                  The number of your ShareRide account...
+                                  The number of your PuffinRide account...
                                   [ Send a code ]
                                   Back to sign-in
 ```
@@ -167,7 +167,7 @@ Lost your passkey?                [ 690 0000            ]
 | `admin.signIn.lost`            | Lost your passkey?                                                                                                                    | Týndirðu aðgangslyklinum?                                                                                                                             |
 | `admin.recover.title`          | Get back into the console                                                                                                             | Komdu aftur inn í stjórnborðið                                                                                                                        |
 | `admin.recover.phone`          | Your phone number                                                                                                                     | Símanúmerið þitt                                                                                                                                      |
-| `admin.recover.phoneHint`      | The number of your ShareRide account. We send a code by text message.                                                                 | Númerið á ShareRide-aðganginum þínum. Við sendum kóða með SMS.                                                                                        |
+| `admin.recover.phoneHint`      | The number of your PuffinRide account. We send a code by text message.                                                                 | Númerið á PuffinRide-aðganginum þínum. Við sendum kóða með SMS.                                                                                        |
 | `admin.recover.send`           | Send a code                                                                                                                           | Senda kóða                                                                                                                                            |
 | `admin.recover.sent`           | If this number belongs to an operator, we sent it a code. It works for 10 minutes.                                                    | Ef þetta númer tilheyrir rekstraraðila sendum við kóða í það. Hann virkar í 10 mínútur.                                                               |
 | `admin.recover.code`           | Code                                                                                                                                  | Kóði                                                                                                                                                  |
@@ -176,10 +176,10 @@ Lost your passkey?                [ 690 0000            ]
 | `admin.recover.noText`         | No text? The operator command on the server makes a setup link too.                                                                   | Kom ekkert SMS? Operator-skipunin á þjóninum býr líka til uppsetningarhlekk.                                                                          |
 | `admin.recover.back`           | Back to sign-in                                                                                                                       | Aftur í innskráningu                                                                                                                                  |
 | `admin.recover.setupBody`      | Save a new passkey for the console on this device or your phone. This step works once, for 30 minutes.                                | Vistaðu nýjan aðgangslykil fyrir stjórnborðið í þessu tæki eða símanum. Þetta skref virkar einu sinni, í 30 mínútur.                                  |
-| `sms.consoleRecoveryCode`      | {code} is your ShareRide console code. Never share it.                                                                                | {code} er kóðinn þinn fyrir stjórnborð ShareRide. Deildu honum aldrei.                                                                                |
-| `email.consoleRecovered.subject` | ShareRide: someone got into the console with a text code | ShareRide: einhver komst inn í stjórnborðið með SMS-kóða |
-| `email.consoleRecovered.body`  | A text code to your phone was just used to get into the ShareRide console and save a new passkey. If this wasn't you, take away the operator role on the server now: operator remove. | SMS-kóði í símann þinn var notaður til að komast inn í stjórnborð ShareRide og vista nýjan aðgangslykil. Ef þetta varst ekki þú skaltu taka hlutverkið af á þjóninum strax: operator remove. |
-| `sms.consoleRecovered`         | ShareRide: a text code was just used to get into the console and save a new passkey. If this wasn't you, take away the operator role on the server now (operator remove). | ShareRide: SMS-kóði var notaður til að komast inn í stjórnborðið og vista nýjan aðgangslykil. Ef þetta varst ekki þú skaltu taka hlutverkið af á þjóninum strax (operator remove). |
+| `sms.consoleRecoveryCode`      | {code} is your PuffinRide console code. Never share it.                                                                                | {code} er kóðinn þinn fyrir stjórnborð PuffinRide. Deildu honum aldrei.                                                                                |
+| `email.consoleRecovered.subject` | PuffinRide: someone got into the console with a text code | PuffinRide: einhver komst inn í stjórnborðið með SMS-kóða |
+| `email.consoleRecovered.body`  | A text code to your phone was just used to get into the PuffinRide console and save a new passkey. If this wasn't you, take away the operator role on the server now: operator remove. | SMS-kóði í símann þinn var notaður til að komast inn í stjórnborð PuffinRide og vista nýjan aðgangslykil. Ef þetta varst ekki þú skaltu taka hlutverkið af á þjóninum strax: operator remove. |
+| `sms.consoleRecovered`         | PuffinRide: a text code was just used to get into the console and save a new passkey. If this wasn't you, take away the operator role on the server now (operator remove). | PuffinRide: SMS-kóði var notaður til að komast inn í stjórnborðið og vista nýjan aðgangslykil. Ef þetta varst ekki þú skaltu taka hlutverkið af á þjóninum strax (operator remove). |
 
 Wrong and expired codes reuse the app's texts for them where they fit.
 

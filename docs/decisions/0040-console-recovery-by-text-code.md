@@ -19,7 +19,7 @@ passkey he had saved and could not sign in. He did not know about the
 command, and asked to sign in with "something I own now (like a phone
 number)".
 
-ShareRide has one operator, who works from a laptop and a phone and is not
+PuffinRide has one operator, who works from a laptop and a phone and is not
 a developer. A way back in that needs the hosting dashboard is easy to
 forget. The console holds members' personal data, reports and suspensions,
 so a takeover of the operator's account is the costliest one we have

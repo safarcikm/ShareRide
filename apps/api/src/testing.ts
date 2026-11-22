@@ -137,7 +137,7 @@ export async function startTestApi(): Promise<TestApi> {
         createDevProvider({ name: "apple", apiOrigin: testApiOrigin }),
       ],
       apiOrigin: testApiOrigin,
-      returnUrls: { webOrigins: [testWebAppUrl], appScheme: "shareride", allowExpoGo: true },
+      returnUrls: { webOrigins: [testWebAppUrl], appScheme: "puffinride", allowExpoGo: true },
     },
   };
   const app = createApp({

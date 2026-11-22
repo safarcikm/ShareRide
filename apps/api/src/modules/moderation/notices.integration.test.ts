@@ -22,7 +22,7 @@ import {
 import { createNotificationWorker } from "../notifications/worker.ts";
 import { createModerationService, type Moderator } from "./actions.ts";
 
-// A person's notices from ShareRide (spec 9, 3.4.4; R9.5): what was done
+// A person's notices from PuffinRide (spec 9, 3.4.4; R9.5): what was done
 // and why, with one appeal within 14 days; and the reporter's outcome. The
 // operator's side comes from the console in later PRs; here it is called
 // as the console will call it.
@@ -138,7 +138,7 @@ async function pushesTo(member: Member) {
 }
 
 describe("my notices (spec 9, 3.4.4; R9.5)", () => {
-  it("lists what ShareRide did and why, the latest first, and never which operator", async () => {
+  it("lists what PuffinRide did and why, the latest first, and never which operator", async () => {
     const jon = await newMember("Jón");
     const gunna = await newMember("Gunna");
     const by = await moderator();
@@ -282,7 +282,7 @@ describe("the operator's answer to an appeal (spec 9, 3.4.4)", () => {
     ]);
     expect(await pushesTo(jon)).toEqual([
       {
-        title: "ShareRide answered your appeal",
+        title: "PuffinRide answered your appeal",
         body: "We looked again and changed our decision.",
         path: "/notices",
       },

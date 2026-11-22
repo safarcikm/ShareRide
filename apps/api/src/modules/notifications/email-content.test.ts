@@ -15,9 +15,9 @@ describe("emailContent (plan 4.6)", () => {
       [
         "Saturday 14 November at 09:00 · BSÍ bus terminal",
         "",
-        "Open in ShareRide: https://shareride.is/bookings/0190a1d6-0000-7000-8000-0000000000b1",
+        "Open in PuffinRide: https://shareride.is/bookings/0190a1d6-0000-7000-8000-0000000000b1",
         "",
-        "You get this email because you have a ShareRide account. News about your bookings is always sent, because others rely on it.",
+        "You get this email because you have a PuffinRide account. News about your bookings is always sent, because others rely on it.",
       ].join("\n"),
     );
   });
@@ -28,9 +28,9 @@ describe("emailContent (plan 4.6)", () => {
     expect(email.html).toContain("<title>Booking confirmed</title>");
     expect(email.html).toContain("<p>Saturday 14 November at 09:00 · BSÍ bus terminal</p>");
     expect(email.html).toContain(
-      '<a href="https://shareride.is/bookings/0190a1d6-0000-7000-8000-0000000000b1">Opna í ShareRide</a>',
+      '<a href="https://shareride.is/bookings/0190a1d6-0000-7000-8000-0000000000b1">Opna í PuffinRide</a>',
     );
-    expect(email.html).toContain("Þú færð þennan póst því þú ert með aðgang að ShareRide.");
+    expect(email.html).toContain("Þú færð þennan póst því þú ert með aðgang að PuffinRide.");
     expect(email.html).not.toMatch(/<img|<script|style=/i);
   });
 
@@ -53,6 +53,6 @@ describe("emailContent (plan 4.6)", () => {
       "http://localhost:8081",
     );
     expect(email.html).toContain("<p>First line<br>Second line</p>");
-    expect(email.text).toContain("Open in ShareRide: http://localhost:8081/messages/x");
+    expect(email.text).toContain("Open in PuffinRide: http://localhost:8081/messages/x");
   });
 });

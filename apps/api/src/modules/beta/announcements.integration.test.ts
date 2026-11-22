@@ -332,8 +332,8 @@ describe("Send to me (3.5.2)", () => {
     expect(mail?.text).toContain("Ný útgáfa");
     expect(mail?.text).toContain("Við bættum kortið.");
     expect(mail?.text).toContain("We improved the map.");
-    expect(mail?.text).toContain("You get this because you are a ShareRide beta tester.");
-    expect(mail?.text).toContain("Þú færð þetta af því að þú tekur þátt í beta-prófun ShareRide.");
+    expect(mail?.text).toContain("You get this because you are a PuffinRide beta tester.");
+    expect(mail?.text).toContain("Þú færð þetta af því að þú tekur þátt í beta-prófun PuffinRide.");
     // Nobody else, and it is not on the operator's Beta news page.
     expect(await toldOf(made.id)).toEqual([]);
     expect((await audit("announcement.tested"))[0]?.subjectId).toBe(made.id);
@@ -408,14 +408,14 @@ describe("sending an announcement (3.5.3; R10.7)", () => {
     expect(english?.subject).toBe("A new version");
     expect(english?.text).toContain("We improved the map.\nThank you for testing.");
     expect(english?.text).toContain(
-      "You get this because you are a ShareRide beta tester. Turn off beta news in Settings.",
+      "You get this because you are a PuffinRide beta tester. Turn off beta news in Settings.",
     );
     expect(english?.text).toContain("https://shareride.test/settings/beta-news");
     const icelandic = email.sent.find((mail) => mail.to === `${palli.userId}@example.test`);
     expect(icelandic?.subject).toBe("Ný útgáfa");
     expect(icelandic?.text).toContain("Við bættum kortið.");
     expect(icelandic?.text).toContain(
-      "Þú færð þetta af því að þú tekur þátt í beta-prófun ShareRide.",
+      "Þú færð þetta af því að þú tekur þátt í beta-prófun PuffinRide.",
     );
     expect(icelandic?.text).not.toContain("We improved the map.");
 

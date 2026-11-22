@@ -16,7 +16,7 @@ describe.skipIf(apiKey === undefined)("Vonage contract (wrong secret, nothing se
     const sender = createVonageSmsSender({
       apiKey,
       apiSecret: "wrong-secret-for-the-contract-test",
-      sender: "ShareRide",
+      sender: "PuffinRide",
     });
     const error = await sender.send({ to: "+3546900000", text: "test" }).then(
       () => null,

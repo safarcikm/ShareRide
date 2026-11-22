@@ -74,7 +74,7 @@ describe("GET /v1/me/driver-readiness (spec 3, 3.1)", () => {
     });
   });
 
-  it("counts a profile photo once added, but not one ShareRide hid", async () => {
+  it("counts a profile photo once added, but not one PuffinRide hid", async () => {
     const { accessToken, userId } = await newDriver();
     const photoItem = async () => {
       const result = await api.client.call(driverReadinessRoute, { accessToken });

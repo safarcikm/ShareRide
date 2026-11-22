@@ -72,7 +72,7 @@ export const reviewBookingRoute = defineRoute({
     404: { description: "not_found: no such booking of yours", ...errors },
     409: {
       description:
-        "not_completed: only completed bookings are reviewed; review_window_closed: 14 days have passed; already_reviewed: with another review, which cannot be changed; report_open: the passenger has said the driver didn't come, and that is not decided yet; person_left: the other person has left ShareRide, or is leaving",
+        "not_completed: only completed bookings are reviewed; review_window_closed: 14 days have passed; already_reviewed: with another review, which cannot be changed; report_open: the passenger has said the driver didn't come, and that is not decided yet; person_left: the other person has left PuffinRide, or is leaving",
       ...errors,
     },
   },

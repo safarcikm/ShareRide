@@ -192,7 +192,7 @@ export const myReportsRoute = defineRoute({
 });
 
 /**
- * What ShareRide did about me and why: the statement of reasons (spec 9,
+ * What PuffinRide did about me and why: the statement of reasons (spec 9,
  * 3.4.4; R9.5), with my appeal and its answer. Never which operator.
  */
 export const noticeSchema = z.object({
@@ -228,7 +228,7 @@ export type Notice = z.infer<typeof noticeSchema>;
 export const myNoticesRoute = defineRoute({
   method: "get",
   path: "/v1/me/notices",
-  summary: "What ShareRide did about me and why, the latest first, with my appeals (R9.5)",
+  summary: "What PuffinRide did about me and why, the latest first, with my appeals (R9.5)",
   tags: ["safety"],
   auth: true,
   responses: {

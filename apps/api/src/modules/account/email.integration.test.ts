@@ -70,7 +70,7 @@ describe("adding an email (plan 4.6)", () => {
     expect(api.email.sent).toHaveLength(1);
     const [sent] = api.email.sent;
     expect(sent?.to).toBe("gunna.add@example.com");
-    expect(sent?.subject).toBe("Confirm your email for ShareRide");
+    expect(sent?.subject).toBe("Confirm your email for PuffinRide");
     expect(sent?.text).toMatch(
       /^Open the link within 24 hours to confirm that this is your email address\. /,
     );
@@ -109,7 +109,7 @@ describe("adding an email (plan 4.6)", () => {
     const jon = await member();
     await api.client.call(updateMeRoute, { accessToken: jon.accessToken, body: { locale: "is" } });
     await putEmail(jon, "jon-is@example.com");
-    expect(api.email.sent[0]?.subject).toBe("Staðfestu netfangið þitt hjá ShareRide");
+    expect(api.email.sent[0]?.subject).toBe("Staðfestu netfangið þitt hjá PuffinRide");
   });
 
   it("makes a link work once, for 24 hours, and only the newest", async () => {

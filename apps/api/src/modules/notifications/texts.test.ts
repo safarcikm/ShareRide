@@ -195,12 +195,12 @@ describe("notification texts", () => {
 
   it("tell both sides that the operator has decided, never how in the text (spec 8, 3.5)", () => {
     expect(text({ kind: "dispute_decided", role: "passenger" })).toEqual({
-      title: "ShareRide has decided on the report",
+      title: "PuffinRide has decided on the report",
       body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00. See the outcome in the app.",
       path: "/bookings/booking-1",
     });
     expect(text({ kind: "dispute_decided_driver" }, "is")).toMatchObject({
-      title: "ShareRide hefur tekið ákvörðun um tilkynninguna",
+      title: "PuffinRide hefur tekið ákvörðun um tilkynninguna",
       path: "/drive/trips/trip-1",
     });
   });
@@ -288,10 +288,10 @@ describe("notification texts", () => {
       body: "BSÍ – Hof, Akureyri · laugardagur 14. nóvember kl. 09:00. Leitaðu að annarri ferð.",
     });
     expect(smsText({ ...facts, ...cancelled }, "en")).toBe(
-      "ShareRide: the driver cancelled your booking for Saturday 14 November at 09:00. Full refund. Details in the app.",
+      "PuffinRide: the driver cancelled your booking for Saturday 14 November at 09:00. Full refund. Details in the app.",
     );
     expect(smsText({ ...facts, ...cancelled, refund: { amount: 0, currency: "ISK" } }, "is")).toBe(
-      "ShareRide: Bílstjórinn aflýsti bókun þinni: laugardagur 14. nóvember kl. 09:00. Nánar í appinu.",
+      "PuffinRide: Bílstjórinn aflýsti bókun þinni: laugardagur 14. nóvember kl. 09:00. Nánar í appinu.",
     );
     expect(() => smsText({ ...facts, kind: "request_new" }, "en")).toThrow(/No SMS/);
   });
@@ -314,13 +314,13 @@ describe("notification texts", () => {
       body: "BSÍ – Hof, Akureyri · laugardagur 14. nóvember kl. 09:00. Leitaðu að annarri ferð.",
     });
     expect(smsText({ ...facts, ...cancelled }, "en")).toBe(
-      "ShareRide: your trip on Saturday 14 November at 09:00 is cancelled. Full refund. Details in the app.",
+      "PuffinRide: your trip on Saturday 14 November at 09:00 is cancelled. Full refund. Details in the app.",
     );
     expect(smsText({ ...facts, ...cancelled }, "is")).toBe(
-      "ShareRide: Ferðinni þinni var aflýst: laugardagur 14. nóvember kl. 09:00. Full endurgreiðsla. Nánar í appinu.",
+      "PuffinRide: Ferðinni þinni var aflýst: laugardagur 14. nóvember kl. 09:00. Full endurgreiðsla. Nánar í appinu.",
     );
     expect(smsText({ ...facts, ...cancelled, refund: { amount: 0, currency: "ISK" } }, "en")).toBe(
-      "ShareRide: your trip on Saturday 14 November at 09:00 is cancelled. Details in the app.",
+      "PuffinRide: your trip on Saturday 14 November at 09:00 is cancelled. Details in the app.",
     );
   });
 
@@ -341,10 +341,10 @@ describe("notification texts", () => {
     });
     const far = { ...facts, ...moved, kind: "departure_moved_far" } as const;
     expect(smsText(far, "en")).toBe(
-      "ShareRide: your trip on Saturday 14 November now leaves at 09:00. Keep it or cancel with a full refund in the app.",
+      "PuffinRide: your trip on Saturday 14 November now leaves at 09:00. Keep it or cancel with a full refund in the app.",
     );
     expect(smsText({ ...far, paid: false }, "is")).toBe(
-      "ShareRide: Ný brottför: laugardagur 14. nóvember kl. 09:00. Nánar í appinu.",
+      "PuffinRide: Ný brottför: laugardagur 14. nóvember kl. 09:00. Nánar í appinu.",
     );
     expect(() => text({ ...moved, moved: null })).toThrow(/needs the move/);
   });
@@ -415,10 +415,10 @@ describe("notification texts", () => {
       body: "Vegavinna við innkeyrsluna.\nAftur í notkun: 30. nóvember 2026\nBSÍ – Hof, Akureyri · laugardagur 14. nóvember kl. 09:00. Bílstjórinn er beðinn um að velja annan viðkomustað.",
     });
     expect(smsText({ ...facts, ...paused }, "en")).toBe(
-      "ShareRide: the meeting point for your trip on Saturday 14 November has changed. Details in the app.",
+      "PuffinRide: the meeting point for your trip on Saturday 14 November has changed. Details in the app.",
     );
     expect(smsText({ ...facts, ...paused }, "is")).toBe(
-      "ShareRide: Mótsstaður ferðarinnar þinnar hefur breyst: laugardagur 14. nóvember. Nánar í appinu.",
+      "PuffinRide: Mótsstaður ferðarinnar þinnar hefur breyst: laugardagur 14. nóvember. Nánar í appinu.",
     );
     expect(() => text({ ...paused, pausedPoint: null })).toThrow(/needs the paused point/);
   });
@@ -463,7 +463,7 @@ describe("notification texts", () => {
     });
     // By SMS within 24 hours of boarding, as a pause (spec 7, 3.4).
     expect(smsText({ ...facts, ...moved }, "en")).toBe(
-      "ShareRide: the meeting point for your trip on Saturday 14 November has changed. Details in the app.",
+      "PuffinRide: the meeting point for your trip on Saturday 14 November has changed. Details in the app.",
     );
     expect(() => text({ ...moved, movedPoint: null })).toThrow(/needs the moved point/);
   });
@@ -489,12 +489,12 @@ describe("notification texts", () => {
     const secret = { text: "My door code is 4512" };
     expect(text({ kind: "unread_messages", role: "passenger", message: secret })).toEqual({
       title: "You have unread messages about your trip on Saturday 14 November",
-      body: "Open the chat in ShareRide to read them.",
+      body: "Open the chat in PuffinRide to read them.",
       path: "/messages/booking-1",
     });
     expect(text({ kind: "unread_messages", role: "driver", message: secret }, "is")).toEqual({
       title: "Þú átt ólesin skilaboð um ferðina: laugardagur 14. nóvember",
-      body: "Opnaðu spjallið í ShareRide til að lesa þau.",
+      body: "Opnaðu spjallið í PuffinRide til að lesa þau.",
       path: "/messages/booking-1",
     });
   });
@@ -537,18 +537,18 @@ describe("notification texts", () => {
     });
   });
 
-  it("never say why ShareRide cancelled a trip or booking (spec 9, 3.6.2)", () => {
+  it("never say why PuffinRide cancelled a trip or booking (spec 9, 3.6.2)", () => {
     expect(text({ kind: "trip_cancelled", role: "passenger", cancelReason: null })).toEqual({
-      title: "ShareRide cancelled the trip",
+      title: "PuffinRide cancelled the trip",
       body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00. Search for another ride.",
       path: "/bookings/booking-1",
     });
     expect(
       text({ kind: "booking_cancelled_by_shareride", role: "driver", cancelReason: null }, "is"),
-    ).toMatchObject({ title: "ShareRide afbókaði: Jón" });
+    ).toMatchObject({ title: "PuffinRide afbókaði: Jón" });
   });
 
-  it("tell the person what ShareRide did, and the email why and how to appeal (spec 9, R9.5)", () => {
+  it("tell the person what PuffinRide did, and the email why and how to appeal (spec 9, R9.5)", () => {
     const settings = defaultNotificationSettings;
     const notice = {
       kind: "moderation_action",
@@ -562,21 +562,21 @@ describe("notification texts", () => {
     // The push names what happened, never the reason: a lock screen shows it.
     expect(notificationText(notice, "en", settings)).toEqual({
       title: "Your account is suspended until 13 December at 12:00",
-      body: "Read why in ShareRide.",
+      body: "Read why in PuffinRide.",
       path: "/notices",
-      open: "Open your notices in ShareRide",
+      open: "Open your notices in PuffinRide",
       emailBody: [
         "Your account is suspended until 13 December at 12:00",
         "",
         "Rule: Harassment",
         "Reason: Repeated messages after being asked to stop.",
         "",
-        "If you disagree, you can appeal in ShareRide, under Notices, until 27 November at 12:00.",
+        "If you disagree, you can appeal in PuffinRide, under Notices, until 27 November at 12:00.",
       ].join("\n"),
     });
     expect(notificationText({ ...notice, until: null }, "is", settings)).toMatchObject({
       title: "Aðganginum þínum hefur verið lokað ótímabundið",
-      body: "Lestu ástæðuna í ShareRide.",
+      body: "Lestu ástæðuna í PuffinRide.",
     });
     expect(
       notificationText(
@@ -586,9 +586,9 @@ describe("notification texts", () => {
       ),
     ).toEqual({
       title: "Your account is open again",
-      body: "You can use ShareRide as before.",
+      body: "You can use PuffinRide as before.",
       path: "/",
-      emailBody: "You can use ShareRide as before.\n\nNote: A mix-up.",
+      emailBody: "You can use PuffinRide as before.\n\nNote: A mix-up.",
     });
     // The email names what it affected (R9.5).
     const hidden = {
@@ -607,7 +607,7 @@ describe("notification texts", () => {
         "Reason: Rude words about another member.",
         "Concerns: a message you sent",
         "",
-        "If you disagree, you can appeal in ShareRide, under Notices, until 27 November at 12:00.",
+        "If you disagree, you can appeal in PuffinRide, under Notices, until 27 November at 12:00.",
       ].join("\n"),
     );
     expect(
@@ -615,7 +615,7 @@ describe("notification texts", () => {
     ).toContain("Varðar: ");
     expect(notificationText({ kind: "suspension_ended" }, "is", settings)).toEqual({
       title: "Aðgangurinn þinn er opinn á ný",
-      body: "Lokuninni er lokið. Þú getur notað ShareRide eins og áður.",
+      body: "Lokuninni er lokið. Þú getur notað PuffinRide eins og áður.",
       path: "/",
     });
   });
@@ -628,10 +628,10 @@ describe("notification texts", () => {
       reply: "Thanks, fixed in the next version.",
     } as const;
     expect(notificationText(reply, "en", settings)).toEqual({
-      title: "ShareRide replied to your feedback",
-      body: "Open ShareRide to read the reply.",
+      title: "PuffinRide replied to your feedback",
+      body: "Open PuffinRide to read the reply.",
       path: "/settings/feedback",
-      open: "Open your feedback in ShareRide",
+      open: "Open your feedback in PuffinRide",
       emailBody: [
         "Thank you for the feedback you sent on 10 March. Our reply:",
         "",
@@ -639,8 +639,8 @@ describe("notification texts", () => {
       ].join("\n"),
     });
     expect(notificationText(reply, "is", settings)).toMatchObject({
-      title: "ShareRide svaraði ábendingunni þinni",
-      body: "Opnaðu ShareRide til að lesa svarið.",
+      title: "PuffinRide svaraði ábendingunni þinni",
+      body: "Opnaðu PuffinRide til að lesa svarið.",
     });
   });
 
@@ -652,11 +652,11 @@ describe("notification texts", () => {
     expect(text).toMatchObject({
       title: "A new version",
       path: "/settings/beta-news",
-      open: "Open Beta news in ShareRide",
+      open: "Open Beta news in PuffinRide",
       emailBody: [
         message,
         "",
-        "You get this because you are a ShareRide beta tester. Turn off beta news in Settings.",
+        "You get this because you are a PuffinRide beta tester. Turn off beta news in Settings.",
       ].join("\n"),
     });
     // The push has the start of it, on one line.
@@ -664,7 +664,7 @@ describe("notification texts", () => {
     expect(text.body).toHaveLength(140);
     expect(text.body.endsWith("…")).toBe(true);
     expect(notificationText(news, "is", settings).emailBody).toContain(
-      "Þú færð þetta af því að þú tekur þátt í beta-prófun ShareRide. Þú getur slökkt á fréttum af beta-prófuninni í stillingum.",
+      "Þú færð þetta af því að þú tekur þátt í beta-prófun PuffinRide. Þú getur slökkt á fréttum af beta-prófuninni í stillingum.",
     );
   });
 
@@ -680,13 +680,13 @@ describe("notification texts", () => {
       title: "Prófun: Ný útgáfa",
       body: "Við bættum kortið.",
       path: "/settings/beta-news",
-      open: "Opna fréttir af beta-prófuninni í ShareRide",
+      open: "Opna fréttir af beta-prófuninni í PuffinRide",
       emailBody: [
         "Ný útgáfa",
         "",
         "Við bættum kortið.",
         "",
-        "Þú færð þetta af því að þú tekur þátt í beta-prófun ShareRide. Þú getur slökkt á fréttum af beta-prófuninni í stillingum.",
+        "Þú færð þetta af því að þú tekur þátt í beta-prófun PuffinRide. Þú getur slökkt á fréttum af beta-prófuninni í stillingum.",
         "",
         "----",
         "",
@@ -694,12 +694,12 @@ describe("notification texts", () => {
         "",
         "We improved the map.",
         "",
-        "You get this because you are a ShareRide beta tester. Turn off beta news in Settings.",
+        "You get this because you are a PuffinRide beta tester. Turn off beta news in Settings.",
       ].join("\n"),
     });
   });
 
-  it("tell the person ShareRide's answer to their appeal, the email with its words (spec 9, 3.4.4)", () => {
+  it("tell the person PuffinRide's answer to their appeal, the email with its words (spec 9, 3.4.4)", () => {
     const settings = defaultNotificationSettings;
     const answer = {
       kind: "appeal_answered",
@@ -707,12 +707,12 @@ describe("notification texts", () => {
       answer: "The messages show it.",
     } as const;
     expect(notificationText(answer, "en", settings)).toEqual({
-      title: "ShareRide answered your appeal",
+      title: "PuffinRide answered your appeal",
       body: "We looked again and the decision stands.",
       path: "/notices",
-      open: "Open your notices in ShareRide",
+      open: "Open your notices in PuffinRide",
       emailBody: [
-        "ShareRide answered your appeal",
+        "PuffinRide answered your appeal",
         "",
         "We looked again and the decision stands.",
         "",
@@ -720,7 +720,7 @@ describe("notification texts", () => {
       ].join("\n"),
     });
     expect(notificationText({ ...answer, outcome: "reversed" }, "is", settings)).toMatchObject({
-      title: "ShareRide svaraði andmælum þínum",
+      title: "PuffinRide svaraði andmælum þínum",
       body: "Við skoðuðum málið aftur og breyttum ákvörðuninni.",
     });
   });
@@ -756,10 +756,10 @@ describe("notification texts", () => {
       path: "/",
     });
     expect(smsText({ kind: "report_filed_urgent" }, "en")).toBe(
-      "ShareRide: a new safety report. Look at it in the console now.",
+      "PuffinRide: a new safety report. Look at it in the console now.",
     );
     expect(smsText({ kind: "report_filed_urgent" }, "is")).toBe(
-      "ShareRide: ný öryggistilkynning. Skoðaðu hana strax í stjórnborðinu.",
+      "PuffinRide: ný öryggistilkynning. Skoðaðu hana strax í stjórnborðinu.",
     );
   });
 });

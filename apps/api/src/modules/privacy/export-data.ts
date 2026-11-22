@@ -624,7 +624,7 @@ export async function collectExport(
           // Never what an erased person said, even where a report kept it.
           const asStored = !removed && line.erasedAt === null;
           return {
-            from: line.senderId === null ? "ShareRide" : line.senderId === userId ? "you" : other,
+            from: line.senderId === null ? "PuffinRide" : line.senderId === userId ? "you" : other,
             kind: line.kind,
             text: removed ? t("chat.removed") : said(line, viewer, other),
             // As stored, for other apps: what the text above was made from.

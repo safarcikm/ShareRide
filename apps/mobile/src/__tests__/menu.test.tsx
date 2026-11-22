@@ -272,7 +272,7 @@ describe("The top bar on wide screens", () => {
     await renderApp("/");
     const bar = await screen.findByTestId("top-bar");
     expect(within(bar).getByTestId("logo", { includeHiddenElements: true })).toBeTruthy();
-    expect(within(bar).getByText("ShareRide")).toBeVisible();
+    expect(within(bar).getByText("PuffinRide")).toBeVisible();
     expect(within(bar).getByRole("tab", { name: "Find", selected: true })).toBeVisible();
     expect(within(bar).getByRole("tab", { name: "My rides" })).toBeVisible();
     expect(within(bar).getByRole("tab", { name: "Offer" })).toBeVisible();
@@ -293,7 +293,7 @@ describe("The top bar on wide screens", () => {
   it("opens Find from the logo and name", async () => {
     const app = await renderApp("/profile");
     const bar = within(await screen.findByTestId("top-bar"));
-    await fireEvent.press(bar.getByRole("link", { name: "ShareRide, to the front page" }));
+    await fireEvent.press(bar.getByRole("link", { name: "PuffinRide, to the front page" }));
     expect(await screen.findByRole("button", { name: "Find a ride" })).toBeVisible();
     expect(screen).toHavePathname("/");
     expect(menuCopies(app.getRouterState())).toBe(1);

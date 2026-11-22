@@ -8,11 +8,11 @@ const now = new Date("2026-11-22T12:00:00Z");
 describe("photoLinkOf (spec 1, 3.5; ADR 0033)", () => {
   const linkOf = photoLinkOf(createFakePhotoStorage(), now);
 
-  it("links to a photo ShareRide has not hidden", async () => {
+  it("links to a photo PuffinRide has not hidden", async () => {
     expect(await linkOf({ photoKey: key, photoHiddenAt: null })).toBe(`https://photos.test/${key}`);
   });
 
-  it("gives null without a photo, or for one ShareRide hid", async () => {
+  it("gives null without a photo, or for one PuffinRide hid", async () => {
     expect(await linkOf({ photoKey: null, photoHiddenAt: null })).toBeNull();
     expect(await linkOf({ photoKey: key, photoHiddenAt: now })).toBeNull();
   });
@@ -25,7 +25,7 @@ describe("photoLinkOf (spec 1, 3.5; ADR 0033)", () => {
 describe("markedPhotoOf (spec 9, 3.4.3; ADR 0033)", () => {
   const markedOf = markedPhotoOf(createFakePhotoStorage(), now);
 
-  it("links to the photo and says whether ShareRide hid it, as its owner and the console see it", async () => {
+  it("links to the photo and says whether PuffinRide hid it, as its owner and the console see it", async () => {
     expect(await markedOf({ photoKey: key, photoHiddenAt: null })).toEqual({
       url: `https://photos.test/${key}`,
       hidden: false,

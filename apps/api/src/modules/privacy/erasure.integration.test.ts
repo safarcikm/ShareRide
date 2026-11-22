@@ -457,7 +457,7 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
       provider: "google",
       stateHash: randomUUID(),
       challenge: "c".repeat(43),
-      returnUrl: "shareride://sign-in/return",
+      returnUrl: "puffinride://sign-in/return",
       expiresAt: new Date(now.getTime() + 30 * 60_000),
       answeredAt: now,
       subject: `erasure-google-${randomUUID()}`,
@@ -861,7 +861,7 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
       return row.id;
     }
 
-    /** What a conversation holds apart from ShareRide's lines, oldest first. */
+    /** What a conversation holds apart from PuffinRide's lines, oldest first. */
     const written = (conversationId: string) =>
       api.connection.db
         .select({
@@ -946,7 +946,7 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
         const exported = talks.find((talk) => talk.bookingId === bookingId);
         expect(
           exported?.messages
-            .filter((message) => message.from !== "ShareRide")
+            .filter((message) => message.from !== "PuffinRide")
             .map(({ text, key, params }) => ({ text, key, params })),
         ).toEqual([
           { text: "I'll wait by the door", key: null, params: null },

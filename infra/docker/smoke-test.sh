@@ -59,8 +59,8 @@ check() {
 status_of() { curl -s -o /dev/null -w '%{http_code}' "$base$1"; }
 
 check "API ready" test "$(status_of /v1/health/ready)" = 200
-check "web app at /" sh -c "curl -fsS '$base/' | grep -q '<title>ShareRide</title>'"
-check "web app at an app route (reload)" sh -c "curl -fsS '$base/sign-in' | grep -q '<title>ShareRide</title>'"
+check "web app at /" sh -c "curl -fsS '$base/' | grep -q '<title>PuffinRide</title>'"
+check "web app at an app route (reload)" sh -c "curl -fsS '$base/sign-in' | grep -q '<title>PuffinRide</title>'"
 check "content security policy on the page" sh -c "curl -fsSI '$base/' | grep -qi '^content-security-policy:'"
 check "unknown /v1 path is the API's 404" test "$(status_of /v1/no-such-endpoint)" = 404
 check "missing bundle is a 404, not the page" test "$(status_of /_expo/static/js/web/gone.js)" = 404
@@ -69,8 +69,8 @@ bundle="$(curl -fsS "$base/" | grep -o '/_expo/static/js/web/index-[^"]*\.js' | 
 check "the page names the app's bundle" test -n "$bundle"
 check "the app's bundle is served" test "$(status_of "$bundle")" = 200
 check "its source map is not" test "$(status_of "$bundle.map")" = 404
-check "console at /admin" sh -c "curl -fsS '$base/admin/' | grep -q '<title>ShareRide console</title>'"
-check "console at a console route (reload)" sh -c "curl -fsS '$base/admin/sign-in' | grep -q '<title>ShareRide console</title>'"
+check "console at /admin" sh -c "curl -fsS '$base/admin/' | grep -q '<title>PuffinRide console</title>'"
+check "console at a console route (reload)" sh -c "curl -fsS '$base/admin/sign-in' | grep -q '<title>PuffinRide console</title>'"
 check "the console's own security policy" sh -c "curl -fsSI '$base/admin/' | grep -qi \"^content-security-policy: default-src 'none'\""
 console_bundle="$(curl -fsS "$base/admin/" | grep -o '/admin/assets/[^"]*\.js' | head -n 1 || true)"
 check "the console page names its bundle" test -n "$console_bundle"

@@ -47,7 +47,7 @@ describe("loadConfig", () => {
         provider: "46elks",
         username: "u-example",
         password: "p-example",
-        sender: "ShareRide",
+        sender: "PuffinRide",
         paused: false,
       },
       webOrigins: ["https://shareride.is", "https://www.shareride.is"],
@@ -103,7 +103,7 @@ describe("loadConfig", () => {
   it("signs in with Apple with its Services ID and the team's key, \\n allowed for line breaks", () => {
     const apple = {
       APPLE_SIGN_IN: "apple",
-      APPLE_SERVICES_ID: "is.shareride.preview.web",
+      APPLE_SERVICES_ID: "is.puffinride.preview.web",
       APPLE_TEAM_ID: "TEAM123456",
       APPLE_KEY_ID: "KEY1234567",
       APPLE_PRIVATE_KEY: appleKey.trim().replaceAll("\n", "\\n"),
@@ -111,7 +111,7 @@ describe("loadConfig", () => {
     };
     expect(loadConfig({ ...valid, ...apple }).signIn.apple).toEqual({
       mode: "apple",
-      servicesId: "is.shareride.preview.web",
+      servicesId: "is.puffinride.preview.web",
       teamId: "TEAM123456",
       keyId: "KEY1234567",
       privateKey: appleKey.trim(),
@@ -369,7 +369,7 @@ describe("loadConfig", () => {
       provider: "vonage",
       apiKey: "k-example",
       apiSecret: "s-example",
-      sender: "ShareRide",
+      sender: "PuffinRide",
       paused: false,
     });
   });
@@ -398,10 +398,10 @@ describe("loadConfig", () => {
   });
 
   it("takes a sender name of up to 11 letters and digits, starting with a letter", () => {
-    expect(loadConfig({ ...valid, SMS_SENDER: "ShareRide2" }).sms).toMatchObject({
-      sender: "ShareRide2",
+    expect(loadConfig({ ...valid, SMS_SENDER: "PuffinRide2" }).sms).toMatchObject({
+      sender: "PuffinRide2",
     });
-    for (const sender of ["Share Ride", "ShareRideApp1", "1ShareRide", "Deilibíll"]) {
+    for (const sender of ["Share Ride", "PuffinRideApp1", "1PuffinRide", "Deilibíll"]) {
       expect(() => loadConfig({ ...valid, SMS_SENDER: sender })).toThrow(ConfigError);
     }
   });
@@ -480,13 +480,13 @@ describe("loadConfig", () => {
       provider: "mailjet",
       apiKey: "mj-public",
       secretKey: "mj-secret",
-      from: { email: "hello@shareride.is", name: "ShareRide" },
+      from: { email: "hello@shareride.is", name: "PuffinRide" },
       webAppUrl: "https://shareride.is",
     });
     expect(
-      loadConfig({ ...valid, ...mailjet, EMAIL_FROM_NAME: "ShareRide beta" }).email,
+      loadConfig({ ...valid, ...mailjet, EMAIL_FROM_NAME: "PuffinRide beta" }).email,
     ).toMatchObject({
-      from: { email: "hello@shareride.is", name: "ShareRide beta" },
+      from: { email: "hello@shareride.is", name: "PuffinRide beta" },
     });
     expect(() => loadConfig({ ...valid, EMAIL_PROVIDER: "mailjet" })).toThrow(ConfigError);
     try {
@@ -499,7 +499,7 @@ describe("loadConfig", () => {
         "WEB_APP_URL: needed when EMAIL_PROVIDER is mailjet",
       ]);
     }
-    expect(() => loadConfig({ ...valid, ...mailjet, EMAIL_FROM: "ShareRide" })).toThrow(
+    expect(() => loadConfig({ ...valid, ...mailjet, EMAIL_FROM: "PuffinRide" })).toThrow(
       "EMAIL_FROM: invalid",
     );
     expect(() =>
