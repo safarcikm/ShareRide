@@ -1381,6 +1381,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   secrets, following the `production` branch. The "Release to production"
   action moves that branch to a commit on `main` whose CI passed, which
   staging already runs; the production runbook has the setup steps.
+- The legal documents published from the repository (ADR 0043): version 2
+  of the Terms of Service, the Community Rules and the Privacy Policy, in
+  English and Icelandic, adapted from the drafts for the lawyer to the open
+  beta and naming Martin Safarcik as the operator. The migration command
+  publishes every listed version a database lacks, in every environment,
+  and a test fails if a published text changes. The app's reader shows
+  their lists as bullet points.
 
 ### Fixed
 

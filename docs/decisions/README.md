@@ -73,3 +73,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0040](0040-console-recovery-by-text-code.md) | Get back into the console with a text code and a new passkey | Accepted |
 | [0041](0041-console-password-for-now.md) | Sign in to the console with a password for now | Accepted |
 | [0042](0042-production-on-render-released-with-a-button.md) | Production on Render, released with a button | Accepted |
+| [0043](0043-legal-documents-published-from-the-repository.md) | Publish the legal documents from the repository | Proposed |

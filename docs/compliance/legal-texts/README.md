@@ -2,10 +2,13 @@
 
 **Owner:** Martin · **Last reviewed:** 2026-11-16
 
-> **Status: first drafts, not in force.** Claude wrote them on 2026-11-16 from
+> **Status: first drafts, for the lawyer.** Claude wrote them on 2026-11-16 from
 > the approved specs and rules, for an Icelandic lawyer to review. They are not
-> legal advice. The app keeps showing its placeholder texts until the reviewed
-> versions are published.
+> legal advice. Version 2 of each, adapted from them to the open beta (paying
+> the driver in person, no invite code, no women-only trips) and in Icelandic
+> too, is what the app shows: it is published from
+> `packages/db/src/legal/texts` ([ADR 0043](../../decisions/0043-legal-documents-published-from-the-repository.md)).
+> The lawyer's changes become version 3.
 
 | Document | At sign-up | Draft |
 | -------- | ---------- | ----- |
@@ -23,7 +26,8 @@
   it before the beta (roadmap, milestone 16).
 - Placeholders are in square brackets, such as `[Company name] ehf.`. They
   are filled in once the company is registered and the payment provider is
-  chosen.
+  chosen. Until the company is registered, version 2 names Martin Safarcik
+  as the operator and controller.
 
 ## Where each part comes from
 

@@ -546,6 +546,27 @@ describe("Settings", () => {
     expect(screen.getByText("Your phone number.")).not.toHaveStyle({ textAlign: "center" });
     expect(screen.getByText("phone number")).toHaveStyle({ fontFamily: "Nunito_700Bold" });
   });
+
+  it("shows the lists of a legal document as bullet points", async () => {
+    const app = await openSettings();
+    app.client.answer("/v1/legal/{type}/current", () =>
+      ok(
+        200,
+        legalDocument(
+          "privacy",
+          2,
+          "## Your rights\n\nYou can:\n\n- **Download your data** in the app.\n- Delete your account.",
+        ),
+      ),
+    );
+    await fireEvent.press(screen.getByRole("button", { name: "Privacy Policy" }));
+    expect(await screen.findByRole("header", { name: "Your rights" })).toBeVisible();
+    expect(screen.getByText("You can:")).toBeVisible();
+    expect(screen.getByText("• Download your data in the app.")).toBeVisible();
+    expect(screen.getByText("Download your data")).toHaveStyle({ fontFamily: "Nunito_700Bold" });
+    expect(screen.getByText("• Delete your account.")).toBeVisible();
+    expect(screen.queryByText(/^- /)).toBeNull();
+  });
 });
 
 describe("Starting the app", () => {
