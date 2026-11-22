@@ -1433,6 +1433,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   Terms, rules and privacy, turns it off, which removes Google's cookies.
   Privacy Policy version 3, in both languages, describes it; it is not
   material, so nobody accepts it again. The phone apps count nothing.
+- Link previews (spec 23, 3.6): `public/share.png` is the two puffins in
+  their round yellow car over the logo and the name in both languages, and
+  Facebook and Messenger get the preview in Icelandic when they ask for it
+  (`X-Facebook-Locale` or `fb_locale`).
 
 ### Fixed
 
