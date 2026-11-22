@@ -75,6 +75,8 @@ are in the project files (`beautify/`).
 
 ## PR 5: empty screens
 
-- [ ] Profile signed out: a welcome card with the puffin by a pin, what an
-  account is for, and Sign in; the links as rows.
-- [ ] Offer a ride, step 1: fill the gap under From and To.
+- [x] Profile signed out: the puffin by a pin, what an account is for, and
+  Sign in; the links as rows, as signed in. My rides, Offer and Messages
+  signed out get the puffin too.
+- [x] Offer a ride, step 1: until both ends are chosen, the puffin and what
+  meeting points are for fill the gap under From and To.

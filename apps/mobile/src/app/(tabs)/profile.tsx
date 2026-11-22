@@ -32,9 +32,10 @@ import { usePalette } from "@/theme/use-palette";
  * Profile, a place of the menu (spec 16, 3.1). Signed in, my profile
  * (spec 16, 3.4): who I am, then rows for my cars, my licence, the meeting
  * points, Settings and the legal documents, and Sign out, which signs out
- * of this device and returns to Find, as Settings does. Signed out: Sign in, the
- * language, the meeting points and the legal documents, in one column on
- * any screen.
+ * of this device and returns to Find, as Settings does. Signed out: what an
+ * account is for and Sign in, then the rows for the meeting points and the
+ * legal documents, as signed in, and the language, in one column on any
+ * screen.
  */
 export default function ProfileScreen() {
   const me = useMe();
@@ -45,19 +46,23 @@ function SignedOut() {
   const { t } = useLanguage();
   const saveLanguage = useSaveLanguage();
   return (
-    <SignInFirst title={t("nav.profile")}>
+    <SignInFirst title={t("nav.profile")} body={t("profile.welcome")}>
       <View style={styles.links}>
+        <Card>
+          <Row
+            title={t("meetingPoints.title")}
+            onPress={() => {
+              router.push("/meeting-points");
+            }}
+          />
+          <Row
+            title={t("profile.legal")}
+            onPress={() => {
+              router.push("/legal");
+            }}
+          />
+        </Card>
         <LanguageSwitch onSwitch={saveLanguage} />
-        <Button
-          variant="text"
-          label={t("meetingPoints.open")}
-          onPress={() => {
-            router.push("/meeting-points");
-          }}
-        />
-        <TextLink label={t("legal.readTerms")} href="/legal/terms" />
-        <TextLink label={t("legal.readRules")} href="/legal/community-rules" />
-        <TextLink label={t("legal.readPrivacy")} href="/legal/privacy" />
       </View>
     </SignInFirst>
   );

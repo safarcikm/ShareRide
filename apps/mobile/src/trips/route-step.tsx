@@ -12,12 +12,14 @@ import { firstTripChoices } from "@shareride/domain";
 import { formatDistance, formatDuration, type Translate } from "@shareride/i18n";
 import { router } from "expo-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { StyleSheet, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { RouteEnds } from "@/components/route-ends";
 import { Notice } from "@/components/notice";
+import { PuffinByPin } from "@/components/puffin-scenes";
 import { useWideScreen } from "@/components/screen";
 import { Switch } from "@/components/switch";
 import { Tag } from "@/components/tag";
@@ -25,6 +27,7 @@ import { Body, Heading } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { dayOf, isoDay } from "@/lib/days";
 import { RouteMap } from "@/maps/route-map";
+import { sizes, spacing } from "@/theme/tokens";
 import { PointDropdown, PointPicker } from "./point-picker";
 import { StepScreen } from "./step-screen";
 import { goOn, stepHref } from "./steps";
@@ -331,6 +334,13 @@ export function RouteStep({
         }}
       />
       <Notice message={message} />
+      {/* Until both ends are chosen, what they are for, where the stops come later. */}
+      {chosen ? null : (
+        <View style={styles.hint}>
+          <PuffinByPin height={sizes.scenePuffin} />
+          <Body>{t("trip.route.hint")}</Body>
+        </View>
+      )}
       {!chosen ? null : (
         <>
           {wide ? null : map}
@@ -432,3 +442,8 @@ function QuoteSummary({
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  // The puffin over its sentence, with room above it under the two ends.
+  hint: { gap: spacing.md, paddingTop: spacing.lg },
+});
