@@ -110,6 +110,46 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   transaction: a wrong code is counted even though the action does not run,
   and the code is used up only when the action succeeds, so a route checks
   whatever else can refuse before asking for the code.
+- **Google and Apple** ([ADR 0034](../decisions/0034-google-and-apple-sign-in-through-our-api.md),
+  [spec 19](../specs/2026-11-22-google-and-apple-sign-in.md)): the API runs
+  the sign-in in a browser window. The start takes the app's challenge
+  (SHA-256 of a secret the app keeps) and a return address from a fixed
+  list (the web app's `/sign-in/return` on `WEB_ORIGINS` or `WEB_APP_URL`,
+  `shareride://sign-in/return`, Expo Go's only outside production and with
+  the stand-ins), stores
+  only a hash of a new 256-bit state, and limits starts to 20 per 10
+  minutes per address. The PKCE verifier and the nonce are keyed hashes of
+  the state, never stored. The callback takes a state once and within 10
+  minutes, trades the code with the client secret, and checks the ID
+  token's signature (RS256) against the provider's published keys, its
+  issuer, audience and authorized party (our client), expiry (a minute's
+  leeway) and nonce. Apple's client secret is a JWT the API signs with the
+  team's key (ES256, an hour long); the key is a Render secret, checked to
+  be a P-256 key at start-up. Apple's callback is the one route that takes
+  a form body, as Apple posts it; it reads no cookie, and its state works
+  once. It sends
+  the browser back with a ticket (`sr_pt_`, 5 minutes, once) in the
+  fragment, with `Cache-Control: no-store` and no referrer. Finishing needs
+  the app's secret, so a ticket caught on its way is useless. A newcomer
+  gets a waiting sign-in (`sr_ps_`, 30 minutes) for the phone step. A link
+  is made only after a code to the account's phone: the phone step's, or a
+  confirm code in Settings; never by email. The development stand-in is
+  refused under `NODE_ENV=production`. Logs carry the provider and the
+  user ID, never the email, the provider's identifier or a token.
+  On the web the window is a pop-up that hands its answer to the page that
+  opened it, so they must stay linked: the pop-up's pages (the start, the
+  callbacks, the stand-in's page and the web app's `/sign-in/return`) have
+  no opener policy, the web app's other pages have
+  `same-origin-allow-popups`, and the rest of the API and the console keep
+  `same-origin` (`openerPolicyFor`). In the pop-up, the app's entry
+  (`apps/mobile/index.ts`) hands the answer only to a window of the web
+  app's own address and takes the ticket out of the pop-up's address and
+  history before the router, error reporting or the session load; the app
+  then does not load in the pop-up at all, so it never refreshes the
+  session both windows share. The opening window keeps the secret in memory
+  for that one try; a new try gets a new one, and leaving the screen closes
+  a pop-up still open. On phones the router opens `sign-in/return` without
+  its fragment (`+native-intent.tsx`).
 - **Data exports:** kept in the database sealed with AES-256-GCM under a key
   derived from `AUTH_SECRET` (HKDF, `shareride-data-export-v1`), a fresh IV
   per file, so a copy of the database alone cannot read them. They leave

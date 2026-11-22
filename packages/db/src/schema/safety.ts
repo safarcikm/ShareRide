@@ -127,7 +127,7 @@ export const moderationActions = pgTable(
     rule: text(),
     /** Written for the person: their statement of reasons, or the reinstatement's note. */
     reason: text().notNull(),
-    /** The content affected: a message, review, trip note, bio, trip or booking. */
+    /** The content affected: a message, review, trip note, bio, profile photo, trip or booking. */
     contentKind: text(),
     contentId: uuid(),
     /** The end of a suspension; empty for one for good, and for every other kind. */

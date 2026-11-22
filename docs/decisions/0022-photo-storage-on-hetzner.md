@@ -2,7 +2,9 @@
 
 - **Status:** Accepted (2026-11-13, by Martin, with the milestone 2 plan); who
   re-encodes a photo and how long its links last are superseded by
-  [ADR 0029](0029-photos-cleaned-in-the-browser-and-checked-by-the-api.md)
+  [ADR 0029](0029-photos-cleaned-in-the-browser-and-checked-by-the-api.md);
+  the location (Helsinki) is superseded by
+  [ADR 0037](0037-photo-storage-in-nuremberg.md)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [ADR 0007](0007-eea-hosting-and-data-residency.md),

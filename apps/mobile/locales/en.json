@@ -1,0 +1,6 @@
+{
+  "ios": {
+    "NSPhotoLibraryUsageDescription": "ShareRide opens your photos so you can choose a profile photo.",
+    "NSCameraUsageDescription": "ShareRide uses the camera so you can take a profile photo."
+  }
+}

@@ -1,6 +1,6 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import { configRoute } from "@shareride/contracts";
-import { pausedNow } from "@shareride/domain";
+import { pausedNow, type SignInProvider } from "@shareride/domain";
 import type { AppEnv } from "../../context.ts";
 import { toOpenApiRoute } from "../../openapi.ts";
 import type { SettingsService } from "./service.ts";
@@ -9,7 +9,12 @@ import type { SettingsService } from "./service.ts";
 export const configMaxAgeSeconds = 300;
 
 /** `GET /v1/config`: the operator's settings the apps need, open to everyone. */
-export function registerConfigRoutes(app: OpenAPIHono<AppEnv>, settings: SettingsService): void {
+export function registerConfigRoutes(
+  app: OpenAPIHono<AppEnv>,
+  settings: SettingsService,
+  /** The Google and Apple sign-ins that are on (spec 19). */
+  signInProviders: readonly SignInProvider[] = [],
+): void {
   app.openapi(toOpenApiRoute(configRoute), async (c) => {
     const { values } = await settings.current();
     c.header("Cache-Control", `public, max-age=${String(configMaxAgeSeconds)}`);
@@ -23,6 +28,7 @@ export function registerConfigRoutes(app: OpenAPIHono<AppEnv>, settings: Setting
         // launch, whether or not the operator asks for invite codes.
         beta: true,
         paused: pausedNow(values),
+        signInProviders: [...signInProviders],
       },
       200,
     );

@@ -1,3 +1,4 @@
+import { createPrivateKey } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { z } from "zod";
@@ -11,6 +12,23 @@ const originSchema = z.string().refine((value) => {
     return false;
   }
 }, "not an origin");
+
+/** Apple's team and key identifiers. */
+const appleIdentifier = /^[A-Z0-9]{10}$/;
+
+/** Whether the text is a private key on the P-256 curve, as Apple's keys are. */
+function isP256Key(pem: string): boolean {
+  try {
+    const key = createPrivateKey(pem);
+    return key.asymmetricKeyType === "ec" && key.asymmetricKeyDetails?.namedCurve === "prime256v1";
+  } catch {
+    return false;
+  }
+}
+
+/** An empty value counts as unset, as Render's empty `sync: false` entries are. */
+const unsetIfEmpty = <T extends z.ZodType>(schema: T) =>
+  z.preprocess((value) => (value === "" ? undefined : value), schema);
 
 const environmentSchema = z
   .object({
@@ -121,7 +139,7 @@ const environmentSchema = z
      */
     PHOTO_STORAGE: z.enum(["none", "folder", "hetzner"]).optional(),
     PHOTO_FOLDER: z.string().min(1).optional(),
-    /** The bucket's location, such as https://hel1.your-objectstorage.com. */
+    /** The bucket's location, such as https://nbg1.your-objectstorage.com. */
     PHOTO_BUCKET_ENDPOINT: originSchema
       .refine((value) => value.startsWith("https://"), "not https")
       .optional(),
@@ -133,6 +151,38 @@ const environmentSchema = z
       .optional(),
     PHOTO_BUCKET_ACCESS_KEY: z.string().min(1).optional(),
     PHOTO_BUCKET_SECRET_KEY: z.string().min(1).optional(),
+    /**
+     * Signing in with Google (ADR 0034): `google` with its web client;
+     * `dev`, our stand-in for development and tests; `off`. By default
+     * `dev`, except under NODE_ENV=production (staging too), where it is
+     * `off` until set and `dev` is refused.
+     */
+    GOOGLE_SIGN_IN: unsetIfEmpty(z.enum(["off", "dev", "google"]).optional()),
+    GOOGLE_CLIENT_ID: unsetIfEmpty(z.string().min(1).optional()),
+    GOOGLE_CLIENT_SECRET: unsetIfEmpty(z.string().min(1).optional()),
+    /**
+     * Sign in with Apple (ADR 0034): `apple` with a Services ID and the
+     * team's key; `dev` and `off` as for Google.
+     */
+    APPLE_SIGN_IN: unsetIfEmpty(z.enum(["off", "dev", "apple"]).optional()),
+    APPLE_SERVICES_ID: unsetIfEmpty(z.string().min(1).optional()),
+    /** Apple's team and key identifiers: ten capital letters and digits each. */
+    APPLE_TEAM_ID: unsetIfEmpty(z.string().regex(appleIdentifier).optional()),
+    APPLE_KEY_ID: unsetIfEmpty(z.string().regex(appleIdentifier).optional()),
+    /** The key's .p8 file (PKCS #8 PEM); `\n` may stand for its line breaks. */
+    APPLE_PRIVATE_KEY: unsetIfEmpty(
+      z
+        .string()
+        .transform((pem) => pem.replaceAll("\\n", "\n"))
+        .refine(isP256Key, "must be the .p8 file of a key with Sign in with Apple")
+        .optional(),
+    ),
+    /**
+     * Where browsers reach the API, for the sign-in providers' callback
+     * addresses: http://localhost:PORT locally; needed on a server once a
+     * provider is on.
+     */
+    API_ORIGIN: unsetIfEmpty(originSchema.optional()),
   })
   .superRefine((env, context) => {
     if (env.NODE_ENV === "production" && env.AUTH_SECRET.startsWith("local-only-")) {
@@ -199,6 +249,62 @@ const environmentSchema = z
           });
         }
       }
+    }
+    if (env.NODE_ENV === "production" && env.GOOGLE_SIGN_IN === "dev") {
+      context.addIssue({
+        code: "custom",
+        path: ["GOOGLE_SIGN_IN"],
+        message: "dev signs anyone in as made-up people and is not allowed in production",
+      });
+    }
+    if (env.NODE_ENV === "production" && env.APPLE_SIGN_IN === "dev") {
+      context.addIssue({
+        code: "custom",
+        path: ["APPLE_SIGN_IN"],
+        message: "dev signs anyone in as made-up people and is not allowed in production",
+      });
+    }
+    if (env.APPLE_SIGN_IN === "apple") {
+      for (const key of [
+        "APPLE_SERVICES_ID",
+        "APPLE_TEAM_ID",
+        "APPLE_KEY_ID",
+        "APPLE_PRIVATE_KEY",
+        ...(env.NODE_ENV === "production" ? (["API_ORIGIN"] as const) : []),
+      ] as const) {
+        if (env[key] === undefined) {
+          context.addIssue({
+            code: "custom",
+            path: [key],
+            message: "needed when APPLE_SIGN_IN is apple",
+          });
+        }
+      }
+    }
+    if (env.GOOGLE_SIGN_IN === "google") {
+      const needed = ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"] as const;
+      for (const key of env.NODE_ENV === "production"
+        ? [...needed, "API_ORIGIN" as const]
+        : needed) {
+        if (env[key] === undefined) {
+          context.addIssue({
+            code: "custom",
+            path: [key],
+            message: "needed when GOOGLE_SIGN_IN is google",
+          });
+        }
+      }
+    }
+    if (
+      env.NODE_ENV === "production" &&
+      env.API_ORIGIN !== undefined &&
+      !env.API_ORIGIN.startsWith("https://")
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["API_ORIGIN"],
+        message: "must be https in production, where Google and Apple send the person back to it",
+      });
     }
     if (env.EMAIL_PROVIDER === "mailjet") {
       for (const key of [
@@ -306,6 +412,71 @@ function photoStorageConfig(env: z.infer<typeof environmentSchema>): PhotoStorag
   }
 }
 
+export type AppleSignInConfig =
+  | { readonly mode: "off" }
+  | { readonly mode: "dev" }
+  | {
+      readonly mode: "apple";
+      readonly servicesId: string;
+      readonly teamId: string;
+      readonly keyId: string;
+      readonly privateKey: string;
+    };
+
+export type GoogleSignInConfig =
+  | { readonly mode: "off" }
+  | { readonly mode: "dev" }
+  | { readonly mode: "google"; readonly clientId: string; readonly clientSecret: string };
+
+/** Google and Apple sign-in through our API (ADR 0034). */
+export interface SignInConfig {
+  readonly google: GoogleSignInConfig;
+  readonly apple: AppleSignInConfig;
+  /** Where browsers reach the API, for the callback addresses. */
+  readonly apiOrigin: string;
+  /** The web app's origins, whose /sign-in/return the browser window may go back to. */
+  readonly returnOrigins: readonly string[];
+  /**
+   * Expo Go's exp:// return addresses: in development with the stand-in
+   * only, never on a server.
+   */
+  readonly allowExpoGo: boolean;
+}
+
+function signInConfig(env: z.infer<typeof environmentSchema>): SignInConfig {
+  const production = env.NODE_ENV === "production";
+  const mode = env.GOOGLE_SIGN_IN ?? (production ? "off" : "dev");
+  const appleMode = env.APPLE_SIGN_IN ?? (production ? "off" : "dev");
+  const webAppUrl = env.WEB_APP_URL ?? (production ? undefined : localWebApp);
+  return {
+    google:
+      mode === "google"
+        ? {
+            mode,
+            clientId: env.GOOGLE_CLIENT_ID ?? "",
+            clientSecret: env.GOOGLE_CLIENT_SECRET ?? "",
+          }
+        : { mode },
+    apple:
+      appleMode === "apple"
+        ? {
+            mode: appleMode,
+            servicesId: env.APPLE_SERVICES_ID ?? "",
+            teamId: env.APPLE_TEAM_ID ?? "",
+            keyId: env.APPLE_KEY_ID ?? "",
+            privateKey: env.APPLE_PRIVATE_KEY ?? "",
+          }
+        : { mode: appleMode },
+    apiOrigin: env.API_ORIGIN ?? `http://localhost:${String(env.PORT)}`,
+    returnOrigins: [
+      ...new Set([...env.WEB_ORIGINS, ...(webAppUrl === undefined ? [] : [webAppUrl])]),
+    ],
+    // Only with the stand-ins, so a real Google or Apple ticket never goes
+    // to an Expo project someone else names.
+    allowExpoGo: !production && mode !== "google" && appleMode !== "apple",
+  };
+}
+
 export interface PaymentsConfig {
   readonly provider: "none" | "test";
 }
@@ -333,6 +504,8 @@ export interface Config {
   readonly adminOrigin: string | undefined;
   /** Where meeting point and profile photos are kept, if anywhere (ADRs 0022 and 0033). */
   readonly photos: PhotoStorageConfig;
+  /** Google and Apple sign-in (ADR 0034). */
+  readonly signIn: SignInConfig;
 }
 
 export class ConfigError extends Error {
@@ -481,5 +654,6 @@ export function loadConfig(environment: Readonly<Record<string, string | undefin
     email: emailConfig(env),
     adminOrigin: adminOriginOf(env),
     photos: photoStorageConfig(env),
+    signIn: signInConfig(env),
   };
 }

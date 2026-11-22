@@ -172,6 +172,7 @@ describe("the reliability figure (spec 8, 3.8)", () => {
           freeCancellationMinutes: 15,
           maxMoveMinutes: 120,
           reliabilityMonths: 6,
+          signInProviders: [],
         }),
       );
     });

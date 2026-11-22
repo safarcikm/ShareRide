@@ -25,6 +25,7 @@ import { createTestPaymentProvider } from "./platform/payments.ts";
 import { createExpoPushSender } from "./platform/push-expo.ts";
 import { startRepeating } from "./platform/repeat.ts";
 import { selectEmail } from "./platform/select-email.ts";
+import { selectSignIn } from "./platform/select-identity-providers.ts";
 import { selectPhotoStorage } from "./platform/select-photo-storage.ts";
 import { deleteDuePhotoFiles } from "./modules/account/photo-files.ts";
 import { selectSmsSender } from "./platform/select-sms-sender.ts";
@@ -94,6 +95,8 @@ const app = createApp({
     ...(payments === undefined ? {} : { payments }),
     ...(email === undefined ? {} : { email }),
     ...photoStorage,
+    // Google and Apple sign-in (ADR 0034); loadConfig refuses the stand-in in production.
+    signIn: selectSignIn(config.signIn),
   },
 });
 
@@ -242,6 +245,8 @@ const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
       smsPaused: config.sms.paused,
       paymentProvider: config.payments.provider,
       emailProvider: config.email.provider,
+      googleSignIn: config.signIn.google.mode,
+      appleSignIn: config.signIn.apple.mode,
       worker: config.worker,
       trustedProxies: config.trustedProxies,
       webApp: config.webAppDir !== undefined,

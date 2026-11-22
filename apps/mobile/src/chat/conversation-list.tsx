@@ -147,7 +147,7 @@ function ConversationRow({
   const content = (
     <>
       <View style={styles.row}>
-        <Avatar firstName={firstNameOf(t, other)} colour={other.colour} />
+        <Avatar firstName={firstNameOf(t, other)} colour={other.colour} photo={other.photo} />
         <View style={styles.grow}>
           <Text style={[typography.bodyStrong, { color: palette.text }]}>
             {firstNameOf(t, other)}

@@ -359,12 +359,12 @@ someone.
 
 ## Turn on photos
 
-Staging takes no meeting point photos until the bucket is open (ADR 0022,
-about €5 a month). Real meeting points need one to go into use. Martin's
-steps:
+Staging takes no meeting point or profile photos until the bucket is open
+(ADRs 0022 and 0037, about €5 a month). A meeting point can go live
+without one, though the console recommends it (ADR 0036). Martin's steps:
 
 1. In the Hetzner Console, open (or create) a project, then **Object
-   Storage**, **Create Bucket**: location Helsinki (`hel1`), a name such
+   Storage**, **Create Bucket**: location Nuremberg (`nbg1`), a name such
    as `shareride-staging-photos`, and visibility **Private**. Sign
    Hetzner's data processing agreement in the account's settings.
 2. In the project's **Security**, **S3 credentials**, generate
@@ -372,7 +372,7 @@ steps:
    Render, never anywhere else.
 3. Open `shareride-staging-api`, **Environment**, and add
    `PHOTO_STORAGE` set to `hetzner`, `PHOTO_BUCKET_ENDPOINT` set to
-   `https://hel1.your-objectstorage.com`, `PHOTO_BUCKET` (the bucket's
+   `https://nbg1.your-objectstorage.com`, `PHOTO_BUCKET` (the bucket's
    name), and `PHOTO_BUCKET_ACCESS_KEY` and `PHOTO_BUCKET_SECRET_KEY` (as
    secrets), then save. Render deploys the service again; a missing one
    stops the API from starting, and the running version stays.
@@ -382,6 +382,123 @@ steps:
 
 To stop taking photos, set `PHOTO_STORAGE` to `none`: the app and the
 console then show none, and the bucket keeps the files.
+
+## Turn on Google sign-in
+
+Staging shows no "Continue with Google" until Google knows ShareRide
+([ADR 0034](../decisions/0034-google-and-apple-sign-in-through-our-api.md),
+[spec 19](../specs/2026-11-22-google-and-apple-sign-in.md)). It is free.
+The blueprint already sets `API_ORIGIN` = `https://staging.skinnar.is`,
+where Google sends the browser back. Martin's steps:
+
+1. Open [Google Cloud](https://console.cloud.google.com/) with the Google
+   account that should own ShareRide's sign-in. In the project picker at
+   the top, **New project**: name `ShareRide`, then **Create**, and pick
+   it.
+2. Menu, **Google Auth Platform** (the old "OAuth consent screen" leads
+   there too), **Get started**: app name `ShareRide`, a support email,
+   audience **External**, a contact email, agree to the policy, then
+   **Create**.
+3. **Branding**: home page `https://staging.skinnar.is`, privacy policy
+   `https://staging.skinnar.is/legal/privacy`, terms of service
+   `https://staging.skinnar.is/legal/terms`, and under authorised domains
+   `skinnar.is`. Leave the logo out: a logo needs Google's review, and the
+   basic sign-in does not. **Save**.
+4. **Data access**, **Add or remove scopes**: tick `openid`,
+   `.../auth/userinfo.email` and `.../auth/userinfo.profile` and nothing
+   else, then **Update** and **Save**.
+5. **Audience**: **Publish app**, then **Confirm**, so anyone can sign in,
+   not only listed test users. With these three scopes Google asks for no
+   review.
+6. **Clients**, **Create client**: type **Web application**, name
+   `ShareRide staging`, no JavaScript origins, and one authorised redirect
+   URI, exactly `https://staging.skinnar.is/v1/auth/oauth/google/callback`.
+   **Create**. Google shows the client ID and the client secret once:
+   copy the secret straight into Render (step 7), never anywhere else.
+7. Open `shareride-staging-api`, **Environment**, and add
+   `GOOGLE_SIGN_IN` set to `google`, `GOOGLE_CLIENT_ID` (the ID, ending in
+   `.apps.googleusercontent.com`) and `GOOGLE_CLIENT_SECRET` (as a
+   secret), then save. Render deploys the service again; a missing one
+   stops the API from starting, and the running version stays.
+8. Check, once the app's buttons are out (plan PR 3): in a laptop's browser
+   and a phone's browser, continue with Google as someone new (the phone
+   step comes once), then sign out and continue with Google again (no
+   code). Settings, Sign-in methods lists Google. In the laptop's browser,
+   Google's window must close by itself and the sign-in go on; if it stays
+   open with "You can close this window", or the ShareRide window shows
+   the sign-in screen as before, tell Claude: Google's pages cut the
+   window off from ShareRide.
+
+To turn Google off, set `GOOGLE_SIGN_IN` to `off`: the button goes, and
+links stay for when it is back. A new secret (Google Cloud, the client,
+**Add secret**) goes into Render the same way; delete the old one in
+Google Cloud once the API runs with the new.
+
+## Turn on Sign in with Apple
+
+Staging shows no "Continue with Apple" until Apple knows ShareRide
+([ADR 0034](../decisions/0034-google-and-apple-sign-in-through-our-api.md),
+[spec 19](../specs/2026-11-22-google-and-apple-sign-in.md)). It needs the
+paid Apple Developer Program, even for the web. The beta uses Martin's own
+developer account with the test App ID `is.shareride.app.preview`, so the
+store's `is.shareride.app` stays free for the company's account (spec 19,
+3.5). Martin's steps:
+
+1. If not a member yet: [Apple Developer Program](https://developer.apple.com/programs/enroll/),
+   **Start your enrollment**, as an individual (99 USD a year). Apple can
+   take up to two days to confirm.
+2. Open [Certificates, Identifiers and Profiles](https://developer.apple.com/account/resources/identifiers/list),
+   **Identifiers**, **+**, **App IDs**, **App**: description
+   `ShareRide preview`, bundle ID **Explicit** `is.shareride.app.preview`,
+   and under capabilities tick **Sign in with Apple**. **Continue**,
+   **Register**.
+3. **Identifiers**, **+**, **Services IDs**: description `ShareRide`
+   (Apple may show it to people when they sign in), identifier
+   `is.shareride.preview.web`. **Continue**, **Register**. Open it again:
+   the list shows App IDs, so switch the menu at its top right to
+   **Services IDs** first. Tick **Sign in with Apple**,
+   **Configure**: primary App ID `is.shareride.app.preview`, domain
+   `staging.skinnar.is`, and one return URL, exactly
+   `https://staging.skinnar.is/v1/auth/oauth/apple/callback`. **Next**,
+   **Done**, **Continue**, **Save**. There is no file to upload.
+4. **Keys**, **+**: name `ShareRide sign-in`, tick **Sign in with Apple**,
+   **Configure**, primary App ID `is.shareride.app.preview`, **Save**,
+   **Continue**, **Register**. **Download** the `AuthKey_….p8` file: Apple
+   gives it once. Note the key ID (ten letters and digits) shown with it.
+   The team ID is under the name at the top right, or in **Membership
+   details**.
+5. Apple's private email relay: in Certificates, Identifiers and Profiles,
+   **Services**, **Sign in with Apple for Email Communication**,
+   **Configure**, **+**, and add `hello@skinnar.is`. Apple checks the
+   sender's SPF and DKIM. Until this is done, ShareRide's emails do not
+   reach people who hid their email from us, and nothing says so.
+6. Open `shareride-staging-api`, **Environment**, and add `APPLE_SIGN_IN`
+   set to `apple`, `APPLE_SERVICES_ID` set to `is.shareride.preview.web`,
+   `APPLE_TEAM_ID`, `APPLE_KEY_ID`, and `APPLE_PRIVATE_KEY` (as a secret):
+   open the `.p8` file in a text editor and paste all of it, the
+   `BEGIN` and `END` lines too. Save; Render deploys the service again. A
+   missing or wrong value stops the API from starting, and the running
+   version stays. Keep the `.p8` file somewhere safe and nowhere else:
+   never in chat, email or the repository.
+7. Check, once the app's buttons are out (plan PR 3): in a laptop's browser
+   and a phone's browser, continue with Apple as someone new and choose
+   **Hide my email**, then sign out and continue with Apple again. Then
+   have ShareRide email that account (for example, offer a test trip as the
+   Apple member and ask for a seat on it as another member) and check the
+   email arrives in the inbox behind the hidden address. As with Google, in
+   the laptop's browser Apple's window must close by itself and the
+   sign-in go on; if not, tell Claude. If it does not, Apple refused the sender: in
+   Mailjet, set up the domain's DKIM and a custom return path on
+   `skinnar.is`, and tell Claude. Apple asks about the name and the email
+   only the first time: to be someone new again, stop using Apple with
+   ShareRide at [account.apple.com](https://account.apple.com) (**Sign-In
+   and Security**, **Sign in with Apple**) and remove Apple in ShareRide's
+   Settings, or use another Apple Account.
+
+To turn Apple off, set `APPLE_SIGN_IN` to `off`. If the key leaks, revoke
+it under **Keys** and make a new one (step 4 and the two key values of
+step 6). When the company's Apple account takes over, every Apple member
+gives their phone number once more (spec 19, 3.5).
 
 ## Restore the database
 

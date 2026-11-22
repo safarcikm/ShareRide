@@ -479,6 +479,7 @@ describe("The Beta label (spec 12, 3.2.6)", () => {
             freeCancellationMinutes: 15,
             maxMoveMinutes: 120,
             reliabilityMonths: 12,
+            signInProviders: [],
           }),
         );
       },

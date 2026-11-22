@@ -18,6 +18,7 @@ import { asc, eq, inArray, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createFakePushSender } from "../../platform/push.ts";
 import { startTestApi, type TestApi } from "../../testing.ts";
+import { givePhoto } from "../account/testing.ts";
 import type { AuditRequest } from "../admin/audit.ts";
 import {
   bookingHelpers,
@@ -32,7 +33,8 @@ import { choicesOf } from "../trips/drafts.ts";
 import { createModerationService, type Moderator } from "./actions.ts";
 
 // Content ShareRide hides, and a trip it cancels, as the console will call
-// them (spec 9, 3.4.3): a message, a review, a trip's note or About you;
+// them (spec 9, 3.4.3): a message, a review, a trip's note, About you or a
+// profile photo;
 // each with its notice and audit entry, and the content shown again when an
 // appeal reverses it. The sample trips at the test clock (Friday 13 November
 // 2026, noon): Jón drives Hlemmur to Keflavík Airport on Saturday at 05:30
@@ -656,6 +658,94 @@ describe("hiding About you (spec 9, 3.4.3)", () => {
         request,
       ),
     ).toEqual({ ok: false, error: { code: "not_found" } });
+  });
+});
+
+describe("hiding a profile photo (spec 9, 3.4.3; ADR 0033)", () => {
+  /** The photo another member sees on the person's public profile. */
+  async function photoOnProfile(viewer: Member, member: Member) {
+    const [row] = await api.connection.db
+      .select({ profileId: schema.users.profileId })
+      .from(schema.users)
+      .where(eq(schema.users.id, member.userId));
+    if (row === undefined) throw new Error("No such member.");
+    const profile = await api.client.call(publicProfileRoute, {
+      accessToken: viewer.accessToken,
+      params: { profileId: row.profileId },
+    });
+    if (!profile.ok) throw new Error(profile.error.code);
+    return profile.data.photo;
+  }
+
+  const hidePhoto = (by: Moderator, member: Member) =>
+    moderation().hideContent(
+      by,
+      { content: { kind: "photo", id: member.userId }, rule: "offensive", reason },
+      request,
+    );
+
+  async function photoHiddenAt(member: Member) {
+    const [row] = await api.connection.db
+      .select({ at: schema.users.photoHiddenAt })
+      .from(schema.users)
+      .where(eq(schema.users.id, member.userId));
+    return row?.at ?? null;
+  }
+
+  it("hides it from everyone else, which its owner still sees marked hidden, and tells them why", async () => {
+    const jon = await newMember("Jón");
+    const gunna = await newMember("Gunna");
+    const link = await givePhoto(api, jon.userId);
+    expect(await photoOnProfile(gunna, jon)).toBe(link);
+    const by = await moderator();
+
+    const hidden = await hidePhoto(by, jon);
+
+    if (!hidden.ok) throw new Error(hidden.error.code);
+    expect(await photoHiddenAt(jon)).toEqual(api.now());
+    expect(await photoOnProfile(gunna, jon)).toBeNull();
+    expect(await api.client.call(getMeRoute, { accessToken: jon.accessToken })).toMatchObject({
+      data: { photo: { url: link, hidden: true } },
+    });
+    expect(await hidePhoto(by, jon)).toEqual({ ok: false, error: { code: "already_hidden" } });
+    // The audit log names the person and the field, never the file.
+    expect(await auditOf(jon.userId)).toEqual([
+      {
+        action: "user.photo_hidden",
+        subjectType: "user",
+        after: { fields: ["photoHiddenAt"], moderationActionId: hidden.value.actionId },
+      },
+    ]);
+    expect(await noticesOf(jon)).toMatchObject([
+      { kind: "content_hidden", rule: "offensive", reason, content: { kind: "photo" } },
+    ]);
+  });
+
+  it("shows it again when an appeal reverses it, only while it is still the photo hidden", async () => {
+    const jon = await newMember("Jón");
+    const by = await moderator();
+    await givePhoto(api, jon.userId);
+    const first = await hidePhoto(by, jon);
+    if (!first.ok) throw new Error(first.error.code);
+    await appealed(by, first.value.actionId, "reversed");
+    expect(await photoHiddenAt(jon)).toBeNull();
+
+    // A new photo, hidden in turn: reversing the first hiding leaves it hidden.
+    const again = await hidePhoto(by, jon);
+    if (!again.ok) throw new Error(again.error.code);
+    await givePhoto(api, jon.userId);
+    const newer = await hidePhoto(by, jon);
+    if (!newer.ok) throw new Error(newer.error.code);
+    await appealed(by, again.value.actionId, "reversed");
+    expect(await photoHiddenAt(jon)).toEqual(api.now());
+  });
+
+  it("refuses someone with no photo", async () => {
+    const jon = await newMember("Jón");
+    expect(await hidePhoto(await moderator(), jon)).toEqual({
+      ok: false,
+      error: { code: "not_found" },
+    });
   });
 });
 

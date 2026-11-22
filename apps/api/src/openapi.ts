@@ -5,6 +5,8 @@ import type { z } from "zod";
 import { adminPrefix, openAdminRoutes } from "./modules/admin/require-operator.ts";
 
 const json = "application/json";
+/** The only other body type: Apple's callback (ADR 0034). */
+const formType = "application/x-www-form-urlencoded";
 
 /** The OpenAPI name of the bearer token scheme used by routes marked `auth`. */
 export const bearerAuth = "bearerAuth";
@@ -31,7 +33,8 @@ export function toOpenApiRoute(route: RouteDefinition, auth?: MiddlewareHandler)
   if (route.request?.params) request.params = route.request.params;
   if (route.request?.query) request.query = route.request.query;
   if (route.request?.body) {
-    request.body = { content: { [json]: { schema: route.request.body } }, required: true };
+    const type = route.request.bodyType === "form" ? formType : json;
+    request.body = { content: { [type]: { schema: route.request.body } }, required: true };
   }
   if (route.auth !== undefined && route.auth !== false && auth === undefined) {
     throw new Error(`${route.path} needs its auth middleware.`);
@@ -73,7 +76,7 @@ export function toOpenApiRoute(route: RouteDefinition, auth?: MiddlewareHandler)
  */
 export function validated<S extends z.ZodType>(
   c: Context,
-  target: "json" | "param" | "query",
+  target: "json" | "form" | "param" | "query",
   schema: S,
 ): z.output<S> {
   const request = c.req as unknown as { valid(target: string): unknown };

@@ -369,7 +369,8 @@ code {
 }
 
 .status-draft,
-.status-retired {
+.status-retired,
+.tag-quiet {
   background: var(--color-border);
 }
 
@@ -670,6 +671,15 @@ legend + * {
   max-width: var(--narrow-width);
   height: auto;
   border-radius: var(--radius-card);
+}
+
+/* A person's profile photo, large enough to judge (ADR 0033). */
+.profile-photo {
+  display: block;
+  width: calc(var(--space-xxl) * 3);
+  height: calc(var(--space-xxl) * 3);
+  border-radius: var(--radius-card);
+  object-fit: cover;
 }
 
 /* A tester's screenshot of a phone's screen: tall, so held to a phone's width. */

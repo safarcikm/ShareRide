@@ -1,6 +1,16 @@
-import { moderationRules, reportCategories, reportOutcomes } from "@shareride/domain";
+import {
+  moderatedContent,
+  moderationRules,
+  reportCategories,
+  reportOutcomes,
+} from "@shareride/domain";
 import { describe, expect, it } from "vitest";
-import { moderationRuleText, reportCategoryText, reportOutcomeText } from "./safety.ts";
+import {
+  moderatedContentText,
+  moderationRuleText,
+  reportCategoryText,
+  reportOutcomeText,
+} from "./safety.ts";
 import { createTranslator } from "./translator.ts";
 
 const en = createTranslator("en");
@@ -35,5 +45,16 @@ describe("the rules an operator's action concerns (spec 9, R9.5)", () => {
     }
     expect(moderationRuleText(en, "scam")).toBe("Scams and payments outside the app");
     expect(moderationRuleText(is, "reliability")).toBe("Áreiðanleiki");
+  });
+});
+
+describe("what an operator's action concerns (spec 9, R9.5)", () => {
+  it("names everything it can concern, each differently, in both languages", () => {
+    for (const t of [en, is]) {
+      const texts = moderatedContent.map((content) => moderatedContentText(t, content));
+      expect(new Set(texts).size).toBe(moderatedContent.length);
+    }
+    expect(moderatedContentText(en, "photo")).toBe("Concerns: your profile photo");
+    expect(moderatedContentText(is, "photo")).toBe("Varðar: prófílmyndina þína");
   });
 });

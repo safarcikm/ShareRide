@@ -58,7 +58,11 @@ function Rider({
   const palette = usePalette();
   return (
     <View accessible accessibilityLabel={riderLabel(t, booking, arrival)} style={styles.rider}>
-      <Avatar firstName={firstNameOf(t, booking.passenger)} colour={booking.passenger.colour} />
+      <Avatar
+        firstName={firstNameOf(t, booking.passenger)}
+        colour={booking.passenger.colour}
+        photo={booking.passenger.photo}
+      />
       <View style={styles.grow}>
         <Text style={[typography.bodyStrong, { color: palette.text }]}>
           {firstNameOf(t, booking.passenger)}

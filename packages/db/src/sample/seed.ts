@@ -1,10 +1,11 @@
-import { createHash } from "node:crypto";
-import { legsFromRoadGraph, searchTextFor, type PlaceKind } from "@shareride/domain";
+import { legsFromRoadGraph, searchTextFor } from "@shareride/domain";
 import { and, eq, inArray, notInArray, or } from "drizzle-orm";
 import type { Database } from "../index.ts";
 import { lockLegs } from "../legs.ts";
-import { corridors, legs, meetingPoints, places } from "../schema/index.ts";
-import { samplePlaces, samplePoints, sampleRoads } from "./meeting-points.ts";
+import { placeId, seedPlaces } from "../places/seed.ts";
+import { corridors, legs, meetingPoints } from "../schema/index.ts";
+import { stableId } from "../stable-id.ts";
+import { samplePoints, sampleRoads } from "./meeting-points.ts";
 
 /** Where the sample legs come from, as stored with each leg. */
 export const sampleLegSource = "sample road graph, approximate (milestone 3)";
@@ -13,32 +14,16 @@ export const sampleLegSource = "sample road graph, approximate (milestone 3)";
  * The same ID for the same sample key on every run, so the seed updates its
  * rows instead of adding new ones: a UUID (version 8) from a hash of the key.
  */
-export function sampleId(key: string): string {
-  const hex = createHash("sha256").update(`shareride-sample:${key}`).digest("hex");
-  const variant = ((Number.parseInt(hex.charAt(16), 16) & 0x3) | 0x8).toString(16);
-  return [
-    hex.slice(0, 8),
-    hex.slice(8, 12),
-    `8${hex.slice(13, 16)}`,
-    `${variant}${hex.slice(17, 20)}`,
-    hex.slice(20, 32),
-  ].join("-");
-}
-
-/** How far a search for a place reaches by default (spec 4, R4.2). */
-const defaultRadiusM: Readonly<Record<PlaceKind, number>> = {
-  area: 20_000,
-  town: 10_000,
-  village: 5_000,
-  landmark: 5_000,
-};
+export const sampleId = stableId;
 
 /**
- * Adds or updates the sample meeting points, places and legs. Sample points
- * that are no longer in the list are retired, never deleted (rule R2.2).
- * Local development and staging only (see seed-guard.ts).
+ * Adds or updates the places (`seedPlaces`, which every environment has),
+ * then the sample meeting points and their legs. Sample points that are no
+ * longer in the list are retired, never deleted (rule R2.2). Local
+ * development and staging only (see seed-guard.ts).
  */
 export async function seedSampleMeetingPoints(db: Database, now: Date): Promise<void> {
+  await seedPlaces(db, now);
   const pointIds = new Map(
     samplePoints.map((point) => [point.key, sampleId(`point:${point.key}`)]),
   );
@@ -93,30 +78,6 @@ export async function seedSampleMeetingPoints(db: Database, now: Date): Promise<
         and(eq(meetingPoints.sample, true), notInArray(meetingPoints.id, [...pointIds.values()])),
       );
 
-    const placeIds: string[] = [];
-    for (const place of samplePlaces) {
-      const id = sampleId(`place:${place.key}`);
-      placeIds.push(id);
-      const row = {
-        id,
-        nameIs: place.nameIs,
-        nameEn: place.nameEn ?? null,
-        aliases: [...(place.aliases ?? [])],
-        location: place.position,
-        kind: place.kind,
-        region: place.region,
-        matchRadiusM: place.matchRadiusM ?? defaultRadiusM[place.kind],
-        municipalities: [...(place.municipalities ?? [])],
-        sample: true,
-        searchText: searchTextFor([place.nameIs, place.nameEn, ...(place.aliases ?? [])]),
-      };
-      await tx
-        .insert(places)
-        .values(row)
-        .onConflictDoUpdate({ target: places.id, set: { ...row, updatedAt: now } });
-    }
-    await tx.delete(places).where(and(eq(places.sample, true), notInArray(places.id, placeIds)));
-
     // The road graph's legs touching any sample point, listed or retired,
     // are written again each time; retired points get none. Legs from our
     // road file ("Recompute all") stay, but not those of a point the list
@@ -170,7 +131,7 @@ export async function seedSampleMeetingPoints(db: Database, now: Date): Promise<
 
 /**
  * The three launch corridors (meeting points guide, "Launch corridors";
- * answer A35), as sample places in order. Reykjanesbær's place covers the
+ * answer A35), as places in order. Reykjanesbær's place covers the
  * airport's meeting point.
  */
 export const sampleCorridors: readonly {
@@ -196,7 +157,7 @@ export const sampleCorridors: readonly {
 ];
 
 /**
- * Adds the launch corridors once, after the sample places. One that is
+ * Adds the launch corridors once, after the places. One that is
  * there is left alone, so a deploy never undoes the operator's change.
  * In production the operator adds them in the console, with the real places.
  */
@@ -207,7 +168,7 @@ export async function seedSampleCorridors(db: Database, now: Date): Promise<void
       sampleCorridors.map((corridor) => ({
         id: sampleId(`corridor:${corridor.key}`),
         name: corridor.name,
-        placeIds: corridor.places.map((key) => sampleId(`place:${key}`)),
+        placeIds: corridor.places.map(placeId),
         createdAt: now,
         updatedAt: now,
       })),

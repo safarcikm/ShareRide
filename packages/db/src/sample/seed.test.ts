@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { samplePlaces, samplePoints, sampleRoads } from "./meeting-points.ts";
+import { samplePoints, sampleRoads } from "./meeting-points.ts";
 import { sampleId } from "./seed.ts";
 
 describe("sampleId", () => {
@@ -14,7 +14,7 @@ describe("sampleId", () => {
 
 describe("the sample data", () => {
   it("has unique keys", () => {
-    const keys = [...samplePoints, ...samplePlaces].map((item) => item.key);
+    const keys = samplePoints.map((item) => item.key);
     expect(new Set(keys).size).toBe(keys.length);
   });
 
@@ -26,7 +26,7 @@ describe("the sample data", () => {
   });
 
   it("keeps every position in Iceland", () => {
-    for (const { position } of [...samplePoints, ...samplePlaces]) {
+    for (const { position } of samplePoints) {
       expect(position.latitude).toBeGreaterThan(63.2);
       expect(position.latitude).toBeLessThan(66.6);
       expect(position.longitude).toBeGreaterThan(-24.6);

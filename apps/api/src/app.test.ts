@@ -1,4 +1,6 @@
 import { Writable } from "node:stream";
+import * as contracts from "@shareride/contracts";
+import { appleCallbackRoute, type RouteDefinition } from "@shareride/contracts";
 import { validator } from "hono/validator";
 import { describe, expect, it } from "vitest";
 import { createApp, type ErrorReporter } from "./app.ts";
@@ -118,6 +120,36 @@ describe("request bodies", () => {
     expect(await response.json()).toMatchObject({ error: { code: "unsupported_media_type" } });
   });
 
+  it("are a form only at Apple's callback, which Apple posts (plan 4.3)", async () => {
+    const { app } = setup();
+    const withBody = (Object.values(contracts) as unknown[]).filter(
+      (value): value is RouteDefinition =>
+        typeof value === "object" &&
+        value !== null &&
+        "method" in value &&
+        "path" in value &&
+        "responses" in value &&
+        ["post", "put", "patch"].includes(String(value.method)),
+    );
+    expect(withBody.length).toBeGreaterThan(20);
+    for (const route of withBody) {
+      const path = route.path.replace(/\{[^}]+\}/g, "0193f0c4-7d4a-7b1e-9c2a-123456789abc");
+      const response = await app.request(path, {
+        method: route.method.toUpperCase(),
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: "state=x",
+      });
+      if (route === appleCallbackRoute) expect(response.status).not.toBe(415);
+      else expect(response.status, route.path).toBe(415);
+    }
+    const multipart = await app.request(appleCallbackRoute.path, {
+      method: "POST",
+      headers: { "content-type": "multipart/form-data; boundary=x" },
+      body: "--x--",
+    });
+    expect(multipart.status).toBe(415);
+  });
+
   it("may be JSON with a charset", async () => {
     const response = await setup().app.request("/v1/no-such-thing", {
       method: "POST",
@@ -148,6 +180,26 @@ describe("requests", () => {
     const response = await setup().app.request("/v1/health");
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
     expect(response.headers.get("strict-transport-security")).toContain("max-age=");
+    expect(response.headers.get("cross-origin-opener-policy")).toBe("same-origin");
+  });
+
+  it("keeps Google's and Apple's pop-up linked to the page that opened it (ADR 0034)", async () => {
+    // The start, the callbacks and the stand-in's page open in the pop-up,
+    // which hands its answer to its opener: an opener policy would cut it off.
+    const { app } = setup();
+    for (const path of [
+      "/v1/auth/oauth/google/start",
+      "/v1/auth/oauth/google/callback",
+      "/v1/auth/oauth/dev/google",
+    ]) {
+      const response = await app.request(path);
+      expect(response.headers.get("cross-origin-opener-policy")).toBe("unsafe-none");
+    }
+    const apple = await app.request("/v1/auth/oauth/apple/callback", { method: "POST" });
+    expect(apple.headers.get("cross-origin-opener-policy")).toBe("unsafe-none");
+    // The API's other answers keep the strict policy.
+    const finish = await app.request("/v1/auth/oauth/finish", { method: "POST" });
+    expect(finish.headers.get("cross-origin-opener-policy")).toBe("same-origin");
   });
 });
 

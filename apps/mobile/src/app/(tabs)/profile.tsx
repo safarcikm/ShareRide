@@ -21,6 +21,7 @@ import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { SignInFirst } from "@/navigation/sign-in-first";
 import { languagesText } from "@/people/languages";
 import { memberSinceText } from "@/people/texts";
+import { PhotoControls } from "@/profile/photo-controls";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
@@ -73,6 +74,7 @@ function MyProfile({ me }: { readonly me: Me }) {
   const person = (
     <>
       <Person me={me} />
+      <PhotoControls me={me} />
       <Button
         variant="secondary"
         label={t("profile.edit")}
@@ -169,7 +171,7 @@ function Person({ me }: { readonly me: Me }) {
     .join(" · ");
   return (
     <View style={styles.person}>
-      <Avatar firstName={firstName} colour={peopleColourOf(me.id)} />
+      <Avatar firstName={firstName} colour={peopleColourOf(me.id)} photo={me.photo?.url ?? null} />
       <Text style={[typography.figure, styles.centre, { color: palette.text }]}>{firstName}</Text>
       <Small centre>{summary}</Small>
     </View>

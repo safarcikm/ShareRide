@@ -41,6 +41,8 @@ export async function seedDraftLegalDocuments(db: Database, now: Date): Promise<
     .onConflictDoNothing();
 }
 
+export { allPlaces, landmarkPlaces, settlementPlaces, type Place } from "./places/places.ts";
+export { placeId, seedPlaces } from "./places/seed.ts";
 export { samplePoints } from "./sample/meeting-points.ts";
 export {
   sampleCorridors,
@@ -77,8 +79,9 @@ export async function seedDevelopmentInviteCode(db: Database, now: Date): Promis
 
 /**
  * What local development and staging start with: the draft legal documents,
- * the sample meeting points, places and legs (milestone 3, decision 1), the
- * three launch corridors and sample trips in the next days.
+ * the places (which every environment has), the sample meeting points and
+ * legs (milestone 3, decision 1), the three launch corridors and sample
+ * trips in the next days.
  */
 export async function seedDevelopmentData(db: Database, now: Date): Promise<void> {
   await seedDraftLegalDocuments(db, now);

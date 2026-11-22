@@ -1,6 +1,6 @@
 import { randomInt } from "node:crypto";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { healthReadyRoute, healthRoute } from "@shareride/contracts";
+import { appleCallbackRoute, healthReadyRoute, healthRoute } from "@shareride/contracts";
 import type { Database } from "@shareride/db";
 import {
   bookingSettingsFrom,
@@ -11,7 +11,9 @@ import {
   defaultReviewSettings,
   inviteCheckLimitsPerAddress,
   operatorSignInLimitsPerAddress,
+  providerSignInRules,
   searchLimitsPerAddress,
+  type ReturnUrlsAllowed,
   type SettingValues,
   switchKeys,
 } from "@shareride/domain";
@@ -47,8 +49,10 @@ import { checkStanding } from "./modules/account/standing.ts";
 import {
   createAuthService,
   createOptionalAuth,
+  createProviderSignInService,
   createRequireAuth,
   registerAuthRoutes,
+  registerProviderRoutes,
 } from "./modules/auth/index.ts";
 import {
   createBookingService,
@@ -153,6 +157,7 @@ import {
 } from "./modules/trips/index.ts";
 import { bearerAuth, operatorSession, toOpenApiRoute } from "./openapi.ts";
 import type { FileCipher, KeyedHasher } from "./platform/crypto.ts";
+import type { IdentityProvider } from "./platform/identity-providers.ts";
 import { addressBlock } from "./platform/client-address.ts";
 import { createMemoryRateLimiter } from "./platform/memory-rate-limiter.ts";
 import type { PaymentProvider } from "./platform/payments.ts";
@@ -166,7 +171,7 @@ import {
   type PhotoStorage,
 } from "./platform/photo-storage.ts";
 import { createAdminApp } from "./admin-app.ts";
-import { createWebApp } from "./web-app.ts";
+import { createWebApp, openerPolicyFor } from "./web-app.ts";
 
 export type { AppEnv };
 
@@ -205,6 +210,18 @@ export interface FeatureDependencies {
   readonly searchLog?: SearchLog;
   /** Settings held whatever is stored: tests and the browser tests' server only. */
   readonly fixedSettings?: Partial<SettingValues>;
+  /** Google and Apple sign-in (ADR 0034); none is on when left out. */
+  readonly signIn?: SignInDependencies;
+}
+
+/** Google and Apple sign-in through our API (ADR 0034). */
+export interface SignInDependencies {
+  /** The providers that are on: Google's and Apple's own, or the development stand-in. */
+  readonly providers: readonly IdentityProvider[];
+  /** Where browsers reach the API, for the providers' callback addresses. */
+  readonly apiOrigin: string;
+  /** Where the browser window may go back to with a ticket. */
+  readonly returnUrls: ReturnUrlsAllowed;
 }
 
 /** Where the request was when an unexpected error happened. No personal data. */
@@ -267,15 +284,37 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       c.req.path.startsWith("/admin/") ? next() : allowWebOrigins(c, next),
     );
   }
+  if (dependencies.features?.photoFiles !== undefined) {
+    // Development and tests only: the web app there runs on another port and
+    // shows these photos, so they may be shown from another origin. Before
+    // the secure headers, so this runs after them and keeps the last word.
+    app.use(`${photoFilesPath}/*`, async (c, next) => {
+      await next();
+      c.res.headers.set("Cross-Origin-Resource-Policy", "cross-origin");
+    });
+  }
+  // Before the secure headers, so it has the last word on the opener
+  // policy: Google's and Apple's pop-up stays linked to its page (ADR 0034).
+  app.use(async (c, next) => {
+    await next();
+    const policy = openerPolicyFor(c.req.path);
+    if (policy !== null) c.res.headers.set("Cross-Origin-Opener-Policy", policy);
+  });
   app.use(secureHeaders());
   app.use(
     createMiddleware<AppEnv>(async (c, next) => {
       // Bodies are JSON only. A browser cannot send JSON to another site
       // without a CORS preflight, so forms and text posts from other pages,
-      // which carry cookies, are refused here.
+      // which carry cookies, are refused here. The one exception is Apple's
+      // callback, which Apple posts as a form: it reads no cookie and takes
+      // only a state that works once (ADR 0034).
       const hasBody = ["POST", "PUT", "PATCH"].includes(c.req.method);
       const type = c.req.header("content-type") ?? "";
-      if (hasBody && !/^application\/json\s*(;|$)/i.test(type)) {
+      const form =
+        c.req.method === "POST" &&
+        c.req.path === appleCallbackRoute.path &&
+        /^application\/x-www-form-urlencoded\s*(;|$)/i.test(type);
+      if (hasBody && !form && !/^application\/json\s*(;|$)/i.test(type)) {
         return c.json(
           errorBody("unsupported_media_type", "Send the body as application/json."),
           415,
@@ -380,6 +419,30 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     });
     const requireAuth = createRequireAuth(auth);
     registerAuthRoutes(app, { ...features, auth, account, requireAuth });
+    const providerSignIn = createProviderSignInService({
+      ...features,
+      logger,
+      auth,
+      providers: features.signIn?.providers ?? [],
+      apiOrigin: features.signIn?.apiOrigin ?? "",
+      returnUrls: features.signIn?.returnUrls ?? {
+        webOrigins: [],
+        appScheme: "shareride",
+        allowExpoGo: false,
+      },
+      limiter: createMemoryRateLimiter({
+        rules: providerSignInRules.startLimits,
+        clock: features.clock,
+      }),
+    });
+    registerProviderRoutes(app, {
+      ...features,
+      providers: providerSignIn,
+      account,
+      requireAuth,
+      // A keyed hash of the address's block, as for the other limits per address.
+      clientKey: (c) => features.hasher("oauth-start", addressBlock(features.clientAddress(c))),
+    });
     registerAccountRoutes(app, account, requireAuth);
     registerProfilePhotoRoutes(
       app,
@@ -501,7 +564,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       settings: reliabilitySettings,
       requireOperator,
     });
-    registerConfigRoutes(app, operatorSettings);
+    registerConfigRoutes(app, operatorSettings, providerSignIn.names);
     registerSettingsAdminRoutes(app, { ...features, settings: operatorSettings, requireOperator });
     registerInviteRoutes(app, {
       invites,

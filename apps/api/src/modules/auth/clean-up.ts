@@ -5,6 +5,7 @@ import { notHeld } from "../privacy/holds.ts";
 
 const {
   emailVerifications,
+  providerSignIns,
   pushTokens,
   rateLimitEvents,
   sessionTokens,
@@ -20,6 +21,8 @@ export interface CleanUpCounts {
   readonly sessionsDeleted: number;
   /** Links to verify an email, a day after they were sent. */
   readonly emailLinks: number;
+  /** Google and Apple sign-ins, an hour after they expired. */
+  readonly providerSignIns: number;
 }
 
 /**
@@ -86,8 +89,14 @@ export async function cleanUpSignInRecords(db: Database, now: Date): Promise<Cle
       .where(lte(emailVerifications.sentAt, cutoff.emailLinksSentBefore))
       .returning({ id: emailVerifications.id });
 
+    const providerRows = await tx
+      .delete(providerSignIns)
+      .where(lt(providerSignIns.expiresAt, cutoff.providerSignInsExpiredBefore))
+      .returning({ id: providerSignIns.id });
+
     return {
       emailLinks: links.length,
+      providerSignIns: providerRows.length,
       codes: codes.length,
       rateLimitEvents: events.length,
       tokens: tokens.length,

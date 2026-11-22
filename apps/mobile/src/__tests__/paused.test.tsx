@@ -27,6 +27,7 @@ const pausedTo = (paused: readonly string[]) => ({
         freeCancellationMinutes: 15,
         maxMoveMinutes: 120,
         reliabilityMonths: 12,
+        signInProviders: [],
       }),
     );
   },

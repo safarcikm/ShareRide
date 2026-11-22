@@ -235,10 +235,10 @@ Endpoints (`/v1`, shapes in `packages/contracts`), replacing spec 1's
 | `GET /auth/oauth/google/callback`, `POST /auth/oauth/apple/callback` | Where the provider sends the person back; sends them on to the app with a one-time ticket |
 | `POST /auth/oauth/finish` | The app trades the ticket for a session, or for "add your phone number" |
 | `POST /auth/phone/verify` | Gains the waiting provider sign-in, to make or link the account |
-| `GET /me/sign-in-methods`, `POST /me/sign-in-methods`, `DELETE /me/sign-in-methods/{provider}` | List, add and remove sign-in methods |
+| `GET /me/sign-in-methods`, `POST /me/sign-in-methods/prepare`, `POST /me/sign-in-methods`, `DELETE /me/sign-in-methods/{provider}` | List; take the window's ticket and check it can be added, before the confirm code is asked for; add with the code; remove |
 | `GET /config` | Gains `signInProviders` |
 
-Events: `SignInMethodLinked`, `SignInMethodRemoved`.
+Events (in the logs, by provider and user ID): `SignInMethodLinked`, `SignInMethodRemoved`.
 
 ## 7. Privacy and safety
 
@@ -275,11 +275,18 @@ Events: `SignInMethodLinked`, `SignInMethodRemoved`.
 | `auth.provider.phoneTitle` | Add your phone number | Bættu við símanúmerinu þínu |
 | `auth.provider.phoneHelp` | You signed in with {provider} as {email}. We text you a code once, so the people you ride with can reach you. Next time {provider} is enough. | {provider} staðfesti netfangið {email}. Við sendum þér kóða með SMS einu sinni, svo fólkið sem þú ferðast með nái í þig. Næst dugar {provider}. |
 | `auth.provider.phoneHelpHidden` | {provider} confirmed it's you. We text you a code once, so the people you ride with can reach you. Next time {provider} is enough. | {provider} staðfesti að þetta sért þú. Við sendum þér kóða með SMS einu sinni, svo fólkið sem þú ferðast með nái í þig. Næst dugar {provider}. |
+| `auth.provider.another` | Sign in another way | Skrá inn á annan hátt |
 | `auth.provider.linked` | {provider} is now linked to your account. Next time you can continue with {provider}. | {provider} er nú tengt aðganginum þínum. Næst getur þú haldið áfram með {provider}. |
 | `auth.provider.failed` | {provider} sign-in didn't work. Try again, or use your phone number. | Innskráning með {provider} tókst ekki. Reyndu aftur eða notaðu símanúmerið þitt. |
 | `auth.provider.expired` | That took too long. Continue with {provider} again. | Þetta tók of langan tíma. Haltu aftur áfram með {provider}. |
-| `error.provider_in_use` | This {provider} account is used by another ShareRide account. | Þessi {provider}-aðgangur er notaður af öðrum ShareRide-aðgangi. |
+| `auth.provider.inUse` | This {provider} account is used by another ShareRide account. | Þessi {provider}-aðgangur er notaður af öðrum ShareRide-aðgangi. |
+| `auth.provider.inUseRetry` | This {provider} account is used by another ShareRide account. Try again to go on with your phone number alone. | Þessi {provider}-aðgangur er notaður af öðrum ShareRide-aðgangi. Reyndu aftur til að halda áfram með símanúmerinu einu. |
 | `auth.provider.replaced` | Your {provider} account on ShareRide is now {email}. | {provider}-aðgangurinn þinn á ShareRide er nú {email}. |
+| `auth.provider.replacedHidden` | Your {provider} account on ShareRide has changed. | {provider}-aðgangurinn þinn á ShareRide hefur breyst. |
+| `auth.provider.dismiss` | Close the message | Loka skilaboðunum |
+| `auth.provider.returning` | Signing you in… (phone, for a moment) | Skrái þig inn… |
+| `auth.provider.closeTitle` | You can close this window (a pop-up left open) | Þú getur lokað þessum glugga |
+| `auth.provider.closeWindow` | Then go on in the ShareRide window. | Haltu svo áfram í ShareRide-glugganum. |
 | `settings.signInMethods` | Sign-in methods | Innskráningarleiðir |
 | `settings.signInMethods.add` | Add {provider} | Bæta við {provider} |
 | `settings.signInMethods.remove` | Remove {provider} | Fjarlægja {provider} |

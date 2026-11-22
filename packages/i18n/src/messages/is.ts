@@ -59,6 +59,29 @@ export const is = {
   "auth.code.resent": "Við sendum nýjan kóða.",
   "auth.code.changeNumber": "Breyta númerinu",
   "auth.code.incomplete": "Sláðu inn alla {length} tölustafi kóðans.",
+  "auth.continueGoogle": "Halda áfram með Google",
+  "auth.continueApple": "Halda áfram með Apple",
+  "auth.orPhone": "eða með símanúmerinu þínu",
+  "auth.provider.phoneTitle": "Bættu við símanúmerinu þínu",
+  "auth.provider.phoneHelp":
+    "{provider} staðfesti netfangið {email}. Við sendum þér kóða með SMS einu sinni, svo fólkið sem þú ferðast með nái í þig. Næst dugar {provider}.",
+  "auth.provider.phoneHelpHidden":
+    "{provider} staðfesti að þetta sért þú. Við sendum þér kóða með SMS einu sinni, svo fólkið sem þú ferðast með nái í þig. Næst dugar {provider}.",
+  "auth.provider.another": "Skrá inn á annan hátt",
+  "auth.provider.linked":
+    "{provider} er nú tengt aðganginum þínum. Næst getur þú haldið áfram með {provider}.",
+  "auth.provider.replaced": "{provider}-aðgangurinn þinn á ShareRide er nú {email}.",
+  "auth.provider.replacedHidden": "{provider}-aðgangurinn þinn á ShareRide hefur breyst.",
+  "auth.provider.failed":
+    "Innskráning með {provider} tókst ekki. Reyndu aftur eða notaðu símanúmerið þitt.",
+  "auth.provider.expired": "Þetta tók of langan tíma. Haltu aftur áfram með {provider}.",
+  "auth.provider.inUse": "Þessi {provider}-aðgangur er notaður af öðrum ShareRide-aðgangi.",
+  "auth.provider.inUseRetry":
+    "Þessi {provider}-aðgangur er notaður af öðrum ShareRide-aðgangi. Reyndu aftur til að halda áfram með símanúmerinu einu.",
+  "auth.provider.returning": "Skrái þig inn…",
+  "auth.provider.closeTitle": "Þú getur lokað þessum glugga",
+  "auth.provider.closeWindow": "Haltu svo áfram í ShareRide-glugganum.",
+  "auth.provider.dismiss": "Loka skilaboðunum",
   "beta.badge": "Beta",
   "beta.badgeFeedback": "Beta. Senda ábendingu",
   "feedback.heading": "Ábendingar",
@@ -192,6 +215,22 @@ export const is = {
   "profile.legal": "Skilmálar, reglur og persónuvernd",
   "profile.inSettings": "Símanúmer, tungumál og útskráning eru í stillingum.",
   "profile.noCars": "Engir bílar enn. Bættu við bílnum sem þú ekur.",
+  "profile.photo.add": "Bæta við mynd",
+  "profile.photo.take": "Taka mynd",
+  "profile.photo.change": "Skipta um mynd",
+  "profile.photo.remove": "Fjarlægja mynd",
+  "profile.photo.help": "Þau sem ferðast með þér sjá hana við nafnið þitt.",
+  "profile.photo.saved": "Myndin var vistuð.",
+  "profile.photo.removed": "Myndin var fjarlægð.",
+  "profile.photo.hidden":
+    "ShareRide faldi myndina þína því hún braut samfélagsreglurnar. Bættu við annarri.",
+  "profile.photo.tooSmall":
+    "Þessi mynd er of lítil. Veldu mynd sem er að minnsta kosti {min} punktar á breidd.",
+  "profile.photo.unusable": "Ekki var hægt að nota þessa mynd. Prófaðu aðra.",
+  "profile.photo.noCamera":
+    "Til að taka mynd skaltu leyfa ShareRide að nota myndavélina í stillingum símans.",
+  "profile.photo.failed": "Ekki tókst að vista myndina. Reyndu aftur eftir smástund.",
+  "profile.photo.off": "Enn er ekki hægt að bæta við myndum.",
   "preview.title": "Eins og aðrir sjá þig",
   "preview.intro": "Þetta er opinberi prófíllinn þinn. Símanúmerið þitt er aldrei hluti af honum.",
   "settings.title": "Stillingar",
@@ -896,6 +935,7 @@ export const is = {
   "notices.content.review": "umsögn sem þú skrifaðir",
   "notices.content.tripNote": "athugasemd þína við ferð",
   "notices.content.about": "textann Um þig",
+  "notices.content.photo": "prófílmyndina þína",
   "notices.content.trip": "ferð sem þú bauðst",
   "notices.content.booking": "bókun",
   "notices.appealUntil": "Ef þú ert ósammála geturðu andmælt. Frestur: {until}.",
@@ -1455,6 +1495,12 @@ export const is = {
   "email.verifyOpen": "Staðfesta netfangið",
   "email.verifyFooter":
     "Þú færð þennan póst því þetta netfang var slegið inn í ShareRide. Ef það varst ekki þú skaltu hunsa hann: netfanginu er ekki bætt við.",
+  "oauth.page.title": "Innskráning í ShareRide",
+  "oauth.page.off":
+    "Þessi innskráningarleið er ekki í boði. Lokaðu glugganum og notaðu símanúmerið þitt.",
+  "oauth.page.invalid": "Þessi innskráningartengill virkar ekki. Lokaðu glugganum og reyndu aftur.",
+  "oauth.page.expired":
+    "Þessi innskráning er útrunnin eða var þegar notuð. Lokaðu glugganum og reyndu aftur.",
   "sms.signInCode": "{code} er ShareRide kóðinn þinn. Hann gildir í 10 mínútur.",
   "sms.confirmCode": "{code} er ShareRide kóðinn til að staðfesta. Ekki deila honum.",
   "sms.bookingCancelled":
@@ -1551,6 +1597,7 @@ export const is = {
   "export.section.legal_acceptances": "Skilmálar og stefnur sem þú samþykktir",
   "export.section.settings": "Stillingar",
   "export.section.devices": "Innskráð tæki",
+  "export.section.sign_in_methods": "Innskráningarleiðir",
   "export.section.email_waiting": "Netfang sem bíður staðfestingar",
   "export.section.vehicles": "Bílar",
   "export.section.trips_posted": "Ferðir sem þú birtir",
@@ -1621,6 +1668,7 @@ export const is = {
   "export.field.kind": "Tegund",
   "export.field.languages": "Tungumál",
   "export.field.lastActiveAt": "Síðast virkt",
+  "export.field.lastUsedAt": "Síðast notað",
   "export.field.licenceDeclaredAt": "Ökuskírteini staðfest",
   "export.field.locale": "Tungumál",
   "export.field.luggage": "Farangur",
@@ -1646,6 +1694,8 @@ export const is = {
   "export.field.phoneVerifiedAt": "Símanúmer staðfest",
   "export.field.place": "Staður",
   "export.field.plannedAt": "Áætlaður tími",
+  "export.field.method": "Innskráningarleið",
+  "export.field.linkedAt": "Tengt",
   "export.field.platform": "Stýrikerfi",
   "export.field.price": "Verð á sæti",
   "export.field.priceLevel": "Verðstig (%)",
@@ -2728,6 +2778,7 @@ export const is = {
   "admin.reports.reviewFacts.passenger": "{rating} af 5 stjörnum, frá farþeganum, skrifuð {when}",
   "admin.reports.reviewWords": "Orð umsagnarinnar",
   "admin.reports.about": "Um þig",
+  "admin.reports.photo": "Prófílmynd",
   "admin.reports.hiddenTag": "ShareRide fjarlægði",
   "admin.reports.hiddenByTag": "Falið af ShareRide",
   "admin.reports.reportedTag": "Tilkynnt",
@@ -2788,6 +2839,7 @@ export const is = {
   "admin.reports.hide.review": "umsögnina",
   "admin.reports.hide.trip_note": "athugasemd ferðarinnar",
   "admin.reports.hide.about": "textann Um þig",
+  "admin.reports.hide.photo": "prófílmynd viðkomandi",
   "admin.reports.effect.warn": "Ekkert annað breytist.",
   "admin.reports.effect.suspend":
     "Viðkomandi getur ekki lengur leitað, bókað, boðið ferðir, sent skilaboð né skrifað umsagnir. Ferðum og bókunum framundan er aflýst með fullri endurgreiðslu; hinum er ekki sagt hvers vegna.",
@@ -2800,6 +2852,8 @@ export const is = {
     "Farþegar sjá hana ekki lengur, fyrr en bílstjórinn skrifar nýja.",
   "admin.reports.effect.hide.about":
     "Aðrir sjá hann ekki lengur, fyrr en viðkomandi skrifar nýjan.",
+  "admin.reports.effect.hide.photo":
+    "Aðrir sjá upphafsstafinn í staðinn, þar til viðkomandi bætir við nýrri mynd.",
   "admin.reports.effect.cancelTrip":
     "Allir farþegar fá fulla endurgreiðslu og að vita að ShareRide aflýsti ferðinni, aldrei hvers vegna.",
   "admin.reports.chooseAction": "Veldu aðgerð.",
@@ -2871,6 +2925,7 @@ export const is = {
   "admin.appeals.content.review": "umsögn frá viðkomandi",
   "admin.appeals.content.trip_note": "athugasemd viðkomandi við ferð",
   "admin.appeals.content.about": "textann Um þig hjá viðkomandi",
+  "admin.appeals.content.photo": "prófílmynd viðkomandi",
   "admin.appeals.content.trip": "ferð sem viðkomandi bauð",
   "admin.appeals.content.booking": "bókun",
   "admin.appeals.until": "Lokunin gildir til {when}.",
@@ -3010,6 +3065,7 @@ export const is = {
   "admin.users.licenceDeclared": "Ökuskírteini staðfest",
   "admin.users.languages": "Tungumál sem viðkomandi talar",
   "admin.users.about": "Um þig",
+  "admin.users.photo": "Prófílmynd",
   "admin.users.userId": "Auðkenni notanda",
   "admin.users.notYet": "Ekki enn",
   "admin.users.noneGiven": "Ekkert",
@@ -3095,6 +3151,7 @@ export const is = {
   "admin.activation.item.legs": "Vegur innan 1 km sem nær til staða í notkun",
   "admin.activation.done": "Lokið",
   "admin.activation.toDo": "Eftir",
+  "admin.activation.recommended": "Mælt með",
   "admin.activation.failed": "Ekki tókst að sækja gátlistann.",
   "admin.activation.activate": "Virkja {name}",
   "admin.activation.activating": "Virkjar {name}…",
