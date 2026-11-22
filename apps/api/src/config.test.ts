@@ -76,7 +76,18 @@ describe("loadConfig", () => {
         allowExpoGo: true,
       },
       searchEngines: { indexable: false, siteOrigin: null },
+      analytics: null,
     });
+  });
+
+  it("turns on Google Analytics with its measurement ID, which must look like one (spec 23)", () => {
+    expect(loadConfig({ ...valid, GOOGLE_ANALYTICS_ID: "G-ABC123XYZ9" }).analytics).toEqual({
+      googleMeasurementId: "G-ABC123XYZ9",
+    });
+    expect(loadConfig({ ...valid, GOOGLE_ANALYTICS_ID: "" }).analytics).toBeNull();
+    expect(() => loadConfig({ ...valid, GOOGLE_ANALYTICS_ID: "UA-1234-1" })).toThrow(
+      "GOOGLE_ANALYTICS_ID: not a Google Analytics measurement ID (G-…)",
+    );
   });
 
   it("lets search engines index production's public pages only (spec 23, R23.6)", () => {

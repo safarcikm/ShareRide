@@ -1,7 +1,7 @@
 // Exports the app icon, the Android icon layers, the opening screen icon and
 // the browser tab icon from the drawings in assets/logo (spec 15, section
-// 4.9), and the link preview picture, public/share.png (spec 23, 3.6), which
-// the web export serves at /share.png. Run it after changing a drawing,
+// 4.9), and the link preview picture, public/share.png (spec 23, 3.6), from
+// assets/share, which the web export serves at /share.png. Run it after changing a drawing,
 // then commit the drawing and the pictures together:
 //   node scripts/export-icons.ts
 // It uses Playwright's Chromium; PLAYWRIGHT_CHROMIUM_PATH picks another one.
@@ -19,10 +19,13 @@ async function font(family: string, file: string): Promise<string> {
 }
 
 /**
- * The link preview (spec 23, 3.6): the app icon, the name and what it is in
- * both languages, 1200 by 630 as link previews want. It names nobody.
+ * The link preview (spec 23, 3.6): the two puffins in their car over the
+ * name and what it is in both languages, 1200 by 630 as link previews want.
+ * The drawing and the name are in the middle, so an app that crops the
+ * picture to a square keeps them. It names nobody.
  */
 async function sharePicture(): Promise<string> {
+  const scene = await readFile(join(assets, "share", "puffins-in-car.svg"), "utf8");
   const icon = await readFile(join(assets, "logo", "icon.svg"), "utf8");
   const display = await font("fredoka", "600SemiBold/Fredoka_600SemiBold.ttf");
   const body = await font("nunito", "700Bold/Nunito_700Bold.ttf");
@@ -30,12 +33,14 @@ async function sharePicture(): Promise<string> {
 @font-face{font-family:Display;src:${display}}
 @font-face{font-family:Body;src:${body}}
 html,body{margin:0}
-.card{width:1200px;height:630px;box-sizing:border-box;padding:0 96px;display:flex;align-items:center;gap:72px;background:#EEF3F4}
-.icon{flex:none;width:340px;height:340px;border-radius:76px;overflow:hidden}
-.icon svg{display:block;width:340px;height:340px}
-h1{margin:0 0 28px;font:600 112px/1 Display;color:#1F2A30}
-p{margin:0;font:700 44px/1.35 Body;color:#2F6B4F}
-</style><div class="card"><div class="icon">${icon}</div><div><h1>PuffinRide</h1><p>Samferða um Ísland</p><p>Shared rides across Iceland</p></div></div>`;
+.card{width:1200px;height:630px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#EEF3F4}
+.scene svg{display:block;width:480px;height:310px}
+.name{display:flex;align-items:center;gap:24px;margin:20px 0 16px}
+.icon{flex:none;width:84px;height:84px;border-radius:19px;overflow:hidden}
+.icon svg{display:block;width:84px;height:84px}
+h1{margin:0;font:600 104px/1 Display;color:#1F2A30}
+p{margin:0;font:700 40px/1.3 Body;color:#2F6B4F}
+</style><div class="card"><div class="scene">${scene}</div><div class="name"><div class="icon">${icon}</div><h1>PuffinRide</h1></div><p>Samferða um Ísland · Shared rides across Iceland</p></div>`;
 }
 
 /** Each drawing in assets/logo, and the width and height of its picture. */

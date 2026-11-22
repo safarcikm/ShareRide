@@ -26,6 +26,7 @@ const indexablePaths: readonly RegExp[] = [
   /^\/places\/[^/]+$/,
   /^\/legal$/,
   new RegExp(`^/legal/(${legalDocumentTypes.join("|")})$`),
+  /^\/cookies$/,
 ];
 
 /**
@@ -109,6 +110,7 @@ export async function publicPages(db: Database): Promise<string[]> {
     ...placeRows.map(({ id }) => `/places/${id}`),
     "/legal",
     ...legalDocumentTypes.map((type) => `/legal/${type}`),
+    "/cookies",
   ];
 }
 
@@ -124,11 +126,17 @@ export interface PageRequest {
   /** The address's `lang`, as given. */
   readonly lang: string | null;
   readonly acceptLanguage: string | null;
+  /**
+   * The locale Facebook's crawler asks a link's preview in, such as is_IS,
+   * from its X-Facebook-Locale header or `fb_locale` (it asks again in each
+   * `og:locale:alternate`).
+   */
+  readonly facebookLocale?: string | null;
 }
 
 export interface PageHead {
   readonly locale: Locale;
-  /** Whether the language came from the browser, so the answer varies with it. */
+  /** Whether the language came from the browser or Facebook, so the answer varies with it. */
   readonly fromBrowser: boolean;
   readonly title: string;
   /** The tags to add, marked as the app's head component marks its own, so it replaces them. */
@@ -136,6 +144,12 @@ export interface PageHead {
 }
 
 const ogLocales: Readonly<Record<Locale, string>> = { is: "is_IS", en: "en_GB" };
+
+/** The language of a Facebook locale such as is_IS, if it is one of ours. */
+function facebookLanguage(locale: string | null | undefined): Locale | null {
+  const language = locale?.split("_")[0]?.toLowerCase() ?? "";
+  return isLocale(language) ? language : null;
+}
 
 /** The languages of an Accept-Language header, best first. */
 function languagesOf(header: string | null): string[] {
@@ -154,14 +168,17 @@ function languagesOf(header: string | null): string[] {
 
 /**
  * What a crawler that does not run the app reads (3.6, item 2): the
- * language the address names, otherwise the browser's, as the app picks
- * it; Find's title and description; on production, for a public page, its
+ * language the address names, otherwise the one Facebook asks a link's
+ * preview in, otherwise the browser's, as the app picks it; Find's title and description; on production, for a public page, its
  * canonical address and alternates; and the same link preview everywhere,
  * which names nobody (R23.7). The app's screens set their own once it runs.
  */
 export function pageHead(request: PageRequest, engines: SearchEngines): PageHead {
   const named = request.lang !== null && isLocale(request.lang) ? request.lang : null;
-  const locale = named ?? pickLocale(languagesOf(request.acceptLanguage));
+  const locale =
+    named ??
+    facebookLanguage(request.facebookLocale) ??
+    pickLocale(languagesOf(request.acceptLanguage));
   const t = createTranslator(locale);
   const title = t("seo.findTitle");
   const description = t("seo.findDescription");

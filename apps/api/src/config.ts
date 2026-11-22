@@ -2,8 +2,9 @@ import { createPrivateKey } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { z } from "zod";
-import { operatorPasswordRules } from "@shareride/domain";
+import { isGoogleMeasurementId, operatorPasswordRules } from "@shareride/domain";
 import type { SearchEngines } from "./search-engines.ts";
+import type { Analytics } from "./web-app.ts";
 
 /** An origin such as https://shareride.is: scheme, host and port, nothing more. */
 const originSchema = z.string().refine((value) => {
@@ -125,6 +126,17 @@ const environmentSchema = z
     EMAIL_FROM_NAME: z.string().min(1).max(60).default("PuffinRide"),
     /** Where links in emails lead: the web app's origin. */
     WEB_APP_URL: originSchema.optional(),
+    /**
+     * Google Analytics on the website, after the visitor accepts (spec 23,
+     * ADR 0045): the web stream's measurement ID, not a secret. Unset, the
+     * site asks nothing and loads nothing from Google.
+     */
+    GOOGLE_ANALYTICS_ID: unsetIfEmpty(
+      z
+        .string()
+        .refine(isGoogleMeasurementId, "not a Google Analytics measurement ID (G-…)")
+        .optional(),
+    ),
     /**
      * The operator console's origin, which its passkeys are bound to (ADR
      * 0028). In development it is the API's own http://localhost:PORT; on a
@@ -518,6 +530,8 @@ export interface Config {
   readonly signIn: SignInConfig;
   /** What search engines may index, and the site's own address (spec 23). */
   readonly searchEngines: SearchEngines;
+  /** Google Analytics on the website, or null where there is none (spec 23). */
+  readonly analytics: Analytics | null;
 }
 
 export class ConfigError extends Error {
@@ -673,5 +687,9 @@ export function loadConfig(environment: Readonly<Record<string, string | undefin
       indexable: deploymentOf(env) === "production" && env.WEB_APP_URL !== undefined,
       siteOrigin: env.WEB_APP_URL ?? null,
     },
+    analytics:
+      env.GOOGLE_ANALYTICS_ID === undefined
+        ? null
+        : { googleMeasurementId: env.GOOGLE_ANALYTICS_ID },
   };
 }

@@ -11,6 +11,10 @@ import type { MenuTab } from "./menu";
 
 const onWeb = Platform.OS === "web";
 
+/** How high the bar is, over the phone's bottom inset: its line, its padding and a tab. */
+export const tabBarHeight = (bottomInset: number): number =>
+  controlOutline + spacing.xs + sizes.tab + Math.max(bottomInset, spacing.xs);
+
 /**
  * The menu as a bar at the bottom of a phone's five main screens (spec 16,
  * 3.1): `surface`, a 2 `border` line on top, and room for the phone's home
@@ -42,6 +46,7 @@ export function TabBar({
         {
           backgroundColor: palette.surface,
           borderTopColor: palette.border,
+          // tabBarHeight counts the same.
           paddingBottom: Math.max(insets.bottom, spacing.xs),
           paddingLeft: insets.left,
           paddingRight: insets.right,

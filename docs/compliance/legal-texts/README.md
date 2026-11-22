@@ -8,7 +8,9 @@
 > the driver in person, no invite code, no women-only trips) and in Icelandic
 > too, is what the app shows: it is published from
 > `packages/db/src/legal/texts` ([ADR 0043](../../decisions/0043-legal-documents-published-from-the-repository.md)).
-> The lawyer's changes become version 3.
+> The lawyer's changes become the next version of each. The Privacy Policy
+> is at version 3 already: Google Analytics on the website, after consent
+> ([spec 23](../../specs/2026-11-22-google-analytics-and-search.md)).
 
 | Document | At sign-up | Draft |
 | -------- | ---------- | ----- |

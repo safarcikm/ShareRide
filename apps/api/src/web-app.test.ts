@@ -74,6 +74,30 @@ describe("the web app on the API's origin", () => {
     expect(webContentSecurityPolicy().split("; ")).toContain("img-src 'self' data: blob:");
   });
 
+  it("lets Google Analytics load only on a site that has it (spec 23, section 6)", () => {
+    const policy = webContentSecurityPolicy(null, true).split("; ");
+    expect(policy).toContain("script-src 'self' https://*.googletagmanager.com");
+    const google =
+      "https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com";
+    expect(policy).toContain(`img-src 'self' data: blob: ${google}`);
+    expect(policy).toContain(
+      `connect-src 'self' https://*.ingest.de.sentry.io ${google} https://*.google.com`,
+    );
+    expect(webContentSecurityPolicy().includes("google")).toBe(false);
+  });
+
+  it("sends that policy with the pages of a site that has Google Analytics", async () => {
+    const withAnalytics = createApp({
+      logger: createLogger({ level: "silent" }),
+      checkDatabase: () => Promise.resolve(),
+      webAppDir: exportedWebApp(),
+      analytics: { googleMeasurementId: "G-ABC123XYZ9" },
+    });
+    const policy = (await withAnalytics.request("/")).headers.get("content-security-policy");
+    expect(policy).toContain("script-src 'self' https://*.googletagmanager.com");
+    expect((await app.request("/")).headers.get("content-security-policy")).not.toContain("google");
+  });
+
   it("serves the page for the app's own routes, so a reload works", async () => {
     for (const path of ["/sign-in", "/sign-in/code", "/legal/terms"]) {
       const response = await app.request(path);

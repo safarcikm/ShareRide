@@ -28,27 +28,50 @@ const isFilePath = (path: string) =>
   path.startsWith("/assets/") ||
   (path.split("/").at(-1) ?? "").includes(".");
 
+/** Google Analytics on the website, asked about before it loads (spec 23, ADR 0045). */
+export interface Analytics {
+  /** The web stream's measurement ID, such as G-ABC123XYZ9. */
+  readonly googleMeasurementId: string;
+}
+
+/** Where Google's tag comes from, and where it sends page views (Google's list for GA4). */
+const googleTag = "https://*.googletagmanager.com";
+const googleAnalyticsHosts = [
+  "https://*.google-analytics.com",
+  "https://*.analytics.google.com",
+  googleTag,
+].join(" ");
+
 /**
  * The web app loads only its own files and calls only its own origin, plus
  * Sentry's EU region for error reports (ADR 0020). Styles may be inline
  * because React Native Web writes them at run time. Images may also come
- * from photo storage (ADR 0022).
+ * from photo storage (ADR 0022). On a site with Google Analytics, its tag
+ * may load and send page views; the app loads it only after the visitor
+ * accepts (spec 23, R23.1).
  */
-export const webContentSecurityPolicy = (photoOrigin: string | null = null) =>
-  [
+export const webContentSecurityPolicy = (photoOrigin: string | null = null, analytics = false) => {
+  const google = (sources: string) => (analytics ? `${sources} ${googleAnalyticsHosts}` : sources);
+  return [
     "default-src 'self'",
-    "script-src 'self'",
+    analytics ? `script-src 'self' ${googleTag}` : "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
-    photoOrigin === null
-      ? "img-src 'self' data: blob:"
-      : `img-src 'self' data: blob: ${photoOrigin}`,
+    google(
+      photoOrigin === null
+        ? "img-src 'self' data: blob:"
+        : `img-src 'self' data: blob: ${photoOrigin}`,
+    ),
     "font-src 'self' data:",
-    "connect-src 'self' https://*.ingest.de.sentry.io",
+    // Google's tag may also send to a google.com address (Google's current list).
+    analytics
+      ? `${google("connect-src 'self' https://*.ingest.de.sentry.io")} https://*.google.com`
+      : "connect-src 'self' https://*.ingest.de.sentry.io",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
   ].join("; ");
+};
 
 /**
  * The opener policy of an answer, where it is not the secure headers'
@@ -96,8 +119,9 @@ export function createWebApp(
   root: string,
   photoOrigin: string | null = null,
   searchEngines: SearchEngines = notIndexed,
+  analytics: Analytics | null = null,
 ): WebApp {
-  const contentSecurityPolicy = webContentSecurityPolicy(photoOrigin);
+  const contentSecurityPolicy = webContentSecurityPolicy(photoOrigin, analytics !== null);
   const files = serveStatic<AppEnv>({ root });
 
   return async (c) => {
@@ -127,10 +151,11 @@ export function createWebApp(
         path: c.req.path,
         lang: c.req.query("lang") ?? null,
         acceptLanguage: c.req.header("accept-language") ?? null,
+        facebookLocale: c.req.header("x-facebook-locale") ?? c.req.query("fb_locale") ?? null,
       },
       searchEngines,
     );
-    if (head.fromBrowser) c.header("Vary", "Accept-Language");
+    if (head.fromBrowser) c.header("Vary", "Accept-Language, X-Facebook-Locale");
     return c.html(fillPage(html, head));
   };
 }

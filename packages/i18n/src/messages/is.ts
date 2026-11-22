@@ -18,7 +18,22 @@ export const is = {
   "seo.placeDescription":
     "Næstu mótsstaðir PuffinRide við {place}, til að finna far eða bjóða far.",
   "seo.legalDescription": "Notendaskilmálar, samfélagsreglur og persónuverndarstefna PuffinRide.",
-  "seo.shareImage": "Lundi PuffinRide á kortanælu",
+  "seo.shareImage": "Tveir lundar PuffinRide á ferð í litlum bíl",
+  "seo.cookiesDescription":
+    "Hvað vefur PuffinRide geymir í tækinu þínu, og val þitt um Google Analytics.",
+  "consent.title": "Vafrakökur",
+  "consent.text":
+    "Megum við telja heimsókn þína með Google Analytics? Það notar vafrakökur og segir Google hvaða síður þú opnar, aldrei nafnið þitt.",
+  "consent.accept": "Samþykkja",
+  "consent.decline": "Hafna",
+  "consent.more": "Nánar",
+  "cookies.title": "Vafrakökur",
+  "cookies.needed":
+    "Vefurinn geymir í tækinu þínu það sem hann þarf til að virka, svo sem innskráninguna, tungumálið og síðustu leitir þínar. Til þess þarf ekki samþykki og það er ekki sent öðrum.",
+  "cookies.analytics": "Telja heimsóknir mínar með Google Analytics",
+  "cookies.analyticsHelp":
+    "Google Analytics setur vafrakökur sem gilda í 13 mánuði og segir Google, í Bandaríkjunum, hvaða síður þú opnar, hvaða vafra þú notar og nokkurn veginn hvar þú ert. Við sjáum aðeins samtölur. Þú getur slökkt á því hvenær sem er.",
+  "cookies.none": "Hér eru engar heimsóknir taldar og engar vafrakökur notaðar fyrir vefmælingar.",
   "common.back": "Til baka",
   "common.loading": "Hleð",
   "refresh.updating": "Uppfæri",
