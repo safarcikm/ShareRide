@@ -80,6 +80,8 @@ describe("All rides leaving soon (spec 4, 3.8)", () => {
   it("offers Offer a ride when there are none, keeping the offer through sign-in", async () => {
     await renderApp("/rides");
     expect(await screen.findByText("No rides are coming up yet.")).toBeVisible();
+    // A puffin by a map pin, which screen readers skip (spec 15, 5.3).
+    expect(screen.getByTestId("puffin-by-pin", { includeHiddenElements: true })).toBeTruthy();
     await fireEvent.press(screen.getByRole("button", { name: "Offer a ride" }));
     expect(await screen.findByText("Sign in or create an account")).toBeVisible();
     expect(writeAppData).toHaveBeenLastCalledWith(

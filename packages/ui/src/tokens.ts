@@ -80,9 +80,10 @@ export const people = {
  * The puffin (spec 15, sections 4.2 and 4.9), in the logo: its white face,
  * the beak's orange, the darker orange of its grooves and the eye's ring,
  * the grey plate at the beak's base, and the grey marks above and below the
- * eye. Its black is `people.face`, the yellow at the beak's base
- * `people.sun`. Like the people colours, only for drawings: never for text,
- * and never the only way to show meaning.
+ * eye. Its black is `people.face`, or `nightBlack` for a puffin drawn
+ * straight on the night screen (section 5.3), so its shape stands off it;
+ * the yellow at the beak's base is `people.sun`. Like the people colours,
+ * only for drawings: never for text, and never the only way to show meaning.
  */
 export const puffin = {
   white: "#F7F5F0",
@@ -90,6 +91,7 @@ export const puffin = {
   beakGroove: "#D9512A",
   beakPlate: "#7C93A0",
   eyeMark: "#8E9CA3",
+  nightBlack: "#2E3D45",
 } as const;
 
 /** The five people colours a driver's shape person and initial can have, in a fixed order. */
@@ -262,6 +264,15 @@ export const sizes = {
   /** The picture of the screen on Send feedback: small, in a phone's shape. */
   screenshotWidth: 144,
   screenshotHeight: 312,
+  /**
+   * The puffin scenes (spec 15, section 5.3): the car on a phone's front page,
+   * at the end of a wide page's title line, and driving off when a seat is
+   * booked; the puffin by a pin on an empty screen, by its height.
+   */
+  sceneCar: 170,
+  sceneCarSmall: 120,
+  sceneCarBooked: 200,
+  scenePuffin: 120,
 } as const;
 
 /** Width of the outline on inputs, tick boxes and chips. */

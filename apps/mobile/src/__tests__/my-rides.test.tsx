@@ -225,6 +225,7 @@ describe("My rides (spec 16, 3.3)", () => {
       ),
     ).toBeVisible();
     expect(screen.queryByRole("header", { name: "Needs you" })).toBeNull();
+    expect(screen.getByTestId("puffin-by-pin", { includeHiddenElements: true })).toBeTruthy();
     await fireEvent.press(screen.getByRole("button", { name: "Find a ride" }));
     expect(screen).toHavePathname("/");
     await fireEvent.press(await screen.findByRole("tab", { name: "My rides" }));

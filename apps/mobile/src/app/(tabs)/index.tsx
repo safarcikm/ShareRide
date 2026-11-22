@@ -11,6 +11,7 @@ import { Grid } from "@/components/grid";
 import { Notice } from "@/components/notice";
 import { LanguageSwitch } from "@/components/language-switch";
 import { Logo } from "@/components/logo";
+import { PuffinsInCar } from "@/components/puffin-scenes";
 import { Screen, useWideScreen } from "@/components/screen";
 import { Body, Heading, Title } from "@/components/text";
 import { offerRide } from "@/drive/offer-ride";
@@ -38,8 +39,9 @@ const shownRidesWide = 6;
 /**
  * Find, the home of the app for everyone, signed in or not (spec 16, 3.2):
  * the logo and the language (in the top bar on wide screens), Your next
- * ride when signed in, a route search with the seats, the rides leaving soon (spec 4, 3.8) and "Offer a
- * ride". Signing in is in the menu.
+ * ride when signed in, two puffins in a little car over the title (spec 15,
+ * 5.3), a route search with the seats, the rides leaving soon (spec 4, 3.8)
+ * and "Offer a ride". Signing in is in the menu.
  *
  * A wide screen (spec 18, 3.5) has the search in one row across the page,
  * then the rides in a grid, closed by the offer as one line, with Your
@@ -84,7 +86,8 @@ function FrontPage() {
     />
   );
   const title = (
-    <View style={styles.intro}>
+    <View testID="title-line" style={styles.intro}>
+      <PuffinsInCar width={wide ? sizes.sceneCarSmall : sizes.sceneCar} />
       <Title>{t("home.title")}</Title>
     </View>
   );

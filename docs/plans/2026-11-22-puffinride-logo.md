@@ -1,7 +1,8 @@
 # PuffinRide logo and puffins implementation plan
 
 **Owner:** Martin · **Date:** 2026-11-22 · **Status:** Logo C chosen by
-Martin (2026-11-22, decision card); PR 1 merged (#203); PR 2 in review
+Martin (2026-11-22, decision card); PR 1 merged (#203), PR 2 merged (#205);
+PR 3 in review
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > superpowers:executing-plans to implement this plan task by task. Steps use
@@ -9,7 +10,8 @@ Martin (2026-11-22, decision card); PR 1 merged (#203); PR 2 in review
 
 **Goal:** the app wears PuffinRide's new look: logo C, the puffin pin, as
 its icon and logo (PR 1), then our puffins in place of the shape people in
-the seat view (PR 2).
+the seat view (PR 2), then the board's other puffins on the front page, on
+empty screens and when a seat is booked (PR 3).
 
 **Design:** [spec 15](../specs/2026-11-13-visual-design-system.md),
 sections 4.2 and 4.9 and decision 12. Martin chose from three directions
@@ -59,7 +61,31 @@ it lives with the design boards in the project files
   colour or grey, with an optional hat or scarf. `seat-view.tsx` uses it in
   place of `Person` (pebble, mountain, dome) and the driver's `KnittedHat`;
   no other screen drew a shape person.
-- [ ] `pnpm check`, the web build and the look screenshots, review, merge.
+- [x] `pnpm check`, the web build and the look screenshots, review, merge
+  (#205).
 
-Puffins on the front page, on empty screens and when a seat is booked (the
-board's other ideas) come after, when Martin has seen PR 2.
+## PR 3: puffins on the front page, empty screens and the booked screen
+
+Martin asked for "all the cute graphics" of board 2 (2026-11-22); spec 15,
+section 5.3 ("Puffin scenes") and decision 13.
+
+- [x] Spec 15: principle 2, the night black in section 4.2, the scenes in
+  section 5.3 and decision 13.
+- [x] **Test first:** `packages/ui/src/tokens.test.ts`, the puffin's face
+  stands out from the night black by 3:1; then `puffin.nightBlack`.
+- [x] **Test first:** `apps/mobile/src/components/puffin-scenes.test.tsx`:
+  the car carries the driver's puffin in a crowberry hat and yours in a moss
+  scarf; `moving` adds the lines behind it; the puffin by the pin wears a
+  crowberry scarf; in dark mode both lift the puffin's black; both are
+  hidden from screen readers. `Puffin` takes the black to draw in, and
+  `sizes` gets the scenes' sizes.
+- [x] `apps/mobile/src/components/puffin-scenes.tsx`: `PuffinsInCar` and
+  `PuffinByPin`, every colour from the tokens.
+- [x] **Test first:** the screens: the front page shows the car (phone and
+  wide), the booked screen the moving car once confirmed and your seat while
+  requested, and the four empty screens the puffin by the pin.
+- [x] The screens: `app/(tabs)/index.tsx`, `app/bookings/[id]/booked.tsx`,
+  `app/rides/index.tsx`, `app/(tabs)/my-rides.tsx`,
+  `chat/conversation-list.tsx` and `app/drive/trips/index.tsx`.
+- [ ] `pnpm check`, the web build, a look at the screens in light and dark,
+  review, merge.
