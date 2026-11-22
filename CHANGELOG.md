@@ -1462,6 +1462,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   the driver in a knitted hat of their colour, you in a moss scarf, and a
   grey puffin with no colour on a seat someone else took, all facing the
   way the car drives. The booked screen's seat shows your puffin too.
+- More puffins (spec 15, 5.3, decision 13): two puffins in a little open
+  car over "Where are you going?" on the front page and driving off on
+  "You're booked!", and a puffin by a map pin on empty screens (Rides
+  leaving soon, My rides, Chats and My trips). A request sent keeps your
+  seat with you in it. In dark mode the puffins drawn on the screen lift
+  their black (`puffin.nightBlack`); screen readers skip all of them.
 - Photos are kept in Hetzner Object Storage in Nuremberg, not Helsinki,
   which Hetzner did not offer when the staging bucket was made (ADR 0037).
   The privacy policy draft, the privacy register and the runbook say so;

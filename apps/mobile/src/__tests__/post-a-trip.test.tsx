@@ -815,6 +815,7 @@ describe("Posting a trip (spec 3)", () => {
     expect(screen.getByText("Delete this draft? You can't undo this.")).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Delete draft" }));
     expect(await screen.findByText("You have no trips yet.")).toBeVisible();
+    expect(screen.getByTestId("puffin-by-pin", { includeHiddenElements: true })).toBeTruthy();
     expect(api.trips()).toEqual([]);
   });
 });

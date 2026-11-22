@@ -715,6 +715,7 @@ describe("Conversations list (spec 7, 3.1, item 9)", () => {
         "Chats open once a booking is confirmed. Then you can message your driver or passengers here.",
       ),
     ).toBeVisible();
+    expect(screen.getByTestId("puffin-by-pin", { includeHiddenElements: true })).toBeTruthy();
   });
 });
 

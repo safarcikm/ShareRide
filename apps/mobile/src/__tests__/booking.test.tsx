@@ -342,6 +342,9 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
     await fireEvent.press(within(bar).getByRole("button", { name: "Send request" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
     expect(await screen.findByRole("header", { name: "Request sent" })).toBeVisible();
+    // The seat waits with you in it; the car drives off once it's yours (spec 15, 5.3).
+    expect(screen.getByTestId("your-seat", { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.queryByTestId("puffins-in-car", { includeHiddenElements: true })).toBeNull();
     // Request sent took the place of Check and pay, so Back opens the trip.
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
     expect(await screen.findByText("You have a booking on this trip.")).toBeVisible();
@@ -443,6 +446,10 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Pay 2,900 ISK" }));
     expect(await screen.findByRole("header", { name: "You're booked!" })).toBeVisible();
     expect(screen).toHavePathname(`/bookings/${bookingId}/booked`);
+    // The puffins' car drives off with you in it (spec 15, 5.3).
+    const car = screen.getByTestId("puffins-in-car", { includeHiddenElements: true });
+    expect(within(car).getByTestId("moving-lines", { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.queryByTestId("your-seat", { includeHiddenElements: true })).toBeNull();
   });
 
   it("says nothing about an unpaid seat while the payment starts", async () => {

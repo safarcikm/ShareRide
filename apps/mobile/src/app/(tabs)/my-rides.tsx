@@ -9,6 +9,7 @@ import { PageColumn } from "@/components/columns";
 import { Grid } from "@/components/grid";
 import { Notice } from "@/components/notice";
 import { Screen, useWideScreen } from "@/components/screen";
+import { PuffinByPin } from "@/components/puffin-scenes";
 import { Body, Heading, Title } from "@/components/text";
 import { offerRide } from "@/drive/offer-ride";
 import { useLanguage } from "@/i18n/language";
@@ -17,7 +18,7 @@ import { RideItem } from "@/my-rides/ride-row";
 import { needsYou, rideKey, type Ride, type When } from "@/my-rides/rides";
 import { useRides } from "@/my-rides/use-rides";
 import { SignInFirst } from "@/navigation/sign-in-first";
-import { spacing } from "@/theme/tokens";
+import { sizes, spacing } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
@@ -103,6 +104,7 @@ function ComingUp({ rides, wide }: { readonly rides: readonly Ride[]; readonly w
   if (rides.length === 0) {
     const nothing = (
       <View style={styles.nothing}>
+        <PuffinByPin height={sizes.scenePuffin} align={wide ? "start" : "center"} />
         <Body align={wide ? "start" : "center"}>{t("myRides.nothing")}</Body>
         <Button
           label={t("welcome.findRide")}

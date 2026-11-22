@@ -71,9 +71,10 @@ What makes it ours:
 
 1. **Cosy, clear, a full car.** Warm and friendly, never cute at the expense
    of clarity.
-2. **Playful around the edges, plain where trust matters.** Shape people
-   appear in seat views, empty screens, confirmations and onboarding. Prices,
-   times, payment, safety and real profile photos are always plain.
+2. **Playful around the edges, plain where trust matters.** Puffins
+   appear in seat views, on the front page, on empty screens and when a
+   seat is booked (section 5.3). Prices, times, payment, safety and real
+   profile photos are always plain.
 3. **Chunky and touchable.** Rounded parts with a solid bottom edge, so it is
    obvious what can be pressed. Nothing smaller than 44 by 44 points to tap.
 4. **Never colour alone.** Every state also has a shape, icon, pattern or
@@ -153,8 +154,12 @@ The puffin in the logo (section 4.9) has its own drawing colours, as tokens
 grooves and the eye's ring `#D9512A`, the grey plate at the beak's base
 `#7C93A0` and the grey marks above and below the eye `#8E9CA3`. Its black
 is basalt `#1F2A30` (in the dark icon, the pin is the car's dark body
-`#34454E`) and the yellow at the beak's base is sun. The face stands out
-from both blacks by more than 3:1 (the tokens' tests check it).
+`#34454E`) and the yellow at the beak's base is sun. A puffin drawn
+straight on the night screen (a scene of section 5.3) lifts its black to
+`#2E3D45`, so its shape stands off night `#121A1E`; puffins on a seat keep
+basalt, as the seats around them are lighter than the screen. The face
+stands out from all three blacks by more than 3:1 (the tokens' tests check
+it).
 
 Our map of Iceland ([ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)):
 sea `#D7E9F0`, land `#F4F1EA` with its coast `#B9CBD3`, glaciers `#FFFFFF`,
@@ -415,6 +420,20 @@ drives. Every puffin looks the same; only a hat or a scarf in a people
 colour tells one rider from another, and like the shapes they say nothing
 about who sits there. The part is `Puffin` in `apps/mobile/src/components`.
 
+**Puffin scenes** (2026-11-22, board 2 of decision 12) are drawings around
+the screens, in `apps/mobile/src/components/puffin-scenes.tsx`. Like the
+seat view they are hidden from screen readers, as the words beside them say
+what matters, and they never stand where a price, a time, payment, safety
+or a photo is.
+
+| Scene | What it shows | Where |
+| ----- | ------------- | ----- |
+| `PuffinsInCar` | A little round car from the side, open on top, front to the right: the driver's puffin in a crowberry knitted hat in front, yours in a moss scarf behind, both facing the way it drives. The car takes the seat view's car colours, lighter than the screen in both modes: in light mode its body `cabin` with a `body` line along it, in dark mode its body `body` with a `seat` line; the windscreen `glass`, `wheel` wheels with `taken` hubs, a sun front light and a crowberry back light | The front page: on a phone in the middle over "Where are you going?", 170 wide; on a wide page 88 wide on the title's line, just before it, so the line is no higher than the title alone and the map beside the rides stays whole in a window 720 high. The booked screen once a seat is confirmed, 200 wide, `moving`: three `control` lines behind it |
+| `PuffinByPin` | A whole puffin standing, three-quarters to the right, in a crowberry scarf, beside a map pin in `primary` with a `surface` dot on a `steering` pole | Empty screens, 120 high, over their sentence: Rides leaving soon with none, My rides with nothing coming up, Chats with none, and My trips with none. Search results stay as they are: what they offer instead (other days, places nearby, asking for a ride) matters more |
+
+A request sent but not yet answered keeps the seat on its own with you in
+it (`YourSeat`): the car drives off only once the seat is yours.
+
 **The seat view** shows the car from above, front to the right, on your part
 of the trip:
 
@@ -595,5 +614,6 @@ Decided by Martin after the spec was approved:
 | - | -------- | -------- |
 | 11 | Which logo? | A, "A shared ride": the car from above with the driver and you (chosen 2026-11-13; the refined drawing approved 2026-11-14), not B (a friend in a hat) or C (your stretch of road). Replaced by decision 12 |
 | 12 | Which logo for PuffinRide, with cartoon puffins? | C, "Puffin pin": the puffin as a map pin, its beak pointing the way (chosen 2026-11-22), not A (two puffins in a little open car) or B (Lundi, a puffin's head in a knitted hat). Moss stays the main colour |
+| 13 | Where else do puffins go? | Board 2 as drawn (Martin, 2026-11-22: "all the cute graphics"): two puffins in a little open car on the front page and when a seat is booked, and a puffin by a map pin on empty screens (section 5.3). Not on prices, times, payment, safety or photos |
 
 ![The three puffin logo directions Martin chose from](images/visual-design-system/logo-puffin-directions.png)

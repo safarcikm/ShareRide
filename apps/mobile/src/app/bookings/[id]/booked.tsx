@@ -10,6 +10,7 @@ import { WhereToStand } from "@/booking/where-to-stand";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
+import { PuffinsInCar } from "@/components/puffin-scenes";
 import { Screen } from "@/components/screen";
 import { TakesFocus } from "@/components/takes-focus";
 import { Body, Heading, Title } from "@/components/text";
@@ -24,7 +25,8 @@ import { firstNameOf } from "@/people/texts";
 
 /**
  * The finish after booking (spec 16, 3.7, items 4 and 5): "You're booked!"
- * once paid or booked free, or "Request sent", with what happens next and,
+ * once paid or booked free, under the puffins' car driving off, or "Request
+ * sent", under your seat with you in it (spec 15, 5.3), with what happens next and,
  * once confirmed, where to stand. Someone we could not reach yet is asked
  * to turn on notifications or add an email (spec 7, 3.6.2). It takes the
  * place of Check and pay, so Back opens the trip; opened on its own, Back
@@ -124,7 +126,7 @@ function Finished({ booking }: { readonly booking: Booking }) {
       ];
   return (
     <>
-      <YourSeat />
+      {requested ? <YourSeat /> : <PuffinsInCar width={sizes.sceneCarBooked} moving />}
       {/* The outcome of the press that opened this screen, so focus starts here. */}
       <TakesFocus>
         <Title>{requested ? t("booking.requestSentTitle") : t("booking.booked")}</Title>

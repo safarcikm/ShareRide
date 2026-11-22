@@ -10,12 +10,13 @@ import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
 import { Tag } from "@/components/tag";
+import { PuffinByPin } from "@/components/puffin-scenes";
 import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { firstNameOf } from "@/people/texts";
 import { useHover } from "@/theme/hover";
-import { controlOutline, edges, spacing, typography } from "@/theme/tokens";
+import { controlOutline, edges, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { otherPerson, previewText } from "./texts";
 import { useUnread } from "./unread";
@@ -91,6 +92,7 @@ export function ConversationList({
   if (rows.length === 0) {
     return (
       <Aside pane={pane}>
+        <PuffinByPin height={sizes.scenePuffin} align={pane ? "start" : "center"} />
         <Body align={pane ? "start" : "center"}>{t("chat.empty")}</Body>
       </Aside>
     );
