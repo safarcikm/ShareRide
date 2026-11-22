@@ -174,7 +174,16 @@ import {
   type PhotoStorage,
 } from "./platform/photo-storage.ts";
 import { createAdminApp } from "./admin-app.ts";
-import { createWebApp, openerPolicyFor } from "./web-app.ts";
+import { createWebApp, openerPolicyFor, type Analytics } from "./web-app.ts";
+import {
+  mayIndex,
+  noIndex,
+  notIndexed,
+  publicPages,
+  robotsTxt,
+  sitemapXml,
+  type SearchEngines,
+} from "./search-engines.ts";
 
 export type { AppEnv };
 
@@ -254,6 +263,10 @@ export interface AppDependencies {
   readonly adminAppDir?: string;
   /** Reports unexpected errors; left out where there is no error tracking. */
   readonly reportError?: ErrorReporter;
+  /** What search engines may index (spec 23); nothing when left out. */
+  readonly searchEngines?: SearchEngines;
+  /** Google Analytics on the website (spec 23); none when left out. */
+  readonly analytics?: Analytics | null;
 }
 
 export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
@@ -306,6 +319,26 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     if (policy !== null) c.res.headers.set("Cross-Origin-Opener-Policy", policy);
   });
   app.use(secureHeaders());
+  // Only production's public pages may be indexed; every other answer, and
+  // every answer off production, says so (spec 23, R23.6; R4.6).
+  const searchEngines = dependencies.searchEngines ?? notIndexed;
+  app.use(async (c, next) => {
+    await next();
+    if (!mayIndex(searchEngines, c.req.path)) c.res.headers.set("X-Robots-Tag", noIndex);
+  });
+  app.get("/robots.txt", (c) => {
+    c.header("Cache-Control", "public, max-age=3600");
+    return c.text(robotsTxt(searchEngines));
+  });
+  const sitemapOrigin = searchEngines.indexable ? searchEngines.siteOrigin : null;
+  const sitemapDb = dependencies.features?.db;
+  if (sitemapOrigin !== null && sitemapDb !== undefined) {
+    app.get("/sitemap.xml", async (c) => {
+      c.header("Content-Type", "application/xml; charset=utf-8");
+      c.header("Cache-Control", "public, max-age=3600");
+      return c.body(sitemapXml(sitemapOrigin, await publicPages(sitemapDb)));
+    });
+  }
   app.use(
     createMiddleware<AppEnv>(async (c, next) => {
       // Bodies are JSON only. A browser cannot send JSON to another site
@@ -591,7 +624,12 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       settings: reliabilitySettings,
       requireOperator,
     });
-    registerConfigRoutes(app, operatorSettings, providerSignIn.names);
+    registerConfigRoutes(
+      app,
+      operatorSettings,
+      providerSignIn.names,
+      dependencies.analytics ?? null,
+    );
     registerSettingsAdminRoutes(app, { ...features, settings: operatorSettings, requireOperator });
     registerInviteRoutes(app, {
       invites,
@@ -706,7 +744,12 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
   const webApp =
     dependencies.webAppDir === undefined
       ? undefined
-      : createWebApp(dependencies.webAppDir, photoOrigin);
+      : createWebApp(
+          dependencies.webAppDir,
+          photoOrigin,
+          searchEngines,
+          dependencies.analytics ?? null,
+        );
   const adminApp =
     dependencies.adminAppDir === undefined
       ? undefined

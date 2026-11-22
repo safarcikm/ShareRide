@@ -1,9 +1,12 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { finishProviderSignInRoute } from "@shareride/contracts";
 import { providerReturnPath } from "@shareride/domain";
 import type { Context } from "hono";
 import { isConsolePath } from "./admin-app.ts";
 import type { AppEnv } from "./context.ts";
+import { fillPage, notIndexed, pageHead, type SearchEngines } from "./search-engines.ts";
 
 const isApiPath = (path: string) =>
   path === "/v1" ||
@@ -25,27 +28,50 @@ const isFilePath = (path: string) =>
   path.startsWith("/assets/") ||
   (path.split("/").at(-1) ?? "").includes(".");
 
+/** Google Analytics on the website, asked about before it loads (spec 23, ADR 0045). */
+export interface Analytics {
+  /** The web stream's measurement ID, such as G-ABC123XYZ9. */
+  readonly googleMeasurementId: string;
+}
+
+/** Where Google's tag comes from, and where it sends page views (Google's list for GA4). */
+const googleTag = "https://*.googletagmanager.com";
+const googleAnalyticsHosts = [
+  "https://*.google-analytics.com",
+  "https://*.analytics.google.com",
+  googleTag,
+].join(" ");
+
 /**
  * The web app loads only its own files and calls only its own origin, plus
  * Sentry's EU region for error reports (ADR 0020). Styles may be inline
  * because React Native Web writes them at run time. Images may also come
- * from photo storage (ADR 0022).
+ * from photo storage (ADR 0022). On a site with Google Analytics, its tag
+ * may load and send page views; the app loads it only after the visitor
+ * accepts (spec 23, R23.1).
  */
-export const webContentSecurityPolicy = (photoOrigin: string | null = null) =>
-  [
+export const webContentSecurityPolicy = (photoOrigin: string | null = null, analytics = false) => {
+  const google = (sources: string) => (analytics ? `${sources} ${googleAnalyticsHosts}` : sources);
+  return [
     "default-src 'self'",
-    "script-src 'self'",
+    analytics ? `script-src 'self' ${googleTag}` : "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
-    photoOrigin === null
-      ? "img-src 'self' data: blob:"
-      : `img-src 'self' data: blob: ${photoOrigin}`,
+    google(
+      photoOrigin === null
+        ? "img-src 'self' data: blob:"
+        : `img-src 'self' data: blob: ${photoOrigin}`,
+    ),
     "font-src 'self' data:",
-    "connect-src 'self' https://*.ingest.de.sentry.io",
+    // Google's tag may also send to a google.com address (Google's current list).
+    analytics
+      ? `${google("connect-src 'self' https://*.ingest.de.sentry.io")} https://*.google.com`
+      : "connect-src 'self' https://*.ingest.de.sentry.io",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
   ].join("; ");
+};
 
 /**
  * The opener policy of an answer, where it is not the secure headers'
@@ -64,29 +90,39 @@ export function openerPolicyFor(path: string): "unsafe-none" | "same-origin-allo
   return path === `/${providerReturnPath}` ? "unsafe-none" : "same-origin-allow-popups";
 }
 
-/**
- * Trip pages show a person's first name and travel plans, so search engines
- * must not index them (spec 4, R4.6). The page adds a robots meta tag too.
- */
-const isTripPage = (path: string) => path.startsWith("/trips/");
-
 /** Lets serveStatic report a miss instead of running another handler. */
 const reportMiss = () => Promise.resolve();
 
 export type WebApp = (c: Context<AppEnv, string>) => Promise<Response | undefined>;
+
+/** The exported page, or undefined when the export has none. */
+async function readPage(root: string): Promise<string | undefined> {
+  try {
+    return await readFile(join(root, "index.html"), "utf8");
+  } catch {
+    return undefined;
+  }
+}
 
 /**
  * Serves the exported web app (`expo export --platform web`) on the API's own
  * origin, so the refresh cookie stays first-party (ADR 0018). It answers only
  * reads that no API route took: files come from the export, and any other
  * path outside /v1 that names a screen gets the app's page, whose router
- * shows it. Returns undefined for everything else, which gets the API's 404.
+ * shows it, with its head filled for the language asked for (spec 23, 3.6).
+ * Returns undefined for everything else, which gets the API's 404.
  * Running after the routes, not as a route, keeps API route names in logs.
+ * Which answers search engines may index is the app's middleware's to say
+ * (spec 23, R23.6; trip pages, R4.6, add a robots tag of their own too).
  */
-export function createWebApp(root: string, photoOrigin: string | null = null): WebApp {
-  const contentSecurityPolicy = webContentSecurityPolicy(photoOrigin);
+export function createWebApp(
+  root: string,
+  photoOrigin: string | null = null,
+  searchEngines: SearchEngines = notIndexed,
+  analytics: Analytics | null = null,
+): WebApp {
+  const contentSecurityPolicy = webContentSecurityPolicy(photoOrigin, analytics !== null);
   const files = serveStatic<AppEnv>({ root });
-  const page = serveStatic<AppEnv>({ root, path: "index.html" });
 
   return async (c) => {
     const read = c.req.method === "GET" || c.req.method === "HEAD";
@@ -99,13 +135,27 @@ export function createWebApp(root: string, photoOrigin: string | null = null): W
       "Cache-Control",
       isHashed(c.req.path) ? "public, max-age=31536000, immutable" : "no-cache",
     );
-    const file = await files(c, reportMiss);
-    if (file instanceof Response) return file;
-    // Neither the 404 nor the page may be kept as if it were a bundle.
-    c.header("Cache-Control", "no-cache");
-    if (isFilePath(c.req.path)) return undefined;
-    if (isTripPage(c.req.path)) c.header("X-Robots-Tag", "noindex, nofollow");
-    const fallback = await page(c, reportMiss);
-    return fallback instanceof Response ? fallback : undefined;
+    if (isFilePath(c.req.path)) {
+      const file = await files(c, reportMiss);
+      if (file instanceof Response) return file;
+      // A missing file's 404 may not be kept as if it were a bundle.
+      c.header("Cache-Control", "no-cache");
+      return undefined;
+    }
+    // A screen, the front page too: the page with its head filled, never the
+    // export's index.html as it is.
+    const html = await readPage(root);
+    if (html === undefined) return undefined;
+    const head = pageHead(
+      {
+        path: c.req.path,
+        lang: c.req.query("lang") ?? null,
+        acceptLanguage: c.req.header("accept-language") ?? null,
+        facebookLocale: c.req.header("x-facebook-locale") ?? c.req.query("fb_locale") ?? null,
+      },
+      searchEngines,
+    );
+    if (head.fromBrowser) c.header("Vary", "Accept-Language, X-Facebook-Locale");
+    return c.html(fillPage(html, head));
   };
 }

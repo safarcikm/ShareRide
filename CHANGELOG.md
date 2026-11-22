@@ -1412,6 +1412,27 @@ releases follow [Semantic Versioning](https://semver.org/).
   superseding ADR 0041's refusal there): the API starts with
   `ADMIN_PASSWORD` set on production, with the same limits and audit as on
   staging.
+- Search engines (spec 23): production's public pages (Find, the meeting
+  points, the places, the legal texts) may be indexed, each in Icelandic
+  and English at `?lang=is` and `?lang=en`, which open the site in that
+  language. The API fills the page's language, title, description,
+  canonical address, alternates and link preview per request, serves
+  `/robots.txt` and `/sitemap.xml`, and answers every other address, and
+  every address off production, with `X-Robots-Tag: noindex`. The public
+  screens set their own title and description; Find's rides leaving soon
+  are kept out of snippets; `public/share.png` is the link preview.
+- Google Analytics on the website, only after the visitor accepts (spec 23,
+  ADR 0045). With `GOOGLE_ANALYTICS_ID` set, `/v1/config` names it, the web
+  app's Content Security Policy lets Google's tag load, and a question
+  about cookies shows at the bottom of every screen, with Accept and
+  Decline alike. Nothing from Google loads before Accept. Page views carry
+  the screen's pattern, such as `/trips/[id]`, never its address, with
+  only the campaign tags (`utm_`) of our own ads' and flyers' links; Google
+  signals and ad personalisation are off, and cookies last 13 months. The
+  choice is kept in the browser for 12 months. The new Cookies page, under
+  Terms, rules and privacy, turns it off, which removes Google's cookies.
+  Privacy Policy version 3, in both languages, describes it; it is not
+  material, so nobody accepts it again. The phone apps count nothing.
 
 ### Fixed
 
@@ -1456,6 +1477,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   decision 14), seen through its side windows, with a case on the roof: on
   the front page and when a seat is booked. The pale open car almost
   vanished on the frost background. The launch ads use the same drawing.
+- Every email looks like PuffinRide (spec 24): the puffin pin and the name
+  at the top, sent inside the email so nothing loads when it is opened, a
+  white card with the title, the words and one moss button, and the footer
+  with the web app's address. Dark mode in Apple Mail
+  and Outlook, Outlook on Windows handled, no downloaded fonts. The
+  plain-text part starts with the title and sets the footer apart. The
+  words did not change. `pnpm --filter @shareride/api email-previews`
+  writes the key emails to look at; the runbook's "Show the puffin beside
+  our emails" gives `hello@` the puffin as its picture in Gmail.
 - Sign out is on Profile too (spec 16, 3.4 item 4), under the rows; Sign
   out on all devices stays in Settings.
 - The living docs and the legal drafts say PuffinRide (ADR 0039): the

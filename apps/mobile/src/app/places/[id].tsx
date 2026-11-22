@@ -8,6 +8,7 @@ import { useSession } from "@/auth/session";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
+import { PageHead } from "@/components/page-head";
 import { Screen } from "@/components/screen";
 import { Body, Heading, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
@@ -56,6 +57,10 @@ function Nearest({ nearest }: { readonly nearest: NearestMeetingPoints }) {
   const { place } = nearest;
   return (
     <>
+      <PageHead
+        title={t("seo.title", { page: t("seo.placeTitle", { place: place.name[locale] }) })}
+        description={t("seo.placeDescription", { place: place.name[locale] })}
+      />
       <Title>{place.name[locale]}</Title>
       <Body>
         {t("places.summary", {

@@ -2,6 +2,8 @@ import { Stack, type ErrorBoundaryProps } from "expo-router";
 import { useEffect, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { AnalyticsProvider } from "@/analytics/analytics";
+import { ConsentBar } from "@/analytics/consent-bar";
 import { SessionProvider, useSession, useSessionState } from "@/auth/session";
 import { ConfigProvider } from "@/beta/config";
 import { ShakeForFeedback } from "@/beta/shake";
@@ -30,11 +32,13 @@ export default function RootLayout() {
       <LanguageProvider>
         <SessionProvider>
           <ConfigProvider>
-            <UnreadProvider>
-              <Navigation />
-              <PushNotifications />
-              <ShakeForFeedback />
-            </UnreadProvider>
+            <AnalyticsProvider>
+              <UnreadProvider>
+                <Navigation />
+                <PushNotifications />
+                <ShakeForFeedback />
+              </UnreadProvider>
+            </AnalyticsProvider>
           </ConfigProvider>
         </SessionProvider>
       </LanguageProvider>
@@ -54,7 +58,9 @@ export default function RootLayout() {
  * where the session changes, close themselves back to the menu instead: a
  * guard would open a second menu on top of the first. Fonts load at the same
  * time; if they fail, the app opens with the system fonts. Wide screens show
- * the menu in a bar above every screen (spec 16, 3.1).
+ * the menu in a bar above every screen (spec 16, 3.1). On a website with
+ * Google Analytics, the question about cookies shows over every screen
+ * until it is answered (spec 23, 3.1).
  */
 function Navigation() {
   const state = useSessionState();
@@ -72,6 +78,7 @@ function Navigation() {
       <Stack.Screen name="coming-soon" />
       <Stack.Screen name="legal/index" />
       <Stack.Screen name="legal/[type]" />
+      <Stack.Screen name="cookies" />
       <Stack.Screen name="meeting-points/index" />
       <Stack.Screen name="meeting-points/[id]/index" />
       {/* Signed out, it asks to sign in first. */}
@@ -122,7 +129,8 @@ function Navigation() {
  * On wide screens, the top bar above every screen, which then leave its edge
  * to it. The screens stay in the same place in the tree either way, so a
  * window turning wide or narrow keeps what they show. What signing in did
- * with a Google or Apple account shows over the screens, under the bar.
+ * with a Google or Apple account shows over the screens, under the bar; the
+ * question about cookies at the bottom.
  */
 function WithTopBar({ children }: { readonly children: ReactNode }) {
   const wide = useWideScreen();
@@ -134,6 +142,7 @@ function WithTopBar({ children }: { readonly children: ReactNode }) {
         <View style={styles.frame}>
           {children}
           <ProviderLinkNotice belowTopBar={wide} />
+          <ConsentBar wide={wide} />
         </View>
       </ScreenEdges>
     </View>

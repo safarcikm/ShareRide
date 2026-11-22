@@ -256,8 +256,9 @@ fit two SMS parts.
 6. Push, email and SMS templates for every row of 3.3 and 3.4, in Icelandic and
    English
 
-Emails are plain and readable without images, with the company's details in
-the footer as required for receipts (spec 13).
+Emails wear the PuffinRide layout of
+[spec 24](2026-11-22-branded-emails.md) and are readable without images,
+with the company's details in the footer as required for receipts (spec 13).
 
 ## 6. Data and API
 

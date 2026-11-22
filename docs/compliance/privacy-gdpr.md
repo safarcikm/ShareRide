@@ -1,6 +1,6 @@
 # Privacy and GDPR
 
-**Owner:** Martin · **Last reviewed:** 2026-11-15
+**Owner:** Martin · **Last reviewed:** 2026-11-22
 
 > Working plan, not legal advice. The privacy policy and data protection
 > impact assessment are reviewed by a lawyer before the beta.
@@ -18,7 +18,10 @@
   **processors** (or separate controllers, for some identity and payment
   providers) and each needs a data processing agreement.
 - All personal data stays in the EEA
-  ([ADR 0007](../decisions/0007-eea-hosting-and-data-residency.md)).
+  ([ADR 0007](../decisions/0007-eea-hosting-and-data-residency.md)), except
+  what providers process elsewhere under a transfer basis, listed below,
+  such as Google Analytics for visitors who accept
+  ([ADR 0045](../decisions/0045-google-analytics-on-the-website-after-consent.md)).
 
 ## Principles we apply
 
@@ -82,7 +85,8 @@
 | Notification log | Recipient, kind of notification, the booking, trip, message, operator's action (a person's notice, or the answer to their appeal) or report (an operator's alert, or the outcome told to the reporter) it is about, channel, delivery status and attempts, the provider's reference, time; no text. The events that lead to it hold IDs only | Check that people were told | Contract and legitimate interest | Operator | 90 days; the events 7 days once processed. Both by the hourly clean-up |
 | Notification settings | Whether trip reminders and beta news (the operator's announcements, spec 10, 3.5) are on; a row only once the person changes one | Respect what the person turned off (spec 7, R7.8) | Contract | The person, in Settings | While the account exists |
 | Approximate location (on request) | Device location to find nearby meeting points | Convenience | Consent (device permission) | Not stored | Not stored |
-| Analytics | None in the beta ([spec 12](../specs/2026-11-13-beta-access-and-feedback.md#34-usage-analytics-j3)); if added later, usage events without names | Improve the product | Consent | Operator | 14 months |
+| Analytics (website only, after consent) | Each screen opened, named by its pattern such as `/trips/[id]`, never its address, an ID or a query, except the campaign tags of our own ads' and flyers' links (`utm_` tags with plain values) on a visit's first screen; the referring site's origin only; what Google Analytics collects itself (browser, system, screen size, language, an approximate location from the network address, which Google says it does not store, **verify**); a random client ID in Google's cookies `_ga` and `_ga_<ID>`. No user ID, account, names, phone numbers, emails, typing or form events; Google signals, ad personalisation, data sharing and enhanced measurement off ([spec 23, 3.3](../specs/2026-11-22-google-analytics-and-search.md)) | See how many people visit and which screens they use | Consent, asked before anything loads, as easy to refuse and to withdraw (R23.1, R23.2, R23.4); for the cookies too (ePrivacy rules in the Electronic Communications Act, **verify**) | Operator, as totals in Google Analytics; Google (provider row) | 14 months in Google Analytics (the property's retention); the cookies 13 months, not extended by a visit; removed from the browser when the visitor turns it off |
+| Choice about Google Analytics | "Accepted" or "declined" and when, kept in the browser under `analytics-consent`; nothing else | Ask once, and respect the answer (spec 23, 3.1, item 6) | Kept only in the browser; PuffinRide never receives it. Needed to keep the answer, so it needs no consent itself (**verify**) | The person using that browser | 12 months, then the question is asked again (R23.5); or until the site's data is cleared |
 | Invite codes | The operator's codes of the closed beta: the code, its name (such as a workplace), its uses and end, and who made it (the operator's ID). An account records the ID of the code it was made with, so a group code's name links its members to that group ([spec 12, 3.2](../specs/2026-11-13-beta-access-and-feedback.md#32-invite-codes-j1)) | Let invited people in, corridor by corridor, and hold the number of testers | Legitimate interest | Operator | The code an account joined with is erased with the account. The codes themselves hold no member's data and are kept while the service runs |
 | Waitlist | Email, role, corridors, language, how they heard | Invite people to the beta | Consent (email confirmation) | Operator | Until they leave, 30 days after sign-up, or 12 months if never invited |
 | Feedback | Message, optional screenshot (from phones; a JPEG without metadata, which the person saw before sending), app version, platform, system version, the screen's name, language, and the operator's one reply | Improve the product | Legitimate interest | Operator; opening a screenshot is written to the audit log | 12 months after the beta ends (when "Invite code required" was last turned off; feedback sent later, 12 months after it was sent), or until the account is deleted. Since the beta is open (ADR 0035) the switch is off by default, which is not a change, so feedback is kept until public launch sets the end of the beta (spec 20, 3.4). In "Download my data", with the screenshots as files |
@@ -110,8 +114,9 @@ processing agreement; Martin signs each one when he opens the account.
 | 46elks (fallback, used only if switched to) | Separate controller under telecom law | Phone number; the message text is not kept (`dontlog`) | Sweden | [ADR 0023](../decisions/0023-sms-with-vonage.md) | Not needed by its terms; ask for one if the lawyer advises |
 | Sentry | Processor | Scrubbed error reports: the error with its stack and nearby source lines, release, route pattern, request ID, request method and path, user agent and language, server runtime and system versions, and the API's outgoing requests (method, address, status); from the app also the app version, the browser or phone model and system, and the API requests just before the error, and from the web app the screen's path and the screens visited before it; never taps, typing, console output, screenshots, replays or usage sessions. Crash reports from the phones' native code are not sent yet (phone builds have no DSN) and are checked against this row before they are (milestone 2 plan, PR 5b). Sentry sees the network address a report comes from and is set not to store it. No request bodies, cookies, query strings or query values; phone numbers, codes, tokens, email addresses and kennitölur are removed from all text | Frankfurt, Germany (United States company) | [ADR 0020](../decisions/0020-error-tracking-with-sentry-eu.md) | To sign |
 | Hetzner | Processor | Meeting point photos and profile photos | Nuremberg, Germany | [ADR 0022](../decisions/0022-photo-storage-on-hetzner.md), [ADR 0037](../decisions/0037-photo-storage-in-nuremberg.md) | To sign |
+| Google (Google Analytics) | Processor, for visitors of the website who accept | The analytics row above: screens by pattern, the referring site's origin, browser, system, screen size, language, approximate location (network address, which Google says it does not store, **verify**) and the random client ID in its cookies; never a user ID, name, phone number or email. Kept 14 months | Google Ireland, with Google LLC in the United States; transfer under the EU-US Data Privacy Framework (**verify** the listing) and Google's standard contractual clauses | [ADR 0045](../decisions/0045-google-analytics-on-the-website-after-consent.md), [spec 23](../specs/2026-11-22-google-analytics-and-search.md) | Google Ads Data Processing Terms, accepted in Google Analytics (Admin, Account details) |
 | Expo (push) | Processor | Push tokens and each push: its title and text (first names, places, times, a chat message's text; to an operator, only that a report came in; never the details in R7.9) and the screen it opens. Expo keeps the contents only until it hands them to Apple (iPhones) or Google (Android phones), its sub-processors for push | United States (United States company), and Apple's and Google's push services; transfer under the EU-US Data Privacy Framework (**verify** the three listings) | [ADR 0026](../decisions/0026-push-through-expo.md) | To sign |
-| Mailjet (email) | Processor | The verified email address and each email: its subject and text (first names, places, times and the screen's link; the copy of a statement of reasons from PuffinRide, with the rule and the reason written for the person, spec 9, R9.5, and the answer to their appeal; never a chat message's text or the details in R7.9), with our delivery ID. Open and click tracking off. Mailjet keeps sent messages and their events in its logs (**verify** for how long, and whether the contents can be removed). Its support sub-processors (Atlassian, Zendesk) are American (**verify** whether they can see contents) | Google Cloud in Germany and Belgium (French company, owned by Sinch, Swedish) | [ADR 0027](../decisions/0027-email-through-mailjet.md) | To sign |
+| Mailjet (email) | Processor | The verified email address and each email: its subject and text (first names, places, times and the screen's link; the copy of a statement of reasons from PuffinRide, with the rule and the reason written for the person, spec 9, R9.5, and the answer to their appeal; never a chat message's text or the details in R7.9), with our delivery ID, and the PuffinRide icon inside it. Open and click tracking off, and nothing in an email is loaded from elsewhere when it is opened ([spec 24](../specs/2026-11-22-branded-emails.md), R24.2). Mailjet keeps sent messages and their events in its logs (**verify** for how long, and whether the contents can be removed). Its support sub-processors (Atlassian, Zendesk) are American (**verify** whether they can see contents) | Google Cloud in Germany and Belgium (French company, owned by Sinch, Swedish) | [ADR 0027](../decisions/0027-email-through-mailjet.md) | To sign |
 | Google and Apple (sign-in) | Separate controllers, at the person's choice | They run their own sign-in page in its own window and learn that the person signs in to PuffinRide; PuffinRide sends them nothing about the person and loads no Google or Apple code on its pages. PuffinRide receives their identifier for the person, the email and whether it is verified, and the first name | Their own terms | [ADR 0034](../decisions/0034-google-and-apple-sign-in-through-our-api.md), [spec 19](../specs/2026-11-22-google-and-apple-sign-in.md) | Not applicable |
 | Apple (TestFlight) | To confirm before testers outside the team join (the beta) | Testers' names and email addresses; each tester's installs, sessions, crash counts, phone model and system version; crash reports; and the feedback testers send, which can include a screenshot. Testers are the team until the beta | United States; the transfer basis (perhaps the EU-US Data Privacy Framework) to check before the beta | [ADR 0003](../decisions/0003-cross-platform-client-expo.md), [app builds](../operations/app-builds.md) | Apple Developer Program License Agreement; check it before the beta |
 
@@ -123,7 +128,7 @@ processing agreement; Martin signs each one when he opens the account.
 | Rectification | Edit profile; contact support for other data |
 | Erasure | "Delete my account": after any open bookings are resolved and a 7-day waiting period, the hourly clean-up removes the profile and everything that was the person's alone (sessions, settings, drafts, cars no trip used, exports). Their trips, bookings and the cars those used move to one shared "former member", without free text or number plates, so the people they rode with keep their history; their messages read "Message deleted" (in a conversation a report covers, the operator can still read them until the report's time is over, A47); reviews written stay as by "a former member" ([spec 11](../specs/2026-11-13-privacy-self-service.md#35-what-is-erased-and-what-is-kept)). The audit log keeps the IDs it names. After a database restore, `privacy reapply-erasures` erases them again |
 | Objection and restriction | Contact form routed to the operator; answered within one month |
-| Withdraw consent | Settings for analytics, marketing, optional verification and women-only trips |
+| Withdraw consent | Google Analytics: the switch on the Cookies page (`/cookies`, under Terms, rules and privacy), which stops it at once and removes Google's cookies (spec 23, R23.4); later, settings for marketing, optional verification and women-only trips |
 
 ## Required documents before the beta
 
@@ -133,8 +138,9 @@ processing agreement; Martin signs each one when he opens the account.
 - [ ] Privacy policy (Icelandic and English); first English
       [draft](legal-texts/privacy-policy.md) for the lawyer (2026-11-16)
 - [ ] Data processing agreements with every provider
-- [ ] Cookie and consent banner for the web, if any non-essential cookies are
-      used
+- [x] Cookie and consent banner for the web, if any non-essential cookies are
+      used: the question about Google Analytics and the Cookies page
+      ([spec 23](../specs/2026-11-22-google-analytics-and-search.md), 2026-11-22)
 - [ ] Breach response procedure (below)
 
 ## Breaches
@@ -159,6 +165,17 @@ processing agreement; Martin signs each one when he opens the account.
   What deletion does to each kind of data is in the domain
   (`deletionEffects`, spec 11, 3.5).
 - No personal data in logs, analytics events, error reports or URLs.
+  Google Analytics gets each screen's pattern, never its address
+  ([spec 23](../specs/2026-11-22-google-analytics-and-search.md), R23.3), and
+  loads only after the visitor accepts (R23.1).
+- Search engines index only production's public pages that hold no
+  person's data: Find, the meeting points, the places, the legal texts and
+  Cookies.
+  Every other answer, and every answer off production, carries
+  `X-Robots-Tag: noindex`; Find's rides leaving soon are kept out of
+  snippets, and link previews name nobody
+  ([spec 23](../specs/2026-11-22-google-analytics-and-search.md), R23.6,
+  R23.7).
 - Production data never copied to staging or development.
 - Privacy impact is a checkbox in every PR template.
 - Retention jobs are tested like any other feature.

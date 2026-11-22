@@ -2,6 +2,8 @@ import type { AdminSettingChange, AdminSettings, Config } from "@shareride/contr
 import { schema } from "@shareride/db";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { createApp } from "../../app.ts";
+import { createLogger } from "../../logger.ts";
 import { startTestApi, type TestApi } from "../../testing.ts";
 import { createSettingsService } from "./service.ts";
 
@@ -313,6 +315,7 @@ describe("GET /v1/config", () => {
       reliabilityMonths: 12,
       signInProviders: ["google", "apple"],
       payInPerson: false,
+      analytics: null,
     });
 
     await change("invite_code_required", {
@@ -329,6 +332,20 @@ describe("GET /v1/config", () => {
       reliabilityMonths: 12,
       signInProviders: ["google", "apple"],
       payInPerson: false,
+      analytics: null,
     });
+  });
+});
+
+describe("GET /v1/config with Google Analytics (spec 23, section 6)", () => {
+  it("names the measurement ID, for the question about cookies", async () => {
+    const app = createApp({
+      logger: createLogger({ level: "silent" }),
+      checkDatabase: () => Promise.resolve(),
+      features: api.features,
+      analytics: { googleMeasurementId: "G-ABC123XYZ9" },
+    });
+    const config = (await (await app.request("/v1/config")).json()) as Config;
+    expect(config.analytics).toEqual({ googleMeasurementId: "G-ABC123XYZ9" });
   });
 });

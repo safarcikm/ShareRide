@@ -196,6 +196,8 @@ These work as in the [staging runbook](staging.md), on `puffinride-api`,
 - [Retention runs and holds](staging.md#retention-runs-and-holds) and
   [Answer privacy requests](staging.md#answer-privacy-requests).
 - [Rotate a secret](staging.md#rotate-a-secret).
+- [Show the puffin beside our emails](staging.md#show-the-puffin-beside-our-emails):
+  one `hello@` user for both.
 
 ## Turn on photos
 
@@ -213,6 +215,84 @@ Hetzner project of its own:
    `PHOTO_BUCKET` = `puffinride-photos`, and `PHOTO_BUCKET_ACCESS_KEY` and
    `PHOTO_BUCKET_SECRET_KEY`. Save; Render deploys again.
 4. Check as on staging ([Turn on photos](staging.md#turn-on-photos), step 4).
+
+## Google Search Console
+
+Search engines may index production's public pages only (spec 23): Find,
+the meeting points, the places, the legal texts and Cookies, each in Icelandic
+(`?lang=is`) and English (`?lang=en`). The API serves `/robots.txt` and
+`/sitemap.xml` from the active meeting points and the places, and answers
+everything else, and every address on staging, with `X-Robots-Tag: noindex`.
+Nothing to set: it follows `APP_ENV` (production when unset) and
+`WEB_APP_URL`.
+
+To tell Google about the site, once:
+
+1. Open [Search Console](https://search.google.com/search-console) signed in
+   as `admin@puffinride.is`, **Add property**, **Domain**: `puffinride.is`.
+   Google shows a TXT record (`google-site-verification=…`).
+2. At ISNIC, **DNS Hosting** for `puffinride.is`, add a **TXT** record on
+   the domain itself (`@`) with that value. Keep the A and CNAME records.
+3. Back in Search Console, **Verify**. It can take a few minutes, sometimes
+   hours, for the record to show.
+4. **Sitemaps**: add `https://puffinride.is/sitemap.xml`. Its status should
+   become "Success", with the pages found.
+5. Check one address with **URL inspection**, for example
+   `https://puffinride.is/?lang=is`: "URL is available to Google", and
+   **Test live URL** shows the page with its title.
+
+The domain property covers `staging.puffinride.is` too: should a staging
+address ever show in results, **Removals** hides it while the noindex drops
+it.
+
+## Turn on Google Analytics
+
+The website counts visits with Google Analytics only for visitors who
+accept the question about cookies, and only by each screen's pattern
+([spec 23](../specs/2026-11-22-google-analytics-and-search.md),
+[ADR 0045](../decisions/0045-google-analytics-on-the-website-after-consent.md)).
+Without `GOOGLE_ANALYTICS_ID` the site asks nothing and loads nothing from
+Google; the phone apps never count.
+
+Once, as `admin@puffinride.is`:
+
+1. In [Google Analytics](https://analytics.google.com), **Admin**,
+   **Create**, **Account** `PuffinRide`, then **Property** `PuffinRide`:
+   time zone Iceland, currency ISK. Accept the **data processing terms**
+   when asked (**Admin**, **Account details**, **Data processing terms**).
+2. **Data streams**, **Add stream**, **Web**: `https://puffinride.is`,
+   name `PuffinRide website`. Turn **Enhanced measurement** off: it would
+   send the real address of each screen.
+3. In the property, **Data collection and modification**:
+   **Data retention**: event data **14 months**; **Data collection**:
+   Google signals off. In the account's **Account details**, data sharing:
+   every box off.
+4. Copy the stream's **Measurement ID** (`G-` and ten letters and digits).
+5. In Render, `puffinride-api`, **Environment**: `GOOGLE_ANALYTICS_ID` =
+   that ID. Save; Render deploys again. The ID is not a secret, but it is
+   set here, not in the blueprint, so staging never counts.
+
+To check: open `https://puffinride.is` in a private window. The question
+about cookies shows at the bottom, and the browser's network tab shows
+nothing from Google. **Accept**: `gtag/js` loads, and Google Analytics'
+**Realtime** report shows one visitor on `/` within a minute. Open a trip:
+Realtime shows `/trips/[id]`, never the trip's ID. On **Cookies** (Profile,
+Terms, rules and privacy, Cookies), turn it off: the `_ga` cookies go.
+
+Links in ads and on flyers can carry campaign tags, such as
+`https://puffinride.is/?lang=is&utm_source=flyer&utm_medium=qr&utm_campaign=launch`,
+and Google Analytics shows them under **Acquisition**. Only `utm_source`,
+`utm_medium`, `utm_campaign`, `utm_content` and `utm_term` are kept, with
+letters, digits, dots, dashes and underscores; anything else in the address
+never reaches Google.
+
+To turn it off for everyone, remove `GOOGLE_ANALYTICS_ID` in Render: the
+question and Google's tag go with the next deploy. Cookies already set
+expire on their own (13 months at most).
+
+Privacy Policy version 3 describes it and is not material, so nobody
+accepts it again. Announce it with an announcement in the console if you
+like (spec 1, 3.4: minor changes are announced without blocking).
 
 ## Upgrade to Render Pro
 

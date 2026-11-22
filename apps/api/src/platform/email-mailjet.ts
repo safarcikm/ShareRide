@@ -2,7 +2,8 @@ import { EmailMaybeSent, type EmailSender } from "./email.ts";
 import { neverLeft } from "./maybe-sent.ts";
 
 // Email through Mailjet's Send API v3.1 (ADR 0027): one message per
-// request, with open and click tracking off (R7.9). Plain fetch, no SDK.
+// request, with open and click tracking off (R7.9) and its pictures inside
+// it (spec 24, 3.4). Plain fetch, no SDK.
 
 export interface MailjetOptions {
   readonly apiKey: string;
@@ -73,6 +74,17 @@ export function createMailjetEmailSender(options: MailjetOptions): EmailSender {
             CustomID: message.idempotencyKey,
             TrackOpens: "disabled",
             TrackClicks: "disabled",
+            // The pictures the HTML shows as cid:… (spec 24, 3.4).
+            ...(message.images === undefined || message.images.length === 0
+              ? {}
+              : {
+                  InlinedAttachments: message.images.map((image) => ({
+                    ContentType: image.contentType,
+                    Filename: image.filename,
+                    ContentID: image.contentId,
+                    Base64Content: Buffer.from(image.content).toString("base64"),
+                  })),
+                }),
           },
         ],
       };

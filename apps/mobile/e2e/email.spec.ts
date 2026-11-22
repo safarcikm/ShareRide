@@ -67,7 +67,7 @@ test("a passenger confirms the email given at sign-up and gets the Pay now email
   await expect(driver.getByRole("heading", { name: "Passengers" })).toBeVisible();
 
   const payNow = await emailTo(address, /^Pay now: /);
-  expect(payNow.text).toMatch(/^Pay [\d,]+ ISK by \d\d:\d\d to confirm your seat\./);
+  expect(payNow.text).toMatch(/^Pay now: .+\n\nPay [\d,]+ ISK by \d\d:\d\d to confirm your seat\./);
   expect(linkIn(payNow, "Open in PuffinRide")).toBe(`${baseURL ?? ""}${bookingPath}`);
   await driverContext.close();
 });

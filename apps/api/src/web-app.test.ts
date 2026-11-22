@@ -18,7 +18,10 @@ function exportedWebApp(): string {
   writeFileSync(join(parent, "secret.txt"), secret);
   const dir = join(parent, "web");
   mkdirSync(dir);
-  writeFileSync(join(dir, "index.html"), "<!doctype html><title>PuffinRide</title>");
+  writeFileSync(
+    join(dir, "index.html"),
+    '<!doctype html><html lang="en"><head><title>PuffinRide</title></head><body><div id="root"></div></body></html>',
+  );
   writeFileSync(join(dir, "favicon.ico"), "icon");
   mkdirSync(join(dir, "_expo", "static", "js", "web"), { recursive: true });
   writeFileSync(join(dir, "_expo", "static", "js", "web", "entry-abc123.js"), "console.log(1);");
@@ -47,7 +50,9 @@ describe("the web app on the API's origin", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/html");
     expect(response.headers.get("cache-control")).toBe("no-cache");
-    expect(await response.text()).toContain("<title>PuffinRide</title>");
+    expect(await response.text()).toContain(
+      "<title>PuffinRide · Shared rides across Iceland</title>",
+    );
   });
 
   it("limits the page to its own scripts, styles and API", async () => {
@@ -69,22 +74,43 @@ describe("the web app on the API's origin", () => {
     expect(webContentSecurityPolicy().split("; ")).toContain("img-src 'self' data: blob:");
   });
 
+  it("lets Google Analytics load only on a site that has it (spec 23, section 6)", () => {
+    const policy = webContentSecurityPolicy(null, true).split("; ");
+    expect(policy).toContain("script-src 'self' https://*.googletagmanager.com");
+    const google =
+      "https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com";
+    expect(policy).toContain(`img-src 'self' data: blob: ${google}`);
+    expect(policy).toContain(
+      `connect-src 'self' https://*.ingest.de.sentry.io ${google} https://*.google.com`,
+    );
+    expect(webContentSecurityPolicy().includes("google")).toBe(false);
+  });
+
+  it("sends that policy with the pages of a site that has Google Analytics", async () => {
+    const withAnalytics = createApp({
+      logger: createLogger({ level: "silent" }),
+      checkDatabase: () => Promise.resolve(),
+      webAppDir: exportedWebApp(),
+      analytics: { googleMeasurementId: "G-ABC123XYZ9" },
+    });
+    const policy = (await withAnalytics.request("/")).headers.get("content-security-policy");
+    expect(policy).toContain("script-src 'self' https://*.googletagmanager.com");
+    expect((await app.request("/")).headers.get("content-security-policy")).not.toContain("google");
+  });
+
   it("serves the page for the app's own routes, so a reload works", async () => {
     for (const path of ["/sign-in", "/sign-in/code", "/legal/terms"]) {
       const response = await app.request(path);
       expect(response.status).toBe(200);
-      expect(await response.text()).toContain("<title>PuffinRide</title>");
+      expect(await response.text()).toContain('<div id="root">');
     }
   });
 
-  it("keeps trip pages out of search engines, and only those (R4.6)", async () => {
+  it("keeps trip pages out of search engines (R4.6; spec 23 has the rest)", async () => {
     const trip = await app.request("/trips/0190a1d6-0000-7000-8000-0000000000d1?fromStop=1");
     expect(trip.status).toBe(200);
     expect(trip.headers.get("x-robots-tag")).toBe("noindex, nofollow");
-    expect(await trip.text()).toContain("<title>PuffinRide</title>");
-    for (const path of ["/", "/search", "/tripsearch"]) {
-      expect((await app.request(path)).headers.get("x-robots-tag"), path).toBeNull();
-    }
+    expect(await trip.text()).toContain('<div id="root">');
   });
 
   it("serves bundles with content hashes for a year", async () => {
@@ -143,7 +169,7 @@ describe("the web app on the API's origin", () => {
   });
 
   it("answers 404 for a missing file, not the page, so an old bundle fails clearly", async () => {
-    for (const path of ["/_expo/static/js/web/entry-old.js", "/assets/gone.png", "/robots.txt"]) {
+    for (const path of ["/_expo/static/js/web/entry-old.js", "/assets/gone.png", "/sitemap.xml"]) {
       const response = await app.request(path);
       expect(response.status, path).toBe(404);
       expect(response.headers.get("cache-control"), path).toBe("no-cache");

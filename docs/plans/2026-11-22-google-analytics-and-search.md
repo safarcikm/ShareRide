@@ -42,31 +42,31 @@ Spec 23's decisions 6 to 8 are built as recommended.
 
 ## PR 2: search engines
 
-- [ ] API: `searchEngines` config (indexable, site origin); `/robots.txt`;
+- [x] API: `searchEngines` config (indexable, site origin); `/robots.txt`;
   `/sitemap.xml` (active meeting points, places, both languages, alternates);
   the page's head filled per request and language; noindex outside the
   public list and off production; tests in `web-app.test.ts` and a new
   `search-engines` test.
-- [ ] App: `?lang=` read at start on the web (`LanguageProvider`); a
+- [x] App: `?lang=` read at start on the web (`LanguageProvider`); a
   `PageHead` component (title, description) on Find, meeting points, a
   meeting point, a place, the legal pages; `data-nosnippet` on Find's ride
   list; the share picture `public/share.png` made by `export-icons.ts`.
-- [ ] Docs: runbook "Google Search Console"; the privacy register's
-  indexing line.
+- [x] Docs: runbook "Google Search Console"; the privacy register's
+  indexing line; a journey (`e2e/search-engines.spec.ts`).
 
 ## PR 3: the consent question and Google Analytics
 
-- [ ] Contracts and API: `analytics` in `/v1/config` from
+- [x] Contracts and API: `analytics` in `/v1/config` from
   `GOOGLE_ANALYTICS_ID`; the CSP with Google's addresses only then.
-- [ ] App: the stored choice (12 months); the bar; the Cookies page and its
+- [x] App: the stored choice (12 months); the bar; the Cookies page and its
   row on `/legal`; the loader (consent defaults, `send_page_view: false`,
   signals and ad personalisation off, cookies 13 months not extended); page
   views by pattern with the referrer's origin from another site; withdrawal
   (`ga-disable-<ID>`, cookies removed).
-- [ ] Privacy Policy version 3 in both languages (minor, announced), the
+- [x] Privacy Policy version 3 in both languages (minor, announced), the
   draft for the lawyer, the register (Analytics, the choice, Google as a
   provider, withdrawal), the runbook "Turn on Google Analytics".
-- [ ] A journey: no request to Google before Accept; patterns only after.
+- [x] A journey: no request to Google before Accept; patterns only after.
 
 ## Martin's steps (after the release)
 

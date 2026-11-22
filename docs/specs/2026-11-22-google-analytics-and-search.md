@@ -55,7 +55,8 @@ Staging answers on its own address and could end up in Google too.
 
 On the website, when the site has Google Analytics turned on (production
 with its measurement ID set, section 6), the first visit shows a bar at the
-bottom of every screen, above the menu bar on phones:
+bottom of every screen, above the menu bar on phones, except the Cookies
+page, which asks with its switch:
 
 > **Cookies**
 > May we count your visit with Google Analytics? It uses cookies and tells
@@ -99,7 +100,12 @@ bottom of every screen, above the menu bar on phones:
 1. **Page views only**, one for each screen opened, named by the screen's
    pattern, such as `/trips/[id]` or `/meeting-points/[id]`, never its
    address: no IDs, no query (places and dates searched), no anchor. The
-   page title sent is the same pattern (R23.3).
+   page title sent is the same pattern (R23.3). The one exception is the
+   campaign tags of our own ads' and flyers' links (`utm_source`,
+   `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`, with plain
+   values of letters, digits, dots, dashes and underscores), kept on the
+   first screen of a visit, so Google Analytics can say which ad or flyer
+   brought it.
 2. The referring site, only when it is another site, as its origin.
 3. What Google Analytics collects itself: browser, system, screen size,
    language and an approximate location from the network address, which
@@ -116,14 +122,14 @@ bottom of every screen, above the menu bar on phones:
 
 Only production's public pages that hold no person's data (R23.6):
 
-| Page | Address |
-| ---- | ------- |
-| Find, the front page | `/` |
-| Meeting points | `/meeting-points` |
-| A meeting point | `/meeting-points/<id>`, each active one |
-| A place and its nearest points | `/places/<id>`, each place |
-| Terms, rules and privacy | `/legal`, `/legal/terms`, `/legal/community-rules`, `/legal/privacy` |
-| Cookies | `/cookies` |
+| Page                           | Address                                                              |
+| ------------------------------ | -------------------------------------------------------------------- |
+| Find, the front page           | `/`                                                                  |
+| Meeting points                 | `/meeting-points`                                                    |
+| A meeting point                | `/meeting-points/<id>`, each active one                              |
+| A place and its nearest points | `/places/<id>`, each place                                           |
+| Terms, rules and privacy       | `/legal`, `/legal/terms`, `/legal/community-rules`, `/legal/privacy` |
+| Cookies                        | `/cookies`                                                           |
 
 Every other address of the web app answers with `X-Robots-Tag: noindex,
 nofollow`: trip pages (R4.6, as now), search results and All rides (they
@@ -155,8 +161,11 @@ lists both (decision 7).
    canonical address and the alternates, so a crawler that does not run the
    app still reads them.
 3. **Link previews** are the same for every address: the PuffinRide picture
-   (1200 × 630, the puffin pin on green), the name and Find's description in
-   the requested language. A trip's link shows no name or photo (R23.7).
+   (1200 × 630: the two puffins in their car over the logo and the name, in the middle so a square crop keeps them), the name and Find's description in
+   the requested language. Facebook and Messenger ask for the preview in
+   the reader's language (`X-Facebook-Locale` or `fb_locale`), so an
+   Icelandic reader sees it in Icelandic. A trip's link shows no name or
+   photo (R23.7).
 
 ### 3.7 robots.txt and the sitemap
 
@@ -176,15 +185,15 @@ the steps are in the [production runbook](../operations/production.md).
 
 ## 4. Rules
 
-| ID | Rule |
-| -- | ---- |
-| R23.1 | Nothing from Google loads and nothing is counted on a browser before its visitor accepts. |
-| R23.2 | Declining is as easy as accepting: the same size, the same place, one press. |
-| R23.3 | Google Analytics receives each screen's pattern only: never an ID, a query, a name, a phone number or an email; no user ID; no advertising features. |
-| R23.4 | Turning analytics off stops it at once and removes Google's cookies from the browser. |
-| R23.5 | A choice is kept in the browser for 12 months, then asked again. |
-| R23.6 | Only production's pages of 3.4 may be indexed; every other address of the web app answers with noindex. |
-| R23.7 | Link previews show no person's name or photo. |
+| ID    | Rule                                                                                                                                                                                     |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R23.1 | Nothing from Google loads and nothing is counted on a browser before its visitor accepts.                                                                                                |
+| R23.2 | Declining is as easy as accepting: the same size, the same place, one press.                                                                                                             |
+| R23.3 | Google Analytics receives each screen's pattern only: never an ID, a query (except our own campaign tags, 3.3), a name, a phone number or an email; no user ID; no advertising features. |
+| R23.4 | Turning analytics off stops it at once and removes Google's cookies from the browser.                                                                                                    |
+| R23.5 | A choice is kept in the browser for 12 months, then asked again.                                                                                                                         |
+| R23.6 | Only production's pages of 3.4 may be indexed; every other address of the web app answers with noindex.                                                                                  |
+| R23.7 | Link previews show no person's name or photo.                                                                                                                                            |
 
 ## 5. Screens
 
@@ -194,7 +203,7 @@ the steps are in the [production runbook](../operations/production.md).
    buttons in the secondary style.
 2. The Cookies page (3.2), in the narrow column, as Settings' pages.
 3. A row **Cookies** on Terms, rules and privacy (`/legal`).
-4. The share picture (3.6), made from the logo's drawing.
+4. The share picture (3.6), made from the front page's puffins in their car and the logo.
 
 ## 6. Data and API
 
@@ -203,11 +212,13 @@ the steps are in the [production runbook](../operations/production.md).
   Indexing is on only where `APP_ENV` is production and `WEB_APP_URL` is
   set; that address is the canonical origin.
 - **`GET /v1/config`** gains `analytics`: `{ "googleMeasurementId":
-  "G-…" }` or `null`.
+"G-…" }` or `null`.
 - **The web app's Content Security Policy** allows Google's addresses only
   when the ID is set: scripts from `https://*.googletagmanager.com`; images
   and connections to `https://*.google-analytics.com`,
-  `https://*.analytics.google.com` and `https://*.googletagmanager.com`.
+  `https://*.analytics.google.com` and `https://*.googletagmanager.com`,
+  and connections to `https://*.google.com` too, as Google's current list
+  has it.
 - **The page:** the server fills the exported `index.html` per request
   (3.6, item 2) and adds the noindex header (3.4).
 - **`GET /robots.txt`** and **`GET /sitemap.xml`** (3.7), from the active
@@ -235,27 +246,28 @@ the steps are in the [production runbook](../operations/production.md).
 
 ## 8. Texts (first draft; Icelandic to be reviewed by a native speaker)
 
-| Key | English | Icelandic (draft) |
-| --- | ------- | ----------------- |
-| `consent.title` | Cookies | Vafrakökur |
-| `consent.text` | May we count your visit with Google Analytics? It uses cookies and tells Google which pages you open, never your name. | Megum við telja heimsókn þína með Google Analytics? Það notar vafrakökur og segir Google hvaða síður þú opnar, aldrei nafnið þitt. |
-| `consent.accept` | Accept | Samþykkja |
-| `consent.decline` | Decline | Hafna |
-| `consent.more` | Read more | Nánar |
-| `cookies.title` | Cookies | Vafrakökur |
-| `cookies.needed` | The website keeps on your device what it needs to work, such as your sign-in, your language and your last searches. That needs no consent and is not sent to anyone else. | Vefurinn geymir í tækinu þínu það sem hann þarf til að virka, svo sem innskráninguna, tungumálið og síðustu leitir þínar. Til þess þarf ekki samþykki og það er ekki sent öðrum. |
-| `cookies.analytics` | Count my visits with Google Analytics | Telja heimsóknir mínar með Google Analytics |
-| `cookies.analyticsHelp` | Google Analytics sets cookies that last 13 months and tells Google, in the United States, which pages you open, your browser and roughly where you are. We see only totals. You can turn it off at any time. | Google Analytics setur vafrakökur sem gilda í 13 mánuði og segir Google, í Bandaríkjunum, hvaða síður þú opnar, hvaða vafra þú notar og nokkurn veginn hvar þú ert. Við sjáum aðeins samtölur. Þú getur slökkt á því hvenær sem er. |
-| `cookies.none` | No visits are counted here, and no cookies are used for analytics. | Hér eru engar heimsóknir taldar og engar vafrakökur notaðar fyrir vefmælingar. |
-| `seo.title` | {page} · PuffinRide | {page} · PuffinRide |
-| `seo.findTitle` | PuffinRide · Share rides across Iceland | PuffinRide · Samferða um Ísland |
-| `seo.findDescription` | Find a ride, or offer the empty seats in your car, between towns in Iceland, and share the cost of the trip. | Finndu far, eða bjóddu laus sæti í bílnum þínum, milli bæja á Íslandi og deildu kostnaðinum við ferðina. |
-| `seo.meetingPointsDescription` | The meeting points where PuffinRide drivers and passengers meet, all around Iceland, on the map and by region. | Mótsstaðirnir þar sem bílstjórar og farþegar PuffinRide hittast, um allt Ísland, á korti og eftir landshlutum. |
-| `seo.meetingPointDescription` | {name}: a PuffinRide meeting point, where drivers and passengers meet for shared rides. | {name}: mótsstaður PuffinRide, þar sem bílstjórar og farþegar hittast til að verða samferða. |
-| `seo.placeTitle` | {place}: nearest meeting points | {place}: næstu mótsstaðir |
-| `seo.placeDescription` | The PuffinRide meeting points nearest to {place}, for finding or offering a shared ride. | Næstu mótsstaðir PuffinRide við {place}, til að finna far eða bjóða far. |
-| `seo.legalDescription` | PuffinRide's Terms of Service, Community Rules and Privacy Policy. | Notendaskilmálar, samfélagsreglur og persónuverndarstefna PuffinRide. |
-| `seo.cookiesDescription` | What the PuffinRide website keeps on your device, and your choice about Google Analytics. | Hvað vefur PuffinRide geymir í tækinu þínu, og val þitt um Google Analytics. |
+| Key                            | English                                                                                                                                                                                                      | Icelandic (draft)                                                                                                                                                                                                                   |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `consent.title`                | Cookies                                                                                                                                                                                                      | Vafrakökur                                                                                                                                                                                                                          |
+| `consent.text`                 | May we count your visit with Google Analytics? It uses cookies and tells Google which pages you open, never your name.                                                                                       | Megum við telja heimsókn þína með Google Analytics? Það notar vafrakökur og segir Google hvaða síður þú opnar, aldrei nafnið þitt.                                                                                                  |
+| `consent.accept`               | Accept                                                                                                                                                                                                       | Samþykkja                                                                                                                                                                                                                           |
+| `consent.decline`              | Decline                                                                                                                                                                                                      | Hafna                                                                                                                                                                                                                               |
+| `consent.more`                 | Read more                                                                                                                                                                                                    | Nánar                                                                                                                                                                                                                               |
+| `cookies.title`                | Cookies                                                                                                                                                                                                      | Vafrakökur                                                                                                                                                                                                                          |
+| `cookies.needed`               | The website keeps on your device what it needs to work, such as your sign-in, your language and your last searches. That needs no consent and is not sent to anyone else.                                    | Vefurinn geymir í tækinu þínu það sem hann þarf til að virka, svo sem innskráninguna, tungumálið og síðustu leitir þínar. Til þess þarf ekki samþykki og það er ekki sent öðrum.                                                    |
+| `cookies.analytics`            | Count my visits with Google Analytics                                                                                                                                                                        | Telja heimsóknir mínar með Google Analytics                                                                                                                                                                                         |
+| `cookies.analyticsHelp`        | Google Analytics sets cookies that last 13 months and tells Google, in the United States, which pages you open, your browser and roughly where you are. We see only totals. You can turn it off at any time. | Google Analytics setur vafrakökur sem gilda í 13 mánuði og segir Google, í Bandaríkjunum, hvaða síður þú opnar, hvaða vafra þú notar og nokkurn veginn hvar þú ert. Við sjáum aðeins samtölur. Þú getur slökkt á því hvenær sem er. |
+| `cookies.none`                 | No visits are counted here, and no cookies are used for analytics.                                                                                                                                           | Hér eru engar heimsóknir taldar og engar vafrakökur notaðar fyrir vefmælingar.                                                                                                                                                      |
+| `seo.title`                    | {page} · PuffinRide                                                                                                                                                                                          | {page} · PuffinRide                                                                                                                                                                                                                 |
+| `seo.findTitle`                | PuffinRide · Shared rides across Iceland                                                                                                                                                                     | PuffinRide · Samferða um Ísland                                                                                                                                                                                                     |
+| `seo.findDescription`          | Find a ride, or offer the empty seats in your car, between towns in Iceland, and share the cost of the trip.                                                                                                 | Finndu far, eða bjóddu laus sæti í bílnum þínum, milli bæja á Íslandi og deildu kostnaðinum við ferðina.                                                                                                                            |
+| `seo.meetingPointsDescription` | The meeting points where PuffinRide drivers and passengers meet, all around Iceland, on the map and by region.                                                                                               | Mótsstaðirnir þar sem bílstjórar og farþegar PuffinRide hittast, um allt Ísland, á korti og eftir landshlutum.                                                                                                                      |
+| `seo.meetingPointDescription`  | {name}: a PuffinRide meeting point, where drivers and passengers meet for shared rides.                                                                                                                      | {name}: mótsstaður PuffinRide, þar sem bílstjórar og farþegar hittast til að verða samferða.                                                                                                                                        |
+| `seo.placeTitle`               | {place}: nearest meeting points                                                                                                                                                                              | {place}: næstu mótsstaðir                                                                                                                                                                                                           |
+| `seo.placeDescription`         | The PuffinRide meeting points nearest to {place}, for finding or offering a shared ride.                                                                                                                     | Næstu mótsstaðir PuffinRide við {place}, til að finna far eða bjóða far.                                                                                                                                                            |
+| `seo.legalDescription`         | PuffinRide's Terms of Service, Community Rules and Privacy Policy.                                                                                                                                           | Notendaskilmálar, samfélagsreglur og persónuverndarstefna PuffinRide.                                                                                                                                                               |
+| `seo.shareImage`               | Two PuffinRide puffins driving in a little car                                                                                                                                                               | Tveir lundar PuffinRide á ferð í litlum bíl                                                                                                                                                                                         |
+| `seo.cookiesDescription`       | What the PuffinRide website keeps on your device, and your choice about Google Analytics.                                                                                                                    | Hvað vefur PuffinRide geymir í tækinu þínu, og val þitt um Google Analytics.                                                                                                                                                        |
 
 `seo.placeDescription` in Icelandic puts the place after "við", which takes
 the accusative; most place names read well there, but a native speaker
@@ -286,15 +298,15 @@ Manager; Bing's own tools (Bing reads the sitemap from robots.txt).
 
 ## Decisions
 
-| # | Question | Decision |
-| - | -------- | -------- |
-| 1 | Google Analytics, or cookieless analytics in the EEA with no banner? | Google Analytics, with the question about cookies (Martin, 2026-11-22, on a decision card; not chosen: a cookieless EEA service such as Plausible, which would count every visit with no banner) |
-| 2 | Where? | The website only; the phone apps are not in the stores yet (my call) |
-| 3 | What does Google get? | Page views by screen pattern, no IDs or queries, advertising features off, 14 months (R23.3; my call) |
-| 4 | How is consent asked? | A bar that does not block, Accept and Decline alike, kept 12 months (R23.2, R23.5; my call) |
-| 5 | What may Google index? | A short list of public pages; everything else noindex (R23.6; my call) |
-| 6 | Find lists drivers' first names. Index it? | Yes, with the ride list kept out of snippets (recommended; or keep Find out of Google, which loses the main page) |
-| 7 | Two languages: how? | `?lang=is` and `?lang=en` addresses with alternates (recommended; or one address, which Google sees in English) |
-| 8 | Is Privacy Policy version 3 material? | No: announced without blocking, as nobody has to accept anything new (recommended; or material, and everyone accepts again) |
-| 9 | Staging and other copies? | Noindex on every answer, crawling allowed so Google sees it (R23.6; my call) |
-| 10 | How is Search Console verified? | A domain property, by a TXT record at ISNIC (my call) |
+| #   | Question                                                             | Decision                                                                                                                                                                                         |
+| --- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Google Analytics, or cookieless analytics in the EEA with no banner? | Google Analytics, with the question about cookies (Martin, 2026-11-22, on a decision card; not chosen: a cookieless EEA service such as Plausible, which would count every visit with no banner) |
+| 2   | Where?                                                               | The website only; the phone apps are not in the stores yet (my call)                                                                                                                             |
+| 3   | What does Google get?                                                | Page views by screen pattern, no IDs or queries, advertising features off, 14 months (R23.3; my call)                                                                                            |
+| 4   | How is consent asked?                                                | A bar that does not block, Accept and Decline alike, kept 12 months (R23.2, R23.5; my call)                                                                                                      |
+| 5   | What may Google index?                                               | A short list of public pages; everything else noindex (R23.6; my call)                                                                                                                           |
+| 6   | Find lists drivers' first names. Index it?                           | Yes, with the ride list kept out of snippets (recommended; or keep Find out of Google, which loses the main page)                                                                                |
+| 7   | Two languages: how?                                                  | `?lang=is` and `?lang=en` addresses with alternates (recommended; or one address, which Google sees in English)                                                                                  |
+| 8   | Is Privacy Policy version 3 material?                                | No: announced without blocking, as nobody has to accept anything new (recommended; or material, and everyone accepts again)                                                                      |
+| 9   | Staging and other copies?                                            | Noindex on every answer, crawling allowed so Google sees it (R23.6; my call)                                                                                                                     |
+| 10  | How is Search Console verified?                                      | A domain property, by a TXT record at ISNIC (my call)                                                                                                                                            |

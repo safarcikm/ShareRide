@@ -1,7 +1,9 @@
 # PuffinRide Privacy Policy (draft)
 
 > **Draft for the lawyer, not in force.** Version 1, written 2026-11-16 from
-> the [privacy register](../privacy-gdpr.md). Periods marked "to confirm" are
+> the [privacy register](../privacy-gdpr.md); Google Analytics on the
+> website added 2026-11-22 ([spec 23](../../specs/2026-11-22-google-analytics-and-search.md),
+> as in published version 3). Periods marked "to confirm" are
 > still to be set with the lawyer. See the [README](README.md).
 
 **Last updated:** [date of publication]
@@ -20,8 +22,10 @@
 - Other people see your first name, photo, bio, languages, badges, reviews
   and reliability figure. They never see your phone number.
 - Your data is stored in the European Economic Area (EEA).
-- We do not sell your data, show ads, or track how you use the app. There is
-  no analytics in the beta and no tracking in our emails.
+- We do not sell your data or show ads. On the website, we count visits
+  with Google Analytics only if you accept, and you can turn it off at any
+  time. The phone apps count nothing, and there is no tracking in our
+  emails.
 - You can download your data and delete your account in the app, at any
   time.
 
@@ -45,6 +49,7 @@
 | **Notifications:** your push token, and a log of what kind of notification was sent and whether it arrived, without its text | To reach you, and to check that people were told | Contract; legitimate interest | Push token while you are signed in on that phone; log 90 days |
 | **Feedback** you send in the beta, with an optional screenshot and technical details | To improve the app | Legitimate interest | 12 months after the beta ends, or until you delete your account |
 | **Technical logs and error reports,** with personal details removed | Security and fixing errors | Legitimate interest | 30 days |
+| **Visits to the website,** only if you accept Google Analytics there: the screens you open, named only by their kind (such as "a trip page", never which trip, person or search); the site you came from, without the page; which of our ads or flyers brought you, if one did; browser, system, screen size and language; roughly where you are, from your network address, which Google says it does not keep; a random ID in Google's cookies, never your account, name, phone number or email | To see how many people visit and which screens they use | Your consent, withdrawn on the Cookies page | 14 months at Google; its cookies 13 months, not extended by a visit |
 | **Privacy requests** and our answers | To answer your rights requests | Legal obligation | 3 years after the answer (to confirm) |
 | **Waitlist** (if you join before you have an account): email, how you want to use PuffinRide, the routes you travel, language | To invite you to the beta | Your consent, given by confirming your email | Until you leave the list, 30 days after you create an account, or 12 months if you are never invited |
 
@@ -84,6 +89,7 @@ processing agreement, only as we instruct.
 | Expo, with Apple and Google | Sending push notifications to your phone | United States |
 | Sentry | Error reports, with personal details removed | Frankfurt, Germany |
 | Hetzner | Storing profile photos | Nuremberg, Germany |
+| Google (Google Analytics), only if you accept on the website | Counting visits to the website | Google Ireland, with Google in the United States |
 | [Payment provider] | Payments, refunds and payouts; it also checks drivers' identity and bank accounts | [Location] |
 
 If you sign in with Google or Apple, you do so on their own page, under
@@ -102,8 +108,9 @@ requires it, or to protect someone's life or safety.
 ## 6. Data outside the EEA
 
 We store your data in the EEA. A few providers may process some of it outside
-the EEA: Expo, Apple and Google for push notifications, and Vonage for
-support and fraud checks. When that happens, we rely on [the EU-US Data
+the EEA: Expo, Apple and Google for push notifications, Google for counting
+visits to the website if you accept, and Vonage for support and fraud
+checks. When that happens, we rely on [the EU-US Data
 Privacy Framework or the European Commission's standard contractual clauses;
 to confirm for each provider].
 
@@ -124,7 +131,8 @@ You can:
 - **Object or ask us to restrict** how we use your data, where the law gives
   you that right.
 - **Withdraw consent** where we rely on it, such as for women-only trips, by
-  turning the setting off.
+  turning the setting off, or for Google Analytics on the Cookies page,
+  which stops it at once and removes Google's cookies from your browser.
 - **Complain** to Persónuvernd, the Icelandic Data Protection Authority
   ([www.personuvernd.is](https://www.personuvernd.is)).
 
@@ -135,8 +143,11 @@ We answer requests within one month. Write to [privacy contact email] or use
 
 The app and website store only what they need to work, such as keeping you
 signed in, your last searches and a booking you started before signing up.
-These stay on your device and are not sent to us. We use no advertising or
-analytics cookies, so there is nothing to consent to.
+These stay on your device and are not sent to us, and need no consent. On
+the website, Google Analytics sets its cookies only if you accept (section
+3). Your answer is kept on your device for 12 months, then we ask again; you
+can change it at any time on the Cookies page. We use no advertising
+cookies.
 
 ## 9. Age
 

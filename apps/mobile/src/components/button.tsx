@@ -25,6 +25,8 @@ interface ButtonProps {
   readonly disabled?: boolean;
   /** The screen's main action, such as a step's "Continue": full width and 56 high. */
   readonly main?: boolean;
+  /** As wide as the room it is given, such as one of two equal choices side by side. */
+  readonly fill?: boolean;
   /** For a button that opens and closes something below it: whether it is open. */
   readonly expanded?: boolean;
 }
@@ -83,6 +85,7 @@ export function Button({
   busy = false,
   disabled = false,
   main = false,
+  fill = false,
   expanded,
 }: ButtonProps) {
   const palette = usePalette();
@@ -110,6 +113,7 @@ export function Button({
         styles.outer,
         variant === "text" && styles.textOuter,
         main && styles.mainOuter,
+        fill && styles.fillOuter,
         chunky(edge, edgeColor, pressed && !inactive).outer,
       ]}
     >
@@ -151,6 +155,7 @@ const styles = StyleSheet.create({
   },
   textOuter: { minHeight: minTouchTarget },
   mainOuter: { minHeight: sizes.mainButtonHeight, alignSelf: "stretch" },
+  fillOuter: { alignSelf: "stretch" },
   face: {
     flexGrow: 1,
     flexDirection: "row",

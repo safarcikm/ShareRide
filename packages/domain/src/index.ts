@@ -1,4 +1,5 @@
 export * from "./admin/index.ts";
+export * from "./analytics/index.ts";
 export * from "./auth/index.ts";
 export * from "./beta/index.ts";
 export * from "./bookings/index.ts";
