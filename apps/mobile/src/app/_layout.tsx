@@ -14,6 +14,7 @@ import { Body, Title } from "@/components/text";
 import { LanguageProvider, useLanguage } from "@/i18n/language";
 import { useSaveLanguage } from "@/i18n/use-save-language";
 import { reportError, startErrorReporting } from "@/lib/error-reporting";
+import { memberScreens } from "@/navigation/member-screens";
 import { PushNotifications } from "@/notifications/push-notifications";
 import { ProviderLinkNotice } from "@/sign-in/provider-link-notice";
 import { useAppFonts } from "@/theme/fonts";
@@ -108,42 +109,9 @@ function Navigation() {
         <Stack.Screen name="onboarding/terms" />
       </Stack.Protected>
       <Stack.Protected guard={me !== null && !deleting && !needsLegal && !needsProfile}>
-        <Stack.Screen name="profile/edit" />
-        <Stack.Screen name="profile/preview" />
-        <Stack.Screen name="people/[profileId]" />
-        <Stack.Screen name="drive/cars/index" />
-        <Stack.Screen name="drive/cars/new" />
-        <Stack.Screen name="drive/cars/[id]" />
-        <Stack.Screen name="drive/licence" />
-        <Stack.Screen name="drive/trips/index" />
-        <Stack.Screen name="drive/trips/new" />
-        <Stack.Screen name="drive/trips/[id]/index" />
-        <Stack.Screen name="drive/trips/[id]/route" />
-        <Stack.Screen name="drive/trips/[id]/time" />
-        <Stack.Screen name="drive/trips/[id]/price" />
-        <Stack.Screen name="drive/trips/[id]/seats" />
-        <Stack.Screen name="drive/trips/[id]/review" />
-        <Stack.Screen name="drive/trips/[id]/published" />
-        <Stack.Screen name="drive/trips/[id]/message" />
-        <Stack.Screen name="drive/trips/[id]/cancel" />
-        <Stack.Screen name="drive/trips/[id]/edit/index" />
-        <Stack.Screen name="drive/trips/[id]/edit/time" />
-        <Stack.Screen name="drive/trips/[id]/edit/price" />
-        <Stack.Screen name="drive/trips/[id]/edit/seats" />
-        <Stack.Screen name="drive/trips/[id]/edit/car" />
-        <Stack.Screen name="drive/trips/[id]/edit/stop" />
-        <Stack.Screen name="drive/trips/[id]/edit/remove-stop" />
-        <Stack.Screen name="drive/trips/[id]/edit/booking" />
-        <Stack.Screen name="drive/trips/[id]/edit/details" />
-        <Stack.Screen name="drive/trips/[id]/edit/check" />
-        <Stack.Screen name="trips/[id]/book" />
-        <Stack.Screen name="bookings/[id]/index" />
-        <Stack.Screen name="bookings/[id]/booked" />
-        <Stack.Screen name="bookings/[id]/cancel" />
-        <Stack.Screen name="bookings/[id]/no-show" />
-        <Stack.Screen name="bookings/[id]/driver-absent" />
-        <Stack.Screen name="bookings/[id]/answer" />
-        <Stack.Screen name="bookings/[id]/rate" />
+        {memberScreens.map((name) => (
+          <Stack.Screen key={name} name={name} />
+        ))}
       </Stack.Protected>
     </Stack>
   );

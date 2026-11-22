@@ -1344,6 +1344,11 @@ releases follow [Semantic Versioning](https://semver.org/).
   accounts, and adds one only after a code to the account's own number.
   A development stand-in replaces Google and Apple locally and in tests;
   staging turns them on with the runbook's steps.
+- Email links after signing in (spec 20, 3.2): a link to a screen that
+  needs an account, such as "How was your trip?" in an email, opened in a
+  browser that is not signed in, opens Sign in and then that screen once
+  the account is ready. Only the path is kept, in the app's own storage,
+  for an hour; a booking or Offer chosen in the app goes first.
 
 ### Fixed
 
