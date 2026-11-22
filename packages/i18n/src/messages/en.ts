@@ -1937,6 +1937,21 @@ export const en = {
   "admin.signIn.unavailable": "This account cannot use the console.",
   "admin.signIn.ended": "Your session ended. Sign in again.",
   "admin.signIn.signedOut": "You signed out.",
+  "admin.signIn.lost": "Lost your passkey?",
+  "admin.recover.title": "Get back into the console",
+  "admin.recover.phone": "Your phone number",
+  "admin.recover.phoneHint":
+    "The number of your PuffinRide account. We send a code by text message.",
+  "admin.recover.send": "Send a code",
+  "admin.recover.sent":
+    "If this number belongs to an operator, we sent it a code. It works for 10 minutes.",
+  "admin.recover.code": "Code",
+  "admin.recover.check": "Check the code",
+  "admin.recover.resend": "Send a new code",
+  "admin.recover.noText": "No text? The operator command on the server makes a setup link too.",
+  "admin.recover.back": "Back to sign-in",
+  "admin.recover.setupBody":
+    "Save a new passkey for the console on this device or your phone. This step works once, for 30 minutes.",
   "admin.signIn.passwordTitle": "Or sign in with a password",
   "admin.signIn.passwordBody": "Your account's phone number and the console's password.",
   "admin.signIn.phoneNumber": "Phone number",

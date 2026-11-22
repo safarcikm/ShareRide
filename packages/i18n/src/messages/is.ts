@@ -1961,6 +1961,21 @@ export const is = {
   "admin.signIn.unavailable": "Þessi aðgangur getur ekki notað stjórnborðið.",
   "admin.signIn.ended": "Lotunni lauk. Skráðu þig inn aftur.",
   "admin.signIn.signedOut": "Þú skráðir þig út.",
+  "admin.signIn.lost": "Týndirðu aðgangslyklinum?",
+  "admin.recover.title": "Komdu aftur inn í stjórnborðið",
+  "admin.recover.phone": "Símanúmerið þitt",
+  "admin.recover.phoneHint": "Númerið á PuffinRide-aðganginum þínum. Við sendum kóða með SMS.",
+  "admin.recover.send": "Senda kóða",
+  "admin.recover.sent":
+    "Ef þetta númer tilheyrir rekstraraðila sendum við kóða í það. Hann virkar í 10 mínútur.",
+  "admin.recover.code": "Kóði",
+  "admin.recover.check": "Athuga kóðann",
+  "admin.recover.resend": "Senda nýjan kóða",
+  "admin.recover.noText":
+    "Kom ekkert SMS? Operator-skipunin á þjóninum býr líka til uppsetningarhlekk.",
+  "admin.recover.back": "Aftur í innskráningu",
+  "admin.recover.setupBody":
+    "Vistaðu nýjan aðgangslykil fyrir stjórnborðið í þessu tæki eða símanum. Þetta skref virkar einu sinni, í 30 mínútur.",
   "admin.signIn.passwordTitle": "Eða skráðu þig inn með lykilorði",
   "admin.signIn.passwordBody": "Símanúmer aðgangsins þíns og lykilorð stjórnborðsins.",
   "admin.signIn.phoneNumber": "Símanúmer",

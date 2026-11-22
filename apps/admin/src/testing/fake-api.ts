@@ -5,7 +5,12 @@ import type { Assertion, PasskeyBrowser, Registration, WebAuthnOptions } from ".
 type Reply = {
   status: number;
   data?: unknown;
-  error?: { code: string; details?: { path: string; issue: string }[] };
+  error?: {
+    code: string;
+    details?: { path: string; issue: string }[];
+    attemptsLeft?: number;
+    retryAfterSeconds?: number;
+  };
 };
 /** A reply, or one that comes later, so a test can answer requests out of order. */
 type Handler = (input: Record<string, unknown>) => Reply | Promise<Reply>;
@@ -32,11 +37,7 @@ export function createFakeApi() {
           : {
               ok: false,
               status: reply.status,
-              error: {
-                code: reply.error?.code ?? "error",
-                message: "",
-                ...(reply.error?.details === undefined ? {} : { details: reply.error.details }),
-              },
+              error: { message: "", ...reply.error, code: reply.error?.code ?? "error" },
             };
       return result as CallResult<R>;
     },
