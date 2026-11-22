@@ -3,7 +3,9 @@
 **Owner:** Martin · **Date:** 2026-11-13 · **Status:** Approved (2026-11-13)
 
 Amended by [spec 16](2026-11-15-one-home-and-simpler-flows.md): the menu's
-`TabBar` and `TopBar`, the `Logo` beside the name, and the `Row` part.
+`TabBar` and `TopBar`, the `Logo` beside the name, and the `Row` part. On
+2026-11-22 ShareRide became PuffinRide, and logo C, the puffin pin, replaced
+logo A (decision 12, section 4.9).
 
 Covers the brand direction (colours, type, tone of voice) and the first
 screen designs from the [roadmap](../strategy/roadmap.md), Phase 1. Related:
@@ -23,7 +25,7 @@ This spec is the source of truth for the build; the canvas is a sketch.
 ## 1. Problem and goal
 
 The app has a neutral placeholder look. Before more screens are built, every
-screen needs to share one look that fits ShareRide: friendly enough that a
+screen needs to share one look that fits PuffinRide: friendly enough that a
 stranger feels at ease getting into someone's car, and clear enough that
 prices, times and seats are never misread.
 
@@ -145,6 +147,14 @@ in light mode; `#34454E`, `#557784` and `#24323A` in dark mode. Inside it,
 seats `#C9D5DA`, people on taken seats `#8E9CA3`, the steering wheel
 `#5B6B73` and the wheels `#1F2A30`; in dark mode `#3E525C`, `#7F8C93`,
 `#9AA8AE` and `#0B1013`.
+
+The puffin in the logo (section 4.9) has its own drawing colours, as tokens
+`puffin`: its face `#F7F5F0`, the beak's orange `#F26B2E`, the beak's
+grooves and the eye's ring `#D9512A`, the grey plate at the beak's base
+`#7C93A0` and the grey marks above and below the eye `#8E9CA3`. Its black
+is basalt `#1F2A30` (in the dark icon, the pin is the car's dark body
+`#34454E`) and the yellow at the beak's base is sun. The face stands out
+from both blacks by more than 3:1 (the tokens' tests check it).
 
 Our map of Iceland ([ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)):
 sea `#D7E9F0`, land `#F4F1EA` with its coast `#B9CBD3`, glaciers `#FFFFFF`,
@@ -275,25 +285,29 @@ review board shows the trip details in Icelandic and dark mode.
 
 ### 4.9 Logo and app icon
 
-Logo A, "A shared ride" (decision 11): the car from above, front up. The
-driver sits front left in a crowberry knitted hat, because Iceland drives on
-the right, and you sit in the back, in moss. The two empty seats say there is
-room.
+Logo C, "Puffin pin" (decision 12): our own puffin, drawn from simple shapes
+like the people in the seat view, is a map pin. The pin is the puffin's
+black and its white face is cut in it, with a red-ringed eye and a blush;
+the striped beak (grey plate, a yellow line, orange with grooves) sticks out
+of the pin and points the way. Meeting points are what the app is built on,
+and the pin keeps the puffin a travel sign rather than a souvenir.
 
-![Logo A as the app icon, the Android icon, the opening screen and with the name](images/visual-design-system/logo.png)
+![Logo C as the app icon, the Android icon, the opening screen and with the name](images/visual-design-system/logo.png)
 
 - **Drawings:** `apps/mobile/assets/logo/*.svg` are the source.
   `node scripts/export-icons.ts` (in `apps/mobile`) exports the pictures in
   `apps/mobile/assets` from them; commit a drawing and its picture together.
-  A test checks each picture's size, background and use in `app.json`.
-- **App icon:** the car at 90% of the square on `primary` moss, filling the
-  square; phones round the corners. iOS also gets a dark icon (the car in
-  night colours on dark `background`) and a tinted icon (the car's outline,
-  windscreen and people in light grey on black, which iOS colours).
-- **Android:** an adaptive icon. The background is `primary` moss; the car
-  layer is see-through with the car at 58%, inside the safe circle (66 of
-  108), so no shape the phone cuts reaches it. The themed icon (Android 13
-  and later) is the same outline in one colour.
+  A test checks each picture's size, background and use in `app.json`, and
+  another that the `Logo` part draws the same shapes as `icon.svg`.
+- **App icon:** the pin and its beak at 90% of the square on `primary`
+  moss, filling the square; phones round the corners. iOS also gets a dark
+  icon (the pin in the car's dark body colour on dark `background`) and a
+  tinted icon (the pin with its face cut out, the eye and the beak in light
+  grey on black, which iOS colours).
+- **Android:** an adaptive icon. The background is `primary` moss; the pin
+  layer is see-through with the drawing at 64%, inside the safe circle (66
+  of 108), so no shape the phone cuts reaches it. The themed icon (Android
+  13 and later) is the same pin in one colour.
 - **Opening screen:** the icon with rounded corners in the middle of
   `background` (frost, or night in dark mode), 144 points wide on both
   platforms, and nothing else. Its picture (1152 pixels, enough for the
@@ -302,9 +316,10 @@ room.
   while the app starts; the fonts and your session then load behind the
   usual loading view.
 - **Browser tab:** the icon with rounded corners, 48 pixels.
-- **With the name:** the icon, then "ShareRide" in Fredoka SemiBold in
+- **With the name:** the icon, then "PuffinRide" in Fredoka SemiBold in
   `text`, at 0.6 of the icon's height, with a gap of a quarter of the
-  icon's height. A new name later only changes the word.
+  icon's height. The name comes from the app's texts, so a new name only
+  changes the word.
 - **Rules:** keep space around the logo of at least half the icon's height.
   Smallest sizes: the icon 24 points, the icon with the name 120 points wide.
   Always on a plain background (frost, white or night); never on a photo,
@@ -339,7 +354,7 @@ and tests need no edits. Only the look changes.
 | `Body` | `body`, `textMuted` (the intro or help line under a title), centred; long text such as a legal document starts at the left |
 | `LanguageSwitch` | A `text` button with the other language's name |
 | `TabBar` | The menu on a phone's main screens (spec 16): `surface`, a 2 `border` line on top, room for the home indicator; five places, each an icon (22) over its name in `caption`, at least 56 high; the chosen one in `primary` with a `primarySoft` pill (56 wide) behind its icon, the others in `textMuted`. Phones read it as tabs with the chosen one selected; the web as the main navigation, with links and the current page marked |
-| `TopBar` | The menu from 900 wide, above every screen: `surface`, a 2 `border` line under it; the `Logo` (36) and "ShareRide" in `heading` at the left, together a link to Find named "ShareRide, to the front page"; the five places in `label` (the chosen one `primary` and underlined, at least 44 high; one under the pointer `primary`), then the `LanguageSwitch`. All of it in a row at most 1144 wide in the middle, with `md` padding at each side, as a page has (spec 18, 3.3) |
+| `TopBar` | The menu from 900 wide, above every screen: `surface`, a 2 `border` line under it; the `Logo` (36) and "PuffinRide" in `heading` at the left, together a link to Find named "PuffinRide, to the front page"; the five places in `label` (the chosen one `primary` and underlined, at least 44 high; one under the pointer `primary`), then the `LanguageSwitch`. All of it in a row at most 1144 wide in the middle, with `md` padding at each side, as a page has (spec 18, 3.3) |
 | `CountBadge` | The unread count on Messages (spec 7, 3.1, item 9): `onPrimary` figures in `caption` on a `primary` pill, at least 20 (`sizes.badge`) wide and high, with a 2 `surface` ring; up to 9, then "9+"; nothing at zero. On the tab bar it sits on the icon's top corner, in the top bar after the name. Screen readers skip it: the place's name says the count ("Messages, 3 unread") |
 | `Logo` | The app icon in small: logo A on `primary`, corners rounded like an app icon, the same in both modes; hidden from screen readers, since the name sits beside it |
 | `ProviderButtons` | "Continue with Google" and "Continue with Apple" (spec 19, 3.1), one under the other, full width: height 48, corner `control`, a 2 outline, the brand's fill, outline and text (section 4.2) with the label in `button`, the brand's logo before it (18 for Google's "G", 22 for Apple's), and a 3 bottom edge in `edge` it sinks over when pressed. A busy one shows a spinner instead of its logo, and both wait. Under them "or with your phone number" in `small` `textMuted`, between two `border` hairlines |
@@ -404,7 +419,7 @@ of the trip:
 | Free | White seat with a dashed `control` outline | Free on your part |
 | Not offered | Flat grey seat with a cross | The driver doesn't offer it |
 
-- **Positions are illustrative.** ShareRide doesn't assign seats. The app
+- **Positions are illustrative.** PuffinRide doesn't assign seats. The app
   fills seats in a fixed order: front passenger seat, then the back seats
   from the outside in. Taken seats come first, then yours, then free ones.
 - A legend under the view repeats the states in words, and a line says "2 of
@@ -571,4 +586,7 @@ Decided by Martin after the spec was approved:
 
 | # | Question | Decision |
 | - | -------- | -------- |
-| 11 | Which logo? | A, "A shared ride": the car from above with the driver and you (chosen 2026-11-13; the refined drawing approved 2026-11-14), not B (a friend in a hat) or C (your stretch of road) |
+| 11 | Which logo? | A, "A shared ride": the car from above with the driver and you (chosen 2026-11-13; the refined drawing approved 2026-11-14), not B (a friend in a hat) or C (your stretch of road). Replaced by decision 12 |
+| 12 | Which logo for PuffinRide, with cartoon puffins? | C, "Puffin pin": the puffin as a map pin, its beak pointing the way (chosen 2026-11-22), not A (two puffins in a little open car) or B (Lundi, a puffin's head in a knitted hat). Moss stays the main colour |
+
+![The three puffin logo directions Martin chose from](images/visual-design-system/logo-puffin-directions.png)
