@@ -1,6 +1,8 @@
 # Spec 24: Emails that look like PuffinRide
 
-**Owner:** Martin · **Date:** 2026-11-22 · **Status:** Proposed (2026-11-22)
+**Owner:** Martin · **Date:** 2026-11-22 · **Status:** Approved
+(2026-11-22, by Martin after the previews: "Guess the links wont be visible,
+otherwise approved")
 
 Features: E1, F2 and A1, every email the API sends
 ([features](../product/features.md)). Changes how emails look, not what they
@@ -65,10 +67,8 @@ layout, from top to bottom:
    - The **button**: the link's words ("Open in PuffinRide", "Confirm my
      email", "Directions", …) in `button` type on `primary` (moss) in
      `onPrimary`, corners `control` (16), with the `buttonPrimary` bottom
-     edge (4) in `primaryEdge`. It fits its label.
-   - Under it, the **link written out** in `small` type in `textMuted`,
-     itself a link, so it can be copied, and so the address the button opens
-     can be seen.
+     edge (4) in `primaryEdge`. It fits its label. The link is not written
+     out under it (Martin, 2026-11-22); the plain-text part has it.
 4. **Footer:** under the card, in `small` type in `textMuted`: why the email
    came (the existing footer), then "PuffinRide · puffinride.is" linking to
    the web app (on staging its address).
@@ -88,7 +88,6 @@ with `md` (16) around it.
  │ │ BSÍ bus terminal                   │ │
  │ │                                    │ │
  │ │ ( Open in PuffinRide )             │ │   moss button
- │ │ https://puffinride.is/bookings/…   │ │   grey link
  │ └────────────────────────────────────┘ │
  │ You get this email because you have a  │   grey footer
  │ PuffinRide account. …                  │
@@ -112,9 +111,8 @@ The layout is tables with the styles written on each part, as mail apps
 need, and a `<style>` block only for dark mode, the phone width and Apple's
 automatic links. It is checked in Gmail (web, Android, iOS), Outlook
 (Windows, Mac, web), Apple Mail (Mac, iPhone) and at 320 pixels wide.
-Outlook on Windows shows the button with square corners and leaves out the
-link written out under it, as it cannot break a long address; everything else
-is the same.
+Outlook on Windows shows the button with square corners; everything else is
+the same.
 
 ### 3.4 Pictures
 
@@ -184,7 +182,7 @@ Not now:
 | R24.2 | An email loads nothing from the internet: the icon travels inside it, no fonts, no tracking pixel, and open and click tracking stay off (R7.9). Its links lead only to the web app. |
 | R24.3 | It reads fully without pictures and without styles, and the plain-text part carries the same title, words, link and footer (3.5). |
 | R24.4 | Colours, type, corners and spacing are spec 15's tokens, from `@shareride/ui`; text meets 4.5:1 in light and dark mode. |
-| R24.5 | The one button is a link with its words, at least 44 pixels high; the address it opens is written out under it (except in Outlook on Windows). |
+| R24.5 | The one button is a link with its words, at least 44 pixels high. The HTML does not write the address out; the plain-text part does. |
 
 ## 5. Screens
 
@@ -223,8 +221,8 @@ footers in Icelandic and English, and the name PuffinRide.
 ## 9. Testing
 
 - API unit tests (`email-content.test.ts`): the plain text's order; the
-  HTML's language, title, preview line, paragraphs and line breaks, button,
-  written-out link, footer and home link; no repeated title; everything
+  HTML's language, title, preview line, paragraphs and line breaks, the
+  button as the only link to the screen, footer and home link; no repeated title; everything
   escaped, in the words and in the link; the icon referenced by `cid:` and
   sent with the email; no other picture, no script, no address outside the
   web app; the colours from the tokens, light and dark.
@@ -251,3 +249,4 @@ footers in Icelandic and English, and the name PuffinRide.
 | 3   | Downloaded fonts? | None, as in the app (spec 15); system fonts stand in (my call). |
 | 4   | Left or centred? | Left-aligned in the card, for long texts (my call; spec 15 centres titles and buttons on screens). |
 | 5   | The sender's picture | `hello@` as a Workspace user with the puffin photo and a rule refusing mail to it (Martin, 2026-11-22, on a decision card; not chosen: not now). BIMI when a certificate is possible. |
+| 6   | Write the link out under the button? | No: the button only (Martin, 2026-11-22, after the previews). |

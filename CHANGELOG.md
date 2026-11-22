@@ -1452,6 +1452,15 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Every email looks like PuffinRide (spec 24): the puffin pin and the name
+  at the top, sent inside the email so nothing loads when it is opened, a
+  white card with the title, the words and one moss button, and the footer
+  with the web app's address. Dark mode in Apple Mail
+  and Outlook, Outlook on Windows handled, no downloaded fonts. The
+  plain-text part starts with the title and sets the footer apart. The
+  words did not change. `pnpm --filter @shareride/api email-previews`
+  writes the key emails to look at; the runbook's "Show the puffin beside
+  our emails" gives `hello@` the puffin as its picture in Gmail.
 - Sign out is on Profile too (spec 16, 3.4 item 4), under the rows; Sign
   out on all devices stays in Settings.
 - The living docs and the legal drafts say PuffinRide (ADR 0039): the

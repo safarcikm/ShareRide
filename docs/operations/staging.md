@@ -158,10 +158,10 @@ settings, and nothing stops working in between. Martin's steps, in order:
    for `admin@` at [myaccount.google.com](https://myaccount.google.com) with
    a passkey or an authenticator app, and keep its backup codes in your
    password manager, not in a file or chat. Check: an email from your own
-   address to `admin@puffinride.is` arrives. Make `hello@` no mailbox of
-   its own: a member's reply to our emails would then be member data
-   (ADR 0039). It becomes a user only for its picture, with a rule that
-   refuses its mail ([Show the puffin beside our emails](#show-the-puffin-beside-our-emails)).
+   address to `admin@puffinride.is` arrives. A member's reply to our
+   emails must never be kept in a mailbox (ADR 0039): `hello@` becomes a
+   user only for its picture, after a rule that refuses mail sent to it
+   ([Show the puffin beside our emails](#show-the-puffin-beside-our-emails)).
 3. **`puffinride.com`, at Cloudflare,** leads to `puffinride.is`. In
    Cloudflare, the domain `puffinride.com`, **DNS**, **Records**: type
    **A**, name `@`, IPv4 `192.0.2.1`, **Proxied**; and the same with name
@@ -504,43 +504,49 @@ never lands in a mailbox (ADR 0039).
 Gmail shows the profile photo of the Google account that an email comes
 from. `hello@puffinride.is` gets one: a Google Workspace user (one more
 Business Starter seat, billed monthly) with the puffin as its photo, and a
-rule that refuses all mail sent to it, so members' replies still go back to
-them ([spec 24, 3.6](../specs/2026-11-22-branded-emails.md#36-the-senders-picture)).
-It works for staging and production alike. Martin's steps, in the Google
-Admin console ([admin.google.com](https://admin.google.com)) as
+rule that refuses all mail sent to it from outside, so members' replies
+still go back to them and are never kept
+([spec 24, 3.6](../specs/2026-11-22-branded-emails.md#36-the-senders-picture)).
+It works for staging and production alike. The rule comes first, so no
+reply lands in the new mailbox while it is set up. Martin's steps, in the
+Google Admin console ([admin.google.com](https://admin.google.com)) as
 `admin@puffinride.is`:
 
-1. **The user.** **Directory**, **Users**, **Add new user**: first name
+1. **Refuse its mail.** **Apps**, **Google Workspace**, **Gmail**,
+   **Routing**, then **Routing** again, **Configure** (or **Add another
+   rule**). Name it `Refuse mail to hello@`. Under *Email messages to
+   affect* tick **Inbound** only. Under *For the above types of messages,
+   do the following* choose **Reject message** with the notice
+   `This address does not receive mail. Write to us in PuffinRide.` (plain
+   letters only: a refusal travels as plain ASCII). Then **Show options**,
+   *Envelope filter*: **Only affect specific envelope recipients**,
+   **Single email address**, `hello@puffinride.is`. **Save**. Google may
+   take up to an hour to apply it; wait that long before step 2.
+2. **The user.** **Directory**, **Users**, **Add new user**: first name
    `PuffinRide`, last name `Iceland`, primary email `hello` @
    `puffinride.is`. Let Google make the password, and save it in your
    password manager, never in a file or chat. Google adds a licence.
-2. **Refuse its mail, before anything else.** **Apps**, **Google
-   Workspace**, **Gmail**, **Routing**, then **Routing** again, **Configure**
-   (or **Add another rule**). Name it `Refuse mail to hello@`. Under
-   *Email messages to affect* tick **Inbound** only. Under *For the above
-   types of messages, do the following* choose **Reject message** with the
-   notice `Þetta netfang tekur ekki við pósti. Skrifaðu okkur í PuffinRide.
-   / This address does not receive mail. Write to us in PuffinRide.` Then
-   **Show options**, *Envelope filter*: **Only affect specific envelope
-   recipients**, **Single email address**, `hello@puffinride.is`. **Save**.
 3. **The photo.** Download `design/puffinride/puffinride-gmail-profile-1024.png`
    from the project's files. In **Directory**, **Users**, open the `hello`
    user, choose its round picture, and upload it.
 4. **Lock it.** In a private browser window, sign in once to
    [myaccount.google.com](https://myaccount.google.com) as
-   `hello@puffinride.is` with the password from step 1. Turn on two-step
-   sign-in (a passkey or an authenticator app; backup codes in your password
-   manager). Under **Personal info**, check the photo is there, and if Google
-   asks who may see it, choose **Anyone**. Sign out. Nobody signs in to it
-   after this.
+   `hello@puffinride.is`. Google asks for a new password first: make a
+   strong one and save it in your password manager in place of the first.
+   Turn on two-step sign-in (a passkey or an authenticator app; backup
+   codes in your password manager). Under **Personal info**, check the photo
+   is there, and if Google asks who may see it, choose **Anyone**. Sign
+   out. Nobody signs in to it after this, and nobody inside Workspace writes
+   to it: only mail from outside is refused.
 5. **Check.** From a personal Gmail address, reply to any PuffinRide email
    (or write to `hello@puffinride.is`): the reply comes back refused, with
-   the notice from step 2. Within a day, a new PuffinRide email shows the
+   the notice from step 1. Within a day, a new PuffinRide email shows the
    puffin beside the sender in the Gmail app and in the opened email.
 
-The puffin does not show in the inbox list on a computer, in Apple Mail or
-in Outlook: that needs BIMI, which needs DMARC at `quarantine` or `reject`
-and a mark certificate (spec 24, 3.6). Revisit it in November 2027.
+The puffin does not show in Gmail's inbox list on a computer or in Apple
+Mail: that needs BIMI, which needs DMARC at `quarantine` or `reject` and a
+mark certificate (spec 24, 3.6); Outlook shows no BIMI logo at all. Revisit
+it in November 2027.
 
 ## Turn on photos
 

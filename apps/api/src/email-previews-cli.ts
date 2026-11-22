@@ -2,10 +2,11 @@
 //   pnpm --filter @shareride/api email-previews [folder]
 // Each email is an .html file, with the puffin pin as a data address so a
 // browser shows it (a mail app gets it inside the email), and a .txt file
-// of its plain-text part. The folder is email-previews/ unless given; git
-// ignores it. Made-up people and places only; nothing is sent.
+// of its plain-text part. The folder is apps/api/email-previews/ unless
+// given; git ignores it. Made-up people and places only; nothing is sent.
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { defaultNotificationSettings } from "@shareride/domain";
 import { locales, type Locale } from "@shareride/i18n";
 import { verifyEmailContent } from "./modules/account/email.ts";
@@ -13,7 +14,9 @@ import { emailContent, type EmailContent } from "./modules/notifications/email-c
 import { notificationText, type NotificationFacts } from "./modules/notifications/texts.ts";
 
 const webAppUrl = "https://puffinride.is";
-const folder = resolve(process.argv[2] ?? "email-previews");
+const folder = resolve(
+  process.argv[2] ?? fileURLToPath(new URL("../email-previews", import.meta.url)),
+);
 
 // Saturday 14 November 2026, boarding at 09:00 in Iceland (UTC all year).
 const booking: NotificationFacts = {

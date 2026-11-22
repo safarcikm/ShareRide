@@ -64,7 +64,7 @@ describe("emailContent (spec 24)", () => {
   });
 
   describe("the HTML (3.1)", () => {
-    it("lays out the title, the words, the button and the link written out, in the reader's language", () => {
+    it("lays out the title, the words and the button, in the reader's language", () => {
       const { html } = emailContent(confirmed, "is", webAppUrl);
       expect(html).toMatch(/^<!doctype html>\n<html lang="is" dir="ltr"/);
       expect(html).toContain("<title>Booking confirmed</title>");
@@ -72,8 +72,9 @@ describe("emailContent (spec 24)", () => {
       expect(html).toMatch(/<p [^>]*>Saturday 14 November at 09:00 · BSÍ bus terminal<\/p>/);
       // The one button, with the link's words.
       expect(html).toMatch(new RegExp(`<a [^>]*href="${link}"[^>]*>Opna í PuffinRide</a>`));
-      // The link written out under it, itself a link.
-      expect(html).toMatch(new RegExp(`<a [^>]*href="${link}"[^>]*>${link}</a>`));
+      // Only the button shows the link (Martin, 2026-11-22); the plain text writes it out.
+      expect(html).not.toContain(`>${link}<`);
+      expect(attributes(html, "href").filter((href) => href === link)).toHaveLength(1);
       expect(html).toContain("Þú færð þennan póst því þú ert með aðgang að PuffinRide.");
       expect(html).toMatch(
         /PuffinRide · <a [^>]*href="https:\/\/puffinride.is"[^>]*>puffinride.is<\/a>/,
@@ -87,6 +88,17 @@ describe("emailContent (spec 24)", () => {
         webAppUrl,
       );
       expect(html).toMatch(/<div [^>]*display:none[^>]*>First paragraph still first[^<]*<\/div>/);
+    });
+
+    it("reads an operator's Windows line ends and blank lines with spaces as paragraphs", () => {
+      const email = emailContent(
+        { title: "News", body: "a\n \n \nb\r\nstill b\r\n\r\n\r\nc \n", path: "/x" },
+        "en",
+        webAppUrl,
+      );
+      expect(email.text).toContain("News\n\na\n\nb\nstill b\n\nc\n\nOpen in PuffinRide");
+      expect(email.html).toMatch(/<p [^>]*>b<br>still b<\/p>/);
+      expect(email.html).toMatch(/<p [^>]*>c<\/p>/);
     });
 
     it("makes a paragraph of each part between blank lines, and keeps line breaks", () => {

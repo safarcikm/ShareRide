@@ -25,11 +25,16 @@ export interface EmailWords {
 }
 
 /**
- * The words as paragraphs, split at blank lines. Words that start with the
- * title, as a statement of reasons does, start after it (spec 24, 3.1).
+ * The words as paragraphs, split at blank lines, also those an operator
+ * typed with spaces or Windows line ends. Words that start with the title,
+ * as a statement of reasons does, start after it (spec 24, 3.1).
  */
 function paragraphsOf(words: string, title: string): string[] {
-  const paragraphs = words.split(/\n[ \t]*\n+/).filter((paragraph) => paragraph.trim() !== "");
+  const paragraphs = words
+    .replace(/\r\n?/g, "\n")
+    .split(/\n(?:[ \t]*\n)+/)
+    .map((paragraph) => paragraph.replace(/(?:\n[ \t]*)+$/, "").trimEnd())
+    .filter((paragraph) => paragraph.trim() !== "");
   return paragraphs.length > 1 && paragraphs[0] === title ? paragraphs.slice(1) : paragraphs;
 }
 

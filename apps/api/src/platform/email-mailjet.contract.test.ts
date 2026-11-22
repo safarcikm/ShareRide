@@ -5,6 +5,7 @@
 // @shareride/api test:contract` with MAILJET_API_KEY, MAILJET_SECRET_KEY
 // and EMAIL_FROM set. Not part of the CI run.
 import { describe, expect, it } from "vitest";
+import { emailLogo } from "../modules/notifications/email-logo.ts";
 import { EmailMaybeSent } from "./email.ts";
 import { createMailjetEmailSender } from "./email-mailjet.ts";
 
@@ -16,14 +17,16 @@ const message = {
   to: "contract-test@example.com",
   subject: "PuffinRide contract test",
   text: "Sandbox mode: this is never sent.",
-  html: "<p>Sandbox mode: this is never sent.</p>",
+  html: '<p><img src="cid:puffinride-logo" alt=""> Sandbox mode: this is never sent.</p>',
+  // The picture inside every email (spec 24, 3.4), so Mailjet checks the attachment too.
+  images: [emailLogo],
   idempotencyKey: "contract-test",
 };
 
 describe.skipIf(apiKey === undefined || secretKey === undefined || fromEmail === undefined)(
   "Mailjet contract (sandbox mode, nothing sent)",
   () => {
-    it("accepts a message with tracking off from our sender", async () => {
+    it("accepts a message with tracking off and its picture inside, from our sender", async () => {
       if (apiKey === undefined || secretKey === undefined || fromEmail === undefined) return;
       const sender = createMailjetEmailSender({
         apiKey,

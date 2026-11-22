@@ -3,7 +3,8 @@ import { colors, edges, maxContentWidth, radii, spacing, typeScale } from "@shar
 import type { EmailImage } from "../../platform/email.ts";
 
 // The HTML of every email (spec 24, 3.1): the puffin pin and the name, a
-// card with the title, the words and one button, and the footer. Tables with
+// card with the title, the words and one button (the link is written out
+// only in the plain-text part), and the footer. Tables with
 // the styles written on each part, as mail apps need; a <style> block only
 // for the phone width and dark mode (3.2), and one for Apple's automatic
 // links and Outlook's dark mode, so a mail app that drops one keeps the
@@ -61,6 +62,8 @@ function type(style: keyof typeof typeScale, colour: string): string {
     `font-family:${face.startsWith("Fredoka") ? displayFont : bodyFont}`,
     `font-size:${px(fontSize)}`,
     `line-height:${px(lineHeight)}`,
+    // Outlook on Windows reads a line height as the least, not the exact one.
+    "mso-line-height-rule:exactly",
     `font-weight:${/_(\d{3})/.exec(face)?.[1] ?? "400"}`,
     `color:${colour}`,
   ].join(";");
@@ -93,10 +96,10 @@ img{border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic}
 <style>
 a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important;font-size:inherit!important;font-family:inherit!important;font-weight:inherit!important;line-height:inherit!important}
 [data-ogsb] .pr-page{background-color:${dark.background}!important}
-[data-ogsb] .pr-surface{background-color:${dark.surface}!important}
+[data-ogsb] .pr-surface{background-color:${dark.surface}!important;border-bottom-color:${dark.edge}!important}
 [data-ogsc] .pr-text{color:${dark.text}!important}
 [data-ogsc] .pr-muted{color:${dark.textMuted}!important}
-[data-ogsb] .pr-button{background-color:${dark.primary}!important}
+[data-ogsb] .pr-button{background-color:${dark.primary}!important;border-bottom-color:${dark.primaryEdge}!important}
 [data-ogsc] .pr-button-text{color:${dark.onPrimary}!important}
 </style>`;
 
@@ -149,8 +152,6 @@ export function emailHtml(layout: EmailLayout): string {
     `<td class="pr-button" bgcolor="${light.primary}" style="background-color:${light.primary};border-radius:${px(radii.control)};border-bottom:${px(edges.buttonPrimary)} solid ${light.primaryEdge};mso-padding-alt:${px(buttonPadding)} ${px(spacing.lg)}">`,
     `<a class="pr-button-text" href="${href}" style="display:inline-block;padding:${px(buttonPadding)} ${px(spacing.lg)};${type("button", light.onPrimary)};text-decoration:none;border-radius:${px(radii.control)}">${escaped(button.label)}</a>`,
     "</td></tr></table>",
-    // Outlook on Windows cannot break a long address, so it shows the button only.
-    `<!--[if !mso]><!--><p class="pr-muted" style="margin:${px(spacing.ms)} 0 0 0;${small};word-break:break-all"><a class="pr-muted" href="${href}" style="color:${light.textMuted};text-decoration:underline">${href}</a></p><!--<![endif]-->`,
     "</td></tr>",
     // The footer.
     `<tr><td class="pr-aside" style="padding:${px(spacing.md)} 0 0 0">`,
