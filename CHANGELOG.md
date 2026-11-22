@@ -1334,6 +1334,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   command. `packages/db/src/places/settlement-meeting-points.csv` holds 104
   meeting points from OpenStreetMap, one in or near each settlement, for
   the operator to import in the console as drafts.
+- Sign in with Google and Apple (spec 19, ADR 0034; migration
+  `0057_sign_in_identities`): "Continue with Google" and "Continue with
+  Apple" on step 1 of signing in, on the web, Android and iPhone, through
+  our API's browser flow (`expo-web-browser`, a one-time ticket and the
+  app's own secret). A newcomer gives their phone number once, at
+  sign-up; a member Google or Apple knows is signed in with no code.
+  Settings, Sign-in methods lists the phone number and the linked
+  accounts, and adds one only after a code to the account's own number.
+  A development stand-in replaces Google and Apple locally and in tests;
+  staging turns them on with the runbook's steps.
 
 ### Fixed
 
@@ -1376,6 +1386,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   and the export's key purpose keep "shareride". Staging answers on
   `staging.puffinride.is` too, beside `staging.skinnar.is`; the runbook's
   "Move to puffinride.is" lists Martin's steps.
+- The logo is a puffin for PuffinRide (spec 15, decision 12): logo C, the
+  puffin pin, our own cartoon puffin as a map pin with its beak pointing
+  the way, replaces the car of logo A in the app icon (iOS light, dark and
+  tinted; Android adaptive and themed), the opening screen, the browser
+  tab and the logo beside the name. The puffin's drawing colours are tokens
+  (`puffin`), and a test keeps the `Logo` part and `icon.svg` the same.
 - Photos are kept in Hetzner Object Storage in Nuremberg, not Helsinki,
   which Hetzner did not offer when the staging bucket was made (ADR 0037).
   The privacy policy draft, the privacy register and the runbook say so;
