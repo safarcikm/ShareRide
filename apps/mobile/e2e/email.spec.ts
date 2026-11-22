@@ -1,17 +1,17 @@
-import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { english, signUp } from "./support/account";
 import { emailTo, linkIn } from "./support/email";
 import { postTripToSelfoss } from "./support/trips";
 
-// Adding an email (plan 4.6) on the web build: a passenger adds an address
-// from Settings, opens the link from the test API's email outbox, and then,
-// with no push in a browser, gets the "Pay now" email when the driver
-// accepts their request. The address is new each run and project.
+// An email on the web build (plan 4.6; spec 20, 3.3): a passenger gives an
+// address at sign-up, sees in Settings that its link waits, opens the link
+// from the test API's email outbox, and then, with no push in a browser,
+// gets the "Pay now" email when the driver accepts their request. The
+// address is new each run and project.
 
 test.use({ locale: "en-GB" });
 
-test("a passenger adds an email and gets the Pay now email once accepted", async ({
+test("a passenger confirms the email given at sign-up and gets the Pay now email", async ({
   page: passenger,
   browser,
 }, testInfo) => {
@@ -29,19 +29,14 @@ test("a passenger adds an email and gets the Pay now email once accepted", async
   });
   const driver = await driverContext.newPage();
   const visible = { visible: true } as const;
-  const address = `edda-${randomUUID().slice(0, 8)}@example.com`;
 
-  // Settings, Your account: add an email.
-  await signUp(passenger, english, "Edda");
+  // Step 3 asked for the email; Settings, Your account, shows its link waiting.
+  const { email: address } = await signUp(passenger, english, "Edda");
   await passenger.goto("/settings");
   await expect(passenger.getByRole("heading", { name: "Your account" })).toBeVisible();
-  await passenger.getByRole("link", { name: "Add an email" }).click();
-  await expect(passenger).toHaveURL("/settings/email");
-  await passenger.getByLabel("Email", { exact: true }).fill(address);
-  await passenger.getByRole("button", { name: "Send the link" }).click();
   await expect(
     passenger
-      .getByText(`We sent a link to ${address}. Open it within 24 hours to add the address.`)
+      .getByText(`Waiting for you to open the link sent to ${address}.`, { exact: true })
       .filter(visible),
   ).toBeVisible();
 

@@ -125,14 +125,20 @@ the menu's `(tabs)/_layout.tsx`, the web's first address
 ### Task 3.1: About you asks for the email
 
 **Files:** `apps/mobile/src/app/onboarding/about-you.tsx`, a small
-`sign-up-email.tsx` part, the screen test, `packages/i18n`
-(`onboarding.emailHelp`), the privacy register's Email row, spec 1.
+`sign-up-email.tsx` part with `email-at-sign-up(.web).ts` (the web asks,
+the phones do not), `profile-form.tsx` (a place after the first name and
+a check beside its own), the screen test, `packages/i18n`
+(`onboarding.emailHelp`), the privacy register's Email links row, spec 1.
 
-- [ ] Test first (web): the field shows without a verified or waiting
+- [x] Test first (web): the field shows without a verified or waiting
       email, an empty or wrong address is refused, the link is sent before
       the profile is saved, a retry after a failed save does not send it
-      again, `email_unavailable` lets sign-up go on. On phones, no field.
-- [ ] Build it; update the sign-up journeys that run on the web.
+      again (a changed address is sent again), `email_unavailable` lets
+      sign-up go on. On phones, no field.
+- [x] Build it; update the sign-up journeys that run on the web: sign-up
+      gives a new address each time, and the email journeys open the link
+      sent at sign-up. The API sends one link a minute, so one asked for
+      in Settings straight after sign-up waits that minute.
 
 ## Martin's steps
 

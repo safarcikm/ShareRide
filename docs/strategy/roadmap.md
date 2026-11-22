@@ -235,7 +235,7 @@ beta is open to everyone,
 
 - [ ] Production environment, separate from staging
 - [ ] Email from our own domain
-- [ ] Web members reached by email: the hour-before reminder, requests and
+- [x] Web members reached by email: the hour-before reminder, requests and
       "How was your trip?", links that open after signing in, and an email
       at sign-up on the web
       ([spec 20](../specs/2026-11-22-email-alerts-and-open-beta.md))

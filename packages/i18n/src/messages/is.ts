@@ -189,6 +189,8 @@ export const is = {
   "legal.version": "Útgáfa {version}",
   "legal.documentVersion": "{title}, útgáfa {version}",
   "onboarding.aboutYou": "Síðasta skref: um þig",
+  "onboarding.emailHelp":
+    "Við sendum þér tölvupóst um ferðirnar þínar: beiðnir, áminningar og hvernig ferðin gekk.",
   "profile.addAbout": "Bættu við nokkrum orðum um þig (valfrjálst)",
   "onboarding.create": "Stofna aðgang",
   "onboarding.createAndBook": "Stofna aðgang og bóka",

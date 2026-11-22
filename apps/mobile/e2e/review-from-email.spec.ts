@@ -1,16 +1,16 @@
-import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { apiUrl } from "../playwright.config";
 import { english, enterCode } from "./support/account";
 import { confirmedBooking, secondPage, visible } from "./support/cancelling";
-import { addEmail, emailTo, linkIn } from "./support/email";
+import { confirmEmail, emailTo, linkIn } from "./support/email";
 
-// "How was your trip?" by email on the web build (spec 20, 3.1 and 3.2).
-// Bára posts Mjódd to N1 Selfoss and Dóra books and pays; Dóra adds an
-// email, which a browser needs, as it gets no push. The test API then moves
-// the trip a day and a half back, so it completes and the email goes. Dóra
-// opens its link in another browser where she is not signed in, such as her
-// phone's: the app asks her to sign in and then opens the rating screen.
+// "How was your trip?" by email on the web build (spec 20, 3.1 to 3.3).
+// Bára posts Mjódd to N1 Selfoss and Dóra books and pays; Dóra gave an
+// email at sign-up, as the web asks (a browser gets no push), and opens its
+// link. The test API then moves the trip a day and a half back, so it
+// completes and the email goes. Dóra opens its link in another browser
+// where she is not signed in, such as her phone's: the app asks her to sign
+// in and then opens the rating screen.
 
 test.use({ locale: "en-GB" });
 
@@ -28,13 +28,15 @@ test("the passenger rates the driver from the email, signing in on the way", asy
 }, testInfo) => {
   test.slow();
   const { page: passenger, close } = await secondPage(browser, testInfo);
-  const { tripId, booking, passengerPhone } = await confirmedBooking(driver, passenger);
-  const address = `dora-${randomUUID().slice(0, 8)}@example.com`;
-  await addEmail(passenger, address);
+  const { tripId, booking, passengerPhone, passengerEmail } = await confirmedBooking(
+    driver,
+    passenger,
+  );
+  await confirmEmail(passenger, passengerEmail);
   await move(driver, tripId, -36 * 60);
 
   // The email opens the rating screen of her booking.
-  const asked = await emailTo(address, /^How was your trip\?$/);
+  const asked = await emailTo(passengerEmail, /^How was your trip\?$/);
   expect(asked.text).toContain("Rate the driver: Bára.");
   const link = linkIn(asked, "Open in ShareRide");
   expect(link).toBe(`${booking}/rate`);
