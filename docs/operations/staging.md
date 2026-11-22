@@ -359,12 +359,12 @@ someone.
 
 ## Turn on photos
 
-Staging takes no meeting point photos until the bucket is open (ADR 0022,
-about €5 a month). Real meeting points need one to go into use. Martin's
-steps:
+Staging takes no meeting point or profile photos until the bucket is open
+(ADRs 0022 and 0037, about €5 a month). A meeting point can go live
+without one, though the console recommends it (ADR 0036). Martin's steps:
 
 1. In the Hetzner Console, open (or create) a project, then **Object
-   Storage**, **Create Bucket**: location Helsinki (`hel1`), a name such
+   Storage**, **Create Bucket**: location Nuremberg (`nbg1`), a name such
    as `shareride-staging-photos`, and visibility **Private**. Sign
    Hetzner's data processing agreement in the account's settings.
 2. In the project's **Security**, **S3 credentials**, generate
@@ -372,7 +372,7 @@ steps:
    Render, never anywhere else.
 3. Open `shareride-staging-api`, **Environment**, and add
    `PHOTO_STORAGE` set to `hetzner`, `PHOTO_BUCKET_ENDPOINT` set to
-   `https://hel1.your-objectstorage.com`, `PHOTO_BUCKET` (the bucket's
+   `https://nbg1.your-objectstorage.com`, `PHOTO_BUCKET` (the bucket's
    name), and `PHOTO_BUCKET_ACCESS_KEY` and `PHOTO_BUCKET_SECRET_KEY` (as
    secrets), then save. Render deploys the service again; a missing one
    stops the API from starting, and the running version stays.

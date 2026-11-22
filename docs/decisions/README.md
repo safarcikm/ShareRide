@@ -52,7 +52,7 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0019](0019-sms-with-46elks.md) | Send sign-in codes by SMS with 46elks | Superseded by ADR 0023 |
 | [0020](0020-error-tracking-with-sentry-eu.md) | Error tracking and uptime checks with Sentry in its EU region | Accepted |
 | [0021](0021-map-tiles-from-maptiler.md) | Map tiles from MapTiler | Superseded by ADR 0024 |
-| [0022](0022-photo-storage-on-hetzner.md) | Store photos in Hetzner Object Storage in Helsinki | Accepted (re-encoding and link lifetime superseded by ADR 0029) |
+| [0022](0022-photo-storage-on-hetzner.md) | Store photos in Hetzner Object Storage in Helsinki | Accepted (re-encoding and link lifetime superseded by ADR 0029, the location by ADR 0037) |
 | [0023](0023-sms-with-vonage.md) | Send sign-in codes by SMS with Vonage, 46elks as the fallback | Accepted |
 | [0024](0024-own-simple-map-of-iceland.md) | Our own simple map of Iceland instead of map tiles | Accepted |
 | [0025](0025-own-date-and-number-formatting.md) | Our own date and number formatting instead of Intl's locale data | Accepted |
@@ -67,3 +67,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0034](0034-google-and-apple-sign-in-through-our-api.md) | Google and Apple sign-in through our API, in a browser window | Accepted |
 | [0035](0035-open-web-beta-reached-by-email.md) | An open beta on the web, reaching members by email | Accepted |
 | [0036](0036-meeting-points-go-live-before-their-photo.md) | A meeting point can go live before it has a photo | Accepted |
+| [0037](0037-photo-storage-in-nuremberg.md) | Store photos in Hetzner Object Storage in Nuremberg | Accepted |
