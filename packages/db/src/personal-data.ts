@@ -93,6 +93,21 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     personColumns: ["userId"],
     onDeletion: erase,
   },
+  identities: {
+    category: "account",
+    export: { section: "sign_in_methods" },
+    personColumns: ["userId"],
+    onDeletion: erase,
+  },
+  provider_sign_ins: {
+    category: "account",
+    export: {
+      leftOut:
+        "a Google or Apple sign-in on its way: gone within 30 minutes, then deleted by the hourly clean-up",
+    },
+    personColumns: ["linkUserId"],
+    onDeletion: erase,
+  },
   legal_documents: notAboutAPerson("the documents themselves, the same for everyone"),
   legal_acceptances: {
     category: "consents",

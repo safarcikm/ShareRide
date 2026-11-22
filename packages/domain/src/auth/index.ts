@@ -7,3 +7,4 @@ export * from "./rate-limit.ts";
 export * from "./retention.ts";
 export * from "./session-tokens.ts";
 export * from "./sign-in-code.ts";
+export * from "./sign-in-providers.ts";

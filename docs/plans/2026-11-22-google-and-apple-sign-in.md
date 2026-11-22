@@ -112,8 +112,10 @@ another thread's.
    the state's hash (unused, less than 10 minutes old), redeems the code
    (4.3), stores the subject, the email with whether it is verified, and
    the first name, makes a ticket (`sr_pt_…`, 5 minutes), and answers
-   `303` to `returnUrl#ticket=…`. Errors go to `returnUrl#error=cancelled`
-   or `#error=failed`; anything else the provider said is not passed on.
+   `303` to `returnUrl#ticket=…`. Errors go to `returnUrl#error=cancelled`,
+   `#error=expired` (the 10 minutes passed, the first time only) or
+   `#error=failed`; anything else the provider said is not passed on, and
+   is logged only by its OAuth error name.
 5. The app (or, on the web, the pop-up page `/sign-in/return`, which calls
    `WebBrowser.maybeCompleteAuthSession()`) gets the URL and calls
    `POST /v1/auth/oauth/finish { ticket, verifier, locale, device }`. The
@@ -139,14 +141,18 @@ another thread's.
 | none | another account | | `provider_in_use`, code kept |
 | exists | nobody | no | link, sign in, `linked: provider` |
 | exists | this account | | sign in (already linked) |
-| exists | another account | | sign in without linking, `linkRefused: provider_in_use` |
-| exists | nobody | yes | replace the old link, sign in, `replaced: provider` (and the email, when the account's email was the old link's) |
+| exists | another account | | sign in without linking, `providerLink.outcome: in_use` |
+| exists | nobody | yes | replace the old link, sign in, `replaced: provider`; the account's email stays, unless it was the old link's Apple relay address (spec 19, 3.5) |
 
-`POST /v1/me/sign-in-methods { ticket, verifier, code }` follows the same
-rules without "make", inside `withConfirmCode` (a code from
-`POST /v1/me/confirm-code`, as spec 11's actions), and refuses instead of
-replacing: `provider_in_use` and `provider_already_linked` are errors (409),
-checked before the code is asked for, so a refusal never uses one up. The email (R19.4) is set when the account has
+Settings follows the same rules without "make", and refuses instead of
+replacing, in two calls. `POST /v1/me/sign-in-methods/prepare { ticket,
+verifier }` takes the ticket for the signed-in account and answers
+`provider_in_use` or `provider_already_linked` (409) before any code is
+asked for, or holds the sign-in for that account only, until 30 minutes
+after the callback. Then `POST /v1/me/sign-in-methods { pendingSignIn,
+code }` adds it inside `withConfirmCode` (a code from
+`POST /v1/me/confirm-code`, as spec 11's actions), checking the rules again,
+so a refusal or a sign-in that took too long never uses the code up. The email (R19.4) is set when the account has
 none, the provider said verified, and no other account has it, checked in
 the transaction; the unique index on `users.email` is the last word.
 
@@ -201,26 +207,29 @@ interface IdentityProvider {
 An empty value counts as unset, so Render's empty `sync: false` entries do
 not break the start. Allowed return addresses: each `WEB_ORIGINS` origin
 with the path `/sign-in/return`; `shareride://sign-in/return`; and, outside
-production, `exp://` addresses ending in `/--/sign-in/return` (Expo Go).
+production and only while no provider is the real one, `exp://` addresses
+ending in `/--/sign-in/return` (Expo Go). `API_ORIGIN` must be `https` in
+production.
 
 ### 4.5 Data
 
-- `identities`: `id`, `user_id` (foreign key), `provider` (check `google`,
-  `apple`), `subject`, `email` (only a verified one, else empty),
-  `linked_at`, `last_used_at`,
-  timestamps. Unique `(provider, subject)` and `(user_id, provider)`.
-  Personal data: account; exported in the account section as sign-in
-  methods (provider, email, linked at); erased with the account.
+- `identities` (migration 0057): `id`, `user_id` (foreign key), `provider`
+  (check `google`, `apple`), `subject`, `email` (only a verified one, else
+  empty), `linked_at`, `last_used_at`, timestamps. Unique
+  `(provider, subject)` and `(user_id, provider)`. Personal data: account;
+  exported in its own section, sign-in methods (provider, email, linked,
+  last used; never the subject); erased with the account.
 - `provider_sign_ins`: `id`, `provider`, `state_hash` (unique),
-  `challenge`, `return_url`, `expires_at`, then `ticket_hash` (unique),
+  `challenge`, `return_url`, `expires_at`, `answered_at`, then `subject`,
+  `email` (only a verified one), `first_name`, `ticket_hash` (unique),
   `ticket_expires_at`, `ticket_used_at`, `pending_hash` (unique),
-  `pending_used_at`, `subject`, `email`, `email_verified`, `first_name`,
-  timestamps. Not linked to an account; listed in `personal-data.ts` as
-  left out of exports ("lives at most 30 minutes, before or while an
-  account is made"). The hourly clean-up deletes rows an hour after
-  `expires_at`.
-- Start limit: 20 starts per 10 minutes per address (its /64 for IPv6), in
-  `rate_limit_events` with the scope `oauth_start`.
+  `link_user_id` (the account a Settings link is for), timestamps. Listed
+  in `personal-data.ts` as left out of exports. A sign-in that ends
+  (signed in, linked, cancelled or failed) is deleted at once; the hourly
+  clean-up deletes the rest an hour after `expires_at`.
+- Start limit: 20 starts per 10 minutes per address (its /64 for IPv6),
+  counted in the API's memory as search's limit is, under a keyed hash of
+  the address.
 
 ### 4.6 The app
 
@@ -256,29 +265,30 @@ opens and merges once CI is green (Martin's rule of 2026-11-16).
 
 ### PR 2: `feat(auth)`: sign in with Google, the API
 
-- [ ] **Domain** (`packages/domain/src/auth/sign-in-providers.ts`):
+- [x] **Domain** (`packages/domain/src/auth/sign-in-providers.ts`):
       `signInProviders`, `providerSignInRules` (10 and 30 minutes, 5-minute
       ticket, start limit), `readProviderClaims` (subject, email, verified
       as `true` or `"true"`, first name through the first name rule),
       `decideLink` (table 4.2), `emailToStore` (R19.4),
       `isAllowedReturnUrl`. Tests first, one per row of 4.2 and per rule.
-- [ ] **Tables** `identities` and `provider_sign_ins`, the migration with
+- [x] **Tables** `identities` and `provider_sign_ins`, the migration with
       the next free number, `personal-data.ts`, export and erasure, the
       clean-up. Tests: export lists the methods; erasure leaves none; the
       clean-up deletes old sign-ins only.
-- [ ] **Providers** with the Google adapter and the development provider
+- [x] **Providers** with the Google adapter and the development provider
       (4.3), `jose` added to the API (justified in the PR). Tests with keys
       made in the test: a wrong signature, audience, issuer, expiry or
-      nonce is refused; an unverified email is kept as unverified.
-- [ ] **Routes** start, Google callback, finish, verify with
-      `pendingSignIn`, `GET`/`POST`/`DELETE /v1/me/sign-in-methods`,
+      nonce is refused; an unverified email is left out (R19.4).
+- [x] **Routes** start, Google callback, finish, verify with
+      `pendingSignIn`, `GET`/`POST`/`DELETE /v1/me/sign-in-methods` and
+      `POST /v1/me/sign-in-methods/prepare`,
       `signInProviders` in `/v1/config`; contracts and the API client.
       Integration tests for every row of 4.2, a ticket used twice, a wrong
       verifier, a sign-in past 10 or 30 minutes, a return address not
       allowed, the start limit, a suspended account, an account waiting to
       be deleted, adding in Settings without or with a wrong confirm code,
       review focus 2 to 4.
-- [ ] **Docs:** security (a "Google and Apple" part of Sign-in and
+- [x] **Docs:** security (a "Google and Apple" part of Sign-in and
       sessions), privacy and GDPR (inventory rows, Google and Apple as
       recipients), the privacy policy draft's section 5, `.env.example`
 - Verify: `pnpm check`; `pnpm test:integration` for `@shareride/api` and
@@ -291,8 +301,8 @@ opens and merges once CI is green (Martin's rule of 2026-11-16).
       checks
 - [ ] `POST /v1/auth/oauth/apple/callback` taking a form body, the one
       exception to JSON bodies, with a test that no other route takes one
-- [ ] Render blueprint entries (`sync: false`), the runbook
-      `docs/operations/sign-in-providers.md` with Martin's steps (section 6)
+- [ ] Render blueprint entries (`sync: false`), and Martin's Apple steps
+      (section 6) in the staging runbook
 - Verify: as PR 2, plus review focus 5
 
 ### PR 3: `feat(app)`: Continue with Google and Apple
@@ -306,6 +316,11 @@ opens and merges once CI is green (Martin's rule of 2026-11-16).
 - [ ] Settings, Sign-in methods: list, add (the window, then the confirm
       code with the part spec 11's screens use), remove with its question
 - [ ] Texts of spec 19, section 8, in `en.ts` and `is.ts`
+- [ ] Safety from PR 2's review: `pendingSignIn` only ever from a `finish`
+      answer, never from an address or link; `/sign-in/return` takes the
+      `#ticket` out of the address at once; a new verifier for each try;
+      the web app's error reports leave out `sr_` tokens; `#error=expired`
+      shows "That took too long"
 - [ ] Screen tests with `renderApp` against the fake API: each outcome of
       `start`, the phone step with a waiting sign-in, settings; Playwright
       journeys with the development provider's pop-up: a newcomer, a
@@ -319,7 +334,9 @@ opens and merges once CI is green (Martin's rule of 2026-11-16).
 
 ## 6. Martin's steps
 
-Exact clicks go in the runbook with PR 2b. In short:
+Exact clicks are in the staging runbook: Google's in
+[Turn on Google sign-in](../operations/staging.md#turn-on-google-sign-in)
+(PR 2), Apple's with PR 2b. In short:
 
 1. **Google Cloud** (free): a project "ShareRide"; Google Auth Platform,
    Branding (app name, support email, the domain `skinnar.is`, links to the

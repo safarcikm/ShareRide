@@ -12,6 +12,10 @@ const originSchema = z.string().refine((value) => {
   }
 }, "not an origin");
 
+/** An empty value counts as unset, as Render's empty `sync: false` entries are. */
+const unsetIfEmpty = <T extends z.ZodType>(schema: T) =>
+  z.preprocess((value) => (value === "" ? undefined : value), schema);
+
 const environmentSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]),
@@ -133,6 +137,21 @@ const environmentSchema = z
       .optional(),
     PHOTO_BUCKET_ACCESS_KEY: z.string().min(1).optional(),
     PHOTO_BUCKET_SECRET_KEY: z.string().min(1).optional(),
+    /**
+     * Signing in with Google (ADR 0034): `google` with its web client;
+     * `dev`, our stand-in for development and tests; `off`. By default
+     * `dev`, except under NODE_ENV=production (staging too), where it is
+     * `off` until set and `dev` is refused.
+     */
+    GOOGLE_SIGN_IN: unsetIfEmpty(z.enum(["off", "dev", "google"]).optional()),
+    GOOGLE_CLIENT_ID: unsetIfEmpty(z.string().min(1).optional()),
+    GOOGLE_CLIENT_SECRET: unsetIfEmpty(z.string().min(1).optional()),
+    /**
+     * Where browsers reach the API, for the sign-in providers' callback
+     * addresses: http://localhost:PORT locally; needed on a server once a
+     * provider is on.
+     */
+    API_ORIGIN: unsetIfEmpty(originSchema.optional()),
   })
   .superRefine((env, context) => {
     if (env.NODE_ENV === "production" && env.AUTH_SECRET.startsWith("local-only-")) {
@@ -198,6 +217,38 @@ const environmentSchema = z
             message: "needed when PHOTO_STORAGE is hetzner",
           });
         }
+      }
+    }
+    if (env.NODE_ENV === "production" && env.GOOGLE_SIGN_IN === "dev") {
+      context.addIssue({
+        code: "custom",
+        path: ["GOOGLE_SIGN_IN"],
+        message: "dev signs anyone in as made-up people and is not allowed in production",
+      });
+    }
+    if (env.GOOGLE_SIGN_IN === "google") {
+      const needed = ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"] as const;
+      for (const key of env.NODE_ENV === "production"
+        ? [...needed, "API_ORIGIN" as const]
+        : needed) {
+        if (env[key] === undefined) {
+          context.addIssue({
+            code: "custom",
+            path: [key],
+            message: "needed when GOOGLE_SIGN_IN is google",
+          });
+        }
+      }
+      if (
+        env.NODE_ENV === "production" &&
+        env.API_ORIGIN !== undefined &&
+        !env.API_ORIGIN.startsWith("https://")
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["API_ORIGIN"],
+          message: "must be https in production, where Google sends the person back to it",
+        });
       }
     }
     if (env.EMAIL_PROVIDER === "mailjet") {
@@ -306,6 +357,48 @@ function photoStorageConfig(env: z.infer<typeof environmentSchema>): PhotoStorag
   }
 }
 
+export type GoogleSignInConfig =
+  | { readonly mode: "off" }
+  | { readonly mode: "dev" }
+  | { readonly mode: "google"; readonly clientId: string; readonly clientSecret: string };
+
+/** Google and Apple sign-in through our API (ADR 0034). */
+export interface SignInConfig {
+  readonly google: GoogleSignInConfig;
+  /** Where browsers reach the API, for the callback addresses. */
+  readonly apiOrigin: string;
+  /** The web app's origins, whose /sign-in/return the browser window may go back to. */
+  readonly returnOrigins: readonly string[];
+  /**
+   * Expo Go's exp:// return addresses: in development with the stand-in
+   * only, never on a server.
+   */
+  readonly allowExpoGo: boolean;
+}
+
+function signInConfig(env: z.infer<typeof environmentSchema>): SignInConfig {
+  const production = env.NODE_ENV === "production";
+  const mode = env.GOOGLE_SIGN_IN ?? (production ? "off" : "dev");
+  const webAppUrl = env.WEB_APP_URL ?? (production ? undefined : localWebApp);
+  return {
+    google:
+      mode === "google"
+        ? {
+            mode,
+            clientId: env.GOOGLE_CLIENT_ID ?? "",
+            clientSecret: env.GOOGLE_CLIENT_SECRET ?? "",
+          }
+        : { mode },
+    apiOrigin: env.API_ORIGIN ?? `http://localhost:${String(env.PORT)}`,
+    returnOrigins: [
+      ...new Set([...env.WEB_ORIGINS, ...(webAppUrl === undefined ? [] : [webAppUrl])]),
+    ],
+    // Only with the stand-in, so a real Google ticket never goes to an
+    // Expo project someone else names.
+    allowExpoGo: !production && mode !== "google",
+  };
+}
+
 export interface PaymentsConfig {
   readonly provider: "none" | "test";
 }
@@ -333,6 +426,8 @@ export interface Config {
   readonly adminOrigin: string | undefined;
   /** Where meeting point and profile photos are kept, if anywhere (ADRs 0022 and 0033). */
   readonly photos: PhotoStorageConfig;
+  /** Google and Apple sign-in (ADR 0034). */
+  readonly signIn: SignInConfig;
 }
 
 export class ConfigError extends Error {
@@ -481,5 +576,6 @@ export function loadConfig(environment: Readonly<Record<string, string | undefin
     email: emailConfig(env),
     adminOrigin: adminOriginOf(env),
     photos: photoStorageConfig(env),
+    signIn: signInConfig(env),
   };
 }

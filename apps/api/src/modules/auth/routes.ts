@@ -41,6 +41,8 @@ const messages: Record<StartError["code"] | VerifyError["code"], string> = {
   code_expired: "The code has expired or was used. Ask for a new one.",
   code_attempts_exceeded: "Too many wrong codes. Ask for a new one.",
   account_unavailable: "This account cannot sign in.",
+  provider_expired: "The Google or Apple sign-in took too long. Continue with it again.",
+  provider_in_use: "This Google or Apple account is used by another ShareRide account.",
   invite_required: "ShareRide is in a closed beta. Send your invite code with the code.",
   ...inviteProblemMessages,
   signups_paused: pausedMessages.signups_paused,
@@ -63,6 +65,7 @@ function signInError(c: Context, error: StartError | VerifyError) {
     case "invite_required":
       return errorResponse(c, 403, error.code, message);
     case "beta_full":
+    case "provider_in_use":
       return errorResponse(c, 409, error.code, message);
     case "signups_paused":
     case "sms_paused":
@@ -70,6 +73,32 @@ function signInError(c: Context, error: StartError | VerifyError) {
     default:
       return errorResponse(c, 400, error.code, message);
   }
+}
+
+/**
+ * The tokens for a sign-in's answer; on the web the refresh token goes in an
+ * HTTP-only cookie instead (ADR 0016).
+ */
+export function tokensBodyFor(
+  c: Context,
+  tokens: IssuedTokens,
+  platform: Platform,
+  secureCookies: boolean,
+) {
+  const body = {
+    accessToken: tokens.accessToken,
+    accessTokenExpiresAt: tokens.accessTokenExpiresAt.toISOString(),
+    refreshTokenExpiresAt: tokens.refreshTokenExpiresAt.toISOString(),
+  };
+  if (platform !== "web") return { ...body, refreshToken: tokens.refreshToken };
+  setCookie(c, refreshCookie.name, tokens.refreshToken, {
+    path: refreshCookie.path,
+    httpOnly: true,
+    secure: secureCookies,
+    sameSite: "Strict",
+    maxAge: sessionRules.refreshTokenIdleSeconds,
+  });
+  return body;
 }
 
 /** The answer to a wrong, expired or exhausted confirm code, for the routes that take one. */
@@ -83,23 +112,8 @@ export function registerAuthRoutes(
 ): void {
   const { auth, account, requireAuth, clientAddress, secureCookies } = dependencies;
 
-  /** The tokens for the body; on the web the refresh token goes in the cookie instead. */
-  function tokensBody(c: Context, tokens: IssuedTokens, platform: Platform) {
-    const body = {
-      accessToken: tokens.accessToken,
-      accessTokenExpiresAt: tokens.accessTokenExpiresAt.toISOString(),
-      refreshTokenExpiresAt: tokens.refreshTokenExpiresAt.toISOString(),
-    };
-    if (platform !== "web") return { ...body, refreshToken: tokens.refreshToken };
-    setCookie(c, refreshCookie.name, tokens.refreshToken, {
-      path: refreshCookie.path,
-      httpOnly: true,
-      secure: secureCookies,
-      sameSite: "Strict",
-      maxAge: sessionRules.refreshTokenIdleSeconds,
-    });
-    return body;
-  }
+  const tokensBody = (c: Context, tokens: IssuedTokens, platform: Platform) =>
+    tokensBodyFor(c, tokens, platform, secureCookies);
 
   function clearRefreshCookie(c: Context): void {
     deleteCookie(c, refreshCookie.name, {
@@ -121,9 +135,18 @@ export function registerAuthRoutes(
     const body = validated(c, "json", verifyPhoneCodeRoute.request.body);
     const result = await auth.verify(body);
     if (!result.ok) return signInError(c, result.error);
-    const { userId, tokens, platform, isNewUser } = result.value;
+    const { userId, tokens, platform, isNewUser, providerLink, suggestedFirstName } = result.value;
     const user = await account.me(userId);
-    return c.json({ ...tokensBody(c, tokens, platform), user, isNewUser }, 200);
+    return c.json(
+      {
+        ...tokensBody(c, tokens, platform),
+        user,
+        isNewUser,
+        ...(providerLink === undefined ? {} : { providerLink }),
+        ...(suggestedFirstName === undefined ? {} : { suggestedFirstName }),
+      },
+      200,
+    );
   });
 
   app.openapi(toOpenApiRoute(refreshRoute), async (c) => {

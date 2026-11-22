@@ -38,6 +38,7 @@ const {
   payments,
   feedback,
   feedbackScreenshots,
+  identities,
   privacyRequests,
   pushTokens,
   reports,
@@ -198,6 +199,17 @@ export async function collectExport(
         .where(eq(pushTokens.userId, userId))
     ).map((row) => row.sessionId),
   );
+
+  const linked = await q
+    .select({
+      provider: identities.provider,
+      email: identities.email,
+      linkedAt: identities.linkedAt,
+      lastUsedAt: identities.lastUsedAt,
+    })
+    .from(identities)
+    .where(eq(identities.userId, userId))
+    .orderBy(asc(identities.linkedAt));
 
   const waiting = await q
     .select({ email: emailVerifications.email, sentAt: emailVerifications.sentAt })
@@ -758,6 +770,12 @@ export async function collectExport(
         lastActiveAt: when(device.lastActiveAt),
         endedAt: when(device.endedAt),
         push: pushed.has(id),
+      })),
+      sign_in_methods: linked.map((row) => ({
+        method: row.provider === "apple" ? "Apple" : "Google",
+        email: row.email,
+        linkedAt: when(row.linkedAt),
+        lastUsedAt: when(row.lastUsedAt),
       })),
       email_waiting: waiting.map((row) => ({ email: row.email, sentAt: when(row.sentAt) })),
       vehicles: cars.map((car) => ({

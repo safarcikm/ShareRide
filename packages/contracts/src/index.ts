@@ -27,5 +27,6 @@ export * from "./route.ts";
 export * from "./safety.ts";
 export * from "./search.ts";
 export * from "./settings.ts";
+export * from "./sign-in-methods.ts";
 export * from "./trip-day.ts";
 export * from "./trips.ts";

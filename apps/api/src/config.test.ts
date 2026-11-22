@@ -55,7 +55,88 @@ describe("loadConfig", () => {
       email: { provider: "dev", webAppUrl: "http://localhost:8081" },
       adminOrigin: "http://localhost:8080",
       photos: { provider: "folder", folder: join(tmpdir(), "shareride-photos") },
+      signIn: {
+        google: { mode: "dev" },
+        apiOrigin: "http://localhost:8080",
+        returnOrigins: [
+          "https://shareride.is",
+          "https://www.shareride.is",
+          "http://localhost:8081",
+        ],
+        allowExpoGo: true,
+      },
     });
+  });
+
+  it("uses the stand-in for Google locally, and nothing on a server until told (ADR 0034)", () => {
+    expect(loadConfig(development).signIn).toEqual({
+      google: { mode: "dev" },
+      apiOrigin: "http://localhost:3000",
+      returnOrigins: ["http://localhost:8081"],
+      allowExpoGo: true,
+    });
+    expect(loadConfig(valid).signIn).toEqual({
+      google: { mode: "off" },
+      apiOrigin: "http://localhost:8080",
+      returnOrigins: ["https://shareride.is", "https://www.shareride.is"],
+      allowExpoGo: false,
+    });
+  });
+
+  it("refuses the stand-in in production, staging included", () => {
+    expect(() => loadConfig({ ...valid, GOOGLE_SIGN_IN: "dev" })).toThrow("GOOGLE_SIGN_IN");
+  });
+
+  it("signs in with Google with its web client, on the API's public origin", () => {
+    const google = {
+      GOOGLE_SIGN_IN: "google",
+      GOOGLE_CLIENT_ID: "client.apps.googleusercontent.com",
+      GOOGLE_CLIENT_SECRET: "a-secret",
+      API_ORIGIN: "https://staging.skinnar.is",
+      WEB_ORIGINS: "",
+      WEB_APP_URL: "https://staging.skinnar.is",
+    };
+    expect(loadConfig({ ...valid, ...google }).signIn).toEqual({
+      google: {
+        mode: "google",
+        clientId: "client.apps.googleusercontent.com",
+        clientSecret: "a-secret",
+      },
+      apiOrigin: "https://staging.skinnar.is",
+      returnOrigins: ["https://staging.skinnar.is"],
+      allowExpoGo: false,
+    });
+    for (const key of ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "API_ORIGIN"] as const) {
+      expect(() => loadConfig({ ...valid, ...google, [key]: undefined })).toThrow(key);
+    }
+    expect(() => loadConfig({ ...valid, ...google, API_ORIGIN: "https://x.is/api" })).toThrow(
+      "API_ORIGIN",
+    );
+    expect(() =>
+      loadConfig({ ...valid, ...google, API_ORIGIN: "http://staging.skinnar.is" }),
+    ).toThrow("API_ORIGIN");
+  });
+
+  it("takes Expo Go's return addresses only while Google is the stand-in", () => {
+    const google = {
+      GOOGLE_SIGN_IN: "google",
+      GOOGLE_CLIENT_ID: "client.apps.googleusercontent.com",
+      GOOGLE_CLIENT_SECRET: "a-secret",
+    };
+    expect(loadConfig({ ...development, ...google }).signIn.allowExpoGo).toBe(false);
+    expect(loadConfig({ ...development, GOOGLE_SIGN_IN: "off" }).signIn.allowExpoGo).toBe(true);
+  });
+
+  it("takes an empty value as unset, as Render's empty secret entries are", () => {
+    expect(
+      loadConfig({
+        ...valid,
+        GOOGLE_SIGN_IN: "",
+        GOOGLE_CLIENT_ID: "",
+        GOOGLE_CLIENT_SECRET: "",
+        API_ORIGIN: "",
+      }).signIn.google,
+    ).toEqual({ mode: "off" });
   });
 
   it("keeps photos in a folder locally, and takes none on a server until a bucket is set (ADR 0022)", () => {

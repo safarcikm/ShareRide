@@ -1450,6 +1450,12 @@ export const en = {
   "email.verifyOpen": "Confirm my email",
   "email.verifyFooter":
     "You get this email because this address was entered in ShareRide. If that was not you, ignore it: the address is not added.",
+  "oauth.page.title": "ShareRide sign-in",
+  "oauth.page.off":
+    "This way of signing in isn't available. Close this window and use your phone number.",
+  "oauth.page.invalid": "This sign-in link doesn't work. Close this window and try again.",
+  "oauth.page.expired":
+    "This sign-in has expired or was already used. Close this window and try again.",
   "sms.signInCode": "{code} is your ShareRide code. It expires in 10 minutes.",
   "sms.confirmCode": "{code} is your ShareRide code to confirm. Never share it.",
   "sms.bookingCancelled":
@@ -1548,6 +1554,7 @@ export const en = {
   "export.section.legal_acceptances": "Terms and policies accepted",
   "export.section.settings": "Settings",
   "export.section.devices": "Signed-in devices",
+  "export.section.sign_in_methods": "Sign-in methods",
   "export.section.email_waiting": "Email waiting to be verified",
   "export.section.vehicles": "Cars",
   "export.section.trips_posted": "Trips you posted",
@@ -1618,6 +1625,7 @@ export const en = {
   "export.field.kind": "Kind",
   "export.field.languages": "Languages",
   "export.field.lastActiveAt": "Last active",
+  "export.field.lastUsedAt": "Last used",
   "export.field.licenceDeclaredAt": "Driving licence declared",
   "export.field.locale": "Language",
   "export.field.luggage": "Luggage",
@@ -1643,6 +1651,8 @@ export const en = {
   "export.field.phoneVerifiedAt": "Phone number verified",
   "export.field.place": "Place",
   "export.field.plannedAt": "Planned time",
+  "export.field.method": "Sign-in method",
+  "export.field.linkedAt": "Linked",
   "export.field.platform": "Platform",
   "export.field.price": "Price per seat",
   "export.field.priceLevel": "Price level (%)",

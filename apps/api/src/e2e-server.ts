@@ -34,6 +34,7 @@ import { operatorRole, reportCategories, type ReportCategory } from "@shareride/
 import { and, desc, eq, sql } from "drizzle-orm";
 import { createApp } from "./app.ts";
 import { createLogger } from "./logger.ts";
+import { selectSignIn } from "./platform/select-identity-providers.ts";
 import { selectPhotoStorage } from "./platform/select-photo-storage.ts";
 import {
   createOperatorSessionService,
@@ -159,6 +160,13 @@ const app = createApp({
     payments: createTestPaymentProvider(),
     adminOrigin,
     ...photoStorage,
+    // Google through the development stand-in's page (ADR 0034).
+    signIn: selectSignIn({
+      google: { mode: "dev" },
+      apiOrigin: `http://localhost:${String(port)}`,
+      returnOrigins: [webOrigin],
+      allowExpoGo: false,
+    }),
   },
 });
 

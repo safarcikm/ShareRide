@@ -1,6 +1,15 @@
-import { codePurposes } from "@shareride/domain";
+import { codePurposes, signInProviders } from "@shareride/domain";
 import { sql } from "drizzle-orm";
-import { check, index, integer, pgTable, text, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
+import {
+  check,
+  index,
+  integer,
+  pgTable,
+  text,
+  unique,
+  uuid,
+  type AnyPgColumn,
+} from "drizzle-orm/pg-core";
 import { at, id, oneOf, timestamps } from "./columns.ts";
 import { users } from "./users.ts";
 
@@ -116,4 +125,77 @@ export const emailVerifications = pgTable(
     ...timestamps,
   },
   (table) => [index("email_verifications_user_index").on(table.userId, table.sentAt)],
+);
+
+/**
+ * A Google or Apple account linked to a ShareRide account (spec 19, R19.1):
+ * one of each provider per account, and each provider account on one
+ * ShareRide account only. Only the provider's identifier and a verified
+ * email are kept (R19.5).
+ */
+export const identities = pgTable(
+  "identities",
+  {
+    id: id(),
+    userId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    provider: text().notNull(),
+    /** The provider's own identifier for the person (`sub`), which does not change. */
+    subject: text().notNull(),
+    /** The email the provider vouched for when it was linked; empty without one. */
+    email: text(),
+    linkedAt: at().notNull(),
+    lastUsedAt: at().notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    unique("identities_provider_subject_unique").on(table.provider, table.subject),
+    unique("identities_user_provider_unique").on(table.userId, table.provider),
+    check("identities_provider_check", oneOf(table.provider, signInProviders)),
+  ],
+);
+
+/**
+ * One sign-in with a provider, from the tap until it is finished (ADR
+ * 0034; plan 4.1). The state, the ticket and the waiting sign-in are kept
+ * only as SHA-256 hashes; the PKCE verifier and the nonce are made from the
+ * state and never stored. After the provider answers, it holds the subject,
+ * a verified email and a first name for at most 30 minutes, before or while
+ * an account is made, or while a member adds it in Settings. A sign-in
+ * that ends is deleted; the hourly clean-up deletes the rest an hour after
+ * they expired.
+ */
+export const providerSignIns = pgTable(
+  "provider_sign_ins",
+  {
+    id: id(),
+    provider: text().notNull(),
+    stateHash: text().notNull().unique("provider_sign_ins_state_hash_unique"),
+    /** SHA-256 of the app's secret, base64url: finishing needs the secret. */
+    challenge: text().notNull(),
+    returnUrl: text().notNull(),
+    /** 10 minutes after the start; 30 minutes after the provider's answer. */
+    expiresAt: at().notNull(),
+    /** When the provider's answer came back, checked. */
+    answeredAt: at(),
+    subject: text(),
+    email: text(),
+    firstName: text(),
+    ticketHash: text().unique("provider_sign_ins_ticket_hash_unique"),
+    ticketExpiresAt: at(),
+    ticketUsedAt: at(),
+    /**
+     * The waiting sign-in: the phone step takes it to make or find the
+     * account (spec 19, 3.3), or Settings, with a confirm code, for the
+     * account in `link_user_id` (3.4). Taking it deletes the row.
+     */
+    pendingHash: text().unique("provider_sign_ins_pending_hash_unique"),
+    linkUserId: uuid().references(() => users.id, { onDelete: "cascade" }),
+    ...timestamps,
+  },
+  (table) => [
+    index().on(table.expiresAt),
+    check("provider_sign_ins_provider_check", oneOf(table.provider, signInProviders)),
+  ],
 );

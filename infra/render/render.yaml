@@ -74,6 +74,17 @@ services:
         value: hello@skinnar.is
       # The photo storage settings (ADR 0022) are added in the dashboard when
       # photos are turned on; see the runbook.
+      # Google sign-in (ADR 0034): asked for, not set here. GOOGLE_SIGN_IN
+      # stays off until it is google and the web client's ID and secret are
+      # set; API_ORIGIN is where Google sends the browser back to.
+      - key: GOOGLE_SIGN_IN
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: API_ORIGIN
+        value: https://staging.skinnar.is
 
   # Deletes records past their retention and erases deleted accounts, every hour (UTC).
   - type: cron
