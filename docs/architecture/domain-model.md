@@ -42,7 +42,7 @@ erDiagram
 | `profile_id` | Random UUID; the only reference to the person on their public profile (`/people/{profile_id}`), so the `id` is never handed to everyone |
 | `phone` | E.164, verified; unique |
 | `email` | Optional, verified if present |
-| `first_name`, `photo_key`, `bio` | Public profile; last name is never shown publicly. The bio is `about`; `about_hidden_at` is set when ShareRide hid it from others (spec 9, 3.4.3), and a new text clears it. `photo_key` names the photo's file in photo storage, new for each photo ([ADR 0033](../decisions/0033-profile-photos-made-in-the-app-and-checked-by-the-api.md)); `photo_hidden_at` works as `about_hidden_at`. Files nobody has any more wait in `photo_files_to_delete` until the API deletes them |
+| `first_name`, `photo_key`, `bio` | Public profile; last name is never shown publicly. The bio is `about`; `about_hidden_at` is set when PuffinRide hid it from others (spec 9, 3.4.3), and a new text clears it. `photo_key` names the photo's file in photo storage, new for each photo ([ADR 0033](../decisions/0033-profile-photos-made-in-the-app-and-checked-by-the-api.md)); `photo_hidden_at` works as `about_hidden_at`. Files nobody has any more wait in `photo_files_to_delete` until the API deletes them |
 | `languages` | Languages spoken, shown on profile |
 | `locale` | App language |
 | `verification` | Set of: `phone`, `email`, `audkenni` |
@@ -140,12 +140,12 @@ paused or retiring) connected by road.
 | `price_level` | Percentage of the suggested prices, 0 (free) up to the cap ([ADR 0012](../decisions/0012-trip-price-level.md)) |
 | `status` | `draft`, `published`, `departed`, `completed`, `cancelled` |
 | `luggage`, `pets`, `smoking`, `child_seat`, `chat` | The preferences, one column each with a fixed list of values |
-| `note`, `note_hidden_at` | Free text from the driver, at most 500 characters, no contact details; when ShareRide hid it from passengers (spec 9, 3.4.3), until the driver writes a new one |
+| `note`, `note_hidden_at` | Free text from the driver, at most 500 characters, no contact details; when PuffinRide hid it from passengers (spec 9, 3.4.3), until the driver writes a new one |
 | `departs_at`, `arrives_at` | Copies of the first and last stops' planned times, for overlap checks and clean-up; empty in a draft until the departure is chosen |
 | `women_only` | Shown to everyone; only women who have opted in can book it; fixed once a request or booking exists (not built yet) |
 | `published_at` | |
 | `completed_at` | Two hours after its last stop's planned time, when it completed on its own ([spec 8, R8.1](../specs/2026-11-13-trip-day-reviews-and-reliability.md#36-trip-completion-e4)), however late the job ran |
-| `cancelled_at`, `cancelled_by`, `cancel_reason`, `cancel_note`, `counts_on_reliability` | When the trip was cancelled and by whom (`driver`, or `operator` for ShareRide, spec 9, 3.4.3 and 3.6), why (a fixed list, the driver's only), the driver's note to everyone on it (up to 500 characters, without contact details), and whether it counts on their reliability, once for the trip ([spec 6, 3.3](../specs/2026-11-13-changes-and-cancellations.md#33-cancelling-a-trip-driver)); ShareRide's never counts unless the operator says so |
+| `cancelled_at`, `cancelled_by`, `cancel_reason`, `cancel_note`, `counts_on_reliability` | When the trip was cancelled and by whom (`driver`, or `operator` for PuffinRide, spec 9, 3.4.3 and 3.6), why (a fixed list, the driver's only), the driver's note to everyone on it (up to 500 characters, without contact details), and whether it counts on their reliability, once for the trip ([spec 6, 3.3](../specs/2026-11-13-changes-and-cancellations.md#33-cancelling-a-trip-driver)); PuffinRide's never counts unless the operator says so |
 | `excused_by_reason`, `overruled_at`, `overrule_note` | Whether the cancellation does not count only because its reason is the weather or a closed road, saved when it is made; when the operator overruled that reason so that it counts (null again if they undo it); and their note on the last change, theirs only, up to 500 characters ([spec 8, R8.11](../specs/2026-11-13-trip-day-reviews-and-reliability.md#4-rules)). Who did is in the audit log |
 | `sample` | Sample data made by the seed for local development and staging |
 
@@ -232,7 +232,7 @@ planned arrival). Messages have `sender_id` (empty for a system line), `kind`
 quick message or system line, `client_id` (one message per client ID and
 sender, so a retry is stored once; only a message to all passengers puts
 one client ID in several conversations of a trip), `sent_at`, `read_at`,
-`hidden_at` (ShareRide removed it: both people read "Removed by ShareRide",
+`hidden_at` (PuffinRide removed it: both people read "Removed by PuffinRide",
 spec 9, 3.4.3; a message to all passengers is removed in every
 conversation it went to), and `erased_at` (when the sender's account was
 erased: the text, key and params are emptied, the sender becomes the former
@@ -305,7 +305,7 @@ once, finally; reversing the suspension the person is under (their latest,
 while they are suspended) lifts it, and what it cancelled stays cancelled.
 Reversing a `content_hidden` shows the content again, unless it has changed
 or been hidden again since. A `trip_cancelled` names the trip; the driver
-reads why, the passengers only that ShareRide cancelled it.
+reads why, the passengers only that PuffinRide cancelled it.
 
 ### Payment
 
@@ -437,7 +437,7 @@ stateDiagram-v2
   [*] --> draft
   draft --> published : driver publishes
   draft --> [*] : driver discards
-  published --> cancelled : driver or ShareRide cancels
+  published --> cancelled : driver or PuffinRide cancels
   published --> departed : planned time of first stop passes
   departed --> completed : planned time of last stop passes plus 2 hours
   cancelled --> [*]

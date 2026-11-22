@@ -1,6 +1,6 @@
 # Security policy
 
-ShareRide handles personal data, locations and, later, payments. We take
+PuffinRide handles personal data, locations and, later, payments. We take
 security reports seriously.
 
 ## Reporting a vulnerability

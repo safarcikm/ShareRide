@@ -2,7 +2,7 @@
 
 **Owner:** Martin · **Last reviewed:** 2026-11-13
 
-ShareRide brings strangers together in cars and stores where people travel.
+PuffinRide brings strangers together in cars and stores where people travel.
 Security failures here can hurt people physically, not only financially. We
 use the [OWASP Application Security Verification Standard](https://owasp.org/www-project-application-security-verification-standard/)
 (ASVS) level 2 as the checklist for the API and the

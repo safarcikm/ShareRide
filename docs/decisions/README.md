@@ -58,7 +58,7 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0025](0025-own-date-and-number-formatting.md) | Our own date and number formatting instead of Intl's locale data | Accepted |
 | [0026](0026-push-through-expo.md) | Send push notifications through Expo's push service | Accepted |
 | [0027](0027-email-through-mailjet.md) | Send email through Mailjet | Accepted |
-| [0028](0028-operator-console-web-app-and-passkeys.md) | The operator console as its own web app, signed in with passkeys | Accepted |
+| [0028](0028-operator-console-web-app-and-passkeys.md) | The operator console as its own web app, signed in with passkeys | Accepted (getting back in without a passkey amended by 0040) |
 | [0029](0029-photos-cleaned-in-the-browser-and-checked-by-the-api.md) | Photos made in the browser and checked by the API; links signed per hour | Accepted |
 | [0030](0030-limit-what-a-whole-trip-brings-the-driver.md) | Limit what a whole trip brings the driver, counting money already booked | Accepted |
 | [0031](0031-distances-from-our-own-road-file.md) | Distances between meeting points from our own road file | Accepted |
@@ -70,3 +70,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0037](0037-photo-storage-in-nuremberg.md) | Store photos in Hetzner Object Storage in Nuremberg | Accepted |
 | [0038](0038-pay-the-driver-in-person-until-card-payments.md) | Passengers pay the driver in person until payments in the app work | Accepted |
 | [0039](0039-rename-to-puffinride.md) | Rename the product to PuffinRide, on puffinride.is | Accepted |
+| [0040](0040-console-recovery-by-text-code.md) | Get back into the console with a text code and a new passkey | Accepted |

@@ -22,12 +22,12 @@ All plugins below are in Anthropic's official marketplace,
 
 ## Install now (Phase 1)
 
-| Plugin | Why ShareRide needs it |
+| Plugin | Why PuffinRide needs it |
 | ------ | ---------------------- |
 | `superpowers` | The development method: brainstorm, write a spec, write a plan, build with test-driven development, review, finish the branch. Keeps AI-written code disciplined and leaves specs and plans in the repo for later review. |
 | `frontend-design` | Produces distinctive, polished interfaces instead of generic ones. Useful from the first prototypes through every screen. |
 | `context7` | Fetches current documentation for fast-moving libraries (Expo, React Native, MapLibre, Drizzle, Hono) so Claude doesn't rely on outdated memory. |
-| `security-guidance` | Warns about security problems while code is written and reviews diffs. ShareRide handles identity, location and later money. |
+| `security-guidance` | Warns about security problems while code is written and reviews diffs. PuffinRide handles identity, location and later money. |
 | `pr-review-toolkit` | Specialised review agents for tests, error handling, type design, comments and simplification. Gives the owner a second pair of eyes before every merge. |
 | `claude-md-management` | Keeps `CLAUDE.md` accurate as the project evolves; `/revise-claude-md` captures lessons from a session. |
 

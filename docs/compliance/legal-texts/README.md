@@ -66,7 +66,7 @@ These add to the brief in
 [legal and regulatory](../legal-and-regulatory.md#9-questions-for-the-lawyer-phase-1-brief),
 section 9, whose answers may change the drafts too.
 
-1. **Our role.** The terms say ShareRide is an intermediary, the ride is an
+1. **Our role.** The terms say PuffinRide is an intermediary, the ride is an
    agreement between the driver and the passenger, and the driver shares
    costs rather than selling a service. Is that wording right for the Taxi
    Act and for consumer law, and does collecting payment in the app change
@@ -112,7 +112,7 @@ section 9, whose answers may change the drafts too.
     passengers may pay the driver the price the app shows, in cash or by
     bank transfer, when they get in (terms 6.9, 7.6 and 8.2;
     [ADR 0038](../../decisions/0038-pay-the-driver-in-person-until-card-payments.md)).
-    ShareRide takes no money and no fee, and has no record of what was
+    PuffinRide takes no money and no fee, and has no record of what was
     paid. Does that change the Taxi Act answer (brief, questions 1 and 3)?
     Is the wording that we cannot refund or give a receipt for that money
     enough, and does a late canceller owing nothing need saying anywhere

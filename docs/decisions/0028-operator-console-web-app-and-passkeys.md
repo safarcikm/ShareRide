@@ -1,6 +1,7 @@
 # 0028. The operator console as its own web app, signed in with passkeys
 
-- **Status:** Accepted
+- **Status:** Accepted; getting back in without a passkey amended by
+  [ADR 0040](0040-console-recovery-by-text-code.md) (a text code, then a new passkey)
 - **Date:** 2026-11-16
 - **Deciders:** Martin
 - **Related:** [ADR 0003](0003-cross-platform-client-expo.md),
