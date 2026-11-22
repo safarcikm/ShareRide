@@ -335,11 +335,12 @@ describe("erasure after the 7 days (spec 11, 3.5)", () => {
     if (before.data.confirmed === null) throw new Error("Not confirmed.");
     expect(after.data).toEqual({
       ...before.data,
-      // No profile, rating or figure: the former member has none.
+      // No profile, rating, figure or photo: the former member has none.
       driver: {
         firstName: null,
         colour: expect.any(Number) as unknown,
         profileId: null,
+        photo: null,
         rating: { average: null, count: 0 },
         reliabilityPercent: null,
       },
