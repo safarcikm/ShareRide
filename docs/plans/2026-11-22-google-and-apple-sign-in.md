@@ -2,7 +2,7 @@
 
 **Owner:** Martin · **Date:** 2026-11-22 · **Status:** Approved with
 [spec 19](../specs/2026-11-22-google-and-apple-sign-in.md) and
-[ADR 0033](../decisions/0033-google-and-apple-sign-in-through-our-api.md)
+[ADR 0034](../decisions/0034-google-and-apple-sign-in-through-our-api.md)
 (Martin, 2026-11-22, on a decision card); building
 
 > **For agentic workers:** use superpowers:executing-plans to carry this out
@@ -11,7 +11,7 @@
 **Goal:** people create an account and sign in with Google or Apple on the
 web, Android and iPhone, verifying a phone number once at sign-up.
 
-**Architecture:** the API runs each sign-in in a browser window (ADR 0033):
+**Architecture:** the API runs each sign-in in a browser window (ADR 0034):
 a start address that sends the person to the provider, a callback that
 trades the provider's code for its ID token and checks it, and a one-time
 ticket the app redeems with a secret only it holds. A newcomer's sign-in
@@ -79,7 +79,7 @@ another thread's.
 
 | # | Call | Why |
 | - | ---- | --- |
-| 1 | The API runs the browser flow on every platform (ADR 0033) | One tested path; works in Expo Go; no native modules or scripts |
+| 1 | The API runs the browser flow on every platform (ADR 0034) | One tested path; works in Expo Go; no native modules or scripts |
 | 2 | Apple on Android too | Free with the browser flow; one sign-in screen for all |
 | 3 | Linking by phone code is automatic | The code is what signing in with the number needs anyway |
 | 4 | The provider's email fills only an empty email | A person's chosen address never changes behind their back |
@@ -247,11 +247,11 @@ production, `exp://` addresses ending in `/--/sign-in/return` (Expo Go).
 One branch, one pull request at a time; each gets a code review before it
 opens and merges once CI is green (Martin's rule of 2026-11-16).
 
-### PR 1: `docs(auth)`: spec 19, ADR 0033 and this plan
+### PR 1: `docs(auth)`: spec 19, ADR 0034 and this plan
 
 - [x] Spec, ADR and plan, the indexes, a line at the top of spec 1 and in
       milestone 2's section 4.7 pointing here, the roadmap's milestone 13
-- Merge: after Martin approves spec 19 and ADR 0033 (ADR 0033 then
+- Merge: after Martin approves spec 19 and ADR 0034 (ADR 0034 then
   Accepted)
 
 ### PR 2: `feat(auth)`: sign in with Google, the API

@@ -3,7 +3,7 @@
 **Owner:** Martin · **Date:** 2026-11-22 · **Status:** Approved
 (2026-11-22, by Martin on a decision card); see the [implementation plan](../plans/2026-11-22-google-and-apple-sign-in.md)
 
-Decision record: [ADR 0033](../decisions/0033-google-and-apple-sign-in-through-our-api.md)
+Decision record: [ADR 0034](../decisions/0034-google-and-apple-sign-in-through-our-api.md)
 (accepted). This spec amends [spec 1](2026-11-13-sign-in-and-profile.md)
 3.3 (sign in with Apple or Google), 3.8 (linked sign-in methods) and 6
 (the provider endpoint), and replaces section 4.7 of the
@@ -263,7 +263,7 @@ Events: `SignInMethodLinked`, `SignInMethodRemoved`.
   whoever caught it: the app that starts a sign-in holds a secret that
   finishing it needs. The provider's answer is checked against its published
   keys, our client ID, its issuer, its expiry and a fresh nonce. Details in
-  ADR 0033 and the plan; the security review of each PR checks them.
+  ADR 0034 and the plan; the security review of each PR checks them.
 
 ## 8. Texts (first draft; Icelandic to be reviewed by a native speaker)
 
@@ -329,7 +329,7 @@ Events: `SignInMethodLinked`, `SignInMethodRemoved`.
 | # | Question | Decision |
 | - | -------- | -------- |
 | 1 | When does a newcomer through Google or Apple give a phone number? | At sign-up, before the account is made; later sign-ins need no code (Martin, 2026-11-22, on a decision card; not chosen: before the first booking, ride or chat, as spec 1, 3.3 said) |
-| 2 | How do the apps and the web talk to Google and Apple? | Through our API, which runs the sign-in in a browser window on every platform ([ADR 0033](../decisions/0033-google-and-apple-sign-in-through-our-api.md); my call) |
+| 2 | How do the apps and the web talk to Google and Apple? | Through our API, which runs the sign-in in a browser window on every platform ([ADR 0034](../decisions/0034-google-and-apple-sign-in-through-our-api.md); my call) |
 | 3 | Is Apple offered on Android? | Yes, like on the web (my call) |
 | 4 | Is a Google or Apple account linked to an existing account by its phone? | Yes, once the person proves the number with its code; never by email (R19.3; my call) |
 | 5 | Whose email does the account keep? | Its own; the provider's verified email only fills an empty one (R19.4; my call) |

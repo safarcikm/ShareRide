@@ -220,7 +220,9 @@ Find replaces both the front page and My profile as the place the app opens.
    Confirm. Until both are done, Publish trip waits, and the text under it
    says why: "Add your car and confirm your licence to publish. Your trip is
    saved as a draft until then."
-5. No profile photo row until profile photos exist.
+5. Once profile photos exist ([plan](../plans/2026-11-22-profile-photos.md)),
+   Profile photo, with Add a photo, joins Your car and Driving licence while
+   photo storage is on.
 
 ### 3.7 Book in fewer steps (proposal 4)
 

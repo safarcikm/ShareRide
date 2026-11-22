@@ -1,4 +1,4 @@
-# 0033. Google and Apple sign-in through our API, in a browser window
+# 0034. Google and Apple sign-in through our API, in a browser window
 
 - **Status:** Accepted (2026-11-22, by Martin on a decision card)
 - **Date:** 2026-11-22
