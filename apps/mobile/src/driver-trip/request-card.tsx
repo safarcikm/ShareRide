@@ -122,7 +122,11 @@ export function RequestCard({
   return (
     <Card>
       <View style={styles.person}>
-        <Avatar firstName={name} colour={booking.passenger.colour} />
+        <Avatar
+          firstName={name}
+          colour={booking.passenger.colour}
+          photo={booking.passenger.photo}
+        />
         <View style={styles.grow}>
           <Text style={[typography.bodyStrong, { color: palette.text }]}>{name}</Text>
           <Text style={[typography.small, { color: palette.textMuted }]}>

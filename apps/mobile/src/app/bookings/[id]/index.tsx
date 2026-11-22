@@ -221,6 +221,7 @@ function BookingDetails({
           firstName: firstNameOf(t, booking.driver),
           colour: booking.driver.colour,
           profileId: booking.driver.profileId,
+          photo: booking.driver.photo,
           // Someone leaving, or a former member, has no profile, and shows no standing.
           standing: booking.driver.profileId === null ? null : booking.driver,
         }}

@@ -240,7 +240,7 @@ function RateForm({ booking }: { readonly booking: Booking }) {
         <Title align="start">{t("review.title")}</Title>
       </View>
       <View style={styles.person}>
-        <Avatar firstName={name} colour={person.colour} />
+        <Avatar firstName={name} colour={person.colour} photo={person.photo} />
         <View style={styles.grow}>
           <Text style={[typography.small, { color: palette.textMuted }]}>{question}</Text>
           <Text style={[typography.bodyStrong, { color: palette.text }]}>{name}</Text>

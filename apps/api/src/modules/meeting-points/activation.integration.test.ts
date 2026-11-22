@@ -13,8 +13,8 @@ import { createMeetingPointAdminService, type ConsoleActor } from "./admin-servi
 import { createLegService } from "./legs.ts";
 
 // Activating a draft (spec 2, 3.6.3): only when its checklist passes
-// (R2.3), and its legs come with it. The tests' router finds no road south
-// of 63.3° N.
+// (R2.3), and its legs come with it. The photo is recommended, not
+// required (ADR 0036). The tests' router finds no road south of 63.3° N.
 
 const { auditLog, legs, meetingPointPhotos, meetingPoints } = schema;
 
@@ -24,6 +24,7 @@ const ready = sampleId("test:ready");
 const bare = sampleId("test:bare");
 const atSea = sampleId("test:at-sea");
 const apart = sampleId("test:apart");
+const noPhoto = sampleId("test:no-photo");
 const nowhere = sampleId("test:nowhere");
 
 /** A made-up draft with only what saving one needs. */
@@ -78,6 +79,14 @@ beforeAll(async () => {
       nameIs: "Afskekkt",
       searchText: "afskekkt",
       location: { latitude: 64.1, longitude: -21.5 },
+    },
+    {
+      ...draft,
+      ...complete,
+      id: noPhoto,
+      nameIs: "Án myndar",
+      searchText: "an myndar",
+      location: { latitude: 63.95, longitude: -21.05 },
     },
   ]);
   const photo = {
@@ -147,16 +156,26 @@ describe("the activation checklist", () => {
     expect((await checklist(bare)).ready).toBe(false);
     expect(await checklist(ready)).toEqual({
       items: [
-        { item: "details", done: true },
-        { item: "whereToStand", done: true },
-        { item: "photos", done: true },
-        { item: "amenities", done: true },
-        { item: "season", done: true },
-        { item: "confirmed", done: true },
-        { item: "legs", done: true },
+        { item: "details", done: true, required: true },
+        { item: "whereToStand", done: true, required: true },
+        { item: "photos", done: true, required: false },
+        { item: "amenities", done: true, required: true },
+        { item: "season", done: true, required: true },
+        { item: "confirmed", done: true, required: true },
+        { item: "legs", done: true, required: true },
       ],
       ready: true,
     });
+  });
+
+  it("is ready without a photo, which it recommends (ADR 0036)", async () => {
+    const list = await checklist(noPhoto);
+    expect(list.items.find((check) => check.item === "photos")).toEqual({
+      item: "photos",
+      done: false,
+      required: false,
+    });
+    expect(list.ready).toBe(true);
   });
 
   it("needs a road within 1 km", async () => {
@@ -169,12 +188,12 @@ describe("the activation checklist", () => {
 });
 
 describe("POST /admin/v1/meeting-points/{id}/activate", () => {
-  it("refuses a draft whose checklist is not done, naming each item", async () => {
+  it("refuses a draft whose checklist is not done, naming each required item", async () => {
     const { status, body } = await activate(bare);
     expect(status).toBe(409);
     expect((body as ErrorResponse).error).toMatchObject({
       code: "activation_not_ready",
-      details: ["whereToStand", "photos", "amenities", "season", "confirmed"].map((item) => ({
+      details: ["whereToStand", "amenities", "season", "confirmed"].map((item) => ({
         path: item,
         issue: "not_done",
       })),
@@ -215,6 +234,12 @@ describe("POST /admin/v1/meeting-points/{id}/activate", () => {
     });
   });
 
+  it("activates a draft with no photo yet (ADR 0036)", async () => {
+    const { status, body } = await activate(noPhoto);
+    expect(status).toBe(200);
+    expect(body).toMatchObject({ id: noPhoto, status: "active" });
+  });
+
   it("refuses a point that is not a draft", async () => {
     const { status, body } = await activate(ready);
     expect(status).toBe(409);
@@ -252,6 +277,7 @@ describe("activating with another router", () => {
     expect((await service.activationChecklist(apart))?.items.at(-1)).toEqual({
       item: "legs",
       done: false,
+      required: true,
     });
     const result = await service.activate(apart, { updatedAt: await loaded(apart) }, actor());
     expect(result).toEqual({

@@ -459,8 +459,9 @@ test("the operator recomputes the distances between meeting points on the road f
 });
 
 // Activating a draft (spec 2, 3.6.3): the checklist (R2.3) says what is
-// still to do, and Activate waits for it; once a described photo is added,
-// the point goes into use with its distances to every point in service.
+// still to do, and Activate waits for it; the photo is recommended, not
+// required (ADR 0036). Once the day it was confirmed is saved, the point
+// goes into use with its distances to every point in service.
 test("the operator activates a draft once its checklist is done", async () => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/admin/meeting-points/new");
@@ -473,14 +474,15 @@ test("the operator activates a draft once its checklist is done", async () => {
   await page.getByLabel("Where to stand, in English").fill("By the pumps.");
   await page.getByLabel("I have checked the amenities").check();
   await page.getByLabel("I have checked the season").check();
-  await page.getByLabel("Last confirmed on").fill("2026-11-16");
   await page.getByRole("button", { name: "Save the draft" }).click();
   await expect(page.getByText("Virkjunarprófun á Selfossi is saved as a draft.")).toBeVisible();
 
   const inUse = page.getByRole("region", { name: "In use" });
   const checklist = inUse.getByRole("list", { name: "Activation checklist" });
   const photosItem = checklist.getByRole("listitem").filter({ hasText: "A photo" });
-  await expect(photosItem).toContainText("To do");
+  const confirmedItem = checklist.getByRole("listitem").filter({ hasText: "The day you last" });
+  await expect(photosItem).toContainText("Recommended");
+  await expect(confirmedItem).toContainText("To do");
   await expect(checklist.getByRole("listitem").filter({ hasText: "A road" })).toContainText("Done");
   const activate = inUse.getByRole("button", { name: "Activate Virkjunarprófun á Selfossi" });
   await activate.click();
@@ -501,6 +503,13 @@ test("the operator activates a draft once its checklist is done", async () => {
   await addForm.getByLabel("Description for screen readers, in English").fill("The pumps.");
   await addForm.getByRole("button", { name: "Add the photo" }).click();
   await expect(photosItem).toContainText("Done");
+  // The photo was recommended: the day confirmed is still to do.
+  await expect(inUse.getByRole("alert")).toHaveText(
+    "1 thing is still to do before Virkjunarprófun á Selfossi can be activated.",
+  );
+  await page.getByLabel("Last confirmed on").fill("2026-11-16");
+  await page.getByRole("button", { name: "Save the changes" }).click();
+  await expect(confirmedItem).toContainText("Done");
   await expect(inUse.getByRole("alert")).toHaveCount(0);
   // On a phone the checklist fits the width.
   await page.setViewportSize({ width: 390, height: 844 });

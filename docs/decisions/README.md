@@ -66,3 +66,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0033](0033-profile-photos-made-in-the-app-and-checked-by-the-api.md) | Profile photos made in the app and checked by the API | Accepted |
 | [0034](0034-google-and-apple-sign-in-through-our-api.md) | Google and Apple sign-in through our API, in a browser window | Accepted |
 | [0035](0035-open-web-beta-reached-by-email.md) | An open beta on the web, reaching members by email | Accepted |
+| [0036](0036-meeting-points-go-live-before-their-photo.md) | A meeting point can go live before it has a photo | Accepted |

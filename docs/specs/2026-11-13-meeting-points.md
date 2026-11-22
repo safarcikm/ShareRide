@@ -9,7 +9,10 @@ Related: [meeting points](../product/meeting-points.md),
 [ADR 0005](../decisions/0005-postgresql-postgis.md),
 [ADR 0006](../decisions/0006-meeting-points-and-segment-pricing.md),
 [ADR 0009](../decisions/0009-maps-and-routing.md) (accepted),
-[spec 1](2026-11-13-sign-in-and-profile.md).
+[spec 1](2026-11-13-sign-in-and-profile.md). Rule R2.3 is amended by
+[spec 21](2026-11-22-meeting-points-for-every-settlement.md) and
+[ADR 0036](../decisions/0036-meeting-points-go-live-before-their-photo.md):
+a photo is recommended, no longer required.
 
 Amended by [spec 16](2026-11-15-one-home-and-simpler-flows.md): the list
 under From and To shows towns and areas first, then meeting points, each
@@ -181,7 +184,7 @@ the point for review, and the user sees a thank-you message.
 | -- | ---- |
 | R2.1 | Only the operator creates, edits, activates, pauses and retires meeting points. Users cannot add or suggest them. |
 | R2.2 | Meeting points are never deleted. Retired points stay readable on past trips and bookings. |
-| R2.3 | A point can be activated only with: a name, location, type, region and municipality; "where to stand" in Icelandic and English; at least one photo with descriptions; amenities and season reviewed; the date the operator confirmed it (decision 2); computed legs. |
+| R2.3 | A point can be activated only with: a name, location, type, region and municipality; "where to stand" in Icelandic and English; amenities and season reviewed; the date the operator confirmed it (decision 2); computed legs. At least one photo with descriptions is recommended, not required (amended 2026-11-22 by spec 21, ADR 0036; it was required). |
 | R2.4 | A new stop on a trip must be an active meeting point, in season on the trip date. Paused points cannot be added to trips. |
 | R2.5 | Seasons are whole months and may cross the new year (for example November to March). |
 | R2.6 | Search ignores case and accents and maps þ→th, ð→d, æ→ae, ö→o, á→a, é→e, í→i, ó→o, ú→u, ý→y, in both the query and the names. |
@@ -325,6 +328,6 @@ and places reachable only by ferry, such as Vestmannaeyjar, Hrísey and Grímsey
 | # | Question | Decision |
 | - | -------- | -------- |
 | 1 | Can users suggest meeting points? | No. The operator curates every meeting point (Martin, 2026-11-13). Users can still report a problem with an existing point |
-| 2 | Must every meeting point be checked on site before it goes live? | The operator confirms every point before activation, from local knowledge or a visit; a visit is not required (Martin, 2026-11-13). The photo and "where to stand" are still required |
+| 2 | Must every meeting point be checked on site before it goes live? | The operator confirms every point before activation, from local knowledge or a visit; a visit is not required (Martin, 2026-11-13). "Where to stand" is still required; the photo is recommended since 2026-11-22 (ADR 0036) |
 | 3 | Should search find street addresses in the beta? | No. Towns, villages, landmarks and "Near me" are enough to choose a meeting point; revisit after the beta (Martin, 2026-11-13) |
 | 4 | Which map? | Our own simple drawing of Iceland, without zoom or map tiles; "Open in maps" gives directions (Martin, 2026-11-14, [ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)) |

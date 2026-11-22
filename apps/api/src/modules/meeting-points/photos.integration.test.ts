@@ -495,6 +495,8 @@ describe("photos in a folder, in development (ADR 0022)", () => {
     expect(file.status).toBe(200);
     expect(file.headers.get("content-type")).toBe("image/jpeg");
     expect(new Uint8Array(await file.arrayBuffer())).toEqual(jpeg());
+    // The web app in development and its journeys run on another port.
+    expect(file.headers.get("cross-origin-resource-policy")).toBe("cross-origin");
   });
 
   it("answers 404 for a missing photo or a path that is not a photo's", async () => {

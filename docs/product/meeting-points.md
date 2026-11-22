@@ -53,7 +53,7 @@ Preferred
 | Amenities | Shelter, toilets, shop, lighting, parking, step-free |
 | Opening hours of shelter | Where relevant |
 | Season | All year, or the months it is usable |
-| Photo and directions | Where to stand, which entrance |
+| Photo and directions | Where to stand, which entrance; a photo is recommended, not required to go live ([ADR 0036](../decisions/0036-meeting-points-go-live-before-their-photo.md)) |
 | Status | Draft, active, paused, retiring, retired ([spec 2](../specs/2026-11-13-meeting-points.md#36-operator-console)); retired points stay on past trips |
 
 ## The meeting-point network
@@ -86,6 +86,20 @@ Phase 1 and confirmed by the operator, who knows the places locally.
 Later corridors: Snæfellsnes, the Westfjords, Mývatn and Húsavík, the East
 (Egilsstaðir, Seyðisfjörður ferry), the South-East (Kirkjubæjarklaustur,
 Skaftafell, Höfn), Golden Circle, and ferry ports (Landeyjahöfn, Stykkishólmur).
+
+## Every settlement
+
+On 2026-11-22 Martin opened the beta to the public and asked for a meeting
+point in every settlement ([spec 21](../specs/2026-11-22-meeting-points-for-every-settlement.md)).
+Every settlement of Statistics Iceland with people in 2026, less the
+ferry islands, is a place in search: 110, from Hafnir to Bakkafjörður.
+Each has a point of its own, or, for 14 small ones with no public spot, a
+bigger neighbour's a few kilometres away. In each settlement the point is
+a fuel station where Strætó stops if there is one, then another fuel
+station, then a Strætó stop, then the car park of a shop, a sports centre,
+a church or a community hall. Their names start with the settlement:
+"Hvammstangi – N1". They arrive as drafts from an import file, and the
+operator checks each one before it goes live, with or without a photo.
 
 ## Governance
 
