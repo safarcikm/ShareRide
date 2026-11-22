@@ -344,10 +344,10 @@ sign-in here, Settings in 3b.
 
 ### PR 3b: `feat(app)`: Settings, Sign-in methods
 
-- [ ] Settings, Sign-in methods: list, add (the window, then the confirm
+- [x] Settings, Sign-in methods: list, add (the window, then the confirm
       code with the part spec 11's screens use), remove with its question
-- [ ] Texts of spec 19, section 8, for Settings
-- [ ] Screen tests; a Playwright journey: add and remove in Settings
+- [x] Texts of spec 19, section 8, for Settings
+- [x] Screen tests; a Playwright journey: add and remove in Settings
 - Verify: as PR 3a
 
 ### PR 4: `docs`: close-out

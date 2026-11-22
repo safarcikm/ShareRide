@@ -88,6 +88,7 @@ function Navigation() {
       <Stack.Protected guard={!deleting}>
         <Stack.Screen name="settings" />
         <Stack.Screen name="settings/email" />
+        <Stack.Screen name="settings/sign-in-methods" />
         <Stack.Screen name="settings/feedback" />
         <Stack.Screen name="settings/beta-news" />
         <Stack.Screen name="feedback" />

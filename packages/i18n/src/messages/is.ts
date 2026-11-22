@@ -243,6 +243,21 @@ export const is = {
     "Notaðu þetta ef þú týndir síma eða skráðir þig inn á tæki sem aðrir nota.",
   "settings.yourAccount": "Aðgangurinn þinn",
   "settings.email": "Netfang",
+  "settings.signInMethods": "Innskráningarleiðir",
+  "settings.signInMethods.help":
+    "Skráðu þig inn með símanúmerinu þínu, eða með Google eða Apple þegar þau eru tengd.",
+  "settings.signInMethods.add": "Bæta við {provider}",
+  "settings.signInMethods.remove": "Fjarlægja {provider}",
+  "settings.signInMethods.removeQuestion":
+    "Fjarlægja {provider}? Þú getur áfram skráð þig inn með símanúmerinu þínu.",
+  "settings.signInMethods.removed": "{provider} er ekki lengur tengt aðganginum þínum.",
+  "settings.signInMethods.notLinked": "Ekki tengt",
+  "settings.signInMethods.linked": "Tengt",
+  "settings.signInMethods.hiddenEmail": "Netfang falið af Apple",
+  "settings.signInMethods.failed": "Ekki tókst að bæta við {provider}. Reyndu aftur.",
+  "settings.signInMethods.expired": "Þetta tók of langan tíma. Bættu {provider} aftur við.",
+  "settings.signInMethods.confirm":
+    "Til að bæta við {provider} skaltu slá inn kóðann sem við sendum þér með SMS.",
   "settings.addEmail": "Bæta við netfangi",
   "settings.changeEmail": "Breyta netfangi",
   "settings.emailWaiting": "Bíður þess að þú opnir hlekkinn sem var sendur á {email}.",

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
-import { english, enterCode, menuLink } from "./support/account";
-import { newPhoneNumber } from "./support/sms";
+import { english, enterCode, menuLink, signUp } from "./support/account";
+import { codeIn, newPhoneNumber, sentCount, textMessage } from "./support/sms";
 
 // Spec 19's journeys (section 9) with the development stand-in for Google
 // (ADR 0034): its page opens in a pop-up, as Google's would, and comes back
@@ -110,5 +110,45 @@ test.describe("Continue with Google", () => {
     expect(
       await window.evaluate(() => `${location.href} ${JSON.stringify(history.state)}`),
     ).not.toContain("sr_");
+  });
+});
+
+test.describe("Sign-in methods in Settings", () => {
+  test.use({ locale: "en-GB" });
+
+  test("adds Apple with a confirm code, then removes it", async ({ page }, testInfo) => {
+    // Apple's stand-in people, so no Google journey meets them.
+    const person =
+      testInfo.project.name === "phone"
+        ? "Anna, with a verified email"
+        : "Bjarni, who hid his email";
+    const { phone } = await signUp(page, english, "Gunna");
+    await page.goto("/settings");
+    await page.getByRole("button", { name: "Sign-in methods" }).click();
+    await expect(page.getByRole("heading", { name: "Sign-in methods" })).toBeVisible();
+    await expect(page.getByText("Not linked")).toHaveCount(2);
+
+    const sentBefore = sentCount(phone.e164);
+    const popup = page.waitForEvent("popup");
+    await page.getByRole("button", { name: "Add Apple" }).click();
+    const window = await popup;
+    // Apple posts its answer back as a form.
+    await window.getByRole("button", { name: person }).click();
+    await window.waitForEvent("close");
+
+    await expect(page.getByText("To add Apple, enter the code we text you.")).toBeVisible();
+    const text = await textMessage(phone.e164, sentBefore + 1);
+    await page.getByLabel("6-digit code").fill(codeIn(text));
+    await expect(
+      page.getByText("Apple is now linked to your account. Next time you can continue with Apple."),
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: "Remove Apple" }).click();
+    await expect(
+      page.getByText("Remove Apple? You can still sign in with your phone number."),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Remove Apple" }).click();
+    await expect(page.getByText("Apple is no longer linked to your account.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Add Apple" })).toBeVisible();
   });
 });

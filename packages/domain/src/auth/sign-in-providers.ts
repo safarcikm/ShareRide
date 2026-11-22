@@ -113,7 +113,8 @@ export function decideLink(input: {
 /** The domain of Apple's private relay addresses (spec 19, 3.5). */
 const appleRelayDomain = "privaterelay.appleid.com";
 
-function isAppleRelay(email: string): boolean {
+/** An address of Apple's private relay, which stands in for a hidden email. */
+export function isAppleRelay(email: string): boolean {
   return email.toLowerCase().endsWith(`@${appleRelayDomain}`);
 }
 
