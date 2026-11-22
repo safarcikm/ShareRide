@@ -12,5 +12,11 @@
     "MD060": false,
   },
   "globs": ["**/*.md"],
-  "ignores": ["node_modules/**", "**/node_modules/**", ".github/pull_request_template.md"],
+  "ignores": [
+    "node_modules/**",
+    "**/node_modules/**",
+    ".github/pull_request_template.md",
+    // Published legal texts never change (ADR 0043); the app renders them.
+    "packages/db/src/legal/texts/**",
+  ],
 }

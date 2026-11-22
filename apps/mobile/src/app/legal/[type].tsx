@@ -2,7 +2,7 @@ import { currentLegalDocumentRoute } from "@shareride/contracts";
 import { legalDocumentTypes, type LegalDocumentType } from "@shareride/domain";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback } from "react";
-import { StyleSheet, Text } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import { BackButton } from "@/components/back-button";
@@ -13,7 +13,7 @@ import { Screen } from "@/components/screen";
 import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
-import { typography } from "@/theme/tokens";
+import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 const isDocumentType = (type: unknown): type is LegalDocumentType =>
@@ -67,9 +67,11 @@ function Inline({ text }: { readonly text: string }) {
   );
 }
 
+const listItem = /^[-*]\s+/;
+
 /**
- * The few Markdown features legal texts use: headings, paragraphs and bold.
- * Anything else shows as plain text.
+ * The few Markdown features legal texts use: headings, paragraphs, lists
+ * and bold. Anything else shows as plain text.
  */
 function Markdown({ text }: { readonly text: string }) {
   const palette = usePalette();
@@ -90,6 +92,19 @@ function Markdown({ text }: { readonly text: string }) {
         </Text>
       );
     }
+    const lines = block.split("\n");
+    if (lines.every((line) => listItem.test(line))) {
+      return (
+        <View key={index} style={styles.list}>
+          {lines.map((line, item) => (
+            <Body key={item} align="start">
+              {"• "}
+              <Inline text={line.replace(listItem, "")} />
+            </Body>
+          ))}
+        </View>
+      );
+    }
     return (
       <Body key={index} align="start">
         <Inline text={block} />
@@ -98,4 +113,7 @@ function Markdown({ text }: { readonly text: string }) {
   });
 }
 
-const styles = StyleSheet.create({ bold: { fontFamily: typography.bodyStrong.fontFamily } });
+const styles = StyleSheet.create({
+  bold: { fontFamily: typography.bodyStrong.fontFamily },
+  list: { gap: spacing.xs },
+});

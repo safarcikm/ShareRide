@@ -141,6 +141,18 @@ workflow**. Leave **commit** empty for the newest commit on `main` whose
 CI passed, which is what staging runs, or give one. The run's summary lists
 the commits and migrations it brings. Docs-only commits deploy nothing.
 
+## Change a legal text
+
+The texts people accept are files in `packages/db/src/legal/texts`,
+published on deploy
+([ADR 0043](../decisions/0043-legal-documents-published-from-the-repository.md)).
+A change is a new version: Claude adds its two files, in English and
+Icelandic, and lists it in `published.ts` with a short summary of what
+changed and whether it is material. A material version is accepted again by
+everyone before they book, post or chat. Staging shows it after the merge,
+production after the next release. A published file never changes: the
+tests fail if it does.
+
 ## Roll back
 
 1. Open `puffinride-api`, **Deploys**, find the last good deploy and choose
@@ -150,7 +162,8 @@ the commits and migrations it brings. Docs-only commits deploy nothing.
    **older**, so the branch says what runs. Or release a fix instead.
 
 The database keeps newer migrations, which the older version must still
-read: that is what the two-deploy rule is for. The cron job has its own
+read: that is what the two-deploy rule is for. A legal version that a newer
+release published stays published. The cron job has its own
 **Deploys** page.
 
 ## Everything else

@@ -15,7 +15,10 @@ wait for the beta label: [Claude Doc](https://claude.ai/artifact/SYY8Coa8WyLpfBg
 - Production shows our full drafts of the terms, community rules and privacy
   policy, in English and Icelandic, as the first real version; the lawyer's
   version follows as a new version that everyone accepts (Martin, decision
-  card 2026-11-22). PR 2 writes its ADR.
+  card 2026-11-22).
+  [ADR 0043](../decisions/0043-legal-documents-published-from-the-repository.md)
+  records how they are published. Until the company is registered they
+  name Martin Safarcik as the operator (decision card 2026-11-22).
 
 ## Pull requests
 
@@ -24,7 +27,8 @@ wait for the beta label: [Claude Doc](https://claude.ai/artifact/SYY8Coa8WyLpfBg
    and ADR 0042.
 2. Legal documents published from the repository on deploy, in every
    environment, and the first real texts in English and Icelandic, with the
-   operator's name, address and contact email from Martin.
+   operator's name, address and contact email from Martin
+   ([ADR 0043](../decisions/0043-legal-documents-published-from-the-repository.md)).
 3. After Martin's setup steps: roadmap tick, privacy register (data
    agreements), and anything the first days show.
 
