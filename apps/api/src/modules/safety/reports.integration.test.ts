@@ -486,7 +486,7 @@ describe("reporting from a profile (spec 9, 3.1.1)", () => {
 
   it.each([
     ["not yet shown", { revealed: false }],
-    ["hidden by ShareRide", { hidden: true }],
+    ["hidden by PuffinRide", { hidden: true }],
   ] as const)("finds no review %s", async (_, shown) => {
     const { jon, reviewId } = await reviewed(shown);
     expect(
@@ -498,7 +498,7 @@ describe("reporting from a profile (spec 9, 3.1.1)", () => {
     expect(await stored()).toEqual([]);
   });
 
-  it("finds no review by someone leaving ShareRide, which no profile shows", async () => {
+  it("finds no review by someone leaving PuffinRide, which no profile shows", async () => {
     const { jon, gunna, reviewId } = await reviewed();
     await api.connection.db
       .update(schema.users)
@@ -531,7 +531,7 @@ describe("reporting from a profile (spec 9, 3.1.1)", () => {
     });
   });
 
-  it("finds no review about someone leaving ShareRide, whose profile is gone", async () => {
+  it("finds no review about someone leaving PuffinRide, whose profile is gone", async () => {
     const { jon, reviewId } = await reviewed();
     const sigga = await newMember("Sigga");
     await api.connection.db
@@ -562,7 +562,7 @@ describe("reporting from a profile (spec 9, 3.1.1)", () => {
     });
   });
 
-  it("refuses my own profile, and finds none for someone leaving ShareRide", async () => {
+  it("refuses my own profile, and finds none for someone leaving PuffinRide", async () => {
     const jon = await driverOf(airport, "Jón");
     const gunna = await newMember("Gunna");
     expect(
@@ -727,7 +727,7 @@ describe("the operator's alert of a new report (spec 9, R9.9)", () => {
       [await phoneOf(osk), await phoneOf(pall)].sort(),
     );
     expect(sms.outbox[0]?.text).toBe(
-      "ShareRide: a new safety report. Look at it in the console now.",
+      "PuffinRide: a new safety report. Look at it in the console now.",
     );
     // Never who or what (3.1.5): the console has the rest.
     expect(JSON.stringify([push.sent, sms.outbox])).not.toMatch(/Jón|Gunna|drinking|Keflav/);
@@ -881,6 +881,6 @@ describe("the operator's alert of a new report (spec 9, R9.9)", () => {
     expect(cancelled.ok).toBe(true);
     await runWorker();
     expect(sms.outbox).toHaveLength(6);
-    expect(sms.outbox.at(-1)?.text).toMatch(/^ShareRide: the driver cancelled your booking/);
+    expect(sms.outbox.at(-1)?.text).toMatch(/^PuffinRide: the driver cancelled your booking/);
   });
 });

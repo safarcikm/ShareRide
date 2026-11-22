@@ -40,8 +40,8 @@ describe("The iPhone preview build", () => {
     expect(eas.submit).toHaveProperty("preview");
   });
 
-  it("has its own name in App Store Connect, leaving ShareRide for the store app", () => {
-    expect(eas.submit["preview"]?.ios?.appName).toBe("ShareRide Preview");
+  it("has its own name in App Store Connect, leaving PuffinRide for the store app", () => {
+    expect(eas.submit["preview"]?.ios?.appName).toBe("PuffinRide Preview");
   });
 
   it("talks to staging over HTTPS, with Expo's preview settings, not production's", () => {

@@ -490,7 +490,7 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     });
     await fireEvent.press(await screen.findByRole("button", { name: "Pay 2,900 ISK" }));
     expect(await screen.findByText("Not paid yet. Your seat is held until 12:30.")).toBeVisible();
-    expect(screen.getByText(/^We couldn't reach ShareRide/)).toBeVisible();
+    expect(screen.getByText(/^We couldn't reach PuffinRide/)).toBeVisible();
     expect(screen.getByRole("header", { name: "Check and pay" })).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Pay 2,900 ISK" }));
     expect(
@@ -634,7 +634,7 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     });
     const send = await screen.findByRole("button", { name: "Send request" });
     await fireEvent.press(send);
-    expect(await screen.findByText(/^We couldn't reach ShareRide/)).toBeVisible();
+    expect(await screen.findByText(/^We couldn't reach PuffinRide/)).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Send request" }));
     expect(await screen.findByRole("header", { name: "Request sent" })).toBeVisible();
     expect(bookCalls(client).map((body) => body["attemptKey"])).toEqual(["attempt-1", "attempt-1"]);

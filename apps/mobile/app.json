@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "ShareRide",
+    "name": "PuffinRide",
     "slug": "shareride",
     "scheme": "shareride",
     "version": "0.1.0",
@@ -40,8 +40,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "ShareRide opens your photos so you can choose a profile photo.",
-          "cameraPermission": "ShareRide uses the camera so you can take a profile photo.",
+          "photosPermission": "PuffinRide opens your photos so you can choose a profile photo.",
+          "cameraPermission": "PuffinRide uses the camera so you can take a profile photo.",
           "microphonePermission": false
         }
       ],

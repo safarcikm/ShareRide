@@ -269,7 +269,7 @@ describe("the passenger's I'm here (spec 8, 3.2; R8.3)", () => {
     [failure(500, "internal"), "We couldn't tell them you're here. Try again."],
     [
       failure(0, "network_error"),
-      "We couldn't reach ShareRide. Check your connection and try again.",
+      "We couldn't reach PuffinRide. Check your connection and try again.",
     ],
   ])("says why it could not tell them (%#)", async (answer, said) => {
     await openBooking(onTheDay(), () => answer);

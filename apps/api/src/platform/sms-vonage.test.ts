@@ -3,7 +3,7 @@ import { createVonageSmsSender } from "./sms-vonage.ts";
 import { SmsMaybeSent, SmsSendError } from "./sms.ts";
 
 const number = "+3546912345";
-const message = { to: number, text: "123456 er kóðinn þinn hjá ShareRide." };
+const message = { to: number, text: "123456 er kóðinn þinn hjá PuffinRide." };
 
 interface Call {
   readonly url: string;
@@ -47,7 +47,7 @@ function sender(fetch: typeof globalThis.fetch, extra: { timeoutMs?: number } = 
   return createVonageSmsSender({
     apiKey: "k-test",
     apiSecret: "s-test",
-    sender: "ShareRide",
+    sender: "PuffinRide",
     fetch,
     ...extra,
   });
@@ -77,7 +77,7 @@ describe("createVonageSmsSender", () => {
     expect(headers.get("content-type")).toBe("application/x-www-form-urlencoded");
     // Vonage takes the number without its +, and Icelandic letters need unicode.
     expect(form(call)).toEqual({
-      from: "ShareRide",
+      from: "PuffinRide",
       to: "3546912345",
       text: message.text,
       type: "unicode",

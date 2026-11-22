@@ -327,7 +327,7 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
     await openFrontPage();
     expect(await screen.findByRole("header", { name: "Where are you going?" })).toBeVisible();
     expect(screen.getByTestId("logo", { includeHiddenElements: true })).toBeTruthy();
-    expect(screen.getByText("ShareRide")).toBeVisible();
+    expect(screen.getByText("PuffinRide")).toBeVisible();
     const find = screen.getByRole("button", { name: "Find a ride" });
     expect(within(find).getByTestId("button-face")).toHaveStyle({
       backgroundColor: colors.light.primary,

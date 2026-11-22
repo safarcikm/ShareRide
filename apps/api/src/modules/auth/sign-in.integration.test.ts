@@ -37,7 +37,7 @@ describe("sign up and sign in with a phone number", () => {
 
     const started = await start(phone.replace("+354", ""), "is");
     expect(started).toEqual({ ok: true, status: 202, data: { resendAfterSeconds: 30 } });
-    expect(api.sms.outbox.at(-1)?.text).toMatch(/^\d{6} er ShareRide kóðinn þinn/);
+    expect(api.sms.outbox.at(-1)?.text).toMatch(/^\d{6} er PuffinRide kóðinn þinn/);
 
     const verified = await verify(phone, api.lastCode(phone));
     expect(verified.ok).toBe(true);

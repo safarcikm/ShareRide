@@ -125,7 +125,7 @@ describe("Download my data (spec 11, 3.2)", () => {
     const app = await openDownloadScreen();
     expect(
       screen.getByText(
-        "You get a ZIP file with what ShareRide keeps about you: your account, trips, bookings, payments, messages and notifications. Other people appear by first name only. You can ask for one file a day.",
+        "You get a ZIP file with what PuffinRide keeps about you: your account, trips, bookings, payments, messages and notifications. Other people appear by first name only. You can ask for one file a day.",
       ),
     ).toBeVisible();
     expect(callsTo(app, "/v1/me/confirm-code")).toEqual([]);

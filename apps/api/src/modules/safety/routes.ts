@@ -65,7 +65,7 @@ function reportError(c: Context, error: ReportError) {
     case "own":
       return errorResponse(c, 409, "cannot_report_own", "You cannot report your own.");
     case "not_reportable":
-      return errorResponse(c, 409, "not_reportable", "ShareRide's own lines cannot be reported.");
+      return errorResponse(c, 409, "not_reportable", "PuffinRide's own lines cannot be reported.");
     case "window_closed":
       return errorResponse(
         c,

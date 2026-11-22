@@ -11,7 +11,7 @@ const message: EmailMessage = {
 };
 
 const keys = { apiKey: "public-key", secretKey: "secret-key" };
-const from = { email: "hello@shareride.example", name: "ShareRide" };
+const from = { email: "hello@shareride.example", name: "PuffinRide" };
 
 interface Call {
   readonly url: string;
@@ -80,7 +80,7 @@ describe("createMailjetEmailSender (ADR 0027)", () => {
     expect(JSON.parse(bodyOf(calls[0]))).toEqual({
       Messages: [
         {
-          From: { Email: "hello@shareride.example", Name: "ShareRide" },
+          From: { Email: "hello@shareride.example", Name: "PuffinRide" },
           To: [{ Email: "anna@example.com" }],
           Subject: message.subject,
           TextPart: message.text,

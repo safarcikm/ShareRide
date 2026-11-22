@@ -3,7 +3,7 @@ import { createElksSmsSender } from "./sms-46elks.ts";
 import { SmsMaybeSent, SmsSendError } from "./sms.ts";
 
 const number = "+3546912345";
-const message = { to: number, text: "123456 is your ShareRide code." };
+const message = { to: number, text: "123456 is your PuffinRide code." };
 
 interface Call {
   readonly url: string;
@@ -34,7 +34,7 @@ function sender(fetch: typeof globalThis.fetch, extra: { dryRun?: boolean } = {}
   return createElksSmsSender({
     username: "u-test",
     password: "p-test",
-    sender: "ShareRide",
+    sender: "PuffinRide",
     fetch,
     ...extra,
   });
@@ -53,7 +53,7 @@ describe("createElksSmsSender", () => {
     expect(headers.get("authorization")).toBe(`Basic ${btoa("u-test:p-test")}`);
     expect(headers.get("content-type")).toBe("application/x-www-form-urlencoded");
     expect(form(call)).toEqual({
-      from: "ShareRide",
+      from: "PuffinRide",
       to: number,
       message: message.text,
       dontlog: "message",
@@ -121,7 +121,7 @@ describe("createElksSmsSender", () => {
     const slow = createElksSmsSender({
       username: "u-test",
       password: "p-test",
-      sender: "ShareRide",
+      sender: "PuffinRide",
       fetch,
       timeoutMs: 20,
     });

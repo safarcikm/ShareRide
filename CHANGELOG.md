@@ -1361,6 +1361,14 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- ShareRide is now PuffinRide (ADR 0039): every Icelandic and English text,
+  the app's name and photo permission texts, the email sender name and SMS
+  sender (`PuffinRide`), the console's passkey name and page title, and the
+  names of downloaded files (`puffinride-data.json`, `puffinride-metrics-…`).
+  A test keeps the old name out of the texts. Message keys, internal names
+  and the export's key purpose keep "shareride". Staging answers on
+  `staging.puffinride.is` too, beside `staging.skinnar.is`; the runbook's
+  "Move to puffinride.is" lists Martin's steps.
 - Photos are kept in Hetzner Object Storage in Nuremberg, not Helsinki,
   which Hetzner did not offer when the staging bucket was made (ADR 0037).
   The privacy policy draft, the privacy register and the runbook say so;

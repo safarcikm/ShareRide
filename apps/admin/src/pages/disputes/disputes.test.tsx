@@ -208,7 +208,7 @@ describe("the disputes list (spec 8, 3.5)", () => {
     ).toBe("page");
   });
 
-  it("names someone who left ShareRide as a former member", async () => {
+  it("names someone who left PuffinRide as a former member", async () => {
     const api = start("/admin/disputes");
     api.on(adminDisputesRoute, {
       status: 200,
@@ -363,7 +363,7 @@ describe("a report (spec 8, 3.5)", () => {
     const decision = await screen.findByRole("region", { name: "Decision" });
     expect(decision.textContent).toContain("OutcomeThe passenger didn't come: the no-show stands");
     expect(decision.textContent).toContain(
-      "Decided byShareRide on its own, as the other side agreed or didn't answer",
+      "Decided byPuffinRide on its own, as the other side agreed or didn't answer",
     );
     expect(decision.textContent).not.toContain("Reasons");
   });
@@ -573,8 +573,8 @@ describe("the booking's conversation (R7.3, R9.6)", () => {
     ).toEqual([
       "Dóra, the driver15 November at 09:50I'm on my way",
       "Bára, the passenger15 November at 09:59By the pumps, in a red coat.",
-      "ShareRide15 November at 10:01Dóra is at the meeting point",
-      "ShareRide15 November at 09:58Bára is at the meeting point",
+      "PuffinRide15 November at 10:01Dóra is at the meeting point",
+      "PuffinRide15 November at 09:58Bára is at the meeting point",
       "Bára, the passenger15 November at 10:05Message deleted",
     ]);
     expect(within(section).getByText("5 messages, oldest first")).toBeTruthy();

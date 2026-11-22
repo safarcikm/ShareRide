@@ -106,7 +106,7 @@ const inEnglish: Journey = {
   white: "White",
   saveCar: "Save car",
   confirmLicence: "Confirm your licence",
-  declaration: "I declare that I hold a valid driving licence for the cars I drive on ShareRide",
+  declaration: "I declare that I hold a valid driving licence for the cars I drive on PuffinRide",
   confirm: "Confirm",
   publish: "Publish trip",
   published: "Your trip is published",
@@ -156,7 +156,7 @@ const inIcelandic: Journey = {
   saveCar: "Vista bíl",
   confirmLicence: "Staðfesta ökuskírteini",
   declaration:
-    "Ég lýsi því yfir að ég sé með gilt ökuskírteini fyrir þá bíla sem ég ek á ShareRide",
+    "Ég lýsi því yfir að ég sé með gilt ökuskírteini fyrir þá bíla sem ég ek á PuffinRide",
   confirm: "Staðfesta",
   publish: "Birta ferð",
   published: "Ferðin þín er birt",

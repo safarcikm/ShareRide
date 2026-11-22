@@ -122,6 +122,79 @@ and again if Render changes its network or the domain's DNS:
 4. Set `SMS_PAUSED` back to `false`. The computer from step 2 can ask for
    codes again after an hour.
 
+## Move to puffinride.is
+
+Staging moves from `staging.skinnar.is` to `staging.puffinride.is`, as
+ShareRide becomes PuffinRide ([ADR 0039](../decisions/0039-rename-to-puffinride.md)).
+The blueprint lists both addresses, so both answer until step 5 switches the
+settings, and nothing stops working in between. Martin's steps, in order:
+
+1. **DNS hosting.** At [isnic.is](https://www.isnic.is), **My page**, the
+   domain `puffinride.is`, **Nameservers**, **Redelegate**, **ISNIC DNS
+   Hosting**, **Submit**. Within about 10 minutes the domain's page lets you
+   add records.
+2. **The mailbox `admin@puffinride.is`,** for the operator's own accounts
+   (Google, Apple, Render, Mailjet, Sentry), never for members' mail. Zoho
+   Mail's free plan has up to 5 mailboxes of 5 GB, in the browser and Zoho's
+   phone app (no IMAP). Sign up for the free plan; if Zoho asks where to keep
+   the data, choose Europe. Add the domain `puffinride.is`, then add in ISNIC
+   what Zoho shows: the TXT record that proves the domain is yours (name
+   empty), the MX records (name empty, each with its priority), and, under
+   Zoho's email configuration, **DKIM** with a selector such as `zoho` (a
+   TXT record named `zoho._domainkey`). Leave out Zoho's SPF record: step 4
+   makes one for Zoho and Mailjet together. Create the user `admin`. Check:
+   an email from your own address to `admin@puffinride.is` arrives.
+3. **Staging's new address.** In ISNIC, add type **CNAME**, name `staging`,
+   and as its value the same `onrender.com` address as the `staging` record
+   of `skinnar.is` (it is at the top of `shareride-staging-api`'s page in
+   Render). No `AAAA` record. In Render, `shareride-staging-api`,
+   **Settings**, **Custom Domains**, choose **Verify** next to
+   `staging.puffinride.is`. Check:
+   `https://staging.puffinride.is/v1/health/ready` answers
+   `{"status":"ok"}`.
+4. **Email from puffinride.is.** In Mailjet, **Account settings**,
+   **Domains and senders**, add `puffinride.is` and add the TXT records it
+   shows for ownership and DKIM, as in [Turn on email](#turn-on-email). Then
+   one SPF record for both senders: type **TXT**, name empty, value
+   `v=spf1 include:spf.mailjet.com include:zohomail.com ~all`, with Zoho's
+   part as Zoho's own SPF value has it (such as `zohomail.eu`). Two SPF
+   records on one domain break both. And DMARC: type **TXT**, name
+   `_dmarc`, value `v=DMARC1; p=none`. Wait until Mailjet shows the domain
+   as validated, with SPF and DKIM in order.
+5. **Tell Claude.** Claude switches the blueprint's `ADMIN_ORIGIN`,
+   `WEB_APP_URL` and `API_ORIGIN` to `https://staging.puffinride.is`,
+   `EMAIL_FROM` to `hello@puffinride.is`, and the app builds' API address.
+6. **After that deploy, the console.** Its passkeys belong to the old
+   address. In the API's **Shell** in Render, run
+   `node apps/api/src/operator-cli.ts add <your phone number>`, open the
+   link and save a new passkey ([Sign in to the console](#sign-in-to-the-console)).
+   Sign in at `https://staging.puffinride.is/admin` from then on, and delete
+   the old passkey from your password manager. Testers sign in again on the
+   new address.
+7. **Google sign-in,** if it is set up already: in Google Cloud, **Google
+   Auth Platform**, **Branding**: app name `PuffinRide`, support email
+   `admin@puffinride.is`, home page, privacy policy and terms of service on
+   `https://staging.puffinride.is` (the same paths as before), and the
+   authorised domain `puffinride.is`. Then **Clients**, the web client, and
+   add the redirect URI
+   `https://staging.puffinride.is/v1/auth/oauth/google/callback`. If it is
+   not set up yet, follow [Turn on Google sign-in](#turn-on-google-sign-in)
+   with these values instead of the old ones.
+8. **Sign in with Apple:** wait until Claude has changed the app IDs to
+   `is.puffinride.…` (plan task 5), then follow
+   [Turn on Sign in with Apple](#turn-on-sign-in-with-apple). A Services ID
+   cannot be renamed: if one with the old name exists, make the new ones and
+   replace `APPLE_SERVICES_ID`, `APPLE_KEY_ID` and `APPLE_PRIVATE_KEY` in
+   Render. Register `hello@puffinride.is` for Apple's email relay.
+9. **Sentry:** change the uptime monitor's address to
+   `https://staging.puffinride.is/v1/health/ready`. The organisation's name
+   may become PuffinRide; keep its short name (slug) as it is.
+10. **The old address,** once nobody uses it: tell Claude, who removes
+    `staging.skinnar.is` from the blueprint. Then delete the `staging`
+    record of `skinnar.is` in ISNIC, the domain `skinnar.is` in Mailjet, the
+    old redirect URI in Google Cloud and `hello@skinnar.is` in Apple's email
+    relay.
+
 ## Sign in to the console
 
 The operator console signs in with passkeys only, bound to one address

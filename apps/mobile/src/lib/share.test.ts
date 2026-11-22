@@ -2,7 +2,7 @@ import { Platform, Share } from "react-native";
 import { shareLink, shareText } from "./share";
 
 const url = "https://shareride.is/trips/0190a1d6-0000-7000-8000-0000000000d1?from=1&to=2";
-const text = "Borgarnes → Blönduós on ShareRide";
+const text = "Borgarnes → Blönduós on PuffinRide";
 
 /** Stands in for the browser's navigator for one test. */
 function browserWith(navigator: Partial<Navigator>) {

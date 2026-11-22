@@ -7,8 +7,8 @@ import { readZip, zip } from "./zip.ts";
 
 describe("ZIP files (download my data)", () => {
   const files = [
-    { name: "shareride-data.json", data: Buffer.from('{"hello":"Jón"}') },
-    { name: "shareride-data.html", data: Buffer.from("<p>Halló, heimur! ".repeat(200)) },
+    { name: "puffinride-data.json", data: Buffer.from('{"hello":"Jón"}') },
+    { name: "puffinride-data.html", data: Buffer.from("<p>Halló, heimur! ".repeat(200)) },
     { name: "empty.txt", data: Buffer.alloc(0) },
   ];
 
@@ -30,7 +30,7 @@ describe("ZIP files (download my data)", () => {
       writeFileSync(path, zip(files, new Date("2026-11-16T12:34:56Z")));
       const listing = execFileSync("unzip", ["-t", path]).toString();
       expect(listing).toContain("No errors detected");
-      expect(execFileSync("unzip", ["-p", path, "shareride-data.json"]).toString()).toBe(
+      expect(execFileSync("unzip", ["-p", path, "puffinride-data.json"]).toString()).toBe(
         '{"hello":"Jón"}',
       );
     } finally {

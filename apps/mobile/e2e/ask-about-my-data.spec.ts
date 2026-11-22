@@ -28,7 +28,7 @@ test("asks about my data, adding an email first", async ({ page }) => {
   await expect(page).toHaveURL("/settings/email");
   await page.getByLabel("Email", { exact: true }).fill(address);
   await page.getByRole("button", { name: "Send the link" }).click();
-  const confirm = await emailTo(address, /^Confirm your email for ShareRide$/);
+  const confirm = await emailTo(address, /^Confirm your email for PuffinRide$/);
   await page.goto(linkIn(confirm, "Confirm my email"));
   await expect(page.getByRole("heading", { name: "Your email is added" })).toBeVisible();
 

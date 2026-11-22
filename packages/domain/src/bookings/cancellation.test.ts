@@ -80,7 +80,7 @@ describe("the reasons (spec 6, 3.3 to 3.5)", () => {
     expect(cancelReasonsFor("driver")).toBe(driverCancelReasons);
   });
 
-  it("keep the driver's absence for ShareRide, never offered to anyone (spec 8, 3.4)", () => {
+  it("keep the driver's absence for PuffinRide, never offered to anyone (spec 8, 3.4)", () => {
     expect(systemCancelReasons).toEqual(["driver_absent"]);
     expect(cancelReasonsFor("driver")).not.toContain("driver_absent");
     expect(cancelReasonsFor("passenger")).not.toContain("driver_absent");

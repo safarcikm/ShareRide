@@ -2,7 +2,7 @@
 
 - **Status:** In progress
 - **Decision:** [ADR 0039](../decisions/0039-rename-to-puffinride.md)
-- **Owner's steps:** [staging runbook](../operations/staging.md)
+- **Owner's steps:** [staging runbook, "Move to puffinride.is"](../operations/staging.md#move-to-puffinrideis)
 
 ShareRide becomes PuffinRide on puffinride.is. Each pull request is small,
 because other work merges in parallel. Names that people never see keep
@@ -10,18 +10,18 @@ because other work merges in parallel. Names that people never see keep
 
 ## Tasks
 
-1. [ ] **Decision and plan.** ADR 0039, this plan, answer A55.
-2. [ ] **What people see.** Every "ShareRide" in the Icelandic and English
+1. [x] **Decision and plan.** ADR 0039, this plan, answer A55.
+2. [x] **What people see.** Every "ShareRide" in the Icelandic and English
    texts becomes PuffinRide, keeping the message keys. Also the app's name and
    permission texts in `apps/mobile/app.json`, the email sender name and SMS
    sender defaults (`EMAIL_FROM_NAME`, `SMS_SENDER`), the passkey name, the
    console's page title, API error texts, and the names of downloaded files
    (data export, metrics). Test first: `packages/i18n` fails while any text
    says ShareRide. Run `pnpm check`, and the web journeys on GitHub.
-3. [ ] **A second address for staging.** `staging.puffinride.is` beside
+3. [x] **A second address for staging.** `staging.puffinride.is` beside
    staging.skinnar.is in `infra/render/render.yaml`; the runbook's
    "Move to puffinride.is" steps, including the mailbox for
-   admin@puffinride.is and one SPF record for Zoho and Mailjet.
+   `admin@puffinride.is` and one SPF record for Zoho and Mailjet.
 4. [ ] **Switch staging to puffinride.is,** once Render shows the new
    address as verified: `ADMIN_ORIGIN`, `WEB_APP_URL`, `API_ORIGIN`,
    `EMAIL_FROM` (`hello@puffinride.is`), and `EXPO_PUBLIC_API_URL` in

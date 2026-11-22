@@ -30,7 +30,7 @@ test.afterAll(async () => {
 test("the operator saves a passkey with the setup link, adds another and signs in with it", async () => {
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Sign in to the console" })).toBeVisible();
-  await expect(page).toHaveTitle("ShareRide console");
+  await expect(page).toHaveTitle("PuffinRide console");
 
   // The link from the operator command; the page takes the token out of the address.
   await page.goto(readFileSync(operatorLink, "utf8").trim());
