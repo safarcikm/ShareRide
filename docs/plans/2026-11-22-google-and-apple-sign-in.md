@@ -142,11 +142,15 @@ another thread's.
 | exists | another account | | sign in without linking, `linkRefused: provider_in_use` |
 | exists | nobody | yes | replace the old link, sign in, `replaced: provider` (and the email, when the account's email was the old link's) |
 
-`POST /v1/me/sign-in-methods { ticket, verifier, code }` follows the same
-rules without "make", inside `withConfirmCode` (a code from
-`POST /v1/me/confirm-code`, as spec 11's actions), and refuses instead of
-replacing: `provider_in_use` and `provider_already_linked` are errors (409),
-checked before the code is asked for, so a refusal never uses one up. The email (R19.4) is set when the account has
+Settings follows the same rules without "make", and refuses instead of
+replacing, in two calls. `POST /v1/me/sign-in-methods/prepare { ticket,
+verifier }` takes the ticket for the signed-in account and answers
+`provider_in_use` or `provider_already_linked` (409) before any code is
+asked for, or holds the sign-in for that account only, until 30 minutes
+after the callback. Then `POST /v1/me/sign-in-methods { pendingSignIn,
+code }` adds it inside `withConfirmCode` (a code from
+`POST /v1/me/confirm-code`, as spec 11's actions), checking the rules again,
+so a refusal or a sign-in that took too long never uses the code up. The email (R19.4) is set when the account has
 none, the provider said verified, and no other account has it, checked in
 the transaction; the unique index on `users.email` is the last word.
 
@@ -205,22 +209,23 @@ production, `exp://` addresses ending in `/--/sign-in/return` (Expo Go).
 
 ### 4.5 Data
 
-- `identities`: `id`, `user_id` (foreign key), `provider` (check `google`,
-  `apple`), `subject`, `email` (only a verified one, else empty),
-  `linked_at`, `last_used_at`,
-  timestamps. Unique `(provider, subject)` and `(user_id, provider)`.
-  Personal data: account; exported in the account section as sign-in
-  methods (provider, email, linked at); erased with the account.
+- `identities` (migration 0057): `id`, `user_id` (foreign key), `provider`
+  (check `google`, `apple`), `subject`, `email` (only a verified one, else
+  empty), `linked_at`, `last_used_at`, timestamps. Unique
+  `(provider, subject)` and `(user_id, provider)`. Personal data: account;
+  exported in its own section, sign-in methods (provider, email, linked,
+  last used; never the subject); erased with the account.
 - `provider_sign_ins`: `id`, `provider`, `state_hash` (unique),
-  `challenge`, `return_url`, `expires_at`, then `ticket_hash` (unique),
+  `challenge`, `return_url`, `expires_at`, `answered_at`, then `subject`,
+  `email` (only a verified one), `first_name`, `ticket_hash` (unique),
   `ticket_expires_at`, `ticket_used_at`, `pending_hash` (unique),
-  `pending_used_at`, `subject`, `email`, `email_verified`, `first_name`,
-  timestamps. Not linked to an account; listed in `personal-data.ts` as
-  left out of exports ("lives at most 30 minutes, before or while an
-  account is made"). The hourly clean-up deletes rows an hour after
-  `expires_at`.
-- Start limit: 20 starts per 10 minutes per address (its /64 for IPv6), in
-  `rate_limit_events` with the scope `oauth_start`.
+  `link_user_id` (the account a Settings link is for), timestamps. Listed
+  in `personal-data.ts` as left out of exports. A sign-in that ends
+  (signed in, linked, cancelled or failed) is deleted at once; the hourly
+  clean-up deletes the rest an hour after `expires_at`.
+- Start limit: 20 starts per 10 minutes per address (its /64 for IPv6),
+  counted in the API's memory as search's limit is, under a keyed hash of
+  the address.
 
 ### 4.6 The app
 
@@ -256,29 +261,30 @@ opens and merges once CI is green (Martin's rule of 2026-11-16).
 
 ### PR 2: `feat(auth)`: sign in with Google, the API
 
-- [ ] **Domain** (`packages/domain/src/auth/sign-in-providers.ts`):
+- [x] **Domain** (`packages/domain/src/auth/sign-in-providers.ts`):
       `signInProviders`, `providerSignInRules` (10 and 30 minutes, 5-minute
       ticket, start limit), `readProviderClaims` (subject, email, verified
       as `true` or `"true"`, first name through the first name rule),
       `decideLink` (table 4.2), `emailToStore` (R19.4),
       `isAllowedReturnUrl`. Tests first, one per row of 4.2 and per rule.
-- [ ] **Tables** `identities` and `provider_sign_ins`, the migration with
+- [x] **Tables** `identities` and `provider_sign_ins`, the migration with
       the next free number, `personal-data.ts`, export and erasure, the
       clean-up. Tests: export lists the methods; erasure leaves none; the
       clean-up deletes old sign-ins only.
-- [ ] **Providers** with the Google adapter and the development provider
+- [x] **Providers** with the Google adapter and the development provider
       (4.3), `jose` added to the API (justified in the PR). Tests with keys
       made in the test: a wrong signature, audience, issuer, expiry or
-      nonce is refused; an unverified email is kept as unverified.
-- [ ] **Routes** start, Google callback, finish, verify with
-      `pendingSignIn`, `GET`/`POST`/`DELETE /v1/me/sign-in-methods`,
+      nonce is refused; an unverified email is left out (R19.4).
+- [x] **Routes** start, Google callback, finish, verify with
+      `pendingSignIn`, `GET`/`POST`/`DELETE /v1/me/sign-in-methods` and
+      `POST /v1/me/sign-in-methods/prepare`,
       `signInProviders` in `/v1/config`; contracts and the API client.
       Integration tests for every row of 4.2, a ticket used twice, a wrong
       verifier, a sign-in past 10 or 30 minutes, a return address not
       allowed, the start limit, a suspended account, an account waiting to
       be deleted, adding in Settings without or with a wrong confirm code,
       review focus 2 to 4.
-- [ ] **Docs:** security (a "Google and Apple" part of Sign-in and
+- [x] **Docs:** security (a "Google and Apple" part of Sign-in and
       sessions), privacy and GDPR (inventory rows, Google and Apple as
       recipients), the privacy policy draft's section 5, `.env.example`
 - Verify: `pnpm check`; `pnpm test:integration` for `@shareride/api` and

@@ -4,12 +4,12 @@ import {
   checkRateLimits,
   codeRules,
   codeSendLimits,
+  decideLink,
   decideRefresh,
   err,
   generateCode,
   normalisePhoneNumber,
   ok,
-  sessionRules,
   type CodePurpose,
   type PhoneNumberError,
   type RateLimited,
@@ -19,10 +19,20 @@ import {
 import { createTranslator, type Locale } from "@shareride/i18n";
 import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { addressBlock } from "../../platform/client-address.ts";
-import { hashToken, newToken, sameHash, type KeyedHasher } from "../../platform/crypto.ts";
+import { hashToken, sameHash, type KeyedHasher } from "../../platform/crypto.ts";
 import type { SmsSender } from "../../platform/sms.ts";
 import type { Logger } from "../../logger.ts";
 import type { SignUpGate, SignUpRefusal } from "../beta/invites.ts";
+import {
+  applyLink,
+  linkStateOf,
+  lockPendingSignIn,
+  subjectTakenConstraint,
+  type LinkOutcome,
+  type PendingSignIn,
+} from "./identities.ts";
+import { issueTokens, openSession } from "./sessions.ts";
+import { uniqueViolation } from "../../platform/database-errors.ts";
 
 const {
   blockedNumbers,
@@ -58,6 +68,10 @@ export interface SignedIn {
   readonly platform: Platform;
   readonly isNewUser: boolean;
   readonly tokens: IssuedTokens;
+  /** With a waiting Google or Apple sign-in: what became of it. */
+  readonly providerLink?: LinkOutcome;
+  /** A new account's first name from Google or Apple, for step 3 only (R19.5). */
+  readonly suggestedFirstName?: string;
 }
 
 export interface Refreshed {
@@ -78,6 +92,10 @@ export type VerifyError =
   | { readonly code: "code_expired" }
   | { readonly code: "code_attempts_exceeded"; readonly retryAfterSeconds: number }
   | { readonly code: "account_unavailable" }
+  /** The waiting Google or Apple sign-in is gone: older than 30 minutes, or used. */
+  | { readonly code: "provider_expired" }
+  /** Another account has the Google or Apple account, and the number has none (R19.1). */
+  | { readonly code: "provider_in_use" }
   | SignUpRefusal;
 
 export type ConfirmError =
@@ -112,6 +130,8 @@ export interface AuthService {
     readonly device: Device;
     /** For a number with no account, while the beta is closed (spec 12, R12.1). */
     readonly inviteCode?: string | undefined;
+    /** A Google or Apple sign-in waiting for this phone step (spec 19, 3.3). */
+    readonly pendingSignIn?: string | undefined;
   }): Promise<Result<SignedIn, VerifyError>>;
   /** Rotates the refresh token (ADR 0016). */
   refresh(refreshToken: string): Promise<Result<Refreshed, RefreshError>>;
@@ -168,8 +188,8 @@ const addSeconds = (date: Date, seconds: number) => new Date(date.getTime() + se
  * keeps reading, downloading and deleting their data (spec 9, 3.6.2); the
  * API refuses them what a suspension takes away.
  */
-const signInStatuses = ["active", "suspended"];
-const canSignIn = (status: string) => signInStatuses.includes(status);
+export const signInStatuses = ["active", "suspended"];
+export const canSignIn = (status: string) => signInStatuses.includes(status);
 
 /** How often `last_active_at` is written, so not every request writes. */
 const lastActiveWriteSeconds = 5 * 60;
@@ -251,40 +271,6 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
       now,
     );
     return check.ok ? 0 : check.error.retryAfterSeconds;
-  }
-
-  async function issueTokens(executor: Executor, sessionId: string, now: Date) {
-    const accessToken = newToken("access");
-    const refreshToken = newToken("refresh");
-    const accessTokenExpiresAt = addSeconds(now, sessionRules.accessTokenSeconds);
-    const refreshTokenExpiresAt = addSeconds(now, sessionRules.refreshTokenIdleSeconds);
-    const rows = await executor
-      .insert(sessionTokens)
-      .values([
-        {
-          sessionId,
-          kind: "access",
-          tokenHash: hashToken(accessToken),
-          expiresAt: accessTokenExpiresAt,
-          createdAt: now,
-          updatedAt: now,
-        },
-        {
-          sessionId,
-          kind: "refresh",
-          tokenHash: hashToken(refreshToken),
-          expiresAt: refreshTokenExpiresAt,
-          createdAt: now,
-          updatedAt: now,
-        },
-      ])
-      .returning({ id: sessionTokens.id, kind: sessionTokens.kind });
-    const refreshRow = rows.find((row) => row.kind === "refresh");
-    if (refreshRow === undefined) throw new Error("The refresh token was not stored.");
-    return {
-      refreshTokenId: refreshRow.id,
-      tokens: { accessToken, accessTokenExpiresAt, refreshToken, refreshTokenExpiresAt },
-    };
   }
 
   /**
@@ -434,6 +420,113 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
       .set({ attempts: sql`${verificationCodes.attempts} + 1`, updatedAt: now })
       .where(eq(verificationCodes.id, codeId));
 
+  /**
+   * The phone step's transaction: checks the code, then signs in to the
+   * number's account or makes it, and, with a waiting Google or Apple
+   * sign-in, links it (spec 19, 3.3; plan 4.2).
+   */
+  async function verifyIn(
+    tx: Transaction,
+    input: Parameters<AuthService["verify"]>[0] & {
+      readonly e164: string;
+      readonly phoneHash: string;
+      readonly now: Date;
+    },
+  ): Promise<Result<SignedIn, VerifyError>> {
+    const { e164, phoneHash, now } = input;
+    // First, so a sign-in that took too long leaves the code unused (3.3, item 5).
+    let pending: PendingSignIn | null = null;
+    if (input.pendingSignIn !== undefined) {
+      pending = await lockPendingSignIn(tx, input.pendingSignIn, now, null);
+      if (pending === null) return err({ code: "provider_expired" });
+    }
+
+    const checked = await checkCode(tx, phoneHash, "sign_in", input.code, now);
+    if (!checked.ok) return checked;
+    const { codeId } = checked.value;
+
+    let [user] = await tx
+      .select({ id: users.id, status: users.status })
+      .from(users)
+      .where(eq(users.phoneE164, e164))
+      .for("update");
+    const isNewUser = user === undefined;
+    const decision =
+      pending === null
+        ? null
+        : decideLink({
+            via: "phone",
+            accountId: user?.id ?? null,
+            ...(await linkStateOf(tx, { ...pending, accountId: user?.id ?? null })),
+          });
+    // No account is made for a provider account another one has; the code stays.
+    if (user === undefined && decision?.action === "refuse") {
+      return err({ code: "provider_in_use" });
+    }
+    if (user === undefined) {
+      // The number of a suspended person whose data was erased cannot
+      // sign up again until the suspension would have ended (R11.9).
+      const [blocked] = await tx
+        .select({ until: blockedNumbers.until })
+        .from(blockedNumbers)
+        .where(and(eq(blockedNumbers.phoneHash, phoneHash), gt(blockedNumbers.until, now)));
+      if (blocked !== undefined) {
+        await useUpCode(tx, codeId);
+        return err({ code: "account_unavailable" });
+      }
+      // The closed beta (spec 12, R12.1): refused, the text-message code
+      // is kept, so the app can ask for the invite code and send both.
+      // A wrong invite code counts as a try, so guessing is held to the
+      // tries of sign-in; asking for one, or a full beta, does not.
+      const admitted = await signUpGate(tx, input.inviteCode, now);
+      if (!admitted.ok) {
+        if (admitted.error.code === "invite_invalid") await countAttempt(tx, codeId, now);
+        return admitted;
+      }
+      [user] = await tx
+        .insert(users)
+        .values({
+          phoneE164: e164,
+          phoneVerifiedAt: now,
+          locale: input.locale,
+          inviteCodeId: admitted.value.inviteCodeId,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .returning({ id: users.id, status: users.status });
+      if (user === undefined) throw new Error("The new user was not stored.");
+    }
+    await useUpCode(tx, codeId);
+    if (!canSignIn(user.status)) return err({ code: "account_unavailable" });
+
+    const providerLink =
+      pending === null || decision === null
+        ? undefined
+        : await applyLink(tx, { decision, pending, userId: user.id, now });
+
+    const { sessionId, tokens } = await openSession(tx, {
+      userId: user.id,
+      device: input.device,
+      now,
+    });
+
+    logger.info(
+      { userId: user.id, sessionId, isNewUser, provider: providerLink?.provider },
+      "signed in",
+    );
+    return ok({
+      userId: user.id,
+      sessionId,
+      platform: input.device.platform,
+      isNewUser,
+      tokens,
+      ...(providerLink === undefined ? {} : { providerLink }),
+      ...(isNewUser && pending !== null && pending.firstName !== null
+        ? { suggestedFirstName: pending.firstName }
+        : {}),
+    });
+  }
+
   return {
     async start(input) {
       const phone = normalisePhoneNumber(input.phoneNumber);
@@ -453,77 +546,19 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
       const now = clock();
       const phoneHash = hasher("phone", e164);
 
-      return db.transaction(async (tx): Promise<Result<SignedIn, VerifyError>> => {
-        const checked = await checkCode(tx, phoneHash, "sign_in", input.code, now);
-        if (!checked.ok) return checked;
-        const { codeId } = checked.value;
-
-        let [user] = await tx
-          .select({ id: users.id, status: users.status })
-          .from(users)
-          .where(eq(users.phoneE164, e164))
-          .for("update");
-        const isNewUser = user === undefined;
-        if (user === undefined) {
-          // The number of a suspended person whose data was erased cannot
-          // sign up again until the suspension would have ended (R11.9).
-          const [blocked] = await tx
-            .select({ until: blockedNumbers.until })
-            .from(blockedNumbers)
-            .where(and(eq(blockedNumbers.phoneHash, phoneHash), gt(blockedNumbers.until, now)));
-          if (blocked !== undefined) {
-            await useUpCode(tx, codeId);
-            return err({ code: "account_unavailable" });
-          }
-          // The closed beta (spec 12, R12.1): refused, the text-message code
-          // is kept, so the app can ask for the invite code and send both.
-          // A wrong invite code counts as a try, so guessing is held to the
-          // tries of sign-in; asking for one, or a full beta, does not.
-          const admitted = await signUpGate(tx, input.inviteCode, now);
-          if (!admitted.ok) {
-            if (admitted.error.code === "invite_invalid") await countAttempt(tx, codeId, now);
-            return admitted;
-          }
-          [user] = await tx
-            .insert(users)
-            .values({
-              phoneE164: e164,
-              phoneVerifiedAt: now,
-              locale: input.locale,
-              inviteCodeId: admitted.value.inviteCodeId,
-              createdAt: now,
-              updatedAt: now,
-            })
-            .returning({ id: users.id, status: users.status });
-          if (user === undefined) throw new Error("The new user was not stored.");
+      const signIn = (tx: Transaction): Promise<Result<SignedIn, VerifyError>> =>
+        verifyIn(tx, { ...input, e164, phoneHash, now });
+      try {
+        return await db.transaction(signIn);
+      } catch (error) {
+        // Two phone steps with one Google or Apple account at once: the
+        // unique index lets one through, and the other makes nothing and
+        // keeps its code (plan, review focus 4).
+        if (uniqueViolation(error, subjectTakenConstraint)) {
+          return err({ code: "provider_in_use" });
         }
-        await useUpCode(tx, codeId);
-        if (!canSignIn(user.status)) return err({ code: "account_unavailable" });
-
-        const [session] = await tx
-          .insert(sessions)
-          .values({
-            userId: user.id,
-            platform: input.device.platform,
-            deviceName: input.device.name ?? null,
-            appVersion: input.device.appVersion ?? null,
-            lastActiveAt: now,
-            createdAt: now,
-            updatedAt: now,
-          })
-          .returning({ id: sessions.id });
-        if (session === undefined) throw new Error("The session was not stored.");
-        const { tokens } = await issueTokens(tx, session.id, now);
-
-        logger.info({ userId: user.id, sessionId: session.id, isNewUser }, "signed in");
-        return ok({
-          userId: user.id,
-          sessionId: session.id,
-          platform: input.device.platform,
-          isNewUser,
-          tokens,
-        });
-      });
+        throw error;
+      }
     },
 
     async refresh(refreshToken) {

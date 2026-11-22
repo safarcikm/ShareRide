@@ -1455,6 +1455,12 @@ export const is = {
   "email.verifyOpen": "Staðfesta netfangið",
   "email.verifyFooter":
     "Þú færð þennan póst því þetta netfang var slegið inn í ShareRide. Ef það varst ekki þú skaltu hunsa hann: netfanginu er ekki bætt við.",
+  "oauth.page.title": "Innskráning í ShareRide",
+  "oauth.page.off":
+    "Þessi innskráningarleið er ekki í boði. Lokaðu glugganum og notaðu símanúmerið þitt.",
+  "oauth.page.invalid": "Þessi innskráningartengill virkar ekki. Lokaðu glugganum og reyndu aftur.",
+  "oauth.page.expired":
+    "Þessi innskráning er útrunnin eða var þegar notuð. Lokaðu glugganum og reyndu aftur.",
   "sms.signInCode": "{code} er ShareRide kóðinn þinn. Hann gildir í 10 mínútur.",
   "sms.confirmCode": "{code} er ShareRide kóðinn til að staðfesta. Ekki deila honum.",
   "sms.bookingCancelled":
@@ -1551,6 +1557,7 @@ export const is = {
   "export.section.legal_acceptances": "Skilmálar og stefnur sem þú samþykktir",
   "export.section.settings": "Stillingar",
   "export.section.devices": "Innskráð tæki",
+  "export.section.sign_in_methods": "Innskráningarleiðir",
   "export.section.email_waiting": "Netfang sem bíður staðfestingar",
   "export.section.vehicles": "Bílar",
   "export.section.trips_posted": "Ferðir sem þú birtir",
@@ -1621,6 +1628,7 @@ export const is = {
   "export.field.kind": "Tegund",
   "export.field.languages": "Tungumál",
   "export.field.lastActiveAt": "Síðast virkt",
+  "export.field.lastUsedAt": "Síðast notað",
   "export.field.licenceDeclaredAt": "Ökuskírteini staðfest",
   "export.field.locale": "Tungumál",
   "export.field.luggage": "Farangur",
@@ -1646,6 +1654,8 @@ export const is = {
   "export.field.phoneVerifiedAt": "Símanúmer staðfest",
   "export.field.place": "Staður",
   "export.field.plannedAt": "Áætlaður tími",
+  "export.field.method": "Innskráningarleið",
+  "export.field.linkedAt": "Tengt",
   "export.field.platform": "Stýrikerfi",
   "export.field.price": "Verð á sæti",
   "export.field.priceLevel": "Verðstig (%)",

@@ -81,6 +81,32 @@ describe("cleanUpSignInRecords", () => {
     expect(await api.connection.db.select().from(schema.emailVerifications)).toHaveLength(1);
   });
 
+  it("deletes Google and Apple sign-ins an hour after they expired (spec 19, 7)", async () => {
+    const { providerSignIns } = schema;
+    const now = api.now();
+    const row = (name: string, expiresAt: Date) => ({
+      provider: "google",
+      stateHash: hashToken(name),
+      challenge: "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+      returnUrl: "https://shareride.test/sign-in/return",
+      expiresAt,
+    });
+    await api.connection.db
+      .insert(providerSignIns)
+      .values([
+        row("old", new Date(now.getTime() - 3601_000)),
+        row("recent", new Date(now.getTime() - 3599_000)),
+        row("open", new Date(now.getTime() + 600_000)),
+      ]);
+    expect(await cleanUp()).toMatchObject({ providerSignIns: 1 });
+    const left = await api.connection.db
+      .select({ stateHash: providerSignIns.stateHash })
+      .from(providerSignIns);
+    expect(left.map((kept) => kept.stateHash).sort()).toEqual(
+      [hashToken("recent"), hashToken("open")].sort(),
+    );
+  });
+
   it("deletes rate-limit events after 24 hours", async () => {
     await sendCode();
     const events = await count(rateLimitEvents);

@@ -1,5 +1,6 @@
 import { pausedParts, settingGroups, settingReasonMaxLength } from "@shareride/domain";
 import { z } from "zod";
+import { signInProviderSchema } from "./auth.ts";
 import { timestampSchema } from "./common.ts";
 import { errorResponseSchema } from "./errors.ts";
 import { defineRoute } from "./route.ts";
@@ -26,6 +27,11 @@ export const configSchema = z.object({
   beta: z.boolean(),
   /** What is paused for a short while, for the app's banners (spec 10, 3.3). */
   paused: z.array(z.enum(pausedParts)),
+  /**
+   * The Google and Apple sign-ins that are on, for the sign-in screen's
+   * buttons (spec 19); none from an API that does not say.
+   */
+  signInProviders: z.array(signInProviderSchema).default([]),
 });
 
 export type Config = z.infer<typeof configSchema>;

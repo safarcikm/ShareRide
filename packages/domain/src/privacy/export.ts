@@ -34,6 +34,8 @@ export const exportSections = [
   "legal_acceptances",
   "settings",
   "devices",
+  /** Google and Apple accounts linked to the account (spec 19, 3.4). */
+  "sign_in_methods",
   "email_waiting",
   "vehicles",
   "trips_posted",

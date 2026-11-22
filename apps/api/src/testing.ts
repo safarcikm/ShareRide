@@ -16,6 +16,7 @@ import { exportCipherPurpose } from "./modules/privacy/index.ts";
 import { createFileCipher, createKeyedHasher } from "./platform/crypto.ts";
 import { createFakeEmailSender, type FakeEmailSender } from "./platform/email.ts";
 import { createTestPaymentProvider } from "./platform/payments.ts";
+import { createDevProvider } from "./platform/identity-providers.ts";
 import { createFakePhotoStorage, type FakePhotoStorage } from "./platform/photo-storage.ts";
 import { createStraightLineRouter } from "./platform/router.ts";
 import { createDevSmsSender, type DevSmsSender, type SmsSender } from "./platform/sms.ts";
@@ -77,6 +78,8 @@ export interface TestApi {
 export const testWebAppUrl = "https://shareride.test";
 /** The console origin passkeys are bound to in tests (ADR 0028). */
 export const testAdminOrigin = "https://shareride.test";
+/** Where the browser reaches the API in tests, for Google's and Apple's way back. */
+export const testApiOrigin = "http://api.test";
 
 let numbers = 0;
 let addresses = 0;
@@ -125,6 +128,12 @@ export async function startTestApi(): Promise<TestApi> {
     // Legs on straight lines; south of 63.3° N, at sea off the south coast, there is no road.
     router: createStraightLineRouter({ offRoad: (position) => position.latitude < 63.3 }),
     fixedSettings,
+    // Google through the development stand-in (ADR 0034).
+    signIn: {
+      providers: [createDevProvider({ name: "google", apiOrigin: testApiOrigin })],
+      apiOrigin: testApiOrigin,
+      returnUrls: { webOrigins: [testWebAppUrl], appScheme: "shareride", allowExpoGo: true },
+    },
   };
   const app = createApp({
     logger,

@@ -18,6 +18,8 @@ export const retentionRules = [
   "idle_sessions",
   "ended_sessions",
   "email_links",
+  /** Google and Apple sign-ins, an hour after they expired (spec 19, 7). */
+  "provider_sign_ins",
   "trip_drafts",
   "conversations",
   "trips_and_bookings",

@@ -1,0 +1,293 @@
+import { createHash } from "node:crypto";
+import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT, type JWK } from "jose";
+import { beforeAll, describe, expect, it } from "vitest";
+import {
+  createDevProvider,
+  createGoogleProvider,
+  devPeople,
+  devSignInPage,
+  googleEndpoints,
+  pkceChallenge,
+} from "./identity-providers.ts";
+
+const clientId = "test-client.apps.googleusercontent.com";
+const redirectUri = "https://api.shareride.test/v1/auth/oauth/google/callback";
+const now = new Date("2026-11-22T12:00:00.000Z");
+const nowSeconds = Math.floor(now.getTime() / 1000);
+
+let signingKey: CryptoKey;
+let otherKey: CryptoKey;
+let keys: ReturnType<typeof createLocalJWKSet>;
+
+beforeAll(async () => {
+  const pair = await generateKeyPair("RS256");
+  const other = await generateKeyPair("RS256");
+  signingKey = pair.privateKey;
+  otherKey = other.privateKey;
+  const jwk: JWK = { ...(await exportJWK(pair.publicKey)), kid: "key-1", alg: "RS256" };
+  keys = createLocalJWKSet({ keys: [jwk] });
+});
+
+interface TokenOptions {
+  readonly key?: CryptoKey;
+  readonly claims?: Record<string, unknown>;
+  readonly issuer?: string;
+  readonly audience?: string;
+  readonly expiresAt?: number;
+}
+
+function idToken(options: TokenOptions = {}): Promise<string> {
+  return new SignJWT({
+    nonce: "the-nonce",
+    email: "person@example.com",
+    email_verified: true,
+    given_name: "Ana",
+    ...options.claims,
+  })
+    .setProtectedHeader({ alg: "RS256", kid: "key-1" })
+    .setSubject("google-subject-1")
+    .setIssuer(options.issuer ?? "https://accounts.google.com")
+    .setAudience(options.audience ?? clientId)
+    .setIssuedAt(nowSeconds - 10)
+    .setExpirationTime(options.expiresAt ?? nowSeconds + 3600)
+    .sign(options.key ?? signingKey);
+}
+
+/** A token endpoint that answers with the given body and keeps what it was sent. */
+function fakeTokenEndpoint(answer: () => Promise<Response>) {
+  const requests: { url: string; body: URLSearchParams }[] = [];
+  const fetchFake = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    requests.push({ url: String(input), body: new URLSearchParams(String(init?.body)) });
+    return answer();
+  }) as typeof fetch;
+  return { requests, fetch: fetchFake };
+}
+
+function google(fetchFake: typeof fetch) {
+  return createGoogleProvider({
+    clientId,
+    clientSecret: "test-secret",
+    fetch: fetchFake,
+    keys,
+    clock: () => now,
+  });
+}
+
+const redeemInput = {
+  code: "the-code",
+  codeVerifier: "v".repeat(64),
+  nonce: "the-nonce",
+  redirectUri,
+};
+
+describe("pkceChallenge", () => {
+  it("is SHA-256 in base64url without padding (RFC 7636)", () => {
+    // The example of RFC 7636, appendix B.
+    expect(pkceChallenge("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk")).toBe(
+      "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+    );
+  });
+});
+
+describe("Google (plan 4.3)", () => {
+  it("sends the person to Google with PKCE, a nonce and the account chooser", () => {
+    const url = new URL(
+      google(fakeTokenEndpoint(() => Promise.resolve(new Response())).fetch).authorizationUrl({
+        state: "the-state",
+        nonce: "the-nonce",
+        codeVerifier: "v".repeat(64),
+        redirectUri,
+      }),
+    );
+    expect(`${url.origin}${url.pathname}`).toBe(googleEndpoints.authorization);
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      response_type: "code",
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      scope: "openid email profile",
+      state: "the-state",
+      nonce: "the-nonce",
+      code_challenge: createHash("sha256").update("v".repeat(64)).digest("base64url"),
+      code_challenge_method: "S256",
+      prompt: "select_account",
+    });
+  });
+
+  it("trades the code for an ID token and keeps the subject, a verified email and the first name", async () => {
+    const token = await idToken();
+    const endpoint = fakeTokenEndpoint(() =>
+      Promise.resolve(Response.json({ id_token: token, access_token: "ignored" })),
+    );
+    expect(await google(endpoint.fetch).redeem(redeemInput)).toEqual({
+      ok: true,
+      value: { subject: "google-subject-1", email: "person@example.com", firstName: "Ana" },
+    });
+    expect(endpoint.requests).toHaveLength(1);
+    expect(endpoint.requests[0]?.url).toBe(googleEndpoints.token);
+    expect(Object.fromEntries(endpoint.requests[0]?.body ?? [])).toEqual({
+      grant_type: "authorization_code",
+      code: "the-code",
+      client_id: clientId,
+      client_secret: "test-secret",
+      redirect_uri: redirectUri,
+      code_verifier: "v".repeat(64),
+    });
+  });
+
+  it("takes Google's issuer without https too", async () => {
+    const token = await idToken({ issuer: "accounts.google.com" });
+    const endpoint = fakeTokenEndpoint(() => Promise.resolve(Response.json({ id_token: token })));
+    expect(await google(endpoint.fetch).redeem(redeemInput)).toMatchObject({ ok: true });
+  });
+
+  it("leaves out an email Google has not verified", async () => {
+    const token = await idToken({ claims: { email_verified: false } });
+    const endpoint = fakeTokenEndpoint(() => Promise.resolve(Response.json({ id_token: token })));
+    expect(await google(endpoint.fetch).redeem(redeemInput)).toMatchObject({
+      ok: true,
+      value: { email: null },
+    });
+  });
+
+  it.each([
+    ["signed with another key", { key: "other" }, "id_token"],
+    ["for another client", { audience: "someone-else" }, "id_token"],
+    ["from another issuer", { issuer: "https://evil.example" }, "id_token"],
+    ["expired more than a minute ago", { expiresAt: nowSeconds - 61 }, "id_token"],
+    ["with another nonce", { claims: { nonce: "old-nonce" } }, "nonce"],
+    ["without a nonce", { claims: { nonce: undefined } }, "nonce"],
+  ] as const)("refuses an ID token %s", async (_case, options, reason) => {
+    const token = await idToken({
+      ...("key" in options ? { key: otherKey } : {}),
+      ...("audience" in options ? { audience: options.audience } : {}),
+      ...("issuer" in options ? { issuer: options.issuer } : {}),
+      ...("expiresAt" in options ? { expiresAt: options.expiresAt } : {}),
+      ...("claims" in options ? { claims: options.claims } : {}),
+    });
+    const endpoint = fakeTokenEndpoint(() => Promise.resolve(Response.json({ id_token: token })));
+    expect(await google(endpoint.fetch).redeem(redeemInput)).toEqual({
+      ok: false,
+      error: { code: "provider_failed", reason },
+    });
+  });
+
+  it("takes a token that expired less than a minute ago (clock skew)", async () => {
+    const token = await idToken({ expiresAt: nowSeconds - 30 });
+    const endpoint = fakeTokenEndpoint(() => Promise.resolve(Response.json({ id_token: token })));
+    expect(await google(endpoint.fetch).redeem(redeemInput)).toMatchObject({ ok: true });
+  });
+
+  it.each([
+    [
+      "refuses the code",
+      () => Promise.resolve(Response.json({ error: "invalid_grant" }, { status: 400 })),
+    ],
+    ["answers without an ID token", () => Promise.resolve(Response.json({ access_token: "x" }))],
+    ["answers something that is not JSON", () => Promise.resolve(new Response("<html>"))],
+    ["cannot be reached", () => Promise.reject(new TypeError("fetch failed"))],
+  ])("fails when the token endpoint %s", async (_case, answer) => {
+    const endpoint = fakeTokenEndpoint(answer);
+    expect(await google(endpoint.fetch).redeem(redeemInput)).toEqual({
+      ok: false,
+      error: { code: "provider_failed", reason: "token_request" },
+    });
+  });
+
+  it("refuses an ID token without a subject", async () => {
+    const token = await new SignJWT({ nonce: "the-nonce" })
+      .setProtectedHeader({ alg: "RS256", kid: "key-1" })
+      .setIssuer("https://accounts.google.com")
+      .setAudience(clientId)
+      .setExpirationTime(nowSeconds + 3600)
+      .sign(signingKey);
+    const endpoint = fakeTokenEndpoint(() => Promise.resolve(Response.json({ id_token: token })));
+    expect(await google(endpoint.fetch).redeem(redeemInput)).toEqual({
+      ok: false,
+      error: { code: "provider_failed", reason: "claims" },
+    });
+  });
+});
+
+describe("the development provider (plan 4.3)", () => {
+  const apiOrigin = "http://localhost:3000";
+  const dev = createDevProvider({ name: "google", apiOrigin });
+  const callback = `${apiOrigin}/v1/auth/oauth/google/callback`;
+
+  it("sends the person to our own page", () => {
+    const url = new URL(
+      dev.authorizationUrl({
+        state: "the-state",
+        nonce: "the-nonce",
+        codeVerifier: "v".repeat(64),
+        redirectUri: callback,
+      }),
+    );
+    expect(`${url.origin}${url.pathname}`).toBe(`${apiOrigin}/v1/auth/oauth/dev/google`);
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      state: "the-state",
+      nonce: "the-nonce",
+      redirect_uri: callback,
+    });
+  });
+
+  it("lists made-up people: with a verified email, a hidden one, and an unverified one", () => {
+    expect(devPeople.map((person) => person.claims.email_verified)).toEqual([true, true, false]);
+    for (const person of devPeople) {
+      expect(String(person.claims.email)).toMatch(/@(example\.com|privaterelay\.example)$/);
+    }
+  });
+
+  it("links each person back to the callback with the state, and offers Cancel", () => {
+    const page = devSignInPage({
+      provider: "google",
+      state: "the-state",
+      nonce: "the-nonce",
+      redirectUri: callback,
+    });
+    expect(page).toContain("<!doctype html>");
+    const hrefs = [...page.matchAll(/href="([^"]+)"/g)].map(
+      (match) => new URL((match[1] ?? "").replaceAll("&amp;", "&")),
+    );
+    expect(hrefs).toHaveLength(devPeople.length + 1);
+    for (const href of hrefs) {
+      expect(`${href.origin}${href.pathname}`).toBe(callback);
+      expect(href.searchParams.get("state")).toBe("the-state");
+    }
+    expect(hrefs.at(-1)?.searchParams.get("error")).toBe("access_denied");
+  });
+
+  it("escapes what it is given", () => {
+    const page = devSignInPage({
+      provider: "google",
+      state: '"><script>',
+      nonce: "n",
+      redirectUri: callback,
+    });
+    expect(page).not.toContain("<script>");
+  });
+
+  it("answers with the person chosen when the nonce matches", async () => {
+    const page = devSignInPage({
+      provider: "google",
+      state: "s",
+      nonce: "the-nonce",
+      redirectUri: callback,
+    });
+    const first = /href="([^"]+)"/.exec(page)?.[1]?.replaceAll("&amp;", "&") ?? "";
+    const code = new URL(first).searchParams.get("code") ?? "";
+    expect(await dev.redeem({ ...redeemInput, code, redirectUri: callback })).toEqual({
+      ok: true,
+      value: { subject: "dev-google-1", email: "dev-person-1@example.com", firstName: "Anna" },
+    });
+    expect(
+      await dev.redeem({ ...redeemInput, code, nonce: "other", redirectUri: callback }),
+    ).toEqual({ ok: false, error: { code: "provider_failed", reason: "nonce" } });
+  });
+
+  it("fails on a code it did not make", async () => {
+    expect(await dev.redeem({ ...redeemInput, code: "garbage" })).toEqual({
+      ok: false,
+      error: { code: "provider_failed", reason: "token_request" },
+    });
+  });
+});

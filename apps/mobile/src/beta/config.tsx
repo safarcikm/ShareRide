@@ -25,6 +25,7 @@ const quiet: Config = {
   freeCancellationMinutes: defaultCancellationSettings.refundCutoffMinutes,
   maxMoveMinutes,
   reliabilityMonths: defaultReliabilitySettings.periodMonths,
+  signInProviders: [],
 };
 
 const ConfigContext = createContext<Config>(quiet);

@@ -16,6 +16,7 @@ import { hashToken, newToken } from "../../platform/crypto.ts";
 import { MaybeSent } from "../../platform/maybe-sent.ts";
 import type { EmailChannel } from "../../platform/email.ts";
 import { emailContent } from "../notifications/email-content.ts";
+import { uniqueViolation } from "../../platform/database-errors.ts";
 
 // Adding an email (spec 1, 3.5; plan 4.6). The address waits with a link
 // sent to it, and becomes the account's, verified, once the link is opened.
@@ -58,16 +59,6 @@ export async function pendingEmailOf(
     .limit(1);
   if (newest === undefined) return null;
   return checkEmailLink({ ...newest, newest: true }, now).ok ? newest.email : null;
-}
-
-/** Whether a database error is the given unique constraint refusing a second row. */
-function uniqueViolation(error: unknown, constraint: string): boolean {
-  for (let cause = error; typeof cause === "object" && cause !== null;) {
-    const fields = cause as { code?: unknown; constraint?: unknown; cause?: unknown };
-    if (fields.code === "23505" && fields.constraint === constraint) return true;
-    cause = fields.cause;
-  }
-  return false;
 }
 
 export function createEmailService(dependencies: {
