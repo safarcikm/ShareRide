@@ -45,3 +45,4 @@ Specs follow the order in [features](../product/features.md#spec-order).
 | 18 | [The web app on a laptop](2026-11-18-laptop-layout.md) | All screens | Approved (2026-11-18) |
 | 19 | [Sign in with Google and Apple](2026-11-22-google-and-apple-sign-in.md) | A1, A4 | Approved (2026-11-22) |
 | 20 | [Email alerts for web members, and an open beta](2026-11-22-email-alerts-and-open-beta.md) | A1, E1, F2, G1, J1 | Approved (2026-11-22) |
+| 21 | [A meeting point for every settlement](2026-11-22-meeting-points-for-every-settlement.md) | B1, B2 | Approved (2026-11-22) |

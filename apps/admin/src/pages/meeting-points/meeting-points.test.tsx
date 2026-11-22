@@ -18,7 +18,12 @@ import {
   type AdminMeetingPointListItem,
   type AdminMeetingPointPhoto,
 } from "@shareride/contracts";
-import { activationItems, icelandDate, type ActivationItem } from "@shareride/domain";
+import {
+  activationItemRequired,
+  activationItems,
+  icelandDate,
+  type ActivationItem,
+} from "@shareride/domain";
 import { formatDate } from "@shareride/i18n";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -97,8 +102,12 @@ const bsi: AdminMeetingPointListItem = {
 
 /** A checklist with these items still to do. */
 const checklistWith = (...toDo: readonly ActivationItem[]): AdminActivationChecklist => ({
-  items: activationItems.map((item) => ({ item, done: !toDo.includes(item) })),
-  ready: toDo.length === 0,
+  items: activationItems.map((item) => ({
+    item,
+    done: !toDo.includes(item),
+    required: activationItemRequired(item),
+  })),
+  ready: toDo.every((item) => !activationItemRequired(item)),
 });
 
 function start(path: string) {
@@ -1021,13 +1030,13 @@ describe("activating a draft (spec 2, 3.6.3)", () => {
   }
 
   it("shows what a draft still needs, and what the API found on Activate", async () => {
-    const api = open(checklistWith("photos", "confirmed"));
+    const api = open(checklistWith("photos", "season", "confirmed"));
     api.on(adminActivateMeetingPointRoute, {
       status: 409,
       error: {
         code: "activation_not_ready",
         details: [
-          { path: "photos", issue: "not_done" },
+          { path: "season", issue: "not_done" },
           { path: "confirmed", issue: "not_done" },
         ],
       },
@@ -1040,9 +1049,9 @@ describe("activating a draft (spec 2, 3.6.3)", () => {
     ).toEqual([
       "Name, place, type, region and municipality Done",
       "Where to stand, in Icelandic and English Done",
-      "A photo described in both languages To do",
+      "A photo described in both languages Recommended",
       "The amenities checked Done",
-      "The season checked Done",
+      "The season checked To do",
       "The day you last confirmed the point To do",
       "A road within 1 km that reaches the points in use Done",
     ]);
@@ -1051,12 +1060,18 @@ describe("activating a draft (spec 2, 3.6.3)", () => {
     );
     fireEvent.click(activateButton());
 
+    // The photo is recommended (ADR 0036): not counted, and still shown as such.
     const alert = await within(panel()).findByRole("alert");
     expect(alert.textContent).toBe(
       "2 things are still to do before N1 Borgarnesi can be activated.",
     );
     await waitFor(() => {
       expect(document.activeElement).toBe(alert);
+    });
+    expect(row(list, "A photo")?.textContent).toContain("Recommended");
+    // The list is loaded again, for the recommended items the API does not name.
+    await waitFor(() => {
+      expect(api.called(adminActivationChecklistRoute)).toHaveLength(2);
     });
     // The API checks again, as the list shown can be older than what is saved.
     expect(api.called(adminActivateMeetingPointRoute)[0]?.input["body"]).toEqual({
@@ -1065,7 +1080,8 @@ describe("activating a draft (spec 2, 3.6.3)", () => {
   });
 
   it("activates a draft whose checklist is done, which computes its distances", async () => {
-    const api = open(checklistWith());
+    // With no photo yet, which is recommended, not required (ADR 0036).
+    const api = open(checklistWith("photos"));
     const active: AdminMeetingPoint = {
       ...draft,
       status: "active",
@@ -1154,6 +1170,8 @@ describe("activating a draft (spec 2, 3.6.3)", () => {
       },
     });
     await checklist();
+    // What is saved changed since the list was loaded: no road reaches the points in use now.
+    api.on(adminActivationChecklistRoute, { status: 200, data: checklistWith("legs") });
     fireEvent.click(activateButton());
     const alert = await within(panel()).findByRole("alert");
     expect(alert.textContent).toBe("1 thing is still to do before N1 Borgarnesi can be activated.");

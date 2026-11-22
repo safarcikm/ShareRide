@@ -5,7 +5,7 @@ import {
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
 import { sampleId, seedSampleMeetingPoints } from "@shareride/db/seed";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
 
@@ -77,7 +77,13 @@ describe("the console's corridors", () => {
     expect(body.places.length).toBeGreaterThan(10);
     expect(body.places).toContainEqual({ id: place("akranes-town"), name: "Akranes" });
     const names = body.places.map((row) => row.name);
-    expect(names).toEqual([...names].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)));
+    // By name, as the database sorts names (its collation: "Þórshöfn"
+    // before "Þykkvibær"), every place once.
+    const byName = await api.connection.db
+      .select({ name: schema.places.nameIs })
+      .from(schema.places)
+      .orderBy(asc(schema.places.nameIs), asc(schema.places.id));
+    expect(names).toEqual(byName.map((row) => row.name));
 
     const [entry] = await api.connection.db
       .select()

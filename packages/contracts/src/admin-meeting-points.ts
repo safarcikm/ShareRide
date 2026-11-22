@@ -30,7 +30,7 @@ export const adminMeetingPointErrorCodes = [
   "move_needed",
   /** The point's status does not allow this change, such as pausing a draft (`nextPointStatus`). */
   "status_change_not_allowed",
-  /** An item of the activation checklist is not done (R2.3); `details` names each one. */
+  /** A required item of the activation checklist is not done (R2.3); `details` names each one. */
   "activation_not_ready",
   /** Only a point in service moves with its own step: a draft's spot is edited, a retired point stays. */
   "move_not_allowed",
@@ -312,13 +312,21 @@ export const adminRetireMeetingPointRoute = defineRoute({
 });
 
 // Activating a draft (spec 2, 3.6.3; milestone 8, PR 12a): only when its
-// checklist passes (R2.3, `activationChecklist`). Activation computes the
+// checklist's required items are done (R2.3 as spec 21 changed it,
+// `activationChecklist`; the photo is recommended). Activation computes the
 // point's legs with every point in service (3.7) in the same transaction.
 
 export const adminActivationChecklistSchema = z.object({
   /** Each item of R2.3, in the order the console shows them. */
-  items: z.array(z.object({ item: z.enum(activationItems), done: z.boolean() })),
-  /** Every item is done. */
+  items: z.array(
+    z.object({
+      item: z.enum(activationItems),
+      done: z.boolean(),
+      /** Activation waits for it; false for the photo, which is recommended (ADR 0036). */
+      required: z.boolean(),
+    }),
+  ),
+  /** Every required item is done. */
   ready: z.boolean(),
 });
 export type AdminActivationChecklist = z.infer<typeof adminActivationChecklistSchema>;
@@ -349,7 +357,7 @@ export const adminActivateMeetingPointRoute = defineRoute({
     400: { description: "validation_failed", ...errors },
     409: {
       description:
-        "meeting_point_changed: saved by someone else since; status_change_not_allowed: not a draft; activation_not_ready: with each item not done in `details`",
+        "meeting_point_changed: saved by someone else since; status_change_not_allowed: not a draft; activation_not_ready: with each required item not done in `details`",
       ...errors,
     },
   },
