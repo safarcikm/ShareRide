@@ -242,7 +242,7 @@ fit two SMS parts.
 | R7.7 | Notifications use the recipient's language and local time. |
 | R7.8 | Only trip reminders and beta news (spec 10) can be turned off in the app. |
 | R7.9 | Notifications never add a phone number, email address, number plate or payment details. A chat message's text appears only in its push, never in an email or SMS. Emails carry no tracking pixels or tracked links. |
-| R7.10 | SMS is sent only for sign-in codes, the events in 3.4 (passengers, within 24 hours of boarding) and an operator's alert of a safety report (spec 9, R9.9), only to a verified phone number, and at most 5 a day per person apart from codes and alerts. |
+| R7.10 | SMS is sent only for sign-in codes, the events in 3.4 (passengers, within 24 hours of boarding), an operator's alert of a safety report (spec 9, R9.9) and an operator's notice that a console recovery code was used (spec 22, R22.4), only to a verified phone number, and at most 5 a day per person apart from codes and alerts. |
 | R7.11 | Reminders follow the trip: they move when the departure moves and are dropped when the booking ends. |
 
 ## 5. Screens

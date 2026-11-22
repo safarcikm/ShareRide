@@ -6,6 +6,8 @@ import {
   adminConfirmRoute,
   adminPasskeysRoute,
   adminPasswordSignInRoute,
+  adminRecoveryCodeRoute,
+  adminRecoveryVerifyRoute,
   adminRemovePasskeyRoute,
   adminSetupOptionsRoute,
   adminSetupRoute,
@@ -26,6 +28,7 @@ import type { RateLimiter } from "../../platform/memory-rate-limiter.ts";
 import { auditRequestOf } from "./audit.ts";
 import type { PasskeyService, SignedInOperator } from "./passkeys.ts";
 import type { PasswordSignIn } from "./password.ts";
+import type { RecoveryService } from "./recovery.ts";
 import { setOperatorCookie } from "./require-operator.ts";
 
 export interface AdminAuthRoutesDependencies {
@@ -35,6 +38,8 @@ export interface AdminAuthRoutesDependencies {
   readonly password: PasswordSignIn;
   /** Password tries per address (keyed like `limiter`) and from all addresses together. */
   readonly passwordLimiters: { readonly perAddress: RateLimiter; readonly all: RateLimiter };
+  /** "Lost your passkey?" (spec 22). */
+  readonly recovery: RecoveryService;
   readonly requireOperator: MiddlewareHandler<AppEnv>;
   readonly clientAddress: (c: Context) => string;
   /** Per-address limits on signing in and setup links, keyed without the plain address. */
@@ -45,9 +50,10 @@ export interface AdminAuthRoutesDependencies {
 }
 
 /**
- * Passkey sign-in, the temporary password sign-in (ADR 0041) and the
- * operator's passkeys (ADR 0028). The routes under /admin/v1/auth are the
- * only console routes open without a session (`openAdminRoutes`).
+ * Passkey sign-in, the temporary password sign-in (ADR 0041), getting
+ * back in with a text code (spec 22) and the operator's passkeys (ADR
+ * 0028). The routes under /admin/v1/auth are the only console routes open
+ * without a session (`openAdminRoutes`).
  */
 export function registerAdminAuthRoutes(
   app: OpenAPIHono<AppEnv>,
@@ -58,6 +64,7 @@ export function registerAdminAuthRoutes(
     passkeys,
     password,
     passwordLimiters,
+    recovery,
     requireOperator,
     clientAddress,
     limiter,
@@ -207,6 +214,72 @@ export function registerAdminAuthRoutes(
         );
       default:
         return errorResponse(c, 401, "password_invalid", "The phone number or password is wrong.");
+    }
+  });
+
+  app.openapi(toOpenApiRoute(adminRecoveryCodeRoute), async (c) => {
+    const refused = limited(c);
+    if (refused !== null) return refused;
+    const { phoneNumber } = validated(c, "json", adminRecoveryCodeRoute.request.body);
+    const result = await recovery.sendCode({ phoneNumber });
+    if (result.ok) return c.json(result.value, 200);
+    logger.warn(
+      { requestId: c.get("requestId"), errorCode: result.error.code },
+      "console recovery code refused",
+    );
+    switch (result.error.code) {
+      case "rate_limited":
+        return errorResponse(
+          c,
+          429,
+          "rate_limited",
+          "Too many codes were asked for. Wait a little.",
+          {
+            retryAfterSeconds: result.error.retryAfterSeconds,
+          },
+        );
+      case "sms_failed":
+      case "sms_paused":
+        return errorResponse(c, 503, "sms_failed", "The text message could not be sent.");
+      default:
+        return errorResponse(c, 400, "phone_invalid", "That is not a mobile number.");
+    }
+  });
+
+  app.openapi(toOpenApiRoute(adminRecoveryVerifyRoute), async (c) => {
+    const refused = limited(c);
+    if (refused !== null) return refused;
+    const body = validated(c, "json", adminRecoveryVerifyRoute.request.body);
+    const result = await recovery.verify({
+      phoneNumber: body.phoneNumber,
+      code: body.code,
+      request: auditRequestOf(c, clientAddress),
+    });
+    if (result.ok) return c.json(result.value, 200);
+    switch (result.error.code) {
+      case "code_invalid":
+        return errorResponse(c, 400, "code_invalid", "The code is wrong.", {
+          attemptsLeft: result.error.attemptsLeft,
+        });
+      case "code_attempts_exceeded":
+        return errorResponse(
+          c,
+          429,
+          "code_attempts_exceeded",
+          "Too many wrong codes. Send a new one.",
+          {
+            retryAfterSeconds: result.error.retryAfterSeconds,
+          },
+        );
+      case "code_expired":
+        return errorResponse(
+          c,
+          400,
+          "code_expired",
+          "The code has expired or was used. Send a new one.",
+        );
+      default:
+        return errorResponse(c, 400, "phone_invalid", "That is not a mobile number.");
     }
   });
 

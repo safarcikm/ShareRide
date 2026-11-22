@@ -92,7 +92,9 @@ the repository.
 
    To turn it off, delete `ADMIN_PASSWORD` there, then check **Passkeys**
    and the audit log as in the staging runbook ("Sign in with a password
-   for now").
+   for now"). If you lose every passkey later, **Lost your passkey?** on the
+   sign-in page texts a code to your phone, as on staging ("Lost every
+   passkey").
 5. **Settings in the console.** **Settings**, **Booking**: turn on **Pay
    the driver in person** and save; without it no booking can be confirmed,
    as production takes no payments in the app. Check that **Invite code

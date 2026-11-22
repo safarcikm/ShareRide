@@ -18,12 +18,20 @@ function takeToken(): string | null {
 
 export interface SetupPageProps {
   readonly onSignedIn: (operator: AdminMe) => void;
+  /** A setup token from a recovery code (spec 22); without it, the link's. */
+  readonly token?: string;
+  /** The text above the name, when it is not the setup link's. */
+  readonly bodyKey?: MessageKey;
 }
 
-/** Saves the first passkey with the link from the `operator` command. */
-export function SetupPage({ onSignedIn }: SetupPageProps) {
+/** Saves a passkey with the link from the `operator` command, or after a recovery code. */
+export function SetupPage({
+  onSignedIn,
+  token: given,
+  bodyKey = "admin.setup.body",
+}: SetupPageProps) {
   const { t, call, passkeys } = useConsole();
-  const [token] = useState(takeToken);
+  const [token] = useState(() => given ?? takeToken());
   const [name, setName] = useState("");
   const [nameMissing, setNameMissing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -100,7 +108,7 @@ export function SetupPage({ onSignedIn }: SetupPageProps) {
             void save();
           }}
         >
-          <p className="type-body muted">{t("admin.setup.body")}</p>
+          <p className="type-body muted">{t(bodyKey)}</p>
           <div className="field">
             <label htmlFor={nameId} className="type-label">
               {t("admin.setup.name")}

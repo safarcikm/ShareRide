@@ -21,7 +21,7 @@ apps.
 | Harassment | Abusive messages, unsafe behaviour | Report and block, moderation queue, suspension, retained evidence for reports |
 | Data breach | Leaked database or backups | Encryption at rest and in transit, least-privilege database roles, no personal data in logs, access audit |
 | Supply chain | Malicious package or action | Lockfile, pinned actions, dependency review, minimal dependencies |
-| Admin misuse | Operator account compromised | Separate operator role, passkey or hardware-key sign-in (a password for now while `ADMIN_PASSWORD` is set, ADRs 0041 and 0044), audit log of every admin action |
+| Admin misuse | Operator account compromised | Separate operator role, passkey or hardware-key sign-in (a password for now while `ADMIN_PASSWORD` is set, ADRs 0041 and 0044), a lost passkey replaced only after a text code to the operator's own number with every other session ended and a notice (ADR 0040), audit log of every admin action |
 
 ## Baseline controls
 
@@ -227,6 +227,22 @@ is built, in `apps/api/src/modules/admin` with the rules in
   sees the role gone. Signing in and setup links
   are limited per address (10 a minute, 60 an hour, keyed by a hash of the
   address, of its /64 network for IPv6).
+- **Recovery by text code:** "Lost your passkey?" (spec 22,
+  [ADR 0040](../decisions/0040-console-recovery-by-text-code.md)) sends a
+  code of purpose `console_recovery` only to the verified number of an
+  account that may use the console, and answers the same for any other
+  valid number. It has its own count per number (1 per 30 seconds, 5 an
+  hour), apart from the app's sign-in texts and their limits per address
+  and country, and the console's "Text messages" switch does not stop it
+  (`SMS_PAUSED` does). The code follows the sign-in code's rules (6 digits,
+  10 minutes, 5 tries); no other code works for it, and it works nowhere
+  else. A right code opens nothing by itself: under a share lock on the
+  account it ends every console session, makes a setup link whose token
+  goes to the page in the response body only, writes `operator.recovered`,
+  and queues a notice by text and, with a verified address, by email, sent
+  at any hour and while the console pauses those channels. Both steps are
+  behind the console's per-address limit. Whoever controls the phone number
+  can get in this way; the notice and the audit entry make that visible.
 - **Password, for now:** while `ADMIN_PASSWORD` is set (12 characters or
   more, staging and production alike) and `ADMIN_ORIGIN` too, an operator
   can also sign in with their phone number and that password

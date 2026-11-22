@@ -210,6 +210,55 @@ export const adminPasswordSignInRoute = defineRoute({
   },
 });
 
+/** A phone number as typed, as at the app's sign-in. */
+const recoveryPhoneNumberSchema = z.string().trim().min(1).max(32);
+
+export const adminRecoveryCodeRoute = defineRoute({
+  method: "post",
+  path: "/admin/v1/auth/recovery/code",
+  summary: "Send a recovery code to an operator who lost their passkeys (spec 22)",
+  tags: ["admin"],
+  request: { body: z.object({ phoneNumber: recoveryPhoneNumberSchema }) },
+  responses: {
+    200: {
+      description:
+        "The same answer for every valid number; a code is sent only to an operator's number",
+      schema: z.object({ resendAfterSeconds: z.int().positive() }),
+    },
+    400: { description: "phone_invalid", ...errors },
+    429: { description: "rate_limited, with retryAfterSeconds", ...errors },
+    503: { description: "sms_failed: the text to the operator's number was refused", ...errors },
+  },
+});
+
+export const adminRecoveryVerifyRoute = defineRoute({
+  method: "post",
+  path: "/admin/v1/auth/recovery/verify",
+  summary: "Check a recovery code; answers with a setup link's token for a new passkey",
+  tags: ["admin"],
+  request: {
+    body: z.object({
+      phoneNumber: recoveryPhoneNumberSchema,
+      code: z.string().regex(/^\d{6}$/),
+    }),
+  },
+  responses: {
+    200: {
+      description:
+        "The token for /admin/v1/auth/setup; every console session of the account has ended",
+      schema: z.object({ token: z.string() }),
+    },
+    400: {
+      description: "code_invalid (with attemptsLeft), code_expired, phone_invalid",
+      ...errors,
+    },
+    429: {
+      description: "code_attempts_exceeded or rate_limited, with retryAfterSeconds",
+      ...errors,
+    },
+  },
+});
+
 export const adminConfirmOptionsRoute = defineRoute({
   method: "post",
   path: "/admin/v1/confirm/options",

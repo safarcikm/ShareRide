@@ -8,7 +8,7 @@ import { origin, smsOutbox } from "../playwright.config.ts";
 // writes to its outbox, never through a browser. A made-up number each run.
 
 /** The code in the last text message to `phoneNumber`. */
-async function codeSentTo(phoneNumber: string): Promise<string> {
+export async function codeSentTo(phoneNumber: string): Promise<string> {
   let code = "";
   await expect
     .poll(() => {

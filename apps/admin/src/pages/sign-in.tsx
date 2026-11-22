@@ -7,7 +7,9 @@ import {
 } from "@shareride/contracts";
 import type { MessageKey } from "@shareride/i18n";
 import { useEffect, useId, useState } from "react";
+import { ConsoleLink } from "../components/console-link.tsx";
 import { useConsole } from "../console.tsx";
+import { recoverPath } from "../paths.ts";
 import { passkeyFailure } from "../webauthn.ts";
 
 export interface SignInPageProps {
@@ -127,6 +129,9 @@ export function SignInPage({ notice, onSignedIn }: SignInPageProps) {
       >
         {t("admin.signIn.button")}
       </button>
+      <ConsoleLink to={recoverPath} className="type-body">
+        {t("admin.signIn.lost")}
+      </ConsoleLink>
       {passwordOn ? (
         <form
           className="stack"

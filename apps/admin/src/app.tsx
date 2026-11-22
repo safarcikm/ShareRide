@@ -9,14 +9,15 @@ import { createTranslator, type Locale, type MessageKey } from "@shareride/i18n"
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ConsoleContext, type Console } from "./console.tsx";
 import { Layout } from "./layout.tsx";
+import { recoverPath, setupPath, signInPath } from "./paths.ts";
+import { RecoverPage } from "./pages/recover.tsx";
 import { SetupPage } from "./pages/setup.tsx";
 import { SignInPage } from "./pages/sign-in.tsx";
 import { homePath, sectionFor } from "./sections.ts";
 import { browserPhotos, type PhotoBrowser } from "./photos.ts";
 import type { PasskeyBrowser } from "./webauthn.ts";
 
-export const signInPath = "/admin/sign-in";
-export const setupPath = "/admin/setup";
+export { recoverPath, setupPath, signInPath };
 
 type Session =
   | { readonly state: "checking" }
@@ -66,7 +67,9 @@ export function ConsoleApp({ client, passkeys, photos = browserPhotos }: Console
     };
   }, []);
 
-  useEffect(() => {
+  // Before the browser paints, so the page never shows text in one language
+  // while it says it is in the other.
+  useLayoutEffect(() => {
     document.documentElement.lang = locale;
     document.title = t("admin.title");
   }, [locale, t]);
@@ -82,7 +85,8 @@ export function ConsoleApp({ client, passkeys, photos = browserPhotos }: Console
     [client],
   );
 
-  const onSetup = path === setupPath;
+  // Pages that work without a session: they do not ask who is signed in.
+  const onSetup = path === setupPath || path === recoverPath;
   useEffect(() => {
     if (session.state !== "checking" || onSetup) return;
     let current = true;
@@ -147,7 +151,9 @@ export function ConsoleApp({ client, passkeys, photos = browserPhotos }: Console
   };
 
   let page;
-  if (onSetup) {
+  if (path === recoverPath) {
+    page = <RecoverPage onSignedIn={signedIn} />;
+  } else if (onSetup) {
     page = <SetupPage onSignedIn={signedIn} />;
   } else if (session.state === "checking") {
     page = (

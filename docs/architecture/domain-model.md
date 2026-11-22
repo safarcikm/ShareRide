@@ -458,7 +458,7 @@ recorded change), `TripChanged` (a new car or stop, likewise), `TripCancelled`, 
 (a request nobody answered, or an accepted booking nobody paid for),
 `BookingWithdrawn`, `BookingCancelled`,
 `TripDeparted`, `CheckedIn`, `PassengerNoShow`, `DriverAbsentReported`,
-`DisputeAnswered`, `DisputeDecided`, `TripCompleted`, `MessageSent`, `ReviewSubmitted`, `ReviewsRevealed`, `ReportFiled`, `ReportClosed` (the reporter is told the outcome), `FeedbackReplied` (the tester is told there is a reply), `AnnouncementSent` (each person it is for is told), `AnnouncementTested` (the operator gets their own copy),
+`DisputeAnswered`, `DisputeDecided`, `TripCompleted`, `MessageSent`, `ReviewSubmitted`, `ReviewsRevealed`, `ReportFiled`, `ReportClosed` (the reporter is told the outcome), `FeedbackReplied` (the tester is told there is a reply), `AnnouncementSent` (each person it is for is told), `AnnouncementTested` (the operator gets their own copy), `ConsoleRecovered` (the operator is told a text code got them back into the console, spec 22),
 `UserBlocked`, `ModerationActionTaken` (a warning, content hidden, a suspension, reinstatement, trip cancelled or other operator action on a person), `SuspensionEnded`, `AppealAnswered`,
 `WomenOnlyAccessWithdrawn`, `WomenOnlyAccessRestored`,
 `WeatherWarningMatched`, `RoadClosureMatched`.

@@ -4,6 +4,7 @@ export * from "./clean-up.ts";
 export * from "./operator-command.ts";
 export * from "./passkeys.ts";
 export * from "./password.ts";
+export * from "./recovery.ts";
 export * from "./require-operator.ts";
 export * from "./routes.ts";
 export * from "./sessions.ts";

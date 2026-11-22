@@ -83,13 +83,13 @@ Martin 2026-11-22).
   `{ push: false, email: "always", sms: true }`, listed in
   `operatorNoticeKinds`; outbox event type `ConsoleRecovered`.
 
-- [ ] Tests: `codePurposes` contains `console_recovery`;
+- [x] Tests: `codePurposes` contains `console_recovery`;
       `recoveryCodeSendLimits.perNumber` equals the values above;
       `notificationRules.console_recovered` equals the rule above and
       `isOperatorNotice("console_recovered")` is true;
       `outboxEventTypes` contains `ConsoleRecovered`. Run
       `pnpm --filter @shareride/domain test`, expect FAIL.
-- [ ] Add the values; run again, expect PASS.
+- [x] Add the values; run again, expect PASS.
 
 ### Task 2: the migration
 
@@ -99,14 +99,14 @@ Martin 2026-11-22).
   `operator_sessions_end_reason_check` list gets `recovered`)
 - Create: `packages/db/migrations/0060_console_recovery.sql` (generated)
 
-- [ ] Add `recovered` to the end reasons; `OperatorSessionEndReason` in
+- [x] Add `recovered` to the end reasons; `OperatorSessionEndReason` in
       `apps/api/src/modules/admin/sessions.ts` gets `"recovered"`.
-- [ ] `pnpm --filter @shareride/db generate --name console_recovery`. The
+- [x] `pnpm --filter @shareride/db generate --name console_recovery`. The
       SQL replaces four check constraints: `verification_codes_purpose_check`,
       `operator_sessions_end_reason_check`, `outbox_events_kind_check`,
       `notifications_kind_check` and `scheduled_notifications_kind_check`
       (the last three from Task 1's lists). Nothing else.
-- [ ] `pnpm --filter @shareride/db test:integration` passes on a fresh
+- [x] `pnpm --filter @shareride/db test:integration` passes on a fresh
       database.
 
 ### Task 3: sending and using a recovery code
@@ -130,7 +130,7 @@ Martin 2026-11-22).
   purpose; `withConfirmCode` and `withRecoveryCode` share one private
   `withCode(e164, purpose, code, action)`.
 
-- [ ] Tests (integration, `createTestApi` style of
+- [x] Tests (integration, `createTestApi` style of
       `confirm-code.integration.test.ts`):
   - `sends a recovery code with its own text and count`: the fake SMS gets a
     text matching `/^\d{6} is your ShareRide console code/`; a
@@ -143,7 +143,7 @@ Martin 2026-11-22).
     `code_expired`), `counts a wrong recovery code` (`code_invalid`,
     `attemptsLeft: 4`), `keeps the code when the action refuses`.
   - `does not take a sign-in code for recovery, or a recovery code for sign-in`.
-- [ ] Run, expect FAIL; implement; run, expect PASS.
+- [x] Run, expect FAIL; implement; run, expect PASS.
 
 ### Task 4: the notice
 
@@ -164,12 +164,12 @@ Martin 2026-11-22).
   to the verified phone and by email to the verified address, whether or not
   they still hold the role.
 
-- [ ] Tests: `tells the operator by text and email that a recovery code was used`
+- [x] Tests: `tells the operator by text and email that a recovery code was used`
       (one SMS with `sms.consoleRecovered`'s English text, one email with
       its subject); `sends no email without a verified address`; texts for
       `is` and `en`.
-- [ ] Run, expect FAIL; implement; run, expect PASS.
-- [ ] `pnpm check --force`, then commit PR 1 with this plan and open the
+- [x] Run, expect FAIL; implement; run, expect PASS.
+- [x] `pnpm check --force`, then commit PR 1 with this plan and open the
       pull request.
 
 ## PR 2: the recovery and the console page
@@ -205,7 +205,7 @@ Martin 2026-11-22).
   subject the user, no `after` fields; insert the `ConsoleRecovered` outbox
   event.
 
-- [ ] Tests:
+- [x] Tests:
   - `sends a code to an operator's number, typed without the country code`.
   - `answers the same and sends nothing for a member, a suspended operator or one waiting to be deleted`.
   - `refuses a number that is not a phone number` (400 `phone_invalid`).
@@ -218,7 +218,7 @@ Martin 2026-11-22).
   - `refuses a code once the role was removed` (Review Focus 2).
   - `two right answers at once make one setup link` (Review Focus 4).
   - `require-operator.test.ts`: both routes are open, nothing else is.
-- [ ] Run, expect FAIL; implement; run, expect PASS.
+- [x] Run, expect FAIL; implement; run, expect PASS.
 
 ### Task 6: the console page
 
@@ -232,12 +232,12 @@ Martin 2026-11-22).
 - Modify: `packages/i18n/src/messages/en.ts`, `is.ts`: the `admin.signIn.lost`
   and `admin.recover.*` keys of spec 22, section 8
 
-- [ ] Tests: `opens Lost your passkey? from the sign-in page`;
+- [x] Tests: `opens Lost your passkey? from the sign-in page`;
       `sends a code and asks for it` (the `admin.recover.sent` text);
       `says a wrong code and the tries left`; `an expired code asks for a new one`;
       `Send a new code waits 30 seconds` (fake timers); `a right code shows Save your passkey and signs in`;
       `Back to sign-in`; the page in Icelandic.
-- [ ] Run, expect FAIL; implement; run, expect PASS.
+- [x] Run, expect FAIL; implement; run, expect PASS.
 
 ### Task 7: the journey and the docs
 
@@ -251,9 +251,9 @@ Martin 2026-11-22).
   service), `docs/operations/staging.md` (Sign in to the console: Lost your
   passkey? first, then the command), `docs/plans/README.md`, this plan
 
-- [ ] Journey `the operator who lost their passkey gets back in with a text code`:
+- [x] Journey `the operator who lost their passkey gets back in with a text code`:
       sign out, a new empty authenticator, Lost your passkey?, the
       operator's number, the code from the SMS outbox, a passkey name, the
       console home; the audit log shows `operator.recovered`.
-- [ ] `pnpm check --force`, the integration tests of the API, the console's
+- [x] `pnpm check --force`, the integration tests of the API, the console's
       journeys, then open the pull request; merge once green.

@@ -12,6 +12,8 @@ const port = 3002;
 export const origin = `http://localhost:${String(port)}`;
 const env = process.env;
 export const operatorLink = join(tmpdir(), "shareride-e2e-operator-link.txt");
+/** The operator's made-up, verified number, for getting back in with a text code (spec 22). */
+export const operatorPhone = "+3548999990";
 /** The test API writes each text message here, for a journey that signs a person in. */
 export const smsOutbox = join(tmpdir(), "shareride-e2e-admin-sms.jsonl");
 
@@ -47,6 +49,7 @@ export default defineConfig({
       E2E_ADMIN_ORIGIN: origin,
       E2E_ADMIN_APP_DIR: fileURLToPath(new URL("dist", import.meta.url)),
       E2E_OPERATOR_LINK: operatorLink,
+      E2E_OPERATOR_PHONE: operatorPhone,
     },
     reuseExistingServer: false,
     timeout: 120_000,
