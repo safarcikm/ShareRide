@@ -1,6 +1,7 @@
 import type { SignInConfig } from "../config.ts";
 import type { SignInDependencies } from "../app.ts";
 import {
+  createAppleProvider,
   createDevProvider,
   createGoogleProvider,
   type IdentityProvider,
@@ -23,6 +24,19 @@ export function selectSignIn(config: SignInConfig): SignInDependencies {
       createGoogleProvider({
         clientId: config.google.clientId,
         clientSecret: config.google.clientSecret,
+      }),
+    );
+  }
+  if (config.apple.mode === "dev") {
+    providers.push(createDevProvider({ name: "apple", apiOrigin: config.apiOrigin }));
+  }
+  if (config.apple.mode === "apple") {
+    providers.push(
+      createAppleProvider({
+        servicesId: config.apple.servicesId,
+        teamId: config.apple.teamId,
+        keyId: config.apple.keyId,
+        privateKey: config.apple.privateKey,
       }),
     );
   }

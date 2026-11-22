@@ -1,6 +1,6 @@
 import { randomInt } from "node:crypto";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { healthReadyRoute, healthRoute } from "@shareride/contracts";
+import { appleCallbackRoute, healthReadyRoute, healthRoute } from "@shareride/contracts";
 import type { Database } from "@shareride/db";
 import {
   bookingSettingsFrom,
@@ -298,10 +298,16 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     createMiddleware<AppEnv>(async (c, next) => {
       // Bodies are JSON only. A browser cannot send JSON to another site
       // without a CORS preflight, so forms and text posts from other pages,
-      // which carry cookies, are refused here.
+      // which carry cookies, are refused here. The one exception is Apple's
+      // callback, which Apple posts as a form: it reads no cookie and takes
+      // only a state that works once (ADR 0034).
       const hasBody = ["POST", "PUT", "PATCH"].includes(c.req.method);
       const type = c.req.header("content-type") ?? "";
-      if (hasBody && !/^application\/json\s*(;|$)/i.test(type)) {
+      const form =
+        c.req.method === "POST" &&
+        c.req.path === appleCallbackRoute.path &&
+        /^application\/x-www-form-urlencoded\s*(;|$)/i.test(type);
+      if (hasBody && !form && !/^application\/json\s*(;|$)/i.test(type)) {
         return c.json(
           errorBody("unsupported_media_type", "Send the body as application/json."),
           415,
