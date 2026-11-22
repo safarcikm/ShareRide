@@ -106,7 +106,7 @@ with a link to the community rules.
 | Field | Rules | Visible to |
 | ----- | ----- | ---------- |
 | First name | Required, 1 to 30 characters, letters, spaces, hyphens and apostrophes | Everyone |
-| Photo | Optional for passengers, required for drivers before their first trip (decision 4); JPEG, PNG or HEIC up to 10 MB; cropped square; location and camera data removed | Everyone |
+| Photo | Optional for passengers, required for drivers before their first trip (decision 4); any photo the phone or browser can open, cropped square and made a JPEG of at most 640 pixels by the app, without location and camera data ([ADR 0033](../decisions/0033-profile-photos-made-in-the-app-and-checked-by-the-api.md)) | Everyone |
 | About you | Optional, up to 300 characters | Everyone |
 | Languages spoken | Optional, choose from a list | Everyone |
 | Email | Optional but encouraged (decision 5); verified by a link | Only the user and the operator |
