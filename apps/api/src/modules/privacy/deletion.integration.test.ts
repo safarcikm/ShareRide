@@ -464,7 +464,7 @@ describe("delete my account (spec 11, 3.4)", () => {
     expect(email.sent).toHaveLength(1);
     const [mail] = email.sent;
     expect(mail?.to).toBe(address);
-    expect(mail?.subject).toBe("PuffinRide aðganginum þínum verður eytt");
+    expect(mail?.subject).toBe("PuffinRide-aðganginum þínum verður eytt");
     expect(mail?.text).toMatch(/Gögnunum þínum verður eytt 20\. nóvember kl\. \d\d:\d\d\./);
 
     // Kept before the email went: none goes.

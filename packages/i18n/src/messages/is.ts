@@ -1421,7 +1421,7 @@ export const is = {
   "notify.reportFiledBody": "Skoðaðu hana í stjórnborðinu innan sólarhrings.",
   "notify.reportFiledUrgent": "Ný öryggistilkynning",
   "notify.reportFiledUrgentBody": "Skoðaðu hana strax í stjórnborðinu.",
-  "notify.accountDeletionScheduled": "PuffinRide aðganginum þínum verður eytt",
+  "notify.accountDeletionScheduled": "PuffinRide-aðganginum þínum verður eytt",
   "notify.accountDeletionScheduledBody":
     "Þú baðst okkur að eyða aðganginum þínum. Gögnunum þínum verður eytt {date}. Fram að því getur þú skráð þig inn og valið „Halda aðganginum“. Ef þú baðst ekki um þetta skaltu skrá þig inn og halda honum.",
   "notify.feedbackReplied": "PuffinRide svaraði ábendingunni þinni",
@@ -1518,8 +1518,8 @@ export const is = {
   "oauth.page.invalid": "Þessi innskráningartengill virkar ekki. Lokaðu glugganum og reyndu aftur.",
   "oauth.page.expired":
     "Þessi innskráning er útrunnin eða var þegar notuð. Lokaðu glugganum og reyndu aftur.",
-  "sms.signInCode": "{code} er PuffinRide kóðinn þinn. Hann gildir í 10 mínútur.",
-  "sms.confirmCode": "{code} er PuffinRide kóðinn til að staðfesta. Ekki deila honum.",
+  "sms.signInCode": "{code} er PuffinRide-kóðinn þinn. Hann gildir í 10 mínútur.",
+  "sms.confirmCode": "{code} er PuffinRide-kóðinn til að staðfesta. Ekki deila honum.",
   "sms.bookingCancelled":
     "PuffinRide: Bílstjórinn aflýsti bókun þinni: {date} kl. {time}. Full endurgreiðsla. Nánar í appinu.",
   "sms.bookingCancelledUnpaid":
@@ -1604,7 +1604,7 @@ export const is = {
   "error.export_too_soon": "Þú getur beðið um eina skrá á dag. Reyndu aftur eftir {wait}.",
   "error.export_not_ready": "Skráin er ekki tilbúin til niðurhals.",
   /** "Download my data": the readable page in the ZIP (spec 11, 3.2.3). */
-  "export.title": "PuffinRide gögnin þín",
+  "export.title": "PuffinRide-gögnin þín",
   "export.intro":
     "Búið til {date}. Skráin puffinride-data.json geymir sömu gögn fyrir önnur forrit.",
   "export.none": "Ekkert hér",

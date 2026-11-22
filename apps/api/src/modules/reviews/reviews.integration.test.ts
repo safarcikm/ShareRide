@@ -611,11 +611,11 @@ describe("asking for reviews (spec 8, 3.7.6 and 3.9)", () => {
     await worker().runOnce();
     const asked = {
       subject: "How was your trip?",
-      link: `Open in ShareRide: ${webAppUrl}/bookings/${bookingId}/rate`,
+      link: `Open in PuffinRide: ${webAppUrl}/bookings/${bookingId}/rate`,
     };
     const askedDriver = {
       subject: "How was your trip?",
-      link: `Open in ShareRide: ${webAppUrl}/drive/trips/${airport}`,
+      link: `Open in PuffinRide: ${webAppUrl}/drive/trips/${airport}`,
     };
     expect(emailedTo("gunna-reviews@example.com")).toEqual([asked]);
     expect(emailedTo("jon-reviews@example.com")).toEqual([askedDriver]);

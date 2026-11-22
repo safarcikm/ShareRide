@@ -21,7 +21,7 @@ test.describe("sign up in Icelandic", () => {
 
   test("signs up with the app and the text message in Icelandic", async ({ page }) => {
     const { text } = await signUp(page, icelandic, "Jón");
-    expect(text).toContain("er PuffinRide kóðinn þinn");
+    expect(text).toContain("er PuffinRide-kóðinn þinn");
   });
 });
 

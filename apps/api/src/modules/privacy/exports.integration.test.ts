@@ -883,7 +883,7 @@ describe("download my data (spec 11, 3.2)", () => {
     await later(hours(24), anna);
     const icelandic = await exportOf(anna);
     expect(icelandic.html).toContain('<html lang="is">');
-    expect(icelandic.html).toContain("<h1>PuffinRide gögnin þín</h1>");
+    expect(icelandic.html).toContain("<h1>PuffinRide-gögnin þín</h1>");
     expect(icelandic.html).toContain("<dt>Staða</dt><dd>Staðfest</dd>");
     expect(icelandic.html).not.toMatch(/<dd>(confirmed|published|approval)<\/dd>/);
   });
