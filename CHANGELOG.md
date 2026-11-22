@@ -1378,6 +1378,12 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- The logo is a puffin for PuffinRide (spec 15, decision 12): logo C, the
+  puffin pin, our own cartoon puffin as a map pin with its beak pointing
+  the way, replaces the car of logo A in the app icon (iOS light, dark and
+  tinted; Android adaptive and themed), the opening screen, the browser
+  tab and the logo beside the name. The puffin's drawing colours are tokens
+  (`puffin`), and a test keeps the `Logo` part and `icon.svg` the same.
 - Photos are kept in Hetzner Object Storage in Nuremberg, not Helsinki,
   which Hetzner did not offer when the staging bucket was made (ADR 0037).
   The privacy policy draft, the privacy register and the runbook say so;
