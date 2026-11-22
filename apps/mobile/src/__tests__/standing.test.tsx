@@ -36,10 +36,10 @@ describe("beside the driver of a trip (spec 4, 3.4 and 3.6)", () => {
         setUp: (client) => {
           searchApi(client, {
             results: () => [
-              { ...northResult, driver: { firstName: "Anna", rating: rated.rating } },
+              { ...northResult, driver: { firstName: "Anna", rating: rated.rating, photo: null } },
               resultOn("2026-11-15", {
                 tripId: "0190a1d6-0000-7000-8000-0000000000f2",
-                driver: { firstName: "Bára", rating: newcomer.rating },
+                driver: { firstName: "Bára", rating: newcomer.rating, photo: null },
               }),
             ],
           });
@@ -96,7 +96,15 @@ describe("beside the driver of a trip (spec 4, 3.4 and 3.6)", () => {
             200,
             northTrip(
               { board: 1, alight: 2 },
-              { driver: { firstName: "Anna", colour: 1, profileId: annaProfileId, ...newcomer } },
+              {
+                driver: {
+                  firstName: "Anna",
+                  colour: 1,
+                  profileId: annaProfileId,
+                  photo: null,
+                  ...newcomer,
+                },
+              },
             ),
           ),
         );
@@ -129,7 +137,7 @@ describe("on a booking (spec 5)", () => {
       setUp: (client) => {
         bookingApi(client, () =>
           northBooking({
-            driver: { firstName: null, colour: 0, profileId: null, ...newcomer },
+            driver: { firstName: null, colour: 0, profileId: null, photo: null, ...newcomer },
           }),
         );
       },
@@ -150,6 +158,7 @@ describe("a passenger, for the driver (spec 5, 3.3 and 3.7)", () => {
         colour: 2,
         memberSince: "2026-11",
         profileId: aProfileId(2),
+        photo: null,
         ...rated,
         ...changes,
       },
@@ -202,6 +211,7 @@ describe("a passenger, for the driver (spec 5, 3.3 and 3.7)", () => {
           colour: 3,
           memberSince: "2026-10",
           profileId: aProfileId(18),
+          photo: null,
           ...rated,
         },
         confirmed: { registration: "AB 123", whereToStand: null },

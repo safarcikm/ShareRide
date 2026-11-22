@@ -16,6 +16,7 @@ export const annaProfileId = "6c1b7e0a-41d2-4f0e-9a51-0000000000a1";
 /** Anna, who drives the north trip, as anyone signed in sees her. */
 export const annaProfile: PublicProfile = {
   profileId: annaProfileId,
+  photo: null,
   firstName: "Anna",
   about: "I drive between Reykjavík and Akureyri most weekends.",
   languages: ["is", "en"],

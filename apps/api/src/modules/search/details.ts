@@ -21,6 +21,8 @@ import {
 import { and, asc, eq, inArray, isNull, ne } from "drizzle-orm";
 import { occupancyNow } from "../bookings/seats.ts";
 import { toSummary } from "../meeting-points/service.ts";
+import type { PhotoStorage } from "../../platform/photo-storage.ts";
+import { photoLinkOf } from "../people/photos.ts";
 import { ratingsOf } from "../people/ratings.ts";
 import { newcomer, standingsOf } from "../people/standing.ts";
 import { shown } from "../privacy/hidden.ts";
@@ -52,6 +54,8 @@ export function createTripDetailsService(dependencies: {
   >;
   /** The reliability figure's values beside the driver; the defaults when left out. */
   readonly reliabilitySettings?: ReliabilitySettings;
+  /** Where the driver's photo is kept; no photo when left out (spec 1, 3.5). */
+  readonly photos?: PhotoStorage;
 }): TripDetailsService {
   const { db, clock } = dependencies;
   const reliability = dependencies.reliabilitySettings ?? defaultReliabilitySettings;
@@ -64,6 +68,7 @@ export function createTripDetailsService(dependencies: {
           trip: trips,
           firstName: users.firstName,
           profileId: users.profileId,
+          photo: { photoKey: users.photoKey, photoHiddenAt: users.photoHiddenAt },
           car: { make: vehicles.make, model: vehicles.model, colour: vehicles.colour },
         })
         .from(trips)
@@ -176,6 +181,8 @@ export function createTripDetailsService(dependencies: {
           colour: peopleColourOf(trip.driverId),
           // Profiles are for members (spec 1, 3.5): nobody else gets the reference.
           profileId: viewerId === null ? null : found.profileId,
+          // The photo is for visitors too, as spec 4 shows the trip's page.
+          photo: await photoLinkOf(dependencies.photos, now)(found.photo),
         },
         car:
           car === null

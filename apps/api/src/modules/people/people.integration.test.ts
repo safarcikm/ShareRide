@@ -589,13 +589,14 @@ describe("beside a person's name (spec 4, 3.4 and 3.6; spec 5, 3.3)", () => {
     });
     if (!found.ok) throw new Error(found.error.code);
     expect(found.data.results.map((result) => result.driver)).toEqual([
-      { firstName: "Jón", rating: { average: 4, count: 1 } },
+      { firstName: "Jón", rating: { average: 4, count: 1 }, photo: null },
     ]);
     const soonest = await api.client.call(soonestTripsRoute, { query: { limit: 50 } });
     if (!soonest.ok) throw new Error(soonest.error.code);
     expect(soonest.data.results.find((result) => result.tripId === north)?.driver).toEqual({
       firstName: "Jón",
       rating: { average: 4, count: 1 },
+      photo: null,
     });
 
     const forVisitors = await api.client.call(tripDetailsRoute, {
@@ -703,5 +704,111 @@ describe("beside a person's name (spec 4, 3.4 and 3.6; spec 5, 3.3)", () => {
     expect(
       onTrip.data.bookings.find((booking) => booking.id === bookingId)?.passenger,
     ).toMatchObject({ profileId: null, ...newcomer });
+  });
+});
+
+describe("a profile photo beside a person's name (spec 1, 3.5; ADR 0033)", () => {
+  const point = (key: string) => sampleId(`point:${key}`);
+
+  /** Gives the member a photo, as `PUT /v1/me/photo` stores it; one ShareRide hid with `hiddenAt`. */
+  async function withPhoto(member: Member, hiddenAt: Date | null = null) {
+    const photoKey = `profile-photos/${crypto.randomUUID()}.jpg`;
+    await api.connection.db
+      .update(users)
+      .set({ photoKey, photoHiddenAt: hiddenAt })
+      .where(eq(users.id, member.userId));
+    return `https://photos.test/${photoKey}`;
+  }
+
+  async function driverIn(viewer: Member | null) {
+    const shown = await api.client.call(tripDetailsRoute, {
+      ...(viewer === null ? {} : { accessToken: viewer.accessToken }),
+      params: { id: north },
+      query: {},
+    });
+    if (!shown.ok) throw new Error(shown.error.code);
+    return shown.data.driver;
+  }
+
+  async function bookingAs(viewer: Member, id: string) {
+    const read = await api.client.call(bookingRoute, {
+      accessToken: viewer.accessToken,
+      params: { id },
+    });
+    if (!read.ok) throw new Error(read.error.code);
+    return read.data;
+  }
+
+  async function passengerOnTrip(driver: Member, bookingId: string) {
+    const onTrip = await api.client.call(tripBookingsRoute, {
+      accessToken: driver.accessToken,
+      params: { id: airport },
+    });
+    if (!onTrip.ok) throw new Error(onTrip.error.code);
+    return onTrip.data.bookings.find((booking) => booking.id === bookingId)?.passenger;
+  }
+
+  it("gives the driver's photo in search results, the rides leaving soon and trip details, also to visitors", async () => {
+    const jon = await driverOf(north, "Jón");
+    const photo = await withPhoto(jon);
+
+    const found = await api.client.call(tripSearchRoute, {
+      query: { from: point("borgarnes"), to: point("blonduos") },
+    });
+    if (!found.ok) throw new Error(found.error.code);
+    expect(found.data.results.map((result) => result.driver.photo)).toEqual([photo]);
+    const soonest = await api.client.call(soonestTripsRoute, { query: { limit: 50 } });
+    if (!soonest.ok) throw new Error(soonest.error.code);
+    expect(soonest.data.results.find((result) => result.tripId === north)?.driver.photo).toBe(
+      photo,
+    );
+    // Spec 4 shows visitors the driver's photo on a trip's page.
+    expect((await driverIn(null)).photo).toBe(photo);
+    expect((await driverIn(await newMember("Dóra"))).photo).toBe(photo);
+  });
+
+  it("gives both people on a booking their photo, and a profile its photo", async () => {
+    const { jon, gunna, bookingId } = await afterTheTrip();
+    const jonsPhoto = await withPhoto(jon);
+    const gunnasPhoto = await withPhoto(gunna);
+
+    const booking = await bookingAs(gunna, bookingId);
+    expect(booking.driver.photo).toBe(jonsPhoto);
+    expect(booking.passenger.photo).toBe(gunnasPhoto);
+    expect((await passengerOnTrip(jon, bookingId))?.photo).toBe(gunnasPhoto);
+    expect((await shownProfile(gunna, jon)).photo).toBe(jonsPhoto);
+  });
+
+  it("gives no photo for someone without one, or for one ShareRide hid (spec 9, 3.4.3)", async () => {
+    const jon = await driverOf(north, "Jón");
+    await withPhoto(jon, api.now());
+    const dora = await newMember("Dóra");
+
+    const found = await api.client.call(tripSearchRoute, {
+      query: { from: point("borgarnes"), to: point("blonduos") },
+    });
+    if (!found.ok) throw new Error(found.error.code);
+    expect(found.data.results.map((result) => result.driver.photo)).toEqual([null]);
+    expect((await driverIn(dora)).photo).toBeNull();
+    expect((await shownProfile(dora, jon)).photo).toBeNull();
+    expect((await shownProfile(jon, dora)).photo).toBeNull();
+  });
+
+  it("gives no photo for someone leaving ShareRide (spec 11, 3.4.3)", async () => {
+    const { jon, gunna, bookingId } = await afterTheTrip();
+    await withPhoto(jon);
+    const gunnasPhoto = await withPhoto(gunna);
+    const leaving = (member: Member, deleteAfter: Date | null) =>
+      api.connection.db.update(users).set({ deleteAfter }).where(eq(users.id, member.userId));
+
+    await leaving(jon, at(api.now(), 30 * 24 * 60));
+    const booking = await bookingAs(gunna, bookingId);
+    expect(booking.driver.photo).toBeNull();
+    expect(booking.passenger.photo).toBe(gunnasPhoto);
+
+    // The other way round: the driver's trip, with a passenger leaving.
+    await leaving(jon, null);
+    await leaving(gunna, at(api.now(), 30 * 24 * 60));
+    expect((await passengerOnTrip(jon, bookingId))?.photo).toBeNull();
   });
 });

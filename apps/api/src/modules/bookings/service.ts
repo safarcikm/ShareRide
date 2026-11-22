@@ -63,6 +63,8 @@ import {
 import { bookingConfirmed } from "./confirmed.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import { recordEvents } from "../notifications/outbox.ts";
+import type { PhotoStorage } from "../../platform/photo-storage.ts";
+import { photoLinkOf } from "../people/photos.ts";
 import { newcomer, standingsOf } from "../people/standing.ts";
 import { isHidden } from "../privacy/hidden.ts";
 import { blocksOf } from "../safety/blocks.ts";
@@ -256,31 +258,35 @@ const driverOf = (row: Row) => ({
   id: row.trip.driverId,
   deleteAfter: row.driverLeaving,
   profileId: row.driverProfileId,
+  ...row.driverPhoto,
 });
 
 const passengerOf = (row: Row) => ({
   id: row.booking.passengerId,
   deleteAfter: row.passengerLeaving,
   profileId: row.passengerProfileId,
+  ...row.passengerPhoto,
 });
 
 /**
  * Bookings with everything their passenger or driver sees, oldest first,
  * each with its trip's moves, new cars and stops added or removed since it
  * was made (spec 6, 3.2), "I'm here" at its boarding stop (spec 8, 3.2),
- * its report, if any (3.3 to 3.5), and both people's profile and standing
- * (spec 5, 3.3.2).
+ * its report, if any (3.3 to 3.5), and both people's profile, standing
+ * (spec 5, 3.3.2) and photo (spec 1, 3.5).
  */
 async function readBookings(
   q: Queryable,
   where: SQL | undefined,
   now: Date,
   reliability: ReliabilitySettings,
+  photos: PhotoStorage | undefined,
 ) {
   const rows = await bookingRows(q, where);
   const tripIds = [...new Set(rows.map((row) => row.trip.id))];
   const people = rows.flatMap((row) => [driverOf(row), passengerOf(row)]);
-  const [changes, checkIns, reports, written, standingOf] = await Promise.all([
+  const linkOf = photoLinkOf(photos, now);
+  const [changes, checkIns, reports, written, standingOf, photoLinks] = await Promise.all([
     tripIds.length === 0
       ? []
       : q
@@ -308,21 +314,25 @@ async function readBookings(
       now,
       reliability,
     ),
+    Promise.all(
+      people.map((person) => (isHidden(person) ? Promise.resolve(null) : linkOf(person))),
+    ),
   ]);
-  // Nobody sees the profile or standing of someone leaving, or of the former
-  // member (spec 11, 3.4.3 and 3.5).
-  const standing = (person: ReturnType<typeof driverOf>) =>
+  // Nobody sees the profile, standing or photo of someone leaving, or of the
+  // former member (spec 11, 3.4.3 and 3.5).
+  const standing = (person: ReturnType<typeof driverOf>, photo: string | null | undefined) =>
     isHidden(person)
-      ? { profileId: null, ...newcomer }
-      : { profileId: person.profileId, ...standingOf(person.id) };
-  return rows.map((row) => {
+      ? { profileId: null, ...newcomer, photo: null }
+      : { profileId: person.profileId, ...standingOf(person.id), photo: photo ?? null };
+  return rows.map((row, index) => {
     const { createdAt, status, cancelledAt, expiredAt, decidedAt } = row.booking;
     // A booking that ended shows only the changes made while it held seats.
     const endedAt = cancelledAt ?? expiredAt ?? (status === "declined" ? decidedAt : null);
     return {
       ...row,
-      driverStanding: standing(driverOf(row)),
-      passengerStanding: standing(passengerOf(row)),
+      // Two people a row, driver first, as `people` lists them.
+      driverStanding: standing(driverOf(row), photoLinks[2 * index]),
+      passengerStanding: standing(passengerOf(row), photoLinks[2 * index + 1]),
       passengerCheckedInAt: passengerCheckedInAt(checkIns, row.booking.id),
       driverCheckedInAt: driverCheckedInAt(checkIns, row.boardStop.id),
       dispute: reports.find((report) => report.bookingId === row.booking.id) ?? null,
@@ -356,9 +366,11 @@ async function bookingRows(q: Queryable, where: SQL | undefined) {
       driverName: drivers.firstName,
       driverProfileId: drivers.profileId,
       driverLeaving: drivers.deleteAfter,
+      driverPhoto: { photoKey: drivers.photoKey, photoHiddenAt: drivers.photoHiddenAt },
       passengerName: passengers.firstName,
       passengerProfileId: passengers.profileId,
       passengerLeaving: passengers.deleteAfter,
+      passengerPhoto: { photoKey: passengers.photoKey, photoHiddenAt: passengers.photoHiddenAt },
       passengerSince: passengers.createdAt,
       car: {
         make: vehicles.make,
@@ -639,12 +651,15 @@ export function createBookingService(dependencies: {
   readonly bookingsPausedIn?: (tx: Transaction) => Promise<boolean>;
   /** The reliability figure's values beside each person; the defaults when left out. */
   readonly reliabilitySettings?: ReliabilitySettings;
+  /** Where people's photos are kept; no photos when left out (spec 1, 3.5). */
+  readonly photos?: PhotoStorage;
 }): BookingService {
   const { db, clock, account, tripDaySettings } = dependencies;
   const ruleSettings = dependencies.settings;
   const bookingsPausedIn = dependencies.bookingsPausedIn ?? (() => Promise.resolve(false));
   const reviewSettings = dependencies.reviewSettings ?? defaultReviewSettings;
   const reliability = dependencies.reliabilitySettings ?? defaultReliabilitySettings;
+  const { photos } = dependencies;
 
   /** Bookings as their viewer sees them, each by its own cancellation values. */
   async function presentAll(rows: readonly BookingRow[], viewerId: string, now: Date) {
@@ -665,7 +680,7 @@ export function createBookingService(dependencies: {
   }
 
   async function readOne(q: Queryable, bookingId: string, viewerId: string, now: Date) {
-    const [row] = await readBookings(q, eq(bookings.id, bookingId), now, reliability);
+    const [row] = await readBookings(q, eq(bookings.id, bookingId), now, reliability, photos);
     if (row === undefined) return undefined;
     if (row.booking.passengerId !== viewerId && row.trip.driverId !== viewerId) return undefined;
     return present(
@@ -932,7 +947,13 @@ export function createBookingService(dependencies: {
 
     async myBookings(passengerId, when) {
       const now = clock();
-      const rows = await readBookings(db, eq(bookings.passengerId, passengerId), now, reliability);
+      const rows = await readBookings(
+        db,
+        eq(bookings.passengerId, passengerId),
+        now,
+        reliability,
+        photos,
+      );
       const upcoming = (row: BookingRow) =>
         holdsSeats(shownStatus(row.booking, now)) &&
         plannedAt(row.alightStop).getTime() > now.getTime();
@@ -951,7 +972,13 @@ export function createBookingService(dependencies: {
     async bookingsOf(viewerId, bookingIds) {
       if (bookingIds.length === 0) return [];
       const now = clock();
-      const rows = await readBookings(db, inArray(bookings.id, [...bookingIds]), now, reliability);
+      const rows = await readBookings(
+        db,
+        inArray(bookings.id, [...bookingIds]),
+        now,
+        reliability,
+        photos,
+      );
       return presentAll(
         rows.filter(
           (row) => row.booking.passengerId === viewerId || row.trip.driverId === viewerId,
@@ -1197,6 +1224,7 @@ export function createBookingService(dependencies: {
           and(eq(bookings.tripId, tripId), inArray(bookings.status, onTripStatuses)),
           now,
           reliability,
+          photos,
         ),
         db
           .select({ position: segments.position, occupancy: segments.occupancy })

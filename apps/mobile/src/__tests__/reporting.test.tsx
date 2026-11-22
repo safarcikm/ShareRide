@@ -292,6 +292,7 @@ describe("Reporting from the driver's trip (spec 9, 3.1.1)", () => {
       colour: 3,
       memberSince: "2026-10",
       profileId: null,
+      photo: null,
       ...newcomer,
     },
     confirmed: { registration: "AB 123", whereToStand: null },

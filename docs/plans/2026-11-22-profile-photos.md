@@ -185,8 +185,9 @@ folders.
 
 ### PR 3: `feat(people)`: photos beside names
 
-- [ ] Contracts: `photo` on the people listed in 4.4
-- [ ] API: trip details, search, rides leaving soon, bookings, public
+- [x] Contracts: `photo` on the people listed in 4.4 (`personPhotoSchema`;
+      chats, the review screen and trip day read the booking's people)
+- [x] API: trip details, search, rides leaving soon, bookings, public
       profile, through `photoLinkOf`. Tests: hidden, former member and
       leaving are null; visitors get the driver's photo
 - Verify: integration tests for search, bookings and people
