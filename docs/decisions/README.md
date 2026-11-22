@@ -68,4 +68,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0035](0035-open-web-beta-reached-by-email.md) | An open beta on the web, reaching members by email | Accepted |
 | [0036](0036-meeting-points-go-live-before-their-photo.md) | A meeting point can go live before it has a photo | Accepted |
 | [0037](0037-photo-storage-in-nuremberg.md) | Store photos in Hetzner Object Storage in Nuremberg | Accepted |
-| [0039](0039-rename-to-puffinride.md) | Rename the product to PuffinRide, on puffinride.is | Proposed |
+| [0039](0039-rename-to-puffinride.md) | Rename the product to PuffinRide, on puffinride.is | Accepted |

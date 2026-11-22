@@ -1,7 +1,7 @@
 # 0039. Rename the product to PuffinRide, on puffinride.is
 
-- **Status:** Proposed (the name and the domain: decided by Martin on
-  2026-11-22; what keeps the old internal name: proposed)
+- **Status:** Accepted (2026-11-22, by Martin: the name and the domain, and
+  this list of what keeps the old internal name, as written)
 - **Date:** 2026-11-22
 - **Deciders:** Martin
 - **Related:** [open questions](../strategy/open-questions.md) A32 and A55,
