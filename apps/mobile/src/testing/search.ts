@@ -26,7 +26,7 @@ export const northResult: TripSearchResult = {
   pricePerSeat: { amount: 2900, currency: "ISK" },
   total: { amount: 2900, currency: "ISK" },
   freeSeats: 3,
-  driver: { firstName: "Anna", rating: newcomer.rating },
+  driver: { firstName: "Anna", rating: newcomer.rating, photo: null },
   bookingMode: "approval",
 };
 
@@ -115,7 +115,7 @@ export function northTrip(
     },
     seatsOffered: 3,
     // As a visitor not signed in sees it: no profile reference.
-    driver: { firstName: "Anna", colour: 1, profileId: null, ...newcomer },
+    driver: { firstName: "Anna", colour: 1, profileId: null, photo: null, ...newcomer },
     car: { make: "Toyota", model: "Yaris", colour: "white" },
     preferences: {
       luggage: "suitcase",

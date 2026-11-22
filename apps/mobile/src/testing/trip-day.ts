@@ -75,6 +75,7 @@ export function rider(
       colour: 2,
       memberSince: "2026-11",
       profileId: aProfileId(3),
+      photo: null,
       ...newcomer,
     },
     tripDay: {

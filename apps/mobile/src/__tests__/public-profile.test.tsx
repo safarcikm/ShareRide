@@ -59,7 +59,15 @@ describe("a public profile (spec 1, 3.5)", () => {
             200,
             northTrip(
               { board: 1, alight: 2 },
-              { driver: { firstName: "Anna", colour: 1, profileId: annaProfileId, ...newcomer } },
+              {
+                driver: {
+                  firstName: "Anna",
+                  colour: 1,
+                  profileId: annaProfileId,
+                  photo: null,
+                  ...newcomer,
+                },
+              },
             ),
           ),
         );

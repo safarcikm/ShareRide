@@ -36,6 +36,7 @@ const jon = northBooking({
     colour: 3,
     memberSince: "2026-10",
     profileId: aProfileId(11),
+    photo: null,
     ...newcomer,
   },
   confirmed: { registration: "AB 123", whereToStand: null },

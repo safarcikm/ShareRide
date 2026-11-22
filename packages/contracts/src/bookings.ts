@@ -14,7 +14,12 @@ import { cancellationTermsSchema, moneySchema, timestampSchema } from "./common.
 import { accountSuspendedResponse, errorResponseSchema } from "./errors.ts";
 import { localisedTextSchema, meetingPointSummarySchema } from "./meeting-points.ts";
 import { bookingReviewSchema } from "./reviews.ts";
-import { peopleColourSchema, standingSchema, yearMonthSchema } from "./people.ts";
+import {
+  peopleColourSchema,
+  personPhotoSchema,
+  standingSchema,
+  yearMonthSchema,
+} from "./people.ts";
 import { defineRoute } from "./route.ts";
 import { disputeSchema } from "./trip-day.ts";
 
@@ -173,18 +178,21 @@ export const bookingSchema = z.object({
   /**
    * `firstName` is null for a former member, whose data was erased (spec 11,
    * 3.5). `profileId` opens their public profile (spec 1, 3.5); null for a
-   * former member or someone leaving ShareRide, who have none.
+   * former member or someone leaving ShareRide, who have none, and who
+   * show no `photo` either (spec 1, 3.5).
    */
   driver: standingSchema.extend({
     firstName: z.string().nullable(),
     colour: peopleColourSchema,
     profileId: z.uuid().nullable(),
+    photo: personPhotoSchema,
   }),
   /** As the driver, with the month they joined (spec 5, 3.3.2). */
   passenger: standingSchema.extend({
     firstName: z.string().nullable(),
     colour: peopleColourSchema,
     profileId: z.uuid().nullable(),
+    photo: personPhotoSchema,
     /** The year and month they joined. */
     memberSince: yearMonthSchema,
   }),
