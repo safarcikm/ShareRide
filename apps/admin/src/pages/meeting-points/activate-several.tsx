@@ -29,6 +29,10 @@ type Run =
 const isItem = (path: string): path is ActivationItem =>
   activationItems.some((item) => item === path);
 
+/** The console cannot reach the API, or the session has ended: the rest would fail too. */
+const stopsTheRest = (code: string) =>
+  code === "network_error" || code === "operator_unauthenticated";
+
 /**
  * Activating several drafts at once, from the list (spec 21, 3.5): the
  * operator ticks the drafts they have checked, and each is activated in
@@ -40,6 +44,7 @@ export function ActivateSeveral({
   drafts,
   selected,
   onSelect,
+  onStart,
   onFinished,
 }: {
   /** The drafts the list shows. */
@@ -47,6 +52,8 @@ export function ActivateSeveral({
   /** Those ticked. */
   readonly selected: ReadonlySet<string>;
   readonly onSelect: (ids: ReadonlySet<string>) => void;
+  /** It starts: the list keeps its filters and ticks until it is done. */
+  readonly onStart: () => void;
   /** Some were activated or refused: the list is loaded again. */
   readonly onFinished: () => void;
 }) {
@@ -54,6 +61,14 @@ export function ActivateSeveral({
   const base = useId();
   const [run, setRun] = useState<Run>({ state: "idle", noneTicked: false });
   const said = useRef<HTMLParagraphElement>(null);
+  // Leaving the page stops it: the drafts not reached yet stay drafts.
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const ticked = drafts.filter((point) => selected.has(point.id));
 
   useEffect(() => {
@@ -68,9 +83,11 @@ export function ActivateSeveral({
       setRun({ state: "idle", noneTicked: true });
       return;
     }
+    onStart();
     const refused: { id: string; name: string; why: Refusal }[] = [];
     let activated = 0;
     for (const [index, point] of ticked.entries()) {
+      if (!mounted.current) return;
       setRun({ state: "working", done: index, count: ticked.length });
       const result = await call(adminActivateMeetingPointRoute, {
         params: { id: point.id },
@@ -81,6 +98,12 @@ export function ActivateSeveral({
         continue;
       }
       const { code, details } = result.error;
+      if (stopsTheRest(code)) {
+        for (const left of ticked.slice(index)) {
+          refused.push({ id: left.id, name: left.nameIs, why: { kind: "failed" } });
+        }
+        break;
+      }
       refused.push({
         id: point.id,
         name: point.nameIs,
@@ -95,6 +118,7 @@ export function ActivateSeveral({
               : { kind: "failed" },
       });
     }
+    if (!mounted.current) return;
     onSelect(new Set());
     setRun({ state: "finished", activated, refused });
     onFinished();
@@ -143,18 +167,16 @@ export function ActivateSeveral({
             >
               {t("admin.activateSeveral.selectAll")}
             </button>
-            {ticked.length > 0 ? (
-              <button
-                type="button"
-                className="button-quiet type-label"
-                aria-disabled={working}
-                onClick={() => {
-                  if (!working) onSelect(new Set());
-                }}
-              >
-                {t("admin.activateSeveral.clear")}
-              </button>
-            ) : null}
+            <button
+              type="button"
+              className="button-quiet type-label"
+              aria-disabled={working}
+              onClick={() => {
+                if (!working) onSelect(new Set());
+              }}
+            >
+              {t("admin.activateSeveral.clear")}
+            </button>
           </div>
         </>
       ) : null}
@@ -163,11 +185,12 @@ export function ActivateSeveral({
           {t("admin.activateSeveral.noneTicked")}
         </p>
       ) : null}
-      {run.state === "working" ? (
-        <p className="type-body" role="status">
-          {t("admin.activateSeveral.working", { done: run.done + 1, count: run.count })}
-        </p>
-      ) : null}
+      {/* Always there, so a screen reader hears the first count too. */}
+      <p className="type-body" role="status">
+        {run.state === "working"
+          ? t("admin.activateSeveral.working", { done: run.done + 1, count: run.count })
+          : null}
+      </p>
       {run.state === "finished" ? (
         <div className="stack">
           <p ref={said} className="type-body-strong" role="status" tabIndex={-1}>

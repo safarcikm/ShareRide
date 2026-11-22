@@ -761,7 +761,6 @@ const auditActions = {
   retire: "retired",
 } as const satisfies Record<Exclude<StatusChange, "activate">, string>;
 
-/** What a status change's audit entry compares: the status, the pause and the review date. */
 /** What confirming a point today changes (`activate` with `confirmToday`). */
 function confirmedValuesOf(point: AdminMeetingPoint): Record<string, unknown> {
   return {
@@ -771,6 +770,7 @@ function confirmedValuesOf(point: AdminMeetingPoint): Record<string, unknown> {
   };
 }
 
+/** What a status change's audit entry compares: the status, the pause and the review date. */
 function statusValuesOf(point: AdminMeetingPoint): Record<string, unknown> {
   return {
     status: point.status,

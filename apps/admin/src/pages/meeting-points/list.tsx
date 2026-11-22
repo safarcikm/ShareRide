@@ -87,8 +87,10 @@ export function MeetingPointList() {
   const [list, setList] = useState<List>({ state: "loading" });
   // The drafts ticked to activate together (spec 21, 3.5).
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
-  // Activated some together: the panel stays to say how it went, even with no draft left.
-  const [activatedSeveral, setActivatedSeveral] = useState(false);
+  // Activating them: the filters and tick boxes wait; after, the panel
+  // stays to say how it went, even with no draft left.
+  const [several, setSeveral] = useState<"idle" | "working" | "finished">("idle");
+  const activating = several === "working";
   const listHeading = useRef<HTMLHeadingElement>(null);
   const focusList = useRef(false);
   // Only the newest request may show its answer.
@@ -136,8 +138,11 @@ export function MeetingPointList() {
   }, [list.state]);
 
   function apply(next: Filters, moveFocus = false) {
+    if (activating) return;
     focusList.current = moveFocus;
-    setActivatedSeveral(false);
+    // Other drafts: none ticked yet.
+    setSeveral("idle");
+    setSelected(new Set());
     setDraft(next);
     setFilters(next);
     showInAddress(next);
@@ -294,13 +299,14 @@ export function MeetingPointList() {
           {t("admin.meetingPoints.openIssuesOnly")}
         </label>
         <div className="actions">
-          <button type="submit" className="button-primary type-button">
+          <button type="submit" className="button-primary type-button" aria-disabled={activating}>
             {t("admin.meetingPoints.apply")}
           </button>
           {filtered ? (
             <button
               type="button"
               className="button-quiet type-label"
+              aria-disabled={activating}
               onClick={() => {
                 apply({}, true);
               }}
@@ -310,7 +316,7 @@ export function MeetingPointList() {
           ) : null}
         </div>
       </form>
-      {drafts.length > 0 || activatedSeveral ? (
+      {drafts.length > 0 || several !== "idle" ? (
         <ActivateSeveral
           // Other filters, other drafts: it starts again.
           key={JSON.stringify(filters)}
@@ -318,8 +324,11 @@ export function MeetingPointList() {
           selected={selected}
           onSelect={setSelected}
           // Loaded again in place, so the panel keeps saying how it went.
+          onStart={() => {
+            setSeveral("working");
+          }}
           onFinished={() => {
-            setActivatedSeveral(true);
+            setSeveral("finished");
             void load(true);
           }}
         />
@@ -414,6 +423,7 @@ export function MeetingPointList() {
                         <input
                           type="checkbox"
                           checked={selected.has(point.id)}
+                          disabled={activating}
                           onChange={(event) => {
                             const next = new Set(selected);
                             if (event.target.checked) next.add(point.id);

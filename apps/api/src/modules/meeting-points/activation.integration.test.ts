@@ -96,6 +96,9 @@ beforeAll(async () => {
       searchText: "oyfirfarid",
       whereToStandIs: "Við skiltið.",
       whereToStandEn: "By the sign.",
+      // Its season was reviewed before, and it was confirmed long ago.
+      seasonReviewedOn: "2026-10-01",
+      lastCheckedOn: "2025-11-01",
       location: { latitude: 63.96, longitude: -21.1 },
     },
   ]);
@@ -269,16 +272,17 @@ describe("POST /admin/v1/meeting-points/{id}/activate", () => {
   });
 
   it("confirms a draft today and activates it, with confirmToday (several at once, spec 21)", async () => {
-    // Without it, the reviews and the day confirmed are still to do.
+    // Without it, the amenities are still to do.
     expect((await activate(unchecked)).status).toBe(409);
     const { status, body } = await activate(unchecked, undefined, true);
     expect(status).toBe(200);
+    // Confirmed today, so reviewed again in a year; the season keeps its earlier review.
     expect(body).toMatchObject({
       id: unchecked,
       status: "active",
       lastCheckedOn: "2026-11-13",
       amenitiesReviewedOn: "2026-11-13",
-      seasonReviewedOn: "2026-11-13",
+      seasonReviewedOn: "2026-10-01",
       reviewDueOn: "2027-11-13",
     });
     const [entry] = await api.connection.db
@@ -291,16 +295,14 @@ describe("POST /admin/v1/meeting-points/{id}/activate", () => {
       before: {
         status: "draft",
         reviewDueOn: null,
-        lastCheckedOn: null,
+        lastCheckedOn: "2025-11-01",
         amenitiesReviewedOn: null,
-        seasonReviewedOn: null,
       },
       after: {
         status: "active",
         reviewDueOn: "2027-11-13",
         lastCheckedOn: "2026-11-13",
         amenitiesReviewedOn: "2026-11-13",
-        seasonReviewedOn: "2026-11-13",
         confirmedToday: true,
       },
     });

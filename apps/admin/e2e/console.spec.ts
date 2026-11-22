@@ -383,6 +383,11 @@ test("the operator imports drafts from a CSV file, seeing each row first", async
   await expect(several.getByRole("list", { name: "Not activated" })).toContainText(
     "Söluskálinn við Hraunsá: still to do: Where to stand, in Icelandic and English",
   );
+  // Loaded again, the drafts still list it.
+  await page.reload();
+  await expect(
+    page.getByRole("checkbox", { name: "Select Söluskálinn við Hraunsá" }),
+  ).not.toBeChecked();
 });
 
 // Problem reports (spec 2, 3.5): someone reports a problem with a point in

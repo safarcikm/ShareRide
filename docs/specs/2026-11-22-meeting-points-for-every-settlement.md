@@ -141,7 +141,12 @@ capital area hubs counted in the 96, and the 3 corridor stops.
    saved for a draft that cannot be activated: one still missing
    something else (such as where to stand), or one changed since the
    list was loaded, is listed under "Not activated" with the reason, and
-   the others go ahead. The list then reloads.
+   the others go ahead. If the API cannot be reached or the sign-in has
+   ended, it stops and lists the rest as not activated. While it works,
+   the filters and tick boxes wait; leaving the page stops it, and the
+   drafts not reached yet stay drafts. The list then reloads, and the
+   panel stays to say how it went, even with no draft left. Other
+   filters start again with nothing ticked.
 
 ## 4. Rules
 
@@ -157,7 +162,7 @@ in "things still to do". The app's meeting point details already show no
 photo block for a point without photos.
 
 The console's Meeting points list gains a panel above the list while it
-shows drafts (3.5.5): a tick box on each draft's card, "Select every
+shows drafts, and after a run (3.5.5): a tick box on each draft's card, "Select every
 draft shown", "Clear the selection" and "Confirm and activate N points".
 While it works it says "Activating 3 of 10…"; then "N points activated."
 and the list of those not activated, each with its reason. Pressing the

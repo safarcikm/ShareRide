@@ -149,7 +149,11 @@ meeting point routes (`registerMeetingPointsAdminRoutes`), with the work in
   computes its own legs and writes its own audit entry. A refusal does
   not stop the rest: the panel lists each draft not activated with what
   is still to do, or that it changed since the list was loaded, and the
-  list reloads at the end.
+  list reloads quietly at the end. `network_error` or
+  `operator_unauthenticated` stops it, and the rest are listed as not
+  activated. While it runs, the filter form and the tick boxes wait;
+  leaving the page stops it before the next request. A filter change
+  clears the ticks.
 - A pause writes one `MeetingPointChanged` event per future trip in the
   same transaction. The notification worker asks that trip's driver to
   choose another stop, and tells each passenger whose accepted or

@@ -259,17 +259,23 @@ describe("activating several drafts at once (spec 21, 3.5)", () => {
 
   it("activates the ticked drafts one after another, confirmed today, and says how it went", async () => {
     const api = open();
-    api.on(adminActivateMeetingPointRoute, (input) =>
-      (input["params"] as { id: string }).id === hella.id
-        ? {
-            status: 409,
-            error: {
-              code: "activation_not_ready",
-              details: [{ path: "whereToStand", issue: "not_done" }],
-            },
-          }
-        : { status: 200, data: { ...draft, status: "active" } },
-    );
+    let answerFirst = () => {};
+    const firstAnswered = new Promise<void>((resolve) => {
+      answerFirst = resolve;
+    });
+    api.on(adminActivateMeetingPointRoute, async (input) => {
+      if ((input["params"] as { id: string }).id === hella.id) {
+        return {
+          status: 409,
+          error: {
+            code: "activation_not_ready",
+            details: [{ path: "whereToStand", issue: "not_done" }],
+          },
+        };
+      }
+      await firstAnswered;
+      return { status: 200, data: { ...draft, status: "active" } };
+    });
     const list = await screen.findByRole("list", { name: "The meeting points" });
     // Only drafts can be ticked.
     expect(within(list).queryByRole("checkbox", { name: "Select BSÍ" })).toBeNull();
@@ -279,6 +285,18 @@ describe("activating several drafts at once (spec 21, 3.5)", () => {
     fireEvent.click(within(list).getByRole("checkbox", { name: "Select N1 Borgarnesi" }));
     fireEvent.click(within(list).getByRole("checkbox", { name: "Select N1 Hellu" }));
     fireEvent.click(within(panel()).getByRole("button", { name: "Confirm and activate 2 points" }));
+
+    // One at a time: the second waits for the first, and the list waits too.
+    expect((await within(panel()).findByText("Activating 1 of 2…")).getAttribute("role")).toBe(
+      "status",
+    );
+    expect(api.called(adminActivateMeetingPointRoute)).toHaveLength(1);
+    expect(
+      within(list).getByRole<HTMLInputElement>("checkbox", { name: "Select N1 Hellu" }).disabled,
+    ).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Show meeting points" }));
+    expect(api.called(adminMeetingPointsRoute)).toHaveLength(1);
+    answerFirst();
 
     const said = await within(panel()).findByText("1 point activated.");
     await waitFor(() => {
@@ -325,6 +343,42 @@ describe("activating several drafts at once (spec 21, 3.5)", () => {
         .getAllByRole("checkbox")
         .some((box) => (box as HTMLInputElement).checked),
     ).toBe(false);
+  });
+
+  it("stops when the API cannot be reached, and says which were not activated", async () => {
+    const api = open();
+    api.on(adminActivateMeetingPointRoute, { status: 503, error: { code: "network_error" } });
+    const list = await screen.findByRole("list", { name: "The meeting points" });
+    fireEvent.click(within(list).getByRole("checkbox", { name: "Select N1 Borgarnesi" }));
+    fireEvent.click(within(list).getByRole("checkbox", { name: "Select N1 Hellu" }));
+    fireEvent.click(within(panel()).getByRole("button", { name: "Confirm and activate 2 points" }));
+    await within(panel()).findByText("0 points activated.");
+    expect(api.called(adminActivateMeetingPointRoute)).toHaveLength(1);
+    expect(
+      within(within(panel()).getByRole("list", { name: "Not activated" }))
+        .getAllByRole("listitem")
+        .map((item) => item.textContent),
+    ).toEqual([
+      "N1 Borgarnesi: could not be activated. Try again.",
+      "N1 Hellu: could not be activated. Try again.",
+    ]);
+  });
+
+  it("starts again with other filters", async () => {
+    open();
+    await screen.findByRole("list", { name: "The meeting points" });
+    fireEvent.click(within(panel()).getByRole("button", { name: "Select every draft shown" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show meeting points" }));
+    await waitFor(() => {
+      expect(
+        within(screen.getByRole("list", { name: "The meeting points" }))
+          .getAllByRole("checkbox")
+          .some((box) => (box as HTMLInputElement).checked),
+      ).toBe(false);
+    });
+    expect(
+      within(panel()).getByRole("button", { name: "Confirm and activate 0 points" }),
+    ).toBeTruthy();
   });
 
   it("keeps saying how it went when no draft is left", async () => {
