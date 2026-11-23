@@ -16,7 +16,7 @@ describe("the common-password list", () => {
   it("holds only passwords long enough to be chosen, lowercased, one per line", () => {
     expect(entries.length).toBeGreaterThan(40_000);
     for (const entry of entries) {
-      expect([...entry].length).toBeGreaterThanOrEqual(passwordRules.minLength);
+      expect(Array.from(entry).length).toBeGreaterThanOrEqual(passwordRules.minLength);
       expect(entry).toBe(entry.normalize("NFC").toLowerCase());
       expect(entry).not.toContain("\r");
     }
