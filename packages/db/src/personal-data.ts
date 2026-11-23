@@ -105,6 +105,24 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     personColumns: ["userId"],
     onDeletion: erase,
   },
+  member_passwords: {
+    category: "account",
+    export: { section: "sign_in_methods" },
+    personColumns: ["userId"],
+    onDeletion: erase,
+  },
+  member_passkeys: {
+    category: "devices",
+    export: { section: "sign_in_methods" },
+    personColumns: ["userId"],
+    onDeletion: erase,
+  },
+  member_passkey_challenges: {
+    category: "devices",
+    export: { leftOut: "random challenges for a passkey to sign, good for 5 minutes" },
+    personColumns: ["userId"],
+    onDeletion: erase,
+  },
   identities: {
     category: "account",
     export: { section: "sign_in_methods" },

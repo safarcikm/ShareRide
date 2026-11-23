@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { retention, retentionCutoffs } from "./retention.ts";
 import { sessionRules } from "./session-tokens.ts";
 import { emailCodeSendLimits, textSendLimits } from "./email-sign-in.ts";
+import { passwordSignInLimits } from "./passwords.ts";
 import { codeSendLimits } from "./sign-in-code.ts";
 
 describe("retention (privacy inventory)", () => {
@@ -31,6 +32,8 @@ describe("retention (privacy inventory)", () => {
       ...emailCodeSendLimits.perIpAddress,
       ...textSendLimits.perPendingSignIn,
       ...textSendLimits.all,
+      ...passwordSignInLimits.perEmail,
+      ...passwordSignInLimits.perIpAddress,
     ].map((rule) => rule.windowSeconds);
     expect(Math.max(...windows)).toBeLessThanOrEqual(retention.rateLimitEventsSeconds);
   });
@@ -48,6 +51,7 @@ describe("retentionCutoffs", () => {
       emailLinksSentBefore: new Date("2026-11-12T12:00:00Z"),
       providerSignInsExpiredBefore: new Date("2026-11-13T11:00:00Z"),
       emailSignInsExpiredBefore: new Date("2026-11-13T11:00:00Z"),
+      passkeyChallengesExpiredBefore: new Date("2026-11-13T11:00:00Z"),
     });
   });
 });

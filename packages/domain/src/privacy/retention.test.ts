@@ -55,6 +55,10 @@ describe("the retention rules this feature adds (spec 11, 3.7)", () => {
     expect(retentionRules).toContain("email_sign_ins");
   });
 
+  it("names the passkey challenges (spec 27)", () => {
+    expect(retentionRules).toContain("passkey_challenges");
+  });
+
   it("names the beta's feedback, deleted 12 months after the beta ended", () => {
     expect(retentionRules).toContain("feedback");
   });

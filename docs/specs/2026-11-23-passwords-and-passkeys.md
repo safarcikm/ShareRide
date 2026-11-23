@@ -217,7 +217,7 @@ Data (one migration):
   public key, its counter, its transports, whether it is synced, the user
   handle the browser keeps (ADR 0048), the device's browser and system
   (such as Safari and iPhone), when it was added and last used. Deleted with the account.
-- `member_passkey_challenges`, new: a challenge's hash, what it is for
+- `member_passkey_challenges`, new: a challenge, what it is for
   (`sign_in` or `register`), whose (registering only), when it expires (5
   minutes). Deleted when used; the hourly clean-up deletes the rest an hour
   after they expire.

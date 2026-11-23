@@ -139,6 +139,28 @@ describe("cleanUpSignInRecords", () => {
     ]);
   });
 
+  it("deletes passkey challenges an hour after they expired (spec 27)", async () => {
+    const { memberPasskeyChallenges } = schema;
+    const now = api.now();
+    const row = (challenge: string, expiresAt: Date) => ({
+      challenge,
+      purpose: "sign_in",
+      expiresAt,
+    });
+    await api.connection.db
+      .insert(memberPasskeyChallenges)
+      .values([
+        row("old", new Date(now.getTime() - 3601_000)),
+        row("recent", new Date(now.getTime() - 3599_000)),
+        row("open", new Date(now.getTime() + 300_000)),
+      ]);
+    expect(await cleanUp()).toMatchObject({ passkeyChallenges: 1 });
+    const left = await api.connection.db
+      .select({ challenge: memberPasskeyChallenges.challenge })
+      .from(memberPasskeyChallenges);
+    expect(left.map((kept) => kept.challenge).sort()).toEqual(["open", "recent"]);
+  });
+
   it("deletes rate-limit events after 24 hours", async () => {
     await sendCode();
     const events = await count(rateLimitEvents);

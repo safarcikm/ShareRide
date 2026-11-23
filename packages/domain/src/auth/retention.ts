@@ -14,6 +14,8 @@ export const retention = {
   providerSignInsSeconds: 3600,
   /** An email sign-in waiting for its phone step stays an hour after it expired (spec 26, 4). */
   emailSignInsSeconds: 3600,
+  /** A member's passkey challenge stays an hour after it expired (spec 27, 5). */
+  passkeyChallengesSeconds: 3600,
 } as const;
 
 export interface RetentionCutoffs {
@@ -35,6 +37,8 @@ export interface RetentionCutoffs {
   readonly providerSignInsExpiredBefore: Date;
   /** Email sign-ins that stopped waiting before this time are deleted. */
   readonly emailSignInsExpiredBefore: Date;
+  /** Members' passkey challenges that expired before this time are deleted. */
+  readonly passkeyChallengesExpiredBefore: Date;
 }
 
 export function retentionCutoffs(now: Date): RetentionCutoffs {
@@ -48,5 +52,6 @@ export function retentionCutoffs(now: Date): RetentionCutoffs {
     emailLinksSentBefore: ago(emailLinkRules.validForSeconds),
     providerSignInsExpiredBefore: ago(retention.providerSignInsSeconds),
     emailSignInsExpiredBefore: ago(retention.emailSignInsSeconds),
+    passkeyChallengesExpiredBefore: ago(retention.passkeyChallengesSeconds),
   };
 }

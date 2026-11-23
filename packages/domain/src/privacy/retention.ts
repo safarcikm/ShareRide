@@ -22,6 +22,8 @@ export const retentionRules = [
   "provider_sign_ins",
   /** Email sign-ins waiting for the phone step, an hour after they expired (spec 26, 4). */
   "email_sign_ins",
+  /** Members' passkey challenges, an hour after they expired (spec 27, 5). */
+  "passkey_challenges",
   "trip_drafts",
   "conversations",
   "trips_and_bookings",
