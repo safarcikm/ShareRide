@@ -95,7 +95,7 @@ describe("the operator console at /admin (ADR 0028)", () => {
   it("keeps the app's pages for every other path", async () => {
     const response = await app.request("/trips/abc");
     expect(await response.text()).toContain(
-      "<title>PuffinRide · Shared rides across Iceland</title>",
+      "<title>PuffinRide · Carpool and shared rides across Iceland</title>",
     );
     expect(response.headers.get("content-security-policy")).toContain("'unsafe-inline'");
   });

@@ -135,7 +135,7 @@ describe("a link opened before signing in (spec 20, 3.2)", () => {
   it("keeps nothing and asks nothing for a screen open to everyone", async () => {
     openedAt("/");
     await renderApp("/");
-    expect(await screen.findByRole("header", { name: "Where are you going?" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Share your ride" })).toBeVisible();
     expect(screen.queryByText("Sign in or create an account")).toBeNull();
     expect(keptPath()).toBeNull();
   });

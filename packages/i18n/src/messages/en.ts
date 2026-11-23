@@ -5,16 +5,18 @@
 export const en = {
   "app.name": "PuffinRide",
   "seo.title": "{page} · PuffinRide",
-  "seo.findTitle": "PuffinRide · Shared rides across Iceland",
+  "seo.findTitle": "PuffinRide · Carpool and shared rides across Iceland",
   "seo.findDescription":
-    "Find a ride, or offer the empty seats in your car, between towns in Iceland, and share the cost of the trip.",
+    "Carpool and ride share between towns in Iceland: find a lift, or offer the empty seats in your car, and share the cost of the trip.",
+  "seo.keywords":
+    "carpool, carpooling, ride share, rideshare, shared rides, lift, rides in Iceland, share a car, Reykjavík, Akureyri",
   "seo.meetingPointsDescription":
-    "The meeting points where PuffinRide drivers and passengers meet, all around Iceland, on the map and by region.",
+    "The meeting points where PuffinRide drivers and passengers meet to carpool, all around Iceland, on the map and by region.",
   "seo.meetingPointDescription":
-    "{name}: a PuffinRide meeting point, where drivers and passengers meet for shared rides.",
-  "seo.placeTitle": "{place}: nearest meeting points",
+    "{name}: a PuffinRide meeting point, where drivers and passengers meet to carpool.",
+  "seo.placeTitle": "{place}: nearest carpool meeting points",
   "seo.placeDescription":
-    "The PuffinRide meeting points nearest to {place}, for finding or offering a shared ride.",
+    "The PuffinRide carpool meeting points nearest to {place}, for finding or offering a shared ride.",
   "seo.legalDescription": "PuffinRide's Terms of Service, Community Rules and Privacy Policy.",
   "seo.shareImage": "Two PuffinRide puffins driving in a little car",
   "seo.cookiesDescription":
@@ -53,7 +55,9 @@ export const en = {
   "nav.offerSignedOut": "Driving somewhere? Share the empty seats in your car.",
   "nav.offerSignIn": "Sign in to offer a ride",
   "nav.messagesSignedOut": "Sign in to see your messages",
-  "home.title": "Where are you going?",
+  "home.title": "Share your ride",
+  "home.intro":
+    "Carpool across Iceland: find a seat in someone else's car, or offer the empty seats in yours.",
   "home.nextRide": "Your next ride",
   "home.nextRideFailed": "Your next ride could not be loaded.",
   "home.map":

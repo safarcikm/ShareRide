@@ -51,7 +51,7 @@ describe("the web app on the API's origin", () => {
     expect(response.headers.get("content-type")).toContain("text/html");
     expect(response.headers.get("cache-control")).toBe("no-cache");
     expect(await response.text()).toContain(
-      "<title>PuffinRide · Shared rides across Iceland</title>",
+      "<title>PuffinRide · Carpool and shared rides across Iceland</title>",
     );
   });
 

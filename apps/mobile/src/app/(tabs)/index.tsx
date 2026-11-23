@@ -61,7 +61,8 @@ const searchRowTop =
  * Find, the home of the app for everyone, signed in or not (spec 16, 3.2):
  * the logo and the language (in the top bar on wide screens), Your next
  * ride when signed in, two puffins in a round car over the title (spec 15,
- * 5.3), a route search with the seats, the rides leaving soon (spec 4, 3.8)
+ * 5.3), "Share your ride" with a line under it that says what PuffinRide
+ * is, a route search with the seats, the rides leaving soon (spec 4, 3.8)
  * and "Offer a ride". Signing in is in the menu.
  *
  * A wide screen (spec 18, 3.5) has the search in one row across the page,
@@ -157,7 +158,12 @@ function FrontPage() {
           <PuffinsInCar width={sizes.sceneCarWide} />
         </View>
       ) : null}
-      <Title>{t("home.title")}</Title>
+      <View style={wide ? [styles.intro, styles.introClearOfCar] : styles.intro}>
+        <Title>{t("home.title")}</Title>
+        <Text style={[typography.body, styles.introText, { color: palette.text }]}>
+          {t("home.intro")}
+        </Text>
+      </View>
     </View>
   );
   const offer = (
@@ -447,6 +453,18 @@ const styles = StyleSheet.create({
     minHeight: sizes.sceneLine,
   },
   carOnHills: { position: "absolute", left: spacing.xl, bottom: -(spacing.sm + spacing.xs) },
+  // The title, and under it what PuffinRide is, for someone new. In the
+  // text's own colour: on a wide page it stands on the mountains, where the
+  // muted one is too faint. Kept clear of the car on both sides, so it stays
+  // in the middle; a narrow wide page puts it on two lines, still within
+  // the title's line.
+  // Both texts stretch across the column, centred within it.
+  intro: { gap: spacing.xs },
+  introClearOfCar: {
+    flexShrink: 1,
+    paddingHorizontal: spacing.xl + sizes.sceneCarWide + spacing.md,
+  },
+  introText: { textAlign: "center" },
   // Where the page's own room is, so the panel lines up with the page.
   panelRoom: { paddingTop: spacing.md, paddingHorizontal: spacing.md, alignItems: "center" },
   next: { gap: spacing.sm, paddingTop: spacing.md },

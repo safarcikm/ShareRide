@@ -16,6 +16,10 @@ test.describe("public pages for search engines", () => {
       "content",
       /^Mótsstaðirnir þar sem/,
     );
+    await expect(page.locator('meta[name="keywords"]')).toHaveAttribute(
+      "content",
+      /^samferða, far, /,
+    );
     const origin = new URL(page.url()).origin;
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       "href",
@@ -33,8 +37,8 @@ test.describe("public pages for search engines", () => {
 
   test("Find has its title, and keeps the drivers' names out of snippets", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Where are you going?" })).toBeVisible();
-    await expect(page).toHaveTitle("PuffinRide · Shared rides across Iceland");
+    await expect(page.getByRole("heading", { name: "Share your ride" })).toBeVisible();
+    await expect(page).toHaveTitle("PuffinRide · Carpool and shared rides across Iceland");
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
     // The e2e API seeds sample trips, so the rides leaving soon are there.
     const rides = page.locator("[data-nosnippet]");

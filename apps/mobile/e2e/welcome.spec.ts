@@ -6,15 +6,15 @@ test.describe("Find, the home, on the web", () => {
 
   test("opens in English, switches to Icelandic and remembers it", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Where are you going?" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Share your ride" })).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
 
     await page.getByRole("button", { name: "Change the language to Icelandic" }).click();
-    await expect(page.getByRole("heading", { name: "Hvert ertu að fara?" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Verum samferða" })).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", "is");
 
     await page.reload();
-    await expect(page.getByRole("heading", { name: "Hvert ertu að fara?" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Verum samferða" })).toBeVisible();
   });
 
   test("shows the rides leaving soon, and opens one", async ({ page }) => {
@@ -33,7 +33,7 @@ test.describe("Find, the home, on the web", () => {
     await page.getByRole("button", { name: /^From: / }).click();
     // The place search drops down under the field, on the front page itself.
     await page.getByLabel("From", { exact: true }).fill("borgarn");
-    await expect(page.getByRole("heading", { name: "Where are you going?" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Share your ride" })).toBeVisible();
     await page.getByRole("button", { name: /^N1 Borgarnes,/ }).click();
     await page.getByRole("button", { name: /^To: / }).click();
     await page.getByLabel("To", { exact: true }).fill("blondu");
@@ -116,6 +116,6 @@ test.describe("Find in Icelandic", () => {
 
   test("opens in Icelandic when the browser prefers Icelandic", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Hvert ertu að fara?" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Verum samferða" })).toBeVisible();
   });
 });

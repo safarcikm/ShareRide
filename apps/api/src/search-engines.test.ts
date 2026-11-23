@@ -139,7 +139,7 @@ describe("the page's head (spec 23, 3.6)", () => {
       production,
     );
     expect(head.locale).toBe("is");
-    expect(head.title).toBe("PuffinRide · Samferða um Ísland");
+    expect(head.title).toBe("PuffinRide · Samferða um Ísland: far og samakstur");
     expect(head.tags).toContain(
       `<link data-rh="true" rel="canonical" href="${site}/meeting-points?lang=is">`,
     );
@@ -193,10 +193,21 @@ describe("the page's head (spec 23, 3.6)", () => {
     );
   });
 
+  it("names the words people search for a shared ride with, in the page's language", () => {
+    const english = pageHead({ path: "/", lang: "en", acceptLanguage: null }, production);
+    expect(english.tags).toMatch(
+      /<meta data-rh="true" name="keywords" content="carpool, [^"]*ride share[^"]*">/,
+    );
+    const icelandic = pageHead({ path: "/", lang: "is", acceptLanguage: null }, production);
+    expect(icelandic.tags).toMatch(
+      /<meta data-rh="true" name="keywords" content="samferða, far, [^"]*samakstur[^"]*deila bíl[^"]*">/,
+    );
+  });
+
   it("gives every address the same preview, which names nobody (R23.7)", () => {
     const trip = pageHead({ path: "/trips/abc", lang: "en", acceptLanguage: null }, production);
     expect(trip.tags).toContain(
-      '<meta data-rh="true" property="og:title" content="PuffinRide · Shared rides across Iceland">',
+      '<meta data-rh="true" property="og:title" content="PuffinRide · Carpool and shared rides across Iceland">',
     );
     expect(trip.tags).toContain(
       `<meta data-rh="true" property="og:image" content="${site}/share.png">`,
@@ -204,7 +215,9 @@ describe("the page's head (spec 23, 3.6)", () => {
     expect(trip.tags).toContain(
       '<meta data-rh="true" name="twitter:card" content="summary_large_image">',
     );
-    expect(trip.tags).toContain('<meta data-rh="true" name="description" content="Find a ride');
+    expect(trip.tags).toContain(
+      '<meta data-rh="true" name="description" content="Carpool and ride share between towns',
+    );
     expect(trip.tags).not.toContain("og:url");
   });
 
@@ -212,7 +225,7 @@ describe("the page's head (spec 23, 3.6)", () => {
     const head = pageHead({ path: "/", lang: "is", acceptLanguage: null }, production);
     const page = fillPage(exportedPage, head);
     expect(page).toContain('<html lang="is">');
-    expect(page).toContain("<title>PuffinRide · Samferða um Ísland</title>");
+    expect(page).toContain("<title>PuffinRide · Samferða um Ísland: far og samakstur</title>");
     expect(page).toContain(head.tags);
     expect(page.match(/<title>/g)).toHaveLength(1);
     expect(page).toContain('<div id="root"></div>');
@@ -242,7 +255,9 @@ describe("the web app for search engines", () => {
   it("answers Facebook's crawler in the locale it asks for, by header or address", async () => {
     const app = setup(production);
     const byHeader = await app.request("/", { headers: { "X-Facebook-Locale": "is_IS" } });
-    expect(await byHeader.text()).toContain("<title>PuffinRide · Samferða um Ísland</title>");
+    expect(await byHeader.text()).toContain(
+      "<title>PuffinRide · Samferða um Ísland: far og samakstur</title>",
+    );
     expect(byHeader.headers.get("vary")).toContain("X-Facebook-Locale");
     const byAddress = await app.request("/trips/abc?fb_locale=is_IS");
     expect(await byAddress.text()).toContain('<html lang="is">');

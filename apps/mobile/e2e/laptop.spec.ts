@@ -17,7 +17,7 @@ test.skip(({ isMobile }) => isMobile, "Laptop windows; phones have their own jou
 
 /** Screens anyone can open, by the heading that shows they are ready. */
 const open = [
-  { path: "/", heading: "Where are you going?" },
+  { path: "/", heading: "Share your ride" },
   { path: "/meeting-points", heading: "Meeting points" },
   { path: "/profile", heading: "Profile" },
 ] as const;
@@ -44,7 +44,7 @@ test.describe("the narrowest wide window, in Icelandic", () => {
 
   test("holds the whole top bar, with its longer words", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Hvert ertu að fara?" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Verum samferða" })).toBeVisible();
     await expect(
       page.getByTestId("top-bar").getByRole("button", { name: "Skipta yfir í ensku" }),
     ).toBeVisible();
@@ -80,7 +80,7 @@ test.describe("the top bar", () => {
       .getByTestId("top-bar")
       .getByRole("link", { name: "PuffinRide, to the front page" })
       .click();
-    await expect(page.getByRole("heading", { name: "Where are you going?" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Share your ride" })).toBeVisible();
     await expect(page).toHaveURL(/\/$/);
   });
 });
@@ -94,7 +94,7 @@ async function box(target: Locator) {
 
 const findTexts = {
   "en-GB": {
-    title: "Where are you going?",
+    title: "Share your ride",
     from: /^From: /,
     date: /^Date: /,
     find: "Find a ride",
@@ -103,7 +103,7 @@ const findTexts = {
     offer: "Offer a ride",
   },
   "is-IS": {
-    title: "Hvert ertu að fara?",
+    title: "Verum samferða",
     from: /^Frá: /,
     date: /^Dagsetning: /,
     find: "Finna far",
