@@ -42,11 +42,13 @@ export const memberScreens = [
   "bookings/[id]/driver-absent",
   "bookings/[id]/answer",
   "bookings/[id]/rate",
+  "onboarding/faster",
 ] as const;
 
 /**
  * Open signed in or out, but only of use signed in: signed out they close
- * back to the menu. Notifications and their emails open them.
+ * back to the menu. Notifications and their emails open them, and "Forgot
+ * your password?" opens Choose a password once signed in (spec 27, 3.4).
  */
 export const accountScreens = [
   "messages/[bookingId]",
@@ -55,4 +57,5 @@ export const accountScreens = [
   "settings/beta-news",
   "settings/reports",
   "settings/privacy/download",
+  "settings/password",
 ] as const;

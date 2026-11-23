@@ -2,6 +2,7 @@ import type { ApiClient, CallFailure, CallInput, CallResult } from "@shareride/a
 import {
   finishProviderSignInRoute,
   getMeRoute,
+  passwordSignInRoute,
   refreshRoute,
   signOutRoute,
   startEmailSignInRoute,
@@ -76,6 +77,14 @@ export interface SessionManager {
    * otherwise answers that the phone step comes next, signed out still.
    */
   verifyEmail(email: string, code: string): Promise<CallResult<typeof verifyEmailCodeRoute>>;
+  /**
+   * Signs in with the account's email and its password (spec 27, 3.2); a
+   * wrong one, an email no account has and no password give one refusal.
+   */
+  signInWithPassword(
+    email: string,
+    password: string,
+  ): Promise<CallResult<typeof passwordSignInRoute>>;
   /**
    * Texts a code for the phone step of a waiting email, Google or Apple
    * sign-in (spec 26, R26.2), as its answer gave it; never from an address
@@ -302,6 +311,18 @@ export function createSessionManager(options: {
       if (result.ok && result.data.status === "signedIn") {
         await keep(result.data);
         keepNews(result.data);
+        set({ status: "signedIn", me: result.data.user });
+      }
+      return result;
+    },
+
+    async signInWithPassword(email, password) {
+      const result = await client.call(passwordSignInRoute, {
+        body: { email, password, device },
+      });
+      if (result.ok) {
+        await keep(result.data);
+        keepNews({});
         set({ status: "signedIn", me: result.data.user });
       }
       return result;

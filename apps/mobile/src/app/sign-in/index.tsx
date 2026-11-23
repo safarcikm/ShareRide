@@ -10,15 +10,20 @@ import { countryNames } from "@shareride/i18n";
 import { router } from "expo-router";
 import { useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { emailErrorText, errorText } from "@/auth/errors";
+import type { CallFailure } from "@shareride/api-client";
+import type { Translate } from "@shareride/i18n";
+import { emailErrorText, errorText, formatWait } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import { PausedBanner, useConfig } from "@/beta/config";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
+import { PasswordField } from "@/components/password-field";
 import { Screen } from "@/components/screen";
 import { TextField } from "@/components/text-field";
 import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
+import { now } from "@/lib/clock";
+import { keepPendingLink } from "@/navigation/kept-link";
 import { useSignInFlow } from "@/sign-in/flow";
 import { KeptRideCard } from "@/sign-in/kept-ride-card";
 import { pendingExpiredText, phoneStepHelp } from "@/sign-in/pending";
@@ -30,7 +35,8 @@ import { usePalette } from "@/theme/use-palette";
 
 /**
  * Step 1 of signing in or up: Continue with Google or Apple, or the email,
- * which gets a code (spec 26, 3.1), under the ride kept on the way. After
+ * which gets a code (spec 26, 3.1), or signs in with its password when one
+ * is typed (spec 27, 3.1), under the ride kept on the way. After
  * an email or a Google or Apple account no account has, it asks for the
  * phone number, with a line on top saying why (spec 19, 3.3; spec 26,
  * 3.3): a text goes only to a number on its way into an account.
@@ -41,7 +47,17 @@ export default function SignInScreen() {
   return pending === null ? <ChooseHowScreen /> : <PhoneStepScreen pending={pending} />;
 }
 
-/** Google or Apple, or a code by email. */
+/** What a refused password sign-in says (spec 27, 3.2): one answer for every wrong try. */
+function passwordErrorText(t: Translate, failure: CallFailure): string {
+  const { code, retryAfterSeconds = 0 } = failure.error;
+  if (code === "credentials_invalid") return t("error.credentialsInvalid");
+  if (code === "rate_limited") {
+    return t("error.passwordTries", { wait: formatWait(t, retryAfterSeconds) });
+  }
+  return errorText(t, failure);
+}
+
+/** Google or Apple, or the email with a code or its password. */
 function ChooseHowScreen() {
   const { locale, t } = useLanguage();
   const session = useSession();
@@ -52,6 +68,8 @@ function ChooseHowScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [providerBusy, setProviderBusy] = useState<SignInProvider | null>(null);
+  // Never kept in the flow: it goes when this screen does.
+  const [password, setPassword] = useState("");
   // Guards against a second tap or a Return key before the first reply.
   const sending = useRef(false);
 
@@ -87,17 +105,28 @@ function ChooseHowScreen() {
     if (result.data.status === "phoneNeeded") flow.setPending(result.data);
   }
 
-  async function send() {
+  /** The password when one is typed; otherwise, or when it was forgotten, a code by email. */
+  async function send(forgot = false) {
     if (sending.current) return;
     setError(null);
     const address = normaliseEmail(flow.email);
     if (!address.ok) {
-      setFieldError(t("error.email"));
+      setFieldError(
+        forgot && flow.email.trim() === "" ? t("auth.forgotPasswordEmail") : t("error.email"),
+      );
       return;
     }
     sending.current = true;
     flow.setNotice(null);
     setBusy(true);
+    if (password !== "" && !forgot) {
+      const signedIn = await session.signInWithPassword(address.value, password);
+      sending.current = false;
+      setBusy(false);
+      // Signed in: sign-in closes by itself.
+      if (!signedIn.ok) setError(passwordErrorText(t, signedIn));
+      return;
+    }
     const result = await session.startEmail(address.value, locale);
     sending.current = false;
     setBusy(false);
@@ -106,6 +135,9 @@ function ChooseHowScreen() {
       else setError(emailErrorText(t, result));
       return;
     }
+    // After the code, Choose a password opens (spec 27, 3.4).
+    if (forgot) await keepPendingLink("/settings/password", now());
+    setPassword("");
     flow.emailCodeSent(address.value, result.data.resendAfterSeconds);
     router.push("/sign-in/email-code");
   }
@@ -138,8 +170,8 @@ function ChooseHowScreen() {
             }}
             error={fieldError}
             keyboardType="email-address"
-            autoComplete="email"
-            textContentType="emailAddress"
+            autoComplete="username"
+            textContentType="username"
             autoCapitalize="none"
             maxLength={320}
             onSubmitEditing={() => {
@@ -147,13 +179,34 @@ function ChooseHowScreen() {
               if (providerBusy === null) void send();
             }}
           />
+          <PasswordField
+            label={t("auth.password")}
+            help={t("auth.passwordHelp")}
+            value={password}
+            onChangeText={(typed) => {
+              setPassword(typed);
+              setError(null);
+            }}
+            purpose="current"
+            onSubmitEditing={() => {
+              if (providerBusy === null) void send();
+            }}
+          />
           <Notice message={error ?? flow.notice} />
           <Button
-            label={t("auth.email.send")}
+            label={t(password === "" ? "auth.email.send" : "auth.signIn")}
             busy={busy}
             disabled={providerBusy !== null}
             onPress={() => void send()}
           />
+          <View style={styles.forgot}>
+            <Button
+              variant="text"
+              label={t("auth.forgotPassword")}
+              disabled={busy || providerBusy !== null}
+              onPress={() => void send(true)}
+            />
+          </View>
           <Body>{t("auth.email.help", { length: codeRules.length })}</Body>
           <Body>{t("auth.email.before")}</Body>
         </View>
@@ -271,6 +324,7 @@ function OrWithEmail({ label }: { readonly label: string }) {
 
 const styles = StyleSheet.create({
   form: { gap: spacing.md, marginTop: spacing.md },
+  forgot: { alignItems: "flex-start" },
   providers: { gap: spacing.md, marginTop: spacing.md },
   or: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   line: { flex: 1, height: StyleSheet.hairlineWidth },

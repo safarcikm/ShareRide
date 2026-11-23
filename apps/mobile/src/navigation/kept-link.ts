@@ -35,11 +35,27 @@ export async function keepPendingLink(path: string, at: Date): Promise<void> {
   await writeAppData(key, JSON.stringify({ path: link, keptAt: at.toISOString() }));
 }
 
+/**
+ * As `keepPendingLink`, unless a link kept within the hour waits already,
+ * which goes first: for a screen worth offering, but not instead of one
+ * the person opened.
+ */
+export async function keepPendingLinkIfNone(path: string, at: Date): Promise<void> {
+  if (keptWithin((await readAppData(key)) ?? "", at) !== null) return;
+  await keepPendingLink(path, at);
+}
+
 /** The link kept within the last hour, once: taking it forgets it. */
 export async function takePendingLink(at: Date): Promise<string | null> {
   const stored = await readAppData(key);
   if (stored === null || stored === "") return null;
   await writeAppData(key, "");
+  return keptWithin(stored, at);
+}
+
+/** The stored link, if it was kept within the last hour and needs an account. */
+function keptWithin(stored: string, at: Date): string | null {
+  if (stored === "") return null;
   let value: unknown;
   try {
     value = JSON.parse(stored);

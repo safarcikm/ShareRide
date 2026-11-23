@@ -22,6 +22,7 @@ export type SignInMethod = z.infer<typeof signInMethodSchema>;
 
 /** The account's password, when it has one: never the password itself (spec 27, R27.3). */
 export const passwordStateSchema = z.object({ setAt: timestampSchema });
+export type PasswordState = z.infer<typeof passwordStateSchema>;
 
 export const signInMethodsSchema = z.object({
   methods: z.array(signInMethodSchema),

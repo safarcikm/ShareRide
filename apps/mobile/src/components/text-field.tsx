@@ -15,6 +15,8 @@ interface TextFieldProps extends Pick<
   | "multiline"
   | "onSubmitEditing"
   | "autoCapitalize"
+  | "autoCorrect"
+  | "secureTextEntry"
 > {
   readonly label: string;
   readonly value: string;

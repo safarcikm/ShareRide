@@ -109,8 +109,9 @@ button for Face ID or fingerprint:
 1. "Forgot your password?" sends the email code to the email in the field
    (spec 26, 3.2), with the same limits. With no email typed, it asks for
    one first: "Type your email, and we'll send you a code."
-2. After the code, the person is signed in and sees "Choose a new password"
+2. After the code, the person is signed in and sees "Choose a password"
    (3.5, item 2), with "Not now". The fresh sign-in is the proof (R27.5).
+   A sign-in step still left (the terms, "Keep my account") comes first.
 
 ### 3.5 Setting a password
 
@@ -184,7 +185,9 @@ Your email code always works too.
 Either choice runs 3.5 or 3.6 straight away; the fresh sign-in is the
 proof. "Not now" goes on to where sign-up goes today. It is shown once:
 afterwards, both are in Settings. Members from before find them in
-Settings.
+Settings. A sign-up made to book, offer a ride, report a meeting point or
+open an email's link goes straight there instead (my call: that is what
+the person came for).
 
 ### 3.8 The phone apps
 

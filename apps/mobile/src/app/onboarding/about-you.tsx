@@ -8,6 +8,8 @@ import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
+import { now } from "@/lib/clock";
+import { keepPendingLinkIfNone } from "@/navigation/kept-link";
 import { LegalPart, useCurrentDocuments } from "@/onboarding/legal-part";
 import { useSignUpEmail } from "@/onboarding/sign-up-email";
 import { ProfileForm } from "@/profile/profile-form";
@@ -23,7 +25,9 @@ import { spacing } from "@/theme/tokens";
  * the email's link and accepts the documents shown, then saves the profile
  * (item 6); if saving fails the answers stay, and a retry does not send or
  * accept again. Saving completes the account: the app then opens the ride
- * kept on the way, or Find (_layout.tsx and the menu).
+ * kept on the way, or Find (_layout.tsx and the menu); with a verified
+ * email and nothing else kept, "Sign in faster next time" first (spec 27,
+ * 3.7).
  */
 export default function AboutYouScreen() {
   const { t } = useLanguage();
@@ -81,7 +85,14 @@ export default function AboutYouScreen() {
         suggestedFirstName={suggestedFirstName}
         afterFirstName={email.field}
         check={email.check}
-        beforeSave={async () => (await email.send()) ?? acceptTerms()}
+        beforeSave={async () => {
+          const stop = (await email.send()) ?? (await acceptTerms());
+          // Offered once the account is ready, as a link kept through sign-up is.
+          if (stop === null && me.email !== null) {
+            await keepPendingLinkIfNone("/onboarding/faster", now());
+          }
+          return stop;
+        }}
         waiting={askTerms && !termsDone && terms.documents === null && terms.failure === null}
       >
         {askTerms ? (

@@ -32,6 +32,9 @@ export interface Texts {
   readonly accept: string;
   /** Step 3's button when nothing is kept through signing up. */
   readonly createAccount: string;
+  /** Once after step 3, with nothing kept (spec 27, 3.7). */
+  readonly fasterTitle: string;
+  readonly notNow: string;
   readonly myProfile: string;
 }
 
@@ -52,6 +55,8 @@ export const english: Texts = {
   age: "I am 18 or older",
   accept: "I accept the Terms of Service and the Community Rules",
   createAccount: "Create account",
+  fasterTitle: "Sign in faster next time",
+  notNow: "Not now",
   myProfile: "My profile",
 };
 
@@ -72,6 +77,8 @@ export const icelandic: Texts = {
   age: "Ég er 18 ára eða eldri",
   accept: "Ég samþykki notendaskilmála og samfélagsreglur",
   createAccount: "Stofna aðgang",
+  fasterTitle: "Skráðu þig hraðar inn næst",
+  notNow: "Ekki núna",
   myProfile: "Prófíllinn minn",
 };
 
@@ -138,6 +145,7 @@ export async function signUp(page: Page, texts: Texts, firstName: string) {
   await page.getByRole("button", { name: texts.signIn, exact: true }).click();
   const { email, text } = await enterCodes(page, texts, phone);
   await finishSignUp(page, texts, firstName);
+  await notNow(page, texts);
   await expect(page.getByRole("heading", { name: texts.findTitle })).toBeVisible();
   await menuLink(page, texts.profileTab).click();
   await expect(page.getByRole("heading", { name: texts.myProfile })).toBeVisible();
@@ -149,6 +157,15 @@ export async function signUp(page: Page, texts: Texts, firstName: string) {
   // a moment after the screen. A reload before then opens My profile again.
   await expect(page).toHaveURL("/");
   return { phone, text, email };
+}
+
+/**
+ * After step 3 with nothing kept, "Sign in faster next time" shows once
+ * (spec 27, 3.7): "Not now" goes on to Find.
+ */
+export async function notNow(page: Page, texts: Texts) {
+  await expect(page.getByRole("heading", { name: texts.fasterTitle })).toBeVisible();
+  await page.getByRole("button", { name: texts.notNow, exact: true }).click();
 }
 
 /** A place of the menu: the tab bar on phones, the top bar on wide screens. */

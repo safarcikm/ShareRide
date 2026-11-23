@@ -7,7 +7,6 @@ import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
 import { useSignOut } from "@/auth/use-sign-out";
-import { useConfig } from "@/beta/config";
 import { useOpenFeedback } from "@/beta/feedback";
 import { ShakeSwitch } from "@/beta/shake";
 import { BackButton } from "@/components/back-button";
@@ -28,8 +27,8 @@ import { usePalette } from "@/theme/use-palette";
 /**
  * Settings (spec 1, section 3.8; spec 16, 3.8): the language as two choices
  * side by side, Your account with the private phone number (spec 16, 3.4),
- * the email (plan 4.6), Sign-in methods once Google or Apple is set up
- * (spec 19, 3.4) and Privacy and your data (spec 11), Notifications
+ * the email (plan 4.6), Sign-in methods (spec 19, 3.4; spec 27, 3.6)
+ * and Privacy and your data (spec 11), Notifications
  * with the Trip reminders switch (spec 7, 3.6), Safety with Blocked people
  * (spec 9, 3.2), Feedback (spec 12, 3.3), legal documents, and signing out
  * here or on every device.
@@ -46,7 +45,6 @@ function Settings({ me }: { readonly me: Me }) {
   const session = useSession();
   const palette = usePalette();
   const openFeedback = useOpenFeedback();
-  const { signInProviders } = useConfig();
   const [error, setError] = useState<string | null>(null);
   // Once signed out, this screen closes back to Find by itself.
   const { signingOut, signOut } = useSignOut({ onError: setError });
@@ -118,14 +116,12 @@ function Settings({ me }: { readonly me: Me }) {
           />
         </View>
         <Card>
-          {signInProviders.length === 0 ? null : (
-            <Row
-              title={t("settings.signInMethods")}
-              onPress={() => {
-                router.push("/settings/sign-in-methods");
-              }}
-            />
-          )}
+          <Row
+            title={t("settings.signInMethods")}
+            onPress={() => {
+              router.push("/settings/sign-in-methods");
+            }}
+          />
           <Row
             title={t("settings.privacy")}
             onPress={() => {

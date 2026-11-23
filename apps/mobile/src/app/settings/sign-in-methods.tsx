@@ -3,7 +3,9 @@ import {
   addSignInMethodRoute,
   listSignInMethodsRoute,
   prepareSignInMethodRoute,
+  removePasswordRoute,
   removeSignInMethodRoute,
+  type PasswordState,
   type SignInMethod,
 } from "@shareride/contracts";
 import {
@@ -12,9 +14,9 @@ import {
   signInProviders,
   type SignInProvider,
 } from "@shareride/domain";
-import type { Translate } from "@shareride/i18n";
-import { router } from "expo-router";
-import { useCallback, useState } from "react";
+import { formatDate, type Translate } from "@shareride/i18n";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
@@ -34,6 +36,9 @@ import { ConfirmWithCode } from "@/privacy/confirm-with-code";
 import { providerNames, useProviderWindow } from "@/sign-in/provider-window";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+
+/** A line of the list that can be changed here: Google, Apple or the password. */
+type Changeable = SignInProvider | "password";
 
 /** A Google or Apple account checked and waiting for the confirm code. */
 interface Adding {
@@ -58,9 +63,11 @@ function refusalText(t: Translate, failure: CallFailure, provider: string): stri
 }
 
 /**
- * Settings, Sign-in methods (spec 19, 3.4; spec 26, 3.8): the phone number,
- * which stays, the email, which signs in and can be changed, and Google and
- * Apple, each linked with its email or not linked. Adding
+ * Settings, Sign-in methods (spec 19, 3.4; spec 26, 3.8; spec 27, 3.6): the
+ * phone number, which stays, the email, which signs in and can be changed,
+ * Google and Apple, each linked with its email or not linked, and the
+ * password, set on a day or not set, which Choose a password adds or
+ * changes and which is removed here after asking. Adding
  * one opens its window, checks it can be added, then asks for a confirm
  * code, as downloading the data does (R19.3): by email to the verified
  * email, else by text to the account's own number (spec 26, 3.6).
@@ -90,13 +97,15 @@ function SignInMethods({
   const { value: answer, reload } = useLoaded(load);
   // The list as changed here, over the one first loaded.
   const [changed, setChanged] = useState<readonly SignInMethod[] | null>(null);
-  const [busy, setBusy] = useState<SignInProvider | null>(null);
-  const [asking, setAsking] = useState<SignInProvider | null>(null);
+  // The password as changed here or loaded again; undefined while as first loaded.
+  const [changedPassword, setChangedPassword] = useState<PasswordState | null | undefined>();
+  const [busy, setBusy] = useState<Changeable | null>(null);
+  const [asking, setAsking] = useState<Changeable | null>(null);
   const [adding, setAdding] = useState<Adding | null>(null);
   // When a new confirm code can be asked for, kept while the form closes and opens.
   const [sentUntil, setSentUntil] = useState(0);
   // The question or form that just closed: its button takes focus back.
-  const [closed, setClosed] = useState<SignInProvider | null>(null);
+  const [closed, setClosed] = useState<Changeable | null>(null);
   // Counted, so each outcome takes focus anew: the button pressed may be gone.
   const [outcome, setOutcome] = useState<{
     text: string;
@@ -110,10 +119,22 @@ function SignInMethods({
   }
 
   /** Loads the list again; if that fails, the list stays as it was. */
-  async function refresh() {
+  const refresh = useCallback(async () => {
     const result = await session.call(listSignInMethodsRoute, {});
-    if (result.ok) setChanged(result.data.methods);
-  }
+    if (result.ok) {
+      setChanged(result.data.methods);
+      setChangedPassword(result.data.password ?? null);
+    }
+  }, [session]);
+
+  // Back from Choose a password: the password's line shows what changed.
+  const shownBefore = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (shownBefore.current) void refresh();
+      shownBefore.current = true;
+    }, [refresh]),
+  );
 
   /** Opens the window in the tap itself, then checks the account can be added. */
   async function add(provider: SignInProvider) {
@@ -199,6 +220,20 @@ function SignInMethods({
     tell(errorText(t, result), true);
   }
 
+  async function removePassword() {
+    setBusy("password");
+    const result = await session.call(removePasswordRoute, {});
+    setBusy(null);
+    setAsking(null);
+    if (result.ok || result.error.code === "not_found") {
+      tell(t("settings.signInMethods.passwordRemoved"), false);
+      setChangedPassword(null);
+      void refresh();
+      return;
+    }
+    tell(errorText(t, result), true);
+  }
+
   const header = (
     <>
       <BackButton fallback="/settings" />
@@ -207,6 +242,12 @@ function SignInMethods({
     </>
   );
   const methods = changed ?? methodsOf(answer);
+  const password =
+    changedPassword === undefined
+      ? answer?.ok === true
+        ? (answer.data.password ?? null)
+        : null
+      : changedPassword;
   if (answer === undefined && changed === null) {
     return (
       <Screen>
@@ -332,6 +373,30 @@ function SignInMethods({
               </View>
             );
           })}
+          <View style={styles.method}>
+            {label(t("auth.password"))}
+            {email === null ? (
+              <Body align="start">{t("password.emailRequired")}</Body>
+            ) : (
+              <PasswordLine
+                setAt={password?.setAt ?? null}
+                asking={asking === "password"}
+                busy={busy === "password"}
+                disabled={busy !== null}
+                takeFocus={closed === "password"}
+                onAsk={() => {
+                  setOutcome(null);
+                  setClosed(null);
+                  setAsking("password");
+                }}
+                onRemove={() => void removePassword()}
+                onCancel={() => {
+                  setAsking(null);
+                  setClosed("password");
+                }}
+              />
+            )}
+          </View>
         </View>
       </Card>
       {/* The code field takes focus itself, as in Download my data. */}
@@ -355,6 +420,87 @@ function SignInMethods({
         </View>
       )}
     </Screen>
+  );
+}
+
+/**
+ * The password's line: set on a day, with Change and Remove, which asks
+ * first; or not set, with Add. Choose a password adds or changes it.
+ */
+function PasswordLine({
+  setAt,
+  asking,
+  busy,
+  disabled,
+  takeFocus,
+  onAsk,
+  onRemove,
+  onCancel,
+}: {
+  readonly setAt: string | null;
+  readonly asking: boolean;
+  readonly busy: boolean;
+  readonly disabled: boolean;
+  readonly takeFocus: boolean;
+  readonly onAsk: () => void;
+  readonly onRemove: () => void;
+  readonly onCancel: () => void;
+}) {
+  const { locale, t } = useLanguage();
+  const choose = () => {
+    router.push("/settings/password");
+  };
+  if (setAt === null) {
+    return (
+      <>
+        <Body align="start">{t("settings.signInMethods.passwordNotSet")}</Body>
+        <TakesFocus when={takeFocus}>
+          <Button
+            variant="secondary"
+            label={t("settings.signInMethods.addPassword")}
+            disabled={disabled}
+            onPress={choose}
+          />
+        </TakesFocus>
+      </>
+    );
+  }
+  // Iceland keeps UTC all year, so the moment's date is Iceland's.
+  const date = formatDate(setAt.slice(0, 10), locale);
+  return (
+    <>
+      <Body align="start">{t("settings.signInMethods.passwordSet", { date })}</Body>
+      {asking ? (
+        <TakesFocus>
+          <View style={styles.question}>
+            <Body align="start">{t("settings.signInMethods.removePasswordQuestion")}</Body>
+            <Button
+              label={t("settings.signInMethods.removePassword")}
+              busy={busy}
+              onPress={onRemove}
+            />
+            <Button variant="text" label={t("common.cancel")} disabled={busy} onPress={onCancel} />
+          </View>
+        </TakesFocus>
+      ) : (
+        <View style={styles.question}>
+          <Button
+            variant="secondary"
+            label={t("settings.signInMethods.changePassword")}
+            disabled={disabled}
+            onPress={choose}
+          />
+          <TakesFocus when={takeFocus}>
+            <Button
+              variant="secondary"
+              label={t("settings.signInMethods.removePassword")}
+              disabled={disabled}
+              onPress={onAsk}
+            />
+          </TakesFocus>
+        </View>
+      )}
+    </>
   );
 }
 
