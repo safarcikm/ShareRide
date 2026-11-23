@@ -152,7 +152,7 @@ date appear on the console home (spec 10).
 
 | ID | Rule |
 | -- | ---- |
-| R11.1 | Download and deletion work in the app without the operator, after a fresh SMS code. |
+| R11.1 | Download and deletion work in the app without the operator, after a fresh SMS code (by email to a verified email since [spec 26](2026-11-23-sign-in-without-text-messages.md), R26.7). |
 | R11.2 | An export contains the user's own data and only the first name of anyone else, never who reported them; it is deleted after 7 days. |
 | R11.3 | An account cannot be deleted while it has an open dispute or a held payout; open trips and bookings are cancelled first under the normal rules. |
 | R11.4 | On deletion, personal data is erased or anonymised as in 3.5; records the law or safety requires are kept for their period only. |

@@ -76,3 +76,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0043](0043-legal-documents-published-from-the-repository.md) | Publish the legal documents from the repository | Proposed |
 | [0044](0044-console-password-on-production.md) | The console password on production too | Accepted |
 | [0045](0045-google-analytics-on-the-website-after-consent.md) | Google Analytics on the website, only after consent | Accepted |
+| [0046](0046-sign-in-by-email-code-and-text-only-to-check-the-number.md) | Sign in with an email code or Google; a text message only checks the number | Proposed |
