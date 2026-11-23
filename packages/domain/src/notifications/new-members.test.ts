@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { newMembersEmailGapMinutes, newMembersPeriod } from "./new-members.ts";
+import {
+  newMembersEmailGapMinutes,
+  newMembersFrom,
+  newMembersLookbackDays,
+  newMembersPeriod,
+} from "./new-members.ts";
 
 const at = (time: string) => new Date(`2026-11-23T${time}:00.000Z`);
 
@@ -32,5 +37,27 @@ describe("newMembersPeriod (spec 25, R25.3)", () => {
     expect(
       newMembersPeriod({ onSince: at("16:00"), lastEmailAt: at("14:02"), now: at("16:01") }),
     ).toEqual({ from: at("16:00") });
+  });
+});
+
+describe("newMembersFrom (spec 25, R25.3)", () => {
+  const day = (date: string) => new Date(`${date}T12:00:00.000Z`);
+
+  it("counts from the later of turning it on and the last email", () => {
+    expect(
+      newMembersFrom({ onSince: at("09:00"), lastEmailAt: at("14:02"), until: at("15:02") }),
+    ).toEqual(at("14:02"));
+    expect(newMembersFrom({ onSince: at("09:00"), lastEmailAt: null, until: at("15:02") })).toEqual(
+      at("09:00"),
+    );
+  });
+
+  it("looks back no further than the notification log keeps the last email", () => {
+    expect(newMembersLookbackDays).toBe(89);
+    // Turned on in the spring, the last email long gone from the log: only
+    // the last 89 days, in which any member would have had an email still kept.
+    expect(
+      newMembersFrom({ onSince: day("2026-03-01"), lastEmailAt: null, until: day("2026-11-23") }),
+    ).toEqual(day("2026-08-26"));
   });
 });

@@ -937,6 +937,33 @@ Spec 10 (3.5; R10.7), built in milestone 11 (PR 10).
 - The Announcements page (`apps/admin/src/pages/announcements/`) has the
   drafts with their reach, the form, and what was sent.
 
+## Emails to you
+
+[Spec 25](../specs/2026-11-23-new-member-emails.md): an email to the
+operator when new members join, built 2026-11-23.
+
+- The rule is in `packages/domain/src/notifications/new-members.ts`:
+  `newMembersPeriod` gives the period an email may cover now, or null
+  within the hour after the last one (`newMembersEmailGapMinutes`, R25.3).
+- The operator's choice is `notification_preferences.new_members_since`,
+  the time they turned it on; empty for off. `modules/notifications/new-members.ts`
+  has the queries: who counts (`age_confirmed_at` set, not deleted;
+  R25.2), the operators who want it (`canUseConsole` and the choice on),
+  and `newMembersEmailDue`, which holds the operator's settings row so two
+  workers at once make one email.
+- The worker's `tellOfNewMembers` runs every 5 seconds with the other
+  steps: one query while nobody has the choice on. A notification is keyed
+  `new_members:<time>` and the operator; its words are made when it is
+  sent, from the previous one (or turning it on) to its own creation, so
+  two emails never count one member twice. It goes by email only, and is
+  dropped when the choice is off, was turned on again since, or the
+  account can no longer use the console.
+- Routes: `GET` and `PUT /admin/v1/me/emails` (`{ newMembers }`), both
+  answering `{ newMembers, address }`, the operator's confirmed address or
+  null. Not in the audit log: they change nothing for anyone else.
+- The page is `apps/admin/src/pages/emails.tsx`, in the menu above
+  Passkeys: one checkbox that saves at once.
+
 ## Users, trips and decline rates
 
 `apps/api/src/modules/moderation/people-routes.ts` holds the console's

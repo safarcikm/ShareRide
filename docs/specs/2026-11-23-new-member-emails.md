@@ -70,6 +70,9 @@ For each operator who turned it on (R25.3):
    of the last one: then it waits until the hour is over, and covers
    everyone who joined in the meantime.
 3. Nobody new, no email.
+4. It never counts further back than 89 days, a day less than the
+   notification log keeps the emails, so the email it counts from is still
+   there.
 
 So the first member after a quiet spell is told within a minute (the worker
 looks every few seconds), and a busy day sends at most one email an hour.

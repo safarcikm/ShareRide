@@ -2048,6 +2048,18 @@ export const en = {
     "{count, plural, one {A switch is off: {names}} other {Switches are off: {names}}}",
   "admin.home.meetingPointProblems":
     "{count, plural, =0 {No open problem reports about meeting points} one {# open problem report about meeting points} other {# open problem reports about meeting points}}",
+  /** Emails to you (spec 25): the operator's own emails. */
+  "admin.emails.title": "Emails to you",
+  "admin.emails.intro": "Only for you: each operator chooses their own.",
+  "admin.emails.newMembers": "Email me when new members join",
+  "admin.emails.newMembersHelp":
+    "Soon after someone finishes signing up. Anyone who joins in the hour after that comes in the next email, so at most one an hour. How many, never who.",
+  "admin.emails.address": "Emails go to {address}.",
+  "admin.emails.noAddress":
+    "Your account has no confirmed email address, so nothing can be sent. Add one in PuffinRide under Settings.",
+  "admin.emails.saved": "Saved.",
+  "admin.emails.saveFailed": "That didn't save. Try again.",
+  "admin.emails.loadFailed": "Your email choices could not be loaded.",
   "admin.passkeys.title": "Passkeys",
   "admin.passkeys.intro":
     "The passkeys you sign in with. Keep at least two, on different devices, so losing one does not lock you out.",

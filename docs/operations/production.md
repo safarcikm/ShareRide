@@ -206,6 +206,20 @@ These work as in the [staging runbook](staging.md), on `puffinride-api`,
 - [Show the puffin beside our emails](staging.md#show-the-puffin-beside-our-emails):
   one `hello@` user for both.
 
+## Get an email when people join
+
+Each operator chooses this for themselves
+([spec 25](../specs/2026-11-23-new-member-emails.md)):
+
+1. Make sure your PuffinRide account has a confirmed email address: in the
+   app, **Settings**, add it and open the link in the email.
+2. In the console, **Emails to you**, tick **Email me when new members
+   join**. It says **Saved.** and where the emails go.
+
+The first email comes a minute or so after someone finishes signing up;
+anyone who joins in the hour after that comes in the next one. Untick it to
+stop.
+
 ## Turn on photos
 
 Done on 2026-11-22. Production keeps its photos apart from staging's.
