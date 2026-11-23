@@ -52,9 +52,11 @@ import { checkStanding } from "./modules/account/standing.ts";
 import {
   createAuthService,
   createOptionalAuth,
+  createPasswordService,
   createProviderSignInService,
   createRequireAuth,
   registerAuthRoutes,
+  registerPasswordRoutes,
   registerProviderRoutes,
 } from "./modules/auth/index.ts";
 import {
@@ -496,13 +498,21 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
         clock: features.clock,
       }),
     });
+    const passwords = createPasswordService({ ...features, logger, auth });
     registerProviderRoutes(app, {
       ...features,
       providers: providerSignIn,
+      passwords,
       account,
       requireAuth,
       // A keyed hash of the address's block, as for the other limits per address.
       clientKey: (c) => features.hasher("oauth-start", addressBlock(features.clientAddress(c))),
+    });
+    registerPasswordRoutes(app, {
+      ...features,
+      passwords,
+      account,
+      requireAuth,
     });
     registerAccountRoutes(app, account, requireAuth);
     registerProfilePhotoRoutes(

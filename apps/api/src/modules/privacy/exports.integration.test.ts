@@ -385,6 +385,22 @@ describe("download my data (spec 11, 3.2)", () => {
     expect(text).not.toContain("export-subject");
   });
 
+  it("says when a password was set, never the password or its hash (spec 27, R27.3)", async () => {
+    const bara = await newMember("Bára");
+    const setAt = new Date("2026-11-20T09:00:00.000Z");
+    await api.connection.db.insert(schema.memberPasswords).values({
+      userId: bara.userId,
+      hash: "scrypt$15$8$3$c2FsdHNhbHRzYWx0c2FsdA$aGFzaGhhc2hoYXNoaGFzaGhhc2hoYXNoaGFzaGhhc2g",
+      createdAt: setAt,
+      updatedAt: setAt,
+    });
+    const { data, text } = await exportOf(bara);
+    expect(data.sections.sign_in_methods).toEqual([
+      { method: "Password", email: null, linkedAt: setAt.toISOString(), lastUsedAt: null },
+    ]);
+    expect(text).not.toContain("scrypt$");
+  });
+
   it("lists the reports I sent and their outcome, never a report about me (R9.2)", async () => {
     const anna = await driverOf(sampleTrip.north, "Anna");
     const gunna = await newMember("Gunna");

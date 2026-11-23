@@ -1597,6 +1597,17 @@ export const en = {
   "email.emailChangedSubject": "Your PuffinRide sign-in email changed",
   "email.emailChangedBody":
     "Your PuffinRide account now signs in with {email}. If this wasn't you, sign in with this address and your phone number to get your account back, then tell us under Send feedback in the app.",
+  /** A change to how an account signs in, to its verified email (spec 27, R27.7). */
+  "email.passwordAddedSubject": "A password was added to your PuffinRide account",
+  "email.passwordChangedSubject": "Your PuffinRide password was changed",
+  "email.passwordRemovedSubject": "The password was removed from your PuffinRide account",
+  "email.passkeyAddedSubject": "Face ID or fingerprint was set up for your PuffinRide account",
+  "email.passkeyAddedOn": "It was set up on {device}. ",
+  "email.signInChangeBody":
+    "If that was you, there's nothing to do. If it wasn't, sign in with your email code, change or remove your password and sign out on all devices under Settings, then tell us under Send feedback in the app.",
+  /** A device with Face ID or fingerprint, such as "Safari on iPhone" (spec 27, 3.6). */
+  "passkey.device": "{browser} on {system}",
+  "passkey.someBrowser": "a browser",
   "oauth.page.title": "PuffinRide sign-in",
   "oauth.page.off": "This way of signing in isn't available. Close this window and use your email.",
   "oauth.page.invalid": "This sign-in link doesn't work. Close this window and try again.",

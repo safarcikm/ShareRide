@@ -1618,6 +1618,15 @@ export const is = {
   "email.emailChangedSubject": "Innskráningarnetfangið þitt hjá PuffinRide breyttist",
   "email.emailChangedBody":
     "Nú skráir þú þig inn í PuffinRide með {email}. Ef þetta varst ekki þú skaltu skrá þig inn með þessu netfangi og símanúmerinu þínu til að fá aðganginn aftur og láta okkur svo vita undir „Senda ábendingu“ í appinu.",
+  "email.passwordAddedSubject": "Lykilorði var bætt við PuffinRide-aðganginn þinn",
+  "email.passwordChangedSubject": "Lykilorðinu þínu hjá PuffinRide var breytt",
+  "email.passwordRemovedSubject": "Lykilorðið var fjarlægt af PuffinRide-aðganginum þínum",
+  "email.passkeyAddedSubject": "Face ID eða fingrafar var sett upp fyrir PuffinRide-aðganginn þinn",
+  "email.passkeyAddedOn": "Það var sett upp í {device}. ",
+  "email.signInChangeBody":
+    "Ef þetta varst þú þarftu ekkert að gera. Ef ekki skaltu skrá þig inn með kóða í tölvupósti, breyta lykilorðinu eða fjarlægja það og skrá þig út á öllum tækjum undir Stillingum, og láta okkur svo vita undir „Senda ábendingu“ í appinu.",
+  "passkey.device": "{browser} á {system}",
+  "passkey.someBrowser": "vafra",
   "oauth.page.title": "Innskráning í PuffinRide",
   "oauth.page.off":
     "Þessi innskráningarleið er ekki í boði. Lokaðu glugganum og notaðu netfangið þitt.",

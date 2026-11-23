@@ -139,9 +139,10 @@ button for Face ID or fingerprint:
    as removing Google does (R19.7).
 6. Saved: "Your password is saved." An email goes to the verified email
    (R27.7): "A password was added to your PuffinRide account", or "changed"
-   or "removed", with the time, and "If that wasn't you, sign in with your
-   email code, change your password and sign out on all devices in
-   Settings. Tell us under Send feedback."
+   or "removed", and "If that was you, there's nothing to do. If it
+   wasn't, sign in with your email code, change or remove your password and
+   sign out on all devices under Settings, then tell us under Send feedback
+   in the app."
 7. Other devices stay signed in. "Sign out on all devices" sits next to it
    in Settings (my call: the password is one way in of several, and the
    person decides).
