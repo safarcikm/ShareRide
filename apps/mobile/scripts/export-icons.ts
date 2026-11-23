@@ -34,7 +34,7 @@ async function sharePicture(): Promise<string> {
 @font-face{font-family:Body;src:${body}}
 html,body{margin:0}
 .card{width:1200px;height:630px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#EEF3F4}
-.scene svg{display:block;width:480px;height:310px}
+.scene svg{display:block;width:520px;height:296px}
 .name{display:flex;align-items:center;gap:24px;margin:20px 0 16px}
 .icon{flex:none;width:84px;height:84px;border-radius:19px;overflow:hidden}
 .icon svg{display:block;width:84px;height:84px}
