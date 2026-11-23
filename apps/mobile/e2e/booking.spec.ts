@@ -1,5 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { english, enterCode, finishSignUp, icelandic, signUp, type Texts } from "./support/account";
+import {
+  english,
+  enterCodes,
+  finishSignUp,
+  icelandic,
+  signUp,
+  type Texts,
+} from "./support/account";
 import { newPhoneNumber } from "./support/sms";
 import { focused, openTrip, type TripSearch } from "./support/trips";
 
@@ -40,7 +47,6 @@ interface Journey extends TripSearch {
   readonly weather: string;
   readonly share: string;
   readonly addEmailPrompt: string;
-  readonly notNow: string;
 }
 
 const inEnglish: Journey = {
@@ -77,7 +83,6 @@ const inEnglish: Journey = {
   weather: "Weather (vedur.is)",
   share: "Share trip details",
   addEmailPrompt: "Add an email so we can reach you if your trip changes.",
-  notNow: "Not now",
 };
 
 const inIcelandic: Journey = {
@@ -114,7 +119,6 @@ const inIcelandic: Journey = {
   weather: "Veður (vedur.is)",
   share: "Deila upplýsingum um ferðina",
   addEmailPrompt: "Bættu við netfangi svo við getum látið þig vita ef ferðin breytist.",
-  notNow: "Ekki núna",
 };
 
 const journeys = [inEnglish, inIcelandic];
@@ -168,11 +172,9 @@ for (const journey of journeys) {
       await expect(page.getByRole("heading", { name: journey.next })).toBeVisible();
       await expect(page.getByRole("heading", { name: journey.whereToStand })).toBeVisible();
       await expect(page.getByRole("button", { name: journey.openInMaps })).toBeVisible();
-      // On the web nothing can reach them yet, so they are asked to add an
-      // email (spec 7, 3.6.2); "Not now" closes it.
-      await expect(page.getByText(journey.addEmailPrompt)).toBeVisible();
-      await page.getByRole("button", { name: journey.notNow }).click();
-      await expect(page.getByText(journey.addEmailPrompt)).toBeHidden();
+      // The account signs in with its email, which reaches them on the web,
+      // so no email is asked for (spec 7, 3.6.2; spec 26).
+      await expect(page.getByText(journey.addEmailPrompt)).toHaveCount(0);
       const booking = page.url().replace(/\/booked$/, "");
 
       // The confirmed seat is kept, and the trip page now leads to it.
@@ -222,7 +224,7 @@ test.describe("booking before having an account", () => {
       page.getByText("Þú ert að bóka", { exact: true }).filter({ visible: true }),
     ).toBeVisible();
     await expect(page.getByText("Skref 1 af 3").filter({ visible: true })).toBeVisible();
-    await enterCode(page, icelandic, newPhoneNumber());
+    await enterCodes(page, icelandic, newPhoneNumber());
     await finishSignUp(page, icelandic, "Bjössi", "Stofna aðgang og bóka");
 
     await expect(page).toHaveURL(

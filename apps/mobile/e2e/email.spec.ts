@@ -1,17 +1,18 @@
 import { expect, test } from "@playwright/test";
-import { english, signUp } from "./support/account";
+import { english, newEmail, signUp } from "./support/account";
 import { emailTo, linkIn } from "./support/email";
 import { postTripToSelfoss } from "./support/trips";
 
-// An email on the web build (plan 4.6; spec 20, 3.3): a passenger gives an
-// address at sign-up, sees in Settings that its link waits, opens the link
-// from the test API's email outbox, and then, with no push in a browser,
-// gets the "Pay now" email when the driver accepts their request. The
-// address is new each run and project.
+// An email on the web build (plan 4.6; spec 26, 3.7): a passenger signs up
+// with an email and sees it in Settings, changes it (no code in an
+// account's first 30 minutes), opens the new address's link from the test
+// API's email outbox, and the old address is told. Then, with no push in a
+// browser, they get the "Pay now" email at the new address when the driver
+// accepts their request. The addresses are new each run and project.
 
 test.use({ locale: "en-GB" });
 
-test("a passenger confirms the email given at sign-up and gets the Pay now email", async ({
+test("a passenger changes their email and gets the Pay now email there", async ({
   page: passenger,
   browser,
 }, testInfo) => {
@@ -30,13 +31,20 @@ test("a passenger confirms the email given at sign-up and gets the Pay now email
   const driver = await driverContext.newPage();
   const visible = { visible: true } as const;
 
-  // Step 3 asked for the email; Settings, Your account, shows its link waiting.
-  const { email: address } = await signUp(passenger, english, "Edda");
+  // Settings, Your account, shows the email she signed up with.
+  const { email: first } = await signUp(passenger, english, "Edda");
   await passenger.goto("/settings");
   await expect(passenger.getByRole("heading", { name: "Your account" })).toBeVisible();
+  await expect(passenger.getByText(first, { exact: true }).filter(visible)).toBeVisible();
+
+  // A new address waits for its link.
+  const address = newEmail();
+  await passenger.getByRole("link", { name: "Change your email" }).click();
+  await passenger.getByRole("textbox", { name: "Email", exact: true }).fill(address);
+  await passenger.getByRole("button", { name: "Send the link" }).click();
   await expect(
     passenger
-      .getByText(`Waiting for you to open the link sent to ${address}.`, { exact: true })
+      .getByText(`We sent a link to ${address}. Open it within 24 hours to add the address.`)
       .filter(visible),
   ).toBeVisible();
 
@@ -50,6 +58,8 @@ test("a passenger confirms the email given at sign-up and gets the Pay now email
   await passenger.getByRole("link", { name: "Go to Settings" }).click();
   await expect(passenger.getByText(address, { exact: true }).filter(visible)).toBeVisible();
   await expect(passenger.getByRole("link", { name: "Change your email" })).toBeVisible();
+  // The old address is told, in case it was not her (spec 26, R26.6).
+  await emailTo(first, /^Your PuffinRide sign-in email changed$/);
 
   // A request, accepted: the passenger has no push here, so email tells them.
   await signUp(driver, english, "Bára");

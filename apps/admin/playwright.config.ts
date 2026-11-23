@@ -16,6 +16,8 @@ export const operatorLink = join(tmpdir(), "shareride-e2e-operator-link.txt");
 export const operatorPhone = "+3548999990";
 /** The test API writes each text message here, for a journey that signs a person in. */
 export const smsOutbox = join(tmpdir(), "shareride-e2e-admin-sms.jsonl");
+/** And each email, such as the sign-in code that comes before the text (spec 26). */
+export const emailOutbox = join(tmpdir(), "shareride-e2e-admin-email.jsonl");
 
 export default defineConfig({
   testDir: "e2e",
@@ -44,7 +46,7 @@ export default defineConfig({
     env: {
       PORT: String(port),
       E2E_SMS_OUTBOX: smsOutbox,
-      E2E_EMAIL_OUTBOX: join(tmpdir(), "shareride-e2e-admin-email.jsonl"),
+      E2E_EMAIL_OUTBOX: emailOutbox,
       E2E_WEB_ORIGIN: origin,
       E2E_ADMIN_ORIGIN: origin,
       E2E_ADMIN_APP_DIR: fileURLToPath(new URL("dist", import.meta.url)),

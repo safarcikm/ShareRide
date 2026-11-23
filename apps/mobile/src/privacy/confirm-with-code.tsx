@@ -1,6 +1,6 @@
 import type { CallFailure } from "@shareride/api-client";
 import { sendConfirmCodeRoute } from "@shareride/contracts";
-import { codeRules } from "@shareride/domain";
+import { codeRules, hideEmail } from "@shareride/domain";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { errorText, formatWait } from "@/auth/errors";
@@ -16,16 +16,23 @@ import { usePalette } from "@/theme/use-palette";
 
 const codeLength = codeRules.length;
 
+/** Where a code went: the email partly hidden, or the number's last two digits. */
+interface SentWhere {
+  readonly channel: "email" | "sms";
+  readonly to: string | null;
+}
+
 /** Failures about the code itself, which this component words. */
 const codeFailures = new Set(["code_invalid", "code_expired", "code_attempts_exceeded"]);
 
 /**
  * Confirming a sensitive action with a fresh code (spec 11, R11.1; plan
- * 4.3): a code goes by text message to the account's own number as soon as
- * this appears, and the action runs once six digits are in. It shows the
- * number's last two digits and "Send a new code" after the wait. Opened
- * again inside that wait, it uses the code already sent. If no code could
- * be sent, it says why and still takes a code the person already has.
+ * 4.3): a code goes as soon as this appears, by email to the account's
+ * verified email, else by text message to its own number (spec 26, 3.6),
+ * and the action runs once six digits are in. It says where the code went,
+ * and shows "Send a new code" after the wait. Opened again inside that
+ * wait, it uses the code already sent. If no code could be sent, it says
+ * why and still takes a code the person already has.
  */
 export function ConfirmWithCode({
   confirmLabel,
@@ -61,6 +68,8 @@ export function ConfirmWithCode({
   // The first request has an answer, whatever it was.
   const [asked, setAsked] = useState(reuse);
   const [resendAt, setResendAt] = useState(reuse ? sentUntil : 0);
+  // Where the API says the code went; for a code sent before, where it goes now.
+  const [sentWhere, setSentWhere] = useState<SentWhere | null>(null);
   const secondsLeft = useSecondsUntil(resendAt);
   const [code, setCode] = useState("");
   const [fieldError, setFieldError] = useState<string>();
@@ -86,6 +95,7 @@ export function ConfirmWithCode({
       setAsked(true);
       if (result.ok) {
         const until = Date.now() + result.data.resendAfterSeconds * 1000;
+        setSentWhere({ channel: result.data.channel, to: result.data.sentTo });
         setSent(true);
         setResendAt(until);
         onSent(until);
@@ -150,12 +160,21 @@ export function ConfirmWithCode({
     message = own ?? errorText(t, failure);
   }
 
-  const digits = me?.phoneNumber?.slice(-2);
+  // A code sent before this opened goes where codes go: the verified email, if any.
+  const where: SentWhere =
+    sentWhere ??
+    (me === null || me.email === null
+      ? { channel: "sms", to: me?.phoneNumber?.slice(-2) ?? null }
+      : { channel: "email", to: hideEmail(me.email) });
   // Until the first answer, sending; then where it went, or nothing if it
   // could not go (the notice says why).
   let sentTo: string | null = asked ? null : t("confirm.sending");
-  if (sent)
-    sentTo = digits === undefined ? t("confirm.sentNoNumber") : t("confirm.sent", { digits });
+  if (sent) {
+    if (where.channel === "email") sentTo = t("confirm.sentToEmail", { email: where.to ?? "" });
+    else
+      sentTo =
+        where.to === null ? t("confirm.sentNoNumber") : t("confirm.sent", { digits: where.to });
+  }
 
   return (
     <View style={styles.group}>

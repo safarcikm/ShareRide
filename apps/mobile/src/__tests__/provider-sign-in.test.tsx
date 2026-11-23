@@ -62,6 +62,7 @@ async function openSignIn(setUp?: (client: FakeClient) => void) {
           maxMoveMinutes: 120,
           reliabilityMonths: 12,
           signInProviders: ["google", "apple"],
+          emailSignIn: true,
         }),
       );
       client.answer("/v1/auth/phone/start", () => ok(202, { resendAfterSeconds: 30 }));
@@ -84,7 +85,8 @@ async function addPhoneNumber(code = "123456") {
 }
 
 const inUseRetry =
-  "This Google account is used by another PuffinRide account. Try again to go on with your phone number alone.";
+  "This Google account is used by another PuffinRide account. Sign in with your email instead.";
+const failed = "Google sign-in didn't work. Try again, or use your email.";
 
 const verifyBodies = (app: { client: FakeClient }) =>
   app.client.calls
@@ -92,11 +94,12 @@ const verifyBodies = (app: { client: FakeClient }) =>
     .map((call) => call.input["body"] as Record<string, unknown>);
 
 describe("Continue with Google or Apple (spec 19)", () => {
-  it("shows the buttons the API has set up, above the phone number", async () => {
+  it("shows the buttons the API has set up, above the email", async () => {
     await openSignIn();
     expect(screen.getByRole("button", { name: "Continue with Apple" })).toBeVisible();
-    expect(screen.getByText("or with your phone number")).toBeVisible();
-    expect(screen.getByLabelText("Mobile number")).toBeVisible();
+    expect(screen.getByText("or with your email")).toBeVisible();
+    expect(screen.getByLabelText("Email")).toBeVisible();
+    expect(screen.queryByLabelText("Mobile number")).toBeNull();
   });
 
   it("shows no buttons while none is set up", async () => {
@@ -105,7 +108,7 @@ describe("Continue with Google or Apple (spec 19)", () => {
       await screen.findByRole("header", { name: "Sign in or create an account" }),
     ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Continue with Google" })).toBeNull();
-    expect(screen.queryByText("or with your phone number")).toBeNull();
+    expect(screen.queryByText("or with your email")).toBeNull();
   });
 
   it("signs a member in with no code, with the secret the start was made from", async () => {
@@ -159,7 +162,7 @@ describe("Continue with Google or Apple (spec 19)", () => {
         "You signed in with Google as anna@example.com. We text you a code once, so the people you ride with can reach you. Next time Google is enough.",
       ),
     ).toBeVisible();
-    expect(screen.getByText("Step 1 of 3")).toBeVisible();
+    expect(screen.getByText("Step 2 of 3")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Continue with Google" })).toBeNull();
 
     await addPhoneNumber();
@@ -252,9 +255,7 @@ describe("Continue with Google or Apple (spec 19)", () => {
     });
     windowReturnsTo(back("error=failed"));
     await continueWith("Google");
-    expect(
-      await screen.findByText("Google sign-in didn't work. Try again, or use your phone number."),
-    ).toBeVisible();
+    expect(await screen.findByText(failed)).toBeVisible();
 
     windowReturnsTo(back("error=expired"));
     await continueWith("Apple");
@@ -263,9 +264,7 @@ describe("Continue with Google or Apple (spec 19)", () => {
     // A ticket the API no longer takes reads the same as a failed window.
     windowReturnsTo(back(`ticket=${ticket}`));
     await continueWith("Google");
-    expect(
-      await screen.findByText("Google sign-in didn't work. Try again, or use your phone number."),
-    ).toBeVisible();
+    expect(await screen.findByText(failed)).toBeVisible();
   });
 
   it("makes a new secret for each try", async () => {
@@ -274,9 +273,9 @@ describe("Continue with Google or Apple (spec 19)", () => {
     });
     windowReturnsTo(back(`ticket=${ticket}`));
     await continueWith("Google");
-    await screen.findByText("Google sign-in didn't work. Try again, or use your phone number.");
+    await screen.findByText(failed);
     await continueWith("Google");
-    await screen.findByText("Google sign-in didn't work. Try again, or use your phone number.");
+    await screen.findByText(failed);
     const verifiers = app.client.calls
       .filter((call) => call.path === "/v1/auth/oauth/finish")
       .map((call) => (call.input["body"] as { verifier: string }).verifier);
@@ -303,16 +302,12 @@ describe("Continue with Google or Apple (spec 19)", () => {
     expect(screen.getByRole("button", { name: "Continue with Google" })).toBeVisible();
   });
 
-  it("makes the account with the number alone when another account has the Google one", async () => {
+  it("goes back to step 1, to use the email, when another account has the Google one", async () => {
     const app = await openSignIn((client) => {
       client.answer("/v1/auth/oauth/finish", () =>
         ok(200, phoneNeeded("google", "anna@example.com")),
       );
-      client.answer("/v1/auth/phone/verify", (input) =>
-        (input["body"] as { pendingSignIn?: string }).pendingSignIn === undefined
-          ? ok(200, { ...tokens(1), user: testMe, isNewUser: true })
-          : failure(409, "provider_in_use"),
-      );
+      client.answer("/v1/auth/phone/verify", () => failure(409, "provider_in_use"));
     });
     windowReturnsTo(back(`ticket=${ticket}`));
     await continueWith("Google");
@@ -320,12 +315,9 @@ describe("Continue with Google or Apple (spec 19)", () => {
     await addPhoneNumber();
 
     expect(await screen.findByText(inUseRetry)).toBeVisible();
-    await fireEvent.changeText(screen.getByLabelText("6-digit code"), "123456");
-    expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
-    expect(verifyBodies(app).map((body) => body["pendingSignIn"])).toEqual([
-      pendingSignIn,
-      undefined,
-    ]);
+    expect(screen.getByRole("header", { name: "Sign in or create an account" })).toBeVisible();
+    expect(screen.getByLabelText("Email")).toBeVisible();
+    expect(verifyBodies(app).map((body) => body["pendingSignIn"])).toEqual([pendingSignIn]);
   });
 
   it("goes back to the choice from the phone step", async () => {
@@ -348,9 +340,9 @@ describe("Continue with Google or Apple (spec 19)", () => {
     const app = await openSignIn();
     openAuthSessionAsync.mockImplementationOnce(() => new Promise(() => undefined));
     await continueWith("Google");
-    await fireEvent.changeText(screen.getByLabelText("Mobile number"), "690 0000");
-    await fireEvent(screen.getByLabelText("Mobile number"), "submitEditing");
-    expect(app.client.calls.filter((call) => call.path === "/v1/auth/phone/start")).toEqual([]);
+    await fireEvent.changeText(screen.getByLabelText("Email"), "anna@example.com");
+    await fireEvent(screen.getByLabelText("Email"), "submitEditing");
+    expect(app.client.calls.filter((call) => call.path === "/v1/auth/email/start")).toEqual([]);
   });
 
   it("says sign-in didn't work when no secret can be made", async () => {
@@ -358,9 +350,7 @@ describe("Continue with Google or Apple (spec 19)", () => {
     await openSignIn();
     const opened = openAuthSessionAsync.mock.calls.length;
     await continueWith("Google");
-    expect(
-      await screen.findByText("Google sign-in didn't work. Try again, or use your phone number."),
-    ).toBeVisible();
+    expect(await screen.findByText(failed)).toBeVisible();
     expect(openAuthSessionAsync.mock.calls).toHaveLength(opened);
   });
 
@@ -372,12 +362,9 @@ describe("Continue with Google or Apple (spec 19)", () => {
           ok(200, phoneNeeded("google", "anna@example.com")),
         );
         client.answer("/v1/auth/phone/verify", (input) => {
-          const body = input["body"] as { pendingSignIn?: string; inviteCode?: string };
+          const body = input["body"] as { inviteCode?: string };
           if (body.inviteCode === undefined) return failure(403, "invite_required");
-          if (body.pendingSignIn !== undefined) {
-            return failure(refusal === "provider_in_use" ? 409 : 400, refusal);
-          }
-          return ok(200, { ...tokens(1), user: testMe, isNewUser: true });
+          return failure(refusal === "provider_in_use" ? 409 : 400, refusal);
         });
       });
       windowReturnsTo(back(`ticket=${ticket}`));
@@ -390,15 +377,13 @@ describe("Continue with Google or Apple (spec 19)", () => {
       return app;
     }
 
-    it("drops the Google account another account has, then makes the account", async () => {
+    it("goes back to step 1, to use the email, when another account has the Google account", async () => {
       const app = await reachInviteStep("provider_in_use");
       expect(await screen.findByText(inUseRetry)).toBeVisible();
-      await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
-      expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
+      expect(screen.getByRole("header", { name: "Sign in or create an account" })).toBeVisible();
       expect(verifyBodies(app).map((body) => body["pendingSignIn"])).toEqual([
         pendingSignIn,
         pendingSignIn,
-        undefined,
       ]);
     });
 

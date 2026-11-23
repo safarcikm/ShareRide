@@ -40,7 +40,7 @@ export const settingDefinitions = {
   trips_open: { group: "switches", ...onByDefault },
   /** Off: no new booking, request or payment; answering and cancelling go on. */
   bookings_open: { group: "switches", ...onByDefault },
-  /** Off: no text message is sent, so nobody can ask for a sign-in code. */
+  /** Off: no text message is sent, so no new number gets its code (spec 26). */
   sms_sending: { group: "switches", ...onByDefault },
   /** Off: emails wait. */
   email_sending: { group: "switches", ...onByDefault },

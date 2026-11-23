@@ -73,8 +73,6 @@ export const is = {
   "common.continue": "Áfram",
   "common.retry": "Reyna aftur",
   "signIn.title": "Skráðu þig inn eða stofnaðu aðgang",
-  "signIn.help":
-    "Við sendum þér {length} stafa kóða með SMS. Í fyrsta sinn á PuffinRide? Sami kóðinn stofnar aðganginn þinn.",
   "signIn.keptRide": "Þú ert að bóka",
   "signIn.keptRideTrip": "{day} · {boardTime} {board} → {alightTime} {alight}",
   "signIn.keptRideDetails": "{seats} · {price} · Ökumaður: {driver}",
@@ -97,7 +95,20 @@ export const is = {
   "auth.code.incomplete": "Sláðu inn alla {length} tölustafi kóðans.",
   "auth.continueGoogle": "Halda áfram með Google",
   "auth.continueApple": "Halda áfram með Apple",
-  "auth.orPhone": "eða með símanúmerinu þínu",
+  "auth.orEmail": "eða með netfanginu þínu",
+  "auth.email.label": "Netfang",
+  "auth.email.send": "Senda kóða",
+  "auth.email.help": "Við sendum þér {length} stafa kóða í tölvupósti.",
+  "auth.email.before":
+    "Skráðir þú þig með símanúmeri? Notaðu netfangið þitt eða Google og svo sama númer. Því er bætt við aðganginn þinn.",
+  "auth.email.unavailable": "Innskráning með netfangi er ekki í boði á þessum netþjóni.",
+  "auth.emailCode.help": "Við sendum {length} stafa kóða á {email}.",
+  "auth.emailCode.change": "Breyta netfanginu",
+  "auth.email.phoneHelp":
+    "Þú staðfestir netfangið {email}. Við sendum þér kóða með SMS einu sinni, svo fólkið sem þú ferðast með nái í þig. Næst dugar netfangið.",
+  "auth.email.expired": "Þetta tók of langan tíma. Byrjaðu aftur með netfanginu þínu.",
+  "auth.email.added": "Næst skráir þú þig inn með {email}.",
+  "auth.email.replaced": "Innskráningarnetfangið þitt er nú {email}.",
   "auth.provider.phoneTitle": "Bættu við símanúmerinu þínu",
   "auth.provider.phoneHelp":
     "{provider} staðfesti netfangið {email}. Við sendum þér kóða með SMS einu sinni, svo fólkið sem þú ferðast með nái í þig. Næst dugar {provider}.",
@@ -109,11 +120,11 @@ export const is = {
   "auth.provider.replaced": "{provider}-aðgangurinn þinn á PuffinRide er nú {email}.",
   "auth.provider.replacedHidden": "{provider}-aðgangurinn þinn á PuffinRide hefur breyst.",
   "auth.provider.failed":
-    "Innskráning með {provider} tókst ekki. Reyndu aftur eða notaðu símanúmerið þitt.",
+    "Innskráning með {provider} tókst ekki. Reyndu aftur eða notaðu netfangið þitt.",
   "auth.provider.expired": "Þetta tók of langan tíma. Haltu aftur áfram með {provider}.",
   "auth.provider.inUse": "Þessi {provider}-aðgangur er notaður af öðrum PuffinRide-aðgangi.",
   "auth.provider.inUseRetry":
-    "Þessi {provider}-aðgangur er notaður af öðrum PuffinRide-aðgangi. Reyndu aftur til að halda áfram með símanúmerinu einu.",
+    "Þessi {provider}-aðgangur er notaður af öðrum PuffinRide-aðgangi. Skráðu þig inn með netfanginu þínu í staðinn.",
   "auth.provider.returning": "Skrái þig inn…",
   "auth.provider.closeTitle": "Þú getur lokað þessum glugga",
   "auth.provider.closeWindow": "Haltu svo áfram í PuffinRide-glugganum.",
@@ -186,7 +197,7 @@ export const is = {
   "error.signups_paused":
     "Nýskráningar eru í bið um stund. Ef þú átt þegar aðgang geturðu skráð þig inn.",
   "error.sms_paused":
-    "Við getum ekki sent SMS eins og er, svo innskráning er í bið um stund. Reyndu aftur síðar.",
+    "Við getum ekki sent SMS eins og er, svo ekki er hægt að bæta við símanúmeri um stund. Reyndu aftur síðar.",
   "error.trips_paused":
     "Ekki er hægt að birta nýjar ferðir um stund. Ferðirnar þínar og drögin eru óhult. Reyndu aftur síðar.",
   "error.bookings_paused":
@@ -285,11 +296,14 @@ export const is = {
   "settings.email": "Netfang",
   "settings.signInMethods": "Innskráningarleiðir",
   "settings.signInMethods.help":
-    "Símanúmerið þitt dugar alltaf til að skrá þig inn. Þú getur líka tengt aðrar innskráningarleiðir.",
+    "Þú skráir þig inn með netfanginu þínu eða Google. Símanúmerið þitt kemur þér aftur inn ef þú missir netfangið.",
   "settings.signInMethods.add": "Bæta við {provider}",
+  "settings.signInMethods.noEmail": "Ekkert netfang enn",
+  "settings.signInMethods.changeEmail": "Breyta netfangi",
+  "settings.signInMethods.addEmail": "Bæta við netfangi",
   "settings.signInMethods.remove": "Fjarlægja {provider}",
   "settings.signInMethods.removeQuestion":
-    "Fjarlægja {provider}? Þú getur áfram skráð þig inn með símanúmerinu þínu.",
+    "Fjarlægja {provider}? Netfangið þitt og símanúmerið koma þér áfram inn.",
   "settings.signInMethods.removed": "{provider} er ekki lengur tengt aðganginum þínum.",
   "settings.signInMethods.notLinked": "Ekki tengt",
   "settings.signInMethods.linked": "Tengt",
@@ -298,7 +312,7 @@ export const is = {
   "settings.signInMethods.failed": "Ekki tókst að bæta við {provider}. Reyndu aftur.",
   "settings.signInMethods.expired": "Þetta tók of langan tíma. Bættu {provider} aftur við.",
   "settings.signInMethods.confirm":
-    "Til að bæta við {provider} skaltu slá inn kóðann sem við sendum þér með SMS.",
+    "Til að bæta við {provider} skaltu slá inn kóðann sem við sendum þér.",
   "settings.addEmail": "Bæta við netfangi",
   "settings.changeEmail": "Breyta netfangi",
   "settings.emailWaiting": "Bíður þess að þú opnir hlekkinn sem var sendur á {email}.",
@@ -1603,10 +1617,10 @@ export const is = {
     "Þú færð þennan póst því þetta netfang var slegið inn í PuffinRide. Enginn frá PuffinRide mun nokkurn tíma biðja þig um þennan kóða.",
   "email.emailChangedSubject": "Innskráningarnetfangið þitt hjá PuffinRide breyttist",
   "email.emailChangedBody":
-    "Nú skráir þú þig inn í PuffinRide með {email}. Ef þetta varst ekki þú skaltu svara þessum pósti og við hjálpum þér.",
+    "Nú skráir þú þig inn í PuffinRide með {email}. Ef þetta varst ekki þú skaltu skrá þig inn með þessu netfangi og símanúmerinu þínu til að fá aðganginn aftur og láta okkur svo vita undir „Senda ábendingu“ í appinu.",
   "oauth.page.title": "Innskráning í PuffinRide",
   "oauth.page.off":
-    "Þessi innskráningarleið er ekki í boði. Lokaðu glugganum og notaðu símanúmerið þitt.",
+    "Þessi innskráningarleið er ekki í boði. Lokaðu glugganum og notaðu netfangið þitt.",
   "oauth.page.invalid": "Þessi innskráningartengill virkar ekki. Lokaðu glugganum og reyndu aftur.",
   "oauth.page.expired":
     "Þessi innskráning er útrunnin eða var þegar notuð. Lokaðu glugganum og reyndu aftur.",
@@ -1694,7 +1708,8 @@ export const is = {
   "privacy.waiting.body":
     "Enginn sér prófílinn þinn eða ferðirnar, bókar hjá þér eða sendir þér skilaboð. Haltu aðganginum til að nota PuffinRide aftur eins og áður.",
   "confirm.title": "Staðfestu að þetta sért þú",
-  "confirm.sending": "Sendi kóða í númerið þitt…",
+  "confirm.sending": "Sendi þér kóða…",
+  "confirm.sentToEmail": "Við sendum kóða á {email}.",
   "confirm.sent": "Við sendum kóða með SMS í númerið þitt sem endar á {digits}.",
   "confirm.sentNoNumber": "Við sendum kóða með SMS í númerið þitt.",
   "error.export_too_soon": "Þú getur beðið um eina skrá á dag. Reyndu aftur eftir {wait}.",
@@ -2373,7 +2388,7 @@ export const is = {
     "Slökkt: engar nýjar bókanir, beiðnir eða greiðslur. Bílstjórar svara áfram beiðnum, allir geta afbókað og engin bókun rennur út vegna ógreiddrar greiðslu fyrr en kveikt er aftur.",
   "admin.settings.name.sms_sending": "SMS-skilaboð",
   "admin.settings.help.sms_sending":
-    "Slökkt: engin SMS eru send, svo enginn getur beðið um innskráningarkóða. Þeir sem eru skráðir inn haldast skráðir inn.",
+    "Slökkt: engin SMS eru send, svo nýir aðgangar geta ekki bætt við símanúmeri og þeir sem hafa ekkert netfang fá engan staðfestingarkóða. Innskráning með netfangi eða Google virkar áfram.",
   "admin.settings.name.email_sending": "Tölvupóstur",
   "admin.settings.help.email_sending":
     "Slökkt: tölvupóstur bíður og fer út þegar kveikt er aftur, nema fréttirnar séu þá orðnar gamlar.",

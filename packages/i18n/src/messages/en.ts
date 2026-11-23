@@ -72,8 +72,6 @@ export const en = {
   "common.continue": "Continue",
   "common.retry": "Try again",
   "signIn.title": "Sign in or create an account",
-  "signIn.help":
-    "We text you a {length}-digit code. New to PuffinRide? The same code creates your account.",
   "signIn.keptRide": "You're booking",
   "signIn.keptRideTrip": "{day} · {boardTime} {board} → {alightTime} {alight}",
   "signIn.keptRideDetails": "{seats} · {price} · Driver: {driver}",
@@ -96,7 +94,20 @@ export const en = {
   "auth.code.incomplete": "Enter all {length} digits of the code.",
   "auth.continueGoogle": "Continue with Google",
   "auth.continueApple": "Continue with Apple",
-  "auth.orPhone": "or with your phone number",
+  "auth.orEmail": "or with your email",
+  "auth.email.label": "Email",
+  "auth.email.send": "Send code",
+  "auth.email.help": "We email you a {length}-digit code.",
+  "auth.email.before":
+    "Joined with your phone number? Use your email or Google, then the same number. It's added to your account.",
+  "auth.email.unavailable": "Sign-in by email is not available on this server.",
+  "auth.emailCode.help": "We emailed a {length}-digit code to {email}.",
+  "auth.emailCode.change": "Change email",
+  "auth.email.phoneHelp":
+    "Signed in as {email}. We text you a code once, so the people you ride with can reach you. Next time your email is enough.",
+  "auth.email.expired": "That took too long. Start again with your email.",
+  "auth.email.added": "Next time, sign in with {email}.",
+  "auth.email.replaced": "Your sign-in email is now {email}.",
   "auth.provider.phoneTitle": "Add your phone number",
   "auth.provider.phoneHelp":
     "You signed in with {provider} as {email}. We text you a code once, so the people you ride with can reach you. Next time {provider} is enough.",
@@ -107,11 +118,11 @@ export const en = {
     "{provider} is now linked to your account. Next time you can continue with {provider}.",
   "auth.provider.replaced": "Your {provider} account on PuffinRide is now {email}.",
   "auth.provider.replacedHidden": "Your {provider} account on PuffinRide has changed.",
-  "auth.provider.failed": "{provider} sign-in didn't work. Try again, or use your phone number.",
+  "auth.provider.failed": "{provider} sign-in didn't work. Try again, or use your email.",
   "auth.provider.expired": "That took too long. Continue with {provider} again.",
   "auth.provider.inUse": "This {provider} account is used by another PuffinRide account.",
   "auth.provider.inUseRetry":
-    "This {provider} account is used by another PuffinRide account. Try again to go on with your phone number alone.",
+    "This {provider} account is used by another PuffinRide account. Sign in with your email instead.",
   "auth.provider.returning": "Signing you in…",
   "auth.provider.closeTitle": "You can close this window",
   "auth.provider.closeWindow": "Then go on in the PuffinRide window.",
@@ -181,7 +192,7 @@ export const en = {
   "error.signups_paused":
     "New accounts are paused for a short while. If you already have an account, you can sign in.",
   "error.sms_paused":
-    "We can't send text messages right now, so signing in is paused for a short while. Try again later.",
+    "We can't send text messages right now, so adding a phone number is paused for a short while. Try again later.",
   "error.trips_paused":
     "Posting new trips is paused for a short while. Your trips and drafts are safe. Try again later.",
   "error.bookings_paused":
@@ -279,11 +290,14 @@ export const en = {
   "settings.email": "Email",
   "settings.signInMethods": "Sign-in methods",
   "settings.signInMethods.help":
-    "Your phone number always signs you in. You can also link other ways to sign in.",
+    "You sign in with your email or Google. Your phone number gets you back in if you lose your email.",
   "settings.signInMethods.add": "Add {provider}",
+  "settings.signInMethods.noEmail": "No email yet",
+  "settings.signInMethods.changeEmail": "Change email",
+  "settings.signInMethods.addEmail": "Add an email",
   "settings.signInMethods.remove": "Remove {provider}",
   "settings.signInMethods.removeQuestion":
-    "Remove {provider}? You can still sign in with your phone number.",
+    "Remove {provider}? Your email and phone number still get you in.",
   "settings.signInMethods.removed": "{provider} is no longer linked to your account.",
   "settings.signInMethods.notLinked": "Not linked",
   "settings.signInMethods.linked": "Linked",
@@ -291,7 +305,7 @@ export const en = {
   "settings.signInMethods.alreadyLinked": "{provider} is already linked to your account.",
   "settings.signInMethods.failed": "Adding {provider} didn't work. Try again.",
   "settings.signInMethods.expired": "That took too long. Add {provider} again.",
-  "settings.signInMethods.confirm": "To add {provider}, enter the code we text you.",
+  "settings.signInMethods.confirm": "To add {provider}, enter the code we send you.",
   "settings.addEmail": "Add an email",
   "settings.changeEmail": "Change your email",
   "settings.emailWaiting": "Waiting for you to open the link sent to {email}.",
@@ -1582,10 +1596,9 @@ export const en = {
   /** To the old address when an account's email changes (R26.6). */
   "email.emailChangedSubject": "Your PuffinRide sign-in email changed",
   "email.emailChangedBody":
-    "Your PuffinRide account now signs in with {email}. If this wasn't you, reply to this email and we will help.",
+    "Your PuffinRide account now signs in with {email}. If this wasn't you, sign in with this address and your phone number to get your account back, then tell us under Send feedback in the app.",
   "oauth.page.title": "PuffinRide sign-in",
-  "oauth.page.off":
-    "This way of signing in isn't available. Close this window and use your phone number.",
+  "oauth.page.off": "This way of signing in isn't available. Close this window and use your email.",
   "oauth.page.invalid": "This sign-in link doesn't work. Close this window and try again.",
   "oauth.page.expired":
     "This sign-in has expired or was already used. Close this window and try again.",
@@ -1674,7 +1687,8 @@ export const en = {
   "privacy.waiting.body":
     "Nobody can see your profile or trips, book with you or message you. Keep your account to use PuffinRide again, as it was.",
   "confirm.title": "Confirm it's you",
-  "confirm.sending": "Sending a code to your number…",
+  "confirm.sending": "Sending you a code…",
+  "confirm.sentToEmail": "We emailed a code to {email}.",
   "confirm.sent": "We sent a code by text message to your number ending in {digits}.",
   "confirm.sentNoNumber": "We sent a code by text message to your number.",
   "error.export_too_soon": "You can ask for one file a day. Try again in {wait}.",
@@ -2346,7 +2360,7 @@ export const en = {
     "Off: no new booking, request or payment. Drivers still answer requests, everyone can cancel, and no booking runs out for lack of payment until this is back on.",
   "admin.settings.name.sms_sending": "Text messages",
   "admin.settings.help.sms_sending":
-    "Off: no text message is sent, so nobody can ask for a sign-in code. People who are signed in stay signed in.",
+    "Off: no text message is sent, so new accounts can't add their phone number, and members without an email get no confirm code. Signing in with an email or Google still works.",
   "admin.settings.name.email_sending": "Emails",
   "admin.settings.help.email_sending":
     "Off: emails wait, and go out when this is back on unless their news is old by then.",

@@ -4,12 +4,22 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from "re
 import { useKeptRide, type KeptRide } from "./kept-ride";
 
 /**
- * What the sign-in screens share: the number as typed, its country, the
- * number a code was sent to, and the ride kept through signing in. Kept in
- * memory, never in the address bar, so the number does not end up in
- * browser history.
+ * What the sign-in screens share: the email and the number as typed, the
+ * number's country, where codes were sent, and the ride kept through
+ * signing in. Kept in memory, never in the address bar, so neither ends up
+ * in browser history.
  */
 export interface SignInFlow {
+  /** The email as typed on step 1 (spec 26, 3.1). */
+  readonly email: string;
+  readonly setEmail: (email: string) => void;
+  /** The address an email code was sent to; null until one was. */
+  readonly emailSentTo: string | null;
+  /** When a new email code can be asked for, as a time in milliseconds. */
+  readonly emailResendAt: number;
+  readonly emailCodeSent: (email: string, resendAfterSeconds: number) => void;
+  /** After a wait the API asked for, such as too many wrong email codes. */
+  readonly waitBeforeEmailResend: (seconds: number) => void;
   readonly country: SupportedCountry;
   readonly setCountry: (country: SupportedCountry) => void;
   readonly typed: string;
@@ -39,9 +49,10 @@ export interface SignInFlow {
   readonly notice: string | null;
   readonly setNotice: (notice: string | null) => void;
   /**
-   * A Google or Apple sign-in waiting for the phone step (spec 19, 3.3):
-   * set only from the finish answer, never from an address or a link, and
-   * sent with the code.
+   * An email, Google or Apple sign-in waiting for the phone step (spec 19,
+   * 3.3; spec 26, 3.3): set only from the answer that proved the email or
+   * the account, never from an address or a link, and sent with the text
+   * and its code. The phone step needs one.
    */
   readonly pending: PhoneNeeded | null;
   readonly setPending: (pending: PhoneNeeded | null) => void;
@@ -57,6 +68,9 @@ export function SignInFlowProvider({
   /** The code of an invite link. */
   readonly inviteCode?: string;
 }) {
+  const [email, setEmail] = useState("");
+  const [emailSentTo, setEmailSentTo] = useState<string | null>(null);
+  const [emailResendAt, setEmailResendAt] = useState(0);
   const [country, setCountry] = useState<SupportedCountry>("IS");
   const [typed, setTyped] = useState("");
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -68,6 +82,17 @@ export function SignInFlowProvider({
   const keptRide = useKeptRide();
   const value = useMemo<SignInFlow>(
     () => ({
+      email,
+      setEmail,
+      emailSentTo,
+      emailResendAt,
+      emailCodeSent: (address, resendAfterSeconds) => {
+        setEmailSentTo(address);
+        setEmailResendAt(Date.now() + resendAfterSeconds * 1000);
+      },
+      waitBeforeEmailResend: (seconds) => {
+        setEmailResendAt(Date.now() + seconds * 1000);
+      },
       country,
       setCountry,
       typed,
@@ -91,7 +116,20 @@ export function SignInFlowProvider({
       pending,
       setPending,
     }),
-    [country, typed, sentTo, resendAt, keptRide, inviteCode, rightCode, notice, pending],
+    [
+      email,
+      emailSentTo,
+      emailResendAt,
+      country,
+      typed,
+      sentTo,
+      resendAt,
+      keptRide,
+      inviteCode,
+      rightCode,
+      notice,
+      pending,
+    ],
   );
   return <SignInFlowContext value={value}>{children}</SignInFlowContext>;
 }

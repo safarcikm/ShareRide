@@ -1,10 +1,10 @@
-import { fireEvent, screen, waitFor } from "expo-router/testing-library";
+import { screen, waitFor } from "expo-router/testing-library";
 import { takeOpenedPath } from "@/navigation/opened-link";
-import { completeMe, renderApp } from "@/testing/app";
+import { completeMe, renderApp, signInByEmail } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { bookingApi } from "@/testing/bookings";
 import { chatBooking, chatServer } from "@/testing/chat";
-import { ok, testMe, tokens, type FakeClient } from "@/testing/fake-client";
+import { testMe, type FakeClient } from "@/testing/fake-client";
 import { completedBooking } from "@/testing/reviews";
 
 // A link to a screen that needs an account, opened before signing in, as
@@ -48,13 +48,7 @@ const keptPath = () => {
 };
 
 async function signInWithCode(fake: FakeClient) {
-  fake.answer("/v1/auth/phone/start", () => ok(202, { resendAfterSeconds: 30 }));
-  fake.answer("/v1/auth/phone/verify", () =>
-    ok(200, { ...tokens(1), user: completeMe, isNewUser: false }),
-  );
-  await fireEvent.changeText(await screen.findByLabelText("Mobile number"), "690 0000");
-  await fireEvent.press(screen.getByRole("button", { name: "Send code" }));
-  await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
+  await signInByEmail(fake, completeMe);
 }
 
 beforeEach(() => {

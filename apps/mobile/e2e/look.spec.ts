@@ -18,7 +18,7 @@ const schemes = [
     findRide: "Find a ride",
     offerRide: "Offer a ride",
     back: "Back",
-    phoneField: "Mobile number",
+    emailField: "Email",
     send: "Send code",
   },
   {
@@ -31,7 +31,7 @@ const schemes = [
     findRide: "Finna far",
     offerRide: "Bjóða far",
     back: "Til baka",
-    phoneField: "Farsímanúmer",
+    emailField: "Netfang",
     send: "Senda kóða",
   },
 ] as const;
@@ -147,7 +147,7 @@ for (const scheme of schemes) {
     }, testInfo) => {
       await page.goto("/sign-in");
       const back = page.getByRole("button", { name: scheme.back, exact: true });
-      const field = page.getByRole("textbox", { name: scheme.phoneField });
+      const field = page.getByRole("textbox", { name: scheme.emailField, exact: true });
       const send = page.getByRole("button", { name: scheme.send });
       await expect(field).toBeVisible();
       await expectFonts(page);

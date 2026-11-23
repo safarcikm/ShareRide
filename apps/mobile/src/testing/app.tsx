@@ -6,7 +6,7 @@
 //   jest.mock("@/auth/token-store", () => jest.requireActual("@/testing/app").mockTokenStoreModule);
 import type { ApiClient } from "@shareride/api-client";
 import type { DriverReadiness, Me } from "@shareride/contracts";
-import { renderRouter } from "expo-router/testing-library";
+import { fireEvent, renderRouter, screen } from "expo-router/testing-library";
 import { createFakeClient, ok, testMe, tokens, type FakeClient } from "./fake-client";
 import { memoryTokenStore } from "./memory-token-store";
 
@@ -52,6 +52,7 @@ export async function renderApp(
       maxMoveMinutes: 120,
       reliabilityMonths: 12,
       signInProviders: [],
+      emailSignIn: true,
     }),
   );
   // The front page's rides leaving soon: none, unless a test says otherwise.
@@ -119,4 +120,18 @@ export function legalDocument(type: string, version: number, body = "Draft text.
     summary: "First version.",
     body,
   };
+}
+
+/**
+ * From step 1 of sign-in, signs in with an email code as a member (spec
+ * 26): an account that has finished signing up, unless `me` is given.
+ */
+export async function signInByEmail(client: FakeClient, me: Me = completeMe): Promise<void> {
+  client.answer("/v1/auth/email/start", () => ok(202, { resendAfterSeconds: 30 }));
+  client.answer("/v1/auth/email/verify", () =>
+    ok(200, { status: "signedIn", ...tokens(1), user: me, isNewUser: false }),
+  );
+  await fireEvent.changeText(await screen.findByLabelText("Email"), "anna@example.com");
+  await fireEvent.press(screen.getByRole("button", { name: "Send code" }));
+  await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
 }

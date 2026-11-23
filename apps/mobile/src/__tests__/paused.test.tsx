@@ -17,6 +17,7 @@ jest.mock("@/lib/preferences", () => ({
 // milestone 11, PR 7): where the paused thing starts. Booking's is in
 // booking.test.tsx.
 
+/** The operator's settings with these parts paused, and the email step answered. */
 const pausedTo = (paused: readonly string[]) => ({
   setUp: (client: FakeClient) => {
     client.answer("/v1/config", () =>
@@ -28,22 +29,49 @@ const pausedTo = (paused: readonly string[]) => ({
         maxMoveMinutes: 120,
         reliabilityMonths: 12,
         signInProviders: [],
+        emailSignIn: true,
       }),
     );
+    emailStep(client);
   },
 });
+
+/** An email no account has: its code leads to the phone step (spec 26, 3.3). */
+function emailStep(client: FakeClient) {
+  client.answer("/v1/auth/email/start", () => ok(202, { resendAfterSeconds: 30 }));
+  client.answer("/v1/auth/email/verify", () =>
+    ok(200, {
+      status: "phoneNeeded",
+      pendingSignIn: `sr_pe_${"e".repeat(43)}`,
+      provider: "email",
+      email: "anna@example.com",
+      firstName: null,
+      expiresAt: "2026-11-23T12:30:00.000Z",
+    }),
+  );
+}
+
+/** From step 1, proves the email: the phone step opens. */
+async function toPhoneStep() {
+  await fireEvent.changeText(await screen.findByLabelText("Email"), "anna@example.com");
+  await fireEvent.press(screen.getByRole("button", { name: "Send code" }));
+  await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "246810");
+  expect(await screen.findByLabelText("Mobile number")).toBeVisible();
+}
 
 const signups =
   "New accounts are paused for a short while. If you already have an account, you can sign in.";
 const sms =
-  "We can't send text messages right now, so signing in is paused for a short while. Try again later.";
+  "We can't send text messages right now, so adding a phone number is paused for a short while. Try again later.";
 const trips =
   "Posting new trips is paused for a short while. Your trips and drafts are safe. Try again later.";
 
-describe("Step 1 of signing in while something is paused", () => {
+describe("Signing in while something is paused", () => {
   it("shows nothing when nothing is paused", async () => {
-    await renderApp("/sign-in");
-    expect(await screen.findByLabelText("Mobile number")).toBeVisible();
+    await renderApp("/sign-in", pausedTo([]));
+    expect(await screen.findByLabelText("Email")).toBeVisible();
+    expect(screen.queryByText(signups)).toBeNull();
+    await toPhoneStep();
     expect(screen.queryByText(signups)).toBeNull();
     expect(screen.queryByText(sms)).toBeNull();
   });
@@ -51,22 +79,30 @@ describe("Step 1 of signing in while something is paused", () => {
   it("says that new accounts are paused, and that members can sign in", async () => {
     await renderApp("/sign-in", pausedTo(["signups"]));
     expect(await screen.findByText(signups)).toBeVisible();
-    expect(screen.queryByText(sms)).toBeNull();
     expect(screen.getByRole("button", { name: "Send code" })).toBeEnabled();
+    await toPhoneStep();
+    expect(screen.getByText(signups)).toBeVisible();
+    expect(screen.queryByText(sms)).toBeNull();
   });
 
-  it("says that text messages are paused", async () => {
+  it("says that text messages are paused at the phone step, where a text goes", async () => {
     await renderApp("/sign-in", pausedTo(["sms"]));
-    expect(await screen.findByText(sms)).toBeVisible();
+    expect(await screen.findByLabelText("Email")).toBeVisible();
+    // Members with an email still sign in: nothing to say on step 1.
+    expect(screen.queryByText(sms)).toBeNull();
+    await toPhoneStep();
+    expect(screen.getByText(sms)).toBeVisible();
   });
 
   it("says so when the API refuses a code asked for just as the pause began", async () => {
     await renderApp("/sign-in", {
       setUp: (client) => {
+        emailStep(client);
         client.answer("/v1/auth/phone/start", () => failure(503, "sms_paused"), "post");
       },
     });
-    await fireEvent.changeText(await screen.findByLabelText("Mobile number"), "6112345");
+    await toPhoneStep();
+    await fireEvent.changeText(screen.getByLabelText("Mobile number"), "6112345");
     await fireEvent.press(screen.getByRole("button", { name: "Send code" }));
     expect(await screen.findByText(sms)).toBeVisible();
   });

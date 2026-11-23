@@ -109,12 +109,18 @@ built), Apple (waits for the developer account).
        sign-in email is now `ana@example.com`.", and the old address gets an
        email saying so (R26.6). This is also how a person who lost their
        email gets back in.
+     - The account has this email already, waiting for its link: it is
+       verified now.
      - Another account took the email in the meantime (a race): signed in,
        the email is left as it was.
 4. Everything that refuses a sign-up today refuses this one too, with the
-   same messages: new accounts paused, texts paused, a number blocked after
-   a suspended account was deleted (R11.9), and the invite code while
-   "Invite code required" is on.
+   same messages: new accounts paused, texts paused (shown on this step
+   only, since step 1 sends no text: "We can't send text messages right
+   now, so adding a phone number is paused for a short while."), a number
+   blocked after a suspended account was deleted (R11.9), and the invite
+   code while "Invite code required" is on. When the waiting sign-in runs
+   out (item 5), or the Google account turns out to be another member's,
+   the person goes back to step 1, which says why.
 5. The email sign-in waits 30 minutes for the phone step, as Google's does.
    After that: "That took too long. Start again with your email."
 
@@ -137,8 +143,10 @@ address (10 an hour) and per country calling code (Iceland 500 an hour and
    later.", and the API logs an error, so the operator hears of it through
    Sentry. (My call on the numbers: far above the first months' sign-ups,
    and about 15 000 kr a day at most; easy to change.)
-3. The console's "Pause texts" (spec 10, 3.3) still stops every text but the
-   console's recovery code.
+3. The console's "Text messages" switch (spec 10, 3.3) still stops every
+   text but the console's recovery code. Signing in with an email or Google
+   goes on; only the phone step, and confirm codes to an account without an
+   email, wait. Its help line in the console says so.
 
 ### 3.6 Confirm codes by email
 
@@ -146,8 +154,9 @@ address (10 an hour) and per country calling code (Iceland 500 an hour and
    Apple (spec 19, 3.4) and changing the email (3.7) ask for a confirm code
    as today. It goes by email to the account's verified email; only an
    account without one gets it by text.
-2. The form says where it went: "We emailed a code to an•••@gmail.com." or
-   "We texted a code to your number ending in 34."
+2. The form says where it went: "We emailed a code to an•••@gmail.com." or,
+   as today, "We sent a code by text message to your number ending in 34."
+   Adding Google or Apple says "To add Google, enter the code we send you."
 3. The rules do not change: 10 minutes, 5 attempts, the account's own
    limits.
 
@@ -191,7 +200,7 @@ the console's recovery code and its notice (spec 22).
 | R26.3 | All sign-in and confirm texts together: at most 300 an hour and 1 000 a day, on top of R1.3. Reaching it is logged as an error.                                                                                                                       |
 | R26.4 | An email code follows R1.2. At most one per 30 seconds and 5 an hour per address, 20 an hour per network address; the answer is the same whether or not an account has the email.                                                                       |
 | R26.5 | A new way into an account (Google, Apple or a new email) is added only after a code to a way the account already has: the phone step's text code, or a confirm code. The one exception is an email added within 30 minutes of the account being made. |
-| R26.6 | When an account's email changes, the old address is told by email, with the new address partly hidden.                                                                                                                                                 |
+| R26.6 | When an account's verified email changes, the old address is told by email, with the new address partly hidden. An address never verified is not told.                                                                                                |
 | R26.7 | Confirm codes go to the account's verified email, and by text only to an account without one.                                                                                                                                                         |
 
 ## 5. Screens
@@ -251,8 +260,10 @@ Endpoints (`/v1`, shapes in `packages/contracts`):
 | `PUT /me/email`                                   | Takes `code`, a confirm code, required unless the account was made in the last 30 minutes (3.7)                                                                                |
 | `GET /config`                                     | Gains `emailSignIn`                                                                                                                                                            |
 
-Logs: "sign-in code emailed" and "email sign-in waiting" with no address;
-"sign-in email changed" with the user ID and the outcome.
+Logs: "code emailed" (with its purpose) and "email sign-in waiting for the
+phone step", with no address; "sign-in email at the phone step" with the
+user ID and the outcome; "email change notice sent" with the user ID; "ceiling
+on all sign-in texts reached" as an error.
 
 ## 7. Privacy and safety
 
@@ -291,12 +302,13 @@ speaker):
 | `auth.email.replaced`        | Your sign-in email is now {email}.                                                                                                            |
 | `email.signInCodeSubject`    | {code} is your PuffinRide code                                                                                                                |
 | `email.signInCodeBody`       | Your code is {code}. It works for 10 minutes. If you didn't ask for it, you can ignore this email.                                            |
-| `email.confirmCodeSubject`   | {code} is your PuffinRide code                                                                                                                |
-| `email.confirmCodeBody`      | Enter {code} in PuffinRide to confirm the change you asked for. It works for 10 minutes. If you didn't ask for it, sign in and check your account. |
+| `email.confirmCodeSubject`   | {code} is your PuffinRide code to confirm                                                                                                     |
+| `email.confirmCodeBody`      | Enter {code} in PuffinRide to confirm the change you asked for. It works for 10 minutes. Never share it. If you didn't ask for it, sign in and check your account. |
 | `email.emailChangedSubject`  | Your PuffinRide sign-in email changed                                                                                                         |
-| `email.emailChangedBody`     | Your PuffinRide account now signs in with {email}. If this wasn't you, reply to this email and we will help.                                  |
+| `email.emailChangedBody`     | Your PuffinRide account now signs in with {email}. If this wasn't you, sign in with this address and your phone number to get your account back, then tell us under Send feedback in the app. (Replies to hello@ are refused, ADR 0039.) |
 | `confirm.sentToEmail`        | We emailed a code to {email}.                                                                                                                 |
-| `confirm.sentToPhone`        | We texted a code to your number ending in {digits}.                                                                                           |
+| `settings.signInMethods.confirm` | To add {provider}, enter the code we send you.                                                                                            |
+| `error.sms_paused`           | We can't send text messages right now, so adding a phone number is paused for a short while. Try again later.                                 |
 
 ## 9. Testing
 
@@ -313,8 +325,11 @@ speaker):
   code; the clean-up.
 - **App:** the sign-in screens with the fake API; the confirm form's line.
 - **Browser journeys (Playwright):** sign up with email and number; sign in
-  again with the email code; a member from before (number only) gets in
-  through the phone step; every journey that signs in now uses the email.
+  again on another device with the email code alone, no text; a lost email
+  replaced through the phone step, with the old address told; changing the
+  email in Settings; confirm codes by email; every journey that signs in now
+  uses the email. A member from before (number only) has its API and screen
+  tests: the journeys' database has no such member.
 - **Manual (Martin):** on staging and then production, a code email arrives
   in Gmail and in another inbox, with the code in the subject.
 

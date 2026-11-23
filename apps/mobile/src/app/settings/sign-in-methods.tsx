@@ -13,6 +13,7 @@ import {
   type SignInProvider,
 } from "@shareride/domain";
 import type { Translate } from "@shareride/i18n";
+import { router } from "expo-router";
 import { useCallback, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
@@ -57,8 +58,9 @@ function refusalText(t: Translate, failure: CallFailure, provider: string): stri
 }
 
 /**
- * Settings, Sign-in methods (spec 19, 3.4): the phone number, which stays,
- * and Google and Apple, each linked with its email or not linked. Adding
+ * Settings, Sign-in methods (spec 19, 3.4; spec 26, 3.8): the phone number,
+ * which stays, the email, which signs in and can be changed, and Google and
+ * Apple, each linked with its email or not linked. Adding
  * one opens its window, checks it can be added, then asks for a code
  * texted to the account's own number, as downloading the data does (R19.3).
  * Removing one asks first; sessions stay signed in. After a change the list
@@ -68,10 +70,16 @@ function refusalText(t: Translate, failure: CallFailure, provider: string): stri
 export default function SignInMethodsScreen() {
   const me = useMe();
   if (me === null) return <BackToMenu />;
-  return <SignInMethods phoneNumber={me.phoneNumber} />;
+  return <SignInMethods phoneNumber={me.phoneNumber} email={me.email} />;
 }
 
-function SignInMethods({ phoneNumber }: { readonly phoneNumber: string | null }) {
+function SignInMethods({
+  phoneNumber,
+  email,
+}: {
+  readonly phoneNumber: string | null;
+  readonly email: string | null;
+}) {
   const { t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
@@ -249,6 +257,21 @@ function SignInMethods({ phoneNumber }: { readonly phoneNumber: string | null })
               <Body align="start">{formatPhoneNumber(phoneNumber)}</Body>
             </View>
           )}
+          <View style={styles.method}>
+            {label(t("settings.email"))}
+            <Body align="start">{email ?? t("settings.signInMethods.noEmail")}</Body>
+            <Button
+              variant="secondary"
+              label={t(
+                email === null
+                  ? "settings.signInMethods.addEmail"
+                  : "settings.signInMethods.changeEmail",
+              )}
+              onPress={() => {
+                router.push("/settings/email");
+              }}
+            />
+          </View>
           {shown.map((provider) => {
             const name = providerNames[provider];
             const method = linked.get(provider);

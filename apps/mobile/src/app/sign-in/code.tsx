@@ -12,6 +12,7 @@ import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useSignInFlow } from "@/sign-in/flow";
 import { KeptRideCard } from "@/sign-in/kept-ride-card";
+import { pendingExpiredText } from "@/sign-in/pending";
 import { providerNames } from "@/sign-in/provider-window";
 import { SignUpProgress } from "@/sign-in/sign-up-progress";
 import { useSecondsUntil } from "@/sign-in/use-seconds-until";
@@ -21,7 +22,8 @@ const codeLength = codeRules.length;
 
 /**
  * Step 2: the code from the text message, with a resend timer (spec 1,
- * screen 3; spec 16, 3.5). The code is checked as soon as six digits are in.
+ * screen 3; spec 16, 3.5), for the phone step of a waiting email, Google or
+ * Apple sign-in (spec 26, 3.3). The code is checked as soon as six digits are in.
  * Signing in closes the sign-in screens, and the app goes on to step 3 for
  * a new account, or back to the ride kept for one that is ready.
  */
@@ -39,10 +41,11 @@ export default function CodeScreen() {
   const inFlight = useRef(false);
 
   const phoneNumber = flow.sentTo;
-  if (phoneNumber === null) return <Redirect href="/sign-in" />;
+  const { pending } = flow;
+  if (phoneNumber === null || pending === null) return <Redirect href="/sign-in" />;
 
   async function verify(entered: string) {
-    if (phoneNumber === null || inFlight.current) return;
+    if (phoneNumber === null || pending === null || inFlight.current) return;
     if (entered.length !== codeLength) {
       setFieldError(t("auth.code.incomplete", { length: codeLength }));
       return;
@@ -55,7 +58,7 @@ export default function CodeScreen() {
       entered,
       locale,
       flow.inviteCode,
-      flow.pending?.pendingSignIn,
+      pending.pendingSignIn,
     );
     if (result.ok) return;
     inFlight.current = false;
@@ -80,35 +83,29 @@ export default function CodeScreen() {
   }
 
   /**
-   * The waiting Google or Apple sign-in was refused; the code was not used
-   * (spec 19, 3.3). Too late: back to step 1 to continue with it again.
-   * Another account has it: the code still makes an account with the
-   * number alone, if the person enters it again.
+   * The waiting sign-in was refused; the code was not used (spec 19, 3.3;
+   * spec 26, 3.3). Too late, or a Google or Apple account another account
+   * has: back to step 1, which says why, to start again with the email.
    */
   function providerRefused(code: string): boolean {
-    const { pending } = flow;
     if (pending === null) return false;
-    const provider = providerNames[pending.provider];
-    if (code === "provider_expired") {
-      flow.setPending(null);
-      flow.setNotice(t("auth.provider.expired", { provider }));
-      router.dismissTo("/sign-in");
-      return true;
-    }
-    if (code === "provider_in_use") {
-      flow.setPending(null);
-      setMessage({ kind: "error", text: t("auth.provider.inUseRetry", { provider }) });
-      return true;
-    }
-    return false;
+    if (code !== "provider_expired" && code !== "provider_in_use") return false;
+    flow.setNotice(
+      code === "provider_expired" || pending.provider === "email"
+        ? pendingExpiredText(t, pending)
+        : t("auth.provider.inUseRetry", { provider: providerNames[pending.provider] }),
+    );
+    flow.setPending(null);
+    router.dismissTo("/sign-in");
+    return true;
   }
 
   async function resend() {
-    if (phoneNumber === null || inFlight.current) return;
+    if (phoneNumber === null || pending === null || inFlight.current) return;
     inFlight.current = true;
     setResending(true);
     setMessage(null);
-    const result = await session.start(phoneNumber, locale);
+    const result = await session.start(phoneNumber, locale, pending.pendingSignIn);
     inFlight.current = false;
     setResending(false);
     if (result.ok) {
@@ -116,6 +113,7 @@ export default function CodeScreen() {
       setMessage({ kind: "info", text: t("auth.code.resent") });
       return;
     }
+    if (providerRefused(result.error.code)) return;
     setMessage({ kind: "error", text: errorText(t, result) });
     const wait = result.error.retryAfterSeconds;
     if (wait !== undefined) flow.waitBeforeResend(wait);

@@ -1,3 +1,4 @@
+import type { CallFailure } from "@shareride/api-client";
 import { putEmailRoute, type Me } from "@shareride/contracts";
 import { normaliseEmail } from "@shareride/domain";
 import { useRef, useState } from "react";
@@ -12,12 +13,15 @@ import { TextField } from "@/components/text-field";
 import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { BackToMenu } from "@/navigation/back-to-menu";
+import { ConfirmWithCode } from "@/privacy/confirm-with-code";
 import { spacing } from "@/theme/tokens";
 
 /**
  * Adding or changing one's email (spec 1, 3.5; plan 4.6): a link goes to
  * the address, and it is the account's once the link is opened. The
- * address is checked with the API's own rule before sending.
+ * address is checked with the API's own rule before sending. The email
+ * signs in, so past the account's first 30 minutes a confirm code comes
+ * first (spec 26, 3.7): the API asks for it, and the form appears.
  */
 export default function EmailScreen() {
   const me = useMe();
@@ -32,7 +36,35 @@ function EmailForm({ me }: { readonly me: Me }) {
   const [fieldError, setFieldError] = useState<string | undefined>();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // The address waiting for a confirm code, while the form for it shows.
+  const [confirming, setConfirming] = useState<string | null>(null);
+  // When a new confirm code can be asked for, kept while the form closes and opens.
+  const [sentUntil, setSentUntil] = useState(0);
   const sending = useRef(false);
+
+  /** Words for a refusal that is not about the code. */
+  function describe(failure: CallFailure): string {
+    const { code, retryAfterSeconds = 0 } = failure.error;
+    if (code === "rate_limited") {
+      // Over a minute to wait: the day's five links are used.
+      const limit =
+        retryAfterSeconds > 60 ? "error.email_rate_limited_day" : "error.email_rate_limited";
+      return t(limit, { wait: formatWait(t, retryAfterSeconds) });
+    }
+    if (code === "email_invalid") return t("error.email");
+    if (code === "email_failed" || code === "email_unavailable") return t(`error.${code}`);
+    return errorText(t, failure);
+  }
+
+  async function confirmed(code: string) {
+    if (confirming === null) return { ok: true } as const;
+    const result = await session.call(putEmailRoute, { body: { email: confirming, code } });
+    if (!result.ok) return result;
+    session.update(result.data);
+    setAddress("");
+    setConfirming(null);
+    return { ok: true } as const;
+  }
 
   async function send(input: string) {
     if (sending.current) return;
@@ -52,19 +84,10 @@ function EmailForm({ me }: { readonly me: Me }) {
       setAddress("");
       return;
     }
-    const { code, retryAfterSeconds = 0 } = result.error;
-    if (code === "rate_limited") {
-      // Over a minute to wait: the day's five links are used.
-      const limit =
-        retryAfterSeconds > 60 ? "error.email_rate_limited_day" : "error.email_rate_limited";
-      setError(t(limit, { wait: formatWait(t, retryAfterSeconds) }));
-    } else if (code === "email_invalid") {
-      setFieldError(t("error.email"));
-    } else if (code === "email_failed" || code === "email_unavailable") {
-      setError(t(`error.${code}`));
-    } else {
-      setError(errorText(t, result));
-    }
+    const { code } = result.error;
+    if (code === "confirm_required") setConfirming(valid.value);
+    else if (code === "email_invalid") setFieldError(t("error.email"));
+    else setError(describe(result));
   }
 
   const { pendingEmail } = me;
@@ -107,7 +130,20 @@ function EmailForm({ me }: { readonly me: Me }) {
           onSubmitEditing={() => void send(address)}
         />
         <Notice message={error} />
-        <Button label={t("addEmail.send")} busy={busy} onPress={() => void send(address)} />
+        {confirming === null ? (
+          <Button label={t("addEmail.send")} busy={busy} onPress={() => void send(address)} />
+        ) : (
+          <ConfirmWithCode
+            confirmLabel={t("addEmail.send")}
+            onConfirm={confirmed}
+            describe={describe}
+            sentUntil={sentUntil}
+            onSent={setSentUntil}
+            onCancel={() => {
+              setConfirming(null);
+            }}
+          />
+        )}
       </View>
     </Screen>
   );

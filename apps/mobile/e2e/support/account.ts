@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { expect, type Page } from "@playwright/test";
+import { emailedCode, signInCodeSubject } from "./email";
 import { codeIn, newPhoneNumber, sentCount, textMessage } from "./sms";
 
-// Signing up and in through the app, as in spec 1's journeys, for any
-// journey that needs an account.
+// Signing up and in through the app, as in spec 26's journeys, for any
+// journey that needs an account: an email and the code emailed to it, and
+// for a new person the phone number, texted a code once.
 
 export interface Texts {
   /** "Sign in" on Profile in the menu, signed out. */
@@ -13,14 +15,17 @@ export interface Texts {
   /** Find and Profile in the menu. */
   readonly findTab: string;
   readonly profileTab: string;
-  readonly phoneLabel: string;
+  /** Step 1's email field (spec 26, 3.1). */
+  readonly email: string;
+  /** "Send code", under the email and under the number alike. */
   readonly send: string;
   readonly codeLabel: string;
+  /** Step 2: the phone number, for a new person only (spec 26, 3.3). */
+  readonly phoneTitle: string;
+  readonly phoneLabel: string;
   /** Step 3 of signing up, about you, with the terms (spec 16, 3.5). */
   readonly aboutYouTitle: string;
   readonly firstName: string;
-  /** Asked on the web, where there is no push (spec 20, 3.3). */
-  readonly email: string;
   readonly addAbout: string;
   readonly about: string;
   readonly age: string;
@@ -35,12 +40,13 @@ export const english: Texts = {
   findTitle: "Share your ride",
   findTab: "Find",
   profileTab: "Profile",
-  phoneLabel: "Mobile number",
+  email: "Email",
   send: "Send code",
   codeLabel: "6-digit code",
+  phoneTitle: "Add your phone number",
+  phoneLabel: "Mobile number",
   aboutYouTitle: "Last step: about you",
   firstName: "First name",
-  email: "Email",
   addAbout: "Add a few words about you (optional)",
   about: "About you",
   age: "I am 18 or older",
@@ -54,12 +60,13 @@ export const icelandic: Texts = {
   findTitle: "Verum samferða",
   findTab: "Leita",
   profileTab: "Prófíll",
-  phoneLabel: "Farsímanúmer",
+  email: "Netfang",
   send: "Senda kóða",
   codeLabel: "6 stafa kóði",
+  phoneTitle: "Bættu við símanúmerinu þínu",
+  phoneLabel: "Farsímanúmer",
   aboutYouTitle: "Síðasta skref: um þig",
   firstName: "Fornafn",
-  email: "Netfang",
   addAbout: "Bættu við nokkrum orðum um þig (valfrjálst)",
   about: "Um þig",
   age: "Ég er 18 ára eða eldri",
@@ -68,33 +75,69 @@ export const icelandic: Texts = {
   myProfile: "Prófíllinn minn",
 };
 
-/** Enters the number, reads the code from the text message and enters it. */
-export async function signIn(page: Page, texts: Texts, phone: { local: string; e164: string }) {
-  await page.goto("/profile");
-  await page.getByRole("button", { name: texts.signIn, exact: true }).click();
-  return enterCode(page, texts, phone);
+/** A new address for a new account. The test database is new each run. */
+export function newEmail(): string {
+  return `test-${randomUUID().slice(0, 8)}@example.com`;
 }
 
-/** On the sign-in screen: the number, then the code from the text message. */
-export async function enterCode(page: Page, texts: Texts, phone: { local: string; e164: string }) {
+/** Opens sign-in from Profile and signs in to an account with its email's code. */
+export async function signIn(page: Page, texts: Texts, address: string) {
+  await page.goto("/profile");
+  await page.getByRole("button", { name: texts.signIn, exact: true }).click();
+  await enterEmailCode(page, texts, address);
+}
+
+/** Step 1 on the sign-in screen: the email, then the code from the email. */
+export async function enterEmailCode(page: Page, texts: Texts, address: string) {
+  await page.getByLabel(texts.email, { exact: true }).fill(address);
+  const code = await emailedCode(address, signInCodeSubject, () =>
+    page.getByRole("button", { name: texts.send, exact: true }).click(),
+  );
+  await page.getByLabel(texts.codeLabel).fill(code);
+}
+
+/**
+ * Step 2, after an email or a Google account no account has: the number,
+ * then the code from the text message. Gives the text message.
+ */
+export async function enterPhoneCode(
+  page: Page,
+  texts: Texts,
+  phone: { local: string; e164: string },
+) {
+  await expect(page.getByRole("heading", { name: texts.phoneTitle })).toBeVisible();
   await page.getByLabel(texts.phoneLabel).fill(phone.local);
   const sentBefore = sentCount(phone.e164);
-  await page.getByRole("button", { name: texts.send }).click();
+  await page.getByRole("button", { name: texts.send, exact: true }).click();
   const text = await textMessage(phone.e164, sentBefore + 1);
   await page.getByLabel(texts.codeLabel).fill(codeIn(text));
   return text;
 }
 
 /**
+ * Steps 1 and 2 for a new person on the sign-in screen: a new email and
+ * its code, then the number and the code texted to it. Gives the email
+ * and the text message.
+ */
+export async function enterCodes(page: Page, texts: Texts, phone: { local: string; e164: string }) {
+  const email = newEmail();
+  await enterEmailCode(page, texts, email);
+  const text = await enterPhoneCode(page, texts, phone);
+  return { email, text };
+}
+
+/**
  * Signs up a new person through the three steps, which opens Find, then
  * checks the profile under Profile in the menu and goes back to Find. Gives
- * the number, the text message with the code and the email given at
- * sign-up, whose link is not opened yet.
+ * the number, the text message with its code and the account's email,
+ * proven by its code.
  */
 export async function signUp(page: Page, texts: Texts, firstName: string) {
   const phone = newPhoneNumber();
-  const text = await signIn(page, texts, phone);
-  const email = await finishSignUp(page, texts, firstName);
+  await page.goto("/profile");
+  await page.getByRole("button", { name: texts.signIn, exact: true }).click();
+  const { email, text } = await enterCodes(page, texts, phone);
+  await finishSignUp(page, texts, firstName);
   await expect(page.getByRole("heading", { name: texts.findTitle })).toBeVisible();
   await menuLink(page, texts.profileTab).click();
   await expect(page.getByRole("heading", { name: texts.myProfile })).toBeVisible();
@@ -114,10 +157,10 @@ export function menuLink(page: Page, name: string) {
 }
 
 /**
- * After the code, step 3: a new person gives a first name, an email (new
- * each time) and a few words, keeps the app's language ticked, accepts the
- * terms and presses the button, which names what comes next ("Create
- * account" when nothing is kept). Gives the email.
+ * After the codes, step 3: a new person gives a first name and a few
+ * words, keeps the app's language ticked, accepts the terms and presses
+ * the button, which names what comes next ("Create account" when nothing
+ * is kept). The account has its email already, so no email is asked.
  */
 export async function finishSignUp(
   page: Page,
@@ -125,14 +168,11 @@ export async function finishSignUp(
   firstName: string,
   button = texts.createAccount,
 ) {
-  const email = `test-${randomUUID().slice(0, 8)}@example.com`;
   await expect(page.getByRole("heading", { name: texts.aboutYouTitle })).toBeVisible();
   await page.getByLabel(texts.firstName).fill(firstName);
-  await page.getByLabel(texts.email, { exact: true }).fill(email);
   await page.getByRole("button", { name: texts.addAbout }).click();
   await page.getByLabel(texts.about).fill("Test account.");
   await page.getByRole("checkbox", { name: texts.age }).click();
   await page.getByRole("checkbox", { name: texts.accept }).click();
   await page.getByRole("button", { name: button, exact: true }).click();
-  return email;
 }

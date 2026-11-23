@@ -31,6 +31,7 @@ import { and, desc, eq, gt, inArray, isNotNull, isNull, ne, sql } from "drizzle-
 import { addressBlock } from "../../platform/client-address.ts";
 import { hashToken, newToken, sameHash, type KeyedHasher } from "../../platform/crypto.ts";
 import type { EmailChannel } from "../../platform/email.ts";
+import { captureError } from "../../platform/error-reporting.ts";
 import { MaybeSent } from "../../platform/maybe-sent.ts";
 import type { SmsSender } from "../../platform/sms.ts";
 import type { Logger } from "../../logger.ts";
@@ -524,8 +525,13 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
         logger.warn({ callingCode }, "sign-in codes per calling code limit reached");
       }
       if (refused.scope === "texts") {
-        // The ceiling on all texts (R26.3): real sign-ups wait, so the operator must hear of it.
+        // The ceiling on all texts (R26.3): real sign-ups wait, so the operator
+        // must hear of it, through Sentry where it reports errors.
         logger.error({ purpose }, "ceiling on all sign-in texts reached");
+        captureError(new Error("ceiling on all sign-in texts reached"), {
+          limit: "texts",
+          purpose,
+        });
       }
       return err(refused.error);
     }
