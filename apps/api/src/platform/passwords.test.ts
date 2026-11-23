@@ -3,7 +3,10 @@ import { createHashGate, hashPassword, verifyPassword } from "./passwords.ts";
 
 // Members' password hashes (ADR 0047): scrypt from Node's crypto.
 
-describe("hashPassword and verifyPassword", () => {
+// Real hashes with today's settings take a tenth of a second or more each,
+// and some tests make five; while every package tests at once on CI, that
+// can pass the 5 seconds a test is given by default.
+describe("hashPassword and verifyPassword", { timeout: 30_000 }, () => {
   it("stores scrypt's settings, a salt and the hash, never the password", async () => {
     const hash = await hashPassword("puffins fly north");
     expect(hash).toMatch(/^scrypt\$15\$8\$3\$[A-Za-z0-9_-]{22}\$[A-Za-z0-9_-]{43}$/);
