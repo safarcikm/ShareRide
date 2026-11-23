@@ -96,6 +96,8 @@ export const is = {
   "auth.continueGoogle": "Halda áfram með Google",
   "auth.continueApple": "Halda áfram með Apple",
   "auth.orEmail": "eða með netfanginu þínu",
+  /** Sign in with a passkey on this device (spec 27, 3.1 and 3.3). */
+  "auth.passkey": "Face ID eða fingrafar",
   "auth.email.label": "Netfang",
   "auth.email.send": "Senda kóða",
   "auth.email.help": "Við sendum þér {length} stafa kóða í tölvupósti.",
@@ -139,6 +141,7 @@ export const is = {
   "signUp.faster.title": "Skráðu þig hraðar inn næst",
   "signUp.faster.password": "Bæta við lykilorði",
   "signUp.faster.help": "Kóði í tölvupósti virkar líka alltaf.",
+  "signUp.faster.passkey": "Nota Face ID eða fingrafar",
   "auth.provider.phoneTitle": "Bættu við símanúmerinu þínu",
   "auth.provider.phoneHelp":
     "{provider} staðfesti netfangið {email}. Við sendum þér kóða með SMS einu sinni, svo fólkið sem þú ferðast með nái í þig. Næst dugar {provider}.",
@@ -351,6 +354,28 @@ export const is = {
   "settings.signInMethods.removePasswordQuestion":
     "Fjarlægja lykilorðið? Kóði í tölvupósti kemur þér áfram inn.",
   "settings.signInMethods.passwordRemoved": "Lykilorðið þitt hefur verið fjarlægt.",
+  /** Face ID or fingerprint, a passkey kept on each device (spec 27, 3.3 and 3.6). */
+  "passkey.unknown":
+    "Innskráning þessa tækis er ekki sett upp fyrir PuffinRide-aðganginn þinn. Notaðu netfangið þitt og settu hana svo upp aftur í Stillingum.",
+  "passkey.unknownDevice": "Vafri",
+  "passkey.notSetUp": "Ekki sett upp",
+  "passkey.added": "Bætt við {date}",
+  "passkey.lastUsed": "Síðast notað {date}",
+  "passkey.neverUsed": "Ekki notað enn",
+  "passkey.remove": "Fjarlægja",
+  "passkey.removeLabel": "Fjarlægja Face ID eða fingrafar fyrir {device}",
+  "passkey.removeQuestion":
+    "Fjarlægja Face ID eða fingrafar fyrir {device}? Þú getur áfram skráð þig inn með netfanginu þínu.",
+  "passkey.removed": "Face ID eða fingrafar hefur verið fjarlægt fyrir {device}.",
+  "passkey.setUp": "Setja upp í þessu tæki",
+  "passkey.saved": "Face ID eða fingrafar er sett upp í þessu tæki.",
+  "passkey.confirm":
+    "Til að setja upp Face ID eða fingrafar skaltu slá inn kóðann sem við sendum þér.",
+  "passkey.already": "Þetta tæki er þegar sett upp.",
+  "passkey.tooMany": "Þú ert með {max} tæki sett upp. Fjarlægðu eitt til að bæta öðru við.",
+  "passkey.expired": "Þetta tók of langan tíma. Reyndu aftur.",
+  "passkey.failed":
+    "Ekki tókst að setja upp Face ID eða fingrafar. Reyndu aftur eða notaðu áfram netfangið þitt.",
   "settings.addEmail": "Bæta við netfangi",
   "settings.changeEmail": "Breyta netfangi",
   "settings.emailWaiting": "Bíður þess að þú opnir hlekkinn sem var sendur á {email}.",

@@ -2,6 +2,8 @@ import type { ApiClient, CallFailure, CallInput, CallResult } from "@shareride/a
 import {
   finishProviderSignInRoute,
   getMeRoute,
+  passkeySignInOptionsRoute,
+  passkeySignInRoute,
   passwordSignInRoute,
   refreshRoute,
   signOutRoute,
@@ -85,6 +87,12 @@ export interface SessionManager {
     email: string,
     password: string,
   ): Promise<CallResult<typeof passwordSignInRoute>>;
+  /** Options for the device's passkey sheet, to sign in with Face ID or fingerprint (spec 27, 3.3). */
+  passkeyOptions(): Promise<CallResult<typeof passkeySignInOptionsRoute>>;
+  /** Signs in with the device's answer; a passkey that is not a member's is refused. */
+  signInWithPasskey(
+    credential: CallInput<typeof passkeySignInRoute>["body"]["credential"],
+  ): Promise<CallResult<typeof passkeySignInRoute>>;
   /**
    * Texts a code for the phone step of a waiting email, Google or Apple
    * sign-in (spec 26, R26.2), as its answer gave it; never from an address
@@ -320,6 +328,18 @@ export function createSessionManager(options: {
       const result = await client.call(passwordSignInRoute, {
         body: { email, password, device },
       });
+      if (result.ok) {
+        await keep(result.data);
+        keepNews({});
+        set({ status: "signedIn", me: result.data.user });
+      }
+      return result;
+    },
+
+    passkeyOptions: () => client.call(passkeySignInOptionsRoute, { body: {} }),
+
+    async signInWithPasskey(credential) {
+      const result = await client.call(passkeySignInRoute, { body: { credential, device } });
       if (result.ok) {
         await keep(result.data);
         keepNews({});

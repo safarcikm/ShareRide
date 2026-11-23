@@ -1,0 +1,408 @@
+import { fireEvent, screen } from "expo-router/testing-library";
+import type { Me, MemberPasskey } from "@shareride/contracts";
+import { failure, ok, tokens, type FakeClient } from "@/testing/fake-client";
+import { completeMe, renderApp } from "@/testing/app";
+import type * as TestApp from "@/testing/app";
+import type * as PasskeyTypes from "@/sign-in/passkey-types";
+
+jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
+jest.mock("@/auth/token-store", () => {
+  return jest.requireActual<typeof TestApp>("@/testing/app").mockTokenStoreModule;
+});
+jest.mock("expo-localization", () => ({ getLocales: () => [{ languageTag: "en-GB" }] }));
+jest.mock("@/lib/preferences", () => ({
+  readPreference: jest.fn(() => Promise.resolve(null)),
+  writePreference: jest.fn(() => Promise.resolve()),
+}));
+const mockStored = new Map<string, string>();
+jest.mock("@/lib/app-data", () => ({
+  readAppData: jest.fn((key: string) => Promise.resolve(mockStored.get(key) ?? null)),
+  writeAppData: jest.fn((key: string, value: string) => {
+    mockStored.set(key, value);
+    return Promise.resolve();
+  }),
+}));
+// The device's passkey sheet, stood in for: the website's only, in a test.
+const mockDevice = {
+  available: jest.fn(() => Promise.resolve(true)),
+  create: jest.fn(),
+  get: jest.fn(),
+};
+jest.mock("@/sign-in/passkey", () => ({
+  ...jest.requireActual<typeof PasskeyTypes>("@/sign-in/passkey-types"),
+  devicePasskeys: mockDevice,
+}));
+
+// Face ID or fingerprint (spec 27, 3.1, 3.3, 3.6 and 3.7).
+
+const anna: Me = { ...completeMe, email: "anna@example.com" };
+const options = { challenge: "c".repeat(43), rpId: "puffinride.is" };
+const assertion = {
+  id: "credential-one",
+  rawId: "credential-one",
+  type: "public-key",
+  response: { clientDataJSON: "data", authenticatorData: "auth", signature: "sig" },
+  clientExtensionResults: {},
+};
+const registration = {
+  id: "credential-new",
+  rawId: "credential-new",
+  type: "public-key",
+  response: { clientDataJSON: "data", attestationObject: "attestation" },
+  clientExtensionResults: {},
+};
+const named = (name: string) => Object.assign(new Error(name), { name });
+
+const iPhone: MemberPasskey = {
+  id: "0190a1d6-0000-7000-8000-0000000000a1",
+  browser: "Safari",
+  system: "iPhone",
+  createdAt: "2026-11-21T10:00:00.000Z",
+  lastUsedAt: "2026-11-22T08:30:00.000Z",
+};
+const mac: MemberPasskey = {
+  id: "0190a1d6-0000-7000-8000-0000000000a2",
+  browser: "Chrome",
+  system: "Mac",
+  createdAt: "2026-11-23T12:00:00.000Z",
+  lastUsedAt: null,
+};
+
+const callsTo = (client: FakeClient, path: string) =>
+  client.calls.filter((call) => call.path === path);
+
+function withPasskeys(client: FakeClient, passkeySignIn = true) {
+  client.answer("/v1/config", () =>
+    ok(200, {
+      beta: false,
+      paused: [],
+      maxSeats: 8,
+      freeCancellationMinutes: 15,
+      maxMoveMinutes: 120,
+      reliabilityMonths: 12,
+      signInProviders: [],
+      emailSignIn: true,
+      passkeySignIn,
+    }),
+  );
+}
+
+beforeEach(() => {
+  mockStored.clear();
+  mockDevice.available.mockReset().mockReturnValue(Promise.resolve(true));
+  mockDevice.create.mockReset().mockReturnValue(Promise.resolve(registration));
+  mockDevice.get.mockReset().mockReturnValue(Promise.resolve(assertion));
+});
+
+async function openSignIn(setUp?: (client: FakeClient) => void, passkeySignIn = true) {
+  const app = await renderApp("/sign-in", {
+    setUp: (client) => {
+      withPasskeys(client, passkeySignIn);
+      client.answer("/v1/auth/passkey/options", () => ok(200, { options }));
+      setUp?.(client);
+    },
+  });
+  expect(await screen.findByRole("header", { name: "Sign in or create an account" })).toBeVisible();
+  return app;
+}
+
+describe("Signing in with Face ID or fingerprint (spec 27, 3.1 and 3.3)", () => {
+  it("is offered where the server has it and the device has its own lock", async () => {
+    await openSignIn();
+    expect(await screen.findByRole("button", { name: "Face ID or fingerprint" })).toBeVisible();
+    expect(screen.getByText("or with your email")).toBeVisible();
+  });
+
+  it("is not offered on a device without its own lock", async () => {
+    mockDevice.available.mockReturnValue(Promise.resolve(false));
+    await openSignIn();
+    expect(screen.queryByRole("button", { name: "Face ID or fingerprint" })).toBeNull();
+  });
+
+  it("is not offered by a server without it", async () => {
+    await openSignIn(undefined, false);
+    expect(screen.queryByRole("button", { name: "Face ID or fingerprint" })).toBeNull();
+  });
+
+  it("signs in with the device's answer, with no email typed", async () => {
+    const app = await openSignIn((client) => {
+      client.answer("/v1/auth/passkey", () =>
+        ok(200, { status: "signedIn", ...tokens(1), user: anna, isNewUser: false }),
+      );
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(mockDevice.get).toHaveBeenCalledWith(options);
+    expect(callsTo(app.client, "/v1/auth/passkey").map((call) => call.input["body"])).toEqual([
+      { credential: assertion, device: expect.any(Object) as unknown },
+    ]);
+  });
+
+  it("changes nothing when the person closes the device's sheet", async () => {
+    mockDevice.get.mockReturnValue(Promise.reject(named("NotAllowedError")));
+    const app = await openSignIn();
+    await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
+    expect(
+      await screen.findByRole("button", { name: "Face ID or fingerprint", disabled: false }),
+    ).toBeVisible();
+    expect(callsTo(app.client, "/v1/auth/passkey")).toHaveLength(0);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("uses the same options on the next tap after the sheet was closed", async () => {
+    mockDevice.get.mockReturnValueOnce(Promise.reject(named("NotAllowedError")));
+    const app = await openSignIn((client) => {
+      client.answer("/v1/auth/passkey", () =>
+        ok(200, { status: "signedIn", ...tokens(1), user: anna, isNewUser: false }),
+      );
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
+    await fireEvent.press(
+      await screen.findByRole("button", { name: "Face ID or fingerprint", disabled: false }),
+    );
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(callsTo(app.client, "/v1/auth/passkey/options")).toHaveLength(1);
+    expect(mockDevice.get).toHaveBeenCalledTimes(2);
+  });
+
+  it("says when the answer came too late", async () => {
+    await openSignIn((client) => {
+      client.answer("/v1/auth/passkey", () => failure(400, "passkey_expired"));
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
+    expect(await screen.findByText("That took too long. Try again.")).toBeVisible();
+  });
+
+  it("says when the device's passkey is not one of a member's", async () => {
+    await openSignIn((client) => {
+      client.answer("/v1/auth/passkey", () => failure(400, "passkey_invalid"));
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
+    expect(
+      await screen.findByText(
+        "This device's sign-in isn't set up for your PuffinRide account. Use your email, then set it up again in Settings.",
+      ),
+    ).toBeVisible();
+  });
+});
+
+/** Opens Sign-in methods with these devices; the list answers as it is kept. */
+async function openMethods(devices: MemberPasskey[], setUp?: (client: FakeClient) => void) {
+  const kept = [...devices];
+  const app = await renderApp("/settings/sign-in-methods", {
+    me: anna,
+    setUp: (client) => {
+      withPasskeys(client);
+      client.answer(
+        "/v1/me/sign-in-methods",
+        () => ok(200, { methods: [], password: null, passkeys: [...kept] }),
+        "get",
+      );
+      client.answer("/v1/me/passkeys/options", () => ok(200, { options }));
+      client.answer("/v1/me/passkeys", () => {
+        kept.push(mac);
+        return ok(201, mac);
+      });
+      client.answer("/v1/me/passkeys/{id}", (input) => {
+        const { id } = input["params"] as { id: string };
+        kept.splice(
+          kept.findIndex((passkey) => passkey.id === id),
+          1,
+        );
+        return ok(204);
+      });
+      client.answer("/v1/me/confirm-code", () =>
+        ok(202, { resendAfterSeconds: 30, channel: "email", sentTo: "a***@example.com" }),
+      );
+      setUp?.(client);
+    },
+  });
+  expect(await screen.findByRole("header", { name: "Sign-in methods" })).toBeVisible();
+  return app;
+}
+
+describe("Face ID or fingerprint in Settings (spec 27, 3.6)", () => {
+  it("lists each device, with when it was added and last used", async () => {
+    await openMethods([iPhone]);
+    expect(await screen.findByText("Safari on iPhone")).toBeVisible();
+    expect(screen.getByText("Added 21 November 2026")).toBeVisible();
+    expect(screen.getByText("Last used 22 November 2026")).toBeVisible();
+  });
+
+  it("removes a device after asking", async () => {
+    const app = await openMethods([iPhone]);
+    await fireEvent.press(
+      await screen.findByRole("button", {
+        name: "Remove Face ID or fingerprint for Safari on iPhone",
+      }),
+    );
+    expect(
+      screen.getByText(
+        "Remove Face ID or fingerprint for Safari on iPhone? You can still sign in with your email.",
+      ),
+    ).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Remove" }));
+    expect(
+      await screen.findByText("Face ID or fingerprint is removed for Safari on iPhone."),
+    ).toBeVisible();
+    expect(screen.queryByText("Safari on iPhone")).toBeNull();
+    expect(screen.getByText("Not set up")).toBeVisible();
+    expect(callsTo(app.client, "/v1/me/passkeys/{id}")).toHaveLength(1);
+  });
+
+  it("sets up this device with a fresh sign-in", async () => {
+    const app = await openMethods([]);
+    await fireEvent.press(await screen.findByRole("button", { name: "Set up on this device" }));
+    expect(
+      await screen.findByText("Face ID or fingerprint is set up on this device."),
+    ).toBeVisible();
+    expect(screen.getByText("Chrome on Mac")).toBeVisible();
+    expect(mockDevice.create).toHaveBeenCalledWith(options);
+    expect(callsTo(app.client, "/v1/me/passkeys").map((call) => call.input["body"])).toEqual([
+      { credential: registration },
+    ]);
+  });
+
+  it("asks for a confirm code when the sign-in is over 10 minutes old (R27.5)", async () => {
+    const app = await openMethods([], (client) => {
+      client.answer("/v1/me/passkeys/options", (input) =>
+        (input["body"] as { code?: string }).code === undefined
+          ? failure(403, "confirm_required")
+          : ok(200, { options }),
+      );
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Set up on this device" }));
+    expect(
+      await screen.findByText("To set up Face ID or fingerprint, enter the code we send you."),
+    ).toBeVisible();
+    await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "654321");
+    expect(
+      await screen.findByText("Face ID or fingerprint is set up on this device."),
+    ).toBeVisible();
+    expect(
+      callsTo(app.client, "/v1/me/passkeys/options").map((call) => call.input["body"]),
+    ).toEqual([{}, { code: "654321" }]);
+  });
+
+  it("uses the confirmed options again when the sheet was closed, with no new code", async () => {
+    mockDevice.create.mockReturnValueOnce(Promise.reject(named("NotAllowedError")));
+    const app = await openMethods([], (client) => {
+      client.answer("/v1/me/passkeys/options", (input) =>
+        (input["body"] as { code?: string }).code === undefined
+          ? failure(403, "confirm_required")
+          : ok(200, { options }),
+      );
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Set up on this device" }));
+    await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "654321");
+    await fireEvent.press(
+      await screen.findByRole("button", { name: "Set up on this device", disabled: false }),
+    );
+    expect(
+      await screen.findByText("Face ID or fingerprint is set up on this device."),
+    ).toBeVisible();
+    expect(
+      callsTo(app.client, "/v1/me/passkeys/options").map((call) => call.input["body"]),
+    ).toEqual([{}, { code: "654321" }]);
+    expect(callsTo(app.client, "/v1/me/confirm-code")).toHaveLength(1);
+    expect(mockDevice.create).toHaveBeenCalledTimes(2);
+  });
+
+  it("says when this device is set up already", async () => {
+    mockDevice.create.mockReturnValue(Promise.reject(named("InvalidStateError")));
+    const app = await openMethods([iPhone]);
+    await fireEvent.press(await screen.findByRole("button", { name: "Set up on this device" }));
+    expect(await screen.findByText("This device is set up already.")).toBeVisible();
+    expect(callsTo(app.client, "/v1/me/passkeys")).toHaveLength(0);
+  });
+
+  it("changes nothing when the person closes the device's sheet", async () => {
+    mockDevice.create.mockReturnValue(Promise.reject(named("NotAllowedError")));
+    const app = await openMethods([]);
+    await fireEvent.press(await screen.findByRole("button", { name: "Set up on this device" }));
+    expect(
+      await screen.findByRole("button", { name: "Set up on this device", disabled: false }),
+    ).toBeVisible();
+    expect(callsTo(app.client, "/v1/me/passkeys")).toHaveLength(0);
+    expect(screen.getByText("Not set up")).toBeVisible();
+  });
+
+  it("asks to remove one when 10 devices are set up (R27.8)", async () => {
+    const ten = Array.from({ length: 10 }, (_, i) => ({
+      ...iPhone,
+      id: `0190a1d6-0000-7000-8000-0000000001${String(i).padStart(2, "0")}`,
+    }));
+    await openMethods(ten);
+    expect(
+      await screen.findByText("You have 10 devices set up. Remove one to add another."),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Set up on this device" })).toBeNull();
+  });
+
+  it("lists the devices, but offers no set-up, on a device without its own lock", async () => {
+    mockDevice.available.mockReturnValue(Promise.resolve(false));
+    await openMethods([iPhone]);
+    expect(await screen.findByText("Safari on iPhone")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Set up on this device" })).toBeNull();
+  });
+
+  it("is left out on a device without its own lock and with no devices", async () => {
+    mockDevice.available.mockReturnValue(Promise.resolve(false));
+    await openMethods([]);
+    expect(await screen.findByText("Add a password")).toBeVisible();
+    expect(screen.queryByText("Face ID or fingerprint")).toBeNull();
+    expect(screen.queryByText("Not set up")).toBeNull();
+  });
+});
+
+describe("Sign in faster next time, after sign-up (spec 27, 3.7)", () => {
+  const newAccount: Me = { ...anna, firstName: null, missingSteps: ["profile"] };
+
+  async function finishSignUp() {
+    const app = await renderApp("/", {
+      me: newAccount,
+      setUp: (client) => {
+        withPasskeys(client);
+        client.answer("/v1/me", (input) => {
+          const body = input["body"] as Partial<Me> | undefined;
+          return ok(200, body === undefined ? newAccount : { ...anna, ...body });
+        });
+        client.answer("/v1/me/passkeys/options", () => ok(200, { options }));
+        client.answer("/v1/me/passkeys", () => ok(201, mac));
+      },
+    });
+    expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
+    await fireEvent.changeText(screen.getByLabelText("First name"), "Anna");
+    await fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+    expect(await screen.findByRole("header", { name: "Sign in faster next time" })).toBeVisible();
+    return app;
+  }
+
+  it("sets up Face ID or fingerprint straight away, then goes on", async () => {
+    const app = await finishSignUp();
+    await fireEvent.press(screen.getByRole("button", { name: "Use Face ID or fingerprint" }));
+    expect(
+      await screen.findByText("Face ID or fingerprint is set up on this device."),
+    ).toBeVisible();
+    expect(callsTo(app.client, "/v1/me/passkeys")).toHaveLength(1);
+    await fireEvent.press(screen.getByRole("button", { name: "Done" }));
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+  });
+
+  it("holds the other choices while the device's sheet is open", async () => {
+    mockDevice.create.mockReturnValue(new Promise(() => {}));
+    await finishSignUp();
+    await fireEvent.press(screen.getByRole("button", { name: "Use Face ID or fingerprint" }));
+    expect(
+      await screen.findByRole("button", { name: "Add a password", disabled: true }),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Not now", disabled: true })).toBeVisible();
+  });
+
+  it("offers only a password on a device without its own lock", async () => {
+    mockDevice.available.mockReturnValue(Promise.resolve(false));
+    await finishSignUp();
+    expect(screen.getByRole("button", { name: "Add a password" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Use Face ID or fingerprint" })).toBeNull();
+  });
+});
